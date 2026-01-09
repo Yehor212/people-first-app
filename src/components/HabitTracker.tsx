@@ -3,6 +3,7 @@ import { Habit } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { Plus, Check, X } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿'];
 const habitColors = [
@@ -21,6 +22,7 @@ interface HabitTrackerProps {
 }
 
 export function HabitTracker({ habits, onToggleHabit, onAddHabit, onDeleteHabit }: HabitTrackerProps) {
+  const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState(habitIcons[0]);
@@ -48,7 +50,7 @@ export function HabitTracker({ habits, onToggleHabit, onAddHabit, onDeleteHabit 
   return (
     <div className="bg-card rounded-2xl p-6 zen-shadow-card animate-fade-in">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-foreground">Привычки</h3>
+        <h3 className="text-lg font-semibold text-foreground">{t.habits}</h3>
         <button
           onClick={() => setIsAdding(!isAdding)}
           className={cn(
@@ -66,12 +68,12 @@ export function HabitTracker({ habits, onToggleHabit, onAddHabit, onDeleteHabit 
             type="text"
             value={newHabitName}
             onChange={(e) => setNewHabitName(e.target.value)}
-            placeholder="Название привычки..."
+            placeholder={t.habitName}
             className="w-full p-3 bg-background rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 mb-3"
           />
           
           <div className="mb-3">
-            <p className="text-sm text-muted-foreground mb-2">Иконка:</p>
+            <p className="text-sm text-muted-foreground mb-2">{t.icon}:</p>
             <div className="flex gap-2 flex-wrap">
               {habitIcons.map((icon) => (
                 <button
@@ -89,7 +91,7 @@ export function HabitTracker({ habits, onToggleHabit, onAddHabit, onDeleteHabit 
           </div>
 
           <div className="mb-4">
-            <p className="text-sm text-muted-foreground mb-2">Цвет:</p>
+            <p className="text-sm text-muted-foreground mb-2">{t.color}:</p>
             <div className="flex gap-2">
               {habitColors.map((color) => (
                 <button
@@ -110,14 +112,14 @@ export function HabitTracker({ habits, onToggleHabit, onAddHabit, onDeleteHabit 
             disabled={!newHabitName.trim()}
             className="w-full py-2 zen-gradient text-primary-foreground font-medium rounded-lg disabled:opacity-50 transition-opacity"
           >
-            Добавить привычку
+            {t.addHabit}
           </button>
         </div>
       )}
 
       {habits.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">
-          Добавьте свою первую привычку! ✨
+          {t.addFirstHabit}
         </p>
       ) : (
         <div className="space-y-3">
@@ -147,7 +149,7 @@ export function HabitTracker({ habits, onToggleHabit, onAddHabit, onDeleteHabit 
                     {habit.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Выполнено {habit.completedDates.length} раз
+                    {t.completedTimes} {habit.completedDates.length} {t.completedTimes2}
                   </p>
                 </div>
                 <button

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
-import { getToday } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
@@ -13,14 +13,17 @@ import { GratitudeJournal } from '@/components/GratitudeJournal';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { StatsPage } from '@/components/StatsPage';
 import { SettingsPanel } from '@/components/SettingsPanel';
+import { LanguageSelector } from '@/components/LanguageSelector';
 
 type TabType = 'home' | 'stats' | 'settings';
 
 const Index = () => {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabType>('home');
+  const [hasSelectedLanguage, setHasSelectedLanguage] = useLocalStorage('zenflow-language-selected', false);
   
   // User data
-  const [userName, setUserName] = useLocalStorage('zenflow-username', 'Друг');
+  const [userName, setUserName] = useLocalStorage('zenflow-username', 'Friend');
   
   // App data
   const [moods, setMoods] = useLocalStorage<MoodEntry[]>('zenflow-moods', []);
@@ -31,7 +34,6 @@ const Index = () => {
   // Handlers
   const handleAddMood = (entry: MoodEntry) => {
     setMoods(prev => {
-      // Replace today's entry if exists
       const filtered = prev.filter(e => e.date !== entry.date);
       return [...filtered, entry];
     });
@@ -72,8 +74,17 @@ const Index = () => {
     setHabits([]);
     setFocusSessions([]);
     setGratitudeEntries([]);
-    setUserName('Друг');
+    setUserName('Friend');
   };
+
+  const handleLanguageSelected = () => {
+    setHasSelectedLanguage(true);
+  };
+
+  // Show language selector on first visit
+  if (!hasSelectedLanguage) {
+    return <LanguageSelector onComplete={handleLanguageSelected} />;
+  }
 
   return (
     <div className="min-h-screen zen-gradient-hero">

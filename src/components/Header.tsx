@@ -1,18 +1,33 @@
-import { getGreeting } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Leaf } from 'lucide-react';
 
 interface HeaderProps {
   userName?: string;
 }
 
-export function Header({ userName = 'Друг' }: HeaderProps) {
-  const greeting = getGreeting();
+export function Header({ userName = 'Friend' }: HeaderProps) {
+  const { t } = useLanguage();
+  
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t.goodMorning;
+    if (hour < 18) return t.goodAfternoon;
+    return t.goodEvening;
+  };
+  
   const today = new Date();
-  const formattedDate = today.toLocaleDateString('ru-RU', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  });
+  const formattedDate = today.toLocaleDateString(
+    useLanguage().language === 'ru' ? 'ru-RU' : 
+    useLanguage().language === 'uk' ? 'uk-UA' :
+    useLanguage().language === 'es' ? 'es-ES' :
+    useLanguage().language === 'de' ? 'de-DE' :
+    useLanguage().language === 'fr' ? 'fr-FR' : 'en-US',
+    {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    }
+  );
 
   return (
     <header className="mb-8 animate-fade-in">
@@ -20,12 +35,12 @@ export function Header({ userName = 'Друг' }: HeaderProps) {
         <div className="p-2 zen-gradient rounded-xl zen-shadow-soft">
           <Leaf className="w-6 h-6 text-primary-foreground" />
         </div>
-        <span className="text-xl font-bold zen-text-gradient">ZenFlow</span>
+        <span className="text-xl font-bold zen-text-gradient">{t.appName}</span>
       </div>
       
       <div className="mt-6">
         <h1 className="text-3xl font-bold text-foreground">
-          {greeting}, {userName}! 👋
+          {getGreeting()}, {userName}! 👋
         </h1>
         <p className="text-muted-foreground mt-1 capitalize">{formattedDate}</p>
       </div>

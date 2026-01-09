@@ -1,5 +1,8 @@
 import { useState } from 'react';
-import { User, Bell, Trash2, Download, Crown, ExternalLink } from 'lucide-react';
+import { User, Bell, Trash2, Download, Crown, ExternalLink, Globe } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Language, languageNames, languageFlags } from '@/i18n/translations';
+import { cn } from '@/lib/utils';
 
 interface SettingsPanelProps {
   userName: string;
@@ -7,7 +10,10 @@ interface SettingsPanelProps {
   onResetData: () => void;
 }
 
+const languages: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr'];
+
 export function SettingsPanel({ userName, onNameChange, onResetData }: SettingsPanelProps) {
+  const { t, language, setLanguage } = useLanguage();
   const [name, setName] = useState(userName);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -24,18 +30,18 @@ export function SettingsPanel({ userName, onNameChange, onResetData }: SettingsP
 
   return (
     <div className="space-y-6 animate-fade-in pb-24">
-      <h2 className="text-2xl font-bold text-foreground">Настройки</h2>
+      <h2 className="text-2xl font-bold text-foreground">{t.settings}</h2>
 
       {/* Profile */}
       <div className="bg-card rounded-2xl p-6 zen-shadow-card">
         <div className="flex items-center gap-3 mb-4">
           <User className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Профиль</h3>
+          <h3 className="text-lg font-semibold text-foreground">{t.profile}</h3>
         </div>
         
         <div className="space-y-4">
           <div>
-            <label className="text-sm text-muted-foreground mb-2 block">Ваше имя</label>
+            <label className="text-sm text-muted-foreground mb-2 block">{t.yourName}</label>
             <div className="flex gap-2">
               <input
                 type="text"
@@ -47,10 +53,38 @@ export function SettingsPanel({ userName, onNameChange, onResetData }: SettingsP
                 onClick={handleNameSave}
                 className="px-4 py-2 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
               >
-                Сохранить
+                {t.save}
               </button>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Language */}
+      <div className="bg-card rounded-2xl p-6 zen-shadow-card">
+        <div className="flex items-center gap-3 mb-4">
+          <Globe className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-foreground">{t.language}</h3>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-2">
+          {languages.map((lang) => (
+            <button
+              key={lang}
+              onClick={() => setLanguage(lang)}
+              className={cn(
+                "flex items-center gap-2 p-3 rounded-xl transition-all",
+                language === lang
+                  ? "bg-primary/10 ring-2 ring-primary"
+                  : "bg-secondary hover:bg-muted"
+              )}
+            >
+              <span className="text-xl">{languageFlags[lang]}</span>
+              <span className="font-medium text-foreground text-sm">
+                {languageNames[lang]}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -60,25 +94,25 @@ export function SettingsPanel({ userName, onNameChange, onResetData }: SettingsP
           <div className="p-2 zen-gradient-warm rounded-xl">
             <Crown className="w-5 h-5 text-primary-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground">ZenFlow Premium</h3>
+          <h3 className="text-lg font-semibold text-foreground">{t.premium}</h3>
         </div>
         <p className="text-muted-foreground mb-4">
-          Разблокируйте расширенную аналитику, экспорт данных и премиум темы!
+          {t.premiumDescription}
         </p>
         <button className="w-full py-3 zen-gradient-warm text-primary-foreground font-semibold rounded-xl hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
-          <span>Скоро</span>
+          <span>{t.comingSoon}</span>
           <ExternalLink className="w-4 h-4" />
         </button>
       </div>
 
-      {/* Notifications (placeholder) */}
+      {/* Notifications */}
       <div className="bg-card rounded-2xl p-6 zen-shadow-card">
         <div className="flex items-center gap-3 mb-4">
           <Bell className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Уведомления</h3>
+          <h3 className="text-lg font-semibold text-foreground">{t.notifications}</h3>
         </div>
         <p className="text-muted-foreground">
-          Уведомления будут доступны в следующих обновлениях.
+          {t.notificationsComingSoon}
         </p>
       </div>
 
@@ -86,12 +120,12 @@ export function SettingsPanel({ userName, onNameChange, onResetData }: SettingsP
       <div className="bg-card rounded-2xl p-6 zen-shadow-card">
         <div className="flex items-center gap-3 mb-4">
           <Download className="w-5 h-5 text-primary" />
-          <h3 className="text-lg font-semibold text-foreground">Данные</h3>
+          <h3 className="text-lg font-semibold text-foreground">{t.data}</h3>
         </div>
         
         <div className="space-y-3">
           <button className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors">
-            Экспорт данных (скоро)
+            {t.exportData} ({t.comingSoon})
           </button>
           
           {!showResetConfirm ? (
@@ -100,25 +134,25 @@ export function SettingsPanel({ userName, onNameChange, onResetData }: SettingsP
               className="w-full py-3 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 transition-colors flex items-center justify-center gap-2"
             >
               <Trash2 className="w-4 h-4" />
-              <span>Сбросить все данные</span>
+              <span>{t.resetAllData}</span>
             </button>
           ) : (
             <div className="p-4 bg-destructive/10 rounded-xl animate-scale-in">
               <p className="text-destructive font-medium mb-3">
-                Вы уверены? Это действие нельзя отменить.
+                {t.areYouSure} {t.cannotBeUndone}
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowResetConfirm(false)}
                   className="flex-1 py-2 bg-secondary text-secondary-foreground rounded-lg"
                 >
-                  Отмена
+                  {t.cancel}
                 </button>
                 <button
                   onClick={handleReset}
                   className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-lg"
                 >
-                  Удалить
+                  {t.delete}
                 </button>
               </div>
             </div>
@@ -128,8 +162,8 @@ export function SettingsPanel({ userName, onNameChange, onResetData }: SettingsP
 
       {/* About */}
       <div className="text-center text-muted-foreground py-4">
-        <p className="text-sm">ZenFlow v1.0.0</p>
-        <p className="text-xs mt-1">Ваш путь к осознанной жизни 🌿</p>
+        <p className="text-sm">{t.appName} v1.0.0</p>
+        <p className="text-xs mt-1">{t.tagline}</p>
       </div>
     </div>
   );

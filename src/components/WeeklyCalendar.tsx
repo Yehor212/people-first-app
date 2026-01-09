@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { MoodEntry, Habit } from '@/types';
-import { cn, getDayName, getToday } from '@/lib/utils';
+import { cn, getToday } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface WeeklyCalendarProps {
   moods: MoodEntry[];
@@ -16,6 +17,10 @@ const moodColors: Record<string, string> = {
 };
 
 export function WeeklyCalendar({ moods, habits }: WeeklyCalendarProps) {
+  const { t } = useLanguage();
+  
+  const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
+  
   const weekDays = useMemo(() => {
     const today = new Date();
     const days = [];
@@ -30,7 +35,7 @@ export function WeeklyCalendar({ moods, habits }: WeeklyCalendarProps) {
       
       days.push({
         date: dateStr,
-        dayName: getDayName(date.getDay()),
+        dayName: dayNames[date.getDay()],
         dayNum: date.getDate(),
         isToday: dateStr === getToday(),
         mood: mood?.mood,
@@ -39,11 +44,11 @@ export function WeeklyCalendar({ moods, habits }: WeeklyCalendarProps) {
     }
     
     return days;
-  }, [moods, habits]);
+  }, [moods, habits, dayNames]);
 
   return (
     <div className="bg-card rounded-2xl p-6 zen-shadow-card animate-fade-in">
-      <h3 className="text-lg font-semibold text-foreground mb-4">Эта неделя</h3>
+      <h3 className="text-lg font-semibold text-foreground mb-4">{t.thisWeek}</h3>
       
       <div className="grid grid-cols-7 gap-2">
         {weekDays.map((day) => (
@@ -62,7 +67,6 @@ export function WeeklyCalendar({ moods, habits }: WeeklyCalendarProps) {
               {day.dayNum}
             </span>
             
-            {/* Mood indicator */}
             {day.mood ? (
               <div className={cn(
                 "w-6 h-6 rounded-full mb-1",
@@ -72,9 +76,8 @@ export function WeeklyCalendar({ moods, habits }: WeeklyCalendarProps) {
               <div className="w-6 h-6 rounded-full bg-secondary mb-1" />
             )}
             
-            {/* Habits indicator */}
             <div className="flex gap-0.5">
-              {habits.slice(0, 3).map((habit, idx) => (
+              {habits.slice(0, 3).map((habit) => (
                 <div
                   key={habit.id}
                   className={cn(
