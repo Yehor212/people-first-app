@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
 import { Home, BarChart3, Settings } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 type TabType = 'home' | 'stats' | 'settings';
 
@@ -8,13 +9,15 @@ interface NavigationProps {
   onTabChange: (tab: TabType) => void;
 }
 
-const tabs = [
-  { id: 'home' as TabType, icon: Home, label: 'Главная' },
-  { id: 'stats' as TabType, icon: BarChart3, label: 'Статистика' },
-  { id: 'settings' as TabType, icon: Settings, label: 'Настройки' },
-];
-
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
+  const { t } = useLanguage();
+  
+  const tabs = [
+    { id: 'home' as TabType, icon: Home, label: t.home },
+    { id: 'stats' as TabType, icon: BarChart3, label: t.stats },
+    { id: 'settings' as TabType, icon: Settings, label: t.settings },
+  ];
+
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-lg border-t border-border z-50">
       <div className="max-w-lg mx-auto px-4">

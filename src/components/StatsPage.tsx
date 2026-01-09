@@ -1,7 +1,8 @@
 import { useMemo } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
-import { getMonthName, calculateStreak } from '@/lib/utils';
+import { calculateStreak } from '@/lib/utils';
 import { TrendingUp, Calendar, Zap, Heart } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface StatsPageProps {
   moods: MoodEntry[];
@@ -19,23 +20,34 @@ const moodEmojis: Record<string, string> = {
 };
 
 export function StatsPage({ moods, habits, focusSessions, gratitudeEntries }: StatsPageProps) {
+  const { t } = useLanguage();
+  
+  const monthNames = [
+    t.january, t.february, t.march, t.april, t.may, t.june,
+    t.july, t.august, t.september, t.october, t.november, t.december
+  ];
+  
+  const moodLabels: Record<string, string> = {
+    great: t.great,
+    good: t.good,
+    okay: t.okay,
+    bad: t.bad,
+    terrible: t.terrible,
+  };
+
   const stats = useMemo(() => {
-    // Overall stats
     const totalFocusMinutes = focusSessions.reduce((acc, s) => acc + s.duration, 0);
     const totalHabitCompletions = habits.reduce((acc, h) => acc + h.completedDates.length, 0);
     
-    // Streak calculation
     const allDates = habits.flatMap(h => h.completedDates);
     const uniqueDates = [...new Set(allDates)].sort();
     const currentStreak = calculateStreak(uniqueDates);
     
-    // Mood distribution
     const moodCounts = moods.reduce((acc, m) => {
       acc[m.mood] = (acc[m.mood] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
     
-    // This month stats
     const now = new Date();
     const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     
@@ -51,18 +63,17 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries }: St
       thisMonthMoods: thisMonthMoods.length,
       thisMonthFocusMinutes: thisMonthFocus.reduce((acc, s) => acc + s.duration, 0),
       thisMonthGratitude: thisMonthGratitude.length,
-      monthName: getMonthName(now.getMonth()),
+      monthName: monthNames[now.getMonth()],
     };
-  }, [moods, habits, focusSessions, gratitudeEntries]);
+  }, [moods, habits, focusSessions, gratitudeEntries, monthNames]);
 
-  // Most productive habit
   const topHabit = habits.length > 0
     ? habits.reduce((a, b) => a.completedDates.length > b.completedDates.length ? a : b)
     : null;
 
   return (
     <div className="space-y-6 animate-fade-in pb-24">
-      <h2 className="text-2xl font-bold text-foreground">Статистика</h2>
+      <h2 className="text-2xl font-bold text-foreground">{t.statistics}</h2>
 
       {/* Monthly Overview */}
       <div className="bg-card rounded-2xl p-6 zen-shadow-card">
@@ -76,33 +87,33 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries }: St
         <div className="grid grid-cols-3 gap-4">
           <div className="text-center p-3 bg-secondary rounded-xl">
             <p className="text-2xl font-bold text-primary">{stats.thisMonthMoods}</p>
-            <p className="text-xs text-muted-foreground">Записей настроения</p>
+            <p className="text-xs text-muted-foreground">{t.moodEntries}</p>
           </div>
           <div className="text-center p-3 bg-secondary rounded-xl">
             <p className="text-2xl font-bold text-accent">{stats.thisMonthFocusMinutes}</p>
-            <p className="text-xs text-muted-foreground">Минут фокуса</p>
+            <p className="text-xs text-muted-foreground">{t.focusMinutes}</p>
           </div>
           <div className="text-center p-3 bg-secondary rounded-xl">
             <p className="text-2xl font-bold text-mood-good">{stats.thisMonthGratitude}</p>
-            <p className="text-xs text-muted-foreground">Благодарностей</p>
+            <p className="text-xs text-muted-foreground">{t.gratitudes}</p>
           </div>
         </div>
       </div>
 
-      {/* Streak & Achievements */}
+      {/* Achievements */}
       <div className="bg-card rounded-2xl p-6 zen-shadow-card">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 zen-gradient-sunset rounded-xl">
             <Zap className="w-5 h-5 text-primary-foreground" />
           </div>
-          <h3 className="text-lg font-semibold text-foreground">Достижения</h3>
+          <h3 className="text-lg font-semibold text-foreground">{t.achievements}</h3>
         </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between p-4 bg-secondary rounded-xl">
             <div>
-              <p className="font-medium text-foreground">Текущая серия</p>
-              <p className="text-sm text-muted-foreground">Дней подряд</p>
+              <p className="font-medium text-foreground">{t.currentStreak}</p>
+              <p className="text-sm text-muted-foreground">{t.daysInRow}</p>
             </div>
             <div className="text-3xl font-bold text-accent">
               🔥 {stats.currentStreak}
@@ -111,18 +122,18 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries }: St
 
           <div className="flex items-center justify-between p-4 bg-secondary rounded-xl">
             <div>
-              <p className="font-medium text-foreground">Всего фокуса</p>
-              <p className="text-sm text-muted-foreground">За все время</p>
+              <p className="font-medium text-foreground">{t.totalFocus}</p>
+              <p className="text-sm text-muted-foreground">{t.allTime}</p>
             </div>
             <div className="text-3xl font-bold text-primary">
-              ⏱️ {stats.totalFocusMinutes}м
+              ⏱️ {stats.totalFocusMinutes}{t.min}
             </div>
           </div>
 
           <div className="flex items-center justify-between p-4 bg-secondary rounded-xl">
             <div>
-              <p className="font-medium text-foreground">Привычки выполнены</p>
-              <p className="text-sm text-muted-foreground">Всего раз</p>
+              <p className="font-medium text-foreground">{t.habitsCompleted}</p>
+              <p className="text-sm text-muted-foreground">{t.totalTimes}</p>
             </div>
             <div className="text-3xl font-bold text-mood-good">
               ✅ {stats.totalHabitCompletions}
@@ -138,7 +149,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries }: St
             <div className="p-2 zen-gradient-calm rounded-xl">
               <Heart className="w-5 h-5 text-primary-foreground" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground">Распределение настроения</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t.moodDistribution}</h3>
           </div>
 
           <div className="space-y-3">
@@ -175,7 +186,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries }: St
             <div className="p-2 zen-gradient-warm rounded-xl">
               <TrendingUp className="w-5 h-5 text-primary-foreground" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground">Лучшая привычка</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t.topHabit}</h3>
           </div>
 
           <div className="flex items-center gap-4 p-4 bg-secondary rounded-xl">
@@ -185,7 +196,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries }: St
             <div>
               <p className="font-semibold text-foreground">{topHabit.name}</p>
               <p className="text-sm text-muted-foreground">
-                Выполнено {topHabit.completedDates.length} раз
+                {t.completedTimes} {topHabit.completedDates.length} {t.completedTimes2}
               </p>
             </div>
           </div>

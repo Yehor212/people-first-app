@@ -2,14 +2,7 @@ import { useState } from 'react';
 import { MoodType, MoodEntry } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-
-const moods: { type: MoodType; emoji: string; label: string; color: string }[] = [
-  { type: 'great', emoji: '😄', label: 'Отлично', color: 'bg-mood-great' },
-  { type: 'good', emoji: '🙂', label: 'Хорошо', color: 'bg-mood-good' },
-  { type: 'okay', emoji: '😐', label: 'Нормально', color: 'bg-mood-okay' },
-  { type: 'bad', emoji: '😔', label: 'Плохо', color: 'bg-mood-bad' },
-  { type: 'terrible', emoji: '😢', label: 'Ужасно', color: 'bg-mood-terrible' },
-];
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MoodTrackerProps {
   entries: MoodEntry[];
@@ -17,8 +10,17 @@ interface MoodTrackerProps {
 }
 
 export function MoodTracker({ entries, onAddEntry }: MoodTrackerProps) {
+  const { t } = useLanguage();
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [note, setNote] = useState('');
+  
+  const moods: { type: MoodType; emoji: string; label: string; color: string }[] = [
+    { type: 'great', emoji: '😄', label: t.great, color: 'bg-mood-great' },
+    { type: 'good', emoji: '🙂', label: t.good, color: 'bg-mood-good' },
+    { type: 'okay', emoji: '😐', label: t.okay, color: 'bg-mood-okay' },
+    { type: 'bad', emoji: '😔', label: t.bad, color: 'bg-mood-bad' },
+    { type: 'terrible', emoji: '😢', label: t.terrible, color: 'bg-mood-terrible' },
+  ];
   
   const today = getToday();
   const todayEntry = entries.find(e => e.date === today);
@@ -43,7 +45,7 @@ export function MoodTracker({ entries, onAddEntry }: MoodTrackerProps) {
     const currentMood = moods.find(m => m.type === todayEntry.mood);
     return (
       <div className="bg-card rounded-2xl p-6 zen-shadow-card animate-fade-in">
-        <h3 className="text-lg font-semibold text-foreground mb-4">Настроение сегодня</h3>
+        <h3 className="text-lg font-semibold text-foreground mb-4">{t.moodToday}</h3>
         <div className="flex items-center gap-4">
           <div className={cn(
             "w-16 h-16 rounded-full flex items-center justify-center text-3xl",
@@ -64,7 +66,7 @@ export function MoodTracker({ entries, onAddEntry }: MoodTrackerProps) {
 
   return (
     <div className="bg-card rounded-2xl p-6 zen-shadow-card animate-fade-in">
-      <h3 className="text-lg font-semibold text-foreground mb-4">Как вы себя чувствуете?</h3>
+      <h3 className="text-lg font-semibold text-foreground mb-4">{t.howAreYouFeeling}</h3>
       
       <div className="flex justify-between mb-6">
         {moods.map((mood) => (
@@ -89,7 +91,7 @@ export function MoodTracker({ entries, onAddEntry }: MoodTrackerProps) {
           <textarea
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Добавьте заметку (необязательно)..."
+            placeholder={t.addNote}
             className="w-full p-4 bg-secondary rounded-xl text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
             rows={3}
           />
@@ -97,7 +99,7 @@ export function MoodTracker({ entries, onAddEntry }: MoodTrackerProps) {
             onClick={handleSubmit}
             className="mt-4 w-full py-3 zen-gradient text-primary-foreground font-semibold rounded-xl hover:opacity-90 transition-opacity zen-shadow-soft"
           >
-            Сохранить настроение
+            {t.saveMood}
           </button>
         </div>
       )}

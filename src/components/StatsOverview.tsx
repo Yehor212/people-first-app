@@ -1,6 +1,7 @@
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, calculateStreak } from '@/lib/utils';
 import { Flame, Brain, Heart, Target } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface StatsOverviewProps {
   moods: MoodEntry[];
@@ -10,9 +11,9 @@ interface StatsOverviewProps {
 }
 
 export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries }: StatsOverviewProps) {
+  const { t } = useLanguage();
   const today = getToday();
   
-  // Calculate stats
   const todayHabitsCompleted = habits.filter(h => h.completedDates.includes(today)).length;
   const totalHabits = habits.length;
   
@@ -29,28 +30,28 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries }
   const stats = [
     {
       icon: Flame,
-      label: 'Серия дней',
+      label: t.streakDays,
       value: streak,
-      suffix: 'дн',
+      suffix: t.days,
       color: 'zen-gradient-sunset',
     },
     {
       icon: Target,
-      label: 'Привычки сегодня',
+      label: t.habitsToday,
       value: `${todayHabitsCompleted}/${totalHabits}`,
       suffix: '',
       color: 'zen-gradient',
     },
     {
       icon: Brain,
-      label: 'Фокус сегодня',
+      label: t.focusToday,
       value: todayFocusMinutes,
-      suffix: 'мин',
+      suffix: t.min,
       color: 'zen-gradient-calm',
     },
     {
       icon: Heart,
-      label: 'Благодарности',
+      label: t.gratitudes,
       value: totalGratitude,
       suffix: '',
       color: 'zen-gradient-warm',

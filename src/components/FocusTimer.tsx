@@ -3,9 +3,10 @@ import { FocusSession } from '@/types';
 import { formatTime, getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { Play, Pause, RotateCcw, Coffee } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
-const FOCUS_TIME = 25 * 60; // 25 minutes
-const BREAK_TIME = 5 * 60; // 5 minutes
+const FOCUS_TIME = 25 * 60;
+const BREAK_TIME = 5 * 60;
 
 interface FocusTimerProps {
   sessions: FocusSession[];
@@ -13,6 +14,7 @@ interface FocusTimerProps {
 }
 
 export function FocusTimer({ sessions, onCompleteSession }: FocusTimerProps) {
+  const { t } = useLanguage();
   const [timeLeft, setTimeLeft] = useState(FOCUS_TIME);
   const [isRunning, setIsRunning] = useState(false);
   const [isBreak, setIsBreak] = useState(false);
@@ -28,7 +30,6 @@ export function FocusTimer({ sessions, onCompleteSession }: FocusTimerProps) {
       }, 1000);
     } else if (timeLeft === 0) {
       if (!isBreak) {
-        // Focus session completed
         const session: FocusSession = {
           id: generateId(),
           duration: FOCUS_TIME / 60,
@@ -67,16 +68,15 @@ export function FocusTimer({ sessions, onCompleteSession }: FocusTimerProps) {
     <div className="bg-card rounded-2xl p-6 zen-shadow-card animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-lg font-semibold text-foreground">
-          {isBreak ? 'Перерыв' : 'Фокус'}
+          {isBreak ? t.breakTime : t.focus}
         </h3>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Coffee className="w-4 h-4" />
-          <span>{todayMinutes} мин сегодня</span>
+          <span>{todayMinutes} {t.todayMinutes}</span>
         </div>
       </div>
 
       <div className="relative w-48 h-48 mx-auto mb-6">
-        {/* Background circle */}
         <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
           <circle
             cx="50"
@@ -100,7 +100,6 @@ export function FocusTimer({ sessions, onCompleteSession }: FocusTimerProps) {
           />
         </svg>
         
-        {/* Timer text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className={cn(
             "text-4xl font-bold",
@@ -109,7 +108,7 @@ export function FocusTimer({ sessions, onCompleteSession }: FocusTimerProps) {
             {formatTime(timeLeft)}
           </span>
           <span className="text-sm text-muted-foreground mt-1">
-            {isBreak ? '☕ Отдохните' : '🎯 Сконцентрируйтесь'}
+            {isBreak ? `☕ ${t.takeRest}` : `🎯 ${t.concentrate}`}
           </span>
         </div>
       </div>
