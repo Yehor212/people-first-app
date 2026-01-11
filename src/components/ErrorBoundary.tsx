@@ -15,7 +15,7 @@ const logError = (payload: Record<string, unknown>) => {
 
 const exportDebugReport = (error?: Error | null) => {
   const report = {
-    version: typeof __APP_VERSION__ !== "undefined" ? __APP_VERSION__ : "unknown",
+    version: "1.0.0",
     timestamp: new Date().toISOString(),
     location: window.location.href,
     userAgent: navigator.userAgent,
@@ -33,11 +33,23 @@ const exportDebugReport = (error?: Error | null) => {
   URL.revokeObjectURL(url);
 };
 
-class ErrorBoundaryBase extends React.Component<
-  { onExport: (error: Error | null) => void; onReload: () => void; title: string; body: string; exportLabel: string; reloadLabel: string },
-  { hasError: boolean; error: Error | null }
-> {
-  state = { hasError: false, error: null };
+interface ErrorBoundaryBaseProps {
+  onExport: (error: Error | null) => void;
+  onReload: () => void;
+  title: string;
+  body: string;
+  exportLabel: string;
+  reloadLabel: string;
+  children: React.ReactNode;
+}
+
+interface ErrorBoundaryBaseState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBoundaryBaseState> {
+  state: ErrorBoundaryBaseState = { hasError: false, error: null };
 
   static getDerivedStateFromError() {
     return { hasError: true };

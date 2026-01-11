@@ -6,6 +6,7 @@ export interface MoodEntry {
   note?: string;
   date: string;
   timestamp: number;
+  tags?: string[];
 }
 
 export interface Habit {
@@ -15,6 +16,9 @@ export interface Habit {
   color: string;
   completedDates: string[];
   createdAt: number;
+  templateId?: string;
+  type?: 'daily' | 'reduce';
+  progressByDate?: Record<string, number>;
 }
 
 export interface GratitudeEntry {
@@ -29,6 +33,9 @@ export interface FocusSession {
   duration: number;
   completedAt: number;
   date: string;
+  label?: string;
+  status?: 'completed' | 'aborted';
+  reflection?: number;
 }
 
 export interface UserStats {
@@ -37,4 +44,22 @@ export interface UserStats {
   longestStreak: number;
   habitsCompleted: number;
   moodEntries: number;
+}
+
+export interface ReminderSettings {
+  enabled: boolean;
+  moodTime: string;
+  habitTime: string;
+  focusTime: string;
+  days: number[];
+  quietHours: {
+    start: string;
+    end: string;
+  };
+  habitIds: string[];
+}
+
+export interface PrivacySettings {
+  noTracking: boolean;
+  analytics: boolean;
 }
