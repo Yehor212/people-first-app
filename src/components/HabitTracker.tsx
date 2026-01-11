@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Habit } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { Plus, Check, X } from 'lucide-react';
+import { Plus, Check, X, Minus } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿'];
@@ -17,11 +17,12 @@ const habitColors = [
 interface HabitTrackerProps {
   habits: Habit[];
   onToggleHabit: (habitId: string, date: string) => void;
+  onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
   onAddHabit: (habit: Habit) => void;
   onDeleteHabit: (habitId: string) => void;
 }
 
-export function HabitTracker({ habits, onToggleHabit, onAddHabit, onDeleteHabit }: HabitTrackerProps) {
+export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit, onDeleteHabit }: HabitTrackerProps) {
   const { t } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
@@ -45,6 +46,21 @@ export function HabitTracker({ habits, onToggleHabit, onAddHabit, onDeleteHabit 
     onAddHabit(habit);
     setNewHabitName('');
     setIsAdding(false);
+  };
+
+  const isCompletedToday = (habit: Habit) => {
+    if ((habit.type || 'daily') === 'reduce') {
+      const progress = habit.progressByDate?.[today];
+      return progress === 0;
+    }
+    return habit.completedDates.includes(today);
+  };
+
+  const getProgress = (habit: Habit) => {
+    if ((habit.type || 'daily') === 'reduce') {
+      return habit.progressByDate?.[today] ?? 0;
+    }
+    return 0;
   };
 
   return (
@@ -124,27 +140,53 @@ export function HabitTracker({ habits, onToggleHabit, onAddHabit, onDeleteHabit 
       ) : (
         <div className="space-y-3">
           {habits.map((habit) => {
-            const isCompletedToday = habit.completedDates.includes(today);
+            const completed = isCompletedToday(habit);
+            const isReduce = (habit.type || 'daily') === 'reduce';
+            const progress = getProgress(habit);
+            
             return (
               <div
                 key={habit.id}
                 className="flex items-center gap-3 p-3 bg-secondary rounded-xl group"
               >
-                <button
-                  onClick={() => onToggleHabit(habit.id, today)}
-                  className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all",
-                    isCompletedToday 
-                      ? `${habit.color} text-primary-foreground zen-shadow-soft` 
-                      : "bg-background hover:opacity-80"
-                  )}
-                >
-                  {isCompletedToday ? <Check className="w-6 h-6" /> : habit.icon}
-                </button>
+                {isReduce ? (
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onAdjustHabit?.(habit.id, today, -1)}
+                      className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                    >
+                      <Minus className="w-4 h-4" />
+                    </button>
+                    <span className={cn(
+                      "w-8 text-center font-bold",
+                      progress === 0 ? "text-mood-good" : "text-foreground"
+                    )}>
+                      {progress}
+                    </span>
+                    <button
+                      onClick={() => onAdjustHabit?.(habit.id, today, 1)}
+                      className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+                    >
+                      <Plus className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => onToggleHabit(habit.id, today)}
+                    className={cn(
+                      "w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all",
+                      completed 
+                        ? `${habit.color} text-primary-foreground zen-shadow-soft` 
+                        : "bg-background hover:opacity-80"
+                    )}
+                  >
+                    {completed ? <Check className="w-6 h-6" /> : habit.icon}
+                  </button>
+                )}
                 <div className="flex-1">
                   <p className={cn(
                     "font-medium transition-all",
-                    isCompletedToday ? "text-muted-foreground line-through" : "text-foreground"
+                    completed ? "text-muted-foreground line-through" : "text-foreground"
                   )}>
                     {habit.name}
                   </p>

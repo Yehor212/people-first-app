@@ -315,6 +315,31 @@ export interface Translations {
   october: string;
   november: string;
   december: string;
+
+  // New translations for onboarding
+  welcomeMessage: string;
+  featureMood: string;
+  featureMoodDescription: string;
+  featureHabits: string;
+  featureHabitsDescription: string;
+  featureFocus: string;
+  featureFocusDescription: string;
+  privacyNote: string;
+  install: string;
+  installDescription: string;
+  onboardingMoodTitle: string;
+  onboardingMoodDescription: string;
+  onboardingHabitsTitle: string;
+  onboardingHabitsDescription: string;
+  onboardingRemindersTitle: string;
+  onboardingRemindersDescription: string;
+  enableReminders: string;
+  morning: string;
+  evening: string;
+  skip: string;
+  getStarted: string;
+  next: string;
+  remindersActive: string;
 }
 
 export const translations: Record<Language, Translations> = {
