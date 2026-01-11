@@ -26,6 +26,7 @@ wellness, habits, mood, focus, gratitude, offline
 - Email: support@zenflow.app
 - Privacy policy: https://yehor212.github.io/people-first-app/privacy.html
 - Terms of service: https://yehor212.github.io/people-first-app/terms.html
+- Delete account: https://yehor212.github.io/people-first-app/delete-account.html
 
 ## Screenshots needed
 - iPhone 6.7" / 6.5" / 5.5"
