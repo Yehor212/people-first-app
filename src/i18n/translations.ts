@@ -157,6 +157,9 @@ export interface Translations {
   importSuccess: string;
   importError: string;
   importedItems: string;
+  importAdded: string;
+  importUpdated: string;
+  importSkipped: string;
   comingSoon: string;
   resetAllData: string;
   installApp: string;
@@ -237,10 +240,16 @@ export interface Translations {
   authError: string;
   authNotConfigured: string;
   syncSuccess: string;
+  syncPulled: string;
+  syncPushed: string;
   syncError: string;
   authGateTitle: string;
   authGateBody: string;
   authGateContinue: string;
+  errorBoundaryTitle: string;
+  errorBoundaryBody: string;
+  errorBoundaryExport: string;
+  errorBoundaryReload: string;
   pushTitle: string;
   pushEnable: string;
   pushDisable: string;
@@ -445,6 +454,9 @@ export const translations: Record<Language, Translations> = {
     importSuccess: 'Импорт завершён.',
     importError: 'Не удалось импортировать файл.',
     importedItems: 'Добавлено',
+    importAdded: 'добавлено',
+    importUpdated: 'обновлено',
+    importSkipped: 'пропущено',
     comingSoon: 'скоро',
     resetAllData: 'Сбросить все данные',
     privacyTitle: 'Приватность',
@@ -533,10 +545,16 @@ export const translations: Record<Language, Translations> = {
     authError: 'Не удалось отправить ссылку.',
     authNotConfigured: 'Supabase не настроен.',
     syncSuccess: 'Синхронизация завершена.',
+    syncPulled: 'Данные восстановлены из облака.',
+    syncPushed: 'Облако обновлено.',
     syncError: 'Не удалось синхронизировать.',
     authGateTitle: 'Вход в аккаунт',
     authGateBody: 'Войдите по почте, чтобы сохранять прогресс и синхронизировать между устройствами.',
     authGateContinue: 'Продолжить без аккаунта',
+    errorBoundaryTitle: 'Что-то пошло не так',
+    errorBoundaryBody: 'Попробуйте перезагрузить приложение или отправить отчёт.',
+    errorBoundaryExport: 'Экспортировать отчёт',
+    errorBoundaryReload: 'Перезагрузить приложение',
     pushTitle: 'Push-уведомления',
     pushEnable: 'Включить push',
     pushDisable: 'Выключить push',
@@ -707,6 +725,9 @@ export const translations: Record<Language, Translations> = {
     importSuccess: 'Import complete.',
     importError: 'Failed to import file.',
     importedItems: 'Added',
+    importAdded: 'added',
+    importUpdated: 'updated',
+    importSkipped: 'skipped',
     comingSoon: 'coming soon',
     resetAllData: 'Reset all data',
     privacyTitle: 'Privacy',
@@ -795,10 +816,16 @@ export const translations: Record<Language, Translations> = {
     authError: 'Failed to send link.',
     authNotConfigured: 'Supabase not configured.',
     syncSuccess: 'Sync complete.',
+    syncPulled: 'Cloud data restored.',
+    syncPushed: 'Cloud updated.',
     syncError: 'Sync failed.',
     authGateTitle: 'Sign in',
     authGateBody: 'Sign in by email to save progress and sync across devices.',
     authGateContinue: 'Continue without account',
+    errorBoundaryTitle: 'Something went wrong',
+    errorBoundaryBody: 'Try reloading the app or export a debug report.',
+    errorBoundaryExport: 'Export debug report',
+    errorBoundaryReload: 'Reload app',
     pushTitle: 'Push notifications',
     pushEnable: 'Enable push',
     pushDisable: 'Disable push',
@@ -969,6 +996,9 @@ export const translations: Record<Language, Translations> = {
     importSuccess: 'Імпорт завершено.',
     importError: 'Не вдалося імпортувати файл.',
     importedItems: 'Додано',
+    importAdded: 'додано',
+    importUpdated: 'оновлено',
+    importSkipped: 'пропущено',
     comingSoon: 'скоро',
     resetAllData: 'Скинути всі дані',
     privacyTitle: 'Privacy',
@@ -1057,10 +1087,16 @@ export const translations: Record<Language, Translations> = {
     authError: 'Failed to send link.',
     authNotConfigured: 'Supabase not configured.',
     syncSuccess: 'Sync complete.',
+    syncPulled: 'Cloud data restored.',
+    syncPushed: 'Cloud updated.',
     syncError: 'Sync failed.',
     authGateTitle: 'Sign in',
     authGateBody: 'Sign in by email to save progress and sync across devices.',
     authGateContinue: 'Continue without account',
+    errorBoundaryTitle: 'Something went wrong',
+    errorBoundaryBody: 'Try reloading the app or export a debug report.',
+    errorBoundaryExport: 'Export debug report',
+    errorBoundaryReload: 'Reload app',
     pushTitle: 'Push notifications',
     pushEnable: 'Enable push',
     pushDisable: 'Disable push',
@@ -1231,6 +1267,9 @@ export const translations: Record<Language, Translations> = {
     importSuccess: 'Importación completada.',
     importError: 'No se pudo importar el archivo.',
     importedItems: 'Añadido',
+    importAdded: 'añadido',
+    importUpdated: 'actualizado',
+    importSkipped: 'omitido',
     comingSoon: 'próximamente',
     resetAllData: 'Restablecer todos los datos',
     privacyTitle: 'Privacy',
@@ -1319,10 +1358,16 @@ export const translations: Record<Language, Translations> = {
     authError: 'Failed to send link.',
     authNotConfigured: 'Supabase not configured.',
     syncSuccess: 'Sync complete.',
+    syncPulled: 'Cloud data restored.',
+    syncPushed: 'Cloud updated.',
     syncError: 'Sync failed.',
     authGateTitle: 'Sign in',
     authGateBody: 'Sign in by email to save progress and sync across devices.',
     authGateContinue: 'Continue without account',
+    errorBoundaryTitle: 'Something went wrong',
+    errorBoundaryBody: 'Try reloading the app or export a debug report.',
+    errorBoundaryExport: 'Export debug report',
+    errorBoundaryReload: 'Reload app',
     pushTitle: 'Push notifications',
     pushEnable: 'Enable push',
     pushDisable: 'Disable push',
@@ -1493,6 +1538,9 @@ export const translations: Record<Language, Translations> = {
     importSuccess: 'Import abgeschlossen.',
     importError: 'Dateiimport fehlgeschlagen.',
     importedItems: 'Hinzugefügt',
+    importAdded: 'hinzugefügt',
+    importUpdated: 'aktualisiert',
+    importSkipped: 'übersprungen',
     comingSoon: 'bald verfügbar',
     resetAllData: 'Alle Daten zurücksetzen',
     privacyTitle: 'Privacy',
@@ -1581,10 +1629,16 @@ export const translations: Record<Language, Translations> = {
     authError: 'Failed to send link.',
     authNotConfigured: 'Supabase not configured.',
     syncSuccess: 'Sync complete.',
+    syncPulled: 'Cloud data restored.',
+    syncPushed: 'Cloud updated.',
     syncError: 'Sync failed.',
     authGateTitle: 'Sign in',
     authGateBody: 'Sign in by email to save progress and sync across devices.',
     authGateContinue: 'Continue without account',
+    errorBoundaryTitle: 'Something went wrong',
+    errorBoundaryBody: 'Try reloading the app or export a debug report.',
+    errorBoundaryExport: 'Export debug report',
+    errorBoundaryReload: 'Reload app',
     pushTitle: 'Push notifications',
     pushEnable: 'Enable push',
     pushDisable: 'Disable push',
@@ -1755,6 +1809,9 @@ export const translations: Record<Language, Translations> = {
     importSuccess: 'Import terminé.',
     importError: 'Échec de l\'import.',
     importedItems: 'Ajouté',
+    importAdded: 'ajouté',
+    importUpdated: 'mis à jour',
+    importSkipped: 'ignoré',
     comingSoon: 'bientôt',
     resetAllData: 'Réinitialiser toutes les données',
     privacyTitle: 'Privacy',
@@ -1843,10 +1900,16 @@ export const translations: Record<Language, Translations> = {
     authError: 'Failed to send link.',
     authNotConfigured: 'Supabase not configured.',
     syncSuccess: 'Sync complete.',
+    syncPulled: 'Cloud data restored.',
+    syncPushed: 'Cloud updated.',
     syncError: 'Sync failed.',
     authGateTitle: 'Sign in',
     authGateBody: 'Sign in by email to save progress and sync across devices.',
     authGateContinue: 'Continue without account',
+    errorBoundaryTitle: 'Something went wrong',
+    errorBoundaryBody: 'Try reloading the app or export a debug report.',
+    errorBoundaryExport: 'Export debug report',
+    errorBoundaryReload: 'Reload app',
     pushTitle: 'Push notifications',
     pushEnable: 'Enable push',
     pushDisable: 'Disable push',

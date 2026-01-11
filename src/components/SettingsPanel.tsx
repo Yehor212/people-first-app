@@ -179,8 +179,8 @@ export function SettingsPanel({
         return;
       }
       setAuthStatus(null);
-      await syncWithCloud('merge');
-      setAuthStatus(t.syncSuccess);
+      const result = await syncWithCloud('merge');
+      setAuthStatus(result.status === "pulled" ? t.syncPulled : t.syncPushed);
     } catch (error) {
       const errorMessage = formatError(error);
       console.error("Sync failed:", errorMessage);
@@ -239,10 +239,15 @@ export function SettingsPanel({
       const text = await file.text();
       const payload = JSON.parse(text);
       const report = await importBackup(payload, importMode);
+      const formatEntry = (label: string, entry: { added: number; updated: number; skipped: number }) =>
+        `${label} ${t.importAdded} ${entry.added}, ${t.importUpdated} ${entry.updated}, ${t.importSkipped} ${entry.skipped}`;
       setDataStatus(
         `${t.importSuccess} ${t.importedItems}: ` +
-          `moods ${report.moods}, habits ${report.habits}, focus ${report.focusSessions}, ` +
-          `gratitude ${report.gratitudeEntries}, settings ${report.settings}.`
+          `${formatEntry(t.moodEntries, report.moods)}; ` +
+          `${formatEntry(t.habits, report.habits)}; ` +
+          `${formatEntry(t.focus, report.focusSessions)}; ` +
+          `${formatEntry(t.gratitude, report.gratitudeEntries)}; ` +
+          `${formatEntry(t.settings, report.settings)}.`
       );
     } catch (error) {
       console.error(error);
