@@ -23,7 +23,7 @@ Key features:
 wellness, habits, mood, focus, gratitude, offline
 
 ## Support
-- Email: support@zenflow.app
+- Email: egorsamraev@gmail.com
 - Privacy policy: https://yehor212.github.io/people-first-app/privacy.html
 - Terms of service: https://yehor212.github.io/people-first-app/terms.html
 - Delete account: https://yehor212.github.io/people-first-app/delete-account.html
@@ -61,7 +61,7 @@ ZenFlow помогает мягко выстраивать привычки и �
 самочувствие, привычки, настроение, фокус, благодарность, офлайн
 
 ## Поддержка
-- Email: support@zenflow.app
+- Email: egorsamraev@gmail.com
 - Политика конфиденциальности: https://yehor212.github.io/people-first-app/privacy.html
 - Условия использования: https://yehor212.github.io/people-first-app/terms.html
 - Удаление аккаунта: https://yehor212.github.io/people-first-app/delete-account.html
