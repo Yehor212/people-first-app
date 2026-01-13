@@ -70,7 +70,7 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
         <button
           onClick={() => setIsAdding(!isAdding)}
           className={cn(
-            "p-2 rounded-full transition-all",
+            "btn-press p-2 rounded-full transition-all",
             isAdding ? "bg-destructive text-destructive-foreground rotate-45" : "bg-primary text-primary-foreground"
           )}
         >
@@ -96,7 +96,7 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
                   key={icon}
                   onClick={() => setSelectedIcon(icon)}
                   className={cn(
-                    "w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all",
+                    "btn-press w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all",
                     selectedIcon === icon ? "bg-primary/20 ring-2 ring-primary" : "bg-background hover:bg-muted"
                   )}
                 >
@@ -114,7 +114,7 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
                   key={color}
                   onClick={() => setSelectedColor(color)}
                   className={cn(
-                    "w-8 h-8 rounded-full transition-all",
+                    "btn-press w-8 h-8 rounded-full transition-all",
                     color,
                     selectedColor === color ? "ring-2 ring-offset-2 ring-foreground" : ""
                   )}
@@ -126,7 +126,7 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
           <button
             onClick={handleAddHabit}
             disabled={!newHabitName.trim()}
-            className="w-full py-2 zen-gradient text-primary-foreground font-medium rounded-lg disabled:opacity-50 transition-opacity"
+            className="btn-press w-full py-2 zen-gradient text-primary-foreground font-medium rounded-lg disabled:opacity-50 transition-opacity"
           >
             {t.addHabit}
           </button>
@@ -153,7 +153,7 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => onAdjustHabit?.(habit.id, today, -1)}
-                      className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
+                      className="btn-press w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
@@ -165,7 +165,7 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
                     </span>
                     <button
                       onClick={() => onAdjustHabit?.(habit.id, today, 1)}
-                      className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+                      className="btn-press w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
                     >
                       <Plus className="w-4 h-4" />
                     </button>
@@ -174,9 +174,9 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
                   <button
                     onClick={() => onToggleHabit(habit.id, today)}
                     className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all",
-                      completed 
-                        ? `${habit.color} text-primary-foreground zen-shadow-soft` 
+                      "btn-press w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all",
+                      completed
+                        ? `${habit.color} text-primary-foreground zen-shadow-soft`
                         : "bg-background hover:opacity-80"
                     )}
                   >

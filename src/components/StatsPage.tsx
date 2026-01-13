@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { calculateStreak, getDaysInMonth, getToday, cn } from '@/lib/utils';
 import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
-import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { ShareProgress } from '@/components/ShareProgress';
 
 interface StatsPageProps {
   moods: MoodEntry[];
@@ -28,6 +29,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
   const todayKey = getToday();
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
+  const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
   const completedFocusSessions = useMemo(
@@ -417,6 +419,13 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
             <Zap className="w-5 h-5 text-primary-foreground" />
           </div>
           <h3 className="text-lg font-semibold text-foreground">{t.achievements}</h3>
+          <button
+            onClick={() => setShowShareDialog(true)}
+            className="btn-press p-2 zen-gradient rounded-xl text-primary-foreground hover:opacity-90 transition-opacity ml-auto"
+            title={t.shareButton || 'Share'}
+          >
+            <Share2 className="w-5 h-5" />
+          </button>
         </div>
 
         <div className="space-y-4">
@@ -503,28 +512,6 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* Mood Heatmap */}
-      {filteredMoods.length > 0 && (
-        <div className="bg-card rounded-2xl p-6 zen-shadow-card">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 zen-gradient rounded-xl">
-              <Calendar className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground">{t.moodHeatmap}</h3>
-          </div>
-          <div className="grid grid-cols-7 gap-2">
-            {heatmapDays.map((day) => (
-              <div
-                key={day.dateKey}
-                className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-semibold ${day.mood ? `bg-mood-${day.mood}` : 'bg-secondary text-muted-foreground'}`}
-              >
-                {day.day}
-              </div>
-            ))}
           </div>
         </div>
       )}
@@ -777,6 +764,20 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
             </div>
           </div>
         </div>
+      )}
+
+      {/* Share Progress Dialog */}
+      {showShareDialog && (
+        <ShareProgress
+          stats={{
+            currentStreak: stats.currentStreak,
+            habitsCompleted: habits.filter(h => h.completedDates.includes(todayKey)).length,
+            totalHabits: habits.length,
+            focusMinutes: stats.totalFocusMinutes,
+            level: Math.floor(stats.currentStreak / 7) + 1,
+          }}
+          onClose={() => setShowShareDialog(false)}
+        />
       )}
     </div>
   );

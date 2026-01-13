@@ -30,6 +30,7 @@ import { RemindersPanel } from '@/components/RemindersPanel';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { AuthGate } from '@/components/AuthGate';
 import { AchievementsPanel } from '@/components/AchievementsPanel';
+import { NotificationPermission } from '@/components/NotificationPermission';
 import { useGamification } from '@/hooks/useGamification';
 
 type TabType = 'home' | 'stats' | 'achievements' | 'settings';
@@ -112,6 +113,13 @@ export function Index() {
     idField: 'key'
   });
 
+  const [notificationPermissionChecked, setNotificationPermissionChecked, isLoadingNotificationPermission] = useIndexedDB({
+    table: db.settings,
+    localStorageKey: 'zenflow-notification-permission-checked',
+    initialValue: false,
+    idField: 'key'
+  });
+
   const [privacy, setPrivacy, isLoadingPrivacy] = useIndexedDB<PrivacySettings>({
     table: db.settings,
     localStorageKey: 'zenflow-privacy',
@@ -127,7 +135,7 @@ export function Index() {
   });
 
   // Loading handling
-  const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingOnboarding || isLoadingPrivacy || isLoadingAuthGate;
+  const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingOnboarding || isLoadingPrivacy || isLoadingAuthGate || isLoadingNotificationPermission;
 
   // Handlers
   const handleAddMood = (entry: MoodEntry) => {
@@ -290,6 +298,10 @@ export function Index() {
     }
 
     setOnboardingComplete(true);
+  };
+
+  const handleNotificationPermissionComplete = () => {
+    setNotificationPermissionChecked(true);
   };
 
   const reminderCopy = useMemo(() => {
@@ -465,6 +477,10 @@ export function Index() {
 
   if (!onboardingComplete) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
+  }
+
+  if (!notificationPermissionChecked) {
+    return <NotificationPermission onComplete={handleNotificationPermissionComplete} />;
   }
 
   return (

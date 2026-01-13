@@ -74,9 +74,9 @@ export function MoodTracker({ entries, onAddEntry }: MoodTrackerProps) {
             key={mood.type}
             onClick={() => setSelectedMood(mood.type)}
             className={cn(
-              "flex flex-col items-center gap-2 p-3 rounded-xl transition-all duration-200",
-              selectedMood === mood.type 
-                ? `${mood.color} bg-opacity-20 scale-110 zen-shadow-soft` 
+              "mood-btn flex flex-col items-center gap-2 p-3 rounded-xl",
+              selectedMood === mood.type
+                ? `${mood.color} bg-opacity-20 scale-110 zen-shadow-soft selected`
                 : "hover:bg-secondary"
             )}
           >
@@ -97,7 +97,7 @@ export function MoodTracker({ entries, onAddEntry }: MoodTrackerProps) {
           />
           <button
             onClick={handleSubmit}
-            className="mt-4 w-full py-3 zen-gradient text-primary-foreground font-semibold rounded-xl hover:opacity-90 transition-opacity zen-shadow-soft"
+            className="btn-press mt-4 w-full py-3 zen-gradient text-primary-foreground font-semibold rounded-xl hover:opacity-90 transition-opacity zen-shadow-soft"
           >
             {t.saveMood}
           </button>

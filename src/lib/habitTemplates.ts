@@ -16,6 +16,9 @@ export const habitTemplates: HabitTemplate[] = [
   { id: 'healthy-food', names: { en: 'Eat healthy', ru: 'Здоровое питание', uk: 'Здорове харчування', es: 'Comer sano', de: 'Gesund essen', fr: 'Manger sainement' }, icon: '🥗', color: 'bg-primary' },
   { id: 'sleep', names: { en: 'Sleep 8 hours', ru: 'Сон 8 часов', uk: 'Сон 8 годин', es: 'Dormir 8 horas', de: '8 Stunden schlafen', fr: 'Dormir 8 heures' }, icon: '😴', color: 'bg-accent' },
   { id: 'journal', names: { en: 'Journal', ru: 'Дневник', uk: 'Щоденник', es: 'Diario', de: 'Tagebuch', fr: 'Journal' }, icon: '✍️', color: 'bg-mood-good' },
+  { id: 'quit-smoking', names: { en: 'Quit smoking', ru: 'Бросить курить', uk: 'Кинути палити', es: 'Dejar de fumar', de: 'Mit Rauchen aufhören', fr: 'Arrêter de fumer' }, icon: '🚭', color: 'bg-mood-great' },
+  { id: 'quit-drinking', names: { en: 'Quit drinking', ru: 'Бросить пить', uk: 'Кинути пити', es: 'Dejar de beber', de: 'Aufhören zu trinken', fr: 'Arrêter de boire' }, icon: '🍷', color: 'bg-mood-okay' },
+  { id: 'learn-english', names: { en: 'Learn English', ru: 'Выучить английский', uk: 'Вивчити англійську', es: 'Aprender inglés', de: 'Englisch lernen', fr: 'Apprendre l\'anglais' }, icon: '🇬🇧', color: 'bg-accent' },
 ];
 
 export function getHabitTemplateName(templateId: string, language: Language): string {

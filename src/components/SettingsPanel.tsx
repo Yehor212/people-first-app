@@ -278,6 +278,10 @@ export function SettingsPanel({
   ];
 
   const handleNoTrackingChange = (checked: boolean) => {
+    // Prevent disabling both toggles
+    if (!checked && !privacy.analytics) {
+      return;
+    }
     onPrivacyChange((prev) => ({
       ...prev,
       noTracking: checked,
@@ -286,6 +290,10 @@ export function SettingsPanel({
   };
 
   const handleAnalyticsChange = (checked: boolean) => {
+    // Prevent disabling both toggles
+    if (!checked && !privacy.noTracking) {
+      return;
+    }
     onPrivacyChange((prev) => ({
       ...prev,
       analytics: checked,
