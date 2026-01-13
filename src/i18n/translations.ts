@@ -301,7 +301,24 @@ export interface Translations {
   areYouSure: string;
   cannotBeUndone: string;
   delete: string;
-  
+
+  // Social Share
+  shareAchievements: string;
+  shareTitle: string;
+  shareText: string;
+  shareButton: string;
+  shareDownload: string;
+  shareDownloading: string;
+  shareCopyLink: string;
+  shareCopied: string;
+  sharePrivacyNote: string;
+  shareStreak: string;
+  shareHabits: string;
+  shareFocus: string;
+  shareGratitude: string;
+  shareFooter: string;
+  myProgress: string;
+
   // Premium
   premium: string;
   premiumDescription: string;
@@ -647,6 +664,21 @@ export const translations: Record<Language, Translations> = {
     areYouSure: 'Вы уверены?',
     cannotBeUndone: 'Это действие нельзя отменить.',
     delete: 'Удалить',
+    shareAchievements: 'Поделиться прогрессом',
+    shareTitle: 'Мой прогресс в ZenFlow',
+    shareText: '{streak} дней подряд! {habits} привычек выполнено, {focus} минут фокуса.',
+    shareButton: 'Поделиться',
+    shareDownload: 'Скачать изображение',
+    shareDownloading: 'Скачивается...',
+    shareCopyLink: 'Скопировать ссылку',
+    shareCopied: 'Скопировано!',
+    sharePrivacyNote: 'Личные данные не передаются. Только сводка прогресса.',
+    shareStreak: 'Дней подряд',
+    shareHabits: 'Привычек',
+    shareFocus: 'Минут',
+    shareGratitude: 'Благодарностей',
+    shareFooter: 'Отслеживай привычки, настроение и фокус',
+    myProgress: 'Мой прогресс',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Разблокируйте расширенную аналитику, экспорт данных и премиум темы!',
     language: 'Язык',
@@ -942,6 +974,21 @@ export const translations: Record<Language, Translations> = {
     areYouSure: 'Are you sure?',
     cannotBeUndone: 'This action cannot be undone.',
     delete: 'Delete',
+    shareAchievements: 'Share Your Progress',
+    shareTitle: 'My Progress on ZenFlow',
+    shareText: '{streak} day streak! {habits} habits completed, {focus} minutes of focus.',
+    shareButton: 'Share',
+    shareDownload: 'Download Image',
+    shareDownloading: 'Downloading...',
+    shareCopyLink: 'Copy Link',
+    shareCopied: 'Copied!',
+    sharePrivacyNote: 'No personal data is shared. Only your progress summary.',
+    shareStreak: 'Day Streak',
+    shareHabits: 'Habits',
+    shareFocus: 'Minutes',
+    shareGratitude: 'Gratitudes',
+    shareFooter: 'Track your habits, mood & focus',
+    myProgress: 'My Progress',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Unlock advanced analytics, data export and premium themes!',
     language: 'Language',
@@ -1237,6 +1284,21 @@ export const translations: Record<Language, Translations> = {
     areYouSure: 'Ви впевнені?',
     cannotBeUndone: 'Цю дію не можна скасувати.',
     delete: 'Видалити',
+    shareAchievements: 'Поділитися прогресом',
+    shareTitle: 'Мій прогрес у ZenFlow',
+    shareText: '{streak} днів поспіль! {habits} звичок виконано, {focus} хвилин фокусу.',
+    shareButton: 'Поділитися',
+    shareDownload: 'Завантажити зображення',
+    shareDownloading: 'Завантаження...',
+    shareCopyLink: 'Скопіювати посилання',
+    shareCopied: 'Скопійовано!',
+    sharePrivacyNote: 'Особисті дані не передаються. Лише зведення прогресу.',
+    shareStreak: 'Днів поспіль',
+    shareHabits: 'Звичок',
+    shareFocus: 'Хвилин',
+    shareGratitude: 'Подяк',
+    shareFooter: 'Відстежуй звички, настрій і фокус',
+    myProgress: 'Мій прогрес',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Розблокуйте розширену аналітику, експорт даних та преміум теми!',
     language: 'Мова',
@@ -1532,6 +1594,21 @@ export const translations: Record<Language, Translations> = {
     areYouSure: '¿Estás seguro?',
     cannotBeUndone: 'Esta acción no se puede deshacer.',
     delete: 'Eliminar',
+    shareAchievements: 'Compartir tu progreso',
+    shareTitle: 'Mi progreso en ZenFlow',
+    shareText: '¡{streak} días seguidos! {habits} hábitos completados, {focus} minutos de enfoque.',
+    shareButton: 'Compartir',
+    shareDownload: 'Descargar imagen',
+    shareDownloading: 'Descargando...',
+    shareCopyLink: 'Copiar enlace',
+    shareCopied: '¡Copiado!',
+    sharePrivacyNote: 'No se comparten datos personales. Solo tu resumen de progreso.',
+    shareStreak: 'Días seguidos',
+    shareHabits: 'Hábitos',
+    shareFocus: 'Minutos',
+    shareGratitude: 'Gratitudes',
+    shareFooter: 'Rastrea tus hábitos, estado de ánimo y enfoque',
+    myProgress: 'Mi progreso',
     premium: 'ZenFlow Premium',
     premiumDescription: '¡Desbloquea análisis avanzados, exportación de datos y temas premium!',
     language: 'Idioma',
@@ -1827,6 +1904,21 @@ export const translations: Record<Language, Translations> = {
     areYouSure: 'Bist du sicher?',
     cannotBeUndone: 'Diese Aktion kann nicht rückgängig gemacht werden.',
     delete: 'Löschen',
+    shareAchievements: 'Fortschritt teilen',
+    shareTitle: 'Mein Fortschritt bei ZenFlow',
+    shareText: '{streak} Tage in Folge! {habits} Gewohnheiten abgeschlossen, {focus} Minuten Fokus.',
+    shareButton: 'Teilen',
+    shareDownload: 'Bild herunterladen',
+    shareDownloading: 'Wird heruntergeladen...',
+    shareCopyLink: 'Link kopieren',
+    shareCopied: 'Kopiert!',
+    sharePrivacyNote: 'Keine persönlichen Daten werden geteilt. Nur deine Fortschrittszusammenfassung.',
+    shareStreak: 'Tage in Folge',
+    shareHabits: 'Gewohnheiten',
+    shareFocus: 'Minuten',
+    shareGratitude: 'Dankbarkeiten',
+    shareFooter: 'Verfolge deine Gewohnheiten, Stimmung und Fokus',
+    myProgress: 'Mein Fortschritt',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Schalte erweiterte Analysen, Datenexport und Premium-Themes frei!',
     language: 'Sprache',
@@ -2122,6 +2214,21 @@ export const translations: Record<Language, Translations> = {
     areYouSure: 'Êtes-vous sûr?',
     cannotBeUndone: 'Cette action ne peut pas être annulée.',
     delete: 'Supprimer',
+    shareAchievements: 'Partager vos progrès',
+    shareTitle: 'Mes progrès sur ZenFlow',
+    shareText: '{streak} jours d\'affilée! {habits} habitudes complétées, {focus} minutes de concentration.',
+    shareButton: 'Partager',
+    shareDownload: 'Télécharger l\'image',
+    shareDownloading: 'Téléchargement...',
+    shareCopyLink: 'Copier le lien',
+    shareCopied: 'Copié!',
+    sharePrivacyNote: 'Aucune donnée personnelle n\'est partagée. Seulement votre résumé de progrès.',
+    shareStreak: 'Jours d\'affilée',
+    shareHabits: 'Habitudes',
+    shareFocus: 'Minutes',
+    shareGratitude: 'Gratitudes',
+    shareFooter: 'Suivez vos habitudes, humeur et concentration',
+    myProgress: 'Mes progrès',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Débloquez des analyses avancées, l\'export de données et des thèmes premium!',
     language: 'Langue',

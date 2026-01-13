@@ -1,9 +1,9 @@
-import { Share2, Download, X } from 'lucide-react';
+import { Share2, Download, X, Copy, Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import html2canvas from 'html2canvas';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 
 interface ShareProgressProps {
   stats: {
@@ -19,6 +19,8 @@ interface ShareProgressProps {
 export function ShareProgress({ stats, onClose }: ShareProgressProps) {
   const { t } = useLanguage();
   const cardRef = useRef<HTMLDivElement>(null);
+  const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const handleShare = async () => {
     if (!cardRef.current) return;
@@ -73,6 +75,45 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
       onClose();
     } catch (error) {
       console.error('Share failed:', error);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText('https://yehor212.github.io/people-first-app/');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy link:', error);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!cardRef.current) return;
+
+    setDownloading(true);
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+      });
+
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob!), 'image/png');
+      });
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `zenflow-progress-${new Date().toISOString().split('T')[0]}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -163,8 +204,34 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
           </button>
 
           <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="btn-press w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            <Download className="w-5 h-5" />
+            {downloading ? (t.shareDownloading || 'Downloading...') : (t.shareDownload || 'Download Image')}
+          </button>
+
+          <button
+            onClick={handleCopyLink}
+            className="btn-press w-full py-3 bg-background text-foreground font-medium rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-2"
+          >
+            {copied ? (
+              <>
+                <Check className="w-5 h-5" />
+                {t.shareCopied || 'Copied!'}
+              </>
+            ) : (
+              <>
+                <Copy className="w-5 h-5" />
+                {t.shareCopyLink || 'Copy Link'}
+              </>
+            )}
+          </button>
+
+          <button
             onClick={onClose}
-            className="btn-press w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-2"
+            className="btn-press w-full py-3 bg-secondary/50 text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-2"
           >
             <X className="w-5 h-5" />
             {t.cancel}
