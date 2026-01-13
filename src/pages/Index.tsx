@@ -12,7 +12,7 @@ import { syncReminderSettings } from '@/storage/reminderSync';
 import { syncWithCloud } from '@/storage/cloudSync';
 import { App } from '@capacitor/app';
 import { handleAuthCallback, isNativePlatform } from '@/lib/authRedirect';
-import { scheduleLocalReminders } from '@/lib/localNotifications';
+import { scheduleLocalReminders, scheduleHabitReminders } from '@/lib/localNotifications';
 
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
@@ -404,6 +404,17 @@ export function Index() {
       console.error("Failed to schedule local reminders:", error);
     });
   }, [reminders, reminderCopy]);
+
+  // Schedule per-habit push notifications
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+    scheduleHabitReminders(habits, {
+      reminderTitle: t.reminderHabitTitle,
+      reminderBody: t.reminderHabitBody
+    }).catch((error) => {
+      console.error("Failed to schedule habit reminders:", error);
+    });
+  }, [habits, t.reminderHabitTitle, t.reminderHabitBody]);
 
   useEffect(() => {
     if (!supabase || !isNativePlatform()) return;
