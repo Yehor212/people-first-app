@@ -20,6 +20,11 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
     onComplete();
   };
 
+  const handleSkip = () => {
+    // Use auto-detected language and continue
+    onComplete();
+  };
+
   return (
     <div className="min-h-screen zen-gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md animate-fade-in">
@@ -71,10 +76,28 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
         {/* Continue Button */}
         <button
           onClick={handleContinue}
-          className="w-full py-4 zen-gradient text-primary-foreground font-semibold rounded-2xl hover:opacity-90 transition-opacity zen-shadow-soft text-lg"
+          className="w-full py-4 zen-gradient text-primary-foreground font-semibold rounded-2xl hover:opacity-90 transition-opacity zen-shadow-soft text-lg mb-3"
         >
           {t.continue}
         </button>
+
+        {/* Skip Button */}
+        <button
+          onClick={handleSkip}
+          className="w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-2xl hover:bg-muted transition-colors"
+        >
+          {t.skip || 'Skip'}
+        </button>
+
+        <p className="text-center text-sm text-muted-foreground mt-4">
+          {language === 'en' ? '🌐 Auto-detected: English' :
+           language === 'ru' ? '🌐 Автоопределено: Русский' :
+           language === 'uk' ? '🌐 Автовизначено: Українська' :
+           language === 'es' ? '🌐 Auto-detectado: Español' :
+           language === 'de' ? '🌐 Automatisch erkannt: Deutsch' :
+           language === 'fr' ? '🌐 Détection automatique: Français' :
+           '🌐 Auto-detected language'}
+        </p>
       </div>
     </div>
   );
