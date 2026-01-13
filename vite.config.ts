@@ -6,6 +6,7 @@ import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: "/people-first-app/",
   server: {
     host: "::",
     port: 8080,
@@ -33,8 +34,9 @@ export default defineConfig(({ mode }) => ({
         short_name: "ZenFlow",
         description: "Трекер привычек, настроения и продуктивности. Работает оффлайн.",
 
-        start_url: "/",
-        scope: "/",
+      start_url: "/people-first-app/",
+scope: "/people-first-app/",
+
         display: "standalone",
         orientation: "portrait-primary",
 
