@@ -92,7 +92,9 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
       .reduce((acc, s) => acc + s.duration, 0);
 
     // All-time focus minutes for achievements section (not filtered by range)
-    const allTimeFocusMinutes = completedFocusSessions.reduce((acc, s) => acc + s.duration, 0);
+    // Include current running session minutes
+    const completedMinutes = completedFocusSessions.reduce((acc, s) => acc + s.duration, 0);
+    const allTimeFocusMinutes = completedMinutes + (currentFocusMinutes || 0);
 
     const totalHabitCompletions = habits.reduce((acc, habit) => {
       const count = getHabitCompletedDates(habit).filter((date) => range === 'all' || rangeDates.has(date)).length;

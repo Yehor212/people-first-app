@@ -302,8 +302,9 @@ export function SettingsPanel({
   };
 
   const baseUrl = import.meta.env.BASE_URL || '/';
-  const privacyHref = language === 'en' ? `${baseUrl}privacy.html` : `${baseUrl}privacy-${language}.html`;
-  const termsHref = language === 'en' ? `${baseUrl}terms.html` : `${baseUrl}terms-${language}.html`;
+  // Use main privacy.html for all languages (localized versions can be added later)
+  const privacyHref = `${baseUrl}privacy.html`;
+  const termsHref = `${baseUrl}terms.html`;
   const deleteAccountHref = `${baseUrl}delete-account.html`;
 
   const handleRemindersToggle = (checked: boolean) => {
