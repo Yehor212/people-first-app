@@ -31,6 +31,7 @@ import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { AuthGate } from '@/components/AuthGate';
 import { AchievementsPanel } from '@/components/AchievementsPanel';
 import { NotificationPermission } from '@/components/NotificationPermission';
+import { GoogleAuthScreen } from '@/components/GoogleAuthScreen';
 import { useGamification } from '@/hooks/useGamification';
 
 type TabType = 'home' | 'stats' | 'achievements' | 'settings';
@@ -217,7 +218,12 @@ export function Index() {
     setUserNameCustom(true);
   };
 
-  const handleAuthComplete = () => {
+  const handleAuthComplete = (userData?: { name: string; email: string }) => {
+    if (userData) {
+      // User signed in with Google - use their name
+      setUserName(userData.name);
+      setUserNameCustom(false); // Allow them to change it later
+    }
     setAuthGateComplete(true);
   };
 
@@ -466,13 +472,21 @@ export function Index() {
     );
   }
 
-  // Show language selector on first visit
+  // Google Auth FIRST - to save all progress
   if (!authGateComplete) {
-    return <AuthGate onComplete={handleAuthComplete} />;
+    return <GoogleAuthScreen onComplete={handleAuthComplete} onSkip={() => setAuthGateComplete(true)} />;
   }
 
+  // Auto-detect language, skip selector unless needed
   if (!hasSelectedLanguage) {
-    return <LanguageSelector onComplete={handleLanguageSelected} />;
+    // Check if language already detected
+    const storedLang = localStorage.getItem('zenflow-language');
+    if (storedLang) {
+      // Language already detected, skip selector
+      setHasSelectedLanguage(true);
+    } else {
+      return <LanguageSelector onComplete={handleLanguageSelected} />;
+    }
   }
 
   if (!onboardingComplete) {
