@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { calculateStreak, getDaysInMonth, getToday, cn } from '@/lib/utils';
 import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
-import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface StatsPageProps {
@@ -28,7 +28,8 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
   const todayKey = getToday();
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
+  const [showMonthSelector, setShowMonthSelector] = useState(false);
   const completedFocusSessions = useMemo(
     () => focusSessions.filter((session) => session.status !== 'aborted'),
     [focusSessions]
@@ -553,9 +554,13 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <div className="px-3 py-2 rounded-lg bg-secondary text-sm text-foreground">
+            <button
+              onClick={() => setShowMonthSelector(!showMonthSelector)}
+              className="px-3 py-2 rounded-lg bg-secondary text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-2"
+            >
               {monthNames[selectedMonth]} {selectedYear}
-            </div>
+              {showMonthSelector ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
             <button
               onClick={() => handleMonthShift(1)}
               aria-label={t.calendarNextMonth}
@@ -566,25 +571,28 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
           </div>
         </div>
 
-        <div className="grid grid-cols-4 gap-2 mb-4">
-          {monthNames.map((month, index) => (
-            <button
-              key={month}
-              onClick={() => {
-                setSelectedMonth(index);
-                setSelectedDate(null);
-              }}
-              className={cn(
-                "px-2 py-2 rounded-lg text-xs font-medium transition-colors",
-                selectedMonth === index
-                  ? "bg-primary/10 ring-2 ring-primary text-foreground"
-                  : "bg-secondary text-muted-foreground hover:bg-muted"
-              )}
-            >
-              {month}
-            </button>
-          ))}
-        </div>
+        {showMonthSelector && (
+          <div className="grid grid-cols-4 gap-2 mb-4 animate-accordion-down">
+            {monthNames.map((month, index) => (
+              <button
+                key={month}
+                onClick={() => {
+                  setSelectedMonth(index);
+                  setSelectedDate(null);
+                  setShowMonthSelector(false);
+                }}
+                className={cn(
+                  "px-2 py-2 rounded-lg text-xs font-medium transition-colors",
+                  selectedMonth === index
+                    ? "bg-primary/10 ring-2 ring-primary text-foreground"
+                    : "bg-secondary text-muted-foreground hover:bg-muted"
+                )}
+              >
+                {month}
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="grid grid-cols-4 gap-4 mb-4">
           <div className="text-center p-3 bg-secondary rounded-xl">
