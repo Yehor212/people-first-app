@@ -90,3 +90,44 @@ export interface PrivacySettings {
   noTracking: boolean;
   analytics: boolean;
 }
+
+export type ChallengeType =
+  | 'streak'      // Челлендж на стрик (например, 30 дней подряд)
+  | 'total'       // Общее количество (например, 100 медитаций)
+  | 'focus'       // Фокус-время (например, 500 минут)
+  | 'gratitude';  // Благодарности (например, 50 записей)
+
+export interface Challenge {
+  id: string;
+  type: ChallengeType;
+  habitId?: string;           // Для habit-specific челленджей
+  target: number;             // Целевое значение
+  progress: number;           // Текущий прогресс
+  startDate: string;          // Дата начала
+  endDate?: string;           // Дата окончания (опционально)
+  completed: boolean;         // Завершен ли челлендж
+  completedDate?: string;     // Дата завершения
+  icon: string;               // Иконка челленджа
+  title: Record<string, string>; // Название на разных языках
+  description: Record<string, string>; // Описание на разных языках
+  reward?: string;            // ID награды/бейджа
+}
+
+export type BadgeCategory =
+  | 'streak'      // За стрики
+  | 'habit'       // За привычки
+  | 'focus'       // За фокус
+  | 'gratitude'   // За благодарности
+  | 'special';    // Специальные достижения
+
+export interface Badge {
+  id: string;
+  category: BadgeCategory;
+  icon: string;               // Эмодзи или иконка
+  title: Record<string, string>;
+  description: Record<string, string>;
+  requirement: number;        // Требование для получения
+  unlocked: boolean;          // Разблокирован ли
+  unlockedDate?: string;      // Дата разблокировки
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+}

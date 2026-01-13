@@ -33,7 +33,9 @@ import { AchievementsPanel } from '@/components/AchievementsPanel';
 import { NotificationPermission } from '@/components/NotificationPermission';
 import { GoogleAuthScreen } from '@/components/GoogleAuthScreen';
 import { WeeklyReport } from '@/components/WeeklyReport';
+import { ChallengesPanel } from '@/components/ChallengesPanel';
 import { useGamification } from '@/hooks/useGamification';
+import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
 
 type TabType = 'home' | 'stats' | 'achievements' | 'settings';
 
