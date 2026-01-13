@@ -88,6 +88,10 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
     const totalFocusMinutes = completedFocusSessions
       .filter((session) => range === 'all' || rangeDates.has(session.date))
       .reduce((acc, s) => acc + s.duration, 0);
+
+    // All-time focus minutes for achievements section (not filtered by range)
+    const allTimeFocusMinutes = completedFocusSessions.reduce((acc, s) => acc + s.duration, 0);
+
     const totalHabitCompletions = habits.reduce((acc, habit) => {
       const count = getHabitCompletedDates(habit).filter((date) => range === 'all' || rangeDates.has(date)).length;
       return acc + count;
@@ -118,6 +122,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
 
     return {
       totalFocusMinutes,
+      allTimeFocusMinutes,
       totalHabitCompletions,
       currentStreak,
       moodCounts,
@@ -431,7 +436,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
               <p className="text-sm text-muted-foreground">{t.allTime}</p>
             </div>
             <div className="text-3xl font-bold text-primary">
-              ⏱️ {stats.totalFocusMinutes}{t.min}
+              ⏱️ {stats.allTimeFocusMinutes}{t.min}
             </div>
           </div>
 

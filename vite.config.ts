@@ -10,6 +10,9 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  define: {
+    __APP_VERSION__: JSON.stringify("2.0.0"),
+  },
   plugins: [
     react(),
     mode === "development" && componentTagger(),
