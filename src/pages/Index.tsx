@@ -150,8 +150,37 @@ export function Index() {
   const handleToggleHabit = (habitId: string, date: string) => {
     setHabits(prev => prev.map(habit => {
       if (habit.id !== habitId) return habit;
-      if ((habit.type || 'daily') === 'reduce') return habit;
 
+      const habitType = habit.type || 'daily';
+
+      // Reduce habits use handleAdjustHabit
+      if (habitType === 'reduce') return habit;
+
+      // Continuous habits don't toggle - they track failures
+      if (habitType === 'continuous') return habit;
+
+      // Multiple times per day habits
+      if (habitType === 'multiple') {
+        const completionsByDate = { ...(habit.completionsByDate || {}) };
+        const current = completionsByDate[date] ?? 0;
+        const target = habit.dailyTarget ?? 1;
+
+        // Increment count up to target
+        if (current < target) {
+          completionsByDate[date] = current + 1;
+          awardXp('habit'); // +10 XP for each completion
+        }
+
+        return {
+          ...habit,
+          completionsByDate,
+          completedDates: completionsByDate[date] >= target
+            ? [...new Set([...habit.completedDates, date])]
+            : habit.completedDates.filter(d => d !== date)
+        };
+      }
+
+      // Daily and scheduled habits (normal toggle)
       const completed = habit.completedDates.includes(date);
       if (!completed) {
         awardXp('habit'); // +10 XP for completing habit
