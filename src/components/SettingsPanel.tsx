@@ -391,150 +391,27 @@ export function SettingsPanel({
         </button>
       </div>
 
-      {/* Reminders */}
+      {/* Reminders Info - Now Per-Habit */}
       <div className="bg-card rounded-2xl p-6 zen-shadow-card">
-        <div className="flex items-center justify-between gap-3 mb-4">
-          <div className="flex items-center gap-3">
-            <Bell className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold text-foreground">{t.remindersTitle}</h3>
-          </div>
-          <Switch
-            checked={reminders.enabled}
-            onCheckedChange={handleRemindersToggle}
-          />
+        <div className="flex items-center gap-3 mb-4">
+          <Bell className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-foreground">{t.remindersTitle}</h3>
         </div>
         <p className="text-muted-foreground mb-4">
-          {t.remindersDescription}
+          {t.habitRemindersPerHabit || 'Reminders are now configured individually for each habit. Add reminders when creating or editing habits.'}
         </p>
-
-        <div className={cn("space-y-4", !reminders.enabled && "opacity-50 pointer-events-none")}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="p-4 bg-primary/10 rounded-xl border-2 border-primary/20">
+          <div className="flex items-start gap-3">
+            <Bell className="w-5 h-5 text-primary mt-0.5" />
             <div>
-              <label className="text-sm text-muted-foreground mb-2 block">{t.moodReminder}</label>
-              <input
-                type="time"
-                value={reminders.moodTime}
-                onChange={(e) =>
-                  onRemindersChange((prev) => ({ ...prev, moodTime: e.target.value }))
-                }
-                className="w-full p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">{t.habitReminder}</label>
-              <input
-                type="time"
-                value={reminders.habitTime}
-                onChange={(e) =>
-                  onRemindersChange((prev) => ({ ...prev, habitTime: e.target.value }))
-                }
-                className="w-full p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
+              <p className="text-sm font-medium text-foreground mb-1">
+                {t.perHabitRemindersTitle || 'Per-Habit Reminders'}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {t.perHabitRemindersDesc || 'Each habit can have its own custom reminder times. Set them when creating a new habit or by editing an existing one.'}
+              </p>
             </div>
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">{t.focusReminder}</label>
-              <input
-                type="time"
-                value={reminders.focusTime}
-                onChange={(e) =>
-                  onRemindersChange((prev) => ({ ...prev, focusTime: e.target.value }))
-                }
-                className="w-full p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground mb-2 block">{t.quietHours}</label>
-              <div className="flex gap-2">
-                <input
-                  type="time"
-                  value={reminders.quietHours.start}
-                  onChange={(e) =>
-                    onRemindersChange((prev) => ({
-                      ...prev,
-                      quietHours: { ...prev.quietHours, start: e.target.value }
-                    }))
-                  }
-                  className="w-full p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-                <input
-                  type="time"
-                  value={reminders.quietHours.end}
-                  onChange={(e) =>
-                    onRemindersChange((prev) => ({
-                      ...prev,
-                      quietHours: { ...prev.quietHours, end: e.target.value }
-                    }))
-                  }
-                  className="w-full p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm text-muted-foreground mb-2 block">{t.reminderDays}</label>
-            <div className="flex flex-wrap gap-2">
-              {dayOptions.map((day) => {
-                const active = reminders.days.includes(day.value);
-                return (
-                  <button
-                    key={day.value}
-                    onClick={() =>
-                      onRemindersChange((prev) => ({
-                        ...prev,
-                        days: active
-                          ? prev.days.filter((value) => value !== day.value)
-                          : [...prev.days, day.value]
-                      }))
-                    }
-                    className={cn(
-                      "px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-                      active
-                        ? "bg-primary/10 ring-2 ring-primary text-foreground"
-                        : "bg-secondary text-muted-foreground hover:bg-muted"
-                    )}
-                  >
-                    {day.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm text-muted-foreground mb-2 block">{t.selectedHabits}</label>
-            {habits.length === 0 ? (
-              <p className="text-sm text-muted-foreground">{t.noHabitsYet}</p>
-            ) : (
-              <div className="space-y-2">
-                {habits.map((habit) => {
-                  const checked = reminders.habitIds.includes(habit.id);
-                  return (
-                    <label key={habit.id} className="flex items-center gap-2 text-sm text-foreground">
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={() =>
-                          onRemindersChange((prev) => ({
-                            ...prev,
-                            habitIds: checked
-                              ? prev.habitIds.filter((id) => id !== habit.id)
-                              : [...prev.habitIds, habit.id]
-                          }))
-                        }
-                        className="h-4 w-4 rounded border-muted"
-                      />
-                      <span>{habit.name}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
         </div>
       </div>
 

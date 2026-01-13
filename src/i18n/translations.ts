@@ -87,7 +87,10 @@ export interface Translations {
   habitReminderTime: string;
   habitReminderDays: string;
   habitReminderEnabled: string;
-  
+  habitRemindersPerHabit: string;
+  perHabitRemindersTitle: string;
+  perHabitRemindersDesc: string;
+
   // Focus timer
   focus: string;
   breakTime: string;
@@ -440,6 +443,9 @@ export const translations: Record<Language, Translations> = {
     habitReminderTime: 'Время',
     habitReminderDays: 'Дни недели',
     habitReminderEnabled: 'Включено',
+    habitRemindersPerHabit: 'Напоминания теперь настраиваются индивидуально для каждой привычки. Добавьте напоминания при создании или редактировании привычек.',
+    perHabitRemindersTitle: 'Индивидуальные напоминания',
+    perHabitRemindersDesc: 'Каждая привычка может иметь свои собственные настраиваемые времена напоминаний. Установите их при создании новой привычки или редактировании существующей.',
     focus: 'Фокус',
     breakTime: 'Перерыв',
     todayMinutes: 'мин сегодня',
@@ -732,6 +738,9 @@ export const translations: Record<Language, Translations> = {
     habitReminderTime: 'Time',
     habitReminderDays: 'Days of week',
     habitReminderEnabled: 'Enabled',
+    habitRemindersPerHabit: 'Reminders are now configured individually for each habit. Add reminders when creating or editing habits.',
+    perHabitRemindersTitle: 'Per-Habit Reminders',
+    perHabitRemindersDesc: 'Each habit can have its own custom reminder times. Set them when creating a new habit or editing an existing one.',
     focus: 'Focus',
     breakTime: 'Break',
     todayMinutes: 'min today',
@@ -1024,6 +1033,9 @@ export const translations: Record<Language, Translations> = {
     habitReminderTime: 'Час',
     habitReminderDays: 'Дні тижня',
     habitReminderEnabled: 'Увімкнено',
+    habitRemindersPerHabit: 'Нагадування тепер налаштовуються індивідуально для кожної звички. Додайте нагадування при створенні або редагуванні звичок.',
+    perHabitRemindersTitle: 'Індивідуальні нагадування',
+    perHabitRemindersDesc: 'Кожна звичка може мати свої власні налаштовані часи нагадувань. Встановіть їх при створенні нової звички або редагуванні існуючої.',
     focus: 'Фокус',
     breakTime: 'Перерва',
     todayMinutes: 'хв сьогодні',
@@ -1316,6 +1328,9 @@ export const translations: Record<Language, Translations> = {
     habitReminderTime: 'Hora',
     habitReminderDays: 'Días de la semana',
     habitReminderEnabled: 'Habilitado',
+    habitRemindersPerHabit: 'Los recordatorios ahora se configuran individualmente para cada hábito. Añade recordatorios al crear o editar hábitos.',
+    perHabitRemindersTitle: 'Recordatorios por Hábito',
+    perHabitRemindersDesc: 'Cada hábito puede tener sus propios horarios de recordatorio personalizados. Configúralos al crear un nuevo hábito o editar uno existente.',
     focus: 'Enfoque',
     breakTime: 'Descanso',
     todayMinutes: 'min hoy',
@@ -1608,6 +1623,9 @@ export const translations: Record<Language, Translations> = {
     habitReminderTime: 'Zeit',
     habitReminderDays: 'Wochentage',
     habitReminderEnabled: 'Aktiviert',
+    habitRemindersPerHabit: 'Erinnerungen werden jetzt individuell für jede Gewohnheit konfiguriert. Fügen Sie Erinnerungen beim Erstellen oder Bearbeiten von Gewohnheiten hinzu.',
+    perHabitRemindersTitle: 'Erinnerungen pro Gewohnheit',
+    perHabitRemindersDesc: 'Jede Gewohnheit kann ihre eigenen benutzerdefinierten Erinnerungszeiten haben. Legen Sie diese beim Erstellen einer neuen Gewohnheit oder beim Bearbeiten einer bestehenden fest.',
     focus: 'Fokus',
     breakTime: 'Pause',
     todayMinutes: 'Min heute',
@@ -1900,6 +1918,9 @@ export const translations: Record<Language, Translations> = {
     habitReminderTime: 'Heure',
     habitReminderDays: 'Jours de la semaine',
     habitReminderEnabled: 'Activé',
+    habitRemindersPerHabit: 'Les rappels sont maintenant configurés individuellement pour chaque habitude. Ajoutez des rappels lors de la création ou de la modification des habitudes.',
+    perHabitRemindersTitle: 'Rappels par Habitude',
+    perHabitRemindersDesc: 'Chaque habitude peut avoir ses propres horaires de rappel personnalisés. Configurez-les lors de la création d\'une nouvelle habitude ou de la modification d\'une habitude existante.',
     focus: 'Focus',
     breakTime: 'Pause',
     todayMinutes: 'min aujourd\'hui',
