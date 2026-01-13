@@ -12,6 +12,7 @@ import { exportBackup, importBackup, ImportMode } from '@/storage/backup';
 import { supabase } from '@/lib/supabaseClient';
 import { syncWithCloud } from '@/storage/cloudSync';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { sanitizeUserName, userNameSchema } from '@/lib/validation';
 
 interface SettingsPanelProps {
   userName: string;
@@ -77,13 +78,22 @@ export function SettingsPanel({
   }, [userName]);
 
   const handleNameSave = async () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    onNameChange(trimmed);
+    const sanitized = sanitizeUserName(name);
+    if (!sanitized) return;
+
+    // Validate name
+    try {
+      userNameSchema.parse(sanitized);
+    } catch (error) {
+      setNameStatus('Invalid name format');
+      return;
+    }
+
+    onNameChange(sanitized);
     setNameStatus(t.nameSaved);
     if (!supabase) return;
     try {
-      await supabase.auth.updateUser({ data: { full_name: trimmed } });
+      await supabase.auth.updateUser({ data: { full_name: sanitized } });
     } catch (error) {
       console.error("Failed to update profile name:", error);
     }

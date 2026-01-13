@@ -1,6 +1,7 @@
 import { db } from "@/storage/db";
 import { FocusSession, GratitudeEntry, Habit, MoodEntry } from "@/types";
 import { generateId } from "@/lib/utils";
+import { sanitizeObject } from "@/lib/validation";
 
 export type ImportMode = "merge" | "replace";
 
@@ -113,9 +114,15 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
 
   const { moods, habits, focusSessions, gratitudeEntries, settings } = normalized.data;
 
-  const filterValid = <T>(items: T[] | undefined, predicate: (item: T) => boolean) => {
+  const filterValid = <T extends Record<string, unknown>>(items: T[] | undefined, predicate: (item: T) => boolean) => {
     const list = items || [];
-    const valid = list.filter(predicate);
+    // Limit array size to prevent DOS attacks
+    if (list.length > 100000) {
+      throw new Error('Backup file too large (max 100,000 items per collection)');
+    }
+    // Sanitize each object to prevent prototype pollution
+    const sanitized = list.map(item => sanitizeObject(item));
+    const valid = sanitized.filter(predicate);
     return { valid, skipped: list.length - valid.length };
   };
 
