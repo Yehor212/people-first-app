@@ -8,23 +8,24 @@ interface StatsOverviewProps {
   habits: Habit[];
   focusSessions: FocusSession[];
   gratitudeEntries: GratitudeEntry[];
+  currentFocusMinutes?: number;
 }
 
-export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries }: StatsOverviewProps) {
+export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, currentFocusMinutes }: StatsOverviewProps) {
   const { t } = useLanguage();
   const today = getToday();
-  
+
   const todayHabitsCompleted = habits.filter(h => h.completedDates.includes(today)).length;
   const totalHabits = habits.length;
-  
+
   const allCompletedDates = habits.flatMap(h => h.completedDates);
   const uniqueDates = [...new Set(allCompletedDates)].sort();
   const streak = calculateStreak(uniqueDates);
-  
-  const todayFocusMinutes = focusSessions
-    .filter(s => s.date === today)
-    .reduce((acc, s) => acc + s.duration, 0);
-  
+
+  const todayFocusMinutes = currentFocusMinutes !== undefined
+    ? currentFocusMinutes
+    : focusSessions.filter(s => s.date === today).reduce((acc, s) => acc + s.duration, 0);
+
   const totalGratitude = gratitudeEntries.length;
 
   const stats = [

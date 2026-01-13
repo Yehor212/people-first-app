@@ -7,32 +7,93 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 const DEFAULT_FOCUS_MINUTES = 25;
 const DEFAULT_BREAK_MINUTES = 5;
+const TIMER_STORAGE_KEY = 'zenflow-timer-state';
+
+interface TimerState {
+  endTime: number | null;
+  focusMinutes: number;
+  breakMinutes: number;
+  isRunning: boolean;
+  isBreak: boolean;
+  label: string;
+  focusStartTime: number | null;
+  focusAccumulated: number;
+  preset: '25' | '50' | 'custom';
+}
 
 interface FocusTimerProps {
   sessions: FocusSession[];
   onCompleteSession: (session: FocusSession) => void;
+  onMinuteUpdate?: (minutes: number) => void;
 }
 
-export function FocusTimer({ sessions, onCompleteSession }: FocusTimerProps) {
+export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: FocusTimerProps) {
   const { t } = useLanguage();
-  const [preset, setPreset] = useState<'25' | '50' | 'custom'>('25');
-  const [focusMinutes, setFocusMinutes] = useState(DEFAULT_FOCUS_MINUTES);
-  const [breakMinutes, setBreakMinutes] = useState(DEFAULT_BREAK_MINUTES);
+
+  // Load persisted state
+  const loadTimerState = (): TimerState | null => {
+    try {
+      const stored = localStorage.getItem(TIMER_STORAGE_KEY);
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error('Failed to load timer state:', e);
+    }
+    return null;
+  };
+
+  const savedState = loadTimerState();
+
+  const [preset, setPreset] = useState<'25' | '50' | 'custom'>(savedState?.preset || '25');
+  const [focusMinutes, setFocusMinutes] = useState(savedState?.focusMinutes || DEFAULT_FOCUS_MINUTES);
+  const [breakMinutes, setBreakMinutes] = useState(savedState?.breakMinutes || DEFAULT_BREAK_MINUTES);
   const [timeLeft, setTimeLeft] = useState(DEFAULT_FOCUS_MINUTES * 60);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isBreak, setIsBreak] = useState(false);
-  const [label, setLabel] = useState('');
+  const [isRunning, setIsRunning] = useState(savedState?.isRunning || false);
+  const [isBreak, setIsBreak] = useState(savedState?.isBreak || false);
+  const [label, setLabel] = useState(savedState?.label || '');
   const [focusElapsed, setFocusElapsed] = useState(0);
   const [showReflection, setShowReflection] = useState(false);
   const [reflectionValue, setReflectionValue] = useState<number | null>(null);
   const [pendingSession, setPendingSession] = useState<FocusSession | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const endTimeRef = useRef<number | null>(null);
-  const focusStartRef = useRef<number | null>(null);
-  const focusAccumulatedRef = useRef(0);
+  const endTimeRef = useRef<number | null>(savedState?.endTime || null);
+  const focusStartRef = useRef<number | null>(savedState?.focusStartTime || null);
+  const focusAccumulatedRef = useRef(savedState?.focusAccumulated || 0);
+  const lastMinuteRef = useRef<number>(0);
   
+  // Persist timer state
+  const saveTimerState = () => {
+    const state: TimerState = {
+      endTime: endTimeRef.current,
+      focusMinutes,
+      breakMinutes,
+      isRunning,
+      isBreak,
+      label,
+      focusStartTime: focusStartRef.current,
+      focusAccumulated: focusAccumulatedRef.current,
+      preset,
+    };
+    try {
+      localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+      console.error('Failed to save timer state:', e);
+    }
+  };
+
   const todaySessions = sessions.filter(s => s.date === getToday() && s.status !== 'aborted');
   const todayMinutes = todaySessions.reduce((acc, s) => acc + s.duration, 0);
+
+  // Calculate current running minutes
+  const getCurrentRunningMinutes = () => {
+    if (!isRunning || isBreak) return 0;
+    const runningElapsed = focusStartRef.current ? Date.now() - focusStartRef.current : 0;
+    const totalElapsed = focusAccumulatedRef.current + runningElapsed;
+    return Math.floor(totalElapsed / 60000);
+  };
+
+  const totalMinutesToday = todayMinutes + getCurrentRunningMinutes();
 
   const focusDuration = focusMinutes * 60;
   const breakDuration = breakMinutes * 60;
@@ -51,11 +112,32 @@ export function FocusTimer({ sessions, onCompleteSession }: FocusTimerProps) {
     prevFocusDurationRef.current = focusDuration;
   }, [focusDuration, isRunning, isBreak]);
 
+  // Save state whenever it changes
+  useEffect(() => {
+    saveTimerState();
+  }, [isRunning, isBreak, focusMinutes, breakMinutes, label, preset]);
+
+  // Restore state on mount
+  useEffect(() => {
+    const saved = loadTimerState();
+    if (saved && saved.endTime && saved.isRunning) {
+      const now = Date.now();
+      if (saved.endTime > now) {
+        const remaining = Math.ceil((saved.endTime - now) / 1000);
+        setTimeLeft(remaining);
+      } else {
+        // Timer expired while tab was inactive
+        localStorage.removeItem(TIMER_STORAGE_KEY);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     if (!isRunning) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      saveTimerState();
       return;
     }
 
@@ -68,7 +150,16 @@ export function FocusTimer({ sessions, onCompleteSession }: FocusTimerProps) {
       if (!isBreak) {
         const runningElapsed = focusStartRef.current ? now - focusStartRef.current : 0;
         const totalElapsed = focusAccumulatedRef.current + runningElapsed;
+        const currentMinutes = Math.floor(totalElapsed / 60000);
         setFocusElapsed(Math.floor(totalElapsed / 1000));
+
+        // Notify parent every minute
+        if (currentMinutes !== lastMinuteRef.current) {
+          lastMinuteRef.current = currentMinutes;
+          if (onMinuteUpdate) {
+            onMinuteUpdate(todayMinutes + currentMinutes);
+          }
+        }
       }
 
       if (remaining === 0) {
@@ -95,7 +186,10 @@ export function FocusTimer({ sessions, onCompleteSession }: FocusTimerProps) {
         const nextIsBreak = !isBreak;
         setIsBreak(nextIsBreak);
         setTimeLeft(nextIsBreak ? breakDuration : focusDuration);
+        localStorage.removeItem(TIMER_STORAGE_KEY);
       }
+
+      saveTimerState();
     }, 500);
 
     return () => {
@@ -103,7 +197,7 @@ export function FocusTimer({ sessions, onCompleteSession }: FocusTimerProps) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isRunning, isBreak, focusMinutes, focusDuration, breakDuration, label]);
+  }, [isRunning, isBreak, focusMinutes, focusDuration, breakDuration, label, todayMinutes, onMinuteUpdate]);
 
   const toggleTimer = () => {
     if (isRunning) {
@@ -149,10 +243,13 @@ export function FocusTimer({ sessions, onCompleteSession }: FocusTimerProps) {
     endTimeRef.current = null;
     focusStartRef.current = null;
     focusAccumulatedRef.current = 0;
+    lastMinuteRef.current = 0;
     setIsRunning(false);
     setIsBreak(false);
     setTimeLeft(focusDuration);
     setFocusElapsed(0);
+    localStorage.removeItem(TIMER_STORAGE_KEY);
+    saveTimerState();
   };
 
   const handlePresetSelect = (key: '25' | '50' | 'custom') => {
@@ -239,7 +336,7 @@ export function FocusTimer({ sessions, onCompleteSession }: FocusTimerProps) {
         </h3>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Coffee className="w-4 h-4" />
-          <span>{todayMinutes} {t.todayMinutes}</span>
+          <span>{totalMinutesToday} {t.todayMinutes}</span>
         </div>
       </div>
 

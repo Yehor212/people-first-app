@@ -10,6 +10,7 @@ interface StatsPageProps {
   habits: Habit[];
   focusSessions: FocusSession[];
   gratitudeEntries: GratitudeEntry[];
+  currentFocusMinutes?: number;
 }
 
 const moodEmojis: Record<string, string> = {
@@ -20,7 +21,7 @@ const moodEmojis: Record<string, string> = {
   terrible: '😢',
 };
 
-export function StatsPage({ moods, habits, focusSessions, gratitudeEntries }: StatsPageProps) {
+export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, currentFocusMinutes }: StatsPageProps) {
   const { t } = useLanguage();
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [range, setRange] = useState<'week' | 'month' | 'all'>('month');
@@ -90,34 +91,41 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries }: St
       const count = getHabitCompletedDates(habit).filter((date) => range === 'all' || rangeDates.has(date)).length;
       return acc + count;
     }, 0);
-    
+
     const allDates = habits.flatMap(h => getHabitCompletedDates(h));
     const uniqueDates = [...new Set(allDates)].sort();
     const currentStreak = calculateStreak(uniqueDates);
-    
+
     const moodCounts = filteredMoods.reduce((acc, m) => {
       acc[m.mood] = (acc[m.mood] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
-    
+
     const now = new Date();
     const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    
+    const today = getToday();
+
     const thisMonthMoods = moods.filter(m => m.date.startsWith(thisMonth));
     const thisMonthFocus = completedFocusSessions.filter(s => s.date.startsWith(thisMonth));
     const thisMonthGratitude = gratitudeEntries.filter(g => g.date.startsWith(thisMonth));
-    
+
+    // Calculate current running minutes if available
+    const thisMonthBaseFocusMinutes = thisMonthFocus.reduce((acc, s) => acc + s.duration, 0);
+    const finalThisMonthFocusMinutes = currentFocusMinutes !== undefined && today.startsWith(thisMonth)
+      ? currentFocusMinutes
+      : thisMonthBaseFocusMinutes;
+
     return {
       totalFocusMinutes,
       totalHabitCompletions,
       currentStreak,
       moodCounts,
       thisMonthMoods: thisMonthMoods.length,
-      thisMonthFocusMinutes: thisMonthFocus.reduce((acc, s) => acc + s.duration, 0),
+      thisMonthFocusMinutes: finalThisMonthFocusMinutes,
       thisMonthGratitude: thisMonthGratitude.length,
       monthName: monthNames[now.getMonth()],
     };
-  }, [moods, habits, completedFocusSessions, gratitudeEntries, monthNames, filteredMoods, range]);
+  }, [moods, habits, completedFocusSessions, gratitudeEntries, monthNames, filteredMoods, range, currentFocusMinutes]);
 
   const moodInsights = useMemo(() => {
     if (filteredMoods.length === 0) {

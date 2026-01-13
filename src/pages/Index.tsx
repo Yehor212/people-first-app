@@ -42,6 +42,9 @@ export function Index() {
   // Gamification system
   const { stats, gamificationState, userLevel, awardXp } = useGamification();
 
+  // Current focus minutes (real-time)
+  const [currentFocusMinutes, setCurrentFocusMinutes] = useState<number | undefined>(undefined);
+
   // Используем useIndexedDB для hasSelectedLanguage
   const [hasSelectedLanguage, setHasSelectedLanguage, isLoadingLangSelected] = useIndexedDB({
     table: db.settings,
@@ -479,10 +482,11 @@ export function Index() {
                 habits={habits}
                 focusSessions={focusSessions}
                 gratitudeEntries={gratitudeEntries}
+                currentFocusMinutes={currentFocusMinutes}
               />
-              
+
               <MoodTracker entries={moods} onAddEntry={handleAddMood} />
-              
+
               <HabitTracker
                 habits={habits}
                 onToggleHabit={handleToggleHabit}
@@ -490,10 +494,11 @@ export function Index() {
                 onAddHabit={handleAddHabit}
                 onDeleteHabit={handleDeleteHabit}
               />
-              
+
               <FocusTimer
                 sessions={focusSessions}
                 onCompleteSession={handleCompleteFocusSession}
+                onMinuteUpdate={setCurrentFocusMinutes}
               />
               
               <GratitudeJournal
@@ -512,6 +517,7 @@ export function Index() {
             habits={habits}
             focusSessions={focusSessions}
             gratitudeEntries={gratitudeEntries}
+            currentFocusMinutes={currentFocusMinutes}
           />
         )}
 
