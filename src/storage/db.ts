@@ -11,7 +11,8 @@ export class ZenFlowDB extends Dexie {
 
   constructor() {
     super('ZenFlowDB');
-    console.log("ZenFlowDB: Конструктор вызван."); // Лог
+
+    // Version 1: Initial schema
     this.version(1).stores({
       moods: 'id, timestamp',
       habits: 'id, createdAt',
@@ -19,12 +20,13 @@ export class ZenFlowDB extends Dexie {
       gratitudeEntries: 'id, timestamp',
       settings: 'key',
     });
-    console.log("ZenFlowDB: Схема версии 1 определена."); // Лог
+
+    // Future migrations can be added here:
+    // this.version(2).stores({ ... }).upgrade(tx => { ... });
   }
 }
 
 export const db = new ZenFlowDB();
-console.log("ZenFlowDB: Экземпляр базы данных создан."); // Лог
 
 export const moodsRepo = db.moods;
 export const habitsRepo = db.habits;

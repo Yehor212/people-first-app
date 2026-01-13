@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4a9d7c">
+  <title>Оффлайн — ZenFlow</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #6bb5a0 0%, #4a9d7c 100%);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+      text-align: center;
+    }
+    .container { max-width: 400px; }
+    .icon {
+      font-size: 80px;
+      margin-bottom: 20px;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+    h1 { font-size: 28px; font-weight: 700; margin-bottom: 12px; }
+    p { font-size: 16px; opacity: 0.9; line-height: 1.5; margin-bottom: 24px; }
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid white;
+      border-radius: 8px;
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    .btn:hover { background: white; color: #4a9d7c; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🌿</div>
+    <h1>Вы оффлайн</h1>
+    <p>ZenFlow работает в автономном режиме. Все ваши данные сохранены локально и синхронизируются при подключении к интернету.</p>
+    <a href="/" class="btn" onclick="window.location.reload(); return false;">Повторить попытку</a>
+  </div>
+  <script>
+    window.addEventListener('online', () => {
+      setTimeout(() => window.location.reload(), 500);
+    });
+  </script>
+</body>
+</html>

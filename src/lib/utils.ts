@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { nanoid } from "nanoid";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -13,8 +14,12 @@ export function getToday(): string {
   return formatDate(new Date());
 }
 
+/**
+ * Generate cryptographically secure unique ID
+ * Uses nanoid for collision-resistant IDs (21 chars, ~2 million years to 1% collision at 1000 IDs/hour)
+ */
 export function generateId(): string {
-  return Math.random().toString(36).substring(2, 15);
+  return nanoid();
 }
 
 export function getGreeting(): string {
