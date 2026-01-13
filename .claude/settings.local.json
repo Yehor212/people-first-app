@@ -8,7 +8,14 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git reset:*)",
+      "Bash(netlify status:*)",
+      "Bash(netlify link:*)",
+      "Bash(netlify deploy:*)",
+      "Bash(npm run dev:*)",
+      "Bash(supabase --version:*)",
+      "Bash(supabase link:*)"
     ]
   }
 }
