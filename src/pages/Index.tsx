@@ -29,13 +29,18 @@ import { InstallBanner } from '@/components/InstallBanner';
 import { RemindersPanel } from '@/components/RemindersPanel';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { AuthGate } from '@/components/AuthGate';
+import { AchievementsPanel } from '@/components/AchievementsPanel';
+import { useGamification } from '@/hooks/useGamification';
 
-type TabType = 'home' | 'stats' | 'settings';
+type TabType = 'home' | 'stats' | 'achievements' | 'settings';
 
 export function Index() {
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const lastSyncedUserIdRef = useRef<string | null>(null);
+
+  // Gamification system
+  const { stats, gamificationState, userLevel, awardXp } = useGamification();
 
   // Используем useIndexedDB для hasSelectedLanguage
   const [hasSelectedLanguage, setHasSelectedLanguage, isLoadingLangSelected] = useIndexedDB({
@@ -127,6 +132,7 @@ export function Index() {
       const filtered = prev.filter(e => e.date !== entry.date);
       return [...filtered, entry];
     });
+    awardXp('mood'); // +5 XP
   };
 
   const handleToggleHabit = (habitId: string, date: string) => {
@@ -135,6 +141,9 @@ export function Index() {
       if ((habit.type || 'daily') === 'reduce') return habit;
 
       const completed = habit.completedDates.includes(date);
+      if (!completed) {
+        awardXp('habit'); // +10 XP for completing habit
+      }
       return {
         ...habit,
         completedDates: completed
@@ -171,10 +180,12 @@ export function Index() {
 
   const handleCompleteFocusSession = (session: FocusSession) => {
     setFocusSessions(prev => [...prev, session]);
+    awardXp('focus'); // +15 XP
   };
 
   const handleAddGratitude = (entry: GratitudeEntry) => {
     setGratitudeEntries(prev => [...prev, entry]);
+    awardXp('gratitude'); // +8 XP
   };
 
   const handleResetData = () => {
@@ -502,6 +513,15 @@ export function Index() {
             focusSessions={focusSessions}
             gratitudeEntries={gratitudeEntries}
           />
+        )}
+
+        {activeTab === 'achievements' && (
+          <div className="pb-24 px-4">
+            <AchievementsPanel
+              stats={stats}
+              unlockedAchievements={gamificationState.unlockedAchievements}
+            />
+          </div>
         )}
 
         {activeTab === 'settings' && (

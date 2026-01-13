@@ -10,7 +10,6 @@ import {
   getXpForAction,
 } from '@/lib/gamification';
 import { toast } from 'sonner';
-import { AchievementToast } from '@/components/AchievementToast';
 
 interface GamificationState {
   totalXp: number;
@@ -98,9 +97,9 @@ export function useGamification() {
 
       // Show toast for each new achievement
       newAchievements.forEach((achievement) => {
-        toast.custom((t) => <AchievementToast achievement={achievement} />, {
+        toast.success(`🎉 ${achievement.name}`, {
+          description: `${achievement.description} (+${achievement.points} XP)`,
           duration: 5000,
-          position: 'top-center',
         });
       });
     } else {

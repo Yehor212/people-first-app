@@ -1,8 +1,8 @@
 import { cn } from '@/lib/utils';
-import { Home, BarChart3, Settings } from 'lucide-react';
+import { Home, BarChart3, Settings, Trophy } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-type TabType = 'home' | 'stats' | 'settings';
+type TabType = 'home' | 'stats' | 'achievements' | 'settings';
 
 interface NavigationProps {
   activeTab: TabType;
@@ -15,6 +15,7 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   const tabs = [
     { id: 'home' as TabType, icon: Home, label: t.home },
     { id: 'stats' as TabType, icon: BarChart3, label: t.stats },
+    { id: 'achievements' as TabType, icon: Trophy, label: t.achievements },
     { id: 'settings' as TabType, icon: Settings, label: t.settings },
   ];
 
