@@ -22,14 +22,19 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  const handleShare = async () => {
+  const handleShare = async (format: 'square' | 'story' = 'square') => {
     if (!cardRef.current) return;
 
     try {
-      // Generate image from card
+      // Generate image from card with format-specific dimensions
+      const scale = 2;
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
+        backgroundColor: '#1a1a2e',
+        scale: scale,
+        width: format === 'story' ? 1080 / scale : cardRef.current.offsetWidth,
+        height: format === 'story' ? 1920 / scale : cardRef.current.offsetHeight,
+        windowWidth: format === 'story' ? 1080 / scale : cardRef.current.offsetWidth,
+        windowHeight: format === 'story' ? 1920 / scale : cardRef.current.offsetHeight,
       });
 
       const blob = await new Promise<Blob>((resolve) => {
@@ -64,7 +69,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = 'zenflow-progress.png';
+          link.download = `zenflow-${format}-${new Date().toISOString().split('T')[0]}.png`;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -88,14 +93,17 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
     }
   };
 
-  const handleDownload = async () => {
+  const handleDownload = async (format: 'square' | 'story' = 'square') => {
     if (!cardRef.current) return;
 
     setDownloading(true);
     try {
+      const scale = 2;
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2,
+        backgroundColor: '#1a1a2e',
+        scale: scale,
+        width: format === 'story' ? 1080 / scale : cardRef.current.offsetWidth,
+        height: format === 'story' ? 1920 / scale : cardRef.current.offsetHeight,
       });
 
       const blob = await new Promise<Blob>((resolve) => {
@@ -105,7 +113,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `zenflow-progress-${new Date().toISOString().split('T')[0]}.png`;
+      link.download = `zenflow-${format}-${new Date().toISOString().split('T')[0]}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -127,11 +135,12 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
         {/* Share Card - This will be captured as image */}
         <div
           ref={cardRef}
-          className="bg-gradient-to-br from-primary/10 via-background to-accent/10 rounded-3xl p-8 mb-4 relative overflow-hidden"
+          className="zen-gradient-hero rounded-3xl p-8 mb-4 relative overflow-hidden"
         >
           {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-40 h-40 bg-accent/5 rounded-full blur-3xl" />
+          <div className="absolute top-0 right-0 w-32 h-32 zen-gradient rounded-full blur-3xl opacity-20" />
+          <div className="absolute bottom-0 left-0 w-40 h-40 zen-gradient-sunset rounded-full blur-3xl opacity-20" />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 zen-gradient-calm rounded-full blur-3xl opacity-10" />
 
           {/* Content */}
           <div className="relative z-10">
@@ -195,22 +204,39 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
 
         {/* Action Buttons */}
         <div className="bg-card rounded-2xl p-4 zen-shadow-card space-y-3">
+          {/* Share to social media */}
           <button
-            onClick={handleShare}
+            onClick={() => handleShare('square')}
             className="btn-press w-full py-3 zen-gradient text-primary-foreground font-semibold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
           >
             <Share2 className="w-5 h-5" />
             {t.shareButton || 'Share Progress'}
           </button>
 
-          <button
-            onClick={handleDownload}
-            disabled={downloading}
-            className="btn-press w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            <Download className="w-5 h-5" />
-            {downloading ? (t.shareDownloading || 'Downloading...') : (t.shareDownload || 'Download Image')}
-          </button>
+          {/* Format-specific downloads */}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => handleDownload('square')}
+              disabled={downloading}
+              className="btn-press py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
+            >
+              <Download className="w-4 h-4" />
+              {t.shareSquare || 'Post 1:1'}
+            </button>
+            <button
+              onClick={() => handleDownload('story')}
+              disabled={downloading}
+              className="btn-press py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
+            >
+              <Download className="w-4 h-4" />
+              {t.shareStory || 'Story 9:16'}
+            </button>
+          </div>
+
+          {/* Helper text */}
+          <p className="text-xs text-center text-muted-foreground">
+            {t.shareFormatHint || '📱 Story format for Instagram/TikTok • Post format for feeds'}
+          </p>
 
           <button
             onClick={handleCopyLink}

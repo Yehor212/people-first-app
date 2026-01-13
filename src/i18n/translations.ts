@@ -318,6 +318,9 @@ export interface Translations {
   shareGratitude: string;
   shareFooter: string;
   myProgress: string;
+  shareSquare: string;
+  shareStory: string;
+  shareFormatHint: string;
 
   // Premium
   premium: string;
@@ -679,6 +682,9 @@ export const translations: Record<Language, Translations> = {
     shareGratitude: 'Благодарностей',
     shareFooter: 'Отслеживай привычки, настроение и фокус',
     myProgress: 'Мой прогресс',
+    shareSquare: 'Пост 1:1',
+    shareStory: 'Сторис 9:16',
+    shareFormatHint: '📱 Формат сторис для Instagram/TikTok • Формат поста для лент',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Разблокируйте расширенную аналитику, экспорт данных и премиум темы!',
     language: 'Язык',
@@ -989,6 +995,9 @@ export const translations: Record<Language, Translations> = {
     shareGratitude: 'Gratitudes',
     shareFooter: 'Track your habits, mood & focus',
     myProgress: 'My Progress',
+    shareSquare: 'Post 1:1',
+    shareStory: 'Story 9:16',
+    shareFormatHint: '📱 Story format for Instagram/TikTok • Post format for feeds',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Unlock advanced analytics, data export and premium themes!',
     language: 'Language',
@@ -1299,6 +1308,9 @@ export const translations: Record<Language, Translations> = {
     shareGratitude: 'Подяк',
     shareFooter: 'Відстежуй звички, настрій і фокус',
     myProgress: 'Мій прогрес',
+    shareSquare: 'Пост 1:1',
+    shareStory: 'Сторіс 9:16',
+    shareFormatHint: '📱 Формат сторіс для Instagram/TikTok • Формат поста для стрічок',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Розблокуйте розширену аналітику, експорт даних та преміум теми!',
     language: 'Мова',
@@ -1609,6 +1621,9 @@ export const translations: Record<Language, Translations> = {
     shareGratitude: 'Gratitudes',
     shareFooter: 'Rastrea tus hábitos, estado de ánimo y enfoque',
     myProgress: 'Mi progreso',
+    shareSquare: 'Post 1:1',
+    shareStory: 'Historia 9:16',
+    shareFormatHint: '📱 Formato de historia para Instagram/TikTok • Formato de publicación para feeds',
     premium: 'ZenFlow Premium',
     premiumDescription: '¡Desbloquea análisis avanzados, exportación de datos y temas premium!',
     language: 'Idioma',
@@ -1919,6 +1934,9 @@ export const translations: Record<Language, Translations> = {
     shareGratitude: 'Dankbarkeiten',
     shareFooter: 'Verfolge deine Gewohnheiten, Stimmung und Fokus',
     myProgress: 'Mein Fortschritt',
+    shareSquare: 'Beitrag 1:1',
+    shareStory: 'Story 9:16',
+    shareFormatHint: '📱 Story-Format für Instagram/TikTok • Beitragsformat für Feeds',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Schalte erweiterte Analysen, Datenexport und Premium-Themes frei!',
     language: 'Sprache',
@@ -2229,6 +2247,9 @@ export const translations: Record<Language, Translations> = {
     shareGratitude: 'Gratitudes',
     shareFooter: 'Suivez vos habitudes, humeur et concentration',
     myProgress: 'Mes progrès',
+    shareSquare: 'Post 1:1',
+    shareStory: 'Story 9:16',
+    shareFormatHint: '📱 Format story pour Instagram/TikTok • Format post pour les fils',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Débloquez des analyses avancées, l\'export de données et des thèmes premium!',
     language: 'Langue',
