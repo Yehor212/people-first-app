@@ -2,8 +2,9 @@
 import { FocusSession } from '@/types';
 import { formatTime, getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { Play, Pause, RotateCcw, Coffee } from 'lucide-react';
+import { Play, Pause, RotateCcw, Coffee, Zap } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { HyperfocusMode } from './HyperfocusMode';
 
 const DEFAULT_FOCUS_MINUTES = 25;
 const DEFAULT_BREAK_MINUTES = 5;
@@ -29,6 +30,9 @@ interface FocusTimerProps {
 
 export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: FocusTimerProps) {
   const { t } = useLanguage();
+
+  // Hyperfocus Mode state
+  const [showHyperfocus, setShowHyperfocus] = useState(false);
 
   // Load persisted state
   const loadTimerState = (): TimerState | null => {
@@ -377,7 +381,7 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: Focu
         </div>
       </div>
 
-      <div className="flex justify-center gap-4">
+      <div className="flex justify-center gap-4 mb-4">
         <button
           onClick={toggleTimer}
           className={cn(
@@ -395,6 +399,21 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: Focu
           <RotateCcw className="w-6 h-6" />
         </button>
       </div>
+
+      {/* Hyperfocus Mode Button */}
+      <button
+        onClick={() => setShowHyperfocus(true)}
+        disabled={isRunning}
+        className={cn(
+          "w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2",
+          isRunning
+            ? "bg-muted text-muted-foreground cursor-not-allowed"
+            : "zen-gradient-calm text-primary-foreground hover:opacity-90 zen-shadow"
+        )}
+      >
+        <Zap className="w-5 h-5" />
+        {t.hyperfocusMode}
+      </button>
 
       {showReflection && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
@@ -433,6 +452,27 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: Focu
             </div>
           </div>
         </div>
+      )}
+
+      {/* Hyperfocus Mode Modal */}
+      {showHyperfocus && (
+        <HyperfocusMode
+          duration={focusMinutes}
+          onComplete={() => {
+            setShowHyperfocus(false);
+            // Save completed session
+            const session: FocusSession = {
+              id: generateId(),
+              duration: focusMinutes,
+              completedAt: Date.now(),
+              date: getToday(),
+              label: label.trim() || undefined,
+              status: 'completed',
+            };
+            onCompleteSession(session);
+          }}
+          onExit={() => setShowHyperfocus(false)}
+        />
       )}
     </div>
   );
