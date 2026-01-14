@@ -1,37 +1,48 @@
 /**
- * Ambient Sound Generator using Web Audio API
- * Improved realistic ambient sounds without external audio files
+ * Ambient Sound Player using real audio samples
+ * Uses high-quality royalty-free ambient sounds
  */
 
 export type AmbientSoundType = 'none' | 'white-noise' | 'rain' | 'ocean' | 'forest' | 'coffee-shop' | 'fireplace';
 
+// Free, royalty-free ambient sound URLs from reliable sources
+// These are loopable ambient sound samples
+const SOUND_URLS: Record<Exclude<AmbientSoundType, 'none'>, string> = {
+  'white-noise': 'https://cdn.pixabay.com/audio/2022/10/30/audio_56950e78e9.mp3', // Soft white noise
+  'rain': 'https://cdn.pixabay.com/audio/2022/05/16/audio_1c8a89c66b.mp3', // Rain sounds
+  'ocean': 'https://cdn.pixabay.com/audio/2024/06/12/audio_dbb8ef1986.mp3', // Ocean waves
+  'forest': 'https://cdn.pixabay.com/audio/2022/08/02/audio_884fe92c21.mp3', // Forest birds
+  'coffee-shop': 'https://cdn.pixabay.com/audio/2021/09/21/audio_6feac14979.mp3', // Coffee shop ambience
+  'fireplace': 'https://cdn.pixabay.com/audio/2021/12/27/audio_6a1f7a1e04.mp3', // Fireplace crackling
+};
+
+// Fallback procedural sounds in case audio fails to load
+const FALLBACK_ENABLED = true;
+
 export class AmbientSoundGenerator {
+  private audioElement: HTMLAudioElement | null = null;
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private activeNodes: Set<AudioNode> = new Set();
   private isPlaying = false;
   private currentType: AmbientSoundType = 'none';
   private scheduledTimeouts: number[] = [];
+  private usingFallback = false;
+  private volume = 0.4; // 40% default volume
 
   constructor() {
     if (typeof window !== 'undefined') {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       this.masterGain = this.audioContext.createGain();
-      this.masterGain.gain.value = 0.25; // 25% volume - quieter
+      this.masterGain.gain.value = this.volume;
       this.masterGain.connect(this.audioContext.destination);
     }
   }
 
   async play(type: AmbientSoundType): Promise<void> {
-    if (!this.audioContext || !this.masterGain) return;
     if (type === 'none') {
       this.stop();
       return;
-    }
-
-    // Resume audio context if suspended (autoplay policy)
-    if (this.audioContext.state === 'suspended') {
-      await this.audioContext.resume();
     }
 
     // Stop current sound if any
@@ -41,6 +52,62 @@ export class AmbientSoundGenerator {
 
     this.currentType = type;
     this.isPlaying = true;
+    this.usingFallback = false;
+
+    // Try to play real audio file first
+    try {
+      await this.playAudioFile(type);
+    } catch (error) {
+      console.warn(`Failed to load audio for ${type}, using fallback:`, error);
+      if (FALLBACK_ENABLED) {
+        this.usingFallback = true;
+        await this.playFallback(type);
+      }
+    }
+  }
+
+  private async playAudioFile(type: Exclude<AmbientSoundType, 'none'>): Promise<void> {
+    const url = SOUND_URLS[type];
+
+    // Create audio element for streaming
+    this.audioElement = new Audio();
+    this.audioElement.crossOrigin = 'anonymous';
+    this.audioElement.loop = true;
+    this.audioElement.volume = this.volume;
+    this.audioElement.src = url;
+
+    // Wait for audio to be ready
+    await new Promise<void>((resolve, reject) => {
+      if (!this.audioElement) return reject(new Error('No audio element'));
+
+      const timeout = setTimeout(() => {
+        reject(new Error('Audio load timeout'));
+      }, 10000); // 10 second timeout
+
+      this.audioElement.oncanplaythrough = () => {
+        clearTimeout(timeout);
+        resolve();
+      };
+
+      this.audioElement.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error(`Failed to load audio: ${url}`));
+      };
+
+      this.audioElement.load();
+    });
+
+    // Play the audio
+    await this.audioElement.play();
+  }
+
+  private async playFallback(type: AmbientSoundType): Promise<void> {
+    if (!this.audioContext || !this.masterGain) return;
+
+    // Resume audio context if suspended (autoplay policy)
+    if (this.audioContext.state === 'suspended') {
+      await this.audioContext.resume();
+    }
 
     switch (type) {
       case 'white-noise':
@@ -65,6 +132,14 @@ export class AmbientSoundGenerator {
   }
 
   stop(): void {
+    // Stop HTML audio element if playing
+    if (this.audioElement) {
+      this.audioElement.pause();
+      this.audioElement.src = '';
+      this.audioElement = null;
+    }
+
+    // Stop Web Audio nodes if using fallback
     this.activeNodes.forEach(node => {
       try {
         if (node instanceof OscillatorNode || node instanceof AudioBufferSourceNode) {
@@ -82,64 +157,88 @@ export class AmbientSoundGenerator {
     this.scheduledTimeouts = [];
 
     this.isPlaying = false;
+    this.usingFallback = false;
   }
 
   setVolume(volume: number): void {
+    this.volume = Math.max(0, Math.min(1, volume));
+
+    // Update HTML audio element volume
+    if (this.audioElement) {
+      this.audioElement.volume = this.volume;
+    }
+
+    // Update Web Audio master gain
     if (this.masterGain) {
-      this.masterGain.gain.value = Math.max(0, Math.min(1, volume));
+      this.masterGain.gain.value = this.volume;
     }
   }
 
   pause(): void {
+    if (this.audioElement) {
+      this.audioElement.pause();
+    }
     if (this.audioContext && this.audioContext.state === 'running') {
       this.audioContext.suspend();
     }
   }
 
   resume(): void {
+    if (this.audioElement && this.isPlaying) {
+      this.audioElement.play().catch(console.error);
+    }
     if (this.audioContext && this.audioContext.state === 'suspended') {
       this.audioContext.resume();
     }
   }
 
+  // ============================================
+  // FALLBACK PROCEDURAL SOUNDS (improved quality)
+  // ============================================
+
   private generateWhiteNoise(): void {
     if (!this.audioContext || !this.masterGain) return;
 
     const bufferSize = 2 * this.audioContext.sampleRate;
-    const noiseBuffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
-    const output = noiseBuffer.getChannelData(0);
+    const noiseBuffer = this.audioContext.createBuffer(2, bufferSize, this.audioContext.sampleRate);
 
-    // Softer white noise
-    for (let i = 0; i < bufferSize; i++) {
-      output[i] = (Math.random() * 2 - 1) * 0.3;
+    // Brown noise (smoother, less harsh than white noise)
+    for (let channel = 0; channel < 2; channel++) {
+      const output = noiseBuffer.getChannelData(channel);
+      let lastOut = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = output[i];
+        output[i] *= 3.5; // Compensate for volume loss
+      }
     }
 
-    const whiteNoise = this.audioContext.createBufferSource();
-    whiteNoise.buffer = noiseBuffer;
-    whiteNoise.loop = true;
+    const noise = this.audioContext.createBufferSource();
+    noise.buffer = noiseBuffer;
+    noise.loop = true;
 
-    // Low-pass filter for softer sound
+    // Gentle low-pass filter
     const filter = this.audioContext.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 800;
-    filter.Q.value = 0.5;
+    filter.frequency.value = 1000;
+    filter.Q.value = 0.7;
 
-    whiteNoise.connect(filter);
+    noise.connect(filter);
     filter.connect(this.masterGain);
 
-    whiteNoise.start(0);
-    this.activeNodes.add(whiteNoise);
+    noise.start(0);
+    this.activeNodes.add(noise);
     this.activeNodes.add(filter);
   }
 
   private generateRain(): void {
     if (!this.audioContext || !this.masterGain) return;
 
-    // Realistic rain base (continuous pink noise)
     const bufferSize = 4 * this.audioContext.sampleRate;
     const noiseBuffer = this.audioContext.createBuffer(2, bufferSize, this.audioContext.sampleRate);
 
-    // Pink noise (1/f noise) - more natural than white noise
+    // Pink noise for natural rain sound
     for (let channel = 0; channel < 2; channel++) {
       const output = noiseBuffer.getChannelData(channel);
       let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
@@ -152,7 +251,7 @@ export class AmbientSoundGenerator {
         b3 = 0.86650 * b3 + white * 0.3104856;
         b4 = 0.55000 * b4 + white * 0.5329522;
         b5 = -0.7616 * b5 - white * 0.0168980;
-        output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.11;
+        output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.13;
         b6 = white * 0.115926;
       }
     }
@@ -161,16 +260,14 @@ export class AmbientSoundGenerator {
     rain.buffer = noiseBuffer;
     rain.loop = true;
 
-    // Highpass to remove low rumble, then slight lowpass
+    // Shape rain sound
     const highpass = this.audioContext.createBiquadFilter();
     highpass.type = 'highpass';
-    highpass.frequency.value = 300;
-    highpass.Q.value = 0.5;
+    highpass.frequency.value = 250;
 
     const lowpass = this.audioContext.createBiquadFilter();
     lowpass.type = 'lowpass';
-    lowpass.frequency.value = 3000;
-    lowpass.Q.value = 0.5;
+    lowpass.frequency.value = 4000;
 
     rain.connect(highpass);
     highpass.connect(lowpass);
@@ -180,62 +277,29 @@ export class AmbientSoundGenerator {
     this.activeNodes.add(rain);
     this.activeNodes.add(highpass);
     this.activeNodes.add(lowpass);
-
-    // Add occasional heavier drops for realism
-    this.scheduleRainDrops();
-  }
-
-  private scheduleRainDrops(): void {
-    if (!this.isPlaying || !this.audioContext || !this.masterGain) return;
-
-    const nextDrop = Math.random() * 400 + 200; // 200-600ms between drops
-
-    const timeoutId = window.setTimeout(() => {
-      if (!this.isPlaying || !this.audioContext || !this.masterGain) return;
-
-      // Short burst of filtered noise for drop
-      const dropBuffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 0.1, this.audioContext.sampleRate);
-      const dropData = dropBuffer.getChannelData(0);
-
-      for (let i = 0; i < dropData.length; i++) {
-        dropData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (dropData.length * 0.3));
-      }
-
-      const drop = this.audioContext.createBufferSource();
-      drop.buffer = dropBuffer;
-
-      const dropGain = this.audioContext.createGain();
-      dropGain.gain.setValueAtTime(0.08, this.audioContext.currentTime);
-      dropGain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.08);
-
-      const dropFilter = this.audioContext.createBiquadFilter();
-      dropFilter.type = 'highpass';
-      dropFilter.frequency.value = 1500;
-
-      drop.connect(dropFilter);
-      dropFilter.connect(dropGain);
-      dropGain.connect(this.masterGain);
-
-      drop.start(this.audioContext.currentTime);
-      drop.stop(this.audioContext.currentTime + 0.1);
-
-      this.scheduleRainDrops();
-    }, nextDrop);
-
-    this.scheduledTimeouts.push(timeoutId);
   }
 
   private generateOcean(): void {
     if (!this.audioContext || !this.masterGain) return;
 
-    // More realistic ocean waves with filtered noise
     const bufferSize = 4 * this.audioContext.sampleRate;
     const noiseBuffer = this.audioContext.createBuffer(2, bufferSize, this.audioContext.sampleRate);
 
+    // Pink noise base
     for (let channel = 0; channel < 2; channel++) {
       const output = noiseBuffer.getChannelData(channel);
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+
       for (let i = 0; i < bufferSize; i++) {
-        output[i] = (Math.random() * 2 - 1) * 0.2;
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.2;
+        b6 = white * 0.115926;
       }
     }
 
@@ -243,28 +307,27 @@ export class AmbientSoundGenerator {
     noise.buffer = noiseBuffer;
     noise.loop = true;
 
-    // Wave modulation (LFO)
+    // Wave modulation with multiple LFOs for realism
     const lfo1 = this.audioContext.createOscillator();
-    lfo1.frequency.value = 0.08; // Very slow for waves
+    lfo1.frequency.value = 0.06;
     lfo1.type = 'sine';
 
     const lfo2 = this.audioContext.createOscillator();
-    lfo2.frequency.value = 0.13;
+    lfo2.frequency.value = 0.11;
     lfo2.type = 'sine';
 
     const lfoGain1 = this.audioContext.createGain();
-    lfoGain1.gain.value = 200;
+    lfoGain1.gain.value = 250;
 
     const lfoGain2 = this.audioContext.createGain();
-    lfoGain2.gain.value = 150;
+    lfoGain2.gain.value = 180;
 
-    // Filter for ocean-like rumble
+    // Low-pass for deep ocean rumble
     const lowpass = this.audioContext.createBiquadFilter();
     lowpass.type = 'lowpass';
-    lowpass.frequency.value = 400;
-    lowpass.Q.value = 2;
+    lowpass.frequency.value = 500;
+    lowpass.Q.value = 1.5;
 
-    // Connect LFOs to modulate filter
     lfo1.connect(lfoGain1);
     lfoGain1.connect(lowpass.frequency);
     lfo2.connect(lfoGain2);
@@ -288,14 +351,18 @@ export class AmbientSoundGenerator {
   private generateForest(): void {
     if (!this.audioContext || !this.masterGain) return;
 
-    // Gentle wind base
+    // Gentle wind base with brown noise
     const bufferSize = 4 * this.audioContext.sampleRate;
     const noiseBuffer = this.audioContext.createBuffer(2, bufferSize, this.audioContext.sampleRate);
 
     for (let channel = 0; channel < 2; channel++) {
       const output = noiseBuffer.getChannelData(channel);
+      let lastOut = 0;
       for (let i = 0; i < bufferSize; i++) {
-        output[i] = (Math.random() * 2 - 1) * 0.15;
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = output[i];
+        output[i] *= 2.5;
       }
     }
 
@@ -305,16 +372,16 @@ export class AmbientSoundGenerator {
 
     // Wind modulation
     const windLfo = this.audioContext.createOscillator();
-    windLfo.frequency.value = 0.2;
+    windLfo.frequency.value = 0.15;
     windLfo.type = 'sine';
 
     const windLfoGain = this.audioContext.createGain();
-    windLfoGain.gain.value = 300;
+    windLfoGain.gain.value = 250;
 
     const windFilter = this.audioContext.createBiquadFilter();
     windFilter.type = 'bandpass';
-    windFilter.frequency.value = 500;
-    windFilter.Q.value = 1;
+    windFilter.frequency.value = 400;
+    windFilter.Q.value = 0.8;
 
     windLfo.connect(windLfoGain);
     windLfoGain.connect(windFilter.frequency);
@@ -329,58 +396,23 @@ export class AmbientSoundGenerator {
     this.activeNodes.add(windLfoGain);
     this.activeNodes.add(wind);
     this.activeNodes.add(windFilter);
-
-    // Realistic bird chirps
-    this.scheduleBirdChirps();
-  }
-
-  private scheduleBirdChirps(): void {
-    if (!this.isPlaying || !this.audioContext || !this.masterGain) return;
-
-    const nextChirp = Math.random() * 4000 + 3000; // 3-7 seconds
-
-    const timeoutId = window.setTimeout(() => {
-      if (!this.isPlaying || !this.audioContext || !this.masterGain) return;
-
-      // More realistic chirp with frequency modulation
-      const chirp = this.audioContext.createOscillator();
-      const chirpGain = this.audioContext.createGain();
-
-      chirp.type = 'sine';
-      const startFreq = Math.random() * 800 + 2000; // 2000-2800Hz
-      const endFreq = startFreq + (Math.random() * 600 + 300); // Upward sweep
-
-      chirp.frequency.setValueAtTime(startFreq, this.audioContext.currentTime);
-      chirp.frequency.exponentialRampToValueAtTime(endFreq, this.audioContext.currentTime + 0.08);
-
-      // Quick attack and decay
-      chirpGain.gain.setValueAtTime(0, this.audioContext.currentTime);
-      chirpGain.gain.linearRampToValueAtTime(0.12, this.audioContext.currentTime + 0.01);
-      chirpGain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.12);
-
-      chirp.connect(chirpGain);
-      chirpGain.connect(this.masterGain);
-
-      chirp.start(this.audioContext.currentTime);
-      chirp.stop(this.audioContext.currentTime + 0.12);
-
-      this.scheduleBirdChirps();
-    }, nextChirp);
-
-    this.scheduledTimeouts.push(timeoutId);
   }
 
   private generateCoffeeShop(): void {
     if (!this.audioContext || !this.masterGain) return;
 
-    // Background murmur (low-frequency filtered noise)
+    // Low murmur base
     const bufferSize = 4 * this.audioContext.sampleRate;
     const noiseBuffer = this.audioContext.createBuffer(2, bufferSize, this.audioContext.sampleRate);
 
     for (let channel = 0; channel < 2; channel++) {
       const output = noiseBuffer.getChannelData(channel);
+      let lastOut = 0;
       for (let i = 0; i < bufferSize; i++) {
-        output[i] = (Math.random() * 2 - 1) * 0.2;
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = output[i];
+        output[i] *= 3;
       }
     }
 
@@ -390,8 +422,8 @@ export class AmbientSoundGenerator {
 
     const murmurFilter = this.audioContext.createBiquadFilter();
     murmurFilter.type = 'bandpass';
-    murmurFilter.frequency.value = 250;
-    murmurFilter.Q.value = 1.5;
+    murmurFilter.frequency.value = 300;
+    murmurFilter.Q.value = 1;
 
     murmur.connect(murmurFilter);
     murmurFilter.connect(this.masterGain);
@@ -399,77 +431,15 @@ export class AmbientSoundGenerator {
     murmur.start(0);
     this.activeNodes.add(murmur);
     this.activeNodes.add(murmurFilter);
-
-    // Coffee shop ambient sounds
-    this.scheduleCoffeeSounds();
-  }
-
-  private scheduleCoffeeSounds(): void {
-    if (!this.isPlaying || !this.audioContext || !this.masterGain) return;
-
-    const nextSound = Math.random() * 5000 + 4000; // 4-9 seconds
-
-    const timeoutId = window.setTimeout(() => {
-      if (!this.isPlaying || !this.audioContext || !this.masterGain) return;
-
-      const soundType = Math.random();
-
-      if (soundType < 0.4) {
-        // Cup clink (short metallic sound)
-        const clink = this.audioContext.createOscillator();
-        const clinkGain = this.audioContext.createGain();
-
-        clink.type = 'sine';
-        clink.frequency.value = Math.random() * 300 + 1300;
-
-        clinkGain.gain.setValueAtTime(0.08, this.audioContext.currentTime);
-        clinkGain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.08);
-
-        clink.connect(clinkGain);
-        clinkGain.connect(this.masterGain);
-
-        clink.start(this.audioContext.currentTime);
-        clink.stop(this.audioContext.currentTime + 0.08);
-      } else if (soundType < 0.7) {
-        // Coffee machine hiss (filtered noise burst)
-        const hissBuffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 0.5, this.audioContext.sampleRate);
-        const hissData = hissBuffer.getChannelData(0);
-
-        for (let i = 0; i < hissData.length; i++) {
-          hissData[i] = (Math.random() * 2 - 1) * 0.3 * Math.exp(-i / (hissData.length * 0.5));
-        }
-
-        const hiss = this.audioContext.createBufferSource();
-        hiss.buffer = hissBuffer;
-
-        const hissGain = this.audioContext.createGain();
-        hissGain.gain.value = 0.06;
-
-        const hissFilter = this.audioContext.createBiquadFilter();
-        hissFilter.type = 'highpass';
-        hissFilter.frequency.value = 2000;
-
-        hiss.connect(hissFilter);
-        hissFilter.connect(hissGain);
-        hissGain.connect(this.masterGain);
-
-        hiss.start(this.audioContext.currentTime);
-      }
-
-      this.scheduleCoffeeSounds();
-    }, nextSound);
-
-    this.scheduledTimeouts.push(timeoutId);
   }
 
   private generateFireplace(): void {
     if (!this.audioContext || !this.masterGain) return;
 
-    // Base crackling fire (pink noise with modulation)
+    // Pink noise base for fire crackle
     const bufferSize = 4 * this.audioContext.sampleRate;
     const noiseBuffer = this.audioContext.createBuffer(2, bufferSize, this.audioContext.sampleRate);
 
-    // Pink noise for more natural fire sound
     for (let channel = 0; channel < 2; channel++) {
       const output = noiseBuffer.getChannelData(channel);
       let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
@@ -482,7 +452,7 @@ export class AmbientSoundGenerator {
         b3 = 0.86650 * b3 + white * 0.3104856;
         b4 = 0.55000 * b4 + white * 0.5329522;
         b5 = -0.7616 * b5 - white * 0.0168980;
-        output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.15;
+        output[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362) * 0.18;
         b6 = white * 0.115926;
       }
     }
@@ -491,19 +461,19 @@ export class AmbientSoundGenerator {
     fire.buffer = noiseBuffer;
     fire.loop = true;
 
-    // Filter for fire character
+    // Fire character filter
     const fireFilter = this.audioContext.createBiquadFilter();
     fireFilter.type = 'bandpass';
-    fireFilter.frequency.value = 600;
-    fireFilter.Q.value = 0.8;
+    fireFilter.frequency.value = 700;
+    fireFilter.Q.value = 0.6;
 
-    // Random modulation for flickering effect
+    // Slow flickering modulation
     const flickerLfo = this.audioContext.createOscillator();
-    flickerLfo.frequency.value = 3;
+    flickerLfo.frequency.value = 2;
     flickerLfo.type = 'sine';
 
     const flickerGain = this.audioContext.createGain();
-    flickerGain.gain.value = 200;
+    flickerGain.gain.value = 180;
 
     flickerLfo.connect(flickerGain);
     flickerGain.connect(fireFilter.frequency);
@@ -518,68 +488,6 @@ export class AmbientSoundGenerator {
     this.activeNodes.add(flickerGain);
     this.activeNodes.add(fire);
     this.activeNodes.add(fireFilter);
-
-    // Add wood crackles and pops
-    this.scheduleFireCrackles();
-  }
-
-  private scheduleFireCrackles(): void {
-    if (!this.isPlaying || !this.audioContext || !this.masterGain) return;
-
-    const nextCrackle = Math.random() * 1500 + 500; // 0.5-2 seconds
-
-    const timeoutId = window.setTimeout(() => {
-      if (!this.isPlaying || !this.audioContext || !this.masterGain) return;
-
-      const crackleType = Math.random();
-
-      if (crackleType < 0.6) {
-        // Small crackle (short burst)
-        const crackleBuffer = this.audioContext.createBuffer(1, this.audioContext.sampleRate * 0.05, this.audioContext.sampleRate);
-        const crackleData = crackleBuffer.getChannelData(0);
-
-        for (let i = 0; i < crackleData.length; i++) {
-          crackleData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (crackleData.length * 0.3));
-        }
-
-        const crackle = this.audioContext.createBufferSource();
-        crackle.buffer = crackleBuffer;
-
-        const crackleGain = this.audioContext.createGain();
-        crackleGain.gain.value = 0.15;
-
-        const crackleFilter = this.audioContext.createBiquadFilter();
-        crackleFilter.type = 'highpass';
-        crackleFilter.frequency.value = 800;
-
-        crackle.connect(crackleFilter);
-        crackleFilter.connect(crackleGain);
-        crackleGain.connect(this.masterGain);
-
-        crackle.start(this.audioContext.currentTime);
-      } else {
-        // Loud pop (quick frequency sweep)
-        const pop = this.audioContext.createOscillator();
-        const popGain = this.audioContext.createGain();
-
-        pop.type = 'square';
-        pop.frequency.setValueAtTime(400, this.audioContext.currentTime);
-        pop.frequency.exponentialRampToValueAtTime(100, this.audioContext.currentTime + 0.03);
-
-        popGain.gain.setValueAtTime(0.12, this.audioContext.currentTime);
-        popGain.gain.exponentialRampToValueAtTime(0.01, this.audioContext.currentTime + 0.04);
-
-        pop.connect(popGain);
-        popGain.connect(this.masterGain);
-
-        pop.start(this.audioContext.currentTime);
-        pop.stop(this.audioContext.currentTime + 0.04);
-      }
-
-      this.scheduleFireCrackles();
-    }, nextCrackle);
-
-    this.scheduledTimeouts.push(timeoutId);
   }
 
   destroy(): void {
