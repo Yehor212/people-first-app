@@ -37,6 +37,18 @@ npm run build
 npx cap sync
 ```
 
+## ⚡ Quick Setup: Supabase Database
+
+**Required for multi-device sync!**
+
+1. Go to https://supabase.com/dashboard
+2. Open your project → **SQL Editor**
+3. Run these 2 migrations:
+   - `supabase/migrations/20260113_challenges_badges.sql`
+   - `supabase/migrations/20260114_tasks_quests.sql`
+
+📖 **Full guide:** See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)
+
 ## Release docs
 - `docs/SMOKE_CHECKLIST.md`
 - `docs/RELEASE_CHECKLIST.md`

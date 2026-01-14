@@ -144,7 +144,7 @@ export function Index() {
   const [privacy, setPrivacy, isLoadingPrivacy] = useIndexedDB<PrivacySettings>({
     table: db.settings,
     localStorageKey: 'zenflow-privacy',
-    initialValue: { noTracking: true, analytics: false },
+    initialValue: { noTracking: false, analytics: true },
     idField: 'key'
   });
 
