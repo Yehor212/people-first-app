@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { User, Bell, Trash2, Download, Crown, ExternalLink, Globe, CheckCircle, Shield } from 'lucide-react';
+import { User, Bell, Trash2, Download, Crown, ExternalLink, Globe, CheckCircle, Shield, Sparkles } from 'lucide-react';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { syncWithCloud } from '@/storage/cloudSync';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { sanitizeUserName, userNameSchema } from '@/lib/validation';
+import { DopamineSettingsComponent } from '@/components/DopamineSettings';
 
 interface SettingsPanelProps {
   userName: string;
@@ -50,6 +51,7 @@ export function SettingsPanel({
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteStatus, setDeleteStatus] = useState<string | null>(null);
+  const [showDopamineSettings, setShowDopamineSettings] = useState(false);
 
   const formatError = (error: unknown) => {
     if (error && typeof error === "object") {
@@ -588,6 +590,34 @@ export function SettingsPanel({
         </div>
       </div>
 
+      {/* Dopamine Settings */}
+      <div className="bg-card rounded-2xl p-6 zen-shadow-card">
+        <div className="flex items-center gap-3 mb-4">
+          <Sparkles className="w-5 h-5 text-primary" />
+          <h3 className="text-lg font-semibold text-foreground">{t.dopamineSettings}</h3>
+        </div>
+
+        <p className="text-muted-foreground mb-4">{t.dopamineSettingsDesc}</p>
+
+        <button
+          onClick={() => setShowDopamineSettings(true)}
+          className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 zen-shadow"
+        >
+          <Sparkles className="w-5 h-5" />
+          <span>{t.dopamineCustomize}</span>
+        </button>
+
+        <div className="mt-4 p-4 bg-primary/5 border border-primary/20 rounded-xl">
+          <div className="flex gap-3">
+            <div className="text-2xl">💡</div>
+            <div className="text-sm">
+              <div className="font-medium mb-1">{t.dopamineTip}</div>
+              <div className="text-muted-foreground">{t.dopamineTipText}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Account */}
       <div className="bg-card rounded-2xl p-6 zen-shadow-card">
         <div className="flex items-center gap-3 mb-4">
@@ -693,6 +723,11 @@ export function SettingsPanel({
         <p className="text-sm">{t.appName} v{__APP_VERSION__}</p>
         <p className="text-xs mt-1">{t.tagline}</p>
       </div>
+
+      {/* Dopamine Settings Modal */}
+      {showDopamineSettings && (
+        <DopamineSettingsComponent onClose={() => setShowDopamineSettings(false)} />
+      )}
     </div>
   );
 }
