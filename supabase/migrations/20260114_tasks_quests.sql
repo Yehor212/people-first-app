@@ -49,36 +49,44 @@ CREATE INDEX IF NOT EXISTS idx_user_quests_completed ON user_quests(completed);
 ALTER TABLE user_tasks ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_quests ENABLE ROW LEVEL SECURITY;
 
--- Tasks policies
+-- Tasks policies (with DROP IF EXISTS to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view their own tasks" ON user_tasks;
 CREATE POLICY "Users can view their own tasks"
   ON user_tasks FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own tasks" ON user_tasks;
 CREATE POLICY "Users can insert their own tasks"
   ON user_tasks FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own tasks" ON user_tasks;
 CREATE POLICY "Users can update their own tasks"
   ON user_tasks FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own tasks" ON user_tasks;
 CREATE POLICY "Users can delete their own tasks"
   ON user_tasks FOR DELETE
   USING (auth.uid() = user_id);
 
--- Quests policies
+-- Quests policies (with DROP IF EXISTS to avoid conflicts)
+DROP POLICY IF EXISTS "Users can view their own quests" ON user_quests;
 CREATE POLICY "Users can view their own quests"
   ON user_quests FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own quests" ON user_quests;
 CREATE POLICY "Users can insert their own quests"
   ON user_quests FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own quests" ON user_quests;
 CREATE POLICY "Users can update their own quests"
   ON user_quests FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own quests" ON user_quests;
 CREATE POLICY "Users can delete their own quests"
   ON user_quests FOR DELETE
   USING (auth.uid() = user_id);
