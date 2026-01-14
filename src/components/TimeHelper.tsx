@@ -65,51 +65,70 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
   }, [isRunning, duration, soundEnabled, pingInterval]);
 
   const playPing = () => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
 
-    const ctx = audioContextRef.current;
-    const oscillator = ctx.createOscillator();
-    const gainNode = ctx.createGain();
+      const ctx = audioContextRef.current;
 
-    oscillator.connect(gainNode);
-    gainNode.connect(ctx.destination);
+      // Resume context if suspended (required for autoplay policies)
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
 
-    oscillator.frequency.value = 800;
-    oscillator.type = 'sine';
-
-    gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-
-    oscillator.start(ctx.currentTime);
-    oscillator.stop(ctx.currentTime + 0.1);
-  };
-
-  const playCompletionSound = () => {
-    if (!audioContextRef.current) {
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-    }
-
-    const ctx = audioContextRef.current;
-
-    // Triple beep for completion
-    [0, 0.2, 0.4].forEach((offset) => {
       const oscillator = ctx.createOscillator();
       const gainNode = ctx.createGain();
 
       oscillator.connect(gainNode);
       gainNode.connect(ctx.destination);
 
-      oscillator.frequency.value = 1000;
+      oscillator.frequency.value = 800;
       oscillator.type = 'sine';
 
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime + offset);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + offset + 0.15);
+      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
 
-      oscillator.start(ctx.currentTime + offset);
-      oscillator.stop(ctx.currentTime + offset + 0.15);
-    });
+      oscillator.start(ctx.currentTime);
+      oscillator.stop(ctx.currentTime + 0.1);
+    } catch (error) {
+      console.error('Failed to play ping sound:', error);
+    }
+  };
+
+  const playCompletionSound = () => {
+    try {
+      if (!audioContextRef.current) {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      }
+
+      const ctx = audioContextRef.current;
+
+      // Resume context if suspended (required for autoplay policies)
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
+
+      // Triple beep for completion
+      [0, 0.2, 0.4].forEach((offset) => {
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        oscillator.frequency.value = 1000;
+        oscillator.type = 'sine';
+
+        gainNode.gain.setValueAtTime(0.3, ctx.currentTime + offset);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + offset + 0.15);
+
+        oscillator.start(ctx.currentTime + offset);
+        oscillator.stop(ctx.currentTime + offset + 0.15);
+      });
+    } catch (error) {
+      console.error('Failed to play completion sound:', error);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -287,18 +306,27 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
             {/* Sound Toggle */}
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-medium">Audio Pings</span>
-              <button
-                onClick={() => setSoundEnabled(!soundEnabled)}
-                className={cn(
-                  'flex items-center gap-2 px-3 py-2 rounded-lg transition-colors',
-                  soundEnabled
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                )}
-              >
-                {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
-                <span className="text-sm">{soundEnabled ? 'On' : 'Off'}</span>
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={playPing}
+                  className="px-3 py-2 rounded-lg bg-muted hover:bg-muted/70 transition-colors text-sm font-medium"
+                  title="Test sound"
+                >
+                  🔊 Test
+                </button>
+                <button
+                  onClick={() => setSoundEnabled(!soundEnabled)}
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-2 rounded-lg transition-colors',
+                    soundEnabled
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted text-muted-foreground'
+                  )}
+                >
+                  {soundEnabled ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
+                  <span className="text-sm">{soundEnabled ? 'On' : 'Off'}</span>
+                </button>
+              </div>
             </div>
 
             {/* Start Button */}

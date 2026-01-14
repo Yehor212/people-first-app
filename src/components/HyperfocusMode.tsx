@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { AmbientSoundGenerator, AmbientSoundType } from '@/lib/ambientSounds';
 
 interface HyperfocusModeProps {
   duration: number; // в минутах
@@ -8,17 +9,15 @@ interface HyperfocusModeProps {
   onExit: () => void;
 }
 
-type AmbientSound = 'none' | 'white-noise' | 'rain' | 'ocean' | 'forest' | 'coffee-shop';
-
 export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeProps) {
   const { t } = useLanguage();
   const [timeLeft, setTimeLeft] = useState(duration * 60); // секунды
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [selectedSound, setSelectedSound] = useState<AmbientSound>('none');
+  const [selectedSound, setSelectedSound] = useState<AmbientSoundType>('none');
   const [isSoundPlaying, setIsSoundPlaying] = useState(false);
   const [showBreathingAnimation, setShowBreathingAnimation] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const soundGeneratorRef = useRef<AmbientSoundGenerator | null>(null);
 
   // Countdown timer
   useEffect(() => {
@@ -56,47 +55,44 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     }
   }, [timeLeft, duration, isRunning, isPaused]);
 
+  // Initialize sound generator
+  useEffect(() => {
+    if (!soundGeneratorRef.current) {
+      soundGeneratorRef.current = new AmbientSoundGenerator();
+    }
+
+    return () => {
+      if (soundGeneratorRef.current) {
+        soundGeneratorRef.current.destroy();
+      }
+    };
+  }, []);
+
   // Ambient sound player
   useEffect(() => {
+    const generator = soundGeneratorRef.current;
+    if (!generator) return;
+
     if (selectedSound === 'none') {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      generator.stop();
       setIsSoundPlaying(false);
       return;
     }
 
-    // Create audio element for ambient sound
-    // Note: In production, you'll need actual sound files in public/sounds/
-    const soundUrls: Record<Exclude<AmbientSound, 'none'>, string> = {
-      'white-noise': '/sounds/white-noise.mp3',
-      'rain': '/sounds/rain.mp3',
-      'ocean': '/sounds/ocean.mp3',
-      'forest': '/sounds/forest.mp3',
-      'coffee-shop': '/sounds/coffee-shop.mp3',
-    };
-
-    if (audioRef.current) {
-      audioRef.current.pause();
-    }
-
-    audioRef.current = new Audio(soundUrls[selectedSound]);
-    audioRef.current.loop = true;
-    audioRef.current.volume = 0.3;
-
     if (isRunning && !isPaused) {
-      audioRef.current.play().catch(err => {
+      generator.play(selectedSound).then(() => {
+        setIsSoundPlaying(true);
+      }).catch(err => {
         console.error('Failed to play ambient sound:', err);
+        setIsSoundPlaying(false);
       });
-      setIsSoundPlaying(true);
+    } else {
+      generator.pause();
+      setIsSoundPlaying(false);
     }
 
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current = null;
-      }
+      generator.stop();
     };
   }, [selectedSound, isRunning, isPaused]);
 
@@ -115,11 +111,12 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
   const handlePause = () => {
     setIsPaused(!isPaused);
-    if (audioRef.current) {
+    const generator = soundGeneratorRef.current;
+    if (generator) {
       if (isPaused) {
-        audioRef.current.play();
+        generator.resume();
       } else {
-        audioRef.current.pause();
+        generator.pause();
       }
     }
   };
@@ -127,18 +124,22 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   const handleEmergencyPause = () => {
     if (window.confirm(t.hyperfocusEmergencyConfirm || 'Хотите приостановить сессию? Без чувства вины! 💜')) {
       setIsPaused(true);
-      if (audioRef.current) {
-        audioRef.current.pause();
+      const generator = soundGeneratorRef.current;
+      if (generator) {
+        generator.pause();
       }
     }
   };
 
   const toggleSound = () => {
-    if (isSoundPlaying && audioRef.current) {
-      audioRef.current.pause();
+    const generator = soundGeneratorRef.current;
+    if (!generator) return;
+
+    if (isSoundPlaying) {
+      generator.pause();
       setIsSoundPlaying(false);
-    } else if (audioRef.current) {
-      audioRef.current.play();
+    } else if (selectedSound !== 'none') {
+      generator.resume();
       setIsSoundPlaying(true);
     }
   };
@@ -294,7 +295,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            {(['none', 'white-noise', 'rain', 'ocean', 'forest', 'coffee-shop'] as AmbientSound[]).map(sound => (
+            {(['none', 'white-noise', 'rain', 'ocean', 'forest', 'coffee-shop'] as AmbientSoundType[]).map(sound => (
               <button
                 key={sound}
                 onClick={() => setSelectedSound(sound)}
