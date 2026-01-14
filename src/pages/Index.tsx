@@ -34,6 +34,7 @@ import { NotificationPermission } from '@/components/NotificationPermission';
 import { GoogleAuthScreen } from '@/components/GoogleAuthScreen';
 import { WeeklyReport } from '@/components/WeeklyReport';
 import { ChallengesPanel } from '@/components/ChallengesPanel';
+import { TasksPanel } from '@/components/TasksPanel';
 import { useGamification } from '@/hooks/useGamification';
 import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
@@ -58,6 +59,9 @@ export function Index() {
   const [showChallenges, setShowChallenges] = useState(false);
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
+
+  // Tasks state
+  const [showTasks, setShowTasks] = useState(false);
 
   // Используем useIndexedDB для hasSelectedLanguage
   const [hasSelectedLanguage, setHasSelectedLanguage, isLoadingLangSelected] = useIndexedDB({
@@ -644,7 +648,11 @@ export function Index() {
         {activeTab === 'home' && (
           <>
             <InstallBanner />
-            <Header userName={userName} onOpenChallenges={() => setShowChallenges(true)} />
+            <Header
+              userName={userName}
+              onOpenChallenges={() => setShowChallenges(true)}
+              onOpenTasks={() => setShowTasks(true)}
+            />
 
             <div className="space-y-6">
               <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
@@ -740,6 +748,24 @@ export function Index() {
           }}
           onClose={() => setShowChallenges(false)}
         />
+      )}
+
+      {/* Tasks Panel Modal */}
+      {showTasks && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold zen-text-gradient">Task Momentum</h2>
+              <button
+                onClick={() => setShowTasks(false)}
+                className="p-2 hover:bg-muted rounded-lg transition-colors text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            <TasksPanel onClose={() => setShowTasks(false)} />
+          </div>
+        </div>
       )}
     </div>
   );
