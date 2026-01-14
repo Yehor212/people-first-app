@@ -36,6 +36,7 @@ import { WeeklyReport } from '@/components/WeeklyReport';
 import { ChallengesPanel } from '@/components/ChallengesPanel';
 import { useGamification } from '@/hooks/useGamification';
 import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
+import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
 
 type TabType = 'home' | 'stats' | 'achievements' | 'settings';
 
@@ -550,6 +551,59 @@ export function Index() {
 
     checkWeeklyReport();
   }, [onboardingComplete, isLoading]);
+
+  // Cloud sync for challenges and badges
+  useEffect(() => {
+    const syncWithCloudIfLoggedIn = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        // Sync challenges
+        const { challenges: syncedChallenges } = await syncChallengesWithCloud(user.id);
+        if (syncedChallenges) {
+          setChallenges(syncedChallenges);
+        }
+
+        // Sync badges
+        const { badges: syncedBadges } = await syncBadgesWithCloud(user.id);
+        if (syncedBadges) {
+          setBadges(syncedBadges);
+        }
+
+        // Subscribe to real-time updates
+        const challengeSub = subscribeToChallengeUpdates(user.id, (updatedChallenge) => {
+          setChallenges(prev => {
+            const index = prev.findIndex(c => c.id === updatedChallenge.id);
+            if (index !== -1) {
+              const updated = [...prev];
+              updated[index] = updatedChallenge;
+              return updated;
+            }
+            return [...prev, updatedChallenge];
+          });
+        });
+
+        const badgeSub = subscribeToBadgeUpdates(user.id, (updatedBadge) => {
+          setBadges(prev => {
+            const index = prev.findIndex(b => b.id === updatedBadge.id);
+            if (index !== -1) {
+              const updated = [...prev];
+              updated[index] = updatedBadge;
+              return updated;
+            }
+            return prev;
+          });
+        });
+
+        return () => {
+          challengeSub.unsubscribe();
+          badgeSub.unsubscribe();
+        };
+      }
+    };
+
+    syncWithCloudIfLoggedIn();
+  }, []);
 
   if (isLoading) {
     return (
