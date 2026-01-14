@@ -11,19 +11,67 @@ node_modules
 dist
 dist-ssr
 *.local
+
+# ============================================
+# SECURITY: Env files with secrets
+# ============================================
+.env
 .env.*
 !.env.example
 
+# ============================================
+# SECURITY: Android signing keys & passwords
+# ============================================
+android/key.properties
+**/*.keystore
+**/*.jks
+
+# Firebase config (contains API keys)
+android/app/google-services.json
+
+# ============================================
+# Android build artifacts
+# ============================================
+android/.gradle/
+android/**/build/
+android/app/build/
+android/build/
+*.apk
+*.aab
+
+# ============================================
+# Claude / AI agent temp files
+# ============================================
+tmpclaude*
+.claude/
+
+# ============================================
+# Extra lockfiles (use only package-lock.json)
+# ============================================
+bun.lockb
+yarn.lock
+pnpm-lock.yaml
+
+# ============================================
 # Editor directories and files
+# ============================================
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
+*.tmp
 
 # Local Netlify folder
 .netlify
+
+# ============================================
+# iOS (if using Capacitor iOS)
+# ============================================
+ios/App/Pods/
+ios/App/App/GoogleService-Info.plist
