@@ -91,6 +91,17 @@ export interface Translations {
   perHabitRemindersTitle: string;
   perHabitRemindersDesc: string;
 
+  // Habit Frequency
+  habitFrequency: string;
+  habitFrequencyOnce: string;
+  habitFrequencyDaily: string;
+  habitFrequencyWeekly: string;
+  habitFrequencyCustom: string;
+  habitFrequencySelectDays: string;
+  habitDurationRequired: string;
+  habitTargetDuration: string;
+  habitDurationMinutes: string;
+
   // Focus timer
   focus: string;
   breakTime: string;
@@ -361,6 +372,7 @@ export interface Translations {
   hyperfocusSoundOcean: string;
   hyperfocusSoundForest: string;
   hyperfocusSoundCoffee: string;
+  hyperfocusSoundFireplace: string;
   hyperfocusTip: string;
   hyperfocusTipText: string;
   hyperfocusPauseMsg: string;
@@ -534,6 +546,18 @@ export const translations: Record<Language, Translations> = {
     habitRemindersPerHabit: 'Напоминания теперь настраиваются индивидуально для каждой привычки. Добавьте напоминания при создании или редактировании привычек.',
     perHabitRemindersTitle: 'Индивидуальные напоминания',
     perHabitRemindersDesc: 'Каждая привычка может иметь свои собственные настраиваемые времена напоминаний. Установите их при создании новой привычки или редактировании существующей.',
+
+    // Habit Frequency
+    habitFrequency: 'Частота',
+    habitFrequencyOnce: 'Один раз',
+    habitFrequencyDaily: 'Ежедневно',
+    habitFrequencyWeekly: 'Еженедельно',
+    habitFrequencyCustom: 'Свои дни',
+    habitFrequencySelectDays: 'Выберите дни',
+    habitDurationRequired: 'Требует времени?',
+    habitTargetDuration: 'Целевое время (минуты)',
+    habitDurationMinutes: 'минут',
+
     focus: 'Фокус',
     breakTime: 'Перерыв',
     todayMinutes: 'мин сегодня',
@@ -789,6 +813,7 @@ export const translations: Record<Language, Translations> = {
     hyperfocusSoundOcean: 'Океан',
     hyperfocusSoundForest: 'Лес',
     hyperfocusSoundCoffee: 'Кафе',
+    hyperfocusSoundFireplace: 'Костёр',
     hyperfocusTip: 'Совет',
     hyperfocusTipText: 'Каждые 25 минут будет короткая дыхательная пауза. Это помогает избежать выгорания!',
     hyperfocusPauseMsg: 'Нажмите Play, чтобы продолжить',
@@ -934,6 +959,18 @@ export const translations: Record<Language, Translations> = {
     habitRemindersPerHabit: 'Reminders are now configured individually for each habit. Add reminders when creating or editing habits.',
     perHabitRemindersTitle: 'Per-Habit Reminders',
     perHabitRemindersDesc: 'Each habit can have its own custom reminder times. Set them when creating a new habit or editing an existing one.',
+
+    // Habit Frequency
+    habitFrequency: 'Frequency',
+    habitFrequencyOnce: 'One-time',
+    habitFrequencyDaily: 'Daily',
+    habitFrequencyWeekly: 'Weekly',
+    habitFrequencyCustom: 'Custom',
+    habitFrequencySelectDays: 'Select Days',
+    habitDurationRequired: 'Requires Duration?',
+    habitTargetDuration: 'Target Duration (minutes)',
+    habitDurationMinutes: 'minutes',
+
     focus: 'Focus',
     breakTime: 'Break',
     todayMinutes: 'min today',
@@ -1189,6 +1226,7 @@ export const translations: Record<Language, Translations> = {
     hyperfocusSoundOcean: 'Ocean',
     hyperfocusSoundForest: 'Forest',
     hyperfocusSoundCoffee: 'Coffee Shop',
+    hyperfocusSoundFireplace: 'Fireplace',
     hyperfocusTip: 'Tip',
     hyperfocusTipText: 'Every 25 minutes there will be a short breathing pause. This helps prevent burnout!',
     hyperfocusPauseMsg: 'Press Play to continue',
@@ -1334,6 +1372,18 @@ export const translations: Record<Language, Translations> = {
     habitRemindersPerHabit: 'Нагадування тепер налаштовуються індивідуально для кожної звички. Додайте нагадування при створенні або редагуванні звичок.',
     perHabitRemindersTitle: 'Індивідуальні нагадування',
     perHabitRemindersDesc: 'Кожна звичка може мати свої власні налаштовані часи нагадувань. Встановіть їх при створенні нової звички або редагуванні існуючої.',
+
+    // Habit Frequency
+    habitFrequency: 'Частота',
+    habitFrequencyOnce: 'Один раз',
+    habitFrequencyDaily: 'Щоденно',
+    habitFrequencyWeekly: 'Щотижня',
+    habitFrequencyCustom: 'Свої дні',
+    habitFrequencySelectDays: 'Оберіть дні',
+    habitDurationRequired: 'Потребує часу?',
+    habitTargetDuration: 'Цільовий час (хвилини)',
+    habitDurationMinutes: 'хвилин',
+
     focus: 'Фокус',
     breakTime: 'Перерва',
     todayMinutes: 'хв сьогодні',
@@ -1589,6 +1639,7 @@ export const translations: Record<Language, Translations> = {
     hyperfocusSoundOcean: 'Океан',
     hyperfocusSoundForest: 'Ліс',
     hyperfocusSoundCoffee: 'Кафе',
+    hyperfocusSoundFireplace: 'Багаття',
     hyperfocusTip: 'Порада',
     hyperfocusTipText: 'Кожні 25 хвилин буде коротка дихальна пауза. Це допомагає уникнути вигорання!',
     hyperfocusPauseMsg: 'Натисніть Play, щоб продовжити',
@@ -1734,6 +1785,19 @@ export const translations: Record<Language, Translations> = {
     habitRemindersPerHabit: 'Los recordatorios ahora se configuran individualmente para cada hábito. Añade recordatorios al crear o editar hábitos.',
     perHabitRemindersTitle: 'Recordatorios por Hábito',
     perHabitRemindersDesc: 'Cada hábito puede tener sus propios horarios de recordatorio personalizados. Configúralos al crear un nuevo hábito o editar uno existente.',
+
+    // Habit Frequency
+    habitFrequency: 'Frecuencia',
+    habitFrequencyOnce: 'Una vez',
+    habitFrequencyDaily: 'Diario',
+    habitFrequencyWeekly: 'Semanal',
+    habitFrequencyCustom: 'Personalizado',
+    habitFrequencySelectDays: 'Seleccionar Días',
+    habitDurationRequired: '¿Requiere Duración?',
+    habitTargetDuration: 'Duración Objetivo (minutos)',
+    habitDurationMinutes: 'minutos',
+
+    // Focus timer
     focus: 'Enfoque',
     breakTime: 'Descanso',
     todayMinutes: 'min hoy',
@@ -1989,6 +2053,7 @@ export const translations: Record<Language, Translations> = {
     hyperfocusSoundOcean: 'Océano',
     hyperfocusSoundForest: 'Bosque',
     hyperfocusSoundCoffee: 'Cafetería',
+    hyperfocusSoundFireplace: 'Chimenea',
     hyperfocusTip: 'Consejo',
     hyperfocusTipText: 'Cada 25 minutos habrá una breve pausa de respiración. ¡Esto ayuda a prevenir el agotamiento!',
     hyperfocusPauseMsg: 'Presiona Play para continuar',
@@ -2134,6 +2199,19 @@ export const translations: Record<Language, Translations> = {
     habitRemindersPerHabit: 'Erinnerungen werden jetzt individuell für jede Gewohnheit konfiguriert. Fügen Sie Erinnerungen beim Erstellen oder Bearbeiten von Gewohnheiten hinzu.',
     perHabitRemindersTitle: 'Erinnerungen pro Gewohnheit',
     perHabitRemindersDesc: 'Jede Gewohnheit kann ihre eigenen benutzerdefinierten Erinnerungszeiten haben. Legen Sie diese beim Erstellen einer neuen Gewohnheit oder beim Bearbeiten einer bestehenden fest.',
+
+    // Habit Frequency
+    habitFrequency: 'Häufigkeit',
+    habitFrequencyOnce: 'Einmalig',
+    habitFrequencyDaily: 'Täglich',
+    habitFrequencyWeekly: 'Wöchentlich',
+    habitFrequencyCustom: 'Benutzerdefiniert',
+    habitFrequencySelectDays: 'Tage Auswählen',
+    habitDurationRequired: 'Erfordert Dauer?',
+    habitTargetDuration: 'Zieldauer (Minuten)',
+    habitDurationMinutes: 'Minuten',
+
+    // Focus timer
     focus: 'Fokus',
     breakTime: 'Pause',
     todayMinutes: 'Min heute',
@@ -2389,6 +2467,7 @@ export const translations: Record<Language, Translations> = {
     hyperfocusSoundOcean: 'Ozean',
     hyperfocusSoundForest: 'Wald',
     hyperfocusSoundCoffee: 'Café',
+    hyperfocusSoundFireplace: 'Kamin',
     hyperfocusTip: 'Tipp',
     hyperfocusTipText: 'Alle 25 Minuten gibt es eine kurze Atempause. Das hilft, Burnout zu vermeiden!',
     hyperfocusPauseMsg: 'Drücke Play zum Fortfahren',
@@ -2534,6 +2613,19 @@ export const translations: Record<Language, Translations> = {
     habitRemindersPerHabit: 'Les rappels sont maintenant configurés individuellement pour chaque habitude. Ajoutez des rappels lors de la création ou de la modification des habitudes.',
     perHabitRemindersTitle: 'Rappels par Habitude',
     perHabitRemindersDesc: 'Chaque habitude peut avoir ses propres horaires de rappel personnalisés. Configurez-les lors de la création d\'une nouvelle habitude ou de la modification d\'une habitude existante.',
+
+    // Habit Frequency
+    habitFrequency: 'Fréquence',
+    habitFrequencyOnce: 'Une fois',
+    habitFrequencyDaily: 'Quotidien',
+    habitFrequencyWeekly: 'Hebdomadaire',
+    habitFrequencyCustom: 'Personnalisé',
+    habitFrequencySelectDays: 'Sélectionner les Jours',
+    habitDurationRequired: 'Nécessite une Durée?',
+    habitTargetDuration: 'Durée Cible (minutes)',
+    habitDurationMinutes: 'minutes',
+
+    // Focus timer
     focus: 'Focus',
     breakTime: 'Pause',
     todayMinutes: 'min aujourd\'hui',
@@ -2789,6 +2881,7 @@ export const translations: Record<Language, Translations> = {
     hyperfocusSoundOcean: 'Océan',
     hyperfocusSoundForest: 'Forêt',
     hyperfocusSoundCoffee: 'Café',
+    hyperfocusSoundFireplace: 'Cheminée',
     hyperfocusTip: 'Astuce',
     hyperfocusTipText: 'Toutes les 25 minutes, il y aura une courte pause respiratoire. Cela aide à prévenir l\'épuisement!',
     hyperfocusPauseMsg: 'Appuyez sur Play pour continuer',

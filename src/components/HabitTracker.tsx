@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Habit, HabitType, HabitReminder } from '@/types';
+import { Habit, HabitType, HabitReminder, HabitFrequency } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { Plus, Check, X, Minus, Bell } from 'lucide-react';
+import { Plus, Check, X, Minus, Bell, Clock } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { habitTemplates } from '@/lib/habitTemplates';
 
@@ -33,6 +33,12 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
   const [dailyTarget, setDailyTarget] = useState(1);
   const [reminders, setReminders] = useState<HabitReminder[]>([]);
   const [showReminderConfig, setShowReminderConfig] = useState(false);
+
+  // New state for frequency and duration
+  const [frequency, setFrequency] = useState<HabitFrequency>('daily');
+  const [customDays, setCustomDays] = useState<number[]>([1, 2, 3, 4, 5]); // Mon-Fri default
+  const [requiresDuration, setRequiresDuration] = useState(false);
+  const [targetDuration, setTargetDuration] = useState(15);
 
   const today = getToday();
 
@@ -66,6 +72,13 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
       createdAt: Date.now(),
       type: selectedType,
       reminders: reminders,
+      frequency: frequency,
+      ...(frequency === 'custom' && { customDays }),
+      ...(requiresDuration && {
+        requiresDuration: true,
+        targetDuration,
+        durationByDate: {}
+      }),
       ...(selectedType === 'multiple' && { dailyTarget, completionsByDate: {} }),
       ...(selectedType === 'continuous' && { startDate: today, failedDates: [] }),
       ...(selectedType === 'reduce' && { progressByDate: {}, targetCount: dailyTarget }),
@@ -77,6 +90,10 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
     setDailyTarget(1);
     setReminders([]);
     setShowReminderConfig(false);
+    setFrequency('daily');
+    setCustomDays([1, 2, 3, 4, 5]);
+    setRequiresDuration(false);
+    setTargetDuration(15);
     setIsAdding(false);
   };
 
@@ -226,6 +243,110 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
                 {t.habitTypeContinuous}
               </button>
             </div>
+          </div>
+
+          {/* Frequency Selection */}
+          <div className="mb-4">
+            <p className="text-sm text-muted-foreground mb-2">Frequency:</p>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => setFrequency('once')}
+                className={cn(
+                  "btn-press p-2 rounded-lg text-sm transition-all",
+                  frequency === 'once' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                )}
+              >
+                One-time
+              </button>
+              <button
+                onClick={() => setFrequency('daily')}
+                className={cn(
+                  "btn-press p-2 rounded-lg text-sm transition-all",
+                  frequency === 'daily' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                )}
+              >
+                Daily
+              </button>
+              <button
+                onClick={() => setFrequency('weekly')}
+                className={cn(
+                  "btn-press p-2 rounded-lg text-sm transition-all",
+                  frequency === 'weekly' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                )}
+              >
+                Weekly
+              </button>
+              <button
+                onClick={() => setFrequency('custom')}
+                className={cn(
+                  "btn-press p-2 rounded-lg text-sm transition-all",
+                  frequency === 'custom' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                )}
+              >
+                Custom
+              </button>
+            </div>
+          </div>
+
+          {/* Custom Days Selection */}
+          {frequency === 'custom' && (
+            <div className="mb-4">
+              <p className="text-sm text-muted-foreground mb-2">Select Days:</p>
+              <div className="flex flex-wrap gap-2">
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => {
+                      if (customDays.includes(idx)) {
+                        setCustomDays(customDays.filter(d => d !== idx));
+                      } else {
+                        setCustomDays([...customDays, idx].sort());
+                      }
+                    }}
+                    className={cn(
+                      "btn-press px-3 py-1 rounded-lg text-sm transition-all",
+                      customDays.includes(idx)
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-background hover:bg-muted"
+                    )}
+                  >
+                    {day}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Duration Settings */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm text-muted-foreground">Requires Duration?</p>
+              <button
+                onClick={() => setRequiresDuration(!requiresDuration)}
+                className={cn(
+                  "btn-press px-3 py-1 rounded-lg text-sm transition-all flex items-center gap-2",
+                  requiresDuration ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                )}
+              >
+                <Clock className="w-4 h-4" />
+                {requiresDuration ? 'Yes' : 'No'}
+              </button>
+            </div>
+            {requiresDuration && (
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">
+                  Target Duration (minutes):
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="480"
+                  value={targetDuration}
+                  onChange={(e) => setTargetDuration(parseInt(e.target.value) || 15)}
+                  className="w-full p-2 bg-background rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            )}
           </div>
 
           {(selectedType === 'multiple' || selectedType === 'reduce') && (

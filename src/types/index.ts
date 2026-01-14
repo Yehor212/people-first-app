@@ -22,6 +22,8 @@ export interface HabitReminder {
   days: number[];    // [1,2,3,4,5] (Mon-Fri)
 }
 
+export type HabitFrequency = 'once' | 'daily' | 'weekly' | 'custom';
+
 export interface Habit {
   id: string;
   name: string;
@@ -34,6 +36,15 @@ export interface Habit {
   // New fields for enhanced habit system
   type: HabitType;
   reminders: HabitReminder[];  // Каждая привычка может иметь несколько напоминаний
+
+  // Frequency settings
+  frequency: HabitFrequency;   // Как часто выполнять привычку
+  customDays?: number[];       // Для custom: дни недели [0-6] (Sun-Sat)
+
+  // Duration settings
+  requiresDuration?: boolean;  // Требует ли привычка времени на выполнение
+  targetDuration?: number;     // Целевое время в минутах
+  durationByDate?: Record<string, number>; // Фактическое время по датам
 
   // For continuous habits (quit smoking/drinking)
   startDate?: string;          // Дата начала отказа

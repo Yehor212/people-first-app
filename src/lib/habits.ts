@@ -4,8 +4,10 @@ export function normalizeHabit(habit: Habit): Habit {
   return {
     ...habit,
     type: habit.type || 'daily',
+    frequency: habit.frequency || 'daily',
     progressByDate: habit.progressByDate || {},
-    completedDates: habit.completedDates || []
+    completedDates: habit.completedDates || [],
+    reminders: habit.reminders || []
   };
 }
 

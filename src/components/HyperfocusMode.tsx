@@ -295,7 +295,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           </div>
 
           <div className="grid grid-cols-3 gap-2">
-            {(['none', 'white-noise', 'rain', 'ocean', 'forest', 'coffee-shop'] as AmbientSoundType[]).map(sound => (
+            {(['none', 'white-noise', 'rain', 'ocean', 'forest', 'coffee-shop', 'fireplace'] as AmbientSoundType[]).map(sound => (
               <button
                 key={sound}
                 onClick={() => setSelectedSound(sound)}
@@ -311,6 +311,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 {sound === 'ocean' && (t.hyperfocusSoundOcean || 'Океан')}
                 {sound === 'forest' && (t.hyperfocusSoundForest || 'Лес')}
                 {sound === 'coffee-shop' && (t.hyperfocusSoundCoffee || 'Кафе')}
+                {sound === 'fireplace' && (t.hyperfocusSoundFireplace || 'Костёр')}
               </button>
             ))}
           </div>
