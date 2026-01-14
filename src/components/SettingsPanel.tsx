@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { User, Bell, Trash2, Download, Crown, ExternalLink, Globe, CheckCircle, Shield, Sparkles } from 'lucide-react';
+import { User, Bell, Trash2, Download, Crown, ExternalLink, Globe, CheckCircle, Shield, Sparkles, Smartphone, ChevronRight } from 'lucide-react';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -24,6 +24,7 @@ interface SettingsPanelProps {
   habits: Habit[];
   privacy: PrivacySettings;
   onPrivacyChange: (value: PrivacySettings | ((prev: PrivacySettings) => PrivacySettings)) => void;
+  onOpenWidgetSettings?: () => void;
 }
 
 const languages: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr'];
@@ -36,7 +37,8 @@ export function SettingsPanel({
   onRemindersChange,
   habits,
   privacy,
-  onPrivacyChange
+  onPrivacyChange,
+  onOpenWidgetSettings
 }: SettingsPanelProps) {
   const { t, language, setLanguage } = useLanguage();
   const { canInstall, isInstalled, promptInstall } = usePwaInstall();
@@ -375,6 +377,25 @@ export function SettingsPanel({
           ))}
         </div>
       </div>
+
+      {/* Widget Settings */}
+      {onOpenWidgetSettings && (
+        <button
+          onClick={onOpenWidgetSettings}
+          className="w-full bg-card rounded-2xl p-6 zen-shadow-card hover:bg-accent/5 transition-colors text-left"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Smartphone className="w-5 h-5 text-primary" />
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">{t.widgetSettings || 'Widget Settings'}</h3>
+                <p className="text-sm text-muted-foreground">{t.widgetSettingsDesc || 'Configure widgets for your home screen'}</p>
+              </div>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </div>
+        </button>
+      )}
 
       {/* Premium Promo */}
       <div className="bg-gradient-to-br from-accent/20 to-primary/20 rounded-2xl p-6 border border-accent/30">

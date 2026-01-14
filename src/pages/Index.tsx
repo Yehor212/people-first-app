@@ -37,6 +37,7 @@ import { ChallengesPanel } from '@/components/ChallengesPanel';
 import { TasksPanel } from '@/components/TasksPanel';
 import { QuestsPanel } from '@/components/QuestsPanel';
 import { TimeHelper } from '@/components/TimeHelper';
+import { WidgetSettings } from '@/pages/WidgetSettings';
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
@@ -57,6 +58,9 @@ export function Index() {
 
   // Weekly report state
   const [showWeeklyReport, setShowWeeklyReport] = useState(false);
+
+  // Widget settings state
+  const [showWidgetSettings, setShowWidgetSettings] = useState(false);
 
   // Challenges state
   const [showChallenges, setShowChallenges] = useState(false);
@@ -750,6 +754,7 @@ export function Index() {
             habits={habits}
             privacy={privacy}
             onPrivacyChange={setPrivacy}
+            onOpenWidgetSettings={() => setShowWidgetSettings(true)}
           />
         )}
       </div>
@@ -765,6 +770,13 @@ export function Index() {
           gratitudeEntries={gratitudeEntries}
           onClose={() => setShowWeeklyReport(false)}
         />
+      )}
+
+      {/* Widget Settings Modal */}
+      {showWidgetSettings && (
+        <div className="fixed inset-0 z-50 bg-background">
+          <WidgetSettings onBack={() => setShowWidgetSettings(false)} />
+        </div>
       )}
 
       {/* Challenges Panel Modal */}
