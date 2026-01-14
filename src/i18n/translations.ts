@@ -377,6 +377,49 @@ export interface Translations {
   hyperfocusTipText: string;
   hyperfocusPauseMsg: string;
 
+  // Widget Settings
+  widgetSettings: string;
+  widgetSettingsDesc: string;
+  widgetPreview: string;
+  widgetSetup: string;
+  widgetInfo: string;
+  widgetInfoDesc: string;
+  widgetStatus: string;
+  widgetPlatform: string;
+  widgetWeb: string;
+  widgetSupport: string;
+  widgetAvailable: string;
+  widgetComingSoon: string;
+  widgetSetupiOS: string;
+  widgetSetupAndroid: string;
+  widgetStep1iOS: string;
+  widgetStep2iOS: string;
+  widgetStep3iOS: string;
+  widgetStep4iOS: string;
+  widgetStep5iOS: string;
+  widgetStep1Android: string;
+  widgetStep2Android: string;
+  widgetStep3Android: string;
+  widgetStep4Android: string;
+  widgetWebWarning: string;
+  widgetWebWarningDesc: string;
+  widgetWebTip: string;
+  widgetFeatures: string;
+  widgetFeature1: string;
+  widgetFeature2: string;
+  widgetFeature3: string;
+  widgetFeature4: string;
+  widgetFeature5: string;
+  widgetSmall: string;
+  widgetMedium: string;
+  widgetLarge: string;
+  widgetNoData: string;
+  todayHabits: string;
+  lastBadge: string;
+  minutes: string;
+  done: string;
+  focusMinutes: string;
+
   // Dopamine Settings
   dopamineSettings: string;
   dopamineSettingsDesc: string;
