@@ -157,11 +157,11 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: Focu
         const currentMinutes = Math.floor(totalElapsed / 60000);
         setFocusElapsed(Math.floor(totalElapsed / 1000));
 
-        // Notify parent every minute
+        // Notify parent every minute (only current running minutes, not total)
         if (currentMinutes !== lastMinuteRef.current) {
           lastMinuteRef.current = currentMinutes;
           if (onMinuteUpdate) {
-            onMinuteUpdate(todayMinutes + currentMinutes);
+            onMinuteUpdate(currentMinutes);
           }
         }
       }
@@ -172,6 +172,7 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: Focu
         }
         endTimeRef.current = null;
         if (!isBreak) {
+          // Focus session completed
           const session: FocusSession = {
             id: generateId(),
             duration: focusMinutes,
@@ -182,14 +183,26 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: Focu
           };
           setPendingSession(session);
           setShowReflection(true);
+
+          // Switch to break mode
+          focusStartRef.current = null;
+          focusAccumulatedRef.current = 0;
+          setFocusElapsed(0);
+          setIsRunning(false);
+          setIsBreak(true);
+          setTimeLeft(breakDuration);
+          lastMinuteRef.current = 0;
+
+          // Reset current minutes counter
+          if (onMinuteUpdate) {
+            onMinuteUpdate(0);
+          }
+        } else {
+          // Break completed, switch back to focus mode
+          setIsRunning(false);
+          setIsBreak(false);
+          setTimeLeft(focusDuration);
         }
-        focusStartRef.current = null;
-        focusAccumulatedRef.current = 0;
-        setFocusElapsed(0);
-        setIsRunning(false);
-        const nextIsBreak = !isBreak;
-        setIsBreak(nextIsBreak);
-        setTimeLeft(nextIsBreak ? breakDuration : focusDuration);
         localStorage.removeItem(TIMER_STORAGE_KEY);
       }
 

@@ -1,14 +1,16 @@
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Leaf, Trophy, ListTodo } from 'lucide-react';
+import { Leaf, Trophy, ListTodo, Target, Clock } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface HeaderProps {
   userName?: string;
   onOpenChallenges?: () => void;
   onOpenTasks?: () => void;
+  onOpenQuests?: () => void;
+  onOpenTimeHelper?: () => void;
 }
 
-export function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks }: HeaderProps) {
+export function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks, onOpenQuests, onOpenTimeHelper }: HeaderProps) {
   const { t } = useLanguage();
 
   const getGreeting = () => {
@@ -42,6 +44,24 @@ export function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks }: H
           <span className="text-xl font-bold zen-text-gradient">{t.appName}</span>
         </div>
         <div className="flex items-center gap-2">
+          {onOpenTimeHelper && (
+            <button
+              onClick={onOpenTimeHelper}
+              className="p-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all zen-shadow-soft hover:zen-shadow"
+              aria-label="Open Time Helper"
+            >
+              <Clock className="w-5 h-5" />
+            </button>
+          )}
+          {onOpenQuests && (
+            <button
+              onClick={onOpenQuests}
+              className="p-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all zen-shadow-soft hover:zen-shadow"
+              aria-label="Open Quests"
+            >
+              <Target className="w-5 h-5" />
+            </button>
+          )}
           {onOpenTasks && (
             <button
               onClick={onOpenTasks}

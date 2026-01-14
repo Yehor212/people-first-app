@@ -165,11 +165,11 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
       {/* Main Content */}
       <div className="relative z-20 text-center px-6">
-        {/* Emergency Exit Button */}
+        {/* Close Button */}
         <button
-          onClick={handleEmergencyPause}
-          className="absolute top-4 right-4 p-3 bg-red-500/20 hover:bg-red-500/30 rounded-xl transition-all text-white"
-          aria-label="Emergency Pause"
+          onClick={onExit}
+          className="absolute top-4 right-4 p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all text-white"
+          aria-label="Close"
         >
           <X className="w-6 h-6" />
         </button>

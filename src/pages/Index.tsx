@@ -35,6 +35,8 @@ import { GoogleAuthScreen } from '@/components/GoogleAuthScreen';
 import { WeeklyReport } from '@/components/WeeklyReport';
 import { ChallengesPanel } from '@/components/ChallengesPanel';
 import { TasksPanel } from '@/components/TasksPanel';
+import { QuestsPanel } from '@/components/QuestsPanel';
+import { TimeHelper } from '@/components/TimeHelper';
 import { useGamification } from '@/hooks/useGamification';
 import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
@@ -57,6 +59,8 @@ export function Index() {
 
   // Challenges state
   const [showChallenges, setShowChallenges] = useState(false);
+  const [showQuests, setShowQuests] = useState(false);
+  const [showTimeHelper, setShowTimeHelper] = useState(false);
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
 
@@ -650,6 +654,8 @@ export function Index() {
             <InstallBanner />
             <Header
               userName={userName}
+              onOpenTimeHelper={() => setShowTimeHelper(true)}
+              onOpenQuests={() => setShowQuests(true)}
               onOpenChallenges={() => setShowChallenges(true)}
               onOpenTasks={() => setShowTasks(true)}
             />
@@ -750,6 +756,15 @@ export function Index() {
         />
       )}
 
+      {/* Quests Panel Modal */}
+      {showQuests && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+            <QuestsPanel onClose={() => setShowQuests(false)} />
+          </div>
+        </div>
+      )}
+
       {/* Tasks Panel Modal */}
       {showTasks && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
@@ -766,6 +781,11 @@ export function Index() {
             <TasksPanel onClose={() => setShowTasks(false)} />
           </div>
         </div>
+      )}
+
+      {/* Time Helper Modal */}
+      {showTimeHelper && (
+        <TimeHelper onClose={() => setShowTimeHelper(false)} />
       )}
     </div>
   );
