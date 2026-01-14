@@ -1,12 +1,13 @@
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Leaf } from 'lucide-react';
+import { Leaf, Trophy } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface HeaderProps {
   userName?: string;
+  onOpenChallenges?: () => void;
 }
 
-export function Header({ userName = 'Friend' }: HeaderProps) {
+export function Header({ userName = 'Friend', onOpenChallenges }: HeaderProps) {
   const { t } = useLanguage();
 
   const getGreeting = () => {
@@ -39,7 +40,18 @@ export function Header({ userName = 'Friend' }: HeaderProps) {
           </div>
           <span className="text-xl font-bold zen-text-gradient">{t.appName}</span>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          {onOpenChallenges && (
+            <button
+              onClick={onOpenChallenges}
+              className="p-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all zen-shadow-soft hover:zen-shadow"
+              aria-label="Open Challenges"
+            >
+              <Trophy className="w-5 h-5" />
+            </button>
+          )}
+          <ThemeToggle />
+        </div>
       </div>
       
       <div className="mt-6">

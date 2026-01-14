@@ -53,6 +53,11 @@ export function Index() {
   // Weekly report state
   const [showWeeklyReport, setShowWeeklyReport] = useState(false);
 
+  // Challenges state
+  const [showChallenges, setShowChallenges] = useState(false);
+  const [challenges, setChallenges] = useState(() => getChallenges());
+  const [badges, setBadges] = useState(() => getBadges());
+
   // Используем useIndexedDB для hasSelectedLanguage
   const [hasSelectedLanguage, setHasSelectedLanguage, isLoadingLangSelected] = useIndexedDB({
     table: db.settings,
@@ -585,8 +590,8 @@ export function Index() {
         {activeTab === 'home' && (
           <>
             <InstallBanner />
-            <Header userName={userName} />
-            
+            <Header userName={userName} onOpenChallenges={() => setShowChallenges(true)} />
+
             <div className="space-y-6">
               <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
               <StatsOverview
@@ -666,6 +671,20 @@ export function Index() {
           focusSessions={focusSessions}
           gratitudeEntries={gratitudeEntries}
           onClose={() => setShowWeeklyReport(false)}
+        />
+      )}
+
+      {/* Challenges Panel Modal */}
+      {showChallenges && (
+        <ChallengesPanel
+          activeChallenges={challenges}
+          badges={badges}
+          onStartChallenge={(challenge) => {
+            addChallenge(challenge);
+            setChallenges(getChallenges());
+            setBadges(getBadges());
+          }}
+          onClose={() => setShowChallenges(false)}
         />
       )}
     </div>
