@@ -38,6 +38,7 @@ import { TasksPanel } from '@/components/TasksPanel';
 import { QuestsPanel } from '@/components/QuestsPanel';
 import { TimeHelper } from '@/components/TimeHelper';
 import { useGamification } from '@/hooks/useGamification';
+import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
 
@@ -157,6 +158,30 @@ export function Index() {
 
   // Loading handling
   const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingOnboarding || isLoadingPrivacy || isLoadingAuthGate || isLoadingNotificationPermission;
+
+  // Widget synchronization
+  const currentStreak = useMemo(() => {
+    if (!habits.length) return 0;
+    const today = getToday();
+    const completed = habits.filter(h => h.completedDates?.includes(today) ?? false);
+    return completed.length === habits.length ? 1 : 0; // Simplified - real streak calculation would be more complex
+  }, [habits]);
+
+  const todayFocusMinutes = useMemo(() => {
+    const today = getToday();
+    return focusSessions
+      .filter(s => s.date.startsWith(today))
+      .reduce((sum, s) => sum + (s.minutes || 0), 0);
+  }, [focusSessions]);
+
+  const lastBadgeName = useMemo(() => {
+    const unlockedBadges = badges.filter(b => b.unlockedAt);
+    if (!unlockedBadges.length) return undefined;
+    const latest = unlockedBadges.sort((a, b) => (b.unlockedAt || 0) - (a.unlockedAt || 0))[0];
+    return latest.name;
+  }, [badges]);
+
+  useWidgetSync(currentStreak, habits, todayFocusMinutes, lastBadgeName);
 
   // Handlers
   const handleAddMood = (entry: MoodEntry) => {

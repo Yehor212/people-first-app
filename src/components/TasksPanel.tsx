@@ -56,6 +56,27 @@ export function TasksPanel({ onClose }: TasksPanelProps) {
         const newCompleted = !task.completed;
         if (newCompleted) {
           setConsecutiveCompletions(prev => prev + 1);
+          // Play success sound if available
+          try {
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            // Happy chime (C-E-G chord)
+            oscillator.frequency.value = 523.25; // C5
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.3);
+          } catch (e) {
+            // Audio not available
+          }
         } else {
           setConsecutiveCompletions(0);
         }
@@ -77,12 +98,12 @@ export function TasksPanel({ onClose }: TasksPanelProps) {
       <div
         key={task.id}
         className={cn(
-          'p-4 rounded-xl transition-all',
+          'p-4 rounded-xl transition-all duration-300 animate-fade-in',
           task.completed
-            ? 'bg-muted opacity-60'
+            ? 'bg-primary/5 opacity-70 scale-95'
             : isTopThree
-            ? 'zen-gradient-card zen-shadow-soft border-2 border-primary/30'
-            : 'bg-card border border-border hover:border-primary/30'
+            ? 'zen-gradient-card zen-shadow-soft border-2 border-primary/30 hover:zen-shadow'
+            : 'bg-card border border-border hover:border-primary/30 hover:zen-shadow-soft'
         )}
       >
         <div className="flex items-start gap-3">

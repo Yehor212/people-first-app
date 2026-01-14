@@ -1,0 +1,37 @@
+import { registerPlugin } from '@capacitor/core';
+
+export interface WidgetData {
+  streak: number;
+  habitsToday: number;
+  habitsTotalToday: number;
+  focusMinutes: number;
+  lastBadge?: string;
+  habits: Array<{
+    name: string;
+    completed: boolean;
+  }>;
+}
+
+export interface WidgetPlugin {
+  /**
+   * Update widget data
+   * @param data - Widget data to display
+   */
+  updateWidget(data: WidgetData): Promise<void>;
+
+  /**
+   * Get current widget data
+   */
+  getWidgetData(): Promise<WidgetData>;
+
+  /**
+   * Check if widgets are supported on this platform
+   */
+  isSupported(): Promise<{ supported: boolean }>;
+}
+
+const Widget = registerPlugin<WidgetPlugin>('Widget', {
+  web: () => import('./WidgetWeb').then(m => new m.WidgetWeb()),
+});
+
+export default Widget;
