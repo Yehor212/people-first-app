@@ -15,7 +15,8 @@
       "Bash(netlify deploy:*)",
       "Bash(npm run dev:*)",
       "Bash(supabase --version:*)",
-      "Bash(supabase link:*)"
+      "Bash(supabase link:*)",
+      "Bash(git status:*)"
     ]
   }
 }

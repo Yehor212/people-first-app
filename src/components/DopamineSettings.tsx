@@ -44,11 +44,13 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
     }
   }, []);
 
-  // Save settings to localStorage
+  // Save settings to localStorage and dispatch event
   const updateSettings = (newSettings: Partial<DopamineSettings>) => {
     const updated = { ...settings, ...newSettings };
     setSettings(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+    // Dispatch custom event for same-tab updates
+    window.dispatchEvent(new CustomEvent('dopamine-settings-change', { detail: updated }));
   };
 
   const handleIntensityChange = (intensity: DopamineSettings['intensity']) => {
@@ -369,25 +371,27 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
 
 // Hook to use dopamine settings in components
 export function useDopamineSettings(): DopamineSettings {
-  const [settings, setSettings] = useState<DopamineSettings>(DEFAULT_SETTINGS);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setSettings({ ...DEFAULT_SETTINGS, ...parsed });
-      } catch (error) {
-        console.error('Failed to parse dopamine settings:', error);
-      }
-    }
-
-    // Listen for storage changes
-    const handleStorageChange = () => {
+  const [settings, setSettings] = useState<DopamineSettings>(() => {
+    // Initialize from localStorage on first render
+    if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         try {
-          const parsed = JSON.parse(stored);
+          return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
+        } catch (error) {
+          console.error('Failed to parse dopamine settings:', error);
+        }
+      }
+    }
+    return DEFAULT_SETTINGS;
+  });
+
+  useEffect(() => {
+    // Listen for cross-tab storage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === STORAGE_KEY && e.newValue) {
+        try {
+          const parsed = JSON.parse(e.newValue);
           setSettings({ ...DEFAULT_SETTINGS, ...parsed });
         } catch (error) {
           console.error('Failed to parse dopamine settings:', error);
@@ -395,8 +399,18 @@ export function useDopamineSettings(): DopamineSettings {
       }
     };
 
+    // Listen for same-tab custom event
+    const handleCustomChange = (e: CustomEvent<DopamineSettings>) => {
+      setSettings(e.detail);
+    };
+
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('dopamine-settings-change', handleCustomChange as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('dopamine-settings-change', handleCustomChange as EventListener);
+    };
   }, []);
 
   return settings;

@@ -9,7 +9,7 @@ import { findTemplateIdByName, getHabitTemplateName } from '@/lib/habitTemplates
 import { normalizeHabit } from '@/lib/habits';
 import { supabase } from '@/lib/supabaseClient';
 import { syncReminderSettings } from '@/storage/reminderSync';
-import { syncWithCloud } from '@/storage/cloudSync';
+import { syncWithCloud, startAutoSync, triggerSync } from '@/storage/cloudSync';
 import { App } from '@capacitor/app';
 import { handleAuthCallback, isNativePlatform } from '@/lib/authRedirect';
 import { scheduleLocalReminders, scheduleHabitReminders } from '@/lib/localNotifications';
@@ -194,6 +194,7 @@ export function Index() {
       return [...filtered, entry];
     });
     awardXp('mood'); // +5 XP
+    triggerSync(); // Auto-sync to cloud
   };
 
   const handleToggleHabit = (habitId: string, date: string) => {
@@ -241,6 +242,7 @@ export function Index() {
           : [...habit.completedDates, date],
       };
     }));
+    triggerSync(); // Auto-sync to cloud
   };
 
   const handleAdjustHabit = (habitId: string, date: string, delta: number) => {
@@ -258,24 +260,29 @@ export function Index() {
         progressByDate,
       };
     }));
+    triggerSync(); // Auto-sync to cloud
   };
 
   const handleAddHabit = (habit: Habit) => {
     setHabits(prev => [...prev, habit]);
+    triggerSync(); // Auto-sync to cloud
   };
 
   const handleDeleteHabit = (habitId: string) => {
     setHabits(prev => prev.filter(h => h.id !== habitId));
+    triggerSync(); // Auto-sync to cloud
   };
 
   const handleCompleteFocusSession = (session: FocusSession) => {
     setFocusSessions(prev => [...prev, session]);
     awardXp('focus'); // +15 XP
+    triggerSync(); // Auto-sync to cloud
   };
 
   const handleAddGratitude = (entry: GratitudeEntry) => {
     setGratitudeEntries(prev => [...prev, entry]);
     awardXp('gratitude'); // +8 XP
+    triggerSync(); // Auto-sync to cloud
   };
 
   const handleResetData = () => {
@@ -508,6 +515,8 @@ export function Index() {
       lastSyncedUserIdRef.current = userId;
       try {
         await syncWithCloud('merge');
+        // Start auto-sync after successful initial sync
+        startAutoSync();
       } catch (error) {
         console.error('Cloud sync failed:', error);
       }
