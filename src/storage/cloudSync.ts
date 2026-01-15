@@ -35,15 +35,14 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge") => {
     throw fetchError;
   }
 
-  let syncStatus: "pulled" | "pushed" = "pushed";
+  let syncStatus: "pulled" | "pushed" | "merged" = "pushed";
 
   if (remote?.payload) {
     const remotePayload = remote.payload;
     const remoteData = remotePayload.data || {};
     const localData = localBackup.data || {};
 
-    // Compare actual data content, not backup creation timestamps
-    // Count total items in each backup
+    // Count items for logging
     const localItemCount =
       (localData.moods?.length || 0) +
       (localData.habits?.length || 0) +
@@ -56,19 +55,20 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge") => {
       (remoteData.focusSessions?.length || 0) +
       (remoteData.gratitudeEntries?.length || 0);
 
-    // If remote has more data, or local is empty but remote has data, pull from cloud
-    const shouldPull = (remoteItemCount > localItemCount) ||
-                       (localItemCount === 0 && remoteItemCount > 0);
+    console.log(`[CloudSync] Local items: ${localItemCount}, Remote items: ${remoteItemCount}`);
 
-    console.log(`[CloudSync] Local items: ${localItemCount}, Remote items: ${remoteItemCount}, Should pull: ${shouldPull}`);
-
-    if (shouldPull) {
+    // ALWAYS merge if remote has any data - this ensures cross-device sync works
+    // The importBackup with mode="merge" will use bulkPut which updates existing or adds new
+    if (remoteItemCount > 0) {
+      console.log('[CloudSync] Merging remote data into local...');
       await importBackup(remotePayload, mode);
-      syncStatus = "pulled";
+      syncStatus = localItemCount === 0 ? "pulled" : "merged";
       // Trigger React state refresh after importing cloud data
       triggerDataRefresh();
-      console.log('[CloudSync] Data refreshed after cloud pull');
+      console.log('[CloudSync] Data refreshed after cloud merge');
     }
+  } else {
+    console.log('[CloudSync] No remote data found, will push local data');
   }
 
   const mergedBackup = await exportBackup();

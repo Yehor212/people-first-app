@@ -68,29 +68,38 @@ export function MoodTracker({ entries, onAddEntry, isPrimaryCTA = false }: MoodT
 
   return (
     <div className={cn(
-      "rounded-2xl p-6 animate-fade-in transition-all",
+      "rounded-2xl p-6 animate-fade-in transition-all relative overflow-hidden",
       isPrimaryCTA
-        ? "bg-gradient-to-br from-primary/10 via-card to-accent/10 ring-2 ring-primary/30 zen-shadow-glow"
+        ? "bg-gradient-to-br from-primary/15 via-card to-accent/15 ring-2 ring-primary/40 shadow-lg shadow-primary/20"
         : "bg-card zen-shadow-card"
     )}>
-      {/* Primary CTA Header */}
+      {/* Animated background glow for CTA */}
       {isPrimaryCTA && (
-        <div className="flex items-center gap-2 mb-3">
-          <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/20 rounded-full">
-            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
-            <span className="text-xs font-semibold text-primary">{t.startHere || 'Start here'}</span>
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 animate-pulse" />
+      )}
+
+      {/* Primary CTA Header - More prominent */}
+      {isPrimaryCTA && (
+        <div className="relative flex items-center justify-center gap-2 mb-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-primary/25 rounded-full border border-primary/30 animate-glow-pulse">
+            <Sparkles className="w-5 h-5 text-primary" />
+            <span className="text-sm font-bold text-primary">{t.startHere || 'Start here'}</span>
+            <Sparkles className="w-5 h-5 text-primary" />
           </div>
         </div>
       )}
 
       <h3 className={cn(
-        "font-semibold text-foreground mb-4",
-        isPrimaryCTA ? "text-xl" : "text-lg"
+        "font-semibold text-foreground mb-4 relative",
+        isPrimaryCTA ? "text-xl text-center" : "text-lg"
       )}>
         {t.howAreYouFeeling}
       </h3>
 
-      <div className="flex justify-between mb-6">
+      <div className={cn(
+        "flex justify-between mb-6 relative",
+        isPrimaryCTA && "bg-card/50 rounded-2xl p-3 -mx-2"
+      )}>
         {moods.map((mood, index) => (
           <button
             key={mood.type}
@@ -98,16 +107,23 @@ export function MoodTracker({ entries, onAddEntry, isPrimaryCTA = false }: MoodT
             className={cn(
               "mood-btn flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
               selectedMood === mood.type
-                ? `${mood.color} bg-opacity-20 scale-110 zen-shadow-soft selected`
-                : "hover:bg-secondary",
-              isPrimaryCTA && !selectedMood && "animate-pulse-subtle"
+                ? `${mood.color} bg-opacity-20 scale-110 zen-shadow-soft selected ring-2 ring-primary/50`
+                : "hover:bg-secondary/80 hover:scale-105",
+              isPrimaryCTA && !selectedMood && "animate-bounce-gentle"
             )}
-            style={isPrimaryCTA && !selectedMood ? { animationDelay: `${index * 100}ms` } : undefined}
+            style={isPrimaryCTA && !selectedMood ? { animationDelay: `${index * 150}ms` } : undefined}
           >
-            <span className={cn("transition-transform", isPrimaryCTA ? "text-4xl" : "text-3xl")}>
+            <span className={cn(
+              "transition-transform drop-shadow-sm",
+              isPrimaryCTA ? "text-4xl" : "text-3xl",
+              isPrimaryCTA && !selectedMood && "hover:scale-125"
+            )}>
               {mood.emoji}
             </span>
-            <span className="text-xs text-muted-foreground">{mood.label}</span>
+            <span className={cn(
+              "text-xs font-medium",
+              selectedMood === mood.type ? "text-foreground" : "text-muted-foreground"
+            )}>{mood.label}</span>
           </button>
         ))}
       </div>

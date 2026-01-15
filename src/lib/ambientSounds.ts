@@ -76,42 +76,46 @@ export interface SoundVariant {
   isLocal: boolean;
 }
 
+// Get base path from Vite config (or use default for GitHub Pages)
+const BASE_PATH = import.meta.env.BASE_URL || '/people-first-app/';
+
 // Local sound files (shipped with app, work offline)
+// Names accurately describe the actual sound content
 const LOCAL_SOUNDS: Record<Exclude<AmbientSoundType, 'none'>, SoundVariant> = {
   'white-noise': {
     id: 'white-noise-local',
-    name: 'Белый шум',
-    url: '/sounds/mixkit-underwater-transmitter-hum-2135.wav',
+    name: 'Подводный гул',
+    url: `${BASE_PATH}sounds/mixkit-underwater-transmitter-hum-2135.wav`,
     isLocal: true,
   },
   'rain': {
     id: 'rain-local',
-    name: 'Дождь в джунглях',
-    url: '/sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.wav',
+    name: 'Гроза в джунглях',
+    url: `${BASE_PATH}sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.wav`,
     isLocal: true,
   },
   'ocean': {
     id: 'ocean-local',
-    name: 'Волны у пирса',
-    url: '/sounds/mixkit-small-waves-harbor-rocks-1208.wav',
+    name: 'Волны у скал',
+    url: `${BASE_PATH}sounds/mixkit-small-waves-harbor-rocks-1208.wav`,
     isLocal: true,
   },
   'forest': {
     id: 'forest-local',
-    name: 'Лесная река',
-    url: '/sounds/mixkit-wildlife-environment-in-a-river-2456.wav',
+    name: 'Природа у реки',
+    url: `${BASE_PATH}sounds/mixkit-wildlife-environment-in-a-river-2456.wav`,
     isLocal: true,
   },
   'coffee-shop': {
     id: 'coffee-local',
-    name: 'Кафе',
-    url: '/sounds/cafe-noise-32940.mp3',
+    name: 'Шум кафе',
+    url: `${BASE_PATH}sounds/cafe-noise-32940.mp3`,
     isLocal: true,
   },
   'fireplace': {
     id: 'fireplace-local',
-    name: 'Камин',
-    url: '/sounds/fireplace-fx-56636.mp3',
+    name: 'Треск камина',
+    url: `${BASE_PATH}sounds/fireplace-fx-56636.mp3`,
     isLocal: true,
   },
 };
@@ -203,7 +207,8 @@ export class AmbientSoundGenerator {
     } catch (error) {
       console.warn(`Failed to load sound ${soundUrl}, trying local fallback:`, error);
       // If online sound failed, try local
-      if (!soundUrl.startsWith('/sounds/')) {
+      const isLocalSound = soundUrl.includes('/sounds/') || soundUrl.includes('sounds/');
+      if (!isLocalSound) {
         try {
           await this.playAudioFile(LOCAL_SOUNDS[type].url);
           this.currentVariantId = LOCAL_SOUNDS[type].id;
@@ -211,6 +216,8 @@ export class AmbientSoundGenerator {
           console.error('All sound sources failed:', fallbackError);
           this.isPlaying = false;
         }
+      } else {
+        this.isPlaying = false;
       }
     }
   }
