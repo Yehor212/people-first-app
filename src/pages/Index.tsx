@@ -198,10 +198,24 @@ export function Index() {
   // Handlers
   const handleAddMood = (entry: MoodEntry) => {
     setMoods(prev => {
-      const filtered = prev.filter(e => e.date !== entry.date);
-      return [...filtered, entry];
+      // Add new entry without removing existing ones for the same day
+      // This allows multiple mood entries per day (morning/afternoon/evening)
+      return [...prev, entry];
     });
     awardXp('mood'); // +5 XP
+    triggerSync(); // Auto-sync to cloud
+  };
+
+  // Update existing mood entry (for same-day editing)
+  const handleUpdateMood = (entryId: string, newMood: MoodEntry['mood'], note?: string) => {
+    setMoods(prev => prev.map(entry => {
+      if (entry.id !== entryId) return entry;
+      return {
+        ...entry,
+        mood: newMood,
+        note: note ?? entry.note,
+      };
+    }));
     triggerSync(); // Auto-sync to cloud
   };
 
@@ -724,7 +738,7 @@ export function Index() {
 
                   {/* Primary CTA: Mood Tracker if not filled today */}
                   {needsPrimaryCTA && (
-                    <MoodTracker entries={moods} onAddEntry={handleAddMood} isPrimaryCTA={true} />
+                    <MoodTracker entries={moods} onAddEntry={handleAddMood} onUpdateEntry={handleUpdateMood} isPrimaryCTA={true} />
                   )}
 
                   {/* Stats Overview - compact when CTA is shown */}
@@ -738,7 +752,7 @@ export function Index() {
 
                   {/* Mood Tracker - normal style when already filled */}
                   {!needsPrimaryCTA && (
-                    <MoodTracker entries={moods} onAddEntry={handleAddMood} />
+                    <MoodTracker entries={moods} onAddEntry={handleAddMood} onUpdateEntry={handleUpdateMood} />
                   )}
 
                   <HabitTracker

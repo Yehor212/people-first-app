@@ -1,10 +1,11 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Habit, HabitType, HabitReminder, HabitFrequency } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { Plus, Check, X, Minus, Bell, Clock, ChevronRight, Trash2, MoreHorizontal, Settings2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { habitTemplates } from '@/lib/habitTemplates';
+import { HabitCompletion, AllHabitsComplete } from './Celebrations';
 
 const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿', '🚭', '🍷', '🇬🇧', '💪', '🧠'];
 const habitColors = [
@@ -44,6 +45,11 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
   const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null);
   const [swipedHabitId, setSwipedHabitId] = useState<string | null>(null);
   const touchStartX = useRef<number>(0);
+
+  // Celebration states
+  const [completedHabitName, setCompletedHabitName] = useState<string | null>(null);
+  const [showAllComplete, setShowAllComplete] = useState(false);
+  const [animatingHabitId, setAnimatingHabitId] = useState<string | null>(null);
 
   const today = getToday();
 
@@ -190,6 +196,38 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
 
     return 0;
   };
+
+  // Handle habit toggle with animations
+  const handleHabitToggle = useCallback((habit: Habit) => {
+    const wasCompleted = isCompletedToday(habit);
+
+    // Trigger the toggle
+    onToggleHabit(habit.id, today);
+
+    // If the habit is being completed (not uncompleted)
+    if (!wasCompleted) {
+      // Trigger pulse animation on the button
+      setAnimatingHabitId(habit.id);
+      setTimeout(() => setAnimatingHabitId(null), 600);
+
+      // Show completion toast
+      setCompletedHabitName(habit.name);
+      setTimeout(() => setCompletedHabitName(null), 2000);
+
+      // Check if all habits are now completed (after this toggle)
+      const otherHabitsCompleted = habits
+        .filter(h => h.id !== habit.id)
+        .every(h => isCompletedToday(h));
+
+      if (otherHabitsCompleted && habits.length > 1) {
+        // All habits will be complete after this one
+        setTimeout(() => {
+          setShowAllComplete(true);
+          setTimeout(() => setShowAllComplete(false), 4000);
+        }, 500);
+      }
+    }
+  }, [habits, onToggleHabit, today]);
 
   return (
     <div className="bg-card rounded-2xl p-6 zen-shadow-card animate-fade-in">
@@ -363,9 +401,22 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
       )}
 
       {habits.length === 0 ? (
-        <p className="text-center text-muted-foreground py-8">
-          {t.addFirstHabit}
-        </p>
+        <div className="text-center py-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/15 rounded-full border border-primary/30 animate-glow-pulse mb-4">
+            <span className="text-2xl">🎯</span>
+            <span className="text-sm font-bold text-primary">{t.startHere || 'Start here'}</span>
+          </div>
+          <p className="text-muted-foreground mb-4">
+            {t.addFirstHabit}
+          </p>
+          <button
+            onClick={() => setIsAdding(true)}
+            className="btn-press px-6 py-3 zen-gradient text-white font-bold rounded-xl hover:opacity-90 transition-all zen-shadow-soft"
+          >
+            <Plus className="w-5 h-5 inline-block mr-2" />
+            {t.addHabit}
+          </button>
+        </div>
       ) : (
         <div className="space-y-3">
           {habits.map((habit) => {
@@ -472,15 +523,20 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
                     </div>
                   ) : (
                     <button
-                      onClick={() => onToggleHabit(habit.id, today)}
+                      onClick={() => handleHabitToggle(habit)}
                       className={cn(
                         "btn-press w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all",
                         completed
                           ? `${habit.color} text-primary-foreground zen-shadow-soft scale-100`
-                          : "bg-background hover:scale-105 active:scale-95"
+                          : "bg-background hover:scale-105 active:scale-95",
+                        animatingHabitId === habit.id && "animate-success-pulse"
                       )}
                     >
-                      {completed ? <Check className="w-6 h-6" /> : habit.icon}
+                      {completed ? (
+                        <Check className={cn("w-6 h-6", animatingHabitId === habit.id && "animate-bounce-check")} />
+                      ) : (
+                        habit.icon
+                      )}
                     </button>
                   )}
                   <div className="flex-1 min-w-0">
@@ -515,6 +571,19 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
             );
           })}
         </div>
+      )}
+
+      {/* Completion Toast */}
+      {completedHabitName && (
+        <HabitCompletion
+          habitName={completedHabitName}
+          onClose={() => setCompletedHabitName(null)}
+        />
+      )}
+
+      {/* All Habits Complete Celebration */}
+      {showAllComplete && (
+        <AllHabitsComplete onClose={() => setShowAllComplete(false)} />
       )}
     </div>
   );

@@ -3,11 +3,13 @@ import { MoodType, MoodEntry } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Sparkles, Sun, Cloud, Moon, Plus, ChevronDown } from 'lucide-react';
+import { Sparkles, Sun, Cloud, Moon, Plus, ChevronDown, Edit3 } from 'lucide-react';
+import { MoodChangedToast, ConfirmDialog } from './Celebrations';
 
 interface MoodTrackerProps {
   entries: MoodEntry[];
   onAddEntry: (entry: MoodEntry) => void;
+  onUpdateEntry?: (entryId: string, mood: MoodType, note?: string) => void;
   isPrimaryCTA?: boolean;
 }
 
@@ -29,12 +31,23 @@ function getTimeOfDayFromTimestamp(timestamp: number): TimeOfDay {
   return 'evening';
 }
 
-export function MoodTracker({ entries, onAddEntry, isPrimaryCTA = false }: MoodTrackerProps) {
+export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA = false }: MoodTrackerProps) {
   const { t } = useLanguage();
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [note, setNote] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [showAddNew, setShowAddNew] = useState(false);
+
+  // Edit mode state
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const [editingMood, setEditingMood] = useState<MoodType | null>(null);
+  const [showMoodChangedToast, setShowMoodChangedToast] = useState(false);
+  const [changedMoodEmoji, setChangedMoodEmoji] = useState<string>('');
+  const [confirmChange, setConfirmChange] = useState<{
+    entryId: string;
+    newMood: MoodType;
+    oldMood: MoodType;
+  } | null>(null);
 
   const moods: { type: MoodType; emoji: string; label: string; color: string }[] = [
     { type: 'great', emoji: '😄', label: t.great, color: 'bg-mood-great' },
@@ -96,6 +109,56 @@ export function MoodTracker({ entries, onAddEntry, isPrimaryCTA = false }: MoodT
     setSelectedMood(null);
     setNote('');
     setShowAddNew(false);
+  };
+
+  // Handle starting edit mode for an entry
+  const handleStartEdit = (entry: MoodEntry) => {
+    setEditingEntryId(entry.id);
+    setEditingMood(entry.mood);
+  };
+
+  // Handle selecting a new mood during edit
+  const handleEditMoodSelect = (entry: MoodEntry, newMood: MoodType) => {
+    if (newMood === entry.mood) {
+      // Same mood selected, cancel edit
+      setEditingEntryId(null);
+      setEditingMood(null);
+      return;
+    }
+    // Show confirmation dialog (misclick protection)
+    setConfirmChange({
+      entryId: entry.id,
+      newMood,
+      oldMood: entry.mood,
+    });
+  };
+
+  // Confirm and apply mood change
+  const confirmMoodChange = () => {
+    if (!confirmChange || !onUpdateEntry) return;
+
+    const { entryId, newMood } = confirmChange;
+    const entry = todayEntries.find(e => e.id === entryId);
+
+    onUpdateEntry(entryId, newMood, entry?.note);
+
+    // Show success toast
+    const newMoodData = moods.find(m => m.type === newMood);
+    setChangedMoodEmoji(newMoodData?.emoji || '');
+    setShowMoodChangedToast(true);
+    setTimeout(() => setShowMoodChangedToast(false), 2500);
+
+    // Reset state
+    setConfirmChange(null);
+    setEditingEntryId(null);
+    setEditingMood(null);
+  };
+
+  // Cancel mood change
+  const cancelMoodChange = () => {
+    setConfirmChange(null);
+    setEditingEntryId(null);
+    setEditingMood(null);
   };
 
   // Compact view showing today's mood entries
@@ -163,25 +226,80 @@ export function MoodTracker({ entries, onAddEntry, isPrimaryCTA = false }: MoodT
               const tod = getTimeOfDayFromTimestamp(entry.timestamp);
               const TimeIcon = timeIcons[tod];
               const time = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const isEditing = editingEntryId === entry.id;
 
               return (
-                <div key={entry.id} className="flex items-center gap-3 p-2 bg-secondary/50 rounded-xl">
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex items-center justify-center text-xl",
-                    entryMood?.color, "bg-opacity-20"
-                  )}>
-                    {entryMood?.emoji}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <TimeIcon className="w-3.5 h-3.5 text-muted-foreground" />
-                      <span className="text-sm font-medium text-foreground">{timeLabels[tod]}</span>
-                      <span className="text-xs text-muted-foreground">{time}</span>
+                <div key={entry.id} className={cn(
+                  "p-2 bg-secondary/50 rounded-xl transition-all",
+                  isEditing && "ring-2 ring-primary/50 bg-secondary"
+                )}>
+                  {/* Normal view */}
+                  {!isEditing ? (
+                    <div className="flex items-center gap-3">
+                      <div className={cn(
+                        "w-10 h-10 rounded-full flex items-center justify-center text-xl",
+                        entryMood?.color, "bg-opacity-20"
+                      )}>
+                        {entryMood?.emoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <TimeIcon className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span className="text-sm font-medium text-foreground">{timeLabels[tod]}</span>
+                          <span className="text-xs text-muted-foreground">{time}</span>
+                        </div>
+                        {entry.note && (
+                          <p className="text-xs text-muted-foreground truncate">{entry.note}</p>
+                        )}
+                      </div>
+                      {/* Edit button - only for today's entries */}
+                      {onUpdateEntry && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartEdit(entry);
+                          }}
+                          className="p-2 hover:bg-primary/10 rounded-lg transition-colors group"
+                          title={t.editMood || 'Edit mood'}
+                        >
+                          <Edit3 className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </button>
+                      )}
                     </div>
-                    {entry.note && (
-                      <p className="text-xs text-muted-foreground truncate">{entry.note}</p>
-                    )}
-                  </div>
+                  ) : (
+                    /* Edit mode view */
+                    <div className="animate-fade-in">
+                      <div className="flex items-center gap-2 mb-3">
+                        <TimeIcon className="w-3.5 h-3.5 text-primary" />
+                        <span className="text-sm font-medium text-primary">{t.changeMood || 'Change mood'}</span>
+                        <button
+                          onClick={() => {
+                            setEditingEntryId(null);
+                            setEditingMood(null);
+                          }}
+                          className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          {t.cancel || 'Cancel'}
+                        </button>
+                      </div>
+                      <div className="flex justify-between gap-1">
+                        {moods.map((mood) => (
+                          <button
+                            key={mood.type}
+                            onClick={() => handleEditMoodSelect(entry, mood.type)}
+                            className={cn(
+                              "flex-1 p-2 rounded-lg transition-all",
+                              editingMood === mood.type || entry.mood === mood.type
+                                ? `${mood.color} bg-opacity-30 scale-105`
+                                : "hover:bg-secondary hover:scale-105"
+                            )}
+                          >
+                            <span className="text-xl">{mood.emoji}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -195,19 +313,33 @@ export function MoodTracker({ entries, onAddEntry, isPrimaryCTA = false }: MoodT
             const hasEntry = !!entryByTime[tod];
             const isCurrent = tod === currentTimeOfDay;
             const entryMood = hasEntry ? moods.find(m => m.type === entryByTime[tod]?.mood) : null;
+            const entry = entryByTime[tod];
+            const canEdit = hasEntry && onUpdateEntry;
 
             return (
-              <div
+              <button
                 key={tod}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (canEdit && entry) {
+                    handleStartEdit(entry);
+                    setIsExpanded(true); // Expand to show edit UI
+                  } else if (!hasEntry && isCurrent) {
+                    setShowAddNew(true);
+                  }
+                }}
+                disabled={!hasEntry && !isCurrent}
                 className={cn(
-                  "flex flex-col items-center gap-1",
-                  !hasEntry && !isCurrent && "opacity-40"
+                  "flex flex-col items-center gap-1 transition-all",
+                  !hasEntry && !isCurrent && "opacity-40",
+                  (canEdit || (!hasEntry && isCurrent)) && "hover:scale-110 cursor-pointer"
                 )}
               >
                 <div className={cn(
-                  "w-8 h-8 rounded-full flex items-center justify-center",
+                  "w-8 h-8 rounded-full flex items-center justify-center transition-all",
                   hasEntry ? `${entryMood?.color} bg-opacity-20` : "bg-secondary",
-                  isCurrent && !hasEntry && "ring-2 ring-primary/30 ring-offset-1"
+                  isCurrent && !hasEntry && "ring-2 ring-primary/30 ring-offset-1",
+                  canEdit && "hover:ring-2 hover:ring-primary/50"
                 )}>
                   {hasEntry ? (
                     <span className="text-lg">{entryMood?.emoji}</span>
@@ -221,10 +353,30 @@ export function MoodTracker({ entries, onAddEntry, isPrimaryCTA = false }: MoodT
                 )}>
                   {timeLabels[tod]}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
+
+        {/* Confirmation Dialog */}
+        {confirmChange && (
+          <ConfirmDialog
+            title={t.changeMoodConfirmTitle || 'Change mood?'}
+            message={t.changeMoodConfirmMessage || 'Are you sure you want to change your mood?'}
+            confirmText={t.confirm || 'Change'}
+            cancelText={t.cancel || 'Cancel'}
+            onConfirm={confirmMoodChange}
+            onCancel={cancelMoodChange}
+          />
+        )}
+
+        {/* Mood Changed Toast */}
+        {showMoodChangedToast && (
+          <MoodChangedToast
+            emoji={changedMoodEmoji}
+            message={t.moodChanged || 'Mood updated!'}
+          />
+        )}
       </div>
     );
   }

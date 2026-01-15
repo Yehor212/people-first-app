@@ -344,6 +344,122 @@
   animation: bounce-gentle 1.5s ease-in-out infinite;
 }
 
+/* Celebration Animations */
+@keyframes bounce-fire {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-20px) scale(1.1);
+  }
+}
+
+@keyframes bounce-fire-delayed {
+  0%, 100% {
+    transform: translateY(0) scale(0.8);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-15px) scale(0.9);
+    opacity: 1;
+  }
+}
+
+@keyframes sparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1) rotate(180deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) rotate(360deg);
+  }
+}
+
+@keyframes confetti {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+@keyframes bounce-check {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes checkmark-draw {
+  0% {
+    stroke-dashoffset: 100;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes success-pulse {
+  0% {
+    box-shadow: 0 0 0 0 hsl(var(--mood-good) / 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 15px hsl(var(--mood-good) / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--mood-good) / 0);
+  }
+}
+
+.animate-bounce-fire {
+  animation: bounce-fire 0.8s ease-in-out infinite;
+}
+
+.animate-bounce-fire-delayed {
+  animation: bounce-fire-delayed 0.8s ease-in-out infinite;
+  animation-delay: 0.2s;
+}
+
+.animate-bounce-fire-delayed-2 {
+  animation: bounce-fire-delayed 0.8s ease-in-out infinite;
+  animation-delay: 0.4s;
+}
+
+.animate-sparkle {
+  animation: sparkle 1.5s ease-in-out infinite;
+}
+
+.animate-confetti {
+  animation: confetti 3s linear forwards;
+}
+
+.animate-bounce-check {
+  animation: bounce-check 0.4s ease-out forwards;
+}
+
+.animate-checkmark {
+  animation: checkmark-draw 0.3s ease-out forwards;
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+}
+
+.animate-success-pulse {
+  animation: success-pulse 0.6s ease-out;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

@@ -57,7 +57,13 @@ export interface Translations {
   moodFocusWithout: string;
   moodHabitCorrelations: string;
   moodNoData: string;
-  
+  editMood: string;
+  changeMood: string;
+  changeMoodConfirmTitle: string;
+  changeMoodConfirmMessage: string;
+  moodChanged: string;
+  confirm: string;
+
   // Habits
   habits: string;
   habitName: string;
@@ -612,6 +618,12 @@ export const translations: Record<Language, Translations> = {
     moodFocusWithout: 'Без фокуса',
     moodHabitCorrelations: 'Привычки и настроение',
     moodNoData: 'Недостаточно данных',
+    editMood: 'Изменить настроение',
+    changeMood: 'Изменить настроение',
+    changeMoodConfirmTitle: 'Изменить настроение?',
+    changeMoodConfirmMessage: 'Вы уверены, что хотите изменить своё настроение?',
+    moodChanged: 'Настроение обновлено!',
+    confirm: 'Изменить',
     habits: 'Привычки',
     habitName: 'Название привычки...',
     icon: 'Иконка',
@@ -1121,6 +1133,12 @@ export const translations: Record<Language, Translations> = {
     moodFocusWithout: 'Without focus',
     moodHabitCorrelations: 'Habits vs mood',
     moodNoData: 'Not enough data',
+    editMood: 'Edit mood',
+    changeMood: 'Change mood',
+    changeMoodConfirmTitle: 'Change mood?',
+    changeMoodConfirmMessage: 'Are you sure you want to change your mood?',
+    moodChanged: 'Mood updated!',
+    confirm: 'Change',
     habits: 'Habits',
     habitName: 'Habit name...',
     icon: 'Icon',
@@ -1630,6 +1648,12 @@ export const translations: Record<Language, Translations> = {
     moodFocusWithout: 'Без фокусу',
     moodHabitCorrelations: 'Звички і настрій',
     moodNoData: 'Недостатньо даних',
+    editMood: 'Змінити настрій',
+    changeMood: 'Змінити настрій',
+    changeMoodConfirmTitle: 'Змінити настрій?',
+    changeMoodConfirmMessage: 'Ви впевнені, що хочете змінити свій настрій?',
+    moodChanged: 'Настрій оновлено!',
+    confirm: 'Змінити',
     habits: 'Звички',
     habitName: 'Назва звички...',
     icon: 'Іконка',
@@ -2139,6 +2163,12 @@ export const translations: Record<Language, Translations> = {
     moodFocusWithout: 'Sin enfoque',
     moodHabitCorrelations: 'Hábitos y ánimo',
     moodNoData: 'No hay suficientes datos',
+    editMood: 'Editar estado de ánimo',
+    changeMood: 'Cambiar estado de ánimo',
+    changeMoodConfirmTitle: '¿Cambiar estado de ánimo?',
+    changeMoodConfirmMessage: '¿Estás seguro de que quieres cambiar tu estado de ánimo?',
+    moodChanged: '¡Estado de ánimo actualizado!',
+    confirm: 'Cambiar',
     habits: 'Hábitos',
     habitName: 'Nombre del hábito...',
     icon: 'Icono',
@@ -2649,6 +2679,12 @@ export const translations: Record<Language, Translations> = {
     moodFocusWithout: 'Ohne Fokus',
     moodHabitCorrelations: 'Gewohnheiten vs Stimmung',
     moodNoData: 'Nicht genug Daten',
+    editMood: 'Stimmung bearbeiten',
+    changeMood: 'Stimmung ändern',
+    changeMoodConfirmTitle: 'Stimmung ändern?',
+    changeMoodConfirmMessage: 'Bist du sicher, dass du deine Stimmung ändern möchtest?',
+    moodChanged: 'Stimmung aktualisiert!',
+    confirm: 'Ändern',
     habits: 'Gewohnheiten',
     habitName: 'Name der Gewohnheit...',
     icon: 'Symbol',
@@ -3159,6 +3195,12 @@ export const translations: Record<Language, Translations> = {
     moodFocusWithout: 'Sans focus',
     moodHabitCorrelations: 'Habitudes et humeur',
     moodNoData: 'Pas assez de données',
+    editMood: 'Modifier l\'humeur',
+    changeMood: 'Changer l\'humeur',
+    changeMoodConfirmTitle: 'Changer l\'humeur ?',
+    changeMoodConfirmMessage: 'Êtes-vous sûr de vouloir changer votre humeur ?',
+    moodChanged: 'Humeur mise à jour !',
+    confirm: 'Changer',
     habits: 'Habitudes',
     habitName: 'Nom de l\'habitude...',
     icon: 'Icône',
