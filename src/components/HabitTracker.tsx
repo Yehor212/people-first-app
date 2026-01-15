@@ -1,15 +1,15 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Habit, HabitType, HabitReminder, HabitFrequency } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { Plus, Check, X, Minus, Bell, Clock } from 'lucide-react';
+import { Plus, Check, X, Minus, Bell, Clock, ChevronRight, Trash2, MoreHorizontal, Settings2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { habitTemplates } from '@/lib/habitTemplates';
 
-const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿'];
+const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿', '🚭', '🍷', '🇬🇧', '💪', '🧠'];
 const habitColors = [
   'bg-primary',
-  'bg-accent', 
+  'bg-accent',
   'bg-mood-good',
   'bg-mood-okay',
   'bg-mood-great',
@@ -26,13 +26,13 @@ interface HabitTrackerProps {
 export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit, onDeleteHabit }: HabitTrackerProps) {
   const { t, language } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
+  const [showCustomForm, setShowCustomForm] = useState(false);
   const [newHabitName, setNewHabitName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState(habitIcons[0]);
   const [selectedColor, setSelectedColor] = useState(habitColors[0]);
   const [selectedType, setSelectedType] = useState<HabitType>('daily');
   const [dailyTarget, setDailyTarget] = useState(1);
   const [reminders, setReminders] = useState<HabitReminder[]>([]);
-  const [showReminderConfig, setShowReminderConfig] = useState(false);
 
   // New state for frequency and duration
   const [frequency, setFrequency] = useState<HabitFrequency>('daily');
@@ -40,7 +40,55 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
   const [requiresDuration, setRequiresDuration] = useState(false);
   const [targetDuration, setTargetDuration] = useState(15);
 
+  // Habit item interaction state
+  const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null);
+  const [swipedHabitId, setSwipedHabitId] = useState<string | null>(null);
+  const touchStartX = useRef<number>(0);
+
   const today = getToday();
+
+  // Quick add from template
+  const handleQuickAdd = (templateId: string) => {
+    const template = habitTemplates.find(t => t.id === templateId);
+    if (!template) return;
+
+    const habit: Habit = {
+      id: generateId(),
+      name: template.names[language] || template.names.en,
+      icon: template.icon,
+      color: template.color,
+      completedDates: [],
+      createdAt: Date.now(),
+      type: template.type,
+      frequency: 'daily',
+      ...(template.type === 'multiple' && { dailyTarget: template.dailyTarget || 1, completionsByDate: {} }),
+      ...(template.type === 'continuous' && { startDate: today, failedDates: [] }),
+    };
+
+    onAddHabit(habit);
+    setIsAdding(false);
+  };
+
+  // Touch handlers for swipe-to-delete
+  const handleTouchStart = (e: React.TouchEvent, habitId: string) => {
+    touchStartX.current = e.touches[0].clientX;
+    if (swipedHabitId && swipedHabitId !== habitId) {
+      setSwipedHabitId(null);
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent, habitId: string) => {
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX.current - touchEndX;
+
+    if (diff > 80) {
+      // Swiped left - show delete
+      setSwipedHabitId(habitId);
+    } else if (diff < -80) {
+      // Swiped right - hide delete
+      setSwipedHabitId(null);
+    }
+  };
 
   const handleAddReminder = () => {
     setReminders([...reminders, {
@@ -89,12 +137,12 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
     setSelectedType('daily');
     setDailyTarget(1);
     setReminders([]);
-    setShowReminderConfig(false);
     setFrequency('daily');
     setCustomDays([1, 2, 3, 4, 5]);
     setRequiresDuration(false);
     setTargetDuration(15);
     setIsAdding(false);
+    setShowCustomForm(false);
   };
 
   const isCompletedToday = (habit: Habit) => {
@@ -158,16 +206,61 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
         </button>
       </div>
 
-      {isAdding && (
+      {isAdding && !showCustomForm && (
         <div className="mb-4 p-4 bg-secondary rounded-xl animate-scale-in">
+          {/* Quick-add templates */}
+          <p className="text-sm font-medium text-foreground mb-3">{t.quickAdd || 'Quick Add'}</p>
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {habitTemplates
+              .filter(template => !habits.some(h => h.name === (template.names[language] || template.names.en)))
+              .slice(0, 6)
+              .map((template) => (
+                <button
+                  key={template.id}
+                  onClick={() => handleQuickAdd(template.id)}
+                  className="btn-press flex items-center gap-2 p-3 bg-background rounded-xl hover:bg-muted transition-all text-left"
+                >
+                  <span className="text-xl">{template.icon}</span>
+                  <span className="text-sm font-medium text-foreground truncate">
+                    {template.names[language] || template.names.en}
+                  </span>
+                </button>
+              ))}
+          </div>
+
+          {/* Custom habit option */}
+          <button
+            onClick={() => setShowCustomForm(true)}
+            className="btn-press w-full flex items-center justify-between p-3 bg-background rounded-xl hover:bg-muted transition-all"
+          >
+            <div className="flex items-center gap-2">
+              <Settings2 className="w-5 h-5 text-primary" />
+              <span className="text-sm font-medium text-foreground">{t.createCustomHabit || 'Create custom habit'}</span>
+            </div>
+            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+          </button>
+        </div>
+      )}
+
+      {isAdding && showCustomForm && (
+        <div className="mb-4 p-4 bg-secondary rounded-xl animate-scale-in">
+          {/* Back button */}
+          <button
+            onClick={() => setShowCustomForm(false)}
+            className="text-sm text-muted-foreground hover:text-foreground mb-3 flex items-center gap-1"
+          >
+            ← {t.back || 'Back'}
+          </button>
+
           <input
             type="text"
             value={newHabitName}
             onChange={(e) => setNewHabitName(e.target.value)}
             placeholder={t.habitName}
             className="w-full p-3 bg-background rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 mb-3"
+            autoFocus
           />
-          
+
           <div className="mb-3">
             <p className="text-sm text-muted-foreground mb-2">{t.icon}:</p>
             <div className="flex gap-2 flex-wrap">
@@ -216,15 +309,6 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
                 {t.habitTypeDaily}
               </button>
               <button
-                onClick={() => setSelectedType('scheduled')}
-                className={cn(
-                  "btn-press p-2 rounded-lg text-sm transition-all",
-                  selectedType === 'scheduled' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
-                )}
-              >
-                {t.habitTypeScheduled}
-              </button>
-              <button
                 onClick={() => setSelectedType('multiple')}
                 className={cn(
                   "btn-press p-2 rounded-lg text-sm transition-all",
@@ -242,111 +326,16 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
               >
                 {t.habitTypeContinuous}
               </button>
-            </div>
-          </div>
-
-          {/* Frequency Selection */}
-          <div className="mb-4">
-            <p className="text-sm text-muted-foreground mb-2">Frequency:</p>
-            <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => setFrequency('once')}
+                onClick={() => setSelectedType('reduce')}
                 className={cn(
                   "btn-press p-2 rounded-lg text-sm transition-all",
-                  frequency === 'once' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                  selectedType === 'reduce' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
                 )}
               >
-                One-time
-              </button>
-              <button
-                onClick={() => setFrequency('daily')}
-                className={cn(
-                  "btn-press p-2 rounded-lg text-sm transition-all",
-                  frequency === 'daily' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
-                )}
-              >
-                Daily
-              </button>
-              <button
-                onClick={() => setFrequency('weekly')}
-                className={cn(
-                  "btn-press p-2 rounded-lg text-sm transition-all",
-                  frequency === 'weekly' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
-                )}
-              >
-                Weekly
-              </button>
-              <button
-                onClick={() => setFrequency('custom')}
-                className={cn(
-                  "btn-press p-2 rounded-lg text-sm transition-all",
-                  frequency === 'custom' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
-                )}
-              >
-                Custom
+                {t.habitTypeReduce || 'Reduce'}
               </button>
             </div>
-          </div>
-
-          {/* Custom Days Selection */}
-          {frequency === 'custom' && (
-            <div className="mb-4">
-              <p className="text-sm text-muted-foreground mb-2">Select Days:</p>
-              <div className="flex flex-wrap gap-2">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => {
-                      if (customDays.includes(idx)) {
-                        setCustomDays(customDays.filter(d => d !== idx));
-                      } else {
-                        setCustomDays([...customDays, idx].sort());
-                      }
-                    }}
-                    className={cn(
-                      "btn-press px-3 py-1 rounded-lg text-sm transition-all",
-                      customDays.includes(idx)
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-background hover:bg-muted"
-                    )}
-                  >
-                    {day}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Duration Settings */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-muted-foreground">Requires Duration?</p>
-              <button
-                onClick={() => setRequiresDuration(!requiresDuration)}
-                className={cn(
-                  "btn-press px-3 py-1 rounded-lg text-sm transition-all flex items-center gap-2",
-                  requiresDuration ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
-                )}
-              >
-                <Clock className="w-4 h-4" />
-                {requiresDuration ? 'Yes' : 'No'}
-              </button>
-            </div>
-            {requiresDuration && (
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">
-                  Target Duration (minutes):
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="480"
-                  value={targetDuration}
-                  onChange={(e) => setTargetDuration(parseInt(e.target.value) || 15)}
-                  className="w-full p-2 bg-background rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-              </div>
-            )}
           </div>
 
           {(selectedType === 'multiple' || selectedType === 'reduce') && (
@@ -363,45 +352,10 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
             </div>
           )}
 
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm text-muted-foreground">{t.habitReminders}:</p>
-              <button
-                onClick={handleAddReminder}
-                className="btn-press p-1 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-            {reminders.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">No reminders yet</p>
-            ) : (
-              <div className="space-y-2">
-                {reminders.map((reminder, idx) => (
-                  <div key={idx} className="flex items-center gap-2 p-2 bg-background rounded-lg">
-                    <Bell className="w-4 h-4 text-muted-foreground" />
-                    <input
-                      type="time"
-                      value={reminder.time}
-                      onChange={(e) => handleReminderChange(idx, 'time', e.target.value)}
-                      className="flex-1 p-1 bg-transparent text-sm text-foreground focus:outline-none"
-                    />
-                    <button
-                      onClick={() => handleRemoveReminder(idx)}
-                      className="p-1 text-destructive hover:bg-destructive/10 rounded transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           <button
             onClick={handleAddHabit}
             disabled={!newHabitName.trim()}
-            className="btn-press w-full py-2 zen-gradient text-primary-foreground font-medium rounded-lg disabled:opacity-50 transition-opacity"
+            className="btn-press w-full py-3 zen-gradient text-primary-foreground font-medium rounded-xl disabled:opacity-50 transition-opacity"
           >
             {t.addHabit}
           </button>
@@ -418,101 +372,145 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
             const completed = isCompletedToday(habit);
             const habitType = habit.type || 'daily';
             const progress = getProgress(habit);
+            const isSwiped = swipedHabitId === habit.id;
 
             return (
               <div
                 key={habit.id}
-                className="flex items-center gap-3 p-3 bg-secondary rounded-xl group"
+                className="relative overflow-hidden rounded-xl"
+                onTouchStart={(e) => handleTouchStart(e, habit.id)}
+                onTouchEnd={(e) => handleTouchEnd(e, habit.id)}
               >
-                {habitType === 'reduce' ? (
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onAdjustHabit?.(habit.id, today, -1)}
-                      className="btn-press w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors"
-                    >
-                      <Minus className="w-4 h-4" />
-                    </button>
-                    <span className={cn(
-                      "w-8 text-center font-bold",
-                      progress === 0 ? "text-mood-good" : "text-foreground"
-                    )}>
-                      {progress}
-                    </span>
-                    <button
-                      onClick={() => onAdjustHabit?.(habit.id, today, 1)}
-                      className="btn-press w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
-                    >
-                      <Plus className="w-4 h-4" />
-                    </button>
-                  </div>
-                ) : habitType === 'multiple' ? (
-                  <div className="flex items-center gap-2">
+                {/* Delete action (revealed on swipe) */}
+                <div
+                  className={cn(
+                    "absolute right-0 top-0 bottom-0 flex items-center justify-center bg-destructive text-white transition-all",
+                    isSwiped ? "w-20" : "w-0"
+                  )}
+                >
+                  <button
+                    onClick={() => {
+                      onDeleteHabit(habit.id);
+                      setSwipedHabitId(null);
+                    }}
+                    className="p-3"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                </div>
+
+                {/* Main habit card */}
+                <div
+                  className={cn(
+                    "flex items-center gap-3 p-3 bg-secondary transition-transform",
+                    isSwiped && "-translate-x-20"
+                  )}
+                >
+                  {habitType === 'reduce' ? (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onAdjustHabit?.(habit.id, today, -1)}
+                        className="btn-press w-9 h-9 rounded-xl bg-mood-good/20 flex items-center justify-center text-mood-good hover:bg-mood-good/30 transition-colors"
+                      >
+                        <Minus className="w-4 h-4" />
+                      </button>
+                      <div className={cn(
+                        "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg",
+                        progress === 0 ? "bg-mood-good/20 text-mood-good" : "bg-background text-foreground"
+                      )}>
+                        {progress}
+                      </div>
+                      <button
+                        onClick={() => onAdjustHabit?.(habit.id, today, 1)}
+                        className="btn-press w-9 h-9 rounded-xl bg-background flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ) : habitType === 'multiple' ? (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => onToggleHabit(habit.id, today)}
+                        className={cn(
+                          "btn-press w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all relative",
+                          completed
+                            ? `${habit.color} text-primary-foreground zen-shadow-soft`
+                            : "bg-background hover:scale-105"
+                        )}
+                      >
+                        {completed ? <Check className="w-6 h-6" /> : habit.icon}
+                      </button>
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: habit.dailyTarget ?? 1 }).map((_, i) => (
+                            <div
+                              key={i}
+                              className={cn(
+                                "w-2 h-2 rounded-full transition-all",
+                                i < progress ? habit.color : "bg-muted"
+                              )}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-muted-foreground mt-1">
+                          {progress}/{habit.dailyTarget ?? 1}
+                        </span>
+                      </div>
+                    </div>
+                  ) : habitType === 'continuous' ? (
+                    <div className="flex items-center gap-2">
+                      <div className={cn(
+                        "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
+                        `${habit.color} text-primary-foreground zen-shadow-soft`
+                      )}>
+                        {habit.icon}
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-lg font-bold text-mood-good">{progress}</span>
+                        <span className="text-xs text-muted-foreground">{t.days}</span>
+                      </div>
+                    </div>
+                  ) : (
                     <button
                       onClick={() => onToggleHabit(habit.id, today)}
                       className={cn(
-                        "btn-press w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all",
+                        "btn-press w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all",
                         completed
-                          ? `${habit.color} text-primary-foreground zen-shadow-soft`
-                          : "bg-background hover:opacity-80"
+                          ? `${habit.color} text-primary-foreground zen-shadow-soft scale-100`
+                          : "bg-background hover:scale-105 active:scale-95"
                       )}
                     >
-                      {habit.icon}
+                      {completed ? <Check className="w-6 h-6" /> : habit.icon}
                     </button>
-                    <span className="text-sm font-medium">
-                      {progress}/{habit.dailyTarget ?? 1}
-                    </span>
-                  </div>
-                ) : habitType === 'continuous' ? (
-                  <div className="flex flex-col items-center">
-                    <div className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
-                      `${habit.color} text-primary-foreground zen-shadow-soft`
-                    )}>
-                      {habit.icon}
-                    </div>
-                    <span className="text-xs font-bold text-mood-good mt-1">{progress}d</span>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => onToggleHabit(habit.id, today)}
-                    className={cn(
-                      "btn-press w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all",
-                      completed
-                        ? `${habit.color} text-primary-foreground zen-shadow-soft`
-                        : "bg-background hover:opacity-80"
-                    )}
-                  >
-                    {completed ? <Check className="w-6 h-6" /> : habit.icon}
-                  </button>
-                )}
-                <div className="flex-1">
-                  <p className={cn(
-                    "font-medium transition-all",
-                    completed && habitType !== 'continuous' ? "text-muted-foreground line-through" : "text-foreground"
-                  )}>
-                    {habit.name}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {habitType === 'continuous'
-                      ? `${progress} ${t.days} streak`
-                      : `${t.completedTimes} ${habit.completedDates.length} ${t.completedTimes2}`
-                    }
-                  </p>
-                  {habit.reminders && habit.reminders.length > 0 && (
-                    <div className="flex items-center gap-1 mt-1">
-                      <Bell className="w-3 h-3 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">
-                        {habit.reminders.map(r => r.time).join(', ')}
-                      </span>
-                    </div>
                   )}
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      "font-medium transition-all truncate",
+                      completed && habitType !== 'continuous' ? "text-muted-foreground line-through" : "text-foreground"
+                    )}>
+                      {habit.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {habitType === 'continuous'
+                        ? `🔥 ${t.streak || 'streak'}`
+                        : `${t.completedTimes} ${habit.completedDates.length} ${t.completedTimes2}`
+                      }
+                    </p>
+                  </div>
+
+                  {/* Desktop delete button */}
+                  <button
+                    onClick={() => onDeleteHabit(habit.id)}
+                    className="hidden sm:flex p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+
+                  {/* Mobile hint for swipe */}
+                  <div className="sm:hidden flex items-center">
+                    <MoreHorizontal className="w-4 h-4 text-muted-foreground/50" />
+                  </div>
                 </div>
-                <button
-                  onClick={() => onDeleteHabit(habit.id)}
-                  className="p-2 opacity-0 group-hover:opacity-100 text-destructive hover:bg-destructive/10 rounded-lg transition-all"
-                >
-                  <X className="w-4 h-4" />
-                </button>
               </div>
             );
           })}

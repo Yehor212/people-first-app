@@ -672,19 +672,14 @@ export function Index() {
     return <GoogleAuthScreen onComplete={handleAuthComplete} onSkip={() => setAuthGateComplete(true)} />;
   }
 
-  // Auto-detect language, skip selector unless needed
+  // Language selection ALWAYS shown after auth (before tutorial)
+  // This ensures tutorial is shown in user's preferred language
   if (!hasSelectedLanguage) {
-    // Check if language already detected
-    const storedLang = localStorage.getItem('zenflow-language');
-    if (storedLang) {
-      // Language already detected, skip selector
-      setHasSelectedLanguage(true);
-    } else {
-      return <LanguageSelector onComplete={handleLanguageSelected} />;
-    }
+    return <LanguageSelector onComplete={handleLanguageSelected} />;
   }
 
   // Show tutorial before onboarding for new users
+  // Now tutorial will be in the language user just selected
   if (!tutorialComplete) {
     return (
       <WelcomeTutorial

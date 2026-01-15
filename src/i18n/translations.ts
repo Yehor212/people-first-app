@@ -25,7 +25,10 @@ export interface Translations {
   
   // Mood tracker
   howAreYouFeeling: string;
+  howAreYouNow: string;
   moodToday: string;
+  moodHistory: string;
+  updateMood: string;
   great: string;
   good: string;
   okay: string;
@@ -92,6 +95,9 @@ export interface Translations {
   habitRemindersPerHabit: string;
   perHabitRemindersTitle: string;
   perHabitRemindersDesc: string;
+  quickAdd: string;
+  createCustomHabit: string;
+  streak: string;
 
   // Habit Frequency
   habitFrequency: string;
@@ -574,7 +580,10 @@ export const translations: Record<Language, Translations> = {
     min: 'мин',
     gratitudes: 'Благодарности',
     howAreYouFeeling: 'Как вы себя чувствуете?',
+    howAreYouNow: 'Как вы сейчас?',
     moodToday: 'Настроение сегодня',
+    moodHistory: 'История за день',
+    updateMood: 'Обновить',
     great: 'Отлично',
     good: 'Хорошо',
     okay: 'Нормально',
@@ -639,6 +648,9 @@ export const translations: Record<Language, Translations> = {
     habitRemindersPerHabit: 'Напоминания теперь настраиваются индивидуально для каждой привычки. Добавьте напоминания при создании или редактировании привычек.',
     perHabitRemindersTitle: 'Индивидуальные напоминания',
     perHabitRemindersDesc: 'Каждая привычка может иметь свои собственные настраиваемые времена напоминаний. Установите их при создании новой привычки или редактировании существующей.',
+    quickAdd: 'Быстро добавить',
+    createCustomHabit: 'Создать свою привычку',
+    streak: 'серия',
 
     // Habit Frequency
     habitFrequency: 'Частота',
@@ -1077,7 +1089,10 @@ export const translations: Record<Language, Translations> = {
     min: 'min',
     gratitudes: 'Gratitudes',
     howAreYouFeeling: 'How are you feeling?',
+    howAreYouNow: 'How are you now?',
     moodToday: 'Mood today',
+    moodHistory: 'Today\'s history',
+    updateMood: 'Update',
     great: 'Great',
     good: 'Good',
     okay: 'Okay',
@@ -1142,6 +1157,9 @@ export const translations: Record<Language, Translations> = {
     habitRemindersPerHabit: 'Reminders are now configured individually for each habit. Add reminders when creating or editing habits.',
     perHabitRemindersTitle: 'Per-Habit Reminders',
     perHabitRemindersDesc: 'Each habit can have its own custom reminder times. Set them when creating a new habit or editing an existing one.',
+    quickAdd: 'Quick Add',
+    createCustomHabit: 'Create custom habit',
+    streak: 'streak',
 
     // Habit Frequency
     habitFrequency: 'Frequency',
@@ -1580,7 +1598,10 @@ export const translations: Record<Language, Translations> = {
     min: 'хв',
     gratitudes: 'Подяки',
     howAreYouFeeling: 'Як ви себе почуваєте?',
+    howAreYouNow: 'Як ви зараз?',
     moodToday: 'Настрій сьогодні',
+    moodHistory: 'Історія за день',
+    updateMood: 'Оновити',
     great: 'Чудово',
     good: 'Добре',
     okay: 'Нормально',
@@ -1645,6 +1666,9 @@ export const translations: Record<Language, Translations> = {
     habitRemindersPerHabit: 'Нагадування тепер налаштовуються індивідуально для кожної звички. Додайте нагадування при створенні або редагуванні звичок.',
     perHabitRemindersTitle: 'Індивідуальні нагадування',
     perHabitRemindersDesc: 'Кожна звичка може мати свої власні налаштовані часи нагадувань. Встановіть їх при створенні нової звички або редагуванні існуючої.',
+    quickAdd: 'Швидко додати',
+    createCustomHabit: 'Створити свою звичку',
+    streak: 'серія',
 
     // Habit Frequency
     habitFrequency: 'Частота',
@@ -2083,7 +2107,10 @@ export const translations: Record<Language, Translations> = {
     min: 'min',
     gratitudes: 'Gratitudes',
     howAreYouFeeling: '¿Cómo te sientes?',
+    howAreYouNow: '¿Cómo estás ahora?',
     moodToday: 'Estado de ánimo hoy',
+    moodHistory: 'Historial del día',
+    updateMood: 'Actualizar',
     great: 'Genial',
     good: 'Bien',
     okay: 'Regular',
@@ -2148,6 +2175,9 @@ export const translations: Record<Language, Translations> = {
     habitRemindersPerHabit: 'Los recordatorios ahora se configuran individualmente para cada hábito. Añade recordatorios al crear o editar hábitos.',
     perHabitRemindersTitle: 'Recordatorios por Hábito',
     perHabitRemindersDesc: 'Cada hábito puede tener sus propios horarios de recordatorio personalizados. Configúralos al crear un nuevo hábito o editar uno existente.',
+    quickAdd: 'Añadir rápido',
+    createCustomHabit: 'Crear hábito personalizado',
+    streak: 'racha',
 
     // Habit Frequency
     habitFrequency: 'Frecuencia',
@@ -2587,7 +2617,10 @@ export const translations: Record<Language, Translations> = {
     min: 'Min',
     gratitudes: 'Dankbarkeiten',
     howAreYouFeeling: 'Wie fühlst du dich?',
+    howAreYouNow: 'Wie geht es dir jetzt?',
     moodToday: 'Stimmung heute',
+    moodHistory: 'Tagesverlauf',
+    updateMood: 'Aktualisieren',
     great: 'Super',
     good: 'Gut',
     okay: 'Okay',
@@ -2652,6 +2685,9 @@ export const translations: Record<Language, Translations> = {
     habitRemindersPerHabit: 'Erinnerungen werden jetzt individuell für jede Gewohnheit konfiguriert. Fügen Sie Erinnerungen beim Erstellen oder Bearbeiten von Gewohnheiten hinzu.',
     perHabitRemindersTitle: 'Erinnerungen pro Gewohnheit',
     perHabitRemindersDesc: 'Jede Gewohnheit kann ihre eigenen benutzerdefinierten Erinnerungszeiten haben. Legen Sie diese beim Erstellen einer neuen Gewohnheit oder beim Bearbeiten einer bestehenden fest.',
+    quickAdd: 'Schnell hinzufügen',
+    createCustomHabit: 'Eigene Gewohnheit erstellen',
+    streak: 'Serie',
 
     // Habit Frequency
     habitFrequency: 'Häufigkeit',
@@ -3091,7 +3127,10 @@ export const translations: Record<Language, Translations> = {
     min: 'min',
     gratitudes: 'Gratitudes',
     howAreYouFeeling: 'Comment vous sentez-vous?',
+    howAreYouNow: 'Comment allez-vous maintenant?',
     moodToday: 'Humeur aujourd\'hui',
+    moodHistory: 'Historique du jour',
+    updateMood: 'Mettre à jour',
     great: 'Super',
     good: 'Bien',
     okay: 'Correct',
@@ -3156,6 +3195,9 @@ export const translations: Record<Language, Translations> = {
     habitRemindersPerHabit: 'Les rappels sont maintenant configurés individuellement pour chaque habitude. Ajoutez des rappels lors de la création ou de la modification des habitudes.',
     perHabitRemindersTitle: 'Rappels par Habitude',
     perHabitRemindersDesc: 'Chaque habitude peut avoir ses propres horaires de rappel personnalisés. Configurez-les lors de la création d\'une nouvelle habitude ou de la modification d\'une habitude existante.',
+    quickAdd: 'Ajout rapide',
+    createCustomHabit: 'Créer une habitude personnalisée',
+    streak: 'série',
 
     // Habit Frequency
     habitFrequency: 'Fréquence',
