@@ -527,6 +527,31 @@ export interface Translations {
   getStarted: string;
   next: string;
   remindersActive: string;
+
+  // Welcome Tutorial
+  tutorialWelcomeTitle: string;
+  tutorialWelcomeSubtitle: string;
+  tutorialWelcomeDesc: string;
+  tutorialBrainTitle: string;
+  tutorialBrainSubtitle: string;
+  tutorialBrainDesc: string;
+  tutorialFeaturesTitle: string;
+  tutorialFeaturesSubtitle: string;
+  tutorialFeaturesDesc: string;
+  tutorialFeature1: string;
+  tutorialFeature2: string;
+  tutorialFeature3: string;
+  tutorialFeature4: string;
+  tutorialMoodTitle: string;
+  tutorialMoodSubtitle: string;
+  tutorialMoodDesc: string;
+  tutorialFocusTitle: string;
+  tutorialFocusSubtitle: string;
+  tutorialFocusDesc: string;
+  tutorialReadyTitle: string;
+  tutorialReadySubtitle: string;
+  tutorialReadyDesc: string;
+  tutorialStart: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -1003,8 +1028,33 @@ export const translations: Record<Language, Translations> = {
     getStarted: 'Начать',
     next: 'Далее',
     remindersActive: 'Напоминания активны',
+
+    // Welcome Tutorial
+    tutorialWelcomeTitle: 'Добро пожаловать в ZenFlow',
+    tutorialWelcomeSubtitle: 'Ваш персональный помощник для продуктивности',
+    tutorialWelcomeDesc: 'Приложение, созданное чтобы помочь вам сохранять фокус, формировать полезные привычки и чувствовать себя лучше каждый день.',
+    tutorialBrainTitle: 'Создано для вашего мозга',
+    tutorialBrainSubtitle: 'Есть СДВГ или просто сложно сосредоточиться?',
+    tutorialBrainDesc: 'ZenFlow использует научно обоснованные техники для управления вниманием, временем и энергией. Диагноз не нужен — если вам сложно концентрироваться, это приложение для вас.',
+    tutorialFeaturesTitle: 'Что вы можете делать',
+    tutorialFeaturesSubtitle: 'Простые инструменты, большой эффект',
+    tutorialFeaturesDesc: 'Отслеживайте прогресс и набирайте обороты:',
+    tutorialFeature1: 'Отслеживание настроения и энергии',
+    tutorialFeature2: 'Формирование привычек шаг за шагом',
+    tutorialFeature3: 'Сессии фокуса с фоновыми звуками',
+    tutorialFeature4: 'Дневник благодарности',
+    tutorialMoodTitle: 'Понимайте себя лучше',
+    tutorialMoodSubtitle: 'Отслеживайте настроение, находите паттерны',
+    tutorialMoodDesc: 'Быстрые ежедневные отметки помогут заметить, что влияет на вашу энергию и фокус. Со временем вы лучше поймёте себя.',
+    tutorialFocusTitle: 'Режим глубокого фокуса',
+    tutorialFocusSubtitle: 'Блокируйте отвлечения, делайте дела',
+    tutorialFocusDesc: 'Используйте технику Помодоро с успокаивающими фоновыми звуками. Идеально для работы, учёбы или творчества.',
+    tutorialReadyTitle: 'Готовы начать?',
+    tutorialReadySubtitle: 'Ваш путь начинается сейчас',
+    tutorialReadyDesc: 'Начните с малого — просто отметьте, как вы себя чувствуете сегодня. Каждый шаг важен!',
+    tutorialStart: 'Поехали!',
   },
-  
+
   en: {
     appName: 'ZenFlow',
     goodMorning: 'Good morning',
@@ -1478,6 +1528,31 @@ export const translations: Record<Language, Translations> = {
     getStarted: 'Get started',
     next: 'Next',
     remindersActive: 'Reminders active',
+
+    // Welcome Tutorial
+    tutorialWelcomeTitle: 'Welcome to ZenFlow',
+    tutorialWelcomeSubtitle: 'Your personal wellness companion',
+    tutorialWelcomeDesc: 'An app designed to help you stay focused, build healthy habits, and feel better every day.',
+    tutorialBrainTitle: 'Built for your brain',
+    tutorialBrainSubtitle: 'Whether you have ADHD or just struggle with focus',
+    tutorialBrainDesc: 'ZenFlow uses science-backed techniques to help you manage attention, time, and energy. No diagnosis needed – if you struggle with focus, this app is for you.',
+    tutorialFeaturesTitle: 'What you can do',
+    tutorialFeaturesSubtitle: 'Simple tools, big impact',
+    tutorialFeaturesDesc: 'Track your progress and build momentum:',
+    tutorialFeature1: 'Track daily mood and energy',
+    tutorialFeature2: 'Build habits step by step',
+    tutorialFeature3: 'Focus sessions with ambient sounds',
+    tutorialFeature4: 'Gratitude journaling',
+    tutorialMoodTitle: 'Understand yourself',
+    tutorialMoodSubtitle: 'Track moods to find patterns',
+    tutorialMoodDesc: 'Quick daily check-ins help you notice what affects your energy and focus. Over time, you\'ll understand yourself better.',
+    tutorialFocusTitle: 'Deep focus mode',
+    tutorialFocusSubtitle: 'Block distractions, get things done',
+    tutorialFocusDesc: 'Use the Pomodoro technique with calming ambient sounds. Perfect for work, study, or creative projects.',
+    tutorialReadyTitle: 'Ready to start?',
+    tutorialReadySubtitle: 'Your journey begins now',
+    tutorialReadyDesc: 'Start small – just check in with how you\'re feeling today. Every step counts!',
+    tutorialStart: 'Let\'s Go!',
   },
 
   uk: {
@@ -1953,6 +2028,31 @@ export const translations: Record<Language, Translations> = {
     getStarted: 'Почати',
     next: 'Далі',
     remindersActive: 'Нагадування активні',
+
+    // Welcome Tutorial
+    tutorialWelcomeTitle: 'Ласкаво просимо до ZenFlow',
+    tutorialWelcomeSubtitle: 'Ваш персональний помічник для продуктивності',
+    tutorialWelcomeDesc: 'Додаток, створений щоб допомогти вам зберігати фокус, формувати корисні звички і почуватися краще щодня.',
+    tutorialBrainTitle: 'Створено для вашого мозку',
+    tutorialBrainSubtitle: 'Маєте СДУГ або просто складно зосередитися?',
+    tutorialBrainDesc: 'ZenFlow використовує науково обґрунтовані техніки для керування увагою, часом та енергією. Діагноз не потрібен — якщо вам складно концентруватися, цей додаток для вас.',
+    tutorialFeaturesTitle: 'Що ви можете робити',
+    tutorialFeaturesSubtitle: 'Прості інструменти, великий ефект',
+    tutorialFeaturesDesc: 'Відстежуйте прогрес і набирайте обертів:',
+    tutorialFeature1: 'Відстеження настрою та енергії',
+    tutorialFeature2: 'Формування звичок крок за кроком',
+    tutorialFeature3: 'Сесії фокусу з фоновими звуками',
+    tutorialFeature4: 'Щоденник вдячності',
+    tutorialMoodTitle: 'Розумійте себе краще',
+    tutorialMoodSubtitle: 'Відстежуйте настрій, знаходьте патерни',
+    tutorialMoodDesc: 'Швидкі щоденні відмітки допоможуть помітити, що впливає на вашу енергію та фокус. З часом ви краще зрозумієте себе.',
+    tutorialFocusTitle: 'Режим глибокого фокусу',
+    tutorialFocusSubtitle: 'Блокуйте відволікання, робіть справи',
+    tutorialFocusDesc: 'Використовуйте техніку Помодоро з заспокійливими фоновими звуками. Ідеально для роботи, навчання або творчості.',
+    tutorialReadyTitle: 'Готові почати?',
+    tutorialReadySubtitle: 'Ваш шлях починається зараз',
+    tutorialReadyDesc: 'Почніть з малого — просто відмітьте, як ви себе почуваєте сьогодні. Кожен крок важливий!',
+    tutorialStart: 'Поїхали!',
   },
 
   es: {
@@ -2429,6 +2529,31 @@ export const translations: Record<Language, Translations> = {
     getStarted: 'Comenzar',
     next: 'Siguiente',
     remindersActive: 'Recordatorios activos',
+
+    // Welcome Tutorial
+    tutorialWelcomeTitle: 'Bienvenido a ZenFlow',
+    tutorialWelcomeSubtitle: 'Tu compañero personal de bienestar',
+    tutorialWelcomeDesc: 'Una aplicación diseñada para ayudarte a mantener el enfoque, crear hábitos saludables y sentirte mejor cada día.',
+    tutorialBrainTitle: 'Diseñado para tu cerebro',
+    tutorialBrainSubtitle: '¿Tienes TDAH o simplemente te cuesta concentrarte?',
+    tutorialBrainDesc: 'ZenFlow utiliza técnicas respaldadas por la ciencia para ayudarte a gestionar la atención, el tiempo y la energía. No necesitas diagnóstico – si te cuesta concentrarte, esta app es para ti.',
+    tutorialFeaturesTitle: 'Qué puedes hacer',
+    tutorialFeaturesSubtitle: 'Herramientas simples, gran impacto',
+    tutorialFeaturesDesc: 'Rastrea tu progreso y gana impulso:',
+    tutorialFeature1: 'Rastrea el estado de ánimo y energía diaria',
+    tutorialFeature2: 'Construye hábitos paso a paso',
+    tutorialFeature3: 'Sesiones de enfoque con sonidos ambientales',
+    tutorialFeature4: 'Diario de gratitud',
+    tutorialMoodTitle: 'Entiéndete a ti mismo',
+    tutorialMoodSubtitle: 'Rastrea estados de ánimo para encontrar patrones',
+    tutorialMoodDesc: 'Los registros diarios rápidos te ayudan a notar qué afecta tu energía y enfoque. Con el tiempo, te entenderás mejor.',
+    tutorialFocusTitle: 'Modo de enfoque profundo',
+    tutorialFocusSubtitle: 'Bloquea distracciones, haz las cosas',
+    tutorialFocusDesc: 'Usa la técnica Pomodoro con sonidos ambientales relajantes. Perfecto para trabajo, estudio o proyectos creativos.',
+    tutorialReadyTitle: '¿Listo para empezar?',
+    tutorialReadySubtitle: 'Tu viaje comienza ahora',
+    tutorialReadyDesc: 'Empieza pequeño – solo registra cómo te sientes hoy. ¡Cada paso cuenta!',
+    tutorialStart: '¡Vamos!',
   },
 
   de: {
@@ -2905,6 +3030,31 @@ export const translations: Record<Language, Translations> = {
     getStarted: 'Loslegen',
     next: 'Weiter',
     remindersActive: 'Erinnerungen aktiv',
+
+    // Welcome Tutorial
+    tutorialWelcomeTitle: 'Willkommen bei ZenFlow',
+    tutorialWelcomeSubtitle: 'Dein persönlicher Wellness-Begleiter',
+    tutorialWelcomeDesc: 'Eine App, die dir hilft, fokussiert zu bleiben, gesunde Gewohnheiten aufzubauen und dich jeden Tag besser zu fühlen.',
+    tutorialBrainTitle: 'Für dein Gehirn entwickelt',
+    tutorialBrainSubtitle: 'Ob du ADHS hast oder einfach Schwierigkeiten mit dem Fokus',
+    tutorialBrainDesc: 'ZenFlow verwendet wissenschaftlich fundierte Techniken, um Aufmerksamkeit, Zeit und Energie zu managen. Keine Diagnose nötig – wenn du Schwierigkeiten hast, dich zu konzentrieren, ist diese App für dich.',
+    tutorialFeaturesTitle: 'Was du tun kannst',
+    tutorialFeaturesSubtitle: 'Einfache Tools, große Wirkung',
+    tutorialFeaturesDesc: 'Verfolge deinen Fortschritt und gewinne Schwung:',
+    tutorialFeature1: 'Tägliche Stimmung und Energie verfolgen',
+    tutorialFeature2: 'Gewohnheiten Schritt für Schritt aufbauen',
+    tutorialFeature3: 'Fokus-Sitzungen mit Umgebungsgeräuschen',
+    tutorialFeature4: 'Dankbarkeitstagebuch',
+    tutorialMoodTitle: 'Verstehe dich selbst',
+    tutorialMoodSubtitle: 'Verfolge Stimmungen, um Muster zu finden',
+    tutorialMoodDesc: 'Schnelle tägliche Check-ins helfen dir zu bemerken, was deine Energie und deinen Fokus beeinflusst. Mit der Zeit wirst du dich besser verstehen.',
+    tutorialFocusTitle: 'Tiefenfokus-Modus',
+    tutorialFocusSubtitle: 'Ablenkungen blockieren, Dinge erledigen',
+    tutorialFocusDesc: 'Nutze die Pomodoro-Technik mit beruhigenden Umgebungsgeräuschen. Perfekt für Arbeit, Studium oder kreative Projekte.',
+    tutorialReadyTitle: 'Bereit anzufangen?',
+    tutorialReadySubtitle: 'Deine Reise beginnt jetzt',
+    tutorialReadyDesc: 'Fang klein an – notiere einfach, wie du dich heute fühlst. Jeder Schritt zählt!',
+    tutorialStart: 'Los geht\'s!',
   },
 
   fr: {
@@ -3381,6 +3531,31 @@ export const translations: Record<Language, Translations> = {
     getStarted: 'Commencer',
     next: 'Suivant',
     remindersActive: 'Rappels actifs',
+
+    // Welcome Tutorial
+    tutorialWelcomeTitle: 'Bienvenue sur ZenFlow',
+    tutorialWelcomeSubtitle: 'Votre compagnon de bien-être personnel',
+    tutorialWelcomeDesc: 'Une application conçue pour vous aider à rester concentré, créer des habitudes saines et vous sentir mieux chaque jour.',
+    tutorialBrainTitle: 'Conçu pour votre cerveau',
+    tutorialBrainSubtitle: 'Que vous ayez un TDAH ou des difficultés à vous concentrer',
+    tutorialBrainDesc: 'ZenFlow utilise des techniques scientifiques pour gérer l\'attention, le temps et l\'énergie. Pas besoin de diagnostic – si vous avez du mal à vous concentrer, cette app est pour vous.',
+    tutorialFeaturesTitle: 'Ce que vous pouvez faire',
+    tutorialFeaturesSubtitle: 'Outils simples, grand impact',
+    tutorialFeaturesDesc: 'Suivez vos progrès et gagnez en élan:',
+    tutorialFeature1: 'Suivre l\'humeur et l\'énergie quotidiennes',
+    tutorialFeature2: 'Construire des habitudes étape par étape',
+    tutorialFeature3: 'Sessions de concentration avec sons ambiants',
+    tutorialFeature4: 'Journal de gratitude',
+    tutorialMoodTitle: 'Comprenez-vous',
+    tutorialMoodSubtitle: 'Suivez les humeurs pour trouver des patterns',
+    tutorialMoodDesc: 'Des check-ins quotidiens rapides vous aident à remarquer ce qui affecte votre énergie et votre concentration. Avec le temps, vous vous comprendrez mieux.',
+    tutorialFocusTitle: 'Mode concentration profonde',
+    tutorialFocusSubtitle: 'Bloquez les distractions, accomplissez des choses',
+    tutorialFocusDesc: 'Utilisez la technique Pomodoro avec des sons ambiants apaisants. Parfait pour le travail, les études ou les projets créatifs.',
+    tutorialReadyTitle: 'Prêt à commencer?',
+    tutorialReadySubtitle: 'Votre voyage commence maintenant',
+    tutorialReadyDesc: 'Commencez petit – notez simplement comment vous vous sentez aujourd\'hui. Chaque pas compte!',
+    tutorialStart: 'C\'est parti!',
   },
 };
 
