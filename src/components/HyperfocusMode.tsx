@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Play, Pause, Volume2, VolumeX, ChevronDown, Wifi, WifiOff } from 'lucide-react';
+import { X, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { AmbientSoundGenerator, AmbientSoundType, unlockAudio } from '@/lib/ambientSounds';
+import { AmbientSoundGenerator, SOUNDS, unlockAudio } from '@/lib/ambientSounds';
 import { cn } from '@/lib/utils';
 
 interface HyperfocusModeProps {
@@ -11,13 +11,11 @@ interface HyperfocusModeProps {
 }
 
 export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [timeLeft, setTimeLeft] = useState(duration * 60); // секунды
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const [selectedSound, setSelectedSound] = useState<AmbientSoundType>('none');
-  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
-  const [showVariants, setShowVariants] = useState(false);
+  const [selectedSoundId, setSelectedSoundId] = useState<string | null>(null);
   const [isSoundPlaying, setIsSoundPlaying] = useState(false);
   const [showBreathingAnimation, setShowBreathingAnimation] = useState(false);
   const soundGeneratorRef = useRef<AmbientSoundGenerator | null>(null);
@@ -76,14 +74,14 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     const generator = soundGeneratorRef.current;
     if (!generator) return;
 
-    if (selectedSound === 'none') {
+    if (!selectedSoundId) {
       generator.stop();
       setIsSoundPlaying(false);
       return;
     }
 
     if (isRunning && !isPaused) {
-      generator.play(selectedSound).then(() => {
+      generator.play(selectedSoundId).then(() => {
         setIsSoundPlaying(true);
       }).catch(err => {
         console.error('Failed to play ambient sound:', err);
@@ -97,7 +95,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     return () => {
       generator.stop();
     };
-  }, [selectedSound, isRunning, isPaused]);
+  }, [selectedSoundId, isRunning, isPaused]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -126,16 +124,6 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     }
   };
 
-  const handleEmergencyPause = () => {
-    if (window.confirm(t.hyperfocusEmergencyConfirm || 'Хотите приостановить сессию? Без чувства вины! 💜')) {
-      setIsPaused(true);
-      const generator = soundGeneratorRef.current;
-      if (generator) {
-        generator.pause();
-      }
-    }
-  };
-
   const toggleSound = () => {
     const generator = soundGeneratorRef.current;
     if (!generator) return;
@@ -143,9 +131,19 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     if (isSoundPlaying) {
       generator.pause();
       setIsSoundPlaying(false);
-    } else if (selectedSound !== 'none') {
+    } else if (selectedSoundId) {
       generator.resume();
       setIsSoundPlaying(true);
+    }
+  };
+
+  const handleSoundSelect = (soundId: string | null) => {
+    unlockAudio();
+    setSelectedSoundId(soundId);
+    if (soundId && isRunning && !isPaused) {
+      soundGeneratorRef.current?.play(soundId).then(() => {
+        setIsSoundPlaying(true);
+      });
     }
   };
 
@@ -279,13 +277,13 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           </button>
         </div>
 
-        {/* Ambient Sound Selector */}
+        {/* Ambient Sound Selector - Simple list of local sounds */}
         <div className="max-w-md mx-auto">
           <div className="flex items-center justify-between mb-3">
             <p className="text-sm text-white/70">
               {t.hyperfocusAmbientSound || 'Фоновый звук'}
             </p>
-            {selectedSound !== 'none' && (
+            {selectedSoundId && (
               <button
                 onClick={toggleSound}
                 className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
@@ -299,89 +297,44 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             )}
           </div>
 
-          {/* Sound type selector */}
-          <div className="grid grid-cols-3 gap-2 mb-3">
-            {(['none', 'white-noise', 'rain', 'ocean', 'forest', 'coffee-shop', 'fireplace'] as AmbientSoundType[]).map(sound => (
+          {/* Sound selector - one button per sound */}
+          <div className="grid grid-cols-3 gap-2">
+            {/* None button */}
+            <button
+              onClick={() => handleSoundSelect(null)}
+              className={cn(
+                'btn-press px-3 py-3 rounded-xl text-sm font-medium transition-all',
+                !selectedSoundId
+                  ? 'bg-primary text-primary-foreground zen-shadow'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              )}
+            >
+              🔇 {t.hyperfocusSoundNone || 'Без звука'}
+            </button>
+
+            {/* All available sounds */}
+            {SOUNDS.map(sound => (
               <button
-                key={sound}
-                onClick={() => {
-                  if (sound !== 'none') unlockAudio();
-                  setSelectedSound(sound);
-                  setSelectedVariantId(null);
-                  setShowVariants(sound !== 'none' && sound !== selectedSound);
-                }}
+                key={sound.id}
+                onClick={() => handleSoundSelect(sound.id)}
                 className={cn(
-                  'btn-press px-3 py-2 rounded-xl text-sm font-medium transition-all',
-                  selectedSound === sound
+                  'btn-press px-3 py-3 rounded-xl text-sm font-medium transition-all',
+                  selectedSoundId === sound.id
                     ? 'bg-primary text-primary-foreground zen-shadow'
                     : 'bg-white/10 text-white hover:bg-white/20'
                 )}
               >
-                {sound === 'none' && (t.hyperfocusSoundNone || 'Без звука')}
-                {sound === 'white-noise' && (t.hyperfocusSoundWhiteNoise || 'Белый шум')}
-                {sound === 'rain' && (t.hyperfocusSoundRain || 'Дождь')}
-                {sound === 'ocean' && (t.hyperfocusSoundOcean || 'Океан')}
-                {sound === 'forest' && (t.hyperfocusSoundForest || 'Лес')}
-                {sound === 'coffee-shop' && (t.hyperfocusSoundCoffee || 'Кафе')}
-                {sound === 'fireplace' && (t.hyperfocusSoundFireplace || 'Костёр')}
+                {sound.id === 'underwater' && '🌊'}
+                {sound.id === 'thunderstorm' && '⛈️'}
+                {sound.id === 'ocean' && '🏖️'}
+                {sound.id === 'river' && '🏞️'}
+                {sound.id === 'cafe' && '☕'}
+                {sound.id === 'fireplace' && '🔥'}
+                {' '}
+                {language === 'ru' || language === 'uk' ? sound.nameRu : sound.nameEn}
               </button>
             ))}
           </div>
-
-          {/* Sound variants selector */}
-          {selectedSound !== 'none' && showVariants && soundGeneratorRef.current && (
-            <div className="bg-white/5 rounded-xl p-3 animate-fade-in">
-              <div className="flex items-center gap-2 mb-2">
-                <ChevronDown className="w-4 h-4 text-white/50" />
-                <p className="text-xs text-white/50">
-                  {t.hyperfocusSoundVariants || 'Варианты звука'}
-                </p>
-                {soundGeneratorRef.current.isOnline() ? (
-                  <Wifi className="w-3 h-3 text-green-400 ml-auto" />
-                ) : (
-                  <WifiOff className="w-3 h-3 text-orange-400 ml-auto" />
-                )}
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {soundGeneratorRef.current.getVariantsForType(selectedSound).map(variant => (
-                  <button
-                    key={variant.id}
-                    onClick={() => {
-                      unlockAudio();
-                      setSelectedVariantId(variant.id);
-                      soundGeneratorRef.current?.play(selectedSound, variant.id);
-                      setIsSoundPlaying(true);
-                    }}
-                    className={cn(
-                      'px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5',
-                      selectedVariantId === variant.id
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-white/10 text-white/80 hover:bg-white/20',
-                      !variant.isLocal && !soundGeneratorRef.current?.isOnline() && 'opacity-50 cursor-not-allowed'
-                    )}
-                    disabled={!variant.isLocal && !soundGeneratorRef.current?.isOnline()}
-                  >
-                    {variant.isLocal ? '📦' : '🌐'}
-                    {variant.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Toggle variants button */}
-          {selectedSound !== 'none' && (
-            <button
-              onClick={() => setShowVariants(!showVariants)}
-              className="w-full mt-2 py-2 text-xs text-white/50 hover:text-white/70 transition-colors flex items-center justify-center gap-1"
-            >
-              <ChevronDown className={cn('w-4 h-4 transition-transform', showVariants && 'rotate-180')} />
-              {showVariants
-                ? (t.hyperfocusHideVariants || 'Скрыть варианты')
-                : (t.hyperfocusShowVariants || 'Показать варианты')
-              }
-            </button>
-          )}
         </div>
 
         {/* Tips */}

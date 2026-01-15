@@ -16,7 +16,9 @@
       "Bash(npm run dev:*)",
       "Bash(supabase --version:*)",
       "Bash(supabase link:*)",
-      "Bash(git status:*)"
+      "Bash(git status:*)",
+      "Bash(dir:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }
