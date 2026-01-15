@@ -28,6 +28,7 @@ import { LanguageSelector } from '@/components/LanguageSelector';
 import { InstallBanner } from '@/components/InstallBanner';
 import { RemindersPanel } from '@/components/RemindersPanel';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
+import { WelcomeTutorial } from '@/components/WelcomeTutorial';
 import { AuthGate } from '@/components/AuthGate';
 import { AchievementsPanel } from '@/components/AchievementsPanel';
 import { NotificationPermission } from '@/components/NotificationPermission';
@@ -132,6 +133,13 @@ export function Index() {
     idField: 'key'
   });
 
+  const [tutorialComplete, setTutorialComplete, isLoadingTutorial] = useIndexedDB({
+    table: db.settings,
+    localStorageKey: 'zenflow-tutorial-complete',
+    initialValue: false,
+    idField: 'key'
+  });
+
   const [onboardingComplete, setOnboardingComplete, isLoadingOnboarding] = useIndexedDB({
     table: db.settings,
     localStorageKey: 'zenflow-onboarding-complete',
@@ -161,7 +169,7 @@ export function Index() {
   });
 
   // Loading handling
-  const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingOnboarding || isLoadingPrivacy || isLoadingAuthGate || isLoadingNotificationPermission;
+  const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingTutorial || isLoadingOnboarding || isLoadingPrivacy || isLoadingAuthGate || isLoadingNotificationPermission;
 
   // Widget synchronization
   const currentStreak = useMemo(() => {
@@ -674,6 +682,16 @@ export function Index() {
     } else {
       return <LanguageSelector onComplete={handleLanguageSelected} />;
     }
+  }
+
+  // Show tutorial before onboarding for new users
+  if (!tutorialComplete) {
+    return (
+      <WelcomeTutorial
+        onComplete={() => setTutorialComplete(true)}
+        onSkip={() => setTutorialComplete(true)}
+      />
+    );
   }
 
   if (!onboardingComplete) {

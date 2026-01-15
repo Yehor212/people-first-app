@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { X, Play, Pause, Volume2, VolumeX, ChevronDown, Wifi, WifiOff } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AmbientSoundGenerator, AmbientSoundType, unlockAudio } from '@/lib/ambientSounds';
+import { cn } from '@/lib/utils';
 
 interface HyperfocusModeProps {
   duration: number; // в минутах
@@ -15,6 +16,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [selectedSound, setSelectedSound] = useState<AmbientSoundType>('none');
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const [showVariants, setShowVariants] = useState(false);
   const [isSoundPlaying, setIsSoundPlaying] = useState(false);
   const [showBreathingAnimation, setShowBreathingAnimation] = useState(false);
   const soundGeneratorRef = useRef<AmbientSoundGenerator | null>(null);
@@ -296,20 +299,23 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          {/* Sound type selector */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
             {(['none', 'white-noise', 'rain', 'ocean', 'forest', 'coffee-shop', 'fireplace'] as AmbientSoundType[]).map(sound => (
               <button
                 key={sound}
                 onClick={() => {
-                  // Unlock audio on sound selection (user gesture)
                   if (sound !== 'none') unlockAudio();
                   setSelectedSound(sound);
+                  setSelectedVariantId(null);
+                  setShowVariants(sound !== 'none' && sound !== selectedSound);
                 }}
-                className={`btn-press px-3 py-2 rounded-xl text-sm font-medium transition-all ${
+                className={cn(
+                  'btn-press px-3 py-2 rounded-xl text-sm font-medium transition-all',
                   selectedSound === sound
                     ? 'bg-primary text-primary-foreground zen-shadow'
                     : 'bg-white/10 text-white hover:bg-white/20'
-                }`}
+                )}
               >
                 {sound === 'none' && (t.hyperfocusSoundNone || 'Без звука')}
                 {sound === 'white-noise' && (t.hyperfocusSoundWhiteNoise || 'Белый шум')}
@@ -321,6 +327,61 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
               </button>
             ))}
           </div>
+
+          {/* Sound variants selector */}
+          {selectedSound !== 'none' && showVariants && soundGeneratorRef.current && (
+            <div className="bg-white/5 rounded-xl p-3 animate-fade-in">
+              <div className="flex items-center gap-2 mb-2">
+                <ChevronDown className="w-4 h-4 text-white/50" />
+                <p className="text-xs text-white/50">
+                  {t.hyperfocusSoundVariants || 'Варианты звука'}
+                </p>
+                {soundGeneratorRef.current.isOnline() ? (
+                  <Wifi className="w-3 h-3 text-green-400 ml-auto" />
+                ) : (
+                  <WifiOff className="w-3 h-3 text-orange-400 ml-auto" />
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {soundGeneratorRef.current.getVariantsForType(selectedSound).map(variant => (
+                  <button
+                    key={variant.id}
+                    onClick={() => {
+                      unlockAudio();
+                      setSelectedVariantId(variant.id);
+                      soundGeneratorRef.current?.play(selectedSound, variant.id);
+                      setIsSoundPlaying(true);
+                    }}
+                    className={cn(
+                      'px-3 py-1.5 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5',
+                      selectedVariantId === variant.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-white/10 text-white/80 hover:bg-white/20',
+                      !variant.isLocal && !soundGeneratorRef.current?.isOnline() && 'opacity-50 cursor-not-allowed'
+                    )}
+                    disabled={!variant.isLocal && !soundGeneratorRef.current?.isOnline()}
+                  >
+                    {variant.isLocal ? '📦' : '🌐'}
+                    {variant.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Toggle variants button */}
+          {selectedSound !== 'none' && (
+            <button
+              onClick={() => setShowVariants(!showVariants)}
+              className="w-full mt-2 py-2 text-xs text-white/50 hover:text-white/70 transition-colors flex items-center justify-center gap-1"
+            >
+              <ChevronDown className={cn('w-4 h-4 transition-transform', showVariants && 'rotate-180')} />
+              {showVariants
+                ? (t.hyperfocusHideVariants || 'Скрыть варианты')
+                : (t.hyperfocusShowVariants || 'Показать варианты')
+              }
+            </button>
+          )}
         </div>
 
         {/* Tips */}

@@ -375,6 +375,9 @@ export interface Translations {
   hyperfocusSoundForest: string;
   hyperfocusSoundCoffee: string;
   hyperfocusSoundFireplace: string;
+  hyperfocusSoundVariants: string;
+  hyperfocusShowVariants: string;
+  hyperfocusHideVariants: string;
   hyperfocusTip: string;
   hyperfocusTipText: string;
   hyperfocusPauseMsg: string;
@@ -904,6 +907,9 @@ export const translations: Record<Language, Translations> = {
     hyperfocusSoundForest: 'Лес',
     hyperfocusSoundCoffee: 'Кафе',
     hyperfocusSoundFireplace: 'Костёр',
+    hyperfocusSoundVariants: 'Варианты звука',
+    hyperfocusShowVariants: 'Показать варианты',
+    hyperfocusHideVariants: 'Скрыть варианты',
     hyperfocusTip: 'Совет',
     hyperfocusTipText: 'Каждые 25 минут будет короткая дыхательная пауза. Это помогает избежать выгорания!',
     hyperfocusPauseMsg: 'Нажмите Play, чтобы продолжить',
@@ -1404,6 +1410,9 @@ export const translations: Record<Language, Translations> = {
     hyperfocusSoundForest: 'Forest',
     hyperfocusSoundCoffee: 'Coffee Shop',
     hyperfocusSoundFireplace: 'Fireplace',
+    hyperfocusSoundVariants: 'Sound variants',
+    hyperfocusShowVariants: 'Show variants',
+    hyperfocusHideVariants: 'Hide variants',
     hyperfocusTip: 'Tip',
     hyperfocusTipText: 'Every 25 minutes there will be a short breathing pause. This helps prevent burnout!',
     hyperfocusPauseMsg: 'Press Play to continue',
@@ -1904,6 +1913,9 @@ export const translations: Record<Language, Translations> = {
     hyperfocusSoundForest: 'Ліс',
     hyperfocusSoundCoffee: 'Кафе',
     hyperfocusSoundFireplace: 'Багаття',
+    hyperfocusSoundVariants: 'Варіанти звуку',
+    hyperfocusShowVariants: 'Показати варіанти',
+    hyperfocusHideVariants: 'Сховати варіанти',
     hyperfocusTip: 'Порада',
     hyperfocusTipText: 'Кожні 25 хвилин буде коротка дихальна пауза. Це допомагає уникнути вигорання!',
     hyperfocusPauseMsg: 'Натисніть Play, щоб продовжити',
@@ -2405,6 +2417,9 @@ export const translations: Record<Language, Translations> = {
     hyperfocusSoundForest: 'Bosque',
     hyperfocusSoundCoffee: 'Cafetería',
     hyperfocusSoundFireplace: 'Chimenea',
+    hyperfocusSoundVariants: 'Variantes de Sonido',
+    hyperfocusShowVariants: 'Mostrar variantes',
+    hyperfocusHideVariants: 'Ocultar variantes',
     hyperfocusTip: 'Consejo',
     hyperfocusTipText: 'Cada 25 minutos habrá una breve pausa de respiración. ¡Esto ayuda a prevenir el agotamiento!',
     hyperfocusPauseMsg: 'Presiona Play para continuar',
@@ -2906,6 +2921,9 @@ export const translations: Record<Language, Translations> = {
     hyperfocusSoundForest: 'Wald',
     hyperfocusSoundCoffee: 'Café',
     hyperfocusSoundFireplace: 'Kamin',
+    hyperfocusSoundVariants: 'Klangvarianten',
+    hyperfocusShowVariants: 'Varianten anzeigen',
+    hyperfocusHideVariants: 'Varianten ausblenden',
     hyperfocusTip: 'Tipp',
     hyperfocusTipText: 'Alle 25 Minuten gibt es eine kurze Atempause. Das hilft, Burnout zu vermeiden!',
     hyperfocusPauseMsg: 'Drücke Play zum Fortfahren',
@@ -3407,6 +3425,9 @@ export const translations: Record<Language, Translations> = {
     hyperfocusSoundForest: 'Forêt',
     hyperfocusSoundCoffee: 'Café',
     hyperfocusSoundFireplace: 'Cheminée',
+    hyperfocusSoundVariants: 'Variantes de Son',
+    hyperfocusShowVariants: 'Afficher les variantes',
+    hyperfocusHideVariants: 'Masquer les variantes',
     hyperfocusTip: 'Astuce',
     hyperfocusTipText: 'Toutes les 25 minutes, il y aura une courte pause respiratoire. Cela aide à prévenir l\'épuisement!',
     hyperfocusPauseMsg: 'Appuyez sur Play pour continuer',
