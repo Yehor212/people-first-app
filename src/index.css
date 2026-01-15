@@ -211,6 +211,16 @@
   .mood-btn.selected {
     animation: bounce-gentle 0.6s ease-in-out;
   }
+
+  /* Subtle pulse for CTA attention */
+  .animate-pulse-subtle {
+    animation: pulse-subtle 2s ease-in-out infinite;
+  }
+
+  /* Glow pulse for primary actions */
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
 }
 
 @keyframes float {
@@ -298,6 +308,26 @@
   }
   100% {
     box-shadow: 0 0 0 15px hsl(var(--primary) / 0);
+  }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+  50% {
+    box-shadow: 0 0 35px hsl(var(--primary) / 0.5);
   }
 }
 

@@ -1,5 +1,6 @@
 import { exportBackup, importBackup } from "@/storage/backup";
 import { supabase } from "@/lib/supabaseClient";
+import { triggerDataRefresh } from "@/hooks/useIndexedDB";
 
 const BACKUP_TABLE = "user_backups";
 const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -43,6 +44,9 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge") => {
     if (remoteDate > localDate) {
       await importBackup(remotePayload, mode);
       syncStatus = "pulled";
+      // Trigger React state refresh after importing cloud data
+      triggerDataRefresh();
+      console.log('[CloudSync] Data refreshed after cloud pull');
     }
   }
 

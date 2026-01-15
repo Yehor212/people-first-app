@@ -3,17 +3,19 @@ import { MoodType, MoodEntry } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Sparkles } from 'lucide-react';
 
 interface MoodTrackerProps {
   entries: MoodEntry[];
   onAddEntry: (entry: MoodEntry) => void;
+  isPrimaryCTA?: boolean;
 }
 
-export function MoodTracker({ entries, onAddEntry }: MoodTrackerProps) {
+export function MoodTracker({ entries, onAddEntry, isPrimaryCTA = false }: MoodTrackerProps) {
   const { t } = useLanguage();
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [note, setNote] = useState('');
-  
+
   const moods: { type: MoodType; emoji: string; label: string; color: string }[] = [
     { type: 'great', emoji: '😄', label: t.great, color: 'bg-mood-great' },
     { type: 'good', emoji: '🙂', label: t.good, color: 'bg-mood-good' },
@@ -21,13 +23,13 @@ export function MoodTracker({ entries, onAddEntry }: MoodTrackerProps) {
     { type: 'bad', emoji: '😔', label: t.bad, color: 'bg-mood-bad' },
     { type: 'terrible', emoji: '😢', label: t.terrible, color: 'bg-mood-terrible' },
   ];
-  
+
   const today = getToday();
   const todayEntry = entries.find(e => e.date === today);
 
   const handleSubmit = () => {
     if (!selectedMood) return;
-    
+
     const entry: MoodEntry = {
       id: generateId(),
       mood: selectedMood,
@@ -35,7 +37,7 @@ export function MoodTracker({ entries, onAddEntry }: MoodTrackerProps) {
       date: today,
       timestamp: Date.now(),
     };
-    
+
     onAddEntry(entry);
     setSelectedMood(null);
     setNote('');
@@ -65,22 +67,46 @@ export function MoodTracker({ entries, onAddEntry }: MoodTrackerProps) {
   }
 
   return (
-    <div className="bg-card rounded-2xl p-6 zen-shadow-card animate-fade-in">
-      <h3 className="text-lg font-semibold text-foreground mb-4">{t.howAreYouFeeling}</h3>
-      
+    <div className={cn(
+      "rounded-2xl p-6 animate-fade-in transition-all",
+      isPrimaryCTA
+        ? "bg-gradient-to-br from-primary/10 via-card to-accent/10 ring-2 ring-primary/30 zen-shadow-glow"
+        : "bg-card zen-shadow-card"
+    )}>
+      {/* Primary CTA Header */}
+      {isPrimaryCTA && (
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-primary/20 rounded-full">
+            <Sparkles className="w-4 h-4 text-primary animate-pulse" />
+            <span className="text-xs font-semibold text-primary">{t.startHere || 'Start here'}</span>
+          </div>
+        </div>
+      )}
+
+      <h3 className={cn(
+        "font-semibold text-foreground mb-4",
+        isPrimaryCTA ? "text-xl" : "text-lg"
+      )}>
+        {t.howAreYouFeeling}
+      </h3>
+
       <div className="flex justify-between mb-6">
-        {moods.map((mood) => (
+        {moods.map((mood, index) => (
           <button
             key={mood.type}
             onClick={() => setSelectedMood(mood.type)}
             className={cn(
-              "mood-btn flex flex-col items-center gap-2 p-3 rounded-xl",
+              "mood-btn flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
               selectedMood === mood.type
                 ? `${mood.color} bg-opacity-20 scale-110 zen-shadow-soft selected`
-                : "hover:bg-secondary"
+                : "hover:bg-secondary",
+              isPrimaryCTA && !selectedMood && "animate-pulse-subtle"
             )}
+            style={isPrimaryCTA && !selectedMood ? { animationDelay: `${index * 100}ms` } : undefined}
           >
-            <span className="text-3xl">{mood.emoji}</span>
+            <span className={cn("transition-transform", isPrimaryCTA ? "text-4xl" : "text-3xl")}>
+              {mood.emoji}
+            </span>
             <span className="text-xs text-muted-foreground">{mood.label}</span>
           </button>
         ))}
@@ -97,11 +123,23 @@ export function MoodTracker({ entries, onAddEntry }: MoodTrackerProps) {
           />
           <button
             onClick={handleSubmit}
-            className="btn-press mt-4 w-full py-3 zen-gradient text-primary-foreground font-semibold rounded-xl hover:opacity-90 transition-opacity zen-shadow-soft"
+            className={cn(
+              "btn-press mt-4 w-full py-4 zen-gradient text-primary-foreground font-bold rounded-xl transition-all",
+              "hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]",
+              "zen-shadow-soft hover:zen-shadow-glow",
+              isPrimaryCTA && "text-lg"
+            )}
           >
             {t.saveMood}
           </button>
         </div>
+      )}
+
+      {/* Hint for Primary CTA */}
+      {isPrimaryCTA && !selectedMood && (
+        <p className="text-center text-sm text-muted-foreground mt-2 animate-fade-in">
+          {t.tapToStart || 'Tap an emoji to start your day'}
+        </p>
       )}
     </div>
   );

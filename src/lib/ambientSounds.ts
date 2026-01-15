@@ -2,9 +2,72 @@
  * Ambient Sound Player with local files and online variety
  * Primary: local sound files for offline use
  * Secondary: online sounds from free sources (Pixabay)
+ *
+ * Note: Mobile browsers require user interaction before playing audio.
+ * Call unlockAudio() in response to a user gesture (click/touch) before playing sounds.
  */
 
 export type AmbientSoundType = 'none' | 'white-noise' | 'rain' | 'ocean' | 'forest' | 'coffee-shop' | 'fireplace';
+
+// Audio unlock state for mobile browsers
+let audioUnlocked = false;
+let unlockPromise: Promise<void> | null = null;
+
+// Silent audio file for unlocking (base64 encoded 1-sample WAV)
+const SILENT_AUDIO = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQQAAAA=';
+
+/**
+ * Unlock audio on mobile browsers.
+ * Must be called in response to a user gesture (click/touch).
+ * Call this early, e.g., on the first button press in the app.
+ */
+export async function unlockAudio(): Promise<void> {
+  if (audioUnlocked) return;
+  if (unlockPromise) return unlockPromise;
+
+  unlockPromise = (async () => {
+    try {
+      // Create and play silent audio to unlock
+      const silentAudio = new Audio(SILENT_AUDIO);
+      silentAudio.volume = 0.01;
+      silentAudio.playsInline = true;
+
+      // Use play() promise
+      const playPromise = silentAudio.play();
+      if (playPromise !== undefined) {
+        await playPromise;
+      }
+      silentAudio.pause();
+
+      // Also try to resume AudioContext if available
+      if (typeof AudioContext !== 'undefined') {
+        const ctx = new AudioContext();
+        if (ctx.state === 'suspended') {
+          await ctx.resume();
+        }
+        await ctx.close();
+      }
+
+      audioUnlocked = true;
+      console.log('[AmbientSounds] Audio unlocked for mobile browser');
+    } catch (e) {
+      console.warn('[AmbientSounds] Failed to unlock audio:', e);
+      // Still mark as unlocked to avoid infinite retries
+      audioUnlocked = true;
+    } finally {
+      unlockPromise = null;
+    }
+  })();
+
+  return unlockPromise;
+}
+
+/**
+ * Check if audio is unlocked
+ */
+export function isAudioUnlocked(): boolean {
+  return audioUnlocked;
+}
 
 export interface SoundVariant {
   id: string;
@@ -153,11 +216,17 @@ export class AmbientSoundGenerator {
   }
 
   private async playAudioFile(url: string): Promise<void> {
+    // Try to unlock audio if not already done
+    await unlockAudio();
+
     // Create audio element
     this.audioElement = new Audio();
     this.audioElement.crossOrigin = 'anonymous';
     this.audioElement.loop = true;
     this.audioElement.volume = this.volume;
+    this.audioElement.playsInline = true; // Required for iOS
+    this.audioElement.setAttribute('playsinline', ''); // Fallback attribute
+    this.audioElement.setAttribute('webkit-playsinline', ''); // Older Safari
     this.audioElement.src = url;
 
     // Wait for audio to be ready
@@ -173,7 +242,7 @@ export class AmbientSoundGenerator {
         resolve();
       };
 
-      this.audioElement.onerror = (e) => {
+      this.audioElement.onerror = () => {
         clearTimeout(timeout);
         reject(new Error(`Failed to load audio: ${url}`));
       };
@@ -182,7 +251,13 @@ export class AmbientSoundGenerator {
     });
 
     // Play the audio
-    await this.audioElement.play();
+    try {
+      await this.audioElement.play();
+    } catch (playError) {
+      // On mobile, play() may fail if not triggered by user gesture
+      console.warn('[AmbientSounds] Play failed, may need user gesture:', playError);
+      throw playError;
+    }
   }
 
   stop(): void {

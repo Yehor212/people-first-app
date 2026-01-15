@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { X, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { AmbientSoundGenerator, AmbientSoundType } from '@/lib/ambientSounds';
+import { AmbientSoundGenerator, AmbientSoundType, unlockAudio } from '@/lib/ambientSounds';
 
 interface HyperfocusModeProps {
   duration: number; // в минутах
@@ -105,6 +105,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   const progress = ((duration * 60 - timeLeft) / (duration * 60)) * 100;
 
   const handleStart = () => {
+    // Unlock audio on user gesture (required for mobile browsers)
+    unlockAudio();
     setIsRunning(true);
     setIsPaused(false);
   };
@@ -298,7 +300,11 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             {(['none', 'white-noise', 'rain', 'ocean', 'forest', 'coffee-shop', 'fireplace'] as AmbientSoundType[]).map(sound => (
               <button
                 key={sound}
-                onClick={() => setSelectedSound(sound)}
+                onClick={() => {
+                  // Unlock audio on sound selection (user gesture)
+                  if (sound !== 'none') unlockAudio();
+                  setSelectedSound(sound);
+                }}
                 className={`btn-press px-3 py-2 rounded-xl text-sm font-medium transition-all ${
                   selectedSound === sound
                     ? 'bg-primary text-primary-foreground zen-shadow'

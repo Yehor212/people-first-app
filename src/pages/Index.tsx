@@ -698,39 +698,59 @@ export function Index() {
               onOpenTasks={() => setShowTasks(true)}
             />
 
-            <div className="space-y-6">
-              <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
-              <StatsOverview
-                moods={moods}
-                habits={habits}
-                focusSessions={focusSessions}
-                gratitudeEntries={gratitudeEntries}
-                currentFocusMinutes={currentFocusMinutes}
-              />
+            {/* Check if today's mood is recorded */}
+            {(() => {
+              const today = getToday();
+              const hasTodayMood = moods.some(m => m.date === today);
+              const hasTodayHabits = habits.some(h => h.completedDates.includes(today));
+              const needsPrimaryCTA = !hasTodayMood;
 
-              <MoodTracker entries={moods} onAddEntry={handleAddMood} />
+              return (
+                <div className="space-y-6">
+                  <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
 
-              <HabitTracker
-                habits={habits}
-                onToggleHabit={handleToggleHabit}
-                onAdjustHabit={handleAdjustHabit}
-                onAddHabit={handleAddHabit}
-                onDeleteHabit={handleDeleteHabit}
-              />
+                  {/* Primary CTA: Mood Tracker if not filled today */}
+                  {needsPrimaryCTA && (
+                    <MoodTracker entries={moods} onAddEntry={handleAddMood} isPrimaryCTA={true} />
+                  )}
 
-              <FocusTimer
-                sessions={focusSessions}
-                onCompleteSession={handleCompleteFocusSession}
-                onMinuteUpdate={setCurrentFocusMinutes}
-              />
-              
-              <GratitudeJournal
-                entries={gratitudeEntries}
-                onAddEntry={handleAddGratitude}
-              />
-              
-              <WeeklyCalendar moods={moods} habits={habits} />
-            </div>
+                  {/* Stats Overview - compact when CTA is shown */}
+                  <StatsOverview
+                    moods={moods}
+                    habits={habits}
+                    focusSessions={focusSessions}
+                    gratitudeEntries={gratitudeEntries}
+                    currentFocusMinutes={currentFocusMinutes}
+                  />
+
+                  {/* Mood Tracker - normal style when already filled */}
+                  {!needsPrimaryCTA && (
+                    <MoodTracker entries={moods} onAddEntry={handleAddMood} />
+                  )}
+
+                  <HabitTracker
+                    habits={habits}
+                    onToggleHabit={handleToggleHabit}
+                    onAdjustHabit={handleAdjustHabit}
+                    onAddHabit={handleAddHabit}
+                    onDeleteHabit={handleDeleteHabit}
+                  />
+
+                  <FocusTimer
+                    sessions={focusSessions}
+                    onCompleteSession={handleCompleteFocusSession}
+                    onMinuteUpdate={setCurrentFocusMinutes}
+                  />
+
+                  <GratitudeJournal
+                    entries={gratitudeEntries}
+                    onAddEntry={handleAddGratitude}
+                  />
+
+                  <WeeklyCalendar moods={moods} habits={habits} />
+                </div>
+              );
+            })()}
           </>
         )}
 

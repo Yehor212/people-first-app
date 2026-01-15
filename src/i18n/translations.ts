@@ -33,6 +33,8 @@ export interface Translations {
   terrible: string;
   addNote: string;
   saveMood: string;
+  startHere: string;
+  tapToStart: string;
   moodPrompt: string;
   moodTagsTitle: string;
   moodTagPlaceholder: string;
@@ -552,6 +554,8 @@ export const translations: Record<Language, Translations> = {
     terrible: 'Ужасно',
     addNote: 'Добавьте заметку (необязательно)...',
     saveMood: 'Сохранить настроение',
+    startHere: 'Начни здесь',
+    tapToStart: 'Нажми на эмодзи, чтобы начать день',
     moodPrompt: 'Что повлияло на настроение?',
     moodTagsTitle: 'Теги',
     moodTagPlaceholder: 'Добавить тег...',
@@ -1025,6 +1029,8 @@ export const translations: Record<Language, Translations> = {
     terrible: 'Terrible',
     addNote: 'Add a note (optional)...',
     saveMood: 'Save mood',
+    startHere: 'Start here',
+    tapToStart: 'Tap an emoji to start your day',
     moodPrompt: 'What influenced it?',
     moodTagsTitle: 'Tags',
     moodTagPlaceholder: 'Add a tag...',
@@ -1498,6 +1504,8 @@ export const translations: Record<Language, Translations> = {
     terrible: 'Жахливо',
     addNote: 'Додайте нотатку (необов\'язково)...',
     saveMood: 'Зберегти настрій',
+    startHere: 'Почни тут',
+    tapToStart: 'Натисни на емодзі, щоб почати день',
     moodPrompt: 'Що вплинуло на настрій?',
     moodTagsTitle: 'Теги',
     moodTagPlaceholder: 'Додати тег...',
@@ -1971,6 +1979,8 @@ export const translations: Record<Language, Translations> = {
     terrible: 'Terrible',
     addNote: 'Añade una nota (opcional)...',
     saveMood: 'Guardar estado',
+    startHere: 'Empieza aquí',
+    tapToStart: 'Toca un emoji para empezar tu día',
     moodPrompt: '¿Qué influyó en tu ánimo?',
     moodTagsTitle: 'Etiquetas',
     moodTagPlaceholder: 'Añadir etiqueta...',
@@ -2445,6 +2455,8 @@ export const translations: Record<Language, Translations> = {
     terrible: 'Schrecklich',
     addNote: 'Notiz hinzufügen (optional)...',
     saveMood: 'Stimmung speichern',
+    startHere: 'Starte hier',
+    tapToStart: 'Tippe auf ein Emoji, um deinen Tag zu beginnen',
     moodPrompt: 'Was hat das beeinflusst?',
     moodTagsTitle: 'Tags',
     moodTagPlaceholder: 'Tag hinzufügen...',
@@ -2919,6 +2931,8 @@ export const translations: Record<Language, Translations> = {
     terrible: 'Terrible',
     addNote: 'Ajouter une note (optionnel)...',
     saveMood: 'Sauvegarder l\'humeur',
+    startHere: 'Commencez ici',
+    tapToStart: 'Appuyez sur un emoji pour commencer votre journée',
     moodPrompt: 'Qu\'est-ce qui a influencé votre humeur ?',
     moodTagsTitle: 'Tags',
     moodTagPlaceholder: 'Ajouter un tag...',
