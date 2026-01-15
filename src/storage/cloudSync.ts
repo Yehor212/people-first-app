@@ -39,9 +39,30 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge") => {
 
   if (remote?.payload) {
     const remotePayload = remote.payload;
-    const localDate = new Date((localBackup as any).createdAt || localBackup.exportedAt).getTime();
-    const remoteDate = new Date(remotePayload.createdAt || remotePayload.exportedAt || remote.updated_at || 0).getTime();
-    if (remoteDate > localDate) {
+    const remoteData = remotePayload.data || {};
+    const localData = localBackup.data || {};
+
+    // Compare actual data content, not backup creation timestamps
+    // Count total items in each backup
+    const localItemCount =
+      (localData.moods?.length || 0) +
+      (localData.habits?.length || 0) +
+      (localData.focusSessions?.length || 0) +
+      (localData.gratitudeEntries?.length || 0);
+
+    const remoteItemCount =
+      (remoteData.moods?.length || 0) +
+      (remoteData.habits?.length || 0) +
+      (remoteData.focusSessions?.length || 0) +
+      (remoteData.gratitudeEntries?.length || 0);
+
+    // If remote has more data, or local is empty but remote has data, pull from cloud
+    const shouldPull = (remoteItemCount > localItemCount) ||
+                       (localItemCount === 0 && remoteItemCount > 0);
+
+    console.log(`[CloudSync] Local items: ${localItemCount}, Remote items: ${remoteItemCount}, Should pull: ${shouldPull}`);
+
+    if (shouldPull) {
       await importBackup(remotePayload, mode);
       syncStatus = "pulled";
       // Trigger React state refresh after importing cloud data
