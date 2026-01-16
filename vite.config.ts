@@ -22,7 +22,8 @@ export default defineConfig(({ mode }) => {
   plugins: [
     react(),
     mode === "development" && componentTagger(),
-    VitePWA({
+    // Disable PWA for Capacitor builds (native apps don't need service workers)
+    !isCapacitor && VitePWA({
       registerType: "prompt", // User controls updates
       includeAssets: [
         "favicon.ico",
