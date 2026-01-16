@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, calculateStreak } from '@/lib/utils';
-import { Flame, Brain, Heart, Target } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { StreakCelebration } from './StreakCelebration';
 import { shouldShowStreakMessage } from '@/lib/motivationalMessages';
@@ -30,7 +29,6 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
   const uniqueDates = [...new Set(allCompletedDates)].sort();
   const streak = calculateStreak(uniqueDates);
 
-  // Check if we should show celebration
   useEffect(() => {
     if (shouldShowStreakMessage(streak, lastShownStreak)) {
       setShowCelebration(true);
@@ -47,71 +45,82 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
 
   const stats = [
     {
-      icon: Flame,
+      emoji: '🔥',
       label: t.streakDays,
       value: streak,
       suffix: t.days,
-      bgColor: 'bg-orange-500',
-      textGradient: 'from-orange-500 to-red-500',
-      shadowColor: 'shadow-orange-500/30',
-      iconColor: 'text-white',
+      gradient: 'from-orange-500/20 to-red-500/20',
+      borderColor: 'border-orange-500/30',
+      valueColor: 'text-orange-400',
     },
     {
-      icon: Target,
+      emoji: '🎯',
       label: t.habitsToday,
       value: `${todayHabitsCompleted}/${totalHabits}`,
       suffix: '',
-      bgColor: 'bg-emerald-500',
-      textGradient: 'from-emerald-500 to-teal-500',
-      shadowColor: 'shadow-emerald-500/30',
-      iconColor: 'text-white',
+      gradient: 'from-emerald-500/20 to-teal-500/20',
+      borderColor: 'border-emerald-500/30',
+      valueColor: 'text-emerald-400',
     },
     {
-      icon: Brain,
+      emoji: '🧠',
       label: t.focusToday,
       value: todayFocusMinutes,
       suffix: t.min,
-      bgColor: 'bg-violet-500',
-      textGradient: 'from-violet-500 to-purple-500',
-      shadowColor: 'shadow-violet-500/30',
-      iconColor: 'text-white',
+      gradient: 'from-violet-500/20 to-purple-500/20',
+      borderColor: 'border-violet-500/30',
+      valueColor: 'text-violet-400',
     },
     {
-      icon: Heart,
+      emoji: '💜',
       label: t.gratitudes,
       value: totalGratitude,
       suffix: '',
-      bgColor: 'bg-pink-500',
-      textGradient: 'from-pink-500 to-rose-500',
-      shadowColor: 'shadow-pink-500/30',
-      iconColor: 'text-white',
+      gradient: 'from-pink-500/20 to-rose-500/20',
+      borderColor: 'border-pink-500/30',
+      valueColor: 'text-pink-400',
     },
   ];
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {stats.map((stat, index) => (
           <div
             key={stat.label}
-            className="stat-card-animated bg-card rounded-2xl p-4 zen-shadow-card hover:scale-[1.02] transition-all cursor-default group"
+            className={`
+              stat-card-animated relative overflow-hidden
+              bg-gradient-to-br ${stat.gradient}
+              border ${stat.borderColor}
+              rounded-2xl p-4
+              hover:scale-[1.02] transition-all duration-300
+              cursor-default group
+            `}
             style={{ animationDelay: `${index * 100}ms` }}
           >
-            <div className={`relative w-12 h-12 ${stat.bgColor} rounded-xl flex items-center justify-center mb-3 shadow-lg ${stat.shadowColor} group-hover:scale-110 transition-transform`}>
-              {typeof stat.icon === 'function' && <stat.icon className={`w-6 h-6 ${stat.iconColor}`} />}
+            {/* Emoji */}
+            <div className="text-3xl mb-2 group-hover:scale-110 transition-transform">
+              {stat.emoji}
             </div>
-            <p className="stat-value text-2xl font-bold transition-all">
-              <span className={`number-animated inline-block bg-clip-text text-transparent bg-gradient-to-r ${stat.textGradient}`} style={{ animationDelay: `${index * 100 + 200}ms` }}>
+
+            {/* Value */}
+            <div className="flex items-baseline gap-1">
+              <span className={`text-2xl font-bold ${stat.valueColor}`}>
                 {stat.value}
               </span>
-              {stat.suffix && <span className="text-sm text-muted-foreground ml-1">{stat.suffix}</span>}
+              {stat.suffix && (
+                <span className="text-xs text-muted-foreground">{stat.suffix}</span>
+              )}
+            </div>
+
+            {/* Label */}
+            <p className="text-xs text-muted-foreground mt-1 truncate">
+              {stat.label}
             </p>
-            <p className="text-sm text-muted-foreground">{stat.label}</p>
           </div>
         ))}
       </div>
 
-      {/* Streak Celebration Modal */}
       {showCelebration && (
         <StreakCelebration
           streak={streak}
