@@ -1362,3 +1362,247 @@
 .animate-selection-pop {
   animation: selection-pop 0.4s ease-out;
 }
+
+/* ============================================
+   DYNAMIC MOOD THEMING
+   ============================================ */
+
+/* CSS Variables for mood themes - set by MoodThemeContext */
+:root {
+  --mood-primary-hue: 250;
+  --mood-accent-hue: 200;
+  --mood-saturation: 50%;
+  --mood-brightness: 1;
+  --mood-gradient-from: rgba(139, 92, 246, 0.1);
+  --mood-gradient-via: rgba(168, 85, 247, 0.05);
+  --mood-gradient-to: rgba(192, 132, 252, 0.08);
+  --mood-animation-speed: 1;
+  --mood-particle-intensity: 0.5;
+  --mood-shadow-intensity: 0.5;
+  --mood-border-radius: 1;
+}
+
+/* Base transition for mood changes */
+body {
+  transition: background-color 0.6s ease-out;
+}
+
+/* Mood-based background overlay */
+.mood-background-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.6s ease-out, background 0.6s ease-out;
+}
+
+body.mood-transitioning .mood-background-overlay {
+  opacity: 0;
+}
+
+/* Great mood - Vibrant, celebratory */
+body.mood-great .mood-background-overlay {
+  opacity: 1;
+  background:
+    radial-gradient(ellipse at top left, var(--mood-gradient-from) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, var(--mood-gradient-to) 0%, transparent 50%),
+    radial-gradient(ellipse at center, var(--mood-gradient-via) 0%, transparent 70%);
+}
+
+body.mood-great {
+  --zen-shadow-soft: 0 4px 25px -4px hsl(280 60% 60% / 0.2);
+  --zen-shadow-glow: 0 0 40px hsl(280 60% 60% / 0.25);
+}
+
+/* Good mood - Warm, positive */
+body.mood-good .mood-background-overlay {
+  opacity: 1;
+  background:
+    radial-gradient(ellipse at top, var(--mood-gradient-from) 0%, transparent 40%),
+    radial-gradient(ellipse at bottom left, var(--mood-gradient-to) 0%, transparent 50%);
+}
+
+body.mood-good {
+  --zen-shadow-soft: 0 4px 22px -4px hsl(150 50% 50% / 0.18);
+  --zen-shadow-glow: 0 0 35px hsl(150 50% 50% / 0.2);
+}
+
+/* Okay mood - Neutral, calm */
+body.mood-okay .mood-background-overlay {
+  opacity: 0.7;
+  background:
+    radial-gradient(ellipse at center, var(--mood-gradient-from) 0%, transparent 60%);
+}
+
+body.mood-okay {
+  --zen-shadow-soft: 0 4px 18px -4px hsl(220 30% 50% / 0.12);
+  --zen-shadow-glow: 0 0 25px hsl(220 30% 50% / 0.15);
+}
+
+/* Bad mood - Calming, supportive blues */
+body.mood-bad .mood-background-overlay {
+  opacity: 1;
+  background:
+    radial-gradient(ellipse at top, var(--mood-gradient-from) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom, var(--mood-gradient-to) 0%, transparent 40%);
+}
+
+body.mood-bad {
+  --zen-shadow-soft: 0 4px 15px -4px hsl(200 40% 50% / 0.1);
+  --zen-shadow-glow: 0 0 20px hsl(200 40% 50% / 0.12);
+}
+
+/* Terrible mood - Very gentle, minimal */
+body.mood-terrible .mood-background-overlay {
+  opacity: 0.8;
+  background:
+    radial-gradient(ellipse at center, var(--mood-gradient-from) 0%, transparent 70%);
+}
+
+body.mood-terrible {
+  --zen-shadow-soft: 0 4px 12px -4px hsl(250 25% 50% / 0.08);
+  --zen-shadow-glow: 0 0 15px hsl(250 25% 50% / 0.1);
+}
+
+/* Neutral mood - Default */
+body.mood-neutral .mood-background-overlay {
+  opacity: 0.5;
+  background:
+    radial-gradient(ellipse at top right, var(--mood-gradient-from) 0%, transparent 50%);
+}
+
+/* Animation speed adjustments based on mood */
+body.mood-great * {
+  --animation-duration-modifier: 0.77; /* Faster */
+}
+
+body.mood-good * {
+  --animation-duration-modifier: 0.91;
+}
+
+body.mood-okay * {
+  --animation-duration-modifier: 1;
+}
+
+body.mood-bad * {
+  --animation-duration-modifier: 1.43; /* Slower */
+}
+
+body.mood-terrible * {
+  --animation-duration-modifier: 2; /* Very slow, calming */
+}
+
+/* Mood-aware animations */
+body.mood-great .animate-fade-in {
+  animation-duration: 0.35s;
+}
+
+body.mood-bad .animate-fade-in,
+body.mood-terrible .animate-fade-in {
+  animation-duration: 0.8s;
+}
+
+/* Border radius adjustments for softer feel on bad moods */
+body.mood-bad .bg-card,
+body.mood-terrible .bg-card {
+  border-radius: calc(var(--radius) * var(--mood-border-radius));
+}
+
+/* Reduce motion for bad moods - less stimulation */
+body.mood-terrible .animate-bounce-gentle,
+body.mood-terrible .animate-float,
+body.mood-terrible .animate-pulse-soft {
+  animation: none;
+}
+
+body.mood-bad .animate-bounce-gentle,
+body.mood-bad .animate-float {
+  animation-duration: 4s;
+}
+
+/* Support message banner */
+.mood-support-banner {
+  background: linear-gradient(135deg,
+    hsl(var(--mood-primary-hue) var(--mood-saturation) 95% / 0.9),
+    hsl(var(--mood-accent-hue) calc(var(--mood-saturation) - 10%) 96% / 0.9)
+  );
+  border: 1px solid hsl(var(--mood-primary-hue) var(--mood-saturation) 80% / 0.3);
+  animation: support-banner-enter 0.6s ease-out;
+}
+
+.dark .mood-support-banner {
+  background: linear-gradient(135deg,
+    hsl(var(--mood-primary-hue) calc(var(--mood-saturation) - 20%) 20% / 0.9),
+    hsl(var(--mood-accent-hue) calc(var(--mood-saturation) - 25%) 18% / 0.9)
+  );
+  border: 1px solid hsl(var(--mood-primary-hue) var(--mood-saturation) 40% / 0.3);
+}
+
+@keyframes support-banner-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mood theme transition overlay */
+.mood-transition-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: hsl(var(--mood-primary-hue) var(--mood-saturation) 50% / 0);
+  transition: background 0.3s ease-out;
+}
+
+.mood-transition-overlay.active {
+  background: hsl(var(--mood-primary-hue) var(--mood-saturation) 50% / 0.1);
+}
+
+/* Floating mood particles (for great/good moods) */
+@keyframes mood-particle-float {
+  0%, 100% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: calc(0.3 * var(--mood-particle-intensity));
+  }
+  50% {
+    transform: translateY(-30px) translateX(10px) scale(1.2);
+    opacity: calc(0.5 * var(--mood-particle-intensity));
+  }
+}
+
+.mood-particle {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: hsl(var(--mood-primary-hue) var(--mood-saturation) 60% / 0.3);
+  pointer-events: none;
+  animation: mood-particle-float 6s ease-in-out infinite;
+}
+
+body.mood-terrible .mood-particle,
+body.mood-bad .mood-particle {
+  display: none;
+}
+
+/* Breathing exercise suggestion for bad moods */
+@keyframes breathing-circle {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.15;
+  }
+}
+
+.breathing-suggestion {
+  animation: breathing-circle 4s ease-in-out infinite;
+}

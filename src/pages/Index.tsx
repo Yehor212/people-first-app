@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useMoodTheme } from '@/contexts/MoodThemeContext';
+import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
 import { generateId, getToday } from '@/lib/utils';
@@ -49,6 +51,7 @@ type TabType = 'home' | 'stats' | 'achievements' | 'settings';
 
 export function Index() {
   const { t, language } = useLanguage();
+  const { setMoodFromEntries } = useMoodTheme();
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const lastSyncedUserIdRef = useRef<string | null>(null);
 
@@ -206,6 +209,13 @@ export function Index() {
   }, [badges]);
 
   useWidgetSync(currentStreak, habits, todayFocusMinutes, lastBadgeName);
+
+  // Sync mood theme with current mood entries
+  useEffect(() => {
+    if (!isLoadingMoods) {
+      setMoodFromEntries(moods);
+    }
+  }, [moods, isLoadingMoods, setMoodFromEntries]);
 
   // Handlers
   const handleAddMood = (entry: MoodEntry) => {
@@ -728,6 +738,9 @@ export function Index() {
 
   return (
     <div className="min-h-screen zen-gradient-hero">
+      {/* Dynamic mood-based background overlay */}
+      <MoodBackgroundOverlay />
+
       <div className="max-w-lg mx-auto px-4 py-6 pb-28">
         {activeTab === 'home' && (
           <>
