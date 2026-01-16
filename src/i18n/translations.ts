@@ -70,6 +70,12 @@ export interface Translations {
   continueProgress: string;
   dayTimeline: string;
   dayComplete: string;
+  perfectDay: string;
+  startYourDay: string;
+  keepGoing: string;
+  almostThere: string;
+  soClose: string;
+  legendaryDay: string;
 
   // Habits
   habits: string;
@@ -657,6 +663,12 @@ export const translations: Record<Language, Translations> = {
     continueProgress: 'Продолжить',
     dayTimeline: 'Твой день',
     dayComplete: 'дня прошло',
+    perfectDay: 'Идеальный день!',
+    startYourDay: 'Начни свой день! 🌅',
+    keepGoing: 'Продолжай! Ты молодец 💪',
+    almostThere: 'Почти на месте! 🚀',
+    soClose: 'Так близко к совершенству! ⭐',
+    legendaryDay: 'ЛЕГЕНДАРНЫЙ ДЕНЬ! 🏆🔥✨',
     habits: 'Привычки',
     habitName: 'Название привычки...',
     icon: 'Иконка',
@@ -1198,6 +1210,12 @@ export const translations: Record<Language, Translations> = {
     continueProgress: 'Continue your progress',
     dayTimeline: 'Your Day',
     dayComplete: 'of day',
+    perfectDay: 'Perfect Day!',
+    startYourDay: 'Start your day! 🌅',
+    keepGoing: "Keep going! You're doing great 💪",
+    almostThere: 'Almost there! 🚀',
+    soClose: 'So close to perfection! ⭐',
+    legendaryDay: 'LEGENDARY DAY! 🏆🔥✨',
     habits: 'Habits',
     habitName: 'Habit name...',
     icon: 'Icon',
@@ -1739,6 +1757,12 @@ export const translations: Record<Language, Translations> = {
     continueProgress: 'Продовжити',
     dayTimeline: 'Твій день',
     dayComplete: 'дня минуло',
+    perfectDay: 'Ідеальний день!',
+    startYourDay: 'Почни свій день! 🌅',
+    keepGoing: 'Продовжуй! Ти молодець 💪',
+    almostThere: 'Майже на місці! 🚀',
+    soClose: 'Так близько до досконалості! ⭐',
+    legendaryDay: 'ЛЕГЕНДАРНИЙ ДЕНЬ! 🏆🔥✨',
     habits: 'Звички',
     habitName: 'Назва звички...',
     icon: 'Іконка',
@@ -2280,6 +2304,12 @@ export const translations: Record<Language, Translations> = {
     continueProgress: 'Continuar tu progreso',
     dayTimeline: 'Tu día',
     dayComplete: 'del día',
+    perfectDay: '¡Día perfecto!',
+    startYourDay: '¡Empieza tu día! 🌅',
+    keepGoing: '¡Sigue así! Lo estás haciendo genial 💪',
+    almostThere: '¡Ya casi! 🚀',
+    soClose: '¡Tan cerca de la perfección! ⭐',
+    legendaryDay: '¡DÍA LEGENDARIO! 🏆🔥✨',
     habits: 'Hábitos',
     habitName: 'Nombre del hábito...',
     icon: 'Icono',
@@ -2822,6 +2852,12 @@ export const translations: Record<Language, Translations> = {
     continueProgress: 'Fortfahren',
     dayTimeline: 'Dein Tag',
     dayComplete: 'des Tages',
+    perfectDay: 'Perfekter Tag!',
+    startYourDay: 'Starte deinen Tag! 🌅',
+    keepGoing: 'Weiter so! Du machst das toll 💪',
+    almostThere: 'Fast geschafft! 🚀',
+    soClose: 'So nah an der Perfektion! ⭐',
+    legendaryDay: 'LEGENDÄRER TAG! 🏆🔥✨',
     habits: 'Gewohnheiten',
     habitName: 'Name der Gewohnheit...',
     icon: 'Symbol',
@@ -3364,6 +3400,12 @@ export const translations: Record<Language, Translations> = {
     continueProgress: 'Continuer',
     dayTimeline: 'Ta journée',
     dayComplete: 'de la journée',
+    perfectDay: 'Journée parfaite !',
+    startYourDay: 'Commence ta journée ! 🌅',
+    keepGoing: 'Continue ! Tu fais du super boulot 💪',
+    almostThere: 'Presque là ! 🚀',
+    soClose: 'Si proche de la perfection ! ⭐',
+    legendaryDay: 'JOURNÉE LÉGENDAIRE ! 🏆🔥✨',
     habits: 'Habitudes',
     habitName: 'Nom de l\'habitude...',
     icon: 'Icône',

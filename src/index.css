@@ -1606,3 +1606,117 @@ body.mood-bad .mood-particle {
 .breathing-suggestion {
   animation: breathing-circle 4s ease-in-out infinite;
 }
+
+/* ============================================
+   ADHD DAY CLOCK ANIMATIONS
+   ============================================ */
+
+/* Energy particle burst animation */
+@keyframes energy-particle {
+  0% {
+    opacity: 1;
+    transform: rotate(var(--particle-angle, 0deg)) translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--particle-angle, 0deg)) translateY(-80px) scale(0.5);
+  }
+}
+
+.animate-energy-particle {
+  animation: energy-particle 1s ease-out forwards;
+}
+
+/* Pulsing glow for active segments */
+@keyframes pulse-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px currentColor);
+    opacity: 0.7;
+  }
+  50% {
+    filter: drop-shadow(0 0 12px currentColor);
+    opacity: 1;
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Soft pulse for completed items */
+@keyframes pulse-soft {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+/* Gentle bounce for mascot */
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-bounce-gentle {
+  animation: bounce-gentle 1.5s ease-in-out infinite;
+}
+
+/* Celebration sparkle */
+@keyframes sparkle-pop {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(180deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(360deg);
+    opacity: 1;
+  }
+}
+
+.animate-sparkle-pop {
+  animation: sparkle-pop 0.5s ease-out forwards;
+}
+
+/* Ring fill animation */
+@keyframes ring-fill {
+  from {
+    stroke-dashoffset: 377;
+  }
+  to {
+    stroke-dashoffset: var(--target-offset, 0);
+  }
+}
+
+.animate-ring-fill {
+  animation: ring-fill 1s ease-out forwards;
+}
+
+/* Energy bar glow */
+@keyframes energy-glow {
+  0%, 100% {
+    box-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+  }
+  50% {
+    box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+  }
+}
+
+.animate-energy-glow {
+  animation: energy-glow 2s ease-in-out infinite;
+}
