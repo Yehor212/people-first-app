@@ -34,12 +34,10 @@ subprojects { project ->
             }
         }
 
-        // Set Kotlin JVM target to match Java
+        // Set Kotlin JVM target to match Java 17
         if (project.plugins.hasPlugin('org.jetbrains.kotlin.android')) {
-            project.tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-                kotlinOptions {
-                    jvmTarget = '17'
-                }
+            project.android.kotlinOptions {
+                jvmTarget = '17'
             }
         }
     }
