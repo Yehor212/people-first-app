@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { setupAudioUnlock } from "./lib/ambientSounds";
+
+// Setup audio unlock for iOS - attaches to first user interaction
+setupAudioUnlock();
 
 // Unregister any existing service workers and clear caches (fixes white screen on Capacitor after PWA was disabled)
 try {
