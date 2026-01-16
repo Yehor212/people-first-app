@@ -63,6 +63,8 @@ export interface Translations {
   changeMoodConfirmMessage: string;
   moodChanged: string;
   confirm: string;
+  dailyProgress: string;
+  continueProgress: string;
 
   // Habits
   habits: string;
@@ -624,6 +626,8 @@ export const translations: Record<Language, Translations> = {
     changeMoodConfirmMessage: 'Вы уверены, что хотите изменить своё настроение?',
     moodChanged: 'Настроение обновлено!',
     confirm: 'Изменить',
+    dailyProgress: 'Прогресс за день',
+    continueProgress: 'Продолжить',
     habits: 'Привычки',
     habitName: 'Название привычки...',
     icon: 'Иконка',
@@ -1139,6 +1143,8 @@ export const translations: Record<Language, Translations> = {
     changeMoodConfirmMessage: 'Are you sure you want to change your mood?',
     moodChanged: 'Mood updated!',
     confirm: 'Change',
+    dailyProgress: 'Daily Progress',
+    continueProgress: 'Continue your progress',
     habits: 'Habits',
     habitName: 'Habit name...',
     icon: 'Icon',
@@ -1654,6 +1660,8 @@ export const translations: Record<Language, Translations> = {
     changeMoodConfirmMessage: 'Ви впевнені, що хочете змінити свій настрій?',
     moodChanged: 'Настрій оновлено!',
     confirm: 'Змінити',
+    dailyProgress: 'Прогрес за день',
+    continueProgress: 'Продовжити',
     habits: 'Звички',
     habitName: 'Назва звички...',
     icon: 'Іконка',
@@ -2169,6 +2177,8 @@ export const translations: Record<Language, Translations> = {
     changeMoodConfirmMessage: '¿Estás seguro de que quieres cambiar tu estado de ánimo?',
     moodChanged: '¡Estado de ánimo actualizado!',
     confirm: 'Cambiar',
+    dailyProgress: 'Progreso diario',
+    continueProgress: 'Continuar tu progreso',
     habits: 'Hábitos',
     habitName: 'Nombre del hábito...',
     icon: 'Icono',
@@ -2685,6 +2695,8 @@ export const translations: Record<Language, Translations> = {
     changeMoodConfirmMessage: 'Bist du sicher, dass du deine Stimmung ändern möchtest?',
     moodChanged: 'Stimmung aktualisiert!',
     confirm: 'Ändern',
+    dailyProgress: 'Tagesfortschritt',
+    continueProgress: 'Fortfahren',
     habits: 'Gewohnheiten',
     habitName: 'Name der Gewohnheit...',
     icon: 'Symbol',
@@ -3201,6 +3213,8 @@ export const translations: Record<Language, Translations> = {
     changeMoodConfirmMessage: 'Êtes-vous sûr de vouloir changer votre humeur ?',
     moodChanged: 'Humeur mise à jour !',
     confirm: 'Changer',
+    dailyProgress: 'Progression quotidienne',
+    continueProgress: 'Continuer',
     habits: 'Habitudes',
     habitName: 'Nom de l\'habitude...',
     icon: 'Icône',

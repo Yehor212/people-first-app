@@ -51,7 +51,50 @@ export const sanitizeObject = <T extends Record<string, unknown>>(obj: T): T => 
   return sanitized;
 };
 
-// Validate backup data structure
+// Individual item validation schemas for backup import
+export const moodEntrySchema = z.object({
+  id: z.string().min(1).max(100),
+  mood: z.enum(['great', 'good', 'okay', 'bad', 'terrible']),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  timestamp: z.number().int().positive(),
+  note: z.string().max(1000).optional(),
+}).passthrough();
+
+export const habitSchema = z.object({
+  id: z.string().min(1).max(100),
+  name: z.string().min(1).max(200),
+  icon: z.string().max(10),
+  color: z.string().max(50),
+  completedDates: z.array(z.string()).max(10000),
+  createdAt: z.number().int().positive(),
+}).passthrough();
+
+export const focusSessionSchema = z.object({
+  id: z.string().min(1).max(100),
+  duration: z.number().int().min(0).max(86400), // max 24 hours
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  timestamp: z.number().int().positive(),
+}).passthrough();
+
+export const gratitudeEntrySchema = z.object({
+  id: z.string().min(1).max(100),
+  text: z.string().min(1).max(1000),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  timestamp: z.number().int().positive(),
+}).passthrough();
+
+export const settingSchema = z.object({
+  key: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/),
+  value: z.unknown(),
+}).passthrough();
+
+// Safe validation with fallback
+export const safeValidate = <T>(schema: z.ZodSchema<T>, data: unknown): T | null => {
+  const result = schema.safeParse(data);
+  return result.success ? result.data : null;
+};
+
+// Validate backup data structure (legacy schema for backwards compat)
 export const backupDataSchema = z.object({
   version: z.string(),
   exportDate: z.string(),

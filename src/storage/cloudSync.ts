@@ -1,6 +1,7 @@
 import { exportBackup, importBackup } from "@/storage/backup";
 import { supabase } from "@/lib/supabaseClient";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
+import logger from "@/lib/logger";
 
 const BACKUP_TABLE = "user_backups";
 const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -55,20 +56,20 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge") => {
       (remoteData.focusSessions?.length || 0) +
       (remoteData.gratitudeEntries?.length || 0);
 
-    console.log(`[CloudSync] Local items: ${localItemCount}, Remote items: ${remoteItemCount}`);
+    logger.sync(`Local items: ${localItemCount}, Remote items: ${remoteItemCount}`);
 
     // ALWAYS merge if remote has any data - this ensures cross-device sync works
     // The importBackup with mode="merge" will use bulkPut which updates existing or adds new
     if (remoteItemCount > 0) {
-      console.log('[CloudSync] Merging remote data into local...');
+      logger.sync('Merging remote data into local...');
       await importBackup(remotePayload, mode);
       syncStatus = localItemCount === 0 ? "pulled" : "merged";
       // Trigger React state refresh after importing cloud data
       triggerDataRefresh();
-      console.log('[CloudSync] Data refreshed after cloud merge');
+      logger.sync('Data refreshed after cloud merge');
     }
   } else {
-    console.log('[CloudSync] No remote data found, will push local data');
+    logger.sync('No remote data found, will push local data');
   }
 
   const mergedBackup = await exportBackup();
@@ -93,9 +94,9 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge") => {
 export const silentSync = async () => {
   try {
     await syncWithCloud('merge');
-    console.log('[CloudSync] Auto-sync completed');
+    logger.sync('Auto-sync completed');
   } catch (error) {
-    console.warn('[CloudSync] Auto-sync failed:', error);
+    logger.warn('[Sync] Auto-sync failed:', error);
   }
 };
 
@@ -127,7 +128,7 @@ export const startAutoSync = () => {
     }
   });
 
-  console.log('[CloudSync] Auto-sync started');
+  logger.sync('Auto-sync started');
 };
 
 // Stop periodic sync

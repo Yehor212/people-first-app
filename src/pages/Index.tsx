@@ -22,6 +22,7 @@ import { HabitTracker } from '@/components/HabitTracker';
 import { FocusTimer } from '@/components/FocusTimer';
 import { GratitudeJournal } from '@/components/GratitudeJournal';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
+import { DailyProgress } from '@/components/DailyProgress';
 import { StatsPage } from '@/components/StatsPage';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { LanguageSelector } from '@/components/LanguageSelector';
@@ -50,6 +51,17 @@ export function Index() {
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const lastSyncedUserIdRef = useRef<string | null>(null);
+
+  // Section refs for navigation
+  const moodRef = useRef<HTMLDivElement>(null);
+  const habitsRef = useRef<HTMLDivElement>(null);
+  const focusRef = useRef<HTMLDivElement>(null);
+  const gratitudeRef = useRef<HTMLDivElement>(null);
+
+  const handleNavigateToSection = (section: 'mood' | 'habits' | 'focus' | 'gratitude') => {
+    const refs = { mood: moodRef, habits: habitsRef, focus: focusRef, gratitude: gratitudeRef };
+    refs[section]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
 
   // Gamification system
   const { stats, gamificationState, userLevel, awardXp } = useGamification();
@@ -736,12 +748,26 @@ export function Index() {
                 <div className="space-y-6">
                   <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
 
-                  {/* Primary CTA: Mood Tracker if not filled today */}
-                  {needsPrimaryCTA && (
-                    <MoodTracker entries={moods} onAddEntry={handleAddMood} onUpdateEntry={handleUpdateMood} isPrimaryCTA={true} />
-                  )}
+                  {/* Daily Progress CTA */}
+                  <DailyProgress
+                    moods={moods}
+                    habits={habits}
+                    focusSessions={focusSessions}
+                    gratitudeEntries={gratitudeEntries}
+                    onNavigate={handleNavigateToSection}
+                  />
 
-                  {/* Stats Overview - compact when CTA is shown */}
+                  {/* Mood Tracker - Primary CTA style if not filled today */}
+                  <div ref={moodRef}>
+                    <MoodTracker
+                      entries={moods}
+                      onAddEntry={handleAddMood}
+                      onUpdateEntry={handleUpdateMood}
+                      isPrimaryCTA={needsPrimaryCTA}
+                    />
+                  </div>
+
+                  {/* Stats Overview */}
                   <StatsOverview
                     moods={moods}
                     habits={habits}
@@ -750,29 +776,30 @@ export function Index() {
                     currentFocusMinutes={currentFocusMinutes}
                   />
 
-                  {/* Mood Tracker - normal style when already filled */}
-                  {!needsPrimaryCTA && (
-                    <MoodTracker entries={moods} onAddEntry={handleAddMood} onUpdateEntry={handleUpdateMood} />
-                  )}
+                  <div ref={habitsRef}>
+                    <HabitTracker
+                      habits={habits}
+                      onToggleHabit={handleToggleHabit}
+                      onAdjustHabit={handleAdjustHabit}
+                      onAddHabit={handleAddHabit}
+                      onDeleteHabit={handleDeleteHabit}
+                    />
+                  </div>
 
-                  <HabitTracker
-                    habits={habits}
-                    onToggleHabit={handleToggleHabit}
-                    onAdjustHabit={handleAdjustHabit}
-                    onAddHabit={handleAddHabit}
-                    onDeleteHabit={handleDeleteHabit}
-                  />
+                  <div ref={focusRef}>
+                    <FocusTimer
+                      sessions={focusSessions}
+                      onCompleteSession={handleCompleteFocusSession}
+                      onMinuteUpdate={setCurrentFocusMinutes}
+                    />
+                  </div>
 
-                  <FocusTimer
-                    sessions={focusSessions}
-                    onCompleteSession={handleCompleteFocusSession}
-                    onMinuteUpdate={setCurrentFocusMinutes}
-                  />
-
-                  <GratitudeJournal
-                    entries={gratitudeEntries}
-                    onAddEntry={handleAddGratitude}
-                  />
+                  <div ref={gratitudeRef}>
+                    <GratitudeJournal
+                      entries={gratitudeEntries}
+                      onAddEntry={handleAddGratitude}
+                    />
+                  </div>
 
                   <WeeklyCalendar moods={moods} habits={habits} />
                 </div>

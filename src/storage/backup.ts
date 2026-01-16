@@ -1,7 +1,15 @@
 import { db } from "@/storage/db";
 import { FocusSession, GratitudeEntry, Habit, MoodEntry } from "@/types";
 import { generateId } from "@/lib/utils";
-import { sanitizeObject } from "@/lib/validation";
+import {
+  sanitizeObject,
+  moodEntrySchema,
+  habitSchema,
+  focusSessionSchema,
+  gratitudeEntrySchema,
+  settingSchema,
+  safeValidate
+} from "@/lib/validation";
 
 export type ImportMode = "merge" | "replace";
 
@@ -114,23 +122,42 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
 
   const { moods, habits, focusSessions, gratitudeEntries, settings } = normalized.data;
 
-  const filterValid = <T extends Record<string, unknown>>(items: T[] | undefined, predicate: (item: T) => boolean) => {
+  // Type-safe validation using Zod schemas
+  const validateAndSanitize = <T>(
+    items: unknown[] | undefined,
+    schema: Parameters<typeof safeValidate>[0],
+    maxItems = 100000
+  ): { valid: T[]; skipped: number } => {
     const list = items || [];
     // Limit array size to prevent DOS attacks
-    if (list.length > 100000) {
-      throw new Error('Backup file too large (max 100,000 items per collection)');
+    if (list.length > maxItems) {
+      throw new Error(`Backup file too large (max ${maxItems} items per collection)`);
     }
-    // Sanitize each object to prevent prototype pollution
-    const sanitized = list.map(item => sanitizeObject(item));
-    const valid = sanitized.filter(predicate);
-    return { valid, skipped: list.length - valid.length };
+
+    const valid: T[] = [];
+    let skipped = 0;
+
+    for (const item of list) {
+      // First sanitize to prevent prototype pollution
+      const sanitized = sanitizeObject(item as Record<string, unknown>);
+      // Then validate against schema
+      const validated = safeValidate(schema, sanitized);
+      if (validated) {
+        valid.push(validated as T);
+      } else {
+        skipped++;
+      }
+    }
+
+    return { valid, skipped };
   };
 
-  const validMoods = filterValid(moods, (item) => Boolean((item as MoodEntry).id));
-  const validHabits = filterValid(habits, (item) => Boolean((item as Habit).id));
-  const validFocus = filterValid(focusSessions, (item) => Boolean((item as FocusSession).id));
-  const validGratitude = filterValid(gratitudeEntries, (item) => Boolean((item as GratitudeEntry).id));
-  const validSettings = filterValid(settings, (item) => Boolean((item as { key?: string }).key));
+  // Validate each collection with strict type checking
+  const validMoods = validateAndSanitize<MoodEntry>(moods, moodEntrySchema);
+  const validHabits = validateAndSanitize<Habit>(habits, habitSchema);
+  const validFocus = validateAndSanitize<FocusSession>(focusSessions, focusSessionSchema);
+  const validGratitude = validateAndSanitize<GratitudeEntry>(gratitudeEntries, gratitudeEntrySchema);
+  const validSettings = validateAndSanitize<{ key: string; value: unknown }>(settings, settingSchema);
 
   if (mode === "replace") {
     await db.transaction("rw", db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, async () => {
