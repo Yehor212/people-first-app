@@ -446,18 +446,19 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
             key={mood.type}
             onClick={() => setSelectedMood(mood.type)}
             className={cn(
-              "mood-btn flex flex-col items-center gap-2 p-3 rounded-xl transition-all",
+              "mood-btn flex flex-col items-center gap-2 p-3 rounded-xl transition-all relative",
               selectedMood === mood.type
                 ? `${mood.color} bg-opacity-20 scale-110 zen-shadow-soft selected ring-2 ring-primary/50`
-                : "hover:bg-secondary/80 hover:scale-105",
-              isPrimaryCTA && !selectedMood && "animate-bounce-gentle"
+                : "hover:bg-secondary/80 hover:scale-105"
             )}
             style={isPrimaryCTA && !selectedMood ? { animationDelay: `${index * 150}ms` } : undefined}
           >
             <span className={cn(
-              "transition-transform drop-shadow-sm",
+              "transition-transform",
               isPrimaryCTA ? "text-4xl" : "text-3xl",
-              isPrimaryCTA && !selectedMood && "hover:scale-125"
+              // Apply unique animation for each mood type
+              `emoji-${mood.type}`,
+              selectedMood === mood.type && "scale-110"
             )}>
               {mood.emoji}
             </span>

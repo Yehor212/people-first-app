@@ -460,6 +460,301 @@
   animation: success-pulse 0.6s ease-out;
 }
 
+/* ========================================
+   ANIMATED MOOD EMOJIS - Unique per mood
+   ======================================== */
+
+/* Great mood - Excited bounce + sparkle */
+@keyframes emoji-great {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  10% {
+    transform: scale(1.2) rotate(-5deg);
+  }
+  20% {
+    transform: scale(1.2) rotate(5deg);
+  }
+  30% {
+    transform: scale(1.1) rotate(-3deg);
+  }
+  40% {
+    transform: scale(1.1) rotate(3deg);
+  }
+  50% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.emoji-great {
+  animation: emoji-great 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px hsl(var(--mood-great) / 0.5));
+}
+
+.emoji-great:hover {
+  animation: emoji-great 0.8s ease-in-out infinite;
+  filter: drop-shadow(0 0 15px hsl(var(--mood-great) / 0.8));
+}
+
+/* Good mood - Gentle nod + warm glow */
+@keyframes emoji-good {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  25% {
+    transform: translateY(-3px) scale(1.05);
+  }
+  50% {
+    transform: translateY(0) scale(1);
+  }
+  75% {
+    transform: translateY(-2px) scale(1.03);
+  }
+}
+
+.emoji-good {
+  animation: emoji-good 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 6px hsl(var(--mood-good) / 0.4));
+}
+
+.emoji-good:hover {
+  animation: emoji-good 1s ease-in-out infinite;
+  filter: drop-shadow(0 0 12px hsl(var(--mood-good) / 0.7));
+}
+
+/* Okay mood - Subtle float + think */
+@keyframes emoji-okay {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  25% {
+    transform: translateX(-2px) rotate(-2deg);
+  }
+  75% {
+    transform: translateX(2px) rotate(2deg);
+  }
+}
+
+.emoji-okay {
+  animation: emoji-okay 3s ease-in-out infinite;
+  filter: drop-shadow(0 0 5px hsl(var(--mood-okay) / 0.3));
+}
+
+.emoji-okay:hover {
+  animation: emoji-okay 1.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px hsl(var(--mood-okay) / 0.6));
+}
+
+/* Bad mood - Slow droop */
+@keyframes emoji-bad {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(3px) scale(0.98);
+  }
+}
+
+.emoji-bad {
+  animation: emoji-bad 2.5s ease-in-out infinite;
+  filter: drop-shadow(0 0 5px hsl(var(--mood-bad) / 0.3));
+}
+
+.emoji-bad:hover {
+  animation: emoji-bad 1.2s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px hsl(var(--mood-bad) / 0.6));
+}
+
+/* Terrible mood - Shake + tears effect */
+@keyframes emoji-terrible {
+  0%, 100% {
+    transform: translateX(0) rotate(0deg);
+  }
+  10% {
+    transform: translateX(-1px) rotate(-1deg);
+  }
+  20% {
+    transform: translateX(1px) rotate(1deg);
+  }
+  30% {
+    transform: translateX(-1px) rotate(0deg);
+  }
+  40% {
+    transform: translateX(1px) rotate(1deg);
+  }
+  50% {
+    transform: translateX(-1px) rotate(-1deg);
+  }
+  60% {
+    transform: translateX(1px) rotate(0deg);
+  }
+  70% {
+    transform: translateX(0);
+  }
+}
+
+.emoji-terrible {
+  animation: emoji-terrible 2s ease-in-out infinite;
+  filter: drop-shadow(0 0 5px hsl(var(--mood-terrible) / 0.3));
+}
+
+.emoji-terrible:hover {
+  animation: emoji-terrible 1s ease-in-out infinite;
+  filter: drop-shadow(0 0 10px hsl(var(--mood-terrible) / 0.6));
+}
+
+/* Emoji selection ring pulse */
+@keyframes emoji-select-ring {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+    opacity: 0.6;
+  }
+  100% {
+    box-shadow: 0 0 0 12px currentColor;
+    opacity: 0;
+  }
+}
+
+.emoji-select-ring::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  animation: emoji-select-ring 1.5s ease-out infinite;
+}
+
+/* ========================================
+   STATS CARD ANIMATIONS
+   ======================================== */
+
+/* Stat card entrance */
+@keyframes stat-card-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.stat-card-animated {
+  animation: stat-card-enter 0.5s ease-out forwards;
+}
+
+.stat-card-animated:nth-child(1) { animation-delay: 0s; }
+.stat-card-animated:nth-child(2) { animation-delay: 0.1s; }
+.stat-card-animated:nth-child(3) { animation-delay: 0.2s; }
+.stat-card-animated:nth-child(4) { animation-delay: 0.3s; }
+
+/* Streak fire animation */
+@keyframes streak-fire-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px hsl(28 80% 55% / 0.6));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 12px hsl(28 80% 55% / 0.9));
+    transform: scale(1.1);
+  }
+}
+
+.streak-icon-animated {
+  animation: streak-fire-glow 1.5s ease-in-out infinite;
+}
+
+/* Habits target pulse */
+@keyframes habits-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px hsl(var(--primary) / 0.5));
+    transform: scale(1);
+  }
+  50% {
+    filter: drop-shadow(0 0 10px hsl(var(--primary) / 0.8));
+    transform: scale(1.08);
+  }
+}
+
+.habits-icon-animated {
+  animation: habits-pulse 2s ease-in-out infinite;
+}
+
+/* Focus timer spin */
+@keyframes focus-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes focus-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px hsl(var(--accent) / 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 10px hsl(var(--accent) / 0.8));
+  }
+}
+
+.focus-icon-animated {
+  animation: focus-glow 2s ease-in-out infinite;
+}
+
+/* Gratitude heart beat */
+@keyframes heart-beat {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 4px hsl(350 70% 60% / 0.5));
+  }
+  14% {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 10px hsl(350 70% 60% / 0.8));
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.1);
+    filter: drop-shadow(0 0 8px hsl(350 70% 60% / 0.7));
+  }
+  56% {
+    transform: scale(1);
+  }
+}
+
+.gratitude-icon-animated {
+  animation: heart-beat 1.5s ease-in-out infinite;
+}
+
+/* Number count up effect */
+@keyframes number-pop {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.number-animated {
+  animation: number-pop 0.4s ease-out forwards;
+}
+
+/* Stat value glow on hover */
+.stat-card-animated:hover .stat-value {
+  text-shadow: 0 0 20px currentColor;
+  transform: scale(1.05);
+  transition: all 0.3s ease;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

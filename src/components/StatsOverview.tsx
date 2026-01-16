@@ -52,6 +52,7 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
       value: streak,
       suffix: t.days,
       color: 'zen-gradient-sunset',
+      iconAnimation: 'streak-icon-animated',
     },
     {
       icon: Target,
@@ -59,6 +60,7 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
       value: `${todayHabitsCompleted}/${totalHabits}`,
       suffix: '',
       color: 'zen-gradient',
+      iconAnimation: 'habits-icon-animated',
     },
     {
       icon: Brain,
@@ -66,6 +68,7 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
       value: todayFocusMinutes,
       suffix: t.min,
       color: 'zen-gradient-calm',
+      iconAnimation: 'focus-icon-animated',
     },
     {
       icon: Heart,
@@ -73,23 +76,27 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
       value: totalGratitude,
       suffix: '',
       color: 'zen-gradient-warm',
+      iconAnimation: 'gratitude-icon-animated',
     },
   ];
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((stat, index) => (
           <div
             key={stat.label}
-            className="bg-card rounded-2xl p-4 zen-shadow-card"
+            className="stat-card-animated bg-card rounded-2xl p-4 zen-shadow-card hover:scale-[1.02] transition-transform cursor-default"
             style={{ animationDelay: `${index * 100}ms` }}
           >
             <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center mb-3`}>
-              <stat.icon className="w-5 h-5 text-primary-foreground" />
+              <stat.icon className={`w-5 h-5 text-primary-foreground ${stat.iconAnimation}`} />
             </div>
-            <p className="text-2xl font-bold text-foreground">
-              {stat.value}{stat.suffix && <span className="text-sm text-muted-foreground ml-1">{stat.suffix}</span>}
+            <p className="stat-value text-2xl font-bold text-foreground transition-all">
+              <span className="number-animated inline-block" style={{ animationDelay: `${index * 100 + 200}ms` }}>
+                {stat.value}
+              </span>
+              {stat.suffix && <span className="text-sm text-muted-foreground ml-1">{stat.suffix}</span>}
             </p>
             <p className="text-sm text-muted-foreground">{stat.label}</p>
           </div>
