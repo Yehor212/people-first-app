@@ -111,66 +111,26 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
     if (completion >= 90) {
       return {
         emoji: '🏆',
-        title: language === 'ru' ? 'Невероятная неделя!' :
-               language === 'en' ? 'Incredible Week!' :
-               language === 'uk' ? 'Неймовірний тиждень!' :
-               language === 'es' ? '¡Semana increíble!' :
-               language === 'de' ? 'Unglaubliche Woche!' :
-               'Semaine incroyable!',
-        message: language === 'ru' ? 'Вы на пути к мастерству!' :
-                 language === 'en' ? 'You\'re on the path to mastery!' :
-                 language === 'uk' ? 'Ви на шляху до майстерності!' :
-                 language === 'es' ? '¡Estás en el camino hacia la maestría!' :
-                 language === 'de' ? 'Du bist auf dem Weg zur Meisterschaft!' :
-                 'Vous êtes sur la voie de la maîtrise!'
+        title: t.incredibleWeek,
+        message: t.pathToMastery
       };
     } else if (completion >= 70) {
       return {
         emoji: '🌟',
-        title: language === 'ru' ? 'Отличная работа!' :
-               language === 'en' ? 'Great Work!' :
-               language === 'uk' ? 'Чудова робота!' :
-               language === 'es' ? '¡Gran trabajo!' :
-               language === 'de' ? 'Großartige Arbeit!' :
-               'Excellent travail!',
-        message: language === 'ru' ? 'Продолжайте в том же духе!' :
-                 language === 'en' ? 'Keep up the momentum!' :
-                 language === 'uk' ? 'Продовжуйте в тому ж дусі!' :
-                 language === 'es' ? '¡Mantén el impulso!' :
-                 language === 'de' ? 'Halte den Schwung!' :
-                 'Gardez le rythme!'
+        title: t.greatWork,
+        message: t.keepMomentum
       };
     } else if (completion >= 50) {
       return {
         emoji: '💪',
-        title: language === 'ru' ? 'Хороший прогресс!' :
-               language === 'en' ? 'Good Progress!' :
-               language === 'uk' ? 'Гарний прогрес!' :
-               language === 'es' ? '¡Buen progreso!' :
-               language === 'de' ? 'Guter Fortschritt!' :
-               'Bon progrès!',
-        message: language === 'ru' ? 'Каждый шаг имеет значение!' :
-                 language === 'en' ? 'Every step counts!' :
-                 language === 'uk' ? 'Кожен крок має значення!' :
-                 language === 'es' ? '¡Cada paso cuenta!' :
-                 language === 'de' ? 'Jeder Schritt zählt!' :
-                 'Chaque pas compte!'
+        title: t.goodProgress,
+        message: t.everyStepCounts
       };
     } else {
       return {
         emoji: '🌱',
-        title: language === 'ru' ? 'Новая неделя - новые возможности!' :
-               language === 'en' ? 'New Week - New Opportunities!' :
-               language === 'uk' ? 'Новий тиждень - нові можливості!' :
-               language === 'es' ? '¡Nueva semana - Nuevas oportunidades!' :
-               language === 'de' ? 'Neue Woche - Neue Möglichkeiten!' :
-               'Nouvelle semaine - Nouvelles opportunités!',
-        message: language === 'ru' ? 'Начните с малого, двигайтесь вперед!' :
-                 language === 'en' ? 'Start small, move forward!' :
-                 language === 'uk' ? 'Почніть з малого, рухайтеся вперед!' :
-                 language === 'es' ? '¡Comienza poco a poco, avanza!' :
-                 language === 'de' ? 'Fang klein an, geh vorwärts!' :
-                 'Commencez petit, avancez!'
+        title: t.newWeekOpportunities,
+        message: t.startSmall
       };
     }
   };
@@ -184,12 +144,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">{motivation.emoji}</div>
           <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            {language === 'ru' ? 'Недельный отчет' :
-             language === 'en' ? 'Weekly Report' :
-             language === 'uk' ? 'Тижневий звіт' :
-             language === 'es' ? 'Informe semanal' :
-             language === 'de' ? 'Wochenbericht' :
-             'Rapport hebdomadaire'}
+            {t.weeklyReport}
           </h2>
           <p className="text-muted-foreground">
             {new Date().toLocaleDateString(language, { month: 'long', day: 'numeric', year: 'numeric' })}
@@ -209,12 +164,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
             <div className="flex items-center gap-2 mb-2">
               <Target className="w-5 h-5 text-primary" />
               <p className="text-sm text-muted-foreground">
-                {language === 'ru' ? 'Привычки' :
-                 language === 'en' ? 'Habits' :
-                 language === 'uk' ? 'Звички' :
-                 language === 'es' ? 'Hábitos' :
-                 language === 'de' ? 'Gewohnheiten' :
-                 'Habitudes'}
+                {t.habits}
               </p>
             </div>
             <p className="text-2xl font-bold">{weekStats.habitsCompleted}/{weekStats.totalHabitsGoal}</p>
@@ -233,12 +183,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
             <div className="flex items-center gap-2 mb-2">
               <Brain className="w-5 h-5 text-primary" />
               <p className="text-sm text-muted-foreground">
-                {language === 'ru' ? 'Фокус' :
-                 language === 'en' ? 'Focus' :
-                 language === 'uk' ? 'Фокус' :
-                 language === 'es' ? 'Enfoque' :
-                 language === 'de' ? 'Fokus' :
-                 'Focus'}
+                {t.focus}
               </p>
             </div>
             <p className="text-2xl font-bold">{weekStats.focusMinutes} {t.min}</p>
@@ -249,12 +194,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
             <div className="flex items-center gap-2 mb-2">
               <Heart className="w-5 h-5 text-primary" />
               <p className="text-sm text-muted-foreground">
-                {language === 'ru' ? 'Благодарности' :
-                 language === 'en' ? 'Gratitude' :
-                 language === 'uk' ? 'Вдячності' :
-                 language === 'es' ? 'Gratitud' :
-                 language === 'de' ? 'Dankbarkeit' :
-                 'Gratitude'}
+                {t.gratitude}
               </p>
             </div>
             <p className="text-2xl font-bold">{weekStats.gratitudeCount}</p>
@@ -265,12 +205,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
             <div className="flex items-center gap-2 mb-2">
               <Award className="w-5 h-5 text-primary" />
               <p className="text-sm text-muted-foreground">
-                {language === 'ru' ? 'Лучший день' :
-                 language === 'en' ? 'Best Day' :
-                 language === 'uk' ? 'Кращий день' :
-                 language === 'es' ? 'Mejor día' :
-                 language === 'de' ? 'Bester Tag' :
-                 'Meilleur jour'}
+                {t.bestDay}
               </p>
             </div>
             <p className="text-lg font-bold capitalize">{weekStats.bestDay}</p>
@@ -282,12 +217,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
           onClick={onClose}
           className="w-full py-4 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-xl hover:shadow-lg transition-all"
         >
-          {language === 'ru' ? 'Продолжить' :
-           language === 'en' ? 'Continue' :
-           language === 'uk' ? 'Продовжити' :
-           language === 'es' ? 'Continuar' :
-           language === 'de' ? 'Weiter' :
-           'Continuer'}
+          {t.continueBtn}
         </button>
       </div>
     </div>

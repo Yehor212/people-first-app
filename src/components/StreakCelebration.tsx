@@ -11,7 +11,7 @@ interface StreakCelebrationProps {
 }
 
 export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrationProps) {
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const message = getStreakMessage(streak, language);
 
@@ -104,12 +104,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
           <div className="flex items-center gap-2 mt-1">
             <Flame className="w-5 h-5 text-orange-400" />
             <span className="text-xl font-bold text-orange-300 uppercase tracking-wider">
-              {language === 'en' ? (streak === 1 ? 'day streak' : 'day streak') :
-               language === 'ru' ? 'дней подряд' :
-               language === 'uk' ? 'днів поспіль' :
-               language === 'es' ? 'días seguidos' :
-               language === 'de' ? 'Tage Serie' :
-               'jours de suite'}
+              {t.dayStreak}
             </span>
             <Flame className="w-5 h-5 text-orange-400" />
           </div>
@@ -144,12 +139,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
             "active:scale-[0.98]"
           )}
         >
-          {language === 'en' ? 'Keep it up!' :
-           language === 'ru' ? 'Так держать!' :
-           language === 'uk' ? 'Так тримати!' :
-           language === 'es' ? '¡Sigue así!' :
-           language === 'de' ? 'Weiter so!' :
-           'Continue comme ça!'}
+          {t.keepItUp}
         </button>
       </div>
     </div>

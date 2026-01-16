@@ -569,6 +569,23 @@ export interface Translations {
   tutorialReadySubtitle: string;
   tutorialReadyDesc: string;
   tutorialStart: string;
+
+  // Weekly Report
+  weeklyReport: string;
+  incredibleWeek: string;
+  pathToMastery: string;
+  greatWork: string;
+  keepMomentum: string;
+  goodProgress: string;
+  everyStepCounts: string;
+  newWeekOpportunities: string;
+  startSmall: string;
+  bestDay: string;
+  continueBtn: string;
+
+  // Streak Celebration
+  dayStreak: string;
+  keepItUp: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -1087,6 +1104,23 @@ export const translations: Record<Language, Translations> = {
     tutorialReadySubtitle: 'Ваш путь начинается сейчас',
     tutorialReadyDesc: 'Начните с малого — просто отметьте, как вы себя чувствуете сегодня. Каждый шаг важен!',
     tutorialStart: 'Поехали!',
+
+    // Weekly Report
+    weeklyReport: 'Недельный отчет',
+    incredibleWeek: 'Невероятная неделя!',
+    pathToMastery: 'Вы на пути к мастерству!',
+    greatWork: 'Отличная работа!',
+    keepMomentum: 'Продолжайте в том же духе!',
+    goodProgress: 'Хороший прогресс!',
+    everyStepCounts: 'Каждый шаг имеет значение!',
+    newWeekOpportunities: 'Новая неделя - новые возможности!',
+    startSmall: 'Начните с малого, двигайтесь вперед!',
+    bestDay: 'Лучший день',
+    continueBtn: 'Продолжить',
+
+    // Streak Celebration
+    dayStreak: 'дней подряд',
+    keepItUp: 'Так держать!',
   },
 
   en: {
@@ -1604,6 +1638,23 @@ export const translations: Record<Language, Translations> = {
     tutorialReadySubtitle: 'Your journey begins now',
     tutorialReadyDesc: 'Start small – just check in with how you\'re feeling today. Every step counts!',
     tutorialStart: 'Let\'s Go!',
+
+    // Weekly Report
+    weeklyReport: 'Weekly Report',
+    incredibleWeek: 'Incredible Week!',
+    pathToMastery: 'You\'re on the path to mastery!',
+    greatWork: 'Great Work!',
+    keepMomentum: 'Keep up the momentum!',
+    goodProgress: 'Good Progress!',
+    everyStepCounts: 'Every step counts!',
+    newWeekOpportunities: 'New Week - New Opportunities!',
+    startSmall: 'Start small, move forward!',
+    bestDay: 'Best Day',
+    continueBtn: 'Continue',
+
+    // Streak Celebration
+    dayStreak: 'day streak',
+    keepItUp: 'Keep it up!',
   },
 
   uk: {
@@ -2121,6 +2172,23 @@ export const translations: Record<Language, Translations> = {
     tutorialReadySubtitle: 'Ваш шлях починається зараз',
     tutorialReadyDesc: 'Почніть з малого — просто відмітьте, як ви себе почуваєте сьогодні. Кожен крок важливий!',
     tutorialStart: 'Поїхали!',
+
+    // Weekly Report
+    weeklyReport: 'Тижневий звіт',
+    incredibleWeek: 'Неймовірний тиждень!',
+    pathToMastery: 'Ви на шляху до майстерності!',
+    greatWork: 'Чудова робота!',
+    keepMomentum: 'Продовжуйте в тому ж дусі!',
+    goodProgress: 'Гарний прогрес!',
+    everyStepCounts: 'Кожен крок має значення!',
+    newWeekOpportunities: 'Новий тиждень - нові можливості!',
+    startSmall: 'Почніть з малого, рухайтеся вперед!',
+    bestDay: 'Кращий день',
+    continueBtn: 'Продовжити',
+
+    // Streak Celebration
+    dayStreak: 'днів поспіль',
+    keepItUp: 'Так тримати!',
   },
 
   es: {
@@ -2639,6 +2707,23 @@ export const translations: Record<Language, Translations> = {
     tutorialReadySubtitle: 'Tu viaje comienza ahora',
     tutorialReadyDesc: 'Empieza pequeño – solo registra cómo te sientes hoy. ¡Cada paso cuenta!',
     tutorialStart: '¡Vamos!',
+
+    // Weekly Report
+    weeklyReport: 'Informe semanal',
+    incredibleWeek: '¡Semana increíble!',
+    pathToMastery: '¡Estás en el camino hacia la maestría!',
+    greatWork: '¡Gran trabajo!',
+    keepMomentum: '¡Mantén el impulso!',
+    goodProgress: '¡Buen progreso!',
+    everyStepCounts: '¡Cada paso cuenta!',
+    newWeekOpportunities: '¡Nueva semana - Nuevas oportunidades!',
+    startSmall: '¡Comienza poco a poco, avanza!',
+    bestDay: 'Mejor día',
+    continueBtn: 'Continuar',
+
+    // Streak Celebration
+    dayStreak: 'días seguidos',
+    keepItUp: '¡Sigue así!',
   },
 
   de: {
@@ -3157,6 +3242,23 @@ export const translations: Record<Language, Translations> = {
     tutorialReadySubtitle: 'Deine Reise beginnt jetzt',
     tutorialReadyDesc: 'Fang klein an – notiere einfach, wie du dich heute fühlst. Jeder Schritt zählt!',
     tutorialStart: 'Los geht\'s!',
+
+    // Weekly Report
+    weeklyReport: 'Wochenbericht',
+    incredibleWeek: 'Unglaubliche Woche!',
+    pathToMastery: 'Du bist auf dem Weg zur Meisterschaft!',
+    greatWork: 'Großartige Arbeit!',
+    keepMomentum: 'Halte den Schwung!',
+    goodProgress: 'Guter Fortschritt!',
+    everyStepCounts: 'Jeder Schritt zählt!',
+    newWeekOpportunities: 'Neue Woche - Neue Möglichkeiten!',
+    startSmall: 'Fang klein an, geh vorwärts!',
+    bestDay: 'Bester Tag',
+    continueBtn: 'Weiter',
+
+    // Streak Celebration
+    dayStreak: 'Tage Serie',
+    keepItUp: 'Weiter so!',
   },
 
   fr: {
@@ -3675,6 +3777,23 @@ export const translations: Record<Language, Translations> = {
     tutorialReadySubtitle: 'Votre voyage commence maintenant',
     tutorialReadyDesc: 'Commencez petit – notez simplement comment vous vous sentez aujourd\'hui. Chaque pas compte!',
     tutorialStart: 'C\'est parti!',
+
+    // Weekly Report
+    weeklyReport: 'Rapport hebdomadaire',
+    incredibleWeek: 'Semaine incroyable!',
+    pathToMastery: 'Vous êtes sur la voie de la maîtrise!',
+    greatWork: 'Excellent travail!',
+    keepMomentum: 'Gardez le rythme!',
+    goodProgress: 'Bon progrès!',
+    everyStepCounts: 'Chaque pas compte!',
+    newWeekOpportunities: 'Nouvelle semaine - Nouvelles opportunités!',
+    startSmall: 'Commencez petit, avancez!',
+    bestDay: 'Meilleur jour',
+    continueBtn: 'Continuer',
+
+    // Streak Celebration
+    dayStreak: 'jours de suite',
+    keepItUp: 'Continue comme ça!',
   },
 };
 
