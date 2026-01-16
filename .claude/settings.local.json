@@ -23,7 +23,8 @@
       "Bash(cd:*)",
       "Bash(./gradlew assembleDebug:*)",
       "Bash(./gradlew clean:*)",
-      "Bash(CAPACITOR_BUILD=true npm run build:*)"
+      "Bash(CAPACITOR_BUILD=true npm run build:*)",
+      "Bash(npm run cap:sync:android:*)"
     ]
   }
 }

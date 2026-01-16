@@ -1,4 +1,4 @@
-import { Share2, Download, X, Copy, Check } from 'lucide-react';
+import { Share2, Download, X, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
@@ -19,22 +19,18 @@ interface ShareProgressProps {
 export function ShareProgress({ stats, onClose }: ShareProgressProps) {
   const { t } = useLanguage();
   const cardRef = useRef<HTMLDivElement>(null);
-  const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
+  const [format, setFormat] = useState<'square' | 'story'>('square');
 
-  const handleShare = async (format: 'square' | 'story' = 'square') => {
+  const handleShare = async () => {
     if (!cardRef.current) return;
 
     try {
-      // Generate image from card with format-specific dimensions
+      setDownloading(true);
       const scale = 2;
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#1a1a2e',
+        backgroundColor: null,
         scale: scale,
-        width: format === 'story' ? 1080 / scale : cardRef.current.offsetWidth,
-        height: format === 'story' ? 1920 / scale : cardRef.current.offsetHeight,
-        windowWidth: format === 'story' ? 1080 / scale : cardRef.current.offsetWidth,
-        windowHeight: format === 'story' ? 1920 / scale : cardRef.current.offsetHeight,
       });
 
       const blob = await new Promise<Blob>((resolve) => {
@@ -42,7 +38,6 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
       });
 
       if (Capacitor.isNativePlatform()) {
-        // Native share on mobile
         const file = new File([blob], 'zenflow-progress.png', { type: 'image/png' });
         const reader = new FileReader();
         reader.readAsDataURL(file);
@@ -50,65 +45,47 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
           const base64 = reader.result as string;
           await Share.share({
             title: t.shareTitle || 'My ZenFlow Progress',
-            text: t.shareText || `${stats.currentStreak} day streak! 🔥`,
+            text: `${stats.currentStreak} day streak! 🔥`,
             url: base64,
             dialogTitle: t.shareDialogTitle || 'Share your progress',
           });
         };
       } else {
-        // Web share or download
         if (navigator.share && navigator.canShare) {
           const file = new File([blob], 'zenflow-progress.png', { type: 'image/png' });
           await navigator.share({
             title: t.shareTitle || 'My ZenFlow Progress',
-            text: t.shareText || `${stats.currentStreak} day streak! 🔥`,
+            text: `${stats.currentStreak} day streak! 🔥`,
             files: [file],
           });
         } else {
-          // Fallback: download image
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `zenflow-${format}-${new Date().toISOString().split('T')[0]}.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
+          downloadImage(blob);
         }
       }
-
       onClose();
     } catch (error) {
       console.error('Share failed:', error);
+    } finally {
+      setDownloading(false);
     }
   };
 
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText('https://yehor212.github.io/people-first-app/');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy link:', error);
-    }
-  };
-
-  const handleDownload = async (format: 'square' | 'story' = 'square') => {
+  const downloadImage = async (existingBlob?: Blob) => {
     if (!cardRef.current) return;
 
     setDownloading(true);
     try {
-      const scale = 2;
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#1a1a2e',
-        scale: scale,
-        width: format === 'story' ? 1080 / scale : cardRef.current.offsetWidth,
-        height: format === 'story' ? 1920 / scale : cardRef.current.offsetHeight,
-      });
-
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => resolve(blob!), 'image/png');
-      });
+      let blob = existingBlob;
+      if (!blob) {
+        const scale = 2;
+        const canvas = await html2canvas(cardRef.current, {
+          backgroundColor: null,
+          scale: scale,
+        });
+        blob = await new Promise<Blob>((resolve) => {
+          canvas.toBlob((blob) => resolve(blob!), 'image/png');
+        });
+      }
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -129,138 +106,188 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
     ? Math.round((stats.habitsCompleted / stats.totalHabits) * 100)
     : 0;
 
+  // Generate achievement message and emoji
+  const getAchievementData = () => {
+    if (stats.currentStreak >= 30) return { emoji: '👑', text: t.shareAchievement30 || 'Legendary!', subtext: '30+ Day Master' };
+    if (stats.currentStreak >= 14) return { emoji: '💎', text: t.shareAchievement14 || 'Unstoppable!', subtext: '14+ Day Warrior' };
+    if (stats.currentStreak >= 7) return { emoji: '🔥', text: t.shareAchievement7 || 'On Fire!', subtext: '7+ Day Streak' };
+    if (stats.currentStreak >= 3) return { emoji: '⭐', text: t.shareAchievement3 || 'Rising Star!', subtext: '3+ Day Streak' };
+    return { emoji: '🌱', text: t.shareAchievementStart || 'Just Started!', subtext: 'Building Habits' };
+  };
+
+  const achievement = getAchievementData();
+
   return (
-    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="w-full max-w-md">
-        {/* Share Card - This will be captured as image */}
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+      {/* Close button */}
+      <button
+        onClick={onClose}
+        className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+      >
+        <X className="w-6 h-6 text-white" />
+      </button>
+
+      <div className="w-full max-w-sm">
+        {/* Format toggle */}
+        <div className="flex justify-center gap-2 mb-4">
+          <button
+            onClick={() => setFormat('square')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              format === 'square'
+                ? 'bg-white text-black'
+                : 'bg-white/10 text-white hover:bg-white/20'
+            }`}
+          >
+            1:1 Post
+          </button>
+          <button
+            onClick={() => setFormat('story')}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              format === 'story'
+                ? 'bg-white text-black'
+                : 'bg-white/10 text-white hover:bg-white/20'
+            }`}
+          >
+            9:16 Story
+          </button>
+        </div>
+
+        {/* Share Card */}
         <div
           ref={cardRef}
-          className="zen-gradient-hero rounded-3xl p-8 mb-4 relative overflow-hidden"
+          className={`relative overflow-hidden ${
+            format === 'story' ? 'aspect-[9/16]' : 'aspect-square'
+          }`}
+          style={{
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+            borderRadius: '24px',
+          }}
         >
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-32 h-32 zen-gradient rounded-full blur-3xl opacity-20" />
-          <div className="absolute bottom-0 left-0 w-40 h-40 zen-gradient-sunset rounded-full blur-3xl opacity-20" />
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 zen-gradient-calm rounded-full blur-3xl opacity-10" />
+          {/* Animated gradient orbs */}
+          <div className="absolute top-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full opacity-40"
+            style={{ background: 'radial-gradient(circle, #4ade80 0%, transparent 70%)' }} />
+          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-30"
+            style={{ background: 'radial-gradient(circle, #22d3ee 0%, transparent 70%)' }} />
+          <div className="absolute top-[40%] left-[60%] w-[40%] h-[40%] rounded-full opacity-20"
+            style={{ background: 'radial-gradient(circle, #a78bfa 0%, transparent 70%)' }} />
 
           {/* Content */}
-          <div className="relative z-10">
-            {/* Logo */}
-            <div className="text-center mb-6">
-              <div className="inline-flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 zen-gradient rounded-xl" />
-                <span className="text-2xl font-bold zen-text-gradient">{t.appName}</span>
+          <div className={`relative z-10 h-full flex flex-col ${format === 'story' ? 'p-8' : 'p-6'} text-white`}>
+            {/* Header */}
+            <div className="flex items-center gap-3 mb-auto">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, #4ade80, #22d3ee)' }}>
+                <Sparkles className="w-5 h-5 text-white" />
               </div>
-              <p className="text-sm text-muted-foreground">
-                {t.shareSubtitle || 'My Wellness Journey'}
-              </p>
+              <div>
+                <h1 className="text-xl font-bold">ZenFlow</h1>
+                <p className="text-xs text-white/60">Wellness Journey</p>
+              </div>
+            </div>
+
+            {/* Main Achievement */}
+            <div className={`text-center ${format === 'story' ? 'my-auto' : 'my-6'}`}>
+              <div className={`${format === 'story' ? 'text-8xl mb-6' : 'text-6xl mb-4'}`}>
+                {achievement.emoji}
+              </div>
+              <h2 className={`font-black ${format === 'story' ? 'text-4xl' : 'text-3xl'} mb-2`}
+                style={{
+                  background: 'linear-gradient(135deg, #4ade80, #22d3ee, #a78bfa)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}>
+                {achievement.text}
+              </h2>
+              <p className="text-white/60 text-sm">{achievement.subtext}</p>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="bg-card/80 backdrop-blur rounded-2xl p-4 text-center">
-                <div className="text-3xl font-bold text-primary mb-1">
+            <div className={`grid grid-cols-2 gap-3 ${format === 'story' ? 'mb-auto' : ''}`}>
+              {/* Streak */}
+              <div className="bg-white/5 backdrop-blur rounded-2xl p-4 border border-white/10">
+                <div className="text-3xl font-black mb-1"
+                  style={{
+                    background: 'linear-gradient(135deg, #f97316, #ef4444)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}>
                   {stats.currentStreak}
                 </div>
-                <div className="text-xs text-muted-foreground">{t.streakDays}</div>
+                <div className="text-xs text-white/50 uppercase tracking-wider">
+                  {t.streakDays || 'Day Streak'}
+                </div>
               </div>
 
-              <div className="bg-card/80 backdrop-blur rounded-2xl p-4 text-center">
-                <div className="text-3xl font-bold text-accent mb-1">
+              {/* Habits */}
+              <div className="bg-white/5 backdrop-blur rounded-2xl p-4 border border-white/10">
+                <div className="text-3xl font-black mb-1"
+                  style={{
+                    background: 'linear-gradient(135deg, #4ade80, #22c55e)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}>
                   {progressPercent}%
                 </div>
-                <div className="text-xs text-muted-foreground">{t.habitsToday}</div>
+                <div className="text-xs text-white/50 uppercase tracking-wider">
+                  {t.habitsToday || 'Habits Done'}
+                </div>
               </div>
 
-              <div className="bg-card/80 backdrop-blur rounded-2xl p-4 text-center">
-                <div className="text-3xl font-bold text-mood-good mb-1">
+              {/* Focus */}
+              <div className="bg-white/5 backdrop-blur rounded-2xl p-4 border border-white/10">
+                <div className="text-3xl font-black mb-1"
+                  style={{
+                    background: 'linear-gradient(135deg, #22d3ee, #3b82f6)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}>
                   {stats.focusMinutes}
                 </div>
-                <div className="text-xs text-muted-foreground">{t.focusToday}</div>
+                <div className="text-xs text-white/50 uppercase tracking-wider">
+                  {t.focusMinutes || 'Focus Min'}
+                </div>
               </div>
 
-              <div className="bg-card/80 backdrop-blur rounded-2xl p-4 text-center">
-                <div className="text-3xl font-bold zen-text-gradient mb-1">
+              {/* Level */}
+              <div className="bg-white/5 backdrop-blur rounded-2xl p-4 border border-white/10">
+                <div className="text-3xl font-black mb-1"
+                  style={{
+                    background: 'linear-gradient(135deg, #a78bfa, #ec4899)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}>
                   {stats.level}
                 </div>
-                <div className="text-xs text-muted-foreground">{t.level || 'Level'}</div>
+                <div className="text-xs text-white/50 uppercase tracking-wider">
+                  {t.level || 'Level'}
+                </div>
               </div>
             </div>
 
-            {/* Achievement Message */}
-            <div className="text-center">
-              <p className="text-lg font-semibold text-foreground mb-1">
-                {stats.currentStreak >= 7
-                  ? t.shareAchievement7 || '🔥 7+ Day Streak!'
-                  : stats.currentStreak >= 3
-                  ? t.shareAchievement3 || '⭐ 3+ Day Streak!'
-                  : t.shareAchievementStart || '🌱 Building Habits!'}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {t.shareFooter || 'Track your wellness with ZenFlow'}
-              </p>
+            {/* Footer */}
+            <div className={`text-center ${format === 'story' ? 'mt-auto' : 'mt-4'}`}>
+              <p className="text-xs text-white/40">zenflow.app</p>
             </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="bg-card rounded-2xl p-4 zen-shadow-card space-y-3">
-          {/* Share to social media */}
+        <div className="flex gap-3 mt-4">
           <button
-            onClick={() => handleShare('square')}
-            className="btn-press w-full py-3 zen-gradient text-primary-foreground font-semibold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
+            onClick={handleShare}
+            disabled={downloading}
+            className="flex-1 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            style={{ background: 'linear-gradient(135deg, #4ade80, #22d3ee)' }}
           >
             <Share2 className="w-5 h-5" />
-            {t.shareButton || 'Share Progress'}
+            {t.shareButton || 'Share'}
           </button>
-
-          {/* Format-specific downloads */}
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => handleDownload('square')}
-              disabled={downloading}
-              className="btn-press py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
-            >
-              <Download className="w-4 h-4" />
-              {t.shareSquare || 'Post 1:1'}
-            </button>
-            <button
-              onClick={() => handleDownload('story')}
-              disabled={downloading}
-              className="btn-press py-3 bg-secondary text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 text-sm"
-            >
-              <Download className="w-4 h-4" />
-              {t.shareStory || 'Story 9:16'}
-            </button>
-          </div>
-
-          {/* Helper text */}
-          <p className="text-xs text-center text-muted-foreground">
-            {t.shareFormatHint || '📱 Story format for Instagram/TikTok • Post format for feeds'}
-          </p>
-
           <button
-            onClick={handleCopyLink}
-            className="btn-press w-full py-3 bg-background text-foreground font-medium rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-2"
+            onClick={() => downloadImage()}
+            disabled={downloading}
+            className="py-4 px-6 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
           >
-            {copied ? (
-              <>
-                <Check className="w-5 h-5" />
-                {t.shareCopied || 'Copied!'}
-              </>
-            ) : (
-              <>
-                <Copy className="w-5 h-5" />
-                {t.shareCopyLink || 'Copy Link'}
-              </>
-            )}
-          </button>
-
-          <button
-            onClick={onClose}
-            className="btn-press w-full py-3 bg-secondary/50 text-secondary-foreground font-medium rounded-xl hover:bg-muted transition-colors flex items-center justify-center gap-2"
-          >
-            <X className="w-5 h-5" />
-            {t.cancel}
+            <Download className="w-5 h-5" />
           </button>
         </div>
       </div>
