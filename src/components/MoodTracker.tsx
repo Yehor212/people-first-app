@@ -204,10 +204,10 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
         {/* Latest mood summary */}
         <div className="flex items-center gap-4 mt-4">
           <div className={cn(
-            "w-14 h-14 rounded-full flex items-center justify-center text-2xl",
+            "w-14 h-14 rounded-full flex items-center justify-center",
             latestMood?.color, "bg-opacity-20"
           )}>
-            {latestMood?.emoji}
+            {latestMood && <AnimatedMoodEmoji mood={latestMood.type} size="lg" />}
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2">
@@ -256,10 +256,10 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
                   {!isEditing ? (
                     <div className="flex items-center gap-3">
                       <div className={cn(
-                        "w-10 h-10 rounded-full flex items-center justify-center text-xl",
+                        "w-10 h-10 rounded-full flex items-center justify-center",
                         entryMood?.color, "bg-opacity-20"
                       )}>
-                        {entryMood?.emoji}
+                        {entryMood && <AnimatedMoodEmoji mood={entryMood.type} size="md" />}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
@@ -360,8 +360,8 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
                   isCurrent && !hasEntry && "ring-2 ring-primary/30 ring-offset-1",
                   canEdit && "hover:ring-2 hover:ring-primary/50"
                 )}>
-                  {hasEntry ? (
-                    <span className="text-lg">{entryMood?.emoji}</span>
+                  {hasEntry && entryMood ? (
+                    <AnimatedMoodEmoji mood={entryMood.type} size="sm" />
                   ) : (
                     <TimeIcon className={cn("w-4 h-4", isCurrent ? "text-primary" : "text-muted-foreground")} />
                   )}

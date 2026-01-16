@@ -326,6 +326,9 @@ export function Index() {
     setGratitudeEntries([]);
     setUserName('Friend');
     setUserNameCustom(false);
+    // Reset onboarding to show first screen after page refresh
+    setOnboardingComplete(false);
+    setHasSelectedLanguage(false);
   };
 
   const handleLanguageSelected = () => {

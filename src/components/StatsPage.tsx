@@ -5,6 +5,7 @@ import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate
 import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ShareProgress } from '@/components/ShareProgress';
+import { AnimatedAchievementsSection } from '@/components/AnimatedAchievementCard';
 
 interface StatsPageProps {
   moods: MoodEntry[];
@@ -414,54 +415,21 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
         </div>
       </div>
 
-      {/* Achievements */}
-      <div className="bg-card rounded-2xl p-6 zen-shadow-card">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 zen-gradient-sunset rounded-xl">
-            <Zap className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground">{t.achievements}</h3>
-          <button
-            onClick={() => setShowShareDialog(true)}
-            className="btn-press p-2 zen-gradient rounded-xl text-primary-foreground hover:opacity-90 transition-opacity ml-auto"
-            title={t.shareButton || 'Share'}
-          >
-            <Share2 className="w-5 h-5" />
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-secondary rounded-xl">
-            <div>
-              <p className="font-medium text-foreground">{t.currentStreak}</p>
-              <p className="text-sm text-muted-foreground">{t.daysInRow}</p>
-            </div>
-            <div className="text-3xl font-bold text-accent">
-              🔥 {stats.currentStreak}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-secondary rounded-xl">
-            <div>
-              <p className="font-medium text-foreground">{t.totalFocus}</p>
-              <p className="text-sm text-muted-foreground">{t.allTime}</p>
-            </div>
-            <div className="text-3xl font-bold text-primary">
-              ⏱️ {stats.allTimeFocusMinutes}{t.min}
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-secondary rounded-xl">
-            <div>
-              <p className="font-medium text-foreground">{t.habitsCompleted}</p>
-              <p className="text-sm text-muted-foreground">{t.totalTimes}</p>
-            </div>
-            <div className="text-3xl font-bold text-mood-good">
-              ✅ {stats.totalHabitCompletions}
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Achievements - Animated Cards */}
+      <AnimatedAchievementsSection
+        currentStreak={stats.currentStreak}
+        totalFocusMinutes={stats.allTimeFocusMinutes}
+        habitsCompleted={stats.totalHabitCompletions}
+        streakLabel={t.currentStreak}
+        streakSublabel={t.daysInRow}
+        focusLabel={t.totalFocus}
+        focusSublabel={t.allTime}
+        habitsLabel={t.habitsCompleted}
+        habitsSublabel={t.totalTimes}
+        focusSuffix={t.min}
+        title={t.achievements}
+        onShare={() => setShowShareDialog(true)}
+      />
 
       {/* Mood Distribution */}
       {Object.keys(stats.moodCounts).length > 0 && (
