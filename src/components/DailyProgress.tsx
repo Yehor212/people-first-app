@@ -16,7 +16,8 @@ interface DailyProgressProps {
 interface ProgressItem {
   key: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }>;
+  icon: React.ComponentType<{ className?: string }> | null;
+  emoji?: string;
   completed: boolean;
   progress?: string;
   color: string;
@@ -46,7 +47,8 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
     {
       key: 'mood',
       label: t.moodToday || "Today's Mood",
-      icon: ({ className }) => <span className={className}>😊</span>,
+      icon: null,
+      emoji: '😊',
       completed: progress.mood,
       color: 'bg-mood-great',
       onClick: () => onNavigate?.('mood'),
@@ -131,11 +133,11 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
               )}>
                 {item.completed ? (
                   <Check className="w-4 h-4 text-mood-good" />
-                ) : typeof Icon === 'function' && Icon.prototype ? (
+                ) : item.emoji ? (
+                  <span className="text-lg">{item.emoji}</span>
+                ) : Icon ? (
                   <Icon className="w-4 h-4 text-primary" />
-                ) : (
-                  <span className="text-lg">{(Icon as any)({ className: "text-lg" })}</span>
-                )}
+                ) : null}
               </div>
               <span className={cn(
                 "text-[10px] font-medium truncate w-full text-center",
