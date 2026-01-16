@@ -51,7 +51,8 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
       label: t.streakDays,
       value: streak,
       suffix: t.days,
-      color: 'zen-gradient-sunset',
+      gradient: 'from-orange-500 to-red-500',
+      shadowColor: 'shadow-orange-500/30',
       iconAnimation: 'streak-icon-animated',
     },
     {
@@ -59,7 +60,8 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
       label: t.habitsToday,
       value: `${todayHabitsCompleted}/${totalHabits}`,
       suffix: '',
-      color: 'zen-gradient',
+      gradient: 'from-emerald-500 to-teal-500',
+      shadowColor: 'shadow-emerald-500/30',
       iconAnimation: 'habits-icon-animated',
     },
     {
@@ -67,7 +69,8 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
       label: t.focusToday,
       value: todayFocusMinutes,
       suffix: t.min,
-      color: 'zen-gradient-calm',
+      gradient: 'from-violet-500 to-purple-500',
+      shadowColor: 'shadow-violet-500/30',
       iconAnimation: 'focus-icon-animated',
     },
     {
@@ -75,7 +78,8 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
       label: t.gratitudes,
       value: totalGratitude,
       suffix: '',
-      color: 'zen-gradient-warm',
+      gradient: 'from-pink-500 to-rose-500',
+      shadowColor: 'shadow-pink-500/30',
       iconAnimation: 'gratitude-icon-animated',
     },
   ];
@@ -86,14 +90,16 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
         {stats.map((stat, index) => (
           <div
             key={stat.label}
-            className="stat-card-animated bg-card rounded-2xl p-4 zen-shadow-card hover:scale-[1.02] transition-transform cursor-default"
+            className="stat-card-animated bg-card rounded-2xl p-4 zen-shadow-card hover:scale-[1.02] transition-all cursor-default group"
             style={{ animationDelay: `${index * 100}ms` }}
           >
-            <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center mb-3`}>
-              <stat.icon className={`w-5 h-5 text-primary-foreground ${stat.iconAnimation}`} />
+            <div className={`relative w-12 h-12 bg-gradient-to-br ${stat.gradient} rounded-xl flex items-center justify-center mb-3 shadow-lg ${stat.shadowColor} group-hover:scale-110 transition-transform`}>
+              <stat.icon className={`w-6 h-6 text-white ${stat.iconAnimation}`} />
+              {/* Pulse ring */}
+              <div className={`absolute inset-0 rounded-xl bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-30 animate-ping`} />
             </div>
             <p className="stat-value text-2xl font-bold text-foreground transition-all">
-              <span className="number-animated inline-block" style={{ animationDelay: `${index * 100 + 200}ms` }}>
+              <span className={`number-animated inline-block bg-clip-text text-transparent bg-gradient-to-r ${stat.gradient}`} style={{ animationDelay: `${index * 100 + 200}ms` }}>
                 {stat.value}
               </span>
               {stat.suffix && <span className="text-sm text-muted-foreground ml-1">{stat.suffix}</span>}

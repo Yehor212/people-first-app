@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
+import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType } from '@/types';
 import { calculateStreak, getDaysInMonth, getToday, cn } from '@/lib/utils';
 import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
 import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ShareProgress } from '@/components/ShareProgress';
 import { AnimatedAchievementsSection } from '@/components/AnimatedAchievementCard';
+import { AnimatedMoodDistribution, AnimatedCalendar } from '@/components/AnimatedStatsComponents';
 
 interface StatsPageProps {
   moods: MoodEntry[];
@@ -431,94 +432,54 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
         onShare={() => setShowShareDialog(true)}
       />
 
-      {/* Mood Distribution */}
-      {Object.keys(stats.moodCounts).length > 0 && (
-        <div className="bg-card rounded-2xl p-6 zen-shadow-card">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 zen-gradient-calm rounded-xl">
-              <Heart className="w-5 h-5 text-primary-foreground" />
+      {/* Mood Distribution - Animated */}
+      <AnimatedMoodDistribution
+        moodCounts={stats.moodCounts as Record<MoodType, number>}
+        totalMoods={filteredMoods.length}
+        title={t.moodDistribution}
+        allTags={allTags}
+        selectedTag={selectedTag}
+        onTagChange={setSelectedTag}
+        tagFilterLabel={t.moodTagFilter}
+        allTagsLabel={t.allTags}
+      />
+
+      {/* Year Calendar - Redesigned */}
+      <div className="bg-card rounded-2xl p-6 zen-shadow-card overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-5">
+          <div className="relative">
+            <div className="p-2.5 bg-gradient-to-br from-violet-500 to-purple-500 rounded-xl shadow-lg shadow-violet-500/20">
+              <Calendar className="w-5 h-5 text-white" />
             </div>
-            <h3 className="text-lg font-semibold text-foreground">{t.moodDistribution}</h3>
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
           </div>
-
-          {allTags.length > 0 && (
-            <div className="mb-4">
-              <label className="text-sm text-muted-foreground mb-2 block">{t.moodTagFilter}</label>
-              <select
-                value={selectedTag}
-                onChange={(e) => setSelectedTag(e.target.value)}
-                className="w-full p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-              >
-                <option value="all">{t.allTags}</option>
-                {allTags.map((tag) => (
-                  <option key={tag} value={tag}>
-                    {tag}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div className="space-y-3">
-            {(['great', 'good', 'okay', 'bad', 'terrible'] as const).map((mood) => {
-              const count = stats.moodCounts[mood] || 0;
-              const total = filteredMoods.length;
-              const percentage = total > 0 ? (count / total) * 100 : 0;
-              
-              return (
-                <div key={mood} className="flex items-center gap-3">
-                  <span className="text-2xl w-10">{moodEmojis[mood]}</span>
-                  <div className="flex-1">
-                    <div className="h-3 bg-secondary rounded-full overflow-hidden">
-                      <div 
-                        className={`h-full bg-mood-${mood} transition-all duration-500`}
-                        style={{ width: `${percentage}%` }}
-                      />
-                    </div>
-                  </div>
-                  <span className="text-sm text-muted-foreground w-12 text-right">
-                    {count}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Year Calendar */}
-      <div className="bg-card rounded-2xl p-6 zen-shadow-card">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 zen-gradient rounded-xl">
-            <Calendar className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground">{t.calendarTitle}</h3>
+          <h3 className="text-lg font-bold text-foreground">{t.calendarTitle}</h3>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 mb-4">
+        {/* Year & Month Selector */}
+        <div className="flex flex-wrap items-center gap-2 mb-5">
           <label className="text-sm text-muted-foreground">{t.calendarYear}</label>
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(Number(e.target.value))}
-            className="p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+            className="p-2 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             {availableYears.map((year) => (
-              <option key={year} value={year}>
-                {year}
-              </option>
+              <option key={year} value={year}>{year}</option>
             ))}
           </select>
           <div className="ml-auto flex items-center gap-2">
             <button
               onClick={() => handleMonthShift(-1)}
               aria-label={t.calendarPrevMonth}
-              className="p-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-muted transition-colors"
+              className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={() => setShowMonthSelector(!showMonthSelector)}
-              className="px-3 py-2 rounded-lg bg-secondary text-sm text-foreground hover:bg-muted transition-colors flex items-center gap-2"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 text-sm font-medium hover:from-primary/20 hover:to-accent/20 transition-all flex items-center gap-2"
             >
               {monthNames[selectedMonth]} {selectedYear}
               {showMonthSelector ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -526,15 +487,16 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
             <button
               onClick={() => handleMonthShift(1)}
               aria-label={t.calendarNextMonth}
-              className="p-2 rounded-lg bg-secondary text-secondary-foreground hover:bg-muted transition-colors"
+              className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
 
+        {/* Month Selector Grid */}
         {showMonthSelector && (
-          <div className="grid grid-cols-4 gap-2 mb-4 animate-accordion-down">
+          <div className="grid grid-cols-4 gap-2 mb-5 animate-fade-in">
             {monthNames.map((month, index) => (
               <button
                 key={month}
@@ -544,10 +506,10 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
                   setShowMonthSelector(false);
                 }}
                 className={cn(
-                  "px-2 py-2 rounded-lg text-xs font-medium transition-colors",
+                  "px-2 py-2.5 rounded-xl text-xs font-medium transition-all",
                   selectedMonth === index
-                    ? "bg-primary/10 ring-2 ring-primary text-foreground"
-                    : "bg-secondary text-muted-foreground hover:bg-muted"
+                    ? "bg-gradient-to-r from-primary to-accent text-white shadow-lg"
+                    : "bg-secondary text-muted-foreground hover:bg-primary/10"
                 )}
               >
                 {month}
@@ -556,51 +518,65 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
           </div>
         )}
 
-        <div className="grid grid-cols-4 gap-4 mb-4">
-          <div className="text-center p-3 bg-secondary rounded-xl">
-            <p className="text-lg font-bold text-primary">{yearStats.moodCount}</p>
-            <p className="text-xs text-muted-foreground">{t.moodEntries}</p>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-4 gap-3 mb-5">
+          <div className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
+            <p className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-500">{yearStats.moodCount}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{t.moodEntries}</p>
           </div>
-          <div className="text-center p-3 bg-secondary rounded-xl">
-            <p className="text-lg font-bold text-accent">{yearStats.focusMinutes}</p>
-            <p className="text-xs text-muted-foreground">{t.focusMinutes}</p>
+          <div className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
+            <p className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-purple-500">{yearStats.focusMinutes}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{t.focusMinutes}</p>
           </div>
-          <div className="text-center p-3 bg-secondary rounded-xl">
-            <p className="text-lg font-bold text-mood-good">{yearStats.habitCompletions}</p>
-            <p className="text-xs text-muted-foreground">{t.habitsCompleted}</p>
+          <div className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
+            <p className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">{yearStats.habitCompletions}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{t.habitsCompleted}</p>
           </div>
-          <div className="text-center p-3 bg-secondary rounded-xl">
-            <p className="text-lg font-bold text-primary">{yearStats.gratitudeCount}</p>
-            <p className="text-xs text-muted-foreground">{t.gratitudes}</p>
+          <div className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
+            <p className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-500 to-orange-500">{yearStats.gratitudeCount}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">{t.gratitudes}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-7 gap-2 text-xs text-muted-foreground mb-2">
+        {/* Day Names */}
+        <div className="grid grid-cols-7 gap-1 text-xs text-muted-foreground mb-2">
           {[t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat].map((day) => (
-            <div key={day} className="text-center">
-              {day.slice(0, 2)}
-            </div>
+            <div key={day} className="text-center font-medium py-2">{day.slice(0, 2)}</div>
           ))}
         </div>
-        <div className="grid grid-cols-7 gap-2">
+
+        {/* Calendar Days - Redesigned */}
+        <div className="grid grid-cols-7 gap-1.5">
           {calendarDays.map((cell, index) => {
             if (!cell.dateKey) {
-              return <div key={`empty-${index}`} className="w-9 h-9" />;
+              return <div key={`empty-${index}`} className="w-full aspect-square" />;
             }
             const mood = moodByDate.get(cell.dateKey)?.mood;
             const hasData = moodByDate.has(cell.dateKey)
               || focusMinutesByDate.has(cell.dateKey)
               || habitCompletionMap.has(cell.dateKey)
               || gratitudeByDate.has(cell.dateKey);
+
+            const moodGradient = mood === 'great' ? 'from-emerald-400/80 to-teal-500/80' :
+                                 mood === 'good' ? 'from-green-400/80 to-emerald-500/80' :
+                                 mood === 'okay' ? 'from-amber-400/80 to-yellow-500/80' :
+                                 mood === 'bad' ? 'from-orange-400/80 to-amber-500/80' :
+                                 mood === 'terrible' ? 'from-red-400/80 to-rose-500/80' : '';
+
             return (
               <button
                 key={cell.dateKey}
                 onClick={() => setSelectedDate(cell.dateKey || null)}
                 className={cn(
-                  "w-9 h-9 rounded-lg text-xs font-semibold flex items-center justify-center transition-colors",
-                  mood ? `bg-mood-${mood} text-foreground` : hasData ? "bg-primary/10 text-foreground" : "bg-secondary text-muted-foreground",
-                  cell.dateKey === todayKey && "ring-2 ring-primary",
-                  cell.dateKey === selectedDate && "outline outline-2 outline-primary"
+                  "w-full aspect-square rounded-xl text-xs font-semibold flex items-center justify-center transition-all duration-200",
+                  "hover:scale-105 hover:shadow-lg",
+                  mood
+                    ? `bg-gradient-to-br ${moodGradient} text-white shadow-md`
+                    : hasData
+                      ? "bg-primary/20 text-foreground"
+                      : "bg-secondary/50 text-muted-foreground hover:bg-secondary",
+                  cell.dateKey === todayKey && "ring-2 ring-primary ring-offset-2 ring-offset-card",
+                  cell.dateKey === selectedDate && "ring-2 ring-accent ring-offset-1 ring-offset-card scale-110"
                 )}
               >
                 {cell.day}
@@ -609,36 +585,46 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
           })}
         </div>
 
-        <div className="mt-4 p-4 bg-secondary rounded-xl">
+        {/* Selected Day Details - Redesigned */}
+        <div className="mt-5 p-4 bg-gradient-to-br from-secondary/80 to-secondary rounded-xl">
           {selectedDate && selectedDayData ? (
-            <div className="space-y-2 text-sm text-foreground">
-              <p className="font-medium">{selectedDate}</p>
+            <div className="space-y-3 animate-fade-in">
               <div className="flex items-center justify-between">
-                <span>{t.moodToday}</span>
-                <span className="flex items-center gap-2">
-                  <span>{selectedDayData.mood ? moodEmojis[selectedDayData.mood.mood] : '—'}</span>
-                  <span>{selectedDayData.mood ? moodLabels[selectedDayData.mood.mood] : t.moodNoData}</span>
-                </span>
+                <p className="font-bold text-foreground">{selectedDate}</p>
+                {selectedDayData.mood && (
+                  <span className="text-2xl">{moodEmojis[selectedDayData.mood.mood]}</span>
+                )}
               </div>
-              <div className="flex items-center justify-between">
-                <span>{t.focusMinutes}</span>
-                <span>{selectedDayData.focusMinutes}</span>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
+                  <span className="text-muted-foreground">{t.moodToday}</span>
+                  <span className="font-medium">
+                    {selectedDayData.mood ? moodLabels[selectedDayData.mood.mood] : '—'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
+                  <span className="text-muted-foreground">{t.focusMinutes}</span>
+                  <span className="font-medium">{selectedDayData.focusMinutes}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
+                  <span className="text-muted-foreground">{t.habitsCompleted}</span>
+                  <span className="font-medium">{selectedDayData.habits.length}</span>
+                </div>
+                <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
+                  <span className="text-muted-foreground">{t.gratitudes}</span>
+                  <span className="font-medium">{selectedDayData.gratitude.length}</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span>{t.habitsCompleted}</span>
-                <span>{selectedDayData.habits.length}</span>
-              </div>
+
               {selectedDayData.habits.length > 0 && (
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground bg-card/30 p-2 rounded-lg">
                   {selectedDayData.habits.join(', ')}
                 </div>
               )}
-              <div className="flex items-center justify-between">
-                <span>{t.gratitudes}</span>
-                <span>{selectedDayData.gratitude.length}</span>
-              </div>
+
               {selectedDayData.gratitude.length > 0 && (
-                <div className="text-xs text-muted-foreground space-y-1">
+                <div className="text-xs text-muted-foreground space-y-1 bg-card/30 p-2 rounded-lg">
                   {selectedDayData.gratitude.slice(0, 3).map((entry) => (
                     <p key={entry.id}>• {entry.text}</p>
                   ))}
@@ -646,7 +632,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">{t.calendarSelectDay}</p>
+            <p className="text-sm text-muted-foreground text-center py-4">{t.calendarSelectDay}</p>
           )}
         </div>
       </div>
