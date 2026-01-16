@@ -547,6 +547,8 @@ export interface Translations {
   getStarted: string;
   next: string;
   remindersActive: string;
+  greatChoice: string;
+  habitsSelected: string;
 
   // Welcome Tutorial
   tutorialWelcomeTitle: string;
@@ -1085,6 +1087,8 @@ export const translations: Record<Language, Translations> = {
     getStarted: 'Начать',
     next: 'Далее',
     remindersActive: 'Напоминания активны',
+    greatChoice: 'Отличный выбор!',
+    habitsSelected: 'привычек выбрано',
 
     // Welcome Tutorial
     tutorialWelcomeTitle: 'Добро пожаловать в ZenFlow',
@@ -1622,6 +1626,8 @@ export const translations: Record<Language, Translations> = {
     getStarted: 'Get started',
     next: 'Next',
     remindersActive: 'Reminders active',
+    greatChoice: 'Great choice!',
+    habitsSelected: 'habits selected',
 
     // Welcome Tutorial
     tutorialWelcomeTitle: 'Welcome to ZenFlow',
@@ -2159,6 +2165,8 @@ export const translations: Record<Language, Translations> = {
     getStarted: 'Почати',
     next: 'Далі',
     remindersActive: 'Нагадування активні',
+    greatChoice: 'Чудовий вибір!',
+    habitsSelected: 'звичок обрано',
 
     // Welcome Tutorial
     tutorialWelcomeTitle: 'Ласкаво просимо до ZenFlow',
@@ -2697,6 +2705,8 @@ export const translations: Record<Language, Translations> = {
     getStarted: 'Comenzar',
     next: 'Siguiente',
     remindersActive: 'Recordatorios activos',
+    greatChoice: '¡Buena elección!',
+    habitsSelected: 'hábitos seleccionados',
 
     // Welcome Tutorial
     tutorialWelcomeTitle: 'Bienvenido a ZenFlow',
@@ -3235,6 +3245,8 @@ export const translations: Record<Language, Translations> = {
     getStarted: 'Loslegen',
     next: 'Weiter',
     remindersActive: 'Erinnerungen aktiv',
+    greatChoice: 'Gute Wahl!',
+    habitsSelected: 'Gewohnheiten ausgewählt',
 
     // Welcome Tutorial
     tutorialWelcomeTitle: 'Willkommen bei ZenFlow',
@@ -3773,6 +3785,8 @@ export const translations: Record<Language, Translations> = {
     getStarted: 'Commencer',
     next: 'Suivant',
     remindersActive: 'Rappels actifs',
+    greatChoice: 'Bon choix!',
+    habitsSelected: 'habitudes sélectionnées',
 
     // Welcome Tutorial
     tutorialWelcomeTitle: 'Bienvenue sur ZenFlow',

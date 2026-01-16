@@ -1296,3 +1296,69 @@
 .delay-300 {
   animation-delay: 300ms;
 }
+
+/* ============================================
+   ONBOARDING ANIMATIONS
+   ============================================ */
+
+/* Floating particles */
+@keyframes float-particle {
+  0%, 100% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0.3;
+  }
+  25% {
+    transform: translateY(-20px) translateX(10px) scale(1.1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-10px) translateX(-5px) scale(0.9);
+    opacity: 0.4;
+  }
+  75% {
+    transform: translateY(-30px) translateX(5px) scale(1.05);
+    opacity: 0.35;
+  }
+}
+
+.animate-float-particle {
+  animation: float-particle 8s ease-in-out infinite;
+}
+
+/* Selection burst effect */
+@keyframes selection-burst {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--burst-angle, 0deg)) translateX(0);
+    opacity: 1;
+    scale: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--burst-angle, 0deg)) translateX(30px);
+    opacity: 0;
+    scale: 0.5;
+  }
+}
+
+.animate-selection-burst {
+  animation: selection-burst 0.5s ease-out forwards;
+}
+
+/* Selection pop for habit cards */
+@keyframes selection-pop {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(0.95);
+  }
+  60% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-selection-pop {
+  animation: selection-pop 0.4s ease-out;
+}

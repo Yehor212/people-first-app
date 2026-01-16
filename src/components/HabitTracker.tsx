@@ -86,6 +86,28 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
     return Math.max(1, streak); // At least 1 for today's completion
   };
 
+  // Check if habit is completed today (must be defined before use)
+  const isCompletedToday = (habit: Habit) => {
+    const habitType = habit.type || 'daily';
+
+    if (habitType === 'reduce') {
+      const progress = habit.progressByDate?.[today];
+      return progress === 0;
+    }
+
+    if (habitType === 'multiple') {
+      const completions = habit.completionsByDate?.[today] ?? 0;
+      const target = habit.dailyTarget ?? 1;
+      return completions >= target;
+    }
+
+    if (habitType === 'continuous') {
+      return !(habit.failedDates?.includes(today));
+    }
+
+    return habit.completedDates.includes(today);
+  };
+
   // Get count of completed habits today
   const completedTodayCount = habits.filter(h => isCompletedToday(h)).length;
 
@@ -185,28 +207,6 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
     setTargetDuration(15);
     setIsAdding(false);
     setShowCustomForm(false);
-  };
-
-  const isCompletedToday = (habit: Habit) => {
-    const habitType = habit.type || 'daily';
-
-    if (habitType === 'reduce') {
-      const progress = habit.progressByDate?.[today];
-      return progress === 0;
-    }
-
-    if (habitType === 'multiple') {
-      const completions = habit.completionsByDate?.[today] ?? 0;
-      const target = habit.dailyTarget ?? 1;
-      return completions >= target;
-    }
-
-    if (habitType === 'continuous') {
-      // Continuous habits are "complete" if no failure today
-      return !(habit.failedDates?.includes(today));
-    }
-
-    return habit.completedDates.includes(today);
   };
 
   const getProgress = (habit: Habit) => {
