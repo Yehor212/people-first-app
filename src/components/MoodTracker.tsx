@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { MoodType, MoodEntry } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
@@ -7,6 +7,7 @@ import { Sparkles, Sun, Cloud, Moon, Plus, ChevronDown, Edit3 } from 'lucide-rea
 import { MoodChangedToast, ConfirmDialog } from './Celebrations';
 import { AnimatedMoodEmoji } from './AnimatedMoodEmoji';
 import { MoodSelectionCelebration } from './MoodSelectionCelebration';
+import { triggerFlyingEmoji } from './FlyingMoodEmoji';
 
 interface MoodTrackerProps {
   entries: MoodEntry[];
@@ -43,12 +44,14 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
   // Edit mode state
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
   const [editingMood, setEditingMood] = useState<MoodType | null>(null);
+  const [editingNote, setEditingNote] = useState<string>('');
   const [showMoodChangedToast, setShowMoodChangedToast] = useState(false);
   const [changedMoodEmoji, setChangedMoodEmoji] = useState<string>('');
   const [confirmChange, setConfirmChange] = useState<{
     entryId: string;
     newMood: MoodType;
     oldMood: MoodType;
+    newNote?: string;
   } | null>(null);
 
   // Celebration state
@@ -58,6 +61,15 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     note?: string;
     timeOfDay: 'morning' | 'afternoon' | 'evening';
   } | null>(null);
+
+  // Ref to track selected mood button for flying animation
+  const moodButtonRefs = useRef<Record<MoodType, HTMLButtonElement | null>>({
+    great: null,
+    good: null,
+    okay: null,
+    bad: null,
+    terrible: null,
+  });
 
   const moods: { type: MoodType; emoji: string; label: string; color: string }[] = [
     { type: 'great', emoji: '😄', label: t.great, color: 'bg-mood-great' },
@@ -107,6 +119,17 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
   const handleSubmit = () => {
     if (!selectedMood) return;
 
+    // Trigger flying emoji animation
+    const moodData = moods.find(m => m.type === selectedMood);
+    const buttonRef = moodButtonRefs.current[selectedMood];
+    if (moodData && buttonRef) {
+      const rect = buttonRef.getBoundingClientRect();
+      triggerFlyingEmoji(moodData.emoji, {
+        x: rect.left + rect.width / 2,
+        y: rect.top + rect.height / 2,
+      });
+    }
+
     const entry: MoodEntry = {
       id: generateId(),
       mood: selectedMood,
@@ -134,21 +157,33 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
   const handleStartEdit = (entry: MoodEntry) => {
     setEditingEntryId(entry.id);
     setEditingMood(entry.mood);
+    setEditingNote(entry.note || '');
   };
 
   // Handle selecting a new mood during edit
   const handleEditMoodSelect = (entry: MoodEntry, newMood: MoodType) => {
-    if (newMood === entry.mood) {
-      // Same mood selected, cancel edit
+    setEditingMood(newMood);
+  };
+
+  // Handle saving the edit (mood + note)
+  const handleSaveEdit = (entry: MoodEntry) => {
+    const moodChanged = editingMood && editingMood !== entry.mood;
+    const noteChanged = editingNote !== (entry.note || '');
+
+    if (!moodChanged && !noteChanged) {
+      // Nothing changed, just close
       setEditingEntryId(null);
       setEditingMood(null);
+      setEditingNote('');
       return;
     }
-    // Show confirmation dialog (misclick protection)
+
+    // Show confirmation dialog
     setConfirmChange({
       entryId: entry.id,
-      newMood,
+      newMood: editingMood || entry.mood,
       oldMood: entry.mood,
+      newNote: editingNote.trim() || undefined,
     });
   };
 
@@ -156,10 +191,9 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
   const confirmMoodChange = () => {
     if (!confirmChange || !onUpdateEntry) return;
 
-    const { entryId, newMood } = confirmChange;
-    const entry = todayEntries.find(e => e.id === entryId);
+    const { entryId, newMood, newNote } = confirmChange;
 
-    onUpdateEntry(entryId, newMood, entry?.note);
+    onUpdateEntry(entryId, newMood, newNote);
 
     // Show success toast
     const newMoodData = moods.find(m => m.type === newMood);
@@ -171,6 +205,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     setConfirmChange(null);
     setEditingEntryId(null);
     setEditingMood(null);
+    setEditingNote('');
   };
 
   // Cancel mood change
@@ -178,6 +213,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     setConfirmChange(null);
     setEditingEntryId(null);
     setEditingMood(null);
+    setEditingNote('');
   };
 
   // Compact view showing today's mood entries
@@ -287,20 +323,23 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
                     </div>
                   ) : (
                     /* Edit mode view */
-                    <div className="animate-fade-in">
-                      <div className="flex items-center gap-2 mb-3">
+                    <div className="animate-fade-in space-y-3">
+                      <div className="flex items-center gap-2">
                         <TimeIcon className="w-3.5 h-3.5 text-primary" />
-                        <span className="text-sm font-medium text-primary">{t.changeMood || 'Change mood'}</span>
+                        <span className="text-sm font-medium text-primary">{t.editMood || 'Edit entry'}</span>
                         <button
                           onClick={() => {
                             setEditingEntryId(null);
                             setEditingMood(null);
+                            setEditingNote('');
                           }}
                           className="ml-auto text-xs text-muted-foreground hover:text-foreground"
                         >
                           {t.cancel || 'Cancel'}
                         </button>
                       </div>
+
+                      {/* Mood selection */}
                       <div className="flex justify-between gap-1">
                         {moods.map((mood) => (
                           <button
@@ -308,7 +347,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
                             onClick={() => handleEditMoodSelect(entry, mood.type)}
                             className={cn(
                               "flex-1 p-2 rounded-lg transition-all",
-                              editingMood === mood.type || entry.mood === mood.type
+                              editingMood === mood.type
                                 ? `${mood.color} bg-opacity-30 scale-105`
                                 : "hover:bg-secondary hover:scale-105"
                             )}
@@ -317,6 +356,23 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
                           </button>
                         ))}
                       </div>
+
+                      {/* Note input */}
+                      <textarea
+                        value={editingNote}
+                        onChange={(e) => setEditingNote(e.target.value)}
+                        placeholder={t.addNote || 'Add a note...'}
+                        className="w-full p-2 bg-background/50 rounded-lg text-sm text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary/30"
+                        rows={2}
+                      />
+
+                      {/* Save button */}
+                      <button
+                        onClick={() => handleSaveEdit(entry)}
+                        className="w-full py-2 bg-primary/20 hover:bg-primary/30 text-primary rounded-lg text-sm font-medium transition-colors"
+                      >
+                        {t.save || 'Save'}
+                      </button>
                     </div>
                   )}
                 </div>
@@ -463,6 +519,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
         {moods.map((mood, index) => (
           <button
             key={mood.type}
+            ref={(el) => { moodButtonRefs.current[mood.type] = el; }}
             onClick={() => setSelectedMood(mood.type)}
             className={cn(
               "mood-btn flex flex-col items-center gap-2 p-3 rounded-xl transition-all relative",

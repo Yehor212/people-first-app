@@ -4,6 +4,8 @@ import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, Priva
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMoodTheme } from '@/contexts/MoodThemeContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
+import { triggerXpPopup } from '@/components/XpPopup';
+import { DailySurprise } from '@/components/DailySurprise';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
 import { generateId, getToday } from '@/lib/utils';
@@ -225,6 +227,7 @@ export function Index() {
       return [...prev, entry];
     });
     awardXp('mood'); // +5 XP
+    triggerXpPopup(5, 'mood'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
   };
 
@@ -263,6 +266,7 @@ export function Index() {
         if (current < target) {
           completionsByDate[date] = current + 1;
           awardXp('habit'); // +10 XP for each completion
+          triggerXpPopup(10, 'habit'); // Visual XP popup
         }
 
         return {
@@ -278,6 +282,7 @@ export function Index() {
       const completed = habit.completedDates.includes(date);
       if (!completed) {
         awardXp('habit'); // +10 XP for completing habit
+        triggerXpPopup(10, 'habit'); // Visual XP popup
       }
       return {
         ...habit,
@@ -320,12 +325,14 @@ export function Index() {
   const handleCompleteFocusSession = (session: FocusSession) => {
     setFocusSessions(prev => [...prev, session]);
     awardXp('focus'); // +15 XP
+    triggerXpPopup(15, 'focus'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
   };
 
   const handleAddGratitude = (entry: GratitudeEntry) => {
     setGratitudeEntries(prev => [...prev, entry]);
     awardXp('gratitude'); // +8 XP
+    triggerXpPopup(8, 'gratitude'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
   };
 
@@ -763,6 +770,9 @@ export function Index() {
               return (
                 <div className="space-y-6">
                   <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
+
+                  {/* Daily Surprise - motivational content that changes daily */}
+                  <DailySurprise onNavigate={handleNavigateToSection} />
 
                   {/* Daily Progress CTA */}
                   <DailyProgress

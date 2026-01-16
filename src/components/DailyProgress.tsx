@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ChevronRight } from 'lucide-react';
+import { setCalendarPosition } from './FlyingMoodEmoji';
 
 interface DailyProgressProps {
   moods: MoodEntry[];
@@ -87,6 +88,31 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
   const completedCount = items.filter(i => i.completed).length;
   const allComplete = completedCount === items.length;
 
+  // Ref for the mood item to use as flying emoji target
+  const moodItemRef = useRef<HTMLButtonElement>(null);
+
+  // Register mood item position for flying emoji
+  useEffect(() => {
+    const updatePosition = () => {
+      if (moodItemRef.current) {
+        const rect = moodItemRef.current.getBoundingClientRect();
+        setCalendarPosition(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2
+        );
+      }
+    };
+
+    updatePosition();
+    window.addEventListener('scroll', updatePosition, { passive: true });
+    window.addEventListener('resize', updatePosition);
+
+    return () => {
+      window.removeEventListener('scroll', updatePosition);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, []);
+
   // Don't show if all complete - let celebrations handle that
   if (allComplete) {
     return null;
@@ -118,6 +144,7 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
         {items.map((item) => (
           <button
             key={item.key}
+            ref={item.key === 'mood' ? moodItemRef : undefined}
             onClick={item.onClick}
             className={cn(
               "flex-1 flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all",
