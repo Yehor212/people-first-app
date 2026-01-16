@@ -22,7 +22,8 @@
       "Bash(npx cap sync android)",
       "Bash(cd:*)",
       "Bash(./gradlew assembleDebug:*)",
-      "Bash(./gradlew clean:*)"
+      "Bash(./gradlew clean:*)",
+      "Bash(CAPACITOR_BUILD=true npm run build:*)"
     ]
   }
 }

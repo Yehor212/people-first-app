@@ -5,8 +5,13 @@ import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 
 // https://vitejs.dev/config/
-export default defineConfig(({ mode }) => ({
-  base: "/people-first-app/",
+export default defineConfig(({ mode }) => {
+  // Use relative paths for Capacitor/Android builds
+  const isCapacitor = process.env.CAPACITOR_BUILD === 'true';
+  const base = isCapacitor ? "./" : "/people-first-app/";
+
+  return {
+  base,
   server: {
     host: "::",
     port: 8080,
@@ -34,8 +39,8 @@ export default defineConfig(({ mode }) => ({
         short_name: "ZenFlow",
         description: "Трекер привычек, настроения и продуктивности. Работает оффлайн.",
 
-      start_url: "/people-first-app/",
-scope: "/people-first-app/",
+      start_url: base,
+      scope: base,
 
         display: "standalone",
         orientation: "portrait-primary",
@@ -121,7 +126,7 @@ scope: "/people-first-app/",
             },
           },
         ],
-        navigateFallback: "/people-first-app/index.html",
+        navigateFallback: `${base}index.html`,
         navigateFallbackDenylist: [/^\/api/, /\.(?:png|jpg|jpeg|svg|gif|woff2?)$/],
       },
 
@@ -185,4 +190,4 @@ scope: "/people-first-app/",
   optimizeDeps: {
     include: ["react", "react-dom", "react-router-dom", "@supabase/supabase-js", "dexie", "nanoid"],
   },
-}));
+};});
