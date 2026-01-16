@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AmbientSoundGenerator, SOUNDS, unlockAudio } from '@/lib/ambientSounds';
@@ -18,6 +18,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   const [selectedSoundId, setSelectedSoundId] = useState<string | null>(null);
   const [isSoundPlaying, setIsSoundPlaying] = useState(false);
   const [showBreathingAnimation, setShowBreathingAnimation] = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
   const soundGeneratorRef = useRef<AmbientSoundGenerator | null>(null);
 
   // Countdown timer
@@ -69,7 +70,38 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     };
   }, []);
 
-  // Ambient sound player
+  // Play sound helper with retry for mobile
+  const playSound = useCallback(async (soundId: string) => {
+    const generator = soundGeneratorRef.current;
+    if (!generator || !soundId) return;
+
+    try {
+      // Unlock audio first (required for mobile)
+      await unlockAudio();
+      setAudioReady(true);
+
+      // Small delay for mobile browsers
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      await generator.play(soundId);
+      setIsSoundPlaying(true);
+      console.log('[HyperfocusMode] Sound playing:', soundId);
+    } catch (err) {
+      console.error('[HyperfocusMode] Failed to play sound:', err);
+      setIsSoundPlaying(false);
+
+      // Retry once on mobile
+      try {
+        await new Promise(resolve => setTimeout(resolve, 300));
+        await generator.play(soundId);
+        setIsSoundPlaying(true);
+      } catch (retryErr) {
+        console.error('[HyperfocusMode] Retry failed:', retryErr);
+      }
+    }
+  }, []);
+
+  // Ambient sound player - react to state changes
   useEffect(() => {
     const generator = soundGeneratorRef.current;
     if (!generator) return;
@@ -80,22 +112,12 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       return;
     }
 
-    if (isRunning && !isPaused) {
-      generator.play(selectedSoundId).then(() => {
-        setIsSoundPlaying(true);
-      }).catch(err => {
-        console.error('Failed to play ambient sound:', err);
-        setIsSoundPlaying(false);
-      });
-    } else {
+    if (isRunning && !isPaused && audioReady) {
+      playSound(selectedSoundId);
+    } else if (!isRunning || isPaused) {
       generator.pause();
-      setIsSoundPlaying(false);
     }
-
-    return () => {
-      generator.stop();
-    };
-  }, [selectedSoundId, isRunning, isPaused]);
+  }, [selectedSoundId, isRunning, isPaused, audioReady, playSound]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -105,26 +127,35 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
   const progress = ((duration * 60 - timeLeft) / (duration * 60)) * 100;
 
-  const handleStart = () => {
+  const handleStart = async () => {
     // Unlock audio on user gesture (required for mobile browsers)
-    unlockAudio();
+    try {
+      await unlockAudio();
+      setAudioReady(true);
+    } catch (e) {
+      console.warn('[HyperfocusMode] Audio unlock failed:', e);
+    }
     setIsRunning(true);
     setIsPaused(false);
   };
 
-  const handlePause = () => {
-    setIsPaused(!isPaused);
+  const handlePause = async () => {
+    const newPausedState = !isPaused;
+    setIsPaused(newPausedState);
+
     const generator = soundGeneratorRef.current;
-    if (generator) {
-      if (isPaused) {
-        generator.resume();
-      } else {
+    if (generator && selectedSoundId) {
+      if (newPausedState) {
+        // Pausing
         generator.pause();
+      } else {
+        // Resuming - need to replay on mobile
+        await playSound(selectedSoundId);
       }
     }
   };
 
-  const toggleSound = () => {
+  const toggleSound = async () => {
     const generator = soundGeneratorRef.current;
     if (!generator) return;
 
@@ -132,18 +163,28 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       generator.pause();
       setIsSoundPlaying(false);
     } else if (selectedSoundId) {
-      generator.resume();
-      setIsSoundPlaying(true);
+      // Need to re-play on mobile instead of just resume
+      await playSound(selectedSoundId);
     }
   };
 
-  const handleSoundSelect = (soundId: string | null) => {
-    unlockAudio();
+  const handleSoundSelect = async (soundId: string | null) => {
+    // User interaction - unlock audio
+    try {
+      await unlockAudio();
+      setAudioReady(true);
+    } catch (e) {
+      console.warn('[HyperfocusMode] Audio unlock failed:', e);
+    }
+
     setSelectedSoundId(soundId);
+
     if (soundId && isRunning && !isPaused) {
-      soundGeneratorRef.current?.play(soundId).then(() => {
-        setIsSoundPlaying(true);
-      });
+      // Play immediately after user selection
+      await playSound(soundId);
+    } else if (!soundId) {
+      soundGeneratorRef.current?.stop();
+      setIsSoundPlaying(false);
     }
   };
 

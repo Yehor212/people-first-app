@@ -3,7 +3,7 @@ import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Check, Target, Clock, Sparkles, ChevronRight } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 
 interface DailyProgressProps {
   moods: MoodEntry[];
@@ -16,8 +16,8 @@ interface DailyProgressProps {
 interface ProgressItem {
   key: string;
   label: string;
-  icon: React.ComponentType<{ className?: string }> | null;
-  emoji?: string;
+  emoji: string;
+  completedEmoji: string;
   completed: boolean;
   progress?: string;
   color: string;
@@ -47,8 +47,8 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
     {
       key: 'mood',
       label: t.moodToday || "Today's Mood",
-      icon: null,
       emoji: '😊',
+      completedEmoji: '✅',
       completed: progress.mood,
       color: 'bg-mood-great',
       onClick: () => onNavigate?.('mood'),
@@ -56,7 +56,8 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
     {
       key: 'habits',
       label: t.habits || 'Habits',
-      icon: Target,
+      emoji: '🎯',
+      completedEmoji: '✅',
       completed: progress.habits.total > 0 && progress.habits.completed >= progress.habits.total,
       progress: progress.habits.total > 0 ? `${progress.habits.completed}/${progress.habits.total}` : undefined,
       color: 'bg-primary',
@@ -65,8 +66,9 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
     {
       key: 'focus',
       label: t.focusSession || 'Focus',
-      icon: Clock,
-      completed: progress.focus >= 25, // 25 min is a success
+      emoji: '🧠',
+      completedEmoji: '✅',
+      completed: progress.focus >= 25,
       progress: progress.focus > 0 ? `${progress.focus} ${t.min}` : undefined,
       color: 'bg-accent',
       onClick: () => onNavigate?.('focus'),
@@ -74,7 +76,8 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
     {
       key: 'gratitude',
       label: t.gratitude || 'Gratitude',
-      icon: Sparkles,
+      emoji: '💜',
+      completedEmoji: '✅',
       completed: progress.gratitude,
       color: 'bg-mood-good',
       onClick: () => onNavigate?.('gratitude'),
@@ -112,42 +115,35 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
 
       {/* Items */}
       <div className="flex justify-between gap-2">
-        {items.map((item) => {
-          const Icon = item.icon;
-          return (
-            <button
-              key={item.key}
-              onClick={item.onClick}
-              className={cn(
-                "flex-1 flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all",
-                item.completed
-                  ? "bg-secondary/50"
-                  : "bg-primary/5 hover:bg-primary/10 ring-1 ring-primary/20"
-              )}
-            >
-              <div className={cn(
-                "w-8 h-8 rounded-full flex items-center justify-center transition-all",
-                item.completed
-                  ? `${item.color} bg-opacity-20`
-                  : "bg-primary/10"
-              )}>
-                {item.completed ? (
-                  <Check className="w-4 h-4 text-mood-good" />
-                ) : item.emoji ? (
-                  <span className="text-lg">{item.emoji}</span>
-                ) : Icon && typeof Icon === 'function' ? (
-                  <Icon className="w-4 h-4 text-primary" />
-                ) : null}
-              </div>
-              <span className={cn(
-                "text-[10px] font-medium truncate w-full text-center",
-                item.completed ? "text-muted-foreground" : "text-foreground"
-              )}>
-                {item.progress || (item.completed ? '✓' : item.label)}
+        {items.map((item) => (
+          <button
+            key={item.key}
+            onClick={item.onClick}
+            className={cn(
+              "flex-1 flex flex-col items-center gap-1.5 p-2 rounded-xl transition-all",
+              item.completed
+                ? "bg-secondary/50"
+                : "bg-primary/5 hover:bg-primary/10 ring-1 ring-primary/20"
+            )}
+          >
+            <div className={cn(
+              "w-10 h-10 rounded-full flex items-center justify-center transition-all",
+              item.completed
+                ? `${item.color} bg-opacity-20`
+                : "bg-primary/10"
+            )}>
+              <span className="text-xl">
+                {item.completed ? item.completedEmoji : item.emoji}
               </span>
-            </button>
-          );
-        })}
+            </div>
+            <span className={cn(
+              "text-[10px] font-medium truncate w-full text-center",
+              item.completed ? "text-muted-foreground" : "text-foreground"
+            )}>
+              {item.progress || (item.completed ? '✓' : item.label)}
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* Next action hint */}
