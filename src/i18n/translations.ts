@@ -29,6 +29,8 @@ export interface Translations {
   moodToday: string;
   moodHistory: string;
   moodRecorded: string;
+  todayProgress: string;
+  completed: string;
   updateMood: string;
   great: string;
   good: string;
@@ -610,6 +612,8 @@ export const translations: Record<Language, Translations> = {
     moodToday: 'Настроение сегодня',
     moodHistory: 'История за день',
     moodRecorded: 'Настроение записано!',
+    todayProgress: 'Прогресс сегодня',
+    completed: 'Выполнено!',
     updateMood: 'Обновить',
     great: 'Отлично',
     good: 'Хорошо',
@@ -1145,6 +1149,8 @@ export const translations: Record<Language, Translations> = {
     moodToday: 'Mood today',
     moodHistory: 'Today\'s history',
     moodRecorded: 'Mood Recorded!',
+    todayProgress: "Today's Progress",
+    completed: 'Completed!',
     updateMood: 'Update',
     great: 'Great',
     good: 'Good',
@@ -1680,6 +1686,8 @@ export const translations: Record<Language, Translations> = {
     moodToday: 'Настрій сьогодні',
     moodHistory: 'Історія за день',
     moodRecorded: 'Настрій записано!',
+    todayProgress: 'Прогрес сьогодні',
+    completed: 'Виконано!',
     updateMood: 'Оновити',
     great: 'Чудово',
     good: 'Добре',
@@ -2215,6 +2223,8 @@ export const translations: Record<Language, Translations> = {
     moodToday: 'Estado de ánimo hoy',
     moodHistory: 'Historial del día',
     moodRecorded: '¡Estado de ánimo registrado!',
+    todayProgress: 'Progreso de hoy',
+    completed: '¡Completado!',
     updateMood: 'Actualizar',
     great: 'Genial',
     good: 'Bien',
@@ -2751,6 +2761,8 @@ export const translations: Record<Language, Translations> = {
     moodToday: 'Stimmung heute',
     moodHistory: 'Tagesverlauf',
     moodRecorded: 'Stimmung aufgezeichnet!',
+    todayProgress: 'Heutiger Fortschritt',
+    completed: 'Erledigt!',
     updateMood: 'Aktualisieren',
     great: 'Super',
     good: 'Gut',
@@ -3287,6 +3299,8 @@ export const translations: Record<Language, Translations> = {
     moodToday: 'Humeur aujourd\'hui',
     moodHistory: 'Historique du jour',
     moodRecorded: 'Humeur enregistrée!',
+    todayProgress: "Progrès d'aujourd'hui",
+    completed: 'Terminé!',
     updateMood: 'Mettre à jour',
     great: 'Super',
     good: 'Bien',

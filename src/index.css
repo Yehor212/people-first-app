@@ -954,3 +954,324 @@
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary) / 0.5);
 }
+
+/* ============================================
+   DUOLINGO-STYLE HABIT ANIMATIONS
+   ============================================ */
+
+/* Habit completion bounce */
+@keyframes habit-complete-bounce {
+  0% {
+    transform: translateX(-50%) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.1);
+  }
+  70% {
+    transform: translateX(-50%) scale(0.95);
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-habit-complete-bounce {
+  animation: habit-complete-bounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Checkmark draw animation */
+@keyframes check-draw {
+  0% {
+    stroke-dashoffset: 30;
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+.animate-check-draw {
+  stroke-dasharray: 30;
+  animation: check-draw 0.4s ease-out forwards;
+}
+
+/* Check circle fill */
+@keyframes check-circle-fill {
+  0% {
+    transform: scale(0.8);
+    background: transparent;
+  }
+  50% {
+    transform: scale(1.2);
+    background: rgba(255, 255, 255, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.animate-check-circle-fill {
+  animation: check-circle-fill 0.4s ease-out;
+}
+
+/* Sparkle burst */
+@keyframes sparkle-burst {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.5) rotate(180deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.animate-sparkle-burst {
+  animation: sparkle-burst 0.6s ease-out;
+}
+
+.delay-100 {
+  animation-delay: 100ms;
+}
+
+/* XP float up */
+@keyframes xp-float-up {
+  0% {
+    transform: translateY(10px) scale(0.5);
+    opacity: 0;
+  }
+  30% {
+    transform: translateY(0) scale(1.2);
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(-5px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-20px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.animate-xp-float-up {
+  animation: xp-float-up 1s ease-out forwards;
+}
+
+/* Streak pop */
+@keyframes streak-pop {
+  0% {
+    transform: translateX(-50%) scale(0) rotate(-10deg);
+    opacity: 0;
+  }
+  60% {
+    transform: translateX(-50%) scale(1.2) rotate(5deg);
+    opacity: 1;
+  }
+  80% {
+    transform: translateX(-50%) scale(0.9) rotate(-2deg);
+  }
+  100% {
+    transform: translateX(-50%) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.animate-streak-pop {
+  animation: streak-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Flame flicker */
+@keyframes flame-flicker {
+  0%, 100% {
+    transform: scaleY(1) scaleX(1);
+    filter: brightness(1);
+  }
+  25% {
+    transform: scaleY(1.1) scaleX(0.95);
+    filter: brightness(1.2);
+  }
+  50% {
+    transform: scaleY(0.95) scaleX(1.05);
+    filter: brightness(0.9);
+  }
+  75% {
+    transform: scaleY(1.05) scaleX(0.98);
+    filter: brightness(1.1);
+  }
+}
+
+.animate-flame-flicker {
+  animation: flame-flicker 0.5s ease-in-out infinite;
+}
+
+/* Particle burst */
+@keyframes particle-burst {
+  0% {
+    transform: translate(-50%, -50%) rotate(var(--particle-angle, 0deg)) translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) rotate(var(--particle-angle, 0deg)) translateX(var(--particle-distance, 50px));
+    opacity: 0;
+  }
+}
+
+.animate-particle-burst {
+  animation: particle-burst 0.6s ease-out forwards;
+}
+
+/* Check pop */
+@keyframes check-pop {
+  0% {
+    transform: scale(0) rotate(-45deg);
+  }
+  50% {
+    transform: scale(1.3) rotate(10deg);
+  }
+  70% {
+    transform: scale(0.9) rotate(-5deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.animate-check-pop {
+  animation: check-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Ripple out */
+@keyframes ripple-out {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-ripple-out {
+  animation: ripple-out 0.6s ease-out forwards;
+}
+
+/* Habit icon complete */
+@keyframes habit-icon-complete {
+  0% {
+    transform: scale(1);
+  }
+  30% {
+    transform: scale(0);
+  }
+  60% {
+    transform: scale(1.3);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.animate-habit-icon-complete {
+  animation: habit-icon-complete 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Completion ring draw */
+@keyframes draw-rect {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-draw-rect {
+  animation: draw-rect 0.6s ease-out forwards;
+}
+
+/* Shimmer slide */
+@keyframes shimmer-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+.animate-shimmer-slide {
+  animation: shimmer-slide 2s ease-in-out infinite;
+}
+
+/* Progress bar fill */
+@keyframes progress-fill {
+  from {
+    width: 0%;
+  }
+}
+
+.animate-progress-fill {
+  animation: progress-fill 0.8s ease-out;
+}
+
+/* Habit row enter */
+@keyframes habit-row-enter {
+  0% {
+    transform: translateX(-20px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-habit-row-enter {
+  animation: habit-row-enter 0.4s ease-out forwards;
+}
+
+/* Pulsing glow for incomplete habits */
+@keyframes incomplete-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+  }
+  50% {
+    box-shadow: 0 0 10px 2px hsl(var(--primary) / 0.3);
+  }
+}
+
+.animate-incomplete-pulse {
+  animation: incomplete-pulse 2s ease-in-out infinite;
+}
+
+/* Completed checkmark with bounce */
+.animate-completed-check {
+  animation: check-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Success ring pulse */
+@keyframes success-ring-pulse {
+  0% {
+    box-shadow: 0 0 0 0 hsl(var(--mood-good) / 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px hsl(var(--mood-good) / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 hsl(var(--mood-good) / 0);
+  }
+}
+
+.animate-success-ring-pulse {
+  animation: success-ring-pulse 0.6s ease-out;
+}

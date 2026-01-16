@@ -2,10 +2,11 @@ import { useState, useRef, useCallback } from 'react';
 import { Habit, HabitType, HabitReminder, HabitFrequency } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { Plus, Check, X, Minus, Bell, Clock, ChevronRight, Trash2, MoreHorizontal, Settings2 } from 'lucide-react';
+import { Plus, Check, X, Minus, Bell, Clock, ChevronRight, Trash2, MoreHorizontal, Settings2, Flame, Zap } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { habitTemplates } from '@/lib/habitTemplates';
 import { HabitCompletion, AllHabitsComplete } from './Celebrations';
+import { HabitCompletionCelebration, DailyProgressBar, AnimatedHabitButton } from './HabitCompletionCelebration';
 
 const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿', '🚭', '🍷', '🇬🇧', '💪', '🧠'];
 const habitColors = [
@@ -50,8 +51,43 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
   const [completedHabitName, setCompletedHabitName] = useState<string | null>(null);
   const [showAllComplete, setShowAllComplete] = useState(false);
   const [animatingHabitId, setAnimatingHabitId] = useState<string | null>(null);
+  const [celebrationData, setCelebrationData] = useState<{
+    habitName: string;
+    habitIcon: string;
+    habitColor: string;
+    streakDays?: number;
+  } | null>(null);
 
   const today = getToday();
+
+  // Calculate habit streak (consecutive days)
+  const getHabitStreak = (habit: Habit): number => {
+    if (!habit.completedDates || habit.completedDates.length === 0) return 1; // Starting new streak
+
+    const sortedDates = [...habit.completedDates].sort().reverse();
+    let streak = 0;
+    const todayDate = new Date(today);
+
+    for (let i = 0; i < sortedDates.length; i++) {
+      const checkDate = new Date(todayDate);
+      checkDate.setDate(checkDate.getDate() - i);
+      const checkDateStr = checkDate.toISOString().split('T')[0];
+
+      if (sortedDates.includes(checkDateStr) || (i === 0 && !sortedDates.includes(today))) {
+        // Count if we're completing today (i=0) or already have the date
+        if (i === 0 || sortedDates.includes(checkDateStr)) {
+          streak++;
+        }
+      } else {
+        break;
+      }
+    }
+
+    return Math.max(1, streak); // At least 1 for today's completion
+  };
+
+  // Get count of completed habits today
+  const completedTodayCount = habits.filter(h => isCompletedToday(h)).length;
 
   // Quick add from template
   const handleQuickAdd = (templateId: string) => {
@@ -210,9 +246,16 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
       setAnimatingHabitId(habit.id);
       setTimeout(() => setAnimatingHabitId(null), 600);
 
-      // Show completion toast
-      setCompletedHabitName(habit.name);
-      setTimeout(() => setCompletedHabitName(null), 2000);
+      // Calculate streak for this habit
+      const streak = getHabitStreak(habit);
+
+      // Show Duolingo-style celebration
+      setCelebrationData({
+        habitName: habit.name,
+        habitIcon: habit.icon,
+        habitColor: habit.color,
+        streakDays: streak > 1 ? streak : undefined,
+      });
 
       // Check if all habits are now completed (after this toggle)
       const otherHabitsCompleted = habits
@@ -224,13 +267,22 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
         setTimeout(() => {
           setShowAllComplete(true);
           setTimeout(() => setShowAllComplete(false), 4000);
-        }, 500);
+        }, 1800); // Delay after celebration ends
       }
     }
   }, [habits, onToggleHabit, today]);
 
   return (
     <div className="bg-card rounded-2xl p-6 zen-shadow-card animate-fade-in">
+      {/* Daily Progress Bar */}
+      {habits.length > 0 && (
+        <DailyProgressBar
+          completedCount={completedTodayCount}
+          totalCount={habits.length}
+          className="mb-5"
+        />
+      )}
+
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-foreground">{t.habits}</h3>
         <button
@@ -573,11 +625,15 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
         </div>
       )}
 
-      {/* Completion Toast */}
-      {completedHabitName && (
-        <HabitCompletion
-          habitName={completedHabitName}
-          onClose={() => setCompletedHabitName(null)}
+      {/* Duolingo-style Completion Celebration */}
+      {celebrationData && (
+        <HabitCompletionCelebration
+          habitName={celebrationData.habitName}
+          habitIcon={celebrationData.habitIcon}
+          habitColor={celebrationData.habitColor}
+          xpGained={10}
+          streakDays={celebrationData.streakDays}
+          onComplete={() => setCelebrationData(null)}
         />
       )}
 
