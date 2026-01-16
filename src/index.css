@@ -1364,10 +1364,10 @@
 }
 
 /* ============================================
-   DYNAMIC MOOD THEMING
+   DYNAMIC MOOD THEMING - DRAMATIC CHANGES
    ============================================ */
 
-/* CSS Variables for mood themes - set by MoodThemeContext */
+/* CSS Variables for mood themes */
 :root {
   --mood-primary-hue: 250;
   --mood-accent-hue: 200;
@@ -1382,9 +1382,13 @@
   --mood-border-radius: 1;
 }
 
-/* Base transition for mood changes */
+/* Base transition for all mood changes */
 body {
-  transition: background-color 0.6s ease-out;
+  transition: background-color 0.8s ease-out;
+}
+
+body * {
+  transition: background-color 0.5s ease-out, border-color 0.5s ease-out, box-shadow 0.5s ease-out;
 }
 
 /* Mood-based background overlay */
@@ -1394,91 +1398,300 @@ body {
   pointer-events: none;
   z-index: -1;
   opacity: 0;
-  transition: opacity 0.6s ease-out, background 0.6s ease-out;
+  transition: opacity 0.8s ease-out, background 0.8s ease-out;
 }
 
 body.mood-transitioning .mood-background-overlay {
   opacity: 0;
 }
 
-/* Great mood - Vibrant, celebratory */
+/* ========================================
+   🎉 GREAT MOOD - Celebration Mode
+   ======================================== */
+body.mood-great {
+  --primary: 280 80% 60%;
+  --accent: 45 95% 55%;
+  --zen-shadow-soft: 0 8px 40px -4px hsl(280 80% 50% / 0.35);
+  --zen-shadow-glow: 0 0 60px hsl(45 95% 55% / 0.4);
+}
+
 body.mood-great .mood-background-overlay {
   opacity: 1;
   background:
-    radial-gradient(ellipse at top left, var(--mood-gradient-from) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom right, var(--mood-gradient-to) 0%, transparent 50%),
-    radial-gradient(ellipse at center, var(--mood-gradient-via) 0%, transparent 70%);
+    radial-gradient(ellipse at top left, rgba(168, 85, 247, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(251, 191, 36, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at top right, rgba(236, 72, 153, 0.15) 0%, transparent 40%),
+    radial-gradient(ellipse at center, rgba(34, 211, 238, 0.1) 0%, transparent 60%);
 }
 
-body.mood-great {
-  --zen-shadow-soft: 0 4px 25px -4px hsl(280 60% 60% / 0.2);
-  --zen-shadow-glow: 0 0 40px hsl(280 60% 60% / 0.25);
+body.mood-great .bg-card {
+  background: linear-gradient(135deg,
+    hsl(280 30% 98%) 0%,
+    hsl(45 30% 97%) 100%
+  ) !important;
+  border: 1px solid hsl(280 50% 85% / 0.5) !important;
+  box-shadow: 0 8px 32px hsl(280 70% 60% / 0.15), inset 0 1px 0 hsl(45 80% 90% / 0.5) !important;
 }
 
-/* Good mood - Warm, positive */
+.dark body.mood-great .bg-card,
+body.mood-great.dark .bg-card {
+  background: linear-gradient(135deg,
+    hsl(280 40% 15%) 0%,
+    hsl(45 30% 12%) 100%
+  ) !important;
+  border: 1px solid hsl(280 50% 40% / 0.4) !important;
+  box-shadow: 0 8px 32px hsl(280 70% 30% / 0.3), inset 0 1px 0 hsl(45 50% 30% / 0.2) !important;
+}
+
+body.mood-great .zen-gradient-hero {
+  background: linear-gradient(180deg,
+    hsl(280 40% 96%) 0%,
+    hsl(45 30% 95%) 50%,
+    hsl(320 30% 96%) 100%
+  ) !important;
+}
+
+.dark body.mood-great .zen-gradient-hero,
+body.mood-great.dark .zen-gradient-hero {
+  background: linear-gradient(180deg,
+    hsl(280 50% 8%) 0%,
+    hsl(45 40% 6%) 50%,
+    hsl(320 40% 8%) 100%
+  ) !important;
+}
+
+/* Great mood buttons get special glow */
+body.mood-great button:not([disabled]) {
+  box-shadow: 0 4px 20px hsl(280 70% 50% / 0.2);
+}
+
+body.mood-great button:hover:not([disabled]) {
+  box-shadow: 0 6px 30px hsl(45 90% 50% / 0.3);
+  transform: translateY(-1px);
+}
+
+/* ========================================
+   😊 GOOD MOOD - Warm & Positive
+   ======================================== */
+body.mood-good {
+  --primary: 150 70% 45%;
+  --accent: 180 60% 50%;
+  --zen-shadow-soft: 0 6px 30px -4px hsl(150 60% 45% / 0.25);
+  --zen-shadow-glow: 0 0 45px hsl(150 60% 45% / 0.3);
+}
+
 body.mood-good .mood-background-overlay {
   opacity: 1;
   background:
-    radial-gradient(ellipse at top, var(--mood-gradient-from) 0%, transparent 40%),
-    radial-gradient(ellipse at bottom left, var(--mood-gradient-to) 0%, transparent 50%);
+    radial-gradient(ellipse at top, rgba(74, 222, 128, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom left, rgba(56, 189, 248, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom right, rgba(167, 243, 208, 0.15) 0%, transparent 50%);
 }
 
-body.mood-good {
-  --zen-shadow-soft: 0 4px 22px -4px hsl(150 50% 50% / 0.18);
-  --zen-shadow-glow: 0 0 35px hsl(150 50% 50% / 0.2);
+body.mood-good .bg-card {
+  background: linear-gradient(135deg,
+    hsl(150 25% 98%) 0%,
+    hsl(180 20% 97%) 100%
+  ) !important;
+  border: 1px solid hsl(150 40% 85% / 0.5) !important;
+  box-shadow: 0 6px 25px hsl(150 50% 50% / 0.12) !important;
 }
 
-/* Okay mood - Neutral, calm */
-body.mood-okay .mood-background-overlay {
-  opacity: 0.7;
-  background:
-    radial-gradient(ellipse at center, var(--mood-gradient-from) 0%, transparent 60%);
+.dark body.mood-good .bg-card,
+body.mood-good.dark .bg-card {
+  background: linear-gradient(135deg,
+    hsl(150 35% 12%) 0%,
+    hsl(180 30% 10%) 100%
+  ) !important;
+  border: 1px solid hsl(150 40% 35% / 0.4) !important;
 }
 
+body.mood-good .zen-gradient-hero {
+  background: linear-gradient(180deg,
+    hsl(150 30% 96%) 0%,
+    hsl(180 25% 95%) 100%
+  ) !important;
+}
+
+.dark body.mood-good .zen-gradient-hero,
+body.mood-good.dark .zen-gradient-hero {
+  background: linear-gradient(180deg,
+    hsl(150 40% 6%) 0%,
+    hsl(180 35% 5%) 100%
+  ) !important;
+}
+
+/* ========================================
+   😐 OKAY MOOD - Neutral & Balanced
+   ======================================== */
 body.mood-okay {
-  --zen-shadow-soft: 0 4px 18px -4px hsl(220 30% 50% / 0.12);
-  --zen-shadow-glow: 0 0 25px hsl(220 30% 50% / 0.15);
+  --primary: 220 50% 55%;
+  --accent: 200 40% 50%;
+  --zen-shadow-soft: 0 4px 20px -4px hsl(220 30% 50% / 0.15);
+  --zen-shadow-glow: 0 0 30px hsl(220 30% 50% / 0.18);
 }
 
-/* Bad mood - Calming, supportive blues */
+body.mood-okay .mood-background-overlay {
+  opacity: 0.6;
+  background:
+    radial-gradient(ellipse at center, rgba(148, 163, 184, 0.15) 0%, transparent 60%);
+}
+
+body.mood-okay .bg-card {
+  background: hsl(220 15% 98%) !important;
+  border: 1px solid hsl(220 20% 88% / 0.5) !important;
+}
+
+.dark body.mood-okay .bg-card,
+body.mood-okay.dark .bg-card {
+  background: hsl(220 20% 12%) !important;
+  border: 1px solid hsl(220 20% 25% / 0.4) !important;
+}
+
+/* ========================================
+   😔 BAD MOOD - Calming Blues
+   ======================================== */
+body.mood-bad {
+  --primary: 200 50% 55%;
+  --accent: 220 40% 60%;
+  --zen-shadow-soft: 0 4px 15px -4px hsl(200 40% 50% / 0.12);
+  --zen-shadow-glow: 0 0 25px hsl(200 40% 50% / 0.15);
+}
+
 body.mood-bad .mood-background-overlay {
   opacity: 1;
   background:
-    radial-gradient(ellipse at top, var(--mood-gradient-from) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom, var(--mood-gradient-to) 0%, transparent 40%);
+    radial-gradient(ellipse at top, rgba(125, 211, 252, 0.18) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(165, 180, 252, 0.15) 0%, transparent 50%);
 }
 
-body.mood-bad {
-  --zen-shadow-soft: 0 4px 15px -4px hsl(200 40% 50% / 0.1);
-  --zen-shadow-glow: 0 0 20px hsl(200 40% 50% / 0.12);
+body.mood-bad .bg-card {
+  background: linear-gradient(135deg,
+    hsl(200 30% 98%) 0%,
+    hsl(220 25% 97%) 100%
+  ) !important;
+  border: 1px solid hsl(200 30% 88% / 0.4) !important;
+  border-radius: 1.5rem !important;
+  box-shadow: 0 4px 20px hsl(200 40% 50% / 0.08) !important;
 }
 
-/* Terrible mood - Very gentle, minimal */
-body.mood-terrible .mood-background-overlay {
-  opacity: 0.8;
-  background:
-    radial-gradient(ellipse at center, var(--mood-gradient-from) 0%, transparent 70%);
+.dark body.mood-bad .bg-card,
+body.mood-bad.dark .bg-card {
+  background: linear-gradient(135deg,
+    hsl(200 30% 12%) 0%,
+    hsl(220 25% 10%) 100%
+  ) !important;
+  border: 1px solid hsl(200 30% 30% / 0.3) !important;
 }
 
+body.mood-bad .zen-gradient-hero {
+  background: linear-gradient(180deg,
+    hsl(200 35% 96%) 0%,
+    hsl(220 30% 95%) 100%
+  ) !important;
+}
+
+.dark body.mood-bad .zen-gradient-hero,
+body.mood-bad.dark .zen-gradient-hero {
+  background: linear-gradient(180deg,
+    hsl(200 30% 6%) 0%,
+    hsl(220 25% 5%) 100%
+  ) !important;
+}
+
+/* Slower, softer animations for bad mood */
+body.mood-bad * {
+  transition-duration: 0.6s !important;
+}
+
+/* ========================================
+   😢 TERRIBLE MOOD - Gentle & Supportive
+   ======================================== */
 body.mood-terrible {
-  --zen-shadow-soft: 0 4px 12px -4px hsl(250 25% 50% / 0.08);
-  --zen-shadow-glow: 0 0 15px hsl(250 25% 50% / 0.1);
+  --primary: 250 35% 60%;
+  --accent: 270 30% 65%;
+  --zen-shadow-soft: 0 3px 12px -4px hsl(250 25% 50% / 0.1);
+  --zen-shadow-glow: 0 0 20px hsl(250 25% 50% / 0.12);
 }
 
-/* Neutral mood - Default */
-body.mood-neutral .mood-background-overlay {
-  opacity: 0.5;
+body.mood-terrible .mood-background-overlay {
+  opacity: 0.7;
   background:
-    radial-gradient(ellipse at top right, var(--mood-gradient-from) 0%, transparent 50%);
+    radial-gradient(ellipse at center, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
 }
 
-/* Animation speed adjustments based on mood */
+body.mood-terrible .bg-card {
+  background: linear-gradient(135deg,
+    hsl(250 20% 98%) 0%,
+    hsl(270 15% 97%) 100%
+  ) !important;
+  border: 1px solid hsl(250 20% 90% / 0.3) !important;
+  border-radius: 2rem !important;
+  box-shadow: 0 3px 15px hsl(250 25% 50% / 0.06) !important;
+}
+
+.dark body.mood-terrible .bg-card,
+body.mood-terrible.dark .bg-card {
+  background: linear-gradient(135deg,
+    hsl(250 25% 11%) 0%,
+    hsl(270 20% 9%) 100%
+  ) !important;
+  border: 1px solid hsl(250 20% 25% / 0.25) !important;
+}
+
+body.mood-terrible .zen-gradient-hero {
+  background: linear-gradient(180deg,
+    hsl(250 25% 96%) 0%,
+    hsl(270 20% 95%) 100%
+  ) !important;
+  filter: saturate(0.85);
+}
+
+.dark body.mood-terrible .zen-gradient-hero,
+body.mood-terrible.dark .zen-gradient-hero {
+  background: linear-gradient(180deg,
+    hsl(250 20% 5%) 0%,
+    hsl(270 15% 4%) 100%
+  ) !important;
+}
+
+/* Very slow, minimal animations */
+body.mood-terrible * {
+  transition-duration: 1s !important;
+}
+
+body.mood-terrible .animate-bounce-gentle,
+body.mood-terrible .animate-float,
+body.mood-terrible .animate-pulse-soft,
+body.mood-terrible .animate-pulse {
+  animation: none !important;
+}
+
+/* Reduce saturation for terrible mood */
+body.mood-terrible img,
+body.mood-terrible .emoji,
+body.mood-terrible span[role="img"] {
+  filter: saturate(0.7);
+}
+
+/* ========================================
+   😶 NEUTRAL MOOD - Default
+   ======================================== */
+body.mood-neutral .mood-background-overlay {
+  opacity: 0.4;
+  background:
+    radial-gradient(ellipse at top right, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
+}
+
+/* ========================================
+   Animation Speed Adjustments
+   ======================================== */
 body.mood-great * {
-  --animation-duration-modifier: 0.77; /* Faster */
+  --animation-duration-modifier: 0.7;
 }
 
 body.mood-good * {
-  --animation-duration-modifier: 0.91;
+  --animation-duration-modifier: 0.85;
 }
 
 body.mood-okay * {
@@ -1486,39 +1699,30 @@ body.mood-okay * {
 }
 
 body.mood-bad * {
-  --animation-duration-modifier: 1.43; /* Slower */
+  --animation-duration-modifier: 1.5;
 }
 
 body.mood-terrible * {
-  --animation-duration-modifier: 2; /* Very slow, calming */
+  --animation-duration-modifier: 2.5;
 }
 
-/* Mood-aware animations */
+/* Mood-aware animation durations */
 body.mood-great .animate-fade-in {
-  animation-duration: 0.35s;
+  animation-duration: 0.25s;
 }
 
-body.mood-bad .animate-fade-in,
+body.mood-bad .animate-fade-in {
+  animation-duration: 0.7s;
+}
+
 body.mood-terrible .animate-fade-in {
-  animation-duration: 0.8s;
+  animation-duration: 1s;
 }
 
-/* Border radius adjustments for softer feel on bad moods */
-body.mood-bad .bg-card,
-body.mood-terrible .bg-card {
-  border-radius: calc(var(--radius) * var(--mood-border-radius));
-}
-
-/* Reduce motion for bad moods - less stimulation */
-body.mood-terrible .animate-bounce-gentle,
-body.mood-terrible .animate-float,
-body.mood-terrible .animate-pulse-soft {
-  animation: none;
-}
-
+/* Slower animations for bad moods */
 body.mood-bad .animate-bounce-gentle,
 body.mood-bad .animate-float {
-  animation-duration: 4s;
+  animation-duration: 5s;
 }
 
 /* Support message banner */
