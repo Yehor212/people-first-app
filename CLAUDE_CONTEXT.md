@@ -164,9 +164,33 @@ npx cap sync     # Синхронизация Capacitor
 
 ---
 
+## Troubleshooting: Cloud Sync
+
+Если синхронизация между устройствами не работает:
+
+### 1. Проверить таблицу user_backups в Supabase
+```sql
+-- Выполнить в Supabase SQL Editor:
+SELECT * FROM user_backups LIMIT 5;
+```
+
+### 2. Если ошибка "policy already exists"
+Используйте безопасную миграцию `supabase/migrations/002_user_backups_safe.sql` - она удаляет старые политики перед созданием новых.
+
+### 3. Проверить RLS
+```sql
+-- Должен вернуть true
+SELECT row_security_active('user_backups');
+```
+
+### 4. Ручная синхронизация
+Перейдите в Настройки → Облачная синхронизация → нажмите кнопку синхронизации.
+
+---
+
 ## Что делать дальше
 
-1. **Применить SQL миграцию** в Supabase Dashboard
+1. **Применить SQL миграцию** `002_user_backups_safe.sql` в Supabase Dashboard
 2. **Настроить OAuth** в Supabase → Authentication → Providers
 3. **Задеплоить** на Vercel/Netlify (см. PUBLISH_INSTRUCTIONS.md)
 4. **Опубликовать** в Google Play / App Store
