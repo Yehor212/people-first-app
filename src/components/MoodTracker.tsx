@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Sparkles, Sun, Cloud, Moon, Plus, ChevronDown, Edit3 } from 'lucide-react';
 import { MoodChangedToast, ConfirmDialog } from './Celebrations';
+import { AnimatedMoodEmoji } from './AnimatedMoodEmoji';
 
 interface MoodTrackerProps {
   entries: MoodEntry[];
@@ -453,15 +454,11 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
             )}
             style={isPrimaryCTA && !selectedMood ? { animationDelay: `${index * 150}ms` } : undefined}
           >
-            <span className={cn(
-              "transition-transform",
-              isPrimaryCTA ? "text-4xl" : "text-3xl",
-              // Apply unique animation for each mood type
-              `emoji-${mood.type}`,
-              selectedMood === mood.type && "scale-110"
-            )}>
-              {mood.emoji}
-            </span>
+            <AnimatedMoodEmoji
+              mood={mood.type}
+              size={isPrimaryCTA ? "xl" : "lg"}
+              isSelected={selectedMood === mood.type}
+            />
             <span className={cn(
               "text-xs font-medium",
               selectedMood === mood.type ? "text-foreground" : "text-muted-foreground"
