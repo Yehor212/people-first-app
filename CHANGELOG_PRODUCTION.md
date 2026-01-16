@@ -321,8 +321,8 @@ vercel --prod
 ## 📞 Support
 
 - **Вопросы**: создайте Issue на GitHub
-- **Email**: support@zenflow.app
-- **Privacy**: privacy@zenflow.app
+- **Email**: egorsamraev@gmail.com
+- **Privacy**: egorsamraev@gmail.com
 
 ---
 

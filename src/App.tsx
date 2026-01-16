@@ -10,6 +10,16 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Determine basename: use "/" for Capacitor/native, or BASE_URL for web
+const getBasename = () => {
+  const baseUrl = import.meta.env.BASE_URL;
+  // If BASE_URL is relative (./ or empty), we're in Capacitor - use "/"
+  if (!baseUrl || baseUrl === './' || baseUrl === '.') {
+    return '/';
+  }
+  return baseUrl;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
@@ -17,7 +27,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
-          <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <BrowserRouter basename={getBasename()}>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="*" element={<NotFound />} />

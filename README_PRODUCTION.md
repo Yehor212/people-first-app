@@ -218,9 +218,9 @@ npx lighthouse https://your-app.vercel.app --view
 
 ## 📞 Поддержка
 
-- **Email**: support@zenflow.app
-- **Privacy**: privacy@zenflow.app
-- **GitHub Issues**: [вставьте ссылку]
+- **Email**: egorsamraev@gmail.com
+- **Privacy**: egorsamraev@gmail.com
+- **GitHub Issues**: https://github.com/egorsamraev/zenflow/issues
 
 ---
 
