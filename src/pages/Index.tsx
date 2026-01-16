@@ -6,6 +6,7 @@ import { useMoodTheme } from '@/contexts/MoodThemeContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { triggerXpPopup } from '@/components/XpPopup';
 import { DailySurprise } from '@/components/DailySurprise';
+import { DayClock } from '@/components/DayClock';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
 import { generateId, getToday } from '@/lib/utils';
@@ -773,6 +774,15 @@ export function Index() {
 
                   {/* Daily Surprise - motivational content that changes daily */}
                   <DailySurprise onNavigate={handleNavigateToSection} />
+
+                  {/* Visual Day Clock - ADHD-friendly timeline */}
+                  <DayClock
+                    moods={moods}
+                    habits={habits}
+                    focusSessions={focusSessions}
+                    gratitudeEntries={gratitudeEntries}
+                    onTimeBlockClick={handleNavigateToSection}
+                  />
 
                   {/* Daily Progress CTA */}
                   <DailyProgress

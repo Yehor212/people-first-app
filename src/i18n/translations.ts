@@ -68,6 +68,8 @@ export interface Translations {
   confirm: string;
   dailyProgress: string;
   continueProgress: string;
+  dayTimeline: string;
+  dayComplete: string;
 
   // Habits
   habits: string;
@@ -653,6 +655,8 @@ export const translations: Record<Language, Translations> = {
     confirm: 'Изменить',
     dailyProgress: 'Прогресс за день',
     continueProgress: 'Продолжить',
+    dayTimeline: 'Твой день',
+    dayComplete: 'дня прошло',
     habits: 'Привычки',
     habitName: 'Название привычки...',
     icon: 'Иконка',
@@ -1192,6 +1196,8 @@ export const translations: Record<Language, Translations> = {
     confirm: 'Change',
     dailyProgress: 'Daily Progress',
     continueProgress: 'Continue your progress',
+    dayTimeline: 'Your Day',
+    dayComplete: 'of day',
     habits: 'Habits',
     habitName: 'Habit name...',
     icon: 'Icon',
@@ -1731,6 +1737,8 @@ export const translations: Record<Language, Translations> = {
     confirm: 'Змінити',
     dailyProgress: 'Прогрес за день',
     continueProgress: 'Продовжити',
+    dayTimeline: 'Твій день',
+    dayComplete: 'дня минуло',
     habits: 'Звички',
     habitName: 'Назва звички...',
     icon: 'Іконка',
@@ -2270,6 +2278,8 @@ export const translations: Record<Language, Translations> = {
     confirm: 'Cambiar',
     dailyProgress: 'Progreso diario',
     continueProgress: 'Continuar tu progreso',
+    dayTimeline: 'Tu día',
+    dayComplete: 'del día',
     habits: 'Hábitos',
     habitName: 'Nombre del hábito...',
     icon: 'Icono',
@@ -2810,6 +2820,8 @@ export const translations: Record<Language, Translations> = {
     confirm: 'Ändern',
     dailyProgress: 'Tagesfortschritt',
     continueProgress: 'Fortfahren',
+    dayTimeline: 'Dein Tag',
+    dayComplete: 'des Tages',
     habits: 'Gewohnheiten',
     habitName: 'Name der Gewohnheit...',
     icon: 'Symbol',
@@ -3350,6 +3362,8 @@ export const translations: Record<Language, Translations> = {
     confirm: 'Changer',
     dailyProgress: 'Progression quotidienne',
     continueProgress: 'Continuer',
+    dayTimeline: 'Ta journée',
+    dayComplete: 'de la journée',
     habits: 'Habitudes',
     habitName: 'Nom de l\'habitude...',
     icon: 'Icône',
