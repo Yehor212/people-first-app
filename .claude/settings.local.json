@@ -18,7 +18,8 @@
       "Bash(supabase link:*)",
       "Bash(git status:*)",
       "Bash(dir:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(npx cap sync android)"
     ]
   }
 }

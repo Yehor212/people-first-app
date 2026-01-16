@@ -135,7 +135,7 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
                   <Check className="w-4 h-4 text-mood-good" />
                 ) : item.emoji ? (
                   <span className="text-lg">{item.emoji}</span>
-                ) : Icon ? (
+                ) : Icon && typeof Icon === 'function' ? (
                   <Icon className="w-4 h-4 text-primary" />
                 ) : null}
               </div>
