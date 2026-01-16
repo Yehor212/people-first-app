@@ -28,6 +28,7 @@ export interface Translations {
   howAreYouNow: string;
   moodToday: string;
   moodHistory: string;
+  moodRecorded: string;
   updateMood: string;
   great: string;
   good: string;
@@ -608,6 +609,7 @@ export const translations: Record<Language, Translations> = {
     howAreYouNow: 'Как вы сейчас?',
     moodToday: 'Настроение сегодня',
     moodHistory: 'История за день',
+    moodRecorded: 'Настроение записано!',
     updateMood: 'Обновить',
     great: 'Отлично',
     good: 'Хорошо',
@@ -1142,6 +1144,7 @@ export const translations: Record<Language, Translations> = {
     howAreYouNow: 'How are you now?',
     moodToday: 'Mood today',
     moodHistory: 'Today\'s history',
+    moodRecorded: 'Mood Recorded!',
     updateMood: 'Update',
     great: 'Great',
     good: 'Good',
@@ -1676,6 +1679,7 @@ export const translations: Record<Language, Translations> = {
     howAreYouNow: 'Як ви зараз?',
     moodToday: 'Настрій сьогодні',
     moodHistory: 'Історія за день',
+    moodRecorded: 'Настрій записано!',
     updateMood: 'Оновити',
     great: 'Чудово',
     good: 'Добре',
@@ -2210,6 +2214,7 @@ export const translations: Record<Language, Translations> = {
     howAreYouNow: '¿Cómo estás ahora?',
     moodToday: 'Estado de ánimo hoy',
     moodHistory: 'Historial del día',
+    moodRecorded: '¡Estado de ánimo registrado!',
     updateMood: 'Actualizar',
     great: 'Genial',
     good: 'Bien',
@@ -2745,6 +2750,7 @@ export const translations: Record<Language, Translations> = {
     howAreYouNow: 'Wie geht es dir jetzt?',
     moodToday: 'Stimmung heute',
     moodHistory: 'Tagesverlauf',
+    moodRecorded: 'Stimmung aufgezeichnet!',
     updateMood: 'Aktualisieren',
     great: 'Super',
     good: 'Gut',
@@ -3280,6 +3286,7 @@ export const translations: Record<Language, Translations> = {
     howAreYouNow: 'Comment allez-vous maintenant?',
     moodToday: 'Humeur aujourd\'hui',
     moodHistory: 'Historique du jour',
+    moodRecorded: 'Humeur enregistrée!',
     updateMood: 'Mettre à jour',
     great: 'Super',
     good: 'Bien',

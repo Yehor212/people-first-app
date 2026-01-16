@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Sparkles, Sun, Cloud, Moon, Plus, ChevronDown, Edit3 } from 'lucide-react';
 import { MoodChangedToast, ConfirmDialog } from './Celebrations';
 import { AnimatedMoodEmoji } from './AnimatedMoodEmoji';
+import { MoodSelectionCelebration } from './MoodSelectionCelebration';
 
 interface MoodTrackerProps {
   entries: MoodEntry[];
@@ -48,6 +49,14 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     entryId: string;
     newMood: MoodType;
     oldMood: MoodType;
+  } | null>(null);
+
+  // Celebration state
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationData, setCelebrationData] = useState<{
+    mood: MoodType;
+    note?: string;
+    timeOfDay: 'morning' | 'afternoon' | 'evening';
   } | null>(null);
 
   const moods: { type: MoodType; emoji: string; label: string; color: string }[] = [
@@ -106,6 +115,15 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
       timestamp: Date.now(),
     };
 
+    // Show celebration first
+    setCelebrationData({
+      mood: selectedMood,
+      note: note.trim() || undefined,
+      timeOfDay: currentTimeOfDay,
+    });
+    setShowCelebration(true);
+
+    // Save entry
     onAddEntry(entry);
     setSelectedMood(null);
     setNote('');
@@ -495,6 +513,20 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
         <p className="text-center text-sm text-muted-foreground mt-2 animate-fade-in relative">
           {t.tapToStart || 'Tap an emoji to start your day'}
         </p>
+      )}
+
+      {/* Mood Selection Celebration */}
+      {showCelebration && celebrationData && (
+        <MoodSelectionCelebration
+          mood={celebrationData.mood}
+          note={celebrationData.note}
+          timeOfDay={celebrationData.timeOfDay}
+          xpGained={5}
+          onComplete={() => {
+            setShowCelebration(false);
+            setCelebrationData(null);
+          }}
+        />
       )}
     </div>
   );

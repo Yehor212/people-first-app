@@ -640,93 +640,105 @@
 }
 
 .stat-card-animated {
-  animation: stat-card-enter 0.5s ease-out forwards;
+  opacity: 0;
+  animation: stat-card-enter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-.stat-card-animated:nth-child(1) { animation-delay: 0s; }
-.stat-card-animated:nth-child(2) { animation-delay: 0.1s; }
-.stat-card-animated:nth-child(3) { animation-delay: 0.2s; }
-.stat-card-animated:nth-child(4) { animation-delay: 0.3s; }
+.stat-card-animated:nth-child(1) { animation-delay: 0.1s; }
+.stat-card-animated:nth-child(2) { animation-delay: 0.2s; }
+.stat-card-animated:nth-child(3) { animation-delay: 0.3s; }
+.stat-card-animated:nth-child(4) { animation-delay: 0.4s; }
 
-/* Streak fire animation */
+/* Streak fire animation - DUOLINGO STYLE */
 @keyframes streak-fire-glow {
   0%, 100% {
-    filter: drop-shadow(0 0 4px hsl(28 80% 55% / 0.6));
-    transform: scale(1);
+    filter: drop-shadow(0 0 6px #ff6b35) drop-shadow(0 0 12px #ff9500);
+    transform: scale(1) rotate(-2deg);
+  }
+  25% {
+    filter: drop-shadow(0 0 10px #ff6b35) drop-shadow(0 0 20px #ff9500);
+    transform: scale(1.15) rotate(2deg);
   }
   50% {
-    filter: drop-shadow(0 0 12px hsl(28 80% 55% / 0.9));
-    transform: scale(1.1);
+    filter: drop-shadow(0 0 14px #ff6b35) drop-shadow(0 0 25px #ff9500);
+    transform: scale(1.2) rotate(-1deg);
+  }
+  75% {
+    filter: drop-shadow(0 0 10px #ff6b35) drop-shadow(0 0 20px #ff9500);
+    transform: scale(1.15) rotate(1deg);
   }
 }
 
 .streak-icon-animated {
-  animation: streak-fire-glow 1.5s ease-in-out infinite;
+  animation: streak-fire-glow 1.2s ease-in-out infinite;
+  color: #ff6b35 !important;
 }
 
-/* Habits target pulse */
+/* Habits target pulse - DUOLINGO STYLE */
 @keyframes habits-pulse {
   0%, 100% {
-    filter: drop-shadow(0 0 4px hsl(var(--primary) / 0.5));
+    filter: drop-shadow(0 0 6px #4ade80) drop-shadow(0 0 12px #22c55e);
     transform: scale(1);
   }
   50% {
-    filter: drop-shadow(0 0 10px hsl(var(--primary) / 0.8));
-    transform: scale(1.08);
+    filter: drop-shadow(0 0 12px #4ade80) drop-shadow(0 0 20px #22c55e);
+    transform: scale(1.15);
   }
 }
 
 .habits-icon-animated {
-  animation: habits-pulse 2s ease-in-out infinite;
+  animation: habits-pulse 1.5s ease-in-out infinite;
+  color: #22c55e !important;
 }
 
-/* Focus timer spin */
-@keyframes focus-spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
+/* Focus brain glow - DUOLINGO STYLE */
 @keyframes focus-glow {
   0%, 100% {
-    filter: drop-shadow(0 0 4px hsl(var(--accent) / 0.5));
+    filter: drop-shadow(0 0 6px #60a5fa) drop-shadow(0 0 12px #3b82f6);
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(1.05) rotate(5deg);
   }
   50% {
-    filter: drop-shadow(0 0 10px hsl(var(--accent) / 0.8));
+    filter: drop-shadow(0 0 12px #60a5fa) drop-shadow(0 0 20px #3b82f6);
+    transform: scale(1.12) rotate(0deg);
+  }
+  75% {
+    transform: scale(1.05) rotate(-5deg);
   }
 }
 
 .focus-icon-animated {
   animation: focus-glow 2s ease-in-out infinite;
+  color: #3b82f6 !important;
 }
 
-/* Gratitude heart beat */
+/* Gratitude heart beat - DUOLINGO STYLE */
 @keyframes heart-beat {
   0%, 100% {
     transform: scale(1);
-    filter: drop-shadow(0 0 4px hsl(350 70% 60% / 0.5));
+    filter: drop-shadow(0 0 6px #f472b6) drop-shadow(0 0 12px #ec4899);
   }
-  14% {
-    transform: scale(1.15);
-    filter: drop-shadow(0 0 10px hsl(350 70% 60% / 0.8));
+  10% {
+    transform: scale(1.25);
+    filter: drop-shadow(0 0 12px #f472b6) drop-shadow(0 0 20px #ec4899);
   }
-  28% {
+  20% {
     transform: scale(1);
   }
-  42% {
-    transform: scale(1.1);
-    filter: drop-shadow(0 0 8px hsl(350 70% 60% / 0.7));
+  30% {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 10px #f472b6) drop-shadow(0 0 18px #ec4899);
   }
-  56% {
+  40% {
     transform: scale(1);
   }
 }
 
 .gratitude-icon-animated {
-  animation: heart-beat 1.5s ease-in-out infinite;
+  animation: heart-beat 1.2s ease-in-out infinite;
+  color: #ec4899 !important;
 }
 
 /* Number count up effect */
@@ -736,7 +748,7 @@
     opacity: 0;
   }
   60% {
-    transform: scale(1.2);
+    transform: scale(1.3);
   }
   100% {
     transform: scale(1);
@@ -745,7 +757,8 @@
 }
 
 .number-animated {
-  animation: number-pop 0.4s ease-out forwards;
+  opacity: 0;
+  animation: number-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
 /* Stat value glow on hover */
@@ -753,6 +766,173 @@
   text-shadow: 0 0 20px currentColor;
   transform: scale(1.05);
   transition: all 0.3s ease;
+}
+
+/* ========================================
+   DUOLINGO-STYLE ACTION CELEBRATIONS
+   ======================================== */
+
+/* Action success burst */
+@keyframes action-burst {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.action-burst {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle, currentColor 0%, transparent 70%);
+  animation: action-burst 0.6s ease-out forwards;
+  pointer-events: none;
+}
+
+/* XP gain popup */
+@keyframes xp-popup {
+  0% {
+    transform: translateY(0) scale(0.5);
+    opacity: 0;
+  }
+  20% {
+    transform: translateY(-10px) scale(1.2);
+    opacity: 1;
+  }
+  80% {
+    transform: translateY(-40px) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-60px) scale(0.8);
+    opacity: 0;
+  }
+}
+
+.xp-popup {
+  position: fixed;
+  font-weight: bold;
+  color: #fbbf24;
+  text-shadow: 0 0 10px #fbbf24, 0 2px 4px rgba(0,0,0,0.3);
+  animation: xp-popup 1.2s ease-out forwards;
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* Streak increase flame */
+@keyframes streak-increase {
+  0% {
+    transform: scale(1) translateY(0);
+    filter: brightness(1);
+  }
+  30% {
+    transform: scale(1.5) translateY(-10px);
+    filter: brightness(1.5);
+  }
+  60% {
+    transform: scale(1.8) translateY(-20px);
+    filter: brightness(2);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    filter: brightness(1);
+  }
+}
+
+.streak-increase {
+  animation: streak-increase 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Mood to calendar jump animation */
+@keyframes mood-jump-to-calendar {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+  30% {
+    transform: scale(1.3) translateY(-50px);
+    opacity: 1;
+  }
+  70% {
+    transform: scale(0.8) translateY(-100px);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(0.5) translateY(-150px);
+    opacity: 0;
+  }
+}
+
+.mood-jump-animation {
+  animation: mood-jump-to-calendar 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+/* Calendar day highlight when mood lands */
+@keyframes calendar-day-highlight {
+  0% {
+    box-shadow: 0 0 0 0 currentColor;
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px currentColor;
+    transform: scale(1.1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 currentColor;
+    transform: scale(1);
+  }
+}
+
+.calendar-day-highlight {
+  animation: calendar-day-highlight 0.6s ease-out;
+}
+
+/* Checkmark draw animation */
+@keyframes habit-check-draw {
+  0% {
+    stroke-dashoffset: 24;
+    transform: scale(0.5);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    stroke-dashoffset: 0;
+    transform: scale(1);
+  }
+}
+
+.habit-check-animated {
+  stroke-dasharray: 24;
+  animation: habit-check-draw 0.4s ease-out forwards;
+}
+
+/* Ripple effect on tap */
+@keyframes tap-ripple {
+  0% {
+    transform: scale(0);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.tap-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  animation: tap-ripple 0.6s ease-out forwards;
+  pointer-events: none;
 }
 
 /* Custom scrollbar */
