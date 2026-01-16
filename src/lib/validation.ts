@@ -73,7 +73,7 @@ export const focusSessionSchema = z.object({
   id: z.string().min(1).max(100),
   duration: z.number().int().min(0).max(86400), // max 24 hours
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  timestamp: z.number().int().positive(),
+  completedAt: z.number().int().positive(),
 }).passthrough();
 
 export const gratitudeEntrySchema = z.object({

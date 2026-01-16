@@ -19,7 +19,10 @@
       "Bash(git status:*)",
       "Bash(dir:*)",
       "Bash(npx tsc:*)",
-      "Bash(npx cap sync android)"
+      "Bash(npx cap sync android)",
+      "Bash(cd:*)",
+      "Bash(./gradlew assembleDebug:*)",
+      "Bash(./gradlew clean:*)"
     ]
   }
 }
