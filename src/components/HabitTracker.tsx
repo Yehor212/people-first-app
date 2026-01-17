@@ -24,9 +24,10 @@ interface HabitTrackerProps {
   onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
   onAddHabit: (habit: Habit) => void;
   onDeleteHabit: (habitId: string) => void;
+  isPrimaryCTA?: boolean;
 }
 
-export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit, onDeleteHabit }: HabitTrackerProps) {
+export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit, onDeleteHabit, isPrimaryCTA = false }: HabitTrackerProps) {
   const { t, language } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [showCustomForm, setShowCustomForm] = useState(false);
@@ -274,18 +275,41 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
   }, [habits, onToggleHabit, today]);
 
   return (
-    <div className="bg-card rounded-2xl p-6 zen-shadow-card animate-fade-in">
+    <div className={cn(
+      "rounded-2xl p-6 animate-fade-in transition-all relative overflow-hidden",
+      isPrimaryCTA
+        ? "bg-gradient-to-br from-emerald-500/15 via-card to-green-500/15 ring-2 ring-emerald-500/40 shadow-lg shadow-emerald-500/20"
+        : "bg-card zen-shadow-card"
+    )}>
+      {/* Animated background glow for CTA */}
+      {isPrimaryCTA && (
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-green-500/5 animate-pulse" />
+      )}
+
       {/* Daily Progress Bar */}
       {habits.length > 0 && (
         <DailyProgressBar
           completedCount={completedTodayCount}
           totalCount={habits.length}
-          className="mb-5"
+          className="mb-5 relative"
         />
       )}
 
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-foreground">{t.habits}</h3>
+      {/* Primary CTA Header */}
+      {isPrimaryCTA && (
+        <div className="relative flex items-center justify-center gap-2 mb-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/25 rounded-full border border-emerald-500/30">
+            <Zap className="w-4 h-4 text-emerald-500" />
+            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{t.startHere}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between mb-4 relative">
+        <h3 className={cn(
+          "font-semibold text-foreground",
+          isPrimaryCTA ? "text-xl" : "text-lg"
+        )}>{t.habits}</h3>
         <button
           onClick={() => setIsAdding(!isAdding)}
           className={cn(

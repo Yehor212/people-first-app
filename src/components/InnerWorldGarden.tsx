@@ -1,11 +1,10 @@
 /**
- * InnerWorldGarden - Beautiful animated garden visualization
- * Your personal growth garden that evolves with your activities
+ * InnerWorldGarden - Beautiful minimalist garden visualization
+ * Clean, peaceful design focused on the tree
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Cloud, Sun, Moon, Star, Droplets, TreeDeciduous, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -13,10 +12,7 @@ import {
   GardenPlant,
   GardenCreature,
   Season,
-  GardenWeather,
-  GardenStage,
 } from '@/types';
-import { COMPANION_EMOJIS, PLANT_EMOJIS, CREATURE_EMOJIS } from '@/lib/innerWorldConstants';
 import { SeasonalTree } from './SeasonalTree';
 import { getTreeStageName, getSeasonEmoji } from '@/lib/seasonHelper';
 
@@ -29,113 +25,78 @@ interface InnerWorldGardenProps {
 }
 
 // ============================================
-// SEASON THEMES
+// SEASON THEMES - Refined beautiful gradients
 // ============================================
 
 const SEASON_THEMES: Record<Season, {
   sky: string;
+  skyGradient: string;
   ground: string;
   accent: string;
   particles: string[];
+  ambientColor: string;
 }> = {
   spring: {
-    sky: 'from-sky-200 via-pink-100 to-sky-300',
-    ground: 'from-green-400 to-emerald-500',
+    sky: 'from-rose-100 via-sky-100 to-violet-100',
+    skyGradient: 'linear-gradient(180deg, #fce7f3 0%, #e0f2fe 50%, #ede9fe 100%)',
+    ground: 'from-emerald-400/80 to-green-500/80',
     accent: '#f9a8d4',
-    particles: ['🌸', '🌷', '🦋', '💮'],
+    particles: ['🌸', '🦋', '✨'],
+    ambientColor: 'rgba(249, 168, 212, 0.15)',
   },
   summer: {
-    sky: 'from-blue-400 via-sky-300 to-cyan-200',
-    ground: 'from-green-500 to-lime-500',
+    sky: 'from-amber-50 via-sky-100 to-cyan-100',
+    skyGradient: 'linear-gradient(180deg, #fffbeb 0%, #e0f2fe 50%, #cffafe 100%)',
+    ground: 'from-green-400/80 to-emerald-500/80',
     accent: '#fbbf24',
-    particles: ['☀️', '🌻', '🐝', '✨'],
+    particles: ['☀️', '🌻', '✨'],
+    ambientColor: 'rgba(251, 191, 36, 0.1)',
   },
   autumn: {
-    sky: 'from-orange-200 via-amber-100 to-yellow-200',
-    ground: 'from-amber-600 to-orange-500',
+    sky: 'from-orange-100 via-amber-50 to-rose-100',
+    skyGradient: 'linear-gradient(180deg, #ffedd5 0%, #fffbeb 50%, #ffe4e6 100%)',
+    ground: 'from-amber-500/80 to-orange-600/80',
     accent: '#f97316',
-    particles: ['🍂', '🍁', '🌾', '🍄'],
+    particles: ['🍂', '🍁', '✨'],
+    ambientColor: 'rgba(249, 115, 22, 0.1)',
   },
   winter: {
-    sky: 'from-slate-300 via-blue-100 to-indigo-200',
-    ground: 'from-slate-200 to-blue-200',
+    sky: 'from-slate-100 via-blue-50 to-indigo-100',
+    skyGradient: 'linear-gradient(180deg, #f1f5f9 0%, #eff6ff 50%, #e0e7ff 100%)',
+    ground: 'from-slate-300/80 to-blue-200/80',
     accent: '#93c5fd',
-    particles: ['❄️', '⛄', '✨', '💎'],
+    particles: ['❄️', '✨', '💎'],
+    ambientColor: 'rgba(147, 197, 253, 0.15)',
   },
-};
-
-const WEATHER_EFFECTS: Record<GardenWeather, {
-  icon: React.ReactNode;
-  particles: string[];
-  overlay: string;
-}> = {
-  sunny: {
-    icon: <Sun className="w-8 h-8 text-yellow-400" />,
-    particles: ['✨', '☀️'],
-    overlay: '',
-  },
-  cloudy: {
-    icon: <Cloud className="w-8 h-8 text-gray-400" />,
-    particles: ['☁️'],
-    overlay: 'bg-gray-200/20',
-  },
-  rainy: {
-    icon: <Droplets className="w-8 h-8 text-blue-400" />,
-    particles: ['💧', '🌧️'],
-    overlay: 'bg-blue-200/20',
-  },
-  starry: {
-    icon: <Star className="w-8 h-8 text-yellow-300" />,
-    particles: ['⭐', '✨', '🌟'],
-    overlay: 'bg-indigo-900/30',
-  },
-  aurora: {
-    icon: <Sparkles className="w-8 h-8 text-purple-400" />,
-    particles: ['💜', '💙', '💚', '✨'],
-    overlay: 'bg-gradient-to-b from-purple-500/20 via-green-400/10 to-transparent',
-  },
-  magical: {
-    icon: <Sparkles className="w-8 h-8 text-pink-400" />,
-    particles: ['✨', '💫', '🌟', '⭐', '🔮'],
-    overlay: 'bg-gradient-to-b from-purple-400/20 via-pink-300/10 to-transparent',
-  },
-};
-
-const GARDEN_STAGE_INFO: Record<GardenStage, {
-  name: string;
-  emoji: string;
-  description: string;
-}> = {
-  empty: { name: 'New Beginning', emoji: '🌱', description: 'Your garden awaits...' },
-  sprouting: { name: 'Sprouting', emoji: '🌿', description: 'Life is beginning!' },
-  growing: { name: 'Growing', emoji: '🌳', description: 'Your garden thrives!' },
-  flourishing: { name: 'Flourishing', emoji: '🌺', description: 'Beautiful growth!' },
-  magical: { name: 'Magical', emoji: '✨', description: 'Magic fills the air!' },
-  legendary: { name: 'Legendary', emoji: '🏰', description: 'A legendary garden!' },
 };
 
 // ============================================
 // ANIMATED COMPONENTS
 // ============================================
 
-function FloatingParticle({ emoji, delay }: { emoji: string; delay: number }) {
+function FloatingParticle({ emoji, delay, season }: { emoji: string; delay: number; season: Season }) {
+  const startX = useMemo(() => Math.random() * 80 + 10, []);
+  const duration = useMemo(() => 8 + Math.random() * 6, []);
+
   return (
     <motion.div
-      className="absolute text-2xl pointer-events-none"
+      className="absolute text-lg pointer-events-none opacity-60"
       initial={{
-        x: Math.random() * 100 + '%',
-        y: '110%',
+        x: `${startX}%`,
+        y: '-5%',
         opacity: 0,
-        scale: 0.5,
+        scale: 0.6,
+        rotate: 0,
       }}
       animate={{
-        y: '-10%',
-        opacity: [0, 1, 1, 0],
-        scale: [0.5, 1, 1, 0.5],
-        x: `${Math.random() * 100}%`,
+        y: '105%',
+        opacity: [0, 0.6, 0.6, 0],
+        scale: [0.6, 0.8, 0.8, 0.6],
+        rotate: season === 'autumn' ? [0, 360] : [0, 180],
+        x: `${startX + (Math.random() - 0.5) * 20}%`,
       }}
       transition={{
-        duration: 8 + Math.random() * 4,
+        duration,
         delay,
         repeat: Infinity,
         ease: 'linear',
@@ -146,109 +107,7 @@ function FloatingParticle({ emoji, delay }: { emoji: string; delay: number }) {
   );
 }
 
-function Plant({ plant, onClick }: { plant: GardenPlant; onClick?: () => void }) {
-  const emoji = PLANT_EMOJIS[plant.type][plant.stage];
-  const size = plant.stage === 'seed' ? 'text-xl' :
-               plant.stage === 'sprout' ? 'text-2xl' :
-               plant.stage === 'growing' ? 'text-3xl' :
-               plant.stage === 'blooming' ? 'text-4xl' : 'text-5xl';
-
-  return (
-    <motion.div
-      className={cn(
-        "absolute cursor-pointer select-none",
-        size,
-        plant.isSpecial && "drop-shadow-[0_0_8px_rgba(255,215,0,0.8)]"
-      )}
-      style={{
-        left: `${plant.position.x}%`,
-        top: `${plant.position.y}%`,
-        transform: 'translate(-50%, -50%)',
-      }}
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      whileHover={{ scale: 1.2, y: -5 }}
-      whileTap={{ scale: 0.9 }}
-      onClick={onClick}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-    >
-      <motion.span
-        animate={plant.stage === 'magnificent' ? {
-          scale: [1, 1.1, 1],
-          rotate: [-2, 2, -2],
-        } : {}}
-        transition={{ duration: 2, repeat: Infinity }}
-      >
-        {emoji}
-      </motion.span>
-      {plant.isSpecial && (
-        <motion.span
-          className="absolute -top-2 -right-2 text-sm"
-          animate={{ scale: [1, 1.3, 1], opacity: [0.8, 1, 0.8] }}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        >
-          ✨
-        </motion.span>
-      )}
-    </motion.div>
-  );
-}
-
-function Creature({ creature, onClick }: { creature: GardenCreature; onClick?: () => void }) {
-  const emoji = CREATURE_EMOJIS[creature.type][creature.stage];
-  const size = creature.stage === 'egg' ? 'text-lg' :
-               creature.stage === 'baby' ? 'text-xl' :
-               creature.stage === 'young' ? 'text-2xl' :
-               creature.stage === 'adult' ? 'text-3xl' : 'text-4xl';
-
-  // Random floating animation
-  const floatY = useMemo(() => Math.random() * 10 + 5, []);
-  const floatDuration = useMemo(() => Math.random() * 2 + 3, []);
-
-  return (
-    <motion.div
-      className={cn(
-        "absolute cursor-pointer select-none",
-        size,
-        creature.isSpecial && "drop-shadow-[0_0_8px_rgba(255,215,0,0.8)]"
-      )}
-      style={{
-        left: `${creature.position.x}%`,
-        top: `${creature.position.y}%`,
-        transform: 'translate(-50%, -50%)',
-      }}
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{
-        scale: 1,
-        opacity: 1,
-        y: [-floatY, floatY, -floatY],
-        x: creature.type === 'butterfly' || creature.type === 'firefly'
-          ? [-5, 5, -5] : 0,
-      }}
-      whileHover={{ scale: 1.3 }}
-      whileTap={{ scale: 0.9 }}
-      onClick={onClick}
-      transition={{
-        scale: { type: 'spring', stiffness: 300 },
-        y: { duration: floatDuration, repeat: Infinity, ease: 'easeInOut' },
-        x: { duration: floatDuration * 1.5, repeat: Infinity, ease: 'easeInOut' },
-      }}
-    >
-      {emoji}
-      {creature.isSpecial && (
-        <motion.span
-          className="absolute -top-1 -right-1 text-xs"
-          animate={{ scale: [1, 1.3, 1] }}
-          transition={{ duration: 1, repeat: Infinity }}
-        >
-          💫
-        </motion.span>
-      )}
-    </motion.div>
-  );
-}
-
-function GardenTree({
+function GardenScene({
   world,
   onClick,
   language,
@@ -261,53 +120,58 @@ function GardenTree({
   const treeStage = companion.treeStage || 1;
   const waterLevel = companion.waterLevel || 50;
   const stageName = getTreeStageName(treeStage, language);
+  const seasonTheme = SEASON_THEMES[world.season];
 
   return (
-    <motion.div
-      className="absolute bottom-[10%] left-1/2 -translate-x-1/2 cursor-pointer z-20"
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
-      onClick={onClick}
-    >
-      <div className="flex flex-col items-center">
-        {/* Seasonal Tree */}
+    <div className="relative w-full h-full flex flex-col items-center justify-end pb-4">
+      {/* Tree container */}
+      <motion.div
+        className="relative cursor-pointer z-10"
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={onClick}
+      >
         <SeasonalTree
           stage={treeStage}
           waterLevel={waterLevel}
           xp={companion.treeXP || 0}
           season={world.season}
           size="md"
-          className="drop-shadow-xl"
+          className="drop-shadow-2xl"
         />
+      </motion.div>
 
-        {/* Stage name badge */}
-        <div className="mt-1 flex flex-col items-center">
-          <span className="text-xs font-medium text-white/90 drop-shadow-md">
+      {/* Stage name pill */}
+      <motion.div
+        className="mt-3 px-4 py-2 rounded-full backdrop-blur-md bg-white/20 border border-white/30 shadow-lg"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-base">{getSeasonEmoji(world.season)}</span>
+          <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
             {stageName}
           </span>
-          {waterLevel < 30 && (
-            <motion.span
-              className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/30 backdrop-blur-sm text-orange-200"
-              animate={{ opacity: [0.7, 1, 0.7] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-            >
-              💧 {waterLevel}%
-            </motion.span>
-          )}
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            ({treeStage}/5)
+          </span>
         </div>
+      </motion.div>
 
-        {/* Low water indicator */}
-        {waterLevel < 30 && (
-          <motion.span
-            className="absolute -top-2 -right-2 text-xl"
-            animate={{ y: [0, -5, 0], opacity: [0.7, 1, 0.7] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-          >
-            💧
-          </motion.span>
-        )}
-      </div>
-    </motion.div>
+      {/* Water level warning */}
+      {waterLevel < 30 && (
+        <motion.div
+          className="mt-2 px-3 py-1 rounded-full bg-orange-500/20 backdrop-blur-sm border border-orange-300/30"
+          animate={{ scale: [1, 1.02, 1] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <span className="text-xs text-orange-600 dark:text-orange-300 flex items-center gap-1">
+            💧 Нужен полив
+          </span>
+        </motion.div>
+      )}
+    </div>
   );
 }
 
@@ -326,164 +190,134 @@ export function InnerWorldGarden({
   const [particles, setParticles] = useState<Array<{ id: number; emoji: string; delay: number }>>([]);
 
   const seasonTheme = SEASON_THEMES[world.season];
-  const weatherEffect = WEATHER_EFFECTS[world.weather];
-  const stageInfo = GARDEN_STAGE_INFO[world.gardenStage];
 
-  // Generate floating particles
+  // Generate sparse floating particles
   useEffect(() => {
-    const allParticles = [...seasonTheme.particles, ...weatherEffect.particles];
-    const newParticles = Array.from({ length: 8 }, (_, i) => ({
+    const particleEmojis = seasonTheme.particles;
+    const newParticles = Array.from({ length: compact ? 3 : 5 }, (_, i) => ({
       id: i,
-      emoji: allParticles[Math.floor(Math.random() * allParticles.length)],
-      delay: i * 1.5,
+      emoji: particleEmojis[i % particleEmojis.length],
+      delay: i * 2.5,
     }));
     setParticles(newParticles);
-  }, [world.season, world.weather]);
+  }, [world.season, compact]);
 
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-3xl",
-        compact ? "h-48" : "h-80"
+        "relative overflow-hidden rounded-3xl shadow-xl",
+        compact ? "h-56" : "h-72"
       )}
     >
-      {/* Sky background */}
-      <div className={cn(
-        "absolute inset-0 bg-gradient-to-b",
-        seasonTheme.sky
-      )} />
-
-      {/* Weather overlay */}
-      {weatherEffect.overlay && (
-        <div className={cn("absolute inset-0", weatherEffect.overlay)} />
-      )}
-
-      {/* Ground */}
+      {/* Beautiful sky background */}
       <div
-        className={cn(
-          "absolute bottom-0 left-0 right-0 h-1/3 bg-gradient-to-t",
-          seasonTheme.ground
-        )}
+        className="absolute inset-0"
+        style={{ background: seasonTheme.skyGradient }}
+      />
+
+      {/* Ambient glow */}
+      <div
+        className="absolute inset-0"
         style={{
-          borderTopLeftRadius: '50% 30px',
-          borderTopRightRadius: '50% 30px',
+          background: `radial-gradient(ellipse at 50% 100%, ${seasonTheme.ambientColor}, transparent 70%)`,
         }}
       />
 
-      {/* Weather icon */}
-      <div className="absolute top-3 right-3 z-10">
-        <motion.div
-          animate={{ rotate: world.weather === 'sunny' ? 360 : 0 }}
-          transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-        >
-          {weatherEffect.icon}
-        </motion.div>
-      </div>
-
-      {/* Garden stage badge */}
-      <div className="absolute top-3 left-3 z-10">
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm">
-          <span className="text-lg">{stageInfo.emoji}</span>
-          <span className="text-xs font-medium text-white/90">{stageInfo.name}</span>
-        </div>
-      </div>
-
-      {/* Stats bar */}
-      {!compact && (
-        <div className="absolute top-12 left-3 z-10 flex flex-col gap-1">
-          <div className="flex items-center gap-1 text-xs text-white/80">
-            <TreeDeciduous className="w-3 h-3" />
-            <span>{world.plants.length}</span>
-          </div>
-          <div className="flex items-center gap-1 text-xs text-white/80">
-            <Heart className="w-3 h-3" />
-            <span>{world.creatures.length}</span>
-          </div>
-          {world.currentActiveStreak > 0 && (
-            <div className="flex items-center gap-1 text-xs text-white/80">
-              <Sparkles className="w-3 h-3" />
-              <span>{world.currentActiveStreak}🔥</span>
-            </div>
+      {/* Ground with grass effect */}
+      <div className="absolute bottom-0 left-0 right-0 h-1/4">
+        {/* Grass layer */}
+        <div
+          className={cn(
+            "absolute inset-0 bg-gradient-to-t",
+            seasonTheme.ground
           )}
-        </div>
-      )}
+          style={{
+            borderTopLeftRadius: '50% 40px',
+            borderTopRightRadius: '50% 40px',
+          }}
+        />
+        {/* Grass highlight */}
+        <div
+          className="absolute inset-0 bg-gradient-to-t from-transparent to-white/10"
+          style={{
+            borderTopLeftRadius: '50% 40px',
+            borderTopRightRadius: '50% 40px',
+          }}
+        />
+      </div>
 
-      {/* Floating particles */}
-      <AnimatePresence>
+      {/* Floating particles - sparse and elegant */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {particles.map((p) => (
-          <FloatingParticle key={p.id} emoji={p.emoji} delay={p.delay} />
-        ))}
-      </AnimatePresence>
-
-      {/* Plants */}
-      <AnimatePresence>
-        {world.plants.map((plant) => (
-          <Plant
-            key={plant.id}
-            plant={plant}
-            onClick={() => onPlantClick?.(plant)}
+          <FloatingParticle
+            key={p.id}
+            emoji={p.emoji}
+            delay={p.delay}
+            season={world.season}
           />
         ))}
-      </AnimatePresence>
+      </div>
 
-      {/* Creatures */}
-      <AnimatePresence>
-        {world.creatures.map((creature) => (
-          <Creature
-            key={creature.id}
-            creature={creature}
-            onClick={() => onCreatureClick?.(creature)}
-          />
-        ))}
-      </AnimatePresence>
-
-      {/* Seasonal Tree (replaces emoji companion) */}
-      <GardenTree
+      {/* Main garden scene */}
+      <GardenScene
         world={world}
         onClick={onCompanionClick}
         language={language}
       />
 
+      {/* Streak indicator - subtle top right */}
+      {world.currentActiveStreak > 0 && (
+        <motion.div
+          className="absolute top-3 right-3 px-3 py-1.5 rounded-full backdrop-blur-md bg-white/30 border border-white/40 shadow-md"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+        >
+          <span className="text-sm font-semibold flex items-center gap-1">
+            <span>🔥</span>
+            <span className="text-orange-600 dark:text-orange-400">{world.currentActiveStreak}</span>
+          </span>
+        </motion.div>
+      )}
+
       {/* Welcome back overlay */}
       <AnimatePresence>
         {world.pendingGrowth.companionMissedYou && (
           <motion.div
-            className="absolute inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-30"
+            className="absolute inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-30"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            onClick={onCompanionClick}
           >
             <motion.div
-              className="text-center p-6"
-              initial={{ scale: 0.8, y: 20 }}
+              className="text-center p-6 bg-white/10 backdrop-blur-md rounded-3xl border border-white/20 mx-4"
+              initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.1, type: 'spring', stiffness: 200 }}
             >
               <motion.div
-                className="mb-4 flex justify-center"
-                animate={{ scale: [1, 1.05, 1] }}
+                className="text-5xl mb-3"
+                animate={{ scale: [1, 1.1, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
               >
-                <SeasonalTree
-                  stage={world.companion.treeStage || 1}
-                  waterLevel={world.companion.waterLevel || 50}
-                  season={world.season}
-                  size="md"
-                />
+                {getSeasonEmoji(world.season)}
               </motion.div>
-              <p className="text-white text-lg font-medium mb-1">
-                {getSeasonEmoji(world.season)} {t.treeMissedYou || 'Your tree missed you!'}
+              <p className="text-white text-lg font-semibold mb-1">
+                {t.treeMissedYou || 'Твоё дерево скучало!'}
               </p>
               <p className="text-white/70 text-sm">
-                {t.welcomeBack || 'Welcome back to your garden'}
+                {t.welcomeBack || 'С возвращением в сад'}
+              </p>
+              <p className="text-white/50 text-xs mt-2">
+                Нажми, чтобы продолжить
               </p>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Gradient overlay at bottom for text readability */}
-      <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+      {/* Bottom gradient for polish */}
+      <div className="absolute bottom-0 left-0 right-0 h-8 bg-gradient-to-t from-black/5 to-transparent pointer-events-none" />
     </div>
   );
 }

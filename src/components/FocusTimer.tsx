@@ -27,9 +27,10 @@ interface FocusTimerProps {
   sessions: FocusSession[];
   onCompleteSession: (session: FocusSession) => void;
   onMinuteUpdate?: (minutes: number) => void;
+  isPrimaryCTA?: boolean;
 }
 
-export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: FocusTimerProps) {
+export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrimaryCTA = false }: FocusTimerProps) {
   const { t } = useLanguage();
 
   // Hyperfocus Mode state
@@ -297,8 +298,28 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: Focu
     : ((focusDuration - timeLeft) / focusDuration) * 100;
 
   return (
-    <div className="bg-card rounded-2xl p-6 zen-shadow-card animate-fade-in">
-      <div className="mb-4 space-y-3">
+    <div className={cn(
+      "rounded-2xl p-6 animate-fade-in transition-all relative overflow-hidden",
+      isPrimaryCTA
+        ? "bg-gradient-to-br from-violet-500/15 via-card to-purple-500/15 ring-2 ring-violet-500/40 shadow-lg shadow-violet-500/20"
+        : "bg-card zen-shadow-card"
+    )}>
+      {/* Animated background glow for CTA */}
+      {isPrimaryCTA && (
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-500/5 via-transparent to-purple-500/5 animate-pulse" />
+      )}
+
+      {/* Primary CTA Header */}
+      {isPrimaryCTA && (
+        <div className="relative flex items-center justify-center gap-2 mb-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-violet-500/25 rounded-full border border-violet-500/30">
+            <Zap className="w-4 h-4 text-violet-500" />
+            <span className="text-sm font-bold text-violet-600 dark:text-violet-400">{t.startHere}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="mb-4 space-y-3 relative">
         <label className="text-sm text-muted-foreground">{t.focusLabelPrompt}</label>
         <input
           type="text"

@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { GratitudeEntry } from '@/types';
-import { getToday, generateId } from '@/lib/utils';
-import { Sparkles, Plus } from 'lucide-react';
+import { getToday, generateId, cn } from '@/lib/utils';
+import { Sparkles, Plus, Zap } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface GratitudeJournalProps {
   entries: GratitudeEntry[];
   onAddEntry: (entry: GratitudeEntry) => void;
+  isPrimaryCTA?: boolean;
 }
 
-export function GratitudeJournal({ entries, onAddEntry }: GratitudeJournalProps) {
+export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false }: GratitudeJournalProps) {
   const { t } = useLanguage();
   const [text, setText] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -34,11 +35,34 @@ export function GratitudeJournal({ entries, onAddEntry }: GratitudeJournalProps)
   };
 
   return (
-    <div className="bg-card rounded-2xl p-6 zen-shadow-card animate-fade-in">
-      <div className="flex items-center justify-between mb-4">
+    <div className={cn(
+      "rounded-2xl p-6 animate-fade-in transition-all relative overflow-hidden",
+      isPrimaryCTA
+        ? "bg-gradient-to-br from-pink-500/15 via-card to-rose-500/15 ring-2 ring-pink-500/40 shadow-lg shadow-pink-500/20"
+        : "bg-card zen-shadow-card"
+    )}>
+      {/* Animated background glow for CTA */}
+      {isPrimaryCTA && (
+        <div className="absolute inset-0 bg-gradient-to-r from-pink-500/5 via-transparent to-rose-500/5 animate-pulse" />
+      )}
+
+      {/* Primary CTA Header */}
+      {isPrimaryCTA && (
+        <div className="relative flex items-center justify-center gap-2 mb-4">
+          <div className="flex items-center gap-2 px-4 py-2 bg-pink-500/25 rounded-full border border-pink-500/30">
+            <Zap className="w-4 h-4 text-pink-500" />
+            <span className="text-sm font-bold text-pink-600 dark:text-pink-400">{t.startHere}</span>
+          </div>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between mb-4 relative">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-accent" />
-          <h3 className="text-lg font-semibold text-foreground">{t.gratitude}</h3>
+          <h3 className={cn(
+            "font-semibold text-foreground",
+            isPrimaryCTA ? "text-xl" : "text-lg"
+          )}>{t.gratitude}</h3>
         </div>
         <span className="text-sm text-muted-foreground">
           {todayEntries.length} {t.today}

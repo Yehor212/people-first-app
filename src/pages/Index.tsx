@@ -59,6 +59,7 @@ import { CompanionPanel } from '@/components/CompanionPanel';
 import { TreePanel } from '@/components/TreePanel';
 import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
+import { RestModeCard } from '@/components/RestModeCard';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { haptics } from '@/lib/haptics';
 
@@ -139,6 +140,10 @@ export function Index() {
     treeStage,
     treeWaterLevel,
     treeXP,
+    // Rest mode
+    isRestMode,
+    activateRestMode,
+    deactivateRestMode,
   } = useInnerWorld();
 
   // Companion panel state
@@ -302,6 +307,38 @@ export function Index() {
   const hasGratitudeToday = useMemo(() => {
     return gratitudeEntries.some(g => g.date === currentDate);
   }, [gratitudeEntries, currentDate]);
+
+  // Check if user has uncompleted habits today
+  const hasUncompletedHabits = useMemo(() => {
+    if (habits.length === 0) return false;
+    return habits.some(h => {
+      const habitType = h.type || 'daily';
+      // Continuous habits don't count for completion
+      if (habitType === 'continuous') return false;
+      // Multiple times per day habits
+      if (habitType === 'multiple') {
+        const completions = h.completionsByDate?.[currentDate] ?? 0;
+        return completions < (h.dailyTarget ?? 1);
+      }
+      // Daily and scheduled habits
+      return !h.completedDates?.includes(currentDate);
+    });
+  }, [habits, currentDate]);
+
+  // Determine current primary CTA (Smart Focus System)
+  // Priority: mood → habits → focus → gratitude → complete
+  const currentPrimaryCTA = useMemo(() => {
+    // 1. Mood is always first priority
+    if (!hasMoodToday) return 'mood' as const;
+    // 2. Habits - if there are uncompleted ones
+    if (hasUncompletedHabits) return 'habits' as const;
+    // 3. Focus - if no session today
+    if (!hasFocusToday) return 'focus' as const;
+    // 4. Gratitude - if no entry today
+    if (!hasGratitudeToday) return 'gratitude' as const;
+    // 5. All complete!
+    return 'complete' as const;
+  }, [hasMoodToday, hasUncompletedHabits, hasFocusToday, hasGratitudeToday]);
 
   // Widget synchronization
   const currentStreak = useMemo(() => {
@@ -1015,34 +1052,39 @@ export function Index() {
               onOpenChallenges={() => setShowChallenges(true)}
             />
 
-            {/* Check if today's mood is recorded */}
-            {(() => {
-              const today = getToday();
-              const hasTodayMood = moods.some(m => m.date === today);
-              const needsPrimaryCTA = !hasTodayMood;
+            <div className="space-y-6">
+              <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
 
-              return (
-                <div className="space-y-6">
-                  <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
+              {/* Streak Banner - Prominent streak display with Rest Mode button */}
+              <StreakBanner
+                moods={moods}
+                habits={habits}
+                focusSessions={focusSessions}
+                gratitudeEntries={gratitudeEntries}
+                onRestMode={activateRestMode}
+                isRestMode={isRestMode}
+              />
 
-                  {/* Streak Banner - Prominent streak display */}
-                  <StreakBanner
-                    moods={moods}
-                    habits={habits}
-                    focusSessions={focusSessions}
-                    gratitudeEntries={gratitudeEntries}
-                  />
-
-                  {/* Mood Tracker - Primary CTA style if not filled today */}
+              {/* Rest Mode UI - Simplified interface when taking a break */}
+              {isRestMode ? (
+                <RestModeCard
+                  streak={innerWorld.currentActiveStreak}
+                  onCancel={deactivateRestMode}
+                />
+              ) : (
+                <>
+                  {/* Smart Primary CTA System - Sequential focus */}
+                  {/* Mood Tracker - Primary CTA if mood not recorded */}
                   <div ref={moodRef}>
                     <MoodTracker
                       entries={moods}
                       onAddEntry={handleAddMood}
                       onUpdateEntry={handleUpdateMood}
-                      isPrimaryCTA={needsPrimaryCTA}
+                      isPrimaryCTA={currentPrimaryCTA === 'mood'}
                     />
                   </div>
 
+                  {/* Habit Tracker - Primary CTA if habits not completed */}
                   <div ref={habitsRef}>
                     <HabitTracker
                       habits={habits}
@@ -1050,26 +1092,31 @@ export function Index() {
                       onAdjustHabit={handleAdjustHabit}
                       onAddHabit={handleAddHabit}
                       onDeleteHabit={handleDeleteHabit}
+                      isPrimaryCTA={currentPrimaryCTA === 'habits'}
                     />
                   </div>
 
+                  {/* Focus Timer - Primary CTA if no focus session today */}
                   <div ref={focusRef}>
                     <FocusTimer
                       sessions={focusSessions}
                       onCompleteSession={handleCompleteFocusSession}
                       onMinuteUpdate={setCurrentFocusMinutes}
+                      isPrimaryCTA={currentPrimaryCTA === 'focus'}
                     />
                   </div>
 
+                  {/* Gratitude Journal - Primary CTA if no gratitude entry */}
                   <div ref={gratitudeRef}>
                     <GratitudeJournal
                       entries={gratitudeEntries}
                       onAddEntry={handleAddGratitude}
+                      isPrimaryCTA={currentPrimaryCTA === 'gratitude'}
                     />
                   </div>
-                </div>
-              );
-            })()}
+                </>
+              )}
+            </div>
           </>
         )}
 
@@ -1095,22 +1142,25 @@ export function Index() {
               }}
             />
 
-            {/* Garden Stats */}
+            {/* Garden Stats - Beautiful minimal cards */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3 text-center border border-border/50">
-                <div className="text-2xl mb-1">🌱</div>
-                <div className="text-lg font-bold text-primary">{gardenStats.totalPlants}</div>
-                <div className="text-xs text-muted-foreground">{t.plants}</div>
+              <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500/10 to-green-500/5 rounded-2xl p-4 text-center border border-emerald-500/20">
+                <div className="text-2xl mb-2">🌱</div>
+                <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{gardenStats.totalPlants}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{t.plants}</div>
+                <div className="absolute -right-3 -bottom-3 text-5xl opacity-10">🌿</div>
               </div>
-              <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3 text-center border border-border/50">
-                <div className="text-2xl mb-1">🦋</div>
-                <div className="text-lg font-bold text-accent">{gardenStats.totalCreatures}</div>
-                <div className="text-xs text-muted-foreground">{t.creatures}</div>
+              <div className="relative overflow-hidden bg-gradient-to-br from-violet-500/10 to-purple-500/5 rounded-2xl p-4 text-center border border-violet-500/20">
+                <div className="text-2xl mb-2">🦋</div>
+                <div className="text-xl font-bold text-violet-600 dark:text-violet-400">{gardenStats.totalCreatures}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{t.creatures}</div>
+                <div className="absolute -right-3 -bottom-3 text-5xl opacity-10">✨</div>
               </div>
-              <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3 text-center border border-border/50">
-                <div className="text-2xl mb-1">⭐</div>
-                <div className="text-lg font-bold text-yellow-500">{innerWorld.companion.level}</div>
-                <div className="text-xs text-muted-foreground">{t.level}</div>
+              <div className="relative overflow-hidden bg-gradient-to-br from-amber-500/10 to-yellow-500/5 rounded-2xl p-4 text-center border border-amber-500/20">
+                <div className="text-2xl mb-2">⭐</div>
+                <div className="text-xl font-bold text-amber-600 dark:text-amber-400">{innerWorld.companion.level}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{t.level}</div>
+                <div className="absolute -right-3 -bottom-3 text-5xl opacity-10">🏆</div>
               </div>
             </div>
 

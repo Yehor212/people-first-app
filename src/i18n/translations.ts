@@ -782,6 +782,14 @@ export interface Translations {
   waterReaction3: string;
   waterReaction4: string;
   waterNotEnough: string;
+
+  // Rest Mode
+  restDayTitle: string;
+  restDayMessage: string;
+  restDayButton: string;
+  restDayCancel: string;
+  daysSaved: string;
+  restDaySupportive: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -1512,6 +1520,14 @@ export const translations: Record<Language, Translations> = {
     waterReaction3: '💦 Спасибо!',
     waterReaction4: '✨ Расту!',
     waterNotEnough: '🍪 Нужно {needed} вкусняшек, есть {have}',
+
+    // Rest Mode
+    restDayTitle: 'День отдыха',
+    restDayMessage: 'Отдыхай, твой стрик в безопасности',
+    restDayButton: 'День отдыха',
+    restDayCancel: 'Всё-таки хочу записать',
+    daysSaved: 'дней сохранено',
+    restDaySupportive: 'Завтра продолжим вместе 💚',
   },
 
   en: {
@@ -2241,6 +2257,14 @@ export const translations: Record<Language, Translations> = {
     waterReaction3: '💦 Thank you!',
     waterReaction4: '✨ Growing!',
     waterNotEnough: '🍪 Need {needed} treats, have {have}',
+
+    // Rest Mode
+    restDayTitle: 'Rest Day',
+    restDayMessage: 'Rest well, your streak is safe',
+    restDayButton: 'Rest Day',
+    restDayCancel: 'I want to track anyway',
+    daysSaved: 'days preserved',
+    restDaySupportive: "We'll continue together tomorrow 💚",
   },
 
   uk: {
@@ -2970,6 +2994,14 @@ export const translations: Record<Language, Translations> = {
     waterReaction3: '💦 Дякую!',
     waterReaction4: '✨ Росту!',
     waterNotEnough: '🍪 Потрібно {needed} смаколиків, є {have}',
+
+    // Rest Mode
+    restDayTitle: 'День відпочинку',
+    restDayMessage: 'Відпочивай, твій стрік у безпеці',
+    restDayButton: 'День відпочинку',
+    restDayCancel: 'Все ж хочу записати',
+    daysSaved: 'днів збережено',
+    restDaySupportive: 'Завтра продовжимо разом 💚',
   },
 
   es: {
@@ -3700,6 +3732,14 @@ export const translations: Record<Language, Translations> = {
     waterReaction3: '💦 ¡Gracias!',
     waterReaction4: '✨ ¡Creciendo!',
     waterNotEnough: '🍪 Necesitas {needed} golosinas, tienes {have}',
+
+    // Rest Mode
+    restDayTitle: 'Día de descanso',
+    restDayMessage: 'Descansa, tu racha está segura',
+    restDayButton: 'Día de descanso',
+    restDayCancel: 'Quiero registrar de todos modos',
+    daysSaved: 'días conservados',
+    restDaySupportive: 'Mañana continuamos juntos 💚',
   },
 
   de: {
@@ -4430,6 +4470,14 @@ export const translations: Record<Language, Translations> = {
     waterReaction3: '💦 Danke!',
     waterReaction4: '✨ Wachse!',
     waterNotEnough: '🍪 Brauche {needed} Leckerlis, habe {have}',
+
+    // Rest Mode
+    restDayTitle: 'Ruhetag',
+    restDayMessage: 'Ruh dich aus, dein Streak ist sicher',
+    restDayButton: 'Ruhetag',
+    restDayCancel: 'Ich möchte trotzdem eintragen',
+    daysSaved: 'Tage gespeichert',
+    restDaySupportive: 'Morgen machen wir zusammen weiter 💚',
   },
 
   fr: {
@@ -5160,6 +5208,14 @@ export const translations: Record<Language, Translations> = {
     waterReaction3: '💦 Merci!',
     waterReaction4: '✨ Je grandis!',
     waterNotEnough: '🍪 Il faut {needed} friandises, tu en as {have}',
+
+    // Rest Mode
+    restDayTitle: 'Jour de repos',
+    restDayMessage: 'Repose-toi, ta série est en sécurité',
+    restDayButton: 'Jour de repos',
+    restDayCancel: 'Je veux quand même enregistrer',
+    daysSaved: 'jours préservés',
+    restDaySupportive: 'On continue ensemble demain 💚',
   },
 };
 

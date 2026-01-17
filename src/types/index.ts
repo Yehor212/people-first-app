@@ -311,4 +311,7 @@ export interface InnerWorld {
     creaturesArrived: number;
     companionMissedYou: boolean;
   };
+
+  // Rest mode - days when user took a break but keeps streak
+  restDays: string[]; // YYYY-MM-DD format
 }

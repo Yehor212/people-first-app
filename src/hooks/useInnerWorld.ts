@@ -107,6 +107,7 @@ const createDefaultInnerWorld = (): InnerWorld => ({
     creaturesArrived: 0,
     companionMissedYou: false,
   },
+  restDays: [],
 });
 
 // ============================================
@@ -847,6 +848,36 @@ export function useInnerWorld() {
     currentStreak: world.currentActiveStreak,
   }), [world]);
 
+  // ============================================
+  // REST MODE
+  // ============================================
+
+  // Check if today is a rest day
+  const today = getToday();
+  const isRestMode = useMemo(() => {
+    return (world.restDays || []).includes(today);
+  }, [world.restDays, today]);
+
+  // Activate rest mode for today - preserves streak
+  const activateRestMode = useCallback(() => {
+    const restDays = world.restDays || [];
+    if (restDays.includes(today)) return; // Already in rest mode
+
+    setWorld({
+      ...world,
+      restDays: [...restDays, today],
+    });
+  }, [world, setWorld, today]);
+
+  // Deactivate rest mode for today
+  const deactivateRestMode = useCallback(() => {
+    const restDays = world.restDays || [];
+    setWorld({
+      ...world,
+      restDays: restDays.filter(d => d !== today),
+    });
+  }, [world, setWorld, today]);
+
   return {
     world,
     isLoading,
@@ -891,5 +922,10 @@ export function useInnerWorld() {
     treeStage: world.companion.treeStage || 1,
     treeWaterLevel: world.companion.waterLevel || 0,
     treeXP: world.companion.treeXP || 0,
+
+    // Rest mode
+    isRestMode,
+    activateRestMode,
+    deactivateRestMode,
   };
 }

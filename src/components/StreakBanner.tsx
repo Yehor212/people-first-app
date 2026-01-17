@@ -1,10 +1,11 @@
 /**
  * StreakBanner - Prominent streak display for home tab
  * Shows current activity streak with motivational messaging
+ * Includes Rest Mode button for low-energy days
  */
 
 import { useMemo } from 'react';
-import { Flame, Zap, Trophy } from 'lucide-react';
+import { Flame, Zap, Trophy, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
@@ -15,9 +16,11 @@ interface StreakBannerProps {
   habits: Habit[];
   focusSessions: FocusSession[];
   gratitudeEntries: GratitudeEntry[];
+  onRestMode?: () => void;
+  isRestMode?: boolean;
 }
 
-export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries }: StreakBannerProps) {
+export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries, onRestMode, isRestMode = false }: StreakBannerProps) {
   const { t } = useLanguage();
   const today = getToday();
 
@@ -153,6 +156,17 @@ export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries }:
           style={{ width: `${(todayProgress.completed / 4) * 100}%` }}
         />
       </div>
+
+      {/* Rest Mode Button - shown when no progress today and not already in rest mode */}
+      {onRestMode && todayProgress.completed === 0 && !isRestMode && (
+        <button
+          onClick={onRestMode}
+          className="mt-3 w-full py-2.5 flex items-center justify-center gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl transition-colors text-sm font-medium"
+        >
+          <Moon className="w-4 h-4" />
+          {t.restDayButton || 'День отдыха'}
+        </button>
+      )}
     </div>
   );
 }

@@ -135,33 +135,75 @@ export function SeasonalTree({
           opacity="0.3"
         />
 
-        {/* Stage 1: Seed */}
+        {/* Stage 1: Seed - Beautiful terracotta pot */}
         {stage === 1 && (
           <motion.g
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200 }}
+            transition={{ type: 'spring', stiffness: 200, damping: 15 }}
           >
-            {/* Pot */}
+            {/* Pot shadow */}
+            <ellipse cx="100" cy="232" rx="35" ry="8" fill="rgba(0,0,0,0.15)" />
+
+            {/* Pot body - terracotta gradient */}
+            <defs>
+              <linearGradient id="potGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#C67B4E" />
+                <stop offset="50%" stopColor="#D4845A" />
+                <stop offset="100%" stopColor="#B5714A" />
+              </linearGradient>
+              <linearGradient id="potRim" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#D4845A" />
+                <stop offset="100%" stopColor="#A65F3A" />
+              </linearGradient>
+            </defs>
+
+            {/* Main pot */}
             <path
-              d="M70 200 L75 230 L125 230 L130 200 Z"
-              fill="#A0522D"
-            />
-            <ellipse cx="100" cy="200" rx="30" ry="8" fill="#8B4513" />
-
-            {/* Seed */}
-            <motion.ellipse
-              cx="100"
-              cy="195"
-              rx="8"
-              ry="12"
-              fill="#654321"
-              animate={{ y: [-2, 2, -2] }}
-              transition={{ duration: 2, repeat: Infinity }}
+              d="M68 198 Q70 215 75 230 L125 230 Q130 215 132 198 Z"
+              fill="url(#potGradient)"
             />
 
-            {/* Soil */}
-            <ellipse cx="100" cy="198" rx="25" ry="6" fill="#3E2723" />
+            {/* Pot rim */}
+            <ellipse cx="100" cy="198" rx="35" ry="10" fill="url(#potRim)" />
+            <ellipse cx="100" cy="196" rx="32" ry="8" fill="#8B4513" />
+
+            {/* Soil with texture */}
+            <ellipse cx="100" cy="196" rx="28" ry="6" fill="#3E2723" />
+            <ellipse cx="100" cy="194" rx="24" ry="4" fill="#4E342E" />
+
+            {/* Seed with shine */}
+            <motion.g
+              animate={{ y: [-1, 1, -1] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <ellipse cx="100" cy="190" rx="9" ry="13" fill="#5D4037" />
+              <ellipse cx="100" cy="190" rx="9" ry="13" fill="url(#seedShine)" />
+              {/* Seed highlight */}
+              <ellipse cx="97" cy="186" rx="3" ry="4" fill="rgba(255,255,255,0.2)" />
+            </motion.g>
+
+            <defs>
+              <radialGradient id="seedShine" cx="30%" cy="30%">
+                <stop offset="0%" stopColor="#8D6E63" stopOpacity="0.5" />
+                <stop offset="100%" stopColor="#3E2723" stopOpacity="0" />
+              </radialGradient>
+            </defs>
+
+            {/* Decorative water droplet */}
+            <motion.g
+              animate={{
+                y: [0, -3, 0],
+                opacity: [0.7, 1, 0.7]
+              }}
+              transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+            >
+              <path
+                d="M115 185 Q118 178 115 172 Q112 178 115 185"
+                fill="#60A5FA"
+                opacity="0.6"
+              />
+            </motion.g>
           </motion.g>
         )}
 
