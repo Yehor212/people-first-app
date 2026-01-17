@@ -25,9 +25,16 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
   const todayHabitsCompleted = habits.filter(h => h.completedDates.includes(today)).length;
   const totalHabits = habits.length;
 
-  const allCompletedDates = habits.flatMap(h => h.completedDates);
-  const uniqueDates = [...new Set(allCompletedDates)].sort();
-  const streak = calculateStreak(uniqueDates);
+  // Calculate streak based on ANY activity (mood, habits, focus, gratitude)
+  // User has until 00:00 next day to continue streak
+  const allActivityDates = [
+    ...moods.map(m => m.date),
+    ...habits.flatMap(h => h.completedDates),
+    ...focusSessions.map(f => f.date),
+    ...gratitudeEntries.map(g => g.date),
+  ];
+  const uniqueActivityDates = [...new Set(allActivityDates)].sort();
+  const streak = calculateStreak(uniqueActivityDates);
 
   useEffect(() => {
     if (shouldShowStreakMessage(streak, lastShownStreak)) {

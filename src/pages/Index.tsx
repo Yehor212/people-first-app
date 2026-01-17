@@ -31,13 +31,11 @@ import {
 
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
-import { StatsOverview } from '@/components/StatsOverview';
 import { MoodTracker } from '@/components/MoodTracker';
 import { HabitTracker } from '@/components/HabitTracker';
 import { FocusTimer } from '@/components/FocusTimer';
 import { GratitudeJournal } from '@/components/GratitudeJournal';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
-import { DailyProgress } from '@/components/DailyProgress';
 import { StatsPage } from '@/components/StatsPage';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { LanguageSelector } from '@/components/LanguageSelector';
@@ -62,11 +60,11 @@ import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
 import { InnerWorldGarden } from '@/components/InnerWorldGarden';
 import { CompanionPanel } from '@/components/CompanionPanel';
-import { TimeAwarenessBadge } from '@/components/TimeAwarenessBadge';
 import { MoodInsights } from '@/components/MoodInsights';
+import { StreakBanner } from '@/components/StreakBanner';
 import { haptics } from '@/lib/haptics';
 
-type TabType = 'home' | 'stats' | 'achievements' | 'settings';
+type TabType = 'home' | 'garden' | 'stats' | 'achievements' | 'settings';
 
 export function Index() {
   const { t, language } = useLanguage();
@@ -990,40 +988,22 @@ export function Index() {
             {(() => {
               const today = getToday();
               const hasTodayMood = moods.some(m => m.date === today);
-              const hasTodayHabits = habits.some(h => h.completedDates.includes(today));
               const needsPrimaryCTA = !hasTodayMood;
 
               return (
                 <div className="space-y-6">
                   <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
 
-                  {/* Time Awareness Badge - ADHD time blindness helper */}
-                  <TimeAwarenessBadge
-                    scheduleEvents={todayScheduleEvents}
-                    onClick={() => setShowTimeHelper(true)}
+                  {/* Streak Banner - Prominent streak display */}
+                  <StreakBanner
+                    moods={moods}
+                    habits={habits}
+                    focusSessions={focusSessions}
+                    gratitudeEntries={gratitudeEntries}
                   />
 
                   {/* Daily Surprise - motivational content that changes daily */}
                   <DailySurprise onNavigate={handleNavigateToSection} />
-
-                  {/* Inner World Garden - Personal growth visualization */}
-                  <div className="relative">
-                    <InnerWorldGarden
-                      world={innerWorld}
-                      onCompanionClick={() => {
-                        clearWelcomeBack();
-                        setShowCompanionPanel(true);
-                      }}
-                      onPlantClick={(plant) => {
-                        // Could show plant details in future
-                        console.log('Plant clicked:', plant);
-                      }}
-                      onCreatureClick={(creature) => {
-                        // Could show creature details in future
-                        console.log('Creature clicked:', creature);
-                      }}
-                    />
-                  </div>
 
                   {/* Onboarding Hints - contextual tips after tutorial */}
                   <OnboardingHints
@@ -1037,31 +1017,6 @@ export function Index() {
                     onNavigate={handleNavigateToSection}
                   />
 
-                  {/* Schedule Timeline - Horizontal day planner */}
-                  <ScheduleTimeline
-                    events={todayScheduleEvents}
-                    onAddEvent={handleAddScheduleEvent}
-                    onDeleteEvent={handleDeleteScheduleEvent}
-                  />
-
-                  {/* Visual Day Clock - ADHD-friendly energy meter */}
-                  <DayClock
-                    moods={moods}
-                    habits={habits}
-                    focusSessions={focusSessions}
-                    gratitudeEntries={gratitudeEntries}
-                    onTimeBlockClick={handleNavigateToSection}
-                  />
-
-                  {/* Daily Progress CTA */}
-                  <DailyProgress
-                    moods={moods}
-                    habits={habits}
-                    focusSessions={focusSessions}
-                    gratitudeEntries={gratitudeEntries}
-                    onNavigate={handleNavigateToSection}
-                  />
-
                   {/* Mood Tracker - Primary CTA style if not filled today */}
                   <div ref={moodRef}>
                     <MoodTracker
@@ -1071,23 +1026,6 @@ export function Index() {
                       isPrimaryCTA={needsPrimaryCTA}
                     />
                   </div>
-
-                  {/* Stats Overview */}
-                  <StatsOverview
-                    moods={moods}
-                    habits={habits}
-                    focusSessions={focusSessions}
-                    gratitudeEntries={gratitudeEntries}
-                    currentFocusMinutes={currentFocusMinutes}
-                  />
-
-                  {/* AI Insights - Personalized mood pattern analysis */}
-                  <MoodInsights
-                    moods={moods}
-                    habits={habits}
-                    focusSessions={focusSessions}
-                    gratitudeEntries={gratitudeEntries}
-                  />
 
                   <div ref={habitsRef}>
                     <HabitTracker
@@ -1113,12 +1051,83 @@ export function Index() {
                       onAddEntry={handleAddGratitude}
                     />
                   </div>
-
-                  <WeeklyCalendar moods={moods} habits={habits} />
                 </div>
               );
             })()}
           </>
+        )}
+
+        {activeTab === 'garden' && (
+          <div className="space-y-6">
+            <Header
+              userName={userName}
+              onOpenTimeHelper={() => setShowTimeHelper(true)}
+              onOpenQuests={() => setShowQuests(true)}
+              onOpenChallenges={() => setShowChallenges(true)}
+              onOpenTasks={() => setShowTasks(true)}
+            />
+
+            {/* Inner World Garden - Personal growth visualization */}
+            <InnerWorldGarden
+              world={innerWorld}
+              onCompanionClick={() => {
+                clearWelcomeBack();
+                setShowCompanionPanel(true);
+              }}
+              onPlantClick={(plant) => {
+                console.log('Plant clicked:', plant);
+              }}
+              onCreatureClick={(creature) => {
+                console.log('Creature clicked:', creature);
+              }}
+            />
+
+            {/* Garden Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3 text-center border border-border/50">
+                <div className="text-2xl mb-1">🌱</div>
+                <div className="text-lg font-bold text-primary">{gardenStats.totalPlants}</div>
+                <div className="text-xs text-muted-foreground">{language === 'ru' ? 'Растений' : 'Plants'}</div>
+              </div>
+              <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3 text-center border border-border/50">
+                <div className="text-2xl mb-1">🦋</div>
+                <div className="text-lg font-bold text-accent">{gardenStats.totalCreatures}</div>
+                <div className="text-xs text-muted-foreground">{language === 'ru' ? 'Существ' : 'Creatures'}</div>
+              </div>
+              <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3 text-center border border-border/50">
+                <div className="text-2xl mb-1">⭐</div>
+                <div className="text-lg font-bold text-yellow-500">{innerWorld.companion.level}</div>
+                <div className="text-xs text-muted-foreground">{language === 'ru' ? 'Уровень' : 'Level'}</div>
+              </div>
+            </div>
+
+            {/* Visual Day Clock - ADHD-friendly energy meter */}
+            <DayClock
+              moods={moods}
+              habits={habits}
+              focusSessions={focusSessions}
+              gratitudeEntries={gratitudeEntries}
+              onTimeBlockClick={handleNavigateToSection}
+            />
+
+            {/* Schedule Timeline - Horizontal day planner */}
+            <ScheduleTimeline
+              events={todayScheduleEvents}
+              onAddEvent={handleAddScheduleEvent}
+              onDeleteEvent={handleDeleteScheduleEvent}
+            />
+
+            {/* Weekly Calendar */}
+            <WeeklyCalendar moods={moods} habits={habits} />
+
+            {/* AI Insights - Personalized mood pattern analysis */}
+            <MoodInsights
+              moods={moods}
+              habits={habits}
+              focusSessions={focusSessions}
+              gratitudeEntries={gratitudeEntries}
+            />
+          </div>
         )}
 
         {activeTab === 'stats' && (
