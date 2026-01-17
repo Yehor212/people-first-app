@@ -748,6 +748,40 @@ export interface Translations {
   free: string;
   fullness: string;
   earnTreatsHint: string;
+
+  // Seasonal Tree System
+  myTree: string;
+  touch: string;
+  water: string;
+  waterLevel: string;
+  growth: string;
+  stage: string;
+  treeThirstyCanWater: string;
+  treeThirstyNoTreats: string;
+  treeStreakLegend: string;
+  treeStreakGood: string;
+  treeMaxStage: string;
+  treeStage4: string;
+  treeStage3: string;
+  treeStage2: string;
+  treeStage1: string;
+  treeHappy: string;
+  treeSeason: string;
+  treeStageUp: string;
+  treeMissedYou: string;
+  treeNeedsWater: string;
+  waterDecayHint: string;
+  seasonTreeHint: string;
+  xpToNextStage: string;
+  touchReaction1: string;
+  touchReaction2: string;
+  touchReaction3: string;
+  touchReaction4: string;
+  waterReaction1: string;
+  waterReaction2: string;
+  waterReaction3: string;
+  waterReaction4: string;
+  waterNotEnough: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -1444,6 +1478,40 @@ export const translations: Record<Language, Translations> = {
     free: 'Бесплатно',
     fullness: 'Сытость',
     earnTreatsHint: 'Выполняй активности чтобы зарабатывать вкусняшки для питомца!',
+
+    // Seasonal Tree System
+    myTree: 'Моё дерево',
+    touch: 'Потрогать',
+    water: 'Полить',
+    waterLevel: 'Уровень воды',
+    growth: 'Рост',
+    stage: 'Стадия',
+    treeThirstyCanWater: '💧 Дерево хочет пить...',
+    treeThirstyNoTreats: '🥀 Жажда... Выполняй активности чтобы заработать вкусняшки!',
+    treeStreakLegend: '🌟 {streak} дней! Дерево сияет!',
+    treeStreakGood: '✨ {streak} дней! Растёт сильным!',
+    treeMaxStage: '🌳 Великолепное великое дерево!',
+    treeStage4: '🌲 Красивое взрослое дерево!',
+    treeStage3: '🌿 Растёт в крепкий саженец!',
+    treeStage2: '🌱 Молодой росток тянется к свету!',
+    treeStage1: '🌰 Маленькое семечко полное потенциала!',
+    treeHappy: '💚 Дерево процветает!',
+    treeSeason: '{emoji} Прекрасная {season}!',
+    treeStageUp: '🎉 Эволюция в {stage}!',
+    treeMissedYou: 'Твоё дерево скучало по тебе!',
+    treeNeedsWater: 'Дереву нужна вода!',
+    waterDecayHint: 'Уровень воды падает -2% в час',
+    seasonTreeHint: 'Дерево меняется со сменой сезонов!',
+    xpToNextStage: '{xp} XP до {stage}',
+    touchReaction1: '✨ *шелест листьев*',
+    touchReaction2: '🍃 Листья танцуют!',
+    touchReaction3: '💚 Чувствую жизнь!',
+    touchReaction4: '🌿 Расту сильнее!',
+    waterReaction1: '💧 *впитывает воду*',
+    waterReaction2: '🌊 Освежает!',
+    waterReaction3: '💦 Спасибо!',
+    waterReaction4: '✨ Расту!',
+    waterNotEnough: '🍪 Нужно {needed} вкусняшек, есть {have}',
   },
 
   en: {
@@ -2139,6 +2207,40 @@ export const translations: Record<Language, Translations> = {
     free: 'Free',
     fullness: 'Fullness',
     earnTreatsHint: 'Complete activities to earn treats for your companion!',
+
+    // Seasonal Tree System
+    myTree: 'My Tree',
+    touch: 'Touch',
+    water: 'Water',
+    waterLevel: 'Water Level',
+    growth: 'Growth',
+    stage: 'Stage',
+    treeThirstyCanWater: '💧 The tree needs water...',
+    treeThirstyNoTreats: '🥀 Thirsty... Do activities to earn treats!',
+    treeStreakLegend: '🌟 {streak} days! The tree is glowing!',
+    treeStreakGood: '✨ {streak} days! Growing strong!',
+    treeMaxStage: '🌳 A magnificent great tree!',
+    treeStage4: '🌲 A beautiful mature tree!',
+    treeStage3: '🌿 Growing into a strong sapling!',
+    treeStage2: '🌱 A young sprout reaching for light!',
+    treeStage1: '🌰 A tiny seed full of potential!',
+    treeHappy: '💚 The tree is flourishing!',
+    treeSeason: '{emoji} Beautiful {season}!',
+    treeStageUp: '🎉 Evolved to {stage}!',
+    treeMissedYou: 'Your tree missed you!',
+    treeNeedsWater: 'The tree needs water!',
+    waterDecayHint: 'Water level decreases -2% per hour',
+    seasonTreeHint: 'The tree changes with the seasons!',
+    xpToNextStage: '{xp} XP to {stage}',
+    touchReaction1: '✨ *rustles leaves*',
+    touchReaction2: '🍃 The leaves dance!',
+    touchReaction3: '💚 Feels alive!',
+    touchReaction4: '🌿 Growing stronger!',
+    waterReaction1: '💧 *absorbs water*',
+    waterReaction2: '🌊 Refreshing!',
+    waterReaction3: '💦 Thank you!',
+    waterReaction4: '✨ Growing!',
+    waterNotEnough: '🍪 Need {needed} treats, have {have}',
   },
 
   uk: {
@@ -2834,6 +2936,40 @@ export const translations: Record<Language, Translations> = {
     free: 'Безкоштовно',
     fullness: 'Ситість',
     earnTreatsHint: 'Виконуй активності щоб заробляти смаколики для улюбленця!',
+
+    // Seasonal Tree System
+    myTree: 'Моє дерево',
+    touch: 'Доторкнутись',
+    water: 'Полити',
+    waterLevel: 'Рівень води',
+    growth: 'Ріст',
+    stage: 'Стадія',
+    treeThirstyCanWater: '💧 Дерево хоче пити...',
+    treeThirstyNoTreats: '🥀 Спрага... Виконуй активності щоб заробити смаколики!',
+    treeStreakLegend: '🌟 {streak} днів! Дерево сяє!',
+    treeStreakGood: '✨ {streak} днів! Росте міцним!',
+    treeMaxStage: '🌳 Чудове велике дерево!',
+    treeStage4: '🌲 Гарне доросле дерево!',
+    treeStage3: '🌿 Росте в міцний саджанець!',
+    treeStage2: '🌱 Молодий паросток тягнеться до світла!',
+    treeStage1: '🌰 Маленьке насіння повне потенціалу!',
+    treeHappy: '💚 Дерево процвітає!',
+    treeSeason: '{emoji} Прекрасна {season}!',
+    treeStageUp: '🎉 Еволюція в {stage}!',
+    treeMissedYou: 'Твоє дерево сумувало за тобою!',
+    treeNeedsWater: 'Дереву потрібна вода!',
+    waterDecayHint: 'Рівень води падає -2% на годину',
+    seasonTreeHint: 'Дерево змінюється зі зміною сезонів!',
+    xpToNextStage: '{xp} XP до {stage}',
+    touchReaction1: '✨ *шелест листя*',
+    touchReaction2: '🍃 Листя танцює!',
+    touchReaction3: '💚 Відчуваю життя!',
+    touchReaction4: '🌿 Росту міцнішим!',
+    waterReaction1: '💧 *поглинає воду*',
+    waterReaction2: '🌊 Освіжає!',
+    waterReaction3: '💦 Дякую!',
+    waterReaction4: '✨ Росту!',
+    waterNotEnough: '🍪 Потрібно {needed} смаколиків, є {have}',
   },
 
   es: {
@@ -3530,6 +3666,40 @@ export const translations: Record<Language, Translations> = {
     free: 'Gratis',
     fullness: 'Saciedad',
     earnTreatsHint: '¡Completa actividades para ganar golosinas para tu compañero!',
+
+    // Seasonal Tree System
+    myTree: 'Mi Árbol',
+    touch: 'Tocar',
+    water: 'Regar',
+    waterLevel: 'Nivel de agua',
+    growth: 'Crecimiento',
+    stage: 'Etapa',
+    treeThirstyCanWater: '💧 El árbol necesita agua...',
+    treeThirstyNoTreats: '🥀 Sediento... ¡Haz actividades para ganar golosinas!',
+    treeStreakLegend: '🌟 ¡{streak} días! ¡El árbol brilla!',
+    treeStreakGood: '✨ ¡{streak} días! ¡Creciendo fuerte!',
+    treeMaxStage: '🌳 ¡Un magnífico gran árbol!',
+    treeStage4: '🌲 ¡Un hermoso árbol maduro!',
+    treeStage3: '🌿 ¡Creciendo en un arbolito fuerte!',
+    treeStage2: '🌱 ¡Un brote joven alcanzando la luz!',
+    treeStage1: '🌰 ¡Una pequeña semilla llena de potencial!',
+    treeHappy: '💚 ¡El árbol está floreciendo!',
+    treeSeason: '{emoji} ¡Hermosa {season}!',
+    treeStageUp: '🎉 ¡Evolucionó a {stage}!',
+    treeMissedYou: '¡Tu árbol te extrañó!',
+    treeNeedsWater: '¡El árbol necesita agua!',
+    waterDecayHint: 'El nivel de agua baja -2% por hora',
+    seasonTreeHint: '¡El árbol cambia con las estaciones!',
+    xpToNextStage: '{xp} XP para {stage}',
+    touchReaction1: '✨ *susurro de hojas*',
+    touchReaction2: '🍃 ¡Las hojas bailan!',
+    touchReaction3: '💚 ¡Se siente vivo!',
+    touchReaction4: '🌿 ¡Creciendo más fuerte!',
+    waterReaction1: '💧 *absorbe agua*',
+    waterReaction2: '🌊 ¡Refrescante!',
+    waterReaction3: '💦 ¡Gracias!',
+    waterReaction4: '✨ ¡Creciendo!',
+    waterNotEnough: '🍪 Necesitas {needed} golosinas, tienes {have}',
   },
 
   de: {
@@ -4226,6 +4396,40 @@ export const translations: Record<Language, Translations> = {
     free: 'Kostenlos',
     fullness: 'Sättigung',
     earnTreatsHint: 'Mach Aktivitäten um Leckerlis für deinen Begleiter zu verdienen!',
+
+    // Seasonal Tree System
+    myTree: 'Mein Baum',
+    touch: 'Berühren',
+    water: 'Gießen',
+    waterLevel: 'Wasserstand',
+    growth: 'Wachstum',
+    stage: 'Stufe',
+    treeThirstyCanWater: '💧 Der Baum braucht Wasser...',
+    treeThirstyNoTreats: '🥀 Durstig... Mach Aktivitäten um Leckerlis zu verdienen!',
+    treeStreakLegend: '🌟 {streak} Tage! Der Baum leuchtet!',
+    treeStreakGood: '✨ {streak} Tage! Wächst stark!',
+    treeMaxStage: '🌳 Ein prächtiger großer Baum!',
+    treeStage4: '🌲 Ein schöner ausgewachsener Baum!',
+    treeStage3: '🌿 Wächst zu einem starken Bäumchen!',
+    treeStage2: '🌱 Ein junger Spross der nach Licht greift!',
+    treeStage1: '🌰 Ein kleiner Samen voller Potenzial!',
+    treeHappy: '💚 Der Baum gedeiht!',
+    treeSeason: '{emoji} Schöner {season}!',
+    treeStageUp: '🎉 Entwickelt zu {stage}!',
+    treeMissedYou: 'Dein Baum hat dich vermisst!',
+    treeNeedsWater: 'Der Baum braucht Wasser!',
+    waterDecayHint: 'Wasserstand sinkt -2% pro Stunde',
+    seasonTreeHint: 'Der Baum verändert sich mit den Jahreszeiten!',
+    xpToNextStage: '{xp} XP bis {stage}',
+    touchReaction1: '✨ *Blätter rascheln*',
+    touchReaction2: '🍃 Die Blätter tanzen!',
+    touchReaction3: '💚 Fühlt sich lebendig an!',
+    touchReaction4: '🌿 Werde stärker!',
+    waterReaction1: '💧 *nimmt Wasser auf*',
+    waterReaction2: '🌊 Erfrischend!',
+    waterReaction3: '💦 Danke!',
+    waterReaction4: '✨ Wachse!',
+    waterNotEnough: '🍪 Brauche {needed} Leckerlis, habe {have}',
   },
 
   fr: {
@@ -4922,6 +5126,40 @@ export const translations: Record<Language, Translations> = {
     free: 'Gratuit',
     fullness: 'Satiété',
     earnTreatsHint: 'Fais des activités pour gagner des friandises pour ton compagnon!',
+
+    // Seasonal Tree System
+    myTree: 'Mon Arbre',
+    touch: 'Toucher',
+    water: 'Arroser',
+    waterLevel: 'Niveau d\'eau',
+    growth: 'Croissance',
+    stage: 'Stade',
+    treeThirstyCanWater: '💧 L\'arbre a besoin d\'eau...',
+    treeThirstyNoTreats: '🥀 Assoiffé... Fais des activités pour gagner des friandises!',
+    treeStreakLegend: '🌟 {streak} jours! L\'arbre brille!',
+    treeStreakGood: '✨ {streak} jours! Pousse fort!',
+    treeMaxStage: '🌳 Un magnifique grand arbre!',
+    treeStage4: '🌲 Un bel arbre mature!',
+    treeStage3: '🌿 Grandit en un solide arbuste!',
+    treeStage2: '🌱 Une jeune pousse qui tend vers la lumière!',
+    treeStage1: '🌰 Une petite graine pleine de potentiel!',
+    treeHappy: '💚 L\'arbre s\'épanouit!',
+    treeSeason: '{emoji} Belle {season}!',
+    treeStageUp: '🎉 Évolué en {stage}!',
+    treeMissedYou: 'Ton arbre t\'a manqué!',
+    treeNeedsWater: 'L\'arbre a besoin d\'eau!',
+    waterDecayHint: 'Le niveau d\'eau baisse de -2% par heure',
+    seasonTreeHint: 'L\'arbre change avec les saisons!',
+    xpToNextStage: '{xp} XP jusqu\'à {stage}',
+    touchReaction1: '✨ *bruissement de feuilles*',
+    touchReaction2: '🍃 Les feuilles dansent!',
+    touchReaction3: '💚 Je me sens vivant!',
+    touchReaction4: '🌿 Je deviens plus fort!',
+    waterReaction1: '💧 *absorbe l\'eau*',
+    waterReaction2: '🌊 Rafraîchissant!',
+    waterReaction3: '💦 Merci!',
+    waterReaction4: '✨ Je grandis!',
+    waterNotEnough: '🍪 Il faut {needed} friandises, tu en as {have}',
   },
 };
 

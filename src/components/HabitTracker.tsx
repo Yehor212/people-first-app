@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { habitTemplates } from '@/lib/habitTemplates';
 import { HabitCompletion, AllHabitsComplete } from './Celebrations';
 import { HabitCompletionCelebration, DailyProgressBar, AnimatedHabitButton } from './HabitCompletionCelebration';
+import { SwipeableHabit } from './SwipeableHabit';
 
 const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿', '🚭', '🍷', '🇬🇧', '💪', '🧠'];
 const habitColors = [
@@ -574,22 +575,31 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
                       </div>
                     </div>
                   ) : (
-                    <button
-                      onClick={() => handleHabitToggle(habit)}
-                      className={cn(
-                        "btn-press w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all",
-                        completed
-                          ? `${habit.color} text-primary-foreground zen-shadow-soft scale-100`
-                          : "bg-background hover:scale-105 active:scale-95",
-                        animatingHabitId === habit.id && "animate-success-pulse"
-                      )}
+                    // Daily/Scheduled habits: Swipe to complete
+                    <SwipeableHabit
+                      onComplete={() => handleHabitToggle(habit)}
+                      disabled={false}
+                      completed={completed}
+                      habitColor={habit.color}
+                      habitIcon={habit.icon}
+                      className="w-14 h-14"
                     >
-                      {completed ? (
-                        <Check className={cn("w-6 h-6", animatingHabitId === habit.id && "animate-bounce-check")} />
-                      ) : (
-                        habit.icon
-                      )}
-                    </button>
+                      <div
+                        className={cn(
+                          "w-14 h-14 rounded-xl flex items-center justify-center text-2xl transition-all",
+                          completed
+                            ? `${habit.color} text-primary-foreground zen-shadow-soft`
+                            : "bg-background",
+                          animatingHabitId === habit.id && "animate-success-pulse"
+                        )}
+                      >
+                        {completed ? (
+                          <Check className={cn("w-6 h-6", animatingHabitId === habit.id && "animate-bounce-check")} />
+                        ) : (
+                          <span className="select-none">{habit.icon}</span>
+                        )}
+                      </div>
+                    </SwipeableHabit>
                   )}
                   <div className="flex-1 min-w-0">
                     <p className={cn(

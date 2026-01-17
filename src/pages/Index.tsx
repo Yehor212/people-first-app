@@ -56,6 +56,7 @@ import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
 import { InnerWorldGarden } from '@/components/InnerWorldGarden';
 import { CompanionPanel } from '@/components/CompanionPanel';
+import { TreePanel } from '@/components/TreePanel';
 import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
@@ -131,10 +132,22 @@ export function Index() {
     earnTreats,
     treatsBalance,
     FEED_COST,
+    // Tree system
+    waterTree,
+    touchTree,
+    WATER_COST,
+    treeStage,
+    treeWaterLevel,
+    treeXP,
   } = useInnerWorld();
 
   // Companion panel state
   const [showCompanionPanel, setShowCompanionPanel] = useState(false);
+  // Tree panel state
+  const [showTreePanel, setShowTreePanel] = useState(false);
+
+  // Guard against double habit toggles (prevents duplicate rewards)
+  const processingHabitsRef = useRef<Set<string>>(new Set());
 
   // Current focus minutes (real-time)
   const [currentFocusMinutes, setCurrentFocusMinutes] = useState<number | undefined>(undefined);
@@ -375,6 +388,18 @@ export function Index() {
   };
 
   const handleToggleHabit = (habitId: string, date: string) => {
+    // Guard against rapid double-clicks (prevents duplicate rewards)
+    const processingKey = `${habitId}-${date}`;
+    if (processingHabitsRef.current.has(processingKey)) {
+      return; // Already processing this habit
+    }
+    processingHabitsRef.current.add(processingKey);
+
+    // Clear processing flag after a short delay
+    setTimeout(() => {
+      processingHabitsRef.current.delete(processingKey);
+    }, 500);
+
     setHabits(prev => prev.map(habit => {
       if (habit.id !== habitId) return habit;
 
@@ -1060,7 +1085,7 @@ export function Index() {
               world={innerWorld}
               onCompanionClick={() => {
                 clearWelcomeBack();
-                setShowCompanionPanel(true);
+                setShowTreePanel(true);
               }}
               onPlantClick={(plant) => {
                 console.log('Plant clicked:', plant);
@@ -1191,7 +1216,7 @@ export function Index() {
         <TimeHelper onClose={() => setShowTimeHelper(false)} />
       )}
 
-      {/* Companion Panel Modal */}
+      {/* Companion Panel Modal (legacy - kept for reference) */}
       <CompanionPanel
         companion={innerWorld.companion}
         isOpen={showCompanionPanel}
@@ -1207,6 +1232,22 @@ export function Index() {
         hasHabitsToday={habits.length > 0 && habits.every(h => h.completedDates?.includes(currentDate))}
         hasFocusToday={hasFocusToday}
         hasGratitudeToday={hasGratitudeToday}
+      />
+
+      {/* Seasonal Tree Panel Modal */}
+      <TreePanel
+        treeStage={treeStage}
+        waterLevel={treeWaterLevel}
+        treeXP={treeXP}
+        treeName={innerWorld.companion.name}
+        isOpen={showTreePanel}
+        onClose={() => setShowTreePanel(false)}
+        onRename={renameCompanion}
+        onTouch={touchTree}
+        onWater={waterTree}
+        treatsBalance={treatsBalance}
+        waterCost={WATER_COST}
+        streak={innerWorld.currentActiveStreak}
       />
     </div>
   );

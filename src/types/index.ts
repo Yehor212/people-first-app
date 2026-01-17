@@ -221,7 +221,11 @@ export interface GardenCreature {
 export type CompanionMood = 'sleeping' | 'calm' | 'happy' | 'excited' | 'celebrating' | 'supportive';
 export type CompanionType = 'fox' | 'cat' | 'owl' | 'rabbit' | 'dragon';
 
+// Tree stages for the new Seasonal Tree system
+export type TreeStage = 1 | 2 | 3 | 4 | 5; // Seed, Sprout, Sapling, Tree, Great Tree
+
 export interface Companion {
+  // Legacy animal type (kept for backward compatibility)
   type: CompanionType;
   name: string;
   mood: CompanionMood;
@@ -233,6 +237,12 @@ export interface Companion {
   lastPetTime?: number;             // Track when companion was last petted
   lastFeedTime?: number;            // Track when companion was last fed
   interactionCount: number;         // Total interactions
+
+  // NEW: Seasonal Tree System
+  treeStage: TreeStage;             // 1-5: growth stage of the tree
+  waterLevel: number;               // 0-100: needs watering
+  lastWateredAt?: number;           // Timestamp of last watering
+  treeXP: number;                   // XP specifically for tree growth
 
   // Simplified stats (new system)
   fullness: number;                 // 0-100: how full the companion is (fed by treats)

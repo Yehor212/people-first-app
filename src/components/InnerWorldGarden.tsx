@@ -17,6 +17,8 @@ import {
   GardenStage,
 } from '@/types';
 import { COMPANION_EMOJIS, PLANT_EMOJIS, CREATURE_EMOJIS } from '@/lib/innerWorldConstants';
+import { SeasonalTree } from './SeasonalTree';
+import { getTreeStageName, getSeasonEmoji } from '@/lib/seasonHelper';
 
 interface InnerWorldGardenProps {
   world: InnerWorld;
@@ -246,98 +248,65 @@ function Creature({ creature, onClick }: { creature: GardenCreature; onClick?: (
   );
 }
 
-function Companion({
+function GardenTree({
   world,
-  onClick
+  onClick,
+  language,
 }: {
   world: InnerWorld;
   onClick?: () => void;
+  language: string;
 }) {
-  const emoji = COMPANION_EMOJIS[world.companion.type];
-  const { mood, level, name } = world.companion;
-
-  const moodAnimation = useMemo(() => {
-    switch (mood) {
-      case 'sleeping':
-        return { rotate: [0, 5, 0], scale: [1, 1.02, 1] };
-      case 'calm':
-        return { y: [0, -3, 0] };
-      case 'happy':
-        return { y: [0, -8, 0], rotate: [-3, 3, -3] };
-      case 'excited':
-        return { y: [0, -12, 0], rotate: [-5, 5, -5], scale: [1, 1.1, 1] };
-      case 'celebrating':
-        return { y: [0, -15, 0], rotate: [-10, 10, -10], scale: [1, 1.15, 1] };
-      case 'supportive':
-        return { y: [0, -5, 0], scale: [1, 1.05, 1] };
-      default:
-        return { y: [0, -3, 0] };
-    }
-  }, [mood]);
+  const { companion } = world;
+  const treeStage = companion.treeStage || 1;
+  const waterLevel = companion.waterLevel || 50;
+  const stageName = getTreeStageName(treeStage, language);
 
   return (
     <motion.div
-      className="absolute bottom-[15%] left-1/2 -translate-x-1/2 cursor-pointer z-20"
-      whileHover={{ scale: 1.15 }}
+      className="absolute bottom-[10%] left-1/2 -translate-x-1/2 cursor-pointer z-20"
+      whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       onClick={onClick}
     >
-      <motion.div
-        className="flex flex-col items-center"
-        animate={moodAnimation}
-        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        {/* Companion emoji */}
-        <span className="text-6xl drop-shadow-lg">{emoji}</span>
+      <div className="flex flex-col items-center">
+        {/* Seasonal Tree */}
+        <SeasonalTree
+          stage={treeStage}
+          waterLevel={waterLevel}
+          xp={companion.treeXP || 0}
+          season={world.season}
+          size="md"
+          className="drop-shadow-xl"
+        />
 
-        {/* Mood indicator */}
-        {mood === 'sleeping' && (
-          <motion.span
-            className="absolute -top-2 -right-2 text-2xl"
-            animate={{ opacity: [0.5, 1, 0.5], y: [0, -5, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            💤
-          </motion.span>
-        )}
-        {mood === 'celebrating' && (
-          <>
-            <motion.span
-              className="absolute -top-4 -left-4 text-xl"
-              animate={{ rotate: [0, 20, 0], scale: [1, 1.2, 1] }}
-              transition={{ duration: 0.5, repeat: Infinity }}
-            >
-              🎉
-            </motion.span>
-            <motion.span
-              className="absolute -top-4 -right-4 text-xl"
-              animate={{ rotate: [0, -20, 0], scale: [1, 1.2, 1] }}
-              transition={{ duration: 0.5, repeat: Infinity, delay: 0.25 }}
-            >
-              🎊
-            </motion.span>
-          </>
-        )}
-        {mood === 'supportive' && (
-          <motion.span
-            className="absolute -top-2 right-0 text-xl"
-            animate={{ scale: [1, 1.2, 1] }}
-            transition={{ duration: 1, repeat: Infinity }}
-          >
-            💝
-          </motion.span>
-        )}
-
-        {/* Name and level badge */}
+        {/* Stage name badge */}
         <div className="mt-1 flex flex-col items-center">
           <span className="text-xs font-medium text-white/90 drop-shadow-md">
-            {name}
+            {stageName}
           </span>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white/80">
-            Lv.{level}
-          </span>
+          {waterLevel < 30 && (
+            <motion.span
+              className="text-[10px] px-2 py-0.5 rounded-full bg-orange-500/30 backdrop-blur-sm text-orange-200"
+              animate={{ opacity: [0.7, 1, 0.7] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              💧 {waterLevel}%
+            </motion.span>
+          )}
         </div>
-      </motion.div>
+
+        {/* Low water indicator */}
+        {waterLevel < 30 && (
+          <motion.span
+            className="absolute -top-2 -right-2 text-xl"
+            animate={{ y: [0, -5, 0], opacity: [0.7, 1, 0.7] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          >
+            💧
+          </motion.span>
+        )}
+      </div>
     </motion.div>
   );
 }
@@ -353,7 +322,7 @@ export function InnerWorldGarden({
   onCreatureClick,
   compact = false,
 }: InnerWorldGardenProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [particles, setParticles] = useState<Array<{ id: number; emoji: string; delay: number }>>([]);
 
   const seasonTheme = SEASON_THEMES[world.season];
@@ -468,10 +437,11 @@ export function InnerWorldGarden({
         ))}
       </AnimatePresence>
 
-      {/* Companion */}
-      <Companion
+      {/* Seasonal Tree (replaces emoji companion) */}
+      <GardenTree
         world={world}
         onClick={onCompanionClick}
+        language={language}
       />
 
       {/* Welcome back overlay */}
@@ -489,15 +459,20 @@ export function InnerWorldGarden({
               animate={{ scale: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <motion.span
-                className="text-7xl block mb-4"
-                animate={{ y: [0, -10, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
+              <motion.div
+                className="mb-4 flex justify-center"
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
               >
-                {COMPANION_EMOJIS[world.companion.type]}
-              </motion.span>
+                <SeasonalTree
+                  stage={world.companion.treeStage || 1}
+                  waterLevel={world.companion.waterLevel || 50}
+                  season={world.season}
+                  size="md"
+                />
+              </motion.div>
               <p className="text-white text-lg font-medium mb-1">
-                {world.companion.name} {t.missedYou || 'missed you!'}
+                {getSeasonEmoji(world.season)} {t.treeMissedYou || 'Your tree missed you!'}
               </p>
               <p className="text-white/70 text-sm">
                 {t.welcomeBack || 'Welcome back to your garden'}

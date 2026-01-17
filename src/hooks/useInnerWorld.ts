@@ -25,7 +25,9 @@ import {
   TreatsWallet,
   TreatSource,
   TreatTransaction,
+  TreeStage,
 } from '@/types';
+import { getTreeStageFromXP, TREE_STAGE_XP } from '@/lib/seasonHelper';
 import {
   GROWTH_THRESHOLDS,
   CREATURE_THRESHOLDS,
@@ -66,6 +68,11 @@ const createDefaultCompanion = (): Companion => ({
     wisdom: 50,
     warmth: 70,
   },
+  // NEW: Seasonal Tree System
+  treeStage: 1 as TreeStage,    // Start as seed
+  waterLevel: 70,               // Start with some water
+  lastWateredAt: Date.now(),    // Just watered
+  treeXP: 0,                    // No XP yet
 });
 
 const createDefaultTreatsWallet = (): TreatsWallet => ({
@@ -226,6 +233,40 @@ export function useInnerWorld() {
       }
     }
   }, [isLoading, world.lastActiveDate]);
+
+  // Water decay effect - reduces water level over time
+  useEffect(() => {
+    if (isLoading) return;
+
+    const DECAY_INTERVAL_MS = 60 * 60 * 1000; // Check every hour
+    const DECAY_RATE = 2; // -2% per hour
+
+    const checkWaterDecay = () => {
+      const lastWateredAt = world.companion.lastWateredAt || Date.now();
+      const hoursSinceWatered = (Date.now() - lastWateredAt) / (1000 * 60 * 60);
+      const expectedDecay = Math.floor(hoursSinceWatered) * DECAY_RATE;
+      const expectedWaterLevel = Math.max(0, 100 - expectedDecay);
+
+      // Only update if water level needs adjustment
+      if (world.companion.waterLevel > expectedWaterLevel) {
+        setWorld({
+          ...world,
+          companion: {
+            ...world.companion,
+            waterLevel: expectedWaterLevel,
+          },
+        });
+      }
+    };
+
+    // Check immediately on load
+    checkWaterDecay();
+
+    // Set up interval for periodic checks
+    const interval = setInterval(checkWaterDecay, DECAY_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [isLoading, world.companion.lastWateredAt]);
 
   // Plant a new plant from an activity
   const plantSeed = useCallback((
@@ -590,6 +631,129 @@ export function useInnerWorld() {
     };
   }, [world, setWorld]);
 
+  // ============================================
+  // SEASONAL TREE INTERACTIONS
+  // ============================================
+
+  // Tree costs
+  const TREE_COSTS = {
+    water: {
+      treatCost: 10,      // 10 treats to water
+      waterGain: 30,      // +30 water level
+      xpGain: 50,         // +50 XP towards tree growth
+    },
+    touch: {
+      xpGain: 10,         // Free +10 XP
+      cooldownMs: 60000,  // 1 minute cooldown for full effect
+    },
+  };
+
+  // Water the tree - COSTS TREATS, increases water level and XP
+  const waterTree = useCallback(() => {
+    const now = Date.now();
+    const treatCost = TREE_COSTS.water.treatCost;
+    const currentBalance = world.treats?.balance || 0;
+
+    // Check if enough treats
+    if (currentBalance < treatCost) {
+      return {
+        success: false,
+        reason: 'not_enough_treats',
+        needed: treatCost,
+        have: currentBalance,
+        waterGain: 0,
+        xpGain: 0,
+      };
+    }
+
+    const waterGain = TREE_COSTS.water.waterGain;
+    const xpGain = TREE_COSTS.water.xpGain;
+
+    // Update water level and XP
+    const newWaterLevel = Math.min(100, (world.companion.waterLevel || 0) + waterGain);
+    const newTreeXP = (world.companion.treeXP || 0) + xpGain;
+    const newTreeStage = getTreeStageFromXP(newTreeXP);
+
+    // Deduct treats
+    const transaction: TreatTransaction = {
+      id: generateId(),
+      amount: -treatCost,
+      source: 'mood',
+      timestamp: now,
+      description: 'Water tree',
+    };
+    const transactions = [transaction, ...(world.treats?.transactions || [])].slice(0, 50);
+
+    const stageUp = newTreeStage > (world.companion.treeStage || 1);
+
+    setWorld({
+      ...world,
+      treats: {
+        ...world.treats!,
+        balance: currentBalance - treatCost,
+        lifetimeSpent: (world.treats?.lifetimeSpent || 0) + treatCost,
+        transactions,
+      },
+      companion: {
+        ...world.companion,
+        waterLevel: newWaterLevel,
+        treeXP: newTreeXP,
+        treeStage: newTreeStage,
+        lastWateredAt: now,
+        lastInteraction: now,
+        interactionCount: (world.companion.interactionCount || 0) + 1,
+      },
+    });
+
+    return {
+      success: true,
+      waterGain,
+      xpGain,
+      treatCost,
+      newBalance: currentBalance - treatCost,
+      newWaterLevel,
+      newTreeXP,
+      stageUp,
+      newStage: newTreeStage,
+    };
+  }, [world, setWorld]);
+
+  // Touch the tree - FREE action, small XP gain
+  const touchTree = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastTouch = world.companion.lastPetTime
+      ? now - world.companion.lastPetTime
+      : Infinity;
+
+    // Cooldown for full effect (1 minute)
+    const canTouchAgain = timeSinceLastTouch > TREE_COSTS.touch.cooldownMs;
+    const xpGain = canTouchAgain ? TREE_COSTS.touch.xpGain : 2;
+
+    const newTreeXP = (world.companion.treeXP || 0) + xpGain;
+    const newTreeStage = getTreeStageFromXP(newTreeXP);
+    const stageUp = newTreeStage > (world.companion.treeStage || 1);
+
+    setWorld({
+      ...world,
+      companion: {
+        ...world.companion,
+        treeXP: newTreeXP,
+        treeStage: newTreeStage,
+        lastPetTime: now,
+        lastInteraction: now,
+        interactionCount: (world.companion.interactionCount || 0) + 1,
+      },
+    });
+
+    return {
+      xpGain,
+      canTouchAgain,
+      stageUp,
+      newStage: newTreeStage,
+      newTreeXP,
+    };
+  }, [world, setWorld]);
+
   // Talk to companion - get advice and increase wisdom
   const talkToCompanion = useCallback(() => {
     const now = Date.now();
@@ -707,6 +871,10 @@ export function useInnerWorld() {
     talkToCompanion,
     updateCompanionFromActivity,
 
+    // Seasonal Tree interactions
+    waterTree,
+    touchTree,
+
     // Stats
     gardenStats,
 
@@ -717,5 +885,11 @@ export function useInnerWorld() {
 
     // Constants for UI
     FEED_COST: COMPANION_COSTS.feed.treatCost,
+    WATER_COST: 10, // Cost to water tree
+
+    // Tree data helpers
+    treeStage: world.companion.treeStage || 1,
+    treeWaterLevel: world.companion.waterLevel || 0,
+    treeXP: world.companion.treeXP || 0,
   };
 }
