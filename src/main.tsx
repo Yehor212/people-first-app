@@ -6,30 +6,31 @@ import { setupAudioUnlock } from "./lib/ambientSounds";
 // Setup audio unlock for iOS - attaches to first user interaction
 setupAudioUnlock();
 
-// Unregister any existing service workers and clear caches (fixes white screen on Capacitor after PWA was disabled)
-try {
-  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator && navigator.serviceWorker) {
-    navigator.serviceWorker.getRegistrations().then((registrations) => {
-      registrations.forEach((registration) => registration.unregister());
-    }).catch(() => {});
-  }
-} catch (e) {
-  // Ignore errors in environments where serviceWorker is not available
-}
+// Only unregister service workers on Capacitor (native apps don't need PWA)
+// Web PWA keeps SW for offline support
+const isCapacitor = typeof window !== 'undefined' &&
+  (window as { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor?.isNativePlatform?.();
 
-// Clear workbox/PWA caches
-try {
-  if (typeof window !== 'undefined' && 'caches' in window && window.caches) {
-    window.caches.keys().then((names) => {
-      names.forEach((name) => {
-        if (name.includes('workbox') || name.includes('precache') || name.includes('runtime')) {
-          window.caches.delete(name);
-        }
-      });
-    }).catch(() => {});
+if (isCapacitor) {
+  try {
+    if ('serviceWorker' in navigator && navigator.serviceWorker) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => registration.unregister());
+      }).catch(() => {});
+    }
+    // Clear workbox/PWA caches on Capacitor only
+    if ('caches' in window && window.caches) {
+      window.caches.keys().then((names) => {
+        names.forEach((name) => {
+          if (name.includes('workbox') || name.includes('precache') || name.includes('runtime')) {
+            window.caches.delete(name);
+          }
+        });
+      }).catch(() => {});
+    }
+  } catch (e) {
+    // Ignore errors
   }
-} catch (e) {
-  // Ignore errors in environments where caches is not available
 }
 
 createRoot(document.getElementById("root")!).render(<App />);

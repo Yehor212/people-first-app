@@ -387,6 +387,16 @@ export interface Translations {
   privacyAnalyticsHint: string;
   privacyPolicy: string;
   termsOfService: string;
+
+  // GDPR Consent
+  consentTitle: string;
+  consentDescription: string;
+  consentAnalyticsTitle: string;
+  consentAnalyticsDesc: string;
+  consentAccept: string;
+  consentDecline: string;
+  consentFooter: string;
+
   areYouSure: string;
   cannotBeUndone: string;
   delete: string;
@@ -1046,6 +1056,16 @@ export const translations: Record<Language, Translations> = {
     privacyAnalyticsHint: 'Помогает улучшать приложение. Можно отключить.',
     privacyPolicy: 'Политика конфиденциальности',
     termsOfService: 'Условия использования',
+
+    // GDPR Consent
+    consentTitle: 'Настройки приватности',
+    consentDescription: 'Мы уважаем вашу приватность. Разрешить анонимную аналитику для улучшения приложения?',
+    consentAnalyticsTitle: 'Анонимная аналитика',
+    consentAnalyticsDesc: 'Только паттерны использования. Без личных данных. Можно изменить в настройках.',
+    consentAccept: 'Разрешить',
+    consentDecline: 'Нет, спасибо',
+    consentFooter: 'Можно изменить в любое время в Настройки > Приватность',
+
     installApp: 'Установить приложение',
     installAppDescription: 'Установите ZenFlow для быстрого запуска и офлайн-доступа.',
     installBannerTitle: 'Установите ZenFlow',
@@ -1783,6 +1803,16 @@ export const translations: Record<Language, Translations> = {
     privacyAnalyticsHint: 'Helps improve the app. You can turn it off.',
     privacyPolicy: 'Privacy policy',
     termsOfService: 'Terms of service',
+
+    // GDPR Consent
+    consentTitle: 'Privacy Settings',
+    consentDescription: 'We respect your privacy. Help us improve the app by allowing anonymous analytics?',
+    consentAnalyticsTitle: 'Anonymous Analytics',
+    consentAnalyticsDesc: 'Usage patterns only. No personal data. You can change this anytime in Settings.',
+    consentAccept: 'Allow',
+    consentDecline: 'No thanks',
+    consentFooter: 'You can change this anytime in Settings > Privacy',
+
     installApp: 'Install app',
     installAppDescription: 'Install ZenFlow for faster launch and offline access.',
     installBannerTitle: 'Install ZenFlow',
@@ -2520,6 +2550,16 @@ export const translations: Record<Language, Translations> = {
     privacyAnalyticsHint: 'Допомагає покращувати додаток. Можна вимкнути.',
     privacyPolicy: 'Політика конфіденційності',
     termsOfService: 'Умови користування',
+
+    // GDPR Consent
+    consentTitle: 'Налаштування приватності',
+    consentDescription: 'Ми поважаємо вашу приватність. Дозволити анонімну аналітику для покращення додатку?',
+    consentAnalyticsTitle: 'Анонімна аналітика',
+    consentAnalyticsDesc: 'Лише патерни використання. Без особистих даних. Можна змінити в налаштуваннях.',
+    consentAccept: 'Дозволити',
+    consentDecline: 'Ні, дякую',
+    consentFooter: 'Можна змінити в будь-який час в Налаштування > Приватність',
+
     installApp: 'Встановити додаток',
     installAppDescription: 'Встановіть ZenFlow для швидшого запуску та офлайн-доступу.',
     installBannerTitle: 'Встановити ZenFlow',
@@ -3258,15 +3298,25 @@ export const translations: Record<Language, Translations> = {
     privacyAnalyticsHint: 'Ayuda a mejorar la app. Puedes desactivarlo.',
     privacyPolicy: 'Politica de privacidad',
     termsOfService: 'Terminos del servicio',
-    installApp: 'Install app',
-    installAppDescription: 'Install ZenFlow for faster launch and offline access.',
-    installBannerTitle: 'Install ZenFlow',
-    installBannerBody: 'Get faster launch and offline access by installing the app.',
-    installNow: 'Install',
-    installLater: 'Later',
-    appInstalled: 'App installed',
-    appInstalledDescription: 'ZenFlow is installed on your device.',
-    remindersTitle: 'Reminders',
+
+    // GDPR Consent
+    consentTitle: 'Configuración de privacidad',
+    consentDescription: 'Respetamos tu privacidad. ¿Permitir análisis anónimos para mejorar la app?',
+    consentAnalyticsTitle: 'Análisis anónimos',
+    consentAnalyticsDesc: 'Solo patrones de uso. Sin datos personales. Puedes cambiarlo en Ajustes.',
+    consentAccept: 'Permitir',
+    consentDecline: 'No, gracias',
+    consentFooter: 'Puedes cambiarlo en cualquier momento en Ajustes > Privacidad',
+
+    installApp: 'Instalar app',
+    installAppDescription: 'Instala ZenFlow para un inicio más rápido y acceso sin conexión.',
+    installBannerTitle: 'Instalar ZenFlow',
+    installBannerBody: 'Obtén un inicio más rápido y acceso sin conexión instalando la app.',
+    installNow: 'Instalar',
+    installLater: 'Más tarde',
+    appInstalled: 'App instalada',
+    appInstalledDescription: 'ZenFlow está instalado en tu dispositivo.',
+    remindersTitle: 'Recordatorios',
     remindersDescription: 'Gentle reminders to keep you on track.',
     moodReminder: 'Mood check-in time',
     habitReminder: 'Habit reminder time',
@@ -3996,15 +4046,25 @@ export const translations: Record<Language, Translations> = {
     privacyAnalyticsHint: 'Hilft, die App zu verbessern. Du kannst es deaktivieren.',
     privacyPolicy: 'Datenschutzerklaerung',
     termsOfService: 'Nutzungsbedingungen',
-    installApp: 'Install app',
-    installAppDescription: 'Install ZenFlow for faster launch and offline access.',
-    installBannerTitle: 'Install ZenFlow',
-    installBannerBody: 'Get faster launch and offline access by installing the app.',
-    installNow: 'Install',
-    installLater: 'Later',
-    appInstalled: 'App installed',
-    appInstalledDescription: 'ZenFlow is installed on your device.',
-    remindersTitle: 'Reminders',
+
+    // GDPR Consent
+    consentTitle: 'Datenschutzeinstellungen',
+    consentDescription: 'Wir respektieren deine Privatsphäre. Anonyme Analysen erlauben, um die App zu verbessern?',
+    consentAnalyticsTitle: 'Anonyme Analysen',
+    consentAnalyticsDesc: 'Nur Nutzungsmuster. Keine persönlichen Daten. Du kannst dies jederzeit in den Einstellungen ändern.',
+    consentAccept: 'Erlauben',
+    consentDecline: 'Nein danke',
+    consentFooter: 'Du kannst dies jederzeit unter Einstellungen > Datenschutz ändern',
+
+    installApp: 'App installieren',
+    installAppDescription: 'Installiere ZenFlow für schnelleren Start und Offline-Zugriff.',
+    installBannerTitle: 'ZenFlow installieren',
+    installBannerBody: 'Schnellerer Start und Offline-Zugriff durch Installation der App.',
+    installNow: 'Installieren',
+    installLater: 'Später',
+    appInstalled: 'App installiert',
+    appInstalledDescription: 'ZenFlow ist auf deinem Gerät installiert.',
+    remindersTitle: 'Erinnerungen',
     remindersDescription: 'Gentle reminders to keep you on track.',
     moodReminder: 'Mood check-in time',
     habitReminder: 'Habit reminder time',
@@ -4734,15 +4794,25 @@ export const translations: Record<Language, Translations> = {
     privacyAnalyticsHint: 'Aide a ameliorer l\'app. Vous pouvez le desactiver.',
     privacyPolicy: 'Politique de confidentialite',
     termsOfService: 'Conditions d\'utilisation',
-    installApp: 'Install app',
-    installAppDescription: 'Install ZenFlow for faster launch and offline access.',
-    installBannerTitle: 'Install ZenFlow',
-    installBannerBody: 'Get faster launch and offline access by installing the app.',
-    installNow: 'Install',
-    installLater: 'Later',
-    appInstalled: 'App installed',
-    appInstalledDescription: 'ZenFlow is installed on your device.',
-    remindersTitle: 'Reminders',
+
+    // GDPR Consent
+    consentTitle: 'Paramètres de confidentialité',
+    consentDescription: 'Nous respectons votre vie privée. Autoriser les analyses anonymes pour améliorer l\'app ?',
+    consentAnalyticsTitle: 'Analyses anonymes',
+    consentAnalyticsDesc: 'Uniquement les habitudes d\'utilisation. Pas de données personnelles. Modifiable dans les paramètres.',
+    consentAccept: 'Autoriser',
+    consentDecline: 'Non merci',
+    consentFooter: 'Vous pouvez modifier cela à tout moment dans Paramètres > Confidentialité',
+
+    installApp: 'Installer l\'app',
+    installAppDescription: 'Installez ZenFlow pour un lancement plus rapide et un accès hors ligne.',
+    installBannerTitle: 'Installer ZenFlow',
+    installBannerBody: 'Obtenez un lancement plus rapide et un accès hors ligne en installant l\'app.',
+    installNow: 'Installer',
+    installLater: 'Plus tard',
+    appInstalled: 'App installée',
+    appInstalledDescription: 'ZenFlow est installé sur votre appareil.',
+    remindersTitle: 'Rappels',
     remindersDescription: 'Gentle reminders to keep you on track.',
     moodReminder: 'Mood check-in time',
     habitReminder: 'Habit reminder time',

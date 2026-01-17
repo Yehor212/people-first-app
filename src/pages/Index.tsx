@@ -60,6 +60,7 @@ import { TreePanel } from '@/components/TreePanel';
 import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
 import { RestModeCard } from '@/components/RestModeCard';
+import { ConsentBanner } from '@/components/ConsentBanner';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { haptics } from '@/lib/haptics';
 
@@ -250,12 +251,23 @@ export function Index() {
     idField: 'key'
   });
 
+  // GDPR: analytics OFF by default (opt-in, not opt-out)
   const [privacy, setPrivacy, isLoadingPrivacy] = useIndexedDB<PrivacySettings>({
     table: db.settings,
     localStorageKey: 'zenflow-privacy',
-    initialValue: { noTracking: false, analytics: true },
+    initialValue: { noTracking: false, analytics: false, consentShown: false },
     idField: 'key'
   });
+
+  // GDPR consent handler
+  const handleConsentResponse = (analyticsAllowed: boolean) => {
+    setPrivacy({
+      ...privacy,
+      analytics: analyticsAllowed,
+      noTracking: !analyticsAllowed,
+      consentShown: true,
+    });
+  };
 
   const [authGateComplete, setAuthGateComplete, isLoadingAuthGate] = useIndexedDB({
     table: db.settings,
@@ -1032,6 +1044,11 @@ export function Index() {
     <div className="min-h-screen zen-gradient-hero">
       {/* Dynamic mood-based background overlay */}
       <MoodBackgroundOverlay />
+
+      {/* GDPR Consent Banner - shows once after onboarding */}
+      {!privacy.consentShown && onboardingComplete && (
+        <ConsentBanner onConsent={handleConsentResponse} />
+      )}
 
       <div className="max-w-lg mx-auto px-4 py-6 pb-28">
         {/* Global Schedule Bar - visible on all tabs when events exist */}

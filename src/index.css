@@ -1924,3 +1924,73 @@ body.mood-bad .mood-particle {
 .animate-energy-glow {
   animation: energy-glow 2s ease-in-out infinite;
 }
+
+/* =============================================
+   Reduced Motion Support (Accessibility)
+   Respects user's system preference for reduced motion
+   ============================================= */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Disable specific animated classes */
+  .animate-float,
+  .animate-pulse-soft,
+  .animate-fade-in,
+  .animate-slide-up,
+  .animate-scale-in,
+  .animate-bounce-gentle,
+  .animate-press,
+  .animate-ripple,
+  .animate-pulse-subtle,
+  .animate-glow-pulse,
+  .animate-bounce-fire,
+  .animate-sparkle,
+  .animate-confetti,
+  .animate-bounce-check,
+  .animate-checkmark-draw,
+  .animate-success-pulse,
+  .animate-ring-fill,
+  .animate-energy-glow {
+    animation: none !important;
+  }
+
+  /* Disable emoji mood animations */
+  .mood-emoji-great,
+  .mood-emoji-good,
+  .mood-emoji-okay,
+  .mood-emoji-bad,
+  .mood-emoji-terrible,
+  .mood-emoji-great-active,
+  .mood-emoji-good-active,
+  .mood-emoji-okay-active,
+  .mood-emoji-bad-active,
+  .mood-emoji-terrible-active {
+    animation: none !important;
+  }
+
+  /* Disable Tailwind animate-* classes */
+  [class*="animate-"] {
+    animation: none !important;
+  }
+
+  /* Keep opacity for fade effects but make instant */
+  .animate-fade-in {
+    opacity: 1 !important;
+  }
+
+  .animate-scale-in {
+    transform: scale(1) !important;
+  }
+
+  .animate-slide-up {
+    transform: translateY(0) !important;
+    opacity: 1 !important;
+  }
+}

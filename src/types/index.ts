@@ -100,6 +100,7 @@ export interface ReminderSettings {
 export interface PrivacySettings {
   noTracking: boolean;
   analytics: boolean;
+  consentShown?: boolean; // GDPR: track if user has been asked for consent
 }
 
 export type ChallengeType =
