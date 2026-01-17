@@ -45,6 +45,11 @@ const createDefaultCompanion = (): Companion => ({
   experience: 0,
   unlockedOutfits: ['default'],
   lastInteraction: Date.now(),
+  lastPetTime: undefined,
+  lastFeedTime: undefined,
+  interactionCount: 0,
+  happiness: 50,
+  hunger: 50,
   personality: {
     energy: 50,
     wisdom: 50,
@@ -369,6 +374,163 @@ export function useInnerWorld() {
     });
   }, [world, setWorld]);
 
+  // ============================================
+  // COMPANION INTERACTIONS
+  // ============================================
+
+  // Pet the companion - increases happiness and warmth
+  const petCompanion = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastPet = world.companion.lastPetTime
+      ? now - world.companion.lastPetTime
+      : Infinity;
+
+    // Can pet once every 5 minutes for full effect
+    const canPetAgain = timeSinceLastPet > 5 * 60 * 1000;
+    const happinessGain = canPetAgain ? 15 : 3;
+    const warmthGain = canPetAgain ? 5 : 1;
+    const xpGain = canPetAgain ? 5 : 1;
+
+    const newHappiness = Math.min(100, (world.companion.happiness || 50) + happinessGain);
+    const newWarmth = Math.min(100, world.companion.personality.warmth + warmthGain);
+
+    setWorld({
+      ...world,
+      companion: {
+        ...world.companion,
+        happiness: newHappiness,
+        lastPetTime: now,
+        lastInteraction: now,
+        interactionCount: (world.companion.interactionCount || 0) + 1,
+        experience: world.companion.experience + xpGain,
+        mood: newHappiness >= 80 ? 'excited' : newHappiness >= 50 ? 'happy' : 'calm',
+        personality: {
+          ...world.companion.personality,
+          warmth: newWarmth,
+        },
+      },
+    });
+
+    return { happinessGain, warmthGain, xpGain, canPetAgain };
+  }, [world, setWorld]);
+
+  // Feed the companion - reduces hunger, increases energy
+  const feedCompanion = useCallback(() => {
+    const now = Date.now();
+    const timeSinceLastFeed = world.companion.lastFeedTime
+      ? now - world.companion.lastFeedTime
+      : Infinity;
+
+    // Can feed once every 30 minutes for full effect
+    const canFeedAgain = timeSinceLastFeed > 30 * 60 * 1000;
+    const hungerReduction = canFeedAgain ? 30 : 5;
+    const energyGain = canFeedAgain ? 10 : 2;
+    const xpGain = canFeedAgain ? 10 : 2;
+
+    const newHunger = Math.max(0, (world.companion.hunger || 50) - hungerReduction);
+    const newEnergy = Math.min(100, world.companion.personality.energy + energyGain);
+
+    setWorld({
+      ...world,
+      companion: {
+        ...world.companion,
+        hunger: newHunger,
+        lastFeedTime: now,
+        lastInteraction: now,
+        interactionCount: (world.companion.interactionCount || 0) + 1,
+        experience: world.companion.experience + xpGain,
+        personality: {
+          ...world.companion.personality,
+          energy: newEnergy,
+        },
+      },
+    });
+
+    return { hungerReduction, energyGain, xpGain, canFeedAgain };
+  }, [world, setWorld]);
+
+  // Talk to companion - get advice and increase wisdom
+  const talkToCompanion = useCallback(() => {
+    const now = Date.now();
+    const wisdomGain = 2;
+    const xpGain = 3;
+
+    const newWisdom = Math.min(100, world.companion.personality.wisdom + wisdomGain);
+
+    setWorld({
+      ...world,
+      companion: {
+        ...world.companion,
+        lastInteraction: now,
+        interactionCount: (world.companion.interactionCount || 0) + 1,
+        experience: world.companion.experience + xpGain,
+        personality: {
+          ...world.companion.personality,
+          wisdom: newWisdom,
+        },
+      },
+    });
+
+    return { wisdomGain, xpGain };
+  }, [world, setWorld]);
+
+  // Update companion stats based on user activity (call this from Index.tsx)
+  const updateCompanionFromActivity = useCallback((
+    activityType: 'mood' | 'habit' | 'focus' | 'gratitude',
+    moodValue?: MoodType
+  ) => {
+    const now = Date.now();
+    let happinessChange = 5;
+    let hungerIncrease = 3; // Activities make companion hungry
+    let personalityChanges = { energy: 0, wisdom: 0, warmth: 0 };
+
+    switch (activityType) {
+      case 'mood':
+        // Positive moods increase warmth more
+        if (moodValue === 'great' || moodValue === 'good') {
+          personalityChanges.warmth = 3;
+          happinessChange = 10;
+        } else if (moodValue === 'bad' || moodValue === 'terrible') {
+          // Companion becomes supportive when user is sad
+          happinessChange = 2;
+          personalityChanges.warmth = 5; // Empathy increases warmth
+        }
+        break;
+      case 'habit':
+        personalityChanges.energy = 3;
+        happinessChange = 8;
+        break;
+      case 'focus':
+        personalityChanges.wisdom = 3;
+        personalityChanges.energy = 2;
+        happinessChange = 10;
+        break;
+      case 'gratitude':
+        personalityChanges.warmth = 5;
+        happinessChange = 12;
+        break;
+    }
+
+    const newHappiness = Math.min(100, (world.companion.happiness || 50) + happinessChange);
+    const newHunger = Math.min(100, (world.companion.hunger || 50) + hungerIncrease);
+
+    setWorld({
+      ...world,
+      companion: {
+        ...world.companion,
+        happiness: newHappiness,
+        hunger: newHunger,
+        lastInteraction: now,
+        mood: newHappiness >= 80 ? 'excited' : newHappiness >= 50 ? 'happy' : 'calm',
+        personality: {
+          energy: Math.min(100, world.companion.personality.energy + personalityChanges.energy),
+          wisdom: Math.min(100, world.companion.personality.wisdom + personalityChanges.wisdom),
+          warmth: Math.min(100, world.companion.personality.warmth + personalityChanges.warmth),
+        },
+      },
+    });
+  }, [world, setWorld]);
+
   // Computed values
   const gardenStats = useMemo(() => ({
     totalPlants: world.plants.length,
@@ -392,6 +554,12 @@ export function useInnerWorld() {
     setCompanionType,
     renameCompanion,
     clearWelcomeBack,
+
+    // Companion interactions
+    petCompanion,
+    feedCompanion,
+    talkToCompanion,
+    updateCompanionFromActivity,
 
     // Stats
     gardenStats,

@@ -129,6 +129,9 @@ export function Index() {
     setCompanionType,
     renameCompanion,
     clearWelcomeBack,
+    petCompanion,
+    feedCompanion,
+    talkToCompanion,
     gardenStats,
   } = useInnerWorld();
 
@@ -283,9 +286,8 @@ export function Index() {
 
   // Filter today's schedule events
   const todayScheduleEvents = useMemo(() => {
-    const today = getToday();
-    return scheduleEvents.filter(e => e.date === today);
-  }, [scheduleEvents]);
+    return scheduleEvents.filter(e => e.date === currentDate);
+  }, [scheduleEvents, currentDate]);
 
   // Onboarding hint dismissal
   const handleDismissHint = (hintId: string) => {
@@ -294,36 +296,31 @@ export function Index() {
 
   // Check if user has mood today
   const hasMoodToday = useMemo(() => {
-    const today = getToday();
-    return moods.some(m => m.date === today);
-  }, [moods]);
+    return moods.some(m => m.date === currentDate);
+  }, [moods, currentDate]);
 
   // Check if user has focus session today
   const hasFocusToday = useMemo(() => {
-    const today = getToday();
-    return focusSessions.some(s => s.date === today);
-  }, [focusSessions]);
+    return focusSessions.some(s => s.date === currentDate);
+  }, [focusSessions, currentDate]);
 
   // Check if user has gratitude today
   const hasGratitudeToday = useMemo(() => {
-    const today = getToday();
-    return gratitudeEntries.some(g => g.date === today);
-  }, [gratitudeEntries]);
+    return gratitudeEntries.some(g => g.date === currentDate);
+  }, [gratitudeEntries, currentDate]);
 
   // Widget synchronization
   const currentStreak = useMemo(() => {
     if (!habits.length) return 0;
-    const today = getToday();
-    const completed = habits.filter(h => h.completedDates?.includes(today) ?? false);
+    const completed = habits.filter(h => h.completedDates?.includes(currentDate) ?? false);
     return completed.length === habits.length ? 1 : 0; // Simplified - real streak calculation would be more complex
-  }, [habits]);
+  }, [habits, currentDate]);
 
   const todayFocusMinutes = useMemo(() => {
-    const today = getToday();
     return focusSessions
-      .filter(s => s.date.startsWith(today))
+      .filter(s => s.date.startsWith(currentDate))
       .reduce((sum, s) => sum + (s.minutes || 0), 0);
-  }, [focusSessions]);
+  }, [focusSessions, currentDate]);
 
   const lastBadgeName = useMemo(() => {
     const unlockedBadges = badges.filter(b => b.unlockedAt);
@@ -1231,7 +1228,14 @@ export function Index() {
         onClose={() => setShowCompanionPanel(false)}
         onRename={renameCompanion}
         onChangeType={setCompanionType}
+        onPet={petCompanion}
+        onFeed={feedCompanion}
+        onTalk={talkToCompanion}
         streak={innerWorld.currentActiveStreak}
+        hasMoodToday={hasMoodToday}
+        hasHabitsToday={habits.length > 0 && habits.every(h => h.completedDates?.includes(currentDate))}
+        hasFocusToday={hasFocusToday}
+        hasGratitudeToday={hasGratitudeToday}
       />
     </div>
   );

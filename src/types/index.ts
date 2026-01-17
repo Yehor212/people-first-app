@@ -208,6 +208,11 @@ export interface Companion {
   unlockedOutfits: string[];
   currentOutfit?: string;
   lastInteraction: number;
+  lastPetTime?: number;             // Track when companion was last petted
+  lastFeedTime?: number;            // Track when companion was last fed
+  interactionCount: number;         // Total interactions
+  happiness: number;                // 0-100: affects reactions
+  hunger: number;                   // 0-100: decreases over time, affects mood
   personality: {
     energy: number;                 // 0-100: calm to energetic
     wisdom: number;                 // 0-100: playful to wise
