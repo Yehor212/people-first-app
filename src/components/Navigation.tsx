@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Home, Settings, Sparkles } from 'lucide-react';
+import { Home, Settings, Sparkles, BarChart3 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 type TabType = 'home' | 'garden' | 'stats' | 'achievements' | 'settings';
@@ -12,10 +12,10 @@ interface NavigationProps {
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   const { t } = useLanguage();
 
-  // Simplified to 3 main tabs
   const tabs = [
     { id: 'home' as TabType, icon: Home, label: t.home },
     { id: 'garden' as TabType, icon: Sparkles, label: t.myWorld },
+    { id: 'stats' as TabType, icon: BarChart3, label: t.stats },
     { id: 'settings' as TabType, icon: Settings, label: t.settings },
   ];
 

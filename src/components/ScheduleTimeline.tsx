@@ -340,7 +340,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
 
 // Add Event Modal
 function AddEventModal({
-  selectedDate,
+  selectedDate: initialDate,
   onClose,
   onAdd,
 }: {
@@ -350,22 +350,32 @@ function AddEventModal({
 }) {
   const { t, language } = useLanguage();
   const [selectedPreset, setSelectedPreset] = useState(EVENT_PRESETS[0]);
+  const [eventDate, setEventDate] = useState(initialDate);
   const [startHour, setStartHour] = useState(9);
   const [startMinute, setStartMinute] = useState(0);
   const [endHour, setEndHour] = useState(10);
   const [endMinute, setEndMinute] = useState(0);
   const [customTitle, setCustomTitle] = useState('');
 
-  // Format date for display
-  const formatDateForHeader = () => {
-    const today = getToday();
-    if (selectedDate === today) {
-      return t.today || 'Today';
+  // Generate next 14 days for date picker
+  const dateOptions = useMemo(() => {
+    const dates: { value: string; label: string }[] = [];
+    const today = new Date();
+    const locale = language === 'ru' ? 'ru-RU' : language === 'uk' ? 'uk-UA' : language === 'es' ? 'es-ES' : language === 'de' ? 'de-DE' : language === 'fr' ? 'fr-FR' : 'en-US';
+
+    for (let i = 0; i < 14; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+      const value = date.toISOString().split('T')[0];
+      const label = i === 0
+        ? (t.today || 'Today')
+        : i === 1
+          ? (t.tomorrow || 'Tomorrow')
+          : date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
+      dates.push({ value, label });
     }
-    const date = new Date(selectedDate);
-    const options: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' };
-    return date.toLocaleDateString(language === 'ru' ? 'ru-RU' : language === 'uk' ? 'uk-UA' : language === 'es' ? 'es-ES' : language === 'de' ? 'de-DE' : language === 'fr' ? 'fr-FR' : 'en-US', options);
-  };
+    return dates;
+  }, [language, t.today, t.tomorrow]);
 
   const handleAdd = () => {
     const title = customTitle || (t[selectedPreset.labelKey as keyof typeof t] as string) || selectedPreset.id;
@@ -377,21 +387,32 @@ function AddEventModal({
       endMinute,
       color: selectedPreset.color,
       emoji: selectedPreset.emoji,
-      date: selectedDate,
+      date: eventDate,
     });
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
-      <div className="bg-card rounded-3xl p-5 w-full max-w-sm animate-slide-up">
+      <div className="bg-card rounded-3xl p-5 w-full max-w-sm animate-slide-up max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h3 className="text-lg font-semibold">{t.scheduleAddEvent || 'Add Event'}</h3>
-            <p className="text-xs text-muted-foreground">{formatDateForHeader()}</p>
-          </div>
+          <h3 className="text-lg font-semibold">{t.scheduleAddEvent || 'Add Event'}</h3>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl">
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Date picker */}
+        <div className="mb-4">
+          <label className="text-xs text-muted-foreground mb-1 block">{t.scheduleDate || 'Date'}</label>
+          <select
+            value={eventDate}
+            onChange={(e) => setEventDate(e.target.value)}
+            className="w-full p-3 bg-secondary/50 rounded-xl text-sm"
+          >
+            {dateOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
         </div>
 
         {/* Event type presets */}

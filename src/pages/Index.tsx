@@ -34,6 +34,7 @@ import { MoodTracker } from '@/components/MoodTracker';
 import { HabitTracker } from '@/components/HabitTracker';
 import { FocusTimer } from '@/components/FocusTimer';
 import { GratitudeJournal } from '@/components/GratitudeJournal';
+import { BreathingExercise } from '@/components/BreathingExercise';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { StatsPage } from '@/components/StatsPage';
 import { SettingsPanel } from '@/components/SettingsPanel';
@@ -1133,6 +1134,9 @@ export function Index() {
                       isPrimaryCTA={currentPrimaryCTA === 'gratitude'}
                     />
                   </div>
+
+                  {/* Breathing Exercise - Mindfulness card */}
+                  <BreathingExercise compact />
                 </>
               )}
             </div>

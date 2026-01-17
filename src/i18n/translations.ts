@@ -198,10 +198,39 @@ export interface Translations {
   focusReflectionQuestion: string;
   focusReflectionSkip: string;
   focusReflectionSave: string;
-  
+
+  // Breathing exercises
+  breathingTitle: string;
+  breathingSubtitle: string;
+  breathingBox: string;
+  breathingBoxDesc: string;
+  breathing478: string;
+  breathing478Desc: string;
+  breathingEnergize: string;
+  breathingEnergizeDesc: string;
+  breathingSleep: string;
+  breathingSleepDesc: string;
+  breatheIn: string;
+  breatheOut: string;
+  hold: string;
+  cycles: string;
+  cycle: string;
+  effectCalming: string;
+  effectFocusing: string;
+  effectEnergizing: string;
+  effectSleeping: string;
+  startBreathing: string;
+  breathingComplete: string;
+  breathingCompleteMsg: string;
+  breathingAgain: string;
+  pause: string;
+  resume: string;
+
   // Gratitude
   gratitude: string;
   today: string;
+  tomorrow: string;
+  scheduleDate: string;
   whatAreYouGratefulFor: string;
   iAmGratefulFor: string;
   save: string;
@@ -991,8 +1020,37 @@ export const translations: Record<Language, Translations> = {
     focusReflectionQuestion: 'Как прошла сессия?',
     focusReflectionSkip: 'Пропустить',
     focusReflectionSave: 'Сохранить',
+
+    // Breathing
+    breathingTitle: 'Дыхание',
+    breathingSubtitle: 'Успокой разум',
+    breathingBox: 'Квадратное дыхание',
+    breathingBoxDesc: 'Равные фазы для фокуса',
+    breathing478: '4-7-8 Расслабление',
+    breathing478Desc: 'Глубокое успокоение',
+    breathingEnergize: 'Энергетическое',
+    breathingEnergizeDesc: 'Заряд бодрости',
+    breathingSleep: 'Перед сном',
+    breathingSleepDesc: 'Медленное для сна',
+    breatheIn: 'Вдох',
+    breatheOut: 'Выдох',
+    hold: 'Задержка',
+    cycles: 'циклов',
+    cycle: 'Цикл',
+    effectCalming: 'Спокойствие',
+    effectFocusing: 'Фокус',
+    effectEnergizing: 'Энергия',
+    effectSleeping: 'Сон',
+    startBreathing: 'Начать',
+    breathingComplete: 'Отлично!',
+    breathingCompleteMsg: 'Вы завершили дыхательное упражнение',
+    breathingAgain: 'Ещё раз',
+    pause: 'Пауза',
+    resume: 'Продолжить',
     gratitude: 'Благодарность',
     today: 'сегодня',
+    tomorrow: 'завтра',
+    scheduleDate: 'Дата',
     whatAreYouGratefulFor: 'За что вы благодарны сегодня?',
     iAmGratefulFor: 'Я благодарен за...',
     save: 'Сохранить',
@@ -1739,8 +1797,37 @@ export const translations: Record<Language, Translations> = {
     focusReflectionQuestion: 'How was the session?',
     focusReflectionSkip: 'Skip',
     focusReflectionSave: 'Save',
+
+    // Breathing
+    breathingTitle: 'Breathing',
+    breathingSubtitle: 'Calm your mind',
+    breathingBox: 'Box Breathing',
+    breathingBoxDesc: 'Equal phases for focus',
+    breathing478: '4-7-8 Relaxing',
+    breathing478Desc: 'Deep calming breath',
+    breathingEnergize: 'Energizing Breath',
+    breathingEnergizeDesc: 'Quick energy boost',
+    breathingSleep: 'Sleep Preparation',
+    breathingSleepDesc: 'Slow exhales for sleep',
+    breatheIn: 'Breathe in',
+    breatheOut: 'Breathe out',
+    hold: 'Hold',
+    cycles: 'cycles',
+    cycle: 'Cycle',
+    effectCalming: 'Calming',
+    effectFocusing: 'Focus',
+    effectEnergizing: 'Energy',
+    effectSleeping: 'Sleep',
+    startBreathing: 'Start',
+    breathingComplete: 'Well done!',
+    breathingCompleteMsg: 'You completed the breathing exercise',
+    breathingAgain: 'Do again',
+    pause: 'Pause',
+    resume: 'Resume',
     gratitude: 'Gratitude',
     today: 'today',
+    tomorrow: 'tomorrow',
+    scheduleDate: 'Date',
     whatAreYouGratefulFor: 'What are you grateful for today?',
     iAmGratefulFor: 'I am grateful for...',
     save: 'Save',
@@ -2487,8 +2574,37 @@ export const translations: Record<Language, Translations> = {
     focusReflectionQuestion: 'Як пройшла сесія?',
     focusReflectionSkip: 'Пропустити',
     focusReflectionSave: 'Зберегти',
+
+    // Breathing
+    breathingTitle: 'Дихання',
+    breathingSubtitle: 'Заспокой розум',
+    breathingBox: 'Квадратне дихання',
+    breathingBoxDesc: 'Рівні фази для фокусу',
+    breathing478: '4-7-8 Розслаблення',
+    breathing478Desc: 'Глибоке заспокоєння',
+    breathingEnergize: 'Енергетичне',
+    breathingEnergizeDesc: 'Заряд бадьорості',
+    breathingSleep: 'Перед сном',
+    breathingSleepDesc: 'Повільне для сну',
+    breatheIn: 'Вдих',
+    breatheOut: 'Видих',
+    hold: 'Затримка',
+    cycles: 'циклів',
+    cycle: 'Цикл',
+    effectCalming: 'Спокій',
+    effectFocusing: 'Фокус',
+    effectEnergizing: 'Енергія',
+    effectSleeping: 'Сон',
+    startBreathing: 'Почати',
+    breathingComplete: 'Чудово!',
+    breathingCompleteMsg: 'Ви завершили дихальну вправу',
+    breathingAgain: 'Ще раз',
+    pause: 'Пауза',
+    resume: 'Продовжити',
     gratitude: 'Подяка',
     today: 'сьогодні',
+    tomorrow: 'завтра',
+    scheduleDate: 'Дата',
     whatAreYouGratefulFor: 'За що ви вдячні сьогодні?',
     iAmGratefulFor: 'Я вдячний за...',
     save: 'Зберегти',
@@ -3236,8 +3352,37 @@ export const translations: Record<Language, Translations> = {
     focusReflectionQuestion: '¿Cómo fue la sesión?',
     focusReflectionSkip: 'Saltar',
     focusReflectionSave: 'Guardar',
+
+    // Breathing
+    breathingTitle: 'Respiración',
+    breathingSubtitle: 'Calma tu mente',
+    breathingBox: 'Respiración cuadrada',
+    breathingBoxDesc: 'Fases iguales para enfoque',
+    breathing478: '4-7-8 Relajante',
+    breathing478Desc: 'Calma profunda',
+    breathingEnergize: 'Energizante',
+    breathingEnergizeDesc: 'Impulso de energía',
+    breathingSleep: 'Preparación para dormir',
+    breathingSleepDesc: 'Exhalación lenta',
+    breatheIn: 'Inhala',
+    breatheOut: 'Exhala',
+    hold: 'Mantén',
+    cycles: 'ciclos',
+    cycle: 'Ciclo',
+    effectCalming: 'Calma',
+    effectFocusing: 'Enfoque',
+    effectEnergizing: 'Energía',
+    effectSleeping: 'Sueño',
+    startBreathing: 'Comenzar',
+    breathingComplete: '¡Bien hecho!',
+    breathingCompleteMsg: 'Completaste el ejercicio de respiración',
+    breathingAgain: 'Otra vez',
+    pause: 'Pausa',
+    resume: 'Continuar',
     gratitude: 'Gratitud',
     today: 'hoy',
+    tomorrow: 'mañana',
+    scheduleDate: 'Fecha',
     whatAreYouGratefulFor: '¿Por qué estás agradecido hoy?',
     iAmGratefulFor: 'Estoy agradecido por...',
     save: 'Guardar',
@@ -3985,8 +4130,37 @@ export const translations: Record<Language, Translations> = {
     focusReflectionQuestion: 'Wie war die Session?',
     focusReflectionSkip: 'Überspringen',
     focusReflectionSave: 'Speichern',
+
+    // Breathing
+    breathingTitle: 'Atmung',
+    breathingSubtitle: 'Beruhige deinen Geist',
+    breathingBox: 'Box-Atmung',
+    breathingBoxDesc: 'Gleiche Phasen für Fokus',
+    breathing478: '4-7-8 Entspannung',
+    breathing478Desc: 'Tiefe Beruhigung',
+    breathingEnergize: 'Energetisierend',
+    breathingEnergizeDesc: 'Schneller Energieschub',
+    breathingSleep: 'Schlafvorbereitung',
+    breathingSleepDesc: 'Langsames Ausatmen',
+    breatheIn: 'Einatmen',
+    breatheOut: 'Ausatmen',
+    hold: 'Halten',
+    cycles: 'Zyklen',
+    cycle: 'Zyklus',
+    effectCalming: 'Beruhigend',
+    effectFocusing: 'Fokus',
+    effectEnergizing: 'Energie',
+    effectSleeping: 'Schlaf',
+    startBreathing: 'Starten',
+    breathingComplete: 'Gut gemacht!',
+    breathingCompleteMsg: 'Du hast die Atemübung abgeschlossen',
+    breathingAgain: 'Nochmal',
+    pause: 'Pause',
+    resume: 'Fortsetzen',
     gratitude: 'Dankbarkeit',
     today: 'heute',
+    tomorrow: 'morgen',
+    scheduleDate: 'Datum',
     whatAreYouGratefulFor: 'Wofür bist du heute dankbar?',
     iAmGratefulFor: 'Ich bin dankbar für...',
     save: 'Speichern',
@@ -4734,8 +4908,37 @@ export const translations: Record<Language, Translations> = {
     focusReflectionQuestion: 'Comment s\'est passée la session ?',
     focusReflectionSkip: 'Passer',
     focusReflectionSave: 'Sauvegarder',
+
+    // Breathing
+    breathingTitle: 'Respiration',
+    breathingSubtitle: 'Apaise ton esprit',
+    breathingBox: 'Respiration carrée',
+    breathingBoxDesc: 'Phases égales pour focus',
+    breathing478: '4-7-8 Relaxant',
+    breathing478Desc: 'Calme profond',
+    breathingEnergize: 'Énergisant',
+    breathingEnergizeDesc: 'Boost d\'énergie',
+    breathingSleep: 'Préparation au sommeil',
+    breathingSleepDesc: 'Expiration lente',
+    breatheIn: 'Inspire',
+    breatheOut: 'Expire',
+    hold: 'Retiens',
+    cycles: 'cycles',
+    cycle: 'Cycle',
+    effectCalming: 'Calmant',
+    effectFocusing: 'Focus',
+    effectEnergizing: 'Énergie',
+    effectSleeping: 'Sommeil',
+    startBreathing: 'Commencer',
+    breathingComplete: 'Bien joué!',
+    breathingCompleteMsg: 'Tu as terminé l\'exercice de respiration',
+    breathingAgain: 'Encore',
+    pause: 'Pause',
+    resume: 'Reprendre',
     gratitude: 'Gratitude',
     today: 'aujourd\'hui',
+    tomorrow: 'demain',
+    scheduleDate: 'Date',
     whatAreYouGratefulFor: 'Pour quoi êtes-vous reconnaissant aujourd\'hui?',
     iAmGratefulFor: 'Je suis reconnaissant pour...',
     save: 'Sauvegarder',
