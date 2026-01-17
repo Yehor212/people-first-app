@@ -94,47 +94,8 @@ export function Index() {
     refs[section]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
-  // Schedule event handlers
-  const handleAddScheduleEvent = (event: Omit<ScheduleEvent, 'id'>) => {
-    const newEvent: ScheduleEvent = {
-      ...event,
-      id: generateId(),
-    };
-    setScheduleEvents([...scheduleEvents, newEvent]);
-  };
-
-  const handleDeleteScheduleEvent = (id: string) => {
-    setScheduleEvents(scheduleEvents.filter(e => e.id !== id));
-  };
-
-  // Filter today's schedule events
-  const todayScheduleEvents = useMemo(() => {
-    const today = getToday();
-    return scheduleEvents.filter(e => e.date === today);
-  }, [scheduleEvents]);
-
-  // Onboarding hint dismissal
-  const handleDismissHint = (hintId: string) => {
-    setDismissedHints([...dismissedHints, hintId]);
-  };
-
-  // Check if user has mood today
-  const hasMoodToday = useMemo(() => {
-    const today = getToday();
-    return moods.some(m => m.date === today);
-  }, [moods]);
-
-  // Check if user has focus session today
-  const hasFocusToday = useMemo(() => {
-    const today = getToday();
-    return focusSessions.some(s => s.date === today);
-  }, [focusSessions]);
-
-  // Check if user has gratitude today
-  const hasGratitudeToday = useMemo(() => {
-    const today = getToday();
-    return gratitudeEntries.some(g => g.date === today);
-  }, [gratitudeEntries]);
+  // NOTE: Schedule event handlers, hint dismissal, and useMemo hooks moved below state declarations
+  // to avoid TDZ (Temporal Dead Zone) errors in production builds
 
   // Gamification system
   const { stats, gamificationState, userLevel, awardXp } = useGamification();
@@ -299,6 +260,48 @@ export function Index() {
 
   // Loading handling
   const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingTutorial || isLoadingOnboarding || isLoadingPrivacy || isLoadingAuthGate || isLoadingNotificationPermission || isLoadingSchedule || isLoadingHints || isLoadingInnerWorld;
+
+  // Schedule event handlers (moved here to avoid TDZ errors)
+  const handleAddScheduleEvent = (event: Omit<ScheduleEvent, 'id'>) => {
+    const newEvent: ScheduleEvent = {
+      ...event,
+      id: generateId(),
+    };
+    setScheduleEvents([...scheduleEvents, newEvent]);
+  };
+
+  const handleDeleteScheduleEvent = (id: string) => {
+    setScheduleEvents(scheduleEvents.filter(e => e.id !== id));
+  };
+
+  // Filter today's schedule events
+  const todayScheduleEvents = useMemo(() => {
+    const today = getToday();
+    return scheduleEvents.filter(e => e.date === today);
+  }, [scheduleEvents]);
+
+  // Onboarding hint dismissal
+  const handleDismissHint = (hintId: string) => {
+    setDismissedHints([...dismissedHints, hintId]);
+  };
+
+  // Check if user has mood today
+  const hasMoodToday = useMemo(() => {
+    const today = getToday();
+    return moods.some(m => m.date === today);
+  }, [moods]);
+
+  // Check if user has focus session today
+  const hasFocusToday = useMemo(() => {
+    const today = getToday();
+    return focusSessions.some(s => s.date === today);
+  }, [focusSessions]);
+
+  // Check if user has gratitude today
+  const hasGratitudeToday = useMemo(() => {
+    const today = getToday();
+    return gratitudeEntries.some(g => g.date === today);
+  }, [gratitudeEntries]);
 
   // Widget synchronization
   const currentStreak = useMemo(() => {

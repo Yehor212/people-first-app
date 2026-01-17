@@ -90,7 +90,6 @@ export default defineConfig(({ mode }) => {
 
       // Workbox configuration
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB for debugging unminified builds
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
           {
@@ -147,7 +146,7 @@ export default defineConfig(({ mode }) => {
 
   build: {
     target: "esnext",
-    minify: false, // Temporarily disabled for debugging TDZ error
+    minify: "esbuild",
 
     rollupOptions: {
       output: {
@@ -161,7 +160,7 @@ export default defineConfig(({ mode }) => {
       },
     },
 
-    sourcemap: true, // Temporarily enabled for production debugging
+    sourcemap: mode === "development",
     chunkSizeWarningLimit: 600, // KB
   },
 
