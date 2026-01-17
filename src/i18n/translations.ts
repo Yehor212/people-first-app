@@ -718,6 +718,36 @@ export interface Translations {
   companionTalk: string;
   companionHappiness: string;
   companionHunger: string;
+
+  // New Companion System
+  companionHungryCanFeed: string;
+  companionHungryNoTreats: string;
+  companionStreakLegend: string;
+  companionStreakGood: string;
+  companionAskMood: string;
+  companionAskHabits: string;
+  companionAskFocus: string;
+  companionAskGratitude: string;
+  companionAllDone: string;
+  companionHappy: string;
+  companionMorning: string;
+  companionAfternoon: string;
+  companionEvening: string;
+  companionNight: string;
+  companionLevelUp: string;
+  companionNeedsFood: string;
+  petReaction1: string;
+  petReaction2: string;
+  petReaction3: string;
+  petReaction4: string;
+  feedReaction1: string;
+  feedReaction2: string;
+  feedReaction3: string;
+  feedReaction4: string;
+  feedNotEnough: string;
+  free: string;
+  fullness: string;
+  earnTreatsHint: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -1384,6 +1414,36 @@ export const translations: Record<Language, Translations> = {
     companionTalk: 'Поговорить',
     companionHappiness: 'Счастье',
     companionHunger: 'Сытость',
+
+    // New Companion System
+    companionHungryCanFeed: '🥺 Я голодный... Покорми меня?',
+    companionHungryNoTreats: '🥺 Я голодный... Выполняй активности чтобы заработать вкусняшки!',
+    companionStreakLegend: '🏆 {streak} дней! Ты легенда!',
+    companionStreakGood: '🔥 {streak} дней! Так держать!',
+    companionAskMood: '💜 Как ты себя чувствуешь сегодня?',
+    companionAskHabits: '🎯 Время для привычек!',
+    companionAskFocus: '🧠 Готов сфокусироваться?',
+    companionAskGratitude: '💖 За что ты благодарен сегодня?',
+    companionAllDone: '🏆 Идеальный день! Ты молодец!',
+    companionHappy: '💕 Я тебя люблю!',
+    companionMorning: '☀️ Доброе утро!',
+    companionAfternoon: '🌤️ Как проходит твой день?',
+    companionEvening: '🌙 Добрый вечер!',
+    companionNight: '💤 Zzz...',
+    companionLevelUp: '🎉 Новый уровень! Теперь {level}!',
+    companionNeedsFood: 'Твой компаньон голоден!',
+    petReaction1: '💕 *мурр*',
+    petReaction2: '✨ Как приятно!',
+    petReaction3: '😊 Спасибо!',
+    petReaction4: '💖 Люблю тебя!',
+    feedReaction1: '🍪 Вкусно!',
+    feedReaction2: '😋 Объедение!',
+    feedReaction3: '✨ Спасибо!',
+    feedReaction4: '💪 Энергия!',
+    feedNotEnough: '🍪 Нужно {needed} вкусняшек, есть {have}',
+    free: 'Бесплатно',
+    fullness: 'Сытость',
+    earnTreatsHint: 'Выполняй активности чтобы зарабатывать вкусняшки для питомца!',
   },
 
   en: {
@@ -2049,6 +2109,36 @@ export const translations: Record<Language, Translations> = {
     companionTalk: 'Talk',
     companionHappiness: 'Happiness',
     companionHunger: 'Fullness',
+
+    // New Companion System
+    companionHungryCanFeed: '🥺 I\'m hungry... Feed me?',
+    companionHungryNoTreats: '🥺 I\'m hungry... Do activities to earn treats!',
+    companionStreakLegend: '🏆 {streak} days! You\'re a legend!',
+    companionStreakGood: '🔥 {streak} days! Keep it up!',
+    companionAskMood: '💜 How are you feeling today?',
+    companionAskHabits: '🎯 Time for habits!',
+    companionAskFocus: '🧠 Ready to focus?',
+    companionAskGratitude: '💖 What are you grateful for?',
+    companionAllDone: '🏆 Perfect day! You\'re amazing!',
+    companionHappy: '💕 I love you!',
+    companionMorning: '☀️ Good morning!',
+    companionAfternoon: '🌤️ How\'s your day going?',
+    companionEvening: '🌙 Good evening!',
+    companionNight: '💤 Zzz...',
+    companionLevelUp: '🎉 Level up! Now level {level}!',
+    companionNeedsFood: 'Your companion is hungry!',
+    petReaction1: '💕 *purr*',
+    petReaction2: '✨ That feels nice!',
+    petReaction3: '😊 Thank you!',
+    petReaction4: '💖 I love you!',
+    feedReaction1: '🍪 Yummy!',
+    feedReaction2: '😋 Delicious!',
+    feedReaction3: '✨ Thank you!',
+    feedReaction4: '💪 Energy!',
+    feedNotEnough: '🍪 Need {needed} treats, have {have}',
+    free: 'Free',
+    fullness: 'Fullness',
+    earnTreatsHint: 'Complete activities to earn treats for your companion!',
   },
 
   uk: {
@@ -2714,6 +2804,36 @@ export const translations: Record<Language, Translations> = {
     companionTalk: 'Поговорити',
     companionHappiness: 'Щастя',
     companionHunger: 'Ситість',
+
+    // New Companion System
+    companionHungryCanFeed: '🥺 Я голодний... Погодуй мене?',
+    companionHungryNoTreats: '🥺 Я голодний... Виконуй активності щоб заробити смаколики!',
+    companionStreakLegend: '🏆 {streak} днів! Ти легенда!',
+    companionStreakGood: '🔥 {streak} днів! Так тримати!',
+    companionAskMood: '💜 Як ти себе почуваєш сьогодні?',
+    companionAskHabits: '🎯 Час для звичок!',
+    companionAskFocus: '🧠 Готовий зосередитись?',
+    companionAskGratitude: '💖 За що ти вдячний сьогодні?',
+    companionAllDone: '🏆 Ідеальний день! Ти молодець!',
+    companionHappy: '💕 Я тебе люблю!',
+    companionMorning: '☀️ Доброго ранку!',
+    companionAfternoon: '🌤️ Як проходить твій день?',
+    companionEvening: '🌙 Добрий вечір!',
+    companionNight: '💤 Zzz...',
+    companionLevelUp: '🎉 Новий рівень! Тепер {level}!',
+    companionNeedsFood: 'Твій компаньйон голодний!',
+    petReaction1: '💕 *мурр*',
+    petReaction2: '✨ Як приємно!',
+    petReaction3: '😊 Дякую!',
+    petReaction4: '💖 Люблю тебе!',
+    feedReaction1: '🍪 Смачно!',
+    feedReaction2: '😋 Об\'їдення!',
+    feedReaction3: '✨ Дякую!',
+    feedReaction4: '💪 Енергія!',
+    feedNotEnough: '🍪 Потрібно {needed} смаколиків, є {have}',
+    free: 'Безкоштовно',
+    fullness: 'Ситість',
+    earnTreatsHint: 'Виконуй активності щоб заробляти смаколики для улюбленця!',
   },
 
   es: {
@@ -3380,6 +3500,36 @@ export const translations: Record<Language, Translations> = {
     companionTalk: 'Hablar',
     companionHappiness: 'Felicidad',
     companionHunger: 'Saciedad',
+
+    // New Companion System
+    companionHungryCanFeed: '🥺 Tengo hambre... ¿Me alimentas?',
+    companionHungryNoTreats: '🥺 Tengo hambre... ¡Haz actividades para ganar golosinas!',
+    companionStreakLegend: '🏆 ¡{streak} días! ¡Eres una leyenda!',
+    companionStreakGood: '🔥 ¡{streak} días! ¡Sigue así!',
+    companionAskMood: '💜 ¿Cómo te sientes hoy?',
+    companionAskHabits: '🎯 ¡Hora de hábitos!',
+    companionAskFocus: '🧠 ¿Listo para enfocarte?',
+    companionAskGratitude: '💖 ¿Por qué estás agradecido?',
+    companionAllDone: '🏆 ¡Día perfecto! ¡Eres increíble!',
+    companionHappy: '💕 ¡Te quiero!',
+    companionMorning: '☀️ ¡Buenos días!',
+    companionAfternoon: '🌤️ ¿Cómo va tu día?',
+    companionEvening: '🌙 ¡Buenas noches!',
+    companionNight: '💤 Zzz...',
+    companionLevelUp: '🎉 ¡Subiste de nivel! ¡Ahora nivel {level}!',
+    companionNeedsFood: '¡Tu compañero tiene hambre!',
+    petReaction1: '💕 *ronroneo*',
+    petReaction2: '✨ ¡Qué bien se siente!',
+    petReaction3: '😊 ¡Gracias!',
+    petReaction4: '💖 ¡Te quiero!',
+    feedReaction1: '🍪 ¡Delicioso!',
+    feedReaction2: '😋 ¡Riquísimo!',
+    feedReaction3: '✨ ¡Gracias!',
+    feedReaction4: '💪 ¡Energía!',
+    feedNotEnough: '🍪 Necesitas {needed} golosinas, tienes {have}',
+    free: 'Gratis',
+    fullness: 'Saciedad',
+    earnTreatsHint: '¡Completa actividades para ganar golosinas para tu compañero!',
   },
 
   de: {
@@ -4046,6 +4196,36 @@ export const translations: Record<Language, Translations> = {
     companionTalk: 'Sprechen',
     companionHappiness: 'Glück',
     companionHunger: 'Sättigung',
+
+    // New Companion System
+    companionHungryCanFeed: '🥺 Ich habe Hunger... Fütterst du mich?',
+    companionHungryNoTreats: '🥺 Ich habe Hunger... Mach Aktivitäten um Leckerlis zu verdienen!',
+    companionStreakLegend: '🏆 {streak} Tage! Du bist eine Legende!',
+    companionStreakGood: '🔥 {streak} Tage! Weiter so!',
+    companionAskMood: '💜 Wie fühlst du dich heute?',
+    companionAskHabits: '🎯 Zeit für Gewohnheiten!',
+    companionAskFocus: '🧠 Bereit dich zu konzentrieren?',
+    companionAskGratitude: '💖 Wofür bist du dankbar?',
+    companionAllDone: '🏆 Perfekter Tag! Du bist großartig!',
+    companionHappy: '💕 Ich liebe dich!',
+    companionMorning: '☀️ Guten Morgen!',
+    companionAfternoon: '🌤️ Wie läuft dein Tag?',
+    companionEvening: '🌙 Guten Abend!',
+    companionNight: '💤 Zzz...',
+    companionLevelUp: '🎉 Level up! Jetzt Level {level}!',
+    companionNeedsFood: 'Dein Begleiter hat Hunger!',
+    petReaction1: '💕 *schnurr*',
+    petReaction2: '✨ Das fühlt sich gut an!',
+    petReaction3: '😊 Danke!',
+    petReaction4: '💖 Hab dich lieb!',
+    feedReaction1: '🍪 Lecker!',
+    feedReaction2: '😋 Köstlich!',
+    feedReaction3: '✨ Danke!',
+    feedReaction4: '💪 Energie!',
+    feedNotEnough: '🍪 Brauche {needed} Leckerlis, habe {have}',
+    free: 'Kostenlos',
+    fullness: 'Sättigung',
+    earnTreatsHint: 'Mach Aktivitäten um Leckerlis für deinen Begleiter zu verdienen!',
   },
 
   fr: {
@@ -4712,6 +4892,36 @@ export const translations: Record<Language, Translations> = {
     companionTalk: 'Parler',
     companionHappiness: 'Bonheur',
     companionHunger: 'Satiété',
+
+    // New Companion System
+    companionHungryCanFeed: '🥺 J\'ai faim... Tu me nourris?',
+    companionHungryNoTreats: '🥺 J\'ai faim... Fais des activités pour gagner des friandises!',
+    companionStreakLegend: '🏆 {streak} jours! Tu es une légende!',
+    companionStreakGood: '🔥 {streak} jours! Continue comme ça!',
+    companionAskMood: '💜 Comment tu te sens aujourd\'hui?',
+    companionAskHabits: '🎯 C\'est l\'heure des habitudes!',
+    companionAskFocus: '🧠 Prêt à te concentrer?',
+    companionAskGratitude: '💖 De quoi es-tu reconnaissant?',
+    companionAllDone: '🏆 Journée parfaite! Tu es incroyable!',
+    companionHappy: '💕 Je t\'aime!',
+    companionMorning: '☀️ Bonjour!',
+    companionAfternoon: '🌤️ Comment va ta journée?',
+    companionEvening: '🌙 Bonsoir!',
+    companionNight: '💤 Zzz...',
+    companionLevelUp: '🎉 Niveau supérieur! Maintenant niveau {level}!',
+    companionNeedsFood: 'Ton compagnon a faim!',
+    petReaction1: '💕 *ronron*',
+    petReaction2: '✨ C\'est agréable!',
+    petReaction3: '😊 Merci!',
+    petReaction4: '💖 Je t\'aime!',
+    feedReaction1: '🍪 Miam!',
+    feedReaction2: '😋 Délicieux!',
+    feedReaction3: '✨ Merci!',
+    feedReaction4: '💪 Énergie!',
+    feedNotEnough: '🍪 Il faut {needed} friandises, tu en as {have}',
+    free: 'Gratuit',
+    fullness: 'Satiété',
+    earnTreatsHint: 'Fais des activités pour gagner des friandises pour ton compagnon!',
   },
 };
 

@@ -5,10 +5,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useMoodTheme } from '@/contexts/MoodThemeContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { triggerXpPopup } from '@/components/XpPopup';
-import { DailySurprise } from '@/components/DailySurprise';
 import { DayClock } from '@/components/DayClock';
 import { ScheduleTimeline } from '@/components/ScheduleTimeline';
-import { OnboardingHints } from '@/components/OnboardingHints';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
 import { generateId, getToday } from '@/lib/utils';
@@ -49,8 +47,6 @@ import { NotificationPermission } from '@/components/NotificationPermission';
 import { GoogleAuthScreen } from '@/components/GoogleAuthScreen';
 import { WeeklyReport } from '@/components/WeeklyReport';
 import { ChallengesPanel } from '@/components/ChallengesPanel';
-import { TasksPanel } from '@/components/TasksPanel';
-import { QuestsPanel } from '@/components/QuestsPanel';
 import { TimeHelper } from '@/components/TimeHelper';
 import { WidgetSettings } from '@/pages/WidgetSettings';
 import { useGamification } from '@/hooks/useGamification';
@@ -130,8 +126,11 @@ export function Index() {
     clearWelcomeBack,
     petCompanion,
     feedCompanion,
-    talkToCompanion,
     gardenStats,
+    // Treats system
+    earnTreats,
+    treatsBalance,
+    FEED_COST,
   } = useInnerWorld();
 
   // Companion panel state
@@ -148,13 +147,9 @@ export function Index() {
 
   // Challenges state
   const [showChallenges, setShowChallenges] = useState(false);
-  const [showQuests, setShowQuests] = useState(false);
   const [showTimeHelper, setShowTimeHelper] = useState(false);
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
-
-  // Tasks state
-  const [showTasks, setShowTasks] = useState(false);
 
   // Используем useIndexedDB для hasSelectedLanguage
   const [hasSelectedLanguage, setHasSelectedLanguage, isLoadingLangSelected] = useIndexedDB({
@@ -259,16 +254,8 @@ export function Index() {
     idField: 'key'
   });
 
-  // Dismissed onboarding hints
-  const [dismissedHints, setDismissedHints, isLoadingHints] = useIndexedDB<string[]>({
-    table: db.settings,
-    localStorageKey: 'zenflow-dismissed-hints',
-    initialValue: [],
-    idField: 'key'
-  });
-
   // Loading handling
-  const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingTutorial || isLoadingOnboarding || isLoadingPrivacy || isLoadingAuthGate || isLoadingNotificationPermission || isLoadingSchedule || isLoadingHints || isLoadingInnerWorld;
+  const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingTutorial || isLoadingOnboarding || isLoadingPrivacy || isLoadingAuthGate || isLoadingNotificationPermission || isLoadingSchedule || isLoadingInnerWorld;
 
   // Schedule event handlers (moved here to avoid TDZ errors)
   const handleAddScheduleEvent = (event: Omit<ScheduleEvent, 'id'>) => {
@@ -287,11 +274,6 @@ export function Index() {
   const todayScheduleEvents = useMemo(() => {
     return scheduleEvents.filter(e => e.date === currentDate);
   }, [scheduleEvents, currentDate]);
-
-  // Onboarding hint dismissal
-  const handleDismissHint = (hintId: string) => {
-    setDismissedHints([...dismissedHints, hintId]);
-  };
 
   // Check if user has mood today
   const hasMoodToday = useMemo(() => {
@@ -344,8 +326,12 @@ export function Index() {
       // This allows multiple mood entries per day (morning/afternoon/evening)
       return [...prev, entry];
     });
-    awardXp('mood'); // +5 XP
-    triggerXpPopup(5, 'mood'); // Visual XP popup
+    awardXp('mood'); // +5 XP (legacy gamification)
+
+    // Earn treats for companion (new unified reward system)
+    const treatResult = earnTreats('mood', 5, 'Logged mood');
+    triggerXpPopup(treatResult.earned, 'mood'); // Show treats earned
+
     triggerSync(); // Auto-sync to cloud
     haptics.moodSaved();
 
@@ -366,13 +352,14 @@ export function Index() {
 
     setMoods(prev => [...prev, entry]);
     awardXp('mood');
+    earnTreats('mood', 5, 'Quick mood');
     triggerSync();
     haptics.moodSaved();
     plantSeed('mood', mood);
     waterPlants('mood');
 
     console.log('Quick mood logged from notification:', mood);
-  }, [awardXp, plantSeed, waterPlants, setMoods]);
+  }, [awardXp, earnTreats, plantSeed, waterPlants, setMoods]);
 
   // Update existing mood entry (for same-day editing)
   const handleUpdateMood = (entryId: string, newMood: MoodEntry['mood'], note?: string) => {
@@ -409,7 +396,8 @@ export function Index() {
         if (current < target) {
           completionsByDate[date] = current + 1;
           awardXp('habit'); // +10 XP for each completion
-          triggerXpPopup(10, 'habit'); // Visual XP popup
+          const treatResult = earnTreats('habit', 10, 'Completed habit');
+          triggerXpPopup(treatResult.earned, 'habit'); // Show treats earned
           haptics.habitToggled();
         }
 
@@ -425,8 +413,9 @@ export function Index() {
       // Daily and scheduled habits (normal toggle)
       const completed = habit.completedDates.includes(date);
       if (!completed) {
-        awardXp('habit'); // +10 XP for completing habit
-        triggerXpPopup(10, 'habit'); // Visual XP popup
+        awardXp('habit'); // +10 XP for completing habit (legacy)
+        const treatResult = earnTreats('habit', 10, 'Completed habit');
+        triggerXpPopup(treatResult.earned, 'habit'); // Show treats earned
         haptics.habitCompleted();
         // Inner World: Plant a tree when completing habit
         plantSeed('habit');
@@ -472,8 +461,13 @@ export function Index() {
 
   const handleCompleteFocusSession = (session: FocusSession) => {
     setFocusSessions(prev => [...prev, session]);
-    awardXp('focus'); // +15 XP
-    triggerXpPopup(15, 'focus'); // Visual XP popup
+    awardXp('focus'); // +15 XP (legacy)
+
+    // Earn treats based on focus duration (0.5 treats per minute)
+    const focusTreats = Math.round(session.duration * 0.5);
+    const treatResult = earnTreats('focus', focusTreats, `Focus ${session.duration}min`);
+    triggerXpPopup(treatResult.earned, 'focus'); // Show treats earned
+
     triggerSync(); // Auto-sync to cloud
     haptics.focusCompleted();
 
@@ -484,8 +478,12 @@ export function Index() {
 
   const handleAddGratitude = (entry: GratitudeEntry) => {
     setGratitudeEntries(prev => [...prev, entry]);
-    awardXp('gratitude'); // +8 XP
-    triggerXpPopup(8, 'gratitude'); // Visual XP popup
+    awardXp('gratitude'); // +8 XP (legacy)
+
+    // Earn treats for companion
+    const treatResult = earnTreats('gratitude', 8, 'Gratitude entry');
+    triggerXpPopup(treatResult.earned, 'gratitude'); // Show treats earned
+
     triggerSync(); // Auto-sync to cloud
     haptics.gratitudeSaved();
 
@@ -989,10 +987,7 @@ export function Index() {
             <InstallBanner />
             <Header
               userName={userName}
-              onOpenTimeHelper={() => setShowTimeHelper(true)}
-              onOpenQuests={() => setShowQuests(true)}
               onOpenChallenges={() => setShowChallenges(true)}
-              onOpenTasks={() => setShowTasks(true)}
             />
 
             {/* Check if today's mood is recorded */}
@@ -1011,21 +1006,6 @@ export function Index() {
                     habits={habits}
                     focusSessions={focusSessions}
                     gratitudeEntries={gratitudeEntries}
-                  />
-
-                  {/* Daily Surprise - motivational content that changes daily */}
-                  <DailySurprise onNavigate={handleNavigateToSection} />
-
-                  {/* Onboarding Hints - contextual tips after tutorial */}
-                  <OnboardingHints
-                    hasCompletedTutorial={tutorialComplete}
-                    hasMoodToday={hasMoodToday}
-                    hasHabits={habits.length > 0}
-                    hasFocusSession={hasFocusToday}
-                    hasGratitude={hasGratitudeToday}
-                    onDismiss={handleDismissHint}
-                    dismissedHints={dismissedHints}
-                    onNavigate={handleNavigateToSection}
                   />
 
                   {/* Mood Tracker - Primary CTA style if not filled today */}
@@ -1072,10 +1052,7 @@ export function Index() {
           <div className="space-y-6">
             <Header
               userName={userName}
-              onOpenTimeHelper={() => setShowTimeHelper(true)}
-              onOpenQuests={() => setShowQuests(true)}
               onOpenChallenges={() => setShowChallenges(true)}
-              onOpenTasks={() => setShowTasks(true)}
             />
 
             {/* Inner World Garden - Personal growth visualization */}
@@ -1209,33 +1186,6 @@ export function Index() {
         />
       )}
 
-      {/* Quests Panel Modal */}
-      {showQuests && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <QuestsPanel onClose={() => setShowQuests(false)} />
-          </div>
-        </div>
-      )}
-
-      {/* Tasks Panel Modal */}
-      {showTasks && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-card rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold zen-text-gradient">Task Momentum</h2>
-              <button
-                onClick={() => setShowTasks(false)}
-                className="p-2 hover:bg-muted rounded-lg transition-colors text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            <TasksPanel onClose={() => setShowTasks(false)} />
-          </div>
-        </div>
-      )}
-
       {/* Time Helper Modal */}
       {showTimeHelper && (
         <TimeHelper onClose={() => setShowTimeHelper(false)} />
@@ -1250,7 +1200,8 @@ export function Index() {
         onChangeType={setCompanionType}
         onPet={petCompanion}
         onFeed={feedCompanion}
-        onTalk={talkToCompanion}
+        treatsBalance={treatsBalance}
+        feedCost={FEED_COST}
         streak={innerWorld.currentActiveStreak}
         hasMoodToday={hasMoodToday}
         hasHabitsToday={habits.length > 0 && habits.every(h => h.completedDates?.includes(currentDate))}

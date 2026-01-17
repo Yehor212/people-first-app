@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Home, BarChart3, Settings, Trophy, Sparkles } from 'lucide-react';
+import { Home, Settings, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 type TabType = 'home' | 'garden' | 'stats' | 'achievements' | 'settings';
@@ -12,11 +12,10 @@ interface NavigationProps {
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   const { t } = useLanguage();
 
+  // Simplified to 3 main tabs
   const tabs = [
     { id: 'home' as TabType, icon: Home, label: t.home },
     { id: 'garden' as TabType, icon: Sparkles, label: t.myWorld },
-    { id: 'stats' as TabType, icon: BarChart3, label: t.stats },
-    { id: 'achievements' as TabType, icon: Trophy, label: t.achievements },
     { id: 'settings' as TabType, icon: Settings, label: t.settings },
   ];
 
@@ -29,17 +28,17 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "flex flex-col items-center gap-1 py-2 px-6 rounded-xl transition-all",
+                "flex flex-col items-center gap-1 py-2 px-8 rounded-xl transition-all",
                 activeTab === tab.id
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
               <div className={cn(
-                "p-2 rounded-xl transition-all",
+                "p-2.5 rounded-xl transition-all",
                 activeTab === tab.id && "zen-gradient text-primary-foreground zen-shadow-soft"
               )}>
-                <tab.icon className="w-5 h-5" />
+                <tab.icon className="w-6 h-6" />
               </div>
               <span className="text-xs font-medium">{tab.label}</span>
             </button>

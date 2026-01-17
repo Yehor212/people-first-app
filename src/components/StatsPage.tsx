@@ -103,8 +103,14 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
       return acc + count;
     }, 0);
 
-    const allDates = habits.flatMap(h => getHabitCompletedDates(h));
-    const uniqueDates = [...new Set(allDates)].sort();
+    // Calculate streak from ALL activities (same as StreakBanner)
+    const allActivityDates = [
+      ...moods.map(m => m.date),
+      ...habits.flatMap(h => getHabitCompletedDates(h)),
+      ...completedFocusSessions.map(f => f.date),
+      ...gratitudeEntries.map(g => g.date),
+    ];
+    const uniqueDates = [...new Set(allActivityDates)].sort();
     const currentStreak = calculateStreak(uniqueDates);
 
     const moodCounts = filteredMoods.reduce((acc, m) => {

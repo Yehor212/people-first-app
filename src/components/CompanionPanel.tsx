@@ -1,15 +1,17 @@
 /**
- * CompanionPanel - Interactive companion mascot panel
- * Allows users to interact with, rename, and customize their companion
+ * CompanionPanel - Simplified companion panel with treats system
+ * 2 actions: Pet (free) and Feed (costs treats)
+ * Shows: Level, XP, Fullness, Treats balance
  */
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Edit3, Check, Heart, Star, MessageCircle, Hand, Cookie, Zap } from 'lucide-react';
+import { X, Edit3, Check, Star, Hand, Cookie } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Companion, CompanionType } from '@/types';
 import { COMPANION_EMOJIS } from '@/lib/innerWorldConstants';
+import { COMPANION_LEVELING } from '@/lib/treatConstants';
 
 interface CompanionPanelProps {
   companion: Companion;
@@ -17,9 +19,10 @@ interface CompanionPanelProps {
   onClose: () => void;
   onRename: (name: string) => void;
   onChangeType: (type: CompanionType) => void;
-  onPet: () => { happinessGain: number; warmthGain: number; xpGain: number; canPetAgain: boolean };
-  onFeed: () => { hungerReduction: number; energyGain: number; xpGain: number; canFeedAgain: boolean };
-  onTalk: () => { wisdomGain: number; xpGain: number };
+  onPet: () => { xpGain: number; canPetAgain: boolean; leveledUp?: boolean; newLevel?: number };
+  onFeed: () => { success: boolean; reason?: string; needed?: number; have?: number; fullnessGain: number; xpGain: number; treatCost?: number; newBalance?: number; leveledUp?: boolean; newLevel?: number };
+  treatsBalance: number;
+  feedCost: number;
   streak: number;
   hasMoodToday: boolean;
   hasHabitsToday: boolean;
@@ -29,117 +32,73 @@ interface CompanionPanelProps {
 
 const COMPANION_TYPES: CompanionType[] = ['fox', 'cat', 'owl', 'rabbit', 'dragon'];
 
-const COMPANION_NAMES: Record<CompanionType, { default: string; personality: string }> = {
-  fox: { default: 'Луна', personality: 'Curious & Playful' },
-  cat: { default: 'Мурка', personality: 'Calm & Wise' },
-  owl: { default: 'Сова', personality: 'Thoughtful & Patient' },
-  rabbit: { default: 'Зайка', personality: 'Energetic & Kind' },
-  dragon: { default: 'Дракоша', personality: 'Brave & Loyal' },
-};
-
-// Context-aware messages based on companion state and user activity
+// Get contextual message based on companion state
 function getContextualMessage(
   companion: Companion,
+  treatsBalance: number,
+  feedCost: number,
   hasMoodToday: boolean,
   hasHabitsToday: boolean,
   hasFocusToday: boolean,
   hasGratitudeToday: boolean,
-  streak: number
+  streak: number,
+  t: Record<string, string>
 ): string {
   const hour = new Date().getHours();
-  const happiness = companion.happiness || 50;
-  const hunger = companion.hunger || 50;
+  const fullness = companion.fullness ?? 50;
 
-  // Time-based greetings
-  const timeGreetings = {
-    morning: ['Доброе утро! ☀️', 'Новый день - новые возможности!', 'Проснулся? Я тоже! 🌅'],
-    afternoon: ['Как проходит день? 🌤️', 'Уже обед, а ты молодец!', 'Продолжаем в том же духе! 💪'],
-    evening: ['Вечер! Время отдыхать 🌙', 'Какой был день?', 'Скоро отдых! ✨'],
-    night: ['Zzz... 💤', '*мирно спит*', 'Пора спать... 🌜'],
-  };
-
-  const getTimeOfDay = () => {
-    if (hour >= 5 && hour < 12) return 'morning';
-    if (hour >= 12 && hour < 18) return 'afternoon';
-    if (hour >= 18 && hour < 23) return 'evening';
-    return 'night';
-  };
-
-  // Priority-based messages
-
-  // If hungry
-  if (hunger >= 70) {
-    return ['Я голодный... 🥺', 'Покорми меня? 🍪', '*урчит животик*'][Math.floor(Math.random() * 3)];
+  // Priority 1: Hungry companion
+  if (fullness < 30) {
+    if (treatsBalance >= feedCost) {
+      return t.companionHungryCanFeed || '🥺 I\'m hungry... Feed me?';
+    }
+    return t.companionHungryNoTreats || '🥺 I\'m hungry... Do activities to earn treats!';
   }
 
-  // Celebrating streak
+  // Priority 2: Celebrating streak
   if (streak >= 7) {
-    return ['🏆 ' + streak + ' дней подряд! Легенда!', 'Ты невероятен! ' + streak + ' дней! 🔥', 'Мы команда мечты! ' + streak + '! 🌟'][Math.floor(Math.random() * 3)];
+    return (t.companionStreakLegend || '🏆 {streak} days! You\'re a legend!').replace('{streak}', String(streak));
   }
-
   if (streak >= 3) {
-    return ['🔥 ' + streak + ' дня подряд!', 'Так держать! ' + streak + ' дней!', streak + ' дней! Горжусь тобой! ✨'][Math.floor(Math.random() * 3)];
+    return (t.companionStreakGood || '🔥 {streak} days! Keep it up!').replace('{streak}', String(streak));
   }
 
-  // Activity reminders
+  // Priority 3: Activity reminders
   if (!hasMoodToday) {
-    return ['Как ты сегодня? 💜', 'Расскажи о настроении!', 'Как настрой?'][Math.floor(Math.random() * 3)];
+    return t.companionAskMood || '💜 How are you feeling today?';
   }
-
   if (!hasHabitsToday) {
-    return ['Привычки ждут! 🎯', 'Не забудь про привычки!', 'Время для привычек? 💪'][Math.floor(Math.random() * 3)];
+    return t.companionAskHabits || '🎯 Time for habits!';
   }
-
   if (!hasFocusToday) {
-    return ['Может сфокусируемся? 🧠', 'Готов поработать?', 'Время фокуса! ⏱️'][Math.floor(Math.random() * 3)];
+    return t.companionAskFocus || '🧠 Ready to focus?';
   }
-
   if (!hasGratitudeToday) {
-    return ['За что благодарен? 💖', 'Напиши благодарность!', 'Что хорошего сегодня? ✨'][Math.floor(Math.random() * 3)];
+    return t.companionAskGratitude || '💖 What are you grateful for?';
   }
 
-  // All done - celebration!
+  // Priority 4: All done!
   if (hasMoodToday && hasHabitsToday && hasFocusToday && hasGratitudeToday) {
-    return ['Всё сделано! Ты СУПЕР! 🏆', 'Идеальный день! 🌟', 'Легенда! 100%! 🎉'][Math.floor(Math.random() * 3)];
+    return t.companionAllDone || '🏆 Perfect day! You\'re amazing!';
   }
 
-  // Happy based
-  if (happiness >= 80) {
-    return ['Обожаю тебя! 💕', 'Лучший хозяин! ✨', 'Мы команда! 🎉'][Math.floor(Math.random() * 3)];
+  // Priority 5: Happy companion
+  if (fullness >= 70) {
+    return t.companionHappy || '💕 I love you!';
   }
 
-  // Default time-based
-  const timeOfDay = getTimeOfDay();
-  const messages = timeGreetings[timeOfDay];
-  return messages[Math.floor(Math.random() * messages.length)];
+  // Default: Time-based
+  if (hour >= 5 && hour < 12) {
+    return t.companionMorning || '☀️ Good morning!';
+  }
+  if (hour >= 12 && hour < 18) {
+    return t.companionAfternoon || '🌤️ How\'s your day going?';
+  }
+  if (hour >= 18 && hour < 23) {
+    return t.companionEvening || '🌙 Good evening!';
+  }
+  return t.companionNight || '💤 Zzz...';
 }
-
-// Pet reaction messages
-const PET_REACTIONS = [
-  '💕 Мррр~',
-  '✨ Приятно!',
-  '😊 Спасибо!',
-  '💖 Обожаю!',
-  '🥰 Ещё!',
-];
-
-// Feed reaction messages
-const FEED_REACTIONS = [
-  '🍪 Вкусно!',
-  '😋 Ням-ням!',
-  '✨ Спасибо!',
-  '💪 Энергия!',
-  '🎉 Сытый!',
-];
-
-// Talk reaction messages
-const TALK_REACTIONS = [
-  '🧠 Интересно...',
-  '💡 Понял!',
-  '✨ Мудрость +1',
-  '📚 Учусь!',
-  '🌟 Спасибо!',
-];
 
 export function CompanionPanel({
   companion,
@@ -149,7 +108,8 @@ export function CompanionPanel({
   onChangeType,
   onPet,
   onFeed,
-  onTalk,
+  treatsBalance,
+  feedCost,
   streak,
   hasMoodToday,
   hasHabitsToday,
@@ -166,9 +126,13 @@ export function CompanionPanel({
   // Update message on open
   useEffect(() => {
     if (isOpen) {
-      setMessage(getContextualMessage(companion, hasMoodToday, hasHabitsToday, hasFocusToday, hasGratitudeToday, streak));
+      setMessage(getContextualMessage(
+        companion, treatsBalance, feedCost,
+        hasMoodToday, hasHabitsToday, hasFocusToday, hasGratitudeToday,
+        streak, t as Record<string, string>
+      ));
     }
-  }, [isOpen, companion, hasMoodToday, hasHabitsToday, hasFocusToday, hasGratitudeToday, streak]);
+  }, [isOpen, companion, treatsBalance, feedCost, hasMoodToday, hasHabitsToday, hasFocusToday, hasGratitudeToday, streak, t]);
 
   const handleSaveName = () => {
     if (editName.trim()) {
@@ -179,19 +143,33 @@ export function CompanionPanel({
 
   const handleTypeChange = (type: CompanionType) => {
     onChangeType(type);
-    setMessage(getContextualMessage(companion, hasMoodToday, hasHabitsToday, hasFocusToday, hasGratitudeToday, streak));
   };
 
   const handlePet = () => {
     if (isAnimating) return;
     setIsAnimating(true);
     const result = onPet();
-    const reaction = PET_REACTIONS[Math.floor(Math.random() * PET_REACTIONS.length)];
-    setShowReaction(reaction + (result.canPetAgain ? ` +${result.xpGain} XP` : ''));
+    const reactions = [
+      t.petReaction1 || '💕 *purr*',
+      t.petReaction2 || '✨ That feels nice!',
+      t.petReaction3 || '😊 Thank you!',
+      t.petReaction4 || '💖 I love you!',
+    ];
+    const reaction = reactions[Math.floor(Math.random() * reactions.length)];
+    setShowReaction(reaction + ` +${result.xpGain} XP`);
+
     setTimeout(() => {
       setShowReaction(null);
       setIsAnimating(false);
-      setMessage(getContextualMessage(companion, hasMoodToday, hasHabitsToday, hasFocusToday, hasGratitudeToday, streak));
+      if (result.leveledUp) {
+        setMessage((t.companionLevelUp || '🎉 Level up! Now level {level}!').replace('{level}', String(result.newLevel)));
+      } else {
+        setMessage(getContextualMessage(
+          companion, treatsBalance, feedCost,
+          hasMoodToday, hasHabitsToday, hasFocusToday, hasGratitudeToday,
+          streak, t as Record<string, string>
+        ));
+      }
     }, 1500);
   };
 
@@ -199,41 +177,47 @@ export function CompanionPanel({
     if (isAnimating) return;
     setIsAnimating(true);
     const result = onFeed();
-    const reaction = FEED_REACTIONS[Math.floor(Math.random() * FEED_REACTIONS.length)];
-    setShowReaction(reaction + (result.canFeedAgain ? ` +${result.xpGain} XP` : ''));
-    setTimeout(() => {
-      setShowReaction(null);
-      setIsAnimating(false);
-      setMessage(getContextualMessage(companion, hasMoodToday, hasHabitsToday, hasFocusToday, hasGratitudeToday, streak));
-    }, 1500);
-  };
 
-  const handleTalk = () => {
-    if (isAnimating) return;
-    setIsAnimating(true);
-    const result = onTalk();
-    const reaction = TALK_REACTIONS[Math.floor(Math.random() * TALK_REACTIONS.length)];
-    setShowReaction(reaction + ` +${result.xpGain} XP`);
+    if (!result.success) {
+      const notEnough = (t.feedNotEnough || '🍪 Need {needed} treats, have {have}')
+        .replace('{needed}', String(result.needed))
+        .replace('{have}', String(result.have));
+      setShowReaction(notEnough);
+    } else {
+      const reactions = [
+        t.feedReaction1 || '🍪 Yummy!',
+        t.feedReaction2 || '😋 Delicious!',
+        t.feedReaction3 || '✨ Thank you!',
+        t.feedReaction4 || '💪 Energy!',
+      ];
+      const reaction = reactions[Math.floor(Math.random() * reactions.length)];
+      setShowReaction(reaction + ` +${result.xpGain} XP`);
+    }
+
     setTimeout(() => {
       setShowReaction(null);
       setIsAnimating(false);
-      setMessage(getContextualMessage(companion, hasMoodToday, hasHabitsToday, hasFocusToday, hasGratitudeToday, streak));
+      if (result.leveledUp) {
+        setMessage((t.companionLevelUp || '🎉 Level up! Now level {level}!').replace('{level}', String(result.newLevel)));
+      } else {
+        setMessage(getContextualMessage(
+          { ...companion, fullness: (companion.fullness || 50) + (result.success ? result.fullnessGain : 0) },
+          result.success ? (result.newBalance || treatsBalance) : treatsBalance,
+          feedCost,
+          hasMoodToday, hasHabitsToday, hasFocusToday, hasGratitudeToday,
+          streak, t as Record<string, string>
+        ));
+      }
     }, 1500);
   };
 
   // Calculate XP progress
-  const xpForNextLevel = companion.level * 100;
+  const xpForNextLevel = COMPANION_LEVELING.xpPerLevel(companion.level);
   const xpProgress = (companion.experience / xpForNextLevel) * 100;
 
-  // Calculate stats with fallbacks
-  const happiness = companion.happiness ?? 50;
-  const hunger = companion.hunger ?? 50;
-  const warmth = companion.personality?.warmth ?? 70;
-  const energy = companion.personality?.energy ?? 50;
-  const wisdom = companion.personality?.wisdom ?? 50;
-
-  // Hunger indicator (inverted - low hunger = good, high hunger = needs feeding)
-  const satiety = 100 - hunger; // Convert hunger to satiety for display
+  // Get fullness (main stat now)
+  const fullness = companion.fullness ?? 50;
+  const canFeed = treatsBalance >= feedCost;
 
   return (
     <AnimatePresence>
@@ -253,15 +237,22 @@ export function CompanionPanel({
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header with close button */}
+            {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border/50">
               <h2 className="text-lg font-semibold">{t.myCompanion}</h2>
-              <button
-                onClick={onClose}
-                className="p-2 rounded-full hover:bg-muted transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
+              {/* Treats Balance */}
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 rounded-full">
+                  <span className="text-lg">🍪</span>
+                  <span className="font-bold text-orange-500">{treatsBalance}</span>
+                </div>
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-full hover:bg-muted transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
 
             <div className="p-6 overflow-y-auto max-h-[calc(85vh-60px)]">
@@ -340,76 +331,60 @@ export function CompanionPanel({
                     </>
                   )}
                 </div>
-
-                {/* Personality */}
-                <p className="text-sm text-muted-foreground">
-                  {COMPANION_NAMES[companion.type].personality}
-                </p>
               </div>
 
-              {/* Interactive buttons */}
-              <div className="grid grid-cols-3 gap-3 mb-6">
+              {/* Two action buttons: Pet (free) and Feed (costs treats) */}
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {/* Pet - FREE */}
                 <button
                   onClick={handlePet}
                   disabled={isAnimating}
                   className={cn(
-                    "flex flex-col items-center gap-2 p-4 rounded-2xl transition-all",
+                    "flex flex-col items-center gap-2 p-5 rounded-2xl transition-all",
                     "bg-gradient-to-br from-pink-500/20 to-red-500/20",
                     "hover:from-pink-500/30 hover:to-red-500/30 hover:scale-105",
                     "active:scale-95",
                     isAnimating && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  <Hand className="w-6 h-6 text-pink-500" />
-                  <span className="text-xs font-medium">{t.pet}</span>
+                  <Hand className="w-8 h-8 text-pink-500" />
+                  <span className="text-sm font-medium">{t.pet || 'Pet'}</span>
+                  <span className="text-xs text-muted-foreground">{t.free || 'Free'}</span>
                 </button>
 
+                {/* Feed - COSTS TREATS */}
                 <button
                   onClick={handleFeed}
-                  disabled={isAnimating}
+                  disabled={isAnimating || !canFeed}
                   className={cn(
-                    "flex flex-col items-center gap-2 p-4 rounded-2xl transition-all",
+                    "flex flex-col items-center gap-2 p-5 rounded-2xl transition-all",
                     "bg-gradient-to-br from-orange-500/20 to-yellow-500/20",
                     "hover:from-orange-500/30 hover:to-yellow-500/30 hover:scale-105",
                     "active:scale-95",
-                    hunger >= 70 && "ring-2 ring-orange-500 animate-pulse",
-                    isAnimating && "opacity-50 cursor-not-allowed"
+                    fullness < 30 && canFeed && "ring-2 ring-orange-500 animate-pulse",
+                    (isAnimating || !canFeed) && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  <Cookie className="w-6 h-6 text-orange-500" />
-                  <span className="text-xs font-medium">{t.feed}</span>
-                </button>
-
-                <button
-                  onClick={handleTalk}
-                  disabled={isAnimating}
-                  className={cn(
-                    "flex flex-col items-center gap-2 p-4 rounded-2xl transition-all",
-                    "bg-gradient-to-br from-blue-500/20 to-purple-500/20",
-                    "hover:from-blue-500/30 hover:to-purple-500/30 hover:scale-105",
-                    "active:scale-95",
-                    isAnimating && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  <MessageCircle className="w-6 h-6 text-blue-500" />
-                  <span className="text-xs font-medium">{t.talk}</span>
+                  <Cookie className="w-8 h-8 text-orange-500" />
+                  <span className="text-sm font-medium">{t.feed || 'Feed'}</span>
+                  <span className="text-xs text-orange-500 font-medium">🍪 {feedCost}</span>
                 </button>
               </div>
 
               {/* Level and XP */}
-              <div className="bg-muted/50 rounded-2xl p-4 mb-6">
+              <div className="bg-muted/50 rounded-2xl p-4 mb-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <Star className="w-5 h-5 text-yellow-500" />
-                    <span className="font-semibold">Level {companion.level}</span>
+                    <span className="font-semibold">{t.level || 'Level'} {companion.level}</span>
                   </div>
                   <span className="text-sm text-muted-foreground">
                     {companion.experience}/{xpForNextLevel} XP
                   </span>
                 </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full bg-gradient-to-r from-primary to-accent"
+                    className="h-full bg-gradient-to-r from-yellow-400 to-orange-500"
                     initial={{ width: 0 }}
                     animate={{ width: `${xpProgress}%` }}
                     transition={{ duration: 0.5 }}
@@ -417,72 +392,49 @@ export function CompanionPanel({
                 </div>
               </div>
 
-              {/* Happiness and Hunger bars */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
-                <div className="bg-muted/50 rounded-xl p-3">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-muted-foreground">😊 {t.happiness}</span>
-                    <span className="text-xs font-medium">{happiness}%</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={cn(
-                        "h-full transition-all rounded-full",
-                        happiness >= 70 ? "bg-green-500" : happiness >= 40 ? "bg-yellow-500" : "bg-red-500"
-                      )}
-                      style={{ width: `${happiness}%` }}
-                    />
-                  </div>
+              {/* Fullness bar (main stat) */}
+              <div className="bg-muted/50 rounded-2xl p-4 mb-6">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">🍽️ {t.fullness || 'Fullness'}</span>
+                  <span className={cn(
+                    "text-sm font-bold",
+                    fullness >= 70 ? "text-green-500" : fullness >= 30 ? "text-yellow-500" : "text-red-500"
+                  )}>
+                    {fullness}%
+                  </span>
                 </div>
-
-                <div className="bg-muted/50 rounded-xl p-3">
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-muted-foreground">🍪 {t.satiety}</span>
-                    <span className="text-xs font-medium">{satiety}%</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className={cn(
-                        "h-full transition-all rounded-full",
-                        satiety >= 70 ? "bg-green-500" : satiety >= 40 ? "bg-yellow-500" : "bg-red-500"
-                      )}
-                      style={{ width: `${satiety}%` }}
-                    />
-                  </div>
+                <div className="h-3 bg-muted rounded-full overflow-hidden">
+                  <motion.div
+                    className={cn(
+                      "h-full rounded-full transition-all",
+                      fullness >= 70 ? "bg-gradient-to-r from-green-400 to-emerald-500" :
+                      fullness >= 30 ? "bg-gradient-to-r from-yellow-400 to-orange-500" :
+                      "bg-gradient-to-r from-red-400 to-rose-500"
+                    )}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${fullness}%` }}
+                    transition={{ duration: 0.5 }}
+                  />
                 </div>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-3 mb-6">
-                <div className="bg-muted/50 rounded-xl p-3 text-center">
-                  <Heart className="w-5 h-5 mx-auto mb-1 text-red-400" />
-                  <p className="text-lg font-bold">{warmth}%</p>
-                  <p className="text-xs text-muted-foreground">{t.warmth}</p>
-                </div>
-                <div className="bg-muted/50 rounded-xl p-3 text-center">
-                  <Zap className="w-5 h-5 mx-auto mb-1 text-yellow-400" />
-                  <p className="text-lg font-bold">{energy}%</p>
-                  <p className="text-xs text-muted-foreground">{t.energy}</p>
-                </div>
-                <div className="bg-muted/50 rounded-xl p-3 text-center">
-                  <MessageCircle className="w-5 h-5 mx-auto mb-1 text-blue-400" />
-                  <p className="text-lg font-bold">{wisdom}%</p>
-                  <p className="text-xs text-muted-foreground">{t.wisdom}</p>
-                </div>
+                {fullness < 30 && (
+                  <p className="text-xs text-red-500 mt-2 text-center">
+                    {t.companionNeedsFood || 'Your companion is hungry!'}
+                  </p>
+                )}
               </div>
 
               {/* Streak display */}
               {streak > 0 && (
                 <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-2xl p-4 mb-6 text-center">
                   <p className="text-3xl mb-1">🔥 {streak}</p>
-                  <p className="text-sm font-medium">{t.companionStreak}</p>
+                  <p className="text-sm font-medium">{t.daysInRow || 'days in a row'}</p>
                 </div>
               )}
 
               {/* Companion selector */}
               <div className="mb-4">
-                <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                  {t.chooseCompanion}
+                <h4 className="text-sm font-medium text-muted-foreground mb-3 text-center">
+                  {t.chooseCompanion || 'Choose companion'}
                 </h4>
                 <div className="flex justify-center gap-2">
                   {COMPANION_TYPES.map((type) => (
@@ -502,9 +454,9 @@ export function CompanionPanel({
                 </div>
               </div>
 
-              {/* How to level up hint */}
-              <div className="text-center text-xs text-muted-foreground">
-                <p>💡 {t.levelUpHint}</p>
+              {/* How to earn treats hint */}
+              <div className="text-center text-xs text-muted-foreground bg-muted/30 rounded-xl p-3">
+                <p>💡 {t.earnTreatsHint || 'Complete activities to earn treats for your companion!'}</p>
               </div>
             </div>
           </motion.div>

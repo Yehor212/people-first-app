@@ -156,6 +156,28 @@ export interface ScheduleEvent {
 }
 
 // ============================================
+// TREATS SYSTEM - Unified reward currency
+// ============================================
+
+export type TreatSource = 'mood' | 'habit' | 'focus' | 'gratitude' | 'streak_bonus' | 'daily_reward';
+
+export interface TreatTransaction {
+  id: string;
+  amount: number;
+  source: TreatSource;
+  timestamp: number;
+  description?: string;
+}
+
+export interface TreatsWallet {
+  balance: number;              // Current treats available
+  lifetimeEarned: number;       // Total treats ever earned
+  lifetimeSpent: number;        // Total treats ever spent
+  lastEarnedAt?: number;        // Timestamp of last earning
+  transactions: TreatTransaction[]; // Recent transactions (last 50)
+}
+
+// ============================================
 // INNER WORLD SYSTEM - Personal Growth Garden
 // ============================================
 
@@ -211,6 +233,11 @@ export interface Companion {
   lastPetTime?: number;             // Track when companion was last petted
   lastFeedTime?: number;            // Track when companion was last fed
   interactionCount: number;         // Total interactions
+
+  // Simplified stats (new system)
+  fullness: number;                 // 0-100: how full the companion is (fed by treats)
+
+  // Legacy stats (kept for backward compatibility, will be derived from fullness)
   happiness: number;                // 0-100: affects reactions
   hunger: number;                   // 0-100: decreases over time, affects mood
   personality: {
@@ -234,6 +261,9 @@ export type GardenWeather = 'sunny' | 'cloudy' | 'rainy' | 'starry' | 'aurora' |
 
 // The complete Inner World state
 export interface InnerWorld {
+  // Treats wallet (unified reward system)
+  treats: TreatsWallet;
+
   // Garden state
   gardenStage: GardenStage;
   plants: GardenPlant[];

@@ -22,6 +22,9 @@ import {
   GardenWeather,
   Season,
   MoodType,
+  TreatsWallet,
+  TreatSource,
+  TreatTransaction,
 } from '@/types';
 import {
   GROWTH_THRESHOLDS,
@@ -32,6 +35,13 @@ import {
   CREATURE_EMOJIS,
   COMPANION_EMOJIS,
 } from '@/lib/innerWorldConstants';
+import {
+  TREAT_REWARDS,
+  COMPANION_COSTS,
+  COMPANION_LEVELING,
+  FULLNESS_DECAY,
+  calculateTreatsEarned,
+} from '@/lib/treatConstants';
 
 // ============================================
 // DEFAULT STATE
@@ -48,8 +58,9 @@ const createDefaultCompanion = (): Companion => ({
   lastPetTime: undefined,
   lastFeedTime: undefined,
   interactionCount: 0,
-  happiness: 50,
-  hunger: 50,
+  fullness: 70,           // New simplified stat (0-100)
+  happiness: 50,          // Legacy - derived from fullness
+  hunger: 30,             // Legacy - derived from fullness (100 - fullness)
   personality: {
     energy: 50,
     wisdom: 50,
@@ -57,7 +68,16 @@ const createDefaultCompanion = (): Companion => ({
   },
 });
 
+const createDefaultTreatsWallet = (): TreatsWallet => ({
+  balance: 20,              // Start with some treats to try feeding
+  lifetimeEarned: 20,
+  lifetimeSpent: 0,
+  lastEarnedAt: Date.now(),
+  transactions: [],
+});
+
 const createDefaultInnerWorld = (): InnerWorld => ({
+  treats: createDefaultTreatsWallet(),
   gardenStage: 'empty',
   plants: [],
   creatures: [],
@@ -375,78 +395,199 @@ export function useInnerWorld() {
   }, [world, setWorld]);
 
   // ============================================
+  // TREATS SYSTEM
+  // ============================================
+
+  // Earn treats from activities
+  const earnTreats = useCallback((
+    source: TreatSource,
+    baseAmount: number,
+    description?: string
+  ) => {
+    const streakDays = world.currentActiveStreak;
+    const { total, bonus, multiplier } = calculateTreatsEarned(baseAmount, streakDays);
+
+    const transaction: TreatTransaction = {
+      id: generateId(),
+      amount: total,
+      source,
+      timestamp: Date.now(),
+      description: description || `${source} +${total}`,
+    };
+
+    // Keep only last 50 transactions
+    const transactions = [transaction, ...(world.treats?.transactions || [])].slice(0, 50);
+
+    const updatedTreats: TreatsWallet = {
+      balance: (world.treats?.balance || 0) + total,
+      lifetimeEarned: (world.treats?.lifetimeEarned || 0) + total,
+      lifetimeSpent: world.treats?.lifetimeSpent || 0,
+      lastEarnedAt: Date.now(),
+      transactions,
+    };
+
+    setWorld({
+      ...world,
+      treats: updatedTreats,
+    });
+
+    return { earned: total, bonus, multiplier, newBalance: updatedTreats.balance };
+  }, [world, setWorld]);
+
+  // Spend treats (e.g., to feed companion)
+  const spendTreats = useCallback((amount: number, purpose: string): boolean => {
+    const currentBalance = world.treats?.balance || 0;
+    if (currentBalance < amount) {
+      return false; // Not enough treats
+    }
+
+    const transaction: TreatTransaction = {
+      id: generateId(),
+      amount: -amount,
+      source: 'mood', // Will be overwritten based on purpose
+      timestamp: Date.now(),
+      description: purpose,
+    };
+
+    const transactions = [transaction, ...(world.treats?.transactions || [])].slice(0, 50);
+
+    const updatedTreats: TreatsWallet = {
+      ...world.treats!,
+      balance: currentBalance - amount,
+      lifetimeSpent: (world.treats?.lifetimeSpent || 0) + amount,
+      transactions,
+    };
+
+    setWorld({
+      ...world,
+      treats: updatedTreats,
+    });
+
+    return true;
+  }, [world, setWorld]);
+
+  // ============================================
   // COMPANION INTERACTIONS
   // ============================================
 
-  // Pet the companion - increases happiness and warmth
+  // Pet the companion - FREE action, small XP gain, shows love
   const petCompanion = useCallback(() => {
     const now = Date.now();
     const timeSinceLastPet = world.companion.lastPetTime
       ? now - world.companion.lastPetTime
       : Infinity;
 
-    // Can pet once every 5 minutes for full effect
-    const canPetAgain = timeSinceLastPet > 5 * 60 * 1000;
-    const happinessGain = canPetAgain ? 15 : 3;
-    const warmthGain = canPetAgain ? 5 : 1;
-    const xpGain = canPetAgain ? 5 : 1;
+    // Cooldown for full effect (1 minute)
+    const canPetAgain = timeSinceLastPet > COMPANION_COSTS.pet.cooldownMs;
+    const xpGain = canPetAgain ? COMPANION_COSTS.pet.xpGain : 2;
 
-    const newHappiness = Math.min(100, (world.companion.happiness || 50) + happinessGain);
-    const newWarmth = Math.min(100, world.companion.personality.warmth + warmthGain);
+    // Calculate level up
+    let newExperience = world.companion.experience + xpGain;
+    let newLevel = world.companion.level;
+    const xpNeeded = COMPANION_LEVELING.xpPerLevel(newLevel);
+
+    if (newExperience >= xpNeeded) {
+      newLevel += 1;
+      newExperience -= xpNeeded;
+    }
 
     setWorld({
       ...world,
       companion: {
         ...world.companion,
-        happiness: newHappiness,
         lastPetTime: now,
         lastInteraction: now,
         interactionCount: (world.companion.interactionCount || 0) + 1,
-        experience: world.companion.experience + xpGain,
-        mood: newHappiness >= 80 ? 'excited' : newHappiness >= 50 ? 'happy' : 'calm',
-        personality: {
-          ...world.companion.personality,
-          warmth: newWarmth,
-        },
+        experience: newExperience,
+        level: newLevel,
       },
     });
 
-    return { happinessGain, warmthGain, xpGain, canPetAgain };
+    return {
+      xpGain,
+      canPetAgain,
+      leveledUp: newLevel > world.companion.level,
+      newLevel,
+    };
   }, [world, setWorld]);
 
-  // Feed the companion - reduces hunger, increases energy
+  // Feed the companion - COSTS TREATS, increases fullness and XP
   const feedCompanion = useCallback(() => {
     const now = Date.now();
-    const timeSinceLastFeed = world.companion.lastFeedTime
-      ? now - world.companion.lastFeedTime
-      : Infinity;
+    const treatCost = COMPANION_COSTS.feed.treatCost;
+    const currentBalance = world.treats?.balance || 0;
 
-    // Can feed once every 30 minutes for full effect
-    const canFeedAgain = timeSinceLastFeed > 30 * 60 * 1000;
-    const hungerReduction = canFeedAgain ? 30 : 5;
-    const energyGain = canFeedAgain ? 10 : 2;
-    const xpGain = canFeedAgain ? 10 : 2;
+    // Check if enough treats
+    if (currentBalance < treatCost) {
+      return {
+        success: false,
+        reason: 'not_enough_treats',
+        needed: treatCost,
+        have: currentBalance,
+        fullnessGain: 0,
+        xpGain: 0,
+      };
+    }
 
-    const newHunger = Math.max(0, (world.companion.hunger || 50) - hungerReduction);
-    const newEnergy = Math.min(100, world.companion.personality.energy + energyGain);
+    const fullnessGain = COMPANION_COSTS.feed.fullnessGain;
+    const xpGain = COMPANION_COSTS.feed.xpGain;
+
+    // Update fullness and derive hunger from it
+    const newFullness = Math.min(100, (world.companion.fullness || 50) + fullnessGain);
+    const newHunger = 100 - newFullness; // Inverse relationship
+    const newHappiness = Math.min(100, Math.max(30, newFullness)); // Happiness linked to fullness
+
+    // Deduct treats
+    const transaction: TreatTransaction = {
+      id: generateId(),
+      amount: -treatCost,
+      source: 'mood',
+      timestamp: now,
+      description: 'Feed companion',
+    };
+    const transactions = [transaction, ...(world.treats?.transactions || [])].slice(0, 50);
+
+    // Calculate level up
+    let newExperience = world.companion.experience + xpGain;
+    let newLevel = world.companion.level;
+    const xpNeeded = COMPANION_LEVELING.xpPerLevel(newLevel);
+
+    if (newExperience >= xpNeeded) {
+      newLevel += 1;
+      newExperience -= xpNeeded;
+    }
 
     setWorld({
       ...world,
+      treats: {
+        ...world.treats!,
+        balance: currentBalance - treatCost,
+        lifetimeSpent: (world.treats?.lifetimeSpent || 0) + treatCost,
+        transactions,
+      },
       companion: {
         ...world.companion,
+        fullness: newFullness,
         hunger: newHunger,
+        happiness: newHappiness,
         lastFeedTime: now,
         lastInteraction: now,
         interactionCount: (world.companion.interactionCount || 0) + 1,
-        experience: world.companion.experience + xpGain,
-        personality: {
-          ...world.companion.personality,
-          energy: newEnergy,
-        },
+        experience: newExperience,
+        level: newLevel,
+        mood: newHappiness >= 80 ? 'excited' : newHappiness >= 50 ? 'happy' : 'calm',
       },
     });
 
-    return { hungerReduction, energyGain, xpGain, canFeedAgain };
+    return {
+      success: true,
+      fullnessGain,
+      xpGain,
+      treatCost,
+      newBalance: currentBalance - treatCost,
+      leveledUp: newLevel > world.companion.level,
+      newLevel,
+    };
   }, [world, setWorld]);
 
   // Talk to companion - get advice and increase wisdom
@@ -546,6 +687,11 @@ export function useInnerWorld() {
     world,
     isLoading,
 
+    // Treats system
+    earnTreats,
+    spendTreats,
+    treatsBalance: world.treats?.balance || 0,
+
     // Actions
     plantSeed,
     waterPlants,
@@ -555,7 +701,7 @@ export function useInnerWorld() {
     renameCompanion,
     clearWelcomeBack,
 
-    // Companion interactions
+    // Companion interactions (simplified: feed costs treats, pet is free)
     petCompanion,
     feedCompanion,
     talkToCompanion,
@@ -568,5 +714,8 @@ export function useInnerWorld() {
     getPlantEmoji: (plant: GardenPlant) => PLANT_EMOJIS[plant.type][plant.stage],
     getCreatureEmoji: (creature: GardenCreature) => CREATURE_EMOJIS[creature.type][creature.stage],
     getCompanionEmoji: () => COMPANION_EMOJIS[world.companion.type],
+
+    // Constants for UI
+    FEED_COST: COMPANION_COSTS.feed.treatCost,
   };
 }
