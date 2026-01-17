@@ -281,5 +281,3 @@ export function CompanionPanel({
     </AnimatePresence>
   );
 }
-
-export default CompanionPanel;

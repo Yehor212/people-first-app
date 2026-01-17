@@ -192,5 +192,3 @@ export function MoodInsights({
     </div>
   );
 }
-
-export default MoodInsights;

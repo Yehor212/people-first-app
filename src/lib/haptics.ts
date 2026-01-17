@@ -151,5 +151,3 @@ export const haptics = {
   timeWarning: hapticWarning,
   error: hapticError,
 };
-
-export default haptics;

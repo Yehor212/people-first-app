@@ -512,5 +512,3 @@ export function InnerWorldGarden({
     </div>
   );
 }
-
-export default InnerWorldGarden;
