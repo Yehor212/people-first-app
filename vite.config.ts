@@ -150,21 +150,8 @@ export default defineConfig(({ mode }) => {
 
     rollupOptions: {
       output: {
-        // Optimized chunking for caching
-        manualChunks: {
-          "react-vendor": ["react", "react-dom", "react-router-dom"],
-          "ui-vendor": [
-            "@radix-ui/react-dialog",
-            "@radix-ui/react-dropdown-menu",
-            "@radix-ui/react-select",
-            "@radix-ui/react-switch",
-            "@radix-ui/react-tabs",
-            "@radix-ui/react-toast",
-          ],
-          "charts": ["recharts"],
-          "supabase": ["@supabase/supabase-js"],
-          "storage": ["dexie"],
-        },
+        // Disabled manualChunks - was causing "Cannot access before initialization" errors
+        // due to module initialization order issues when splitting chunks
 
         // Hashed filenames for cache busting
         entryFileNames: "assets/[name]-[hash].js",
