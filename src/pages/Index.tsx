@@ -62,9 +62,10 @@ import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
 import { InnerWorldGarden } from '@/components/InnerWorldGarden';
 import { CompanionPanel } from '@/components/CompanionPanel';
-import { TimeAwarenessBadge } from '@/components/TimeAwarenessBadge';
-import { MoodInsights } from '@/components/MoodInsights';
-import { haptics } from '@/lib/haptics';
+// TEMPORARILY DISABLED - investigating circular dependency
+// import { TimeAwarenessBadge } from '@/components/TimeAwarenessBadge';
+// import { MoodInsights } from '@/components/MoodInsights';
+// import { haptics } from '@/lib/haptics';
 
 type TabType = 'home' | 'stats' | 'achievements' | 'settings';
 
@@ -321,7 +322,7 @@ export function Index() {
     awardXp('mood'); // +5 XP
     triggerXpPopup(5, 'mood'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
-    haptics.moodSaved(); // Haptic feedback
+    // haptics.moodSaved(); // Haptic feedback - TEMPORARILY DISABLED
 
     // Inner World: Plant a flower based on mood
     plantSeed('mood', entry.mood);
@@ -341,7 +342,7 @@ export function Index() {
     setMoods(prev => [...prev, entry]);
     awardXp('mood');
     triggerSync();
-    haptics.moodSaved(); // Haptic feedback
+    // haptics.moodSaved(); // Haptic feedback - TEMPORARILY DISABLED
     plantSeed('mood', mood);
     waterPlants('mood');
 
@@ -384,7 +385,7 @@ export function Index() {
           completionsByDate[date] = current + 1;
           awardXp('habit'); // +10 XP for each completion
           triggerXpPopup(10, 'habit'); // Visual XP popup
-          haptics.habitToggled(); // Haptic feedback
+          // haptics.habitToggled(); // Haptic feedback - TEMPORARILY DISABLED
         }
 
         return {
@@ -401,7 +402,7 @@ export function Index() {
       if (!completed) {
         awardXp('habit'); // +10 XP for completing habit
         triggerXpPopup(10, 'habit'); // Visual XP popup
-        haptics.habitCompleted(); // Haptic feedback
+        // haptics.habitCompleted(); // Haptic feedback - TEMPORARILY DISABLED
         // Inner World: Plant a tree when completing habit
         plantSeed('habit');
         waterPlants('habit');
@@ -449,7 +450,7 @@ export function Index() {
     awardXp('focus'); // +15 XP
     triggerXpPopup(15, 'focus'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
-    haptics.focusCompleted(); // Haptic feedback
+    // haptics.focusCompleted(); // Haptic feedback - TEMPORARILY DISABLED
 
     // Inner World: Plant a crystal when completing focus session
     plantSeed('focus');
@@ -461,7 +462,7 @@ export function Index() {
     awardXp('gratitude'); // +8 XP
     triggerXpPopup(8, 'gratitude'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
-    haptics.gratitudeSaved(); // Haptic feedback
+    // haptics.gratitudeSaved(); // Haptic feedback - TEMPORARILY DISABLED
 
     // Inner World: Plant a mushroom and attract creatures
     plantSeed('gratitude');
@@ -970,11 +971,12 @@ export function Index() {
                 <div className="space-y-6">
                   <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
 
-                  {/* Time Awareness Badge - ADHD time blindness helper */}
+                  {/* Time Awareness Badge - ADHD time blindness helper - TEMPORARILY DISABLED
                   <TimeAwarenessBadge
                     scheduleEvents={todayScheduleEvents}
                     onClick={() => setShowTimeHelper(true)}
                   />
+                  */}
 
                   {/* Daily Surprise - motivational content that changes daily */}
                   <DailySurprise onNavigate={handleNavigateToSection} />
@@ -1053,13 +1055,14 @@ export function Index() {
                     currentFocusMinutes={currentFocusMinutes}
                   />
 
-                  {/* AI Insights - Personalized mood pattern analysis */}
+                  {/* AI Insights - Personalized mood pattern analysis - TEMPORARILY DISABLED
                   <MoodInsights
                     moods={moods}
                     habits={habits}
                     focusSessions={focusSessions}
                     gratitudeEntries={gratitudeEntries}
                   />
+                  */}
 
                   <div ref={habitsRef}>
                     <HabitTracker
