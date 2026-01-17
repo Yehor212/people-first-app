@@ -26,7 +26,8 @@
       "Bash(CAPACITOR_BUILD=true npm run build:*)",
       "Bash(npm run cap:sync:android:*)",
       "Bash(npm audit:*)",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(gh run list:*)"
     ]
   }
 }

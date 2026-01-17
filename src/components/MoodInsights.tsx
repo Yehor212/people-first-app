@@ -18,21 +18,29 @@ interface MoodInsightsProps {
   gratitudeEntries: GratitudeEntry[];
 }
 
-const TYPE_ICONS = {
-  pattern: TrendingUp,
-  correlation: Brain,
-  tip: Target,
-  achievement: Sparkles,
-  warning: Heart,
-};
+// Helper function to get icon for insight type - avoids module-level const with component refs
+function getInsightIcon(type: MoodInsight['type']) {
+  switch (type) {
+    case 'pattern': return TrendingUp;
+    case 'correlation': return Brain;
+    case 'tip': return Target;
+    case 'achievement': return Sparkles;
+    case 'warning': return Heart;
+    default: return Brain;
+  }
+}
 
-const TYPE_COLORS = {
-  pattern: 'from-blue-500/20 to-cyan-500/20 border-blue-500/30',
-  correlation: 'from-purple-500/20 to-pink-500/20 border-purple-500/30',
-  tip: 'from-amber-500/20 to-orange-500/20 border-amber-500/30',
-  achievement: 'from-green-500/20 to-emerald-500/20 border-green-500/30',
-  warning: 'from-red-500/20 to-rose-500/20 border-red-500/30',
-};
+// Helper function to get color for insight type
+function getInsightColor(type: MoodInsight['type']) {
+  switch (type) {
+    case 'pattern': return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30';
+    case 'correlation': return 'from-purple-500/20 to-pink-500/20 border-purple-500/30';
+    case 'tip': return 'from-amber-500/20 to-orange-500/20 border-amber-500/30';
+    case 'achievement': return 'from-green-500/20 to-emerald-500/20 border-green-500/30';
+    case 'warning': return 'from-red-500/20 to-rose-500/20 border-red-500/30';
+    default: return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30';
+  }
+}
 
 export function MoodInsights({
   moods,
@@ -92,7 +100,7 @@ export function MoodInsights({
 
   const featuredInsight = insights[0];
   const otherInsights = insights.slice(1);
-  const FeaturedIcon = TYPE_ICONS[featuredInsight.type];
+  const FeaturedIcon = getInsightIcon(featuredInsight.type);
 
   return (
     <div className="space-y-3">
@@ -102,7 +110,7 @@ export function MoodInsights({
         animate={{ opacity: 1, y: 0 }}
         className={cn(
           "relative bg-gradient-to-br rounded-2xl p-5 border overflow-hidden",
-          TYPE_COLORS[featuredInsight.type]
+          getInsightColor(featuredInsight.type)
         )}
       >
         {/* Background decoration */}
@@ -157,7 +165,7 @@ export function MoodInsights({
       {/* Other Insights */}
       <AnimatePresence>
         {showAll && otherInsights.map((insight, index) => {
-          const Icon = TYPE_ICONS[insight.type];
+          const Icon = getInsightIcon(insight.type);
           return (
             <motion.div
               key={insight.id}
@@ -167,7 +175,7 @@ export function MoodInsights({
               transition={{ delay: index * 0.1 }}
               className={cn(
                 "relative bg-gradient-to-br rounded-xl p-4 border",
-                TYPE_COLORS[insight.type]
+                getInsightColor(insight.type)
               )}
             >
               {/* Dismiss button */}
