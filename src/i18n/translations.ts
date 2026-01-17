@@ -92,6 +92,25 @@ export interface Translations {
   scheduleStudy: string;
   scheduleMeeting: string;
 
+  // Time Awareness (ADHD time blindness helper)
+  timeUntilEndOfDay: string;
+  timeIn: string;
+  timePassed: string;
+  timeNow: string;
+  hoursShort: string;
+  minutesShort: string;
+  night: string;
+
+  // AI Insights
+  aiInsights: string;
+  aiInsight: string;
+  personalizedForYou: string;
+  insightsNeedMoreData: string;
+  daysLogged: string;
+  showMore: string;
+  moreInsights: string;
+  hideInsights: string;
+
   // Onboarding Hints
   hintFirstMoodTitle: string;
   hintFirstMoodDesc: string;
@@ -542,6 +561,14 @@ export interface Translations {
   gardenMagical: string;
   gardenLegendary: string;
 
+  // Companion Notifications (soft reminders)
+  companionMissesYou: string;
+  companionWantsToPlay: string;
+  companionWaiting: string;
+  companionProud: string;
+  companionCheersYou: string;
+  companionQuickMood: string;  // Quick mood log prompt
+
   // Premium
   premium: string;
   premiumDescription: string;
@@ -749,6 +776,25 @@ export const translations: Record<Language, Translations> = {
     scheduleExercise: 'Спорт',
     scheduleStudy: 'Учёба',
     scheduleMeeting: 'Встреча',
+
+    // Time Awareness (ADHD time blindness helper)
+    timeUntilEndOfDay: 'До конца дня',
+    timeIn: 'через',
+    timePassed: 'Время прошло',
+    timeNow: 'Сейчас!',
+    hoursShort: 'ч',
+    minutesShort: 'м',
+    night: 'Ночь',
+
+    // AI Insights
+    aiInsights: 'AI Аналитика',
+    aiInsight: 'AI Инсайт',
+    personalizedForYou: 'Персонально для вас',
+    insightsNeedMoreData: 'Записывайте настроение неделю, чтобы разблокировать персональные инсайты!',
+    daysLogged: 'дней записано',
+    showMore: 'Показать ещё',
+    moreInsights: 'инсайтов',
+    hideInsights: 'Скрыть инсайты',
 
     // Onboarding Hints
     hintFirstMoodTitle: 'Как вы себя чувствуете?',
@@ -1278,6 +1324,14 @@ export const translations: Record<Language, Translations> = {
     gardenFlourishing: 'Цветение',
     gardenMagical: 'Магия',
     gardenLegendary: 'Легенда',
+
+    // Companion Notifications
+    companionMissesYou: 'скучает по тебе! 💕',
+    companionWantsToPlay: 'хочет провести время вместе!',
+    companionWaiting: 'ждёт тебя в саду 🌱',
+    companionProud: 'гордится тобой! ⭐',
+    companionCheersYou: 'болеет за тебя! 💪',
+    companionQuickMood: 'Как настроение? Нажми! 😊',
   },
 
   en: {
@@ -1362,6 +1416,25 @@ export const translations: Record<Language, Translations> = {
     scheduleExercise: 'Exercise',
     scheduleStudy: 'Study',
     scheduleMeeting: 'Meeting',
+
+    // Time Awareness (ADHD time blindness helper)
+    timeUntilEndOfDay: 'Until end of day',
+    timeIn: 'in',
+    timePassed: 'Time passed',
+    timeNow: 'Now!',
+    hoursShort: 'h',
+    minutesShort: 'm',
+    night: 'Night',
+
+    // AI Insights
+    aiInsights: 'AI Insights',
+    aiInsight: 'AI Insight',
+    personalizedForYou: 'Personalized for you',
+    insightsNeedMoreData: 'Log your mood for a week to unlock personalized insights!',
+    daysLogged: 'days logged',
+    showMore: 'Show',
+    moreInsights: 'more insights',
+    hideInsights: 'Hide insights',
 
     // Onboarding Hints
     hintFirstMoodTitle: 'How are you feeling?',
@@ -1891,6 +1964,14 @@ export const translations: Record<Language, Translations> = {
     gardenFlourishing: 'Flourishing',
     gardenMagical: 'Magical',
     gardenLegendary: 'Legendary',
+
+    // Companion Notifications
+    companionMissesYou: 'misses you! 💕',
+    companionWantsToPlay: 'wants to spend time with you!',
+    companionWaiting: 'is waiting in the garden 🌱',
+    companionProud: 'is proud of you! ⭐',
+    companionCheersYou: 'is cheering for you! 💪',
+    companionQuickMood: 'How are you feeling? Tap! 😊',
   },
 
   uk: {
@@ -1975,6 +2056,25 @@ export const translations: Record<Language, Translations> = {
     scheduleExercise: 'Спорт',
     scheduleStudy: 'Навчання',
     scheduleMeeting: 'Зустріч',
+
+    // Time Awareness (ADHD time blindness helper)
+    timeUntilEndOfDay: 'До кінця дня',
+    timeIn: 'через',
+    timePassed: 'Час минув',
+    timeNow: 'Зараз!',
+    hoursShort: 'г',
+    minutesShort: 'хв',
+    night: 'Ніч',
+
+    // AI Insights
+    aiInsights: 'AI Аналітика',
+    aiInsight: 'AI Інсайт',
+    personalizedForYou: 'Персонально для вас',
+    insightsNeedMoreData: 'Записуйте настрій тиждень, щоб розблокувати персональні інсайти!',
+    daysLogged: 'днів записано',
+    showMore: 'Показати ще',
+    moreInsights: 'інсайтів',
+    hideInsights: 'Сховати інсайти',
 
     // Onboarding Hints
     hintFirstMoodTitle: 'Як ви себе почуваєте?',
@@ -2504,6 +2604,14 @@ export const translations: Record<Language, Translations> = {
     gardenFlourishing: 'Цвітіння',
     gardenMagical: 'Магія',
     gardenLegendary: 'Легенда',
+
+    // Companion Notifications
+    companionMissesYou: 'сумує за тобою! 💕',
+    companionWantsToPlay: 'хоче провести час разом!',
+    companionWaiting: 'чекає тебе в саду 🌱',
+    companionProud: 'пишається тобою! ⭐',
+    companionCheersYou: 'вболіває за тебе! 💪',
+    companionQuickMood: 'Як настрій? Натисни! 😊',
   },
 
   es: {
@@ -2588,6 +2696,25 @@ export const translations: Record<Language, Translations> = {
     scheduleExercise: 'Ejercicio',
     scheduleStudy: 'Estudio',
     scheduleMeeting: 'Reunión',
+
+    // Time Awareness (ADHD time blindness helper)
+    timeUntilEndOfDay: 'Hasta fin del día',
+    timeIn: 'en',
+    timePassed: 'Tiempo pasado',
+    timeNow: '¡Ahora!',
+    hoursShort: 'h',
+    minutesShort: 'm',
+    night: 'Noche',
+
+    // AI Insights
+    aiInsights: 'Análisis IA',
+    aiInsight: 'Insight IA',
+    personalizedForYou: 'Personalizado para ti',
+    insightsNeedMoreData: '¡Registra tu ánimo una semana para desbloquear insights personalizados!',
+    daysLogged: 'días registrados',
+    showMore: 'Mostrar',
+    moreInsights: 'más insights',
+    hideInsights: 'Ocultar insights',
 
     // Onboarding Hints
     hintFirstMoodTitle: '¿Cómo te sientes?',
@@ -3118,6 +3245,14 @@ export const translations: Record<Language, Translations> = {
     gardenFlourishing: 'Floreciendo',
     gardenMagical: 'Mágico',
     gardenLegendary: 'Legendario',
+
+    // Companion Notifications
+    companionMissesYou: '¡te extraña! 💕',
+    companionWantsToPlay: '¡quiere pasar tiempo contigo!',
+    companionWaiting: 'te espera en el jardín 🌱',
+    companionProud: '¡está orgulloso de ti! ⭐',
+    companionCheersYou: '¡te anima! 💪',
+    companionQuickMood: '¿Cómo te sientes? ¡Toca! 😊',
   },
 
   de: {
@@ -3202,6 +3337,25 @@ export const translations: Record<Language, Translations> = {
     scheduleExercise: 'Sport',
     scheduleStudy: 'Lernen',
     scheduleMeeting: 'Meeting',
+
+    // Time Awareness (ADHD time blindness helper)
+    timeUntilEndOfDay: 'Bis Tagesende',
+    timeIn: 'in',
+    timePassed: 'Zeit vergangen',
+    timeNow: 'Jetzt!',
+    hoursShort: 'h',
+    minutesShort: 'm',
+    night: 'Nacht',
+
+    // AI Insights
+    aiInsights: 'KI-Einblicke',
+    aiInsight: 'KI-Einblick',
+    personalizedForYou: 'Personalisiert für dich',
+    insightsNeedMoreData: 'Notiere deine Stimmung eine Woche lang, um personalisierte Einblicke freizuschalten!',
+    daysLogged: 'Tage notiert',
+    showMore: 'Zeige',
+    moreInsights: 'weitere Einblicke',
+    hideInsights: 'Einblicke ausblenden',
 
     // Onboarding Hints
     hintFirstMoodTitle: 'Wie fühlst du dich?',
@@ -3732,6 +3886,14 @@ export const translations: Record<Language, Translations> = {
     gardenFlourishing: 'Blühend',
     gardenMagical: 'Magisch',
     gardenLegendary: 'Legendär',
+
+    // Companion Notifications
+    companionMissesYou: 'vermisst dich! 💕',
+    companionWantsToPlay: 'möchte Zeit mit dir verbringen!',
+    companionWaiting: 'wartet im Garten auf dich 🌱',
+    companionProud: 'ist stolz auf dich! ⭐',
+    companionCheersYou: 'feuert dich an! 💪',
+    companionQuickMood: 'Wie geht es dir? Tippe! 😊',
   },
 
   fr: {
@@ -3816,6 +3978,25 @@ export const translations: Record<Language, Translations> = {
     scheduleExercise: 'Exercice',
     scheduleStudy: 'Études',
     scheduleMeeting: 'Réunion',
+
+    // Time Awareness (ADHD time blindness helper)
+    timeUntilEndOfDay: 'Jusqu\'à la fin de journée',
+    timeIn: 'dans',
+    timePassed: 'Temps écoulé',
+    timeNow: 'Maintenant!',
+    hoursShort: 'h',
+    minutesShort: 'm',
+    night: 'Nuit',
+
+    // AI Insights
+    aiInsights: 'Analyses IA',
+    aiInsight: 'Insight IA',
+    personalizedForYou: 'Personnalisé pour vous',
+    insightsNeedMoreData: 'Notez votre humeur pendant une semaine pour débloquer des insights personnalisés!',
+    daysLogged: 'jours notés',
+    showMore: 'Afficher',
+    moreInsights: 'plus d\'insights',
+    hideInsights: 'Masquer les insights',
 
     // Onboarding Hints
     hintFirstMoodTitle: 'Comment vous sentez-vous ?',
@@ -4346,6 +4527,14 @@ export const translations: Record<Language, Translations> = {
     gardenFlourishing: 'Floraison',
     gardenMagical: 'Magique',
     gardenLegendary: 'Légendaire',
+
+    // Companion Notifications
+    companionMissesYou: 'tu lui manques! 💕',
+    companionWantsToPlay: 'veut passer du temps avec toi!',
+    companionWaiting: 't\'attend dans le jardin 🌱',
+    companionProud: 'est fier de toi! ⭐',
+    companionCheersYou: 't\'encourage! 💪',
+    companionQuickMood: 'Comment tu te sens? Appuie! 😊',
   },
 };
 

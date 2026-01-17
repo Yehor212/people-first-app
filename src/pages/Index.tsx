@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -19,7 +19,15 @@ import { syncReminderSettings } from '@/storage/reminderSync';
 import { syncWithCloud, startAutoSync, triggerSync } from '@/storage/cloudSync';
 import { App } from '@capacitor/app';
 import { handleAuthCallback, isNativePlatform } from '@/lib/authRedirect';
-import { scheduleLocalReminders, scheduleHabitReminders } from '@/lib/localNotifications';
+import {
+  scheduleLocalReminders,
+  scheduleHabitReminders,
+  scheduleCompanionReminders,
+  registerMoodNotificationActions,
+  setupNotificationActionListener,
+  setMoodActionCallback,
+  scheduleMoodQuickLogNotification,
+} from '@/lib/localNotifications';
 
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
@@ -54,6 +62,9 @@ import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
 import { InnerWorldGarden } from '@/components/InnerWorldGarden';
 import { CompanionPanel } from '@/components/CompanionPanel';
+import { TimeAwarenessBadge } from '@/components/TimeAwarenessBadge';
+import { MoodInsights } from '@/components/MoodInsights';
+import { haptics } from '@/lib/haptics';
 
 type TabType = 'home' | 'stats' | 'achievements' | 'settings';
 
@@ -310,11 +321,32 @@ export function Index() {
     awardXp('mood'); // +5 XP
     triggerXpPopup(5, 'mood'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
+    haptics.moodSaved(); // Haptic feedback
 
     // Inner World: Plant a flower based on mood
     plantSeed('mood', entry.mood);
     waterPlants('mood');
   };
+
+  // Quick mood handler for one-tap notification actions
+  const handleQuickMood = useCallback((mood: MoodEntry['mood']) => {
+    const today = getToday();
+    const entry: MoodEntry = {
+      id: generateId(),
+      mood,
+      date: today,
+      timestamp: Date.now(),
+    };
+
+    setMoods(prev => [...prev, entry]);
+    awardXp('mood');
+    triggerSync();
+    haptics.moodSaved(); // Haptic feedback
+    plantSeed('mood', mood);
+    waterPlants('mood');
+
+    console.log('Quick mood logged from notification:', mood);
+  }, [awardXp, plantSeed, waterPlants, setMoods]);
 
   // Update existing mood entry (for same-day editing)
   const handleUpdateMood = (entryId: string, newMood: MoodEntry['mood'], note?: string) => {
@@ -352,6 +384,7 @@ export function Index() {
           completionsByDate[date] = current + 1;
           awardXp('habit'); // +10 XP for each completion
           triggerXpPopup(10, 'habit'); // Visual XP popup
+          haptics.habitToggled(); // Haptic feedback
         }
 
         return {
@@ -368,6 +401,7 @@ export function Index() {
       if (!completed) {
         awardXp('habit'); // +10 XP for completing habit
         triggerXpPopup(10, 'habit'); // Visual XP popup
+        haptics.habitCompleted(); // Haptic feedback
         // Inner World: Plant a tree when completing habit
         plantSeed('habit');
         waterPlants('habit');
@@ -415,6 +449,7 @@ export function Index() {
     awardXp('focus'); // +15 XP
     triggerXpPopup(15, 'focus'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
+    haptics.focusCompleted(); // Haptic feedback
 
     // Inner World: Plant a crystal when completing focus session
     plantSeed('focus');
@@ -426,6 +461,7 @@ export function Index() {
     awardXp('gratitude'); // +8 XP
     triggerXpPopup(8, 'gratitude'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
+    haptics.gratitudeSaved(); // Haptic feedback
 
     // Inner World: Plant a mushroom and attract creatures
     plantSeed('gratitude');
@@ -622,6 +658,68 @@ export function Index() {
       console.error("Failed to schedule habit reminders:", error);
     });
   }, [habits, t.reminderHabitTitle, t.reminderHabitBody]);
+
+  // Schedule companion-based soft reminders (gentle, non-judgmental)
+  useEffect(() => {
+    if (!isNativePlatform() || isLoadingInnerWorld) return;
+    scheduleCompanionReminders(
+      reminders,
+      { type: innerWorld.companion.type, name: innerWorld.companion.name },
+      {
+        companionMissesYou: t.companionMissesYou || 'misses you! 💕',
+        companionWantsToPlay: t.companionWantsToPlay || 'wants to spend time with you!',
+        companionWaiting: t.companionWaiting || 'is waiting in the garden 🌱',
+        companionProud: t.companionProud || 'is proud of you! ⭐',
+        companionCheersYou: t.companionCheersYou || 'is cheering for you! 💪',
+      }
+    ).catch((error) => {
+      console.error("Failed to schedule companion reminders:", error);
+    });
+  }, [reminders, innerWorld.companion, isLoadingInnerWorld, t]);
+
+  // Set up one-tap mood notification actions
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+
+    let cleanupListener: (() => void) | null = null;
+
+    const setupMoodActions = async () => {
+      // Register notification action types (mood emoji buttons)
+      await registerMoodNotificationActions();
+
+      // Set up listener for action taps
+      cleanupListener = await setupNotificationActionListener();
+
+      // Register callback to handle quick mood logging
+      setMoodActionCallback(handleQuickMood);
+    };
+
+    setupMoodActions().catch((error) => {
+      console.error('Failed to setup mood notification actions:', error);
+    });
+
+    return () => {
+      if (cleanupListener) cleanupListener();
+    };
+  }, [handleQuickMood]);
+
+  // Schedule mood quick-log notification with action buttons
+  useEffect(() => {
+    if (!isNativePlatform() || isLoadingInnerWorld || !reminders.enabled) return;
+
+    const parseTime = (time: string) => {
+      const [hours, minutes] = time.split(':').map(Number);
+      return { hour: hours, minute: minutes };
+    };
+
+    scheduleMoodQuickLogNotification(
+      parseTime(reminders.moodTime),
+      { type: innerWorld.companion.type, name: innerWorld.companion.name },
+      t.companionQuickMood || 'How are you feeling? Tap! 😊'
+    ).catch((error) => {
+      console.error('Failed to schedule mood quick-log notification:', error);
+    });
+  }, [reminders.enabled, reminders.moodTime, innerWorld.companion, isLoadingInnerWorld, t.companionQuickMood]);
 
   useEffect(() => {
     if (!supabase || !isNativePlatform()) return;
@@ -872,6 +970,12 @@ export function Index() {
                 <div className="space-y-6">
                   <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
 
+                  {/* Time Awareness Badge - ADHD time blindness helper */}
+                  <TimeAwarenessBadge
+                    scheduleEvents={todayScheduleEvents}
+                    onClick={() => setShowTimeHelper(true)}
+                  />
+
                   {/* Daily Surprise - motivational content that changes daily */}
                   <DailySurprise onNavigate={handleNavigateToSection} />
 
@@ -947,6 +1051,14 @@ export function Index() {
                     focusSessions={focusSessions}
                     gratitudeEntries={gratitudeEntries}
                     currentFocusMinutes={currentFocusMinutes}
+                  />
+
+                  {/* AI Insights - Personalized mood pattern analysis */}
+                  <MoodInsights
+                    moods={moods}
+                    habits={habits}
+                    focusSessions={focusSessions}
+                    gratitudeEntries={gratitudeEntries}
                   />
 
                   <div ref={habitsRef}>
