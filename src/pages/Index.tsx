@@ -1104,6 +1104,9 @@ export function Index() {
                     />
                   </div>
 
+                  {/* Breathing Exercise - Mindfulness card (under mood) */}
+                  <BreathingExercise compact />
+
                   {/* Habit Tracker - Primary CTA if habits not completed */}
                   <div ref={habitsRef}>
                     <HabitTracker
@@ -1134,9 +1137,6 @@ export function Index() {
                       isPrimaryCTA={currentPrimaryCTA === 'gratitude'}
                     />
                   </div>
-
-                  {/* Breathing Exercise - Mindfulness card */}
-                  <BreathingExercise compact />
                 </>
               )}
             </div>

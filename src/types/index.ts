@@ -154,6 +154,7 @@ export interface ScheduleEvent {
   color: string;
   emoji?: string;
   date: string;               // Which day this event is for
+  note?: string;              // Optional note/description
 }
 
 // ============================================

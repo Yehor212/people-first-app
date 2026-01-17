@@ -92,6 +92,8 @@ export interface Translations {
   scheduleExercise: string;
   scheduleStudy: string;
   scheduleMeeting: string;
+  scheduleNote: string;
+  scheduleNotePlaceholder: string;
 
   // Time Awareness (ADHD time blindness helper)
   timeUntilEndOfDay: string;
@@ -916,6 +918,8 @@ export const translations: Record<Language, Translations> = {
     scheduleExercise: 'Спорт',
     scheduleStudy: 'Учёба',
     scheduleMeeting: 'Встреча',
+    scheduleNote: 'Заметка (опционально)',
+    scheduleNotePlaceholder: 'Добавьте детали или напоминания...',
 
     // Time Awareness (ADHD time blindness helper)
     timeUntilEndOfDay: 'До конца дня',
@@ -1693,6 +1697,8 @@ export const translations: Record<Language, Translations> = {
     scheduleExercise: 'Exercise',
     scheduleStudy: 'Study',
     scheduleMeeting: 'Meeting',
+    scheduleNote: 'Note (optional)',
+    scheduleNotePlaceholder: 'Add details or reminders...',
 
     // Time Awareness (ADHD time blindness helper)
     timeUntilEndOfDay: 'Until end of day',
@@ -2470,6 +2476,8 @@ export const translations: Record<Language, Translations> = {
     scheduleExercise: 'Спорт',
     scheduleStudy: 'Навчання',
     scheduleMeeting: 'Зустріч',
+    scheduleNote: 'Нотатка (опціонально)',
+    scheduleNotePlaceholder: 'Додайте деталі або нагадування...',
 
     // Time Awareness (ADHD time blindness helper)
     timeUntilEndOfDay: 'До кінця дня',
@@ -3247,6 +3255,8 @@ export const translations: Record<Language, Translations> = {
     scheduleExercise: 'Ejercicio',
     scheduleStudy: 'Estudio',
     scheduleMeeting: 'Reunión',
+    scheduleNote: 'Nota (opcional)',
+    scheduleNotePlaceholder: 'Agregar detalles o recordatorios...',
 
     // Time Awareness (ADHD time blindness helper)
     timeUntilEndOfDay: 'Hasta fin del día',
@@ -4025,6 +4035,8 @@ export const translations: Record<Language, Translations> = {
     scheduleExercise: 'Sport',
     scheduleStudy: 'Lernen',
     scheduleMeeting: 'Meeting',
+    scheduleNote: 'Notiz (optional)',
+    scheduleNotePlaceholder: 'Details oder Erinnerungen hinzufügen...',
 
     // Time Awareness (ADHD time blindness helper)
     timeUntilEndOfDay: 'Bis Tagesende',
@@ -4803,6 +4815,8 @@ export const translations: Record<Language, Translations> = {
     scheduleExercise: 'Exercice',
     scheduleStudy: 'Études',
     scheduleMeeting: 'Réunion',
+    scheduleNote: 'Note (optionnel)',
+    scheduleNotePlaceholder: 'Ajouter des détails ou des rappels...',
 
     // Time Awareness (ADHD time blindness helper)
     timeUntilEndOfDay: 'Jusqu\'à la fin de journée',

@@ -356,6 +356,7 @@ function AddEventModal({
   const [endHour, setEndHour] = useState(10);
   const [endMinute, setEndMinute] = useState(0);
   const [customTitle, setCustomTitle] = useState('');
+  const [note, setNote] = useState('');
 
   // Generate next 14 days for date picker
   const dateOptions = useMemo(() => {
@@ -388,6 +389,7 @@ function AddEventModal({
       color: selectedPreset.color,
       emoji: selectedPreset.emoji,
       date: eventDate,
+      note: note.trim() || undefined,
     });
   };
 
@@ -493,6 +495,18 @@ function AddEventModal({
           </div>
         </div>
 
+        {/* Note (optional) */}
+        <div className="mb-4">
+          <label className="text-xs text-muted-foreground mb-1 block">{t.scheduleNote || 'Note (optional)'}</label>
+          <textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder={t.scheduleNotePlaceholder || 'Add details or reminders...'}
+            className="w-full p-3 bg-secondary/50 rounded-xl text-sm resize-none"
+            rows={2}
+          />
+        </div>
+
         {/* Add button */}
         <button
           onClick={handleAdd}
@@ -537,6 +551,13 @@ function EventDetailsModal({
             {formatTime(event.startHour, event.startMinute)} - {formatTime(event.endHour, event.endMinute)}
           </p>
         </div>
+
+        {/* Note display */}
+        {event.note && (
+          <div className="mb-4 p-3 bg-secondary/50 rounded-xl">
+            <p className="text-sm text-muted-foreground">{event.note}</p>
+          </div>
+        )}
 
         <div className="flex gap-2">
           <button
