@@ -1085,15 +1085,6 @@ export function Index() {
                 isRestMode={isRestMode}
               />
 
-              {/* Visual Day Clock - ADHD-friendly energy meter (moved to home) */}
-              <DayClock
-                moods={moods}
-                habits={habits}
-                focusSessions={focusSessions}
-                gratitudeEntries={gratitudeEntries}
-                onTimeBlockClick={handleNavigateToSection}
-              />
-
               {/* Schedule Timeline - Horizontal day planner (moved to home) */}
               <ScheduleTimeline
                 events={todayScheduleEvents}
@@ -1166,7 +1157,7 @@ export function Index() {
               onOpenChallenges={() => setShowChallenges(true)}
             />
 
-            {/* Inner World Garden - Personal growth visualization */}
+            {/* Inner World Garden - Hidden temporarily
             <InnerWorldGarden
               world={innerWorld}
               onCompanionClick={() => {
@@ -1181,6 +1172,7 @@ export function Index() {
                 console.log('Creature clicked:', creature);
               }}
             />
+            */}
 
             {/* Garden Stats - Hidden temporarily
             <div className="grid grid-cols-3 gap-3">
@@ -1204,6 +1196,15 @@ export function Index() {
               </div>
             </div>
             */}
+
+            {/* Visual Day Clock - ADHD-friendly energy meter */}
+            <DayClock
+              moods={moods}
+              habits={habits}
+              focusSessions={focusSessions}
+              gratitudeEntries={gratitudeEntries}
+              onTimeBlockClick={handleNavigateToSection}
+            />
 
             {/* Weekly Calendar */}
             <WeeklyCalendar moods={moods} habits={habits} />

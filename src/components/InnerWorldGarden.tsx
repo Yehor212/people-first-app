@@ -263,13 +263,14 @@ export function InnerWorldGarden({
         ))}
       </div>
 
-      {/* Main garden scene */}
+      {/* Main garden scene - Hidden temporarily
       <GardenScene
         world={world}
         onClick={onCompanionClick}
         language={language}
         calmMode={calmMode}
       />
+      */}
 
       {/* Streak indicator - subtle top right */}
       {world.currentActiveStreak > 0 && (
