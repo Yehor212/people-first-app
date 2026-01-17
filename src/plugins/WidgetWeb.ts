@@ -1,5 +1,5 @@
 import { WebPlugin } from '@capacitor/core';
-import type { WidgetPlugin, WidgetData } from './WidgetPlugin';
+import type { WidgetPlugin, WidgetData } from './widgetTypes';
 
 export class WidgetWeb extends WebPlugin implements WidgetPlugin {
   async updateWidget(data: WidgetData): Promise<void> {
