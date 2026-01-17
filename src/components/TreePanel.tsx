@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { TreeStage } from '@/types';
 import { SeasonalTree } from './SeasonalTree';
+import { Switch } from '@/components/ui/switch';
 import {
   getCurrentSeason,
   getSeasonEmoji,
@@ -34,6 +35,8 @@ interface TreePanelProps {
   treatsBalance: number;
   waterCost: number;
   streak: number;
+  calmMode: boolean;
+  onCalmModeChange: (value: boolean) => void;
 }
 
 // Get contextual message based on tree state
@@ -103,6 +106,8 @@ export function TreePanel({
   treatsBalance,
   waterCost,
   streak,
+  calmMode,
+  onCalmModeChange,
 }: TreePanelProps) {
   const { t, language } = useLanguage();
   const [message, setMessage] = useState('');
@@ -267,6 +272,7 @@ export function TreePanel({
                     xp={treeXP}
                     season={season}
                     isWatering={isWatering}
+                    lowStimulus={calmMode}
                     size="lg"
                     className="drop-shadow-xl"
                   />
@@ -389,6 +395,17 @@ export function TreePanel({
                   <p className="text-sm font-medium">{t.daysInRow || 'days in a row'}</p>
                 </div>
               )}
+
+              {/* Calm visuals toggle */}
+              <div className="bg-muted/30 rounded-xl p-3 text-center mb-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-left">
+                    <p className="text-sm font-medium">{t.dopamineMinimal}</p>
+                    <p className="text-xs text-muted-foreground">{t.dopamineMinimalDesc}</p>
+                  </div>
+                  <Switch checked={calmMode} onCheckedChange={onCalmModeChange} />
+                </div>
+              </div>
 
               {/* Season display */}
               <div className="bg-muted/30 rounded-xl p-3 text-center mb-4">

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMoodTheme } from '@/contexts/MoodThemeContext';
@@ -151,6 +152,7 @@ export function Index() {
   const [showCompanionPanel, setShowCompanionPanel] = useState(false);
   // Tree panel state
   const [showTreePanel, setShowTreePanel] = useState(false);
+  const [treeCalmMode, setTreeCalmMode] = useLocalStorage<boolean>('zenflow-tree-calm', false);
 
   // Guard against double habit toggles (prevents duplicate rewards)
   const processingHabitsRef = useRef<Set<string>>(new Set());
@@ -1151,6 +1153,7 @@ export function Index() {
                 clearWelcomeBack();
                 setShowTreePanel(true);
               }}
+              calmMode={treeCalmMode}
               onPlantClick={(plant) => {
                 console.log('Plant clicked:', plant);
               }}
@@ -1315,6 +1318,8 @@ export function Index() {
         treatsBalance={treatsBalance}
         waterCost={WATER_COST}
         streak={innerWorld.currentActiveStreak}
+        calmMode={treeCalmMode}
+        onCalmModeChange={setTreeCalmMode}
       />
     </div>
   );

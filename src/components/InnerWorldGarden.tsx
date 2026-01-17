@@ -22,6 +22,7 @@ interface InnerWorldGardenProps {
   onPlantClick?: (plant: GardenPlant) => void;
   onCreatureClick?: (creature: GardenCreature) => void;
   compact?: boolean;
+  calmMode?: boolean;
 }
 
 // ============================================
@@ -111,10 +112,12 @@ function GardenScene({
   world,
   onClick,
   language,
+  calmMode,
 }: {
   world: InnerWorld;
   onClick?: () => void;
   language: string;
+  calmMode?: boolean;
 }) {
   const { companion } = world;
   const treeStage = companion.treeStage || 1;
@@ -136,6 +139,7 @@ function GardenScene({
           waterLevel={waterLevel}
           xp={companion.treeXP || 0}
           season={world.season}
+          lowStimulus={calmMode}
           size="md"
           className="drop-shadow-2xl"
         />
@@ -185,6 +189,7 @@ export function InnerWorldGarden({
   onPlantClick,
   onCreatureClick,
   compact = false,
+  calmMode,
 }: InnerWorldGardenProps) {
   const { t, language } = useLanguage();
   const [particles, setParticles] = useState<Array<{ id: number; emoji: string; delay: number }>>([]);
@@ -263,6 +268,7 @@ export function InnerWorldGarden({
         world={world}
         onClick={onCompanionClick}
         language={language}
+        calmMode={calmMode}
       />
 
       {/* Streak indicator - subtle top right */}
