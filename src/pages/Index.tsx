@@ -57,12 +57,12 @@ import { TimeHelper } from '@/components/TimeHelper';
 import { WidgetSettings } from '@/pages/WidgetSettings';
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
-import { useInnerWorld } from '@/hooks/useInnerWorld';
+// TEMPORARILY DISABLED - investigating circular dependency
+// import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
-import { InnerWorldGarden } from '@/components/InnerWorldGarden';
-import { CompanionPanel } from '@/components/CompanionPanel';
-// TEMPORARILY DISABLED - investigating circular dependency
+// import { InnerWorldGarden } from '@/components/InnerWorldGarden';
+// import { CompanionPanel } from '@/components/CompanionPanel';
 // import { TimeAwarenessBadge } from '@/components/TimeAwarenessBadge';
 // import { MoodInsights } from '@/components/MoodInsights';
 // import { haptics } from '@/lib/haptics';
@@ -131,19 +131,30 @@ export function Index() {
   // Gamification system
   const { stats, gamificationState, userLevel, awardXp } = useGamification();
 
-  // Inner World garden system
-  const {
-    world: innerWorld,
-    isLoading: isLoadingInnerWorld,
-    plantSeed,
-    waterPlants,
-    attractCreature,
-    feedCreatures,
-    setCompanionType,
-    renameCompanion,
-    clearWelcomeBack,
-    gardenStats,
-  } = useInnerWorld();
+  // Inner World garden system - TEMPORARILY DISABLED
+  // const {
+  //   world: innerWorld,
+  //   isLoading: isLoadingInnerWorld,
+  //   plantSeed,
+  //   waterPlants,
+  //   attractCreature,
+  //   feedCreatures,
+  //   setCompanionType,
+  //   renameCompanion,
+  //   clearWelcomeBack,
+  //   gardenStats,
+  // } = useInnerWorld();
+
+  // Stub values for disabled Inner World
+  const innerWorld = { companion: { type: 'fox' as const, name: 'Luna' }, currentActiveStreak: 0 };
+  const isLoadingInnerWorld = false;
+  const plantSeed = () => {};
+  const waterPlants = () => {};
+  const attractCreature = () => {};
+  const feedCreatures = () => {};
+  const setCompanionType = () => {};
+  const renameCompanion = () => {};
+  const clearWelcomeBack = () => {};
 
   // Companion panel state
   const [showCompanionPanel, setShowCompanionPanel] = useState(false);
@@ -981,7 +992,7 @@ export function Index() {
                   {/* Daily Surprise - motivational content that changes daily */}
                   <DailySurprise onNavigate={handleNavigateToSection} />
 
-                  {/* Inner World Garden - Personal growth visualization */}
+                  {/* Inner World Garden - Personal growth visualization - TEMPORARILY DISABLED
                   <div className="relative">
                     <InnerWorldGarden
                       world={innerWorld}
@@ -999,6 +1010,7 @@ export function Index() {
                       }}
                     />
                   </div>
+                  */}
 
                   {/* Onboarding Hints - contextual tips after tutorial */}
                   <OnboardingHints
@@ -1196,7 +1208,7 @@ export function Index() {
         <TimeHelper onClose={() => setShowTimeHelper(false)} />
       )}
 
-      {/* Companion Panel Modal */}
+      {/* Companion Panel Modal - TEMPORARILY DISABLED
       <CompanionPanel
         companion={innerWorld.companion}
         isOpen={showCompanionPanel}
@@ -1205,6 +1217,7 @@ export function Index() {
         onChangeType={setCompanionType}
         streak={innerWorld.currentActiveStreak}
       />
+      */}
     </div>
   );
 };
