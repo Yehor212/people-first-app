@@ -77,6 +77,38 @@ export interface Translations {
   soClose: string;
   legendaryDay: string;
 
+  // Schedule Timeline
+  scheduleTitle: string;
+  scheduleAddEvent: string;
+  scheduleEmpty: string;
+  scheduleStart: string;
+  scheduleEnd: string;
+  scheduleAdd: string;
+  scheduleCustomTitle: string;
+  scheduleWork: string;
+  scheduleMeal: string;
+  scheduleRest: string;
+  scheduleExercise: string;
+  scheduleStudy: string;
+  scheduleMeeting: string;
+
+  // Onboarding Hints
+  hintFirstMoodTitle: string;
+  hintFirstMoodDesc: string;
+  hintFirstMoodAction: string;
+  hintFirstHabitTitle: string;
+  hintFirstHabitDesc: string;
+  hintFirstHabitAction: string;
+  hintFirstFocusTitle: string;
+  hintFirstFocusDesc: string;
+  hintFirstFocusAction: string;
+  hintFirstGratitudeTitle: string;
+  hintFirstGratitudeDesc: string;
+  hintFirstGratitudeAction: string;
+  hintScheduleTipTitle: string;
+  hintScheduleTipDesc: string;
+  hintScheduleTipAction: string;
+
   // Habits
   habits: string;
   habitName: string;
@@ -493,6 +525,23 @@ export interface Translations {
   mysteryBox: string;
   openBox: string;
 
+  // Inner World Garden
+  myCompanion: string;
+  missedYou: string;
+  welcomeBack: string;
+  warmth: string;
+  energy: string;
+  wisdom: string;
+  companionStreak: string;
+  chooseCompanion: string;
+  levelUpHint: string;
+  gardenEmpty: string;
+  gardenSprouting: string;
+  gardenGrowing: string;
+  gardenFlourishing: string;
+  gardenMagical: string;
+  gardenLegendary: string;
+
   // Premium
   premium: string;
   premiumDescription: string;
@@ -550,7 +599,9 @@ export interface Translations {
   onboardingRemindersDescription: string;
   enableReminders: string;
   morning: string;
+  afternoon: string;
   evening: string;
+  close: string;
   skip: string;
   getStarted: string;
   next: string;
@@ -578,6 +629,20 @@ export interface Translations {
   tutorialFocusTitle: string;
   tutorialFocusSubtitle: string;
   tutorialFocusDesc: string;
+  tutorialDayClockTitle: string;
+  tutorialDayClockSubtitle: string;
+  tutorialDayClockDesc: string;
+  tutorialDayClockFeature1: string;
+  tutorialDayClockFeature2: string;
+  tutorialDayClockFeature3: string;
+  tutorialDayClockFeature4: string;
+  tutorialMoodThemeTitle: string;
+  tutorialMoodThemeSubtitle: string;
+  tutorialMoodThemeDesc: string;
+  tutorialMoodThemeFeature1: string;
+  tutorialMoodThemeFeature2: string;
+  tutorialMoodThemeFeature3: string;
+  tutorialMoodThemeFeature4: string;
   tutorialReadyTitle: string;
   tutorialReadySubtitle: string;
   tutorialReadyDesc: string;
@@ -669,6 +734,39 @@ export const translations: Record<Language, Translations> = {
     almostThere: 'Почти на месте! 🚀',
     soClose: 'Так близко к совершенству! ⭐',
     legendaryDay: 'ЛЕГЕНДАРНЫЙ ДЕНЬ! 🏆🔥✨',
+
+    // Schedule Timeline
+    scheduleTitle: 'Ваше расписание',
+    scheduleAddEvent: 'Добавить событие',
+    scheduleEmpty: 'Нет запланированных событий. Нажмите + чтобы добавить!',
+    scheduleStart: 'Начало',
+    scheduleEnd: 'Конец',
+    scheduleAdd: 'Добавить в расписание',
+    scheduleCustomTitle: 'Своё название (опционально)',
+    scheduleWork: 'Работа',
+    scheduleMeal: 'Еда',
+    scheduleRest: 'Отдых',
+    scheduleExercise: 'Спорт',
+    scheduleStudy: 'Учёба',
+    scheduleMeeting: 'Встреча',
+
+    // Onboarding Hints
+    hintFirstMoodTitle: 'Как вы себя чувствуете?',
+    hintFirstMoodDesc: 'Начните день с записи настроения. Это займёт 5 секунд и поможет лучше понять себя!',
+    hintFirstMoodAction: 'Записать настроение',
+    hintFirstHabitTitle: 'Создайте первую привычку',
+    hintFirstHabitDesc: 'Маленькие привычки ведут к большим переменам. Попробуйте добавить что-то простое, например "Выпить воду".',
+    hintFirstHabitAction: 'Добавить привычку',
+    hintFirstFocusTitle: 'Готовы сфокусироваться?',
+    hintFirstFocusDesc: 'Используйте таймер фокуса с успокаивающими звуками. Начните с 25 минут!',
+    hintFirstFocusAction: 'Начать фокус',
+    hintFirstGratitudeTitle: 'Практикуйте благодарность',
+    hintFirstGratitudeDesc: 'Запишите одну вещь, за которую вы благодарны. Это мощный способ поднять настроение!',
+    hintFirstGratitudeAction: 'Добавить благодарность',
+    hintScheduleTipTitle: 'Спланируйте день',
+    hintScheduleTipDesc: 'Используйте таймлайн чтобы видеть свой день. Добавляйте события чтобы не сбиваться!',
+    hintScheduleTipAction: 'Смотреть таймлайн',
+
     habits: 'Привычки',
     habitName: 'Название привычки...',
     icon: 'Иконка',
@@ -1098,7 +1196,9 @@ export const translations: Record<Language, Translations> = {
     onboardingRemindersDescription: 'Получайте напоминания о привычках',
     enableReminders: 'Включить напоминания',
     morning: 'Утро',
+    afternoon: 'День',
     evening: 'Вечер',
+    close: 'Закрыть',
     skip: 'Пропустить',
     getStarted: 'Начать',
     next: 'Далее',
@@ -1126,6 +1226,20 @@ export const translations: Record<Language, Translations> = {
     tutorialFocusTitle: 'Режим глубокого фокуса',
     tutorialFocusSubtitle: 'Блокируйте отвлечения, делайте дела',
     tutorialFocusDesc: 'Используйте технику Помодоро с успокаивающими фоновыми звуками. Идеально для работы, учёбы или творчества.',
+    tutorialDayClockTitle: 'Ваш день на одном экране',
+    tutorialDayClockSubtitle: 'Визуальный энергометр для СДВГ мозга',
+    tutorialDayClockDesc: 'Смотрите на свой день как на круг с утром, днём и вечером. Наблюдайте, как растёт ваша энергия с каждым действием!',
+    tutorialDayClockFeature1: '⚡ Энергометр заполняется с прогрессом',
+    tutorialDayClockFeature2: '😊 Маскот реагирует на ваши достижения',
+    tutorialDayClockFeature3: '🎯 Отслеживайте все активности в одном месте',
+    tutorialDayClockFeature4: '🏆 Достигните 100% для Идеального Дня!',
+    tutorialMoodThemeTitle: 'Приложение адаптируется под вас',
+    tutorialMoodThemeSubtitle: 'Дизайн меняется с вашим настроением',
+    tutorialMoodThemeDesc: 'Когда вам хорошо, приложение празднует яркими цветами. Когда грустно — становится спокойным и поддерживающим.',
+    tutorialMoodThemeFeature1: '😄 Отличное настроение: Яркий фиолетовый и золотой',
+    tutorialMoodThemeFeature2: '🙂 Хорошее настроение: Тёплые зелёные тона',
+    tutorialMoodThemeFeature3: '😔 Плохое настроение: Успокаивающий синий',
+    tutorialMoodThemeFeature4: '😢 Тяжёлые времена: Мягкий, минималистичный дизайн',
     tutorialReadyTitle: 'Готовы начать?',
     tutorialReadySubtitle: 'Ваш путь начинается сейчас',
     tutorialReadyDesc: 'Начните с малого — просто отметьте, как вы себя чувствуете сегодня. Каждый шаг важен!',
@@ -1147,6 +1261,23 @@ export const translations: Record<Language, Translations> = {
     // Streak Celebration
     dayStreak: 'дней подряд',
     keepItUp: 'Так держать!',
+
+    // Inner World Garden
+    myCompanion: 'Мой компаньон',
+    missedYou: 'скучал по тебе!',
+    welcomeBack: 'С возвращением в твой сад',
+    warmth: 'Тепло',
+    energy: 'Энергия',
+    wisdom: 'Мудрость',
+    companionStreak: 'Дней подряд!',
+    chooseCompanion: 'Выбери компаньона',
+    levelUpHint: 'Выполняй активности, чтобы получать XP и повышать уровень!',
+    gardenEmpty: 'Новое начало',
+    gardenSprouting: 'Ростки',
+    gardenGrowing: 'Рост',
+    gardenFlourishing: 'Цветение',
+    gardenMagical: 'Магия',
+    gardenLegendary: 'Легенда',
   },
 
   en: {
@@ -1216,6 +1347,39 @@ export const translations: Record<Language, Translations> = {
     almostThere: 'Almost there! 🚀',
     soClose: 'So close to perfection! ⭐',
     legendaryDay: 'LEGENDARY DAY! 🏆🔥✨',
+
+    // Schedule Timeline
+    scheduleTitle: 'Your Schedule',
+    scheduleAddEvent: 'Add Event',
+    scheduleEmpty: 'No events planned. Tap + to add your schedule!',
+    scheduleStart: 'Start',
+    scheduleEnd: 'End',
+    scheduleAdd: 'Add to Schedule',
+    scheduleCustomTitle: 'Custom title (optional)',
+    scheduleWork: 'Work',
+    scheduleMeal: 'Meal',
+    scheduleRest: 'Rest',
+    scheduleExercise: 'Exercise',
+    scheduleStudy: 'Study',
+    scheduleMeeting: 'Meeting',
+
+    // Onboarding Hints
+    hintFirstMoodTitle: 'How are you feeling?',
+    hintFirstMoodDesc: 'Start your day by logging your mood. It takes just 5 seconds and helps you understand yourself better!',
+    hintFirstMoodAction: 'Log mood',
+    hintFirstHabitTitle: 'Build your first habit',
+    hintFirstHabitDesc: "Small habits lead to big changes. Try adding something simple like 'Drink water' or 'Take a break'.",
+    hintFirstHabitAction: 'Add habit',
+    hintFirstFocusTitle: 'Ready to focus?',
+    hintFirstFocusDesc: 'Use the focus timer with calming sounds. Start with just 25 minutes - your brain will thank you!',
+    hintFirstFocusAction: 'Start focus',
+    hintFirstGratitudeTitle: 'Practice gratitude',
+    hintFirstGratitudeDesc: "Write down one thing you're grateful for. It's a powerful mood booster!",
+    hintFirstGratitudeAction: 'Add gratitude',
+    hintScheduleTipTitle: 'Plan your day',
+    hintScheduleTipDesc: 'Use the timeline to see your day at a glance. Add events to stay on track!',
+    hintScheduleTipAction: 'View timeline',
+
     habits: 'Habits',
     habitName: 'Habit name...',
     icon: 'Icon',
@@ -1645,7 +1809,9 @@ export const translations: Record<Language, Translations> = {
     onboardingRemindersDescription: 'Get reminders for your habits',
     enableReminders: 'Enable reminders',
     morning: 'Morning',
+    afternoon: 'Afternoon',
     evening: 'Evening',
+    close: 'Close',
     skip: 'Skip',
     getStarted: 'Get started',
     next: 'Next',
@@ -1673,6 +1839,20 @@ export const translations: Record<Language, Translations> = {
     tutorialFocusTitle: 'Deep focus mode',
     tutorialFocusSubtitle: 'Block distractions, get things done',
     tutorialFocusDesc: 'Use the Pomodoro technique with calming ambient sounds. Perfect for work, study, or creative projects.',
+    tutorialDayClockTitle: 'Your Day at a Glance',
+    tutorialDayClockSubtitle: 'Visual energy meter for ADHD brains',
+    tutorialDayClockDesc: 'See your day as a circle with morning, afternoon, and evening zones. Watch your energy grow as you complete activities!',
+    tutorialDayClockFeature1: '⚡ Energy meter fills up with progress',
+    tutorialDayClockFeature2: '😊 Mascot reacts to your achievements',
+    tutorialDayClockFeature3: '🎯 Track all activities in one place',
+    tutorialDayClockFeature4: '🏆 Reach 100% for Perfect Day!',
+    tutorialMoodThemeTitle: 'App Adapts to You',
+    tutorialMoodThemeSubtitle: 'Design changes with your mood',
+    tutorialMoodThemeDesc: 'When you feel great, the app celebrates with vibrant colors. When you feel down, it becomes calm and supportive.',
+    tutorialMoodThemeFeature1: '😄 Great mood: Vibrant purple & gold',
+    tutorialMoodThemeFeature2: '🙂 Good mood: Warm greens',
+    tutorialMoodThemeFeature3: '😔 Bad mood: Calming blues',
+    tutorialMoodThemeFeature4: '😢 Tough times: Gentle, minimal design',
     tutorialReadyTitle: 'Ready to start?',
     tutorialReadySubtitle: 'Your journey begins now',
     tutorialReadyDesc: 'Start small – just check in with how you\'re feeling today. Every step counts!',
@@ -1694,6 +1874,23 @@ export const translations: Record<Language, Translations> = {
     // Streak Celebration
     dayStreak: 'day streak',
     keepItUp: 'Keep it up!',
+
+    // Inner World Garden
+    myCompanion: 'My Companion',
+    missedYou: 'missed you!',
+    welcomeBack: 'Welcome back to your garden',
+    warmth: 'Warmth',
+    energy: 'Energy',
+    wisdom: 'Wisdom',
+    companionStreak: 'Day Streak!',
+    chooseCompanion: 'Choose Companion',
+    levelUpHint: 'Complete activities to earn XP and level up!',
+    gardenEmpty: 'New Beginning',
+    gardenSprouting: 'Sprouting',
+    gardenGrowing: 'Growing',
+    gardenFlourishing: 'Flourishing',
+    gardenMagical: 'Magical',
+    gardenLegendary: 'Legendary',
   },
 
   uk: {
@@ -1763,6 +1960,39 @@ export const translations: Record<Language, Translations> = {
     almostThere: 'Майже на місці! 🚀',
     soClose: 'Так близько до досконалості! ⭐',
     legendaryDay: 'ЛЕГЕНДАРНИЙ ДЕНЬ! 🏆🔥✨',
+
+    // Schedule Timeline
+    scheduleTitle: 'Ваш розклад',
+    scheduleAddEvent: 'Додати подію',
+    scheduleEmpty: 'Немає запланованих подій. Натисніть + щоб додати!',
+    scheduleStart: 'Початок',
+    scheduleEnd: 'Кінець',
+    scheduleAdd: 'Додати до розкладу',
+    scheduleCustomTitle: 'Своя назва (опціонально)',
+    scheduleWork: 'Робота',
+    scheduleMeal: 'Їжа',
+    scheduleRest: 'Відпочинок',
+    scheduleExercise: 'Спорт',
+    scheduleStudy: 'Навчання',
+    scheduleMeeting: 'Зустріч',
+
+    // Onboarding Hints
+    hintFirstMoodTitle: 'Як ви себе почуваєте?',
+    hintFirstMoodDesc: 'Почніть день із запису настрою. Це займе 5 секунд і допоможе краще зрозуміти себе!',
+    hintFirstMoodAction: 'Записати настрій',
+    hintFirstHabitTitle: 'Створіть першу звичку',
+    hintFirstHabitDesc: 'Маленькі звички ведуть до великих змін. Спробуйте додати щось просте, наприклад "Випити воду".',
+    hintFirstHabitAction: 'Додати звичку',
+    hintFirstFocusTitle: 'Готові сфокусуватися?',
+    hintFirstFocusDesc: 'Використовуйте таймер фокусу з заспокійливими звуками. Почніть з 25 хвилин!',
+    hintFirstFocusAction: 'Почати фокус',
+    hintFirstGratitudeTitle: 'Практикуйте вдячність',
+    hintFirstGratitudeDesc: 'Запишіть одну річ, за яку ви вдячні. Це потужний спосіб підняти настрій!',
+    hintFirstGratitudeAction: 'Додати вдячність',
+    hintScheduleTipTitle: 'Сплануйте день',
+    hintScheduleTipDesc: 'Використовуйте таймлайн щоб бачити свій день. Додавайте події щоб не збиватися!',
+    hintScheduleTipAction: 'Дивитися таймлайн',
+
     habits: 'Звички',
     habitName: 'Назва звички...',
     icon: 'Іконка',
@@ -2192,7 +2422,9 @@ export const translations: Record<Language, Translations> = {
     onboardingRemindersDescription: 'Отримуйте нагадування про звички',
     enableReminders: 'Увімкнути нагадування',
     morning: 'Ранок',
+    afternoon: 'День',
     evening: 'Вечір',
+    close: 'Закрити',
     skip: 'Пропустити',
     getStarted: 'Почати',
     next: 'Далі',
@@ -2220,6 +2452,20 @@ export const translations: Record<Language, Translations> = {
     tutorialFocusTitle: 'Режим глибокого фокусу',
     tutorialFocusSubtitle: 'Блокуйте відволікання, робіть справи',
     tutorialFocusDesc: 'Використовуйте техніку Помодоро з заспокійливими фоновими звуками. Ідеально для роботи, навчання або творчості.',
+    tutorialDayClockTitle: 'Ваш день на одному екрані',
+    tutorialDayClockSubtitle: 'Візуальний енергометр для СДУГ мозку',
+    tutorialDayClockDesc: 'Дивіться на свій день як на коло з ранком, днем і вечором. Спостерігайте, як зростає ваша енергія з кожною дією!',
+    tutorialDayClockFeature1: '⚡ Енергометр заповнюється з прогресом',
+    tutorialDayClockFeature2: '😊 Маскот реагує на ваші досягнення',
+    tutorialDayClockFeature3: '🎯 Відстежуйте всі активності в одному місці',
+    tutorialDayClockFeature4: '🏆 Досягніть 100% для Ідеального Дня!',
+    tutorialMoodThemeTitle: 'Додаток адаптується під вас',
+    tutorialMoodThemeSubtitle: 'Дизайн змінюється з вашим настроєм',
+    tutorialMoodThemeDesc: 'Коли вам добре, додаток святкує яскравими кольорами. Коли сумно — стає спокійним і підтримуючим.',
+    tutorialMoodThemeFeature1: '😄 Чудовий настрій: Яскравий фіолетовий і золотий',
+    tutorialMoodThemeFeature2: '🙂 Добрий настрій: Теплі зелені тони',
+    tutorialMoodThemeFeature3: '😔 Поганий настрій: Заспокійливий синій',
+    tutorialMoodThemeFeature4: '😢 Важкі часи: М\'який, мінімалістичний дизайн',
     tutorialReadyTitle: 'Готові почати?',
     tutorialReadySubtitle: 'Ваш шлях починається зараз',
     tutorialReadyDesc: 'Почніть з малого — просто відмітьте, як ви себе почуваєте сьогодні. Кожен крок важливий!',
@@ -2241,6 +2487,23 @@ export const translations: Record<Language, Translations> = {
     // Streak Celebration
     dayStreak: 'днів поспіль',
     keepItUp: 'Так тримати!',
+
+    // Inner World Garden
+    myCompanion: 'Мій компаньйон',
+    missedYou: 'сумував за тобою!',
+    welcomeBack: 'З поверненням до твого саду',
+    warmth: 'Тепло',
+    energy: 'Енергія',
+    wisdom: 'Мудрість',
+    companionStreak: 'Днів поспіль!',
+    chooseCompanion: 'Обери компаньйона',
+    levelUpHint: 'Виконуй активності, щоб отримувати XP і підвищувати рівень!',
+    gardenEmpty: 'Новий початок',
+    gardenSprouting: 'Паростки',
+    gardenGrowing: 'Зростання',
+    gardenFlourishing: 'Цвітіння',
+    gardenMagical: 'Магія',
+    gardenLegendary: 'Легенда',
   },
 
   es: {
@@ -2310,6 +2573,39 @@ export const translations: Record<Language, Translations> = {
     almostThere: '¡Ya casi! 🚀',
     soClose: '¡Tan cerca de la perfección! ⭐',
     legendaryDay: '¡DÍA LEGENDARIO! 🏆🔥✨',
+
+    // Schedule Timeline
+    scheduleTitle: 'Tu Horario',
+    scheduleAddEvent: 'Agregar Evento',
+    scheduleEmpty: 'Sin eventos planificados. ¡Toca + para agregar!',
+    scheduleStart: 'Inicio',
+    scheduleEnd: 'Fin',
+    scheduleAdd: 'Agregar al Horario',
+    scheduleCustomTitle: 'Título personalizado (opcional)',
+    scheduleWork: 'Trabajo',
+    scheduleMeal: 'Comida',
+    scheduleRest: 'Descanso',
+    scheduleExercise: 'Ejercicio',
+    scheduleStudy: 'Estudio',
+    scheduleMeeting: 'Reunión',
+
+    // Onboarding Hints
+    hintFirstMoodTitle: '¿Cómo te sientes?',
+    hintFirstMoodDesc: 'Empieza el día registrando tu estado de ánimo. ¡Solo toma 5 segundos y te ayuda a entenderte mejor!',
+    hintFirstMoodAction: 'Registrar ánimo',
+    hintFirstHabitTitle: 'Crea tu primer hábito',
+    hintFirstHabitDesc: 'Los pequeños hábitos llevan a grandes cambios. Prueba agregar algo simple como "Beber agua".',
+    hintFirstHabitAction: 'Agregar hábito',
+    hintFirstFocusTitle: '¿Listo para enfocarte?',
+    hintFirstFocusDesc: 'Usa el temporizador de enfoque con sonidos relajantes. ¡Comienza con solo 25 minutos!',
+    hintFirstFocusAction: 'Iniciar enfoque',
+    hintFirstGratitudeTitle: 'Practica la gratitud',
+    hintFirstGratitudeDesc: 'Escribe una cosa por la que estés agradecido. ¡Es un poderoso impulsor del ánimo!',
+    hintFirstGratitudeAction: 'Agregar gratitud',
+    hintScheduleTipTitle: 'Planifica tu día',
+    hintScheduleTipDesc: '¡Usa la línea de tiempo para ver tu día de un vistazo. Agrega eventos para mantenerte en camino!',
+    hintScheduleTipAction: 'Ver línea de tiempo',
+
     habits: 'Hábitos',
     habitName: 'Nombre del hábito...',
     icon: 'Icono',
@@ -2740,7 +3036,9 @@ export const translations: Record<Language, Translations> = {
     onboardingRemindersDescription: 'Recibe recordatorios para tus hábitos',
     enableReminders: 'Activar recordatorios',
     morning: 'Mañana',
-    evening: 'Tarde',
+    afternoon: 'Tarde',
+    evening: 'Noche',
+    close: 'Cerrar',
     skip: 'Omitir',
     getStarted: 'Comenzar',
     next: 'Siguiente',
@@ -2768,6 +3066,20 @@ export const translations: Record<Language, Translations> = {
     tutorialFocusTitle: 'Modo de enfoque profundo',
     tutorialFocusSubtitle: 'Bloquea distracciones, haz las cosas',
     tutorialFocusDesc: 'Usa la técnica Pomodoro con sonidos ambientales relajantes. Perfecto para trabajo, estudio o proyectos creativos.',
+    tutorialDayClockTitle: 'Tu día de un vistazo',
+    tutorialDayClockSubtitle: 'Medidor visual de energía para cerebros con TDAH',
+    tutorialDayClockDesc: 'Ve tu día como un círculo con zonas de mañana, tarde y noche. ¡Observa cómo crece tu energía al completar actividades!',
+    tutorialDayClockFeature1: '⚡ El medidor de energía se llena con el progreso',
+    tutorialDayClockFeature2: '😊 La mascota reacciona a tus logros',
+    tutorialDayClockFeature3: '🎯 Rastrea todas las actividades en un lugar',
+    tutorialDayClockFeature4: '🏆 ¡Alcanza 100% para el Día Perfecto!',
+    tutorialMoodThemeTitle: 'La app se adapta a ti',
+    tutorialMoodThemeSubtitle: 'El diseño cambia con tu estado de ánimo',
+    tutorialMoodThemeDesc: 'Cuando te sientes genial, la app celebra con colores vibrantes. Cuando estás mal, se vuelve tranquila y reconfortante.',
+    tutorialMoodThemeFeature1: '😄 Genial: Púrpura vibrante y dorado',
+    tutorialMoodThemeFeature2: '🙂 Buen humor: Verdes cálidos',
+    tutorialMoodThemeFeature3: '😔 Mal humor: Azules calmantes',
+    tutorialMoodThemeFeature4: '😢 Tiempos difíciles: Diseño suave y minimalista',
     tutorialReadyTitle: '¿Listo para empezar?',
     tutorialReadySubtitle: 'Tu viaje comienza ahora',
     tutorialReadyDesc: 'Empieza pequeño – solo registra cómo te sientes hoy. ¡Cada paso cuenta!',
@@ -2789,6 +3101,23 @@ export const translations: Record<Language, Translations> = {
     // Streak Celebration
     dayStreak: 'días seguidos',
     keepItUp: '¡Sigue así!',
+
+    // Inner World Garden
+    myCompanion: 'Mi Compañero',
+    missedYou: '¡te extrañó!',
+    welcomeBack: 'Bienvenido de vuelta a tu jardín',
+    warmth: 'Calidez',
+    energy: 'Energía',
+    wisdom: 'Sabiduría',
+    companionStreak: '¡Días seguidos!',
+    chooseCompanion: 'Elige Compañero',
+    levelUpHint: '¡Completa actividades para ganar XP y subir de nivel!',
+    gardenEmpty: 'Nuevo Comienzo',
+    gardenSprouting: 'Brotando',
+    gardenGrowing: 'Creciendo',
+    gardenFlourishing: 'Floreciendo',
+    gardenMagical: 'Mágico',
+    gardenLegendary: 'Legendario',
   },
 
   de: {
@@ -2858,6 +3187,39 @@ export const translations: Record<Language, Translations> = {
     almostThere: 'Fast geschafft! 🚀',
     soClose: 'So nah an der Perfektion! ⭐',
     legendaryDay: 'LEGENDÄRER TAG! 🏆🔥✨',
+
+    // Schedule Timeline
+    scheduleTitle: 'Dein Zeitplan',
+    scheduleAddEvent: 'Ereignis hinzufügen',
+    scheduleEmpty: 'Keine Ereignisse geplant. Tippe auf + um hinzuzufügen!',
+    scheduleStart: 'Start',
+    scheduleEnd: 'Ende',
+    scheduleAdd: 'Zum Zeitplan hinzufügen',
+    scheduleCustomTitle: 'Eigener Titel (optional)',
+    scheduleWork: 'Arbeit',
+    scheduleMeal: 'Mahlzeit',
+    scheduleRest: 'Ruhe',
+    scheduleExercise: 'Sport',
+    scheduleStudy: 'Lernen',
+    scheduleMeeting: 'Meeting',
+
+    // Onboarding Hints
+    hintFirstMoodTitle: 'Wie fühlst du dich?',
+    hintFirstMoodDesc: 'Beginne den Tag mit einer Stimmungsnotiz. Es dauert nur 5 Sekunden und hilft dir, dich besser zu verstehen!',
+    hintFirstMoodAction: 'Stimmung notieren',
+    hintFirstHabitTitle: 'Erstelle deine erste Gewohnheit',
+    hintFirstHabitDesc: 'Kleine Gewohnheiten führen zu großen Veränderungen. Versuche etwas Einfaches wie "Wasser trinken".',
+    hintFirstHabitAction: 'Gewohnheit hinzufügen',
+    hintFirstFocusTitle: 'Bereit dich zu fokussieren?',
+    hintFirstFocusDesc: 'Nutze den Fokus-Timer mit beruhigenden Klängen. Starte mit nur 25 Minuten!',
+    hintFirstFocusAction: 'Fokus starten',
+    hintFirstGratitudeTitle: 'Übe Dankbarkeit',
+    hintFirstGratitudeDesc: 'Schreibe eine Sache auf, für die du dankbar bist. Es ist ein starker Stimmungsaufheller!',
+    hintFirstGratitudeAction: 'Dankbarkeit hinzufügen',
+    hintScheduleTipTitle: 'Plane deinen Tag',
+    hintScheduleTipDesc: 'Nutze die Zeitleiste, um deinen Tag auf einen Blick zu sehen. Füge Ereignisse hinzu!',
+    hintScheduleTipAction: 'Zeitleiste ansehen',
+
     habits: 'Gewohnheiten',
     habitName: 'Name der Gewohnheit...',
     icon: 'Symbol',
@@ -3288,7 +3650,9 @@ export const translations: Record<Language, Translations> = {
     onboardingRemindersDescription: 'Erhalte Erinnerungen für deine Gewohnheiten',
     enableReminders: 'Erinnerungen aktivieren',
     morning: 'Morgen',
+    afternoon: 'Nachmittag',
     evening: 'Abend',
+    close: 'Schließen',
     skip: 'Überspringen',
     getStarted: 'Loslegen',
     next: 'Weiter',
@@ -3316,6 +3680,20 @@ export const translations: Record<Language, Translations> = {
     tutorialFocusTitle: 'Tiefenfokus-Modus',
     tutorialFocusSubtitle: 'Ablenkungen blockieren, Dinge erledigen',
     tutorialFocusDesc: 'Nutze die Pomodoro-Technik mit beruhigenden Umgebungsgeräuschen. Perfekt für Arbeit, Studium oder kreative Projekte.',
+    tutorialDayClockTitle: 'Dein Tag auf einen Blick',
+    tutorialDayClockSubtitle: 'Visuelles Energiemeter für ADHS-Gehirne',
+    tutorialDayClockDesc: 'Sieh deinen Tag als Kreis mit Morgen-, Nachmittag- und Abendzonen. Beobachte, wie deine Energie mit jeder Aktivität wächst!',
+    tutorialDayClockFeature1: '⚡ Energiemeter füllt sich mit Fortschritt',
+    tutorialDayClockFeature2: '😊 Maskottchen reagiert auf deine Erfolge',
+    tutorialDayClockFeature3: '🎯 Verfolge alle Aktivitäten an einem Ort',
+    tutorialDayClockFeature4: '🏆 Erreiche 100% für den Perfekten Tag!',
+    tutorialMoodThemeTitle: 'Die App passt sich dir an',
+    tutorialMoodThemeSubtitle: 'Design ändert sich mit deiner Stimmung',
+    tutorialMoodThemeDesc: 'Wenn du dich großartig fühlst, feiert die App mit lebhaften Farben. Wenn du traurig bist, wird sie ruhig und unterstützend.',
+    tutorialMoodThemeFeature1: '😄 Tolle Stimmung: Lebhaftes Lila & Gold',
+    tutorialMoodThemeFeature2: '🙂 Gute Stimmung: Warme Grüntöne',
+    tutorialMoodThemeFeature3: '😔 Schlechte Stimmung: Beruhigendes Blau',
+    tutorialMoodThemeFeature4: '😢 Schwere Zeiten: Sanftes, minimales Design',
     tutorialReadyTitle: 'Bereit anzufangen?',
     tutorialReadySubtitle: 'Deine Reise beginnt jetzt',
     tutorialReadyDesc: 'Fang klein an – notiere einfach, wie du dich heute fühlst. Jeder Schritt zählt!',
@@ -3337,6 +3715,23 @@ export const translations: Record<Language, Translations> = {
     // Streak Celebration
     dayStreak: 'Tage Serie',
     keepItUp: 'Weiter so!',
+
+    // Inner World Garden
+    myCompanion: 'Mein Begleiter',
+    missedYou: 'hat dich vermisst!',
+    welcomeBack: 'Willkommen zurück in deinem Garten',
+    warmth: 'Wärme',
+    energy: 'Energie',
+    wisdom: 'Weisheit',
+    companionStreak: 'Tage am Stück!',
+    chooseCompanion: 'Begleiter wählen',
+    levelUpHint: 'Schließe Aktivitäten ab, um XP zu verdienen und aufzusteigen!',
+    gardenEmpty: 'Neuer Anfang',
+    gardenSprouting: 'Keimend',
+    gardenGrowing: 'Wachsend',
+    gardenFlourishing: 'Blühend',
+    gardenMagical: 'Magisch',
+    gardenLegendary: 'Legendär',
   },
 
   fr: {
@@ -3406,6 +3801,39 @@ export const translations: Record<Language, Translations> = {
     almostThere: 'Presque là ! 🚀',
     soClose: 'Si proche de la perfection ! ⭐',
     legendaryDay: 'JOURNÉE LÉGENDAIRE ! 🏆🔥✨',
+
+    // Schedule Timeline
+    scheduleTitle: 'Votre Emploi du Temps',
+    scheduleAddEvent: 'Ajouter un Événement',
+    scheduleEmpty: 'Aucun événement prévu. Appuyez sur + pour ajouter !',
+    scheduleStart: 'Début',
+    scheduleEnd: 'Fin',
+    scheduleAdd: "Ajouter à l'emploi du temps",
+    scheduleCustomTitle: 'Titre personnalisé (optionnel)',
+    scheduleWork: 'Travail',
+    scheduleMeal: 'Repas',
+    scheduleRest: 'Repos',
+    scheduleExercise: 'Exercice',
+    scheduleStudy: 'Études',
+    scheduleMeeting: 'Réunion',
+
+    // Onboarding Hints
+    hintFirstMoodTitle: 'Comment vous sentez-vous ?',
+    hintFirstMoodDesc: "Commencez la journée en notant votre humeur. Ça ne prend que 5 secondes et vous aide à mieux vous comprendre !",
+    hintFirstMoodAction: 'Noter humeur',
+    hintFirstHabitTitle: 'Créez votre première habitude',
+    hintFirstHabitDesc: 'Les petites habitudes mènent à de grands changements. Essayez quelque chose de simple comme "Boire de l\'eau".',
+    hintFirstHabitAction: 'Ajouter habitude',
+    hintFirstFocusTitle: 'Prêt à vous concentrer ?',
+    hintFirstFocusDesc: 'Utilisez le minuteur de focus avec des sons apaisants. Commencez par 25 minutes !',
+    hintFirstFocusAction: 'Démarrer focus',
+    hintFirstGratitudeTitle: 'Pratiquez la gratitude',
+    hintFirstGratitudeDesc: "Écrivez une chose pour laquelle vous êtes reconnaissant. C'est un puissant booster d'humeur !",
+    hintFirstGratitudeAction: 'Ajouter gratitude',
+    hintScheduleTipTitle: 'Planifiez votre journée',
+    hintScheduleTipDesc: "Utilisez la timeline pour voir votre journée d'un coup d'œil. Ajoutez des événements !",
+    hintScheduleTipAction: 'Voir timeline',
+
     habits: 'Habitudes',
     habitName: 'Nom de l\'habitude...',
     icon: 'Icône',
@@ -3836,7 +4264,9 @@ export const translations: Record<Language, Translations> = {
     onboardingRemindersDescription: 'Recevez des rappels pour vos habitudes',
     enableReminders: 'Activer les rappels',
     morning: 'Matin',
+    afternoon: 'Après-midi',
     evening: 'Soir',
+    close: 'Fermer',
     skip: 'Passer',
     getStarted: 'Commencer',
     next: 'Suivant',
@@ -3864,6 +4294,20 @@ export const translations: Record<Language, Translations> = {
     tutorialFocusTitle: 'Mode concentration profonde',
     tutorialFocusSubtitle: 'Bloquez les distractions, accomplissez des choses',
     tutorialFocusDesc: 'Utilisez la technique Pomodoro avec des sons ambiants apaisants. Parfait pour le travail, les études ou les projets créatifs.',
+    tutorialDayClockTitle: 'Votre journée en un coup d\'œil',
+    tutorialDayClockSubtitle: 'Compteur d\'énergie visuel pour cerveaux TDAH',
+    tutorialDayClockDesc: 'Voyez votre journée comme un cercle avec des zones matin, après-midi et soir. Regardez votre énergie grandir avec chaque activité!',
+    tutorialDayClockFeature1: '⚡ Le compteur d\'énergie se remplit avec les progrès',
+    tutorialDayClockFeature2: '😊 La mascotte réagit à vos réussites',
+    tutorialDayClockFeature3: '🎯 Suivez toutes les activités en un seul endroit',
+    tutorialDayClockFeature4: '🏆 Atteignez 100% pour la Journée Parfaite!',
+    tutorialMoodThemeTitle: 'L\'app s\'adapte à vous',
+    tutorialMoodThemeSubtitle: 'Le design change avec votre humeur',
+    tutorialMoodThemeDesc: 'Quand vous vous sentez bien, l\'app célèbre avec des couleurs vibrantes. Quand vous êtes triste, elle devient calme et réconfortante.',
+    tutorialMoodThemeFeature1: '😄 Super humeur: Violet vibrant et doré',
+    tutorialMoodThemeFeature2: '🙂 Bonne humeur: Verts chaleureux',
+    tutorialMoodThemeFeature3: '😔 Mauvaise humeur: Bleus apaisants',
+    tutorialMoodThemeFeature4: '😢 Moments difficiles: Design doux et minimal',
     tutorialReadyTitle: 'Prêt à commencer?',
     tutorialReadySubtitle: 'Votre voyage commence maintenant',
     tutorialReadyDesc: 'Commencez petit – notez simplement comment vous vous sentez aujourd\'hui. Chaque pas compte!',
@@ -3885,6 +4329,23 @@ export const translations: Record<Language, Translations> = {
     // Streak Celebration
     dayStreak: 'jours de suite',
     keepItUp: 'Continue comme ça!',
+
+    // Inner World Garden
+    myCompanion: 'Mon Compagnon',
+    missedYou: 'tu lui as manqué!',
+    welcomeBack: 'Bienvenue dans ton jardin',
+    warmth: 'Chaleur',
+    energy: 'Énergie',
+    wisdom: 'Sagesse',
+    companionStreak: 'Jours consécutifs!',
+    chooseCompanion: 'Choisir un Compagnon',
+    levelUpHint: 'Complète des activités pour gagner des XP et monter de niveau!',
+    gardenEmpty: 'Nouveau Départ',
+    gardenSprouting: 'Germination',
+    gardenGrowing: 'Croissance',
+    gardenFlourishing: 'Floraison',
+    gardenMagical: 'Magique',
+    gardenLegendary: 'Légendaire',
   },
 };
 

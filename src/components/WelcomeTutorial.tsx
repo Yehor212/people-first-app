@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { ChevronRight, ChevronLeft, Sparkles, Brain, Target, Heart, Timer, Zap, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Sparkles, Brain, Target, Heart, Timer, Zap, CheckCircle2, Clock, Palette } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -35,6 +35,20 @@ const slides = [
     gradient: 'from-blue-500/20 to-cyan-500/20',
     iconColor: 'text-blue-500',
     animation: 'bounce',
+  },
+  {
+    id: 'dayclock',
+    icon: Clock,
+    gradient: 'from-amber-500/20 to-orange-500/20',
+    iconColor: 'text-amber-500',
+    animation: 'spin-slow',
+  },
+  {
+    id: 'moodtheme',
+    icon: Palette,
+    gradient: 'from-violet-500/20 to-fuchsia-500/20',
+    iconColor: 'text-violet-500',
+    animation: 'color-shift',
   },
   {
     id: 'mood',
@@ -87,6 +101,28 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
           t.tutorialFeature2 || 'Build habits step by step',
           t.tutorialFeature3 || 'Focus sessions with ambient sounds',
           t.tutorialFeature4 || 'Gratitude journaling',
+        ],
+      },
+      dayclock: {
+        title: t.tutorialDayClockTitle || 'Your Day at a Glance',
+        subtitle: t.tutorialDayClockSubtitle || 'Visual energy meter for ADHD brains',
+        description: t.tutorialDayClockDesc || 'See your day as a circle with morning, afternoon, and evening zones. Watch your energy grow as you complete activities!',
+        features: [
+          t.tutorialDayClockFeature1 || '⚡ Energy meter fills up with progress',
+          t.tutorialDayClockFeature2 || '😊 Mascot reacts to your achievements',
+          t.tutorialDayClockFeature3 || '🎯 Track all activities in one place',
+          t.tutorialDayClockFeature4 || '🏆 Reach 100% for Perfect Day!',
+        ],
+      },
+      moodtheme: {
+        title: t.tutorialMoodThemeTitle || 'App Adapts to You',
+        subtitle: t.tutorialMoodThemeSubtitle || 'Design changes with your mood',
+        description: t.tutorialMoodThemeDesc || 'When you feel great, the app celebrates with vibrant colors. When you feel down, it becomes calm and supportive.',
+        features: [
+          t.tutorialMoodThemeFeature1 || '😄 Great mood: Vibrant purple & gold',
+          t.tutorialMoodThemeFeature2 || '🙂 Good mood: Warm greens',
+          t.tutorialMoodThemeFeature3 || '😔 Bad mood: Calming blues',
+          t.tutorialMoodThemeFeature4 || '😢 Tough times: Gentle, minimal design',
         ],
       },
       mood: {
@@ -174,7 +210,8 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
             slide.animation === 'bounce' && 'animate-bounce',
             slide.animation === 'heartbeat' && 'animate-heartbeat',
             slide.animation === 'spin-slow' && 'animate-spin-slow',
-            slide.animation === 'zap' && 'animate-zap'
+            slide.animation === 'zap' && 'animate-zap',
+            slide.animation === 'color-shift' && 'animate-color-shift'
           )} />
 
           {/* Decorative circles */}
@@ -288,6 +325,27 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
         }
         .animate-zap {
           animation: zap 2s ease-in-out infinite;
+        }
+        @keyframes color-shift {
+          0%, 100% {
+            filter: hue-rotate(0deg);
+            transform: scale(1);
+          }
+          25% {
+            filter: hue-rotate(60deg);
+            transform: scale(1.05);
+          }
+          50% {
+            filter: hue-rotate(120deg);
+            transform: scale(1);
+          }
+          75% {
+            filter: hue-rotate(180deg);
+            transform: scale(1.05);
+          }
+        }
+        .animate-color-shift {
+          animation: color-shift 4s ease-in-out infinite;
         }
       `}</style>
     </div>

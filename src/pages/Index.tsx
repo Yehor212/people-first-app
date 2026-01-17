@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings } from '@/types';
+import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMoodTheme } from '@/contexts/MoodThemeContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { triggerXpPopup } from '@/components/XpPopup';
 import { DailySurprise } from '@/components/DailySurprise';
 import { DayClock } from '@/components/DayClock';
+import { ScheduleTimeline } from '@/components/ScheduleTimeline';
+import { OnboardingHints } from '@/components/OnboardingHints';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
 import { generateId, getToday } from '@/lib/utils';
@@ -47,8 +49,11 @@ import { TimeHelper } from '@/components/TimeHelper';
 import { WidgetSettings } from '@/pages/WidgetSettings';
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
+import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
+import { InnerWorldGarden } from '@/components/InnerWorldGarden';
+import { CompanionPanel } from '@/components/CompanionPanel';
 
 type TabType = 'home' | 'stats' | 'achievements' | 'settings';
 
@@ -69,8 +74,67 @@ export function Index() {
     refs[section]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
+  // Schedule event handlers
+  const handleAddScheduleEvent = (event: Omit<ScheduleEvent, 'id'>) => {
+    const newEvent: ScheduleEvent = {
+      ...event,
+      id: generateId(),
+    };
+    setScheduleEvents([...scheduleEvents, newEvent]);
+  };
+
+  const handleDeleteScheduleEvent = (id: string) => {
+    setScheduleEvents(scheduleEvents.filter(e => e.id !== id));
+  };
+
+  // Filter today's schedule events
+  const todayScheduleEvents = useMemo(() => {
+    const today = getToday();
+    return scheduleEvents.filter(e => e.date === today);
+  }, [scheduleEvents]);
+
+  // Onboarding hint dismissal
+  const handleDismissHint = (hintId: string) => {
+    setDismissedHints([...dismissedHints, hintId]);
+  };
+
+  // Check if user has mood today
+  const hasMoodToday = useMemo(() => {
+    const today = getToday();
+    return moods.some(m => m.date === today);
+  }, [moods]);
+
+  // Check if user has focus session today
+  const hasFocusToday = useMemo(() => {
+    const today = getToday();
+    return focusSessions.some(s => s.date === today);
+  }, [focusSessions]);
+
+  // Check if user has gratitude today
+  const hasGratitudeToday = useMemo(() => {
+    const today = getToday();
+    return gratitudeEntries.some(g => g.date === today);
+  }, [gratitudeEntries]);
+
   // Gamification system
   const { stats, gamificationState, userLevel, awardXp } = useGamification();
+
+  // Inner World garden system
+  const {
+    world: innerWorld,
+    isLoading: isLoadingInnerWorld,
+    plantSeed,
+    waterPlants,
+    attractCreature,
+    feedCreatures,
+    setCompanionType,
+    renameCompanion,
+    clearWelcomeBack,
+    gardenStats,
+  } = useInnerWorld();
+
+  // Companion panel state
+  const [showCompanionPanel, setShowCompanionPanel] = useState(false);
 
   // Current focus minutes (real-time)
   const [currentFocusMinutes, setCurrentFocusMinutes] = useState<number | undefined>(undefined);
@@ -186,8 +250,24 @@ export function Index() {
     idField: 'key'
   });
 
+  // Schedule events for ADHD timeline
+  const [scheduleEvents, setScheduleEvents, isLoadingSchedule] = useIndexedDB<ScheduleEvent[]>({
+    table: db.settings,
+    localStorageKey: 'zenflow-schedule-events',
+    initialValue: [],
+    idField: 'key'
+  });
+
+  // Dismissed onboarding hints
+  const [dismissedHints, setDismissedHints, isLoadingHints] = useIndexedDB<string[]>({
+    table: db.settings,
+    localStorageKey: 'zenflow-dismissed-hints',
+    initialValue: [],
+    idField: 'key'
+  });
+
   // Loading handling
-  const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingTutorial || isLoadingOnboarding || isLoadingPrivacy || isLoadingAuthGate || isLoadingNotificationPermission;
+  const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingTutorial || isLoadingOnboarding || isLoadingPrivacy || isLoadingAuthGate || isLoadingNotificationPermission || isLoadingSchedule || isLoadingHints || isLoadingInnerWorld;
 
   // Widget synchronization
   const currentStreak = useMemo(() => {
@@ -230,6 +310,10 @@ export function Index() {
     awardXp('mood'); // +5 XP
     triggerXpPopup(5, 'mood'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
+
+    // Inner World: Plant a flower based on mood
+    plantSeed('mood', entry.mood);
+    waterPlants('mood');
   };
 
   // Update existing mood entry (for same-day editing)
@@ -284,6 +368,9 @@ export function Index() {
       if (!completed) {
         awardXp('habit'); // +10 XP for completing habit
         triggerXpPopup(10, 'habit'); // Visual XP popup
+        // Inner World: Plant a tree when completing habit
+        plantSeed('habit');
+        waterPlants('habit');
       }
       return {
         ...habit,
@@ -328,6 +415,10 @@ export function Index() {
     awardXp('focus'); // +15 XP
     triggerXpPopup(15, 'focus'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
+
+    // Inner World: Plant a crystal when completing focus session
+    plantSeed('focus');
+    waterPlants('focus');
   };
 
   const handleAddGratitude = (entry: GratitudeEntry) => {
@@ -335,6 +426,15 @@ export function Index() {
     awardXp('gratitude'); // +8 XP
     triggerXpPopup(8, 'gratitude'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
+
+    // Inner World: Plant a mushroom and attract creatures
+    plantSeed('gratitude');
+    waterPlants('gratitude');
+    // 30% chance to attract a creature
+    if (Math.random() < 0.3) {
+      attractCreature();
+    }
+    feedCreatures();
   };
 
   const handleResetData = () => {
@@ -775,7 +875,44 @@ export function Index() {
                   {/* Daily Surprise - motivational content that changes daily */}
                   <DailySurprise onNavigate={handleNavigateToSection} />
 
-                  {/* Visual Day Clock - ADHD-friendly timeline */}
+                  {/* Inner World Garden - Personal growth visualization */}
+                  <div className="relative">
+                    <InnerWorldGarden
+                      world={innerWorld}
+                      onCompanionClick={() => {
+                        clearWelcomeBack();
+                        setShowCompanionPanel(true);
+                      }}
+                      onPlantClick={(plant) => {
+                        // Could show plant details in future
+                        console.log('Plant clicked:', plant);
+                      }}
+                      onCreatureClick={(creature) => {
+                        // Could show creature details in future
+                        console.log('Creature clicked:', creature);
+                      }}
+                    />
+                  </div>
+
+                  {/* Onboarding Hints - contextual tips after tutorial */}
+                  <OnboardingHints
+                    hasCompletedTutorial={tutorialComplete}
+                    hasMoodToday={hasMoodToday}
+                    hasHabits={habits.length > 0}
+                    hasFocusSession={hasFocusToday}
+                    hasGratitude={hasGratitudeToday}
+                    onDismiss={handleDismissHint}
+                    dismissedHints={dismissedHints}
+                  />
+
+                  {/* Schedule Timeline - Horizontal day planner */}
+                  <ScheduleTimeline
+                    events={todayScheduleEvents}
+                    onAddEvent={handleAddScheduleEvent}
+                    onDeleteEvent={handleDeleteScheduleEvent}
+                  />
+
+                  {/* Visual Day Clock - ADHD-friendly energy meter */}
                   <DayClock
                     moods={moods}
                     habits={habits}
@@ -943,6 +1080,16 @@ export function Index() {
       {showTimeHelper && (
         <TimeHelper onClose={() => setShowTimeHelper(false)} />
       )}
+
+      {/* Companion Panel Modal */}
+      <CompanionPanel
+        companion={innerWorld.companion}
+        isOpen={showCompanionPanel}
+        onClose={() => setShowCompanionPanel(false)}
+        onRename={renameCompanion}
+        onChangeType={setCompanionType}
+        streak={innerWorld.currentActiveStreak}
+      />
     </div>
   );
 };

@@ -142,3 +142,128 @@ export interface Badge {
   unlockedDate?: string;      // Дата разблокировки
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
 }
+
+export interface ScheduleEvent {
+  id: string;
+  title: string;
+  startHour: number;
+  startMinute: number;
+  endHour: number;
+  endMinute: number;
+  color: string;
+  emoji?: string;
+  date: string;               // Which day this event is for
+}
+
+// ============================================
+// INNER WORLD SYSTEM - Personal Growth Garden
+// ============================================
+
+export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
+
+export type PlantType = 'flower' | 'tree' | 'crystal' | 'mushroom';
+export type CreatureType = 'butterfly' | 'bird' | 'firefly' | 'spirit';
+
+export type PlantStage = 'seed' | 'sprout' | 'growing' | 'blooming' | 'magnificent';
+export type CreatureStage = 'egg' | 'baby' | 'young' | 'adult' | 'legendary';
+
+// Plant in the garden - grows from activities
+export interface GardenPlant {
+  id: string;
+  type: PlantType;
+  stage: PlantStage;
+  color: string;                    // Based on mood when planted
+  plantedAt: number;                // Timestamp
+  lastWateredAt: number;            // Last activity timestamp
+  growthPoints: number;             // Accumulated growth
+  position: { x: number; y: number }; // Position in garden (0-100)
+  sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude';
+  isSpecial?: boolean;              // Seasonal or rare
+  variant?: string;                 // Visual variant
+}
+
+// Creature in the garden - attracted by gratitude
+export interface GardenCreature {
+  id: string;
+  type: CreatureType;
+  stage: CreatureStage;
+  color: string;
+  arrivedAt: number;
+  happiness: number;                // 0-100
+  position: { x: number; y: number };
+  isSpecial?: boolean;
+  variant?: string;
+}
+
+// Companion mascot - lives in the garden
+export type CompanionMood = 'sleeping' | 'calm' | 'happy' | 'excited' | 'celebrating' | 'supportive';
+export type CompanionType = 'fox' | 'cat' | 'owl' | 'rabbit' | 'dragon';
+
+export interface Companion {
+  type: CompanionType;
+  name: string;
+  mood: CompanionMood;
+  level: number;                    // 1-100
+  experience: number;
+  unlockedOutfits: string[];
+  currentOutfit?: string;
+  lastInteraction: number;
+  personality: {
+    energy: number;                 // 0-100: calm to energetic
+    wisdom: number;                 // 0-100: playful to wise
+    warmth: number;                 // 0-100: reserved to affectionate
+  };
+}
+
+// Garden evolution stages
+export type GardenStage =
+  | 'empty'           // Just started
+  | 'sprouting'       // First week
+  | 'growing'         // First month
+  | 'flourishing'     // Few months
+  | 'magical'         // Half year
+  | 'legendary';      // Year+
+
+// Weather/atmosphere in the garden
+export type GardenWeather = 'sunny' | 'cloudy' | 'rainy' | 'starry' | 'aurora' | 'magical';
+
+// The complete Inner World state
+export interface InnerWorld {
+  // Garden state
+  gardenStage: GardenStage;
+  plants: GardenPlant[];
+  creatures: GardenCreature[];
+  weather: GardenWeather;
+  season: Season;
+
+  // Companion
+  companion: Companion;
+
+  // Stats
+  totalPlantsGrown: number;
+  totalCreaturesAttracted: number;
+  daysActive: number;
+  longestActiveStreak: number;
+  currentActiveStreak: number;
+  lastActiveDate: string;
+
+  // Unlocks
+  unlockedBackgrounds: string[];
+  unlockedDecorations: string[];
+  currentBackground: string;
+  decorations: Array<{
+    id: string;
+    type: string;
+    position: { x: number; y: number };
+  }>;
+
+  // Seasonal
+  seasonalItemsCollected: string[];
+
+  // Welcome back state
+  pendingGrowth: {
+    plantsToGrow: number;
+    creaturesArrived: number;
+    companionMissedYou: boolean;
+  };
+}
