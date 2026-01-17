@@ -16,7 +16,16 @@ interface OnboardingHintsProps {
   hasGratitude: boolean;
   onDismiss: (hintId: string) => void;
   dismissedHints: string[];
+  onNavigate?: (section: 'mood' | 'habits' | 'focus' | 'gratitude') => void;
 }
+
+// Map hint IDs to navigation targets
+const HINT_NAVIGATION: Record<string, 'mood' | 'habits' | 'focus' | 'gratitude'> = {
+  first_mood: 'mood',
+  first_habit: 'habits',
+  first_focus: 'focus',
+  first_gratitude: 'gratitude',
+};
 
 interface Hint {
   id: string;
@@ -155,7 +164,16 @@ export function OnboardingHints(props: OnboardingHintsProps) {
           </p>
 
           {content.action && (
-            <button className="mt-2 text-xs font-medium text-primary flex items-center gap-1 hover:underline">
+            <button
+              onClick={() => {
+                const target = HINT_NAVIGATION[currentHint.id];
+                if (target && props.onNavigate) {
+                  props.onNavigate(target);
+                  handleDismiss();
+                }
+              }}
+              className="mt-2 text-xs font-medium text-primary flex items-center gap-1 hover:underline"
+            >
               {content.action}
               <ChevronRight className="w-3 h-3" />
             </button>

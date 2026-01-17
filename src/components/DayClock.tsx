@@ -9,7 +9,7 @@ interface DayClockProps {
   habits: Habit[];
   focusSessions: FocusSession[];
   gratitudeEntries: GratitudeEntry[];
-  onTimeBlockClick?: (period: 'morning' | 'afternoon' | 'evening') => void;
+  onTimeBlockClick?: (section: 'mood' | 'habits' | 'focus' | 'gratitude') => void;
 }
 
 // Mascot expressions based on energy level

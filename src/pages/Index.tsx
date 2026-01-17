@@ -1037,6 +1037,7 @@ export function Index() {
                     hasGratitude={hasGratitudeToday}
                     onDismiss={handleDismissHint}
                     dismissedHints={dismissedHints}
+                    onNavigate={handleNavigateToSection}
                   />
 
                   {/* Schedule Timeline - Horizontal day planner */}
