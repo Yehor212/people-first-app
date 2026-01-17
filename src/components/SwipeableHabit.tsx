@@ -2,11 +2,11 @@
  * SwipeableHabit - Swipe-to-complete habit interaction
  *
  * Features:
- * - Swipe right to complete habit
+ * - Swipe right to complete habit (mobile)
+ * - Simple click to complete (desktop)
  * - Visual progress indicator
  * - Haptic feedback on completion
  * - Protection against accidental taps
- * - Desktop fallback (long press)
  */
 
 import { useState, useRef, useCallback, ReactNode } from 'react';
@@ -115,43 +115,24 @@ export function SwipeableHabit({
     isSwipingRef.current = false;
   }, []);
 
-  // Desktop fallback: long press
-  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const [isLongPressing, setIsLongPressing] = useState(false);
-
-  const handleMouseDown = useCallback(() => {
+  // Desktop: simple click to complete
+  const handleClick = useCallback((e: React.MouseEvent) => {
     if (disabled || completed) return;
 
-    longPressTimerRef.current = setTimeout(() => {
-      setIsLongPressing(true);
-      // Trigger after long press
-      setTimeout(() => {
-        if (navigator.vibrate) {
-          navigator.vibrate(50);
-        }
-        setShowSuccess(true);
-        onComplete();
-        setTimeout(() => {
-          setShowSuccess(false);
-          setIsLongPressing(false);
-        }, 500);
-      }, 300);
-    }, 500); // 500ms long press
+    // Ignore if this was a touch event (mobile devices trigger both touch and click)
+    if (e.detail === 0) return; // Touch events have detail=0
+
+    // Show success animation
+    setShowSuccess(true);
+
+    // Trigger callback
+    onComplete();
+
+    // Reset after animation
+    setTimeout(() => {
+      setShowSuccess(false);
+    }, 500);
   }, [disabled, completed, onComplete]);
-
-  const handleMouseUp = useCallback(() => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-    if (!showSuccess) {
-      setIsLongPressing(false);
-    }
-  }, [showSuccess]);
-
-  const handleMouseLeave = useCallback(() => {
-    handleMouseUp();
-  }, [handleMouseUp]);
 
   return (
     <div
@@ -164,9 +145,7 @@ export function SwipeableHabit({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
+      onClick={handleClick}
     >
       {/* Swipe progress background */}
       <AnimatePresence>
@@ -186,19 +165,6 @@ export function SwipeableHabit({
         )}
       </AnimatePresence>
 
-      {/* Long press progress indicator (desktop) */}
-      <AnimatePresence>
-        {isLongPressing && !completed && (
-          <motion.div
-            className="absolute inset-0 z-0 bg-gradient-to-r from-primary/30 to-primary/50"
-            initial={{ scaleX: 0 }}
-            animate={{ scaleX: 1 }}
-            exit={{ scaleX: 0 }}
-            style={{ transformOrigin: 'left' }}
-            transition={{ duration: 0.5 }}
-          />
-        )}
-      </AnimatePresence>
 
       {/* Success checkmark overlay */}
       <AnimatePresence>

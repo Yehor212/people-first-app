@@ -1107,6 +1107,16 @@ export function Index() {
                   {/* Breathing Exercise - Mindfulness card (under mood) */}
                   <BreathingExercise compact />
 
+                  {/* Focus Timer - Primary CTA if no focus session today */}
+                  <div ref={focusRef}>
+                    <FocusTimer
+                      sessions={focusSessions}
+                      onCompleteSession={handleCompleteFocusSession}
+                      onMinuteUpdate={setCurrentFocusMinutes}
+                      isPrimaryCTA={currentPrimaryCTA === 'focus'}
+                    />
+                  </div>
+
                   {/* Habit Tracker - Primary CTA if habits not completed */}
                   <div ref={habitsRef}>
                     <HabitTracker
@@ -1116,16 +1126,6 @@ export function Index() {
                       onAddHabit={handleAddHabit}
                       onDeleteHabit={handleDeleteHabit}
                       isPrimaryCTA={currentPrimaryCTA === 'habits'}
-                    />
-                  </div>
-
-                  {/* Focus Timer - Primary CTA if no focus session today */}
-                  <div ref={focusRef}>
-                    <FocusTimer
-                      sessions={focusSessions}
-                      onCompleteSession={handleCompleteFocusSession}
-                      onMinuteUpdate={setCurrentFocusMinutes}
-                      isPrimaryCTA={currentPrimaryCTA === 'focus'}
                     />
                   </div>
 

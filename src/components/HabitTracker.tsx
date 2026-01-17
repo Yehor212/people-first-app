@@ -311,9 +311,13 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
           isPrimaryCTA ? "text-xl" : "text-lg"
         )}>{t.habits}</h3>
         <button
-          onClick={() => setIsAdding(!isAdding)}
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            setIsAdding(!isAdding);
+          }}
           className={cn(
-            "btn-press p-2 rounded-full transition-all",
+            "btn-press p-2 rounded-full transition-all cursor-pointer",
             isAdding ? "bg-destructive text-destructive-foreground rotate-45" : "bg-primary text-primary-foreground"
           )}
         >
@@ -332,8 +336,13 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
               .map((template) => (
                 <button
                   key={template.id}
-                  onClick={() => handleQuickAdd(template.id)}
-                  className="btn-press flex items-center gap-2 p-3 bg-background rounded-xl hover:bg-muted transition-all text-left"
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleQuickAdd(template.id);
+                  }}
+                  className="btn-press flex items-center gap-2 p-3 bg-background rounded-xl hover:bg-muted transition-all text-left cursor-pointer"
                 >
                   <span className="text-xl">{template.icon}</span>
                   <span className="text-sm font-medium text-foreground truncate">
@@ -345,8 +354,13 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
 
           {/* Custom habit option */}
           <button
-            onClick={() => setShowCustomForm(true)}
-            className="btn-press w-full flex items-center justify-between p-3 bg-background rounded-xl hover:bg-muted transition-all"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setShowCustomForm(true);
+            }}
+            className="btn-press w-full flex items-center justify-between p-3 bg-background rounded-xl hover:bg-muted transition-all cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <Settings2 className="w-5 h-5 text-primary" />
@@ -382,9 +396,13 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
               {habitIcons.map((icon) => (
                 <button
                   key={icon}
-                  onClick={() => setSelectedIcon(icon)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedIcon(icon);
+                  }}
                   className={cn(
-                    "btn-press w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all",
+                    "btn-press w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all cursor-pointer",
                     selectedIcon === icon ? "bg-primary/20 ring-2 ring-primary" : "bg-background hover:bg-muted"
                   )}
                 >
@@ -400,9 +418,13 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
               {habitColors.map((color) => (
                 <button
                   key={color}
-                  onClick={() => setSelectedColor(color)}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setSelectedColor(color);
+                  }}
                   className={cn(
-                    "btn-press w-8 h-8 rounded-full transition-all",
+                    "btn-press w-8 h-8 rounded-full transition-all cursor-pointer",
                     color,
                     selectedColor === color ? "ring-2 ring-offset-2 ring-foreground" : ""
                   )}
@@ -415,36 +437,52 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
             <p className="text-sm text-muted-foreground mb-2">{t.habitType}:</p>
             <div className="grid grid-cols-2 gap-2">
               <button
-                onClick={() => setSelectedType('daily')}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedType('daily');
+                }}
                 className={cn(
-                  "btn-press p-2 rounded-lg text-sm transition-all",
+                  "btn-press p-2 rounded-lg text-sm transition-all cursor-pointer",
                   selectedType === 'daily' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
                 )}
               >
                 {t.habitTypeDaily}
               </button>
               <button
-                onClick={() => setSelectedType('multiple')}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedType('multiple');
+                }}
                 className={cn(
-                  "btn-press p-2 rounded-lg text-sm transition-all",
+                  "btn-press p-2 rounded-lg text-sm transition-all cursor-pointer",
                   selectedType === 'multiple' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
                 )}
               >
                 {t.habitTypeMultiple}
               </button>
               <button
-                onClick={() => setSelectedType('continuous')}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedType('continuous');
+                }}
                 className={cn(
-                  "btn-press p-2 rounded-lg text-sm transition-all",
+                  "btn-press p-2 rounded-lg text-sm transition-all cursor-pointer",
                   selectedType === 'continuous' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
                 )}
               >
                 {t.habitTypeContinuous}
               </button>
               <button
-                onClick={() => setSelectedType('reduce')}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedType('reduce');
+                }}
                 className={cn(
-                  "btn-press p-2 rounded-lg text-sm transition-all",
+                  "btn-press p-2 rounded-lg text-sm transition-all cursor-pointer",
                   selectedType === 'reduce' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
                 )}
               >
@@ -468,9 +506,13 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
           )}
 
           <button
-            onClick={handleAddHabit}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              handleAddHabit();
+            }}
             disabled={!newHabitName.trim()}
-            className="btn-press w-full py-3 zen-gradient text-primary-foreground font-medium rounded-xl disabled:opacity-50 transition-opacity"
+            className="btn-press w-full py-3 zen-gradient text-primary-foreground font-medium rounded-xl disabled:opacity-50 transition-opacity cursor-pointer"
           >
             {t.addHabit}
           </button>
@@ -487,8 +529,12 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
             {t.addFirstHabit}
           </p>
           <button
-            onClick={() => setIsAdding(true)}
-            className="btn-press px-6 py-3 zen-gradient text-white font-bold rounded-xl hover:opacity-90 transition-all zen-shadow-soft"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              setIsAdding(true);
+            }}
+            className="btn-press px-6 py-3 zen-gradient text-white font-bold rounded-xl hover:opacity-90 transition-all zen-shadow-soft cursor-pointer"
           >
             <Plus className="w-5 h-5 inline-block mr-2" />
             {t.addHabit}
