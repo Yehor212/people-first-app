@@ -1085,6 +1085,22 @@ export function Index() {
                 isRestMode={isRestMode}
               />
 
+              {/* Visual Day Clock - ADHD-friendly energy meter (moved to home) */}
+              <DayClock
+                moods={moods}
+                habits={habits}
+                focusSessions={focusSessions}
+                gratitudeEntries={gratitudeEntries}
+                onTimeBlockClick={handleNavigateToSection}
+              />
+
+              {/* Schedule Timeline - Horizontal day planner (moved to home) */}
+              <ScheduleTimeline
+                events={todayScheduleEvents}
+                onAddEvent={handleAddScheduleEvent}
+                onDeleteEvent={handleDeleteScheduleEvent}
+              />
+
               {/* Rest Mode UI - Simplified interface when taking a break */}
               {isRestMode ? (
                 <RestModeCard
@@ -1166,7 +1182,7 @@ export function Index() {
               }}
             />
 
-            {/* Garden Stats - Beautiful minimal cards */}
+            {/* Garden Stats - Hidden temporarily
             <div className="grid grid-cols-3 gap-3">
               <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500/10 to-green-500/5 rounded-2xl p-4 text-center border border-emerald-500/20">
                 <div className="text-2xl mb-2">🌱</div>
@@ -1187,22 +1203,7 @@ export function Index() {
                 <div className="absolute -right-3 -bottom-3 text-5xl opacity-10">🏆</div>
               </div>
             </div>
-
-            {/* Visual Day Clock - ADHD-friendly energy meter */}
-            <DayClock
-              moods={moods}
-              habits={habits}
-              focusSessions={focusSessions}
-              gratitudeEntries={gratitudeEntries}
-              onTimeBlockClick={handleNavigateToSection}
-            />
-
-            {/* Schedule Timeline - Horizontal day planner */}
-            <ScheduleTimeline
-              events={todayScheduleEvents}
-              onAddEvent={handleAddScheduleEvent}
-              onDeleteEvent={handleDeleteScheduleEvent}
-            />
+            */}
 
             {/* Weekly Calendar */}
             <WeeklyCalendar moods={moods} habits={habits} />

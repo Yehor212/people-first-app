@@ -5,15 +5,12 @@ const config: CapacitorConfig = {
   appName: 'ZenFlow',
   webDir: 'dist',
   android: {
-    // PRODUCTION: Disable debugging for security
-    webContentsDebuggingEnabled: false,
-    // PRODUCTION: Require HTTPS only
+    // DEBUG: Enable for development, disable for production release
+    webContentsDebuggingEnabled: true,
     allowMixedContent: false,
   },
   server: {
-    // Use HTTPS scheme
     androidScheme: 'https',
-    // PRODUCTION: Disable cleartext (HTTP) traffic
     cleartext: false,
   }
 };
