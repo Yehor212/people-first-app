@@ -90,6 +90,7 @@ export default defineConfig(({ mode }) => {
 
       // Workbox configuration
       workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024, // 5MB for debugging unminified builds
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
           {
@@ -146,7 +147,7 @@ export default defineConfig(({ mode }) => {
 
   build: {
     target: "esnext",
-    minify: "esbuild", // Changed from terser - terser was causing "Cannot access before initialization" errors
+    minify: false, // Temporarily disabled for debugging TDZ error
 
     rollupOptions: {
       output: {
@@ -160,7 +161,7 @@ export default defineConfig(({ mode }) => {
       },
     },
 
-    sourcemap: mode === "development",
+    sourcemap: true, // Temporarily enabled for production debugging
     chunkSizeWarningLimit: 600, // KB
   },
 
