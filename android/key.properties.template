@@ -1,0 +1,7 @@
+# DO NOT commit this file to git!
+# Copy this to key.properties and fill in your values
+
+storeFile=../zenflow-release.keystore
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyAlias=zenflow
+keyPassword=YOUR_KEY_PASSWORD
