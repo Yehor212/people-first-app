@@ -30,7 +30,8 @@
       "Bash(gh run list:*)",
       "Bash(initialization\" errors due to module order issues when splitting\nbundles. Disabling it creates one larger bundle but ensures proper\ninitialization order.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(npx madge:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(find:*)"
     ]
   }
 }

@@ -5,16 +5,16 @@ const config: CapacitorConfig = {
   appName: 'ZenFlow',
   webDir: 'dist',
   android: {
-    // Enable WebView debugging
-    webContentsDebuggingEnabled: true,
-    // Allow mixed content for debugging
-    allowMixedContent: true,
+    // PRODUCTION: Disable debugging for security
+    webContentsDebuggingEnabled: false,
+    // PRODUCTION: Require HTTPS only
+    allowMixedContent: false,
   },
   server: {
-    // Use relative URLs
+    // Use HTTPS scheme
     androidScheme: 'https',
-    // Clear cache on reload
-    cleartext: true,
+    // PRODUCTION: Disable cleartext (HTTP) traffic
+    cleartext: false,
   }
 };
 

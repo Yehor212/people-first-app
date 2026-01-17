@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
     port: 8080,
   },
   define: {
-    __APP_VERSION__: JSON.stringify("2.0.0"),
+    __APP_VERSION__: JSON.stringify("1.0.0"),
   },
   plugins: [
     react(),
