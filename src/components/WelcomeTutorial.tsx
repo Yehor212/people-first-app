@@ -13,71 +13,76 @@ interface WelcomeTutorialProps {
   onSkip: () => void;
 }
 
-// Tutorial slides content
-const slides = [
-  {
-    id: 'welcome',
-    icon: Sparkles,
-    gradient: 'from-primary/20 to-accent/20',
-    iconColor: 'text-primary',
-    animation: 'float',
-  },
-  {
-    id: 'brain',
-    icon: Brain,
-    gradient: 'from-purple-500/20 to-pink-500/20',
-    iconColor: 'text-purple-500',
-    animation: 'pulse',
-  },
-  {
-    id: 'features',
-    icon: Target,
-    gradient: 'from-blue-500/20 to-cyan-500/20',
-    iconColor: 'text-blue-500',
-    animation: 'bounce',
-  },
-  {
-    id: 'dayclock',
-    icon: Clock,
-    gradient: 'from-amber-500/20 to-orange-500/20',
-    iconColor: 'text-amber-500',
-    animation: 'spin-slow',
-  },
-  {
-    id: 'moodtheme',
-    icon: Palette,
-    gradient: 'from-violet-500/20 to-fuchsia-500/20',
-    iconColor: 'text-violet-500',
-    animation: 'color-shift',
-  },
-  {
-    id: 'mood',
-    icon: Heart,
-    gradient: 'from-red-500/20 to-orange-500/20',
-    iconColor: 'text-red-500',
-    animation: 'heartbeat',
-  },
-  {
-    id: 'focus',
-    icon: Timer,
-    gradient: 'from-green-500/20 to-emerald-500/20',
-    iconColor: 'text-green-500',
-    animation: 'spin-slow',
-  },
-  {
-    id: 'ready',
-    icon: Zap,
-    gradient: 'from-yellow-500/20 to-orange-500/20',
-    iconColor: 'text-yellow-500',
-    animation: 'zap',
-  },
-];
+// Tutorial slides content - using function to avoid TDZ issues with icon imports
+function getSlides() {
+  return [
+    {
+      id: 'welcome',
+      icon: Sparkles,
+      gradient: 'from-primary/20 to-accent/20',
+      iconColor: 'text-primary',
+      animation: 'float',
+    },
+    {
+      id: 'brain',
+      icon: Brain,
+      gradient: 'from-purple-500/20 to-pink-500/20',
+      iconColor: 'text-purple-500',
+      animation: 'pulse',
+    },
+    {
+      id: 'features',
+      icon: Target,
+      gradient: 'from-blue-500/20 to-cyan-500/20',
+      iconColor: 'text-blue-500',
+      animation: 'bounce',
+    },
+    {
+      id: 'dayclock',
+      icon: Clock,
+      gradient: 'from-amber-500/20 to-orange-500/20',
+      iconColor: 'text-amber-500',
+      animation: 'spin-slow',
+    },
+    {
+      id: 'moodtheme',
+      icon: Palette,
+      gradient: 'from-violet-500/20 to-fuchsia-500/20',
+      iconColor: 'text-violet-500',
+      animation: 'color-shift',
+    },
+    {
+      id: 'mood',
+      icon: Heart,
+      gradient: 'from-red-500/20 to-orange-500/20',
+      iconColor: 'text-red-500',
+      animation: 'heartbeat',
+    },
+    {
+      id: 'focus',
+      icon: Timer,
+      gradient: 'from-green-500/20 to-emerald-500/20',
+      iconColor: 'text-green-500',
+      animation: 'spin-slow',
+    },
+    {
+      id: 'ready',
+      icon: Zap,
+      gradient: 'from-yellow-500/20 to-orange-500/20',
+      iconColor: 'text-yellow-500',
+      animation: 'zap',
+    },
+  ];
+}
 
 export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
   const { t } = useLanguage();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
+
+  // Get slides array inside component to avoid TDZ issues
+  const slides = getSlides();
 
   // Tutorial content with translations
   const getSlideContent = (id: string) => {
