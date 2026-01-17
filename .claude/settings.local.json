@@ -27,7 +27,8 @@
       "Bash(npm run cap:sync:android:*)",
       "Bash(npm audit:*)",
       "Bash(npm ls:*)",
-      "Bash(gh run list:*)"
+      "Bash(gh run list:*)",
+      "Bash(initialization\" errors due to module order issues when splitting\nbundles. Disabling it creates one larger bundle but ensures proper\ninitialization order.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }

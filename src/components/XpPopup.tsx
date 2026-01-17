@@ -12,19 +12,22 @@ export interface XpEvent {
   message?: string;
 }
 
-// Icons and colors for different XP types
-const xpConfig = {
-  mood: { icon: Sparkles, color: 'text-purple-400', glow: 'purple' },
-  habit: { icon: Star, color: 'text-green-400', glow: 'green' },
-  focus: { icon: Zap, color: 'text-blue-400', glow: 'blue' },
-  gratitude: { icon: Heart, color: 'text-pink-400', glow: 'pink' },
-  streak: { icon: Flame, color: 'text-orange-400', glow: 'orange' },
-  bonus: { icon: Sparkles, color: 'text-amber-400', glow: 'amber' },
-};
+// Helper function to get XP config - avoids module-level const with component refs
+function getXpConfig(type: XpEvent['type']) {
+  switch (type) {
+    case 'mood': return { icon: Sparkles, color: 'text-purple-400', glow: 'purple' };
+    case 'habit': return { icon: Star, color: 'text-green-400', glow: 'green' };
+    case 'focus': return { icon: Zap, color: 'text-blue-400', glow: 'blue' };
+    case 'gratitude': return { icon: Heart, color: 'text-pink-400', glow: 'pink' };
+    case 'streak': return { icon: Flame, color: 'text-orange-400', glow: 'orange' };
+    case 'bonus': return { icon: Sparkles, color: 'text-amber-400', glow: 'amber' };
+    default: return { icon: Sparkles, color: 'text-purple-400', glow: 'purple' };
+  }
+}
 
 function XpPopupItem({ event, onComplete }: { event: XpEvent; onComplete: () => void }) {
   const [stage, setStage] = useState<'enter' | 'float' | 'exit'>('enter');
-  const config = xpConfig[event.type];
+  const config = getXpConfig(event.type);
   const Icon = config.icon;
 
   useEffect(() => {

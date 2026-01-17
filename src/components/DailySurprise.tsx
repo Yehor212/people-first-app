@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Gift, Sparkles, Brain, Target, Heart, Lightbulb, Star, X, ChevronRight } from 'lucide-react';
+import { Gift, Sparkles, Brain, Target, Heart, Lightbulb, X, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { getToday } from '@/lib/utils';
@@ -270,23 +270,29 @@ const surprisesPool: DailySurpriseContent[] = [
   },
 ];
 
-// Icons for each type
-const typeIcons: Record<SurpriseType, typeof Gift> = {
-  quote: Sparkles,
-  fact: Brain,
-  challenge: Target,
-  tip: Lightbulb,
-  affirmation: Heart,
-};
+// Helper function to get icon for surprise type - avoids module-level const with component refs
+function getTypeIcon(type: SurpriseType) {
+  switch (type) {
+    case 'quote': return Sparkles;
+    case 'fact': return Brain;
+    case 'challenge': return Target;
+    case 'tip': return Lightbulb;
+    case 'affirmation': return Heart;
+    default: return Gift;
+  }
+}
 
-// Colors for each type
-const typeColors: Record<SurpriseType, string> = {
-  quote: 'from-purple-500/20 to-pink-500/20 border-purple-500/30',
-  fact: 'from-blue-500/20 to-cyan-500/20 border-blue-500/30',
-  challenge: 'from-orange-500/20 to-amber-500/20 border-orange-500/30',
-  tip: 'from-green-500/20 to-emerald-500/20 border-green-500/30',
-  affirmation: 'from-rose-500/20 to-pink-500/20 border-rose-500/30',
-};
+// Helper function to get color for surprise type
+function getTypeColor(type: SurpriseType) {
+  switch (type) {
+    case 'quote': return 'from-purple-500/20 to-pink-500/20 border-purple-500/30';
+    case 'fact': return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30';
+    case 'challenge': return 'from-orange-500/20 to-amber-500/20 border-orange-500/30';
+    case 'tip': return 'from-green-500/20 to-emerald-500/20 border-green-500/30';
+    case 'affirmation': return 'from-rose-500/20 to-pink-500/20 border-rose-500/30';
+    default: return 'from-purple-500/20 to-pink-500/20 border-purple-500/30';
+  }
+}
 
 interface DailySurpriseProps {
   onNavigate?: (section: 'mood' | 'habits' | 'focus' | 'gratitude') => void;
@@ -335,7 +341,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
     }
   };
 
-  const Icon = typeIcons[todaySurprise.type];
+  const Icon = getTypeIcon(todaySurprise.type);
 
   // Collapsed card (shows when not yet opened today)
   if (!hasSeenToday) {
@@ -344,7 +350,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
         onClick={handleOpen}
         className={cn(
           "w-full p-4 rounded-2xl border transition-all",
-          "bg-gradient-to-r", typeColors[todaySurprise.type],
+          "bg-gradient-to-r", getTypeColor(todaySurprise.type),
           "hover:scale-[1.02] active:scale-[0.98]",
           "animate-pulse-subtle"
         )}
@@ -384,7 +390,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
         onClick={() => setIsOpen(true)}
         className={cn(
           "w-full p-3 rounded-xl border transition-all opacity-70 hover:opacity-100",
-          "bg-gradient-to-r", typeColors[todaySurprise.type],
+          "bg-gradient-to-r", getTypeColor(todaySurprise.type),
         )}
       >
         <div className="flex items-center gap-2">
@@ -402,7 +408,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
   return (
     <div className={cn(
       "relative p-5 rounded-2xl border transition-all animate-scale-in",
-      "bg-gradient-to-br", typeColors[todaySurprise.type],
+      "bg-gradient-to-br", getTypeColor(todaySurprise.type),
     )}>
       {/* Close button */}
       <button
