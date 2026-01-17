@@ -33,9 +33,6 @@ import {
   COMPANION_EMOJIS,
 } from '@/lib/innerWorldConstants';
 
-// Re-export constants for backward compatibility
-export { COMPANION_EMOJIS, PLANT_EMOJIS, CREATURE_EMOJIS } from '@/lib/innerWorldConstants';
-
 // ============================================
 // DEFAULT STATE
 // ============================================
