@@ -569,6 +569,13 @@ export interface Translations {
   companionCheersYou: string;
   companionQuickMood: string;  // Quick mood log prompt
 
+  // Companion Panel UI (additional)
+  pet: string;
+  feed: string;
+  talk: string;
+  happiness: string;
+  satiety: string;
+
   // Premium
   premium: string;
   premiumDescription: string;
@@ -691,6 +698,26 @@ export interface Translations {
   // Streak Celebration
   dayStreak: string;
   keepItUp: string;
+
+  // Garden / My World tab
+  myWorld: string;
+  plants: string;
+  creatures: string;
+  level: string;
+
+  // Streak Banner
+  startStreak: string;
+  legendaryStreak: string;
+  amazingStreak: string;
+  goodStart: string;
+  todayActivities: string;
+
+  // Companion
+  companionPet: string;
+  companionFeed: string;
+  companionTalk: string;
+  companionHappiness: string;
+  companionHunger: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -1318,6 +1345,11 @@ export const translations: Record<Language, Translations> = {
     companionStreak: 'Дней подряд!',
     chooseCompanion: 'Выбери компаньона',
     levelUpHint: 'Выполняй активности, чтобы получать XP и повышать уровень!',
+    pet: 'Погладить',
+    feed: 'Покормить',
+    talk: 'Поговорить',
+    happiness: 'Счастье',
+    satiety: 'Сытость',
     gardenEmpty: 'Новое начало',
     gardenSprouting: 'Ростки',
     gardenGrowing: 'Рост',
@@ -1332,6 +1364,26 @@ export const translations: Record<Language, Translations> = {
     companionProud: 'гордится тобой! ⭐',
     companionCheersYou: 'болеет за тебя! 💪',
     companionQuickMood: 'Как настроение? Нажми! 😊',
+
+    // Garden / My World
+    myWorld: 'Мой мир',
+    plants: 'Растений',
+    creatures: 'Существ',
+    level: 'Уровень',
+
+    // Streak Banner
+    startStreak: 'Начни серию сегодня!',
+    legendaryStreak: 'Легендарная серия!',
+    amazingStreak: 'Потрясающе!',
+    goodStart: 'Отличное начало!',
+    todayActivities: 'Сегодня',
+
+    // Companion
+    companionPet: 'Погладить',
+    companionFeed: 'Покормить',
+    companionTalk: 'Поговорить',
+    companionHappiness: 'Счастье',
+    companionHunger: 'Сытость',
   },
 
   en: {
@@ -1958,6 +2010,11 @@ export const translations: Record<Language, Translations> = {
     companionStreak: 'Day Streak!',
     chooseCompanion: 'Choose Companion',
     levelUpHint: 'Complete activities to earn XP and level up!',
+    pet: 'Pet',
+    feed: 'Feed',
+    talk: 'Talk',
+    happiness: 'Happiness',
+    satiety: 'Fullness',
     gardenEmpty: 'New Beginning',
     gardenSprouting: 'Sprouting',
     gardenGrowing: 'Growing',
@@ -1972,6 +2029,26 @@ export const translations: Record<Language, Translations> = {
     companionProud: 'is proud of you! ⭐',
     companionCheersYou: 'is cheering for you! 💪',
     companionQuickMood: 'How are you feeling? Tap! 😊',
+
+    // Garden / My World
+    myWorld: 'My World',
+    plants: 'Plants',
+    creatures: 'Creatures',
+    level: 'Level',
+
+    // Streak Banner
+    startStreak: 'Start your streak today!',
+    legendaryStreak: 'Legendary streak!',
+    amazingStreak: 'Amazing!',
+    goodStart: 'Great start!',
+    todayActivities: 'Today',
+
+    // Companion
+    companionPet: 'Pet',
+    companionFeed: 'Feed',
+    companionTalk: 'Talk',
+    companionHappiness: 'Happiness',
+    companionHunger: 'Fullness',
   },
 
   uk: {
@@ -2598,6 +2675,11 @@ export const translations: Record<Language, Translations> = {
     companionStreak: 'Днів поспіль!',
     chooseCompanion: 'Обери компаньйона',
     levelUpHint: 'Виконуй активності, щоб отримувати XP і підвищувати рівень!',
+    pet: 'Погладити',
+    feed: 'Погодувати',
+    talk: 'Поговорити',
+    happiness: 'Щастя',
+    satiety: 'Ситість',
     gardenEmpty: 'Новий початок',
     gardenSprouting: 'Паростки',
     gardenGrowing: 'Зростання',
@@ -2612,6 +2694,26 @@ export const translations: Record<Language, Translations> = {
     companionProud: 'пишається тобою! ⭐',
     companionCheersYou: 'вболіває за тебе! 💪',
     companionQuickMood: 'Як настрій? Натисни! 😊',
+
+    // Garden / My World
+    myWorld: 'Мій світ',
+    plants: 'Рослин',
+    creatures: 'Істот',
+    level: 'Рівень',
+
+    // Streak Banner
+    startStreak: 'Почни серію сьогодні!',
+    legendaryStreak: 'Легендарна серія!',
+    amazingStreak: 'Чудово!',
+    goodStart: 'Чудовий початок!',
+    todayActivities: 'Сьогодні',
+
+    // Companion
+    companionPet: 'Погладити',
+    companionFeed: 'Погодувати',
+    companionTalk: 'Поговорити',
+    companionHappiness: 'Щастя',
+    companionHunger: 'Ситість',
   },
 
   es: {
@@ -3239,6 +3341,11 @@ export const translations: Record<Language, Translations> = {
     companionStreak: '¡Días seguidos!',
     chooseCompanion: 'Elige Compañero',
     levelUpHint: '¡Completa actividades para ganar XP y subir de nivel!',
+    pet: 'Acariciar',
+    feed: 'Alimentar',
+    talk: 'Hablar',
+    happiness: 'Felicidad',
+    satiety: 'Saciedad',
     gardenEmpty: 'Nuevo Comienzo',
     gardenSprouting: 'Brotando',
     gardenGrowing: 'Creciendo',
@@ -3253,6 +3360,26 @@ export const translations: Record<Language, Translations> = {
     companionProud: '¡está orgulloso de ti! ⭐',
     companionCheersYou: '¡te anima! 💪',
     companionQuickMood: '¿Cómo te sientes? ¡Toca! 😊',
+
+    // Garden / My World
+    myWorld: 'Mi mundo',
+    plants: 'Plantas',
+    creatures: 'Criaturas',
+    level: 'Nivel',
+
+    // Streak Banner
+    startStreak: '¡Empieza tu racha hoy!',
+    legendaryStreak: '¡Racha legendaria!',
+    amazingStreak: '¡Increíble!',
+    goodStart: '¡Gran comienzo!',
+    todayActivities: 'Hoy',
+
+    // Companion
+    companionPet: 'Acariciar',
+    companionFeed: 'Alimentar',
+    companionTalk: 'Hablar',
+    companionHappiness: 'Felicidad',
+    companionHunger: 'Saciedad',
   },
 
   de: {
@@ -3880,6 +4007,11 @@ export const translations: Record<Language, Translations> = {
     companionStreak: 'Tage am Stück!',
     chooseCompanion: 'Begleiter wählen',
     levelUpHint: 'Schließe Aktivitäten ab, um XP zu verdienen und aufzusteigen!',
+    pet: 'Streicheln',
+    feed: 'Füttern',
+    talk: 'Sprechen',
+    happiness: 'Glück',
+    satiety: 'Sättigung',
     gardenEmpty: 'Neuer Anfang',
     gardenSprouting: 'Keimend',
     gardenGrowing: 'Wachsend',
@@ -3894,6 +4026,26 @@ export const translations: Record<Language, Translations> = {
     companionProud: 'ist stolz auf dich! ⭐',
     companionCheersYou: 'feuert dich an! 💪',
     companionQuickMood: 'Wie geht es dir? Tippe! 😊',
+
+    // Garden / My World
+    myWorld: 'Meine Welt',
+    plants: 'Pflanzen',
+    creatures: 'Kreaturen',
+    level: 'Stufe',
+
+    // Streak Banner
+    startStreak: 'Starte heute deine Serie!',
+    legendaryStreak: 'Legendäre Serie!',
+    amazingStreak: 'Erstaunlich!',
+    goodStart: 'Toller Start!',
+    todayActivities: 'Heute',
+
+    // Companion
+    companionPet: 'Streicheln',
+    companionFeed: 'Füttern',
+    companionTalk: 'Sprechen',
+    companionHappiness: 'Glück',
+    companionHunger: 'Sättigung',
   },
 
   fr: {
@@ -4521,6 +4673,11 @@ export const translations: Record<Language, Translations> = {
     companionStreak: 'Jours consécutifs!',
     chooseCompanion: 'Choisir un Compagnon',
     levelUpHint: 'Complète des activités pour gagner des XP et monter de niveau!',
+    pet: 'Caresser',
+    feed: 'Nourrir',
+    talk: 'Parler',
+    happiness: 'Bonheur',
+    satiety: 'Satiété',
     gardenEmpty: 'Nouveau Départ',
     gardenSprouting: 'Germination',
     gardenGrowing: 'Croissance',
@@ -4535,6 +4692,26 @@ export const translations: Record<Language, Translations> = {
     companionProud: 'est fier de toi! ⭐',
     companionCheersYou: 't\'encourage! 💪',
     companionQuickMood: 'Comment tu te sens? Appuie! 😊',
+
+    // Garden / My World
+    myWorld: 'Mon monde',
+    plants: 'Plantes',
+    creatures: 'Créatures',
+    level: 'Niveau',
+
+    // Streak Banner
+    startStreak: 'Commence ta série aujourd\'hui!',
+    legendaryStreak: 'Série légendaire!',
+    amazingStreak: 'Incroyable!',
+    goodStart: 'Excellent début!',
+    todayActivities: 'Aujourd\'hui',
+
+    // Companion
+    companionPet: 'Caresser',
+    companionFeed: 'Nourrir',
+    companionTalk: 'Parler',
+    companionHappiness: 'Bonheur',
+    companionHunger: 'Satiété',
   },
 };
 

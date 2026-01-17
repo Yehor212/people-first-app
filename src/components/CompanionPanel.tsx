@@ -255,7 +255,7 @@ export function CompanionPanel({
           >
             {/* Header with close button */}
             <div className="flex items-center justify-between p-4 border-b border-border/50">
-              <h2 className="text-lg font-semibold">{t.myCompanion || 'Мой компаньон'}</h2>
+              <h2 className="text-lg font-semibold">{t.myCompanion}</h2>
               <button
                 onClick={onClose}
                 className="p-2 rounded-full hover:bg-muted transition-colors"
@@ -361,7 +361,7 @@ export function CompanionPanel({
                   )}
                 >
                   <Hand className="w-6 h-6 text-pink-500" />
-                  <span className="text-xs font-medium">{t.pet || 'Погладить'}</span>
+                  <span className="text-xs font-medium">{t.pet}</span>
                 </button>
 
                 <button
@@ -377,7 +377,7 @@ export function CompanionPanel({
                   )}
                 >
                   <Cookie className="w-6 h-6 text-orange-500" />
-                  <span className="text-xs font-medium">{t.feed || 'Покормить'}</span>
+                  <span className="text-xs font-medium">{t.feed}</span>
                 </button>
 
                 <button
@@ -392,7 +392,7 @@ export function CompanionPanel({
                   )}
                 >
                   <MessageCircle className="w-6 h-6 text-blue-500" />
-                  <span className="text-xs font-medium">{t.talk || 'Поговорить'}</span>
+                  <span className="text-xs font-medium">{t.talk}</span>
                 </button>
               </div>
 
@@ -421,7 +421,7 @@ export function CompanionPanel({
               <div className="grid grid-cols-2 gap-3 mb-6">
                 <div className="bg-muted/50 rounded-xl p-3">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-muted-foreground">😊 {t.happiness || 'Счастье'}</span>
+                    <span className="text-xs text-muted-foreground">😊 {t.happiness}</span>
                     <span className="text-xs font-medium">{happiness}%</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -437,7 +437,7 @@ export function CompanionPanel({
 
                 <div className="bg-muted/50 rounded-xl p-3">
                   <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs text-muted-foreground">🍪 {t.satiety || 'Сытость'}</span>
+                    <span className="text-xs text-muted-foreground">🍪 {t.satiety}</span>
                     <span className="text-xs font-medium">{satiety}%</span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -457,17 +457,17 @@ export function CompanionPanel({
                 <div className="bg-muted/50 rounded-xl p-3 text-center">
                   <Heart className="w-5 h-5 mx-auto mb-1 text-red-400" />
                   <p className="text-lg font-bold">{warmth}%</p>
-                  <p className="text-xs text-muted-foreground">{t.warmth || 'Тепло'}</p>
+                  <p className="text-xs text-muted-foreground">{t.warmth}</p>
                 </div>
                 <div className="bg-muted/50 rounded-xl p-3 text-center">
                   <Zap className="w-5 h-5 mx-auto mb-1 text-yellow-400" />
                   <p className="text-lg font-bold">{energy}%</p>
-                  <p className="text-xs text-muted-foreground">{t.energy || 'Энергия'}</p>
+                  <p className="text-xs text-muted-foreground">{t.energy}</p>
                 </div>
                 <div className="bg-muted/50 rounded-xl p-3 text-center">
                   <MessageCircle className="w-5 h-5 mx-auto mb-1 text-blue-400" />
                   <p className="text-lg font-bold">{wisdom}%</p>
-                  <p className="text-xs text-muted-foreground">{t.wisdom || 'Мудрость'}</p>
+                  <p className="text-xs text-muted-foreground">{t.wisdom}</p>
                 </div>
               </div>
 
@@ -475,14 +475,14 @@ export function CompanionPanel({
               {streak > 0 && (
                 <div className="bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-2xl p-4 mb-6 text-center">
                   <p className="text-3xl mb-1">🔥 {streak}</p>
-                  <p className="text-sm font-medium">{t.companionStreak || 'дней подряд!'}</p>
+                  <p className="text-sm font-medium">{t.companionStreak}</p>
                 </div>
               )}
 
               {/* Companion selector */}
               <div className="mb-4">
                 <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                  {t.chooseCompanion || 'Выбери компаньона'}
+                  {t.chooseCompanion}
                 </h4>
                 <div className="flex justify-center gap-2">
                   {COMPANION_TYPES.map((type) => (
@@ -504,7 +504,7 @@ export function CompanionPanel({
 
               {/* How to level up hint */}
               <div className="text-center text-xs text-muted-foreground">
-                <p>💡 {t.levelUpHint || 'Выполняй активности, чтобы получать XP и повышать уровень!'}</p>
+                <p>💡 {t.levelUpHint}</p>
               </div>
             </div>
           </motion.div>

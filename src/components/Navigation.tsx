@@ -14,7 +14,7 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
 
   const tabs = [
     { id: 'home' as TabType, icon: Home, label: t.home },
-    { id: 'garden' as TabType, icon: Sparkles, label: t.myWorld || 'Мой мир' },
+    { id: 'garden' as TabType, icon: Sparkles, label: t.myWorld },
     { id: 'stats' as TabType, icon: BarChart3, label: t.stats },
     { id: 'achievements' as TabType, icon: Trophy, label: t.achievements },
     { id: 'settings' as TabType, icon: Settings, label: t.settings },

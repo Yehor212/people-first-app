@@ -47,18 +47,18 @@ export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries }:
   // Get streak message
   const getMessage = () => {
     if (streak === 0) {
-      return t.startStreak || 'Начни серию сегодня!';
+      return t.startStreak;
     }
     if (streak >= 30) {
-      return t.legendaryStreak || 'Легендарная серия!';
+      return t.legendaryStreak;
     }
     if (streak >= 7) {
-      return t.amazingStreak || 'Потрясающе!';
+      return t.amazingStreak;
     }
     if (streak >= 3) {
-      return t.keepItUp || 'Так держать!';
+      return t.keepItUp;
     }
-    return t.goodStart || 'Отличное начало!';
+    return t.goodStart;
   };
 
   // Get icon based on streak
@@ -104,7 +104,7 @@ export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries }:
               {streak}
             </span>
             <span className="text-sm text-muted-foreground">
-              {t.daysInRow || 'дней подряд'}
+              {t.daysInRow}
             </span>
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -136,7 +136,7 @@ export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries }:
             })}
           </div>
           <span className="text-xs text-muted-foreground">
-            {todayProgress.completed}/4 {t.today || 'сегодня'}
+            {todayProgress.completed}/4 {t.today}
           </span>
         </div>
       </div>

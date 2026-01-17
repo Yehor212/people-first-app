@@ -62,6 +62,7 @@ import { InnerWorldGarden } from '@/components/InnerWorldGarden';
 import { CompanionPanel } from '@/components/CompanionPanel';
 import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
+import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { haptics } from '@/lib/haptics';
 
 type TabType = 'home' | 'garden' | 'stats' | 'achievements' | 'settings';
@@ -973,6 +974,16 @@ export function Index() {
       <MoodBackgroundOverlay />
 
       <div className="max-w-lg mx-auto px-4 py-6 pb-28">
+        {/* Global Schedule Bar - visible on all tabs when events exist */}
+        {todayScheduleEvents.length > 0 && activeTab !== 'settings' && (
+          <div className="mb-4">
+            <GlobalScheduleBar
+              events={todayScheduleEvents}
+              onTap={() => setActiveTab('garden')}
+            />
+          </div>
+        )}
+
         {activeTab === 'home' && (
           <>
             <InstallBanner />
@@ -1087,17 +1098,17 @@ export function Index() {
               <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3 text-center border border-border/50">
                 <div className="text-2xl mb-1">🌱</div>
                 <div className="text-lg font-bold text-primary">{gardenStats.totalPlants}</div>
-                <div className="text-xs text-muted-foreground">{language === 'ru' ? 'Растений' : 'Plants'}</div>
+                <div className="text-xs text-muted-foreground">{t.plants}</div>
               </div>
               <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3 text-center border border-border/50">
                 <div className="text-2xl mb-1">🦋</div>
                 <div className="text-lg font-bold text-accent">{gardenStats.totalCreatures}</div>
-                <div className="text-xs text-muted-foreground">{language === 'ru' ? 'Существ' : 'Creatures'}</div>
+                <div className="text-xs text-muted-foreground">{t.creatures}</div>
               </div>
               <div className="bg-card/60 backdrop-blur-sm rounded-xl p-3 text-center border border-border/50">
                 <div className="text-2xl mb-1">⭐</div>
                 <div className="text-lg font-bold text-yellow-500">{innerWorld.companion.level}</div>
-                <div className="text-xs text-muted-foreground">{language === 'ru' ? 'Уровень' : 'Level'}</div>
+                <div className="text-xs text-muted-foreground">{t.level}</div>
               </div>
             </div>
 
