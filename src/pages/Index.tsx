@@ -19,23 +19,15 @@ import { syncReminderSettings } from '@/storage/reminderSync';
 import { syncWithCloud, startAutoSync, triggerSync } from '@/storage/cloudSync';
 import { App } from '@capacitor/app';
 import { handleAuthCallback, isNativePlatform } from '@/lib/authRedirect';
-// TEMPORARILY DISABLED - imports from innerWorldConstants
-// import {
-//   scheduleLocalReminders,
-//   scheduleHabitReminders,
-//   scheduleCompanionReminders,
-//   registerMoodNotificationActions,
-//   setupNotificationActionListener,
-//   setMoodActionCallback,
-//   scheduleMoodQuickLogNotification,
-// } from '@/lib/localNotifications';
-const scheduleLocalReminders = async () => {};
-const scheduleHabitReminders = async () => {};
-const scheduleCompanionReminders = async () => {};
-const registerMoodNotificationActions = async () => {};
-const setupNotificationActionListener = async () => () => {};
-const setMoodActionCallback = () => {};
-const scheduleMoodQuickLogNotification = async () => {};
+import {
+  scheduleLocalReminders,
+  scheduleHabitReminders,
+  scheduleCompanionReminders,
+  registerMoodNotificationActions,
+  setupNotificationActionListener,
+  setMoodActionCallback,
+  scheduleMoodQuickLogNotification,
+} from '@/lib/localNotifications';
 
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
@@ -65,15 +57,14 @@ import { TimeHelper } from '@/components/TimeHelper';
 import { WidgetSettings } from '@/pages/WidgetSettings';
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
-// TEMPORARILY DISABLED - investigating circular dependency
-// import { useInnerWorld } from '@/hooks/useInnerWorld';
+import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
-// import { InnerWorldGarden } from '@/components/InnerWorldGarden';
-// import { CompanionPanel } from '@/components/CompanionPanel';
-// import { TimeAwarenessBadge } from '@/components/TimeAwarenessBadge';
-// import { MoodInsights } from '@/components/MoodInsights';
-// import { haptics } from '@/lib/haptics';
+import { InnerWorldGarden } from '@/components/InnerWorldGarden';
+import { CompanionPanel } from '@/components/CompanionPanel';
+import { TimeAwarenessBadge } from '@/components/TimeAwarenessBadge';
+import { MoodInsights } from '@/components/MoodInsights';
+import { haptics } from '@/lib/haptics';
 
 type TabType = 'home' | 'stats' | 'achievements' | 'settings';
 
@@ -82,6 +73,33 @@ export function Index() {
   const { setMoodFromEntries } = useMoodTheme();
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const lastSyncedUserIdRef = useRef<string | null>(null);
+
+  // Track current date and detect midnight change
+  const [currentDate, setCurrentDate] = useState(getToday());
+
+  // Check for date change every minute (for midnight reset of mood)
+  useEffect(() => {
+    const checkDateChange = () => {
+      const newDate = getToday();
+      if (newDate !== currentDate) {
+        console.log('Date changed from', currentDate, 'to', newDate);
+        setCurrentDate(newDate);
+        // This will trigger a re-render and all date-dependent useMemo hooks will recalculate
+      }
+    };
+
+    // Check every minute
+    const interval = setInterval(checkDateChange, 60000);
+
+    // Also check on window focus (in case device was sleeping)
+    const handleFocus = () => checkDateChange();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [currentDate]);
 
   // Section refs for navigation
   const moodRef = useRef<HTMLDivElement>(null);
@@ -100,30 +118,19 @@ export function Index() {
   // Gamification system
   const { stats, gamificationState, userLevel, awardXp } = useGamification();
 
-  // Inner World garden system - TEMPORARILY DISABLED
-  // const {
-  //   world: innerWorld,
-  //   isLoading: isLoadingInnerWorld,
-  //   plantSeed,
-  //   waterPlants,
-  //   attractCreature,
-  //   feedCreatures,
-  //   setCompanionType,
-  //   renameCompanion,
-  //   clearWelcomeBack,
-  //   gardenStats,
-  // } = useInnerWorld();
-
-  // Stub values for disabled Inner World
-  const innerWorld = { companion: { type: 'fox' as const, name: 'Luna' }, currentActiveStreak: 0 };
-  const isLoadingInnerWorld = false;
-  const plantSeed = () => {};
-  const waterPlants = () => {};
-  const attractCreature = () => {};
-  const feedCreatures = () => {};
-  const setCompanionType = () => {};
-  const renameCompanion = () => {};
-  const clearWelcomeBack = () => {};
+  // Inner World garden system
+  const {
+    world: innerWorld,
+    isLoading: isLoadingInnerWorld,
+    plantSeed,
+    waterPlants,
+    attractCreature,
+    feedCreatures,
+    setCompanionType,
+    renameCompanion,
+    clearWelcomeBack,
+    gardenStats,
+  } = useInnerWorld();
 
   // Companion panel state
   const [showCompanionPanel, setShowCompanionPanel] = useState(false);
@@ -344,7 +351,7 @@ export function Index() {
     awardXp('mood'); // +5 XP
     triggerXpPopup(5, 'mood'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
-    // haptics.moodSaved(); // Haptic feedback - TEMPORARILY DISABLED
+    haptics.moodSaved();
 
     // Inner World: Plant a flower based on mood
     plantSeed('mood', entry.mood);
@@ -364,7 +371,7 @@ export function Index() {
     setMoods(prev => [...prev, entry]);
     awardXp('mood');
     triggerSync();
-    // haptics.moodSaved(); // Haptic feedback - TEMPORARILY DISABLED
+    haptics.moodSaved();
     plantSeed('mood', mood);
     waterPlants('mood');
 
@@ -407,7 +414,7 @@ export function Index() {
           completionsByDate[date] = current + 1;
           awardXp('habit'); // +10 XP for each completion
           triggerXpPopup(10, 'habit'); // Visual XP popup
-          // haptics.habitToggled(); // Haptic feedback - TEMPORARILY DISABLED
+          haptics.habitToggled();
         }
 
         return {
@@ -424,7 +431,7 @@ export function Index() {
       if (!completed) {
         awardXp('habit'); // +10 XP for completing habit
         triggerXpPopup(10, 'habit'); // Visual XP popup
-        // haptics.habitCompleted(); // Haptic feedback - TEMPORARILY DISABLED
+        haptics.habitCompleted();
         // Inner World: Plant a tree when completing habit
         plantSeed('habit');
         waterPlants('habit');
@@ -472,7 +479,7 @@ export function Index() {
     awardXp('focus'); // +15 XP
     triggerXpPopup(15, 'focus'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
-    // haptics.focusCompleted(); // Haptic feedback - TEMPORARILY DISABLED
+    haptics.focusCompleted();
 
     // Inner World: Plant a crystal when completing focus session
     plantSeed('focus');
@@ -484,7 +491,7 @@ export function Index() {
     awardXp('gratitude'); // +8 XP
     triggerXpPopup(8, 'gratitude'); // Visual XP popup
     triggerSync(); // Auto-sync to cloud
-    // haptics.gratitudeSaved(); // Haptic feedback - TEMPORARILY DISABLED
+    haptics.gratitudeSaved();
 
     // Inner World: Plant a mushroom and attract creatures
     plantSeed('gratitude');
@@ -993,17 +1000,16 @@ export function Index() {
                 <div className="space-y-6">
                   <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
 
-                  {/* Time Awareness Badge - ADHD time blindness helper - TEMPORARILY DISABLED
+                  {/* Time Awareness Badge - ADHD time blindness helper */}
                   <TimeAwarenessBadge
                     scheduleEvents={todayScheduleEvents}
                     onClick={() => setShowTimeHelper(true)}
                   />
-                  */}
 
                   {/* Daily Surprise - motivational content that changes daily */}
                   <DailySurprise onNavigate={handleNavigateToSection} />
 
-                  {/* Inner World Garden - Personal growth visualization - TEMPORARILY DISABLED
+                  {/* Inner World Garden - Personal growth visualization */}
                   <div className="relative">
                     <InnerWorldGarden
                       world={innerWorld}
@@ -1021,7 +1027,6 @@ export function Index() {
                       }}
                     />
                   </div>
-                  */}
 
                   {/* Onboarding Hints - contextual tips after tutorial */}
                   <OnboardingHints
@@ -1078,14 +1083,13 @@ export function Index() {
                     currentFocusMinutes={currentFocusMinutes}
                   />
 
-                  {/* AI Insights - Personalized mood pattern analysis - TEMPORARILY DISABLED
+                  {/* AI Insights - Personalized mood pattern analysis */}
                   <MoodInsights
                     moods={moods}
                     habits={habits}
                     focusSessions={focusSessions}
                     gratitudeEntries={gratitudeEntries}
                   />
-                  */}
 
                   <div ref={habitsRef}>
                     <HabitTracker
@@ -1219,7 +1223,7 @@ export function Index() {
         <TimeHelper onClose={() => setShowTimeHelper(false)} />
       )}
 
-      {/* Companion Panel Modal - TEMPORARILY DISABLED
+      {/* Companion Panel Modal */}
       <CompanionPanel
         companion={innerWorld.companion}
         isOpen={showCompanionPanel}
@@ -1228,7 +1232,6 @@ export function Index() {
         onChangeType={setCompanionType}
         streak={innerWorld.currentActiveStreak}
       />
-      */}
     </div>
   );
 };

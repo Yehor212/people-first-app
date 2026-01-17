@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { MoodType, MoodEntry } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
@@ -91,8 +91,36 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     evening: t.evening || 'Evening',
   };
 
-  const today = getToday();
-  const currentTimeOfDay = getCurrentTimeOfDay();
+  // Track current date with state to detect midnight changes
+  const [today, setToday] = useState(getToday());
+  const [currentTimeOfDay, setCurrentTimeOfDay] = useState(getCurrentTimeOfDay());
+
+  // Check for date/time changes (midnight reset for mood selection)
+  useEffect(() => {
+    const checkDateChange = () => {
+      const newDate = getToday();
+      const newTimeOfDay = getCurrentTimeOfDay();
+
+      if (newDate !== today) {
+        setToday(newDate);
+      }
+      if (newTimeOfDay !== currentTimeOfDay) {
+        setCurrentTimeOfDay(newTimeOfDay);
+      }
+    };
+
+    // Check every minute
+    const interval = setInterval(checkDateChange, 60000);
+
+    // Also check on window focus
+    const handleFocus = () => checkDateChange();
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [today, currentTimeOfDay]);
 
   // Get all entries for today, sorted by time
   const todayEntries = useMemo(() => {
