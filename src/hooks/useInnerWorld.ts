@@ -23,113 +23,18 @@ import {
   Season,
   MoodType,
 } from '@/types';
+import {
+  GROWTH_THRESHOLDS,
+  CREATURE_THRESHOLDS,
+  GARDEN_STAGE_THRESHOLDS,
+  MOOD_COLORS,
+  PLANT_EMOJIS,
+  CREATURE_EMOJIS,
+  COMPANION_EMOJIS,
+} from '@/lib/innerWorldConstants';
 
-// ============================================
-// CONSTANTS
-// ============================================
-
-const GROWTH_THRESHOLDS: Record<PlantStage, number> = {
-  seed: 0,
-  sprout: 10,
-  growing: 30,
-  blooming: 70,
-  magnificent: 150,
-};
-
-const CREATURE_THRESHOLDS: Record<CreatureStage, number> = {
-  egg: 0,
-  baby: 5,
-  young: 15,
-  adult: 40,
-  legendary: 100,
-};
-
-const GARDEN_STAGE_THRESHOLDS: Record<GardenStage, number> = {
-  empty: 0,
-  sprouting: 3,      // 3 plants
-  growing: 10,       // 10 plants
-  flourishing: 30,   // 30 plants
-  magical: 75,       // 75 plants
-  legendary: 200,    // 200 plants
-};
-
-const MOOD_COLORS: Record<MoodType, string> = {
-  great: '#a855f7',    // Purple
-  good: '#22c55e',     // Green
-  okay: '#3b82f6',     // Blue
-  bad: '#6366f1',      // Indigo
-  terrible: '#8b5cf6', // Violet
-};
-
-const PLANT_EMOJIS: Record<PlantType, Record<PlantStage, string>> = {
-  flower: {
-    seed: '🌱',
-    sprout: '🌿',
-    growing: '🌷',
-    blooming: '🌸',
-    magnificent: '🌺',
-  },
-  tree: {
-    seed: '🌰',
-    sprout: '🌱',
-    growing: '🪴',
-    blooming: '🌳',
-    magnificent: '🌲',
-  },
-  crystal: {
-    seed: '✨',
-    sprout: '💎',
-    growing: '💠',
-    blooming: '🔮',
-    magnificent: '🌟',
-  },
-  mushroom: {
-    seed: '🟤',
-    sprout: '🍄',
-    growing: '🍄',
-    blooming: '🪷',
-    magnificent: '✨',
-  },
-};
-
-const CREATURE_EMOJIS: Record<CreatureType, Record<CreatureStage, string>> = {
-  butterfly: {
-    egg: '🥚',
-    baby: '🐛',
-    young: '🦋',
-    adult: '🦋',
-    legendary: '✨🦋✨',
-  },
-  bird: {
-    egg: '🥚',
-    baby: '🐣',
-    young: '🐤',
-    adult: '🐦',
-    legendary: '🦜',
-  },
-  firefly: {
-    egg: '✨',
-    baby: '💫',
-    young: '⭐',
-    adult: '🌟',
-    legendary: '💫🌟💫',
-  },
-  spirit: {
-    egg: '👻',
-    baby: '🫧',
-    young: '💨',
-    adult: '🌀',
-    legendary: '🌌',
-  },
-};
-
-const COMPANION_EMOJIS: Record<CompanionType, string> = {
-  fox: '🦊',
-  cat: '🐱',
-  owl: '🦉',
-  rabbit: '🐰',
-  dragon: '🐲',
-};
+// Re-export constants for backward compatibility
+export { COMPANION_EMOJIS, PLANT_EMOJIS, CREATURE_EMOJIS } from '@/lib/innerWorldConstants';
 
 // ============================================
 // DEFAULT STATE
@@ -500,5 +405,3 @@ export function useInnerWorld() {
     getCompanionEmoji: () => COMPANION_EMOJIS[world.companion.type],
   };
 }
-
-export { COMPANION_EMOJIS, PLANT_EMOJIS, CREATURE_EMOJIS };

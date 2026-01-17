@@ -9,7 +9,7 @@ import { X, Edit3, Check, Heart, Sparkles, Star, MessageCircle } from 'lucide-re
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Companion, CompanionType, CompanionMood } from '@/types';
-import { COMPANION_EMOJIS } from '@/hooks/useInnerWorld';
+import { COMPANION_EMOJIS } from '@/lib/innerWorldConstants';
 
 interface CompanionPanelProps {
   companion: Companion;

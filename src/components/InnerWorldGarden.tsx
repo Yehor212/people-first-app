@@ -16,7 +16,7 @@ import {
   GardenWeather,
   GardenStage,
 } from '@/types';
-import { COMPANION_EMOJIS, PLANT_EMOJIS, CREATURE_EMOJIS } from '@/hooks/useInnerWorld';
+import { COMPANION_EMOJIS, PLANT_EMOJIS, CREATURE_EMOJIS } from '@/lib/innerWorldConstants';
 
 interface InnerWorldGardenProps {
   world: InnerWorld;
