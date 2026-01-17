@@ -146,18 +146,7 @@ export default defineConfig(({ mode }) => {
 
   build: {
     target: "esnext",
-    minify: "terser",
-
-    terserOptions: {
-      compress: {
-        drop_console: mode === "production",
-        drop_debugger: mode === "production",
-        passes: 2,
-      },
-      mangle: {
-        safari10: true,
-      },
-    },
+    minify: "esbuild", // Changed from terser - terser was causing "Cannot access before initialization" errors
 
     rollupOptions: {
       output: {
