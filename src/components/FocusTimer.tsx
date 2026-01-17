@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Play, Pause, RotateCcw, Coffee, Zap } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { HyperfocusMode } from './HyperfocusMode';
-import { haptics } from '@/lib/haptics';
+// import { haptics } from '@/lib/haptics'; // TEMPORARILY DISABLED
 
 const DEFAULT_FOCUS_MINUTES = 25;
 const DEFAULT_BREAK_MINUTES = 5;
@@ -230,7 +230,7 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: Focu
         setFocusElapsed(Math.floor(focusAccumulatedRef.current / 1000));
       }
       setIsRunning(false);
-      haptics.focusPaused(); // Haptic feedback for pause
+      // haptics.focusPaused(); // Haptic feedback for pause - TEMPORARILY DISABLED
       return;
     }
 
@@ -240,7 +240,7 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: Focu
     endTimeRef.current = Date.now() + (timeLeft > 0 ? timeLeft : (isBreak ? breakDuration : focusDuration)) * 1000;
     if (!isBreak) {
       focusStartRef.current = Date.now();
-      haptics.focusStarted(); // Haptic feedback for focus start
+      // haptics.focusStarted(); // Haptic feedback for focus start - TEMPORARILY DISABLED
     }
     setIsRunning(true);
   };

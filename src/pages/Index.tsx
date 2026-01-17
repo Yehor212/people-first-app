@@ -19,15 +19,23 @@ import { syncReminderSettings } from '@/storage/reminderSync';
 import { syncWithCloud, startAutoSync, triggerSync } from '@/storage/cloudSync';
 import { App } from '@capacitor/app';
 import { handleAuthCallback, isNativePlatform } from '@/lib/authRedirect';
-import {
-  scheduleLocalReminders,
-  scheduleHabitReminders,
-  scheduleCompanionReminders,
-  registerMoodNotificationActions,
-  setupNotificationActionListener,
-  setMoodActionCallback,
-  scheduleMoodQuickLogNotification,
-} from '@/lib/localNotifications';
+// TEMPORARILY DISABLED - imports from innerWorldConstants
+// import {
+//   scheduleLocalReminders,
+//   scheduleHabitReminders,
+//   scheduleCompanionReminders,
+//   registerMoodNotificationActions,
+//   setupNotificationActionListener,
+//   setMoodActionCallback,
+//   scheduleMoodQuickLogNotification,
+// } from '@/lib/localNotifications';
+const scheduleLocalReminders = async () => {};
+const scheduleHabitReminders = async () => {};
+const scheduleCompanionReminders = async () => {};
+const registerMoodNotificationActions = async () => {};
+const setupNotificationActionListener = async () => () => {};
+const setMoodActionCallback = () => {};
+const scheduleMoodQuickLogNotification = async () => {};
 
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
