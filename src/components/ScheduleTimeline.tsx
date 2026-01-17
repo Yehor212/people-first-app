@@ -1,10 +1,11 @@
 /**
  * Schedule Timeline - Horizontal day view for ADHD users
  * Shows current time, planned activities, and helps with time awareness
+ * Supports week planning with day selector
  */
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Clock, X, Check } from 'lucide-react';
+import { Plus, Clock, X, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn, getToday } from '@/lib/utils';
 import { ScheduleEvent } from '@/types';
@@ -13,6 +14,42 @@ interface ScheduleTimelineProps {
   events: ScheduleEvent[];
   onAddEvent?: (event: Omit<ScheduleEvent, 'id'>) => void;
   onDeleteEvent?: (id: string) => void;
+}
+
+// Get array of dates for the week (today + 6 days ahead)
+function getWeekDates(): string[] {
+  const dates: string[] = [];
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(today);
+    date.setDate(today.getDate() + i);
+    dates.push(date.toISOString().split('T')[0]);
+  }
+  return dates;
+}
+
+// Format date for display
+function formatDayShort(dateStr: string, language: string): { day: string; weekday: string; isToday: boolean } {
+  const date = new Date(dateStr);
+  const today = new Date();
+  const isToday = dateStr === getToday();
+
+  const weekdayNames: Record<string, string[]> = {
+    ru: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
+    en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    uk: ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
+    es: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
+    de: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
+    fr: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
+  };
+
+  const names = weekdayNames[language] || weekdayNames.en;
+
+  return {
+    day: date.getDate().toString(),
+    weekday: names[date.getDay()],
+    isToday,
+  };
 }
 
 // Preset event types with colors
@@ -31,11 +68,28 @@ const END_HOUR = 23;
 const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
 
 export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: ScheduleTimelineProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
+  const [selectedDate, setSelectedDate] = useState(getToday());
   const timelineRef = useRef<HTMLDivElement>(null);
+
+  // Get week dates
+  const weekDates = useMemo(() => getWeekDates(), []);
+
+  // Filter events for selected date
+  const filteredEvents = useMemo(() => {
+    return events.filter(e => e.date === selectedDate);
+  }, [events, selectedDate]);
+
+  // Check if a date has events
+  const dateHasEvents = (date: string) => {
+    return events.some(e => e.date === date);
+  };
+
+  // Check if selected date is today
+  const isToday = selectedDate === getToday();
 
   // Update time every minute
   useEffect(() => {
@@ -94,13 +148,13 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
     return nowMinutes >= startMinutes && nowMinutes < endMinutes;
   };
 
-  // Find current event
-  const currentEvent = events.find(isEventCurrent);
+  // Find current event (only on today)
+  const currentEvent = isToday ? filteredEvents.find(isEventCurrent) : null;
 
   return (
     <div className="bg-card rounded-3xl p-4 zen-shadow-card animate-fade-in">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center">
             <Clock className="w-5 h-5 text-primary" />
@@ -128,6 +182,40 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
             <Plus className="w-5 h-5 text-primary" />
           </button>
         )}
+      </div>
+
+      {/* Week Day Selector */}
+      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1 -mx-1 px-1">
+        {weekDates.map((date) => {
+          const { day, weekday, isToday: dayIsToday } = formatDayShort(date, language);
+          const isSelected = date === selectedDate;
+          const hasEvents = dateHasEvents(date);
+
+          return (
+            <button
+              key={date}
+              onClick={() => setSelectedDate(date)}
+              className={cn(
+                "flex-shrink-0 flex flex-col items-center py-2 px-3 rounded-xl transition-all min-w-[52px]",
+                isSelected
+                  ? "bg-primary text-primary-foreground"
+                  : dayIsToday
+                    ? "bg-primary/20 text-primary"
+                    : "bg-secondary/50 hover:bg-secondary text-foreground"
+              )}
+            >
+              <span className="text-[10px] uppercase opacity-70">{weekday}</span>
+              <span className="text-lg font-bold">{day}</span>
+              {hasEvents && !isSelected && (
+                <div className="w-1.5 h-1.5 rounded-full bg-primary mt-0.5" />
+              )}
+              {hasEvents && isSelected && (
+                <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground mt-0.5" />
+              )}
+              {!hasEvents && <div className="h-1.5 mt-0.5" />}
+            </button>
+          );
+        })}
       </div>
 
       {/* Timeline */}
@@ -171,14 +259,14 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
               </div>
 
               {/* Events */}
-              {events.map((event) => (
+              {filteredEvents.map((event) => (
                 <button
                   key={event.id}
                   onClick={() => setSelectedEvent(event)}
                   style={getEventStyle(event)}
                   className={cn(
                     "absolute top-1 bottom-1 rounded-lg flex items-center justify-center gap-1 text-white text-xs font-medium transition-all hover:scale-[1.02] hover:z-10",
-                    isEventCurrent(event) && "ring-2 ring-white ring-offset-2 ring-offset-card animate-pulse"
+                    isToday && isEventCurrent(event) && "ring-2 ring-white ring-offset-2 ring-offset-card animate-pulse"
                   )}
                 >
                   <span>{event.emoji}</span>
@@ -186,14 +274,16 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                 </button>
               ))}
 
-              {/* Current time indicator */}
-              <div
-                className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
-                style={{ left: `${currentTimePosition}%` }}
-              >
-                <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-              </div>
+              {/* Current time indicator - only show for today */}
+              {isToday && (
+                <div
+                  className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
+                  style={{ left: `${currentTimePosition}%` }}
+                >
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                </div>
+              )}
             </div>
 
             {/* Period labels */}
@@ -211,10 +301,12 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
       </div>
 
       {/* Quick info */}
-      {events.length === 0 && (
+      {filteredEvents.length === 0 && (
         <div className="mt-3 text-center py-3 bg-secondary/30 rounded-xl">
           <p className="text-sm text-muted-foreground">
-            {t.scheduleEmpty || 'No events planned. Tap + to add your schedule!'}
+            {isToday
+              ? (t.scheduleEmpty || 'No events planned. Tap + to add your schedule!')
+              : (t.scheduleEmptyDay || 'No events for this day')}
           </p>
         </div>
       )}
@@ -222,6 +314,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
       {/* Add Event Modal */}
       {showAddModal && onAddEvent && (
         <AddEventModal
+          selectedDate={selectedDate}
           onClose={() => setShowAddModal(false)}
           onAdd={(event) => {
             onAddEvent(event);
@@ -247,19 +340,32 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
 
 // Add Event Modal
 function AddEventModal({
+  selectedDate,
   onClose,
   onAdd,
 }: {
+  selectedDate: string;
   onClose: () => void;
   onAdd: (event: Omit<ScheduleEvent, 'id'>) => void;
 }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [selectedPreset, setSelectedPreset] = useState(EVENT_PRESETS[0]);
   const [startHour, setStartHour] = useState(9);
   const [startMinute, setStartMinute] = useState(0);
   const [endHour, setEndHour] = useState(10);
   const [endMinute, setEndMinute] = useState(0);
   const [customTitle, setCustomTitle] = useState('');
+
+  // Format date for display
+  const formatDateForHeader = () => {
+    const today = getToday();
+    if (selectedDate === today) {
+      return t.today || 'Today';
+    }
+    const date = new Date(selectedDate);
+    const options: Intl.DateTimeFormatOptions = { weekday: 'short', day: 'numeric', month: 'short' };
+    return date.toLocaleDateString(language === 'ru' ? 'ru-RU' : language === 'uk' ? 'uk-UA' : language === 'es' ? 'es-ES' : language === 'de' ? 'de-DE' : language === 'fr' ? 'fr-FR' : 'en-US', options);
+  };
 
   const handleAdd = () => {
     const title = customTitle || (t[selectedPreset.labelKey as keyof typeof t] as string) || selectedPreset.id;
@@ -271,7 +377,7 @@ function AddEventModal({
       endMinute,
       color: selectedPreset.color,
       emoji: selectedPreset.emoji,
-      date: getToday(),
+      date: selectedDate,
     });
   };
 
@@ -279,7 +385,10 @@ function AddEventModal({
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
       <div className="bg-card rounded-3xl p-5 w-full max-w-sm animate-slide-up">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">{t.scheduleAddEvent || 'Add Event'}</h3>
+          <div>
+            <h3 className="text-lg font-semibold">{t.scheduleAddEvent || 'Add Event'}</h3>
+            <p className="text-xs text-muted-foreground">{formatDateForHeader()}</p>
+          </div>
           <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl">
             <X className="w-5 h-5" />
           </button>

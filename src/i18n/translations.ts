@@ -81,6 +81,7 @@ export interface Translations {
   scheduleTitle: string;
   scheduleAddEvent: string;
   scheduleEmpty: string;
+  scheduleEmptyDay: string;
   scheduleStart: string;
   scheduleEnd: string;
   scheduleAdd: string;
@@ -875,6 +876,7 @@ export const translations: Record<Language, Translations> = {
     scheduleTitle: 'Ваше расписание',
     scheduleAddEvent: 'Добавить событие',
     scheduleEmpty: 'Нет запланированных событий. Нажмите + чтобы добавить!',
+    scheduleEmptyDay: 'Нет событий на этот день',
     scheduleStart: 'Начало',
     scheduleEnd: 'Конец',
     scheduleAdd: 'Добавить в расписание',
@@ -1622,6 +1624,7 @@ export const translations: Record<Language, Translations> = {
     scheduleTitle: 'Your Schedule',
     scheduleAddEvent: 'Add Event',
     scheduleEmpty: 'No events planned. Tap + to add your schedule!',
+    scheduleEmptyDay: 'No events for this day',
     scheduleStart: 'Start',
     scheduleEnd: 'End',
     scheduleAdd: 'Add to Schedule',
@@ -2369,6 +2372,7 @@ export const translations: Record<Language, Translations> = {
     scheduleTitle: 'Ваш розклад',
     scheduleAddEvent: 'Додати подію',
     scheduleEmpty: 'Немає запланованих подій. Натисніть + щоб додати!',
+    scheduleEmptyDay: 'Немає подій на цей день',
     scheduleStart: 'Початок',
     scheduleEnd: 'Кінець',
     scheduleAdd: 'Додати до розкладу',
@@ -3116,6 +3120,7 @@ export const translations: Record<Language, Translations> = {
     scheduleTitle: 'Tu Horario',
     scheduleAddEvent: 'Agregar Evento',
     scheduleEmpty: 'Sin eventos planificados. ¡Toca + para agregar!',
+    scheduleEmptyDay: 'Sin eventos para este día',
     scheduleStart: 'Inicio',
     scheduleEnd: 'Fin',
     scheduleAdd: 'Agregar al Horario',
@@ -3864,6 +3869,7 @@ export const translations: Record<Language, Translations> = {
     scheduleTitle: 'Dein Zeitplan',
     scheduleAddEvent: 'Ereignis hinzufügen',
     scheduleEmpty: 'Keine Ereignisse geplant. Tippe auf + um hinzuzufügen!',
+    scheduleEmptyDay: 'Keine Ereignisse für diesen Tag',
     scheduleStart: 'Start',
     scheduleEnd: 'Ende',
     scheduleAdd: 'Zum Zeitplan hinzufügen',
@@ -4612,6 +4618,7 @@ export const translations: Record<Language, Translations> = {
     scheduleTitle: 'Votre Emploi du Temps',
     scheduleAddEvent: 'Ajouter un Événement',
     scheduleEmpty: 'Aucun événement prévu. Appuyez sur + pour ajouter !',
+    scheduleEmptyDay: 'Aucun événement pour ce jour',
     scheduleStart: 'Début',
     scheduleEnd: 'Fin',
     scheduleAdd: "Ajouter à l'emploi du temps",
