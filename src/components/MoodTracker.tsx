@@ -101,26 +101,47 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
       const newDate = getToday();
       const newTimeOfDay = getCurrentTimeOfDay();
 
-      if (newDate !== today) {
-        setToday(newDate);
-      }
-      if (newTimeOfDay !== currentTimeOfDay) {
-        setCurrentTimeOfDay(newTimeOfDay);
-      }
+      // Always update if different - compare fresh values, not closure
+      setToday(prev => {
+        if (prev !== newDate) {
+          console.log('[MoodTracker] Date changed:', prev, '->', newDate);
+          return newDate;
+        }
+        return prev;
+      });
+
+      setCurrentTimeOfDay(prev => {
+        if (prev !== newTimeOfDay) {
+          return newTimeOfDay;
+        }
+        return prev;
+      });
     };
+
+    // IMPORTANT: Check immediately on mount/effect run
+    checkDateChange();
 
     // Check every minute
     const interval = setInterval(checkDateChange, 60000);
 
-    // Also check on window focus
+    // Check on window focus (when user returns to app)
     const handleFocus = () => checkDateChange();
     window.addEventListener('focus', handleFocus);
+
+    // Check on visibility change (when tab becomes visible)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkDateChange();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
       clearInterval(interval);
       window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [today, currentTimeOfDay]);
+  }, []); // Empty deps - effect runs once on mount, interval handles updates
 
   // Get all entries for today, sorted by time
   const todayEntries = useMemo(() => {
