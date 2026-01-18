@@ -562,7 +562,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
       </h3>
 
       <div className={cn(
-        "flex justify-between mb-6 relative",
+        "flex justify-center gap-2 sm:gap-4 mb-6 relative flex-wrap",
         isPrimaryCTA && "bg-card/50 rounded-2xl p-3 -mx-2"
       )}>
         {moods.map((mood, index) => (
@@ -571,7 +571,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
             ref={(el) => { moodButtonRefs.current[mood.type] = el; }}
             onClick={() => setSelectedMood(mood.type)}
             className={cn(
-              "mood-btn flex flex-col items-center gap-2 p-3 rounded-xl transition-all relative",
+              "mood-btn flex flex-col items-center gap-1 p-2 sm:p-3 rounded-xl transition-all relative min-w-[56px]",
               selectedMood === mood.type
                 ? `${mood.color} bg-opacity-20 scale-110 zen-shadow-soft selected ring-2 ring-primary/50`
                 : "hover:bg-secondary/80 hover:scale-105"

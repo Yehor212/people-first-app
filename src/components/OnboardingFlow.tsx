@@ -208,13 +208,13 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 {t.onboardingMoodDescription || 'Track your mood daily'}
               </p>
 
-              <div className="flex justify-between gap-2 mb-4 relative">
+              <div className="flex justify-center gap-1.5 sm:gap-2 mb-4 relative flex-wrap">
                 {moods.map((mood, index) => (
                   <button
                     key={mood.type}
                     onClick={() => handleMoodSelect(mood.type)}
                     className={cn(
-                      "relative flex-1 p-3 rounded-2xl flex flex-col items-center gap-2 transition-all duration-200",
+                      "relative p-2 sm:p-3 rounded-2xl flex flex-col items-center gap-1 transition-all duration-200 min-w-[52px]",
                       selectedMood === mood.type
                         ? `bg-gradient-to-br ${mood.color} shadow-lg scale-105`
                         : "bg-secondary/50 hover:bg-secondary hover:scale-102"
