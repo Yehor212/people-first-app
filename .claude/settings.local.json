@@ -31,7 +31,10 @@
       "Bash(initialization\" errors due to module order issues when splitting\nbundles. Disabling it creates one larger bundle but ensures proper\ninitialization order.\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(npx madge:*)",
       "Bash(curl:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(gh api:*)",
+      "Bash(node scripts/generate-icons.js:*)",
+      "Bash(node:*)"
     ]
   }
 }
