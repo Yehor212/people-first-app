@@ -273,16 +273,24 @@ export async function syncQuests(): Promise<{ daily: Quest | null; weekly: Quest
 
 /**
  * Subscribe to real-time task updates
+ * @param userId - Filter changes to only this user's tasks
+ * @param callback - Function to call with updated tasks
  */
-export function subscribeToTaskUpdates(callback: (tasks: Task[]) => void) {
+export function subscribeToTaskUpdates(userId: string, callback: (tasks: Task[]) => void) {
+  if (!userId) {
+    console.warn('[TasksSync] No userId provided for subscription');
+    return () => {};
+  }
+
   const channel = supabase
-    .channel('tasks-changes')
+    .channel(`tasks-changes-${userId}`)
     .on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
         table: 'user_tasks',
+        filter: `user_id=eq.${userId}`,
       },
       async () => {
         const tasks = await pullTasksFromCloud();
@@ -299,16 +307,24 @@ export function subscribeToTaskUpdates(callback: (tasks: Task[]) => void) {
 
 /**
  * Subscribe to real-time quest updates
+ * @param userId - Filter changes to only this user's quests
+ * @param callback - Function to call with updated quests
  */
-export function subscribeToQuestUpdates(callback: (quests: { daily: Quest | null; weekly: Quest | null; bonus: Quest | null }) => void) {
+export function subscribeToQuestUpdates(userId: string, callback: (quests: { daily: Quest | null; weekly: Quest | null; bonus: Quest | null }) => void) {
+  if (!userId) {
+    console.warn('[QuestsSync] No userId provided for subscription');
+    return () => {};
+  }
+
   const channel = supabase
-    .channel('quests-changes')
+    .channel(`quests-changes-${userId}`)
     .on(
       'postgres_changes',
       {
         event: '*',
         schema: 'public',
         table: 'user_quests',
+        filter: `user_id=eq.${userId}`,
       },
       async () => {
         const quests = await pullQuestsFromCloud();

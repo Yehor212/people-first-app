@@ -365,14 +365,17 @@ export function Index() {
   const todayFocusMinutes = useMemo(() => {
     return focusSessions
       .filter(s => s.date.startsWith(currentDate))
-      .reduce((sum, s) => sum + (s.minutes || 0), 0);
+      .reduce((sum, s) => sum + (s.duration || 0), 0);
   }, [focusSessions, currentDate]);
 
   const lastBadgeName = useMemo(() => {
-    const unlockedBadges = badges.filter(b => b.unlockedAt);
+    const unlockedBadges = badges.filter(b => b.unlocked && b.unlockedDate);
     if (!unlockedBadges.length) return undefined;
-    const latest = unlockedBadges.sort((a, b) => (b.unlockedAt || 0) - (a.unlockedAt || 0))[0];
-    return latest.name;
+    // Sort by unlockedDate string (ISO format sorts correctly)
+    const latest = unlockedBadges.sort((a, b) =>
+      (b.unlockedDate || '').localeCompare(a.unlockedDate || '')
+    )[0];
+    return latest.title?.['en'] || latest.id;
   }, [badges]);
 
   useWidgetSync(currentStreak, habits, todayFocusMinutes, lastBadgeName);
@@ -955,6 +958,9 @@ export function Index() {
   // Cloud sync for challenges and badges
   useEffect(() => {
     const syncWithCloudIfLoggedIn = async () => {
+      // Guard: skip if Supabase is not available (local mode)
+      if (!supabase) return;
+
       const { data: { user } } = await supabase.auth.getUser();
 
       if (user) {

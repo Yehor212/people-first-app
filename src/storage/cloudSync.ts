@@ -10,6 +10,11 @@ const SYNC_DEBOUNCE = 30 * 1000; // 30 seconds after data change
 let syncInterval: ReturnType<typeof setInterval> | null = null;
 let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 let lastSyncTime = 0;
+let autoSyncStarted = false;
+
+// Store listener references for cleanup
+let visibilityChangeHandler: (() => void) | null = null;
+let beforeUnloadHandler: (() => void) | null = null;
 
 export const syncWithCloud = async (mode: "merge" | "replace" = "merge") => {
   if (!supabase) {
@@ -104,7 +109,13 @@ export const silentSync = async () => {
 export const startAutoSync = () => {
   if (!supabase) return;
 
-  // Clear existing interval
+  // Prevent duplicate listener registration
+  if (autoSyncStarted) {
+    logger.sync('Auto-sync already started, skipping');
+    return;
+  }
+
+  // Clear existing interval (safety)
   if (syncInterval) {
     clearInterval(syncInterval);
   }
@@ -112,26 +123,30 @@ export const startAutoSync = () => {
   // Sync every 5 minutes
   syncInterval = setInterval(silentSync, SYNC_INTERVAL);
 
-  // Sync on page visibility change (when user comes back to tab)
-  document.addEventListener('visibilitychange', () => {
+  // Create and store listener references for later cleanup
+  visibilityChangeHandler = () => {
     if (document.visibilityState === 'visible' && Date.now() - lastSyncTime > 60000) {
       silentSync();
     }
-  });
+  };
 
-  // Sync before page unload
-  window.addEventListener('beforeunload', () => {
-    // Use navigator.sendBeacon for reliable delivery
+  beforeUnloadHandler = () => {
+    // Note: async operations in beforeunload are unreliable
+    // This is a best-effort sync attempt
     if (navigator.sendBeacon && supabase) {
-      // Can't do async in beforeunload, so just trigger sync
       silentSync();
     }
-  });
+  };
 
+  // Add listeners
+  document.addEventListener('visibilitychange', visibilityChangeHandler);
+  window.addEventListener('beforeunload', beforeUnloadHandler);
+
+  autoSyncStarted = true;
   logger.sync('Auto-sync started');
 };
 
-// Stop periodic sync
+// Stop periodic sync and cleanup listeners
 export const stopAutoSync = () => {
   if (syncInterval) {
     clearInterval(syncInterval);
@@ -141,6 +156,19 @@ export const stopAutoSync = () => {
     clearTimeout(syncTimeout);
     syncTimeout = null;
   }
+
+  // Remove event listeners
+  if (visibilityChangeHandler) {
+    document.removeEventListener('visibilitychange', visibilityChangeHandler);
+    visibilityChangeHandler = null;
+  }
+  if (beforeUnloadHandler) {
+    window.removeEventListener('beforeunload', beforeUnloadHandler);
+    beforeUnloadHandler = null;
+  }
+
+  autoSyncStarted = false;
+  logger.sync('Auto-sync stopped');
 };
 
 // Trigger debounced sync (call after data changes)
