@@ -1081,6 +1081,7 @@ export function Index() {
                 habits={habits}
                 focusSessions={focusSessions}
                 gratitudeEntries={gratitudeEntries}
+                restDays={innerWorld.restDays}
                 onRestMode={activateRestMode}
                 isRestMode={isRestMode}
               />
@@ -1225,6 +1226,7 @@ export function Index() {
             habits={habits}
             focusSessions={focusSessions}
             gratitudeEntries={gratitudeEntries}
+            restDays={innerWorld.restDays}
             currentFocusMinutes={currentFocusMinutes}
           />
         )}

@@ -13,6 +13,7 @@ interface StatsPageProps {
   habits: Habit[];
   focusSessions: FocusSession[];
   gratitudeEntries: GratitudeEntry[];
+  restDays?: string[];
   currentFocusMinutes?: number;
 }
 
@@ -24,7 +25,7 @@ const moodEmojis: Record<string, string> = {
   terrible: '😢',
 };
 
-export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, currentFocusMinutes }: StatsPageProps) {
+export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, restDays = [], currentFocusMinutes }: StatsPageProps) {
   const { t } = useLanguage();
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [range, setRange] = useState<'week' | 'month' | 'all'>('month');
@@ -109,6 +110,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, curr
       ...habits.flatMap(h => getHabitCompletedDates(h)),
       ...completedFocusSessions.map(f => f.date),
       ...gratitudeEntries.map(g => g.date),
+      ...restDays, // Rest days count towards streak!
     ];
     const uniqueDates = [...new Set(allActivityDates)].sort();
     const currentStreak = calculateStreak(uniqueDates);

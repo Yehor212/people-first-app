@@ -10,10 +10,11 @@ interface StatsOverviewProps {
   habits: Habit[];
   focusSessions: FocusSession[];
   gratitudeEntries: GratitudeEntry[];
+  restDays?: string[];
   currentFocusMinutes?: number;
 }
 
-export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, currentFocusMinutes }: StatsOverviewProps) {
+export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, restDays = [], currentFocusMinutes }: StatsOverviewProps) {
   const { t } = useLanguage();
   const today = getToday();
   const [showCelebration, setShowCelebration] = useState(false);
@@ -25,13 +26,14 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
   const todayHabitsCompleted = habits.filter(h => h.completedDates.includes(today)).length;
   const totalHabits = habits.length;
 
-  // Calculate streak based on ANY activity (mood, habits, focus, gratitude)
+  // Calculate streak based on ANY activity (mood, habits, focus, gratitude, rest days)
   // User has until 00:00 next day to continue streak
   const allActivityDates = [
     ...moods.map(m => m.date),
     ...habits.flatMap(h => h.completedDates),
     ...focusSessions.map(f => f.date),
     ...gratitudeEntries.map(g => g.date),
+    ...restDays, // Rest days count towards streak!
   ];
   const uniqueActivityDates = [...new Set(allActivityDates)].sort();
   const streak = calculateStreak(uniqueActivityDates);

@@ -18,18 +18,20 @@ interface MoodTrackerProps {
 
 type TimeOfDay = 'morning' | 'afternoon' | 'evening';
 
-// Get current time of day
+// Get current time of day based on user's local time
+// Morning: 00:00-11:59, Afternoon: 12:00-17:59, Evening: 18:00-23:59
 function getCurrentTimeOfDay(): TimeOfDay {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 0 && hour < 12) return 'morning';
   if (hour >= 12 && hour < 18) return 'afternoon';
   return 'evening';
 }
 
 // Get time of day from timestamp
+// Morning: 00:00-11:59, Afternoon: 12:00-17:59, Evening: 18:00-23:59
 function getTimeOfDayFromTimestamp(timestamp: number): TimeOfDay {
   const hour = new Date(timestamp).getHours();
-  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 0 && hour < 12) return 'morning';
   if (hour >= 12 && hour < 18) return 'afternoon';
   return 'evening';
 }
@@ -265,8 +267,10 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     setEditingNote('');
   };
 
-  // Compact view showing today's mood entries
-  if (hasAnyEntryToday && !showAddNew) {
+  // Show full input view (mood icons) when current time period has no entry
+  // This ensures fresh mood selection at start of each time period (morning/afternoon/evening)
+  // Compact view only when current period is already recorded
+  if (hasAnyEntryToday && !canAddForCurrentTime && !showAddNew) {
     const latestEntry = todayEntries[todayEntries.length - 1];
     const latestMood = moods.find(m => m.type === latestEntry.mood);
     const latestTimeOfDay = getTimeOfDayFromTimestamp(latestEntry.timestamp);
@@ -539,8 +543,8 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
         </div>
       )}
 
-      {/* Current time indicator */}
-      {showAddNew && (
+      {/* Current time indicator - always show which time period we're recording for */}
+      {!isPrimaryCTA && (
         <div className="relative flex items-center justify-center gap-2 mb-3">
           {(() => {
             const CurrentTimeIcon = timeIcons[currentTimeOfDay];

@@ -16,25 +16,27 @@ interface StreakBannerProps {
   habits: Habit[];
   focusSessions: FocusSession[];
   gratitudeEntries: GratitudeEntry[];
+  restDays?: string[];
   onRestMode?: () => void;
   isRestMode?: boolean;
 }
 
-export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries, onRestMode, isRestMode = false }: StreakBannerProps) {
+export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries, restDays = [], onRestMode, isRestMode = false }: StreakBannerProps) {
   const { t } = useLanguage();
   const today = getToday();
 
-  // Calculate streak based on ANY activity
+  // Calculate streak based on ANY activity (including rest days)
   const streak = useMemo(() => {
     const allActivityDates = [
       ...moods.map(m => m.date),
       ...habits.flatMap(h => h.completedDates),
       ...focusSessions.map(f => f.date),
       ...gratitudeEntries.map(g => g.date),
+      ...restDays, // Rest days count towards streak!
     ];
     const uniqueActivityDates = [...new Set(allActivityDates)].sort();
     return calculateStreak(uniqueActivityDates);
-  }, [moods, habits, focusSessions, gratitudeEntries]);
+  }, [moods, habits, focusSessions, gratitudeEntries, restDays]);
 
   // Check today's progress
   const todayProgress = useMemo(() => {
