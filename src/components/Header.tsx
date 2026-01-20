@@ -34,52 +34,61 @@ export function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks, onO
   );
 
   return (
-    <header className="mb-8 animate-fade-in">
-      <div className="flex items-center justify-between mb-2">
+    <header className="mb-6 animate-fade-in">
+      {/* Top row: Logo and theme toggle only */}
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <div className="p-2 zen-gradient rounded-xl zen-shadow-soft">
             <Leaf className="w-6 h-6 text-primary-foreground" />
           </div>
           <span className="text-xl font-bold zen-text-gradient">{t.appName}</span>
         </div>
-        <div className="flex items-center gap-2">
+        <ThemeToggle />
+      </div>
+
+      {/* Greeting */}
+      <div className="mb-4">
+        <h1 className="text-2xl font-bold text-foreground">
+          {getGreeting()}, {userName}! 👋
+        </h1>
+        <p className="text-muted-foreground text-sm capitalize">{formattedDate}</p>
+      </div>
+
+      {/* Quick Actions Bar - larger, more accessible buttons */}
+      {(onOpenTasks || onOpenQuests || onOpenChallenges) && (
+        <div className="flex gap-2">
           {onOpenTasks && (
             <button
               onClick={onOpenTasks}
-              className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl transition-all zen-shadow-soft hover:zen-shadow"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl transition-all"
               aria-label="Open Tasks"
             >
               <ListTodo className="w-5 h-5" />
+              <span className="text-sm font-medium">{t.tasks || 'Задачи'}</span>
             </button>
           )}
           {onOpenQuests && (
             <button
               onClick={onOpenQuests}
-              className="p-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded-xl transition-all zen-shadow-soft hover:zen-shadow"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded-xl transition-all"
               aria-label="Open Quests"
             >
               <Sparkles className="w-5 h-5" />
+              <span className="text-sm font-medium">{t.quests || 'Квесты'}</span>
             </button>
           )}
           {onOpenChallenges && (
             <button
               onClick={onOpenChallenges}
-              className="p-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all zen-shadow-soft hover:zen-shadow"
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all"
               aria-label="Open Challenges"
             >
               <Trophy className="w-5 h-5" />
+              <span className="text-sm font-medium">{t.challenges || 'Вызовы'}</span>
             </button>
           )}
-          <ThemeToggle />
         </div>
-      </div>
-      
-      <div className="mt-6">
-        <h1 className="text-3xl font-bold text-foreground">
-          {getGreeting()}, {userName}! 👋
-        </h1>
-        <p className="text-muted-foreground mt-1 capitalize">{formattedDate}</p>
-      </div>
+      )}
     </header>
   );
 }
