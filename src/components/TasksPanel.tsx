@@ -11,6 +11,7 @@ import {
   calculateMomentumBonus,
   getTwoMinuteTasks,
 } from '@/lib/taskMomentum';
+import { pushTasksToCloud } from '@/storage/tasksCloudSync';
 
 const STORAGE_KEY = 'zenflow_tasks';
 const MOMENTUM_KEY = 'zenflow_task_momentum';
@@ -60,6 +61,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   // Save tasks to localStorage whenever they change
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    pushTasksToCloud(tasks).catch(console.error);
   }, [tasks]);
 
   // Save momentum state

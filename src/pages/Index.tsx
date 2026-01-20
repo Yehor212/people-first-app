@@ -58,6 +58,7 @@ import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
+import { syncTasks, syncQuests, subscribeToTaskUpdates, subscribeToQuestUpdates } from '@/storage/tasksCloudSync';
 import { InnerWorldGarden } from '@/components/InnerWorldGarden';
 import { CompanionPanel } from '@/components/CompanionPanel';
 import { TreePanel } from '@/components/TreePanel';
@@ -1018,6 +1019,10 @@ export function Index() {
           setBadges(syncedBadges);
         }
 
+        // Sync tasks and quests (updates localStorage for Panels to read)
+        await syncTasks();
+        await syncQuests();
+
         // Subscribe to real-time updates
         const challengeSub = subscribeToChallengeUpdates(user.id, (updatedChallenge) => {
           setChallenges(prev => {
@@ -1043,9 +1048,22 @@ export function Index() {
           });
         });
 
+        // Subscribe to tasks/quests updates to keep localStorage fresh
+        const taskSub = subscribeToTaskUpdates(user.id, () => {
+          // TasksPanel reads from localStorage, sync updates it automatically
+          console.log('[Index] Tasks updated from cloud');
+        });
+
+        const questSub = subscribeToQuestUpdates(user.id, () => {
+          // QuestsPanel reads from localStorage, sync updates it automatically
+          console.log('[Index] Quests updated from cloud');
+        });
+
         return () => {
           challengeSub.unsubscribe();
           badgeSub.unsubscribe();
+          taskSub();
+          questSub();
         };
       }
     };
