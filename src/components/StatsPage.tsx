@@ -666,9 +666,9 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
               {selectedDayData.moods.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-muted-foreground">{t.moodNotes || 'Mood Notes'}</p>
-                  {selectedDayData.moods.map((entry) => (
+                  {selectedDayData.moods.map((entry, idx) => (
                     <div
-                      key={entry.id}
+                      key={entry.id || `mood-${idx}`}
                       className="p-3 bg-card/50 rounded-lg border-l-4 border-primary/50"
                     >
                       <div className="flex items-center gap-2 mb-1">

@@ -1000,75 +1000,82 @@ export function Index() {
 
   // Cloud sync for challenges and badges
   useEffect(() => {
+    let challengeSub: { unsubscribe: () => void } | null = null;
+    let badgeSub: { unsubscribe: () => void } | null = null;
+    let taskSub: (() => void) | null = null;
+    let questSub: (() => void) | null = null;
+
     const syncWithCloudIfLoggedIn = async () => {
       // Guard: skip if Supabase is not available (local mode)
       if (!supabase) return;
 
-      const { data: { user } } = await supabase.auth.getUser();
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
 
-      if (user) {
-        // Sync challenges
-        const { challenges: syncedChallenges } = await syncChallengesWithCloud(user.id);
-        if (syncedChallenges) {
-          setChallenges(syncedChallenges);
-        }
+        if (user) {
+          // Sync challenges
+          const { challenges: syncedChallenges } = await syncChallengesWithCloud(user.id);
+          if (syncedChallenges) {
+            setChallenges(syncedChallenges);
+          }
 
-        // Sync badges
-        const { badges: syncedBadges } = await syncBadgesWithCloud(user.id);
-        if (syncedBadges) {
-          setBadges(syncedBadges);
-        }
+          // Sync badges
+          const { badges: syncedBadges } = await syncBadgesWithCloud(user.id);
+          if (syncedBadges) {
+            setBadges(syncedBadges);
+          }
 
-        // Sync tasks and quests (updates localStorage for Panels to read)
-        await syncTasks();
-        await syncQuests();
+          // Sync tasks and quests (updates localStorage for Panels to read)
+          await syncTasks();
+          await syncQuests();
 
-        // Subscribe to real-time updates
-        const challengeSub = subscribeToChallengeUpdates(user.id, (updatedChallenge) => {
-          setChallenges(prev => {
-            const index = prev.findIndex(c => c.id === updatedChallenge.id);
-            if (index !== -1) {
-              const updated = [...prev];
-              updated[index] = updatedChallenge;
-              return updated;
-            }
-            return [...prev, updatedChallenge];
+          // Subscribe to real-time updates
+          challengeSub = subscribeToChallengeUpdates(user.id, (updatedChallenge) => {
+            setChallenges(prev => {
+              const index = prev.findIndex(c => c.id === updatedChallenge.id);
+              if (index !== -1) {
+                const updated = [...prev];
+                updated[index] = updatedChallenge;
+                return updated;
+              }
+              return [...prev, updatedChallenge];
+            });
           });
-        });
 
-        const badgeSub = subscribeToBadgeUpdates(user.id, (updatedBadge) => {
-          setBadges(prev => {
-            const index = prev.findIndex(b => b.id === updatedBadge.id);
-            if (index !== -1) {
-              const updated = [...prev];
-              updated[index] = updatedBadge;
-              return updated;
-            }
-            return prev;
+          badgeSub = subscribeToBadgeUpdates(user.id, (updatedBadge) => {
+            setBadges(prev => {
+              const index = prev.findIndex(b => b.id === updatedBadge.id);
+              if (index !== -1) {
+                const updated = [...prev];
+                updated[index] = updatedBadge;
+                return updated;
+              }
+              return prev;
+            });
           });
-        });
 
-        // Subscribe to tasks/quests updates to keep localStorage fresh
-        const taskSub = subscribeToTaskUpdates(user.id, () => {
-          // TasksPanel reads from localStorage, sync updates it automatically
-          console.log('[Index] Tasks updated from cloud');
-        });
+          // Subscribe to tasks/quests updates to keep localStorage fresh
+          taskSub = subscribeToTaskUpdates(user.id, () => {
+            console.log('[Index] Tasks updated from cloud');
+          });
 
-        const questSub = subscribeToQuestUpdates(user.id, () => {
-          // QuestsPanel reads from localStorage, sync updates it automatically
-          console.log('[Index] Quests updated from cloud');
-        });
-
-        return () => {
-          challengeSub.unsubscribe();
-          badgeSub.unsubscribe();
-          taskSub();
-          questSub();
-        };
+          questSub = subscribeToQuestUpdates(user.id, () => {
+            console.log('[Index] Quests updated from cloud');
+          });
+        }
+      } catch (error) {
+        console.error('[Index] Cloud sync error:', error);
       }
     };
 
     syncWithCloudIfLoggedIn();
+
+    return () => {
+      challengeSub?.unsubscribe();
+      badgeSub?.unsubscribe();
+      taskSub?.();
+      questSub?.();
+    };
   }, []);
 
   if (isLoading) {
