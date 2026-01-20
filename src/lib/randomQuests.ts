@@ -431,3 +431,48 @@ export function getQuestDifficultyColor(type: QuestType): string {
 
   return colors[type];
 }
+
+const QUESTS_STORAGE_KEY = 'zenflow_quests';
+
+/**
+ * Update all quests progress from localStorage and return newly completed quests
+ * Call this from Index.tsx when user performs actions
+ */
+export function updateAllQuestsProgress(
+  action: {
+    type: 'habit_completed' | 'focus_completed' | 'gratitude_added' | 'streak_updated';
+    value: number;
+  }
+): Quest[] {
+  try {
+    const stored = localStorage.getItem(QUESTS_STORAGE_KEY);
+    if (!stored) return [];
+
+    const data = JSON.parse(stored);
+    const newlyCompleted: Quest[] = [];
+
+    // Update each quest type
+    ['daily', 'weekly', 'bonus'].forEach(questType => {
+      const quest = data[questType] as Quest | null;
+      if (!quest || quest.completed || Date.now() > quest.expiresAt) return;
+
+      const wasCompleted = quest.completed;
+      const updated = updateQuestProgress(quest, action);
+
+      // Check if quest just became completed
+      if (updated.completed && !wasCompleted) {
+        newlyCompleted.push(updated);
+      }
+
+      data[questType] = updated;
+    });
+
+    // Save updated quests back to localStorage
+    localStorage.setItem(QUESTS_STORAGE_KEY, JSON.stringify(data));
+
+    return newlyCompleted;
+  } catch (error) {
+    console.error('Failed to update quests progress:', error);
+    return [];
+  }
+}

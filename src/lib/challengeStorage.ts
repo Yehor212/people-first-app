@@ -168,8 +168,42 @@ export function checkSpecialBadges(stats: UserStats, habits: any[]): Badge[] {
     }
   }
 
-  // Additional special badge checks can be added here
-  // e.g., Perfectionist, Early Bird, Night Owl, etc.
+  // Perfectionist - completed all habits in a day 10 times
+  if ((stats.perfectDaysCount || 0) >= 10) {
+    const badge = badges.find(b => b.id === 'badge_special_perfectionist');
+    if (badge && !badge.unlocked) {
+      const unlocked = unlockBadge('badge_special_perfectionist');
+      if (unlocked) newlyUnlocked.push(unlocked);
+    }
+  }
+
+  // Early Bird - completed habits before 8 AM 20 times
+  if ((stats.earlyBirdCount || 0) >= 20) {
+    const badge = badges.find(b => b.id === 'badge_special_early_bird');
+    if (badge && !badge.unlocked) {
+      const unlocked = unlockBadge('badge_special_early_bird');
+      if (unlocked) newlyUnlocked.push(unlocked);
+    }
+  }
+
+  // Night Owl - completed habits after 10 PM 20 times
+  if ((stats.nightOwlCount || 0) >= 20) {
+    const badge = badges.find(b => b.id === 'badge_special_night_owl');
+    if (badge && !badge.unlocked) {
+      const unlocked = unlockBadge('badge_special_night_owl');
+      if (unlocked) newlyUnlocked.push(unlocked);
+    }
+  }
+
+  // Zen Master - maintained perfect balance for 30 days
+  // (mood + habits + focus + gratitude all done in same day)
+  if ((stats.zenMasterDays || 0) >= 30) {
+    const badge = badges.find(b => b.id === 'badge_special_zen_master');
+    if (badge && !badge.unlocked) {
+      const unlocked = unlockBadge('badge_special_zen_master');
+      if (unlocked) newlyUnlocked.push(unlocked);
+    }
+  }
 
   return newlyUnlocked;
 }

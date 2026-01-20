@@ -7,6 +7,12 @@ import { Quest } from '@/lib/randomQuests';
 const TASKS_STORAGE_KEY = 'zenflow_tasks';
 const QUESTS_STORAGE_KEY = 'zenflow_quests';
 
+// Sync locks to prevent race conditions
+let isTasksSyncing = false;
+let isQuestsSyncing = false;
+let tasksSyncQueue: (() => void)[] = [];
+let questsSyncQueue: (() => void)[] = [];
+
 interface TaskRow {
   user_id: string;
   task_id: string;
@@ -157,37 +163,58 @@ export async function pushTasksToCloud(tasks: Task[]): Promise<void> {
 
 /**
  * Sync tasks: pull from cloud and merge with local
+ * Uses lock to prevent race conditions
  */
 export async function syncTasks(): Promise<Task[]> {
-  // Pull from cloud
-  const cloudTasks = await pullTasksFromCloud();
+  // If already syncing, queue this request
+  if (isTasksSyncing) {
+    return new Promise((resolve) => {
+      tasksSyncQueue.push(() => {
+        syncTasks().then(resolve);
+      });
+    });
+  }
 
-  // Get local tasks
-  const localTasksStr = localStorage.getItem(TASKS_STORAGE_KEY);
-  const localTasks: Task[] = localTasksStr ? JSON.parse(localTasksStr) : [];
+  isTasksSyncing = true;
 
-  // Merge strategy: cloud wins for conflicts
-  const taskMap = new Map<string, Task>();
+  try {
+    // Pull from cloud
+    const cloudTasks = await pullTasksFromCloud();
 
-  // Add local tasks
-  localTasks.forEach(task => {
-    taskMap.set(task.id, task);
-  });
+    // Get local tasks
+    const localTasksStr = localStorage.getItem(TASKS_STORAGE_KEY);
+    const localTasks: Task[] = localTasksStr ? JSON.parse(localTasksStr) : [];
 
-  // Override with cloud tasks (cloud wins)
-  cloudTasks.forEach(task => {
-    taskMap.set(task.id, task);
-  });
+    // Merge strategy: cloud wins for conflicts
+    const taskMap = new Map<string, Task>();
 
-  const mergedTasks = Array.from(taskMap.values());
+    // Add local tasks
+    localTasks.forEach(task => {
+      taskMap.set(task.id, task);
+    });
 
-  // Save merged to local
-  localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(mergedTasks));
+    // Override with cloud tasks (cloud wins)
+    cloudTasks.forEach(task => {
+      taskMap.set(task.id, task);
+    });
 
-  // Push merged to cloud
-  await pushTasksToCloud(mergedTasks);
+    const mergedTasks = Array.from(taskMap.values());
 
-  return mergedTasks;
+    // Save merged to local
+    localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(mergedTasks));
+
+    // Push merged to cloud
+    await pushTasksToCloud(mergedTasks);
+
+    return mergedTasks;
+  } finally {
+    isTasksSyncing = false;
+
+    // Process next queued sync (only one, discard others to avoid pile-up)
+    const nextSync = tasksSyncQueue.shift();
+    tasksSyncQueue = []; // Clear queue
+    if (nextSync) nextSync();
+  }
 }
 
 /**
@@ -246,29 +273,50 @@ export async function pushQuestsToCloud(quests: { daily: Quest | null; weekly: Q
 
 /**
  * Sync quests: pull from cloud and merge with local
+ * Uses lock to prevent race conditions
  */
 export async function syncQuests(): Promise<{ daily: Quest | null; weekly: Quest | null; bonus: Quest | null }> {
-  // Pull from cloud
-  const cloudQuests = await pullQuestsFromCloud();
+  // If already syncing, queue this request
+  if (isQuestsSyncing) {
+    return new Promise((resolve) => {
+      questsSyncQueue.push(() => {
+        syncQuests().then(resolve);
+      });
+    });
+  }
 
-  // Get local quests
-  const localQuestsStr = localStorage.getItem(QUESTS_STORAGE_KEY);
-  const localQuests = localQuestsStr ? JSON.parse(localQuestsStr) : { daily: null, weekly: null, bonus: null };
+  isQuestsSyncing = true;
 
-  // Merge strategy: cloud wins
-  const mergedQuests = {
-    daily: cloudQuests.daily || localQuests.daily,
-    weekly: cloudQuests.weekly || localQuests.weekly,
-    bonus: cloudQuests.bonus || localQuests.bonus,
-  };
+  try {
+    // Pull from cloud
+    const cloudQuests = await pullQuestsFromCloud();
 
-  // Save merged to local
-  localStorage.setItem(QUESTS_STORAGE_KEY, JSON.stringify(mergedQuests));
+    // Get local quests
+    const localQuestsStr = localStorage.getItem(QUESTS_STORAGE_KEY);
+    const localQuests = localQuestsStr ? JSON.parse(localQuestsStr) : { daily: null, weekly: null, bonus: null };
 
-  // Push merged to cloud
-  await pushQuestsToCloud(mergedQuests);
+    // Merge strategy: cloud wins
+    const mergedQuests = {
+      daily: cloudQuests.daily || localQuests.daily,
+      weekly: cloudQuests.weekly || localQuests.weekly,
+      bonus: cloudQuests.bonus || localQuests.bonus,
+    };
 
-  return mergedQuests;
+    // Save merged to local
+    localStorage.setItem(QUESTS_STORAGE_KEY, JSON.stringify(mergedQuests));
+
+    // Push merged to cloud
+    await pushQuestsToCloud(mergedQuests);
+
+    return mergedQuests;
+  } finally {
+    isQuestsSyncing = false;
+
+    // Process next queued sync (only one, discard others to avoid pile-up)
+    const nextSync = questsSyncQueue.shift();
+    questsSyncQueue = []; // Clear queue
+    if (nextSync) nextSync();
+  }
 }
 
 /**

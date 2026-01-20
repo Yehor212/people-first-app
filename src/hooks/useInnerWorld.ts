@@ -3,10 +3,11 @@
  * Manages the growth of plants, creatures, and companion in the Inner World
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useIndexedDB } from './useIndexedDB';
 import { db } from '@/storage/db';
 import { generateId, getToday } from '@/lib/utils';
+import { pushInnerWorldToCloud } from '@/storage/innerWorldCloudSync';
 import {
   InnerWorld,
   GardenPlant,
@@ -268,6 +269,27 @@ export function useInnerWorld() {
 
     return () => clearInterval(interval);
   }, [isLoading, world.companion.lastWateredAt]);
+
+  // Cloud sync - push to Supabase when world changes (debounced)
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (isLoading) return;
+
+    // Debounce sync to avoid too many requests
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+
+    syncTimeoutRef.current = setTimeout(() => {
+      pushInnerWorldToCloud(world).catch(console.error);
+    }, 5000); // Sync 5 seconds after last change
+
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
+  }, [isLoading, world]);
 
   // Plant a new plant from an activity
   const plantSeed = useCallback((

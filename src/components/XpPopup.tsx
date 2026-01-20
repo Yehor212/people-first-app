@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Sparkles, Flame, Star, Zap, Heart } from 'lucide-react';
+import { Sparkles, Flame, Star, Zap, Heart, Wind } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface XpEvent {
@@ -8,7 +8,7 @@ export interface XpEvent {
   amount: number;
   x: number;
   y: number;
-  type: 'mood' | 'habit' | 'focus' | 'gratitude' | 'streak' | 'bonus';
+  type: 'mood' | 'habit' | 'focus' | 'gratitude' | 'breathing' | 'streak' | 'bonus';
   message?: string;
 }
 
@@ -19,6 +19,7 @@ function getXpConfig(type: XpEvent['type']) {
     case 'habit': return { icon: Star, color: 'text-green-400', glow: 'green' };
     case 'focus': return { icon: Zap, color: 'text-blue-400', glow: 'blue' };
     case 'gratitude': return { icon: Heart, color: 'text-pink-400', glow: 'pink' };
+    case 'breathing': return { icon: Wind, color: 'text-cyan-400', glow: 'cyan' };
     case 'streak': return { icon: Flame, color: 'text-orange-400', glow: 'orange' };
     case 'bonus': return { icon: Sparkles, color: 'text-amber-400', glow: 'amber' };
     default: return { icon: Sparkles, color: 'text-purple-400', glow: 'purple' };

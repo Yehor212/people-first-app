@@ -439,6 +439,163 @@ export interface Database {
           keys?: unknown;
         };
       };
+      // Tasks & Quests cloud sync tables
+      user_tasks: {
+        Row: {
+          user_id: string;
+          task_id: string;
+          name: string;
+          description: string | null;
+          urgent: boolean;
+          estimated_minutes: number;
+          user_rating: number | null;
+          completed: boolean;
+          due_date: string | null;
+          category: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          task_id: string;
+          name: string;
+          description?: string | null;
+          urgent?: boolean;
+          estimated_minutes?: number;
+          user_rating?: number | null;
+          completed?: boolean;
+          due_date?: string | null;
+          category?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          name?: string;
+          description?: string | null;
+          urgent?: boolean;
+          estimated_minutes?: number;
+          user_rating?: number | null;
+          completed?: boolean;
+          due_date?: string | null;
+          category?: string | null;
+          updated_at?: string;
+        };
+      };
+      user_quests: {
+        Row: {
+          user_id: string;
+          quest_id: string;
+          type: 'daily' | 'weekly' | 'bonus';
+          category: string;
+          title: string;
+          description: string;
+          condition: unknown;
+          reward: unknown;
+          progress: number;
+          total: number;
+          completed: boolean;
+          expires_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          quest_id: string;
+          type: 'daily' | 'weekly' | 'bonus';
+          category: string;
+          title: string;
+          description: string;
+          condition: unknown;
+          reward: unknown;
+          progress?: number;
+          total: number;
+          completed?: boolean;
+          expires_at: string;
+          updated_at?: string;
+        };
+        Update: {
+          progress?: number;
+          completed?: boolean;
+          updated_at?: string;
+        };
+      };
+      user_challenges: {
+        Row: {
+          user_id: string;
+          challenge_id: string;
+          type: string;
+          title: unknown;
+          description: unknown;
+          target: number;
+          progress: number;
+          completed: boolean;
+          badge_id: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          challenge_id: string;
+          type: string;
+          title: unknown;
+          description: unknown;
+          target: number;
+          progress?: number;
+          completed?: boolean;
+          badge_id?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          progress?: number;
+          completed?: boolean;
+          updated_at?: string;
+        };
+      };
+      user_badges: {
+        Row: {
+          user_id: string;
+          badge_id: string;
+          category: string;
+          icon: string;
+          title: unknown;
+          description: unknown;
+          requirement: number;
+          unlocked: boolean;
+          unlocked_date: string | null;
+          rarity: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          badge_id: string;
+          category: string;
+          icon: string;
+          title: unknown;
+          description: unknown;
+          requirement: number;
+          unlocked?: boolean;
+          unlocked_date?: string | null;
+          rarity: string;
+          updated_at?: string;
+        };
+        Update: {
+          unlocked?: boolean;
+          unlocked_date?: string | null;
+          updated_at?: string;
+        };
+      };
+      user_inner_world: {
+        Row: {
+          user_id: string;
+          world_data: unknown;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          world_data: unknown;
+          updated_at?: string;
+        };
+        Update: {
+          world_data?: unknown;
+          updated_at?: string;
+        };
+      };
     };
     Functions: {
       calculate_streak: {

@@ -59,6 +59,7 @@ import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
 import { syncTasks, syncQuests, subscribeToTaskUpdates, subscribeToQuestUpdates } from '@/storage/tasksCloudSync';
+import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { InnerWorldGarden } from '@/components/InnerWorldGarden';
 import { CompanionPanel } from '@/components/CompanionPanel';
 import { TreePanel } from '@/components/TreePanel';
@@ -398,6 +399,33 @@ export function Index() {
     const totalGratitude = gratitudeEntries.length;
     const totalHabitsCompleted = habits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0);
 
+    // Calculate perfect days (days where ALL habits were completed)
+    const habitDates = new Set<string>();
+    habits.forEach(h => h.completedDates?.forEach(d => habitDates.add(d)));
+    let perfectDaysCount = 0;
+    habitDates.forEach(date => {
+      const allCompleted = habits.every(h => h.completedDates?.includes(date));
+      if (allCompleted && habits.length > 0) perfectDaysCount++;
+    });
+
+    // Calculate zen master days (days with mood + habits + focus + gratitude)
+    const moodDates = new Set(moods.map(m => m.date));
+    const focusDates = new Set(focusSessions.map(f => f.date));
+    const gratitudeDates = new Set(gratitudeEntries.map(g => g.date));
+    let zenMasterDays = 0;
+    habitDates.forEach(date => {
+      const hasMood = moodDates.has(date);
+      const hasFocus = focusDates.has(date);
+      const hasGratitude = gratitudeDates.has(date);
+      const allHabits = habits.every(h => h.completedDates?.includes(date));
+      if (hasMood && allHabits && hasFocus && hasGratitude && habits.length > 0) {
+        zenMasterDays++;
+      }
+    });
+
+    // Get early bird / night owl counts from localStorage (tracked incrementally)
+    const specialBadgeData = JSON.parse(localStorage.getItem('zenflow-special-badges') || '{}');
+
     // Build UserStats object matching types/index.ts interface
     const userStats = {
       totalFocusMinutes,
@@ -405,6 +433,11 @@ export function Index() {
       longestStreak: innerWorld.currentActiveStreak || 0, // Approximation
       habitsCompleted: totalHabitsCompleted,
       moodEntries: moods.length,
+      gratitudeEntries: totalGratitude,
+      perfectDaysCount,
+      earlyBirdCount: specialBadgeData.earlyBirdCount || 0,
+      nightOwlCount: specialBadgeData.nightOwlCount || 0,
+      zenMasterDays,
     };
 
     const newBadges = syncChallengeProgress(userStats, totalFocusMinutes, totalGratitude);
@@ -476,6 +509,22 @@ export function Index() {
     triggerSync(); // Auto-sync to cloud
   };
 
+  // Track early bird / night owl for special badges
+  const trackTimeOfDayCompletion = useCallback(() => {
+    const hour = new Date().getHours();
+    const data = JSON.parse(localStorage.getItem('zenflow-special-badges') || '{}');
+
+    if (hour < 8) {
+      // Early Bird: before 8 AM
+      data.earlyBirdCount = (data.earlyBirdCount || 0) + 1;
+    } else if (hour >= 22) {
+      // Night Owl: after 10 PM
+      data.nightOwlCount = (data.nightOwlCount || 0) + 1;
+    }
+
+    localStorage.setItem('zenflow-special-badges', JSON.stringify(data));
+  }, []);
+
   const handleToggleHabit = (habitId: string, date: string) => {
     // Guard against rapid double-clicks (prevents duplicate rewards)
     const processingKey = `${habitId}-${date}`;
@@ -513,6 +562,7 @@ export function Index() {
           const treatResult = earnTreats('habit', 10, 'Completed habit');
           triggerXpPopup(treatResult.earned, 'habit'); // Show treats earned
           haptics.habitToggled();
+          trackTimeOfDayCompletion(); // Track for Early Bird/Night Owl badges
         }
 
         return {
@@ -531,6 +581,7 @@ export function Index() {
         const treatResult = earnTreats('habit', 10, 'Completed habit');
         triggerXpPopup(treatResult.earned, 'habit'); // Show treats earned
         haptics.habitCompleted();
+        trackTimeOfDayCompletion(); // Track for Early Bird/Night Owl badges
         // Inner World: Plant a tree when completing habit
         plantSeed('habit');
         waterPlants('habit');
@@ -546,6 +597,14 @@ export function Index() {
 
     // Update challenge progress
     updateChallengeProgress();
+
+    // Update quest progress and award XP for completed quests
+    const completedQuests = updateAllQuestsProgress({ type: 'habit_completed', value: 1 });
+    completedQuests.forEach(quest => {
+      const xpReward = quest.reward.xp;
+      earnTreats('habit', xpReward, `Quest: ${quest.title}`);
+      triggerXpPopup(xpReward, 'bonus');
+    });
   };
 
   const handleAdjustHabit = (habitId: string, date: string, delta: number) => {
@@ -594,6 +653,14 @@ export function Index() {
 
     // Update challenge progress
     updateChallengeProgress();
+
+    // Update quest progress and award XP for completed quests
+    const completedQuests = updateAllQuestsProgress({ type: 'focus_completed', value: session.duration });
+    completedQuests.forEach(quest => {
+      const xpReward = quest.reward.xp;
+      earnTreats('focus', xpReward, `Quest: ${quest.title}`);
+      triggerXpPopup(xpReward, 'bonus');
+    });
   };
 
   const handleAddGratitude = (entry: GratitudeEntry) => {
@@ -618,6 +685,14 @@ export function Index() {
 
     // Update challenge progress
     updateChallengeProgress();
+
+    // Update quest progress and award XP for completed quests
+    const completedQuests = updateAllQuestsProgress({ type: 'gratitude_added', value: 1 });
+    completedQuests.forEach(quest => {
+      const xpReward = quest.reward.xp;
+      earnTreats('gratitude', xpReward, `Quest: ${quest.title}`);
+      triggerXpPopup(xpReward, 'bonus');
+    });
   };
 
   const handleResetData = () => {

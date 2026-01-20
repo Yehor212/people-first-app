@@ -82,6 +82,12 @@ export interface UserStats {
   longestStreak: number;
   habitsCompleted: number;
   moodEntries: number;
+  gratitudeEntries: number;
+  // Special badge tracking
+  perfectDaysCount: number;    // Days where all habits completed
+  earlyBirdCount: number;      // Habits completed before 8 AM
+  nightOwlCount: number;       // Habits completed after 10 PM
+  zenMasterDays: number;       // Days with mood + habits + focus + gratitude
 }
 
 export interface ReminderSettings {
