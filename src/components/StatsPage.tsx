@@ -356,14 +356,16 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
   }, [selectedDate, moodsByDate, moodByDate, focusMinutesByDate, habitCompletionMap, gratitudeByDate]);
 
   // Helper to get time of day label from timestamp
-  const getTimeOfDay = (timestamp: number): string => {
+  const getTimeOfDay = (timestamp: number | undefined): string => {
+    if (!timestamp) return '';
     const hour = new Date(timestamp).getHours();
     if (hour < 12) return t.morning || 'Morning';
     if (hour < 18) return t.afternoon || 'Afternoon';
     return t.evening || 'Evening';
   };
 
-  const getTimeOfDayEmoji = (timestamp: number): string => {
+  const getTimeOfDayEmoji = (timestamp: number | undefined): string => {
+    if (!timestamp) return '📝';
     const hour = new Date(timestamp).getHours();
     if (hour < 12) return '🌅';
     if (hour < 18) return '☀️';
