@@ -1,13 +1,15 @@
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Leaf, Trophy } from 'lucide-react';
+import { Leaf, Trophy, ListTodo, Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface HeaderProps {
   userName?: string;
   onOpenChallenges?: () => void;
+  onOpenTasks?: () => void;
+  onOpenQuests?: () => void;
 }
 
-export function Header({ userName = 'Friend', onOpenChallenges }: HeaderProps) {
+export function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks, onOpenQuests }: HeaderProps) {
   const { t } = useLanguage();
 
   const getGreeting = () => {
@@ -41,6 +43,24 @@ export function Header({ userName = 'Friend', onOpenChallenges }: HeaderProps) {
           <span className="text-xl font-bold zen-text-gradient">{t.appName}</span>
         </div>
         <div className="flex items-center gap-2">
+          {onOpenTasks && (
+            <button
+              onClick={onOpenTasks}
+              className="p-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl transition-all zen-shadow-soft hover:zen-shadow"
+              aria-label="Open Tasks"
+            >
+              <ListTodo className="w-5 h-5" />
+            </button>
+          )}
+          {onOpenQuests && (
+            <button
+              onClick={onOpenQuests}
+              className="p-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded-xl transition-all zen-shadow-soft hover:zen-shadow"
+              aria-label="Open Quests"
+            >
+              <Sparkles className="w-5 h-5" />
+            </button>
+          )}
           {onOpenChallenges && (
             <button
               onClick={onOpenChallenges}

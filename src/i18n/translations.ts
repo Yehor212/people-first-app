@@ -832,6 +832,28 @@ export interface Translations {
   restDayCancel: string;
   daysSaved: string;
   restDaySupportive: string;
+
+  // Task Momentum
+  taskMomentum: string;
+  taskMomentumDesc: string;
+  tasksInARow: string;
+  taskNamePlaceholder: string;
+  durationMinutes: string;
+  interestLevel: string;
+  markAsUrgent: string;
+  urgent: string;
+  addTask: string;
+  topRecommendedTasks: string;
+  quickWins: string;
+  allTasks: string;
+  noTasksYet: string;
+  addFirstTaskMessage: string;
+  addFirstTask: string;
+  adhdTaskTips: string;
+  taskTip1: string;
+  taskTip2: string;
+  taskTip3: string;
+  taskTip4: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -1612,6 +1634,28 @@ export const translations: Record<Language, Translations> = {
     restDayCancel: 'Всё-таки хочу записать',
     daysSaved: 'дней сохранено',
     restDaySupportive: 'Завтра продолжим вместе 💚',
+
+    // Task Momentum
+    taskMomentum: 'Задачи',
+    taskMomentumDesc: 'СДВГ-дружелюбная приоритизация',
+    tasksInARow: 'задач подряд',
+    taskNamePlaceholder: 'Название задачи...',
+    durationMinutes: 'Длительность (мин)',
+    interestLevel: 'Интерес (1-10)',
+    markAsUrgent: 'Срочная задача',
+    urgent: 'Срочно',
+    addTask: 'Добавить',
+    topRecommendedTasks: 'Топ-3 рекомендуемых',
+    quickWins: 'Быстрые победы (до 2 мин)',
+    allTasks: 'Все задачи',
+    noTasksYet: 'Пока нет задач',
+    addFirstTaskMessage: 'Добавьте первую задачу для начала!',
+    addFirstTask: 'Добавить задачу',
+    adhdTaskTips: 'СДВГ советы',
+    taskTip1: 'Начните с быстрых задач (2-5 мин)',
+    taskTip2: 'Наращивайте момент последовательными выполнениями',
+    taskTip3: 'Интересные задачи дают больше дофамина',
+    taskTip4: 'Срочное + короткое = идеальная комбинация',
   },
 
   en: {
@@ -2391,6 +2435,28 @@ export const translations: Record<Language, Translations> = {
     restDayCancel: 'I want to track anyway',
     daysSaved: 'days preserved',
     restDaySupportive: "We'll continue together tomorrow 💚",
+
+    // Task Momentum
+    taskMomentum: 'Task Momentum',
+    taskMomentumDesc: 'ADHD-friendly task prioritization',
+    tasksInARow: 'tasks in a row',
+    taskNamePlaceholder: 'Task name...',
+    durationMinutes: 'Duration (minutes)',
+    interestLevel: 'Interest (1-10)',
+    markAsUrgent: 'Mark as urgent',
+    urgent: 'Urgent',
+    addTask: 'Add Task',
+    topRecommendedTasks: 'Top 3 Recommended Tasks',
+    quickWins: 'Quick Wins (Under 2 min)',
+    allTasks: 'All Tasks',
+    noTasksYet: 'No tasks yet',
+    addFirstTaskMessage: 'Add your first task to get started with Task Momentum!',
+    addFirstTask: 'Add Your First Task',
+    adhdTaskTips: 'ADHD Task Tips',
+    taskTip1: 'Start with quick wins (2-5 min tasks)',
+    taskTip2: 'Build momentum with consecutive completions',
+    taskTip3: 'High interest tasks give more dopamine',
+    taskTip4: 'Urgent + short = perfect combo',
   },
 
   uk: {
@@ -3170,6 +3236,28 @@ export const translations: Record<Language, Translations> = {
     restDayCancel: 'Все ж хочу записати',
     daysSaved: 'днів збережено',
     restDaySupportive: 'Завтра продовжимо разом 💚',
+
+    // Task Momentum
+    taskMomentum: 'Задачі',
+    taskMomentumDesc: 'СДУГ-дружня пріоритизація',
+    tasksInARow: 'задач поспіль',
+    taskNamePlaceholder: 'Назва задачі...',
+    durationMinutes: 'Тривалість (хв)',
+    interestLevel: 'Інтерес (1-10)',
+    markAsUrgent: 'Термінова задача',
+    urgent: 'Терміново',
+    addTask: 'Додати',
+    topRecommendedTasks: 'Топ-3 рекомендованих',
+    quickWins: 'Швидкі перемоги (до 2 хв)',
+    allTasks: 'Усі задачі',
+    noTasksYet: 'Поки немає задач',
+    addFirstTaskMessage: 'Додайте першу задачу для початку!',
+    addFirstTask: 'Додати задачу',
+    adhdTaskTips: 'СДУГ поради',
+    taskTip1: 'Починайте з швидких задач (2-5 хв)',
+    taskTip2: 'Набирайте момент послідовними виконаннями',
+    taskTip3: 'Цікаві задачі дають більше дофаміну',
+    taskTip4: 'Термінове + коротке = ідеальна комбінація',
   },
 
   es: {
@@ -3950,6 +4038,28 @@ export const translations: Record<Language, Translations> = {
     restDayCancel: 'Quiero registrar de todos modos',
     daysSaved: 'días conservados',
     restDaySupportive: 'Mañana continuamos juntos 💚',
+
+    // Task Momentum
+    taskMomentum: 'Tareas',
+    taskMomentumDesc: 'Priorización amigable para TDAH',
+    tasksInARow: 'tareas seguidas',
+    taskNamePlaceholder: 'Nombre de la tarea...',
+    durationMinutes: 'Duración (minutos)',
+    interestLevel: 'Interés (1-10)',
+    markAsUrgent: 'Marcar como urgente',
+    urgent: 'Urgente',
+    addTask: 'Añadir',
+    topRecommendedTasks: 'Top 3 tareas recomendadas',
+    quickWins: 'Victorias rápidas (menos de 2 min)',
+    allTasks: 'Todas las tareas',
+    noTasksYet: 'Sin tareas todavía',
+    addFirstTaskMessage: '¡Añade tu primera tarea para empezar!',
+    addFirstTask: 'Añadir primera tarea',
+    adhdTaskTips: 'Consejos para TDAH',
+    taskTip1: 'Empieza con victorias rápidas (2-5 min)',
+    taskTip2: 'Gana impulso con completados consecutivos',
+    taskTip3: 'Las tareas interesantes dan más dopamina',
+    taskTip4: 'Urgente + corto = combo perfecto',
   },
 
   de: {
@@ -4730,6 +4840,28 @@ export const translations: Record<Language, Translations> = {
     restDayCancel: 'Ich möchte trotzdem eintragen',
     daysSaved: 'Tage gespeichert',
     restDaySupportive: 'Morgen machen wir zusammen weiter 💚',
+
+    // Task Momentum
+    taskMomentum: 'Aufgaben',
+    taskMomentumDesc: 'ADHS-freundliche Priorisierung',
+    tasksInARow: 'Aufgaben hintereinander',
+    taskNamePlaceholder: 'Aufgabenname...',
+    durationMinutes: 'Dauer (Minuten)',
+    interestLevel: 'Interesse (1-10)',
+    markAsUrgent: 'Als dringend markieren',
+    urgent: 'Dringend',
+    addTask: 'Hinzufügen',
+    topRecommendedTasks: 'Top 3 empfohlene Aufgaben',
+    quickWins: 'Schnelle Erfolge (unter 2 Min)',
+    allTasks: 'Alle Aufgaben',
+    noTasksYet: 'Noch keine Aufgaben',
+    addFirstTaskMessage: 'Füge deine erste Aufgabe hinzu!',
+    addFirstTask: 'Erste Aufgabe hinzufügen',
+    adhdTaskTips: 'ADHS Aufgaben-Tipps',
+    taskTip1: 'Beginne mit schnellen Erfolgen (2-5 Min)',
+    taskTip2: 'Baue Momentum durch aufeinanderfolgende Abschlüsse',
+    taskTip3: 'Interessante Aufgaben geben mehr Dopamin',
+    taskTip4: 'Dringend + kurz = perfekte Kombination',
   },
 
   fr: {
@@ -5510,6 +5642,28 @@ export const translations: Record<Language, Translations> = {
     restDayCancel: 'Je veux quand même enregistrer',
     daysSaved: 'jours préservés',
     restDaySupportive: 'On continue ensemble demain 💚',
+
+    // Task Momentum
+    taskMomentum: 'Tâches',
+    taskMomentumDesc: 'Priorisation adaptée au TDAH',
+    tasksInARow: 'tâches de suite',
+    taskNamePlaceholder: 'Nom de la tâche...',
+    durationMinutes: 'Durée (minutes)',
+    interestLevel: 'Intérêt (1-10)',
+    markAsUrgent: 'Marquer comme urgent',
+    urgent: 'Urgent',
+    addTask: 'Ajouter',
+    topRecommendedTasks: 'Top 3 tâches recommandées',
+    quickWins: 'Victoires rapides (moins de 2 min)',
+    allTasks: 'Toutes les tâches',
+    noTasksYet: 'Pas encore de tâches',
+    addFirstTaskMessage: 'Ajoute ta première tâche pour commencer!',
+    addFirstTask: 'Ajouter une tâche',
+    adhdTaskTips: 'Conseils TDAH',
+    taskTip1: 'Commence par les victoires rapides (2-5 min)',
+    taskTip2: 'Gagne en élan avec des complétions consécutives',
+    taskTip3: 'Les tâches intéressantes donnent plus de dopamine',
+    taskTip4: 'Urgent + court = combo parfait',
   },
 };
 

@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Clock, Bell, BellOff, Play, Pause, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { playNotification, playLevelUp } from '@/lib/audioManager';
 
 interface TimeHelperProps {
   onClose: () => void;
@@ -19,7 +20,6 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
   const [pingInterval, setPingInterval] = useState(15); // minutes
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastPingRef = useRef<number>(0);
-  const audioContextRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
     setTimeLeft(duration * 60);
@@ -64,70 +64,17 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
     };
   }, [isRunning, duration, soundEnabled, pingInterval]);
 
+  // Use centralized AudioManager for ping sound
   const playPing = () => {
-    try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-
-      const ctx = audioContextRef.current;
-
-      // Resume context if suspended (required for autoplay policies)
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
-
-      const oscillator = ctx.createOscillator();
-      const gainNode = ctx.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(ctx.destination);
-
-      oscillator.frequency.value = 800;
-      oscillator.type = 'sine';
-
-      gainNode.gain.setValueAtTime(0.3, ctx.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-
-      oscillator.start(ctx.currentTime);
-      oscillator.stop(ctx.currentTime + 0.1);
-    } catch (error) {
-      console.error('Failed to play ping sound:', error);
+    if (soundEnabled) {
+      playNotification();
     }
   };
 
+  // Use centralized AudioManager for completion sound
   const playCompletionSound = () => {
-    try {
-      if (!audioContextRef.current) {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      }
-
-      const ctx = audioContextRef.current;
-
-      // Resume context if suspended (required for autoplay policies)
-      if (ctx.state === 'suspended') {
-        ctx.resume();
-      }
-
-      // Triple beep for completion
-      [0, 0.2, 0.4].forEach((offset) => {
-        const oscillator = ctx.createOscillator();
-        const gainNode = ctx.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        oscillator.frequency.value = 1000;
-        oscillator.type = 'sine';
-
-        gainNode.gain.setValueAtTime(0.3, ctx.currentTime + offset);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + offset + 0.15);
-
-        oscillator.start(ctx.currentTime + offset);
-        oscillator.stop(ctx.currentTime + offset + 0.15);
-      });
-    } catch (error) {
-      console.error('Failed to play completion sound:', error);
+    if (soundEnabled) {
+      playLevelUp();
     }
   };
 

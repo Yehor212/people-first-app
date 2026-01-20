@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Plus, Zap, Clock, Star, Calendar, Trash2, CheckCircle2, Circle } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Plus, Zap, Clock, Star, Calendar, Trash2, CheckCircle2, Circle, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { playSuccess, playStreakMilestone } from '@/lib/audioManager';
 import {
   Task,
   PrioritizedTask,
@@ -11,11 +12,16 @@ import {
   getTwoMinuteTasks,
 } from '@/lib/taskMomentum';
 
+const STORAGE_KEY = 'zenflow_tasks';
+const MOMENTUM_KEY = 'zenflow_task_momentum';
+
 interface TasksPanelProps {
   onClose?: () => void;
+  onAwardXp?: (source: string, amount: number) => void;
+  onEarnTreats?: (source: string, amount: number, reason: string) => void;
 }
 
-export function TasksPanel({ onClose }: TasksPanelProps) {
+export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps) {
   const { t } = useLanguage();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskName, setNewTaskName] = useState('');
@@ -25,12 +31,51 @@ export function TasksPanel({ onClose }: TasksPanelProps) {
   const [consecutiveCompletions, setConsecutiveCompletions] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
 
+  // Load tasks from localStorage on mount
+  useEffect(() => {
+    const storedTasks = localStorage.getItem(STORAGE_KEY);
+    if (storedTasks) {
+      try {
+        const parsed = JSON.parse(storedTasks);
+        setTasks(Array.isArray(parsed) ? parsed : []);
+      } catch (error) {
+        console.error('[TasksPanel] Failed to parse stored tasks:', error);
+      }
+    }
+
+    const storedMomentum = localStorage.getItem(MOMENTUM_KEY);
+    if (storedMomentum) {
+      try {
+        const parsed = JSON.parse(storedMomentum);
+        // Reset momentum if last completion was more than 30 minutes ago
+        if (parsed.lastCompletion && Date.now() - parsed.lastCompletion < 30 * 60 * 1000) {
+          setConsecutiveCompletions(parsed.count || 0);
+        }
+      } catch (error) {
+        console.error('[TasksPanel] Failed to parse momentum:', error);
+      }
+    }
+  }, []);
+
+  // Save tasks to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+  }, [tasks]);
+
+  // Save momentum state
+  useEffect(() => {
+    localStorage.setItem(MOMENTUM_KEY, JSON.stringify({
+      count: consecutiveCompletions,
+      lastCompletion: consecutiveCompletions > 0 ? Date.now() : null,
+    }));
+  }, [consecutiveCompletions]);
+
   const prioritizedTasks = prioritizeForADHD(tasks);
   const topThree = getNextThreeTasks(tasks);
   const categorized = getTwoMinuteTasks(tasks);
   const momentumBonus = calculateMomentumBonus(consecutiveCompletions);
 
-  const handleAddTask = () => {
+  const handleAddTask = useCallback(() => {
     if (!newTaskName.trim()) return;
 
     const newTask: Task = {
@@ -42,54 +87,61 @@ export function TasksPanel({ onClose }: TasksPanelProps) {
       completed: false,
     };
 
-    setTasks([...tasks, newTask]);
+    setTasks(prev => [...prev, newTask]);
     setNewTaskName('');
     setNewTaskMinutes(15);
     setNewTaskUrgent(false);
     setNewTaskInterest(5);
     setShowAddForm(false);
-  };
+  }, [newTaskName, newTaskMinutes, newTaskUrgent, newTaskInterest]);
 
-  const handleToggleTask = (taskId: string) => {
-    setTasks(tasks.map(task => {
-      if (task.id === taskId) {
-        const newCompleted = !task.completed;
-        if (newCompleted) {
-          setConsecutiveCompletions(prev => prev + 1);
-          // Play success sound if available
-          try {
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
+  const handleToggleTask = useCallback((taskId: string) => {
+    setTasks(prev => prev.map(task => {
+      if (task.id !== taskId) return task;
 
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
+      const newCompleted = !task.completed;
 
-            // Happy chime (C-E-G chord)
-            oscillator.frequency.value = 523.25; // C5
-            oscillator.type = 'sine';
+      if (newCompleted) {
+        // Increment momentum
+        setConsecutiveCompletions(c => {
+          const newCount = c + 1;
 
-            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+          // Calculate rewards with momentum bonus
+          const bonus = calculateMomentumBonus(newCount);
+          const baseXp = 15;
+          const totalXp = Math.round(baseXp * bonus.streakMultiplier);
 
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.3);
-          } catch (e) {
-            // Audio not available
+          // Award XP through gamification system
+          if (onAwardXp) {
+            onAwardXp('task', totalXp);
           }
-        } else {
-          setConsecutiveCompletions(0);
-        }
-        return { ...task, completed: newCompleted };
-      }
-      return task;
-    }));
-  };
 
-  const handleDeleteTask = (taskId: string) => {
-    setTasks(tasks.filter(task => task.id !== taskId));
-    setConsecutiveCompletions(0);
-  };
+          // Award treats for companion
+          if (onEarnTreats) {
+            onEarnTreats('task', totalXp, `Task: ${task.name}`);
+          }
+
+          // Play sound (streak milestone at 3, 5, 10)
+          if (newCount === 3 || newCount === 5 || newCount % 10 === 0) {
+            playStreakMilestone();
+          } else {
+            playSuccess();
+          }
+
+          return newCount;
+        });
+      } else {
+        // Reset momentum when uncompleting
+        setConsecutiveCompletions(0);
+      }
+
+      return { ...task, completed: newCompleted };
+    }));
+  }, [onAwardXp, onEarnTreats]);
+
+  const handleDeleteTask = useCallback((taskId: string) => {
+    setTasks(prev => prev.filter(task => task.id !== taskId));
+  }, []);
 
   const renderTaskCard = (task: PrioritizedTask, index?: number) => {
     const isTopThree = index !== undefined && index < 3;
@@ -140,12 +192,12 @@ export function TasksPanel({ onClose }: TasksPanelProps) {
               {task.urgent && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-destructive/10 text-destructive rounded-md text-xs font-medium">
                   <Zap className="w-3 h-3" />
-                  Urgent
+                  {t.urgent || 'Urgent'}
                 </span>
               )}
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-md text-xs">
                 <Clock className="w-3 h-3" />
-                {task.estimatedMinutes} min
+                {task.estimatedMinutes} {t.min || 'min'}
               </span>
               {task.userRating && task.userRating >= 7 && (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 rounded-md text-xs">
@@ -158,7 +210,7 @@ export function TasksPanel({ onClose }: TasksPanelProps) {
             {!task.completed && (
               <div className="mt-2 space-y-1">
                 <p className="text-xs text-muted-foreground">
-                  💡 {task.reasoning}
+                  {task.reasoning}
                 </p>
                 <p className="text-xs font-medium text-primary">
                   {task.encouragement}
@@ -179,186 +231,199 @@ export function TasksPanel({ onClose }: TasksPanelProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold zen-text-gradient">Task Momentum</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            ADHD-friendly task prioritization
-          </p>
+    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm overflow-y-auto">
+      <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold zen-text-gradient">{t.taskMomentum || 'Task Momentum'}</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              {t.taskMomentumDesc || 'ADHD-friendly task prioritization'}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className={cn(
+                'p-3 rounded-xl transition-all zen-shadow-soft',
+                showAddForm
+                  ? 'bg-muted text-foreground'
+                  : 'zen-gradient text-white hover:opacity-90'
+              )}
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
+          </div>
         </div>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className={cn(
-            'p-3 rounded-xl transition-all zen-shadow-soft',
-            showAddForm
-              ? 'bg-muted text-foreground'
-              : 'zen-gradient text-white hover:opacity-90'
-          )}
-        >
-          <Plus className="w-5 h-5" />
-        </button>
-      </div>
 
-      {/* Momentum Bonus */}
-      {consecutiveCompletions > 0 && (
-        <div className="p-4 zen-gradient rounded-xl zen-shadow animate-scale-in">
-          <div className="flex items-center gap-3">
-            <div className="text-4xl">🔥</div>
-            <div className="flex-1">
-              <div className="text-white font-bold">
-                {momentumBonus.message}
-              </div>
-              <div className="text-white/80 text-sm mt-1">
-                {consecutiveCompletions} tasks in a row • +{momentumBonus.xpBonus} XP • {momentumBonus.streakMultiplier}x multiplier
+        {/* Momentum Bonus */}
+        {consecutiveCompletions > 0 && (
+          <div className="p-4 zen-gradient rounded-xl zen-shadow animate-scale-in">
+            <div className="flex items-center gap-3">
+              <div className="text-4xl">🔥</div>
+              <div className="flex-1">
+                <div className="text-white font-bold">
+                  {momentumBonus.message}
+                </div>
+                <div className="text-white/80 text-sm mt-1">
+                  {consecutiveCompletions} {t.tasksInARow || 'tasks in a row'} • +{Math.round(15 * momentumBonus.streakMultiplier)} XP • {momentumBonus.streakMultiplier}x
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Add Task Form */}
-      {showAddForm && (
-        <div className="p-4 bg-card rounded-xl border-2 border-primary/30 zen-shadow-card animate-scale-in space-y-4">
-          <input
-            type="text"
-            value={newTaskName}
-            onChange={(e) => setNewTaskName(e.target.value)}
-            placeholder="Task name..."
-            className="w-full p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-            autoFocus
-          />
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">
-                Duration (minutes)
-              </label>
-              <input
-                type="number"
-                value={newTaskMinutes}
-                onChange={(e) => setNewTaskMinutes(parseInt(e.target.value) || 0)}
-                min="1"
-                max="480"
-                className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">
-                Interest (1-10)
-              </label>
-              <input
-                type="number"
-                value={newTaskInterest}
-                onChange={(e) => setNewTaskInterest(Math.min(10, Math.max(1, parseInt(e.target.value) || 5)))}
-                min="1"
-                max="10"
-                className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </div>
-          </div>
-
-          <label className="flex items-center gap-2 cursor-pointer">
+        {/* Add Task Form */}
+        {showAddForm && (
+          <div className="p-4 bg-card rounded-xl border-2 border-primary/30 zen-shadow-card animate-scale-in space-y-4">
             <input
-              type="checkbox"
-              checked={newTaskUrgent}
-              onChange={(e) => setNewTaskUrgent(e.target.checked)}
-              className="w-4 h-4"
+              type="text"
+              value={newTaskName}
+              onChange={(e) => setNewTaskName(e.target.value)}
+              placeholder={t.taskNamePlaceholder || 'Task name...'}
+              className="w-full p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              autoFocus
+              onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
             />
-            <span className="text-sm text-foreground">Mark as urgent</span>
-          </label>
 
-          <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">
+                  {t.durationMinutes || 'Duration (minutes)'}
+                </label>
+                <input
+                  type="number"
+                  value={newTaskMinutes}
+                  onChange={(e) => setNewTaskMinutes(parseInt(e.target.value) || 0)}
+                  min="1"
+                  max="480"
+                  className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">
+                  {t.interestLevel || 'Interest (1-10)'}
+                </label>
+                <input
+                  type="number"
+                  value={newTaskInterest}
+                  onChange={(e) => setNewTaskInterest(Math.min(10, Math.max(1, parseInt(e.target.value) || 5)))}
+                  min="1"
+                  max="10"
+                  className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={newTaskUrgent}
+                onChange={(e) => setNewTaskUrgent(e.target.checked)}
+                className="w-4 h-4"
+              />
+              <span className="text-sm text-foreground">{t.markAsUrgent || 'Mark as urgent'}</span>
+            </label>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleAddTask}
+                disabled={!newTaskName.trim()}
+                className="flex-1 py-3 zen-gradient text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {t.addTask || 'Add Task'}
+              </button>
+              <button
+                onClick={() => setShowAddForm(false)}
+                className="px-6 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors"
+              >
+                {t.cancel || 'Cancel'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Top 3 Recommended Tasks */}
+        {topThree.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">
+                {t.topRecommendedTasks || 'Top 3 Recommended Tasks'}
+              </h3>
+            </div>
+            <div className="space-y-3">
+              {topThree.map((task, index) => renderTaskCard(task, index))}
+            </div>
+          </div>
+        )}
+
+        {/* Quick Wins (2-minute tasks) */}
+        {categorized.immediate.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="w-5 h-5 text-primary" />
+              <h3 className="text-lg font-semibold">
+                {t.quickWins || 'Quick Wins (Under 2 min)'}
+              </h3>
+            </div>
+            <div className="space-y-2">
+              {categorized.immediate.map(task => renderTaskCard(task))}
+            </div>
+          </div>
+        )}
+
+        {/* All Tasks */}
+        {prioritizedTasks.length > 0 && (
+          <div>
+            <h3 className="text-lg font-semibold mb-3">{t.allTasks || 'All Tasks'}</h3>
+            <div className="space-y-2">
+              {prioritizedTasks.map(task => renderTaskCard(task))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {tasks.length === 0 && !showAddForm && (
+          <div className="text-center py-12">
+            <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
+              <Calendar className="w-8 h-8 text-primary" />
+            </div>
+            <h3 className="text-lg font-semibold mb-2">{t.noTasksYet || 'No tasks yet'}</h3>
+            <p className="text-muted-foreground mb-4">
+              {t.addFirstTaskMessage || 'Add your first task to get started with Task Momentum!'}
+            </p>
             <button
-              onClick={handleAddTask}
-              disabled={!newTaskName.trim()}
-              className="flex-1 py-3 zen-gradient text-white rounded-xl font-medium hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={() => setShowAddForm(true)}
+              className="px-6 py-3 zen-gradient text-white rounded-xl font-medium hover:opacity-90 transition-opacity inline-flex items-center gap-2"
             >
-              Add Task
-            </button>
-            <button
-              onClick={() => setShowAddForm(false)}
-              className="px-6 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors"
-            >
-              Cancel
+              <Plus className="w-5 h-5" />
+              {t.addFirstTask || 'Add Your First Task'}
             </button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Top 3 Recommended Tasks */}
-      {topThree.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Zap className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">
-              Top 3 Recommended Tasks
-            </h3>
-          </div>
-          <div className="space-y-3">
-            {topThree.map((task, index) => renderTaskCard(task, index))}
-          </div>
-        </div>
-      )}
-
-      {/* Quick Wins (2-minute tasks) */}
-      {categorized.immediate.length > 0 && (
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <Clock className="w-5 h-5 text-primary" />
-            <h3 className="text-lg font-semibold">
-              Quick Wins (Under 2 min)
-            </h3>
-          </div>
-          <div className="space-y-2">
-            {categorized.immediate.map(task => renderTaskCard(task))}
-          </div>
-        </div>
-      )}
-
-      {/* All Tasks */}
-      {prioritizedTasks.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold mb-3">All Tasks</h3>
-          <div className="space-y-2">
-            {prioritizedTasks.map(task => renderTaskCard(task))}
-          </div>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {tasks.length === 0 && !showAddForm && (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
-            <Calendar className="w-8 h-8 text-primary" />
-          </div>
-          <h3 className="text-lg font-semibold mb-2">No tasks yet</h3>
-          <p className="text-muted-foreground mb-4">
-            Add your first task to get started with Task Momentum!
-          </p>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className="px-6 py-3 zen-gradient text-white rounded-xl font-medium hover:opacity-90 transition-opacity inline-flex items-center gap-2"
-          >
-            <Plus className="w-5 h-5" />
-            Add Your First Task
-          </button>
-        </div>
-      )}
-
-      {/* ADHD Tips */}
-      <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
-        <div className="flex gap-3">
-          <div className="text-2xl">💡</div>
-          <div className="text-sm">
-            <div className="font-medium mb-1">ADHD Task Tips</div>
-            <ul className="text-muted-foreground space-y-1 list-disc list-inside">
-              <li>Start with quick wins (2-5 min tasks)</li>
-              <li>Build momentum with consecutive completions</li>
-              <li>High interest tasks give more dopamine</li>
-              <li>Urgent + short = perfect combo</li>
-            </ul>
+        {/* ADHD Tips */}
+        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+          <div className="flex gap-3">
+            <div className="text-2xl">💡</div>
+            <div className="text-sm">
+              <div className="font-medium mb-1">{t.adhdTaskTips || 'ADHD Task Tips'}</div>
+              <ul className="text-muted-foreground space-y-1 list-disc list-inside">
+                <li>{t.taskTip1 || 'Start with quick wins (2-5 min tasks)'}</li>
+                <li>{t.taskTip2 || 'Build momentum with consecutive completions'}</li>
+                <li>{t.taskTip3 || 'High interest tasks give more dopamine'}</li>
+                <li>{t.taskTip4 || 'Urgent + short = perfect combo'}</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

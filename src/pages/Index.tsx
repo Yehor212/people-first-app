@@ -49,6 +49,8 @@ import { NotificationPermission } from '@/components/NotificationPermission';
 import { GoogleAuthScreen } from '@/components/GoogleAuthScreen';
 import { WeeklyReport } from '@/components/WeeklyReport';
 import { ChallengesPanel } from '@/components/ChallengesPanel';
+import { TasksPanel } from '@/components/TasksPanel';
+import { QuestsPanel } from '@/components/QuestsPanel';
 import { TimeHelper } from '@/components/TimeHelper';
 import { WidgetSettings } from '@/pages/WidgetSettings';
 import { useGamification } from '@/hooks/useGamification';
@@ -170,6 +172,8 @@ export function Index() {
   // Challenges state
   const [showChallenges, setShowChallenges] = useState(false);
   const [showTimeHelper, setShowTimeHelper] = useState(false);
+  const [showTasksPanel, setShowTasksPanel] = useState(false);
+  const [showQuestsPanel, setShowQuestsPanel] = useState(false);
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
 
@@ -387,6 +391,32 @@ export function Index() {
     }
   }, [moods, isLoadingMoods, setMoodFromEntries]);
 
+  // Helper function to update challenge progress after user actions
+  const updateChallengeProgress = useCallback(() => {
+    const totalFocusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const totalGratitude = gratitudeEntries.length;
+    const totalHabitsCompleted = habits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0);
+
+    // Build UserStats object matching types/index.ts interface
+    const userStats = {
+      totalFocusMinutes,
+      currentStreak: innerWorld.currentActiveStreak || 0,
+      longestStreak: innerWorld.currentActiveStreak || 0, // Approximation
+      habitsCompleted: totalHabitsCompleted,
+      moodEntries: moods.length,
+    };
+
+    const newBadges = syncChallengeProgress(userStats, totalFocusMinutes, totalGratitude);
+
+    // Refresh challenges and badges state
+    setChallenges(getChallenges());
+
+    if (newBadges.length > 0) {
+      setBadges(getBadges());
+      // Could add a celebration/notification for new badges here
+    }
+  }, [focusSessions, gratitudeEntries, habits, moods, innerWorld.currentActiveStreak]);
+
   // Handlers
   const handleAddMood = (entry: MoodEntry) => {
     setMoods(prev => {
@@ -406,6 +436,9 @@ export function Index() {
     // Inner World: Plant a flower based on mood
     plantSeed('mood', entry.mood);
     waterPlants('mood');
+
+    // Update challenge progress
+    updateChallengeProgress();
   };
 
   // Quick mood handler for one-tap notification actions
@@ -509,6 +542,9 @@ export function Index() {
       };
     }));
     triggerSync(); // Auto-sync to cloud
+
+    // Update challenge progress
+    updateChallengeProgress();
   };
 
   const handleAdjustHabit = (habitId: string, date: string, delta: number) => {
@@ -554,6 +590,9 @@ export function Index() {
     // Inner World: Plant a crystal when completing focus session
     plantSeed('focus');
     waterPlants('focus');
+
+    // Update challenge progress
+    updateChallengeProgress();
   };
 
   const handleAddGratitude = (entry: GratitudeEntry) => {
@@ -575,6 +614,9 @@ export function Index() {
       attractCreature();
     }
     feedCreatures();
+
+    // Update challenge progress
+    updateChallengeProgress();
   };
 
   const handleResetData = () => {
@@ -1076,6 +1118,8 @@ export function Index() {
             <Header
               userName={userName}
               onOpenChallenges={() => setShowChallenges(true)}
+              onOpenTasks={() => setShowTasksPanel(true)}
+              onOpenQuests={() => setShowQuestsPanel(true)}
             />
 
             <div className="space-y-6">
@@ -1162,6 +1206,8 @@ export function Index() {
             <Header
               userName={userName}
               onOpenChallenges={() => setShowChallenges(true)}
+              onOpenTasks={() => setShowTasksPanel(true)}
+              onOpenQuests={() => setShowQuestsPanel(true)}
             />
 
             {/* Inner World Garden - Hidden temporarily
@@ -1298,6 +1344,30 @@ export function Index() {
       {/* Time Helper Modal */}
       {showTimeHelper && (
         <TimeHelper onClose={() => setShowTimeHelper(false)} />
+      )}
+
+      {/* Tasks Panel Modal */}
+      {showTasksPanel && (
+        <TasksPanel
+          onClose={() => setShowTasksPanel(false)}
+          onAwardXp={(_source, amount) => {
+            // Award XP through gamification (using habit as proxy for task)
+            for (let i = 0; i < Math.ceil(amount / 15); i++) {
+              awardXp('habit');
+            }
+          }}
+          onEarnTreats={(_source, amount, reason) => {
+            // Use 'habit' as treat source since 'task' is not a valid TreatSource
+            earnTreats('habit', amount, reason);
+          }}
+        />
+      )}
+
+      {/* Quests Panel Modal */}
+      {showQuestsPanel && (
+        <QuestsPanel
+          onClose={() => setShowQuestsPanel(false)}
+        />
       )}
 
       {/* Companion Panel Modal (legacy - kept for reference) */}
