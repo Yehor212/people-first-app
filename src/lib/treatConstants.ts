@@ -9,6 +9,7 @@ export const TREAT_REWARDS = {
   habit: 10,         // Complete habit = 10 treats
   focus_per_minute: 0.5,  // Focus = 0.5 treats/min (25 min = 12.5 → 13 treats)
   gratitude: 8,      // Gratitude entry = 8 treats
+  breathing: 5,      // Complete breathing exercise = 5 treats
 } as const;
 
 // Streak multiplier: +10% per streak day, max 2x at 10 days

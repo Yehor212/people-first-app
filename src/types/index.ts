@@ -161,7 +161,7 @@ export interface ScheduleEvent {
 // TREATS SYSTEM - Unified reward currency
 // ============================================
 
-export type TreatSource = 'mood' | 'habit' | 'focus' | 'gratitude' | 'streak_bonus' | 'daily_reward';
+export type TreatSource = 'mood' | 'habit' | 'focus' | 'gratitude' | 'breathing' | 'streak_bonus' | 'daily_reward';
 
 export interface TreatTransaction {
   id: string;

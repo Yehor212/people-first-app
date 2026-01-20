@@ -22,13 +22,13 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-lg border-t border-border z-50">
       <div className="max-w-lg mx-auto px-4">
-        <div className="flex justify-around py-2">
+        <div className="flex justify-between py-2">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                "flex flex-col items-center gap-1 py-2 px-8 rounded-xl transition-all",
+                "flex flex-col items-center gap-1 py-2 px-3 flex-1 rounded-xl transition-all min-w-0",
                 activeTab === tab.id
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
@@ -40,7 +40,7 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
               )}>
                 <tab.icon className="w-6 h-6" />
               </div>
-              <span className="text-xs font-medium">{tab.label}</span>
+              <span className="text-xs font-medium truncate max-w-full">{tab.label}</span>
             </button>
           ))}
         </div>

@@ -1188,7 +1188,14 @@ export function Index() {
                   </div>
 
                   {/* Breathing Exercise - Mindfulness card (under mood) */}
-                  <BreathingExercise compact />
+                  <BreathingExercise
+                    compact
+                    onComplete={(pattern) => {
+                      // Award treats for breathing exercise completion
+                      const treatResult = earnTreats('breathing', 5, `Breathing: ${pattern.name.en}`);
+                      triggerXpPopup(treatResult.earned, 'breathing');
+                    }}
+                  />
 
                   {/* Focus Timer - Primary CTA if no focus session today */}
                   <div ref={focusRef}>

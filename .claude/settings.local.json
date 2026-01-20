@@ -35,7 +35,9 @@
       "Bash(gh api:*)",
       "Bash(node scripts/generate-icons.js:*)",
       "Bash(node:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(set:*)",
+      "Bash(npx cross-env CAPACITOR_BUILD=true npm run build:*)"
     ]
   }
 }
