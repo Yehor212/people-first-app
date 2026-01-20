@@ -833,6 +833,8 @@ export interface Translations {
   restDayCancel: string;
   daysSaved: string;
   restDaySupportive: string;
+  restDayCooldown: string;
+  restDayAvailableIn: string;
 
   // Task Momentum
   taskMomentum: string;
@@ -1636,6 +1638,8 @@ export const translations: Record<Language, Translations> = {
     restDayCancel: 'Всё-таки хочу записать',
     daysSaved: 'дней сохранено',
     restDaySupportive: 'Завтра продолжим вместе 💚',
+    restDayCooldown: 'День отдыха уже был недавно',
+    restDayAvailableIn: 'Доступен через',
 
     // Task Momentum
     taskMomentum: 'Задачи',
@@ -2438,6 +2442,8 @@ export const translations: Record<Language, Translations> = {
     restDayCancel: 'I want to track anyway',
     daysSaved: 'days preserved',
     restDaySupportive: "We'll continue together tomorrow 💚",
+    restDayCooldown: 'Rest day was used recently',
+    restDayAvailableIn: 'Available in',
 
     // Task Momentum
     taskMomentum: 'Task Momentum',
@@ -3240,6 +3246,8 @@ export const translations: Record<Language, Translations> = {
     restDayCancel: 'Все ж хочу записати',
     daysSaved: 'днів збережено',
     restDaySupportive: 'Завтра продовжимо разом 💚',
+    restDayCooldown: 'День відпочинку вже був нещодавно',
+    restDayAvailableIn: 'Доступний через',
 
     // Task Momentum
     taskMomentum: 'Задачі',
@@ -4043,6 +4051,8 @@ export const translations: Record<Language, Translations> = {
     restDayCancel: 'Quiero registrar de todos modos',
     daysSaved: 'días conservados',
     restDaySupportive: 'Mañana continuamos juntos 💚',
+    restDayCooldown: 'El día de descanso ya se usó recientemente',
+    restDayAvailableIn: 'Disponible en',
 
     // Task Momentum
     taskMomentum: 'Tareas',
@@ -4846,6 +4856,8 @@ export const translations: Record<Language, Translations> = {
     restDayCancel: 'Ich möchte trotzdem eintragen',
     daysSaved: 'Tage gespeichert',
     restDaySupportive: 'Morgen machen wir zusammen weiter 💚',
+    restDayCooldown: 'Ruhetag wurde kürzlich genutzt',
+    restDayAvailableIn: 'Verfügbar in',
 
     // Task Momentum
     taskMomentum: 'Aufgaben',
@@ -5649,6 +5661,8 @@ export const translations: Record<Language, Translations> = {
     restDayCancel: 'Je veux quand même enregistrer',
     daysSaved: 'jours préservés',
     restDaySupportive: 'On continue ensemble demain 💚',
+    restDayCooldown: 'Le jour de repos a été utilisé récemment',
+    restDayAvailableIn: 'Disponible dans',
 
     // Task Momentum
     taskMomentum: 'Tâches',

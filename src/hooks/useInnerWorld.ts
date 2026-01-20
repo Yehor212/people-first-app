@@ -871,25 +871,64 @@ export function useInnerWorld() {
   }), [world]);
 
   // ============================================
-  // REST MODE
+  // REST MODE (with cooldown: max 1 day per 7 days)
   // ============================================
 
-  // Check if today is a rest day
   const today = getToday();
+  const REST_COOLDOWN_DAYS = 7; // 1 rest day allowed per 7 days
+
+  // Check if today is a rest day
   const isRestMode = useMemo(() => {
     return (world.restDays || []).includes(today);
+  }, [world.restDays, today]);
+
+  // Calculate rest mode availability
+  const restModeStatus = useMemo(() => {
+    const restDays = world.restDays || [];
+    const todayDate = new Date(today);
+
+    // Find rest days in the last 7 days (excluding today)
+    const recentRestDays = restDays.filter(d => {
+      if (d === today) return false;
+      const dayDate = new Date(d);
+      const diffMs = todayDate.getTime() - dayDate.getTime();
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      return diffDays >= 0 && diffDays < REST_COOLDOWN_DAYS;
+    });
+
+    const canActivate = recentRestDays.length === 0;
+
+    // Calculate days until rest is available again
+    let daysUntilAvailable = 0;
+    if (!canActivate && recentRestDays.length > 0) {
+      const mostRecentRest = recentRestDays.sort().reverse()[0];
+      const restDate = new Date(mostRecentRest);
+      const availableDate = new Date(restDate.getTime() + REST_COOLDOWN_DAYS * 24 * 60 * 60 * 1000);
+      daysUntilAvailable = Math.ceil((availableDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+    }
+
+    return {
+      canActivate,
+      daysUntilAvailable,
+      usedThisWeek: recentRestDays.length,
+    };
   }, [world.restDays, today]);
 
   // Activate rest mode for today - preserves streak
   const activateRestMode = useCallback(() => {
     const restDays = world.restDays || [];
-    if (restDays.includes(today)) return; // Already in rest mode
+    if (restDays.includes(today)) return { success: false, reason: 'already_resting' };
+    if (!restModeStatus.canActivate) return { success: false, reason: 'cooldown', daysUntilAvailable: restModeStatus.daysUntilAvailable };
 
+    // Update lastActiveDate to today to prevent streak from breaking
     setWorld({
       ...world,
       restDays: [...restDays, today],
+      lastActiveDate: today, // Important: mark today as "active" to preserve streak
     });
-  }, [world, setWorld, today]);
+
+    return { success: true };
+  }, [world, setWorld, today, restModeStatus]);
 
   // Deactivate rest mode for today
   const deactivateRestMode = useCallback(() => {
@@ -949,5 +988,7 @@ export function useInnerWorld() {
     isRestMode,
     activateRestMode,
     deactivateRestMode,
+    canActivateRestMode: restModeStatus.canActivate,
+    daysUntilRestAvailable: restModeStatus.daysUntilAvailable,
   };
 }

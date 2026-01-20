@@ -151,6 +151,8 @@ export function Index() {
     isRestMode,
     activateRestMode,
     deactivateRestMode,
+    canActivateRestMode,
+    daysUntilRestAvailable,
   } = useInnerWorld();
 
   // Companion panel state
@@ -1234,6 +1236,8 @@ export function Index() {
                 restDays={innerWorld.restDays}
                 onRestMode={activateRestMode}
                 isRestMode={isRestMode}
+                canActivateRestMode={canActivateRestMode}
+                daysUntilRestAvailable={daysUntilRestAvailable}
               />
 
               {/* Schedule Timeline - Horizontal day planner (moved to home) */}

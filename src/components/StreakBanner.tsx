@@ -19,9 +19,11 @@ interface StreakBannerProps {
   restDays?: string[];
   onRestMode?: () => void;
   isRestMode?: boolean;
+  canActivateRestMode?: boolean;
+  daysUntilRestAvailable?: number;
 }
 
-export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries, restDays = [], onRestMode, isRestMode = false }: StreakBannerProps) {
+export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries, restDays = [], onRestMode, isRestMode = false, canActivateRestMode = true, daysUntilRestAvailable = 0 }: StreakBannerProps) {
   const { t } = useLanguage();
   const today = getToday();
 
@@ -161,13 +163,22 @@ export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries, r
 
       {/* Rest Mode Button - shown when no progress today and not already in rest mode */}
       {onRestMode && todayProgress.completed === 0 && !isRestMode && (
-        <button
-          onClick={onRestMode}
-          className="mt-3 w-full py-2.5 flex items-center justify-center gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl transition-colors text-sm font-medium"
-        >
-          <Moon className="w-4 h-4" />
-          {t.restDayButton || 'День отдыха'}
-        </button>
+        <div className="mt-3">
+          {canActivateRestMode ? (
+            <button
+              onClick={onRestMode}
+              className="w-full py-2.5 flex items-center justify-center gap-2 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 rounded-xl transition-colors text-sm font-medium"
+            >
+              <Moon className="w-4 h-4" />
+              {t.restDayButton || 'День отдыха'}
+            </button>
+          ) : (
+            <div className="py-2.5 flex items-center justify-center gap-2 bg-muted/30 text-muted-foreground rounded-xl text-sm">
+              <Moon className="w-4 h-4 opacity-50" />
+              <span>{t.restDayAvailableIn || 'Доступен через'} {daysUntilRestAvailable} {t.days}</span>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
