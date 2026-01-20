@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Sparkles, Trophy, Clock, Zap, Target } from 'lucide-react';
+import { Sparkles, Trophy, Clock, Zap, Target, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import {
@@ -199,22 +199,25 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold zen-text-gradient">Random Quests</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            Complete quests for bonus XP and exclusive badges
-          </p>
+    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm overflow-y-auto">
+      <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold zen-text-gradient">Random Quests</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Complete quests for bonus XP and exclusive badges
+            </p>
+          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
-        <button
-          onClick={onClose}
-          className="p-2 hover:bg-muted rounded-lg transition-colors text-2xl"
-        >
-          ×
-        </button>
-      </div>
 
       {/* Info Banner */}
       <div className="p-4 zen-gradient rounded-xl zen-shadow">
@@ -295,18 +298,19 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
         )}
       </div>
 
-      {/* Tips */}
-      <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
-        <div className="flex gap-3">
-          <div className="text-2xl">💡</div>
-          <div className="text-sm">
-            <div className="font-medium mb-1">Quest Tips</div>
-            <ul className="text-muted-foreground space-y-1 list-disc list-inside">
-              <li>Daily quests reset every 24 hours</li>
-              <li>Weekly quests offer 3x XP rewards</li>
-              <li>Bonus quests are rare with 5x XP</li>
-              <li>Complete quests before they expire!</li>
-            </ul>
+        {/* Tips */}
+        <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl">
+          <div className="flex gap-3">
+            <div className="text-2xl">💡</div>
+            <div className="text-sm">
+              <div className="font-medium mb-1">Quest Tips</div>
+              <ul className="text-muted-foreground space-y-1 list-disc list-inside">
+                <li>Daily quests reset every 24 hours</li>
+                <li>Weekly quests offer 3x XP rewards</li>
+                <li>Bonus quests are rare with 5x XP</li>
+                <li>Complete quests before they expire!</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
