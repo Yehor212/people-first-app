@@ -12,6 +12,7 @@ import {
   getQuestCategoryEmoji,
   getQuestDifficultyColor,
 } from '@/lib/randomQuests';
+import { pushQuestsToCloud } from '@/storage/tasksCloudSync';
 
 const STORAGE_KEY = 'zenflow_quests';
 
@@ -24,6 +25,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
   const [dailyQuest, setDailyQuest] = useState<Quest | null>(null);
   const [weeklyQuest, setWeeklyQuest] = useState<Quest | null>(null);
   const [bonusQuest, setBonusQuest] = useState<Quest | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load quests from localStorage
   useEffect(() => {
@@ -38,20 +40,25 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
         console.error('Failed to parse quests:', error);
       }
     }
+    setIsLoaded(true);
   }, []);
 
   // Save quests to localStorage
   useEffect(() => {
+    if (!isLoaded) return;
     const data = {
       daily: dailyQuest,
       weekly: weeklyQuest,
       bonus: bonusQuest,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  }, [dailyQuest, weeklyQuest, bonusQuest]);
+    pushQuestsToCloud(data).catch(console.error);
+  }, [dailyQuest, weeklyQuest, bonusQuest, isLoaded]);
 
   // Check and regenerate expired/completed quests
   useEffect(() => {
+    if (!isLoaded) return;
+
     if (!dailyQuest || shouldRegenerateQuest(dailyQuest)) {
       setDailyQuest(generateDailyQuest());
     }
@@ -66,7 +73,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
     } else if (bonusQuest && shouldRegenerateQuest(bonusQuest)) {
       setBonusQuest(null);
     }
-  }, []);
+  }, [isLoaded]);
 
   // Manual refresh
   const handleRefreshDaily = () => {

@@ -31,6 +31,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   const [newTaskInterest, setNewTaskInterest] = useState(5);
   const [consecutiveCompletions, setConsecutiveCompletions] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Load tasks from localStorage on mount
   useEffect(() => {
@@ -56,21 +57,24 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
         console.error('[TasksPanel] Failed to parse momentum:', error);
       }
     }
+    setIsLoaded(true);
   }, []);
 
   // Save tasks to localStorage whenever they change
   useEffect(() => {
+    if (!isLoaded) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
     pushTasksToCloud(tasks).catch(console.error);
-  }, [tasks]);
+  }, [tasks, isLoaded]);
 
   // Save momentum state
   useEffect(() => {
+    if (!isLoaded) return;
     localStorage.setItem(MOMENTUM_KEY, JSON.stringify({
       count: consecutiveCompletions,
       lastCompletion: consecutiveCompletions > 0 ? Date.now() : null,
     }));
-  }, [consecutiveCompletions]);
+  }, [consecutiveCompletions, isLoaded]);
 
   const prioritizedTasks = prioritizeForADHD(tasks);
   const topThree = getNextThreeTasks(tasks);
