@@ -857,6 +857,27 @@ export interface Translations {
   taskTip2: string;
   taskTip3: string;
   taskTip4: string;
+
+  // Header Quick Actions (missing)
+  tasks: string;
+  quests: string;
+  challenges: string;
+
+  // Missing companion key
+  companionHungry: string;
+
+  // Missing common actions
+  back: string;
+  start: string;
+  stop: string;
+
+  // Celebrations (missing)
+  allHabitsComplete: string;
+  amazingWork: string;
+
+  // 404 page
+  pageNotFound: string;
+  goHome: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -1662,6 +1683,27 @@ export const translations: Record<Language, Translations> = {
     taskTip2: 'Наращивайте момент последовательными выполнениями',
     taskTip3: 'Интересные задачи дают больше дофамина',
     taskTip4: 'Срочное + короткое = идеальная комбинация',
+
+    // Header Quick Actions
+    tasks: 'Задачи',
+    quests: 'Квесты',
+    challenges: 'Вызовы',
+
+    // Companion
+    companionHungry: 'Я голодный... Покорми меня?',
+
+    // Common actions
+    back: 'Назад',
+    start: 'Начать',
+    stop: 'Стоп',
+
+    // Celebrations
+    allHabitsComplete: 'Все привычки выполнены!',
+    amazingWork: 'Отличная работа сегодня!',
+
+    // 404 page
+    pageNotFound: 'Страница не найдена',
+    goHome: 'На главную',
   },
 
   en: {
@@ -2466,6 +2508,27 @@ export const translations: Record<Language, Translations> = {
     taskTip2: 'Build momentum with consecutive completions',
     taskTip3: 'High interest tasks give more dopamine',
     taskTip4: 'Urgent + short = perfect combo',
+
+    // Header Quick Actions
+    tasks: 'Tasks',
+    quests: 'Quests',
+    challenges: 'Challenges',
+
+    // Companion
+    companionHungry: "I'm hungry... Feed me?",
+
+    // Common actions
+    back: 'Back',
+    start: 'Start',
+    stop: 'Stop',
+
+    // Celebrations
+    allHabitsComplete: 'All Habits Done!',
+    amazingWork: 'Amazing work today!',
+
+    // 404 page
+    pageNotFound: 'Page not found',
+    goHome: 'Go Home',
   },
 
   uk: {
@@ -3270,6 +3333,27 @@ export const translations: Record<Language, Translations> = {
     taskTip2: 'Набирайте момент послідовними виконаннями',
     taskTip3: 'Цікаві задачі дають більше дофаміну',
     taskTip4: 'Термінове + коротке = ідеальна комбінація',
+
+    // Header Quick Actions
+    tasks: 'Задачі',
+    quests: 'Квести',
+    challenges: 'Виклики',
+
+    // Companion
+    companionHungry: 'Я голодний... Погодуй мене?',
+
+    // Common actions
+    back: 'Назад',
+    start: 'Почати',
+    stop: 'Стоп',
+
+    // Celebrations
+    allHabitsComplete: 'Всі звички виконані!',
+    amazingWork: 'Чудова робота сьогодні!',
+
+    // 404 page
+    pageNotFound: 'Сторінку не знайдено',
+    goHome: 'На головну',
   },
 
   es: {
@@ -4075,6 +4159,27 @@ export const translations: Record<Language, Translations> = {
     taskTip2: 'Gana impulso con completados consecutivos',
     taskTip3: 'Las tareas interesantes dan más dopamina',
     taskTip4: 'Urgente + corto = combo perfecto',
+
+    // Header Quick Actions
+    tasks: 'Tareas',
+    quests: 'Misiones',
+    challenges: 'Desafíos',
+
+    // Companion
+    companionHungry: 'Tengo hambre... ¿Me das de comer?',
+
+    // Common actions
+    back: 'Atrás',
+    start: 'Empezar',
+    stop: 'Parar',
+
+    // Celebrations
+    allHabitsComplete: '¡Todos los hábitos completados!',
+    amazingWork: '¡Increíble trabajo hoy!',
+
+    // 404 page
+    pageNotFound: 'Página no encontrada',
+    goHome: 'Ir al inicio',
   },
 
   de: {
@@ -4880,6 +4985,27 @@ export const translations: Record<Language, Translations> = {
     taskTip2: 'Baue Momentum durch aufeinanderfolgende Abschlüsse',
     taskTip3: 'Interessante Aufgaben geben mehr Dopamin',
     taskTip4: 'Dringend + kurz = perfekte Kombination',
+
+    // Header Quick Actions
+    tasks: 'Aufgaben',
+    quests: 'Quests',
+    challenges: 'Herausforderungen',
+
+    // Companion
+    companionHungry: 'Ich bin hungrig... Fütterst du mich?',
+
+    // Common actions
+    back: 'Zurück',
+    start: 'Starten',
+    stop: 'Stopp',
+
+    // Celebrations
+    allHabitsComplete: 'Alle Gewohnheiten erledigt!',
+    amazingWork: 'Tolle Arbeit heute!',
+
+    // 404 page
+    pageNotFound: 'Seite nicht gefunden',
+    goHome: 'Zur Startseite',
   },
 
   fr: {
@@ -5685,6 +5811,27 @@ export const translations: Record<Language, Translations> = {
     taskTip2: 'Gagne en élan avec des complétions consécutives',
     taskTip3: 'Les tâches intéressantes donnent plus de dopamine',
     taskTip4: 'Urgent + court = combo parfait',
+
+    // Header Quick Actions
+    tasks: 'Tâches',
+    quests: 'Quêtes',
+    challenges: 'Défis',
+
+    // Companion
+    companionHungry: "J'ai faim... Tu me nourris?",
+
+    // Common actions
+    back: 'Retour',
+    start: 'Commencer',
+    stop: 'Arrêter',
+
+    // Celebrations
+    allHabitsComplete: 'Toutes les habitudes terminées!',
+    amazingWork: 'Excellent travail aujourd\'hui!',
+
+    // 404 page
+    pageNotFound: 'Page non trouvée',
+    goHome: 'Accueil',
   },
 };
 

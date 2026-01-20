@@ -64,7 +64,7 @@ export function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks, onO
               aria-label="Open Tasks"
             >
               <ListTodo className="w-5 h-5" />
-              <span className="text-sm font-medium">{t.tasks || 'Задачи'}</span>
+              <span className="text-sm font-medium">{t.tasks}</span>
             </button>
           )}
           {onOpenQuests && (
@@ -74,7 +74,7 @@ export function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks, onO
               aria-label="Open Quests"
             >
               <Sparkles className="w-5 h-5" />
-              <span className="text-sm font-medium">{t.quests || 'Квесты'}</span>
+              <span className="text-sm font-medium">{t.quests}</span>
             </button>
           )}
           {onOpenChallenges && (
@@ -84,7 +84,7 @@ export function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks, onO
               aria-label="Open Challenges"
             >
               <Trophy className="w-5 h-5" />
-              <span className="text-sm font-medium">{t.challenges || 'Вызовы'}</span>
+              <span className="text-sm font-medium">{t.challenges}</span>
             </button>
           )}
         </div>
