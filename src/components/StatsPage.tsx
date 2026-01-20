@@ -229,10 +229,29 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
     return { bestDay, focusAvg, habitDiffs };
   }, [filteredMoods, habits, completedFocusSessions, t]);
 
+  // Store ALL mood entries per date (not just one)
+  const moodsByDate = useMemo(() => {
+    const map = new Map<string, MoodEntry[]>();
+    moods.forEach((entry) => {
+      const existing = map.get(entry.date) || [];
+      existing.push(entry);
+      map.set(entry.date, existing);
+    });
+    // Sort entries by timestamp within each day
+    map.forEach((entries) => {
+      entries.sort((a, b) => a.timestamp - b.timestamp);
+    });
+    return map;
+  }, [moods]);
+
+  // Legacy single mood per date (for calendar coloring - uses last mood of day)
   const moodByDate = useMemo(() => {
     const map = new Map<string, MoodEntry>();
     moods.forEach((entry) => {
-      map.set(entry.date, entry);
+      const existing = map.get(entry.date);
+      if (!existing || entry.timestamp > existing.timestamp) {
+        map.set(entry.date, entry);
+      }
     });
     return map;
   }, [moods]);
@@ -328,12 +347,28 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
   const selectedDayData = useMemo(() => {
     if (!selectedDate) return null;
     return {
-      mood: moodByDate.get(selectedDate),
+      moods: moodsByDate.get(selectedDate) || [], // All moods for the day
+      mood: moodByDate.get(selectedDate), // Last mood (for backward compat)
       focusMinutes: focusMinutesByDate.get(selectedDate) || 0,
       habits: habitCompletionMap.get(selectedDate) || [],
       gratitude: gratitudeByDate.get(selectedDate) || []
     };
-  }, [selectedDate, moodByDate, focusMinutesByDate, habitCompletionMap, gratitudeByDate]);
+  }, [selectedDate, moodsByDate, moodByDate, focusMinutesByDate, habitCompletionMap, gratitudeByDate]);
+
+  // Helper to get time of day label from timestamp
+  const getTimeOfDay = (timestamp: number): string => {
+    const hour = new Date(timestamp).getHours();
+    if (hour < 12) return t.morning || 'Morning';
+    if (hour < 18) return t.afternoon || 'Afternoon';
+    return t.evening || 'Evening';
+  };
+
+  const getTimeOfDayEmoji = (timestamp: number): string => {
+    const hour = new Date(timestamp).getHours();
+    if (hour < 12) return '🌅';
+    if (hour < 18) return '☀️';
+    return '🌙';
+  };
 
   const heatmapDays = useMemo(() => {
     const now = new Date();
@@ -624,6 +659,44 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
                   <span className="font-medium">{selectedDayData.gratitude.length}</span>
                 </div>
               </div>
+
+              {/* All Mood Entries with Notes */}
+              {selectedDayData.moods.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">{t.moodNotes || 'Mood Notes'}</p>
+                  {selectedDayData.moods.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="p-3 bg-card/50 rounded-lg border-l-4 border-primary/50"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">{moodEmojis[entry.mood]}</span>
+                        <span className="text-sm font-medium">{moodLabels[entry.mood]}</span>
+                        <span className="text-xs text-muted-foreground ml-auto flex items-center gap-1">
+                          {getTimeOfDayEmoji(entry.timestamp)} {getTimeOfDay(entry.timestamp)}
+                        </span>
+                      </div>
+                      {entry.note && (
+                        <p className="text-sm text-foreground mt-2 pl-7 italic">
+                          "{entry.note}"
+                        </p>
+                      )}
+                      {entry.tags && entry.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2 pl-7">
+                          {entry.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
 
               {selectedDayData.habits.length > 0 && (
                 <div className="text-xs text-muted-foreground bg-card/30 p-2 rounded-lg">

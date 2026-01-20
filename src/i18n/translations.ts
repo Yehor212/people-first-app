@@ -29,6 +29,7 @@ export interface Translations {
   moodToday: string;
   moodHistory: string;
   moodRecorded: string;
+  moodNotes: string;
   todayProgress: string;
   completed: string;
   updateMood: string;
@@ -877,6 +878,7 @@ export const translations: Record<Language, Translations> = {
     moodToday: 'Настроение сегодня',
     moodHistory: 'История за день',
     moodRecorded: 'Настроение записано!',
+    moodNotes: 'Записи настроения',
     todayProgress: 'Прогресс сегодня',
     completed: 'Выполнено!',
     updateMood: 'Обновить',
@@ -1678,6 +1680,7 @@ export const translations: Record<Language, Translations> = {
     moodToday: 'Mood today',
     moodHistory: 'Today\'s history',
     moodRecorded: 'Mood Recorded!',
+    moodNotes: 'Mood Notes',
     todayProgress: "Today's Progress",
     completed: 'Completed!',
     updateMood: 'Update',
@@ -2479,6 +2482,7 @@ export const translations: Record<Language, Translations> = {
     moodToday: 'Настрій сьогодні',
     moodHistory: 'Історія за день',
     moodRecorded: 'Настрій записано!',
+    moodNotes: 'Записи настрою',
     todayProgress: 'Прогрес сьогодні',
     completed: 'Виконано!',
     updateMood: 'Оновити',
@@ -3280,6 +3284,7 @@ export const translations: Record<Language, Translations> = {
     moodToday: 'Estado de ánimo hoy',
     moodHistory: 'Historial del día',
     moodRecorded: '¡Estado de ánimo registrado!',
+    moodNotes: 'Notas de ánimo',
     todayProgress: 'Progreso de hoy',
     completed: '¡Completado!',
     updateMood: 'Actualizar',
@@ -4082,6 +4087,7 @@ export const translations: Record<Language, Translations> = {
     moodToday: 'Stimmung heute',
     moodHistory: 'Tagesverlauf',
     moodRecorded: 'Stimmung aufgezeichnet!',
+    moodNotes: 'Stimmungsnotizen',
     todayProgress: 'Heutiger Fortschritt',
     completed: 'Erledigt!',
     updateMood: 'Aktualisieren',
@@ -4884,6 +4890,7 @@ export const translations: Record<Language, Translations> = {
     moodToday: 'Humeur aujourd\'hui',
     moodHistory: 'Historique du jour',
     moodRecorded: 'Humeur enregistrée!',
+    moodNotes: 'Notes d\'humeur',
     todayProgress: "Progrès d'aujourd'hui",
     completed: 'Terminé!',
     updateMood: 'Mettre à jour',
