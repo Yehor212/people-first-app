@@ -324,9 +324,9 @@ export function CompanionPanel({
                           setEditName(companion.name);
                           setIsEditing(true);
                         }}
-                        className="p-1.5 rounded-lg hover:bg-muted transition-colors"
+                        className="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
                       >
-                        <Edit3 className="w-4 h-4 text-muted-foreground" />
+                        <Edit3 className="w-5 h-5 text-muted-foreground" />
                       </button>
                     </>
                   )}

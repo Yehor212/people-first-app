@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { Volume2, VolumeX, Sparkles, Zap, Award, Music } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -39,7 +40,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
         const parsed = JSON.parse(stored);
         setSettings({ ...DEFAULT_SETTINGS, ...parsed });
       } catch (error) {
-        console.error('Failed to parse dopamine settings:', error);
+        logger.error('Failed to parse dopamine settings:', error);
       }
     }
   }, []);
@@ -379,7 +380,7 @@ export function useDopamineSettings(): DopamineSettings {
         try {
           return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
         } catch (error) {
-          console.error('Failed to parse dopamine settings:', error);
+          logger.error('Failed to parse dopamine settings:', error);
         }
       }
     }
@@ -394,7 +395,7 @@ export function useDopamineSettings(): DopamineSettings {
           const parsed = JSON.parse(e.newValue);
           setSettings({ ...DEFAULT_SETTINGS, ...parsed });
         } catch (error) {
-          console.error('Failed to parse dopamine settings:', error);
+          logger.error('Failed to parse dopamine settings:', error);
         }
       }
     };

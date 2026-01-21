@@ -47,6 +47,14 @@
     --zen-shadow-soft: 0 4px 20px -4px hsl(158 45% 42% / 0.15);
     --zen-shadow-card: 0 2px 12px -2px hsl(160 25% 15% / 0.08);
     --zen-shadow-glow: 0 0 30px hsl(158 45% 42% / 0.2);
+    --zen-shadow-hover: 0 8px 30px -6px hsl(158 45% 42% / 0.25);
+
+    /* Animation timing tokens */
+    --duration-fast: 150ms;
+    --duration-normal: 200ms;
+    --duration-slow: 300ms;
+    --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
+    --easing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 
     /* Mood colors - softer, more visible */
     --mood-great: 158 60% 50%;
@@ -98,6 +106,7 @@
     --zen-shadow-soft: 0 4px 20px -4px hsl(158 50% 50% / 0.2);
     --zen-shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.3);
     --zen-shadow-glow: 0 0 30px hsl(158 50% 50% / 0.15);
+    --zen-shadow-hover: 0 8px 30px -6px hsl(158 50% 50% / 0.3);
   }
 }
 
@@ -143,6 +152,29 @@
 
   .zen-shadow-glow {
     box-shadow: var(--zen-shadow-glow);
+  }
+
+  .zen-shadow-hover {
+    box-shadow: var(--zen-shadow-hover);
+  }
+
+  /* Standard transitions using CSS variables */
+  .zen-transition {
+    transition-property: all;
+    transition-duration: var(--duration-normal);
+    transition-timing-function: var(--easing-default);
+  }
+
+  .zen-transition-fast {
+    transition-property: all;
+    transition-duration: var(--duration-fast);
+    transition-timing-function: var(--easing-default);
+  }
+
+  .zen-transition-slow {
+    transition-property: all;
+    transition-duration: var(--duration-slow);
+    transition-timing-function: var(--easing-default);
   }
 
   .zen-text-gradient {

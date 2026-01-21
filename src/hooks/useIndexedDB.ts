@@ -1,16 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Table } from 'dexie';
+import { logger } from '@/lib/logger';
 
 // Event emitter for cross-hook data refresh
 type RefreshListener = () => void;
 const refreshListeners = new Set<RefreshListener>();
 
 export const triggerDataRefresh = () => {
-  console.log('[useIndexedDB] Triggering data refresh for all hooks');
+  logger.log('[useIndexedDB] Triggering data refresh for all hooks');
   refreshListeners.forEach(listener => listener());
 };
 
 interface UseIndexedDBOptions<T> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   table: Table<any, string>;
   localStorageKey: string;
   initialValue: T;
@@ -45,8 +47,8 @@ export function useIndexedDB<T>({
               setData(parsed as T);
               // Migrate to IndexedDB
               await table.put({ key: localStorageKey, value: parsed });
-            } catch {
-              // ignore
+            } catch (parseError) {
+              logger.warn('Failed to parse localStorage data for migration:', parseError);
             }
           }
         }
@@ -66,21 +68,21 @@ export function useIndexedDB<T>({
                 // Migrate to IndexedDB
                 await table.bulkPut(parsed);
               }
-            } catch {
-              // ignore
+            } catch (parseError) {
+              logger.warn('Failed to parse localStorage array data for migration:', parseError);
             }
           }
         }
       }
     } catch (error) {
-      console.error('Error loading from IndexedDB:', error);
+      logger.error('Error loading from IndexedDB:', error);
       // Fallback to localStorage
       const stored = localStorage.getItem(localStorageKey);
       if (stored) {
         try {
           setData(JSON.parse(stored) as T);
-        } catch {
-          // ignore
+        } catch (parseError) {
+          logger.warn('Failed to parse localStorage fallback data:', parseError);
         }
       }
     } finally {
@@ -135,7 +137,7 @@ export function useIndexedDB<T>({
           // Also save to localStorage as backup
           localStorage.setItem(localStorageKey, JSON.stringify(newValue));
         } catch (error) {
-          console.error('Error saving to IndexedDB:', error);
+          logger.error('Error saving to IndexedDB:', error);
           localStorage.setItem(localStorageKey, JSON.stringify(newValue));
         }
       })();

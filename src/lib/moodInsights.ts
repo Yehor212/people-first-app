@@ -5,7 +5,7 @@
  */
 
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType } from '@/types';
-import { getToday } from './utils';
+import { getToday, formatDate } from './utils';
 
 // Mood scores for analysis
 const MOOD_SCORES: Record<MoodType, number> = {
@@ -332,7 +332,7 @@ function analyzeMoodTrend(moods: MoodEntry[]): MoodInsight | null {
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    last7Days.push(d.toISOString().split('T')[0]);
+    last7Days.push(formatDate(d));
   }
 
   // Get previous 7 days
@@ -340,7 +340,7 @@ function analyzeMoodTrend(moods: MoodEntry[]): MoodInsight | null {
   for (let i = 13; i >= 7; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    prev7Days.push(d.toISOString().split('T')[0]);
+    prev7Days.push(formatDate(d));
   }
 
   const recentScores = moods
@@ -393,7 +393,7 @@ function analyzeConsistency(moods: MoodEntry[], habits: Habit[]): MoodInsight | 
   for (let i = 13; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
-    last14Days.push(d.toISOString().split('T')[0]);
+    last14Days.push(formatDate(d));
   }
 
   const daysWithMood = new Set(moods.filter(m => last14Days.includes(m.date)).map(m => m.date));

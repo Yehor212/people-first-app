@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 import { MoodType, MoodEntry } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Sparkles, Sun, Cloud, Moon, Plus, ChevronDown, Edit3 } from 'lucide-react';
 import { MoodChangedToast, ConfirmDialog } from './Celebrations';
@@ -106,7 +107,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
       // Always update if different - compare fresh values, not closure
       setToday(prev => {
         if (prev !== newDate) {
-          console.log('[MoodTracker] Date changed:', prev, '->', newDate);
+          logger.log('[MoodTracker] Date changed:', prev, '->', newDate);
           return newDate;
         }
         return prev;
@@ -280,8 +281,11 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
       <div className="bg-card rounded-2xl p-5 zen-shadow-card animate-fade-in">
         {/* Header with expand toggle */}
         <div
+          role="button"
+          tabIndex={0}
           className="flex items-center justify-between cursor-pointer"
           onClick={() => setIsExpanded(!isExpanded)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsExpanded(!isExpanded); } }}
         >
           <h3 className="text-lg font-semibold text-foreground">{t.moodToday || "Today's Mood"}</h3>
           <ChevronDown className={cn(

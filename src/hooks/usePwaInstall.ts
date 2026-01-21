@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -50,7 +51,7 @@ export function usePwaInstall() {
         return true;
       }
     } catch (error) {
-      console.error('Error prompting install:', error);
+      logger.error('Error prompting install:', error);
     }
 
     return false;

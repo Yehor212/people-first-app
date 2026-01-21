@@ -1,5 +1,6 @@
 // Inner World Cloud Synchronization with Supabase
 
+import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
 import { InnerWorld } from '@/types';
 
@@ -31,11 +32,11 @@ export async function pushInnerWorldToCloud(world: InnerWorld): Promise<void> {
     if (error) {
       // Table might not exist yet - that's ok, we'll just use local storage
       if (error.code !== '42P01') { // relation does not exist
-        console.error('[InnerWorld] Error pushing to cloud:', error);
+        logger.error('[InnerWorld] Error pushing to cloud:', error);
       }
     }
   } catch (err) {
-    console.error('[InnerWorld] Push error:', err);
+    logger.error('[InnerWorld] Push error:', err);
   }
 }
 
@@ -58,14 +59,14 @@ export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
     if (error) {
       // Table might not exist or no data - that's ok
       if (error.code !== 'PGRST116' && error.code !== '42P01') {
-        console.error('[InnerWorld] Error pulling from cloud:', error);
+        logger.error('[InnerWorld] Error pulling from cloud:', error);
       }
       return null;
     }
 
     return data?.world_data as InnerWorld || null;
   } catch (err) {
-    console.error('[InnerWorld] Pull error:', err);
+    logger.error('[InnerWorld] Pull error:', err);
     return null;
   }
 }

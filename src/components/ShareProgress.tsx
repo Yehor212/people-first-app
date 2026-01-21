@@ -1,9 +1,11 @@
 import { Share2, Download, X, Sparkles } from 'lucide-react';
+import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import html2canvas from 'html2canvas';
 import { useRef, useState } from 'react';
+import { formatDate } from '@/lib/utils';
 
 interface ShareProgressProps {
   stats: {
@@ -64,7 +66,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
       }
       onClose();
     } catch (error) {
-      console.error('Share failed:', error);
+      logger.error('Share failed:', error);
     } finally {
       setDownloading(false);
     }
@@ -90,13 +92,13 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `zenflow-${format}-${new Date().toISOString().split('T')[0]}.png`;
+      link.download = `zenflow-${format}-${formatDate(new Date())}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Download failed:', error);
+      logger.error('Download failed:', error);
     } finally {
       setDownloading(false);
     }

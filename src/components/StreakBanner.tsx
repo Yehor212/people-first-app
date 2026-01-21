@@ -4,7 +4,7 @@
  * Includes Rest Mode button for low-energy days
  */
 
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import { Flame, Zap, Trophy, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -23,7 +23,7 @@ interface StreakBannerProps {
   daysUntilRestAvailable?: number;
 }
 
-export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries, restDays = [], onRestMode, isRestMode = false, canActivateRestMode = true, daysUntilRestAvailable = 0 }: StreakBannerProps) {
+export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSessions, gratitudeEntries, restDays = [], onRestMode, isRestMode = false, canActivateRestMode = true, daysUntilRestAvailable = 0 }: StreakBannerProps) {
   const { t } = useLanguage();
   const today = getToday();
 
@@ -182,4 +182,4 @@ export function StreakBanner({ moods, habits, focusSessions, gratitudeEntries, r
       )}
     </div>
   );
-}
+});

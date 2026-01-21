@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Leaf, Trophy, ListTodo, Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -9,29 +10,31 @@ interface HeaderProps {
   onOpenQuests?: () => void;
 }
 
-export function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks, onOpenQuests }: HeaderProps) {
-  const { t } = useLanguage();
+export const Header = memo(function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks, onOpenQuests }: HeaderProps) {
+  const { t, language } = useLanguage();
 
-  const getGreeting = () => {
+  const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return t.goodMorning;
     if (hour < 18) return t.goodAfternoon;
     return t.goodEvening;
-  };
+  }, [t.goodMorning, t.goodAfternoon, t.goodEvening]);
 
-  const today = new Date();
-  const formattedDate = today.toLocaleDateString(
-    useLanguage().language === 'ru' ? 'ru-RU' :
-    useLanguage().language === 'uk' ? 'uk-UA' :
-    useLanguage().language === 'es' ? 'es-ES' :
-    useLanguage().language === 'de' ? 'de-DE' :
-    useLanguage().language === 'fr' ? 'fr-FR' : 'en-US',
-    {
+  const formattedDate = useMemo(() => {
+    const localeMap: Record<string, string> = {
+      ru: 'ru-RU',
+      uk: 'uk-UA',
+      es: 'es-ES',
+      de: 'de-DE',
+      fr: 'fr-FR',
+    };
+    const locale = localeMap[language] || 'en-US';
+    return new Date().toLocaleDateString(locale, {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
-    }
-  );
+    });
+  }, [language]);
 
   return (
     <header className="mb-6 animate-fade-in">
@@ -49,7 +52,7 @@ export function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks, onO
       {/* Greeting */}
       <div className="mb-4">
         <h1 className="text-2xl font-bold text-foreground">
-          {getGreeting()}, {userName}! 👋
+          {greeting}, {userName}! 👋
         </h1>
         <p className="text-muted-foreground text-sm capitalize">{formattedDate}</p>
       </div>
@@ -91,4 +94,4 @@ export function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks, onO
       )}
     </header>
   );
-}
+});

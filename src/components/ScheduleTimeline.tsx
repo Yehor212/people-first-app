@@ -7,7 +7,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, Clock, X, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { cn, getToday } from '@/lib/utils';
+import { cn, getToday, formatDate } from '@/lib/utils';
 import { ScheduleEvent } from '@/types';
 
 interface ScheduleTimelineProps {
@@ -23,7 +23,7 @@ function getWeekDates(): string[] {
   for (let i = 0; i < 7; i++) {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
-    dates.push(date.toISOString().split('T')[0]);
+    dates.push(formatDate(date));
   }
   return dates;
 }
@@ -367,7 +367,7 @@ function AddEventModal({
     for (let i = 0; i < 14; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
-      const value = date.toISOString().split('T')[0];
+      const value = formatDate(date);
       const label = i === 0
         ? (t.today || 'Today')
         : i === 1

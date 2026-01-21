@@ -1,7 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Habit, HabitType, HabitReminder, HabitFrequency } from '@/types';
-import { getToday, generateId } from '@/lib/utils';
-import { cn } from '@/lib/utils';
+import { getToday, generateId, formatDate, cn } from '@/lib/utils';
 import { Plus, Check, X, Minus, Bell, Clock, ChevronRight, Trash2, MoreHorizontal, Settings2, Flame, Zap } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { habitTemplates } from '@/lib/habitTemplates';
@@ -73,7 +72,7 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
     for (let i = 0; i < sortedDates.length; i++) {
       const checkDate = new Date(todayDate);
       checkDate.setDate(checkDate.getDate() - i);
-      const checkDateStr = checkDate.toISOString().split('T')[0];
+      const checkDateStr = formatDate(checkDate);
 
       if (sortedDates.includes(checkDateStr) || (i === 0 && !sortedDates.includes(today))) {
         // Count if we're completing today (i=0) or already have the date
@@ -504,6 +503,81 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
               />
             </div>
           )}
+
+          {/* Reminders Section */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-sm text-muted-foreground">{t.reminders || 'Reminders'}</label>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleAddReminder();
+                }}
+                className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+              >
+                + {t.addReminder || 'Add'}
+              </button>
+            </div>
+
+            {reminders.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">{t.noReminders || 'No reminders set'}</p>
+            ) : (
+              <div className="space-y-2">
+                {reminders.map((reminder, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-background rounded-lg">
+                    <input
+                      type="time"
+                      value={reminder.time}
+                      onChange={(e) => handleReminderChange(index, 'time', e.target.value)}
+                      className="flex-1 p-1 bg-secondary rounded text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                    />
+                    <div className="flex gap-1">
+                      {[
+                        { day: 1, label: t.mon?.slice(0, 2) || 'Mo' },
+                        { day: 2, label: t.tue?.slice(0, 2) || 'Tu' },
+                        { day: 3, label: t.wed?.slice(0, 2) || 'We' },
+                        { day: 4, label: t.thu?.slice(0, 2) || 'Th' },
+                        { day: 5, label: t.fri?.slice(0, 2) || 'Fr' },
+                        { day: 6, label: t.sat?.slice(0, 2) || 'Sa' },
+                        { day: 0, label: t.sun?.slice(0, 2) || 'Su' },
+                      ].map(({ day, label }) => (
+                        <button
+                          key={day}
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            const newDays = reminder.days.includes(day)
+                              ? reminder.days.filter(d => d !== day)
+                              : [...reminder.days, day];
+                            handleReminderChange(index, 'days', newDays);
+                          }}
+                          className={cn(
+                            "w-6 h-6 text-[10px] rounded transition-colors",
+                            reminder.days.includes(day)
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-secondary text-muted-foreground"
+                          )}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleRemoveReminder(index);
+                      }}
+                      className="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-destructive hover:bg-destructive/10 rounded-lg"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <button
             type="button"

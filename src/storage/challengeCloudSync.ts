@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
 import { Challenge, Badge } from '@/types';
 import { getChallenges, saveChallenges, getBadges, saveBadges } from '@/lib/challengeStorage';
@@ -125,7 +126,7 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
       .eq('user_id', userId);
 
     if (fetchError) {
-      console.error('Failed to fetch challenges from cloud:', fetchError);
+      logger.error('Failed to fetch challenges from cloud:', fetchError);
       return { challenges: localChallenges, error: fetchError.message };
     }
 
@@ -164,7 +165,7 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
         .upsert(toUpsert, { onConflict: 'user_id,challenge_id' });
 
       if (upsertError) {
-        console.error('Failed to push challenges to cloud:', upsertError);
+        logger.error('Failed to push challenges to cloud:', upsertError);
       }
     }
 
@@ -173,7 +174,7 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
 
     return { challenges: merged };
   } catch (error) {
-    console.error('Sync challenges error:', error);
+    logger.error('Sync challenges error:', error);
     return {
       challenges: getChallenges(),
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -191,13 +192,13 @@ export async function pushChallengeUpdate(userId: string, challenge: Challenge):
       });
 
     if (error) {
-      console.error('Failed to push challenge update:', error);
+      logger.error('Failed to push challenge update:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Push challenge update error:', error);
+    logger.error('Push challenge update error:', error);
     return false;
   }
 }
@@ -218,7 +219,7 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
       .eq('user_id', userId);
 
     if (fetchError) {
-      console.error('Failed to fetch badges from cloud:', fetchError);
+      logger.error('Failed to fetch badges from cloud:', fetchError);
       return { badges: localBadges, error: fetchError.message };
     }
 
@@ -261,7 +262,7 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
         .upsert(toUpsert, { onConflict: 'user_id,badge_id' });
 
       if (upsertError) {
-        console.error('Failed to push badges to cloud:', upsertError);
+        logger.error('Failed to push badges to cloud:', upsertError);
       }
     }
 
@@ -270,7 +271,7 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
 
     return { badges: merged };
   } catch (error) {
-    console.error('Sync badges error:', error);
+    logger.error('Sync badges error:', error);
     return {
       badges: getBadges(),
       error: error instanceof Error ? error.message : 'Unknown error'
@@ -288,13 +289,13 @@ export async function pushBadgeUnlock(userId: string, badge: Badge): Promise<boo
       });
 
     if (error) {
-      console.error('Failed to push badge unlock:', error);
+      logger.error('Failed to push badge unlock:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Push badge unlock error:', error);
+    logger.error('Push badge unlock error:', error);
     return false;
   }
 }
@@ -363,13 +364,13 @@ export async function initializeBadgesInCloud(userId: string, badges: Badge[]): 
       .upsert(badgesToInsert, { onConflict: 'user_id,badge_id' });
 
     if (error) {
-      console.error('Failed to initialize badges in cloud:', error);
+      logger.error('Failed to initialize badges in cloud:', error);
       return false;
     }
 
     return true;
   } catch (error) {
-    console.error('Initialize badges error:', error);
+    logger.error('Initialize badges error:', error);
     return false;
   }
 }

@@ -1,6 +1,8 @@
 // Random Quest Generator for ADHD engagement
 // Generates daily/weekly quests with XP rewards and badge unlocks
 
+import { logger } from './logger';
+
 export type QuestType = 'daily' | 'weekly' | 'bonus';
 export type QuestCategory = 'habits' | 'focus' | 'streak' | 'gratitude' | 'speed' | 'consistency';
 
@@ -472,7 +474,7 @@ export function updateAllQuestsProgress(
 
     return newlyCompleted;
   } catch (error) {
-    console.error('Failed to update quests progress:', error);
+    logger.error('Failed to update quests progress:', error);
     return [];
   }
 }

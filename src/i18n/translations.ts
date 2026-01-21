@@ -832,6 +832,24 @@ export interface Translations {
   restDayButton: string;
   restDayCancel: string;
   daysSaved: string;
+
+  // Completed sections (collapsible)
+  expand: string;
+  collapse: string;
+  moodRecordedShort: string;
+  habitsCompletedShort: string;
+  focusCompletedShort: string;
+  gratitudeAddedShort: string;
+
+  // All complete celebration
+  allComplete: string;
+  allCompleteMessage: string;
+  allCompleteSupportive: string;
+  allCompleteLegend: string;
+  allCompleteAmazing: string;
+  allCompleteGreat: string;
+  allCompleteNice: string;
+  daysStreak: string;
   restDaySupportive: string;
   restDayCooldown: string;
   restDayAvailableIn: string;
@@ -1658,6 +1676,24 @@ export const translations: Record<Language, Translations> = {
     restDayButton: 'День отдыха',
     restDayCancel: 'Всё-таки хочу записать',
     daysSaved: 'дней сохранено',
+
+    // Completed sections
+    expand: 'Развернуть',
+    collapse: 'Свернуть',
+    moodRecordedShort: 'Настроение записано',
+    habitsCompletedShort: 'Привычки выполнены',
+    focusCompletedShort: 'Фокус завершён',
+    gratitudeAddedShort: 'Благодарность записана',
+
+    // All complete celebration
+    allComplete: 'Всё выполнено!',
+    allCompleteMessage: 'Вы выполнили все активности на сегодня',
+    allCompleteSupportive: 'Увидимся завтра!',
+    allCompleteLegend: 'Легендарный день!',
+    allCompleteAmazing: 'Потрясающе!',
+    allCompleteGreat: 'Отличная работа!',
+    allCompleteNice: 'Хорошая работа!',
+    daysStreak: 'дней подряд',
     restDaySupportive: 'Завтра продолжим вместе 💚',
     restDayCooldown: 'День отдыха уже был недавно',
     restDayAvailableIn: 'Доступен через',
@@ -2483,6 +2519,24 @@ export const translations: Record<Language, Translations> = {
     restDayButton: 'Rest Day',
     restDayCancel: 'I want to track anyway',
     daysSaved: 'days preserved',
+
+    // Completed sections
+    expand: 'Expand',
+    collapse: 'Collapse',
+    moodRecordedShort: 'Mood recorded',
+    habitsCompletedShort: 'Habits done',
+    focusCompletedShort: 'Focus complete',
+    gratitudeAddedShort: 'Gratitude added',
+
+    // All complete celebration
+    allComplete: 'All done!',
+    allCompleteMessage: 'You\'ve completed all activities for today',
+    allCompleteSupportive: 'See you tomorrow!',
+    allCompleteLegend: 'Legendary day!',
+    allCompleteAmazing: 'Amazing work!',
+    allCompleteGreat: 'Great job!',
+    allCompleteNice: 'Nice work!',
+    daysStreak: 'days streak',
     restDaySupportive: "We'll continue together tomorrow 💚",
     restDayCooldown: 'Rest day was used recently',
     restDayAvailableIn: 'Available in',
@@ -3308,6 +3362,24 @@ export const translations: Record<Language, Translations> = {
     restDayButton: 'День відпочинку',
     restDayCancel: 'Все ж хочу записати',
     daysSaved: 'днів збережено',
+
+    // Completed sections
+    expand: 'Розгорнути',
+    collapse: 'Згорнути',
+    moodRecordedShort: 'Настрій записано',
+    habitsCompletedShort: 'Звички виконані',
+    focusCompletedShort: 'Фокус завершено',
+    gratitudeAddedShort: 'Подяку записано',
+
+    // All complete celebration
+    allComplete: 'Все виконано!',
+    allCompleteMessage: 'Ви виконали всі активності на сьогодні',
+    allCompleteSupportive: 'До завтра!',
+    allCompleteLegend: 'Легендарний день!',
+    allCompleteAmazing: 'Вражаюче!',
+    allCompleteGreat: 'Чудова робота!',
+    allCompleteNice: 'Гарна робота!',
+    daysStreak: 'днів поспіль',
     restDaySupportive: 'Завтра продовжимо разом 💚',
     restDayCooldown: 'День відпочинку вже був нещодавно',
     restDayAvailableIn: 'Доступний через',
@@ -4134,6 +4206,24 @@ export const translations: Record<Language, Translations> = {
     restDayButton: 'Día de descanso',
     restDayCancel: 'Quiero registrar de todos modos',
     daysSaved: 'días conservados',
+
+    // Completed sections
+    expand: 'Expandir',
+    collapse: 'Contraer',
+    moodRecordedShort: 'Ánimo registrado',
+    habitsCompletedShort: 'Hábitos completados',
+    focusCompletedShort: 'Enfoque completo',
+    gratitudeAddedShort: 'Gratitud añadida',
+
+    // All complete celebration
+    allComplete: '¡Todo listo!',
+    allCompleteMessage: 'Has completado todas las actividades de hoy',
+    allCompleteSupportive: '¡Hasta mañana!',
+    allCompleteLegend: '¡Día legendario!',
+    allCompleteAmazing: '¡Increíble!',
+    allCompleteGreat: '¡Excelente trabajo!',
+    allCompleteNice: '¡Buen trabajo!',
+    daysStreak: 'días seguidos',
     restDaySupportive: 'Mañana continuamos juntos 💚',
     restDayCooldown: 'El día de descanso ya se usó recientemente',
     restDayAvailableIn: 'Disponible en',
@@ -4960,6 +5050,24 @@ export const translations: Record<Language, Translations> = {
     restDayButton: 'Ruhetag',
     restDayCancel: 'Ich möchte trotzdem eintragen',
     daysSaved: 'Tage gespeichert',
+
+    // Completed sections
+    expand: 'Erweitern',
+    collapse: 'Einklappen',
+    moodRecordedShort: 'Stimmung erfasst',
+    habitsCompletedShort: 'Gewohnheiten erledigt',
+    focusCompletedShort: 'Fokus abgeschlossen',
+    gratitudeAddedShort: 'Dankbarkeit hinzugefügt',
+
+    // All complete celebration
+    allComplete: 'Alles erledigt!',
+    allCompleteMessage: 'Du hast alle Aktivitäten für heute abgeschlossen',
+    allCompleteSupportive: 'Bis morgen!',
+    allCompleteLegend: 'Legendärer Tag!',
+    allCompleteAmazing: 'Unglaublich!',
+    allCompleteGreat: 'Tolle Arbeit!',
+    allCompleteNice: 'Gute Arbeit!',
+    daysStreak: 'Tage in Folge',
     restDaySupportive: 'Morgen machen wir zusammen weiter 💚',
     restDayCooldown: 'Ruhetag wurde kürzlich genutzt',
     restDayAvailableIn: 'Verfügbar in',
@@ -5786,6 +5894,24 @@ export const translations: Record<Language, Translations> = {
     restDayButton: 'Jour de repos',
     restDayCancel: 'Je veux quand même enregistrer',
     daysSaved: 'jours préservés',
+
+    // Completed sections
+    expand: 'Développer',
+    collapse: 'Réduire',
+    moodRecordedShort: 'Humeur enregistrée',
+    habitsCompletedShort: 'Habitudes complétées',
+    focusCompletedShort: 'Focus terminé',
+    gratitudeAddedShort: 'Gratitude ajoutée',
+
+    // All complete celebration
+    allComplete: 'Tout est fait!',
+    allCompleteMessage: 'Vous avez terminé toutes les activités d\'aujourd\'hui',
+    allCompleteSupportive: 'À demain!',
+    allCompleteLegend: 'Journée légendaire!',
+    allCompleteAmazing: 'Incroyable!',
+    allCompleteGreat: 'Excellent travail!',
+    allCompleteNice: 'Bon travail!',
+    daysStreak: 'jours consécutifs',
     restDaySupportive: 'On continue ensemble demain 💚',
     restDayCooldown: 'Le jour de repos a été utilisé récemment',
     restDayAvailableIn: 'Disponible dans',

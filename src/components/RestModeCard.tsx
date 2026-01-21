@@ -3,6 +3,7 @@
  * Shows when user activates "Rest Day" to preserve streak without activity
  */
 
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Moon, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -12,7 +13,7 @@ interface RestModeCardProps {
   onCancel: () => void;
 }
 
-export function RestModeCard({ streak, onCancel }: RestModeCardProps) {
+export const RestModeCard = memo(function RestModeCard({ streak, onCancel }: RestModeCardProps) {
   const { t } = useLanguage();
 
   return (
@@ -101,4 +102,4 @@ export function RestModeCard({ streak, onCancel }: RestModeCardProps) {
       </button>
     </motion.div>
   );
-}
+});

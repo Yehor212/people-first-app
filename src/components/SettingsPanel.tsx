@@ -5,6 +5,7 @@ import { Share } from '@capacitor/share';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Language, languageNames, languageFlags } from '@/i18n/translations';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { Habit, ReminderSettings, PrivacySettings } from '@/types';
 import { Switch } from '@/components/ui/switch';
@@ -99,7 +100,7 @@ export function SettingsPanel({
     try {
       await supabase.auth.updateUser({ data: { full_name: sanitized } });
     } catch (error) {
-      console.error("Failed to update profile name:", error);
+      logger.error("Failed to update profile name:", error);
     }
   };
 
@@ -181,7 +182,7 @@ export function SettingsPanel({
       setShowDeleteConfirm(false);
       setDeleteStatus(t.deleteAccountSuccess);
     } catch (error) {
-      console.error("Delete account failed:", error);
+      logger.error("Delete account failed:", error);
       setDeleteStatus(t.deleteAccountError);
     }
   };
@@ -197,7 +198,7 @@ export function SettingsPanel({
       setAuthStatus(result.status === "pulled" ? t.syncPulled : t.syncPushed);
     } catch (error) {
       const errorMessage = formatError(error);
-      console.error("Sync failed:", errorMessage);
+      logger.error("Sync failed:", errorMessage);
       setAuthStatus(`${t.syncError} ${errorMessage}`);
     }
   };
@@ -237,7 +238,7 @@ export function SettingsPanel({
       URL.revokeObjectURL(url);
       setDataStatus(t.exportSuccess);
     } catch (error) {
-      console.error(error);
+      logger.error("Export failed:", error);
       setDataStatus(t.exportError);
     }
   };
@@ -264,7 +265,7 @@ export function SettingsPanel({
           `${formatEntry(t.settings, report.settings)}.`
       );
     } catch (error) {
-      console.error(error);
+      logger.error("Import failed:", error);
       setDataStatus(t.importError);
     } finally {
       event.target.value = '';

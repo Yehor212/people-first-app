@@ -1,11 +1,12 @@
 ﻿import { useMemo, useState, useEffect, useRef } from 'react';
+import { logger } from '@/lib/logger';
 import { FocusSession } from '@/types';
 import { formatTime, getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { Play, Pause, RotateCcw, Coffee, Zap } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { HyperfocusMode } from './HyperfocusMode';
-// import { haptics } from '@/lib/haptics'; // TEMPORARILY DISABLED
+import { haptics } from '@/lib/haptics';
 
 const DEFAULT_FOCUS_MINUTES = 25;
 const DEFAULT_BREAK_MINUTES = 5;
@@ -44,7 +45,7 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
         return JSON.parse(stored);
       }
     } catch (e) {
-      console.error('Failed to load timer state:', e);
+      logger.error('Failed to load timer state:', e);
     }
     return null;
   };
@@ -84,7 +85,7 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
     try {
       localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
     } catch (e) {
-      console.error('Failed to save timer state:', e);
+      logger.error('Failed to save timer state:', e);
     }
   };
 
@@ -231,7 +232,7 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
         setFocusElapsed(Math.floor(focusAccumulatedRef.current / 1000));
       }
       setIsRunning(false);
-      // haptics.focusPaused(); // Haptic feedback for pause - TEMPORARILY DISABLED
+      haptics.focusPaused();
       return;
     }
 
@@ -241,7 +242,7 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
     endTimeRef.current = Date.now() + (timeLeft > 0 ? timeLeft : (isBreak ? breakDuration : focusDuration)) * 1000;
     if (!isBreak) {
       focusStartRef.current = Date.now();
-      // haptics.focusStarted(); // Haptic feedback for focus start - TEMPORARILY DISABLED
+      haptics.focusStarted();
     }
     setIsRunning(true);
   };

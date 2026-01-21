@@ -541,7 +541,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
 
         {/* Month Selector Grid */}
         {showMonthSelector && (
-          <div className="grid grid-cols-4 gap-2 mb-5 animate-fade-in">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-5 animate-fade-in">
             {monthNames.map((month, index) => (
               <button
                 key={month}
@@ -564,34 +564,34 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
         )}
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-4 gap-3 mb-5">
-          <div className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-            <p className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-500">{yearStats.moodCount}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
+          <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
+            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-500">{yearStats.moodCount}</p>
             <p className="text-[10px] text-muted-foreground mt-1">{t.moodEntries}</p>
           </div>
-          <div className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-            <p className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-purple-500">{yearStats.focusMinutes}</p>
+          <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
+            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-purple-500">{yearStats.focusMinutes}</p>
             <p className="text-[10px] text-muted-foreground mt-1">{t.focusMinutes}</p>
           </div>
-          <div className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-            <p className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">{yearStats.habitCompletions}</p>
+          <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
+            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">{yearStats.habitCompletions}</p>
             <p className="text-[10px] text-muted-foreground mt-1">{t.habitsCompleted}</p>
           </div>
-          <div className="text-center p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-            <p className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-500 to-orange-500">{yearStats.gratitudeCount}</p>
+          <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
+            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-500 to-orange-500">{yearStats.gratitudeCount}</p>
             <p className="text-[10px] text-muted-foreground mt-1">{t.gratitudes}</p>
           </div>
         </div>
 
         {/* Day Names */}
-        <div className="grid grid-cols-7 gap-1 text-xs text-muted-foreground mb-2">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-[10px] sm:text-xs text-muted-foreground mb-2">
           {[t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat].map((day) => (
-            <div key={day} className="text-center font-medium py-2">{day.slice(0, 2)}</div>
+            <div key={day} className="text-center font-medium py-1 sm:py-2">{day.slice(0, 2)}</div>
           ))}
         </div>
 
         {/* Calendar Days - Redesigned */}
-        <div className="grid grid-cols-7 gap-1.5">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-1.5">
           {calendarDays.map((cell, index) => {
             if (!cell.dateKey) {
               return <div key={`empty-${index}`} className="w-full aspect-square" />;

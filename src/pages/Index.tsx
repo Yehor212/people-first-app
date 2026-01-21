@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { logger } from '@/lib/logger';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useMoodTheme } from '@/contexts/MoodThemeContext';
@@ -60,12 +60,12 @@ import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@
 import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
 import { syncTasks, syncQuests, subscribeToTaskUpdates, subscribeToQuestUpdates } from '@/storage/tasksCloudSync';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
-import { InnerWorldGarden } from '@/components/InnerWorldGarden';
 import { CompanionPanel } from '@/components/CompanionPanel';
-import { TreePanel } from '@/components/TreePanel';
 import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
 import { RestModeCard } from '@/components/RestModeCard';
+import { CompletedSection } from '@/components/CompletedSection';
+import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
 import { ConsentBanner } from '@/components/ConsentBanner';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { haptics } from '@/lib/haptics';
@@ -86,7 +86,7 @@ export function Index() {
     const checkDateChange = () => {
       const newDate = getToday();
       if (newDate !== currentDate) {
-        console.log('Date changed from', currentDate, 'to', newDate);
+        logger.log('Date changed from', currentDate, 'to', newDate);
         setCurrentDate(newDate);
         // This will trigger a re-render and all date-dependent useMemo hooks will recalculate
       }
@@ -140,13 +140,6 @@ export function Index() {
     earnTreats,
     treatsBalance,
     FEED_COST,
-    // Tree system
-    waterTree,
-    touchTree,
-    WATER_COST,
-    treeStage,
-    treeWaterLevel,
-    treeXP,
     // Rest mode
     isRestMode,
     activateRestMode,
@@ -157,9 +150,6 @@ export function Index() {
 
   // Companion panel state
   const [showCompanionPanel, setShowCompanionPanel] = useState(false);
-  // Tree panel state
-  const [showTreePanel, setShowTreePanel] = useState(false);
-  const [treeCalmMode, setTreeCalmMode] = useLocalStorage<boolean>('zenflow-tree-calm', false);
 
   // Guard against double habit toggles (prevents duplicate rewards)
   const processingHabitsRef = useRef<Set<string>>(new Set());
@@ -495,7 +485,7 @@ export function Index() {
     plantSeed('mood', mood);
     waterPlants('mood');
 
-    console.log('Quick mood logged from notification:', mood);
+    logger.log('Quick mood logged from notification:', mood);
   }, [awardXp, earnTreats, plantSeed, waterPlants, setMoods]);
 
   // Update existing mood entry (for same-day editing)
@@ -858,7 +848,7 @@ export function Index() {
     if (!supabase) return;
     const timeoutId = window.setTimeout(() => {
       syncReminderSettings(reminders, language).catch((error) => {
-        console.error("Failed to sync reminder settings:", error);
+        logger.error("Failed to sync reminder settings:", error);
       });
     }, 500);
 
@@ -868,7 +858,7 @@ export function Index() {
   useEffect(() => {
     if (!isNativePlatform()) return;
     scheduleLocalReminders(reminders, reminderCopy).catch((error) => {
-      console.error("Failed to schedule local reminders:", error);
+      logger.error("Failed to schedule local reminders:", error);
     });
   }, [reminders, reminderCopy]);
 
@@ -879,7 +869,7 @@ export function Index() {
       reminderTitle: t.reminderHabitTitle,
       reminderBody: t.reminderHabitBody
     }).catch((error) => {
-      console.error("Failed to schedule habit reminders:", error);
+      logger.error("Failed to schedule habit reminders:", error);
     });
   }, [habits, t.reminderHabitTitle, t.reminderHabitBody]);
 
@@ -897,7 +887,7 @@ export function Index() {
         companionCheersYou: t.companionCheersYou || 'is cheering for you! 💪',
       }
     ).catch((error) => {
-      console.error("Failed to schedule companion reminders:", error);
+      logger.error("Failed to schedule companion reminders:", error);
     });
   }, [reminders, innerWorld.companion, isLoadingInnerWorld, t]);
 
@@ -919,7 +909,7 @@ export function Index() {
     };
 
     setupMoodActions().catch((error) => {
-      console.error('Failed to setup mood notification actions:', error);
+      logger.error('Failed to setup mood notification actions:', error);
     });
 
     return () => {
@@ -941,7 +931,7 @@ export function Index() {
       { type: innerWorld.companion.type, name: innerWorld.companion.name },
       t.companionQuickMood || 'How are you feeling? Tap! 😊'
     ).catch((error) => {
-      console.error('Failed to schedule mood quick-log notification:', error);
+      logger.error('Failed to schedule mood quick-log notification:', error);
     });
   }, [reminders.enabled, reminders.moodTime, innerWorld.companion, isLoadingInnerWorld, t.companionQuickMood]);
 
@@ -953,7 +943,7 @@ export function Index() {
       try {
         await handleAuthCallback(supabase, url);
       } catch (error) {
-        console.error("Failed to handle auth callback:", error);
+        logger.error("Failed to handle auth callback:", error);
       }
     };
 
@@ -964,7 +954,7 @@ export function Index() {
           await handleAuthUrl(launch.url);
         }
       } catch (error) {
-        console.error("Failed to read launch url:", error);
+        logger.error("Failed to read launch url:", error);
       }
 
       const listener = await App.addListener("appUrlOpen", (event) => {
@@ -995,7 +985,7 @@ export function Index() {
         // Start auto-sync after successful initial sync
         startAutoSync();
       } catch (error) {
-        console.error('Cloud sync failed:', error);
+        logger.error('Cloud sync failed:', error);
       }
     };
 
@@ -1133,15 +1123,15 @@ export function Index() {
 
           // Subscribe to tasks/quests updates to keep localStorage fresh
           taskSub = subscribeToTaskUpdates(user.id, () => {
-            console.log('[Index] Tasks updated from cloud');
+            logger.log('[Index] Tasks updated from cloud');
           });
 
           questSub = subscribeToQuestUpdates(user.id, () => {
-            console.log('[Index] Quests updated from cloud');
+            logger.log('[Index] Quests updated from cloud');
           });
         }
       } catch (error) {
-        console.error('[Index] Cloud sync error:', error);
+        logger.error('[Index] Cloud sync error:', error);
       }
     };
 
@@ -1253,58 +1243,143 @@ export function Index() {
                   streak={innerWorld.currentActiveStreak}
                   onCancel={deactivateRestMode}
                 />
+              ) : currentPrimaryCTA === 'complete' ? (
+                /* All activities complete - show celebration */
+                <AllCompleteCelebration streak={innerWorld.currentActiveStreak} />
               ) : (
                 <>
-                  {/* Smart Primary CTA System - Sequential focus */}
-                  {/* Mood Tracker - Primary CTA if mood not recorded */}
+                  {/* Smart Primary CTA System - Sequential focus with collapsible completed sections */}
+
+                  {/* Mood Tracker - Primary or Collapsed */}
                   <div ref={moodRef}>
-                    <MoodTracker
-                      entries={moods}
-                      onAddEntry={handleAddMood}
-                      onUpdateEntry={handleUpdateMood}
-                      isPrimaryCTA={currentPrimaryCTA === 'mood'}
-                    />
+                    {currentPrimaryCTA === 'mood' ? (
+                      <MoodTracker
+                        entries={moods}
+                        onAddEntry={handleAddMood}
+                        onUpdateEntry={handleUpdateMood}
+                        isPrimaryCTA={true}
+                      />
+                    ) : hasMoodToday ? (
+                      <CompletedSection
+                        title={t.moodRecordedShort || t.mood}
+                        icon="💜"
+                        accentColor="primary"
+                      >
+                        <MoodTracker
+                          entries={moods}
+                          onAddEntry={handleAddMood}
+                          onUpdateEntry={handleUpdateMood}
+                        />
+                      </CompletedSection>
+                    ) : (
+                      <MoodTracker
+                        entries={moods}
+                        onAddEntry={handleAddMood}
+                        onUpdateEntry={handleUpdateMood}
+                      />
+                    )}
                   </div>
 
-                  {/* Breathing Exercise - Mindfulness card (under mood) */}
+                  {/* Breathing Exercise - Compact mindfulness card */}
                   <BreathingExercise
                     compact
                     onComplete={(pattern) => {
-                      // Award treats for breathing exercise completion
                       const treatResult = earnTreats('breathing', 5, `Breathing: ${pattern.name.en}`);
                       triggerXpPopup(treatResult.earned, 'breathing');
                     }}
                   />
 
-                  {/* Focus Timer - Primary CTA if no focus session today */}
-                  <div ref={focusRef}>
-                    <FocusTimer
-                      sessions={focusSessions}
-                      onCompleteSession={handleCompleteFocusSession}
-                      onMinuteUpdate={setCurrentFocusMinutes}
-                      isPrimaryCTA={currentPrimaryCTA === 'focus'}
-                    />
-                  </div>
-
-                  {/* Habit Tracker - Primary CTA if habits not completed */}
+                  {/* Habit Tracker - Primary or Collapsed */}
                   <div ref={habitsRef}>
-                    <HabitTracker
-                      habits={habits}
-                      onToggleHabit={handleToggleHabit}
-                      onAdjustHabit={handleAdjustHabit}
-                      onAddHabit={handleAddHabit}
-                      onDeleteHabit={handleDeleteHabit}
-                      isPrimaryCTA={currentPrimaryCTA === 'habits'}
-                    />
+                    {currentPrimaryCTA === 'habits' ? (
+                      <HabitTracker
+                        habits={habits}
+                        onToggleHabit={handleToggleHabit}
+                        onAdjustHabit={handleAdjustHabit}
+                        onAddHabit={handleAddHabit}
+                        onDeleteHabit={handleDeleteHabit}
+                        isPrimaryCTA={true}
+                      />
+                    ) : !hasUncompletedHabits && habits.length > 0 ? (
+                      <CompletedSection
+                        title={t.habitsCompletedShort || t.habits}
+                        icon="✅"
+                        accentColor="emerald"
+                      >
+                        <HabitTracker
+                          habits={habits}
+                          onToggleHabit={handleToggleHabit}
+                          onAdjustHabit={handleAdjustHabit}
+                          onAddHabit={handleAddHabit}
+                          onDeleteHabit={handleDeleteHabit}
+                        />
+                      </CompletedSection>
+                    ) : (
+                      <HabitTracker
+                        habits={habits}
+                        onToggleHabit={handleToggleHabit}
+                        onAdjustHabit={handleAdjustHabit}
+                        onAddHabit={handleAddHabit}
+                        onDeleteHabit={handleDeleteHabit}
+                      />
+                    )}
                   </div>
 
-                  {/* Gratitude Journal - Primary CTA if no gratitude entry */}
+                  {/* Focus Timer - Primary or Collapsed */}
+                  <div ref={focusRef}>
+                    {currentPrimaryCTA === 'focus' ? (
+                      <FocusTimer
+                        sessions={focusSessions}
+                        onCompleteSession={handleCompleteFocusSession}
+                        onMinuteUpdate={setCurrentFocusMinutes}
+                        isPrimaryCTA={true}
+                      />
+                    ) : hasFocusToday ? (
+                      <CompletedSection
+                        title={t.focusCompletedShort || t.focus}
+                        icon="🎯"
+                        accentColor="violet"
+                      >
+                        <FocusTimer
+                          sessions={focusSessions}
+                          onCompleteSession={handleCompleteFocusSession}
+                          onMinuteUpdate={setCurrentFocusMinutes}
+                        />
+                      </CompletedSection>
+                    ) : (
+                      <FocusTimer
+                        sessions={focusSessions}
+                        onCompleteSession={handleCompleteFocusSession}
+                        onMinuteUpdate={setCurrentFocusMinutes}
+                      />
+                    )}
+                  </div>
+
+                  {/* Gratitude Journal - Primary or Collapsed */}
                   <div ref={gratitudeRef}>
-                    <GratitudeJournal
-                      entries={gratitudeEntries}
-                      onAddEntry={handleAddGratitude}
-                      isPrimaryCTA={currentPrimaryCTA === 'gratitude'}
-                    />
+                    {currentPrimaryCTA === 'gratitude' ? (
+                      <GratitudeJournal
+                        entries={gratitudeEntries}
+                        onAddEntry={handleAddGratitude}
+                        isPrimaryCTA={true}
+                      />
+                    ) : hasGratitudeToday ? (
+                      <CompletedSection
+                        title={t.gratitudeAddedShort || t.gratitude}
+                        icon="🙏"
+                        accentColor="pink"
+                      >
+                        <GratitudeJournal
+                          entries={gratitudeEntries}
+                          onAddEntry={handleAddGratitude}
+                        />
+                      </CompletedSection>
+                    ) : (
+                      <GratitudeJournal
+                        entries={gratitudeEntries}
+                        onAddEntry={handleAddGratitude}
+                      />
+                    )}
                   </div>
                 </>
               )}
@@ -1320,46 +1395,6 @@ export function Index() {
               onOpenTasks={() => setShowTasksPanel(true)}
               onOpenQuests={() => setShowQuestsPanel(true)}
             />
-
-            {/* Inner World Garden - Hidden temporarily
-            <InnerWorldGarden
-              world={innerWorld}
-              onCompanionClick={() => {
-                clearWelcomeBack();
-                setShowTreePanel(true);
-              }}
-              calmMode={treeCalmMode}
-              onPlantClick={(plant) => {
-                console.log('Plant clicked:', plant);
-              }}
-              onCreatureClick={(creature) => {
-                console.log('Creature clicked:', creature);
-              }}
-            />
-            */}
-
-            {/* Garden Stats - Hidden temporarily
-            <div className="grid grid-cols-3 gap-3">
-              <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500/10 to-green-500/5 rounded-2xl p-4 text-center border border-emerald-500/20">
-                <div className="text-2xl mb-2">🌱</div>
-                <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">{gardenStats.totalPlants}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">{t.plants}</div>
-                <div className="absolute -right-3 -bottom-3 text-5xl opacity-10">🌿</div>
-              </div>
-              <div className="relative overflow-hidden bg-gradient-to-br from-violet-500/10 to-purple-500/5 rounded-2xl p-4 text-center border border-violet-500/20">
-                <div className="text-2xl mb-2">🦋</div>
-                <div className="text-xl font-bold text-violet-600 dark:text-violet-400">{gardenStats.totalCreatures}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">{t.creatures}</div>
-                <div className="absolute -right-3 -bottom-3 text-5xl opacity-10">✨</div>
-              </div>
-              <div className="relative overflow-hidden bg-gradient-to-br from-amber-500/10 to-yellow-500/5 rounded-2xl p-4 text-center border border-amber-500/20">
-                <div className="text-2xl mb-2">⭐</div>
-                <div className="text-xl font-bold text-amber-600 dark:text-amber-400">{innerWorld.companion.level}</div>
-                <div className="text-xs text-muted-foreground mt-0.5">{t.level}</div>
-                <div className="absolute -right-3 -bottom-3 text-5xl opacity-10">🏆</div>
-              </div>
-            </div>
-            */}
 
             {/* Visual Day Clock - ADHD-friendly energy meter */}
             <DayClock
@@ -1499,23 +1534,6 @@ export function Index() {
         hasGratitudeToday={hasGratitudeToday}
       />
 
-      {/* Seasonal Tree Panel Modal */}
-      <TreePanel
-        treeStage={treeStage}
-        waterLevel={treeWaterLevel}
-        treeXP={treeXP}
-        treeName={innerWorld.companion.name}
-        isOpen={showTreePanel}
-        onClose={() => setShowTreePanel(false)}
-        onRename={renameCompanion}
-        onTouch={touchTree}
-        onWater={waterTree}
-        treatsBalance={treatsBalance}
-        waterCost={WATER_COST}
-        streak={innerWorld.currentActiveStreak}
-        calmMode={treeCalmMode}
-        onCalmModeChange={setTreeCalmMode}
-      />
     </div>
   );
 };

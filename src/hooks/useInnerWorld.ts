@@ -4,6 +4,7 @@
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { logger } from '@/lib/logger';
 import { useIndexedDB } from './useIndexedDB';
 import { db } from '@/storage/db';
 import { generateId, getToday } from '@/lib/utils';
@@ -281,7 +282,7 @@ export function useInnerWorld() {
     }
 
     syncTimeoutRef.current = setTimeout(() => {
-      pushInnerWorldToCloud(world).catch(console.error);
+      pushInnerWorldToCloud(world).catch(err => logger.error('Failed to push inner world to cloud:', err));
     }, 5000); // Sync 5 seconds after last change
 
     return () => {

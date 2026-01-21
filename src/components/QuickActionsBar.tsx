@@ -111,9 +111,9 @@ export function QuickActionsBar({
             </h3>
             <button
               onClick={() => setIsExpanded(false)}
-              className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+              className="p-2.5 hover:bg-muted rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
@@ -222,9 +222,9 @@ export function QuickActionsBar({
               {onDismissNotification && (
                 <button
                   onClick={() => onDismissNotification(notification.id)}
-                  className="p-1.5 hover:bg-muted rounded-lg transition-colors"
+                  className="p-2.5 hover:bg-muted rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               )}
             </div>

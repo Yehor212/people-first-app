@@ -11,6 +11,8 @@
  * - playsInline attribute required for inline playback
  */
 
+import { logger } from './logger';
+
 // Sound categories based on actual available files
 export type AmbientSoundType = 'none' | 'underwater' | 'thunderstorm' | 'ocean' | 'river' | 'cafe' | 'fireplace';
 
@@ -59,9 +61,9 @@ async function unlockWithOscillator(): Promise<void> {
     oscillator.start(0);
     oscillator.stop(ctx.currentTime + 0.001);
 
-    console.log('[AmbientSounds] Oscillator trick completed');
+    logger.log('[AmbientSounds] Oscillator trick completed');
   } catch (e) {
-    console.warn('[AmbientSounds] Oscillator unlock failed:', e);
+    logger.warn('[AmbientSounds] Oscillator unlock failed:', e);
   }
 }
 
@@ -85,9 +87,9 @@ async function unlockWithAudioElement(): Promise<void> {
     audio.pause();
     audio.src = '';
 
-    console.log('[AmbientSounds] Audio element unlock completed');
+    logger.log('[AmbientSounds] Audio element unlock completed');
   } catch (e) {
-    console.warn('[AmbientSounds] Audio element unlock failed:', e);
+    logger.warn('[AmbientSounds] Audio element unlock failed:', e);
   }
 }
 
@@ -115,9 +117,9 @@ export async function unlockAudio(): Promise<void> {
       }
 
       audioUnlocked = true;
-      console.log('[AmbientSounds] Audio fully unlocked for mobile browser');
+      logger.log('[AmbientSounds] Audio fully unlocked for mobile browser');
     } catch (e) {
-      console.warn('[AmbientSounds] Audio unlock had issues:', e);
+      logger.warn('[AmbientSounds] Audio unlock had issues:', e);
       // Still mark as unlocked to avoid infinite retries
       audioUnlocked = true;
     } finally {
@@ -154,7 +156,7 @@ export function setupAudioUnlock(): void {
   document.addEventListener('click', handleInteraction, { capture: true, passive: true });
   document.addEventListener('keydown', handleInteraction, { capture: true, passive: true });
 
-  console.log('[AmbientSounds] Audio unlock listeners set up');
+  logger.log('[AmbientSounds] Audio unlock listeners set up');
 }
 
 /**
@@ -269,7 +271,7 @@ export class AmbientSoundGenerator {
 
     const sound = getSoundById(soundId);
     if (!sound) {
-      console.error(`[AmbientSounds] Sound not found: ${soundId}`);
+      logger.error(`[AmbientSounds] Sound not found: ${soundId}`);
       return;
     }
 
@@ -283,9 +285,9 @@ export class AmbientSoundGenerator {
 
     try {
       await this.playAudioFile(sound.file);
-      console.log(`[AmbientSounds] Playing: ${sound.nameEn}`);
+      logger.log(`[AmbientSounds] Playing: ${sound.nameEn}`);
     } catch (error) {
-      console.error(`[AmbientSounds] Failed to play ${sound.nameEn}:`, error);
+      logger.error(`[AmbientSounds] Failed to play ${sound.nameEn}:`, error);
       this.isPlaying = false;
       this.currentSoundId = null;
     }
@@ -319,7 +321,7 @@ export class AmbientSoundGenerator {
         }
       }
     } catch (e) {
-      console.warn('[AmbientSounds] AudioContext resume failed:', e);
+      logger.warn('[AmbientSounds] AudioContext resume failed:', e);
     }
 
     // Create audio element with iOS-friendly settings
@@ -339,7 +341,7 @@ export class AmbientSoundGenerator {
 
       const timeout = setTimeout(() => {
         // On iOS, sometimes oncanplaythrough doesn't fire - try anyway
-        console.warn('[AmbientSounds] Audio load timeout - attempting play anyway');
+        logger.warn('[AmbientSounds] Audio load timeout - attempting play anyway');
         resolve();
       }, 10000); // 10 second timeout
 
@@ -356,7 +358,7 @@ export class AmbientSoundGenerator {
 
       this.audioElement.onerror = (e) => {
         clearTimeout(timeout);
-        console.error('[AmbientSounds] Audio error:', e);
+        logger.error('[AmbientSounds] Audio error:', e);
         reject(new Error(`Failed to load audio: ${url}`));
       };
 
@@ -367,7 +369,7 @@ export class AmbientSoundGenerator {
     try {
       await this.audioElement.play();
     } catch (playError) {
-      console.warn('[AmbientSounds] First play attempt failed, retrying...', playError);
+      logger.warn('[AmbientSounds] First play attempt failed, retrying...', playError);
       // iOS sometimes needs a second attempt
       await new Promise(resolve => setTimeout(resolve, 100));
       await this.audioElement.play();
@@ -403,7 +405,7 @@ export class AmbientSoundGenerator {
 
   resume(): void {
     if (this.audioElement && this.isPlaying) {
-      this.audioElement.play().catch(console.error);
+      this.audioElement.play().catch(err => logger.error('Failed to resume audio:', err));
     }
   }
 

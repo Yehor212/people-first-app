@@ -7,7 +7,7 @@ export class ZenFlowDB extends Dexie {
   habits!: Table<Habit, string>;
   focusSessions!: Table<FocusSession, string>;
   gratitudeEntries!: Table<GratitudeEntry, string>;
-  settings!: Table<{ key: string; value: any }, string>;
+  settings!: Table<{ key: string; value: unknown }, string>;
 
   constructor() {
     super('ZenFlowDB');

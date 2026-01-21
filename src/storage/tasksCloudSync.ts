@@ -1,5 +1,6 @@
 // Tasks and Quests Cloud Synchronization with Supabase
 
+import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
 import { Task } from '@/lib/taskMomentum';
 import { Quest } from '@/lib/randomQuests';
@@ -132,7 +133,7 @@ export async function pullTasksFromCloud(): Promise<Task[]> {
     .order('updated_at', { ascending: false });
 
   if (error) {
-    console.error('Error pulling tasks:', error);
+    logger.error('Error pulling tasks:', error);
     return [];
   }
 
@@ -157,7 +158,7 @@ export async function pushTasksToCloud(tasks: Task[]): Promise<void> {
     });
 
   if (error) {
-    console.error('Error pushing tasks:', error);
+    logger.error('Error pushing tasks:', error);
   }
 }
 
@@ -231,7 +232,7 @@ export async function pullQuestsFromCloud(): Promise<{ daily: Quest | null; week
     .order('updated_at', { ascending: false });
 
   if (error) {
-    console.error('Error pulling quests:', error);
+    logger.error('Error pulling quests:', error);
     return { daily: null, weekly: null, bonus: null };
   }
 
@@ -267,7 +268,7 @@ export async function pushQuestsToCloud(quests: { daily: Quest | null; weekly: Q
     });
 
   if (error) {
-    console.error('Error pushing quests:', error);
+    logger.error('Error pushing quests:', error);
   }
 }
 
@@ -326,7 +327,7 @@ export async function syncQuests(): Promise<{ daily: Quest | null; weekly: Quest
  */
 export function subscribeToTaskUpdates(userId: string, callback: (tasks: Task[]) => void) {
   if (!userId) {
-    console.warn('[TasksSync] No userId provided for subscription');
+    logger.warn('[TasksSync] No userId provided for subscription');
     return () => {};
   }
 
@@ -360,7 +361,7 @@ export function subscribeToTaskUpdates(userId: string, callback: (tasks: Task[])
  */
 export function subscribeToQuestUpdates(userId: string, callback: (quests: { daily: Quest | null; weekly: Quest | null; bonus: Quest | null }) => void) {
   if (!userId) {
-    console.warn('[QuestsSync] No userId provided for subscription');
+    logger.warn('[QuestsSync] No userId provided for subscription');
     return () => {};
   }
 

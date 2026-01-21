@@ -1,4 +1,5 @@
 import { Challenge, ChallengeType } from '@/types';
+import { formatDate } from './utils';
 
 export const challengeTemplates: Omit<Challenge, 'id' | 'progress' | 'startDate' | 'completed'>[] = [
   // Streak Challenges
@@ -218,7 +219,7 @@ export function createChallengeFromTemplate(
     ...template,
     id: `challenge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     progress: 0,
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: formatDate(new Date()),
     completed: false,
     habitId
   };

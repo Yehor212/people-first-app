@@ -4,6 +4,7 @@
  * Falls back to full backup sync if granular sync fails
  */
 
+import { logger } from '@/lib/logger';
 import { supabase, getCurrentUserId } from '@/lib/supabaseClient';
 import { db } from '@/storage/db';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
@@ -32,9 +33,9 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     }, { onConflict: 'id' });
 
     if (error) throw error;
-    console.log('[Sync] Mood synced:', mood.id);
+    logger.log('[Sync] Mood synced:', mood.id);
   } catch (error) {
-    console.error('[Sync] Failed to sync mood:', error);
+    logger.error('[Sync] Failed to sync mood:', error);
   }
 };
 
@@ -50,9 +51,9 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
       .eq('user_id', userId);
 
     if (error) throw error;
-    console.log('[Sync] Mood deleted:', moodId);
+    logger.log('[Sync] Mood deleted:', moodId);
   } catch (error) {
-    console.error('[Sync] Failed to delete mood:', error);
+    logger.error('[Sync] Failed to delete mood:', error);
   }
 };
 
@@ -126,9 +127,9 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
       if (reminderError) throw reminderError;
     }
 
-    console.log('[Sync] Habit synced:', habit.id);
+    logger.log('[Sync] Habit synced:', habit.id);
   } catch (error) {
-    console.error('[Sync] Failed to sync habit:', error);
+    logger.error('[Sync] Failed to sync habit:', error);
   }
 };
 
@@ -144,9 +145,9 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
       .eq('user_id', userId);
 
     if (error) throw error;
-    console.log('[Sync] Habit deleted:', habitId);
+    logger.log('[Sync] Habit deleted:', habitId);
   } catch (error) {
-    console.error('[Sync] Failed to delete habit:', error);
+    logger.error('[Sync] Failed to delete habit:', error);
   }
 };
 
@@ -174,9 +175,9 @@ export const syncHabitCompletion = async (habitId: string, date: string, complet
 
       if (error) throw error;
     }
-    console.log('[Sync] Habit completion synced:', habitId, date, completed);
+    logger.log('[Sync] Habit completion synced:', habitId, date, completed);
   } catch (error) {
-    console.error('[Sync] Failed to sync habit completion:', error);
+    logger.error('[Sync] Failed to sync habit completion:', error);
   }
 };
 
@@ -201,9 +202,9 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
     }, { onConflict: 'id' });
 
     if (error) throw error;
-    console.log('[Sync] Focus session synced:', session.id);
+    logger.log('[Sync] Focus session synced:', session.id);
   } catch (error) {
-    console.error('[Sync] Failed to sync focus session:', error);
+    logger.error('[Sync] Failed to sync focus session:', error);
   }
 };
 
@@ -225,9 +226,9 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
     }, { onConflict: 'id' });
 
     if (error) throw error;
-    console.log('[Sync] Gratitude synced:', entry.id);
+    logger.log('[Sync] Gratitude synced:', entry.id);
   } catch (error) {
-    console.error('[Sync] Failed to sync gratitude:', error);
+    logger.error('[Sync] Failed to sync gratitude:', error);
   }
 };
 
@@ -243,9 +244,9 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
       .eq('user_id', userId);
 
     if (error) throw error;
-    console.log('[Sync] Gratitude deleted:', entryId);
+    logger.log('[Sync] Gratitude deleted:', entryId);
   } catch (error) {
-    console.error('[Sync] Failed to delete gratitude:', error);
+    logger.error('[Sync] Failed to delete gratitude:', error);
   }
 };
 
@@ -265,9 +266,9 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
     }, { onConflict: 'user_id,key' });
 
     if (error) throw error;
-    console.log('[Sync] Setting synced:', key);
+    logger.log('[Sync] Setting synced:', key);
   } catch (error) {
-    console.error('[Sync] Failed to sync setting:', error);
+    logger.error('[Sync] Failed to sync setting:', error);
   }
 };
 
@@ -400,7 +401,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       }
     });
 
-    console.log('[Sync] Pulled from cloud:', {
+    logger.log('[Sync] Pulled from cloud:', {
       moods: moods.length,
       habits: habits.length,
       focusSessions: focusSessions.length,
@@ -409,7 +410,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
 
     return true;
   } catch (error) {
-    console.error('[Sync] Failed to pull from cloud:', error);
+    logger.error('[Sync] Failed to pull from cloud:', error);
     return false;
   }
 };
@@ -440,7 +441,7 @@ export const pushToCloud = async (): Promise<boolean> => {
       ...settings.map(s => syncSetting(s.key, s.value)),
     ]);
 
-    console.log('[Sync] Pushed to cloud:', {
+    logger.log('[Sync] Pushed to cloud:', {
       moods: moods.length,
       habits: habits.length,
       focusSessions: focusSessions.length,
@@ -449,7 +450,7 @@ export const pushToCloud = async (): Promise<boolean> => {
 
     return true;
   } catch (error) {
-    console.error('[Sync] Failed to push to cloud:', error);
+    logger.error('[Sync] Failed to push to cloud:', error);
     return false;
   }
 };
@@ -497,7 +498,7 @@ export const subscribeToRealtime = async (): Promise<void> => {
       (payload) => handleRealtimeChange('gratitude_entries', payload)
     )
     .subscribe((status) => {
-      console.log('[Realtime] Subscription status:', status);
+      logger.log('[Realtime] Subscription status:', status);
     });
 };
 
@@ -506,12 +507,12 @@ export const unsubscribeFromRealtime = async (): Promise<void> => {
 
   await supabase.removeChannel(realtimeChannel);
   realtimeChannel = null;
-  console.log('[Realtime] Unsubscribed');
+  logger.log('[Realtime] Unsubscribed');
 };
 
 // Handle realtime changes from other devices
 const handleRealtimeChange = async (table: string, payload: { eventType: string; new: Record<string, unknown>; old: Record<string, unknown> }) => {
-  console.log('[Realtime] Change received:', table, payload.eventType);
+  logger.log('[Realtime] Change received:', table, payload.eventType);
 
   try {
     switch (table) {
@@ -573,7 +574,7 @@ const handleRealtimeChange = async (table: string, payload: { eventType: string;
     // Dispatch custom event to notify UI
     window.dispatchEvent(new CustomEvent('realtime-sync', { detail: { table, event: payload.eventType } }));
   } catch (error) {
-    console.error('[Realtime] Failed to handle change:', error);
+    logger.error('[Realtime] Failed to handle change:', error);
   }
 };
 
@@ -590,7 +591,7 @@ export const fetchUserStats = async () => {
     if (error) throw error;
     return data;
   } catch (error) {
-    console.error('[Sync] Failed to fetch user stats:', error);
+    logger.error('[Sync] Failed to fetch user stats:', error);
     return null;
   }
 };

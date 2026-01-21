@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 import { X, Play, Pause, Volume2, VolumeX } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AmbientSoundGenerator, SOUNDS, unlockAudio } from '@/lib/ambientSounds';
@@ -85,9 +86,9 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
       await generator.play(soundId);
       setIsSoundPlaying(true);
-      console.log('[HyperfocusMode] Sound playing:', soundId);
+      logger.log('[HyperfocusMode] Sound playing:', soundId);
     } catch (err) {
-      console.error('[HyperfocusMode] Failed to play sound:', err);
+      logger.error('[HyperfocusMode] Failed to play sound:', err);
       setIsSoundPlaying(false);
 
       // Retry once on mobile
@@ -96,7 +97,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         await generator.play(soundId);
         setIsSoundPlaying(true);
       } catch (retryErr) {
-        console.error('[HyperfocusMode] Retry failed:', retryErr);
+        logger.error('[HyperfocusMode] Retry failed:', retryErr);
       }
     }
   }, []);
@@ -133,7 +134,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       await unlockAudio();
       setAudioReady(true);
     } catch (e) {
-      console.warn('[HyperfocusMode] Audio unlock failed:', e);
+      logger.warn('[HyperfocusMode] Audio unlock failed:', e);
     }
     setIsRunning(true);
     setIsPaused(false);
@@ -174,7 +175,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       await unlockAudio();
       setAudioReady(true);
     } catch (e) {
-      console.warn('[HyperfocusMode] Audio unlock failed:', e);
+      logger.warn('[HyperfocusMode] Audio unlock failed:', e);
     }
 
     setSelectedSoundId(soundId);
@@ -188,14 +189,31 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     }
   };
 
+  // Lock body scroll when component mounts
+  useEffect(() => {
+    const originalOverflow = document.body.style.overflow;
+    const originalPosition = document.body.style.position;
+    const originalWidth = document.body.style.width;
+
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.position = originalPosition;
+      document.body.style.width = originalWidth;
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center">
+    <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center overflow-hidden touch-none">
       {/* Background gradient */}
-      <div className="absolute inset-0 zen-gradient-calm opacity-20" />
+      <div className="absolute inset-0 zen-gradient-calm opacity-20 pointer-events-none" />
 
       {/* Breathing Animation */}
       {showBreathingAnimation && (
-        <div className="absolute inset-0 flex items-center justify-center z-10">
+        <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
           <div className="breathing-circle zen-gradient rounded-full opacity-40" />
           <div className="absolute text-center">
             <p className="text-4xl font-bold text-white mb-4">

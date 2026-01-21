@@ -1,5 +1,7 @@
 import { Challenge, Badge, UserStats } from '@/types';
 import { badgeDefinitions } from './badges';
+import { formatDate } from './utils';
+import { logger } from './logger';
 
 const CHALLENGES_KEY = 'zenflow_challenges';
 const BADGES_KEY = 'zenflow_badges';
@@ -10,7 +12,7 @@ export function getChallenges(): Challenge[] {
     const data = localStorage.getItem(CHALLENGES_KEY);
     return data ? JSON.parse(data) : [];
   } catch (error) {
-    console.error('Failed to load challenges:', error);
+    logger.error('Failed to load challenges:', error);
     return [];
   }
 }
@@ -19,7 +21,7 @@ export function saveChallenges(challenges: Challenge[]): void {
   try {
     localStorage.setItem(CHALLENGES_KEY, JSON.stringify(challenges));
   } catch (error) {
-    console.error('Failed to save challenges:', error);
+    logger.error('Failed to save challenges:', error);
   }
 }
 
@@ -54,7 +56,7 @@ export function getBadges(): Badge[] {
     // Initialize with default badges if not found
     return initializeBadges();
   } catch (error) {
-    console.error('Failed to load badges:', error);
+    logger.error('Failed to load badges:', error);
     return initializeBadges();
   }
 }
@@ -70,7 +72,7 @@ export function saveBadges(badges: Badge[]): void {
   try {
     localStorage.setItem(BADGES_KEY, JSON.stringify(badges));
   } catch (error) {
-    console.error('Failed to save badges:', error);
+    logger.error('Failed to save badges:', error);
   }
 }
 
@@ -79,7 +81,7 @@ export function unlockBadge(badgeId: string): Badge | null {
   const badge = badges.find(b => b.id === badgeId);
   if (badge && !badge.unlocked) {
     badge.unlocked = true;
-    badge.unlockedDate = new Date().toISOString().split('T')[0];
+    badge.unlockedDate = formatDate(new Date());
     saveBadges(badges);
     return badge;
   }
@@ -100,7 +102,7 @@ export function updateChallengeProgress(
     // Check if challenge is completed
     if (progress >= challenge.target) {
       challenge.completed = true;
-      challenge.completedDate = new Date().toISOString().split('T')[0];
+      challenge.completedDate = formatDate(new Date());
 
       // Unlock reward badge if exists
       if (challenge.reward) {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useIndexedDB } from './useIndexedDB';
 import { db } from '@/storage/db';
+import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import {
   Achievement,
   AchievementId,
@@ -34,10 +35,10 @@ export function useGamification() {
     idField: 'key',
   });
 
-  const [moods, setMoods] = useState<any[]>([]);
-  const [habits, setHabits] = useState<any[]>([]);
-  const [focusSessions, setFocusSessions] = useState<any[]>([]);
-  const [gratitudeEntries, setGratitudeEntries] = useState<any[]>([]);
+  const [moods, setMoods] = useState<MoodEntry[]>([]);
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [focusSessions, setFocusSessions] = useState<FocusSession[]>([]);
+  const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeEntry[]>([]);
 
   // Load all data for stats
   useEffect(() => {

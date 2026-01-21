@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { logger } from '@/lib/logger';
 import { Sparkles, Trophy, Clock, Zap, Target, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -37,7 +38,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
         setWeeklyQuest(parsed.weekly || null);
         setBonusQuest(parsed.bonus || null);
       } catch (error) {
-        console.error('Failed to parse quests:', error);
+        logger.error('Failed to parse quests:', error);
       }
     }
     setIsLoaded(true);
@@ -52,7 +53,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
       bonus: bonusQuest,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    pushQuestsToCloud(data).catch(console.error);
+    pushQuestsToCloud(data).catch(err => logger.error('Failed to push quests to cloud:', err));
   }, [dailyQuest, weeklyQuest, bonusQuest, isLoaded]);
 
   // Check and regenerate expired/completed quests

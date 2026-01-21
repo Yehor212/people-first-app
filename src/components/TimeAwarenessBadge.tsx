@@ -7,7 +7,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Clock, Sunset, Coffee, Moon, Sun, Calendar } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { cn } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 import { ScheduleEvent } from '@/types';
 
 interface TimeAwarenessBadgeProps {
@@ -76,7 +76,7 @@ export function TimeAwarenessBadge({
 
   // Find next scheduled event
   const nextEvent = useMemo(() => {
-    const today = now.toISOString().split('T')[0];
+    const today = formatDate(now);
     const todayEvents = scheduleEvents
       .filter(e => e.date === today)
       .filter(e => {

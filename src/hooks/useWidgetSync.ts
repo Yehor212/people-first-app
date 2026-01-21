@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { logger } from '@/lib/logger';
 import { Capacitor } from '@capacitor/core';
 import Widget, { type WidgetData } from '@/plugins/WidgetPlugin';
 import type { Habit } from '@/types';
+import { formatDate } from '@/lib/utils';
 
 /**
  * Hook to automatically sync data with native widgets
@@ -24,7 +26,7 @@ export function useWidgetSync(
       if (!supported) return;
 
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = formatDate(new Date());
 
         // Calculate habits completed today
         const habitsToday = habits.filter(habit => {
@@ -47,10 +49,10 @@ export function useWidgetSync(
 
         // Update widget
         Widget.updateWidget(widgetData).catch(err => {
-          console.error('Failed to update widget:', err);
+          logger.error('Failed to update widget:', err);
         });
       } catch (error) {
-        console.error('Error preparing widget data:', error);
+        logger.error('Error preparing widget data:', error);
       }
     });
   }, [streak, habits, focusMinutes, lastBadge]);
@@ -67,7 +69,7 @@ export function useWidgetData() {
     Widget.getWidgetData()
       .then(setData)
       .catch(err => {
-        console.error('Failed to get widget data:', err);
+        logger.error('Failed to get widget data:', err);
       });
   }, []);
 

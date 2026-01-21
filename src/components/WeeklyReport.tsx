@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { TrendingUp, TrendingDown, Minus, Flame, Brain, Heart, Target, Calendar, Award } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 
 interface WeeklyReportProps {
   moods: MoodEntry[];
@@ -33,7 +33,7 @@ function getWeekDates() {
   for (let i = 0; i < 7; i++) {
     const date = new Date(monday);
     date.setDate(monday.getDate() + i);
-    dates.push(date.toISOString().split('T')[0]);
+    dates.push(formatDate(date));
   }
   return dates;
 }
@@ -49,7 +49,7 @@ function getPreviousWeekDates() {
   for (let i = 0; i < 7; i++) {
     const date = new Date(lastMonday);
     date.setDate(lastMonday.getDate() + i);
-    dates.push(date.toISOString().split('T')[0]);
+    dates.push(formatDate(date));
   }
   return dates;
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus, Zap, Clock, Star, Calendar, Trash2, CheckCircle2, Circle, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 import { playSuccess, playStreakMilestone } from '@/lib/audioManager';
 import {
   Task,
@@ -41,7 +42,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
         const parsed = JSON.parse(storedTasks);
         setTasks(Array.isArray(parsed) ? parsed : []);
       } catch (error) {
-        console.error('[TasksPanel] Failed to parse stored tasks:', error);
+        logger.error('[TasksPanel] Failed to parse stored tasks:', error);
       }
     }
 
@@ -54,7 +55,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
           setConsecutiveCompletions(parsed.count || 0);
         }
       } catch (error) {
-        console.error('[TasksPanel] Failed to parse momentum:', error);
+        logger.error('[TasksPanel] Failed to parse momentum:', error);
       }
     }
     setIsLoaded(true);
@@ -64,7 +65,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-    pushTasksToCloud(tasks).catch(console.error);
+    pushTasksToCloud(tasks).catch(err => logger.error('[TasksPanel] Cloud sync failed:', err));
   }, [tasks, isLoaded]);
 
   // Save momentum state

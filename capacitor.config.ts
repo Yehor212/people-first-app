@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   android: {
     // Set to false for production release
-    webContentsDebuggingEnabled: false,
+    webContentsDebuggingEnabled: true,
     allowMixedContent: false,
   },
   server: {

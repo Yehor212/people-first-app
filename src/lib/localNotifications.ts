@@ -1,4 +1,5 @@
 import { LocalNotifications, ActionPerformed } from '@capacitor/local-notifications';
+import { logger } from './logger';
 import { ReminderSettings, Habit, CompanionType, MoodType } from '@/types';
 import { COMPANION_EMOJIS } from '@/lib/innerWorldConstants';
 
@@ -61,7 +62,7 @@ export async function scheduleLocalReminders(
     if (permission.display !== 'granted') {
       const request = await LocalNotifications.requestPermissions();
       if (request.display !== 'granted') {
-        console.log('Notification permission denied');
+        logger.log('Notification permission denied');
         return;
       }
     }
@@ -80,7 +81,7 @@ export async function scheduleLocalReminders(
       id: number;
       title: string;
       body: string;
-      schedule: { on: { hour: number; minute: number }; every: 'day' };
+      schedule: { on: { hour: number; minute: number }; every: 'day'; allowWhileIdle: boolean };
     }> = [];
 
     const parseTime = (time: string) => {
@@ -96,27 +97,27 @@ export async function scheduleLocalReminders(
       id: 1,
       title: copy.mood.title,
       body: copy.mood.body,
-      schedule: { on: moodTime, every: 'day' }
+      schedule: { on: moodTime, every: 'day', allowWhileIdle: true }
     });
 
     notifications.push({
       id: 2,
       title: copy.habit.title,
       body: copy.habit.body,
-      schedule: { on: habitTime, every: 'day' }
+      schedule: { on: habitTime, every: 'day', allowWhileIdle: true }
     });
 
     notifications.push({
       id: 3,
       title: copy.focus.title,
       body: copy.focus.body,
-      schedule: { on: focusTime, every: 'day' }
+      schedule: { on: focusTime, every: 'day', allowWhileIdle: true }
     });
 
-    await LocalNotifications.schedule({ notifications });
-    console.log('Local notifications scheduled successfully');
+    await LocalNotifications.schedule({ notifications: notifications as any });
+    logger.log('Local notifications scheduled successfully');
   } catch (error) {
-    console.error('Failed to schedule local notifications:', error);
+    logger.error('Failed to schedule local notifications:', error);
   }
 }
 
@@ -132,7 +133,7 @@ export async function scheduleHabitReminders(
     // Check permission
     const permission = await LocalNotifications.checkPermissions();
     if (permission.display !== 'granted') {
-      console.log('Notification permission not granted for habit reminders');
+      logger.log('Notification permission not granted for habit reminders');
       return;
     }
 
@@ -196,12 +197,12 @@ export async function scheduleHabitReminders(
 
     if (notifications.length > 0) {
       await LocalNotifications.schedule({ notifications });
-      console.log(`Scheduled ${notifications.length} habit reminder notifications`);
+      logger.log(`Scheduled ${notifications.length} habit reminder notifications`);
     } else {
-      console.log('No habit reminders to schedule');
+      logger.log('No habit reminders to schedule');
     }
   } catch (error) {
-    console.error('Failed to schedule habit reminders:', error);
+    logger.error('Failed to schedule habit reminders:', error);
   }
 }
 
@@ -272,9 +273,9 @@ export async function scheduleCompanionReminders(
     });
 
     await LocalNotifications.schedule({ notifications });
-    console.log('Companion reminders scheduled successfully');
+    logger.log('Companion reminders scheduled successfully');
   } catch (error) {
-    console.error('Failed to schedule companion reminders:', error);
+    logger.error('Failed to schedule companion reminders:', error);
   }
 }
 
@@ -299,9 +300,9 @@ export async function registerMoodNotificationActions(): Promise<void> {
         },
       ],
     });
-    console.log('Mood notification actions registered');
+    logger.log('Mood notification actions registered');
   } catch (error) {
-    console.error('Failed to register mood notification actions:', error);
+    logger.error('Failed to register mood notification actions:', error);
   }
 }
 
@@ -322,7 +323,7 @@ export async function setupNotificationActionListener(): Promise<() => void> {
 
       if (moodEntry && moodActionCallback) {
         const moodType = moodEntry[0] as MoodType;
-        console.log('Quick mood logged:', moodType);
+        logger.log('Quick mood logged:', moodType);
         moodActionCallback(moodType);
       }
     }
@@ -375,8 +376,8 @@ export async function scheduleMoodQuickLogNotification(
       ],
     });
 
-    console.log('Mood quick-log notification scheduled');
+    logger.log('Mood quick-log notification scheduled');
   } catch (error) {
-    console.error('Failed to schedule mood quick-log notification:', error);
+    logger.error('Failed to schedule mood quick-log notification:', error);
   }
 }

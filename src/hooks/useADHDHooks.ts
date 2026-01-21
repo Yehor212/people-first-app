@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { logger } from '@/lib/logger';
 import {
   ComboState,
   TimeChallenge,
@@ -101,7 +102,7 @@ export function useADHDHooks(currentStreak: number) {
           loginStreak,
         });
       } catch (error) {
-        console.error('Failed to load ADHD hooks state:', error);
+        logger.error('Failed to load ADHD hooks state:', error);
       }
     };
 
