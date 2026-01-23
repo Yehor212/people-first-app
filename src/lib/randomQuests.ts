@@ -2,6 +2,28 @@
 // Generates daily/weekly quests with XP rewards and badge unlocks
 
 import { logger } from './logger';
+import { translations } from '@/i18n/translations';
+
+// Quest translation key mapping
+interface QuestTranslationKeys {
+  titleKey: keyof typeof translations.en;
+  descriptionKey: keyof typeof translations.en;
+}
+
+// Helper to get current language from localStorage
+function getCurrentLanguage(): string {
+  try {
+    return localStorage.getItem('zenflow-language') || 'en';
+  } catch {
+    return 'en';
+  }
+}
+
+// Helper to get translations for current language
+function getQuestTranslations(language?: string) {
+  const lang = (language || getCurrentLanguage()) as keyof typeof translations;
+  return translations[lang] || translations.en;
+}
 
 export type QuestType = 'daily' | 'weekly' | 'bonus';
 export type QuestCategory = 'habits' | 'focus' | 'streak' | 'gratitude' | 'speed' | 'consistency';
@@ -39,8 +61,8 @@ export interface QuestTemplate {
   category: QuestCategory;
   difficulty: 'easy' | 'medium' | 'hard';
   templates: {
-    title: string;
-    description: string;
+    titleKey: keyof typeof translations.en;
+    descriptionKey: keyof typeof translations.en;
     condition: Omit<QuestCondition, 'count'>;
     baseReward: number;
     badgeReward?: string;
@@ -55,20 +77,20 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     difficulty: 'easy',
     templates: [
       {
-        title: 'Morning Momentum',
-        description: 'Complete 3 habits before 12:00',
+        titleKey: 'questMorningMomentum',
+        descriptionKey: 'questMorningMomentumDesc',
         condition: { type: 'complete_habits', beforeTime: '12:00' },
         baseReward: 50,
       },
       {
-        title: 'Habit Master',
-        description: 'Complete 5 habits today',
+        titleKey: 'questHabitMaster',
+        descriptionKey: 'questHabitMasterDesc',
         condition: { type: 'complete_habits' },
         baseReward: 75,
       },
       {
-        title: 'Speed Demon',
-        description: 'Complete 3 habits in 30 minutes',
+        titleKey: 'questSpeedDemon',
+        descriptionKey: 'questSpeedDemonDesc',
         condition: { type: 'complete_habits', timeLimit: 30 },
         baseReward: 100,
         badgeReward: 'Speed Demon',
@@ -81,21 +103,21 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     difficulty: 'medium',
     templates: [
       {
-        title: 'Focus Flow',
-        description: '30 minutes of focus without breaks',
+        titleKey: 'questFocusFlow',
+        descriptionKey: 'questFocusFlowDesc',
         condition: { type: 'focus_minutes' },
         baseReward: 75,
       },
       {
-        title: 'Deep Work',
-        description: '60 minutes of focused work',
+        titleKey: 'questDeepWork',
+        descriptionKey: 'questDeepWorkDesc',
         condition: { type: 'focus_minutes' },
         baseReward: 150,
         badgeReward: 'Deep Focus',
       },
       {
-        title: 'Hyperfocus Hero',
-        description: '90 minutes in Hyperfocus Mode',
+        titleKey: 'questHyperfocusHero',
+        descriptionKey: 'questHyperfocusHeroDesc',
         condition: { type: 'focus_minutes' },
         baseReward: 250,
         badgeReward: 'Hyperfocus Hero',
@@ -108,15 +130,15 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     difficulty: 'hard',
     templates: [
       {
-        title: 'Streak Keeper',
-        description: 'Maintain your streak for 7 days',
+        titleKey: 'questStreakKeeper',
+        descriptionKey: 'questStreakKeeperDesc',
         condition: { type: 'maintain_streak' },
         baseReward: 200,
         badgeReward: 'Streak Keeper',
       },
       {
-        title: 'Consistency King',
-        description: 'Maintain your streak for 14 days',
+        titleKey: 'questConsistencyKing',
+        descriptionKey: 'questConsistencyKingDesc',
         condition: { type: 'maintain_streak' },
         baseReward: 500,
         badgeReward: 'Consistency King',
@@ -129,14 +151,14 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     difficulty: 'easy',
     templates: [
       {
-        title: 'Gratitude Sprint',
-        description: 'Write 5 gratitudes in 5 minutes',
+        titleKey: 'questGratitudeSprint',
+        descriptionKey: 'questGratitudeSprintDesc',
         condition: { type: 'gratitude_count', timeLimit: 5 },
         baseReward: 50,
       },
       {
-        title: 'Thankful Heart',
-        description: 'Write 10 gratitudes today',
+        titleKey: 'questThankfulHeart',
+        descriptionKey: 'questThankfulHeartDesc',
         condition: { type: 'gratitude_count' },
         baseReward: 100,
         badgeReward: 'Thankful Heart',
@@ -149,8 +171,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     difficulty: 'medium',
     templates: [
       {
-        title: 'Lightning Round',
-        description: 'Complete 5 quick tasks in 15 minutes',
+        titleKey: 'questLightningRound',
+        descriptionKey: 'questLightningRoundDesc',
         condition: { type: 'speed_challenge', timeLimit: 15 },
         baseReward: 125,
         badgeReward: 'Lightning Fast',
@@ -163,8 +185,8 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
     difficulty: 'hard',
     templates: [
       {
-        title: 'Weekly Warrior',
-        description: 'Complete habits 7 days in a row',
+        titleKey: 'questWeeklyWarrior',
+        descriptionKey: 'questWeeklyWarriorDesc',
         condition: { type: 'consecutive_days' },
         baseReward: 300,
         badgeReward: 'Weekly Warrior',
@@ -177,12 +199,19 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
  * Generate a random daily quest
  */
 export function generateDailyQuest(): Quest {
+  // Get translations for current language
+  const t = getQuestTranslations();
+
   // Pick random category (favor easier categories for daily quests)
   const easyCategories = QUEST_TEMPLATES.filter(t => t.difficulty === 'easy' || t.difficulty === 'medium');
   const categoryTemplate = easyCategories[Math.floor(Math.random() * easyCategories.length)];
 
   // Pick random template from category
   const template = categoryTemplate.templates[Math.floor(Math.random() * categoryTemplate.templates.length)];
+
+  // Get translated title and description
+  const title = t[template.titleKey] as string;
+  const description = t[template.descriptionKey] as string;
 
   // Determine count based on condition type
   let count = 3;
@@ -192,11 +221,11 @@ export function generateDailyQuest(): Quest {
     count = template.condition.beforeTime ? 3 : 5;
     total = count;
   } else if (template.condition.type === 'focus_minutes') {
-    count = template.description.includes('30') ? 30 :
-            template.description.includes('60') ? 60 : 90;
+    count = description.includes('30') ? 30 :
+            description.includes('60') ? 60 : 90;
     total = count;
   } else if (template.condition.type === 'gratitude_count') {
-    count = template.description.includes('5') ? 5 : 10;
+    count = description.includes('5') ? 5 : 10;
     total = count;
   }
 
@@ -209,8 +238,8 @@ export function generateDailyQuest(): Quest {
     id: `quest-daily-${now}`,
     type: 'daily',
     category: categoryTemplate.category,
-    title: template.title,
-    description: template.description,
+    title,
+    description,
     condition: {
       ...template.condition,
       count,
@@ -218,7 +247,7 @@ export function generateDailyQuest(): Quest {
     reward: {
       xp: template.baseReward,
       badge: template.badgeReward,
-      message: `${template.title} completed! +${template.baseReward} XP`,
+      message: `${title} completed! +${template.baseReward} XP`,
     },
     progress: 0,
     total,
@@ -232,18 +261,25 @@ export function generateDailyQuest(): Quest {
  * Generate a random weekly quest
  */
 export function generateWeeklyQuest(): Quest {
+  // Get translations for current language
+  const t = getQuestTranslations();
+
   // Pick random category (can include harder categories)
   const categoryTemplate = QUEST_TEMPLATES[Math.floor(Math.random() * QUEST_TEMPLATES.length)];
 
   // Pick random template from category
   const template = categoryTemplate.templates[Math.floor(Math.random() * categoryTemplate.templates.length)];
 
+  // Get translated title and description
+  const title = t[template.titleKey] as string;
+  const description = t[template.descriptionKey] as string;
+
   // Determine count based on condition type
   let count = 7;
   let total = 7;
 
   if (template.condition.type === 'maintain_streak') {
-    count = template.description.includes('14') ? 14 : 7;
+    count = description.includes('14') ? 14 : 7;
     total = count;
   } else if (template.condition.type === 'consecutive_days') {
     count = 7;
@@ -264,8 +300,8 @@ export function generateWeeklyQuest(): Quest {
     id: `quest-weekly-${now}`,
     type: 'weekly',
     category: categoryTemplate.category,
-    title: `Weekly: ${template.title}`,
-    description: template.description,
+    title: `Weekly: ${title}`,
+    description,
     condition: {
       ...template.condition,
       count,
@@ -273,7 +309,7 @@ export function generateWeeklyQuest(): Quest {
     reward: {
       xp: template.baseReward * 3, // Triple XP for weekly quests
       badge: template.badgeReward,
-      message: `Weekly ${template.title} completed! +${template.baseReward * 3} XP`,
+      message: `Weekly ${title} completed! +${template.baseReward * 3} XP`,
     },
     progress: 0,
     total,
@@ -287,14 +323,21 @@ export function generateWeeklyQuest(): Quest {
  * Generate a bonus quest (rare, high reward)
  */
 export function generateBonusQuest(): Quest {
+  // Get translations for current language
+  const t = getQuestTranslations();
+
   // Only hard quests with badges
   const hardTemplates = QUEST_TEMPLATES
     .flatMap(cat => cat.templates.filter(t => t.badgeReward));
 
   const template = hardTemplates[Math.floor(Math.random() * hardTemplates.length)];
   const categoryTemplate = QUEST_TEMPLATES.find(cat =>
-    cat.templates.some(t => t.title === template.title)
+    cat.templates.some(t => t.titleKey === template.titleKey)
   )!;
+
+  // Get translated title and description
+  const title = t[template.titleKey] as string;
+  const description = t[template.descriptionKey] as string;
 
   let count = 10;
   let total = 10;
@@ -315,8 +358,8 @@ export function generateBonusQuest(): Quest {
     id: `quest-bonus-${now}`,
     type: 'bonus',
     category: categoryTemplate.category,
-    title: `🌟 BONUS: ${template.title}`,
-    description: `${template.description} (Limited Time!)`,
+    title: `🌟 BONUS: ${title}`,
+    description: `${description} (Limited Time!)`,
     condition: {
       ...template.condition,
       count,
@@ -324,7 +367,7 @@ export function generateBonusQuest(): Quest {
     reward: {
       xp: template.baseReward * 5, // 5x XP for bonus quests!
       badge: template.badgeReward,
-      message: `BONUS ${template.title} completed! +${template.baseReward * 5} XP + Badge!`,
+      message: `BONUS ${title} completed! +${template.baseReward * 5} XP + Badge!`,
     },
     progress: 0,
     total,
