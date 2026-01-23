@@ -52,7 +52,10 @@ export function HabitCompletionCelebration({
   }, [streakDays, onComplete]);
 
   return (
-    <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[150] pointer-events-none">
+    <div
+      className="fixed left-1/2 -translate-x-1/2 z-[150] pointer-events-none"
+      style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
+    >
       {/* Main completion toast */}
       <div
         className={cn(

@@ -20,7 +20,10 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-lg border-t border-border z-50">
+    <nav
+      className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-lg border-t border-border z-50"
+      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
       <div className="max-w-lg mx-auto px-4">
         <div className="flex justify-between py-2">
           {tabs.map((tab) => (

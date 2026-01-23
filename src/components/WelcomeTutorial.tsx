@@ -3,7 +3,7 @@
  * Designed for both ADHD-aware and general users
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronLeft, Sparkles, Brain, Target, Heart, Timer, Zap, CheckCircle2, Clock, Palette } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -80,6 +80,10 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
   const [direction, setDirection] = useState<'next' | 'prev'>('next');
+
+  // Refs for swipe gesture tracking
+  const startXRef = useRef(0);
+  const isSwipingRef = useRef(false);
 
   // Get slides array inside component to avoid TDZ issues
   const slides = getSlides();
@@ -183,12 +187,63 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
     }, 300);
   };
 
+  // Swipe gesture handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    startXRef.current = e.touches[0].clientX;
+    isSwipingRef.current = false;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!startXRef.current) return;
+
+    const currentX = e.touches[0].clientX;
+    const diff = Math.abs(currentX - startXRef.current);
+
+    // Detect horizontal swipe (threshold: 10px)
+    if (diff > 10) {
+      isSwipingRef.current = true;
+    }
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (!isSwipingRef.current || !startXRef.current || isAnimating) {
+      startXRef.current = 0;
+      isSwipingRef.current = false;
+      return;
+    }
+
+    const endX = e.changedTouches[0].clientX;
+    const diff = endX - startXRef.current;
+    const threshold = window.innerWidth * 0.3; // 30% of screen width
+    const MIN_DISTANCE = 50;
+
+    if (Math.abs(diff) > MIN_DISTANCE && Math.abs(diff) > threshold) {
+      if (diff > 0 && currentSlide > 0) {
+        // Swipe right = previous slide
+        handlePrev();
+        navigator.vibrate?.(10); // Haptic feedback
+      } else if (diff < 0 && currentSlide < slides.length - 1) {
+        // Swipe left = next slide
+        handleNext();
+        navigator.vibrate?.(10);
+      }
+    }
+
+    startXRef.current = 0;
+    isSwipingRef.current = false;
+  };
+
   const slide = slides[currentSlide];
   const content = getSlideContent(slide.id);
   const Icon = slide.icon;
 
   return (
-    <div className="min-h-screen zen-gradient-hero flex flex-col">
+    <div
+      className="min-h-screen zen-gradient-hero flex flex-col"
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Skip button */}
       <div className="flex justify-end p-4">
         <button
@@ -258,7 +313,10 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
       </div>
 
       {/* Navigation */}
-      <div className="px-6 pb-8">
+      <div
+        className="px-6 pb-8"
+        style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
+      >
         {/* Dots */}
         <div className="flex justify-center gap-2 mb-6">
           {slides.map((_, index) => (

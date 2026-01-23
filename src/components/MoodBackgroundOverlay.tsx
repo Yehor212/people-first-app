@@ -64,7 +64,10 @@ function SupportBanner() {
   if (!isVisible || !message) return null;
 
   return (
-    <div className="fixed bottom-24 left-4 right-4 z-50 animate-fade-in">
+    <div
+      className="fixed left-4 right-4 z-50 animate-fade-in"
+      style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
+    >
       <div className="mood-support-banner rounded-2xl p-4 flex items-start gap-3 max-w-md mx-auto">
         <div className={cn(
           "p-2 rounded-full",

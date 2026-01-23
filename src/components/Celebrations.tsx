@@ -100,9 +100,10 @@ export function HabitCompletion({ habitName, onClose }: HabitCompletionProps) {
   return (
     <div
       className={cn(
-        "fixed bottom-24 left-1/2 -translate-x-1/2 z-[150] transition-all duration-300",
+        "fixed left-1/2 -translate-x-1/2 z-[150] transition-all duration-300",
         show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       )}
+      style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
     >
       <div className="flex items-center gap-3 px-6 py-3 bg-mood-good text-white rounded-full shadow-lg">
         <span className="text-2xl animate-bounce-check">✓</span>
@@ -204,9 +205,10 @@ export function MoodChangedToast({ emoji, message, onClose }: MoodChangedToastPr
   return (
     <div
       className={cn(
-        "fixed bottom-24 left-1/2 -translate-x-1/2 z-[150] transition-all duration-300",
+        "fixed left-1/2 -translate-x-1/2 z-[150] transition-all duration-300",
         show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
       )}
+      style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
     >
       <div className="flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-full shadow-lg animate-success-pulse">
         <span className="text-2xl">{emoji}</span>
