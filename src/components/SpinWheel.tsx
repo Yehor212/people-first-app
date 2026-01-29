@@ -37,8 +37,13 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
   const prizes = getSpinWheelPrizes();
   const segmentAngle = prizes.length > 0 ? 360 / prizes.length : 0;
 
+  // P1 Fix: Add ref to prevent double-click race condition
+  const spinLockRef = useRef(false);
+
   const handleSpin = () => {
-    if (isSpinning || spinsAvailable <= 0) return;
+    // P1 Fix: Double-check with ref to prevent race conditions
+    if (isSpinning || spinsAvailable <= 0 || spinLockRef.current) return;
+    spinLockRef.current = true;
 
     setIsSpinning(true);
     setShowResult(false);
@@ -58,6 +63,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
     // Show result after spinning
     setTimeout(() => {
       setIsSpinning(false);
+      spinLockRef.current = false; // P1 Fix: Release lock after animation
       setPrize(winningPrize);
       setShowResult(true);
     }, 4000); // Match animation duration

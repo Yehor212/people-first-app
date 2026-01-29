@@ -23,8 +23,7 @@ const CRON_SECRET = Deno.env.get("CRON_SECRET"); // Secret for cron job authenti
 
 // Allowed origins for CORS (production only - no http://localhost)
 const ALLOWED_ORIGINS = [
-  "https://zenflow.app",
-  "https://www.zenflow.app",
+  "https://yehor212.github.io",
   "capacitor://localhost", // Required for mobile app
 ];
 
@@ -271,7 +270,7 @@ function generateEmailHtml(data: UserDigestData): string {
 
         <!-- CTA -->
         <div style="text-align: center; margin-top: 32px;">
-          <a href="https://zenflow.app" style="display: inline-block; background: linear-gradient(135deg, #4a9d7c, #3b8d6f); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 16px;">
+          <a href="https://yehor212.github.io/people-first-app/" style="display: inline-block; background: linear-gradient(135deg, #4a9d7c, #3b8d6f); color: white; padding: 14px 32px; border-radius: 12px; text-decoration: none; font-weight: 600; font-size: 16px;">
             Continue Your Journey
           </a>
         </div>
@@ -282,7 +281,7 @@ function generateEmailHtml(data: UserDigestData): string {
             You're receiving this because you subscribed to weekly digests.
           </p>
           <p style="margin: 0; color: #999; font-size: 12px;">
-            <a href="https://zenflow.app/settings" style="color: #4a9d7c;">Manage preferences</a>
+            <a href="https://yehor212.github.io/people-first-app/" style="color: #4a9d7c;">Manage preferences</a>
           </p>
         </div>
       </div>

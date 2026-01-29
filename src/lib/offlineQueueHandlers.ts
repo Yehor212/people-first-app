@@ -13,6 +13,27 @@ import { syncGratitude, deleteGratitudeFromCloud } from '@/storage/realtimeSync'
 import { logger } from './logger';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 
+// P1 Fix: Basic payload validation to prevent corrupted data from crashing sync
+function isValidMoodEntry(payload: unknown): payload is MoodEntry {
+  const p = payload as Record<string, unknown>;
+  return p && typeof p.id === 'string' && typeof p.mood === 'string' && typeof p.date === 'string';
+}
+
+function isValidHabit(payload: unknown): payload is Habit {
+  const p = payload as Record<string, unknown>;
+  return p && typeof p.id === 'string' && typeof p.name === 'string';
+}
+
+function isValidFocusSession(payload: unknown): payload is FocusSession {
+  const p = payload as Record<string, unknown>;
+  return p && typeof p.id === 'string' && typeof p.duration === 'number' && typeof p.date === 'string';
+}
+
+function isValidGratitudeEntry(payload: unknown): payload is GratitudeEntry {
+  const p = payload as Record<string, unknown>;
+  return p && typeof p.id === 'string' && typeof p.text === 'string' && typeof p.date === 'string';
+}
+
 /**
  * Initialize all offline queue handlers
  * Call this once when the app starts
@@ -21,14 +42,21 @@ export function initializeOfflineQueueHandlers(): void {
   logger.log('[OfflineQueue] Initializing handlers...');
 
   // Mood handlers
+  // P1 Fix: Validate payload before processing
   offlineQueue.registerHandler('CREATE_MOOD', async (action: OfflineAction) => {
-    const mood = action.payload as MoodEntry;
-    await syncMood(mood);
+    if (!isValidMoodEntry(action.payload)) {
+      logger.warn('[OfflineQueue] Invalid mood payload, skipping:', action.entityId);
+      return;
+    }
+    await syncMood(action.payload);
   });
 
   offlineQueue.registerHandler('UPDATE_MOOD', async (action: OfflineAction) => {
-    const mood = action.payload as MoodEntry;
-    await syncMood(mood);
+    if (!isValidMoodEntry(action.payload)) {
+      logger.warn('[OfflineQueue] Invalid mood payload, skipping:', action.entityId);
+      return;
+    }
+    await syncMood(action.payload);
   });
 
   offlineQueue.registerHandler('DELETE_MOOD', async (action: OfflineAction) => {
@@ -36,14 +64,21 @@ export function initializeOfflineQueueHandlers(): void {
   });
 
   // Habit handlers
+  // P1 Fix: Validate payload before processing
   offlineQueue.registerHandler('CREATE_HABIT', async (action: OfflineAction) => {
-    const habit = action.payload as Habit;
-    await syncHabit(habit);
+    if (!isValidHabit(action.payload)) {
+      logger.warn('[OfflineQueue] Invalid habit payload, skipping:', action.entityId);
+      return;
+    }
+    await syncHabit(action.payload);
   });
 
   offlineQueue.registerHandler('UPDATE_HABIT', async (action: OfflineAction) => {
-    const habit = action.payload as Habit;
-    await syncHabit(habit);
+    if (!isValidHabit(action.payload)) {
+      logger.warn('[OfflineQueue] Invalid habit payload, skipping:', action.entityId);
+      return;
+    }
+    await syncHabit(action.payload);
   });
 
   offlineQueue.registerHandler('DELETE_HABIT', async (action: OfflineAction) => {
@@ -51,20 +86,31 @@ export function initializeOfflineQueueHandlers(): void {
   });
 
   offlineQueue.registerHandler('TOGGLE_HABIT', async (action: OfflineAction) => {
-    const habit = action.payload as Habit;
-    await syncHabit(habit);
+    if (!isValidHabit(action.payload)) {
+      logger.warn('[OfflineQueue] Invalid habit payload, skipping:', action.entityId);
+      return;
+    }
+    await syncHabit(action.payload);
   });
 
   // Focus session handler
+  // P1 Fix: Validate payload before processing
   offlineQueue.registerHandler('CREATE_FOCUS_SESSION', async (action: OfflineAction) => {
-    const session = action.payload as FocusSession;
-    await syncFocusSession(session);
+    if (!isValidFocusSession(action.payload)) {
+      logger.warn('[OfflineQueue] Invalid focus session payload, skipping:', action.entityId);
+      return;
+    }
+    await syncFocusSession(action.payload);
   });
 
   // Gratitude handlers
+  // P1 Fix: Validate payload before processing
   offlineQueue.registerHandler('CREATE_GRATITUDE', async (action: OfflineAction) => {
-    const entry = action.payload as GratitudeEntry;
-    await syncGratitude(entry);
+    if (!isValidGratitudeEntry(action.payload)) {
+      logger.warn('[OfflineQueue] Invalid gratitude payload, skipping:', action.entityId);
+      return;
+    }
+    await syncGratitude(action.payload);
   });
 
   offlineQueue.registerHandler('DELETE_GRATITUDE', async (action: OfflineAction) => {

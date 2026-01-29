@@ -305,6 +305,7 @@ export interface Companion {
   treeStage: TreeStage;             // 1-5: growth stage of the tree
   waterLevel: number;               // 0-100: needs watering
   lastWateredAt?: number;           // Timestamp of last watering
+  lastTouchTime?: number;           // P1 Fix: Separate cooldown for tree touch
   treeXP: number;                   // XP specifically for tree growth
 
   // Simplified stats (new system)

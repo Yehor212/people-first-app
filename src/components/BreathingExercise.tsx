@@ -37,6 +37,15 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
   const [circleScale, setCircleScale] = useState(0.6);
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  // P1 Fix: Track mounted state to prevent setState after unmount
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Get current phase duration
   const getPhaseDuration = useCallback((phase: BreathingPhase): number => {
@@ -101,6 +110,9 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
     }
 
     intervalRef.current = setInterval(() => {
+      // P1 Fix: Check mounted before setState
+      if (!mountedRef.current) return;
+
       setPhaseTime(prev => {
         const phaseDuration = getPhaseDuration(currentPhase);
 
@@ -112,15 +124,21 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
           if (nextPhase === 'inhale' && currentPhase !== 'inhale') {
             if (currentCycle >= selectedPattern.cycles) {
               // Exercise complete
-              setIsActive(false);
-              setCurrentPhase('complete');
-              onComplete?.(selectedPattern);
+              if (mountedRef.current) {
+                setIsActive(false);
+                setCurrentPhase('complete');
+                onComplete?.(selectedPattern);
+              }
               return 0;
             }
-            setCurrentCycle(c => c + 1);
+            if (mountedRef.current) {
+              setCurrentCycle(c => c + 1);
+            }
           }
 
-          setCurrentPhase(nextPhase);
+          if (mountedRef.current) {
+            setCurrentPhase(nextPhase);
+          }
           return 0;
         }
 

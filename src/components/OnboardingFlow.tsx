@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, Sparkles, Target, Bell, Check, Star, Heart } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MoodType, PrimaryEmotion, EmotionIntensity } from '@/types';
@@ -112,13 +112,21 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     onComplete({ skipped: true, mood: null, habits: [], enableReminders: false, reminderTime: 'morning' });
   };
 
+  // P1 Fix: Ref to prevent double-clicks during transition
+  const transitionLockRef = useRef(false);
+
   const handleNext = () => {
+    // P1 Fix: Prevent rapid double-clicks during transition
+    if (isTransitioning || transitionLockRef.current) return;
+
     // Steps: 1=mood, 2=habits, 3=reminders
     if (step < 3) {
+      transitionLockRef.current = true;
       setIsTransitioning(true);
       setTimeout(() => {
         setStep(step + 1);
         setIsTransitioning(false);
+        transitionLockRef.current = false;
       }, 300);
     } else {
       const habits = selectedHabits.map(id => {

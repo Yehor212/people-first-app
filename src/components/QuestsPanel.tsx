@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 import { safeJsonParse } from '@/lib/safeJson';
 import { Sparkles, Trophy, Clock, Zap, Target, X } from 'lucide-react';
@@ -73,20 +73,36 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
     }
   }, [isLoaded]);
 
-  // Manual refresh
-  const handleRefreshDaily = () => {
+  // P1 Fix: Debounce refs to prevent rapid refresh spam
+  const refreshDebounceRef = useRef<{ daily: boolean; weekly: boolean; bonus: boolean }>({
+    daily: false,
+    weekly: false,
+    bonus: false,
+  });
+
+  // Manual refresh with debounce protection
+  const handleRefreshDaily = useCallback(() => {
+    if (refreshDebounceRef.current.daily) return;
+    refreshDebounceRef.current.daily = true;
     setDailyQuest(generateDailyQuest());
-  };
+    setTimeout(() => { refreshDebounceRef.current.daily = false; }, 300);
+  }, []);
 
-  const handleRefreshWeekly = () => {
+  const handleRefreshWeekly = useCallback(() => {
+    if (refreshDebounceRef.current.weekly) return;
+    refreshDebounceRef.current.weekly = true;
     setWeeklyQuest(generateWeeklyQuest());
-  };
+    setTimeout(() => { refreshDebounceRef.current.weekly = false; }, 300);
+  }, []);
 
-  const handleGenerateBonus = () => {
+  const handleGenerateBonus = useCallback(() => {
+    if (refreshDebounceRef.current.bonus) return;
     if (!bonusQuest || shouldRegenerateQuest(bonusQuest)) {
+      refreshDebounceRef.current.bonus = true;
       setBonusQuest(generateBonusQuest());
+      setTimeout(() => { refreshDebounceRef.current.bonus = false; }, 300);
     }
-  };
+  }, [bonusQuest]);
 
   // Map quest type to translation key
   const getQuestTypeLabel = (type: 'daily' | 'weekly' | 'bonus') => {

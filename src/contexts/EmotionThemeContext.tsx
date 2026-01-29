@@ -4,7 +4,7 @@
  * Replaces MoodThemeContext with richer emotion-based theming
  */
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo, useCallback } from 'react';
 import { PrimaryEmotion, MoodEntry, EmotionIntensity } from '@/types';
 import { getToday } from '@/lib/utils';
 
@@ -215,15 +215,18 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
   const [currentTheme, setCurrentTheme] = useState<EmotionTheme>(emotionThemes.neutral);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // P1 Fix: Store timeout refs for cleanup
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const endTransitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Update emotion from mood entries (looks at today's latest entry)
-  const setEmotionFromEntries = (entries: MoodEntry[]) => {
+  // P1 Fix: Wrap in useCallback for stable reference
+  const setEmotionFromEntries = useCallback((entries: MoodEntry[]) => {
     const today = getToday();
     const todayEntries = entries.filter(e => e.date === today);
 
     if (todayEntries.length === 0) {
-      if (currentEmotion !== 'neutral') {
-        transitionToEmotion('neutral');
-      }
+      transitionToEmotion('neutral');
       return;
     }
 
@@ -232,41 +235,59 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
 
     // Use emotion.primary if available, otherwise stay neutral
     const emotion = latestEntry.emotion?.primary || 'neutral';
-
-    if (emotion !== currentEmotion) {
-      transitionToEmotion(emotion);
-    }
-  };
+    transitionToEmotion(emotion);
+  }, [transitionToEmotion]);
 
   // Set emotion directly (for previews, testing)
-  const setEmotionDirectly = (emotion: PrimaryEmotion | 'neutral') => {
-    if (emotion !== currentEmotion) {
-      transitionToEmotion(emotion);
-    }
-  };
+  // P1 Fix: Wrap in useCallback for stable reference
+  const setEmotionDirectly = useCallback((emotion: PrimaryEmotion | 'neutral') => {
+    transitionToEmotion(emotion);
+  }, [transitionToEmotion]);
 
   // Smooth transition between emotions
-  const transitionToEmotion = (newEmotion: PrimaryEmotion | 'neutral') => {
+  // P1 Fix: Use refs and cleanup previous timeouts to prevent race conditions
+  const transitionToEmotion = useCallback((newEmotion: PrimaryEmotion | 'neutral') => {
+    // Clear any pending timeouts
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+    if (endTransitionTimeoutRef.current) {
+      clearTimeout(endTransitionTimeoutRef.current);
+    }
+
     setIsTransitioning(true);
 
     // Start transition
-    setTimeout(() => {
+    transitionTimeoutRef.current = setTimeout(() => {
       setCurrentEmotion(newEmotion);
       setCurrentTheme(emotionThemes[newEmotion]);
     }, 150);
 
     // End transition
-    setTimeout(() => {
+    endTransitionTimeoutRef.current = setTimeout(() => {
       setIsTransitioning(false);
     }, 600);
-  };
+  }, []);
+
+  // P1 Fix: Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+      if (endTransitionTimeoutRef.current) {
+        clearTimeout(endTransitionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Get support message for current emotion
-  const getSupportMessage = (lang: string): string | null => {
+  // P1 Fix: Wrap in useCallback for stable reference
+  const getSupportMessage = useCallback((lang: string): string | null => {
     if (!currentTheme.supportMessage) return null;
     const messages = emotionSupportMessages[currentTheme.supportMessage];
     return messages?.[lang] || messages?.['en'] || null;
-  };
+  }, [currentTheme.supportMessage]);
 
   // Apply CSS variables when theme changes
   useEffect(() => {
@@ -311,15 +332,18 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
 
   }, [currentTheme, currentEmotion]);
 
+  // P1 Fix: Memoize provider value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
+    currentTheme,
+    currentEmotion,
+    setEmotionFromEntries,
+    setEmotionDirectly,
+    getSupportMessage,
+    isTransitioning,
+  }), [currentTheme, currentEmotion, setEmotionFromEntries, setEmotionDirectly, getSupportMessage, isTransitioning]);
+
   return (
-    <EmotionThemeContext.Provider value={{
-      currentTheme,
-      currentEmotion,
-      setEmotionFromEntries,
-      setEmotionDirectly,
-      getSupportMessage,
-      isTransitioning,
-    }}>
+    <EmotionThemeContext.Provider value={value}>
       {children}
     </EmotionThemeContext.Provider>
   );

@@ -13,10 +13,20 @@ const FCM_PROJECT_ID = Deno.env.get("FCM_PROJECT_ID");
 const FCM_SERVICE_ACCOUNT_B64 = Deno.env.get("FCM_SERVICE_ACCOUNT_B64");
 const CRON_SECRET = Deno.env.get("CRON_SECRET"); // Secret for cron job authentication
 
+// P0 Fix: Constant-time comparison to prevent timing attacks
+function secureCompare(a: string | null | undefined, b: string | null | undefined): boolean {
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 // Allowed origins for CORS (production only - no http://localhost)
 const ALLOWED_ORIGINS = [
-  "https://zenflow.app",
-  "https://www.zenflow.app",
+  "https://yehor212.github.io",
   "capacitor://localhost", // Required for mobile app
 ];
 
@@ -192,10 +202,10 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     const cronSecretHeader = req.headers.get("X-Cron-Secret");
 
-    // Allow if: valid cron secret OR service role key
+    // P0 Fix: Use secure comparison to prevent timing attacks
     const isAuthorized =
-      (CRON_SECRET && cronSecretHeader === CRON_SECRET) ||
-      (authHeader === `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`);
+      (CRON_SECRET && secureCompare(cronSecretHeader, CRON_SECRET)) ||
+      secureCompare(authHeader, `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`);
 
     if (!isAuthorized) {
       console.warn("[ScheduledPush] Unauthorized request attempt");
@@ -239,15 +249,23 @@ Deno.serve(async (req) => {
       if (!isInWindow(minutes, target, 15)) continue;
       if (check.type === "habit" && (!item.habit_ids || item.habit_ids.length === 0)) continue;
 
-      const { data: sent } = await supabase
-        .from("push_logs")
-        .select("user_id")
-        .eq("user_id", item.user_id)
-        .eq("type", check.type)
-        .eq("date_key", dateKey)
-        .maybeSingle();
+      // P0 Fix: Atomic check with INSERT ON CONFLICT to prevent race conditions
+      // Try to insert first - if it fails with unique violation, notification was already sent
+      const { error: logError } = await supabase.from("push_logs").insert({
+        user_id: item.user_id,
+        type: check.type,
+        date_key: dateKey,
+        sent_at: new Date().toISOString()
+      });
 
-      if (sent) continue;
+      // If insert failed due to unique constraint, notification was already sent
+      if (logError?.code === '23505') {
+        continue; // Skip - already sent
+      }
+      if (logError) {
+        console.error(`[ScheduledPush] Failed to log push for ${item.user_id}:`, logError);
+        continue;
+      }
 
       const { data: subs } = await supabase
         .from("push_subscriptions")
@@ -286,12 +304,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      await supabase.from("push_logs").upsert({
-        user_id: item.user_id,
-        type: check.type,
-        date_key: dateKey,
-        sent_at: new Date().toISOString()
-      });
+      // P0 Fix: Log was already inserted atomically above, no need to upsert here
     }
   }
 

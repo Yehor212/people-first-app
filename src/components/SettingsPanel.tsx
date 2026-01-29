@@ -89,6 +89,9 @@ export function SettingsPanel({
   const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(false);
   const [weeklyDigestLoading, setWeeklyDigestLoading] = useState(false);
   const weeklyDigestTouchedRef = useRef(false);
+  // P1 Fix: Debounce for cloud sync toggle to prevent race conditions
+  const cloudSyncDebounceRef = useRef(false);
+  const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
   const [showWhatsNew, setShowWhatsNew] = useState(() => {
     const dismissed = localStorage.getItem('zenflow_whats_new_v1_3_0_dismissed');
     return dismissed !== 'true';
@@ -403,6 +406,11 @@ export function SettingsPanel({
   };
 
   const handleCloudSyncToggle = (enabled: boolean) => {
+    // P1 Fix: Debounce to prevent rapid toggle race conditions
+    if (cloudSyncDebounceRef.current) return;
+    cloudSyncDebounceRef.current = true;
+    setTimeout(() => { cloudSyncDebounceRef.current = false; }, 500);
+
     setCloudSyncEnabled(enabled);
     setCloudSyncEnabledState(enabled);
 
@@ -1249,7 +1257,10 @@ export function SettingsPanel({
             </button>
             {!showDeleteConfirm ? (
               <button
-                onClick={() => setShowDeleteConfirm(true)}
+                onClick={() => {
+                  setShowDeleteConfirm(true);
+                  setDeleteConfirmInput(''); // P1 Fix: Reset input on open
+                }}
                 className="w-full py-3 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 transition-colors"
               >
                 {t.deleteAccount}
@@ -1262,16 +1273,34 @@ export function SettingsPanel({
                 <p className="text-xs text-muted-foreground">
                   {t.deleteAccountWarning}
                 </p>
+                {/* P1 Fix: Require typing DELETE to confirm */}
+                <div>
+                  <label className="text-xs text-destructive font-medium block mb-1">
+                    {t.deleteAccountTypeConfirm || 'Type DELETE to confirm:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={deleteConfirmInput}
+                    onChange={(e) => setDeleteConfirmInput(e.target.value)}
+                    placeholder="DELETE"
+                    className="w-full p-2 bg-secondary rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-destructive/30"
+                    autoComplete="off"
+                  />
+                </div>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setShowDeleteConfirm(false)}
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setDeleteConfirmInput('');
+                    }}
                     className="flex-1 py-2 bg-secondary text-secondary-foreground rounded-lg"
                   >
                     {t.cancel}
                   </button>
                   <button
                     onClick={handleDeleteAccount}
-                    className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-lg"
+                    disabled={deleteConfirmInput !== 'DELETE'}
+                    className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {t.delete}
                   </button>

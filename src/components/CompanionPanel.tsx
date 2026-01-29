@@ -4,7 +4,7 @@
  * Shows: Level, XP, Fullness, Treats balance
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Edit3, Check, Star, Hand, Cookie } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -123,6 +123,20 @@ export function CompanionPanel({
   const [showReaction, setShowReaction] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // P1 Fix: Track mounted state and timeouts to prevent memory leaks
+  const mountedRef = useRef(true);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   // Update message on open
   useEffect(() => {
     if (isOpen) {
@@ -158,16 +172,28 @@ export function CompanionPanel({
     const reaction = reactions[Math.floor(Math.random() * reactions.length)];
     setShowReaction(reaction + ` +${result.xpGain} XP`);
 
-    setTimeout(() => {
+    // P1 Fix: Store timeout ref and check mounted before updating state
+    // Capture current values to avoid stale closure
+    const capturedCompanion = companion;
+    const capturedTreatsBalance = treatsBalance;
+    const capturedFeedCost = feedCost;
+    const capturedHasMoodToday = hasMoodToday;
+    const capturedHasHabitsToday = hasHabitsToday;
+    const capturedHasFocusToday = hasFocusToday;
+    const capturedHasGratitudeToday = hasGratitudeToday;
+    const capturedStreak = streak;
+
+    timeoutRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
       setShowReaction(null);
       setIsAnimating(false);
       if (result.leveledUp) {
         setMessage((t.companionLevelUp || '🎉 Level up! Now level {level}!').replace('{level}', String(result.newLevel)));
       } else {
         setMessage(getContextualMessage(
-          companion, treatsBalance, feedCost,
-          hasMoodToday, hasHabitsToday, hasFocusToday, hasGratitudeToday,
-          streak, t as Record<string, string>
+          capturedCompanion, capturedTreatsBalance, capturedFeedCost,
+          capturedHasMoodToday, capturedHasHabitsToday, capturedHasFocusToday, capturedHasGratitudeToday,
+          capturedStreak, t as Record<string, string>
         ));
       }
     }, 1500);
@@ -194,18 +220,30 @@ export function CompanionPanel({
       setShowReaction(reaction + ` +${result.xpGain} XP`);
     }
 
-    setTimeout(() => {
+    // P1 Fix: Store timeout ref and check mounted before updating state
+    // Capture current values to avoid stale closure
+    const capturedCompanion = companion;
+    const capturedTreatsBalance = treatsBalance;
+    const capturedFeedCost = feedCost;
+    const capturedHasMoodToday = hasMoodToday;
+    const capturedHasHabitsToday = hasHabitsToday;
+    const capturedHasFocusToday = hasFocusToday;
+    const capturedHasGratitudeToday = hasGratitudeToday;
+    const capturedStreak = streak;
+
+    timeoutRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
       setShowReaction(null);
       setIsAnimating(false);
       if (result.leveledUp) {
         setMessage((t.companionLevelUp || '🎉 Level up! Now level {level}!').replace('{level}', String(result.newLevel)));
       } else {
         setMessage(getContextualMessage(
-          { ...companion, fullness: (companion.fullness || 50) + (result.success ? result.fullnessGain : 0) },
-          result.success ? (result.newBalance || treatsBalance) : treatsBalance,
-          feedCost,
-          hasMoodToday, hasHabitsToday, hasFocusToday, hasGratitudeToday,
-          streak, t as Record<string, string>
+          { ...capturedCompanion, fullness: (capturedCompanion.fullness || 50) + (result.success ? result.fullnessGain : 0) },
+          result.success ? (result.newBalance || capturedTreatsBalance) : capturedTreatsBalance,
+          capturedFeedCost,
+          capturedHasMoodToday, capturedHasHabitsToday, capturedHasFocusToday, capturedHasGratitudeToday,
+          capturedStreak, t as Record<string, string>
         ));
       }
     }, 1500);

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { EmotionThemeProvider } from "@/contexts/EmotionThemeContext";
+import { AICoachProvider } from "@/contexts/AICoachContext";
 import { XpPopupProvider } from "@/components/XpPopup";
 import { FlyingEmojiProvider } from "@/components/FlyingMoodEmoji";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -31,10 +32,11 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
       <EmotionThemeProvider>
-        <XpPopupProvider>
-          <FlyingEmojiProvider>
-            <ErrorBoundary>
-            <TooltipProvider>
+        <AICoachProvider>
+          <XpPopupProvider>
+            <FlyingEmojiProvider>
+              <ErrorBoundary>
+              <TooltipProvider>
               <Toaster />
               <Sonner />
               <BrowserRouter basename={getBasename()}>
@@ -44,9 +46,10 @@ const App = () => (
                 </Routes>
               </BrowserRouter>
             </TooltipProvider>
-          </ErrorBoundary>
-          </FlyingEmojiProvider>
-        </XpPopupProvider>
+            </ErrorBoundary>
+            </FlyingEmojiProvider>
+          </XpPopupProvider>
+        </AICoachProvider>
       </EmotionThemeProvider>
     </LanguageProvider>
   </QueryClientProvider>

@@ -9,10 +9,42 @@ const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT");
 const FCM_PROJECT_ID = Deno.env.get("FCM_PROJECT_ID");
 const FCM_SERVICE_ACCOUNT_B64 = Deno.env.get("FCM_SERVICE_ACCOUNT_B64");
 
+// P0 Fix: Rate limiting to prevent push notification abuse
+const RATE_LIMIT = 10; // Max 10 requests per user
+const RATE_WINDOW = 60000; // Per 60 seconds
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+
+// Clean expired entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of rateLimitMap.entries()) {
+    if (value.resetAt < now) {
+      rateLimitMap.delete(key);
+    }
+  }
+}, 60000);
+
+function checkRateLimit(userId: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(userId);
+
+  if (!entry || entry.resetAt < now) {
+    // New window
+    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_WINDOW });
+    return { allowed: true };
+  }
+
+  if (entry.count >= RATE_LIMIT) {
+    return { allowed: false, retryAfter: Math.ceil((entry.resetAt - now) / 1000) };
+  }
+
+  entry.count++;
+  return { allowed: true };
+}
+
 // Allowed origins for CORS (production only - no http://localhost)
 const ALLOWED_ORIGINS = [
-  "https://zenflow.app",
-  "https://www.zenflow.app",
+  "https://yehor212.github.io",
   "capacitor://localhost", // Required for mobile app
 ];
 
@@ -167,6 +199,15 @@ Deno.serve(async (req) => {
     const { data, error } = await supabase.auth.getUser(token);
     if (error || !data?.user) {
       return jsonResponse(401, { error: "Unauthorized" });
+    }
+
+    // P0 Fix: Check rate limit
+    const rateLimitResult = checkRateLimit(data.user.id);
+    if (!rateLimitResult.allowed) {
+      return jsonResponse(429, {
+        error: "Rate limit exceeded",
+        retryAfter: rateLimitResult.retryAfter,
+      });
     }
 
     const { data: settings } = await supabase

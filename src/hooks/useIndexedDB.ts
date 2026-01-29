@@ -11,8 +11,8 @@ export const triggerDataRefresh = () => {
   refreshListeners.forEach(listener => listener());
 };
 
-// Timeout for IndexedDB operations (5 seconds)
-const INDEXEDDB_TIMEOUT_MS = 5000;
+// P0 Fix: Timeout for IndexedDB operations (10 seconds, increased from 5s for slow devices)
+const INDEXEDDB_TIMEOUT_MS = 10000;
 
 // Helper to add timeout to promises
 const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
@@ -36,12 +36,12 @@ const acquireInitLock = async (): Promise<void> => {
   return new Promise((resolve) => {
     if (!globalInitLock) {
       globalInitLock = true;
-      // Auto-release lock after 10 seconds to prevent deadlock
-      // Increased from 3s to handle slow IndexedDB initialization on some devices
+      // P0 Fix: Auto-release lock after 30 seconds to prevent deadlock
+      // Increased from 10s to handle slow IndexedDB initialization on low-end Android devices
       lockTimeout = setTimeout(() => {
-        logger.warn('[useIndexedDB] Lock timeout - force releasing');
+        logger.warn('[useIndexedDB] Lock timeout (30s) - force releasing');
         releaseInitLock();
-      }, 10000);
+      }, 30000);
       resolve();
     } else {
       initQueue.push(() => resolve());

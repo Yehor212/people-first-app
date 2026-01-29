@@ -1,4 +1,4 @@
-import { createContext, useContext, ReactNode, useEffect, useRef } from 'react';
+import { createContext, useContext, ReactNode, useEffect, useRef, useMemo } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Language, Translations, translations } from '@/i18n/translations';
 
@@ -62,8 +62,15 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const t = translations[language];
 
+  // P1 Fix: Memoize provider value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
+    language,
+    setLanguage,
+    t,
+  }), [language, setLanguage, t]);
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t }}>
+    <LanguageContext.Provider value={value}>
       {children}
     </LanguageContext.Provider>
   );

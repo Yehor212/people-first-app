@@ -74,6 +74,7 @@ const createDefaultCompanion = (): Companion => ({
   treeStage: 1 as TreeStage,    // Start as seed
   waterLevel: 70,               // Start with some water
   lastWateredAt: Date.now(),    // Just watered
+  lastTouchTime: undefined,     // P1 Fix: Separate cooldown for tree touch
   treeXP: 0,                    // No XP yet
 });
 
@@ -293,6 +294,7 @@ export function useInnerWorld() {
   }, [isLoading, world]);
 
   // Plant a new plant from an activity
+  // P0 Fix: Use functional update to prevent race conditions with stale world state
   const plantSeed = useCallback((
     sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude',
     mood?: MoodType
@@ -303,233 +305,275 @@ export function useInnerWorld() {
       sourceActivity === 'focus' ? 'crystal' : 'mushroom';
 
     const color = mood ? MOOD_COLORS[mood] : '#22c55e';
-    const existingPositions = world.plants.map(p => p.position);
-
-    const newPlant: GardenPlant = {
-      id: generateId(),
-      type: plantType,
-      stage: 'seed',
-      color,
-      plantedAt: Date.now(),
-      lastWateredAt: Date.now(),
-      growthPoints: 0,
-      position: getRandomPosition(existingPositions),
-      sourceActivity,
-      isSpecial: Math.random() < 0.05, // 5% chance of special
-    };
-
+    const plantId = generateId();
+    const plantedAt = Date.now();
     const today = getToday();
-    const isNewDay = world.lastActiveDate !== today;
-    const newStreak = isNewDay
-      ? (world.lastActiveDate && new Date(today).getTime() - new Date(world.lastActiveDate).getTime() < 2 * 24 * 60 * 60 * 1000
-          ? world.currentActiveStreak + 1
-          : 1)
-      : world.currentActiveStreak;
+    const isSpecial = Math.random() < 0.05; // 5% chance of special
 
-    const updatedWorld: InnerWorld = {
-      ...world,
-      plants: [...world.plants, newPlant],
-      totalPlantsGrown: world.totalPlantsGrown + 1,
-      gardenStage: getGardenStage(world.totalPlantsGrown + 1),
-      lastActiveDate: today,
-      daysActive: isNewDay ? world.daysActive + 1 : world.daysActive,
-      currentActiveStreak: newStreak,
-      longestActiveStreak: Math.max(world.longestActiveStreak, newStreak),
-      companion: {
-        ...world.companion,
-        mood: getCompanionMood({ ...world, currentActiveStreak: newStreak, lastActiveDate: today }),
-        experience: world.companion.experience + 10,
-      },
-      pendingGrowth: {
-        plantsToGrow: 0,
-        creaturesArrived: 0,
-        companionMissedYou: false,
-      },
-    };
+    let newPlantRef: GardenPlant | null = null;
 
-    // Level up companion if enough XP
-    const xpNeeded = updatedWorld.companion.level * 100;
-    if (updatedWorld.companion.experience >= xpNeeded) {
-      updatedWorld.companion.level += 1;
-      updatedWorld.companion.experience -= xpNeeded;
-    }
+    setWorld(prev => {
+      const existingPositions = prev.plants.map(p => p.position);
 
-    setWorld(updatedWorld);
-    return newPlant;
-  }, [world, setWorld]);
+      const newPlant: GardenPlant = {
+        id: plantId,
+        type: plantType,
+        stage: 'seed',
+        color,
+        plantedAt,
+        lastWateredAt: plantedAt,
+        growthPoints: 0,
+        position: getRandomPosition(existingPositions),
+        sourceActivity,
+        isSpecial,
+      };
+      newPlantRef = newPlant;
 
-  // Water plants (called when doing activities)
-  const waterPlants = useCallback((sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude') => {
-    const updatedPlants = world.plants.map(plant => {
-      if (plant.sourceActivity === sourceActivity) {
-        const newGrowthPoints = plant.growthPoints + 5;
-        return {
-          ...plant,
-          growthPoints: newGrowthPoints,
-          stage: getPlantStage(newGrowthPoints),
-          lastWateredAt: Date.now(),
-        };
+      const isNewDay = prev.lastActiveDate !== today;
+      const newStreak = isNewDay
+        ? (prev.lastActiveDate && new Date(today).getTime() - new Date(prev.lastActiveDate).getTime() < 2 * 24 * 60 * 60 * 1000
+            ? prev.currentActiveStreak + 1
+            : 1)
+        : prev.currentActiveStreak;
+
+      let newExperience = prev.companion.experience + 10;
+      let newLevel = prev.companion.level;
+      const xpNeeded = newLevel * 100;
+      if (newExperience >= xpNeeded) {
+        newLevel += 1;
+        newExperience -= xpNeeded;
       }
-      return plant;
-    });
 
-    setWorld({
-      ...world,
-      plants: updatedPlants,
-    });
-  }, [world, setWorld]);
-
-  // Attract a creature (from gratitude)
-  const attractCreature = useCallback(() => {
-    const creatureTypes: CreatureType[] = ['butterfly', 'bird', 'firefly', 'spirit'];
-    const type = creatureTypes[Math.floor(Math.random() * creatureTypes.length)];
-    const existingPositions = [
-      ...world.plants.map(p => p.position),
-      ...world.creatures.map(c => c.position),
-    ];
-
-    const newCreature: GardenCreature = {
-      id: generateId(),
-      type,
-      stage: 'egg',
-      color: '#fbbf24',
-      arrivedAt: Date.now(),
-      happiness: 0,
-      position: getRandomPosition(existingPositions),
-      isSpecial: Math.random() < 0.1, // 10% chance
-    };
-
-    setWorld({
-      ...world,
-      creatures: [...world.creatures, newCreature],
-      totalCreaturesAttracted: world.totalCreaturesAttracted + 1,
-    });
-
-    return newCreature;
-  }, [world, setWorld]);
-
-  // Feed creatures (increases happiness)
-  const feedCreatures = useCallback(() => {
-    const updatedCreatures = world.creatures.map(creature => {
-      const newHappiness = Math.min(100, creature.happiness + 10);
       return {
-        ...creature,
-        happiness: newHappiness,
-        stage: getCreatureStage(newHappiness),
+        ...prev,
+        plants: [...prev.plants, newPlant],
+        totalPlantsGrown: prev.totalPlantsGrown + 1,
+        gardenStage: getGardenStage(prev.totalPlantsGrown + 1),
+        lastActiveDate: today,
+        daysActive: isNewDay ? prev.daysActive + 1 : prev.daysActive,
+        currentActiveStreak: newStreak,
+        longestActiveStreak: Math.max(prev.longestActiveStreak, newStreak),
+        companion: {
+          ...prev.companion,
+          mood: getCompanionMood({ ...prev, currentActiveStreak: newStreak, lastActiveDate: today }),
+          experience: newExperience,
+          level: newLevel,
+        },
+        pendingGrowth: {
+          plantsToGrow: 0,
+          creaturesArrived: 0,
+          companionMissedYou: false,
+        },
       };
     });
 
-    setWorld({
-      ...world,
-      creatures: updatedCreatures,
+    return newPlantRef;
+  }, [setWorld]);
+
+  // Water plants (called when doing activities)
+  // P0 Fix: Use functional update to prevent race conditions
+  const waterPlants = useCallback((sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude') => {
+    const now = Date.now();
+    setWorld(prev => ({
+      ...prev,
+      plants: prev.plants.map(plant => {
+        if (plant.sourceActivity === sourceActivity) {
+          const newGrowthPoints = plant.growthPoints + 5;
+          return {
+            ...plant,
+            growthPoints: newGrowthPoints,
+            stage: getPlantStage(newGrowthPoints),
+            lastWateredAt: now,
+          };
+        }
+        return plant;
+      }),
+    }));
+  }, [setWorld]);
+
+  // Attract a creature (from gratitude)
+  // P0 Fix: Use functional update to prevent race conditions
+  const attractCreature = useCallback(() => {
+    const creatureTypes: CreatureType[] = ['butterfly', 'bird', 'firefly', 'spirit'];
+    const type = creatureTypes[Math.floor(Math.random() * creatureTypes.length)];
+    const creatureId = generateId();
+    const arrivedAt = Date.now();
+    const isSpecial = Math.random() < 0.1; // 10% chance
+
+    let newCreatureRef: GardenCreature | null = null;
+
+    setWorld(prev => {
+      const existingPositions = [
+        ...prev.plants.map(p => p.position),
+        ...prev.creatures.map(c => c.position),
+      ];
+
+      const newCreature: GardenCreature = {
+        id: creatureId,
+        type,
+        stage: 'egg',
+        color: '#fbbf24',
+        arrivedAt,
+        happiness: 0,
+        position: getRandomPosition(existingPositions),
+        isSpecial,
+      };
+      newCreatureRef = newCreature;
+
+      return {
+        ...prev,
+        creatures: [...prev.creatures, newCreature],
+        totalCreaturesAttracted: prev.totalCreaturesAttracted + 1,
+      };
     });
-  }, [world, setWorld]);
+
+    return newCreatureRef;
+  }, [setWorld]);
+
+  // Feed creatures (increases happiness)
+  // P0 Fix: Use functional update to prevent race conditions
+  const feedCreatures = useCallback(() => {
+    setWorld(prev => ({
+      ...prev,
+      creatures: prev.creatures.map(creature => {
+        const newHappiness = Math.min(100, creature.happiness + 10);
+        return {
+          ...creature,
+          happiness: newHappiness,
+          stage: getCreatureStage(newHappiness),
+        };
+      }),
+    }));
+  }, [setWorld]);
 
   // Change companion
+  // P0 Fix: Use functional update to prevent race conditions
   const setCompanionType = useCallback((type: CompanionType) => {
-    setWorld({
-      ...world,
+    setWorld(prev => ({
+      ...prev,
       companion: {
-        ...world.companion,
+        ...prev.companion,
         type,
       },
-    });
-  }, [world, setWorld]);
+    }));
+  }, [setWorld]);
 
   // Rename companion
+  // P0 Fix: Use functional update to prevent race conditions
   const renameCompanion = useCallback((name: string) => {
-    setWorld({
-      ...world,
+    setWorld(prev => ({
+      ...prev,
       companion: {
-        ...world.companion,
+        ...prev.companion,
         name,
       },
-    });
-  }, [world, setWorld]);
+    }));
+  }, [setWorld]);
 
   // Clear welcome back state
+  // P0 Fix: Use functional update to prevent race conditions
   const clearWelcomeBack = useCallback(() => {
-    setWorld({
-      ...world,
+    setWorld(prev => ({
+      ...prev,
       pendingGrowth: {
         plantsToGrow: 0,
         creaturesArrived: 0,
         companionMissedYou: false,
       },
-    });
-  }, [world, setWorld]);
+    }));
+  }, [setWorld]);
 
   // ============================================
   // TREATS SYSTEM
   // ============================================
 
   // Earn treats from activities
+  // P0 Fix: Use functional update to prevent race conditions
   const earnTreats = useCallback((
     source: TreatSource,
     baseAmount: number,
     description?: string
   ) => {
-    const streakDays = world.currentActiveStreak;
-    const { total, bonus, multiplier } = calculateTreatsEarned(baseAmount, streakDays);
+    const transactionId = generateId();
+    const now = Date.now();
+    let result = { earned: 0, bonus: 0, multiplier: 1, newBalance: 0 };
 
-    const transaction: TreatTransaction = {
-      id: generateId(),
-      amount: total,
-      source,
-      timestamp: Date.now(),
-      description: description || `${source} +${total}`,
-    };
+    setWorld(prev => {
+      const streakDays = prev.currentActiveStreak;
+      const { total, bonus, multiplier } = calculateTreatsEarned(baseAmount, streakDays);
 
-    // Keep only last 50 transactions
-    const transactions = [transaction, ...(world.treats?.transactions || [])].slice(0, 50);
+      const transaction: TreatTransaction = {
+        id: transactionId,
+        amount: total,
+        source,
+        timestamp: now,
+        description: description || `${source} +${total}`,
+      };
 
-    const updatedTreats: TreatsWallet = {
-      balance: (world.treats?.balance || 0) + total,
-      lifetimeEarned: (world.treats?.lifetimeEarned || 0) + total,
-      lifetimeSpent: world.treats?.lifetimeSpent || 0,
-      lastEarnedAt: Date.now(),
-      transactions,
-    };
+      // Keep only last 50 transactions
+      const transactions = [transaction, ...(prev.treats?.transactions || [])].slice(0, 50);
 
-    setWorld({
-      ...world,
-      treats: updatedTreats,
+      const newBalance = (prev.treats?.balance || 0) + total;
+      result = { earned: total, bonus, multiplier, newBalance };
+
+      return {
+        ...prev,
+        treats: {
+          balance: newBalance,
+          lifetimeEarned: (prev.treats?.lifetimeEarned || 0) + total,
+          lifetimeSpent: prev.treats?.lifetimeSpent || 0,
+          lastEarnedAt: now,
+          transactions,
+        },
+      };
     });
 
-    return { earned: total, bonus, multiplier, newBalance: updatedTreats.balance };
-  }, [world, setWorld]);
+    return result;
+  }, [setWorld]);
 
   // Spend treats (e.g., to feed companion)
+  // P0 Fix: Use functional update to prevent race conditions
   const spendTreats = useCallback((amount: number, purpose: string): boolean => {
-    const currentBalance = world.treats?.balance || 0;
-    if (currentBalance < amount) {
-      return false; // Not enough treats
+    // Check balance synchronously first (may be stale but prevents unnecessary update)
+    if ((world.treats?.balance || 0) < amount) {
+      return false;
     }
 
-    const transaction: TreatTransaction = {
-      id: generateId(),
-      amount: -amount,
-      source: 'mood', // Will be overwritten based on purpose
-      timestamp: Date.now(),
-      description: purpose,
-    };
+    let success = false;
+    const transactionId = generateId();
+    const now = Date.now();
 
-    const transactions = [transaction, ...(world.treats?.transactions || [])].slice(0, 50);
+    setWorld(prev => {
+      const currentBalance = prev.treats?.balance || 0;
+      if (currentBalance < amount) {
+        success = false;
+        return prev; // Not enough treats - don't update
+      }
 
-    const updatedTreats: TreatsWallet = {
-      ...world.treats!,
-      balance: currentBalance - amount,
-      lifetimeSpent: (world.treats?.lifetimeSpent || 0) + amount,
-      transactions,
-    };
+      success = true;
+      const transaction: TreatTransaction = {
+        id: transactionId,
+        amount: -amount,
+        source: 'mood',
+        timestamp: now,
+        description: purpose,
+      };
 
-    setWorld({
-      ...world,
-      treats: updatedTreats,
+      const transactions = [transaction, ...(prev.treats?.transactions || [])].slice(0, 50);
+
+      return {
+        ...prev,
+        treats: {
+          ...prev.treats!,
+          balance: currentBalance - amount,
+          lifetimeSpent: (prev.treats?.lifetimeSpent || 0) + amount,
+          transactions,
+        },
+      };
     });
 
-    return true;
-  }, [world, setWorld]);
+    return success;
+  }, [world.treats?.balance, setWorld]);
 
   // ============================================
   // COMPANION INTERACTIONS
@@ -745,8 +789,9 @@ export function useInnerWorld() {
   // Touch the tree - FREE action, small XP gain
   const touchTree = useCallback(() => {
     const now = Date.now();
-    const timeSinceLastTouch = world.companion.lastPetTime
-      ? now - world.companion.lastPetTime
+    // P1 Fix: Use lastTouchTime instead of lastPetTime for tree cooldown
+    const timeSinceLastTouch = world.companion.lastTouchTime
+      ? now - world.companion.lastTouchTime
       : Infinity;
 
     // Cooldown for full effect (1 minute)
@@ -763,7 +808,7 @@ export function useInnerWorld() {
         ...world.companion,
         treeXP: newTreeXP,
         treeStage: newTreeStage,
-        lastPetTime: now,
+        lastTouchTime: now, // P1 Fix: Update lastTouchTime, not lastPetTime
         lastInteraction: now,
         interactionCount: (world.companion.interactionCount || 0) + 1,
       },

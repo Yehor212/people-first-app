@@ -67,6 +67,20 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     timeOfDay: 'morning' | 'afternoon' | 'evening';
   } | null>(null);
 
+  // P0 Fix: Track mounted state to prevent memory leaks
+  const mountedRef = useRef(true);
+  const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
+
   // Ref to track selected mood button for flying animation
   const moodButtonRefs = useRef<Record<MoodType, HTMLButtonElement | null>>({
     great: null,
@@ -277,7 +291,12 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     const newMoodData = moods.find(m => m.type === newMood);
     setChangedMoodEmoji(newMoodData?.emoji || '');
     setShowMoodChangedToast(true);
-    setTimeout(() => setShowMoodChangedToast(false), 2500);
+    // P0 Fix: Store timeout ref and check mounted before state update
+    toastTimeoutRef.current = setTimeout(() => {
+      if (mountedRef.current) {
+        setShowMoodChangedToast(false);
+      }
+    }, 2500);
 
     // Reset state
     setConfirmChange(null);

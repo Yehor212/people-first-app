@@ -5,8 +5,7 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // Allowed origins for CORS (production only - no http://localhost)
 const ALLOWED_ORIGINS = [
-  "https://zenflow.app",
-  "https://www.zenflow.app",
+  "https://yehor212.github.io",
   "capacitor://localhost", // Required for mobile app
 ];
 

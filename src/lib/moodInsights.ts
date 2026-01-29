@@ -190,7 +190,9 @@ function analyzeHabitMoodCorrelation(
 
   habits.forEach(habit => {
     const datesWithHabit = habit.completedDates;
-    const datesWithoutHabit = Object.keys(moodByDate).filter(d => !datesWithHabit.includes(d));
+    // P2 Fix: Use Set for O(1) lookup instead of O(n) includes()
+    const habitDatesSet = new Set(datesWithHabit);
+    const datesWithoutHabit = Object.keys(moodByDate).filter(d => !habitDatesSet.has(d));
 
     const scoresWithHabit = datesWithHabit
       .filter(d => moodByDate[d] !== undefined)
@@ -252,7 +254,9 @@ function analyzeFocusMoodCorrelation(
 
   // Compare mood on focus days vs non-focus days
   const focusDays = Object.keys(focusByDate);
-  const nonFocusDays = Object.keys(moodByDate).filter(d => !focusDays.includes(d));
+  // P2 Fix: Use Set for O(1) lookup instead of O(n) includes()
+  const focusDaysSet = new Set(focusDays);
+  const nonFocusDays = Object.keys(moodByDate).filter(d => !focusDaysSet.has(d));
 
   const moodWithFocus = focusDays
     .filter(d => moodByDate[d] !== undefined)
@@ -308,7 +312,9 @@ function analyzeGratitudeMoodCorrelation(
 
   // Compare mood on gratitude days vs non-gratitude days
   const gratitudeDays = Object.keys(gratitudeByDate);
-  const nonGratitudeDays = Object.keys(moodByDate).filter(d => !gratitudeDays.includes(d));
+  // P2 Fix: Use Set for O(1) lookup instead of O(n) includes()
+  const gratitudeDaysSet = new Set(gratitudeDays);
+  const nonGratitudeDays = Object.keys(moodByDate).filter(d => !gratitudeDaysSet.has(d));
 
   const moodWithGratitude = gratitudeDays
     .filter(d => moodByDate[d] !== undefined)
@@ -362,11 +368,15 @@ function analyzeMoodTrend(moods: MoodEntry[]): MoodInsight | null {
     prev7Days.push(formatDate(d));
   }
 
+  // P2 Fix: Use Sets for O(1) lookup
+  const last7DaysSet = new Set(last7Days);
+  const prev7DaysSet = new Set(prev7Days);
+
   const recentScores = moods
-    .filter(m => last7Days.includes(m.date))
+    .filter(m => last7DaysSet.has(m.date))
     .map(m => getMoodScore(m.mood));
   const previousScores = moods
-    .filter(m => prev7Days.includes(m.date))
+    .filter(m => prev7DaysSet.has(m.date))
     .map(m => getMoodScore(m.mood));
 
   if (recentScores.length < 3 || previousScores.length < 3) return null;
@@ -421,7 +431,9 @@ function analyzeConsistency(moods: MoodEntry[], habits: Habit[]): MoodInsight | 
     last14Days.push(formatDate(d));
   }
 
-  const daysWithMood = new Set(moods.filter(m => last14Days.includes(m.date)).map(m => m.date));
+  // P2 Fix: Use Set for O(1) lookup
+  const last14DaysSet = new Set(last14Days);
+  const daysWithMood = new Set(moods.filter(m => last14DaysSet.has(m.date)).map(m => m.date));
   const consistency = daysWithMood.size / 14;
 
   if (consistency >= 0.85) {

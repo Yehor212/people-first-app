@@ -463,6 +463,7 @@ export interface Translations {
   cloudSyncDisabled: string;
   deleteAccount: string;
   deleteAccountConfirm: string;
+  deleteAccountTypeConfirm: string;
   deleteAccountWarning: string;
   deleteAccountSuccess: string;
   deleteAccountError: string;
@@ -1393,6 +1394,16 @@ export interface Translations {
 
   // XP Display
   xp: string;
+
+  // AI Coach
+  aiCoachTitle: string;
+  aiCoachSubtitle: string;
+  aiCoachWelcome: string;
+  aiCoachPlaceholder: string;
+  aiCoachQuick1: string;
+  aiCoachQuick2: string;
+  aiCoachQuick3: string;
+  clearHistory: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -1924,6 +1935,7 @@ export const translations: Record<Language, Translations> = {
     cloudSyncDisabled: 'Облачная синхронизация отключена.',
     deleteAccount: 'Удалить аккаунт',
     deleteAccountConfirm: 'Удалить аккаунт?',
+    deleteAccountTypeConfirm: 'Введите DELETE для подтверждения:',
     deleteAccountWarning: 'Будут удалены облачные данные и доступ к аккаунту.',
     deleteAccountSuccess: 'Аккаунт удалён.',
     deleteAccountError: 'Не удалось удалить аккаунт.',
@@ -2733,6 +2745,16 @@ export const translations: Record<Language, Translations> = {
 
     // XP Display
     xp: 'XP',
+
+    // AI Coach
+    aiCoachTitle: 'AI Коуч',
+    aiCoachSubtitle: 'Твой персональный помощник',
+    aiCoachWelcome: 'Привет! Чем я могу помочь?',
+    aiCoachPlaceholder: 'Напиши сообщение...',
+    aiCoachQuick1: 'Я чувствую стресс',
+    aiCoachQuick2: 'Помоги сосредоточиться',
+    aiCoachQuick3: 'Нужна мотивация',
+    clearHistory: 'Очистить историю',
   },
 
   en: {
@@ -3263,6 +3285,7 @@ export const translations: Record<Language, Translations> = {
     cloudSyncDisabled: 'Cloud sync disabled.',
     deleteAccount: 'Delete account',
     deleteAccountConfirm: 'Delete your account?',
+    deleteAccountTypeConfirm: 'Type DELETE to confirm:',
     deleteAccountWarning: 'This will remove cloud data and access to your account.',
     deleteAccountSuccess: 'Account deleted.',
     deleteAccountError: 'Failed to delete account.',
@@ -4072,6 +4095,16 @@ export const translations: Record<Language, Translations> = {
 
     // XP Display
     xp: 'XP',
+
+    // AI Coach
+    aiCoachTitle: 'AI Coach',
+    aiCoachSubtitle: 'Your personal wellness guide',
+    aiCoachWelcome: 'Hi! How can I help you today?',
+    aiCoachPlaceholder: 'Type a message...',
+    aiCoachQuick1: "I'm feeling stressed",
+    aiCoachQuick2: 'Help me focus',
+    aiCoachQuick3: 'Need motivation',
+    clearHistory: 'Clear history',
   },
 
   uk: {
@@ -4602,6 +4635,7 @@ export const translations: Record<Language, Translations> = {
     cloudSyncDisabled: 'Синхронізація з хмарою вимкнена.',
     deleteAccount: 'Видалити акаунт',
     deleteAccountConfirm: 'Видалити акаунт?',
+    deleteAccountTypeConfirm: 'Введіть DELETE для підтвердження:',
     deleteAccountWarning: 'Буде видалено хмарні дані та доступ до акаунту.',
     deleteAccountSuccess: 'Акаунт видалено.',
     deleteAccountError: 'Не вдалося видалити акаунт.',
@@ -5411,6 +5445,16 @@ export const translations: Record<Language, Translations> = {
 
     // XP Display
     xp: 'XP',
+
+    // AI Coach
+    aiCoachTitle: 'AI Коуч',
+    aiCoachSubtitle: 'Твій персональний помічник',
+    aiCoachWelcome: 'Привіт! Чим я можу допомогти?',
+    aiCoachPlaceholder: 'Напиши повідомлення...',
+    aiCoachQuick1: 'Я відчуваю стрес',
+    aiCoachQuick2: 'Допоможи зосередитись',
+    aiCoachQuick3: 'Потрібна мотивація',
+    clearHistory: 'Очистити історію',
   },
 
   es: {
@@ -5942,6 +5986,7 @@ export const translations: Record<Language, Translations> = {
     cloudSyncDisabled: 'Sincronización en la nube desactivada.',
     deleteAccount: 'Eliminar cuenta',
     deleteAccountConfirm: '¿Eliminar tu cuenta?',
+    deleteAccountTypeConfirm: 'Escribe DELETE para confirmar:',
     deleteAccountWarning: 'Esto eliminará los datos en la nube y el acceso a tu cuenta.',
     deleteAccountSuccess: 'Cuenta eliminada.',
     deleteAccountError: 'No se pudo eliminar la cuenta.',
@@ -6751,6 +6796,16 @@ export const translations: Record<Language, Translations> = {
 
     // XP Display
     xp: 'XP',
+
+    // AI Coach
+    aiCoachTitle: 'Coach de IA',
+    aiCoachSubtitle: 'Tu guía personal de bienestar',
+    aiCoachWelcome: '¡Hola! ¿Cómo puedo ayudarte?',
+    aiCoachPlaceholder: 'Escribe un mensaje...',
+    aiCoachQuick1: 'Me siento estresado',
+    aiCoachQuick2: 'Ayúdame a concentrarme',
+    aiCoachQuick3: 'Necesito motivación',
+    clearHistory: 'Borrar historial',
   },
 
   de: {
@@ -7282,6 +7337,7 @@ export const translations: Record<Language, Translations> = {
     cloudSyncDisabled: 'Cloud-Synchronisierung deaktiviert.',
     deleteAccount: 'Konto löschen',
     deleteAccountConfirm: 'Konto löschen?',
+    deleteAccountTypeConfirm: 'Geben Sie DELETE zur Bestätigung ein:',
     deleteAccountWarning: 'Dabei werden Cloud-Daten und der Zugriff auf das Konto entfernt.',
     deleteAccountSuccess: 'Konto gelöscht.',
     deleteAccountError: 'Konto konnte nicht gelöscht werden.',
@@ -8091,6 +8147,16 @@ export const translations: Record<Language, Translations> = {
 
     // XP Display
     xp: 'XP',
+
+    // AI Coach
+    aiCoachTitle: 'AI Coach',
+    aiCoachSubtitle: 'Dein persönlicher Wellness-Guide',
+    aiCoachWelcome: 'Hallo! Wie kann ich dir helfen?',
+    aiCoachPlaceholder: 'Nachricht eingeben...',
+    aiCoachQuick1: 'Ich fühle mich gestresst',
+    aiCoachQuick2: 'Hilf mir, mich zu konzentrieren',
+    aiCoachQuick3: 'Motivation gebraucht',
+    clearHistory: 'Verlauf löschen',
   },
 
   fr: {
@@ -8622,7 +8688,8 @@ export const translations: Record<Language, Translations> = {
     cloudSyncDisabled: 'Synchronisation cloud désactivée.',
     deleteAccount: 'Supprimer le compte',
     deleteAccountConfirm: 'Supprimer votre compte ?',
-    deleteAccountWarning: 'Cela supprimera les données cloud et l’accès au compte.',
+    deleteAccountTypeConfirm: 'Tapez DELETE pour confirmer :',
+    deleteAccountWarning: 'Cela supprimera les données cloud et l\'accès au compte.',
     deleteAccountSuccess: 'Compte supprimé.',
     deleteAccountError: 'Impossible de supprimer le compte.',
     deleteAccountLink: 'Supprimer le compte/données',
@@ -9431,6 +9498,16 @@ export const translations: Record<Language, Translations> = {
 
     // XP Display
     xp: 'XP',
+
+    // AI Coach
+    aiCoachTitle: 'Coach IA',
+    aiCoachSubtitle: 'Ton guide personnel de bien-être',
+    aiCoachWelcome: 'Salut! Comment puis-je t\'aider?',
+    aiCoachPlaceholder: 'Écris un message...',
+    aiCoachQuick1: 'Je me sens stressé',
+    aiCoachQuick2: 'Aide-moi à me concentrer',
+    aiCoachQuick3: 'Besoin de motivation',
+    clearHistory: 'Effacer l\'historique',
   },
 };
 

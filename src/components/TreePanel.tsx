@@ -4,7 +4,7 @@
  * Shows: Tree stage, XP progress, Water level, Season
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Droplets, Hand, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -115,6 +115,20 @@ export function TreePanel({
   const [isAnimating, setIsAnimating] = useState(false);
   const [isWatering, setIsWatering] = useState(false);
 
+  // P1 Fix: Track mounted state and timeouts to prevent memory leaks
+  const mountedRef = useRef(true);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   const season = getCurrentSeason();
   const stageName = getTreeStageName(treeStage, language);
   const xpProgress = getXPProgressToNextStage(treeXP, treeStage);
@@ -145,7 +159,16 @@ export function TreePanel({
     const reaction = reactions[Math.floor(Math.random() * reactions.length)];
     setShowReaction(reaction + ` +${result.xpGain} XP`);
 
-    setTimeout(() => {
+    // P1 Fix: Store timeout ref and check mounted before updating state
+    // Capture current values to avoid stale closure
+    const capturedWaterLevel = waterLevel;
+    const capturedTreeStage = treeStage;
+    const capturedTreatsBalance = treatsBalance;
+    const capturedWaterCost = waterCost;
+    const capturedStreak = streak;
+
+    timeoutRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
       setShowReaction(null);
       setIsAnimating(false);
       if (result.stageUp) {
@@ -153,7 +176,7 @@ export function TreePanel({
         setMessage((t.treeStageUp || '🎉 Evolved to {stage}!').replace('{stage}', newStageName));
       } else {
         setMessage(getContextualMessage(
-          waterLevel, treeStage, treatsBalance, waterCost, streak, season, language, t as Record<string, string>
+          capturedWaterLevel, capturedTreeStage, capturedTreatsBalance, capturedWaterCost, capturedStreak, season, language, t as Record<string, string>
         ));
       }
     }, 1500);
@@ -182,7 +205,16 @@ export function TreePanel({
       setShowReaction(reaction + ` +${result.xpGain} XP`);
     }
 
-    setTimeout(() => {
+    // P1 Fix: Store timeout ref and check mounted before updating state
+    // Capture current values to avoid stale closure
+    const capturedWaterLevel = waterLevel;
+    const capturedTreeStage = treeStage;
+    const capturedTreatsBalance = treatsBalance;
+    const capturedWaterCost = waterCost;
+    const capturedStreak = streak;
+
+    timeoutRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
       setShowReaction(null);
       setIsAnimating(false);
       setIsWatering(false);
@@ -191,10 +223,10 @@ export function TreePanel({
         setMessage((t.treeStageUp || '🎉 Evolved to {stage}!').replace('{stage}', newStageName));
       } else {
         setMessage(getContextualMessage(
-          result.success ? waterLevel + result.waterGain : waterLevel,
-          treeStage,
-          result.success ? (result.newBalance || treatsBalance) : treatsBalance,
-          waterCost, streak, season, language, t as Record<string, string>
+          result.success ? capturedWaterLevel + result.waterGain : capturedWaterLevel,
+          capturedTreeStage,
+          result.success ? (result.newBalance || capturedTreatsBalance) : capturedTreatsBalance,
+          capturedWaterCost, capturedStreak, season, language, t as Record<string, string>
         ));
       }
     }, 2000);

@@ -59,6 +59,7 @@ import { InstallBanner } from '@/components/InstallBanner';
 import { RemindersPanel } from '@/components/RemindersPanel';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { WelcomeTutorial } from '@/components/WelcomeTutorial';
+import { AICoachOnboarding } from '@/components/AICoachOnboarding';
 import { AuthGate } from '@/components/AuthGate';
 import { AchievementsPanel } from '@/components/AchievementsPanel';
 import { NotificationPermission } from '@/components/NotificationPermission';
@@ -93,6 +94,8 @@ import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
 import { ConsentBanner } from '@/components/ConsentBanner';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { haptics } from '@/lib/haptics';
+import { AICoachChat } from '@/components/AICoachChat';
+import { useAICoach } from '@/contexts/AICoachContext';
 import { OnboardingOverlay, DayProgressIndicator } from '@/components/OnboardingOverlay';
 import { FeatureUnlock } from '@/components/FeatureUnlock';
 import { QuickStatsRow } from '@/components/ui/stat-card';
@@ -125,7 +128,9 @@ export function Index() {
   const { t, language } = useLanguage();
   const { setEmotionFromEntries } = useEmotionTheme();
   const { syncFocusSession } = useHealthConnect();
+  const { triggerLowMoodCheck, openCoach, setUserData, onboardingData, saveOnboardingAnswer } = useAICoach();
   const [activeTab, setActiveTab] = useState<TabType>('home');
+  const [showAIOnboarding, setShowAIOnboarding] = useState(false);
   const lastSyncedUserIdRef = useRef<string | null>(null);
 
   // App initialization state (must be first)
@@ -485,6 +490,13 @@ export function Index() {
     }
   }, [isLoadingReminders, reminders.moodTime, reminders.moodTimeMorning, setReminders]);
 
+  // Update AI Coach context with user data
+  useEffect(() => {
+    if (!isLoading && !isLoadingInnerWorld) {
+      setUserData(safeMoods, safeHabits, innerWorld);
+    }
+  }, [isLoading, isLoadingInnerWorld, safeMoods, safeHabits, innerWorld, setUserData]);
+
   // Schedule event handlers (moved here to avoid TDZ errors)
   const handleAddScheduleEvent = (event: Omit<ScheduleEvent, 'id'>) => {
     const newEvent: ScheduleEvent = {
@@ -803,6 +815,16 @@ export function Index() {
 
     // Update challenge progress
     updateChallengeProgress();
+
+    // AI Coach: Check for low mood and offer support
+    // P0 Fix: Only trigger if data is loaded (so AI Coach has context)
+    if (entry.mood === 'bad' || entry.mood === 'terrible') {
+      if (!isLoading && !isLoadingInnerWorld) {
+        setTimeout(() => {
+          triggerLowMoodCheck(entry);
+        }, 1500);
+      }
+    }
   };
 
   // Quick mood handler for one-tap notification actions
@@ -1541,7 +1563,8 @@ export function Index() {
       syncIfNeeded(data.session?.user?.id ?? null);
     });
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+    // P1 Fix: Correct destructuring pattern for auth subscription
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       // v1.1.1 Migration: Auto-enable cloud sync when user signs in
       if (session) {
         migrateExistingUser();
@@ -1551,7 +1574,7 @@ export function Index() {
 
     return () => {
       active = false;
-      subscription?.subscription?.unsubscribe?.();
+      subscription?.unsubscribe();
       stopAutoSync(); // Clean up auto-sync listeners and intervals
     };
   }, [isLoading]);
@@ -1572,13 +1595,14 @@ export function Index() {
 
     syncName();
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(() => {
+    // P1 Fix: Correct destructuring pattern for auth subscription
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
       syncName();
     });
 
     return () => {
       active = false;
-      subscription?.subscription?.unsubscribe?.();
+      subscription?.unsubscribe();
     };
   }, [userNameCustom, userName, setUserName]);
 
@@ -1775,8 +1799,29 @@ export function Index() {
   if (!tutorialComplete) {
     return (
       <WelcomeTutorial
-        onComplete={() => setTutorialComplete(true)}
-        onSkip={() => setTutorialComplete(true)}
+        onComplete={() => {
+          setTutorialComplete(true);
+          // P0 Fix: Show AI Coach Onboarding after Welcome Tutorial
+          if (!onboardingData.completedAt) {
+            setShowAIOnboarding(true);
+          }
+        }}
+        onSkip={() => {
+          setTutorialComplete(true);
+        }}
+      />
+    );
+  }
+
+  // P0 Fix: AI Coach Onboarding (personalization questions)
+  if (showAIOnboarding) {
+    return (
+      <AICoachOnboarding
+        onComplete={() => {
+          saveOnboardingAnswer('completedAt', String(Date.now()));
+          setShowAIOnboarding(false);
+        }}
+        onSkip={() => setShowAIOnboarding(false)}
       />
     );
   }
@@ -2284,6 +2329,9 @@ export function Index() {
         onComplete={handleMindfulMomentComplete}
         trigger="focus"
       />
+
+      {/* AI Coach Chat - bottom sheet for AI coaching */}
+      <AICoachChat />
 
     </div>
   );

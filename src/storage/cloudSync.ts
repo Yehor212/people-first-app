@@ -20,7 +20,7 @@ let autoSyncStarted = false;
 let syncLock = false;
 let syncLockOwner: string | null = null; // Unique ID of the operation holding the lock
 let syncLockTimeout: ReturnType<typeof setTimeout> | null = null;
-const SYNC_LOCK_TIMEOUT = 60000; // 60 seconds max lock time to prevent deadlock
+const SYNC_LOCK_TIMEOUT = 120000; // P0 Fix: 120 seconds max lock time (increased from 60s to prevent data corruption during slow operations)
 
 /**
  * Generate a unique operation ID for lock ownership tracking.

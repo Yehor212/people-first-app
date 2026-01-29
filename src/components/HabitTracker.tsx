@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, memo } from 'react';
+import { useState, useCallback, useMemo, memo, useRef } from 'react';
 import { Habit, HabitType, HabitReminder, HabitFrequency } from '@/types';
 import { getToday, generateId, formatDate, cn } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
@@ -62,6 +62,9 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
 
   // Get active challenges count
   const activeChallengesCount = useMemo(() => getActiveChallenges().length, []);
+
+  // P1 Fix: Debounce ref to prevent rapid toggle causing multiple celebrations
+  const toggleDebounceRef = useRef<Set<string>>(new Set());
 
   const today = getToday();
 
@@ -254,7 +257,15 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   }, [progressMap]);
 
   // Handle habit toggle with celebrations
+  // P1 Fix: Added debounce to prevent rapid toggles causing multiple celebrations
   const handleHabitToggle = useCallback((habit: Habit) => {
+    // P1 Fix: Prevent rapid double-toggle
+    if (toggleDebounceRef.current.has(habit.id)) {
+      return;
+    }
+    toggleDebounceRef.current.add(habit.id);
+    setTimeout(() => toggleDebounceRef.current.delete(habit.id), 500);
+
     const wasCompleted = isCompletedToday(habit);
 
     // Trigger the toggle

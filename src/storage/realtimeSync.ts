@@ -51,7 +51,12 @@ async function processBatched<T>(
 
 export const syncMood = async (mood: MoodEntry): Promise<void> => {
   const userId = await getCurrentUserId();
-  if (!supabase || !userId) return;
+  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  if (!supabase) return;
+  if (!userId) {
+    logger.warn('[Sync] Cannot sync mood: User not authenticated');
+    return;
+  }
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
@@ -129,7 +134,12 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
 
 export const syncHabit = async (habit: Habit): Promise<void> => {
   const userId = await getCurrentUserId();
-  if (!supabase || !userId) return;
+  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  if (!supabase) return;
+  if (!userId) {
+    logger.warn('[Sync] Cannot sync habit: User not authenticated');
+    return;
+  }
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
@@ -289,7 +299,12 @@ export const syncHabitCompletion = async (habitId: string, date: string, complet
 
 export const syncFocusSession = async (session: FocusSession): Promise<void> => {
   const userId = await getCurrentUserId();
-  if (!supabase || !userId) return;
+  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  if (!supabase) return;
+  if (!userId) {
+    logger.warn('[Sync] Cannot sync focus session: User not authenticated');
+    return;
+  }
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
@@ -323,7 +338,12 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
 
 export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
   const userId = await getCurrentUserId();
-  if (!supabase || !userId) return;
+  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  if (!supabase) return;
+  if (!userId) {
+    logger.warn('[Sync] Cannot sync gratitude: User not authenticated');
+    return;
+  }
 
   // If offline, queue for later sync
   if (!navigator.onLine) {
@@ -379,7 +399,12 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
 
 export const syncSetting = async (key: string, value: unknown): Promise<void> => {
   const userId = await getCurrentUserId();
-  if (!supabase || !userId) return;
+  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  if (!supabase) return;
+  if (!userId) {
+    logger.warn('[Sync] Cannot sync setting: User not authenticated');
+    return;
+  }
 
   try {
     const { error } = await supabase.from('user_settings').upsert({
@@ -401,7 +426,12 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
 
 export const pullFromCloud = async (): Promise<boolean> => {
   const userId = await getCurrentUserId();
-  if (!supabase || !userId) return false;
+  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  if (!supabase) return false;
+  if (!userId) {
+    logger.warn('[Sync] Cannot pull from cloud: User not authenticated');
+    return false;
+  }
 
   try {
     // Fetch all data in parallel with timeouts
@@ -545,7 +575,12 @@ export const pullFromCloud = async (): Promise<boolean> => {
 
 export const pushToCloud = async (): Promise<boolean> => {
   const userId = await getCurrentUserId();
-  if (!supabase || !userId) return false;
+  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  if (!supabase) return false;
+  if (!userId) {
+    logger.warn('[Sync] Cannot push to cloud: User not authenticated');
+    return false;
+  }
 
   try {
     const [moods, habits, focusSessions, gratitudeEntries, settings] = await Promise.all([
@@ -583,7 +618,12 @@ export const pushToCloud = async (): Promise<boolean> => {
 
 export const subscribeToRealtime = async (): Promise<void> => {
   const userId = await getCurrentUserId();
-  if (!supabase || !userId) return;
+  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  if (!supabase) return;
+  if (!userId) {
+    logger.warn('[Realtime] Cannot subscribe: User not authenticated');
+    return;
+  }
 
   // Unsubscribe from existing channel
   if (realtimeChannel) {

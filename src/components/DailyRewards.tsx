@@ -3,7 +3,7 @@
  * ADHD-optimized daily check-in with escalating rewards
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Gift, Sparkles, Check, Lock, Zap, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -29,6 +29,20 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
   const [canClaim, setCanClaim] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+
+  // P0 Fix: Track mounted state and timeout to prevent memory leaks
+  const mountedRef = useRef(true);
+  const claimTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (claimTimeoutRef.current) {
+        clearTimeout(claimTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Load saved state
@@ -93,8 +107,9 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
     }));
     localStorage.setItem(ADHD_STORAGE_KEYS.LAST_LOGIN, new Date().toDateString());
 
-    // Trigger callback
-    setTimeout(() => {
+    // P0 Fix: Store timeout ref and check mounted before state update
+    claimTimeoutRef.current = setTimeout(() => {
+      if (!mountedRef.current) return;
       onClaimReward(reward.reward, bonusXp);
       setCanClaim(false);
       setClaiming(false);

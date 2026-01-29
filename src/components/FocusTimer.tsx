@@ -66,7 +66,15 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
   // Bug fix: Use string state for inputs to allow free typing, validate on blur
   const [focusInputValue, setFocusInputValue] = useState(String(focusMinutes));
   const [breakInputValue, setBreakInputValue] = useState(String(breakMinutes));
-  const [timeLeft, setTimeLeft] = useState(DEFAULT_FOCUS_MINUTES * 60);
+  // Bug fix: Initialize timeLeft based on saved or current focusMinutes, not hardcoded default
+  const [timeLeft, setTimeLeft] = useState(() => {
+    if (savedState?.endTime && savedState.isRunning) {
+      const remaining = Math.ceil((savedState.endTime - Date.now()) / 1000);
+      if (remaining > 0) return remaining;
+    }
+    const minutes = savedState?.focusMinutes || DEFAULT_FOCUS_MINUTES;
+    return minutes * 60;
+  });
   const [isRunning, setIsRunning] = useState(savedState?.isRunning || false);
   const [isBreak, setIsBreak] = useState(savedState?.isBreak || false);
   const [label, setLabel] = useState(savedState?.label || '');
@@ -77,6 +85,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const intervalTickRef = useRef<number>(0);
+  // P0 Fix: Flag to prevent interval saves while debounced save is pending
+  const savePendingRef = useRef(false);
   const endTimeRef = useRef<number | null>(savedState?.endTime || null);
   const focusStartRef = useRef<number | null>(savedState?.focusStartTime || null);
   const focusAccumulatedRef = useRef(savedState?.focusAccumulated || 0);
@@ -138,10 +148,13 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     if (saveDebounceRef.current) {
       clearTimeout(saveDebounceRef.current);
     }
-    // Debounce save by 100ms to avoid conflicts with interval saves
+    // P0 Fix: Mark save as pending to prevent interval save conflicts
+    savePendingRef.current = true;
+    // Debounce save by 300ms (increased from 100ms) to avoid conflicts with interval saves
     saveDebounceRef.current = setTimeout(() => {
       saveTimerState();
-    }, 100);
+      savePendingRef.current = false;
+    }, 300);
 
     return () => {
       if (saveDebounceRef.current) {
@@ -235,11 +248,14 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
         localStorage.removeItem(TIMER_STORAGE_KEY);
       }
 
-      // Save state every 10 ticks (5 seconds) to reduce localStorage writes and prevent race conditions
+      // Save state every 10 ticks (5 seconds) to reduce localStorage writes
+      // P0 Fix: Skip if a debounced save is pending to prevent race conditions
       intervalTickRef.current++;
       if (intervalTickRef.current >= 10) {
         intervalTickRef.current = 0;
-        saveTimerState();
+        if (!savePendingRef.current) {
+          saveTimerState();
+        }
       }
     }, 500);
 

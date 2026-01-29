@@ -53,6 +53,9 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     return () => clearInterval(interval);
   }, [isRunning, isPaused, onComplete]);
 
+  // P1 Fix: Ref to store auto-break timeout for cleanup
+  const autoBreakTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   // Auto-break reminder every 25 minutes
   useEffect(() => {
     if (!isRunning || isPaused) return;
@@ -63,12 +66,19 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       setShowBreathingAnimation(true);
       setIsPaused(true);
 
-      // Auto-resume after 30 seconds
-      setTimeout(() => {
+      // P1 Fix: Store timeout ref for cleanup
+      autoBreakTimeoutRef.current = setTimeout(() => {
         setShowBreathingAnimation(false);
         setIsPaused(false);
       }, 30000);
     }
+
+    // P1 Fix: Cleanup timeout on unmount or deps change
+    return () => {
+      if (autoBreakTimeoutRef.current) {
+        clearTimeout(autoBreakTimeoutRef.current);
+      }
+    };
   }, [timeLeft, duration, isRunning, isPaused]);
 
   // Stop sound when component unmounts (but don't destroy global singleton)
