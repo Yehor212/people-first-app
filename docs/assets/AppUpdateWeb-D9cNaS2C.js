@@ -1,0 +1,1 @@
+class a{async checkForUpdate(){return{updateAvailable:!1,updatePriority:0,immediateAllowed:!1,flexibleAllowed:!1,availableVersionCode:0,stalenessDays:0}}async startImmediateUpdate(){}async startFlexibleUpdate(){}async isSupported(){return{supported:!1}}}export{a as AppUpdateWeb};

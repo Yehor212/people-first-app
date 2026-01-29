@@ -1,55 +1,62 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ZenFlow Privacy Policy</title>
-    <style>
-      body { font-family: Arial, sans-serif; margin: 32px; line-height: 1.6; color: #111; }
-      h1, h2 { margin-bottom: 8px; }
-      h1 { font-size: 28px; }
-      h2 { font-size: 18px; margin-top: 24px; }
-      ul { padding-left: 18px; }
-      .muted { color: #555; font-size: 14px; }
-    </style>
-  </head>
-  <body>
-    <h1>Privacy Policy</h1>
-    <p class="muted">Effective date: 2026-01-10</p>
-
-    <h2>Summary</h2>
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#4a9d7c">
+  <title>Политика конфиденциальности — ZenFlow</title>
+  <style>* { margin: 0; padding: 0; box-sizing: border-box; } body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.7; color: #333; background: #f9fafb; padding: 20px; } .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); } h1 { font-size: 32px; font-weight: 700; color: #4a9d7c; margin-bottom: 8px; } .last-updated { color: #6b7280; font-size: 14px; margin-bottom: 32px; } h2 { font-size: 24px; font-weight: 600; color: #1f2937; margin-top: 32px; margin-bottom: 16px; } p { margin-bottom: 16px; color: #4b5563; } ul { margin-left: 20px; margin-bottom: 16px; } li { margin-bottom: 8px; color: #4b5563; } strong { color: #1f2937; font-weight: 600; } a { color: #4a9d7c; text-decoration: none; } a:hover { text-decoration: underline; } .back-link { display: inline-block; margin-bottom: 20px; color: #4a9d7c; font-weight: 500; }</style>
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← Вернуться в ZenFlow</a>
+    <h1>Политика конфиденциальности</h1>
+    <p class="last-updated">Последнее обновление: 25 января 2026</p>
+    <h2>1. Введение</h2>
+    <p>ZenFlow («мы», «наше приложение») — это приложение для отслеживания привычек, настроения и продуктивности, разработанное с приоритетом конфиденциальности пользователей. Мы стремимся минимизировать сбор данных и обеспечить полный контроль пользователя над своей информацией.</p>
+    <h2>2. Какие данные мы собираем</h2>
+    <h3>2.1 Данные, хранящиеся локально (IndexedDB)</h3>
     <ul>
-      <li>Your data is stored on your device by default.</li>
-      <li>We do not sell your data.</li>
-      <li>If you enable cloud sync, your data is stored in your account.</li>
+      <li><strong>Записи настроения:</strong> ваши ежедневные записи с уровнем настроения, заметками, дата и время</li>
+      <li><strong>Привычки:</strong> названия привычек, частота выполнения, история отметок</li>
+      <li><strong>Фокус-сессии:</strong> продолжительность работы, тип задач (опционально)</li>
+      <li><strong>Записи благодарности:</strong> текст записей, даты</li>
+      <li><strong>Настройки приложения:</strong> тема (светлая/тёмная), язык, напоминания</li>
+    </ul>
+    <p><strong>Важно:</strong> Все эти данные хранятся только на вашем устройстве в IndexedDB. Мы не имеем доступа к этим данным без вашего явного согласия на синхронизацию.</p>
+    <h3>2.2 Данные при синхронизации (опционально, Supabase)</h3>
+    <p>Если вы создаёте аккаунт и включаете синхронизацию:</p>
+    <ul>
+      <li><strong>Email:</strong> используется для аутентификации (через Supabase Auth)</li>
+      <li><strong>Зашифрованные данные:</strong> ваши записи настроения, привычки, сессии</li>
+      <li><strong>Метаданные:</strong> дата последней синхронизации, ID устройства (анонимный UUID)</li>
+    </ul>
+    <h2>3. Как мы используем данные</h2>
+    <ul>
+      <li><strong>Функционирование приложения:</strong> отображение ваших записей, напоминания, статистика</li>
+      <li><strong>Синхронизация (опционально):</strong> резервное копирование между устройствами</li>
+    </ul>
+    <p><strong>Мы никогда не продаём ваши данные третьим лицам.</strong></p>
+    <h3>2.3 Health Connect (Android)</h3>
+    <p>Если вы включите интеграцию с Health Connect на Android, ZenFlow может получить доступ к:</p>
+    <ul>
+      <li><strong>Чтение:</strong> данные о сне, количество шагов — для предоставления рекомендаций по здоровью</li>
+      <li><strong>Запись:</strong> сеансы осознанности — для записи ваших фокус-сессий как сеансов медитации</li>
+    </ul>
+    <p>Данные о здоровье обрабатываются локально на вашем устройстве. Если вы включите облачную синхронизацию, данные могут быть включены в синхронизированные данные. Мы не передаём данные о здоровье третьим лицам.</p>
+
+    <h2>4. Ваши права (GDPR, CCPA)</h2>
+    <ul>
+      <li><strong>Доступ:</strong> вы можете экспортировать все свои данные в JSON из настроек</li>
+      <li><strong>Удаление:</strong> вы можете удалить аккаунт и все данные из настроек</li>
+      <li><strong>Портируемость:</strong> экспорт в JSON для переноса в другие приложения</li>
     </ul>
 
-    <h2>Data we store</h2>
-    <p>
-      ZenFlow stores your wellness entries (mood, habits, focus sessions, gratitude) on your device.
-      This data stays local unless you choose to sign in and enable cloud sync.
-    </p>
+    <h2>5. Дети и возрастные ограничения</h2>
+    <p>ZenFlow предназначен для пользователей от 13 лет и старше. Мы не собираем личную информацию детей младше 13 лет. Если вам меньше 13 лет, пожалуйста, не используйте это приложение без согласия родителей. Приложение подтверждает возраст пользователя при первом запуске.</p>
 
-    <h2>Cloud sync</h2>
-    <p>
-      If you sign in and use cloud sync, your data is stored in your account on our backend.
-      This is used only to sync your data between devices.
-    </p>
-
-    <h2>Notifications</h2>
-    <p>
-      If you enable reminders, the app schedules local notifications on your device.
-      We do not send push notifications yet.
-    </p>
-
-    <h2>Analytics</h2>
-    <p>
-      Analytics are optional and can be disabled in Settings.
-    </p>
-
-    <h2>Contact</h2>
-    <p>
-If you have questions, contact us at egorsamraev@gmail.com.
-    </p>
-  </body>
+    <h2>6. Контакты</h2>
+    <p>Если у вас есть вопросы о конфиденциальности, напишите нам: <a href="mailto:egorsamraev@gmail.com">egorsamraev@gmail.com</a></p>
+  </div>
+</body>
 </html>

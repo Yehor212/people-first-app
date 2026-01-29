@@ -1,14 +1,21 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
+import { readFileSync } from 'fs';
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
+import { changelogPlugin } from "./vite-plugin-changelog";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Use relative paths for Capacitor/Android builds
-  const isCapacitor = process.env.CAPACITOR_BUILD === 'true';
+  // Set to true for Android builds, false for web deployment
+  const isCapacitor = false; // Changed to false for web deployment
   const base = isCapacitor ? "./" : "/people-first-app/";
+
+  // Read version from package.json
+  const packageJson = JSON.parse(readFileSync('./package.json', 'utf-8'));
+  const appVersion = packageJson.version;
 
   return {
   base,
@@ -17,13 +24,14 @@ export default defineConfig(({ mode }) => {
     port: 8080,
   },
   define: {
-    __APP_VERSION__: JSON.stringify("1.0.0"),
+    __APP_VERSION__: JSON.stringify(appVersion),
   },
   plugins: [
     react(),
+    changelogPlugin(),
     mode === "development" && componentTagger(),
     // Disable PWA for Capacitor builds (native apps don't need service workers)
-    !isCapacitor && VitePWA({
+    !isCapacitor ? VitePWA({
       registerType: "prompt", // User controls updates
       includeAssets: [
         "favicon.ico",
@@ -135,7 +143,7 @@ export default defineConfig(({ mode }) => {
         enabled: mode === "development",
         type: "module",
       },
-    }),
+    }) : null,
   ].filter(Boolean),
 
   resolve: {
@@ -150,8 +158,33 @@ export default defineConfig(({ mode }) => {
 
     rollupOptions: {
       output: {
-        // Disabled manualChunks - was causing "Cannot access before initialization" errors
-        // due to module initialization order issues when splitting chunks
+        // Enable code splitting for better performance
+        manualChunks: {
+          // Core React libraries
+          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+
+          // UI library (heavy Radix components)
+          'ui-vendor': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-toast',
+          ],
+
+          // Charts library (only loaded when viewing stats)
+          'charts': ['recharts'],
+
+          // Backend libraries
+          'backend': ['@supabase/supabase-js', 'dexie'],
+
+          // Animation library
+          'animations': ['framer-motion'],
+
+          // Date utilities
+          'date-utils': ['date-fns'],
+        },
 
         // Hashed filenames for cache busting
         entryFileNames: "assets/[name]-[hash].js",
