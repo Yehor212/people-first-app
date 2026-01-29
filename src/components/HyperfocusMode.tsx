@@ -1,9 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { logger } from '@/lib/logger';
-import { X, Play, Pause, Volume2, VolumeX } from 'lucide-react';
+import { X, Play, Pause, Volume2, VolumeX, Music, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { AmbientSoundGenerator, SOUNDS, unlockAudio } from '@/lib/ambientSounds';
+import { getAmbientSoundGenerator, SOUNDS, unlockAudio, AmbientSoundGenerator } from '@/lib/ambientSounds';
 import { cn } from '@/lib/utils';
+import {
+  isSpotifyConnected,
+  connectSpotify,
+  getCurrentTrack,
+  startFocusPlayback,
+  stopFocusPlayback,
+  SpotifyTrack
+} from '@/lib/spotifyIntegration';
 
 interface HyperfocusModeProps {
   duration: number; // в минутах
@@ -19,8 +27,13 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   const [selectedSoundId, setSelectedSoundId] = useState<string | null>(null);
   const [isSoundPlaying, setIsSoundPlaying] = useState(false);
   const [showBreathingAnimation, setShowBreathingAnimation] = useState(false);
-  const [audioReady, setAudioReady] = useState(false);
-  const soundGeneratorRef = useRef<AmbientSoundGenerator | null>(null);
+  // Use global singleton to prevent audio overlap
+  const soundGeneratorRef = useRef<AmbientSoundGenerator>(getAmbientSoundGenerator());
+
+  // Spotify state
+  const [spotifyConnected, setSpotifyConnected] = useState(isSpotifyConnected());
+  const [spotifyTrack, setSpotifyTrack] = useState<SpotifyTrack | null>(null);
+  const [spotifyAutoPlay, setSpotifyAutoPlay] = useState(false);
 
   // Countdown timer
   useEffect(() => {
@@ -58,49 +71,63 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     }
   }, [timeLeft, duration, isRunning, isPaused]);
 
-  // Initialize sound generator
+  // Stop sound when component unmounts (but don't destroy global singleton)
   useEffect(() => {
-    if (!soundGeneratorRef.current) {
-      soundGeneratorRef.current = new AmbientSoundGenerator();
-    }
-
     return () => {
       if (soundGeneratorRef.current) {
-        soundGeneratorRef.current.destroy();
+        soundGeneratorRef.current.stop();
       }
     };
   }, []);
 
-  // Play sound helper with retry for mobile
+  // Spotify auto-play/pause when timer starts/stops
+  useEffect(() => {
+    if (!spotifyConnected || !spotifyAutoPlay) return;
+
+    if (isRunning && !isPaused) {
+      startFocusPlayback();
+    } else {
+      stopFocusPlayback();
+    }
+  }, [isRunning, isPaused, spotifyConnected, spotifyAutoPlay]);
+
+  // Poll Spotify current track
+  useEffect(() => {
+    if (!spotifyConnected) return;
+
+    const pollTrack = async () => {
+      const track = await getCurrentTrack();
+      setSpotifyTrack(track);
+    };
+
+    pollTrack();
+    const interval = setInterval(pollTrack, 5000);
+    return () => clearInterval(interval);
+  }, [spotifyConnected]);
+
+  // Handle Spotify connect
+  const handleSpotifyConnect = () => {
+    connectSpotify();
+  };
+
+  // Play sound helper
   const playSound = useCallback(async (soundId: string) => {
     const generator = soundGeneratorRef.current;
     if (!generator || !soundId) return;
 
     try {
-      // Unlock audio first (required for mobile)
+      // Unlock audio (required for mobile)
       await unlockAudio();
-      setAudioReady(true);
 
-      // Small delay for mobile browsers
-      await new Promise(resolve => setTimeout(resolve, 100));
-
+      // Play directly - cancellation handled by AmbientSoundGenerator
       await generator.play(soundId);
       setIsSoundPlaying(true);
       logger.log('[HyperfocusMode] Sound playing:', soundId);
     } catch (err) {
       logger.error('[HyperfocusMode] Failed to play sound:', err);
       setIsSoundPlaying(false);
-
-      // Retry once on mobile
-      try {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        await generator.play(soundId);
-        setIsSoundPlaying(true);
-      } catch (retryErr) {
-        logger.error('[HyperfocusMode] Retry failed:', retryErr);
-      }
     }
-  }, []);
+  }, []); // Empty deps - stable function
 
   // Ambient sound player - react to state changes
   useEffect(() => {
@@ -113,12 +140,14 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       return;
     }
 
-    if (isRunning && !isPaused && audioReady) {
-      playSound(selectedSoundId);
-    } else if (!isRunning || isPaused) {
+    // Always play sound when selected (loads and initializes audio)
+    playSound(selectedSoundId);
+
+    // Pause immediately if timer not running or paused
+    if (!isRunning || isPaused) {
       generator.pause();
     }
-  }, [selectedSoundId, isRunning, isPaused, audioReady, playSound]);
+  }, [selectedSoundId, isRunning, isPaused]); // Removed audioReady and playSound
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -132,7 +161,6 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     // Unlock audio on user gesture (required for mobile browsers)
     try {
       await unlockAudio();
-      setAudioReady(true);
     } catch (e) {
       logger.warn('[HyperfocusMode] Audio unlock failed:', e);
     }
@@ -170,18 +198,17 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   };
 
   const handleSoundSelect = async (soundId: string | null) => {
-    // User interaction - unlock audio
+    // Always unlock on user interaction
     try {
       await unlockAudio();
-      setAudioReady(true);
     } catch (e) {
       logger.warn('[HyperfocusMode] Audio unlock failed:', e);
     }
 
     setSelectedSoundId(soundId);
 
+    // If running and not paused, play immediately
     if (soundId && isRunning && !isPaused) {
-      // Play immediately after user selection
       await playSound(soundId);
     } else if (!soundId) {
       soundGeneratorRef.current?.stop();
@@ -189,20 +216,27 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     }
   };
 
-  // Lock body scroll when component mounts
+  // Lock body scroll when component mounts (preserves scroll position)
   useEffect(() => {
-    const originalOverflow = document.body.style.overflow;
-    const originalPosition = document.body.style.position;
-    const originalWidth = document.body.style.width;
+    const scrollY = window.scrollY;
+    const originalStyles = {
+      overflow: document.body.style.overflow,
+      position: document.body.style.position,
+      width: document.body.style.width,
+      top: document.body.style.top,
+    };
 
     document.body.style.overflow = 'hidden';
     document.body.style.position = 'fixed';
     document.body.style.width = '100%';
+    document.body.style.top = `-${scrollY}px`;
 
     return () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.position = originalPosition;
-      document.body.style.width = originalWidth;
+      document.body.style.overflow = originalStyles.overflow;
+      document.body.style.position = originalStyles.position;
+      document.body.style.width = originalStyles.width;
+      document.body.style.top = originalStyles.top;
+      window.scrollTo(0, scrollY);
     };
   }, []);
 
@@ -226,17 +260,18 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         </div>
       )}
 
+      {/* Close Button - Fixed position with safe area for iOS */}
+      <button
+        onClick={onExit}
+        className="fixed top-4 right-4 z-[110] p-3 min-w-[48px] min-h-[48px] bg-white/10 hover:bg-white/20 rounded-xl transition-all text-white flex items-center justify-center active:scale-95"
+        style={{ top: 'max(1rem, env(safe-area-inset-top, 1rem))', right: 'max(1rem, env(safe-area-inset-right, 1rem))' }}
+        aria-label="Close"
+      >
+        <X className="w-6 h-6" />
+      </button>
+
       {/* Main Content */}
       <div className="relative z-20 text-center px-6">
-        {/* Close Button */}
-        <button
-          onClick={onExit}
-          className="absolute top-4 right-4 p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all text-white"
-          aria-label="Close"
-        >
-          <X className="w-6 h-6" />
-        </button>
-
         {/* Timer Display */}
         <div className="mb-12">
           <div className="relative w-64 h-64 mx-auto mb-8">
@@ -304,7 +339,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           {!isRunning ? (
             <button
               onClick={handleStart}
-              className="btn-press px-8 py-4 zen-gradient rounded-2xl text-white font-bold text-lg flex items-center gap-3 hover:opacity-90 transition-opacity zen-shadow-xl"
+              className="btn-press px-8 py-4 min-h-[56px] zen-gradient rounded-2xl text-white font-bold text-lg flex items-center gap-3 hover:opacity-90 transition-opacity zen-shadow-xl active:scale-95"
             >
               <Play className="w-6 h-6" />
               {t.hyperfocusStart || 'Начать'}
@@ -312,7 +347,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           ) : (
             <button
               onClick={handlePause}
-              className="btn-press px-8 py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-white font-bold text-lg flex items-center gap-3 transition-all zen-shadow-xl"
+              className="btn-press px-8 py-4 min-h-[56px] bg-white/10 hover:bg-white/20 rounded-2xl text-white font-bold text-lg flex items-center gap-3 transition-all zen-shadow-xl active:scale-95"
             >
               {isPaused ? (
                 <>
@@ -330,7 +365,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
           <button
             onClick={onExit}
-            className="btn-press px-6 py-4 bg-red-500/20 hover:bg-red-500/30 rounded-2xl text-white font-medium transition-all"
+            className="btn-press px-6 py-4 min-h-[56px] bg-red-500/20 hover:bg-red-500/30 rounded-2xl text-white font-medium transition-all active:scale-95"
           >
             {t.hyperfocusExit || 'Выход'}
           </button>
@@ -345,12 +380,12 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             {selectedSoundId && (
               <button
                 onClick={toggleSound}
-                className="p-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                className="p-2.5 min-w-[44px] min-h-[44px] bg-white/10 hover:bg-white/20 rounded-lg transition-colors flex items-center justify-center active:scale-95"
               >
                 {isSoundPlaying ? (
-                  <Volume2 className="w-4 h-4 text-white" />
+                  <Volume2 className="w-5 h-5 text-white" />
                 ) : (
-                  <VolumeX className="w-4 h-4 text-white" />
+                  <VolumeX className="w-5 h-5 text-white" />
                 )}
               </button>
             )}
@@ -362,13 +397,13 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             <button
               onClick={() => handleSoundSelect(null)}
               className={cn(
-                'btn-press px-3 py-3 rounded-xl text-sm font-medium transition-all',
+                'btn-press px-2 py-3 min-h-[48px] rounded-xl text-xs font-medium transition-all active:scale-95',
                 !selectedSoundId
                   ? 'bg-primary text-primary-foreground zen-shadow'
                   : 'bg-white/10 text-white hover:bg-white/20'
               )}
             >
-              🔇 {t.hyperfocusSoundNone || 'Без звука'}
+              🔇 {t.hyperfocusSoundNone || 'Без звуку'}
             </button>
 
             {/* All available sounds */}
@@ -377,7 +412,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 key={sound.id}
                 onClick={() => handleSoundSelect(sound.id)}
                 className={cn(
-                  'btn-press px-3 py-3 rounded-xl text-sm font-medium transition-all',
+                  'btn-press px-2 py-3 min-h-[48px] rounded-xl text-xs font-medium transition-all active:scale-95',
                   selectedSoundId === sound.id
                     ? 'bg-primary text-primary-foreground zen-shadow'
                     : 'bg-white/10 text-white hover:bg-white/20'
@@ -393,6 +428,68 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 {language === 'ru' || language === 'uk' ? sound.nameRu : sound.nameEn}
               </button>
             ))}
+          </div>
+
+          {/* Spotify Section */}
+          <div className="mt-6 pt-4 border-t border-white/10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Music className="w-4 h-4 text-green-400" />
+                <p className="text-sm text-white/70">Spotify</p>
+              </div>
+              {spotifyConnected && (
+                <button
+                  onClick={() => setSpotifyAutoPlay(!spotifyAutoPlay)}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                    spotifyAutoPlay
+                      ? 'bg-green-500/20 text-green-400'
+                      : 'bg-white/10 text-white/60'
+                  )}
+                >
+                  {spotifyAutoPlay ? 'Auto-play ON' : 'Auto-play OFF'}
+                </button>
+              )}
+            </div>
+
+            {!spotifyConnected ? (
+              <button
+                onClick={handleSpotifyConnect}
+                className="w-full py-3 bg-[#1DB954]/20 hover:bg-[#1DB954]/30 rounded-xl text-[#1DB954] font-medium flex items-center justify-center gap-2 transition-all active:scale-95"
+              >
+                <ExternalLink className="w-4 h-4" />
+                {t.spotifyConnect || 'Подключить Spotify'}
+              </button>
+            ) : spotifyTrack ? (
+              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+                {spotifyTrack.albumArt && (
+                  <img
+                    src={spotifyTrack.albumArt}
+                    alt="Album"
+                    className="w-12 h-12 rounded-lg"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-white font-medium truncate">
+                    {spotifyTrack.name}
+                  </p>
+                  <p className="text-xs text-white/60 truncate">
+                    {spotifyTrack.artist}
+                  </p>
+                </div>
+                {spotifyTrack.isPlaying && (
+                  <div className="flex gap-0.5">
+                    <div className="w-1 h-4 bg-green-400 rounded-full animate-pulse" />
+                    <div className="w-1 h-4 bg-green-400 rounded-full animate-pulse delay-75" />
+                    <div className="w-1 h-4 bg-green-400 rounded-full animate-pulse delay-150" />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-white/40 text-center py-2">
+                {t.spotifyNoTrack || 'Откройте Spotify и включите музыку'}
+              </p>
+            )}
           </div>
         </div>
 
@@ -425,9 +522,16 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         }
 
         .breathing-circle {
-          width: 200px;
-          height: 200px;
+          width: 150px;
+          height: 150px;
           animation: breathing 8s ease-in-out infinite;
+        }
+
+        @media (min-width: 360px) {
+          .breathing-circle {
+            width: 200px;
+            height: 200px;
+          }
         }
       `}</style>
     </div>

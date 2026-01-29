@@ -1,19 +1,25 @@
-import { useMoodTheme, supportMessages } from '@/contexts/MoodThemeContext';
+import { useEmotionTheme, emotionSupportMessages } from '@/contexts/EmotionThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Heart, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
+import { PrimaryEmotion } from '@/types';
 
-// Floating particles for positive moods
-function MoodParticles() {
-  const { currentTheme, currentMood } = useMoodTheme();
+// Positive emotions that get particles
+const POSITIVE_EMOTIONS: PrimaryEmotion[] = ['joy', 'trust', 'anticipation', 'surprise'];
+// Negative emotions that get support
+const NEGATIVE_EMOTIONS: PrimaryEmotion[] = ['sadness', 'anger', 'fear', 'disgust'];
 
-  // Don't show particles for bad/terrible moods
-  if (currentMood === 'bad' || currentMood === 'terrible' || currentMood === 'neutral') {
+// Floating particles for positive emotions
+function EmotionParticles() {
+  const { currentEmotion } = useEmotionTheme();
+
+  // Don't show particles for negative/neutral emotions
+  if (currentEmotion === 'neutral' || NEGATIVE_EMOTIONS.includes(currentEmotion as PrimaryEmotion)) {
     return null;
   }
 
-  const particleCount = currentMood === 'great' ? 8 : currentMood === 'good' ? 5 : 3;
+  const particleCount = currentEmotion === 'joy' ? 8 : currentEmotion === 'trust' ? 6 : 4;
 
   return (
     <>
@@ -26,8 +32,8 @@ function MoodParticles() {
             top: `${20 + (i * 8) % 60}%`,
             animationDelay: `${i * 0.8}s`,
             animationDuration: `${5 + i * 0.5}s`,
-            width: currentMood === 'great' ? '10px' : '6px',
-            height: currentMood === 'great' ? '10px' : '6px',
+            width: currentEmotion === 'joy' ? '10px' : '6px',
+            height: currentEmotion === 'joy' ? '10px' : '6px',
           }}
         />
       ))}
@@ -35,33 +41,43 @@ function MoodParticles() {
   );
 }
 
-// Support banner for bad moods
+// Support banner for difficult emotions
 function SupportBanner() {
-  const { currentMood, getSupportMessage } = useMoodTheme();
+  const { currentEmotion, getSupportMessage } = useEmotionTheme();
   const { language } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    // Show banner after a delay for bad/terrible moods
-    if ((currentMood === 'bad' || currentMood === 'terrible') && !dismissed) {
+    // Show banner after a delay for negative emotions
+    if (NEGATIVE_EMOTIONS.includes(currentEmotion as PrimaryEmotion) && !dismissed) {
       const timer = setTimeout(() => setIsVisible(true), 1000);
       return () => clearTimeout(timer);
     } else {
       setIsVisible(false);
     }
-  }, [currentMood, dismissed]);
+  }, [currentEmotion, dismissed]);
 
-  // Reset dismissed when mood changes to good
+  // Reset dismissed when emotion changes to positive
   useEffect(() => {
-    if (currentMood === 'good' || currentMood === 'great' || currentMood === 'okay') {
+    if (POSITIVE_EMOTIONS.includes(currentEmotion as PrimaryEmotion) || currentEmotion === 'neutral') {
       setDismissed(false);
     }
-  }, [currentMood]);
+  }, [currentEmotion]);
 
   const message = getSupportMessage(language);
 
   if (!isVisible || !message) return null;
+
+  // Color based on emotion
+  const emotionColors: Record<string, { bg: string; icon: string }> = {
+    sadness: { bg: 'bg-indigo-100 dark:bg-indigo-900/30', icon: 'text-indigo-500' },
+    anger: { bg: 'bg-blue-100 dark:bg-blue-900/30', icon: 'text-blue-500' }, // Calming blue for anger
+    fear: { bg: 'bg-teal-100 dark:bg-teal-900/30', icon: 'text-teal-500' },
+    disgust: { bg: 'bg-purple-100 dark:bg-purple-900/30', icon: 'text-purple-500' },
+  };
+
+  const colors = emotionColors[currentEmotion] || emotionColors.sadness;
 
   return (
     <div
@@ -69,14 +85,8 @@ function SupportBanner() {
       style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
     >
       <div className="mood-support-banner rounded-2xl p-4 flex items-start gap-3 max-w-md mx-auto">
-        <div className={cn(
-          "p-2 rounded-full",
-          currentMood === 'terrible' ? "bg-violet-100 dark:bg-violet-900/30" : "bg-sky-100 dark:bg-sky-900/30"
-        )}>
-          <Heart className={cn(
-            "w-5 h-5",
-            currentMood === 'terrible' ? "text-violet-500" : "text-sky-500"
-          )} />
+        <div className={cn("p-2 rounded-full", colors.bg)}>
+          <Heart className={cn("w-5 h-5", colors.icon)} />
         </div>
         <div className="flex-1">
           <p className="text-sm text-foreground/90 leading-relaxed">
@@ -95,35 +105,41 @@ function SupportBanner() {
   );
 }
 
-// Breathing exercise suggestion for terrible mood
+// Breathing exercise suggestion for intense negative emotions
 function BreathingSuggestion() {
-  const { currentMood } = useMoodTheme();
-  const { t } = useLanguage();
+  const { currentEmotion } = useEmotionTheme();
   const [showSuggestion, setShowSuggestion] = useState(false);
 
+  // Show for sadness (grief) or anger (rage)
+  const shouldShow = currentEmotion === 'sadness' || currentEmotion === 'anger';
+
   useEffect(() => {
-    if (currentMood === 'terrible') {
+    if (shouldShow) {
       const timer = setTimeout(() => setShowSuggestion(true), 3000);
       return () => clearTimeout(timer);
     } else {
       setShowSuggestion(false);
     }
-  }, [currentMood]);
+  }, [shouldShow]);
 
   if (!showSuggestion) return null;
 
+  const bgColor = currentEmotion === 'anger'
+    ? 'bg-blue-200/20 dark:bg-blue-800/10'  // Calming blue for anger
+    : 'bg-indigo-200/20 dark:bg-indigo-800/10';
+
   return (
     <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
-      <div className="breathing-suggestion w-32 h-32 rounded-full bg-violet-200/20 dark:bg-violet-800/10" />
+      <div className={cn("breathing-suggestion w-32 h-32 rounded-full", bgColor)} />
     </div>
   );
 }
 
-// Celebration sparkles for great mood
+// Celebration sparkles for joy emotion
 function CelebrationSparkles() {
-  const { currentMood } = useMoodTheme();
+  const { currentEmotion } = useEmotionTheme();
 
-  if (currentMood !== 'great') return null;
+  if (currentEmotion !== 'joy') return null;
 
   return (
     <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
@@ -145,9 +161,9 @@ function CelebrationSparkles() {
   );
 }
 
-// Main overlay component
+// Main overlay component (renamed from MoodBackgroundOverlay but keeping export name for compatibility)
 export function MoodBackgroundOverlay() {
-  const { isTransitioning } = useMoodTheme();
+  const { isTransitioning } = useEmotionTheme();
 
   return (
     <>
@@ -163,8 +179,8 @@ export function MoodBackgroundOverlay() {
         isTransitioning && "active"
       )} />
 
-      {/* Mood-specific elements */}
-      <MoodParticles />
+      {/* Emotion-specific elements */}
+      <EmotionParticles />
       <CelebrationSparkles />
       <BreathingSuggestion />
       <SupportBanner />

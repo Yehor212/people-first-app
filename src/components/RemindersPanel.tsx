@@ -23,6 +23,7 @@ export function RemindersPanel({ reminders, onUpdateReminders, habits }: Reminde
     <div className="bg-card rounded-2xl p-4 zen-shadow-card animate-fade-in">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
         className="w-full flex items-center justify-between"
       >
         <div className="flex items-center gap-3">
@@ -43,16 +44,28 @@ export function RemindersPanel({ reminders, onUpdateReminders, habits }: Reminde
 
       {isExpanded && (
         <div className="mt-4 pt-4 border-t border-border space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-foreground">{t.moodReminder || 'Mood'}</span>
-            <span className="text-sm text-muted-foreground">{reminders.moodTime}</span>
+          {/* Mood - 3 times */}
+          <div className="space-y-2">
+            <span className="text-sm font-medium text-foreground">{t.moodReminder || 'Mood'} 😊</span>
+            <div className="flex items-center justify-between pl-4">
+              <span className="text-xs text-muted-foreground">{t.morning || 'Morning'}</span>
+              <span className="text-xs text-muted-foreground">{reminders.moodTimeMorning || '09:00'}</span>
+            </div>
+            <div className="flex items-center justify-between pl-4">
+              <span className="text-xs text-muted-foreground">{t.afternoon || 'Afternoon'}</span>
+              <span className="text-xs text-muted-foreground">{reminders.moodTimeAfternoon || '14:00'}</span>
+            </div>
+            <div className="flex items-center justify-between pl-4">
+              <span className="text-xs text-muted-foreground">{t.evening || 'Evening'}</span>
+              <span className="text-xs text-muted-foreground">{reminders.moodTimeEvening || '20:00'}</span>
+            </div>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-foreground">{t.habitReminder || 'Habits'}</span>
+            <span className="text-sm text-foreground">{t.habitReminder || 'Habits'} ✨</span>
             <span className="text-sm text-muted-foreground">{reminders.habitTime}</span>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-sm text-foreground">{t.focusReminder || 'Focus'}</span>
+            <span className="text-sm text-foreground">{t.focusReminder || 'Focus'} 🎯</span>
             <span className="text-sm text-muted-foreground">{reminders.focusTime}</span>
           </div>
         </div>

@@ -140,7 +140,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
             <h4 className="text-xs font-semibold text-muted-foreground mb-2">
               {t.todayHabits || 'Привычки на сегодня'}:
             </h4>
-            {data.habits.slice(0, 5).map((habit, index) => (
+            {(data.habits ?? []).slice(0, 5).map((habit, index) => (
               <div
                 key={index}
                 className="flex items-center gap-2 bg-background/50 rounded-lg p-2"
@@ -177,6 +177,11 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
                 </span>
               </div>
             ))}
+            {(!data.habits || data.habits.length === 0) && (
+              <p className="text-xs text-muted-foreground text-center py-2">
+                {t.noHabitsYet || 'Нет привычек'}
+              </p>
+            )}
           </div>
 
           {/* Last Badge */}

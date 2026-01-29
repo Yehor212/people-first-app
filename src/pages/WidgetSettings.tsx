@@ -17,12 +17,13 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
     <div className="min-h-screen bg-background pb-20">
       {/* Header */}
       <div className="sticky top-0 z-50 bg-background/95 backdrop-blur border-b">
-        <div className="flex items-center gap-4 px-6 py-4">
+        <div className="flex items-center gap-4 px-4 py-4 pt-safe">
           <button
             onClick={onBack}
-            className="p-2 hover:bg-accent rounded-xl transition-colors"
+            className="p-4 hover:bg-accent rounded-xl transition-colors active:scale-95 touch-manipulation"
+            aria-label="Go back"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
             <h1 className="text-2xl font-bold">{t.widgetSettings || 'Настройки виджетов'}</h1>

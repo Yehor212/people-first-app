@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { logger } from '@/lib/logger';
+import { useState, useEffect, useCallback } from 'react';
+import { safeJsonParse } from '@/lib/safeJson';
 import { Volume2, VolumeX, Sparkles, Zap, Award, Music } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -36,25 +36,23 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setSettings({ ...DEFAULT_SETTINGS, ...parsed });
-      } catch (error) {
-        logger.error('Failed to parse dopamine settings:', error);
-      }
+      const parsed = safeJsonParse(stored, DEFAULT_SETTINGS);
+      setSettings({ ...DEFAULT_SETTINGS, ...parsed });
     }
   }, []);
 
   // Save settings to localStorage and dispatch event
-  const updateSettings = (newSettings: Partial<DopamineSettings>) => {
-    const updated = { ...settings, ...newSettings };
-    setSettings(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    // Dispatch custom event for same-tab updates
-    window.dispatchEvent(new CustomEvent('dopamine-settings-change', { detail: updated }));
-  };
+  const updateSettings = useCallback((newSettings: Partial<DopamineSettings>) => {
+    setSettings(prev => {
+      const updated = { ...prev, ...newSettings };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      // Dispatch custom event for same-tab updates
+      window.dispatchEvent(new CustomEvent('dopamine-settings-change', { detail: updated }));
+      return updated;
+    });
+  }, []);
 
-  const handleIntensityChange = (intensity: DopamineSettings['intensity']) => {
+  const handleIntensityChange = useCallback((intensity: DopamineSettings['intensity']) => {
     if (intensity === 'adhd') {
       // ADHD mode = EVERYTHING ON!
       updateSettings({
@@ -86,10 +84,10 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
         streakFire: true,
       });
     }
-  };
+  }, [updateSettings]);
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="dopamine-settings-title">
       <div className="bg-card rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
@@ -99,7 +97,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                 <Sparkles className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-bold">{t.dopamineSettings || 'Dopamine Dashboard'}</h2>
+                <h2 id="dopamine-settings-title" className="text-xl font-bold">{t.dopamineSettings || 'Dopamine Dashboard'}</h2>
                 <p className="text-sm text-muted-foreground">
                   {t.dopamineSettingsDesc || 'Customize your feedback experience'}
                 </p>
@@ -107,6 +105,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
             </div>
             <button
               onClick={onClose}
+              aria-label={t.close || 'Close'}
               className="p-2 hover:bg-muted rounded-lg transition-colors"
             >
               ×
@@ -190,149 +189,164 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
             </h3>
 
             {/* Animations */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-9 h-9 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
                   <Sparkles className="w-5 h-5 text-primary" />
                 </div>
-                <div>
-                  <div className="font-medium">{t.dopamineAnimations || 'Animations'}</div>
-                  <div className="text-xs text-muted-foreground">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{t.dopamineAnimations || 'Animations'}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-1">
                     {t.dopamineAnimationsDesc || 'Smooth transitions and effects'}
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => updateSettings({ animations: !settings.animations })}
+                role="switch"
+                aria-checked={settings.animations}
+                aria-label={t.dopamineAnimations || 'Animations'}
                 className={cn(
-                  'w-12 h-6 rounded-full transition-colors relative',
+                  'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
                   settings.animations ? 'bg-primary' : 'bg-muted'
                 )}
               >
                 <div
                   className={cn(
-                    'absolute top-1 w-4 h-4 bg-white rounded-full transition-transform',
-                    settings.animations ? 'translate-x-7' : 'translate-x-1'
+                    'absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform',
+                    settings.animations ? 'translate-x-[22px]' : 'translate-x-1'
                   )}
                 />
               </button>
             </div>
 
             {/* Sounds */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-9 h-9 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
                   {settings.sounds ? (
                     <Volume2 className="w-5 h-5 text-primary" />
                   ) : (
                     <VolumeX className="w-5 h-5 text-muted-foreground" />
                   )}
                 </div>
-                <div>
-                  <div className="font-medium">{t.dopamineSounds || 'Sounds'}</div>
-                  <div className="text-xs text-muted-foreground">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{t.dopamineSounds || 'Sounds'}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-1">
                     {t.dopamineSoundsDesc || 'Success sounds and audio feedback'}
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => updateSettings({ sounds: !settings.sounds })}
+                role="switch"
+                aria-checked={settings.sounds}
+                aria-label={t.dopamineSounds || 'Sounds'}
                 className={cn(
-                  'w-12 h-6 rounded-full transition-colors relative',
+                  'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
                   settings.sounds ? 'bg-primary' : 'bg-muted'
                 )}
               >
                 <div
                   className={cn(
-                    'absolute top-1 w-4 h-4 bg-white rounded-full transition-transform',
-                    settings.sounds ? 'translate-x-7' : 'translate-x-1'
+                    'absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform',
+                    settings.sounds ? 'translate-x-[22px]' : 'translate-x-1'
                   )}
                 />
               </button>
             </div>
 
             {/* Haptics */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-9 h-9 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
                   <Music className="w-5 h-5 text-primary" />
                 </div>
-                <div>
-                  <div className="font-medium">{t.dopamineHaptics || 'Haptics'}</div>
-                  <div className="text-xs text-muted-foreground">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{t.dopamineHaptics || 'Haptics'}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-1">
                     {t.dopamineHapticsDesc || 'Vibration feedback (mobile only)'}
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => updateSettings({ haptics: !settings.haptics })}
+                role="switch"
+                aria-checked={settings.haptics}
+                aria-label={t.dopamineHaptics || 'Haptics'}
                 className={cn(
-                  'w-12 h-6 rounded-full transition-colors relative',
+                  'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
                   settings.haptics ? 'bg-primary' : 'bg-muted'
                 )}
               >
                 <div
                   className={cn(
-                    'absolute top-1 w-4 h-4 bg-white rounded-full transition-transform',
-                    settings.haptics ? 'translate-x-7' : 'translate-x-1'
+                    'absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform',
+                    settings.haptics ? 'translate-x-[22px]' : 'translate-x-1'
                   )}
                 />
               </button>
             </div>
 
             {/* Confetti */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <div className="text-lg">🎉</div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-9 h-9 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <span className="text-lg leading-none">🎉</span>
                 </div>
-                <div>
-                  <div className="font-medium">{t.dopamineConfetti || 'Confetti'}</div>
-                  <div className="text-xs text-muted-foreground">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{t.dopamineConfetti || 'Confetti'}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-1">
                     {t.dopamineConfettiDesc || 'Celebrate habit completions'}
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => updateSettings({ confetti: !settings.confetti })}
+                role="switch"
+                aria-checked={settings.confetti}
+                aria-label={t.dopamineConfetti || 'Confetti'}
                 className={cn(
-                  'w-12 h-6 rounded-full transition-colors relative',
+                  'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
                   settings.confetti ? 'bg-primary' : 'bg-muted'
                 )}
               >
                 <div
                   className={cn(
-                    'absolute top-1 w-4 h-4 bg-white rounded-full transition-transform',
-                    settings.confetti ? 'translate-x-7' : 'translate-x-1'
+                    'absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform',
+                    settings.confetti ? 'translate-x-[22px]' : 'translate-x-1'
                   )}
                 />
               </button>
             </div>
 
             {/* Streak Fire */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <div className="text-lg">🔥</div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-9 h-9 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <span className="text-lg leading-none">🔥</span>
                 </div>
-                <div>
-                  <div className="font-medium">{t.dopamineStreakFire || 'Streak Fire'}</div>
-                  <div className="text-xs text-muted-foreground">
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{t.dopamineStreakFire || 'Streak Fire'}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-1">
                     {t.dopamineStreakFireDesc || 'Animated fire for streaks'}
                   </div>
                 </div>
               </div>
               <button
                 onClick={() => updateSettings({ streakFire: !settings.streakFire })}
+                role="switch"
+                aria-checked={settings.streakFire}
+                aria-label={t.dopamineStreakFire || 'Streak fire'}
                 className={cn(
-                  'w-12 h-6 rounded-full transition-colors relative',
+                  'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
                   settings.streakFire ? 'bg-primary' : 'bg-muted'
                 )}
               >
                 <div
                   className={cn(
-                    'absolute top-1 w-4 h-4 bg-white rounded-full transition-transform',
-                    settings.streakFire ? 'translate-x-7' : 'translate-x-1'
+                    'absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform',
+                    settings.streakFire ? 'translate-x-[22px]' : 'translate-x-1'
                   )}
                 />
               </button>
@@ -377,11 +391,8 @@ export function useDopamineSettings(): DopamineSettings {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        try {
-          return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
-        } catch (error) {
-          logger.error('Failed to parse dopamine settings:', error);
-        }
+        const parsed = safeJsonParse(stored, DEFAULT_SETTINGS);
+        return { ...DEFAULT_SETTINGS, ...parsed };
       }
     }
     return DEFAULT_SETTINGS;
@@ -391,12 +402,8 @@ export function useDopamineSettings(): DopamineSettings {
     // Listen for cross-tab storage changes
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === STORAGE_KEY && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          setSettings({ ...DEFAULT_SETTINGS, ...parsed });
-        } catch (error) {
-          logger.error('Failed to parse dopamine settings:', error);
-        }
+        const parsed = safeJsonParse(e.newValue, DEFAULT_SETTINGS);
+        setSettings({ ...DEFAULT_SETTINGS, ...parsed });
       }
     };
 

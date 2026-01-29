@@ -1,9 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, Zap, Clock, Star, Calendar, Trash2, CheckCircle2, Circle, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { safeJsonParse } from '@/lib/safeJson';
 import { playSuccess, playStreakMilestone } from '@/lib/audioManager';
+import { taskNameSchema, sanitizeString, safeParseInt } from '@/lib/validation';
 import {
   Task,
   PrioritizedTask,
@@ -13,6 +15,7 @@ import {
   getTwoMinuteTasks,
 } from '@/lib/taskMomentum';
 import { pushTasksToCloud } from '@/storage/tasksCloudSync';
+import { syncOrchestrator } from '@/lib/syncOrchestrator';
 
 const STORAGE_KEY = 'zenflow_tasks';
 const MOMENTUM_KEY = 'zenflow_task_momentum';
@@ -38,24 +41,16 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   useEffect(() => {
     const storedTasks = localStorage.getItem(STORAGE_KEY);
     if (storedTasks) {
-      try {
-        const parsed = JSON.parse(storedTasks);
-        setTasks(Array.isArray(parsed) ? parsed : []);
-      } catch (error) {
-        logger.error('[TasksPanel] Failed to parse stored tasks:', error);
-      }
+      const parsed = safeJsonParse<Task[]>(storedTasks, []);
+      setTasks(Array.isArray(parsed) ? parsed : []);
     }
 
     const storedMomentum = localStorage.getItem(MOMENTUM_KEY);
     if (storedMomentum) {
-      try {
-        const parsed = JSON.parse(storedMomentum);
-        // Reset momentum if last completion was more than 30 minutes ago
-        if (parsed.lastCompletion && Date.now() - parsed.lastCompletion < 30 * 60 * 1000) {
-          setConsecutiveCompletions(parsed.count || 0);
-        }
-      } catch (error) {
-        logger.error('[TasksPanel] Failed to parse momentum:', error);
+      const parsed = safeJsonParse<{ lastCompletion?: number; count?: number }>(storedMomentum, {});
+      // Reset momentum if last completion was more than 30 minutes ago
+      if (parsed.lastCompletion && Date.now() - parsed.lastCompletion < 30 * 60 * 1000) {
+        setConsecutiveCompletions(parsed.count || 0);
       }
     }
     setIsLoaded(true);
@@ -65,7 +60,11 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   useEffect(() => {
     if (!isLoaded) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-    pushTasksToCloud(tasks).catch(err => logger.error('[TasksPanel] Cloud sync failed:', err));
+
+    // Use syncOrchestrator to avoid race conditions with other sync operations
+    syncOrchestrator.sync('tasks', async () => {
+      await pushTasksToCloud(tasks);
+    }).catch(err => logger.error('[TasksPanel] Cloud sync failed:', err));
   }, [tasks, isLoaded]);
 
   // Save momentum state
@@ -77,17 +76,27 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
     }));
   }, [consecutiveCompletions, isLoaded]);
 
-  const prioritizedTasks = prioritizeForADHD(tasks);
-  const topThree = getNextThreeTasks(tasks);
-  const categorized = getTwoMinuteTasks(tasks);
-  const momentumBonus = calculateMomentumBonus(consecutiveCompletions);
+  const prioritizedTasks = useMemo(() => prioritizeForADHD(tasks), [tasks]);
+  const topThree = useMemo(() => getNextThreeTasks(tasks), [tasks]);
+  const categorized = useMemo(() => getTwoMinuteTasks(tasks), [tasks]);
+  const momentumBonus = useMemo(() => calculateMomentumBonus(consecutiveCompletions), [consecutiveCompletions]);
 
   const handleAddTask = useCallback(() => {
-    if (!newTaskName.trim()) return;
+    const trimmedName = newTaskName.trim();
+    if (!trimmedName) return;
+
+    // Validate and sanitize input to prevent XSS
+    const validationResult = taskNameSchema.safeParse(trimmedName);
+    if (!validationResult.success) {
+      logger.warn('[TasksPanel] Invalid task name:', validationResult.error.message);
+      return;
+    }
+
+    const sanitizedName = sanitizeString(validationResult.data);
 
     const newTask: Task = {
       id: Date.now().toString(),
-      name: newTaskName.trim(),
+      name: sanitizedName,
       urgent: newTaskUrgent,
       estimatedMinutes: newTaskMinutes,
       userRating: newTaskInterest,
@@ -157,7 +166,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
       <div
         key={task.id}
         className={cn(
-          'p-4 rounded-xl transition-all duration-300 animate-fade-in',
+          'p-4 rounded-2xl transition-all duration-300 animate-fade-in',
           task.completed
             ? 'bg-primary/5 opacity-70 scale-95'
             : isTopThree
@@ -183,7 +192,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <h4 className={cn(
-                'font-medium',
+                'font-medium min-w-0 truncate',
                 task.completed && 'line-through text-muted-foreground'
               )}>
                 {task.name}
@@ -238,12 +247,12 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm overflow-y-auto">
+    <div role="dialog" aria-modal="true" aria-labelledby="tasks-panel-title" className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto">
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold zen-text-gradient">{t.taskMomentum || 'Task Momentum'}</h2>
+            <h2 id="tasks-panel-title" className="text-2xl font-bold zen-text-gradient">{t.taskMomentum || 'Task Momentum'}</h2>
             <p className="text-sm text-muted-foreground mt-1">
               {t.taskMomentumDesc || 'ADHD-friendly task prioritization'}
             </p>
@@ -263,6 +272,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
             {onClose && (
               <button
                 onClick={onClose}
+                aria-label={t.close || 'Close'}
                 className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -290,13 +300,13 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
 
         {/* Add Task Form */}
         {showAddForm && (
-          <div className="p-4 bg-card rounded-xl border-2 border-primary/30 zen-shadow-card animate-scale-in space-y-4">
+          <div className="p-4 bg-card rounded-2xl border-2 border-primary/30 zen-shadow-card animate-scale-in space-y-4">
             <input
               type="text"
               value={newTaskName}
               onChange={(e) => setNewTaskName(e.target.value)}
               placeholder={t.taskNamePlaceholder || 'Task name...'}
-              className="w-full p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              className="w-full p-3 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               autoFocus
               onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
             />
@@ -309,7 +319,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
                 <input
                   type="number"
                   value={newTaskMinutes}
-                  onChange={(e) => setNewTaskMinutes(parseInt(e.target.value) || 0)}
+                  onChange={(e) => setNewTaskMinutes(safeParseInt(e.target.value, 15, 1, 480))}
                   min="1"
                   max="480"
                   className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -322,7 +332,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
                 <input
                   type="number"
                   value={newTaskInterest}
-                  onChange={(e) => setNewTaskInterest(Math.min(10, Math.max(1, parseInt(e.target.value) || 5)))}
+                  onChange={(e) => setNewTaskInterest(safeParseInt(e.target.value, 5, 1, 10))}
                   min="1"
                   max="10"
                   className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"

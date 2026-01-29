@@ -1,12 +1,16 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useCallback, useMemo, memo } from 'react';
 import { Habit, HabitType, HabitReminder, HabitFrequency } from '@/types';
 import { getToday, generateId, formatDate, cn } from '@/lib/utils';
-import { Plus, Check, X, Minus, Bell, Clock, ChevronRight, Trash2, MoreHorizontal, Settings2, Flame, Zap } from 'lucide-react';
+import { safeParseInt } from '@/lib/validation';
+import { Plus, X, ChevronRight, Settings2, Zap, Users } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { habitTemplates } from '@/lib/habitTemplates';
-import { HabitCompletion, AllHabitsComplete } from './Celebrations';
-import { HabitCompletionCelebration, DailyProgressBar, AnimatedHabitButton } from './HabitCompletionCelebration';
-import { SwipeableHabit } from './SwipeableHabit';
+import { AllHabitsComplete } from './Celebrations';
+import { HabitCompletionCelebration, DailyProgressBar } from './HabitCompletionCelebration';
+import { CompactHabitCard } from './CompactHabitCard';
+import { ChallengeModal } from './ChallengeModal';
+import { hapticTap } from '@/lib/haptics';
+import { getActiveChallenges } from '@/lib/friendChallenge';
 
 const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿', '🚭', '🍷', '🇬🇧', '💪', '🧠'];
 const habitColors = [
@@ -26,7 +30,7 @@ interface HabitTrackerProps {
   isPrimaryCTA?: boolean;
 }
 
-export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit, onDeleteHabit, isPrimaryCTA = false }: HabitTrackerProps) {
+export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit, onDeleteHabit, isPrimaryCTA = false }: HabitTrackerProps) {
   const { t, language } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [showCustomForm, setShowCustomForm] = useState(false);
@@ -43,15 +47,8 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
   const [requiresDuration, setRequiresDuration] = useState(false);
   const [targetDuration, setTargetDuration] = useState(15);
 
-  // Habit item interaction state
-  const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null);
-  const [swipedHabitId, setSwipedHabitId] = useState<string | null>(null);
-  const touchStartX = useRef<number>(0);
-
   // Celebration states
-  const [completedHabitName, setCompletedHabitName] = useState<string | null>(null);
   const [showAllComplete, setShowAllComplete] = useState(false);
-  const [animatingHabitId, setAnimatingHabitId] = useState<string | null>(null);
   const [celebrationData, setCelebrationData] = useState<{
     habitName: string;
     habitIcon: string;
@@ -59,7 +56,67 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
     streakDays?: number;
   } | null>(null);
 
+  // Challenge states
+  const [showChallengeModal, setShowChallengeModal] = useState(false);
+  const [challengeHabit, setChallengeHabit] = useState<Habit | undefined>(undefined);
+
+  // Get active challenges count
+  const activeChallengesCount = useMemo(() => getActiveChallenges().length, []);
+
   const today = getToday();
+
+  // Memoized progress map for better performance
+  const progressMap = useMemo(() => {
+    const map = new Map<string, number>();
+    habits.forEach(habit => {
+      const habitType = habit.type || 'daily';
+      let progress = 0;
+
+      if (habitType === 'reduce') {
+        progress = habit.progressByDate?.[today] ?? 0;
+      } else if (habitType === 'multiple') {
+        progress = habit.completionsByDate?.[today] ?? 0;
+      } else if (habitType === 'continuous') {
+        if (habit.startDate) {
+          const start = new Date(habit.startDate);
+          const now = new Date();
+          const daysSinceStart = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+          const failureCount = habit.failedDates?.length ?? 0;
+          progress = Math.max(0, daysSinceStart - failureCount);
+        }
+      }
+
+      map.set(habit.id, progress);
+    });
+    return map;
+  }, [habits, today]);
+
+  // Memoized completion status map
+  const completionStatusMap = useMemo(() => {
+    const map = new Map<string, boolean>();
+    habits.forEach(habit => {
+      const habitType = habit.type || 'daily';
+      let isCompleted = false;
+
+      if (habitType === 'reduce') {
+        const progress = habit.progressByDate?.[today];
+        isCompleted = progress === 0;
+      } else if (habitType === 'multiple') {
+        const count = habit.completionsByDate?.[today] ?? 0;
+        const target = habit.dailyTarget ?? 1;
+        isCompleted = count >= target;
+      } else if (habitType === 'continuous') {
+        const failedToday = habit.failedDates?.includes(today);
+        isCompleted = !failedToday;
+      } else {
+        // daily type
+        isCompleted = habit.completedDates?.includes(today) ?? false;
+      }
+
+      map.set(habit.id, isCompleted);
+    });
+    return map;
+  }, [habits, today]);
 
   // Calculate habit streak (consecutive days)
   const getHabitStreak = (habit: Habit): number => {
@@ -87,73 +144,50 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
     return Math.max(1, streak); // At least 1 for today's completion
   };
 
-  // Check if habit is completed today (must be defined before use)
-  const isCompletedToday = (habit: Habit) => {
-    const habitType = habit.type || 'daily';
+  // Check if habit is completed today (uses memoized map for performance)
+  const isCompletedToday = useCallback((habit: Habit) => {
+    return completionStatusMap.get(habit.id) ?? false;
+  }, [completionStatusMap]);
 
-    if (habitType === 'reduce') {
-      const progress = habit.progressByDate?.[today];
-      return progress === 0;
-    }
+  // Get count of completed habits today (derived from memoized map)
+  const completedTodayCount = useMemo(() => {
+    let count = 0;
+    completionStatusMap.forEach(isCompleted => {
+      if (isCompleted) count++;
+    });
+    return count;
+  }, [completionStatusMap]);
 
-    if (habitType === 'multiple') {
-      const completions = habit.completionsByDate?.[today] ?? 0;
-      const target = habit.dailyTarget ?? 1;
-      return completions >= target;
-    }
-
-    if (habitType === 'continuous') {
-      return !(habit.failedDates?.includes(today));
-    }
-
-    return habit.completedDates.includes(today);
-  };
-
-  // Get count of completed habits today
-  const completedTodayCount = habits.filter(h => isCompletedToday(h)).length;
-
-  // Quick add from template
+  // Quick add from template - now shows customization form first
   const handleQuickAdd = (templateId: string) => {
     const template = habitTemplates.find(t => t.id === templateId);
     if (!template) return;
 
-    const habit: Habit = {
-      id: generateId(),
-      name: template.names[language] || template.names.en,
-      icon: template.icon,
-      color: template.color,
-      completedDates: [],
-      createdAt: Date.now(),
-      type: template.type,
-      frequency: 'daily',
-      ...(template.type === 'multiple' && { dailyTarget: template.dailyTarget || 1, completionsByDate: {} }),
-      ...(template.type === 'continuous' && { startDate: today, failedDates: [] }),
-    };
-
-    onAddHabit(habit);
-    setIsAdding(false);
-  };
-
-  // Touch handlers for swipe-to-delete
-  const handleTouchStart = (e: React.TouchEvent, habitId: string) => {
-    touchStartX.current = e.touches[0].clientX;
-    if (swipedHabitId && swipedHabitId !== habitId) {
-      setSwipedHabitId(null);
+    // Pre-fill form with template data
+    setNewHabitName(template.names[language] || template.names.en);
+    setSelectedIcon(template.icon);
+    setSelectedColor(template.color);
+    setSelectedType(template.type);
+    if (template.type === 'multiple' && template.dailyTarget) {
+      setDailyTarget(template.dailyTarget);
+    } else {
+      setDailyTarget(1);
     }
+    setReminders([]);
+    setFrequency('daily');
+
+    // Show customization form
+    setShowCustomForm(true);
   };
 
-  const handleTouchEnd = (e: React.TouchEvent, habitId: string) => {
-    const touchEndX = e.changedTouches[0].clientX;
-    const diff = touchStartX.current - touchEndX;
-
-    if (diff > 80) {
-      // Swiped left - show delete
-      setSwipedHabitId(habitId);
-    } else if (diff < -80) {
-      // Swiped right - hide delete
-      setSwipedHabitId(null);
-    }
-  };
+  // Calculate streaks for all habits (memoized for performance)
+  const habitStreaks = useMemo(() => {
+    const streaks = new Map<string, number>();
+    habits.forEach(habit => {
+      streaks.set(habit.id, getHabitStreak(habit));
+    });
+    return streaks;
+  }, [habits, today]);
 
   const handleAddReminder = () => {
     setReminders([...reminders, {
@@ -167,7 +201,11 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
     setReminders(reminders.filter((_, i) => i !== index));
   };
 
-  const handleReminderChange = (index: number, field: keyof HabitReminder, value: any) => {
+  const handleReminderChange = <K extends keyof HabitReminder>(
+    index: number,
+    field: K,
+    value: HabitReminder[K]
+  ) => {
     const updated = [...reminders];
     updated[index] = { ...updated[index], [field]: value };
     setReminders(updated);
@@ -210,31 +248,12 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
     setShowCustomForm(false);
   };
 
-  const getProgress = (habit: Habit) => {
-    const habitType = habit.type || 'daily';
+  // Get progress using memoized map for performance
+  const getProgress = useCallback((habit: Habit) => {
+    return progressMap.get(habit.id) ?? 0;
+  }, [progressMap]);
 
-    if (habitType === 'reduce') {
-      return habit.progressByDate?.[today] ?? 0;
-    }
-
-    if (habitType === 'multiple') {
-      return habit.completionsByDate?.[today] ?? 0;
-    }
-
-    if (habitType === 'continuous') {
-      // Calculate days since start without failure
-      if (!habit.startDate) return 0;
-      const start = new Date(habit.startDate);
-      const now = new Date();
-      const daysSinceStart = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-      const failureCount = habit.failedDates?.length ?? 0;
-      return Math.max(0, daysSinceStart - failureCount);
-    }
-
-    return 0;
-  };
-
-  // Handle habit toggle with animations
+  // Handle habit toggle with celebrations
   const handleHabitToggle = useCallback((habit: Habit) => {
     const wasCompleted = isCompletedToday(habit);
 
@@ -243,10 +262,6 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
 
     // If the habit is being completed (not uncompleted)
     if (!wasCompleted) {
-      // Trigger pulse animation on the button
-      setAnimatingHabitId(habit.id);
-      setTimeout(() => setAnimatingHabitId(null), 600);
-
       // Calculate streak for this habit
       const streak = getHabitStreak(habit);
 
@@ -282,7 +297,7 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
     )}>
       {/* Animated background glow for CTA */}
       {isPrimaryCTA && (
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-green-500/5 animate-pulse" />
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-green-500/5 animate-pulse pointer-events-none" />
       )}
 
       {/* Daily Progress Bar */}
@@ -309,23 +324,44 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
           "font-semibold text-foreground",
           isPrimaryCTA ? "text-xl" : "text-lg"
         )}>{t.habits}</h3>
-        <button
-          type="button"
-          onClick={(e) => {
-            e.preventDefault();
-            setIsAdding(!isAdding);
-          }}
-          className={cn(
-            "btn-press p-2 rounded-full transition-all cursor-pointer",
-            isAdding ? "bg-destructive text-destructive-foreground rotate-45" : "bg-primary text-primary-foreground"
-          )}
-        >
-          <Plus className="w-5 h-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Challenges button */}
+          <button
+            type="button"
+            onClick={() => {
+              hapticTap();
+              setChallengeHabit(undefined);
+              setShowChallengeModal(true);
+            }}
+            className="btn-press p-2 rounded-full bg-secondary text-foreground hover:bg-muted transition-all cursor-pointer relative"
+            aria-label={t.friendChallenges}
+          >
+            <Users className="w-5 h-5" />
+            {activeChallengesCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+                {activeChallengesCount}
+              </span>
+            )}
+          </button>
+          {/* Add button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              setIsAdding(!isAdding);
+            }}
+            className={cn(
+              "btn-press p-2 rounded-full transition-all cursor-pointer",
+              isAdding ? "bg-destructive text-destructive-foreground rotate-45" : "bg-primary text-primary-foreground"
+            )}
+          >
+            <Plus className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {isAdding && !showCustomForm && (
-        <div className="mb-4 p-4 bg-secondary rounded-xl animate-scale-in">
+        <div className="mb-4 p-4 bg-secondary rounded-2xl animate-scale-in">
           {/* Quick-add templates */}
           <p className="text-sm font-medium text-foreground mb-3">{t.quickAdd || 'Quick Add'}</p>
           <div className="grid grid-cols-2 gap-2 mb-4">
@@ -336,12 +372,8 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
                 <button
                   key={template.id}
                   type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    handleQuickAdd(template.id);
-                  }}
-                  className="btn-press flex items-center gap-2 p-3 bg-background rounded-xl hover:bg-muted transition-all text-left cursor-pointer"
+                  onClick={() => handleQuickAdd(template.id)}
+                  className="btn-press flex items-center gap-2 p-3 min-h-[48px] bg-background rounded-xl hover:bg-muted transition-all text-left cursor-pointer active:scale-[0.98]"
                 >
                   <span className="text-xl">{template.icon}</span>
                   <span className="text-sm font-medium text-foreground truncate">
@@ -354,12 +386,10 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
           {/* Custom habit option */}
           <button
             type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
+            onClick={() => {
               setShowCustomForm(true);
             }}
-            className="btn-press w-full flex items-center justify-between p-3 bg-background rounded-xl hover:bg-muted transition-all cursor-pointer"
+            className="btn-press w-full flex items-center justify-between p-3 min-h-[48px] bg-background rounded-xl hover:bg-muted transition-all cursor-pointer active:scale-[0.98]"
           >
             <div className="flex items-center gap-2">
               <Settings2 className="w-5 h-5 text-primary" />
@@ -371,7 +401,7 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
       )}
 
       {isAdding && showCustomForm && (
-        <div className="mb-4 p-4 bg-secondary rounded-xl animate-scale-in">
+        <div className="mb-4 p-4 bg-secondary rounded-2xl animate-scale-in">
           {/* Back button */}
           <button
             onClick={() => setShowCustomForm(false)}
@@ -498,7 +528,7 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
                 min="1"
                 max="50"
                 value={dailyTarget}
-                onChange={(e) => setDailyTarget(parseInt(e.target.value) || 1)}
+                onChange={(e) => setDailyTarget(safeParseInt(e.target.value, 1, 1, 50))}
                 className="w-full p-2 bg-background rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
@@ -615,167 +645,25 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
           </button>
         </div>
       ) : (
-        <div className="space-y-3">
-          {habits.map((habit) => {
-            const completed = isCompletedToday(habit);
-            const habitType = habit.type || 'daily';
-            const progress = getProgress(habit);
-            const isSwiped = swipedHabitId === habit.id;
-
-            return (
-              <div
-                key={habit.id}
-                className="relative overflow-hidden rounded-xl"
-                onTouchStart={(e) => handleTouchStart(e, habit.id)}
-                onTouchEnd={(e) => handleTouchEnd(e, habit.id)}
-              >
-                {/* Delete action (revealed on swipe) */}
-                <div
-                  className={cn(
-                    "absolute right-0 top-0 bottom-0 flex items-center justify-center bg-destructive text-white transition-all",
-                    isSwiped ? "w-20" : "w-0"
-                  )}
-                >
-                  <button
-                    onClick={() => {
-                      onDeleteHabit(habit.id);
-                      setSwipedHabitId(null);
-                    }}
-                    className="p-3"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
-
-                {/* Main habit card */}
-                <div
-                  className={cn(
-                    "flex items-center gap-3 p-3 bg-secondary transition-transform",
-                    isSwiped && "-translate-x-20"
-                  )}
-                >
-                  {habitType === 'reduce' ? (
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => onAdjustHabit?.(habit.id, today, -1)}
-                        className="btn-press w-9 h-9 rounded-xl bg-mood-good/20 flex items-center justify-center text-mood-good hover:bg-mood-good/30 transition-colors"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <div className={cn(
-                        "w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg",
-                        progress === 0 ? "bg-mood-good/20 text-mood-good" : "bg-background text-foreground"
-                      )}>
-                        {progress}
-                      </div>
-                      <button
-                        onClick={() => onAdjustHabit?.(habit.id, today, 1)}
-                        className="btn-press w-9 h-9 rounded-xl bg-background flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : habitType === 'multiple' ? (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => onToggleHabit(habit.id, today)}
-                        className={cn(
-                          "btn-press w-12 h-12 rounded-xl flex items-center justify-center text-2xl transition-all relative",
-                          completed
-                            ? `${habit.color} text-primary-foreground zen-shadow-soft`
-                            : "bg-background hover:scale-105"
-                        )}
-                      >
-                        {completed ? <Check className="w-6 h-6" /> : habit.icon}
-                      </button>
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-1">
-                          {Array.from({ length: habit.dailyTarget ?? 1 }).map((_, i) => (
-                            <div
-                              key={i}
-                              className={cn(
-                                "w-2 h-2 rounded-full transition-all",
-                                i < progress ? habit.color : "bg-muted"
-                              )}
-                            />
-                          ))}
-                        </div>
-                        <span className="text-xs text-muted-foreground mt-1">
-                          {progress}/{habit.dailyTarget ?? 1}
-                        </span>
-                      </div>
-                    </div>
-                  ) : habitType === 'continuous' ? (
-                    <div className="flex items-center gap-2">
-                      <div className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center text-2xl",
-                        `${habit.color} text-primary-foreground zen-shadow-soft`
-                      )}>
-                        {habit.icon}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-lg font-bold text-mood-good">{progress}</span>
-                        <span className="text-xs text-muted-foreground">{t.days}</span>
-                      </div>
-                    </div>
-                  ) : (
-                    // Daily/Scheduled habits: Swipe to complete
-                    <SwipeableHabit
-                      onComplete={() => handleHabitToggle(habit)}
-                      disabled={false}
-                      completed={completed}
-                      habitColor={habit.color}
-                      habitIcon={habit.icon}
-                      className="w-14 h-14"
-                    >
-                      <div
-                        className={cn(
-                          "w-14 h-14 rounded-xl flex items-center justify-center text-2xl transition-all",
-                          completed
-                            ? `${habit.color} text-primary-foreground zen-shadow-soft`
-                            : "bg-background",
-                          animatingHabitId === habit.id && "animate-success-pulse"
-                        )}
-                      >
-                        {completed ? (
-                          <Check className={cn("w-6 h-6", animatingHabitId === habit.id && "animate-bounce-check")} />
-                        ) : (
-                          <span className="select-none">{habit.icon}</span>
-                        )}
-                      </div>
-                    </SwipeableHabit>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      "font-medium transition-all truncate",
-                      completed && habitType !== 'continuous' ? "text-muted-foreground line-through" : "text-foreground"
-                    )}>
-                      {habit.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {habitType === 'continuous'
-                        ? `🔥 ${t.streak || 'streak'}`
-                        : `${t.completedTimes} ${habit.completedDates.length} ${t.completedTimes2}`
-                      }
-                    </p>
-                  </div>
-
-                  {/* Desktop delete button */}
-                  <button
-                    onClick={() => onDeleteHabit(habit.id)}
-                    className="hidden sm:flex p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-
-                  {/* Mobile hint for swipe */}
-                  <div className="sm:hidden flex items-center">
-                    <MoreHorizontal className="w-4 h-4 text-muted-foreground/50" />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+        <div
+          role="list"
+          aria-label={t.habits || 'Habits'}
+          className="space-y-2"
+        >
+          {habits.map((habit) => (
+            <CompactHabitCard
+              key={habit.id}
+              habit={habit}
+              onToggle={() => handleHabitToggle(habit)}
+              onAdjust={onAdjustHabit}
+              onDelete={onDeleteHabit}
+              onChallenge={(h) => {
+                setChallengeHabit(h);
+                setShowChallengeModal(true);
+              }}
+              streak={habitStreaks.get(habit.id) || 0}
+            />
+          ))}
         </div>
       )}
 
@@ -795,6 +683,13 @@ export function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit,
       {showAllComplete && (
         <AllHabitsComplete onClose={() => setShowAllComplete(false)} />
       )}
+
+      {/* Challenge Modal */}
+      <ChallengeModal
+        open={showChallengeModal}
+        onOpenChange={setShowChallengeModal}
+        habit={challengeHabit}
+      />
     </div>
   );
-}
+});

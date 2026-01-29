@@ -96,6 +96,22 @@ export interface Translations {
   scheduleNote: string;
   scheduleNotePlaceholder: string;
 
+  // Mindfulness v1.5.0
+  needInspiration: string;
+  journalPrompt: string;
+  dailyPrompt: string;
+  usePrompt: string;
+  shufflePrompt: string;
+  mindfulMoment: string;
+  takeAMoment: string;
+  withNote: string;
+  whatsMakingYouFeel: string;
+  emotionSaved: string;
+  treat: string;
+  moodGood: string;
+  moodOkay: string;
+  moodNotGreat: string;
+
   // Time Awareness (ADHD time blindness helper)
   timeUntilEndOfDay: string;
   timeIn: string;
@@ -114,6 +130,25 @@ export interface Translations {
   showMore: string;
   moreInsights: string;
   hideInsights: string;
+  // Insight texts
+  insightBestDayTitle: string;
+  insightBestDayDesc: string;
+  insightBestTimeTitle: string;
+  insightBestTimeDesc: string;
+  insightHabitBoostsTitle: string;
+  insightHabitBoostsDesc: string;
+  insightFocusMoodTitle: string;
+  insightFocusMoodDesc: string;
+  insightGratitudeMoodTitle: string;
+  insightGratitudeMoodDesc: string;
+  insightMoodUpTitle: string;
+  insightMoodUpDesc: string;
+  insightMoodDownTitle: string;
+  insightMoodDownDesc: string;
+  insightHighConsistencyTitle: string;
+  insightHighConsistencyDesc: string;
+  insightLowConsistencyTitle: string;
+  insightLowConsistencyDesc: string;
 
   // Onboarding Hints
   hintFirstMoodTitle: string;
@@ -182,6 +217,10 @@ export interface Translations {
   habitFrequencySelectDays: string;
   habitDurationRequired: string;
   habitTargetDuration: string;
+  // v1.4.0: Habit reminders and schedule
+  addReminder: string;
+  noReminders: string;
+  habitEventExplanation: string;
   habitDurationMinutes: string;
 
   // Focus timer
@@ -264,6 +303,40 @@ export interface Translations {
   moodEntries: string;
   focusMinutes: string;
   achievements: string;
+  toLevel: string;
+  unlockedPercent: string;
+  all: string;
+  unlocked: string;
+  locked: string;
+  unlockedOn: string;
+  hiddenAchievement: string;
+  hidden: string;
+  noAchievementsYet: string;
+  startUsingZenFlow: string;
+  achievementUnlocked: string;
+  userLevel: string;
+  focusSession: string;
+  // TimeHelper
+  timeBlindnessHelper: string;
+  visualTimeAwareness: string;
+  hoursMinutesLeft: string;
+  minutesLeft: string;
+  timesUp: string;
+  youllFinishAt: string;
+  nMinutes: string;
+  pingEveryMinutes: string;
+  audioPings: string;
+  testSound: string;
+  soundOn: string;
+  soundOff: string;
+  startTimer: string;
+  pauseTimer: string;
+  resetTimer: string;
+  adhdTimeManagement: string;
+  adhdTip1: string;
+  adhdTip2: string;
+  adhdTip3: string;
+  adhdTip4: string;
   currentStreak: string;
   daysInRow: string;
   totalFocus: string;
@@ -272,9 +345,12 @@ export interface Translations {
   totalTimes: string;
   moodDistribution: string;
   moodHeatmap: string;
+  activityHeatmap: string;
+  less: string;
+  more: string;
   topHabit: string;
   completedTimes2: string;
-  
+
   // Settings
   profile: string;
   yourName: string;
@@ -289,12 +365,16 @@ export interface Translations {
   importReplace: string;
   exportSuccess: string;
   exportError: string;
+  exportCSV: string;
+  exportPDF: string;
   importSuccess: string;
   importError: string;
   importedItems: string;
   importAdded: string;
   importUpdated: string;
   importSkipped: string;
+  textTooLong: string;
+  invalidInput: string;
   comingSoon: string;
   resetAllData: string;
   installApp: string;
@@ -305,6 +385,12 @@ export interface Translations {
   installLater: string;
   appInstalled: string;
   appInstalledDescription: string;
+  // App Updates (v1.4.1)
+  checkForUpdates: string;
+  checkingForUpdates: string;
+  appUpToDate: string;
+  openGooglePlay: string;
+  updateCheckFailed: string;
   remindersTitle: string;
   remindersDescription: string;
   moodReminder: string;
@@ -421,6 +507,19 @@ export interface Translations {
   privacyPolicy: string;
   termsOfService: string;
 
+  // v1.2.0 Appearance
+  appearance: string;
+  oledDarkMode: string;
+  oledDarkModeHint: string;
+
+  // What's New Modal
+  whatsNewTitle: string;
+  whatsNewVersion: string;
+  whatsNewGotIt: string;
+
+  // Accessibility
+  skipToContent: string;
+
   // v1.1.1 Settings Redesign
   settingsCloudSyncTitle: string;
   settingsCloudSyncDescription: string;
@@ -432,16 +531,47 @@ export interface Translations {
   settingsImportMergeTooltip: string;
   settingsImportReplaceTooltip: string;
   settingsImportReplaceConfirm: string;
+  // Import validation (v1.4.1)
+  invalidFileType: string;
+  fileTooLarge: string;
+  importConfirm: string;
+  invalidBackupFormat: string;
   settingsWhatsNewTitle: string;
-  settingsWhatsNewInsights: string;
-  settingsWhatsNewTrends: string;
-  settingsWhatsNewSync: string;
-  settingsWhatsNewOnboarding: string;
-  settingsWhatsNewReengagement: string;
-  settingsWhatsNewLearnMore: string;
+  settingsWhatsNewLeaderboards: string;
+  settingsWhatsNewLeaderboardsDesc: string;
+  settingsWhatsNewSpotify: string;
+  settingsWhatsNewSpotifyDesc: string;
+  settingsWhatsNewChallenges: string;
+  settingsWhatsNewChallengesDesc: string;
+  settingsWhatsNewDigest: string;
+  settingsWhatsNewDigestDesc: string;
+  settingsWhatsNewSecurity: string;
+  settingsWhatsNewSecurityDesc: string;
   settingsWhatsNewGotIt: string;
   settingsSectionAccount: string;
   settingsSectionData: string;
+
+  // Weekly Digest (v1.3.0)
+  weeklyDigestTitle: string;
+  weeklyDigestDescription: string;
+  weeklyDigestEnabled: string;
+
+  // Changelog (v1.3.0)
+  changelogTitle: string;
+  changelogExpandAll: string;
+  changelogCollapseAll: string;
+  changelogEmpty: string;
+  changelogAdded: string;
+  changelogFixed: string;
+  changelogChanged: string;
+  changelogRemoved: string;
+
+  // Settings Groups (v1.3.0)
+  settingsGroupProfile: string;
+  settingsGroupNotifications: string;
+  settingsGroupData: string;
+  settingsGroupAccount: string;
+  settingsGroupAbout: string;
 
   // GDPR Consent
   consentTitle: string;
@@ -458,6 +588,7 @@ export interface Translations {
 
   // Social Share
   shareAchievements: string;
+  shareDialogTitle: string;
   shareTitle: string;
   shareText: string;
   shareButton: string;
@@ -475,6 +606,18 @@ export interface Translations {
   shareSquare: string;
   shareStory: string;
   shareFormatHint: string;
+  shareFailed: string;
+  shareAchievement30: string;
+  shareAchievement14: string;
+  shareAchievement7: string;
+  shareAchievement3: string;
+  shareAchievementStart: string;
+  shareSubtext30: string;
+  shareSubtext14: string;
+  shareSubtext7: string;
+  shareSubtext3: string;
+  shareSubtextStart: string;
+  dismiss: string;
 
   // Challenges & Badges
   challengesTitle: string;
@@ -494,6 +637,49 @@ export interface Translations {
   challengeTypeFocus: string;
   challengeTypeGratitude: string;
   challengeTypeTotal: string;
+
+  // Friend Challenges
+  friendChallenges: string;
+  createChallenge: string;
+  challengeDescription: string;
+  challengeYourFriends: string;
+  challengeDuration: string;
+  challengeCreated: string;
+  challengeDetails: string;
+  shareToInvite: string;
+  trackWithFriends: string;
+  challengeCode: string;
+  yourProgress: string;
+  daysLeft: string;
+  dayChallenge: string;
+  challengeCompleted: string;
+  noChallenges: string;
+  createChallengePrompt: string;
+  completedChallenges: string;
+  expiredChallenges: string;
+  youCreated: string;
+  createdBy: string;
+  confirmDeleteChallenge: string;
+  challengeInvite: string;
+  challengeJoinPrompt: string;
+  challengeShareTip: string;
+
+  // Friend Challenges - Join
+  joinChallenge: string;
+  enterChallengeCode: string;
+  invalidChallengeCode: string;
+  enterCodeToJoin: string;
+  joinChallengeHint: string;
+  joining: string;
+  join: string;
+
+  // Friend Challenges v2 - Motivational messages
+  challengeWon: string;
+  catchUp: string;
+  aheadOfSchedule: string;
+  daysPassed: string;
+  daysCompleted: string;
+  daysRemaining: string;
 
   // Hyperfocus Mode
   hyperfocusMode: string;
@@ -684,6 +870,11 @@ export interface Translations {
   privacyNote: string;
   install: string;
   installDescription: string;
+  onboardingAgeTitle: string;
+  onboardingAgeDesc: string;
+  onboardingAgeConfirm: string;
+  onboardingAgeNote: string;
+  healthConnectAgeDesc: string;
   onboardingMoodTitle: string;
   onboardingMoodDescription: string;
   onboardingHabitsTitle: string;
@@ -714,6 +905,7 @@ export interface Translations {
   tutorialFeaturesDesc: string;
   tutorialFeature1: string;
   tutorialFeature2: string;
+  tutorialFeature2b: string;
   tutorialFeature3: string;
   tutorialFeature4: string;
   tutorialMoodTitle: string;
@@ -743,6 +935,7 @@ export interface Translations {
 
   // Weekly Report
   weeklyReport: string;
+  weeklyStory: string;
   incredibleWeek: string;
   pathToMastery: string;
   greatWork: string;
@@ -753,6 +946,20 @@ export interface Translations {
   startSmall: string;
   bestDay: string;
   continueBtn: string;
+  // Weekly Story translations (ProgressStoriesViewer)
+  storyAverageMoodScore: string;
+  storyCompletionRate: string;
+  storyTopHabit: string;
+  storyCompletions: string;
+  storyPerfectDays: string;
+  storyAvgSession: string;
+  storyLongestSession: string;
+  storyMostFocusedOn: string;
+  storyTrackYourJourney: string;
+  storyTapLeft: string;
+  storyTapCenter: string;
+  storyTapRight: string;
+  generating: string;
 
   // Streak Celebration
   dayStreak: string;
@@ -892,10 +1099,36 @@ export interface Translations {
   taskTip3: string;
   taskTip4: string;
 
-  // Header Quick Actions (missing)
+  // Header Quick Actions
   tasks: string;
   quests: string;
   challenges: string;
+  openTasks: string;
+  openQuests: string;
+  openChallenges: string;
+
+  // QuestsPanel UI
+  randomQuests: string;
+  questsPanelSubtitle: string;
+  adhdEngagementSystem: string;
+  adhdEngagementDesc: string;
+  dailyQuest: string;
+  weeklyQuest: string;
+  bonusQuest: string;
+  newQuest: string;
+  limitedTime: string;
+  generate: string;
+  noQuestAvailable: string;
+  noBonusQuestAvailable: string;
+  bonusQuestsHint: string;
+  questProgress: string;
+  questExpired: string;
+  questType: string;
+  questTips: string;
+  questTipDaily: string;
+  questTipWeekly: string;
+  questTipBonus: string;
+  questTipExpire: string;
 
   // Missing companion key
   companionHungry: string;
@@ -925,6 +1158,51 @@ export interface Translations {
   insightsShowMore: string;
   insightsShowLess: string;
   insightsDismissedCount: string;
+  insightsMoodEntries: string;
+  insightsHabitCount: string;
+  insightsFocusSessions: string;
+
+  // Weekly Insights (v1.5.0)
+  weeklyInsights: string;
+  weeklyInsightsNotEnoughData: string;
+  comparedToLastWeek: string;
+  recommendations: string;
+  avgMood: string;
+  week: string;
+  // Recommendation translations
+  recLowMoodTitle: string;
+  recLowMoodDesc: string;
+  recLowMoodAction: string;
+  recHabitDeclineTitle: string;
+  recHabitDeclineDesc: string;
+  recHabitDeclineAction: string;
+  recLowFocusTitle: string;
+  recLowFocusDesc: string;
+  recLowFocusAction: string;
+  recGreatProgressTitle: string;
+  recGreatProgressDesc: string;
+  recBestDayTitle: string;
+  recBestDayDesc: string;
+  recGratitudeTitle: string;
+  recGratitudeDesc: string;
+  recGratitudeAction: string;
+  recPerfectWeekTitle: string;
+  recPerfectWeekDesc: string;
+  recTopHabitTitle: string;
+  recTopHabitDesc: string;
+
+  // Smart Reminders (v1.5.0)
+  smartReminders: string;
+  smartRemindersNotEnoughData: string;
+  smartRemindersOptimized: string;
+  smartRemindersDescription: string;
+  suggestions: string;
+  highConfidence: string;
+  mediumConfidence: string;
+  lowConfidence: string;
+  apply: string;
+  habitRemindersOptimal: string;
+  patternBased: string;
 
   // Sync status (additional)
   syncOffline: string;
@@ -967,6 +1245,24 @@ export interface Translations {
   trendsTotalFocus: string;
   trendsInsightHint: string;
   trendsInsightHintDesc: string;
+
+  // Health Connect (v1.2.0)
+  healthConnect: string;
+  healthConnectDescription: string;
+  healthConnectLoading: string;
+  healthConnectNotAvailable: string;
+  healthConnectUpdateRequired: string;
+  mindfulness: string;
+  sleep: string;
+  steps: string;
+  stepsLabel: string;
+  grantPermissions: string;
+  todayHealth: string;
+  syncFocusSessions: string;
+  syncFocusSessionsHint: string;
+  openHealthConnect: string;
+  refresh: string;
+  permissions: string;
 
   // Quest Templates (for randomQuests.ts)
   questMorningMomentum: string;
@@ -1024,6 +1320,79 @@ export interface Translations {
   onboardingchallengesUnlockTitle: string;
   onboardingchallengesUnlockSubtitle: string;
   onboardingchallengesDescription: string;
+
+  // Feedback System
+  feedbackTitle: string;
+  feedbackSubtitle: string;
+  feedbackCategoryBug: string;
+  feedbackCategoryFeature: string;
+  feedbackCategoryOther: string;
+  feedbackMessagePlaceholder: string;
+  feedbackEmailPlaceholder: string;
+  feedbackSubmit: string;
+  feedbackSuccess: string;
+  feedbackError: string;
+  feedbackSending: string;
+  sendFeedback: string;
+
+  // App Rating
+  rateAppTitle: string;
+  rateAppSubtitle: string;
+  rateAppButton: string;
+  rateAppLater: string;
+
+  // App Updates
+  updateAvailable: string;
+  updateDescription: string;
+  updateDescriptionCritical: string;
+  updateNow: string;
+  updateAvailableFor: string;  // Uses {days} placeholder
+
+  // Lock Screen Quick Actions (v1.2.0)
+  quickActions: string;
+  quickActionsDescription: string;
+  quickActionsEnabled: string;
+  quickActionsDisabled: string;
+  quickActionLogMood: string;
+  quickActionStartFocus: string;
+  quickActionViewHabits: string;
+
+  // Notification Sounds (v1.2.0)
+  notificationSound: string;
+  notificationSoundDescription: string;
+  soundDefault: string;
+  soundDefaultDesc: string;
+  soundGentle: string;
+  soundGentleDesc: string;
+  soundChime: string;
+  soundChimeDesc: string;
+  soundSilent: string;
+  soundSilentDesc: string;
+  testNotification: string;
+  testNotificationHint: string;
+
+  // Insight Card Details (v1.3.0)
+  insightConfidence: string;
+  insightDataPoints: string;
+  insightAvgMoodWith: string;
+  insightAvgMoodWithout: string;
+  insightSampleDays: string;
+  insightBestActivity: string;
+  insightPeakTime: string;
+  insightAvgDuration: string;
+  insightSessions: string;
+  insightTagOccurrences: string;
+  insightMoodWithTag: string;
+  insightMoodWithoutTag: string;
+  insightDisclaimer: string;
+  times: string;
+
+  // Stats Empty States (v1.3.0)
+  noMoodDataYet: string;
+  noEmotionDataYet: string;
+
+  // XP Display
+  xp: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -1114,6 +1483,22 @@ export const translations: Record<Language, Translations> = {
     scheduleNote: 'Заметка (опционально)',
     scheduleNotePlaceholder: 'Добавьте детали или напоминания...',
 
+    // Mindfulness v1.5.0
+    needInspiration: 'Нужно вдохновение?',
+    journalPrompt: 'Промпт',
+    dailyPrompt: 'Промпт дня',
+    usePrompt: 'Использовать этот промпт',
+    shufflePrompt: 'Другой промпт',
+    mindfulMoment: 'Момент осознанности',
+    takeAMoment: 'Сделай паузу...',
+    withNote: 'с заметкой',
+    whatsMakingYouFeel: 'Что вызывает это чувство?',
+    emotionSaved: 'Эмоция сохранена',
+    treat: 'лакомство',
+    moodGood: 'Хорошо',
+    moodOkay: 'Нормально',
+    moodNotGreat: 'Не очень',
+
     // Time Awareness (ADHD time blindness helper)
     timeUntilEndOfDay: 'До конца дня',
     timeIn: 'через',
@@ -1132,6 +1517,25 @@ export const translations: Record<Language, Translations> = {
     showMore: 'Показать ещё',
     moreInsights: 'инсайтов',
     hideInsights: 'Скрыть инсайты',
+    // Insight texts
+    insightBestDayTitle: '{day} — ваш лучший день!',
+    insightBestDayDesc: 'Ваше настроение обычно лучше по {day}м. Планируйте важные дела на этот день.',
+    insightBestTimeTitle: 'Вы сияете ярче {period}',
+    insightBestTimeDesc: 'Ваше настроение обычно лучше {period}. Планируйте сложные задачи на это время!',
+    insightHabitBoostsTitle: '«{habit}» поднимает настроение!',
+    insightHabitBoostsDesc: 'Когда вы выполняете «{habit}», настроение на {percent}% лучше. Так держать!',
+    insightFocusMoodTitle: 'Фокус = Лучшее настроение!',
+    insightFocusMoodDesc: 'В дни с фокус-сессиями настроение на {percent}% лучше. Глубокая работа окупается!',
+    insightGratitudeMoodTitle: 'Благодарность поднимает настроение!',
+    insightGratitudeMoodDesc: 'Дни с записями благодарности показывают на {percent}% лучшее настроение. Продолжайте практиковать!',
+    insightMoodUpTitle: 'Ваше настроение улучшается!',
+    insightMoodUpDesc: 'Среднее настроение на этой неделе на {percent}% лучше, чем на прошлой. Вы молодец!',
+    insightMoodDownTitle: 'Давайте поднимем настроение!',
+    insightMoodDownDesc: 'Настроение немного снизилось. Попробуйте сосредоточиться на привычках, которые обычно вас радуют.',
+    insightHighConsistencyTitle: 'Потрясающая последовательность!',
+    insightHighConsistencyDesc: 'Вы записывали настроение {days} из последних 14 дней. Это мощное самопознание!',
+    insightLowConsistencyTitle: 'Создайте привычку записей',
+    insightLowConsistencyDesc: 'Попробуйте записывать настроение в одно и то же время каждый день. Регулярность помогает выявлять закономерности!',
 
     // Onboarding Hints
     hintFirstMoodTitle: 'Как вы себя чувствуете?',
@@ -1199,6 +1603,10 @@ export const translations: Record<Language, Translations> = {
     habitFrequencySelectDays: 'Выберите дни',
     habitDurationRequired: 'Требует времени?',
     habitTargetDuration: 'Целевое время (минуты)',
+    // v1.4.0: Habit reminders and schedule
+    addReminder: 'Добавить',
+    noReminders: 'Нет напоминаний',
+    habitEventExplanation: 'Это событие из привычки. Измените привычку для редактирования.',
     habitDurationMinutes: 'минут',
 
     focus: 'Фокус',
@@ -1274,6 +1682,40 @@ export const translations: Record<Language, Translations> = {
     moodEntries: 'Записей настроения',
     focusMinutes: 'Минут фокуса',
     achievements: 'Достижения',
+    toLevel: 'До уровня',
+    unlockedPercent: 'Разблокировано {percent}%',
+    all: 'Все',
+    unlocked: 'Открытые',
+    locked: 'Закрытые',
+    unlockedOn: 'Разблокировано {date}',
+    hiddenAchievement: '???',
+    hidden: 'Скрыто',
+    noAchievementsYet: 'Пока нет достижений',
+    startUsingZenFlow: 'Начните использовать ZenFlow, чтобы разблокировать достижения!',
+    achievementUnlocked: 'Достижение разблокировано!',
+    userLevel: 'Уровень',
+    focusSession: 'Сессия фокуса',
+    // TimeHelper
+    timeBlindnessHelper: 'Помощник осознания времени',
+    visualTimeAwareness: 'Визуальное отслеживание времени для СДВГ',
+    hoursMinutesLeft: '{hours}ч {mins}м осталось',
+    minutesLeft: '{mins}м осталось',
+    timesUp: 'Время вышло!',
+    youllFinishAt: '🎯 Вы закончите в:',
+    nMinutes: '{n} минут',
+    pingEveryMinutes: 'Сигнал каждые (минут)',
+    audioPings: 'Звуковые сигналы',
+    testSound: '🔊 Тест',
+    soundOn: 'Вкл',
+    soundOff: 'Выкл',
+    startTimer: 'Запустить таймер',
+    pauseTimer: 'Пауза',
+    resetTimer: 'Сброс',
+    adhdTimeManagement: 'Управление временем при СДВГ',
+    adhdTip1: 'Звуковые сигналы помогают отслеживать время',
+    adhdTip2: 'Визуальный обратный отсчёт снижает тревогу',
+    adhdTip3: 'Прогноз завершения = лучшее планирование',
+    adhdTip4: 'Смена цвета предупреждает о нехватке времени',
     currentStreak: 'Текущая серия',
     daysInRow: 'Дней подряд',
     totalFocus: 'Всего фокуса',
@@ -1282,6 +1724,9 @@ export const translations: Record<Language, Translations> = {
     totalTimes: 'Всего раз',
     moodDistribution: 'Распределение настроения',
     moodHeatmap: 'Календарь настроения',
+    activityHeatmap: 'Обзор активности',
+    less: 'Меньше',
+    more: 'Больше',
     topHabit: 'Лучшая привычка',
     completedTimes2: 'раз',
     profile: 'Профиль',
@@ -1297,12 +1742,16 @@ export const translations: Record<Language, Translations> = {
     importReplace: 'Заменить',
     exportSuccess: 'Экспорт готов.',
     exportError: 'Не удалось экспортировать данные.',
+    exportCSV: 'Экспорт CSV',
+    exportPDF: 'Экспорт PDF',
     importSuccess: 'Импорт завершён.',
     importError: 'Не удалось импортировать файл.',
     importedItems: 'Добавлено',
     importAdded: 'добавлено',
     importUpdated: 'обновлено',
     importSkipped: 'пропущено',
+    textTooLong: 'Текст слишком длинный (максимум 2000 символов)',
+    invalidInput: 'Проверьте введённые данные',
     comingSoon: 'скоро',
     resetAllData: 'Сбросить все данные',
     privacyTitle: 'Приватность',
@@ -1313,6 +1762,19 @@ export const translations: Record<Language, Translations> = {
     privacyAnalyticsHint: 'Помогает улучшать приложение. Можно отключить.',
     privacyPolicy: 'Политика конфиденциальности',
     termsOfService: 'Условия использования',
+
+    // v1.2.0 Appearance
+    appearance: 'Внешний вид',
+    oledDarkMode: 'OLED тёмная тема',
+    oledDarkModeHint: 'Чисто чёрная тема для OLED экранов. Экономит батарею.',
+
+    // What's New Modal
+    whatsNewTitle: 'Что нового',
+    whatsNewVersion: 'Версия',
+    whatsNewGotIt: 'Понятно!',
+
+    // Accessibility
+    skipToContent: 'Перейти к содержимому',
 
     // v1.1.1 Settings Redesign
     settingsCloudSyncTitle: 'Включить облачную синхронизацию',
@@ -1325,16 +1787,47 @@ export const translations: Record<Language, Translations> = {
     settingsImportMergeTooltip: 'Импортированные данные будут добавлены к существующим. Дубликаты пропускаются.',
     settingsImportReplaceTooltip: '⚠️ Все текущие данные будут удалены и заменены импортированными',
     settingsImportReplaceConfirm: 'Введите "REPLACE" для подтверждения удаления всех данных',
-    settingsWhatsNewTitle: 'Что нового в v1.1.0',
-    settingsWhatsNewInsights: 'Система инсайтов - Узнайте, что работает для ВАШЕГО мозга',
-    settingsWhatsNewTrends: 'Панель трендов - Отслеживайте долгосрочный прогресс',
-    settingsWhatsNewSync: 'Умная синхронизация - Надёжная облачная синхронизация',
-    settingsWhatsNewOnboarding: 'Постепенное введение - Без перегрузки для новых пользователей',
-    settingsWhatsNewReengagement: 'Приветствие возвращающихся - Для пользователей после перерыва',
-    settingsWhatsNewLearnMore: 'Узнать больше',
+    // Import validation (v1.4.1)
+    invalidFileType: 'Неверный тип файла. Требуется JSON.',
+    fileTooLarge: 'Файл слишком большой (макс. 10 МБ)',
+    importConfirm: 'Подтвердить импорт',
+    invalidBackupFormat: 'Неверный формат резервной копии',
+    settingsWhatsNewTitle: 'Что нового в v1.3.0',
+    settingsWhatsNewLeaderboards: 'Таблицы лидеров',
+    settingsWhatsNewLeaderboardsDesc: 'Соревнуйтесь анонимно с другими',
+    settingsWhatsNewSpotify: 'Интеграция Spotify',
+    settingsWhatsNewSpotifyDesc: 'Автовоспроизведение музыки во время фокусировки',
+    settingsWhatsNewChallenges: 'Челленджи с друзьями',
+    settingsWhatsNewChallengesDesc: 'Приглашайте друзей вырабатывать привычки вместе',
+    settingsWhatsNewDigest: 'Еженедельный дайджест',
+    settingsWhatsNewDigestDesc: 'Получайте отчёты о прогрессе на email',
+    settingsWhatsNewSecurity: 'Улучшенная безопасность',
+    settingsWhatsNewSecurityDesc: 'Лучшая защита данных и приватности',
     settingsWhatsNewGotIt: 'Понятно!',
     settingsSectionAccount: 'Аккаунт и облако',
     settingsSectionData: 'Данные и резервное копирование',
+
+    // Weekly Digest (v1.3.0)
+    weeklyDigestTitle: 'Еженедельный отчёт',
+    weeklyDigestDescription: 'Получайте сводку привычек, фокуса и настроения каждое воскресенье.',
+    weeklyDigestEnabled: 'Отчёты приходят на вашу почту',
+
+    // Changelog
+    changelogTitle: 'История обновлений',
+    changelogExpandAll: 'Развернуть все',
+    changelogCollapseAll: 'Свернуть все',
+    changelogEmpty: 'История обновлений недоступна',
+    changelogAdded: 'Добавлено',
+    changelogFixed: 'Исправлено',
+    changelogChanged: 'Изменено',
+    changelogRemoved: 'Удалено',
+
+    // Settings Groups (v1.3.0)
+    settingsGroupProfile: 'Профиль и оформление',
+    settingsGroupNotifications: 'Уведомления',
+    settingsGroupData: 'Данные и приватность',
+    settingsGroupAccount: 'Аккаунт',
+    settingsGroupAbout: 'О приложении',
 
     // GDPR Consent
     consentTitle: 'Настройки приватности',
@@ -1353,6 +1846,12 @@ export const translations: Record<Language, Translations> = {
     installLater: 'Позже',
     appInstalled: 'Приложение установлено',
     appInstalledDescription: 'ZenFlow установлен на вашем устройстве.',
+    // App Updates (v1.4.1)
+    checkForUpdates: 'Проверить обновления',
+    checkingForUpdates: 'Проверка обновлений...',
+    appUpToDate: 'У вас последняя версия',
+    openGooglePlay: 'Открыть Google Play',
+    updateCheckFailed: 'Не удалось проверить обновления',
     remindersTitle: 'Напоминания',
     remindersDescription: 'Мягкие напоминания, чтобы не сбиваться с курса.',
     moodReminder: 'Время для отметки настроения',
@@ -1464,6 +1963,7 @@ export const translations: Record<Language, Translations> = {
     cannotBeUndone: 'Это действие нельзя отменить.',
     delete: 'Удалить',
     shareAchievements: 'Поделиться прогрессом',
+    shareDialogTitle: 'Поделитесь своим прогрессом',
     shareTitle: 'Мой прогресс в ZenFlow',
     shareText: '{streak} дней подряд! {habits} привычек выполнено, {focus} минут фокуса.',
     shareButton: 'Поделиться',
@@ -1481,6 +1981,18 @@ export const translations: Record<Language, Translations> = {
     shareSquare: 'Пост 1:1',
     shareStory: 'Сторис 9:16',
     shareFormatHint: '📱 Формат сторис для Instagram/TikTok • Формат поста для лент',
+    shareFailed: 'Не удалось поделиться. Попробуйте снова.',
+    shareAchievement30: 'Легенда!',
+    shareAchievement14: 'Неудержимый!',
+    shareAchievement7: 'В огне!',
+    shareAchievement3: 'Восходящая звезда!',
+    shareAchievementStart: 'Только начал!',
+    shareSubtext30: 'Мастер 30+ дней',
+    shareSubtext14: 'Воин 14+ дней',
+    shareSubtext7: 'Серия 7+ дней',
+    shareSubtext3: 'Серия 3+ дня',
+    shareSubtextStart: 'Строю привычки',
+    dismiss: 'Закрыть',
     challengesTitle: 'Челленджи и награды',
     challengesSubtitle: 'Принимайте вызовы и зарабатывайте бейджи',
     activeChallenges: 'Активные',
@@ -1498,6 +2010,50 @@ export const translations: Record<Language, Translations> = {
     challengeTypeFocus: 'Фокус',
     challengeTypeGratitude: 'Благодарность',
     challengeTypeTotal: 'Всего',
+
+    // Friend Challenges
+    friendChallenges: 'Вызовы друзьям',
+    createChallenge: 'Создать вызов',
+    challengeDescription: 'Бросьте вызов друзьям и формируйте привычки вместе',
+    challengeYourFriends: 'Бросьте вызов друзьям!',
+    challengeDuration: 'Длительность вызова',
+    challengeCreated: 'Вызов создан!',
+    challengeDetails: 'Детали вызова',
+    shareToInvite: 'Поделитесь, чтобы пригласить друзей!',
+    trackWithFriends: 'Отслеживайте вызовы с друзьями',
+    challengeCode: 'Код вызова',
+    yourProgress: 'Ваш прогресс',
+    daysLeft: 'дней осталось',
+    dayChallenge: 'дневной вызов',
+    challengeCompleted: 'Вызов выполнен!',
+    noChallenges: 'Пока нет вызовов',
+    createChallengePrompt: 'Создайте вызов из любой привычки!',
+    completedChallenges: 'Завершённые',
+    expiredChallenges: 'Истёкшие',
+    youCreated: 'Вы создали',
+    createdBy: 'Создал',
+    confirmDeleteChallenge: 'Удалить этот вызов?',
+    challengeInvite: 'Присоединяйся к моему вызову!',
+    challengeJoinPrompt: 'Присоединяйся ко мне в ZenFlow!',
+    challengeShareTip: 'После создания вы сможете поделиться вызовом с друзьями.',
+
+    // Friend Challenges - Join
+    joinChallenge: 'Присоединиться',
+    enterChallengeCode: 'Введите код от друга',
+    invalidChallengeCode: 'Неверный код. Формат: ZEN-XXXXXX',
+    enterCodeToJoin: 'Введите код вызова, чтобы присоединиться',
+    joinChallengeHint: 'Попросите друга поделиться кодом вызова',
+    joining: 'Присоединяемся...',
+    join: 'Присоединиться',
+
+    // Friend Challenges v2
+    challengeWon: '🎉 Потрясающе! Вы завершили испытание!',
+    catchUp: '💪 Вы можете догнать! Каждый день важен!',
+    aheadOfSchedule: '⭐ Отличный темп! Вы опережаете график!',
+    daysPassed: 'Дней прошло',
+    daysCompleted: 'Выполнено',
+    daysRemaining: 'Осталось',
+
     hyperfocusMode: 'Режим гиперфокуса',
     hyperfocusStart: 'Начать',
     hyperfocusPause: 'Пауза',
@@ -1632,6 +2188,11 @@ export const translations: Record<Language, Translations> = {
     privacyNote: 'Ваши данные хранятся локально и защищены',
     install: 'Установить приложение',
     installDescription: 'Установите ZenFlow на домашний экран',
+    onboardingAgeTitle: 'Добро пожаловать в ZenFlow',
+    onboardingAgeDesc: 'Это приложение предназначено для пользователей от 13 лет и старше',
+    onboardingAgeConfirm: 'Мне есть 13 лет',
+    onboardingAgeNote: 'Продолжая, вы подтверждаете, что вам есть 13 лет',
+    healthConnectAgeDesc: 'Функции Health Connect требуют подтверждения возраста 13+ для ответственного использования данных о здоровье.',
     onboardingMoodTitle: 'Как вы себя чувствуете?',
     onboardingMoodDescription: 'Отслеживайте своё настроение ежедневно',
     onboardingHabitsTitle: 'Создайте свои первые привычки',
@@ -1662,6 +2223,7 @@ export const translations: Record<Language, Translations> = {
     tutorialFeaturesDesc: 'Отслеживайте прогресс и набирайте обороты:',
     tutorialFeature1: 'Отслеживание настроения и энергии',
     tutorialFeature2: 'Формирование привычек шаг за шагом',
+    tutorialFeature2b: '✨ Настраивайте иконки, цвета и цели!',
     tutorialFeature3: 'Сессии фокуса с фоновыми звуками',
     tutorialFeature4: 'Дневник благодарности',
     tutorialMoodTitle: 'Понимайте себя лучше',
@@ -1691,6 +2253,7 @@ export const translations: Record<Language, Translations> = {
 
     // Weekly Report
     weeklyReport: 'Недельный отчет',
+    weeklyStory: 'История недели',
     incredibleWeek: 'Невероятная неделя!',
     pathToMastery: 'Вы на пути к мастерству!',
     greatWork: 'Отличная работа!',
@@ -1701,6 +2264,20 @@ export const translations: Record<Language, Translations> = {
     startSmall: 'Начните с малого, двигайтесь вперед!',
     bestDay: 'Лучший день',
     continueBtn: 'Продолжить',
+    // Weekly Story translations (ProgressStoriesViewer)
+    storyAverageMoodScore: 'средняя оценка настроения',
+    storyCompletionRate: 'выполнение',
+    storyTopHabit: 'Топ привычка',
+    storyCompletions: 'выполнений',
+    storyPerfectDays: 'идеальных дней на этой неделе',
+    storyAvgSession: 'сред. сессия',
+    storyLongestSession: 'самая долгая',
+    storyMostFocusedOn: 'Больше всего фокус на:',
+    storyTrackYourJourney: 'Отслеживайте свой путь с',
+    storyTapLeft: '← Влево',
+    storyTapCenter: 'Центр - пауза',
+    storyTapRight: 'Вправо →',
+    generating: 'Генерация...',
 
     // Streak Celebration
     dayStreak: 'дней подряд',
@@ -1867,6 +2444,32 @@ export const translations: Record<Language, Translations> = {
     tasks: 'Задачи',
     quests: 'Квесты',
     challenges: 'Вызовы',
+    openTasks: 'Открыть задачи',
+    openQuests: 'Открыть квесты',
+    openChallenges: 'Открыть вызовы',
+
+    // QuestsPanel UI
+    randomQuests: 'Случайные квесты',
+    questsPanelSubtitle: 'Выполняйте квесты для бонусного XP и эксклюзивных значков',
+    adhdEngagementSystem: 'Система вовлечённости СДВГ',
+    adhdEngagementDesc: 'Квесты дают разнообразие и неожиданные награды — идеально для СДВГ-мозга, который жаждет новизны!',
+    dailyQuest: 'Ежедневный квест',
+    weeklyQuest: 'Еженедельный квест',
+    bonusQuest: 'Бонусный квест',
+    newQuest: 'Новый квест',
+    limitedTime: 'Ограниченное время',
+    generate: 'Создать',
+    noQuestAvailable: 'Квест недоступен',
+    noBonusQuestAvailable: 'Бонусный квест недоступен',
+    bonusQuestsHint: 'Бонусные квесты появляются случайно или могут быть созданы вручную',
+    questProgress: 'Прогресс:',
+    questExpired: 'Истёк',
+    questType: 'Квест',
+    questTips: 'Советы по квестам',
+    questTipDaily: 'Ежедневные квесты обновляются каждые 24 часа',
+    questTipWeekly: 'Еженедельные квесты дают 3x XP',
+    questTipBonus: 'Бонусные квесты редки и дают 5x XP',
+    questTipExpire: 'Завершите квесты до истечения срока!',
 
     // Companion
     companionHungry: 'Я голодный... Покорми меня?',
@@ -1896,6 +2499,51 @@ export const translations: Record<Language, Translations> = {
     insightsShowMore: 'Показать больше',
     insightsShowLess: 'Показать меньше',
     insightsDismissedCount: 'Скрыто инсайтов',
+    insightsMoodEntries: 'записей настроения',
+    insightsHabitCount: 'привычка',
+    insightsFocusSessions: 'фокус-сессий',
+
+    // Weekly Insights (v1.5.0)
+    weeklyInsights: 'Инсайты недели',
+    weeklyInsightsNotEnoughData: 'Отслеживайте прогресс на этой неделе, чтобы получить персонализированные инсайты и рекомендации.',
+    comparedToLastWeek: 'По сравнению с прошлой неделей',
+    recommendations: 'Рекомендации',
+    avgMood: 'Ср. настр.',
+    week: 'Неделя',
+    // Recommendation translations
+    recLowMoodTitle: 'Настроение требует внимания',
+    recLowMoodDesc: 'Ваше настроение на этой неделе было ниже обычного. Попробуйте занятия, которые обычно поднимают вам настроение.',
+    recLowMoodAction: 'Попробуйте 5-минутное дыхательное упражнение',
+    recHabitDeclineTitle: 'Привычки снизились',
+    recHabitDeclineDesc: 'Выполнение привычек снизилось по сравнению с прошлой неделей. Начните с малого, чтобы восстановить импульс.',
+    recHabitDeclineAction: 'Сфокусируйтесь на одной привычке сегодня',
+    recLowFocusTitle: 'Увеличьте время фокуса',
+    recLowFocusDesc: 'На этой неделе было мало сессий фокусировки. Даже короткие сессии помогают выработать привычку.',
+    recLowFocusAction: 'Попробуйте 10-минутную сессию фокуса',
+    recGreatProgressTitle: 'Вы на подъёме!',
+    recGreatProgressDesc: 'Ваш прогресс улучшается по сравнению с прошлой неделей. Так держать!',
+    recBestDayTitle: 'Это был ваш лучший день',
+    recBestDayDesc: 'Попробуйте понять, что сделало этот день особенным, и повторить эти условия.',
+    recGratitudeTitle: 'Практикуйте благодарность',
+    recGratitudeDesc: 'Записывание того, за что вы благодарны, может значительно улучшить настроение со временем.',
+    recGratitudeAction: 'Добавьте запись благодарности сегодня',
+    recPerfectWeekTitle: 'Потрясающая стабильность!',
+    recPerfectWeekDesc: 'Вы выполнили большинство привычек на этой неделе. Вы формируете крепкие привычки!',
+    recTopHabitTitle: 'Продолжайте эту привычку',
+    recTopHabitDesc: 'Это одна из ваших самых стабильных привычек. Она способствует вашему благополучию.',
+
+    // Smart Reminders
+    smartReminders: 'Умные напоминания',
+    smartRemindersNotEnoughData: 'Продолжайте использовать приложение, чтобы получить персонализированные рекомендации по напоминаниям.',
+    smartRemindersOptimized: 'Ваше время напоминаний оптимально! Отличная работа.',
+    smartRemindersDescription: 'Персональные рекомендации на основе ваших паттернов',
+    suggestions: 'предложений',
+    highConfidence: 'Высокая уверенность',
+    mediumConfidence: 'Средняя',
+    lowConfidence: 'Предложение',
+    apply: 'Применить',
+    habitRemindersOptimal: 'Оптимальное время привычек',
+    patternBased: 'По паттерну',
 
     // Sync status
     syncOffline: 'Оффлайн',
@@ -1969,6 +2617,24 @@ export const translations: Record<Language, Translations> = {
     trendsInsightHint: 'Хотите персональные инсайты?',
     trendsInsightHintDesc: 'Проверьте панель Инсайтов на главной для обнаружения паттернов в ваших данных.',
 
+    // Health Connect (v1.2.0)
+    healthConnect: 'Health Connect',
+    healthConnectDescription: 'Синхронизация с Google Health Connect',
+    healthConnectLoading: 'Проверка Health Connect...',
+    healthConnectNotAvailable: 'Недоступно на этом устройстве',
+    healthConnectUpdateRequired: 'Обновите приложение Health Connect',
+    mindfulness: 'Осознанность',
+    sleep: 'Сон',
+    steps: 'Шаги',
+    stepsLabel: 'шагов',
+    grantPermissions: 'Предоставить разрешения',
+    todayHealth: 'Здоровье сегодня',
+    syncFocusSessions: 'Синхронизировать фокус-сессии',
+    syncFocusSessionsHint: 'Сохранять фокус-сессии как осознанность в Health Connect',
+    openHealthConnect: 'Открыть Health Connect',
+    refresh: 'Обновить',
+    permissions: 'Разрешения',
+
     // Quest Templates (для randomQuests.ts)
     questMorningMomentum: 'Утренний Импульс',
     questMorningMomentumDesc: 'Выполните 3 привычки до 12:00',
@@ -1994,6 +2660,79 @@ export const translations: Record<Language, Translations> = {
     questLightningRoundDesc: 'Выполните 5 быстрых задач за 15 минут',
     questWeeklyWarrior: 'Недельный Воин',
     questWeeklyWarriorDesc: 'Выполняйте привычки 7 дней подряд',
+
+    // Feedback System
+    feedbackTitle: 'Обратная связь',
+    feedbackSubtitle: 'Помогите нам сделать приложение лучше',
+    feedbackCategoryBug: 'Сообщить об ошибке',
+    feedbackCategoryFeature: 'Предложить функцию',
+    feedbackCategoryOther: 'Другое',
+    feedbackMessagePlaceholder: 'Опишите вашу проблему или предложение...',
+    feedbackEmailPlaceholder: 'Email (необязательно)',
+    feedbackSubmit: 'Отправить',
+    feedbackSuccess: 'Спасибо за обратную связь!',
+    feedbackError: 'Не удалось отправить. Попробуйте позже.',
+    feedbackSending: 'Отправка...',
+    sendFeedback: 'Написать нам',
+
+    // App Rating
+    rateAppTitle: 'Нравится ZenFlow?',
+    rateAppSubtitle: 'Оцените нас в Play Store',
+    rateAppButton: 'Оценить',
+    rateAppLater: 'Позже',
+
+    // App Updates
+    updateAvailable: 'Доступно обновление',
+    updateDescription: 'Новая версия готова к установке с улучшениями и исправлениями.',
+    updateDescriptionCritical: 'Критическое обновление необходимо для продолжения использования приложения.',
+    updateNow: 'Обновить сейчас',
+    updateAvailableFor: 'Доступно {days} дн.',
+
+    // Lock Screen Quick Actions
+    quickActions: 'Быстрые действия',
+    quickActionsDescription: 'Показывать уведомление с быстрыми действиями на экране блокировки',
+    quickActionsEnabled: 'Быстрые действия включены',
+    quickActionsDisabled: 'Быстрые действия отключены',
+    quickActionLogMood: 'Записать настроение',
+    quickActionStartFocus: 'Начать фокус',
+    quickActionViewHabits: 'Привычки',
+
+    // Notification Sounds
+    notificationSound: 'Звук уведомлений',
+    notificationSoundDescription: 'Выберите звук для напоминаний',
+    soundDefault: 'По умолчанию',
+    soundDefaultDesc: 'Системный звук уведомления',
+    soundGentle: 'Мягкий',
+    soundGentleDesc: 'Только вибрация',
+    soundChime: 'Короткий',
+    soundChimeDesc: 'Короткий тон уведомления',
+    soundSilent: 'Тихий',
+    soundSilentDesc: 'Без звука и вибрации',
+    testNotification: 'Тестовое уведомление',
+    testNotificationHint: 'Отправляет тестовое уведомление через 5 секунд для проверки работы.',
+
+    // Insight Card Details
+    insightConfidence: 'Уверенность',
+    insightDataPoints: 'Точек данных',
+    insightAvgMoodWith: 'Среднее настроение с привычкой',
+    insightAvgMoodWithout: 'Среднее настроение без привычки',
+    insightSampleDays: 'Дней в выборке',
+    insightBestActivity: 'Лучшая активность',
+    insightPeakTime: 'Пиковое время',
+    insightAvgDuration: 'Средняя длительность',
+    insightSessions: 'Сессий',
+    insightTagOccurrences: 'Вхождений тега',
+    insightMoodWithTag: 'Настроение с тегом',
+    insightMoodWithoutTag: 'Настроение без тега',
+    insightDisclaimer: 'Инсайт основан на ваших данных. Паттерны могут меняться.',
+    times: 'раз',
+
+    // Stats Empty States
+    noMoodDataYet: 'Нет данных о настроении',
+    noEmotionDataYet: 'Нет данных об эмоциях',
+
+    // XP Display
+    xp: 'XP',
   },
 
   en: {
@@ -2083,6 +2822,22 @@ export const translations: Record<Language, Translations> = {
     scheduleNote: 'Note (optional)',
     scheduleNotePlaceholder: 'Add details or reminders...',
 
+    // Mindfulness v1.5.0
+    needInspiration: 'Need inspiration?',
+    journalPrompt: 'Prompt',
+    dailyPrompt: 'Daily Prompt',
+    usePrompt: 'Use this prompt',
+    shufflePrompt: 'Get another prompt',
+    mindfulMoment: 'Mindful Moment',
+    takeAMoment: 'Take a moment...',
+    withNote: 'with note',
+    whatsMakingYouFeel: 'What\'s making you feel this way?',
+    emotionSaved: 'Emotion saved',
+    treat: 'treat',
+    moodGood: 'Good',
+    moodOkay: 'Okay',
+    moodNotGreat: 'Not great',
+
     // Time Awareness (ADHD time blindness helper)
     timeUntilEndOfDay: 'Until end of day',
     timeIn: 'in',
@@ -2101,6 +2856,25 @@ export const translations: Record<Language, Translations> = {
     showMore: 'Show',
     moreInsights: 'more insights',
     hideInsights: 'Hide insights',
+    // Insight texts
+    insightBestDayTitle: '{day}s are your best!',
+    insightBestDayDesc: 'Your mood tends to be highest on {day}s. Consider scheduling important tasks then.',
+    insightBestTimeTitle: 'You shine brightest in the {period}',
+    insightBestTimeDesc: 'Your mood is typically better during {period} hours. Schedule demanding tasks then!',
+    insightHabitBoostsTitle: '"{habit}" boosts your mood!',
+    insightHabitBoostsDesc: 'When you complete "{habit}", your mood tends to be {percent}% better. Keep it up!',
+    insightFocusMoodTitle: 'Focus time = Better mood!',
+    insightFocusMoodDesc: 'On days you do focus sessions, your mood is {percent}% better. Deep work pays off!',
+    insightGratitudeMoodTitle: 'Gratitude lifts your mood!',
+    insightGratitudeMoodDesc: 'Days with gratitude entries show {percent}% better mood. Keep practicing gratitude!',
+    insightMoodUpTitle: 'Your mood is improving!',
+    insightMoodUpDesc: 'Your average mood this week is {percent}% better than last week. You\'re doing great!',
+    insightMoodDownTitle: 'Let\'s boost your mood!',
+    insightMoodDownDesc: 'Your mood has dipped a bit. Try focusing on habits that usually make you feel good.',
+    insightHighConsistencyTitle: 'Amazing consistency!',
+    insightHighConsistencyDesc: 'You\'ve logged your mood {days} of the last 14 days. This self-awareness is powerful!',
+    insightLowConsistencyTitle: 'Build your logging habit',
+    insightLowConsistencyDesc: 'Try logging your mood at the same time each day. Consistency helps you spot patterns!',
 
     // Onboarding Hints
     hintFirstMoodTitle: 'How are you feeling?',
@@ -2168,6 +2942,10 @@ export const translations: Record<Language, Translations> = {
     habitFrequencySelectDays: 'Select Days',
     habitDurationRequired: 'Requires Duration?',
     habitTargetDuration: 'Target Duration (minutes)',
+    // v1.4.0: Habit reminders and schedule
+    addReminder: 'Add',
+    noReminders: 'No reminders set',
+    habitEventExplanation: 'This event is from your habit. Edit the habit to change it.',
     habitDurationMinutes: 'minutes',
 
     focus: 'Focus',
@@ -2243,6 +3021,40 @@ export const translations: Record<Language, Translations> = {
     moodEntries: 'Mood entries',
     focusMinutes: 'Focus minutes',
     achievements: 'Achievements',
+    toLevel: 'To level',
+    unlockedPercent: '{percent}% Unlocked',
+    all: 'All',
+    unlocked: 'Unlocked',
+    locked: 'Locked',
+    unlockedOn: 'Unlocked on {date}',
+    hiddenAchievement: '???',
+    hidden: 'Hidden',
+    noAchievementsYet: 'No achievements yet',
+    startUsingZenFlow: 'Start using ZenFlow to unlock achievements!',
+    achievementUnlocked: 'Achievement Unlocked!',
+    userLevel: 'Level',
+    focusSession: 'Focus Session',
+    // TimeHelper
+    timeBlindnessHelper: 'Time Blindness Helper',
+    visualTimeAwareness: 'Visual time awareness for ADHD',
+    hoursMinutesLeft: '{hours}h {mins}m left',
+    minutesLeft: '{mins}m left',
+    timesUp: "Time's up!",
+    youllFinishAt: "🎯 You'll finish at:",
+    nMinutes: '{n} minutes',
+    pingEveryMinutes: 'Ping Every (minutes)',
+    audioPings: 'Audio Pings',
+    testSound: '🔊 Test',
+    soundOn: 'On',
+    soundOff: 'Off',
+    startTimer: 'Start Timer',
+    pauseTimer: 'Pause',
+    resetTimer: 'Reset',
+    adhdTimeManagement: 'ADHD Time Management',
+    adhdTip1: 'Audio pings help track time passing',
+    adhdTip2: 'Visual countdown reduces anxiety',
+    adhdTip3: 'End time prediction = better planning',
+    adhdTip4: 'Color changes warn when time is low',
     currentStreak: 'Current streak',
     daysInRow: 'Days in a row',
     totalFocus: 'Total focus',
@@ -2251,6 +3063,9 @@ export const translations: Record<Language, Translations> = {
     totalTimes: 'Total times',
     moodDistribution: 'Mood distribution',
     moodHeatmap: 'Mood heatmap',
+    activityHeatmap: 'Activity Overview',
+    less: 'Less',
+    more: 'More',
     topHabit: 'Top habit',
     completedTimes2: 'times',
     profile: 'Profile',
@@ -2266,12 +3081,16 @@ export const translations: Record<Language, Translations> = {
     importReplace: 'Replace',
     exportSuccess: 'Export ready.',
     exportError: 'Failed to export data.',
+    exportCSV: 'Export CSV',
+    exportPDF: 'Export PDF',
     importSuccess: 'Import complete.',
     importError: 'Failed to import file.',
     importedItems: 'Added',
     importAdded: 'added',
     importUpdated: 'updated',
     importSkipped: 'skipped',
+    textTooLong: 'Text is too long (max 2000 characters)',
+    invalidInput: 'Please check your input',
     comingSoon: 'coming soon',
     resetAllData: 'Reset all data',
     privacyTitle: 'Privacy',
@@ -2282,6 +3101,19 @@ export const translations: Record<Language, Translations> = {
     privacyAnalyticsHint: 'Helps improve the app. You can turn it off.',
     privacyPolicy: 'Privacy policy',
     termsOfService: 'Terms of service',
+
+    // v1.2.0 Appearance
+    appearance: 'Appearance',
+    oledDarkMode: 'OLED Dark Mode',
+    oledDarkModeHint: 'Pure black theme for OLED screens. Saves battery.',
+
+    // What's New Modal
+    whatsNewTitle: "What's New",
+    whatsNewVersion: 'Version',
+    whatsNewGotIt: 'Got it!',
+
+    // Accessibility
+    skipToContent: 'Skip to main content',
 
     // v1.1.1 Settings Redesign
     settingsCloudSyncTitle: 'Enable Cloud Sync',
@@ -2294,16 +3126,47 @@ export const translations: Record<Language, Translations> = {
     settingsImportMergeTooltip: 'Imported data will be added to existing. Duplicates skipped.',
     settingsImportReplaceTooltip: '⚠️ All current data will be deleted and replaced with import',
     settingsImportReplaceConfirm: 'Type "REPLACE" to confirm deletion of all data',
-    settingsWhatsNewTitle: 'What\'s New in v1.1.0',
-    settingsWhatsNewInsights: 'Insights Engine - See what works for YOUR brain',
-    settingsWhatsNewTrends: 'Trends Dashboard - Track long-term progress',
-    settingsWhatsNewSync: 'Smart Sync - Reliable cloud synchronization',
-    settingsWhatsNewOnboarding: 'Progressive Onboarding - No overwhelm',
-    settingsWhatsNewReengagement: 'Welcome Back - For returning users',
-    settingsWhatsNewLearnMore: 'Learn More',
+    // Import validation (v1.4.1)
+    invalidFileType: 'Invalid file type. JSON required.',
+    fileTooLarge: 'File too large (max 10 MB)',
+    importConfirm: 'Confirm import',
+    invalidBackupFormat: 'Invalid backup format',
+    settingsWhatsNewTitle: 'What\'s New in v1.3.0',
+    settingsWhatsNewLeaderboards: 'Leaderboards',
+    settingsWhatsNewLeaderboardsDesc: 'Compete anonymously with others',
+    settingsWhatsNewSpotify: 'Spotify Integration',
+    settingsWhatsNewSpotifyDesc: 'Auto-play music during focus sessions',
+    settingsWhatsNewChallenges: 'Friend Challenges',
+    settingsWhatsNewChallengesDesc: 'Challenge friends to build habits together',
+    settingsWhatsNewDigest: 'Weekly Digest',
+    settingsWhatsNewDigestDesc: 'Get progress reports in your inbox',
+    settingsWhatsNewSecurity: 'Enhanced Security',
+    settingsWhatsNewSecurityDesc: 'Better data protection & privacy',
     settingsWhatsNewGotIt: 'Got it!',
     settingsSectionAccount: 'Account & Cloud',
     settingsSectionData: 'Data & Backup',
+
+    // Weekly Digest (v1.3.0)
+    weeklyDigestTitle: 'Weekly Progress Report',
+    weeklyDigestDescription: 'Receive a weekly summary of your habits, focus time, and mood trends every Sunday.',
+    weeklyDigestEnabled: 'You\'ll receive reports at your email',
+
+    // Changelog
+    changelogTitle: 'Version History',
+    changelogExpandAll: 'Expand All',
+    changelogCollapseAll: 'Collapse All',
+    changelogEmpty: 'No version history available',
+    changelogAdded: 'Added',
+    changelogFixed: 'Fixed',
+    changelogChanged: 'Changed',
+    changelogRemoved: 'Removed',
+
+    // Settings Groups (v1.3.0)
+    settingsGroupProfile: 'Profile & Appearance',
+    settingsGroupNotifications: 'Notifications',
+    settingsGroupData: 'Data & Privacy',
+    settingsGroupAccount: 'Account',
+    settingsGroupAbout: 'About',
 
     // GDPR Consent
     consentTitle: 'Privacy Settings',
@@ -2322,6 +3185,12 @@ export const translations: Record<Language, Translations> = {
     installLater: 'Later',
     appInstalled: 'App installed',
     appInstalledDescription: 'ZenFlow is installed on your device.',
+    // App Updates (v1.4.1)
+    checkForUpdates: 'Check for updates',
+    checkingForUpdates: 'Checking for updates...',
+    appUpToDate: 'You have the latest version',
+    openGooglePlay: 'Open Google Play',
+    updateCheckFailed: 'Failed to check for updates',
     remindersTitle: 'Reminders',
     remindersDescription: 'Gentle nudges to keep you on track.',
     moodReminder: 'Mood check-in time',
@@ -2433,6 +3302,7 @@ export const translations: Record<Language, Translations> = {
     cannotBeUndone: 'This action cannot be undone.',
     delete: 'Delete',
     shareAchievements: 'Share Your Progress',
+    shareDialogTitle: 'Share your progress',
     shareTitle: 'My Progress on ZenFlow',
     shareText: '{streak} day streak! {habits} habits completed, {focus} minutes of focus.',
     shareButton: 'Share',
@@ -2450,6 +3320,18 @@ export const translations: Record<Language, Translations> = {
     shareSquare: 'Post 1:1',
     shareStory: 'Story 9:16',
     shareFormatHint: '📱 Story format for Instagram/TikTok • Post format for feeds',
+    shareFailed: 'Failed to share. Please try again.',
+    shareAchievement30: 'Legendary!',
+    shareAchievement14: 'Unstoppable!',
+    shareAchievement7: 'On Fire!',
+    shareAchievement3: 'Rising Star!',
+    shareAchievementStart: 'Just Started!',
+    shareSubtext30: '30+ Day Master',
+    shareSubtext14: '14+ Day Warrior',
+    shareSubtext7: '7+ Day Streak',
+    shareSubtext3: '3+ Day Streak',
+    shareSubtextStart: 'Building Habits',
+    dismiss: 'Dismiss',
     challengesTitle: 'Challenges & Badges',
     challengesSubtitle: 'Take on challenges and earn badges',
     activeChallenges: 'Active',
@@ -2467,6 +3349,50 @@ export const translations: Record<Language, Translations> = {
     challengeTypeFocus: 'Focus',
     challengeTypeGratitude: 'Gratitude',
     challengeTypeTotal: 'Total',
+
+    // Friend Challenges
+    friendChallenges: 'Friend Challenges',
+    createChallenge: 'Create Challenge',
+    challengeDescription: 'Challenge friends to build habits together',
+    challengeYourFriends: 'Challenge your friends to this habit!',
+    challengeDuration: 'Challenge Duration',
+    challengeCreated: 'Challenge Created!',
+    challengeDetails: 'Challenge Details',
+    shareToInvite: 'Share to invite friends!',
+    trackWithFriends: 'Track your challenges with friends',
+    challengeCode: 'Challenge Code',
+    yourProgress: 'Your Progress',
+    daysLeft: 'days left',
+    dayChallenge: 'day challenge',
+    challengeCompleted: 'Challenge Complete!',
+    noChallenges: 'No challenges yet',
+    createChallengePrompt: 'Create a challenge from any habit!',
+    completedChallenges: 'Completed',
+    expiredChallenges: 'Expired',
+    youCreated: 'You created this',
+    createdBy: 'Created by',
+    confirmDeleteChallenge: 'Delete this challenge?',
+    challengeInvite: 'Join my challenge!',
+    challengeJoinPrompt: 'Join me on ZenFlow!',
+    challengeShareTip: "You'll be able to share this challenge with friends after creating it.",
+
+    // Friend Challenges - Join
+    joinChallenge: 'Join Challenge',
+    enterChallengeCode: 'Enter the code from your friend',
+    invalidChallengeCode: 'Invalid code. Format: ZEN-XXXXXX',
+    enterCodeToJoin: 'Enter a challenge code to join your friends',
+    joinChallengeHint: 'Ask your friend to share their challenge code with you',
+    joining: 'Joining...',
+    join: 'Join',
+
+    // Friend Challenges v2
+    challengeWon: '🎉 Amazing! You completed the challenge!',
+    catchUp: '💪 You can catch up! Every day counts!',
+    aheadOfSchedule: '⭐ Great pace! You\'re ahead of schedule!',
+    daysPassed: 'Days Passed',
+    daysCompleted: 'Completed',
+    daysRemaining: 'Remaining',
+
     hyperfocusMode: 'Hyperfocus Mode',
     hyperfocusStart: 'Start',
     hyperfocusPause: 'Pause',
@@ -2601,6 +3527,11 @@ export const translations: Record<Language, Translations> = {
     privacyNote: 'Your data is stored locally and protected',
     install: 'Install app',
     installDescription: 'Install ZenFlow on your home screen',
+    onboardingAgeTitle: 'Welcome to ZenFlow',
+    onboardingAgeDesc: 'This app is designed for users aged 13 and older',
+    onboardingAgeConfirm: 'I am 13 years or older',
+    onboardingAgeNote: 'By continuing, you confirm that you are 13 years of age or older',
+    healthConnectAgeDesc: 'Health Connect features require you to be 13 years or older to use health data responsibly.',
     onboardingMoodTitle: 'How are you feeling?',
     onboardingMoodDescription: 'Track your mood daily',
     onboardingHabitsTitle: 'Create your first habits',
@@ -2631,6 +3562,7 @@ export const translations: Record<Language, Translations> = {
     tutorialFeaturesDesc: 'Track your progress and build momentum:',
     tutorialFeature1: 'Track daily mood and energy',
     tutorialFeature2: 'Build habits step by step',
+    tutorialFeature2b: '✨ Customize icons, colors & goals!',
     tutorialFeature3: 'Focus sessions with ambient sounds',
     tutorialFeature4: 'Gratitude journaling',
     tutorialMoodTitle: 'Understand yourself',
@@ -2660,6 +3592,7 @@ export const translations: Record<Language, Translations> = {
 
     // Weekly Report
     weeklyReport: 'Weekly Report',
+    weeklyStory: 'Weekly Story',
     incredibleWeek: 'Incredible Week!',
     pathToMastery: 'You\'re on the path to mastery!',
     greatWork: 'Great Work!',
@@ -2670,6 +3603,20 @@ export const translations: Record<Language, Translations> = {
     startSmall: 'Start small, move forward!',
     bestDay: 'Best Day',
     continueBtn: 'Continue',
+    // Weekly Story translations (ProgressStoriesViewer)
+    storyAverageMoodScore: 'average mood score',
+    storyCompletionRate: 'completion rate',
+    storyTopHabit: 'Top habit',
+    storyCompletions: 'completions',
+    storyPerfectDays: 'perfect days this week',
+    storyAvgSession: 'avg session',
+    storyLongestSession: 'longest',
+    storyMostFocusedOn: 'Most focused on:',
+    storyTrackYourJourney: 'Track your journey with',
+    storyTapLeft: '← Tap left',
+    storyTapCenter: 'Tap center to pause',
+    storyTapRight: 'Tap right →',
+    generating: 'Generating...',
 
     // Streak Celebration
     dayStreak: 'day streak',
@@ -2836,6 +3783,32 @@ export const translations: Record<Language, Translations> = {
     tasks: 'Tasks',
     quests: 'Quests',
     challenges: 'Challenges',
+    openTasks: 'Open Tasks',
+    openQuests: 'Open Quests',
+    openChallenges: 'Open Challenges',
+
+    // QuestsPanel UI
+    randomQuests: 'Random Quests',
+    questsPanelSubtitle: 'Complete quests for bonus XP and exclusive badges',
+    adhdEngagementSystem: 'ADHD Engagement System',
+    adhdEngagementDesc: 'Quests provide variety and unexpected rewards - perfect for ADHD brains that crave novelty!',
+    dailyQuest: 'Daily Quest',
+    weeklyQuest: 'Weekly Quest',
+    bonusQuest: 'Bonus Quest',
+    newQuest: 'New Quest',
+    limitedTime: 'Limited Time',
+    generate: 'Generate',
+    noQuestAvailable: 'No quest available',
+    noBonusQuestAvailable: 'No bonus quest available',
+    bonusQuestsHint: 'Bonus quests appear randomly or can be generated manually',
+    questProgress: 'Progress:',
+    questExpired: 'Expired',
+    questType: 'Quest',
+    questTips: 'Quest Tips',
+    questTipDaily: 'Daily quests reset every 24 hours',
+    questTipWeekly: 'Weekly quests offer 3x XP rewards',
+    questTipBonus: 'Bonus quests are rare with 5x XP',
+    questTipExpire: 'Complete quests before they expire!',
 
     // Companion
     companionHungry: "I'm hungry... Feed me?",
@@ -2865,6 +3838,51 @@ export const translations: Record<Language, Translations> = {
     insightsShowMore: 'Show more',
     insightsShowLess: 'Show less',
     insightsDismissedCount: 'insights dismissed',
+    insightsMoodEntries: 'mood entries',
+    insightsHabitCount: 'habit',
+    insightsFocusSessions: 'focus sessions',
+
+    // Weekly Insights (v1.5.0)
+    weeklyInsights: 'Weekly Insights',
+    weeklyInsightsNotEnoughData: 'Track your progress this week to unlock personalized insights and recommendations.',
+    comparedToLastWeek: 'Compared to last week',
+    recommendations: 'Recommendations',
+    avgMood: 'Avg Mood',
+    week: 'Week',
+    // Recommendation translations
+    recLowMoodTitle: 'Mood needs attention',
+    recLowMoodDesc: 'Your mood this week has been lower than usual. Consider activities that usually lift your spirits.',
+    recLowMoodAction: 'Try a quick 5-minute breathing exercise',
+    recHabitDeclineTitle: 'Habit consistency dropped',
+    recHabitDeclineDesc: 'Your habit completion is down from last week. Start small to rebuild momentum.',
+    recHabitDeclineAction: 'Focus on just one habit today',
+    recLowFocusTitle: 'Boost your focus time',
+    recLowFocusDesc: 'You\'ve had limited focus sessions this week. Even short sessions help build the habit.',
+    recLowFocusAction: 'Try a 10-minute focus session',
+    recGreatProgressTitle: 'You\'re on a roll!',
+    recGreatProgressDesc: 'Your overall progress is improving compared to last week. Keep up the momentum!',
+    recBestDayTitle: 'This was your best day',
+    recBestDayDesc: 'Try to identify what made this day special and replicate those conditions.',
+    recGratitudeTitle: 'Practice gratitude',
+    recGratitudeDesc: 'Writing down things you\'re grateful for can significantly improve your mood over time.',
+    recGratitudeAction: 'Add a gratitude entry today',
+    recPerfectWeekTitle: 'Amazing consistency!',
+    recPerfectWeekDesc: 'You completed most of your habits this week. You\'re building strong routines!',
+    recTopHabitTitle: 'Keep up this habit',
+    recTopHabitDesc: 'This is one of your most consistent habits. It\'s likely contributing to your well-being.',
+
+    // Smart Reminders
+    smartReminders: 'Smart Reminders',
+    smartRemindersNotEnoughData: 'Keep using the app to unlock personalized reminder suggestions based on your patterns.',
+    smartRemindersOptimized: 'Your reminder times are well optimized! Keep up the great work.',
+    smartRemindersDescription: 'Personalized suggestions based on your usage patterns',
+    suggestions: 'suggestions',
+    highConfidence: 'High confidence',
+    mediumConfidence: 'Medium',
+    lowConfidence: 'Suggestion',
+    apply: 'Apply',
+    habitRemindersOptimal: 'Optimal habit times',
+    patternBased: 'Pattern',
 
     // Sync status
     syncOffline: 'Offline',
@@ -2938,6 +3956,24 @@ export const translations: Record<Language, Translations> = {
     trendsInsightHint: 'Want personalized insights?',
     trendsInsightHintDesc: 'Check the Insights panel on the home tab to discover patterns in your data.',
 
+    // Health Connect (v1.2.0)
+    healthConnect: 'Health Connect',
+    healthConnectDescription: 'Sync with Google Health Connect',
+    healthConnectLoading: 'Checking Health Connect...',
+    healthConnectNotAvailable: 'Not available on this device',
+    healthConnectUpdateRequired: 'Please update Health Connect app',
+    mindfulness: 'Mindfulness',
+    sleep: 'Sleep',
+    steps: 'Steps',
+    stepsLabel: 'steps',
+    grantPermissions: 'Grant Permissions',
+    todayHealth: "Today's Health",
+    syncFocusSessions: 'Sync Focus Sessions',
+    syncFocusSessionsHint: 'Save focus sessions as mindfulness in Health Connect',
+    openHealthConnect: 'Open Health Connect',
+    refresh: 'Refresh',
+    permissions: 'Permissions',
+
     // Quest Templates (for randomQuests.ts)
     questMorningMomentum: 'Morning Momentum',
     questMorningMomentumDesc: 'Complete 3 habits before 12:00',
@@ -2963,6 +3999,79 @@ export const translations: Record<Language, Translations> = {
     questLightningRoundDesc: 'Complete 5 quick tasks in 15 minutes',
     questWeeklyWarrior: 'Weekly Warrior',
     questWeeklyWarriorDesc: 'Complete habits 7 days in a row',
+
+    // Feedback System
+    feedbackTitle: 'Send Feedback',
+    feedbackSubtitle: 'Help us improve the app',
+    feedbackCategoryBug: 'Report Bug',
+    feedbackCategoryFeature: 'Request Feature',
+    feedbackCategoryOther: 'Other',
+    feedbackMessagePlaceholder: 'Describe your issue or suggestion...',
+    feedbackEmailPlaceholder: 'Email (optional)',
+    feedbackSubmit: 'Submit',
+    feedbackSuccess: 'Thank you for your feedback!',
+    feedbackError: 'Failed to send. Please try again.',
+    feedbackSending: 'Sending...',
+    sendFeedback: 'Send Feedback',
+
+    // App Rating
+    rateAppTitle: 'Enjoying ZenFlow?',
+    rateAppSubtitle: 'Rate us on Play Store',
+    rateAppButton: 'Rate Now',
+    rateAppLater: 'Later',
+
+    // App Updates
+    updateAvailable: 'Update Available',
+    updateDescription: 'A new version is ready to install with improvements and fixes.',
+    updateDescriptionCritical: 'A critical update is required to continue using the app.',
+    updateNow: 'Update Now',
+    updateAvailableFor: 'Available for {days} days',
+
+    // Lock Screen Quick Actions
+    quickActions: 'Quick Actions',
+    quickActionsDescription: 'Show notification with quick actions on lock screen',
+    quickActionsEnabled: 'Quick actions enabled',
+    quickActionsDisabled: 'Quick actions disabled',
+    quickActionLogMood: 'Log Mood',
+    quickActionStartFocus: 'Start Focus',
+    quickActionViewHabits: 'View Habits',
+
+    // Notification Sounds
+    notificationSound: 'Notification Sound',
+    notificationSoundDescription: 'Choose sound for reminders',
+    soundDefault: 'Default',
+    soundDefaultDesc: 'System notification sound',
+    soundGentle: 'Gentle',
+    soundGentleDesc: 'Vibration only',
+    soundChime: 'Chime',
+    soundChimeDesc: 'Short notification tone',
+    soundSilent: 'Silent',
+    soundSilentDesc: 'No sound or vibration',
+    testNotification: 'Test Notification',
+    testNotificationHint: 'Sends a test notification in 5 seconds to verify notifications work.',
+
+    // Insight Card Details
+    insightConfidence: 'Confidence',
+    insightDataPoints: 'Data points',
+    insightAvgMoodWith: 'Avg mood with habit',
+    insightAvgMoodWithout: 'Avg mood without habit',
+    insightSampleDays: 'Sample days',
+    insightBestActivity: 'Best activity',
+    insightPeakTime: 'Peak time',
+    insightAvgDuration: 'Avg duration',
+    insightSessions: 'Sessions',
+    insightTagOccurrences: 'Tag occurrences',
+    insightMoodWithTag: 'Mood with tag',
+    insightMoodWithoutTag: 'Mood without tag',
+    insightDisclaimer: 'This insight is based on your data. Patterns may change over time.',
+    times: 'times',
+
+    // Stats Empty States
+    noMoodDataYet: 'No mood data yet',
+    noEmotionDataYet: 'No emotion data yet',
+
+    // XP Display
+    xp: 'XP',
   },
 
   uk: {
@@ -3052,6 +4161,22 @@ export const translations: Record<Language, Translations> = {
     scheduleNote: 'Нотатка (опціонально)',
     scheduleNotePlaceholder: 'Додайте деталі або нагадування...',
 
+    // Mindfulness v1.5.0
+    needInspiration: 'Потрібне натхнення?',
+    journalPrompt: 'Промпт',
+    dailyPrompt: 'Промпт дня',
+    usePrompt: 'Використати цей промпт',
+    shufflePrompt: 'Інший промпт',
+    mindfulMoment: 'Момент усвідомленості',
+    takeAMoment: 'Зроби паузу...',
+    withNote: 'з нотаткою',
+    whatsMakingYouFeel: 'Що викликає це почуття?',
+    emotionSaved: 'Емоцію збережено',
+    treat: 'смаколик',
+    moodGood: 'Добре',
+    moodOkay: 'Нормально',
+    moodNotGreat: 'Не дуже',
+
     // Time Awareness (ADHD time blindness helper)
     timeUntilEndOfDay: 'До кінця дня',
     timeIn: 'через',
@@ -3070,6 +4195,25 @@ export const translations: Record<Language, Translations> = {
     showMore: 'Показати ще',
     moreInsights: 'інсайтів',
     hideInsights: 'Сховати інсайти',
+    // Insight texts
+    insightBestDayTitle: '{day} — ваш найкращий день!',
+    insightBestDayDesc: 'Ваш настрій зазвичай кращий у {day}. Плануйте важливі справи на цей день.',
+    insightBestTimeTitle: 'Ви сяєте найяскравіше {period}',
+    insightBestTimeDesc: 'Ваш настрій зазвичай кращий {period}. Плануйте складні завдання на цей час!',
+    insightHabitBoostsTitle: '«{habit}» піднімає настрій!',
+    insightHabitBoostsDesc: 'Коли ви виконуєте «{habit}», настрій на {percent}% кращий. Так тримати!',
+    insightFocusMoodTitle: 'Фокус = Кращий настрій!',
+    insightFocusMoodDesc: 'У дні з фокус-сесіями настрій на {percent}% кращий. Глибока робота окупається!',
+    insightGratitudeMoodTitle: 'Вдячність піднімає настрій!',
+    insightGratitudeMoodDesc: 'Дні з записами вдячності показують на {percent}% кращий настрій. Продовжуйте практикувати!',
+    insightMoodUpTitle: 'Ваш настрій покращується!',
+    insightMoodUpDesc: 'Середній настрій цього тижня на {percent}% кращий, ніж минулого. Ви молодець!',
+    insightMoodDownTitle: 'Давайте піднімемо настрій!',
+    insightMoodDownDesc: 'Настрій трохи знизився. Спробуйте зосередитися на звичках, які зазвичай вас радують.',
+    insightHighConsistencyTitle: 'Чудова послідовність!',
+    insightHighConsistencyDesc: 'Ви записували настрій {days} з останніх 14 днів. Це потужне самопізнання!',
+    insightLowConsistencyTitle: 'Створіть звичку записів',
+    insightLowConsistencyDesc: 'Спробуйте записувати настрій в один і той самий час щодня. Регулярність допомагає виявляти закономірності!',
 
     // Onboarding Hints
     hintFirstMoodTitle: 'Як ви себе почуваєте?',
@@ -3137,6 +4281,10 @@ export const translations: Record<Language, Translations> = {
     habitFrequencySelectDays: 'Оберіть дні',
     habitDurationRequired: 'Потребує часу?',
     habitTargetDuration: 'Цільовий час (хвилини)',
+    // v1.4.0: Habit reminders and schedule
+    addReminder: 'Додати',
+    noReminders: 'Немає нагадувань',
+    habitEventExplanation: 'Ця подія зі звички. Відредагуйте звичку, щоб змінити.',
     habitDurationMinutes: 'хвилин',
 
     focus: 'Фокус',
@@ -3212,6 +4360,40 @@ export const translations: Record<Language, Translations> = {
     moodEntries: 'Записів настрою',
     focusMinutes: 'Хвилин фокусу',
     achievements: 'Досягнення',
+    toLevel: 'До рівня',
+    unlockedPercent: 'Розблоковано {percent}%',
+    all: 'Усі',
+    unlocked: 'Відкриті',
+    locked: 'Закриті',
+    unlockedOn: 'Розблоковано {date}',
+    hiddenAchievement: '???',
+    hidden: 'Приховано',
+    noAchievementsYet: 'Поки немає досягнень',
+    startUsingZenFlow: 'Почніть користуватися ZenFlow, щоб розблокувати досягнення!',
+    achievementUnlocked: 'Досягнення розблоковано!',
+    userLevel: 'Рівень',
+    focusSession: 'Сесія фокусування',
+    // TimeHelper
+    timeBlindnessHelper: 'Помічник усвідомлення часу',
+    visualTimeAwareness: 'Візуальне відстеження часу для СДУГ',
+    hoursMinutesLeft: '{hours}год {mins}хв залишилось',
+    minutesLeft: '{mins}хв залишилось',
+    timesUp: 'Час вийшов!',
+    youllFinishAt: '🎯 Ви закінчите о:',
+    nMinutes: '{n} хвилин',
+    pingEveryMinutes: 'Сигнал кожні (хвилин)',
+    audioPings: 'Звукові сигнали',
+    testSound: '🔊 Тест',
+    soundOn: 'Увімк',
+    soundOff: 'Вимк',
+    startTimer: 'Запустити таймер',
+    pauseTimer: 'Пауза',
+    resetTimer: 'Скинути',
+    adhdTimeManagement: 'Керування часом при СДУГ',
+    adhdTip1: 'Звукові сигнали допомагають відстежувати час',
+    adhdTip2: 'Візуальний відлік зменшує тривогу',
+    adhdTip3: 'Прогноз завершення = краще планування',
+    adhdTip4: 'Зміна кольору попереджає про брак часу',
     currentStreak: 'Поточна серія',
     daysInRow: 'Днів поспіль',
     totalFocus: 'Всього фокусу',
@@ -3220,6 +4402,9 @@ export const translations: Record<Language, Translations> = {
     totalTimes: 'Всього разів',
     moodDistribution: 'Розподіл настрою',
     moodHeatmap: 'Календар настрою',
+    activityHeatmap: 'Огляд активності',
+    less: 'Менше',
+    more: 'Більше',
     topHabit: 'Найкраща звичка',
     completedTimes2: 'разів',
     profile: 'Профіль',
@@ -3235,12 +4420,16 @@ export const translations: Record<Language, Translations> = {
     importReplace: 'Замінити',
     exportSuccess: 'Експорт готовий.',
     exportError: 'Не вдалося експортувати дані.',
+    exportCSV: 'Експорт CSV',
+    exportPDF: 'Експорт PDF',
     importSuccess: 'Імпорт завершено.',
     importError: 'Не вдалося імпортувати файл.',
     importedItems: 'Додано',
     importAdded: 'додано',
     importUpdated: 'оновлено',
     importSkipped: 'пропущено',
+    textTooLong: 'Текст занадто довгий (максимум 2000 символів)',
+    invalidInput: 'Перевірте введені дані',
     comingSoon: 'скоро',
     resetAllData: 'Скинути всі дані',
     privacyTitle: 'Конфіденційність',
@@ -3251,6 +4440,19 @@ export const translations: Record<Language, Translations> = {
     privacyAnalyticsHint: 'Допомагає покращувати додаток. Можна вимкнути.',
     privacyPolicy: 'Політика конфіденційності',
     termsOfService: 'Умови користування',
+
+    // v1.2.0 Appearance
+    appearance: 'Зовнішній вигляд',
+    oledDarkMode: 'OLED темна тема',
+    oledDarkModeHint: 'Чисто чорна тема для OLED екранів. Економить батарею.',
+
+    // What's New Modal
+    whatsNewTitle: 'Що нового',
+    whatsNewVersion: 'Версія',
+    whatsNewGotIt: 'Зрозуміло!',
+
+    // Accessibility
+    skipToContent: 'Перейти до вмісту',
 
     // v1.1.1 Settings Redesign
     settingsCloudSyncTitle: 'Увімкнути хмарну синхронізацію',
@@ -3263,16 +4465,47 @@ export const translations: Record<Language, Translations> = {
     settingsImportMergeTooltip: 'Імпортовані дані будуть додані до існуючих. Дублікати пропускаються.',
     settingsImportReplaceTooltip: '⚠️ Усі поточні дані будуть видалені та замінені імпортованими',
     settingsImportReplaceConfirm: 'Введіть "REPLACE" для підтвердження видалення всіх даних',
-    settingsWhatsNewTitle: 'Що нового в v1.1.0',
-    settingsWhatsNewInsights: 'Система інсайтів - Дізнайтеся, що працює для ВАШОГО мозку',
-    settingsWhatsNewTrends: 'Панель трендів - Відстежуйте довгостроковий прогрес',
-    settingsWhatsNewSync: 'Розумна синхронізація - Надійна хмарна синхронізація',
-    settingsWhatsNewOnboarding: 'Поступове введення - Без перевантаження для нових користувачів',
-    settingsWhatsNewReengagement: 'Вітаємо повернення - Для користувачів після перерви',
-    settingsWhatsNewLearnMore: 'Дізнатися більше',
+    // Import validation (v1.4.1)
+    invalidFileType: 'Невірний тип файлу. Потрібен JSON.',
+    fileTooLarge: 'Файл завеликий (макс. 10 МБ)',
+    importConfirm: 'Підтвердити імпорт',
+    invalidBackupFormat: 'Невірний формат резервної копії',
+    settingsWhatsNewTitle: 'Що нового в v1.3.0',
+    settingsWhatsNewLeaderboards: 'Таблиці лідерів',
+    settingsWhatsNewLeaderboardsDesc: 'Змагайтеся анонімно з іншими',
+    settingsWhatsNewSpotify: 'Інтеграція Spotify',
+    settingsWhatsNewSpotifyDesc: 'Автовідтворення музики під час фокусування',
+    settingsWhatsNewChallenges: 'Челенджі з друзями',
+    settingsWhatsNewChallengesDesc: 'Запрошуйте друзів виробляти звички разом',
+    settingsWhatsNewDigest: 'Щотижневий дайджест',
+    settingsWhatsNewDigestDesc: 'Отримуйте звіти про прогрес на email',
+    settingsWhatsNewSecurity: 'Покращена безпека',
+    settingsWhatsNewSecurityDesc: 'Кращий захист даних та приватності',
     settingsWhatsNewGotIt: 'Зрозуміло!',
     settingsSectionAccount: 'Акаунт і хмара',
     settingsSectionData: 'Дані та резервне копіювання',
+
+    // Weekly Digest (v1.3.0)
+    weeklyDigestTitle: 'Щотижневий звіт',
+    weeklyDigestDescription: 'Отримуйте підсумок звичок, фокусу та настрою щонеділі.',
+    weeklyDigestEnabled: 'Звіти надходять на вашу пошту',
+
+    // Changelog
+    changelogTitle: 'Історія оновлень',
+    changelogExpandAll: 'Розгорнути все',
+    changelogCollapseAll: 'Згорнути все',
+    changelogEmpty: 'Історія оновлень недоступна',
+    changelogAdded: 'Додано',
+    changelogFixed: 'Виправлено',
+    changelogChanged: 'Змінено',
+    changelogRemoved: 'Видалено',
+
+    // Settings Groups (v1.3.0)
+    settingsGroupProfile: 'Профіль і оформлення',
+    settingsGroupNotifications: 'Сповіщення',
+    settingsGroupData: 'Дані та приватність',
+    settingsGroupAccount: 'Акаунт',
+    settingsGroupAbout: 'Про додаток',
 
     // GDPR Consent
     consentTitle: 'Налаштування приватності',
@@ -3291,6 +4524,12 @@ export const translations: Record<Language, Translations> = {
     installLater: 'Пізніше',
     appInstalled: 'Додаток встановлено',
     appInstalledDescription: 'ZenFlow встановлено на вашому пристрої.',
+    // App Updates (v1.4.1)
+    checkForUpdates: 'Перевірити оновлення',
+    checkingForUpdates: 'Перевірка оновлень...',
+    appUpToDate: 'У вас найновіша версія',
+    openGooglePlay: 'Відкрити Google Play',
+    updateCheckFailed: 'Не вдалося перевірити оновлення',
     remindersTitle: 'Нагадування',
     remindersDescription: 'Дружні нагадування, щоб підтримувати тебе.',
     moodReminder: 'Час перевірки настрою',
@@ -3402,6 +4641,7 @@ export const translations: Record<Language, Translations> = {
     cannotBeUndone: 'Цю дію не можна скасувати.',
     delete: 'Видалити',
     shareAchievements: 'Поділитися прогресом',
+    shareDialogTitle: 'Поділіться своїм прогресом',
     shareTitle: 'Мій прогрес у ZenFlow',
     shareText: '{streak} днів поспіль! {habits} звичок виконано, {focus} хвилин фокусу.',
     shareButton: 'Поділитися',
@@ -3419,6 +4659,18 @@ export const translations: Record<Language, Translations> = {
     shareSquare: 'Пост 1:1',
     shareStory: 'Сторіс 9:16',
     shareFormatHint: '📱 Формат сторіс для Instagram/TikTok • Формат поста для стрічок',
+    shareFailed: 'Не вдалося поділитися. Спробуйте ще раз.',
+    shareAchievement30: 'Легенда!',
+    shareAchievement14: 'Незупинний!',
+    shareAchievement7: 'У вогні!',
+    shareAchievement3: 'Зірка, що сходить!',
+    shareAchievementStart: 'Тільки почав!',
+    shareSubtext30: 'Майстер 30+ днів',
+    shareSubtext14: 'Воїн 14+ днів',
+    shareSubtext7: 'Серія 7+ днів',
+    shareSubtext3: 'Серія 3+ дні',
+    shareSubtextStart: 'Будую звички',
+    dismiss: 'Закрити',
     challengesTitle: 'Виклики та нагороди',
     challengesSubtitle: 'Приймайте виклики та заробляйте бейджі',
     activeChallenges: 'Активні',
@@ -3436,6 +4688,50 @@ export const translations: Record<Language, Translations> = {
     challengeTypeFocus: 'Фокус',
     challengeTypeGratitude: 'Вдячність',
     challengeTypeTotal: 'Всього',
+
+    // Friend Challenges
+    friendChallenges: 'Виклики друзям',
+    createChallenge: 'Створити виклик',
+    challengeDescription: 'Киньте виклик друзям і формуйте звички разом',
+    challengeYourFriends: 'Киньте виклик друзям!',
+    challengeDuration: 'Тривалість виклику',
+    challengeCreated: 'Виклик створено!',
+    challengeDetails: 'Деталі виклику',
+    shareToInvite: 'Поділіться, щоб запросити друзів!',
+    trackWithFriends: 'Відстежуйте виклики з друзями',
+    challengeCode: 'Код виклику',
+    yourProgress: 'Ваш прогрес',
+    daysLeft: 'днів залишилось',
+    dayChallenge: 'денний виклик',
+    challengeCompleted: 'Виклик виконано!',
+    noChallenges: 'Поки немає викликів',
+    createChallengePrompt: 'Створіть виклик з будь-якої звички!',
+    completedChallenges: 'Завершені',
+    expiredChallenges: 'Прострочені',
+    youCreated: 'Ви створили',
+    createdBy: 'Створив',
+    confirmDeleteChallenge: 'Видалити цей виклик?',
+    challengeInvite: 'Приєднуйся до мого виклику!',
+    challengeJoinPrompt: 'Приєднуйся до мене в ZenFlow!',
+    challengeShareTip: 'Після створення ви зможете поділитися викликом з друзями.',
+
+    // Friend Challenges - Join
+    joinChallenge: 'Приєднатися',
+    enterChallengeCode: 'Введіть код від друга',
+    invalidChallengeCode: 'Невірний код. Формат: ZEN-XXXXXX',
+    enterCodeToJoin: 'Введіть код виклику, щоб приєднатися',
+    joinChallengeHint: 'Попросіть друга поділитися кодом виклику',
+    joining: 'Приєднуємося...',
+    join: 'Приєднатися',
+
+    // Friend Challenges v2
+    challengeWon: '🎉 Чудово! Ви завершили випробування!',
+    catchUp: '💪 Ви можете наздогнати! Кожен день важливий!',
+    aheadOfSchedule: '⭐ Чудовий темп! Ви випереджаєте графік!',
+    daysPassed: 'Днів пройшло',
+    daysCompleted: 'Виконано',
+    daysRemaining: 'Залишилось',
+
     hyperfocusMode: 'Режим гіперфокусу',
     hyperfocusStart: 'Почати',
     hyperfocusPause: 'Пауза',
@@ -3570,6 +4866,11 @@ export const translations: Record<Language, Translations> = {
     privacyNote: 'Ваші дані зберігаються локально та захищені',
     install: 'Встановити додаток',
     installDescription: 'Встановіть ZenFlow на головний екран',
+    onboardingAgeTitle: 'Ласкаво просимо до ZenFlow',
+    onboardingAgeDesc: 'Цей додаток призначений для користувачів від 13 років і старше',
+    onboardingAgeConfirm: 'Мені є 13 років',
+    onboardingAgeNote: 'Продовжуючи, ви підтверджуєте, що вам є 13 років',
+    healthConnectAgeDesc: 'Функції Health Connect вимагають підтвердження віку 13+ для відповідального використання даних про здоров\'я.',
     onboardingMoodTitle: 'Як ви себе почуваєте?',
     onboardingMoodDescription: 'Відстежуйте свій настрій щодня',
     onboardingHabitsTitle: 'Створіть свої перші звички',
@@ -3600,6 +4901,7 @@ export const translations: Record<Language, Translations> = {
     tutorialFeaturesDesc: 'Відстежуйте прогрес і набирайте обертів:',
     tutorialFeature1: 'Відстеження настрою та енергії',
     tutorialFeature2: 'Формування звичок крок за кроком',
+    tutorialFeature2b: '✨ Налаштовуйте іконки, кольори та цілі!',
     tutorialFeature3: 'Сесії фокусу з фоновими звуками',
     tutorialFeature4: 'Щоденник вдячності',
     tutorialMoodTitle: 'Розумійте себе краще',
@@ -3629,6 +4931,7 @@ export const translations: Record<Language, Translations> = {
 
     // Weekly Report
     weeklyReport: 'Тижневий звіт',
+    weeklyStory: 'Історія тижня',
     incredibleWeek: 'Неймовірний тиждень!',
     pathToMastery: 'Ви на шляху до майстерності!',
     greatWork: 'Чудова робота!',
@@ -3639,6 +4942,20 @@ export const translations: Record<Language, Translations> = {
     startSmall: 'Почніть з малого, рухайтеся вперед!',
     bestDay: 'Кращий день',
     continueBtn: 'Продовжити',
+    // Weekly Story translations (ProgressStoriesViewer)
+    storyAverageMoodScore: 'середня оцінка настрою',
+    storyCompletionRate: 'виконання',
+    storyTopHabit: 'Топ звичка',
+    storyCompletions: 'виконань',
+    storyPerfectDays: 'ідеальних днів цього тижня',
+    storyAvgSession: 'сер. сесія',
+    storyLongestSession: 'найдовша',
+    storyMostFocusedOn: 'Найбільше фокус на:',
+    storyTrackYourJourney: 'Відстежуйте свій шлях з',
+    storyTapLeft: '← Вліво',
+    storyTapCenter: 'Центр - пауза',
+    storyTapRight: 'Вправо →',
+    generating: 'Генерація...',
 
     // Streak Celebration
     dayStreak: 'днів поспіль',
@@ -3805,6 +5122,32 @@ export const translations: Record<Language, Translations> = {
     tasks: 'Задачі',
     quests: 'Квести',
     challenges: 'Виклики',
+    openTasks: 'Відкрити задачі',
+    openQuests: 'Відкрити квести',
+    openChallenges: 'Відкрити виклики',
+
+    // QuestsPanel UI
+    randomQuests: 'Випадкові квести',
+    questsPanelSubtitle: 'Виконуйте квести для бонусного XP та ексклюзивних значків',
+    adhdEngagementSystem: 'Система залучення СДУГ',
+    adhdEngagementDesc: 'Квести дають різноманітність та несподівані нагороди — ідеально для СДУГ-мозку, який прагне новизни!',
+    dailyQuest: 'Щоденний квест',
+    weeklyQuest: 'Щотижневий квест',
+    bonusQuest: 'Бонусний квест',
+    newQuest: 'Новий квест',
+    limitedTime: 'Обмежений час',
+    generate: 'Створити',
+    noQuestAvailable: 'Квест недоступний',
+    noBonusQuestAvailable: 'Бонусний квест недоступний',
+    bonusQuestsHint: 'Бонусні квести з\'являються випадково або можуть бути створені вручну',
+    questProgress: 'Прогрес:',
+    questExpired: 'Закінчився',
+    questType: 'Квест',
+    questTips: 'Поради щодо квестів',
+    questTipDaily: 'Щоденні квести оновлюються кожні 24 години',
+    questTipWeekly: 'Щотижневі квести дають 3x XP',
+    questTipBonus: 'Бонусні квести рідкісні та дають 5x XP',
+    questTipExpire: 'Завершіть квести до закінчення терміну!',
 
     // Companion
     companionHungry: 'Я голодний... Погодуй мене?',
@@ -3834,6 +5177,51 @@ export const translations: Record<Language, Translations> = {
     insightsShowMore: 'Показати більше',
     insightsShowLess: 'Показати менше',
     insightsDismissedCount: 'Приховано інсайтів',
+    insightsMoodEntries: 'записів настрою',
+    insightsHabitCount: 'звичка',
+    insightsFocusSessions: 'фокус-сесій',
+
+    // Weekly Insights (v1.5.0)
+    weeklyInsights: 'Інсайти тижня',
+    weeklyInsightsNotEnoughData: 'Відстежуйте прогрес цього тижня, щоб отримати персоналізовані інсайти та рекомендації.',
+    comparedToLastWeek: 'Порівняно з минулим тижнем',
+    recommendations: 'Рекомендації',
+    avgMood: 'Сер. настрій',
+    week: 'Тиждень',
+    // Recommendation translations
+    recLowMoodTitle: 'Настрій потребує уваги',
+    recLowMoodDesc: 'Ваш настрій цього тижня був нижчим за звичайний. Спробуйте заняття, які зазвичай піднімають вам настрій.',
+    recLowMoodAction: 'Спробуйте 5-хвилинну дихальну вправу',
+    recHabitDeclineTitle: 'Звички знизились',
+    recHabitDeclineDesc: 'Виконання звичок знизилось порівняно з минулим тижнем. Почніть з малого, щоб відновити імпульс.',
+    recHabitDeclineAction: 'Сфокусуйтесь на одній звичці сьогодні',
+    recLowFocusTitle: 'Збільшіть час фокусу',
+    recLowFocusDesc: 'Цього тижня було мало сесій фокусування. Навіть короткі сесії допомагають виробити звичку.',
+    recLowFocusAction: 'Спробуйте 10-хвилинну сесію фокусу',
+    recGreatProgressTitle: 'Ви на підйомі!',
+    recGreatProgressDesc: 'Ваш прогрес покращується порівняно з минулим тижнем. Так тримати!',
+    recBestDayTitle: 'Це був ваш найкращий день',
+    recBestDayDesc: 'Спробуйте зрозуміти, що зробило цей день особливим, і повторити ці умови.',
+    recGratitudeTitle: 'Практикуйте вдячність',
+    recGratitudeDesc: 'Записування того, за що ви вдячні, може значно покращити настрій з часом.',
+    recGratitudeAction: 'Додайте запис вдячності сьогодні',
+    recPerfectWeekTitle: 'Неймовірна стабільність!',
+    recPerfectWeekDesc: 'Ви виконали більшість звичок цього тижня. Ви формуєте міцні звички!',
+    recTopHabitTitle: 'Продовжуйте цю звичку',
+    recTopHabitDesc: 'Це одна з ваших найстабільніших звичок. Вона сприяє вашому благополуччю.',
+
+    // Smart Reminders
+    smartReminders: 'Розумні нагадування',
+    smartRemindersNotEnoughData: 'Продовжуйте користуватися додатком, щоб отримати персоналізовані рекомендації щодо нагадувань.',
+    smartRemindersOptimized: 'Час ваших нагадувань оптимальний! Чудова робота.',
+    smartRemindersDescription: 'Персоналізовані пропозиції на основі ваших патернів',
+    suggestions: 'пропозицій',
+    highConfidence: 'Висока впевненість',
+    mediumConfidence: 'Середня',
+    lowConfidence: 'Пропозиція',
+    apply: 'Застосувати',
+    habitRemindersOptimal: 'Оптимальний час звичок',
+    patternBased: 'За патерном',
 
     // Sync status
     syncOffline: 'Офлайн',
@@ -3907,6 +5295,24 @@ export const translations: Record<Language, Translations> = {
     trendsInsightHint: 'Хочете персональні інсайти?',
     trendsInsightHintDesc: 'Перевірте панель Інсайтів на головній для виявлення патернів у ваших даних.',
 
+    // Health Connect (v1.2.0)
+    healthConnect: 'Health Connect',
+    healthConnectDescription: 'Синхронізація з Google Health Connect',
+    healthConnectLoading: 'Перевірка Health Connect...',
+    healthConnectNotAvailable: 'Недоступно на цьому пристрої',
+    healthConnectUpdateRequired: 'Оновіть додаток Health Connect',
+    mindfulness: 'Усвідомленість',
+    sleep: 'Сон',
+    steps: 'Кроки',
+    stepsLabel: 'кроків',
+    grantPermissions: 'Надати дозволи',
+    todayHealth: 'Здоров\'я сьогодні',
+    syncFocusSessions: 'Синхронізувати фокус-сесії',
+    syncFocusSessionsHint: 'Зберігати фокус-сесії як усвідомленість у Health Connect',
+    openHealthConnect: 'Відкрити Health Connect',
+    refresh: 'Оновити',
+    permissions: 'Дозволи',
+
     // Quest Templates (для randomQuests.ts)
     questMorningMomentum: 'Ранковий Імпульс',
     questMorningMomentumDesc: 'Виконайте 3 звички до 12:00',
@@ -3932,6 +5338,79 @@ export const translations: Record<Language, Translations> = {
     questLightningRoundDesc: 'Виконайте 5 швидких завдань за 15 хвилин',
     questWeeklyWarrior: 'Тижневий Воїн',
     questWeeklyWarriorDesc: 'Виконуйте звички 7 днів поспіль',
+
+    // Feedback System
+    feedbackTitle: 'Зворотний зв\'язок',
+    feedbackSubtitle: 'Допоможіть нам покращити додаток',
+    feedbackCategoryBug: 'Повідомити про помилку',
+    feedbackCategoryFeature: 'Запропонувати функцію',
+    feedbackCategoryOther: 'Інше',
+    feedbackMessagePlaceholder: 'Опишіть вашу проблему або пропозицію...',
+    feedbackEmailPlaceholder: 'Email (необов\'язково)',
+    feedbackSubmit: 'Надіслати',
+    feedbackSuccess: 'Дякуємо за зворотний зв\'язок!',
+    feedbackError: 'Не вдалося надіслати. Спробуйте пізніше.',
+    feedbackSending: 'Надсилання...',
+    sendFeedback: 'Написати нам',
+
+    // App Rating
+    rateAppTitle: 'Подобається ZenFlow?',
+    rateAppSubtitle: 'Оцініть нас у Play Store',
+    rateAppButton: 'Оцінити',
+    rateAppLater: 'Пізніше',
+
+    // App Updates
+    updateAvailable: 'Доступне оновлення',
+    updateDescription: 'Нова версія готова до встановлення з покращеннями та виправленнями.',
+    updateDescriptionCritical: 'Критичне оновлення необхідне для продовження використання додатку.',
+    updateNow: 'Оновити зараз',
+    updateAvailableFor: 'Доступно {days} дн.',
+
+    // Lock Screen Quick Actions
+    quickActions: 'Швидкі дії',
+    quickActionsDescription: 'Показувати сповіщення з швидкими діями на екрані блокування',
+    quickActionsEnabled: 'Швидкі дії увімкнено',
+    quickActionsDisabled: 'Швидкі дії вимкнено',
+    quickActionLogMood: 'Записати настрій',
+    quickActionStartFocus: 'Почати фокус',
+    quickActionViewHabits: 'Звички',
+
+    // Notification Sounds
+    notificationSound: 'Звук сповіщень',
+    notificationSoundDescription: 'Оберіть звук для нагадувань',
+    soundDefault: 'За замовчуванням',
+    soundDefaultDesc: 'Системний звук сповіщення',
+    soundGentle: 'М\'який',
+    soundGentleDesc: 'Тільки вібрація',
+    soundChime: 'Короткий',
+    soundChimeDesc: 'Короткий тон сповіщення',
+    soundSilent: 'Тихий',
+    soundSilentDesc: 'Без звуку та вібрації',
+    testNotification: 'Тестове сповіщення',
+    testNotificationHint: 'Надсилає тестове сповіщення через 5 секунд для перевірки роботи.',
+
+    // Insight Card Details
+    insightConfidence: 'Впевненість',
+    insightDataPoints: 'Точок даних',
+    insightAvgMoodWith: 'Середній настрій зі звичкою',
+    insightAvgMoodWithout: 'Середній настрій без звички',
+    insightSampleDays: 'Днів у вибірці',
+    insightBestActivity: 'Найкраща активність',
+    insightPeakTime: 'Піковий час',
+    insightAvgDuration: 'Середня тривалість',
+    insightSessions: 'Сесій',
+    insightTagOccurrences: 'Входжень тегу',
+    insightMoodWithTag: 'Настрій з тегом',
+    insightMoodWithoutTag: 'Настрій без тегу',
+    insightDisclaimer: 'Інсайт базується на ваших даних. Патерни можуть змінюватися.',
+    times: 'разів',
+
+    // Stats Empty States
+    noMoodDataYet: 'Немає даних про настрій',
+    noEmotionDataYet: 'Немає даних про емоції',
+
+    // XP Display
+    xp: 'XP',
   },
 
   es: {
@@ -4021,6 +5500,22 @@ export const translations: Record<Language, Translations> = {
     scheduleNote: 'Nota (opcional)',
     scheduleNotePlaceholder: 'Agregar detalles o recordatorios...',
 
+    // Mindfulness v1.5.0
+    needInspiration: '¿Necesitas inspiración?',
+    journalPrompt: 'Pregunta',
+    dailyPrompt: 'Pregunta del Día',
+    usePrompt: 'Usar esta pregunta',
+    shufflePrompt: 'Otra pregunta',
+    mindfulMoment: 'Momento de atención plena',
+    takeAMoment: 'Tómate un momento...',
+    withNote: 'con nota',
+    whatsMakingYouFeel: '¿Qué te hace sentir así?',
+    emotionSaved: 'Emoción guardada',
+    treat: 'premio',
+    moodGood: 'Bien',
+    moodOkay: 'Normal',
+    moodNotGreat: 'No muy bien',
+
     // Time Awareness (ADHD time blindness helper)
     timeUntilEndOfDay: 'Hasta fin del día',
     timeIn: 'en',
@@ -4039,6 +5534,25 @@ export const translations: Record<Language, Translations> = {
     showMore: 'Mostrar',
     moreInsights: 'más insights',
     hideInsights: 'Ocultar insights',
+    // Insight texts
+    insightBestDayTitle: '¡Los {day} son tu mejor día!',
+    insightBestDayDesc: 'Tu ánimo suele ser mejor los {day}. Considera programar tareas importantes ese día.',
+    insightBestTimeTitle: 'Brillas más por la {period}',
+    insightBestTimeDesc: 'Tu ánimo suele ser mejor por la {period}. ¡Programa tareas exigentes para entonces!',
+    insightHabitBoostsTitle: '¡"{habit}" mejora tu ánimo!',
+    insightHabitBoostsDesc: 'Cuando completas "{habit}", tu ánimo tiende a ser {percent}% mejor. ¡Sigue así!',
+    insightFocusMoodTitle: '¡Enfoque = Mejor ánimo!',
+    insightFocusMoodDesc: 'Los días con sesiones de enfoque, tu ánimo es {percent}% mejor. ¡El trabajo profundo vale la pena!',
+    insightGratitudeMoodTitle: '¡La gratitud mejora tu ánimo!',
+    insightGratitudeMoodDesc: 'Los días con entradas de gratitud muestran {percent}% mejor ánimo. ¡Sigue practicando!',
+    insightMoodUpTitle: '¡Tu ánimo está mejorando!',
+    insightMoodUpDesc: 'Tu ánimo promedio esta semana es {percent}% mejor que la semana pasada. ¡Lo estás haciendo genial!',
+    insightMoodDownTitle: '¡Levantemos tu ánimo!',
+    insightMoodDownDesc: 'Tu ánimo ha bajado un poco. Intenta enfocarte en hábitos que usualmente te hacen sentir bien.',
+    insightHighConsistencyTitle: '¡Consistencia increíble!',
+    insightHighConsistencyDesc: 'Has registrado tu ánimo {days} de los últimos 14 días. ¡Esta autoconciencia es poderosa!',
+    insightLowConsistencyTitle: 'Construye tu hábito de registro',
+    insightLowConsistencyDesc: 'Intenta registrar tu ánimo a la misma hora cada día. ¡La consistencia te ayuda a detectar patrones!',
 
     // Onboarding Hints
     hintFirstMoodTitle: '¿Cómo te sientes?',
@@ -4106,6 +5620,10 @@ export const translations: Record<Language, Translations> = {
     habitFrequencySelectDays: 'Seleccionar Días',
     habitDurationRequired: '¿Requiere Duración?',
     habitTargetDuration: 'Duración Objetivo (minutos)',
+    // v1.4.0: Habit reminders and schedule
+    addReminder: 'Añadir',
+    noReminders: 'Sin recordatorios',
+    habitEventExplanation: 'Este evento es de tu hábito. Edita el hábito para cambiarlo.',
     habitDurationMinutes: 'minutos',
 
     // Focus timer
@@ -4182,6 +5700,40 @@ export const translations: Record<Language, Translations> = {
     moodEntries: 'Entradas de ánimo',
     focusMinutes: 'Minutos de enfoque',
     achievements: 'Logros',
+    toLevel: 'Al nivel',
+    unlockedPercent: '{percent}% Desbloqueado',
+    all: 'Todos',
+    unlocked: 'Desbloqueados',
+    locked: 'Bloqueados',
+    unlockedOn: 'Desbloqueado el {date}',
+    hiddenAchievement: '???',
+    hidden: 'Oculto',
+    noAchievementsYet: 'Aún no hay logros',
+    startUsingZenFlow: '¡Comienza a usar ZenFlow para desbloquear logros!',
+    achievementUnlocked: '¡Logro desbloqueado!',
+    userLevel: 'Nivel',
+    focusSession: 'Sesión de enfoque',
+    // TimeHelper
+    timeBlindnessHelper: 'Ayuda para la ceguera temporal',
+    visualTimeAwareness: 'Conciencia visual del tiempo para TDAH',
+    hoursMinutesLeft: '{hours}h {mins}m restantes',
+    minutesLeft: '{mins}m restantes',
+    timesUp: '¡Se acabó el tiempo!',
+    youllFinishAt: '🎯 Terminarás a las:',
+    nMinutes: '{n} minutos',
+    pingEveryMinutes: 'Señal cada (minutos)',
+    audioPings: 'Señales de audio',
+    testSound: '🔊 Probar',
+    soundOn: 'Activado',
+    soundOff: 'Desactivado',
+    startTimer: 'Iniciar temporizador',
+    pauseTimer: 'Pausar',
+    resetTimer: 'Reiniciar',
+    adhdTimeManagement: 'Gestión del tiempo con TDAH',
+    adhdTip1: 'Las señales de audio ayudan a seguir el tiempo',
+    adhdTip2: 'La cuenta regresiva visual reduce la ansiedad',
+    adhdTip3: 'Predicción de fin = mejor planificación',
+    adhdTip4: 'Los cambios de color avisan cuando queda poco tiempo',
     currentStreak: 'Racha actual',
     daysInRow: 'Días seguidos',
     totalFocus: 'Enfoque total',
@@ -4190,6 +5742,9 @@ export const translations: Record<Language, Translations> = {
     totalTimes: 'Veces totales',
     moodDistribution: 'Distribución del ánimo',
     moodHeatmap: 'Mapa de ánimo',
+    activityHeatmap: 'Resumen de actividad',
+    less: 'Menos',
+    more: 'Más',
     topHabit: 'Mejor hábito',
     completedTimes2: 'veces',
     profile: 'Perfil',
@@ -4205,22 +5760,39 @@ export const translations: Record<Language, Translations> = {
     importReplace: 'Reemplazar',
     exportSuccess: 'Exportación lista.',
     exportError: 'No se pudo exportar los datos.',
+    exportCSV: 'Exportar CSV',
+    exportPDF: 'Exportar PDF',
     importSuccess: 'Importación completada.',
     importError: 'No se pudo importar el archivo.',
     importedItems: 'Añadido',
     importAdded: 'añadido',
     importUpdated: 'actualizado',
     importSkipped: 'omitido',
+    textTooLong: 'El texto es demasiado largo (máximo 2000 caracteres)',
+    invalidInput: 'Por favor verifica tu entrada',
     comingSoon: 'próximamente',
     resetAllData: 'Restablecer todos los datos',
-    privacyTitle: 'Privacy',
-    privacyDescription: 'Your data stays on device. No hidden tracking.',
-    privacyNoTracking: 'No tracking',
-    privacyNoTrackingHint: 'We do not collect behavioral data.',
-    privacyAnalytics: 'Analytics',
+    privacyTitle: 'Privacidad',
+    privacyDescription: 'Tus datos permanecen en el dispositivo. Sin rastreo oculto.',
+    privacyNoTracking: 'Sin rastreo',
+    privacyNoTrackingHint: 'No recopilamos datos de comportamiento.',
+    privacyAnalytics: 'Analíticas',
     privacyAnalyticsHint: 'Ayuda a mejorar la app. Puedes desactivarlo.',
     privacyPolicy: 'Politica de privacidad',
     termsOfService: 'Terminos del servicio',
+
+    // v1.2.0 Appearance
+    appearance: 'Apariencia',
+    oledDarkMode: 'Modo oscuro OLED',
+    oledDarkModeHint: 'Tema negro puro para pantallas OLED. Ahorra batería.',
+
+    // What's New Modal
+    whatsNewTitle: 'Novedades',
+    whatsNewVersion: 'Versión',
+    whatsNewGotIt: '¡Entendido!',
+
+    // Accessibility
+    skipToContent: 'Ir al contenido principal',
 
     // v1.1.1 Settings Redesign
     settingsCloudSyncTitle: 'Activar sincronización en la nube',
@@ -4233,16 +5805,47 @@ export const translations: Record<Language, Translations> = {
     settingsImportMergeTooltip: 'Los datos importados se agregarán a los existentes. Se omiten duplicados.',
     settingsImportReplaceTooltip: '⚠️ Todos los datos actuales se eliminarán y reemplazarán con la importación',
     settingsImportReplaceConfirm: 'Escribe "REPLACE" para confirmar la eliminación de todos los datos',
-    settingsWhatsNewTitle: 'Novedades en v1.1.0',
-    settingsWhatsNewInsights: 'Motor de insights - Descubre qué funciona para TU cerebro',
-    settingsWhatsNewTrends: 'Panel de tendencias - Rastrea progreso a largo plazo',
-    settingsWhatsNewSync: 'Sincronización inteligente - Sincronización en la nube confiable',
-    settingsWhatsNewOnboarding: 'Incorporación progresiva - Sin abrumar',
-    settingsWhatsNewReengagement: 'Bienvenida de regreso - Para usuarios que regresan',
-    settingsWhatsNewLearnMore: 'Aprender más',
+    // Import validation (v1.4.1)
+    invalidFileType: 'Tipo de archivo inválido. Se requiere JSON.',
+    fileTooLarge: 'Archivo demasiado grande (máx. 10 MB)',
+    importConfirm: 'Confirmar importación',
+    invalidBackupFormat: 'Formato de copia de seguridad inválido',
+    settingsWhatsNewTitle: 'Novedades en v1.3.0',
+    settingsWhatsNewLeaderboards: 'Tablas de clasificación',
+    settingsWhatsNewLeaderboardsDesc: 'Compite anónimamente con otros',
+    settingsWhatsNewSpotify: 'Integración Spotify',
+    settingsWhatsNewSpotifyDesc: 'Reproducción automática durante sesiones de enfoque',
+    settingsWhatsNewChallenges: 'Desafíos con amigos',
+    settingsWhatsNewChallengesDesc: 'Desafía a amigos a crear hábitos juntos',
+    settingsWhatsNewDigest: 'Resumen semanal',
+    settingsWhatsNewDigestDesc: 'Recibe informes de progreso por email',
+    settingsWhatsNewSecurity: 'Seguridad mejorada',
+    settingsWhatsNewSecurityDesc: 'Mejor protección de datos y privacidad',
     settingsWhatsNewGotIt: '¡Entendido!',
     settingsSectionAccount: 'Cuenta y nube',
     settingsSectionData: 'Datos y copia de seguridad',
+
+    // Weekly Digest (v1.3.0)
+    weeklyDigestTitle: 'Informe semanal de progreso',
+    weeklyDigestDescription: 'Recibe un resumen semanal de tus hábitos, tiempo de enfoque y tendencias de ánimo cada domingo.',
+    weeklyDigestEnabled: 'Recibirás informes en tu correo',
+
+    // Changelog
+    changelogTitle: 'Historial de versiones',
+    changelogExpandAll: 'Expandir todo',
+    changelogCollapseAll: 'Contraer todo',
+    changelogEmpty: 'Historial de versiones no disponible',
+    changelogAdded: 'Añadido',
+    changelogFixed: 'Corregido',
+    changelogChanged: 'Cambiado',
+    changelogRemoved: 'Eliminado',
+
+    // Settings Groups (v1.3.0)
+    settingsGroupProfile: 'Perfil y apariencia',
+    settingsGroupNotifications: 'Notificaciones',
+    settingsGroupData: 'Datos y privacidad',
+    settingsGroupAccount: 'Cuenta',
+    settingsGroupAbout: 'Acerca de',
 
     // GDPR Consent
     consentTitle: 'Configuración de privacidad',
@@ -4261,6 +5864,12 @@ export const translations: Record<Language, Translations> = {
     installLater: 'Más tarde',
     appInstalled: 'App instalada',
     appInstalledDescription: 'ZenFlow está instalado en tu dispositivo.',
+    // App Updates (v1.4.1)
+    checkForUpdates: 'Buscar actualizaciones',
+    checkingForUpdates: 'Buscando actualizaciones...',
+    appUpToDate: 'Tienes la última versión',
+    openGooglePlay: 'Abrir Google Play',
+    updateCheckFailed: 'Error al buscar actualizaciones',
     remindersTitle: 'Recordatorios',
     remindersDescription: 'Pequeños empujones para mantenerte en camino.',
     moodReminder: 'Hora del estado de ánimo',
@@ -4278,50 +5887,50 @@ export const translations: Record<Language, Translations> = {
     reminderFocusBody: 'Solo 25 minutos para modo héroe. ¿Vamos?',
     reminderDismiss: 'Ahora no',
     notificationPermissionTitle: 'Mantente en el camino',
-    notificationPermissionDescription: 'Get gentle reminders to track your mood, complete habits, and take focus breaks. Notifications help you build healthy routines.',
-    notificationFeature1Title: 'Daily Mood Reminders',
-    notificationFeature1Desc: 'Check in with yourself every day',
-    notificationFeature2Title: 'Habit Tracking',
-    notificationFeature2Desc: 'Stay consistent with your goals',
-    notificationFeature3Title: 'Focus Sessions',
-    notificationFeature3Desc: 'Get reminded to take productive breaks',
-    notificationAllow: 'Enable Notifications',
-    notificationDeny: 'Maybe Later',
-    notificationPrivacyNote: 'You can change this anytime in Settings. Notifications are local and private.',
-    onboardingStep: 'Step',
-    onboardingValueTitle: 'Track mood + habits in 30 seconds a day',
-    onboardingValueBody: 'Quick check-ins, zero clutter, fully private.',
-    onboardingStart: 'Start in 30 sec',
-    onboardingExplore: 'Explore',
-    onboardingGoalTitle: 'Pick your focus',
-    onboardingGoalLessStress: 'Less stress',
-    onboardingGoalLessStressDesc: 'Calm and gentle habits',
-    onboardingGoalMoreEnergy: 'More energy',
-    onboardingGoalMoreEnergyDesc: 'Sleep, movement, hydration',
-    onboardingGoalBetterRoutine: 'Better routine',
-    onboardingGoalBetterRoutineDesc: 'Stability and rhythm',
-    onboardingContinue: 'Continue',
-    onboardingCheckinTitle: 'Quick check-in',
-    onboardingHabitsPrompt: 'Choose two habits',
-    onboardingPickTwo: 'Pick up to two',
-    onboardingReminderTitle: 'Enable reminders',
-    onboardingReminderBody: 'Choose a time that fits you. No spam.',
-    onboardingMorning: 'Morning',
-    onboardingEvening: 'Evening',
-    onboardingEnable: 'Enable',
-    onboardingSkip: 'Skip for now',
-    onboardingHabitBreathing: 'Breathing',
-    onboardingHabitEveningWalk: 'Evening walk',
-    onboardingHabitStretch: 'Stretch',
-    onboardingHabitJournaling: 'Journaling',
-    onboardingHabitWater: 'Water',
-    onboardingHabitSunlight: 'Sunlight',
-    onboardingHabitMovement: 'Movement',
-    onboardingHabitSleepOnTime: 'Sleep on time',
-    onboardingHabitMorningPlan: 'Morning plan',
-    onboardingHabitRead: 'Read 10 min',
-    onboardingHabitNoScreens: 'No late screens',
-    onboardingHabitDailyReview: 'Daily review',
+    notificationPermissionDescription: 'Recibe recordatorios suaves para registrar tu estado de ánimo, completar hábitos y tomar descansos de enfoque. Las notificaciones te ayudan a crear rutinas saludables.',
+    notificationFeature1Title: 'Recordatorios de estado de ánimo',
+    notificationFeature1Desc: 'Haz seguimiento de ti mismo cada día',
+    notificationFeature2Title: 'Seguimiento de hábitos',
+    notificationFeature2Desc: 'Mantén la constancia con tus metas',
+    notificationFeature3Title: 'Sesiones de enfoque',
+    notificationFeature3Desc: 'Recibe recordatorios para tomar descansos productivos',
+    notificationAllow: 'Activar notificaciones',
+    notificationDeny: 'Quizás después',
+    notificationPrivacyNote: 'Puedes cambiar esto en cualquier momento en Ajustes. Las notificaciones son locales y privadas.',
+    onboardingStep: 'Paso',
+    onboardingValueTitle: 'Registra tu ánimo + hábitos en 30 segundos al día',
+    onboardingValueBody: 'Check-ins rápidos, sin desorden, totalmente privado.',
+    onboardingStart: 'Empezar en 30 seg',
+    onboardingExplore: 'Explorar',
+    onboardingGoalTitle: 'Elige tu enfoque',
+    onboardingGoalLessStress: 'Menos estrés',
+    onboardingGoalLessStressDesc: 'Hábitos tranquilos y suaves',
+    onboardingGoalMoreEnergy: 'Más energía',
+    onboardingGoalMoreEnergyDesc: 'Sueño, movimiento, hidratación',
+    onboardingGoalBetterRoutine: 'Mejor rutina',
+    onboardingGoalBetterRoutineDesc: 'Estabilidad y ritmo',
+    onboardingContinue: 'Continuar',
+    onboardingCheckinTitle: 'Check-in rápido',
+    onboardingHabitsPrompt: 'Elige dos hábitos',
+    onboardingPickTwo: 'Elige hasta dos',
+    onboardingReminderTitle: 'Activar recordatorios',
+    onboardingReminderBody: 'Elige una hora que te convenga. Sin spam.',
+    onboardingMorning: 'Mañana',
+    onboardingEvening: 'Noche',
+    onboardingEnable: 'Activar',
+    onboardingSkip: 'Omitir por ahora',
+    onboardingHabitBreathing: 'Respiración',
+    onboardingHabitEveningWalk: 'Paseo nocturno',
+    onboardingHabitStretch: 'Estiramiento',
+    onboardingHabitJournaling: 'Escribir diario',
+    onboardingHabitWater: 'Beber agua',
+    onboardingHabitSunlight: 'Luz solar',
+    onboardingHabitMovement: 'Movimiento',
+    onboardingHabitSleepOnTime: 'Dormir a tiempo',
+    onboardingHabitMorningPlan: 'Plan matutino',
+    onboardingHabitRead: 'Leer 10 min',
+    onboardingHabitNoScreens: 'Sin pantallas tarde',
+    onboardingHabitDailyReview: 'Revisión diaria',
     account: 'Cuenta',
     accountDescription: 'Inicia sesión con tu email para sincronizar tu progreso entre dispositivos.',
     emailPlaceholder: 'you@email.com',
@@ -4372,6 +5981,7 @@ export const translations: Record<Language, Translations> = {
     cannotBeUndone: 'Esta acción no se puede deshacer.',
     delete: 'Eliminar',
     shareAchievements: 'Compartir tu progreso',
+    shareDialogTitle: 'Comparte tu progreso',
     shareTitle: 'Mi progreso en ZenFlow',
     shareText: '¡{streak} días seguidos! {habits} hábitos completados, {focus} minutos de enfoque.',
     shareButton: 'Compartir',
@@ -4389,6 +5999,18 @@ export const translations: Record<Language, Translations> = {
     shareSquare: 'Post 1:1',
     shareStory: 'Historia 9:16',
     shareFormatHint: '📱 Formato de historia para Instagram/TikTok • Formato de publicación para feeds',
+    shareFailed: 'Error al compartir. Inténtalo de nuevo.',
+    shareAchievement30: '¡Legendario!',
+    shareAchievement14: '¡Imparable!',
+    shareAchievement7: '¡En llamas!',
+    shareAchievement3: '¡Estrella en ascenso!',
+    shareAchievementStart: '¡Recién empezado!',
+    shareSubtext30: 'Maestro de 30+ días',
+    shareSubtext14: 'Guerrero de 14+ días',
+    shareSubtext7: 'Racha de 7+ días',
+    shareSubtext3: 'Racha de 3+ días',
+    shareSubtextStart: 'Creando hábitos',
+    dismiss: 'Cerrar',
     challengesTitle: 'Desafíos y insignias',
     challengesSubtitle: 'Acepta desafíos y gana insignias',
     activeChallenges: 'Activos',
@@ -4406,6 +6028,50 @@ export const translations: Record<Language, Translations> = {
     challengeTypeFocus: 'Enfoque',
     challengeTypeGratitude: 'Gratitud',
     challengeTypeTotal: 'Total',
+
+    // Friend Challenges
+    friendChallenges: 'Desafíos de amigos',
+    createChallenge: 'Crear desafío',
+    challengeDescription: 'Desafía a tus amigos a construir hábitos juntos',
+    challengeYourFriends: '¡Desafía a tus amigos con este hábito!',
+    challengeDuration: 'Duración del desafío',
+    challengeCreated: '¡Desafío creado!',
+    challengeDetails: 'Detalles del desafío',
+    shareToInvite: '¡Comparte para invitar amigos!',
+    trackWithFriends: 'Sigue tus desafíos con amigos',
+    challengeCode: 'Código del desafío',
+    yourProgress: 'Tu progreso',
+    daysLeft: 'días restantes',
+    dayChallenge: 'días de desafío',
+    challengeCompleted: '¡Desafío completado!',
+    noChallenges: 'Aún no hay desafíos',
+    createChallengePrompt: '¡Crea un desafío desde cualquier hábito!',
+    completedChallenges: 'Completados',
+    expiredChallenges: 'Expirados',
+    youCreated: 'Tú lo creaste',
+    createdBy: 'Creado por',
+    confirmDeleteChallenge: '¿Eliminar este desafío?',
+    challengeInvite: '¡Únete a mi desafío!',
+    challengeJoinPrompt: '¡Únete a mí en ZenFlow!',
+    challengeShareTip: 'Podrás compartir este desafío con amigos después de crearlo.',
+
+    // Friend Challenges - Join
+    joinChallenge: 'Unirse al desafío',
+    enterChallengeCode: 'Introduce el código de tu amigo',
+    invalidChallengeCode: 'Código inválido. Formato: ZEN-XXXXXX',
+    enterCodeToJoin: 'Introduce un código de desafío para unirte',
+    joinChallengeHint: 'Pide a tu amigo que comparta el código del desafío',
+    joining: 'Uniéndose...',
+    join: 'Unirse',
+
+    // Friend Challenges v2
+    challengeWon: '🎉 ¡Increíble! ¡Completaste el desafío!',
+    catchUp: '💪 ¡Puedes ponerte al día! ¡Cada día cuenta!',
+    aheadOfSchedule: '⭐ ¡Buen ritmo! ¡Vas adelantado!',
+    daysPassed: 'Días Pasados',
+    daysCompleted: 'Completados',
+    daysRemaining: 'Restantes',
+
     hyperfocusMode: 'Modo Hiperenfoque',
     hyperfocusStart: 'Comenzar',
     hyperfocusPause: 'Pausa',
@@ -4540,6 +6206,11 @@ export const translations: Record<Language, Translations> = {
     privacyNote: 'Tus datos se almacenan localmente y están protegidos',
     install: 'Instalar aplicación',
     installDescription: 'Instala ZenFlow en tu pantalla de inicio',
+    onboardingAgeTitle: 'Bienvenido a ZenFlow',
+    onboardingAgeDesc: 'Esta aplicación está diseñada para usuarios de 13 años o más',
+    onboardingAgeConfirm: 'Tengo 13 años o más',
+    onboardingAgeNote: 'Al continuar, confirmas que tienes 13 años o más',
+    healthConnectAgeDesc: 'Las funciones de Health Connect requieren que tengas 13 años o más para usar los datos de salud de manera responsable.',
     onboardingMoodTitle: '¿Cómo te sientes?',
     onboardingMoodDescription: 'Rastrea tu estado de ánimo diariamente',
     onboardingHabitsTitle: 'Crea tus primeros hábitos',
@@ -4570,6 +6241,7 @@ export const translations: Record<Language, Translations> = {
     tutorialFeaturesDesc: 'Rastrea tu progreso y gana impulso:',
     tutorialFeature1: 'Rastrea el estado de ánimo y energía diaria',
     tutorialFeature2: 'Construye hábitos paso a paso',
+    tutorialFeature2b: '✨ ¡Personaliza iconos, colores y metas!',
     tutorialFeature3: 'Sesiones de enfoque con sonidos ambientales',
     tutorialFeature4: 'Diario de gratitud',
     tutorialMoodTitle: 'Entiéndete a ti mismo',
@@ -4599,6 +6271,7 @@ export const translations: Record<Language, Translations> = {
 
     // Weekly Report
     weeklyReport: 'Informe semanal',
+    weeklyStory: 'Historia semanal',
     incredibleWeek: '¡Semana increíble!',
     pathToMastery: '¡Estás en el camino hacia la maestría!',
     greatWork: '¡Gran trabajo!',
@@ -4609,6 +6282,20 @@ export const translations: Record<Language, Translations> = {
     startSmall: '¡Comienza poco a poco, avanza!',
     bestDay: 'Mejor día',
     continueBtn: 'Continuar',
+    // Weekly Story translations (ProgressStoriesViewer)
+    storyAverageMoodScore: 'puntuación media de ánimo',
+    storyCompletionRate: 'tasa de finalización',
+    storyTopHabit: 'Hábito principal',
+    storyCompletions: 'completados',
+    storyPerfectDays: 'días perfectos esta semana',
+    storyAvgSession: 'sesión prom.',
+    storyLongestSession: 'más larga',
+    storyMostFocusedOn: 'Más enfocado en:',
+    storyTrackYourJourney: 'Sigue tu camino con',
+    storyTapLeft: '← Toca izquierda',
+    storyTapCenter: 'Toca centro para pausar',
+    storyTapRight: 'Toca derecha →',
+    generating: 'Generando...',
 
     // Streak Celebration
     dayStreak: 'días seguidos',
@@ -4775,6 +6462,32 @@ export const translations: Record<Language, Translations> = {
     tasks: 'Tareas',
     quests: 'Misiones',
     challenges: 'Desafíos',
+    openTasks: 'Abrir tareas',
+    openQuests: 'Abrir misiones',
+    openChallenges: 'Abrir desafíos',
+
+    // QuestsPanel UI
+    randomQuests: 'Misiones aleatorias',
+    questsPanelSubtitle: 'Completa misiones para XP extra y medallas exclusivas',
+    adhdEngagementSystem: 'Sistema de compromiso TDAH',
+    adhdEngagementDesc: 'Las misiones ofrecen variedad y recompensas inesperadas - ¡perfecto para cerebros con TDAH que buscan novedad!',
+    dailyQuest: 'Misión diaria',
+    weeklyQuest: 'Misión semanal',
+    bonusQuest: 'Misión bonus',
+    newQuest: 'Nueva misión',
+    limitedTime: 'Tiempo limitado',
+    generate: 'Generar',
+    noQuestAvailable: 'Misión no disponible',
+    noBonusQuestAvailable: 'Misión bonus no disponible',
+    bonusQuestsHint: 'Las misiones bonus aparecen aleatoriamente o pueden generarse manualmente',
+    questProgress: 'Progreso:',
+    questExpired: 'Expirado',
+    questType: 'Misión',
+    questTips: 'Consejos de misiones',
+    questTipDaily: 'Las misiones diarias se reinician cada 24 horas',
+    questTipWeekly: 'Las misiones semanales ofrecen 3x XP',
+    questTipBonus: 'Las misiones bonus son raras con 5x XP',
+    questTipExpire: '¡Completa las misiones antes de que expiren!',
 
     // Companion
     companionHungry: 'Tengo hambre... ¿Me das de comer?',
@@ -4804,6 +6517,51 @@ export const translations: Record<Language, Translations> = {
     insightsShowMore: 'Mostrar más',
     insightsShowLess: 'Mostrar menos',
     insightsDismissedCount: 'perspectivas descartadas',
+    insightsMoodEntries: 'registros de ánimo',
+    insightsHabitCount: 'hábito',
+    insightsFocusSessions: 'sesiones de enfoque',
+
+    // Weekly Insights (v1.5.0)
+    weeklyInsights: 'Insights Semanales',
+    weeklyInsightsNotEnoughData: 'Rastrea tu progreso esta semana para desbloquear insights y recomendaciones personalizadas.',
+    comparedToLastWeek: 'Comparado con la semana pasada',
+    recommendations: 'Recomendaciones',
+    avgMood: 'Ánimo prom.',
+    week: 'Semana',
+    // Recommendation translations
+    recLowMoodTitle: 'Tu ánimo necesita atención',
+    recLowMoodDesc: 'Tu estado de ánimo esta semana ha sido más bajo de lo habitual. Considera actividades que suelen animarte.',
+    recLowMoodAction: 'Prueba un ejercicio de respiración de 5 minutos',
+    recHabitDeclineTitle: 'Los hábitos disminuyeron',
+    recHabitDeclineDesc: 'El cumplimiento de tus hábitos bajó respecto a la semana pasada. Empieza poco a poco para recuperar el impulso.',
+    recHabitDeclineAction: 'Enfócate en un solo hábito hoy',
+    recLowFocusTitle: 'Aumenta tu tiempo de enfoque',
+    recLowFocusDesc: 'Has tenido pocas sesiones de enfoque esta semana. Incluso las sesiones cortas ayudan a crear el hábito.',
+    recLowFocusAction: 'Prueba una sesión de enfoque de 10 minutos',
+    recGreatProgressTitle: '¡Vas muy bien!',
+    recGreatProgressDesc: 'Tu progreso general está mejorando respecto a la semana pasada. ¡Sigue así!',
+    recBestDayTitle: 'Este fue tu mejor día',
+    recBestDayDesc: 'Intenta identificar qué hizo especial este día y replica esas condiciones.',
+    recGratitudeTitle: 'Practica la gratitud',
+    recGratitudeDesc: 'Escribir las cosas por las que estás agradecido puede mejorar significativamente tu ánimo con el tiempo.',
+    recGratitudeAction: 'Añade una entrada de gratitud hoy',
+    recPerfectWeekTitle: '¡Increíble constancia!',
+    recPerfectWeekDesc: 'Completaste la mayoría de tus hábitos esta semana. ¡Estás creando rutinas sólidas!',
+    recTopHabitTitle: 'Continúa con este hábito',
+    recTopHabitDesc: 'Este es uno de tus hábitos más constantes. Probablemente contribuye a tu bienestar.',
+
+    // Smart Reminders
+    smartReminders: 'Recordatorios Inteligentes',
+    smartRemindersNotEnoughData: 'Sigue usando la app para desbloquear sugerencias personalizadas basadas en tus patrones.',
+    smartRemindersOptimized: '¡Tus horarios de recordatorio están bien optimizados! Sigue así.',
+    smartRemindersDescription: 'Sugerencias personalizadas basadas en tus patrones de uso',
+    suggestions: 'sugerencias',
+    highConfidence: 'Alta confianza',
+    mediumConfidence: 'Media',
+    lowConfidence: 'Sugerencia',
+    apply: 'Aplicar',
+    habitRemindersOptimal: 'Horarios óptimos de hábitos',
+    patternBased: 'Patrón',
 
     // Sync status
     syncOffline: 'Sin conexión',
@@ -4877,6 +6635,24 @@ export const translations: Record<Language, Translations> = {
     trendsInsightHint: '¿Quieres insights personalizados?',
     trendsInsightHintDesc: 'Consulta el panel de Insights en la pestaña principal para descubrir patrones en tus datos.',
 
+    // Health Connect (v1.2.0)
+    healthConnect: 'Health Connect',
+    healthConnectDescription: 'Sincronizar con Google Health Connect',
+    healthConnectLoading: 'Comprobando Health Connect...',
+    healthConnectNotAvailable: 'No disponible en este dispositivo',
+    healthConnectUpdateRequired: 'Por favor actualiza la app Health Connect',
+    mindfulness: 'Atención plena',
+    sleep: 'Sueño',
+    steps: 'Pasos',
+    stepsLabel: 'pasos',
+    grantPermissions: 'Otorgar permisos',
+    todayHealth: 'Salud de hoy',
+    syncFocusSessions: 'Sincronizar sesiones de enfoque',
+    syncFocusSessionsHint: 'Guardar sesiones de enfoque como atención plena en Health Connect',
+    openHealthConnect: 'Abrir Health Connect',
+    refresh: 'Actualizar',
+    permissions: 'Permisos',
+
     // Quest Templates (para randomQuests.ts)
     questMorningMomentum: 'Impulso Matutino',
     questMorningMomentumDesc: 'Completa 3 hábitos antes de las 12:00',
@@ -4902,6 +6678,79 @@ export const translations: Record<Language, Translations> = {
     questLightningRoundDesc: 'Completa 5 tareas rápidas en 15 minutos',
     questWeeklyWarrior: 'Guerrero Semanal',
     questWeeklyWarriorDesc: 'Completa hábitos 7 días seguidos',
+
+    // Feedback System
+    feedbackTitle: 'Enviar comentarios',
+    feedbackSubtitle: 'Ayúdanos a mejorar la app',
+    feedbackCategoryBug: 'Reportar error',
+    feedbackCategoryFeature: 'Solicitar función',
+    feedbackCategoryOther: 'Otro',
+    feedbackMessagePlaceholder: 'Describe tu problema o sugerencia...',
+    feedbackEmailPlaceholder: 'Email (opcional)',
+    feedbackSubmit: 'Enviar',
+    feedbackSuccess: '¡Gracias por tus comentarios!',
+    feedbackError: 'Error al enviar. Intenta de nuevo.',
+    feedbackSending: 'Enviando...',
+    sendFeedback: 'Enviar comentarios',
+
+    // App Rating
+    rateAppTitle: '¿Te gusta ZenFlow?',
+    rateAppSubtitle: 'Califícanos en Play Store',
+    rateAppButton: 'Calificar',
+    rateAppLater: 'Más tarde',
+
+    // App Updates
+    updateAvailable: 'Actualización disponible',
+    updateDescription: 'Una nueva versión está lista para instalar con mejoras y correcciones.',
+    updateDescriptionCritical: 'Se requiere una actualización crítica para continuar usando la app.',
+    updateNow: 'Actualizar ahora',
+    updateAvailableFor: 'Disponible hace {days} días',
+
+    // Lock Screen Quick Actions
+    quickActions: 'Acciones rápidas',
+    quickActionsDescription: 'Mostrar notificación con acciones rápidas en pantalla de bloqueo',
+    quickActionsEnabled: 'Acciones rápidas activadas',
+    quickActionsDisabled: 'Acciones rápidas desactivadas',
+    quickActionLogMood: 'Registrar estado',
+    quickActionStartFocus: 'Iniciar enfoque',
+    quickActionViewHabits: 'Ver hábitos',
+
+    // Notification Sounds
+    notificationSound: 'Sonido de notificación',
+    notificationSoundDescription: 'Elige el sonido para recordatorios',
+    soundDefault: 'Predeterminado',
+    soundDefaultDesc: 'Sonido de notificación del sistema',
+    soundGentle: 'Suave',
+    soundGentleDesc: 'Solo vibración',
+    soundChime: 'Timbre',
+    soundChimeDesc: 'Tono de notificación corto',
+    soundSilent: 'Silencioso',
+    soundSilentDesc: 'Sin sonido ni vibración',
+    testNotification: 'Notificación de prueba',
+    testNotificationHint: 'Envía una notificación de prueba en 5 segundos para verificar que funcionan.',
+
+    // Insight Card Details
+    insightConfidence: 'Confianza',
+    insightDataPoints: 'Puntos de datos',
+    insightAvgMoodWith: 'Ánimo promedio con hábito',
+    insightAvgMoodWithout: 'Ánimo promedio sin hábito',
+    insightSampleDays: 'Días de muestra',
+    insightBestActivity: 'Mejor actividad',
+    insightPeakTime: 'Hora pico',
+    insightAvgDuration: 'Duración promedio',
+    insightSessions: 'Sesiones',
+    insightTagOccurrences: 'Ocurrencias de etiqueta',
+    insightMoodWithTag: 'Ánimo con etiqueta',
+    insightMoodWithoutTag: 'Ánimo sin etiqueta',
+    insightDisclaimer: 'Este insight se basa en tus datos. Los patrones pueden cambiar.',
+    times: 'veces',
+
+    // Stats Empty States
+    noMoodDataYet: 'Sin datos de ánimo',
+    noEmotionDataYet: 'Sin datos de emociones',
+
+    // XP Display
+    xp: 'XP',
   },
 
   de: {
@@ -4991,6 +6840,22 @@ export const translations: Record<Language, Translations> = {
     scheduleNote: 'Notiz (optional)',
     scheduleNotePlaceholder: 'Details oder Erinnerungen hinzufügen...',
 
+    // Mindfulness v1.5.0
+    needInspiration: 'Brauchst du Inspiration?',
+    journalPrompt: 'Frage',
+    dailyPrompt: 'Tagesfrage',
+    usePrompt: 'Diese Frage verwenden',
+    shufflePrompt: 'Andere Frage',
+    mindfulMoment: 'Achtsamer Moment',
+    takeAMoment: 'Nimm dir einen Moment...',
+    withNote: 'mit Notiz',
+    whatsMakingYouFeel: 'Was lässt dich so fühlen?',
+    emotionSaved: 'Emotion gespeichert',
+    treat: 'Leckerli',
+    moodGood: 'Gut',
+    moodOkay: 'Okay',
+    moodNotGreat: 'Nicht so gut',
+
     // Time Awareness (ADHD time blindness helper)
     timeUntilEndOfDay: 'Bis Tagesende',
     timeIn: 'in',
@@ -5009,6 +6874,25 @@ export const translations: Record<Language, Translations> = {
     showMore: 'Zeige',
     moreInsights: 'weitere Einblicke',
     hideInsights: 'Einblicke ausblenden',
+    // Insight texts
+    insightBestDayTitle: '{day}e sind deine besten Tage!',
+    insightBestDayDesc: 'Deine Stimmung ist an {day}en meist am besten. Plane wichtige Aufgaben für diesen Tag.',
+    insightBestTimeTitle: 'Du strahlst am hellsten am {period}',
+    insightBestTimeDesc: 'Deine Stimmung ist am {period} meist besser. Plane anspruchsvolle Aufgaben für diese Zeit!',
+    insightHabitBoostsTitle: '„{habit}" hebt deine Stimmung!',
+    insightHabitBoostsDesc: 'Wenn du „{habit}" erledigst, ist deine Stimmung tendenziell {percent}% besser. Weiter so!',
+    insightFocusMoodTitle: 'Fokuszeit = Bessere Stimmung!',
+    insightFocusMoodDesc: 'An Tagen mit Fokus-Sitzungen ist deine Stimmung {percent}% besser. Tiefe Arbeit zahlt sich aus!',
+    insightGratitudeMoodTitle: 'Dankbarkeit hebt deine Stimmung!',
+    insightGratitudeMoodDesc: 'Tage mit Dankbarkeitseinträgen zeigen {percent}% bessere Stimmung. Mach weiter so!',
+    insightMoodUpTitle: 'Deine Stimmung verbessert sich!',
+    insightMoodUpDesc: 'Deine durchschnittliche Stimmung diese Woche ist {percent}% besser als letzte Woche. Du machst das großartig!',
+    insightMoodDownTitle: 'Lass uns deine Stimmung heben!',
+    insightMoodDownDesc: 'Deine Stimmung ist etwas gesunken. Konzentriere dich auf Gewohnheiten, die dir normalerweise gut tun.',
+    insightHighConsistencyTitle: 'Erstaunliche Beständigkeit!',
+    insightHighConsistencyDesc: 'Du hast deine Stimmung an {days} der letzten 14 Tage notiert. Dieses Selbstbewusstsein ist mächtig!',
+    insightLowConsistencyTitle: 'Baue deine Notier-Gewohnheit auf',
+    insightLowConsistencyDesc: 'Versuche, deine Stimmung jeden Tag zur gleichen Zeit zu notieren. Beständigkeit hilft, Muster zu erkennen!',
 
     // Onboarding Hints
     hintFirstMoodTitle: 'Wie fühlst du dich?',
@@ -5076,6 +6960,10 @@ export const translations: Record<Language, Translations> = {
     habitFrequencySelectDays: 'Tage Auswählen',
     habitDurationRequired: 'Erfordert Dauer?',
     habitTargetDuration: 'Zieldauer (Minuten)',
+    // v1.4.0: Habit reminders and schedule
+    addReminder: 'Hinzufügen',
+    noReminders: 'Keine Erinnerungen',
+    habitEventExplanation: 'Dieses Ereignis stammt aus deiner Gewohnheit. Bearbeite die Gewohnheit, um es zu ändern.',
     habitDurationMinutes: 'Minuten',
 
     // Focus timer
@@ -5152,6 +7040,40 @@ export const translations: Record<Language, Translations> = {
     moodEntries: 'Stimmungseinträge',
     focusMinutes: 'Fokusminuten',
     achievements: 'Erfolge',
+    toLevel: 'Zum Level',
+    unlockedPercent: '{percent}% Freigeschaltet',
+    all: 'Alle',
+    unlocked: 'Freigeschaltet',
+    locked: 'Gesperrt',
+    unlockedOn: 'Freigeschaltet am {date}',
+    hiddenAchievement: '???',
+    hidden: 'Versteckt',
+    noAchievementsYet: 'Noch keine Erfolge',
+    startUsingZenFlow: 'Beginne ZenFlow zu nutzen, um Erfolge freizuschalten!',
+    achievementUnlocked: 'Erfolg freigeschaltet!',
+    userLevel: 'Stufe',
+    focusSession: 'Fokus-Sitzung',
+    // TimeHelper
+    timeBlindnessHelper: 'Zeitblindheit-Helfer',
+    visualTimeAwareness: 'Visuelle Zeitwahrnehmung für ADHS',
+    hoursMinutesLeft: '{hours}Std {mins}Min übrig',
+    minutesLeft: '{mins}Min übrig',
+    timesUp: 'Zeit ist um!',
+    youllFinishAt: '🎯 Du wirst fertig um:',
+    nMinutes: '{n} Minuten',
+    pingEveryMinutes: 'Signal alle (Minuten)',
+    audioPings: 'Audio-Signale',
+    testSound: '🔊 Test',
+    soundOn: 'An',
+    soundOff: 'Aus',
+    startTimer: 'Timer starten',
+    pauseTimer: 'Pause',
+    resetTimer: 'Zurücksetzen',
+    adhdTimeManagement: 'ADHS Zeitmanagement',
+    adhdTip1: 'Audio-Signale helfen, die Zeit zu verfolgen',
+    adhdTip2: 'Visueller Countdown reduziert Angst',
+    adhdTip3: 'Endzeit-Vorhersage = bessere Planung',
+    adhdTip4: 'Farbwechsel warnen bei wenig Zeit',
     currentStreak: 'Aktuelle Serie',
     daysInRow: 'Tage am Stück',
     totalFocus: 'Gesamtfokus',
@@ -5160,6 +7082,9 @@ export const translations: Record<Language, Translations> = {
     totalTimes: 'Insgesamt Mal',
     moodDistribution: 'Stimmungsverteilung',
     moodHeatmap: 'Stimmungs-Heatmap',
+    activityHeatmap: 'Aktivitätsübersicht',
+    less: 'Weniger',
+    more: 'Mehr',
     topHabit: 'Beste Gewohnheit',
     completedTimes2: 'Mal',
     profile: 'Profil',
@@ -5175,22 +7100,39 @@ export const translations: Record<Language, Translations> = {
     importReplace: 'Ersetzen',
     exportSuccess: 'Export bereit.',
     exportError: 'Export fehlgeschlagen.',
+    exportCSV: 'CSV exportieren',
+    exportPDF: 'PDF exportieren',
     importSuccess: 'Import abgeschlossen.',
     importError: 'Dateiimport fehlgeschlagen.',
     importedItems: 'Hinzugefügt',
     importAdded: 'hinzugefügt',
     importUpdated: 'aktualisiert',
     importSkipped: 'übersprungen',
+    textTooLong: 'Text ist zu lang (maximal 2000 Zeichen)',
+    invalidInput: 'Bitte überprüfen Sie Ihre Eingabe',
     comingSoon: 'bald verfügbar',
     resetAllData: 'Alle Daten zurücksetzen',
-    privacyTitle: 'Privacy',
-    privacyDescription: 'Your data stays on device. No hidden tracking.',
-    privacyNoTracking: 'No tracking',
-    privacyNoTrackingHint: 'We do not collect behavioral data.',
-    privacyAnalytics: 'Analytics',
+    privacyTitle: 'Datenschutz',
+    privacyDescription: 'Deine Daten bleiben auf dem Gerät. Kein verstecktes Tracking.',
+    privacyNoTracking: 'Kein Tracking',
+    privacyNoTrackingHint: 'Wir sammeln keine Verhaltensdaten.',
+    privacyAnalytics: 'Analytik',
     privacyAnalyticsHint: 'Hilft, die App zu verbessern. Du kannst es deaktivieren.',
     privacyPolicy: 'Datenschutzerklaerung',
     termsOfService: 'Nutzungsbedingungen',
+
+    // v1.2.0 Appearance
+    appearance: 'Darstellung',
+    oledDarkMode: 'OLED Dunkelmodus',
+    oledDarkModeHint: 'Reines Schwarz für OLED-Bildschirme. Spart Akku.',
+
+    // What's New Modal
+    whatsNewTitle: 'Was ist neu',
+    whatsNewVersion: 'Version',
+    whatsNewGotIt: 'Verstanden!',
+
+    // Accessibility
+    skipToContent: 'Zum Hauptinhalt springen',
 
     // v1.1.1 Settings Redesign
     settingsCloudSyncTitle: 'Cloud-Sync aktivieren',
@@ -5203,16 +7145,47 @@ export const translations: Record<Language, Translations> = {
     settingsImportMergeTooltip: 'Importierte Daten werden zu bestehenden hinzugefügt. Duplikate übersprungen.',
     settingsImportReplaceTooltip: '⚠️ Alle aktuellen Daten werden gelöscht und durch Import ersetzt',
     settingsImportReplaceConfirm: 'Gib "REPLACE" ein, um das Löschen aller Daten zu bestätigen',
-    settingsWhatsNewTitle: 'Was ist neu in v1.1.0',
-    settingsWhatsNewInsights: 'Insights-Engine - Sieh, was für DEIN Gehirn funktioniert',
-    settingsWhatsNewTrends: 'Trend-Dashboard - Verfolge langfristigen Fortschritt',
-    settingsWhatsNewSync: 'Intelligente Synchronisation - Zuverlässige Cloud-Sync',
-    settingsWhatsNewOnboarding: 'Schrittweises Onboarding - Keine Überforderung',
-    settingsWhatsNewReengagement: 'Willkommen zurück - Für zurückkehrende Nutzer',
-    settingsWhatsNewLearnMore: 'Mehr erfahren',
+    // Import validation (v1.4.1)
+    invalidFileType: 'Ungültiger Dateityp. JSON erforderlich.',
+    fileTooLarge: 'Datei zu groß (max. 10 MB)',
+    importConfirm: 'Import bestätigen',
+    invalidBackupFormat: 'Ungültiges Backup-Format',
+    settingsWhatsNewTitle: 'Was ist neu in v1.3.0',
+    settingsWhatsNewLeaderboards: 'Bestenlisten',
+    settingsWhatsNewLeaderboardsDesc: 'Anonym mit anderen konkurrieren',
+    settingsWhatsNewSpotify: 'Spotify-Integration',
+    settingsWhatsNewSpotifyDesc: 'Automatische Musikwiedergabe bei Fokus-Sessions',
+    settingsWhatsNewChallenges: 'Freunde-Challenges',
+    settingsWhatsNewChallengesDesc: 'Fordere Freunde heraus, gemeinsam Gewohnheiten aufzubauen',
+    settingsWhatsNewDigest: 'Wöchentlicher Digest',
+    settingsWhatsNewDigestDesc: 'Erhalte Fortschrittsberichte per E-Mail',
+    settingsWhatsNewSecurity: 'Verbesserte Sicherheit',
+    settingsWhatsNewSecurityDesc: 'Besserer Datenschutz & Privatsphäre',
     settingsWhatsNewGotIt: 'Verstanden!',
     settingsSectionAccount: 'Konto & Cloud',
     settingsSectionData: 'Daten & Backup',
+
+    // Weekly Digest (v1.3.0)
+    weeklyDigestTitle: 'Wöchentlicher Fortschrittsbericht',
+    weeklyDigestDescription: 'Erhalte jeden Sonntag eine Zusammenfassung deiner Gewohnheiten, Fokuszeit und Stimmungstrends.',
+    weeklyDigestEnabled: 'Du erhältst Berichte per E-Mail',
+
+    // Changelog
+    changelogTitle: 'Versionshistorie',
+    changelogExpandAll: 'Alle erweitern',
+    changelogCollapseAll: 'Alle einklappen',
+    changelogEmpty: 'Keine Versionshistorie verfügbar',
+    changelogAdded: 'Hinzugefügt',
+    changelogFixed: 'Behoben',
+    changelogChanged: 'Geändert',
+    changelogRemoved: 'Entfernt',
+
+    // Settings Groups (v1.3.0)
+    settingsGroupProfile: 'Profil & Erscheinung',
+    settingsGroupNotifications: 'Benachrichtigungen',
+    settingsGroupData: 'Daten & Datenschutz',
+    settingsGroupAccount: 'Konto',
+    settingsGroupAbout: 'Über',
 
     // GDPR Consent
     consentTitle: 'Datenschutzeinstellungen',
@@ -5231,6 +7204,12 @@ export const translations: Record<Language, Translations> = {
     installLater: 'Später',
     appInstalled: 'App installiert',
     appInstalledDescription: 'ZenFlow ist auf deinem Gerät installiert.',
+    // App Updates (v1.4.1)
+    checkForUpdates: 'Nach Updates suchen',
+    checkingForUpdates: 'Suche nach Updates...',
+    appUpToDate: 'Du hast die neueste Version',
+    openGooglePlay: 'Google Play öffnen',
+    updateCheckFailed: 'Update-Prüfung fehlgeschlagen',
     remindersTitle: 'Erinnerungen',
     remindersDescription: 'Sanfte Stupser um dich auf Kurs zu halten.',
     moodReminder: 'Stimmungs-Check Zeit',
@@ -5248,50 +7227,50 @@ export const translations: Record<Language, Translations> = {
     reminderFocusBody: 'Nur 25 Minuten zum Helden-Modus. Bereit?',
     reminderDismiss: 'Jetzt nicht',
     notificationPermissionTitle: 'Bleib auf Kurs',
-    notificationPermissionDescription: 'Get gentle reminders to track your mood, complete habits, and take focus breaks. Notifications help you build healthy routines.',
-    notificationFeature1Title: 'Daily Mood Reminders',
-    notificationFeature1Desc: 'Check in with yourself every day',
-    notificationFeature2Title: 'Habit Tracking',
-    notificationFeature2Desc: 'Stay consistent with your goals',
-    notificationFeature3Title: 'Focus Sessions',
-    notificationFeature3Desc: 'Get reminded to take productive breaks',
-    notificationAllow: 'Enable Notifications',
-    notificationDeny: 'Maybe Later',
-    notificationPrivacyNote: 'You can change this anytime in Settings. Notifications are local and private.',
-    onboardingStep: 'Step',
-    onboardingValueTitle: 'Track mood + habits in 30 seconds a day',
-    onboardingValueBody: 'Quick check-ins, zero clutter, fully private.',
-    onboardingStart: 'Start in 30 sec',
-    onboardingExplore: 'Explore',
-    onboardingGoalTitle: 'Pick your focus',
-    onboardingGoalLessStress: 'Less stress',
-    onboardingGoalLessStressDesc: 'Calm and gentle habits',
-    onboardingGoalMoreEnergy: 'More energy',
-    onboardingGoalMoreEnergyDesc: 'Sleep, movement, hydration',
-    onboardingGoalBetterRoutine: 'Better routine',
-    onboardingGoalBetterRoutineDesc: 'Stability and rhythm',
-    onboardingContinue: 'Continue',
-    onboardingCheckinTitle: 'Quick check-in',
-    onboardingHabitsPrompt: 'Choose two habits',
-    onboardingPickTwo: 'Pick up to two',
-    onboardingReminderTitle: 'Enable reminders',
-    onboardingReminderBody: 'Choose a time that fits you. No spam.',
-    onboardingMorning: 'Morning',
-    onboardingEvening: 'Evening',
-    onboardingEnable: 'Enable',
-    onboardingSkip: 'Skip for now',
-    onboardingHabitBreathing: 'Breathing',
-    onboardingHabitEveningWalk: 'Evening walk',
-    onboardingHabitStretch: 'Stretch',
-    onboardingHabitJournaling: 'Journaling',
-    onboardingHabitWater: 'Water',
-    onboardingHabitSunlight: 'Sunlight',
-    onboardingHabitMovement: 'Movement',
-    onboardingHabitSleepOnTime: 'Sleep on time',
-    onboardingHabitMorningPlan: 'Morning plan',
-    onboardingHabitRead: 'Read 10 min',
-    onboardingHabitNoScreens: 'No late screens',
-    onboardingHabitDailyReview: 'Daily review',
+    notificationPermissionDescription: 'Erhalte sanfte Erinnerungen, um deine Stimmung zu erfassen, Gewohnheiten abzuschließen und Fokuspausen einzulegen. Benachrichtigungen helfen dir, gesunde Routinen aufzubauen.',
+    notificationFeature1Title: 'Tägliche Stimmungserinnerungen',
+    notificationFeature1Desc: 'Checke jeden Tag bei dir selbst ein',
+    notificationFeature2Title: 'Gewohnheits-Tracking',
+    notificationFeature2Desc: 'Bleib konsequent bei deinen Zielen',
+    notificationFeature3Title: 'Fokus-Sitzungen',
+    notificationFeature3Desc: 'Werde an produktive Pausen erinnert',
+    notificationAllow: 'Benachrichtigungen aktivieren',
+    notificationDeny: 'Vielleicht später',
+    notificationPrivacyNote: 'Du kannst dies jederzeit in den Einstellungen ändern. Benachrichtigungen sind lokal und privat.',
+    onboardingStep: 'Schritt',
+    onboardingValueTitle: 'Erfasse Stimmung + Gewohnheiten in 30 Sekunden täglich',
+    onboardingValueBody: 'Schnelle Check-ins, kein Chaos, völlig privat.',
+    onboardingStart: 'In 30 Sek starten',
+    onboardingExplore: 'Erkunden',
+    onboardingGoalTitle: 'Wähle deinen Fokus',
+    onboardingGoalLessStress: 'Weniger Stress',
+    onboardingGoalLessStressDesc: 'Ruhige und sanfte Gewohnheiten',
+    onboardingGoalMoreEnergy: 'Mehr Energie',
+    onboardingGoalMoreEnergyDesc: 'Schlaf, Bewegung, Flüssigkeit',
+    onboardingGoalBetterRoutine: 'Bessere Routine',
+    onboardingGoalBetterRoutineDesc: 'Stabilität und Rhythmus',
+    onboardingContinue: 'Weiter',
+    onboardingCheckinTitle: 'Schneller Check-in',
+    onboardingHabitsPrompt: 'Wähle zwei Gewohnheiten',
+    onboardingPickTwo: 'Wähle bis zu zwei',
+    onboardingReminderTitle: 'Erinnerungen aktivieren',
+    onboardingReminderBody: 'Wähle eine Zeit, die dir passt. Kein Spam.',
+    onboardingMorning: 'Morgens',
+    onboardingEvening: 'Abends',
+    onboardingEnable: 'Aktivieren',
+    onboardingSkip: 'Jetzt überspringen',
+    onboardingHabitBreathing: 'Atmen',
+    onboardingHabitEveningWalk: 'Abendspaziergang',
+    onboardingHabitStretch: 'Dehnen',
+    onboardingHabitJournaling: 'Tagebuch schreiben',
+    onboardingHabitWater: 'Wasser trinken',
+    onboardingHabitSunlight: 'Sonnenlicht',
+    onboardingHabitMovement: 'Bewegung',
+    onboardingHabitSleepOnTime: 'Rechtzeitig schlafen',
+    onboardingHabitMorningPlan: 'Morgenplanung',
+    onboardingHabitRead: '10 Min lesen',
+    onboardingHabitNoScreens: 'Keine späten Bildschirme',
+    onboardingHabitDailyReview: 'Tägliche Überprüfung',
     account: 'Konto',
     accountDescription: 'Melden Sie sich mit E-Mail an, um Ihren Fortschritt zwischen Geräten zu synchronisieren.',
     emailPlaceholder: 'ihre@email.com',
@@ -5342,6 +7321,7 @@ export const translations: Record<Language, Translations> = {
     cannotBeUndone: 'Diese Aktion kann nicht rückgängig gemacht werden.',
     delete: 'Löschen',
     shareAchievements: 'Fortschritt teilen',
+    shareDialogTitle: 'Teile deinen Fortschritt',
     shareTitle: 'Mein Fortschritt bei ZenFlow',
     shareText: '{streak} Tage in Folge! {habits} Gewohnheiten abgeschlossen, {focus} Minuten Fokus.',
     shareButton: 'Teilen',
@@ -5359,6 +7339,18 @@ export const translations: Record<Language, Translations> = {
     shareSquare: 'Beitrag 1:1',
     shareStory: 'Story 9:16',
     shareFormatHint: '📱 Story-Format für Instagram/TikTok • Beitragsformat für Feeds',
+    shareFailed: 'Teilen fehlgeschlagen. Bitte erneut versuchen.',
+    shareAchievement30: 'Legendär!',
+    shareAchievement14: 'Unaufhaltsam!',
+    shareAchievement7: 'In Flammen!',
+    shareAchievement3: 'Aufsteigender Stern!',
+    shareAchievementStart: 'Gerade gestartet!',
+    shareSubtext30: '30+ Tage Meister',
+    shareSubtext14: '14+ Tage Krieger',
+    shareSubtext7: '7+ Tage Serie',
+    shareSubtext3: '3+ Tage Serie',
+    shareSubtextStart: 'Gewohnheiten aufbauen',
+    dismiss: 'Schließen',
     challengesTitle: 'Herausforderungen & Abzeichen',
     challengesSubtitle: 'Nimm Herausforderungen an und verdiene Abzeichen',
     activeChallenges: 'Aktiv',
@@ -5376,6 +7368,50 @@ export const translations: Record<Language, Translations> = {
     challengeTypeFocus: 'Fokus',
     challengeTypeGratitude: 'Dankbarkeit',
     challengeTypeTotal: 'Gesamt',
+
+    // Friend Challenges
+    friendChallenges: 'Freundes-Herausforderungen',
+    createChallenge: 'Herausforderung erstellen',
+    challengeDescription: 'Fordere Freunde heraus, gemeinsam Gewohnheiten aufzubauen',
+    challengeYourFriends: 'Fordere deine Freunde zu dieser Gewohnheit heraus!',
+    challengeDuration: 'Dauer der Herausforderung',
+    challengeCreated: 'Herausforderung erstellt!',
+    challengeDetails: 'Details der Herausforderung',
+    shareToInvite: 'Teilen, um Freunde einzuladen!',
+    trackWithFriends: 'Verfolge deine Herausforderungen mit Freunden',
+    challengeCode: 'Herausforderungscode',
+    yourProgress: 'Dein Fortschritt',
+    daysLeft: 'Tage übrig',
+    dayChallenge: 'Tage-Herausforderung',
+    challengeCompleted: 'Herausforderung abgeschlossen!',
+    noChallenges: 'Noch keine Herausforderungen',
+    createChallengePrompt: 'Erstelle eine Herausforderung aus jeder Gewohnheit!',
+    completedChallenges: 'Abgeschlossen',
+    expiredChallenges: 'Abgelaufen',
+    youCreated: 'Du hast erstellt',
+    createdBy: 'Erstellt von',
+    confirmDeleteChallenge: 'Diese Herausforderung löschen?',
+    challengeInvite: 'Nimm an meiner Herausforderung teil!',
+    challengeJoinPrompt: 'Mach mit bei ZenFlow!',
+    challengeShareTip: 'Du kannst diese Herausforderung nach dem Erstellen mit Freunden teilen.',
+
+    // Friend Challenges - Join
+    joinChallenge: 'Herausforderung beitreten',
+    enterChallengeCode: 'Gib den Code deines Freundes ein',
+    invalidChallengeCode: 'Ungültiger Code. Format: ZEN-XXXXXX',
+    enterCodeToJoin: 'Gib einen Code ein, um beizutreten',
+    joinChallengeHint: 'Bitte deinen Freund, den Code zu teilen',
+    joining: 'Beitritt...',
+    join: 'Beitreten',
+
+    // Friend Challenges v2
+    challengeWon: '🎉 Fantastisch! Du hast die Herausforderung abgeschlossen!',
+    catchUp: '💪 Du kannst aufholen! Jeder Tag zählt!',
+    aheadOfSchedule: '⭐ Tolles Tempo! Du bist dem Zeitplan voraus!',
+    daysPassed: 'Tage vergangen',
+    daysCompleted: 'Abgeschlossen',
+    daysRemaining: 'Verbleibend',
+
     hyperfocusMode: 'Hyperfokus-Modus',
     hyperfocusStart: 'Starten',
     hyperfocusPause: 'Pause',
@@ -5510,6 +7546,11 @@ export const translations: Record<Language, Translations> = {
     privacyNote: 'Deine Daten werden lokal gespeichert und sind geschützt',
     install: 'App installieren',
     installDescription: 'Installiere ZenFlow auf deinem Startbildschirm',
+    onboardingAgeTitle: 'Willkommen bei ZenFlow',
+    onboardingAgeDesc: 'Diese App ist für Benutzer ab 13 Jahren gedacht',
+    onboardingAgeConfirm: 'Ich bin 13 Jahre oder älter',
+    onboardingAgeNote: 'Mit dem Fortfahren bestätigst du, dass du 13 Jahre oder älter bist',
+    healthConnectAgeDesc: 'Health Connect-Funktionen erfordern ein Alter von 13 Jahren oder älter für einen verantwortungsvollen Umgang mit Gesundheitsdaten.',
     onboardingMoodTitle: 'Wie fühlst du dich?',
     onboardingMoodDescription: 'Verfolge deine Stimmung täglich',
     onboardingHabitsTitle: 'Erstelle deine ersten Gewohnheiten',
@@ -5540,6 +7581,7 @@ export const translations: Record<Language, Translations> = {
     tutorialFeaturesDesc: 'Verfolge deinen Fortschritt und gewinne Schwung:',
     tutorialFeature1: 'Tägliche Stimmung und Energie verfolgen',
     tutorialFeature2: 'Gewohnheiten Schritt für Schritt aufbauen',
+    tutorialFeature2b: '✨ Symbole, Farben & Ziele anpassen!',
     tutorialFeature3: 'Fokus-Sitzungen mit Umgebungsgeräuschen',
     tutorialFeature4: 'Dankbarkeitstagebuch',
     tutorialMoodTitle: 'Verstehe dich selbst',
@@ -5569,6 +7611,7 @@ export const translations: Record<Language, Translations> = {
 
     // Weekly Report
     weeklyReport: 'Wochenbericht',
+    weeklyStory: 'Wochengeschichte',
     incredibleWeek: 'Unglaubliche Woche!',
     pathToMastery: 'Du bist auf dem Weg zur Meisterschaft!',
     greatWork: 'Großartige Arbeit!',
@@ -5579,6 +7622,20 @@ export const translations: Record<Language, Translations> = {
     startSmall: 'Fang klein an, geh vorwärts!',
     bestDay: 'Bester Tag',
     continueBtn: 'Weiter',
+    // Weekly Story translations (ProgressStoriesViewer)
+    storyAverageMoodScore: 'durchschnittliche Stimmung',
+    storyCompletionRate: 'Abschlussrate',
+    storyTopHabit: 'Top Gewohnheit',
+    storyCompletions: 'Abschlüsse',
+    storyPerfectDays: 'perfekte Tage diese Woche',
+    storyAvgSession: 'Durchschn.',
+    storyLongestSession: 'längste',
+    storyMostFocusedOn: 'Am meisten fokussiert auf:',
+    storyTrackYourJourney: 'Verfolge deine Reise mit',
+    storyTapLeft: '← Links tippen',
+    storyTapCenter: 'Mitte tippen zum Pausieren',
+    storyTapRight: 'Rechts tippen →',
+    generating: 'Generieren...',
 
     // Streak Celebration
     dayStreak: 'Tage Serie',
@@ -5745,6 +7802,32 @@ export const translations: Record<Language, Translations> = {
     tasks: 'Aufgaben',
     quests: 'Quests',
     challenges: 'Herausforderungen',
+    openTasks: 'Aufgaben öffnen',
+    openQuests: 'Quests öffnen',
+    openChallenges: 'Herausforderungen öffnen',
+
+    // QuestsPanel UI
+    randomQuests: 'Zufällige Quests',
+    questsPanelSubtitle: 'Schließe Quests ab für Bonus-XP und exklusive Abzeichen',
+    adhdEngagementSystem: 'ADHS-Engagement-System',
+    adhdEngagementDesc: 'Quests bieten Abwechslung und unerwartete Belohnungen - perfekt für ADHS-Gehirne, die Neuheit suchen!',
+    dailyQuest: 'Täglicher Quest',
+    weeklyQuest: 'Wöchentlicher Quest',
+    bonusQuest: 'Bonus-Quest',
+    newQuest: 'Neuer Quest',
+    limitedTime: 'Begrenzte Zeit',
+    generate: 'Generieren',
+    noQuestAvailable: 'Kein Quest verfügbar',
+    noBonusQuestAvailable: 'Kein Bonus-Quest verfügbar',
+    bonusQuestsHint: 'Bonus-Quests erscheinen zufällig oder können manuell generiert werden',
+    questProgress: 'Fortschritt:',
+    questExpired: 'Abgelaufen',
+    questType: 'Quest',
+    questTips: 'Quest-Tipps',
+    questTipDaily: 'Tägliche Quests werden alle 24 Stunden zurückgesetzt',
+    questTipWeekly: 'Wöchentliche Quests bieten 3x XP',
+    questTipBonus: 'Bonus-Quests sind selten mit 5x XP',
+    questTipExpire: 'Schließe Quests ab, bevor sie ablaufen!',
 
     // Companion
     companionHungry: 'Ich bin hungrig... Fütterst du mich?',
@@ -5774,6 +7857,51 @@ export const translations: Record<Language, Translations> = {
     insightsShowMore: 'Mehr anzeigen',
     insightsShowLess: 'Weniger anzeigen',
     insightsDismissedCount: 'Einblicke ausgeblendet',
+    insightsMoodEntries: 'Stimmungseinträge',
+    insightsHabitCount: 'Gewohnheit',
+    insightsFocusSessions: 'Fokus-Sitzungen',
+
+    // Weekly Insights (v1.5.0)
+    weeklyInsights: 'Wochen-Einblicke',
+    weeklyInsightsNotEnoughData: 'Verfolge deinen Fortschritt diese Woche, um personalisierte Einblicke und Empfehlungen freizuschalten.',
+    comparedToLastWeek: 'Im Vergleich zur letzten Woche',
+    recommendations: 'Empfehlungen',
+    avgMood: 'Ø Stimmung',
+    week: 'Woche',
+    // Recommendation translations
+    recLowMoodTitle: 'Stimmung braucht Aufmerksamkeit',
+    recLowMoodDesc: 'Deine Stimmung war diese Woche niedriger als gewöhnlich. Versuche Aktivitäten, die dich normalerweise aufheitern.',
+    recLowMoodAction: 'Probiere eine 5-minütige Atemübung',
+    recHabitDeclineTitle: 'Gewohnheiten sind gesunken',
+    recHabitDeclineDesc: 'Deine Gewohnheitserfüllung ist im Vergleich zur letzten Woche gesunken. Fang klein an, um wieder Schwung zu bekommen.',
+    recHabitDeclineAction: 'Konzentriere dich heute auf eine Gewohnheit',
+    recLowFocusTitle: 'Steigere deine Fokuszeit',
+    recLowFocusDesc: 'Du hattest diese Woche wenige Fokus-Sitzungen. Selbst kurze Sitzungen helfen, die Gewohnheit aufzubauen.',
+    recLowFocusAction: 'Probiere eine 10-minütige Fokus-Sitzung',
+    recGreatProgressTitle: 'Du bist auf dem Vormarsch!',
+    recGreatProgressDesc: 'Dein Fortschritt verbessert sich im Vergleich zur letzten Woche. Weiter so!',
+    recBestDayTitle: 'Das war dein bester Tag',
+    recBestDayDesc: 'Versuche herauszufinden, was diesen Tag besonders gemacht hat, und wiederhole diese Bedingungen.',
+    recGratitudeTitle: 'Übe Dankbarkeit',
+    recGratitudeDesc: 'Das Aufschreiben von Dingen, für die du dankbar bist, kann deine Stimmung langfristig verbessern.',
+    recGratitudeAction: 'Füge heute einen Dankbarkeitseintrag hinzu',
+    recPerfectWeekTitle: 'Erstaunliche Beständigkeit!',
+    recPerfectWeekDesc: 'Du hast die meisten deiner Gewohnheiten diese Woche erfüllt. Du baust starke Routinen auf!',
+    recTopHabitTitle: 'Behalte diese Gewohnheit bei',
+    recTopHabitDesc: 'Dies ist eine deiner beständigsten Gewohnheiten. Sie trägt wahrscheinlich zu deinem Wohlbefinden bei.',
+
+    // Smart Reminders
+    smartReminders: 'Smarte Erinnerungen',
+    smartRemindersNotEnoughData: 'Nutze die App weiter, um personalisierte Erinnerungsvorschläge basierend auf deinen Mustern zu erhalten.',
+    smartRemindersOptimized: 'Deine Erinnerungszeiten sind gut optimiert! Weiter so.',
+    smartRemindersDescription: 'Personalisierte Vorschläge basierend auf deinen Nutzungsmustern',
+    suggestions: 'Vorschläge',
+    highConfidence: 'Hohe Sicherheit',
+    mediumConfidence: 'Mittel',
+    lowConfidence: 'Vorschlag',
+    apply: 'Anwenden',
+    habitRemindersOptimal: 'Optimale Gewohnheitszeiten',
+    patternBased: 'Muster',
 
     // Sync status
     syncOffline: 'Offline',
@@ -5847,6 +7975,24 @@ export const translations: Record<Language, Translations> = {
     trendsInsightHint: 'Möchtest du personalisierte Insights?',
     trendsInsightHintDesc: 'Schaue dir das Insights-Panel auf der Startseite an, um Muster in deinen Daten zu entdecken.',
 
+    // Health Connect (v1.2.0)
+    healthConnect: 'Health Connect',
+    healthConnectDescription: 'Mit Google Health Connect synchronisieren',
+    healthConnectLoading: 'Health Connect wird überprüft...',
+    healthConnectNotAvailable: 'Auf diesem Gerät nicht verfügbar',
+    healthConnectUpdateRequired: 'Bitte aktualisiere die Health Connect App',
+    mindfulness: 'Achtsamkeit',
+    sleep: 'Schlaf',
+    steps: 'Schritte',
+    stepsLabel: 'Schritte',
+    grantPermissions: 'Berechtigungen erteilen',
+    todayHealth: 'Gesundheit heute',
+    syncFocusSessions: 'Fokus-Sitzungen synchronisieren',
+    syncFocusSessionsHint: 'Fokus-Sitzungen als Achtsamkeit in Health Connect speichern',
+    openHealthConnect: 'Health Connect öffnen',
+    refresh: 'Aktualisieren',
+    permissions: 'Berechtigungen',
+
     // Quest Templates (für randomQuests.ts)
     questMorningMomentum: 'Morgen-Schwung',
     questMorningMomentumDesc: 'Erledige 3 Gewohnheiten vor 12:00 Uhr',
@@ -5872,6 +8018,79 @@ export const translations: Record<Language, Translations> = {
     questLightningRoundDesc: 'Erledige 5 schnelle Aufgaben in 15 Minuten',
     questWeeklyWarrior: 'Wöchentlicher Krieger',
     questWeeklyWarriorDesc: 'Erledige 7 Tage lang Gewohnheiten',
+
+    // Feedback System
+    feedbackTitle: 'Feedback senden',
+    feedbackSubtitle: 'Hilf uns, die App zu verbessern',
+    feedbackCategoryBug: 'Fehler melden',
+    feedbackCategoryFeature: 'Funktion vorschlagen',
+    feedbackCategoryOther: 'Sonstiges',
+    feedbackMessagePlaceholder: 'Beschreibe dein Problem oder deinen Vorschlag...',
+    feedbackEmailPlaceholder: 'E-Mail (optional)',
+    feedbackSubmit: 'Senden',
+    feedbackSuccess: 'Danke für dein Feedback!',
+    feedbackError: 'Senden fehlgeschlagen. Versuche es erneut.',
+    feedbackSending: 'Wird gesendet...',
+    sendFeedback: 'Feedback senden',
+
+    // App Rating
+    rateAppTitle: 'Gefällt dir ZenFlow?',
+    rateAppSubtitle: 'Bewerte uns im Play Store',
+    rateAppButton: 'Bewerten',
+    rateAppLater: 'Später',
+
+    // App Updates
+    updateAvailable: 'Update verfügbar',
+    updateDescription: 'Eine neue Version mit Verbesserungen und Fehlerbehebungen ist bereit zur Installation.',
+    updateDescriptionCritical: 'Ein kritisches Update ist erforderlich, um die App weiter zu nutzen.',
+    updateNow: 'Jetzt aktualisieren',
+    updateAvailableFor: 'Seit {days} Tagen verfügbar',
+
+    // Lock Screen Quick Actions
+    quickActions: 'Schnellaktionen',
+    quickActionsDescription: 'Benachrichtigung mit Schnellaktionen auf dem Sperrbildschirm anzeigen',
+    quickActionsEnabled: 'Schnellaktionen aktiviert',
+    quickActionsDisabled: 'Schnellaktionen deaktiviert',
+    quickActionLogMood: 'Stimmung erfassen',
+    quickActionStartFocus: 'Fokus starten',
+    quickActionViewHabits: 'Gewohnheiten',
+
+    // Notification Sounds
+    notificationSound: 'Benachrichtigungston',
+    notificationSoundDescription: 'Wähle den Ton für Erinnerungen',
+    soundDefault: 'Standard',
+    soundDefaultDesc: 'System-Benachrichtigungston',
+    soundGentle: 'Sanft',
+    soundGentleDesc: 'Nur Vibration',
+    soundChime: 'Klingel',
+    soundChimeDesc: 'Kurzer Benachrichtigungston',
+    soundSilent: 'Lautlos',
+    soundSilentDesc: 'Kein Ton oder Vibration',
+    testNotification: 'Testbenachrichtigung',
+    testNotificationHint: 'Sendet in 5 Sekunden eine Testbenachrichtigung zur Überprüfung.',
+
+    // Insight Card Details
+    insightConfidence: 'Vertrauen',
+    insightDataPoints: 'Datenpunkte',
+    insightAvgMoodWith: 'Durchschn. Stimmung mit Gewohnheit',
+    insightAvgMoodWithout: 'Durchschn. Stimmung ohne Gewohnheit',
+    insightSampleDays: 'Stichprobentage',
+    insightBestActivity: 'Beste Aktivität',
+    insightPeakTime: 'Spitzenzeit',
+    insightAvgDuration: 'Durchschn. Dauer',
+    insightSessions: 'Sitzungen',
+    insightTagOccurrences: 'Tag-Vorkommen',
+    insightMoodWithTag: 'Stimmung mit Tag',
+    insightMoodWithoutTag: 'Stimmung ohne Tag',
+    insightDisclaimer: 'Dieser Einblick basiert auf deinen Daten. Muster können sich ändern.',
+    times: 'Mal',
+
+    // Stats Empty States
+    noMoodDataYet: 'Noch keine Stimmungsdaten',
+    noEmotionDataYet: 'Noch keine Emotionsdaten',
+
+    // XP Display
+    xp: 'XP',
   },
 
   fr: {
@@ -5961,6 +8180,22 @@ export const translations: Record<Language, Translations> = {
     scheduleNote: 'Note (optionnel)',
     scheduleNotePlaceholder: 'Ajouter des détails ou des rappels...',
 
+    // Mindfulness v1.5.0
+    needInspiration: 'Besoin d\'inspiration?',
+    journalPrompt: 'Question',
+    dailyPrompt: 'Question du Jour',
+    usePrompt: 'Utiliser cette question',
+    shufflePrompt: 'Autre question',
+    mindfulMoment: 'Moment de pleine conscience',
+    takeAMoment: 'Prends un moment...',
+    withNote: 'avec note',
+    whatsMakingYouFeel: 'Qu\'est-ce qui te fait ressentir cela?',
+    emotionSaved: 'Émotion enregistrée',
+    treat: 'friandise',
+    moodGood: 'Bien',
+    moodOkay: 'Correct',
+    moodNotGreat: 'Pas très bien',
+
     // Time Awareness (ADHD time blindness helper)
     timeUntilEndOfDay: 'Jusqu\'à la fin de journée',
     timeIn: 'dans',
@@ -5979,6 +8214,25 @@ export const translations: Record<Language, Translations> = {
     showMore: 'Afficher',
     moreInsights: 'plus d\'insights',
     hideInsights: 'Masquer les insights',
+    // Insight texts
+    insightBestDayTitle: 'Les {day}s sont vos meilleurs jours !',
+    insightBestDayDesc: 'Votre humeur tend à être meilleure les {day}s. Planifiez les tâches importantes ce jour-là.',
+    insightBestTimeTitle: 'Vous brillez le plus le {period}',
+    insightBestTimeDesc: 'Votre humeur est généralement meilleure le {period}. Planifiez les tâches exigeantes à ce moment !',
+    insightHabitBoostsTitle: '« {habit} » améliore votre humeur !',
+    insightHabitBoostsDesc: 'Quand vous complétez « {habit} », votre humeur tend à être {percent}% meilleure. Continuez !',
+    insightFocusMoodTitle: 'Focus = Meilleure humeur !',
+    insightFocusMoodDesc: 'Les jours avec des sessions de focus, votre humeur est {percent}% meilleure. Le travail profond paie !',
+    insightGratitudeMoodTitle: 'La gratitude améliore votre humeur !',
+    insightGratitudeMoodDesc: 'Les jours avec des entrées de gratitude montrent {percent}% de meilleure humeur. Continuez à pratiquer !',
+    insightMoodUpTitle: 'Votre humeur s\'améliore !',
+    insightMoodUpDesc: 'Votre humeur moyenne cette semaine est {percent}% meilleure que la semaine dernière. Vous faites du bon travail !',
+    insightMoodDownTitle: 'Remontons votre humeur !',
+    insightMoodDownDesc: 'Votre humeur a un peu baissé. Essayez de vous concentrer sur les habitudes qui vous font habituellement du bien.',
+    insightHighConsistencyTitle: 'Constance incroyable !',
+    insightHighConsistencyDesc: 'Vous avez noté votre humeur {days} des 14 derniers jours. Cette conscience de soi est puissante !',
+    insightLowConsistencyTitle: 'Construisez votre habitude de notation',
+    insightLowConsistencyDesc: 'Essayez de noter votre humeur à la même heure chaque jour. La constance aide à repérer les tendances !',
 
     // Onboarding Hints
     hintFirstMoodTitle: 'Comment vous sentez-vous ?',
@@ -6046,6 +8300,10 @@ export const translations: Record<Language, Translations> = {
     habitFrequencySelectDays: 'Sélectionner les Jours',
     habitDurationRequired: 'Nécessite une Durée?',
     habitTargetDuration: 'Durée Cible (minutes)',
+    // v1.4.0: Habit reminders and schedule
+    addReminder: 'Ajouter',
+    noReminders: 'Aucun rappel',
+    habitEventExplanation: 'Cet événement vient de votre habitude. Modifiez l\'habitude pour le changer.',
     habitDurationMinutes: 'minutes',
 
     // Focus timer
@@ -6122,6 +8380,40 @@ export const translations: Record<Language, Translations> = {
     moodEntries: 'Entrées d\'humeur',
     focusMinutes: 'Minutes de focus',
     achievements: 'Réalisations',
+    toLevel: 'Au niveau',
+    unlockedPercent: '{percent}% Débloqué',
+    all: 'Tous',
+    unlocked: 'Débloqués',
+    locked: 'Verrouillés',
+    unlockedOn: 'Débloqué le {date}',
+    hiddenAchievement: '???',
+    hidden: 'Caché',
+    noAchievementsYet: 'Pas encore de réalisations',
+    startUsingZenFlow: 'Commencez à utiliser ZenFlow pour débloquer des réalisations !',
+    achievementUnlocked: 'Réalisation débloquée !',
+    userLevel: 'Niveau',
+    focusSession: 'Session de concentration',
+    // TimeHelper
+    timeBlindnessHelper: 'Aide à la cécité temporelle',
+    visualTimeAwareness: 'Conscience visuelle du temps pour TDAH',
+    hoursMinutesLeft: '{hours}h {mins}m restantes',
+    minutesLeft: '{mins}m restantes',
+    timesUp: "C'est l'heure !",
+    youllFinishAt: '🎯 Vous finirez à :',
+    nMinutes: '{n} minutes',
+    pingEveryMinutes: 'Signal toutes les (minutes)',
+    audioPings: 'Signaux audio',
+    testSound: '🔊 Test',
+    soundOn: 'Activé',
+    soundOff: 'Désactivé',
+    startTimer: 'Démarrer le minuteur',
+    pauseTimer: 'Pause',
+    resetTimer: 'Réinitialiser',
+    adhdTimeManagement: 'Gestion du temps TDAH',
+    adhdTip1: 'Les signaux audio aident à suivre le temps',
+    adhdTip2: "Le compte à rebours visuel réduit l'anxiété",
+    adhdTip3: 'Prédiction de fin = meilleure planification',
+    adhdTip4: 'Les changements de couleur avertissent du temps restant',
     currentStreak: 'Série actuelle',
     daysInRow: 'Jours consécutifs',
     totalFocus: 'Focus total',
@@ -6130,6 +8422,9 @@ export const translations: Record<Language, Translations> = {
     totalTimes: 'Fois au total',
     moodDistribution: 'Distribution de l\'humeur',
     moodHeatmap: 'Calendrier d\'humeur',
+    activityHeatmap: 'Aperçu de l\'activité',
+    less: 'Moins',
+    more: 'Plus',
     topHabit: 'Meilleure habitude',
     completedTimes2: 'fois',
     profile: 'Profil',
@@ -6145,22 +8440,39 @@ export const translations: Record<Language, Translations> = {
     importReplace: 'Remplacer',
     exportSuccess: 'Export prêt.',
     exportError: 'Échec de l\'export.',
+    exportCSV: 'Exporter CSV',
+    exportPDF: 'Exporter PDF',
     importSuccess: 'Import terminé.',
     importError: 'Échec de l\'import.',
     importedItems: 'Ajouté',
     importAdded: 'ajouté',
     importUpdated: 'mis à jour',
     importSkipped: 'ignoré',
+    textTooLong: 'Le texte est trop long (2000 caractères maximum)',
+    invalidInput: 'Veuillez vérifier votre saisie',
     comingSoon: 'bientôt',
     resetAllData: 'Réinitialiser toutes les données',
-    privacyTitle: 'Privacy',
-    privacyDescription: 'Your data stays on device. No hidden tracking.',
-    privacyNoTracking: 'No tracking',
-    privacyNoTrackingHint: 'We do not collect behavioral data.',
-    privacyAnalytics: 'Analytics',
+    privacyTitle: 'Confidentialité',
+    privacyDescription: 'Tes données restent sur l\'appareil. Pas de suivi caché.',
+    privacyNoTracking: 'Pas de suivi',
+    privacyNoTrackingHint: 'Nous ne collectons pas de données comportementales.',
+    privacyAnalytics: 'Analytiques',
     privacyAnalyticsHint: 'Aide a ameliorer l\'app. Vous pouvez le desactiver.',
     privacyPolicy: 'Politique de confidentialite',
     termsOfService: 'Conditions d\'utilisation',
+
+    // v1.2.0 Appearance
+    appearance: 'Apparence',
+    oledDarkMode: 'Mode sombre OLED',
+    oledDarkModeHint: 'Thème noir pur pour écrans OLED. Économise la batterie.',
+
+    // What's New Modal
+    whatsNewTitle: 'Nouveautés',
+    whatsNewVersion: 'Version',
+    whatsNewGotIt: 'Compris !',
+
+    // Accessibility
+    skipToContent: 'Aller au contenu principal',
 
     // v1.1.1 Settings Redesign
     settingsCloudSyncTitle: 'Activer la synchronisation cloud',
@@ -6173,16 +8485,47 @@ export const translations: Record<Language, Translations> = {
     settingsImportMergeTooltip: 'Les données importées seront ajoutées aux existantes. Doublons ignorés.',
     settingsImportReplaceTooltip: '⚠️ Toutes les données actuelles seront supprimées et remplacées',
     settingsImportReplaceConfirm: 'Tapez "REPLACE" pour confirmer la suppression de toutes les données',
-    settingsWhatsNewTitle: 'Nouveautés dans v1.1.0',
-    settingsWhatsNewInsights: 'Moteur d\'insights - Découvrez ce qui fonctionne pour VOTRE cerveau',
-    settingsWhatsNewTrends: 'Tableau de tendances - Suivez les progrès à long terme',
-    settingsWhatsNewSync: 'Sync intelligente - Synchronisation cloud fiable',
-    settingsWhatsNewOnboarding: 'Intégration progressive - Sans surcharge',
-    settingsWhatsNewReengagement: 'Bienvenue de retour - Pour les utilisateurs de retour',
-    settingsWhatsNewLearnMore: 'En savoir plus',
+    // Import validation (v1.4.1)
+    invalidFileType: 'Type de fichier invalide. JSON requis.',
+    fileTooLarge: 'Fichier trop volumineux (max 10 Mo)',
+    importConfirm: 'Confirmer l\'importation',
+    invalidBackupFormat: 'Format de sauvegarde invalide',
+    settingsWhatsNewTitle: 'Nouveautés dans v1.3.0',
+    settingsWhatsNewLeaderboards: 'Classements',
+    settingsWhatsNewLeaderboardsDesc: 'Rivalisez anonymement avec les autres',
+    settingsWhatsNewSpotify: 'Intégration Spotify',
+    settingsWhatsNewSpotifyDesc: 'Lecture automatique pendant les sessions de focus',
+    settingsWhatsNewChallenges: 'Défis entre amis',
+    settingsWhatsNewChallengesDesc: 'Défiez vos amis à créer des habitudes ensemble',
+    settingsWhatsNewDigest: 'Digest hebdomadaire',
+    settingsWhatsNewDigestDesc: 'Recevez des rapports de progrès par email',
+    settingsWhatsNewSecurity: 'Sécurité améliorée',
+    settingsWhatsNewSecurityDesc: 'Meilleure protection des données et confidentialité',
     settingsWhatsNewGotIt: 'Compris !',
     settingsSectionAccount: 'Compte et cloud',
     settingsSectionData: 'Données et sauvegarde',
+
+    // Weekly Digest (v1.3.0)
+    weeklyDigestTitle: 'Rapport de progression hebdomadaire',
+    weeklyDigestDescription: 'Recevez un résumé hebdomadaire de vos habitudes, temps de concentration et tendances d\'humeur chaque dimanche.',
+    weeklyDigestEnabled: 'Vous recevrez les rapports par email',
+
+    // Changelog
+    changelogTitle: 'Historique des versions',
+    changelogExpandAll: 'Tout développer',
+    changelogCollapseAll: 'Tout réduire',
+    changelogEmpty: 'Aucun historique de versions disponible',
+    changelogAdded: 'Ajouté',
+    changelogFixed: 'Corrigé',
+    changelogChanged: 'Modifié',
+    changelogRemoved: 'Supprimé',
+
+    // Settings Groups (v1.3.0)
+    settingsGroupProfile: 'Profil et apparence',
+    settingsGroupNotifications: 'Notifications',
+    settingsGroupData: 'Données et confidentialité',
+    settingsGroupAccount: 'Compte',
+    settingsGroupAbout: 'À propos',
 
     // GDPR Consent
     consentTitle: 'Paramètres de confidentialité',
@@ -6201,6 +8544,12 @@ export const translations: Record<Language, Translations> = {
     installLater: 'Plus tard',
     appInstalled: 'App installée',
     appInstalledDescription: 'ZenFlow est installé sur votre appareil.',
+    // App Updates (v1.4.1)
+    checkForUpdates: 'Vérifier les mises à jour',
+    checkingForUpdates: 'Vérification des mises à jour...',
+    appUpToDate: 'Vous avez la dernière version',
+    openGooglePlay: 'Ouvrir Google Play',
+    updateCheckFailed: 'Échec de la vérification',
     remindersTitle: 'Rappels',
     remindersDescription: 'Des petits coups de pouce pour te garder sur la bonne voie.',
     moodReminder: 'Heure du check-in humeur',
@@ -6218,50 +8567,50 @@ export const translations: Record<Language, Translations> = {
     reminderFocusBody: 'Juste 25 min pour le mode héros. C\'est parti?',
     reminderDismiss: 'Pas maintenant',
     notificationPermissionTitle: 'Reste sur la bonne voie',
-    notificationPermissionDescription: 'Get gentle reminders to track your mood, complete habits, and take focus breaks. Notifications help you build healthy routines.',
-    notificationFeature1Title: 'Daily Mood Reminders',
-    notificationFeature1Desc: 'Check in with yourself every day',
-    notificationFeature2Title: 'Habit Tracking',
-    notificationFeature2Desc: 'Stay consistent with your goals',
-    notificationFeature3Title: 'Focus Sessions',
-    notificationFeature3Desc: 'Get reminded to take productive breaks',
-    notificationAllow: 'Enable Notifications',
-    notificationDeny: 'Maybe Later',
-    notificationPrivacyNote: 'You can change this anytime in Settings. Notifications are local and private.',
-    onboardingStep: 'Step',
-    onboardingValueTitle: 'Track mood + habits in 30 seconds a day',
-    onboardingValueBody: 'Quick check-ins, zero clutter, fully private.',
-    onboardingStart: 'Start in 30 sec',
-    onboardingExplore: 'Explore',
-    onboardingGoalTitle: 'Pick your focus',
-    onboardingGoalLessStress: 'Less stress',
-    onboardingGoalLessStressDesc: 'Calm and gentle habits',
-    onboardingGoalMoreEnergy: 'More energy',
-    onboardingGoalMoreEnergyDesc: 'Sleep, movement, hydration',
-    onboardingGoalBetterRoutine: 'Better routine',
-    onboardingGoalBetterRoutineDesc: 'Stability and rhythm',
-    onboardingContinue: 'Continue',
-    onboardingCheckinTitle: 'Quick check-in',
-    onboardingHabitsPrompt: 'Choose two habits',
-    onboardingPickTwo: 'Pick up to two',
-    onboardingReminderTitle: 'Enable reminders',
-    onboardingReminderBody: 'Choose a time that fits you. No spam.',
-    onboardingMorning: 'Morning',
-    onboardingEvening: 'Evening',
-    onboardingEnable: 'Enable',
-    onboardingSkip: 'Skip for now',
-    onboardingHabitBreathing: 'Breathing',
-    onboardingHabitEveningWalk: 'Evening walk',
-    onboardingHabitStretch: 'Stretch',
-    onboardingHabitJournaling: 'Journaling',
-    onboardingHabitWater: 'Water',
-    onboardingHabitSunlight: 'Sunlight',
-    onboardingHabitMovement: 'Movement',
-    onboardingHabitSleepOnTime: 'Sleep on time',
-    onboardingHabitMorningPlan: 'Morning plan',
-    onboardingHabitRead: 'Read 10 min',
-    onboardingHabitNoScreens: 'No late screens',
-    onboardingHabitDailyReview: 'Daily review',
+    notificationPermissionDescription: 'Reçois des rappels doux pour suivre ton humeur, compléter tes habitudes et prendre des pauses de concentration. Les notifications t\'aident à créer des routines saines.',
+    notificationFeature1Title: 'Rappels d\'humeur quotidiens',
+    notificationFeature1Desc: 'Fais le point avec toi-même chaque jour',
+    notificationFeature2Title: 'Suivi des habitudes',
+    notificationFeature2Desc: 'Reste constant avec tes objectifs',
+    notificationFeature3Title: 'Sessions de concentration',
+    notificationFeature3Desc: 'Reçois des rappels pour prendre des pauses productives',
+    notificationAllow: 'Activer les notifications',
+    notificationDeny: 'Peut-être plus tard',
+    notificationPrivacyNote: 'Tu peux changer cela à tout moment dans les Paramètres. Les notifications sont locales et privées.',
+    onboardingStep: 'Étape',
+    onboardingValueTitle: 'Suis ton humeur + habitudes en 30 secondes par jour',
+    onboardingValueBody: 'Check-ins rapides, zéro désordre, totalement privé.',
+    onboardingStart: 'Commencer en 30 sec',
+    onboardingExplore: 'Explorer',
+    onboardingGoalTitle: 'Choisis ton focus',
+    onboardingGoalLessStress: 'Moins de stress',
+    onboardingGoalLessStressDesc: 'Habitudes calmes et douces',
+    onboardingGoalMoreEnergy: 'Plus d\'énergie',
+    onboardingGoalMoreEnergyDesc: 'Sommeil, mouvement, hydratation',
+    onboardingGoalBetterRoutine: 'Meilleure routine',
+    onboardingGoalBetterRoutineDesc: 'Stabilité et rythme',
+    onboardingContinue: 'Continuer',
+    onboardingCheckinTitle: 'Check-in rapide',
+    onboardingHabitsPrompt: 'Choisis deux habitudes',
+    onboardingPickTwo: 'Choisis jusqu\'à deux',
+    onboardingReminderTitle: 'Activer les rappels',
+    onboardingReminderBody: 'Choisis une heure qui te convient. Pas de spam.',
+    onboardingMorning: 'Matin',
+    onboardingEvening: 'Soir',
+    onboardingEnable: 'Activer',
+    onboardingSkip: 'Passer pour l\'instant',
+    onboardingHabitBreathing: 'Respiration',
+    onboardingHabitEveningWalk: 'Promenade du soir',
+    onboardingHabitStretch: 'Étirement',
+    onboardingHabitJournaling: 'Journalisation',
+    onboardingHabitWater: 'Boire de l\'eau',
+    onboardingHabitSunlight: 'Lumière du soleil',
+    onboardingHabitMovement: 'Mouvement',
+    onboardingHabitSleepOnTime: 'Dormir à temps',
+    onboardingHabitMorningPlan: 'Plan du matin',
+    onboardingHabitRead: 'Lire 10 min',
+    onboardingHabitNoScreens: 'Pas d\'écrans tard',
+    onboardingHabitDailyReview: 'Bilan quotidien',
     account: 'Compte',
     accountDescription: 'Connectez-vous par e-mail pour synchroniser votre progression entre appareils.',
     emailPlaceholder: 'votre@email.com',
@@ -6312,6 +8661,7 @@ export const translations: Record<Language, Translations> = {
     cannotBeUndone: 'Cette action ne peut pas être annulée.',
     delete: 'Supprimer',
     shareAchievements: 'Partager vos progrès',
+    shareDialogTitle: 'Partagez vos progrès',
     shareTitle: 'Mes progrès sur ZenFlow',
     shareText: '{streak} jours d\'affilée! {habits} habitudes complétées, {focus} minutes de concentration.',
     shareButton: 'Partager',
@@ -6329,6 +8679,18 @@ export const translations: Record<Language, Translations> = {
     shareSquare: 'Post 1:1',
     shareStory: 'Story 9:16',
     shareFormatHint: '📱 Format story pour Instagram/TikTok • Format post pour les fils',
+    shareFailed: 'Échec du partage. Veuillez réessayer.',
+    shareAchievement30: 'Légendaire!',
+    shareAchievement14: 'Inarrêtable!',
+    shareAchievement7: 'En feu!',
+    shareAchievement3: 'Étoile montante!',
+    shareAchievementStart: 'Vient de commencer!',
+    shareSubtext30: 'Maître 30+ jours',
+    shareSubtext14: 'Guerrier 14+ jours',
+    shareSubtext7: 'Série 7+ jours',
+    shareSubtext3: 'Série 3+ jours',
+    shareSubtextStart: 'Construction d\'habitudes',
+    dismiss: 'Fermer',
     challengesTitle: 'Défis et badges',
     challengesSubtitle: 'Relève des défis et gagne des badges',
     activeChallenges: 'Actifs',
@@ -6346,6 +8708,50 @@ export const translations: Record<Language, Translations> = {
     challengeTypeFocus: 'Focus',
     challengeTypeGratitude: 'Gratitude',
     challengeTypeTotal: 'Total',
+
+    // Friend Challenges
+    friendChallenges: 'Défis entre amis',
+    createChallenge: 'Créer un défi',
+    challengeDescription: 'Défiez vos amis pour construire des habitudes ensemble',
+    challengeYourFriends: 'Défiez vos amis avec cette habitude!',
+    challengeDuration: 'Durée du défi',
+    challengeCreated: 'Défi créé!',
+    challengeDetails: 'Détails du défi',
+    shareToInvite: 'Partagez pour inviter des amis!',
+    trackWithFriends: 'Suivez vos défis avec des amis',
+    challengeCode: 'Code du défi',
+    yourProgress: 'Votre progression',
+    daysLeft: 'jours restants',
+    dayChallenge: 'jours de défi',
+    challengeCompleted: 'Défi terminé!',
+    noChallenges: 'Pas encore de défis',
+    createChallengePrompt: 'Créez un défi à partir de n\'importe quelle habitude!',
+    completedChallenges: 'Terminés',
+    expiredChallenges: 'Expirés',
+    youCreated: 'Vous avez créé',
+    createdBy: 'Créé par',
+    confirmDeleteChallenge: 'Supprimer ce défi?',
+    challengeInvite: 'Rejoins mon défi!',
+    challengeJoinPrompt: 'Rejoins-moi sur ZenFlow!',
+    challengeShareTip: 'Vous pourrez partager ce défi avec des amis après l\'avoir créé.',
+
+    // Friend Challenges - Join
+    joinChallenge: 'Rejoindre le défi',
+    enterChallengeCode: 'Entrez le code de votre ami',
+    invalidChallengeCode: 'Code invalide. Format: ZEN-XXXXXX',
+    enterCodeToJoin: 'Entrez un code de défi pour rejoindre',
+    joinChallengeHint: 'Demandez à votre ami de partager le code du défi',
+    joining: 'Rejoindre...',
+    join: 'Rejoindre',
+
+    // Friend Challenges v2
+    challengeWon: '🎉 Incroyable! Tu as terminé le défi!',
+    catchUp: '💪 Tu peux rattraper! Chaque jour compte!',
+    aheadOfSchedule: '⭐ Super rythme! Tu es en avance!',
+    daysPassed: 'Jours passés',
+    daysCompleted: 'Complétés',
+    daysRemaining: 'Restants',
+
     hyperfocusMode: 'Mode Hyperfocus',
     hyperfocusStart: 'Commencer',
     hyperfocusPause: 'Pause',
@@ -6480,6 +8886,11 @@ export const translations: Record<Language, Translations> = {
     privacyNote: 'Vos données sont stockées localement et protégées',
     install: 'Installer l\'application',
     installDescription: 'Installez ZenFlow sur votre écran d\'accueil',
+    onboardingAgeTitle: 'Bienvenue sur ZenFlow',
+    onboardingAgeDesc: 'Cette application est conçue pour les utilisateurs de 13 ans et plus',
+    onboardingAgeConfirm: 'J\'ai 13 ans ou plus',
+    onboardingAgeNote: 'En continuant, vous confirmez que vous avez 13 ans ou plus',
+    healthConnectAgeDesc: 'Les fonctionnalités Health Connect nécessitent d\'avoir 13 ans ou plus pour utiliser les données de santé de manière responsable.',
     onboardingMoodTitle: 'Comment vous sentez-vous?',
     onboardingMoodDescription: 'Suivez votre humeur quotidiennement',
     onboardingHabitsTitle: 'Créez vos premières habitudes',
@@ -6510,6 +8921,7 @@ export const translations: Record<Language, Translations> = {
     tutorialFeaturesDesc: 'Suivez vos progrès et gagnez en élan:',
     tutorialFeature1: 'Suivre l\'humeur et l\'énergie quotidiennes',
     tutorialFeature2: 'Construire des habitudes étape par étape',
+    tutorialFeature2b: '✨ Personnalisez icônes, couleurs et objectifs!',
     tutorialFeature3: 'Sessions de concentration avec sons ambiants',
     tutorialFeature4: 'Journal de gratitude',
     tutorialMoodTitle: 'Comprenez-vous',
@@ -6539,6 +8951,7 @@ export const translations: Record<Language, Translations> = {
 
     // Weekly Report
     weeklyReport: 'Rapport hebdomadaire',
+    weeklyStory: 'Histoire de la semaine',
     incredibleWeek: 'Semaine incroyable!',
     pathToMastery: 'Vous êtes sur la voie de la maîtrise!',
     greatWork: 'Excellent travail!',
@@ -6549,6 +8962,20 @@ export const translations: Record<Language, Translations> = {
     startSmall: 'Commencez petit, avancez!',
     bestDay: 'Meilleur jour',
     continueBtn: 'Continuer',
+    // Weekly Story translations (ProgressStoriesViewer)
+    storyAverageMoodScore: 'score d\'humeur moyen',
+    storyCompletionRate: 'taux de complétion',
+    storyTopHabit: 'Habitude principale',
+    storyCompletions: 'complétées',
+    storyPerfectDays: 'jours parfaits cette semaine',
+    storyAvgSession: 'session moy.',
+    storyLongestSession: 'plus longue',
+    storyMostFocusedOn: 'Plus concentré sur:',
+    storyTrackYourJourney: 'Suivez votre parcours avec',
+    storyTapLeft: '← Appuyez à gauche',
+    storyTapCenter: 'Appuyez au centre pour pause',
+    storyTapRight: 'Appuyez à droite →',
+    generating: 'Génération...',
 
     // Streak Celebration
     dayStreak: 'jours de suite',
@@ -6715,6 +9142,32 @@ export const translations: Record<Language, Translations> = {
     tasks: 'Tâches',
     quests: 'Quêtes',
     challenges: 'Défis',
+    openTasks: 'Ouvrir les tâches',
+    openQuests: 'Ouvrir les quêtes',
+    openChallenges: 'Ouvrir les défis',
+
+    // QuestsPanel UI
+    randomQuests: 'Quêtes aléatoires',
+    questsPanelSubtitle: 'Complète des quêtes pour des XP bonus et des badges exclusifs',
+    adhdEngagementSystem: "Système d'engagement TDAH",
+    adhdEngagementDesc: 'Les quêtes offrent variété et récompenses inattendues - parfait pour les cerveaux TDAH en quête de nouveauté!',
+    dailyQuest: 'Quête quotidienne',
+    weeklyQuest: 'Quête hebdomadaire',
+    bonusQuest: 'Quête bonus',
+    newQuest: 'Nouvelle quête',
+    limitedTime: 'Temps limité',
+    generate: 'Générer',
+    noQuestAvailable: 'Aucune quête disponible',
+    noBonusQuestAvailable: 'Aucune quête bonus disponible',
+    bonusQuestsHint: 'Les quêtes bonus apparaissent aléatoirement ou peuvent être générées manuellement',
+    questProgress: 'Progrès:',
+    questExpired: 'Expiré',
+    questType: 'Quête',
+    questTips: 'Conseils pour les quêtes',
+    questTipDaily: 'Les quêtes quotidiennes se réinitialisent toutes les 24 heures',
+    questTipWeekly: 'Les quêtes hebdomadaires offrent 3x XP',
+    questTipBonus: 'Les quêtes bonus sont rares avec 5x XP',
+    questTipExpire: 'Complète les quêtes avant leur expiration!',
 
     // Companion
     companionHungry: "J'ai faim... Tu me nourris?",
@@ -6744,6 +9197,51 @@ export const translations: Record<Language, Translations> = {
     insightsShowMore: 'Afficher plus',
     insightsShowLess: 'Afficher moins',
     insightsDismissedCount: 'aperçus ignorés',
+    insightsMoodEntries: 'entrées d\'humeur',
+    insightsHabitCount: 'habitude',
+    insightsFocusSessions: 'sessions de concentration',
+
+    // Weekly Insights (v1.5.0)
+    weeklyInsights: 'Insights Hebdomadaires',
+    weeklyInsightsNotEnoughData: 'Suivez vos progrès cette semaine pour débloquer des insights et recommandations personnalisés.',
+    comparedToLastWeek: 'Par rapport à la semaine dernière',
+    recommendations: 'Recommandations',
+    avgMood: 'Humeur moy.',
+    week: 'Semaine',
+    // Recommendation translations
+    recLowMoodTitle: 'Humeur à surveiller',
+    recLowMoodDesc: 'Votre humeur cette semaine a été plus basse que d\'habitude. Essayez des activités qui vous remontent généralement le moral.',
+    recLowMoodAction: 'Essayez un exercice de respiration de 5 minutes',
+    recHabitDeclineTitle: 'Habitudes en baisse',
+    recHabitDeclineDesc: 'L\'accomplissement de vos habitudes a diminué par rapport à la semaine dernière. Commencez petit pour reprendre l\'élan.',
+    recHabitDeclineAction: 'Concentrez-vous sur une seule habitude aujourd\'hui',
+    recLowFocusTitle: 'Augmentez votre temps de concentration',
+    recLowFocusDesc: 'Vous avez eu peu de sessions de concentration cette semaine. Même les courtes sessions aident à créer l\'habitude.',
+    recLowFocusAction: 'Essayez une session de concentration de 10 minutes',
+    recGreatProgressTitle: 'Vous êtes en pleine forme !',
+    recGreatProgressDesc: 'Votre progression s\'améliore par rapport à la semaine dernière. Continuez comme ça !',
+    recBestDayTitle: 'C\'était votre meilleur jour',
+    recBestDayDesc: 'Essayez d\'identifier ce qui a rendu cette journée spéciale et reproduisez ces conditions.',
+    recGratitudeTitle: 'Pratiquez la gratitude',
+    recGratitudeDesc: 'Écrire les choses pour lesquelles vous êtes reconnaissant peut améliorer significativement votre humeur au fil du temps.',
+    recGratitudeAction: 'Ajoutez une entrée de gratitude aujourd\'hui',
+    recPerfectWeekTitle: 'Constance incroyable !',
+    recPerfectWeekDesc: 'Vous avez accompli la plupart de vos habitudes cette semaine. Vous construisez des routines solides !',
+    recTopHabitTitle: 'Continuez cette habitude',
+    recTopHabitDesc: 'C\'est l\'une de vos habitudes les plus constantes. Elle contribue probablement à votre bien-être.',
+
+    // Smart Reminders
+    smartReminders: 'Rappels Intelligents',
+    smartRemindersNotEnoughData: 'Continuez à utiliser l\'app pour débloquer des suggestions personnalisées basées sur vos habitudes.',
+    smartRemindersOptimized: 'Vos horaires de rappel sont bien optimisés ! Continuez ainsi.',
+    smartRemindersDescription: 'Suggestions personnalisées basées sur vos habitudes d\'utilisation',
+    suggestions: 'suggestions',
+    highConfidence: 'Haute confiance',
+    mediumConfidence: 'Moyenne',
+    lowConfidence: 'Suggestion',
+    apply: 'Appliquer',
+    habitRemindersOptimal: 'Horaires optimaux des habitudes',
+    patternBased: 'Modèle',
 
     // Sync status
     syncOffline: 'Hors ligne',
@@ -6817,6 +9315,24 @@ export const translations: Record<Language, Translations> = {
     trendsInsightHint: 'Tu veux des insights personnalisés?',
     trendsInsightHintDesc: 'Consulte le panneau Insights sur l\'onglet principal pour découvrir des motifs dans tes données.',
 
+    // Health Connect (v1.2.0)
+    healthConnect: 'Health Connect',
+    healthConnectDescription: 'Synchroniser avec Google Health Connect',
+    healthConnectLoading: 'Vérification de Health Connect...',
+    healthConnectNotAvailable: 'Non disponible sur cet appareil',
+    healthConnectUpdateRequired: 'Veuillez mettre à jour l\'app Health Connect',
+    mindfulness: 'Pleine conscience',
+    sleep: 'Sommeil',
+    steps: 'Pas',
+    stepsLabel: 'pas',
+    grantPermissions: 'Accorder les permissions',
+    todayHealth: 'Santé aujourd\'hui',
+    syncFocusSessions: 'Synchroniser les sessions focus',
+    syncFocusSessionsHint: 'Enregistrer les sessions focus comme pleine conscience dans Health Connect',
+    openHealthConnect: 'Ouvrir Health Connect',
+    refresh: 'Actualiser',
+    permissions: 'Permissions',
+
     // Quest Templates (pour randomQuests.ts)
     questMorningMomentum: 'Élan Matinal',
     questMorningMomentumDesc: 'Complète 3 habitudes avant 12h00',
@@ -6842,6 +9358,79 @@ export const translations: Record<Language, Translations> = {
     questLightningRoundDesc: 'Complète 5 tâches rapides en 15 minutes',
     questWeeklyWarrior: 'Guerrier Hebdomadaire',
     questWeeklyWarriorDesc: 'Complète des habitudes 7 jours d\'affilée',
+
+    // Feedback System
+    feedbackTitle: 'Envoyer un commentaire',
+    feedbackSubtitle: 'Aidez-nous à améliorer l\'application',
+    feedbackCategoryBug: 'Signaler un bug',
+    feedbackCategoryFeature: 'Suggérer une fonctionnalité',
+    feedbackCategoryOther: 'Autre',
+    feedbackMessagePlaceholder: 'Décrivez votre problème ou suggestion...',
+    feedbackEmailPlaceholder: 'Email (optionnel)',
+    feedbackSubmit: 'Envoyer',
+    feedbackSuccess: 'Merci pour votre retour !',
+    feedbackError: 'Échec de l\'envoi. Veuillez réessayer.',
+    feedbackSending: 'Envoi en cours...',
+    sendFeedback: 'Nous contacter',
+
+    // App Rating
+    rateAppTitle: 'Vous aimez ZenFlow ?',
+    rateAppSubtitle: 'Notez-nous sur Play Store',
+    rateAppButton: 'Noter',
+    rateAppLater: 'Plus tard',
+
+    // App Updates
+    updateAvailable: 'Mise à jour disponible',
+    updateDescription: 'Une nouvelle version est prête à installer avec des améliorations et corrections.',
+    updateDescriptionCritical: 'Une mise à jour critique est requise pour continuer à utiliser l\'application.',
+    updateNow: 'Mettre à jour',
+    updateAvailableFor: 'Disponible depuis {days} jours',
+
+    // Lock Screen Quick Actions
+    quickActions: 'Actions rapides',
+    quickActionsDescription: 'Afficher une notification avec des actions rapides sur l\'écran de verrouillage',
+    quickActionsEnabled: 'Actions rapides activées',
+    quickActionsDisabled: 'Actions rapides désactivées',
+    quickActionLogMood: 'Enregistrer humeur',
+    quickActionStartFocus: 'Démarrer focus',
+    quickActionViewHabits: 'Voir habitudes',
+
+    // Notification Sounds
+    notificationSound: 'Son de notification',
+    notificationSoundDescription: 'Choisissez le son pour les rappels',
+    soundDefault: 'Par défaut',
+    soundDefaultDesc: 'Son de notification système',
+    soundGentle: 'Doux',
+    soundGentleDesc: 'Vibration uniquement',
+    soundChime: 'Carillon',
+    soundChimeDesc: 'Tonalité de notification courte',
+    soundSilent: 'Silencieux',
+    soundSilentDesc: 'Pas de son ni de vibration',
+    testNotification: 'Notification de test',
+    testNotificationHint: 'Envoie une notification de test dans 5 secondes pour vérifier le fonctionnement.',
+
+    // Insight Card Details
+    insightConfidence: 'Confiance',
+    insightDataPoints: 'Points de données',
+    insightAvgMoodWith: 'Humeur moyenne avec habitude',
+    insightAvgMoodWithout: 'Humeur moyenne sans habitude',
+    insightSampleDays: 'Jours échantillonnés',
+    insightBestActivity: 'Meilleure activité',
+    insightPeakTime: 'Heure de pointe',
+    insightAvgDuration: 'Durée moyenne',
+    insightSessions: 'Sessions',
+    insightTagOccurrences: 'Occurrences de tag',
+    insightMoodWithTag: 'Humeur avec tag',
+    insightMoodWithoutTag: 'Humeur sans tag',
+    insightDisclaimer: 'Cet aperçu est basé sur vos données. Les tendances peuvent changer.',
+    times: 'fois',
+
+    // Stats Empty States
+    noMoodDataYet: 'Pas encore de données d\'humeur',
+    noEmotionDataYet: 'Pas encore de données d\'émotion',
+
+    // XP Display
+    xp: 'XP',
   },
 };
 

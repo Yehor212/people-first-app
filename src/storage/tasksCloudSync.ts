@@ -4,15 +4,19 @@ import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
 import { Task } from '@/lib/taskMomentum';
 import { Quest } from '@/lib/randomQuests';
+import { syncOrchestrator } from '@/lib/syncOrchestrator';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { triggerDataRefresh } from '@/hooks/useIndexedDB';
 
 const TASKS_STORAGE_KEY = 'zenflow_tasks';
 const QUESTS_STORAGE_KEY = 'zenflow_quests';
 
-// Sync locks to prevent race conditions
-let isTasksSyncing = false;
-let isQuestsSyncing = false;
-let tasksSyncQueue: (() => void)[] = [];
-let questsSyncQueue: (() => void)[] = [];
+// UUID validation regex for secure user_id filtering
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const isValidUUID = (id: string): boolean => {
+  return typeof id === 'string' && UUID_REGEX.test(id);
+};
 
 interface TaskRow {
   user_id: string;
@@ -121,10 +125,11 @@ function rowToQuest(row: QuestRow): Quest {
 
 /**
  * Pull tasks from Supabase
+ * Returns null if there's an error to prevent data loss
  */
-export async function pullTasksFromCloud(): Promise<Task[]> {
+export async function pullTasksFromCloud(): Promise<Task[] | null> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  if (!user) return null; // Not authenticated - return null to keep local data
 
   const { data, error } = await supabase
     .from('user_tasks')
@@ -134,7 +139,7 @@ export async function pullTasksFromCloud(): Promise<Task[]> {
 
   if (error) {
     logger.error('Error pulling tasks:', error);
-    return [];
+    return null; // Return null to signal error - caller should keep local data
   }
 
   return (data || []).map(rowToTask);
@@ -164,27 +169,25 @@ export async function pushTasksToCloud(tasks: Task[]): Promise<void> {
 
 /**
  * Sync tasks: pull from cloud and merge with local
- * Uses lock to prevent race conditions
+ * Uses orchestrator for queue-based sync
+ * Never loses local data on sync errors
  */
 export async function syncTasks(): Promise<Task[]> {
-  // If already syncing, queue this request
-  if (isTasksSyncing) {
-    return new Promise((resolve) => {
-      tasksSyncQueue.push(() => {
-        syncTasks().then(resolve);
-      });
-    });
-  }
+  let mergedTasks: Task[] = [];
 
-  isTasksSyncing = true;
+  await syncOrchestrator.sync('tasks', async () => {
+    // Get local tasks first (safe fallback)
+    const localTasks = safeLocalStorageGet<Task[]>(TASKS_STORAGE_KEY, []);
 
-  try {
     // Pull from cloud
     const cloudTasks = await pullTasksFromCloud();
 
-    // Get local tasks
-    const localTasksStr = localStorage.getItem(TASKS_STORAGE_KEY);
-    const localTasks: Task[] = localTasksStr ? JSON.parse(localTasksStr) : [];
+    // If cloud pull failed, keep local data and skip sync
+    if (cloudTasks === null) {
+      logger.warn('[TasksSync] Cloud pull failed, keeping local data');
+      mergedTasks = localTasks;
+      return;
+    }
 
     // Merge strategy: cloud wins for conflicts
     const taskMap = new Map<string, Task>();
@@ -199,31 +202,31 @@ export async function syncTasks(): Promise<Task[]> {
       taskMap.set(task.id, task);
     });
 
-    const mergedTasks = Array.from(taskMap.values());
+    mergedTasks = Array.from(taskMap.values());
 
     // Save merged to local
-    localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(mergedTasks));
+    safeLocalStorageSet(TASKS_STORAGE_KEY, mergedTasks);
+
+    // Trigger React state refresh so UI updates
+    triggerDataRefresh();
+    logger.log('[TasksSync] Data refresh triggered after merge');
 
     // Push merged to cloud
     await pushTasksToCloud(mergedTasks);
+  }, { priority: 7, maxRetries: 3 }); // Higher priority for user tasks
 
-    return mergedTasks;
-  } finally {
-    isTasksSyncing = false;
-
-    // Process next queued sync (only one, discard others to avoid pile-up)
-    const nextSync = tasksSyncQueue.shift();
-    tasksSyncQueue = []; // Clear queue
-    if (nextSync) nextSync();
-  }
+  return mergedTasks;
 }
+
+type QuestsState = { daily: Quest | null; weekly: Quest | null; bonus: Quest | null };
 
 /**
  * Pull quests from Supabase
+ * Returns undefined if there's an error to prevent data loss
  */
-export async function pullQuestsFromCloud(): Promise<{ daily: Quest | null; weekly: Quest | null; bonus: Quest | null }> {
+export async function pullQuestsFromCloud(): Promise<QuestsState | undefined> {
   const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return { daily: null, weekly: null, bonus: null };
+  if (!user) return undefined; // Not authenticated - return undefined to keep local data
 
   const { data, error } = await supabase
     .from('user_quests')
@@ -233,7 +236,7 @@ export async function pullQuestsFromCloud(): Promise<{ daily: Quest | null; week
 
   if (error) {
     logger.error('Error pulling quests:', error);
-    return { daily: null, weekly: null, bonus: null };
+    return undefined; // Return undefined to signal error - caller should keep local data
   }
 
   const quests = (data || []).map(rowToQuest);
@@ -274,50 +277,46 @@ export async function pushQuestsToCloud(quests: { daily: Quest | null; weekly: Q
 
 /**
  * Sync quests: pull from cloud and merge with local
- * Uses lock to prevent race conditions
+ * Uses orchestrator for queue-based sync
+ * Never loses local data on sync errors
  */
-export async function syncQuests(): Promise<{ daily: Quest | null; weekly: Quest | null; bonus: Quest | null }> {
-  // If already syncing, queue this request
-  if (isQuestsSyncing) {
-    return new Promise((resolve) => {
-      questsSyncQueue.push(() => {
-        syncQuests().then(resolve);
-      });
-    });
-  }
+export async function syncQuests(): Promise<QuestsState> {
+  const defaultQuests: QuestsState = { daily: null, weekly: null, bonus: null };
+  let mergedQuests: QuestsState = defaultQuests;
 
-  isQuestsSyncing = true;
+  await syncOrchestrator.sync('quests', async () => {
+    // Get local quests first (safe fallback)
+    const localQuests = safeLocalStorageGet<QuestsState>(QUESTS_STORAGE_KEY, defaultQuests);
 
-  try {
     // Pull from cloud
     const cloudQuests = await pullQuestsFromCloud();
 
-    // Get local quests
-    const localQuestsStr = localStorage.getItem(QUESTS_STORAGE_KEY);
-    const localQuests = localQuestsStr ? JSON.parse(localQuestsStr) : { daily: null, weekly: null, bonus: null };
+    // If cloud pull failed, keep local data and skip sync
+    if (cloudQuests === undefined) {
+      logger.warn('[QuestsSync] Cloud pull failed, keeping local data');
+      mergedQuests = localQuests;
+      return;
+    }
 
     // Merge strategy: cloud wins
-    const mergedQuests = {
+    mergedQuests = {
       daily: cloudQuests.daily || localQuests.daily,
       weekly: cloudQuests.weekly || localQuests.weekly,
       bonus: cloudQuests.bonus || localQuests.bonus,
     };
 
     // Save merged to local
-    localStorage.setItem(QUESTS_STORAGE_KEY, JSON.stringify(mergedQuests));
+    safeLocalStorageSet(QUESTS_STORAGE_KEY, mergedQuests);
+
+    // Trigger React state refresh so UI updates
+    triggerDataRefresh();
+    logger.log('[QuestsSync] Data refresh triggered after merge');
 
     // Push merged to cloud
     await pushQuestsToCloud(mergedQuests);
+  }, { priority: 7, maxRetries: 3 }); // Higher priority for user tasks
 
-    return mergedQuests;
-  } finally {
-    isQuestsSyncing = false;
-
-    // Process next queued sync (only one, discard others to avoid pile-up)
-    const nextSync = questsSyncQueue.shift();
-    questsSyncQueue = []; // Clear queue
-    if (nextSync) nextSync();
-  }
+  return mergedQuests;
 }
 
 /**
@@ -328,6 +327,12 @@ export async function syncQuests(): Promise<{ daily: Quest | null; weekly: Quest
 export function subscribeToTaskUpdates(userId: string, callback: (tasks: Task[]) => void) {
   if (!userId) {
     logger.warn('[TasksSync] No userId provided for subscription');
+    return () => {};
+  }
+
+  // Validate userId to prevent injection attacks
+  if (!isValidUUID(userId)) {
+    logger.warn('[TasksSync] Invalid userId format for subscription');
     return () => {};
   }
 
@@ -343,13 +348,17 @@ export function subscribeToTaskUpdates(userId: string, callback: (tasks: Task[])
       },
       async () => {
         const tasks = await pullTasksFromCloud();
-        localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
-        callback(tasks);
+        if (tasks !== null) {
+          safeLocalStorageSet(TASKS_STORAGE_KEY, tasks);
+          triggerDataRefresh();
+          callback(tasks);
+        }
       }
     )
     .subscribe();
 
   return () => {
+    channel.unsubscribe();
     supabase.removeChannel(channel);
   };
 }
@@ -365,6 +374,12 @@ export function subscribeToQuestUpdates(userId: string, callback: (quests: { dai
     return () => {};
   }
 
+  // Validate userId to prevent injection attacks
+  if (!isValidUUID(userId)) {
+    logger.warn('[QuestsSync] Invalid userId format for subscription');
+    return () => {};
+  }
+
   const channel = supabase
     .channel(`quests-changes-${userId}`)
     .on(
@@ -377,13 +392,17 @@ export function subscribeToQuestUpdates(userId: string, callback: (quests: { dai
       },
       async () => {
         const quests = await pullQuestsFromCloud();
-        localStorage.setItem(QUESTS_STORAGE_KEY, JSON.stringify(quests));
-        callback(quests);
+        if (quests !== undefined) {
+          safeLocalStorageSet(QUESTS_STORAGE_KEY, quests);
+          triggerDataRefresh();
+          callback(quests);
+        }
       }
     )
     .subscribe();
 
   return () => {
+    channel.unsubscribe();
     supabase.removeChannel(channel);
   };
 }

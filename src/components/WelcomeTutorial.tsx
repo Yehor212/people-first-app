@@ -108,6 +108,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
         features: [
           t.tutorialFeature1 || 'Track daily mood and energy',
           t.tutorialFeature2 || 'Build habits step by step',
+          t.tutorialFeature2b || '✨ Customize icons, colors & goals!',
           t.tutorialFeature3 || 'Focus sessions with ambient sounds',
           t.tutorialFeature4 || 'Gratitude journaling',
         ],
@@ -239,31 +240,31 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
 
   return (
     <div
-      className="min-h-screen zen-gradient-hero flex flex-col"
+      className="screen-overlay zen-gradient-hero overflow-y-auto"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       {/* Skip button */}
-      <div className="flex justify-end p-4">
+      <div className="flex justify-end p-3 sm:p-4">
         <button
           onClick={onSkip}
-          className="text-sm text-muted-foreground hover:text-foreground transition-colors px-4 py-2"
+          className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-2 sm:px-4"
         >
           {t.skip || 'Skip'}
         </button>
       </div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 pb-8">
-        {/* Animated icon */}
+      <div className="screen-centered px-4 sm:px-6 pb-4 sm:pb-8">
+        {/* Animated icon - responsive sizes */}
         <div className={cn(
-          'relative w-32 h-32 rounded-3xl flex items-center justify-center mb-8 transition-all duration-500',
+          'relative w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-2xl sm:rounded-3xl flex items-center justify-center mb-6 sm:mb-8 md:mb-10 transition-all duration-500',
           `bg-gradient-to-br ${slide.gradient}`,
           isAnimating && (direction === 'next' ? 'translate-x-10 opacity-0' : '-translate-x-10 opacity-0')
         )}>
           <Icon className={cn(
-            'w-16 h-16 transition-all',
+            'w-12 h-12 sm:w-14 sm:h-14 md:w-18 md:h-18 lg:w-22 lg:h-22 transition-all',
             slide.iconColor,
             slide.animation === 'float' && 'animate-float',
             slide.animation === 'pulse' && 'animate-pulse',
@@ -274,23 +275,23 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
             slide.animation === 'color-shift' && 'animate-color-shift'
           )} />
 
-          {/* Decorative circles */}
-          <div className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-primary/20 animate-ping" />
-          <div className="absolute -bottom-3 -left-3 w-8 h-8 rounded-full bg-accent/20 animate-pulse" />
+          {/* Decorative circles - responsive */}
+          <div className="absolute -top-1 -right-1 sm:-top-2 sm:-right-2 w-4 h-4 sm:w-6 sm:h-6 rounded-full bg-primary/20 animate-ping" />
+          <div className="absolute -bottom-2 -left-2 sm:-bottom-3 sm:-left-3 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-accent/20 animate-pulse" />
         </div>
 
-        {/* Text content */}
+        {/* Text content - responsive */}
         <div className={cn(
-          'text-center max-w-sm transition-all duration-300',
+          'text-center max-w-sm md:max-w-md lg:max-w-lg transition-all duration-300 px-2',
           isAnimating && (direction === 'next' ? 'translate-x-10 opacity-0' : '-translate-x-10 opacity-0')
         )}>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-2 md:mb-3">
             {content.title}
           </h1>
-          <p className="text-lg text-primary font-medium mb-4">
+          <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-primary font-medium mb-3 sm:mb-4 md:mb-5">
             {content.subtitle}
           </p>
-          <p className="text-muted-foreground leading-relaxed">
+          <p className="text-sm sm:text-base md:text-lg lg:text-xl text-muted-foreground leading-relaxed">
             {content.description}
           </p>
 
@@ -312,42 +313,42 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
         </div>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation - responsive */}
       <div
-        className="px-6 pb-8"
-        style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
+        className="px-4 sm:px-6 pb-4 sm:pb-8"
+        style={{ paddingBottom: 'calc(1rem + var(--safe-bottom))' }}
       >
         {/* Dots */}
-        <div className="flex justify-center gap-2 mb-6">
+        <div className="flex justify-center gap-1.5 sm:gap-2 mb-4 sm:mb-6">
           {slides.map((_, index) => (
             <button
               key={index}
               onClick={() => handleDotClick(index)}
               className={cn(
-                'h-2 rounded-full transition-all duration-300',
+                'h-1.5 sm:h-2 rounded-full transition-all duration-300',
                 index === currentSlide
-                  ? 'w-8 bg-primary'
-                  : 'w-2 bg-muted hover:bg-muted-foreground/50'
+                  ? 'w-6 sm:w-8 bg-primary'
+                  : 'w-1.5 sm:w-2 bg-muted hover:bg-muted-foreground/50'
               )}
             />
           ))}
         </div>
 
-        {/* Buttons */}
-        <div className="flex gap-3">
+        {/* Buttons - responsive */}
+        <div className="flex gap-2 sm:gap-3">
           {currentSlide > 0 && (
             <button
               onClick={handlePrev}
-              className="p-4 bg-secondary rounded-xl hover:bg-muted transition-colors"
+              className="p-3 sm:p-4 bg-secondary rounded-xl hover:bg-muted transition-colors"
             >
-              <ChevronLeft className="w-6 h-6" />
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
           )}
 
           <button
             onClick={handleNext}
             className={cn(
-              'flex-1 py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2',
+              'flex-1 py-3 sm:py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base',
               currentSlide === slides.length - 1
                 ? 'zen-gradient text-primary-foreground hover:opacity-90 animate-glow-pulse'
                 : 'zen-gradient text-primary-foreground hover:opacity-90'
@@ -357,7 +358,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
               ? (t.tutorialStart || "Let's Go!")
               : (t.next || 'Next')
             }
-            <ChevronRight className="w-5 h-5" />
+            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </div>

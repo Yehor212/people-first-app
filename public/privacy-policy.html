@@ -29,10 +29,10 @@
 </head>
 <body>
   <h1>🧘 ZenFlow Privacy Policy</h1>
-  <p class="updated">Last updated: January 17, 2026</p>
+  <p class="updated">Last updated: January 25, 2026</p>
 
   <div class="highlight">
-    <p><strong>Summary:</strong> ZenFlow stores all your data locally on your device. We do not collect, transmit, or store any personal information on external servers.</p>
+    <p><strong>Summary:</strong> ZenFlow stores all your data locally on your device by default. Optional cloud sync uses Supabase for secure backup. We do not sell your data to third parties.</p>
   </div>
 
   <h2>1. Introduction</h2>
@@ -79,10 +79,29 @@
   </ul>
 
   <h2>5. Third-Party Services</h2>
-  <p>ZenFlow does not integrate with any third-party services that collect user data. The app functions entirely offline and standalone.</p>
+
+  <h3>5.1 Cloud Sync (Optional)</h3>
+  <p>If you choose to enable cloud sync, your data is stored using <strong>Supabase</strong> (<a href="https://supabase.com" target="_blank">supabase.com</a>), a secure cloud platform:</p>
+  <ul>
+    <li>Data is encrypted in transit (TLS) and at rest</li>
+    <li>Your email is used only for authentication</li>
+    <li>You can delete all cloud data at any time from Settings</li>
+    <li>Cloud sync is completely optional - the app works fully offline</li>
+  </ul>
+
+  <h3>5.2 Health Connect (Android)</h3>
+  <p>If you enable Health Connect integration on Android, ZenFlow may access:</p>
+  <ul>
+    <li><span class="emoji">📖</span> <strong>Read:</strong> Sleep data, Step count - to provide wellness insights</li>
+    <li><span class="emoji">✍️</span> <strong>Write:</strong> Mindfulness sessions - to log your focus timer sessions as mindfulness activities</li>
+  </ul>
+  <p>Health data is processed locally on your device. If you enable cloud sync, health-derived insights may be included in your synced data. We do not share health data with third parties.</p>
+
+  <h3>5.3 Google Sign-In (Optional)</h3>
+  <p>If you choose to sign in with Google, we receive only your email address and profile name for authentication purposes. We do not access your contacts, calendar, or other Google data unless you explicitly enable Google Calendar integration.</p>
 
   <h2>6. Children's Privacy</h2>
-  <p>ZenFlow is suitable for users of all ages. We do not knowingly collect any personal information from children or any other users, as the app operates entirely offline with local storage only.</p>
+  <p>ZenFlow is designed for users aged 13 and older. We do not knowingly collect personal information from children under 13. If you are under 13, please do not use this app without parental consent. The app confirms user age during onboarding.</p>
 
   <h2>7. Health Disclaimer</h2>
   <div class="highlight">

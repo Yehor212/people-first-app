@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
+import { safeJsonParse } from '@/lib/safeJson';
 import { Sparkles, Trophy, Clock, Zap, Target, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -32,14 +33,10 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setDailyQuest(parsed.daily || null);
-        setWeeklyQuest(parsed.weekly || null);
-        setBonusQuest(parsed.bonus || null);
-      } catch (error) {
-        logger.error('Failed to parse quests:', error);
-      }
+      const parsed = safeJsonParse<{ daily?: Quest | null; weekly?: Quest | null; bonus?: Quest | null }>(stored, {});
+      setDailyQuest(parsed.daily || null);
+      setWeeklyQuest(parsed.weekly || null);
+      setBonusQuest(parsed.bonus || null);
     }
     setIsLoaded(true);
   }, []);
@@ -91,11 +88,21 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
     }
   };
 
+  // Map quest type to translation key
+  const getQuestTypeLabel = (type: 'daily' | 'weekly' | 'bonus') => {
+    const labels = {
+      daily: t.dailyQuest,
+      weekly: t.weeklyQuest,
+      bonus: t.bonusQuest,
+    };
+    return labels[type] || t.questType;
+  };
+
   const renderQuestCard = (quest: Quest | null) => {
     if (!quest) {
       return (
         <div className="p-6 bg-muted/50 rounded-xl border-2 border-dashed border-border text-center">
-          <p className="text-muted-foreground">No quest available</p>
+          <p className="text-muted-foreground">{t.noQuestAvailable}</p>
         </div>
       );
     }
@@ -117,19 +124,19 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
         )}
       >
         {/* Header */}
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{getQuestCategoryEmoji(quest.category)}</span>
-            <div>
+        <div className="flex items-start justify-between mb-3 gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span className="text-2xl flex-shrink-0">{getQuestCategoryEmoji(quest.category)}</span>
+            <div className="min-w-0">
               <h3 className={cn(
-                'font-bold',
+                'font-bold line-clamp-2',
                 getQuestDifficultyColor(quest.type),
                 quest.completed && 'line-through opacity-70'
               )}>
                 {quest.title}
               </h3>
-              <p className="text-xs text-muted-foreground mt-0.5 capitalize">
-                {quest.type} Quest
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {getQuestTypeLabel(quest.type)}
               </p>
             </div>
           </div>
@@ -147,13 +154,13 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
         <div className="mb-4">
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="font-medium">
-              Progress: {quest.progress}/{quest.total}
+              {t.questProgress} {quest.progress}/{quest.total}
             </span>
             <span className={cn(
               'font-medium',
               isExpired ? 'text-destructive' : 'text-primary'
             )}>
-              {isExpired ? 'Expired' : getQuestTimeRemaining(quest)}
+              {isExpired ? t.questExpired : getQuestTimeRemaining(quest)}
             </span>
           </div>
           <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -200,19 +207,20 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm overflow-y-auto">
+    <div role="dialog" aria-modal="true" aria-labelledby="quests-title" className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto">
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold zen-text-gradient">Random Quests</h2>
+            <h2 id="quests-title" className="text-2xl font-bold zen-text-gradient">{t.randomQuests}</h2>
             <p className="text-sm text-muted-foreground mt-1">
-              Complete quests for bonus XP and exclusive badges
+              {t.questsPanelSubtitle}
             </p>
           </div>
           {onClose && (
             <button
               onClick={onClose}
+              aria-label={t.close || 'Close'}
               className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
             >
               <X className="w-5 h-5" />
@@ -225,9 +233,9 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
         <div className="flex items-start gap-3 text-white">
           <Target className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div className="text-sm">
-            <div className="font-medium mb-1">🎯 ADHD Engagement System</div>
+            <div className="font-medium mb-1">🎯 {t.adhdEngagementSystem}</div>
             <div className="text-white/90">
-              Quests provide variety and unexpected rewards - perfect for ADHD brains that crave novelty!
+              {t.adhdEngagementDesc}
             </div>
           </div>
         </div>
@@ -238,13 +246,13 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Clock className="w-5 h-5 text-blue-500" />
-            <h3 className="text-lg font-semibold">Daily Quest</h3>
+            <h3 className="text-lg font-semibold">{t.dailyQuest}</h3>
           </div>
           <button
             onClick={handleRefreshDaily}
             className="text-sm px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors"
           >
-            New Quest
+            {t.newQuest}
           </button>
         </div>
         {renderQuestCard(dailyQuest)}
@@ -255,13 +263,13 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Zap className="w-5 h-5 text-purple-500" />
-            <h3 className="text-lg font-semibold">Weekly Quest</h3>
+            <h3 className="text-lg font-semibold">{t.weeklyQuest}</h3>
           </div>
           <button
             onClick={handleRefreshWeekly}
             className="text-sm px-3 py-1 bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors"
           >
-            New Quest
+            {t.newQuest}
           </button>
         </div>
         {renderQuestCard(weeklyQuest)}
@@ -272,9 +280,9 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-yellow-500" />
-            <h3 className="text-lg font-semibold">Bonus Quest</h3>
+            <h3 className="text-lg font-semibold">{t.bonusQuest}</h3>
             <span className="px-2 py-0.5 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 text-xs font-medium rounded-full">
-              Limited Time
+              {t.limitedTime}
             </span>
           </div>
           {(!bonusQuest || shouldRegenerateQuest(bonusQuest)) && (
@@ -282,7 +290,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
               onClick={handleGenerateBonus}
               className="text-sm px-3 py-1 zen-gradient text-white rounded-lg hover:opacity-90 transition-opacity"
             >
-              Generate
+              {t.generate}
             </button>
           )}
         </div>
@@ -291,9 +299,9 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
         ) : (
           <div className="p-8 bg-muted/50 rounded-xl border-2 border-dashed border-border text-center">
             <Sparkles className="w-12 h-12 mx-auto mb-3 text-yellow-500/50" />
-            <p className="text-muted-foreground mb-3">No bonus quest available</p>
+            <p className="text-muted-foreground mb-3">{t.noBonusQuestAvailable}</p>
             <p className="text-xs text-muted-foreground">
-              Bonus quests appear randomly or can be generated manually
+              {t.bonusQuestsHint}
             </p>
           </div>
         )}
@@ -304,12 +312,12 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
           <div className="flex gap-3">
             <div className="text-2xl">💡</div>
             <div className="text-sm">
-              <div className="font-medium mb-1">Quest Tips</div>
+              <div className="font-medium mb-1">{t.questTips}</div>
               <ul className="text-muted-foreground space-y-1 list-disc list-inside">
-                <li>Daily quests reset every 24 hours</li>
-                <li>Weekly quests offer 3x XP rewards</li>
-                <li>Bonus quests are rare with 5x XP</li>
-                <li>Complete quests before they expire!</li>
+                <li>{t.questTipDaily}</li>
+                <li>{t.questTipWeekly}</li>
+                <li>{t.questTipBonus}</li>
+                <li>{t.questTipExpire}</li>
               </ul>
             </div>
           </div>

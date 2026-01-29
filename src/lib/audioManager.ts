@@ -1,19 +1,35 @@
 // Centralized Audio Manager - Single source of truth for all app audio
 // Prevents conflicts from multiple AudioContext instances
 
+import { logger } from './logger';
+import { safeParseFloat } from '@/lib/validation';
+
 type SoundType = 'success' | 'complete' | 'streak' | 'levelUp' | 'notification';
 
 interface AudioManagerState {
   context: AudioContext | null;
   isMuted: boolean;
   volume: number;
+  activeTimeouts: number[];
 }
 
 const state: AudioManagerState = {
   context: null,
   isMuted: false,
   volume: 0.3,
+  activeTimeouts: [],
 };
+
+// Helper to schedule timeout with tracking
+function scheduleTimeout(callback: () => void, delay: number): void {
+  const id = window.setTimeout(() => {
+    callback();
+    // Remove from active list after execution
+    const index = state.activeTimeouts.indexOf(id);
+    if (index > -1) state.activeTimeouts.splice(index, 1);
+  }, delay);
+  state.activeTimeouts.push(id);
+}
 
 // Lazy initialization of AudioContext (required for mobile)
 function getAudioContext(): AudioContext | null {
@@ -23,7 +39,7 @@ function getAudioContext(): AudioContext | null {
     state.context = new (window.AudioContext || (window as any).webkitAudioContext)();
     return state.context;
   } catch (e) {
-    console.warn('[AudioManager] AudioContext not available:', e);
+    logger.warn('[AudioManager] AudioContext not available:', e);
     return null;
   }
 }
@@ -37,7 +53,7 @@ async function ensureContextResumed(): Promise<boolean> {
     try {
       await ctx.resume();
     } catch (e) {
-      console.warn('[AudioManager] Failed to resume context:', e);
+      logger.warn('[AudioManager] Failed to resume context:', e);
       return false;
     }
   }
@@ -84,7 +100,7 @@ export function playSuccess(): void {
     const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
 
     notes.forEach((freq, i) => {
-      setTimeout(() => playTone(freq, 0.2), i * 80);
+      scheduleTimeout(() => playTone(freq, 0.2), i * 80);
     });
   } catch (e) {
     // Silent fail
@@ -103,7 +119,7 @@ export function playStreakMilestone(): void {
     const notes = [392, 493.88, 587.33, 783.99]; // G4, B4, D5, G5
 
     notes.forEach((freq, i) => {
-      setTimeout(() => playTone(freq, 0.3, 'triangle'), i * 100);
+      scheduleTimeout(() => playTone(freq, 0.3, 'triangle'), i * 100);
     });
   } catch (e) {
     // Silent fail
@@ -127,7 +143,7 @@ export function playLevelUp(): void {
     ];
 
     notes.forEach(({ freq, delay }) => {
-      setTimeout(() => playTone(freq, 0.4, 'sine'), delay);
+      scheduleTimeout(() => playTone(freq, 0.4, 'sine'), delay);
     });
   } catch (e) {
     // Silent fail
@@ -162,7 +178,11 @@ export function playSound(type: SoundType): void {
 // Mute control
 export function setMuted(muted: boolean): void {
   state.isMuted = muted;
-  localStorage.setItem('zenflow-audio-muted', muted ? '1' : '0');
+  try {
+    localStorage.setItem('zenflow-audio-muted', muted ? '1' : '0');
+  } catch {
+    // Safari Private Mode or quota exceeded - silent fail
+  }
 }
 
 export function isMuted(): boolean {
@@ -172,7 +192,11 @@ export function isMuted(): boolean {
 // Volume control (0.0 - 1.0)
 export function setVolume(volume: number): void {
   state.volume = Math.max(0, Math.min(1, volume));
-  localStorage.setItem('zenflow-audio-volume', state.volume.toString());
+  try {
+    localStorage.setItem('zenflow-audio-volume', state.volume.toString());
+  } catch {
+    // Safari Private Mode or quota exceeded - silent fail
+  }
 }
 
 export function getVolume(): number {
@@ -181,14 +205,18 @@ export function getVolume(): number {
 
 // Initialize from localStorage
 export function initAudioManager(): void {
-  const mutedStr = localStorage.getItem('zenflow-audio-muted');
-  if (mutedStr === '1') {
-    state.isMuted = true;
-  }
+  try {
+    const mutedStr = localStorage.getItem('zenflow-audio-muted');
+    if (mutedStr === '1') {
+      state.isMuted = true;
+    }
 
-  const volumeStr = localStorage.getItem('zenflow-audio-volume');
-  if (volumeStr) {
-    state.volume = parseFloat(volumeStr) || 0.3;
+    const volumeStr = localStorage.getItem('zenflow-audio-volume');
+    if (volumeStr) {
+      state.volume = safeParseFloat(volumeStr, 0.3, 0, 1);
+    }
+  } catch {
+    // Safari Private Mode - use defaults
   }
 }
 
@@ -199,6 +227,10 @@ export async function resumeOnInteraction(): Promise<void> {
 
 // Cleanup (for testing/unmount)
 export function cleanup(): void {
+  // Clear all pending audio timeouts
+  state.activeTimeouts.forEach(id => clearTimeout(id));
+  state.activeTimeouts.length = 0;
+
   if (state.context) {
     state.context.close();
     state.context = null;

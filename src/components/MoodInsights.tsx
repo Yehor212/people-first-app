@@ -42,6 +42,28 @@ function getInsightColor(type: MoodInsight['type']) {
   }
 }
 
+// Helper function to interpolate translation parameters
+function interpolate(template: string, params: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => String(params[key] ?? key));
+}
+
+// Helper function to get translated insight text with fallback
+function getInsightText(
+  insight: MoodInsight,
+  t: Record<string, unknown>,
+  field: 'title' | 'description'
+): string {
+  const key = field === 'title' ? insight.titleKey : insight.descriptionKey;
+  const fallback = field === 'title' ? insight.title : insight.description;
+
+  // If no key or translation not found, use fallback
+  const translation = key ? (t as Record<string, string>)[key] : undefined;
+  if (!translation) return fallback;
+
+  // Interpolate parameters
+  return insight.params ? interpolate(translation, insight.params) : translation;
+}
+
 export function MoodInsights({
   moods,
   habits,
@@ -119,6 +141,7 @@ export function MoodInsights({
         {/* Dismiss button */}
         <button
           onClick={() => handleDismiss(featuredInsight.id)}
+          aria-label={t.insightsDismiss || 'Dismiss insight'}
           className="absolute top-3 right-3 p-1.5 hover:bg-black/10 rounded-lg transition-colors"
         >
           <X className="w-4 h-4 text-muted-foreground" />
@@ -141,8 +164,8 @@ export function MoodInsights({
         <div className="flex items-start gap-4">
           <div className="text-4xl">{featuredInsight.icon}</div>
           <div className="flex-1">
-            <h4 className="font-bold text-foreground mb-1">{featuredInsight.title}</h4>
-            <p className="text-sm text-muted-foreground">{featuredInsight.description}</p>
+            <h4 className="font-bold text-foreground mb-1">{getInsightText(featuredInsight, t as unknown as Record<string, unknown>, 'title')}</h4>
+            <p className="text-sm text-muted-foreground">{getInsightText(featuredInsight, t as unknown as Record<string, unknown>, 'description')}</p>
           </div>
         </div>
 
@@ -150,6 +173,8 @@ export function MoodInsights({
         {otherInsights.length > 0 && (
           <button
             onClick={() => setShowAll(!showAll)}
+            aria-expanded={showAll}
+            aria-label={showAll ? (t.hideInsights || 'Hide insights') : (t.moreInsights || 'Show more insights')}
             className="mt-4 flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80 transition-colors"
           >
             <span>
@@ -181,6 +206,7 @@ export function MoodInsights({
               {/* Dismiss button */}
               <button
                 onClick={() => handleDismiss(insight.id)}
+                aria-label={t.insightsDismiss || 'Dismiss insight'}
                 className="absolute top-2 right-2 p-1 hover:bg-black/10 rounded-lg transition-colors"
               >
                 <X className="w-3 h-3 text-muted-foreground" />
@@ -189,8 +215,8 @@ export function MoodInsights({
               <div className="flex items-start gap-3">
                 <div className="text-2xl">{insight.icon}</div>
                 <div className="flex-1 pr-6">
-                  <h4 className="font-semibold text-foreground text-sm mb-0.5">{insight.title}</h4>
-                  <p className="text-xs text-muted-foreground">{insight.description}</p>
+                  <h4 className="font-semibold text-foreground text-sm mb-0.5">{getInsightText(insight, t as unknown as Record<string, unknown>, 'title')}</h4>
+                  <p className="text-xs text-muted-foreground">{getInsightText(insight, t as unknown as Record<string, unknown>, 'description')}</p>
                 </div>
               </div>
             </motion.div>

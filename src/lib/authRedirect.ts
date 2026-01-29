@@ -1,4 +1,6 @@
 import { Capacitor } from "@capacitor/core";
+import { logger } from "./logger";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const NATIVE_REDIRECT_URL = "com.zenflow.app://login-callback";
 
@@ -27,16 +29,6 @@ const sanitizeErrorMessage = (message: string): string => {
   return 'Authentication failed. Please try again.';
 };
 
-// Basic JWT format validation (header.payload.signature)
-const isValidJwtFormat = (token: string): boolean => {
-  if (!token || typeof token !== 'string') return false;
-  const parts = token.split('.');
-  if (parts.length !== 3) return false;
-  // Check each part is base64url encoded
-  const base64UrlRegex = /^[A-Za-z0-9_-]+$/;
-  return parts.every(part => part.length > 0 && base64UrlRegex.test(part));
-};
-
 export const getAuthRedirectUrl = () => {
   if (Capacitor.isNativePlatform()) {
     return NATIVE_REDIRECT_URL;
@@ -46,7 +38,7 @@ export const getAuthRedirectUrl = () => {
 
 export const isNativePlatform = () => Capacitor.isNativePlatform();
 
-export const handleAuthCallback = async (supabaseClient: any, url: string) => {
+export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: string) => {
   if (!supabaseClient || !url) return;
 
   let parsed: URL;
@@ -65,33 +57,80 @@ export const handleAuthCallback = async (supabaseClient: any, url: string) => {
     throw new Error(sanitizeErrorMessage(errorDescription));
   }
 
-  // PKCE flow - exchange code for session (preferred, more secure)
+  // Try PKCE flow first - exchange code for session (most secure)
   const code = searchParams.get("code") || hashParams.get("code");
   if (code) {
     // Validate code format (should be alphanumeric)
     if (!/^[A-Za-z0-9_-]+$/.test(code) || code.length > 256) {
       throw new Error('Invalid authorization code');
     }
-    await supabaseClient.auth.exchangeCodeForSession(code);
+
+    const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code);
+
+    if (error) {
+      logger.error('[Auth] exchangeCodeForSession error:', error.message);
+      throw new Error(`Session exchange failed: ${error.message}`);
+    }
+
+    if (!data.session) {
+      throw new Error('Session exchange succeeded but no session returned');
+    }
+
+    logger.log('[Auth] PKCE session exchange successful, user:', data.session.user.email);
     return;
   }
 
-  // Implicit flow fallback - validate tokens before use
+  // Fallback: Implicit flow - tokens directly in URL hash (used by Supabase for mobile)
   const accessToken = hashParams.get("access_token");
   const refreshToken = hashParams.get("refresh_token");
 
   if (accessToken && refreshToken) {
-    // Validate JWT format before setting session
-    if (!isValidJwtFormat(accessToken)) {
-      throw new Error('Invalid access token format');
-    }
-    if (!isValidJwtFormat(refreshToken)) {
-      throw new Error('Invalid refresh token format');
+    logger.log('[Auth] Implicit flow detected, setting session from tokens');
+
+    const { data, error } = await supabaseClient.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+
+    if (error) {
+      logger.error('[Auth] setSession error:', error.message);
+      throw new Error(`Session setup failed: ${error.message}`);
     }
 
-    await supabaseClient.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken
-    });
+    if (!data.session) {
+      throw new Error('Session setup succeeded but no session returned');
+    }
+
+    logger.log('[Auth] Implicit flow session set, user:', data.session.user.email);
+    return;
   }
+
+  // No valid authentication method found
+  throw new Error('No valid authentication code or tokens found');
+};
+
+// Event name for OAuth completion notification
+export const AUTH_COMPLETE_EVENT = 'zenflow-auth-complete';
+
+// Notify GoogleAuthScreen that auth completed in Index.tsx
+export const notifyAuthComplete = () => {
+  window.dispatchEvent(new CustomEvent(AUTH_COMPLETE_EVENT));
+};
+
+// Store pending auth URL for processing when supabase is ready
+let pendingAuthUrl: string | null = null;
+
+export const setPendingAuthUrl = (url: string | null) => {
+  pendingAuthUrl = url;
+  logger.log('[Auth] Pending auth URL set:', url ? 'yes' : 'null');
+};
+
+export const getPendingAuthUrl = (): string | null => {
+  const url = pendingAuthUrl;
+  pendingAuthUrl = null; // Clear after reading
+  return url;
+};
+
+export const hasPendingAuthUrl = (): boolean => {
+  return pendingAuthUrl !== null;
 };

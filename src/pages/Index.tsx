@@ -4,22 +4,33 @@ import { useIndexedDB } from '@/hooks/useIndexedDB';
 import { initializeApp } from '@/lib/appInitializer';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useMoodTheme } from '@/contexts/MoodThemeContext';
+import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { triggerXpPopup } from '@/components/XpPopup';
 import { DayClock } from '@/components/DayClock';
 import { ScheduleTimeline } from '@/components/ScheduleTimeline';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
-import { generateId, getToday } from '@/lib/utils';
+import { generateId, getToday, calculateStreak } from '@/lib/utils';
+import { safeLocalStorageGet } from '@/lib/safeJson';
 import { findTemplateIdByName, getHabitTemplateName } from '@/lib/habitTemplates';
 import { normalizeHabit } from '@/lib/habits';
 import { supabase } from '@/lib/supabaseClient';
 import { syncReminderSettings } from '@/storage/reminderSync';
-import { syncWithCloud, startAutoSync, triggerSync } from '@/storage/cloudSync';
+import { syncWithCloud, startAutoSync, stopAutoSync, triggerSync } from '@/storage/cloudSync';
+import { generateHabitScheduleEvents, mergeScheduleEvents } from '@/lib/habitScheduleSync';
 import { migrateExistingUser } from '@/lib/cloudSyncSettings';
+import { useHealthConnect } from '@/hooks/useHealthConnect';
+import { useQuickActions, QuickActionType } from '@/hooks/useQuickActions';
 import { App } from '@capacitor/app';
-import { handleAuthCallback, isNativePlatform } from '@/lib/authRedirect';
+import {
+  handleAuthCallback,
+  isNativePlatform,
+  notifyAuthComplete,
+  setPendingAuthUrl,
+  getPendingAuthUrl
+} from '@/lib/authRedirect';
+import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 import {
   scheduleLocalReminders,
   scheduleHabitReminders,
@@ -33,15 +44,16 @@ import {
 
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
-import { MoodTracker } from '@/components/MoodTracker';
+import { EmotionWheel } from '@/components/mindfulness/EmotionWheel';
 import { HabitTracker } from '@/components/HabitTracker';
 import { FocusTimer } from '@/components/FocusTimer';
-import { GratitudeJournal } from '@/components/GratitudeJournal';
-import { BreathingExercise } from '@/components/BreathingExercise';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
+
 // Lazy-loaded components for better performance
 const StatsPage = lazy(() => import('@/components/StatsPage').then(m => ({ default: m.StatsPage })));
 const SettingsPanel = lazy(() => import('@/components/SettingsPanel').then(m => ({ default: m.SettingsPanel })));
+const GratitudeJournal = lazy(() => import('@/components/GratitudeJournal').then(m => ({ default: m.GratitudeJournal })));
+const BreathingExercise = lazy(() => import('@/components/BreathingExercise').then(m => ({ default: m.BreathingExercise })));
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { InstallBanner } from '@/components/InstallBanner';
 import { RemindersPanel } from '@/components/RemindersPanel';
@@ -52,11 +64,14 @@ import { AchievementsPanel } from '@/components/AchievementsPanel';
 import { NotificationPermission } from '@/components/NotificationPermission';
 import { GoogleAuthScreen } from '@/components/GoogleAuthScreen';
 import { WeeklyReport } from '@/components/WeeklyReport';
-import { ChallengesPanel } from '@/components/ChallengesPanel';
-import { TasksPanel } from '@/components/TasksPanel';
-import { QuestsPanel } from '@/components/QuestsPanel';
 import { TimeHelper } from '@/components/TimeHelper';
-import { WidgetSettings } from '@/pages/WidgetSettings';
+
+// More lazy-loaded components (opened via modals/sheets)
+const ChallengesPanel = lazy(() => import('@/components/ChallengesPanel').then(m => ({ default: m.ChallengesPanel })));
+const TasksPanel = lazy(() => import('@/components/TasksPanel').then(m => ({ default: m.TasksPanel })));
+const QuestsPanel = lazy(() => import('@/components/QuestsPanel').then(m => ({ default: m.QuestsPanel })));
+const WidgetSettings = lazy(() => import('@/pages/WidgetSettings').then(m => ({ default: m.WidgetSettings })));
+const Leaderboard = lazy(() => import('@/components/Leaderboard').then(m => ({ default: m.Leaderboard })));
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';
@@ -69,6 +84,10 @@ import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
 import { InsightsPanel } from '@/components/InsightsPanel';
 import { RestModeCard } from '@/components/RestModeCard';
+import { WhatsNewModal } from '@/components/WhatsNewModal';
+import { ChallengeModal } from '@/components/ChallengeModal';
+import { decodeInviteData, ChallengeInvite } from '@/lib/friendChallenge';
+import { initializeOfflineQueueHandlers } from '@/lib/offlineQueueHandlers';
 import { CompletedSection } from '@/components/CompletedSection';
 import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
 import { ConsentBanner } from '@/components/ConsentBanner';
@@ -76,6 +95,9 @@ import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { haptics } from '@/lib/haptics';
 import { OnboardingOverlay, DayProgressIndicator } from '@/components/OnboardingOverlay';
 import { FeatureUnlock } from '@/components/FeatureUnlock';
+import { QuickStatsRow } from '@/components/ui/stat-card';
+import { MindfulMoment } from '@/components/MindfulMoment';
+import { DailyPromptCard } from '@/components/DailyPromptCard';
 import {
   initializeOnboarding,
   isFeatureUnlocked,
@@ -94,12 +116,15 @@ import {
   wasStreakBroken,
   updateLastActiveDate
 } from '@/lib/reEngagement';
+import { UpdatePrompt } from '@/components/UpdatePrompt';
+import { checkForAppUpdate, wasUpdateDismissed, dismissUpdate, UpdateState } from '@/lib/appUpdateManager';
 
 type TabType = 'home' | 'garden' | 'stats' | 'achievements' | 'settings';
 
 export function Index() {
   const { t, language } = useLanguage();
-  const { setMoodFromEntries } = useMoodTheme();
+  const { setEmotionFromEntries } = useEmotionTheme();
+  const { syncFocusSession } = useHealthConnect();
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const lastSyncedUserIdRef = useRef<string | null>(null);
 
@@ -118,6 +143,14 @@ export function Index() {
   useEffect(() => {
     const initialize = async () => {
       logger.log('[Index] Starting app initialization...');
+
+      // Initialize offline queue handlers for offline-first sync
+      initializeOfflineQueueHandlers();
+
+      // Apply OLED mode if previously enabled
+      if (localStorage.getItem('zenflow_oled_mode') === 'true') {
+        document.documentElement.classList.add('oled');
+      }
 
       const result = await initializeApp();
 
@@ -185,10 +218,13 @@ export function Index() {
   const focusRef = useRef<HTMLDivElement>(null);
   const gratitudeRef = useRef<HTMLDivElement>(null);
 
-  const handleNavigateToSection = (section: 'mood' | 'habits' | 'focus' | 'gratitude') => {
+  const handleNavigateToSection = useCallback((section: 'mood' | 'habits' | 'focus' | 'gratitude') => {
     const refs = { mood: moodRef, habits: habitsRef, focus: focusRef, gratitude: gratitudeRef };
     refs[section]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  };
+  }, []);
+
+  // Lock screen quick actions integration
+  const { onAction: onQuickAction } = useQuickActions();
 
   // NOTE: Schedule event handlers, hint dismissal, and useMemo hooks moved below state declarations
   // to avoid TDZ (Temporal Dead Zone) errors in production builds
@@ -239,6 +275,8 @@ export function Index() {
 
   // Challenges state
   const [showChallenges, setShowChallenges] = useState(false);
+  const [showChallengeModal, setShowChallengeModal] = useState(false);
+  const [challengeInvite, setChallengeInvite] = useState<ChallengeInvite | undefined>(undefined);
   const [showTimeHelper, setShowTimeHelper] = useState(false);
   const [showTasksPanel, setShowTasksPanel] = useState(false);
   const [showQuestsPanel, setShowQuestsPanel] = useState(false);
@@ -257,6 +295,19 @@ export function Index() {
     currentStreak: number;
     topHabits: Array<{ habit: Habit; successRate: number }>;
   } | null>(null);
+
+  // App Update state (Google Play In-App Updates)
+  const [updateState, setUpdateState] = useState<UpdateState | null>(null);
+
+  // MindfulMoment - shows after focus session completion
+  const [showMindfulMoment, setShowMindfulMoment] = useState(false);
+
+  // Journal prompt text - from DailyPromptCard to GratitudeJournal
+  const [journalPromptText, setJournalPromptText] = useState<string | undefined>(undefined);
+
+  // Synchronous bypass flag for Google Auth - immediately skips GoogleAuthScreen
+  // This is needed because setGoogleAuthChecked uses async IndexedDB write
+  const [authBypassFlag, setAuthBypassFlag] = useState(false);
 
   // Используем useIndexedDB для hasSelectedLanguage
   const [hasSelectedLanguage, setHasSelectedLanguage, isLoadingLangSelected] = useIndexedDB({
@@ -339,6 +390,14 @@ export function Index() {
     idField: 'key'
   });
 
+  // Google Auth check (shown once after language selection)
+  const [googleAuthChecked, setGoogleAuthChecked, isLoadingGoogleAuth] = useIndexedDB({
+    table: db.settings,
+    localStorageKey: 'zenflow-google-auth-checked',
+    initialValue: false,
+    idField: 'key'
+  });
+
   // GDPR: analytics OFF by default (opt-in, not opt-out)
   const [privacy, setPrivacy, isLoadingPrivacy] = useIndexedDB<PrivacySettings>({
     table: db.settings,
@@ -367,7 +426,37 @@ export function Index() {
   });
 
   // Loading handling
-  const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingTutorial || isLoadingOnboarding || isLoadingPrivacy || isLoadingNotificationPermission || isLoadingSchedule || isLoadingInnerWorld;
+  const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingTutorial || isLoadingOnboarding || isLoadingPrivacy || isLoadingNotificationPermission || isLoadingGoogleAuth || isLoadingSchedule || isLoadingInnerWorld;
+
+  // Defensive array guards - prevent crashes from corrupted cloud sync data
+  const safeMoods = Array.isArray(moods) ? moods : [];
+  const safeHabits = Array.isArray(habits) ? habits : [];
+  const safeFocusSessions = Array.isArray(focusSessions) ? focusSessions : [];
+  const safeGratitudeEntries = Array.isArray(gratitudeEntries) ? gratitudeEntries : [];
+  const safeScheduleEvents = Array.isArray(scheduleEvents) ? scheduleEvents : [];
+  const safeBadges = Array.isArray(badges) ? badges : [];
+
+  // Register Android back button handler for modal panels
+  useEffect(() => {
+    const unregister = registerModalCloseCallback(() => {
+      // Close panels in priority order (most recently opened first)
+      if (showTasksPanel) { setShowTasksPanel(false); return true; }
+      if (showQuestsPanel) { setShowQuestsPanel(false); return true; }
+      if (showChallenges) { setShowChallenges(false); return true; }
+      if (showChallengeModal) { setShowChallengeModal(false); return true; }
+      if (showWidgetSettings) { setShowWidgetSettings(false); return true; }
+      if (showCompanionPanel) { setShowCompanionPanel(false); return true; }
+      if (showWeeklyReport) { setShowWeeklyReport(false); return true; }
+      if (showTimeHelper) { setShowTimeHelper(false); return true; }
+      if (showMindfulMoment) { setShowMindfulMoment(false); return true; }
+      if (showWelcomeBack) { setShowWelcomeBack(false); return true; }
+      if (showWelcomeOverlay) { setShowWelcomeOverlay(false); return true; }
+      return false;
+    });
+    return unregister;
+  }, [showTasksPanel, showQuestsPanel, showChallenges, showChallengeModal,
+      showWidgetSettings, showCompanionPanel, showWeeklyReport, showTimeHelper,
+      showMindfulMoment, showWelcomeBack, showWelcomeOverlay]);
 
   // Migrate old reminder settings to new 3-time mood format
   useEffect(() => {
@@ -401,38 +490,62 @@ export function Index() {
     const newEvent: ScheduleEvent = {
       ...event,
       id: generateId(),
+      source: 'manual',  // v1.4.0: Mark as manually created
+      isEditable: true,
     };
-    setScheduleEvents([...scheduleEvents, newEvent]);
+    // v1.4.0: Use functional update to avoid stale closure race conditions
+    setScheduleEvents(prev => [...prev, newEvent]);
   };
 
   const handleDeleteScheduleEvent = (id: string) => {
+    // v1.4.0: Only allow deleting manual events (habit events are managed through habits)
+    const eventToDelete = allScheduleEvents.find(e => e.id === id);
+    if (eventToDelete?.source === 'habit') {
+      logger.warn('[Schedule] Cannot delete habit-generated event directly');
+      return;
+    }
     setScheduleEvents(scheduleEvents.filter(e => e.id !== id));
   };
 
-  // Filter today's schedule events
+  // Filter today's schedule events (manual only)
   const todayScheduleEvents = useMemo(() => {
-    return scheduleEvents.filter(e => e.date === currentDate);
-  }, [scheduleEvents, currentDate]);
+    return safeScheduleEvents.filter(e => e.date === currentDate);
+  }, [safeScheduleEvents, currentDate]);
+
+  // v1.4.0: Generate habit-based schedule events (7 days ahead)
+  const habitScheduleEvents = useMemo(() => {
+    return generateHabitScheduleEvents(safeHabits, 7);
+  }, [safeHabits]);
+
+  // v1.4.0: Merge manual and habit events for full schedule
+  const allScheduleEvents = useMemo(() => {
+    return mergeScheduleEvents(safeScheduleEvents, habitScheduleEvents);
+  }, [safeScheduleEvents, habitScheduleEvents]);
+
+  // v1.4.0: Today's combined events (manual + habits)
+  const todayAllEvents = useMemo(() => {
+    return allScheduleEvents.filter(e => e.date === currentDate);
+  }, [allScheduleEvents, currentDate]);
 
   // Check if user has mood today
   const hasMoodToday = useMemo(() => {
-    return moods.some(m => m.date === currentDate);
-  }, [moods, currentDate]);
+    return safeMoods.some(m => m.date === currentDate);
+  }, [safeMoods, currentDate]);
 
   // Check if user has focus session today
   const hasFocusToday = useMemo(() => {
-    return focusSessions.some(s => s.date === currentDate);
-  }, [focusSessions, currentDate]);
+    return safeFocusSessions.some(s => s.date === currentDate);
+  }, [safeFocusSessions, currentDate]);
 
   // Check if user has gratitude today
   const hasGratitudeToday = useMemo(() => {
-    return gratitudeEntries.some(g => g.date === currentDate);
-  }, [gratitudeEntries, currentDate]);
+    return safeGratitudeEntries.some(g => g.date === currentDate);
+  }, [safeGratitudeEntries, currentDate]);
 
   // Check if user has uncompleted habits today
   const hasUncompletedHabits = useMemo(() => {
-    if (habits.length === 0) return false;
-    return habits.some(h => {
+    if (safeHabits.length === 0) return false;
+    return safeHabits.some(h => {
       const habitType = h.type || 'daily';
       // Continuous habits don't count for completion
       if (habitType === 'continuous') return false;
@@ -444,7 +557,25 @@ export function Index() {
       // Daily and scheduled habits
       return !h.completedDates?.includes(currentDate);
     });
-  }, [habits, currentDate]);
+  }, [safeHabits, currentDate]);
+
+  // Count completed habits today (for QuickStatsRow)
+  const completedTodayCount = useMemo(() => {
+    return safeHabits.filter(h => {
+      const habitType = h.type || 'daily';
+      if (habitType === 'reduce') {
+        return (h.progressByDate?.[currentDate] ?? 0) === 0;
+      }
+      if (habitType === 'multiple') {
+        const completions = h.completionsByDate?.[currentDate] ?? 0;
+        return completions >= (h.dailyTarget ?? 1);
+      }
+      if (habitType === 'continuous') {
+        return !(h.failedDates?.includes(currentDate));
+      }
+      return h.completedDates?.includes(currentDate);
+    }).length;
+  }, [safeHabits, currentDate]);
 
   // Determine current primary CTA (Smart Focus System)
   // Priority: mood → habits → focus → gratitude → complete
@@ -462,43 +593,53 @@ export function Index() {
   }, [hasMoodToday, hasUncompletedHabits, hasFocusToday, hasGratitudeToday]);
 
   // Widget synchronization
-  const currentStreak = useMemo(() => {
-    if (!habits.length) return 0;
-    const completed = habits.filter(h => h.completedDates?.includes(currentDate) ?? false);
-    return completed.length === habits.length ? 1 : 0; // Simplified - real streak calculation would be more complex
-  }, [habits, currentDate]);
-
   const todayFocusMinutes = useMemo(() => {
-    return focusSessions
+    return safeFocusSessions
       .filter(s => s.date.startsWith(currentDate))
       .reduce((sum, s) => sum + (s.duration || 0), 0);
-  }, [focusSessions, currentDate]);
+  }, [safeFocusSessions, currentDate]);
 
   const lastBadgeName = useMemo(() => {
-    const unlockedBadges = badges.filter(b => b.unlocked && b.unlockedDate);
+    const unlockedBadges = safeBadges.filter(b => b.unlocked && b.unlockedDate);
     if (!unlockedBadges.length) return undefined;
     // Sort by unlockedDate string (ISO format sorts correctly)
     const latest = unlockedBadges.sort((a, b) =>
       (b.unlockedDate || '').localeCompare(a.unlockedDate || '')
     )[0];
     return latest.title?.['en'] || latest.id;
-  }, [badges]);
+  }, [safeBadges]);
 
-  useWidgetSync(currentStreak, habits, todayFocusMinutes, lastBadgeName);
+  // Calculate streak for widget (same logic as StreakBanner)
+  const widgetStreak = useMemo(() => {
+    const allActivityDates = [
+      ...safeMoods.map(m => m.date),
+      ...safeHabits.flatMap(h => h.completedDates || []),
+      ...safeFocusSessions.map(f => f.date),
+      ...safeGratitudeEntries.map(g => g.date),
+      ...(innerWorld.restDays || []),
+    ];
+    const uniqueActivityDates = [...new Set(allActivityDates)].sort();
+    return calculateStreak(uniqueActivityDates);
+  }, [safeMoods, safeHabits, safeFocusSessions, safeGratitudeEntries, innerWorld.restDays]);
 
-  // Sync mood theme with current mood entries
+  // Sync widget with calculated streak (same as StreakBanner shows)
+  // Wait for all data that affects streak to be loaded
+  const isWidgetDataLoading = isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingInnerWorld;
+  useWidgetSync(widgetStreak, habits, todayFocusMinutes, lastBadgeName, isWidgetDataLoading);
+
+  // Sync emotion theme with current mood entries
   useEffect(() => {
     if (!isLoadingMoods) {
-      setMoodFromEntries(moods);
+      setEmotionFromEntries(moods);
     }
-  }, [moods, isLoadingMoods, setMoodFromEntries]);
+  }, [moods, isLoadingMoods, setEmotionFromEntries]);
 
   // Initialize Progressive Onboarding
   useEffect(() => {
     if (isLoading || !onboardingComplete) return;
 
     // Detect existing users (skip onboarding)
-    const hasExistingData = moods.length > 0 || habits.length > 0 || focusSessions.length > 0;
+    const hasExistingData = safeMoods.length > 0 || safeHabits.length > 0 || safeFocusSessions.length > 0;
 
     // Initialize onboarding state
     initializeOnboarding({ hasExistingData });
@@ -510,7 +651,7 @@ export function Index() {
     if (shouldShowWelcome()) {
       setShowWelcomeOverlay(true);
     }
-  }, [isLoading, onboardingComplete, moods.length, habits.length, focusSessions.length]);
+  }, [isLoading, onboardingComplete, safeMoods.length, safeHabits.length, safeFocusSessions.length]);
 
   // Re-engagement detection (Welcome Back for 3+ day absence)
   useEffect(() => {
@@ -522,25 +663,48 @@ export function Index() {
     // Check if we should show welcome back modal
     if (shouldShowWelcomeBack()) {
       const daysAway = getDaysSinceLastActive();
-      const topHabits = calculateHabitSuccessRates(habits);
-      const streakBroken = wasStreakBroken(currentStreak, daysAway, innerWorld.restDays);
+      const topHabits = calculateHabitSuccessRates(safeHabits);
+      const streakBroken = wasStreakBroken(innerWorld.currentActiveStreak, daysAway, innerWorld.restDays);
 
       setWelcomeBackData({
         daysAway,
         streakBroken,
-        currentStreak,
+        currentStreak: innerWorld.currentActiveStreak,
         topHabits
       });
       setShowWelcomeBack(true);
       markWelcomeBackShown();
     }
-  }, [isLoading, onboardingComplete, isLoadingInnerWorld, habits, currentStreak, innerWorld.restDays]);
+  }, [isLoading, onboardingComplete, isLoadingInnerWorld, safeHabits, innerWorld.currentActiveStreak, innerWorld.restDays]);
+
+  // Check for app updates (Google Play In-App Updates)
+  // NOTE: Update check runs only after app is fully loaded to prevent blocking
+  useEffect(() => {
+    if (isLoading || !onboardingComplete) return;
+
+    // Delay update check to ensure app is fully rendered first
+    const timeoutId = setTimeout(async () => {
+      if (wasUpdateDismissed()) return;
+
+      try {
+        const state = await checkForAppUpdate();
+        if (state.available) {
+          logger.log('[AppUpdate] Update available:', state);
+          setUpdateState(state);
+        }
+      } catch (error) {
+        logger.warn('[AppUpdate] Check failed (non-critical):', error);
+      }
+    }, 3000); // 3 second delay
+
+    return () => clearTimeout(timeoutId);
+  }, [isLoading, onboardingComplete]);
 
   // Check for feature unlocks after user actions
   const checkForFeatureUnlocks = useCallback(() => {
-    const habitsCompleted = habits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0);
-    const focusSessionsCompleted = focusSessions.length;
-    const moodEntriesCount = moods.length;
+    const habitsCompleted = safeHabits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0);
+    const focusSessionsCompleted = safeFocusSessions.length;
+    const moodEntriesCount = safeMoods.length;
 
     const stats = { habitsCompleted, focusSessionsCompleted, moodEntriesCount };
 
@@ -557,40 +721,40 @@ export function Index() {
         break; // Show one unlock at a time
       }
     }
-  }, [habits, focusSessions, moods]);
+  }, [safeHabits, safeFocusSessions, safeMoods]);
 
   // Helper function to update challenge progress after user actions
   const updateChallengeProgress = useCallback(() => {
-    const totalFocusMinutes = focusSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
-    const totalGratitude = gratitudeEntries.length;
-    const totalHabitsCompleted = habits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0);
+    const totalFocusMinutes = safeFocusSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
+    const totalGratitude = safeGratitudeEntries.length;
+    const totalHabitsCompleted = safeHabits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0);
 
     // Calculate perfect days (days where ALL habits were completed)
     const habitDates = new Set<string>();
-    habits.forEach(h => h.completedDates?.forEach(d => habitDates.add(d)));
+    safeHabits.forEach(h => h.completedDates?.forEach(d => habitDates.add(d)));
     let perfectDaysCount = 0;
     habitDates.forEach(date => {
-      const allCompleted = habits.every(h => h.completedDates?.includes(date));
-      if (allCompleted && habits.length > 0) perfectDaysCount++;
+      const allCompleted = safeHabits.every(h => h.completedDates?.includes(date));
+      if (allCompleted && safeHabits.length > 0) perfectDaysCount++;
     });
 
     // Calculate zen master days (days with mood + habits + focus + gratitude)
-    const moodDates = new Set(moods.map(m => m.date));
-    const focusDates = new Set(focusSessions.map(f => f.date));
-    const gratitudeDates = new Set(gratitudeEntries.map(g => g.date));
+    const moodDates = new Set(safeMoods.map(m => m.date));
+    const focusDates = new Set(safeFocusSessions.map(f => f.date));
+    const gratitudeDates = new Set(safeGratitudeEntries.map(g => g.date));
     let zenMasterDays = 0;
     habitDates.forEach(date => {
       const hasMood = moodDates.has(date);
       const hasFocus = focusDates.has(date);
       const hasGratitude = gratitudeDates.has(date);
-      const allHabits = habits.every(h => h.completedDates?.includes(date));
-      if (hasMood && allHabits && hasFocus && hasGratitude && habits.length > 0) {
+      const allHabits = safeHabits.every(h => h.completedDates?.includes(date));
+      if (hasMood && allHabits && hasFocus && hasGratitude && safeHabits.length > 0) {
         zenMasterDays++;
       }
     });
 
     // Get early bird / night owl counts from localStorage (tracked incrementally)
-    const specialBadgeData = JSON.parse(localStorage.getItem('zenflow-special-badges') || '{}');
+    const specialBadgeData = safeLocalStorageGet<Record<string, number>>('zenflow-special-badges', {});
 
     // Build UserStats object matching types/index.ts interface
     const userStats = {
@@ -598,7 +762,7 @@ export function Index() {
       currentStreak: innerWorld.currentActiveStreak || 0,
       longestStreak: innerWorld.currentActiveStreak || 0, // Approximation
       habitsCompleted: totalHabitsCompleted,
-      moodEntries: moods.length,
+      moodEntries: safeMoods.length,
       gratitudeEntries: totalGratitude,
       perfectDaysCount,
       earlyBirdCount: specialBadgeData.earlyBirdCount || 0,
@@ -615,7 +779,7 @@ export function Index() {
       setBadges(getBadges());
       // Could add a celebration/notification for new badges here
     }
-  }, [focusSessions, gratitudeEntries, habits, moods, innerWorld.currentActiveStreak]);
+  }, [safeFocusSessions, safeGratitudeEntries, safeHabits, safeMoods, innerWorld.currentActiveStreak]);
 
   // Handlers
   const handleAddMood = (entry: MoodEntry) => {
@@ -678,7 +842,12 @@ export function Index() {
   // Track early bird / night owl for special badges
   const trackTimeOfDayCompletion = useCallback(() => {
     const hour = new Date().getHours();
-    const data = JSON.parse(localStorage.getItem('zenflow-special-badges') || '{}');
+    let data: Record<string, number> = {};
+    try {
+      data = JSON.parse(localStorage.getItem('zenflow-special-badges') || '{}');
+    } catch {
+      // Ignore parse errors
+    }
 
     if (hour < 8) {
       // Early Bird: before 8 AM
@@ -731,17 +900,19 @@ export function Index() {
           trackTimeOfDayCompletion(); // Track for Early Bird/Night Owl badges
         }
 
+        const existingDates = habit.completedDates || [];
         return {
           ...habit,
           completionsByDate,
           completedDates: completionsByDate[date] >= target
-            ? [...new Set([...habit.completedDates, date])]
-            : habit.completedDates.filter(d => d !== date)
+            ? [...new Set([...existingDates, date])]
+            : existingDates.filter(d => d !== date)
         };
       }
 
       // Daily and scheduled habits (normal toggle)
-      const completed = habit.completedDates.includes(date);
+      const existingDates = habit.completedDates || [];
+      const completed = existingDates.includes(date);
       if (!completed) {
         awardXp('habit'); // +10 XP for completing habit (legacy)
         const treatResult = earnTreats('habit', 10, 'Completed habit');
@@ -755,8 +926,8 @@ export function Index() {
       return {
         ...habit,
         completedDates: completed
-          ? habit.completedDates.filter(d => d !== date)
-          : [...habit.completedDates, date],
+          ? existingDates.filter(d => d !== date)
+          : [...existingDates, date],
       };
     }));
     triggerSync(); // Auto-sync to cloud
@@ -816,6 +987,17 @@ export function Index() {
     triggerSync(); // Auto-sync to cloud
     haptics.focusCompleted();
 
+    // Show MindfulMoment after focus session (only for sessions > 5 min)
+    if (session.duration >= 5) {
+      setTimeout(() => setShowMindfulMoment(true), 500);
+    }
+
+    // Sync to Health Connect if enabled (only completed sessions, not aborted)
+    if (session.status === 'completed' && localStorage.getItem('zenflow_health_connect_sync') === 'true') {
+      const startTime = session.completedAt - (session.duration * 60 * 1000);
+      syncFocusSession(session.id, startTime, session.duration, session.label);
+    }
+
     // Inner World: Plant a crystal when completing focus session
     plantSeed('focus');
     waterPlants('focus');
@@ -867,6 +1049,25 @@ export function Index() {
     });
   };
 
+  // MindfulMoment completion handler
+  const handleMindfulMomentComplete = useCallback(() => {
+    // Award treats for completing mindful moment
+    const treatResult = earnTreats('mindful', 1, 'Mindful Moment');
+    triggerXpPopup(treatResult.earned, 'mindful');
+  }, [earnTreats]);
+
+  // DailyPromptCard handler - opens GratitudeJournal with prompt
+  const handleUseJournalPrompt = useCallback((promptText: string) => {
+    setJournalPromptText(promptText);
+    // Scroll to gratitude section
+    gratitudeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
+
+  // Clear journal prompt text after it's been used
+  const handleJournalPromptUsed = useCallback(() => {
+    setJournalPromptText(undefined);
+  }, []);
+
   const handleResetData = () => {
     setMoods([]);
     setHabits([]);
@@ -897,6 +1098,26 @@ export function Index() {
     // Auth is now optional - no need to set gate complete
   };
 
+  // Google Auth handlers (shown once after language selection)
+  const handleGoogleAuthComplete = (userData: { name: string; email: string }) => {
+    logger.log('[Index] Google auth completed:', userData.email);
+
+    // CRITICAL: Set synchronous bypass flag FIRST (immediate UI update)
+    // This ensures we skip GoogleAuthScreen immediately, before IndexedDB writes
+    setAuthBypassFlag(true);
+
+    // Then set persistent values (async IndexedDB)
+    setUserName(userData.name);
+    setUserNameCustom(false);
+    setGoogleAuthChecked(true);
+  };
+
+  const handleGoogleAuthSkip = () => {
+    logger.log('[Index] Google auth skipped');
+    setAuthBypassFlag(true);  // Immediate UI update
+    setGoogleAuthChecked(true);
+  };
+
   const handleOnboardingComplete = (result: {
     skipped?: boolean;
     mood: MoodEntry['mood'] | null;
@@ -924,7 +1145,7 @@ export function Index() {
       let selectedHabitIds: string[] = [];
       if (result.habits.length > 0) {
         const existingByName = new Map(
-          habits.map(habit => [habit.name.toLowerCase(), habit.id])
+          safeHabits.map(habit => [habit.name.toLowerCase(), habit.id])
         );
         const additions: Habit[] = [];
 
@@ -986,7 +1207,7 @@ export function Index() {
   };
 
   const reminderCopy = useMemo(() => {
-    const habitNameMap = new Map(habits.map((habit) => [habit.id, habit.name]));
+    const habitNameMap = new Map(safeHabits.map((habit) => [habit.id, habit.name]));
     const habitNames = reminders.habitIds
       .map((id) => habitNameMap.get(id))
       .filter(Boolean) as string[];
@@ -1000,10 +1221,10 @@ export function Index() {
       habit: { title: t.reminderHabitTitle, body: habitBody },
       focus: { title: t.reminderFocusTitle, body: t.reminderFocusBody }
     };
-  }, [habits, reminders.habitIds, t]);
+  }, [safeHabits, reminders.habitIds, t]);
 
   useEffect(() => {
-    if (habits.length === 0) return;
+    if (safeHabits.length === 0) return;
     setHabits(prev => {
       let changed = false;
       const updated = prev.map(habit => {
@@ -1027,7 +1248,7 @@ export function Index() {
       });
       return changed ? updated : prev;
     });
-  }, [language, habits.length, setHabits]);
+  }, [language, safeHabits.length, setHabits]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -1129,42 +1350,171 @@ export function Index() {
     });
   }, [reminders.enabled, reminders.moodTimeMorning, innerWorld.companion, isLoadingInnerWorld, t.companionQuickMood]);
 
+  // Lock screen quick actions handler
   useEffect(() => {
-    if (!supabase || !isNativePlatform()) return;
+    onQuickAction((action: QuickActionType) => {
+      logger.log('[Index] Quick action triggered:', action);
+
+      // Switch to home tab first
+      setActiveTab('home');
+
+      // Small delay to ensure tab switch is complete before scrolling
+      setTimeout(() => {
+        switch (action) {
+          case 'mood':
+            handleNavigateToSection('mood');
+            break;
+          case 'focus':
+            handleNavigateToSection('focus');
+            break;
+          case 'habits':
+            handleNavigateToSection('habits');
+            break;
+        }
+      }, 100);
+    });
+  }, [onQuickAction, handleNavigateToSection]);
+
+  // Deep link listener - ALWAYS register, store URL if supabase not ready
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+
     let removeListener = () => {};
 
     const handleAuthUrl = async (url: string) => {
+      // Check if URL is auth callback
+      if (!url.includes('login-callback')) return;
+
+      logger.log('[Index] Auth URL received:', url);
+
+      // If supabase not ready, store for later
+      if (!supabase) {
+        logger.log('[Index] Supabase not ready, storing pending URL');
+        setPendingAuthUrl(url);
+        return;
+      }
+
       try {
         await handleAuthCallback(supabase, url);
+
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user) {
+          const metadata = data.session.user.user_metadata;
+          const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
+          const email = data.session.user.email || '';
+
+          logger.log('[Auth] OAuth callback successful:', email);
+          setAuthBypassFlag(true);
+          notifyAuthComplete();
+          setUserName(name);
+          setUserNameCustom(false);
+          setGoogleAuthChecked(true);
+        }
       } catch (error) {
-        logger.error("Failed to handle auth callback:", error);
+        logger.error('[Index] Failed to handle auth callback:', error);
       }
+    };
+
+    // Handle challenge deep links
+    const handleChallengeUrl = (url: string): boolean => {
+      try {
+        const parsedUrl = new URL(url);
+        // Check if it's a challenge invite URL
+        // Support both: zenflow://challenge?data=... and https://zenflow.app/challenge?data=...
+        const isCustomScheme = parsedUrl.protocol === 'zenflow:' && parsedUrl.hostname === 'challenge';
+        const isHttpsScheme = parsedUrl.hostname === 'zenflow.app' && parsedUrl.pathname.startsWith('/challenge');
+
+        if (isCustomScheme || isHttpsScheme) {
+          const data = parsedUrl.searchParams.get('data');
+          if (data) {
+            const invite = decodeInviteData(data);
+            if (invite) {
+              logger.log('[Index] Challenge invite received:', invite.code);
+              setChallengeInvite(invite);
+              setShowChallengeModal(true);
+              return true;
+            }
+          }
+        }
+      } catch (error) {
+        logger.error('[Index] Failed to parse challenge URL:', error);
+      }
+      return false;
     };
 
     const setup = async () => {
       try {
+        // Check launch URL (cold start with deep link)
         const launch = await App.getLaunchUrl();
         if (launch?.url) {
-          await handleAuthUrl(launch.url);
+          logger.log('[Index] Launch URL found:', launch.url);
+          // Try challenge URL first, then auth URL
+          if (!handleChallengeUrl(launch.url)) {
+            await handleAuthUrl(launch.url);
+          }
         }
       } catch (error) {
-        logger.error("Failed to read launch url:", error);
+        logger.error('[Index] Failed to read launch URL:', error);
       }
 
-      const listener = await App.addListener("appUrlOpen", (event) => {
+      // Listen for future deep links
+      const listener = await App.addListener('appUrlOpen', (event) => {
         if (event?.url) {
-          handleAuthUrl(event.url);
+          logger.log('[Index] appUrlOpen event:', event.url);
+          // Try challenge URL first, then auth URL
+          if (!handleChallengeUrl(event.url)) {
+            handleAuthUrl(event.url);
+          }
         }
       });
       removeListener = () => listener.remove();
     };
 
     setup();
+    return () => { removeListener(); };
+  }, []); // Listener registers ONCE, no dependencies
+
+  // Process pending auth URL when supabase becomes ready
+  useEffect(() => {
+    if (!supabase || !isNativePlatform()) return;
+
+    let active = true;
+    const pendingUrl = getPendingAuthUrl();
+    if (pendingUrl) {
+      logger.log('[Index] Processing pending auth URL');
+
+      (async () => {
+        try {
+          await handleAuthCallback(supabase, pendingUrl);
+
+          // Check if component is still mounted
+          if (!active) return;
+
+          const { data } = await supabase.auth.getSession();
+          if (!active) return;
+
+          if (data.session?.user) {
+            const metadata = data.session.user.user_metadata;
+            const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
+            const email = data.session.user.email || '';
+
+            logger.log('[Auth] Pending auth processed successfully:', email);
+            setAuthBypassFlag(true);
+            notifyAuthComplete();
+            setUserName(name);
+            setUserNameCustom(false);
+            setGoogleAuthChecked(true);
+          }
+        } catch (error) {
+          logger.error('[Index] Failed to process pending auth:', error);
+        }
+      })();
+    }
 
     return () => {
-      removeListener();
+      active = false;
     };
-  }, []);
+  }, [supabase, setUserName, setUserNameCustom, setGoogleAuthChecked]);
 
   useEffect(() => {
     if (!supabase || isLoading) return;
@@ -1201,7 +1551,8 @@ export function Index() {
 
     return () => {
       active = false;
-      subscription.subscription.unsubscribe();
+      subscription?.subscription?.unsubscribe?.();
+      stopAutoSync(); // Clean up auto-sync listeners and intervals
     };
   }, [isLoading]);
 
@@ -1227,7 +1578,7 @@ export function Index() {
 
     return () => {
       active = false;
-      subscription.subscription.unsubscribe();
+      subscription?.subscription?.unsubscribe?.();
     };
   }, [userNameCustom, userName, setUserName]);
 
@@ -1269,8 +1620,9 @@ export function Index() {
 
   // Cloud sync for challenges and badges
   useEffect(() => {
-    let challengeSub: { unsubscribe: () => void } | null = null;
-    let badgeSub: { unsubscribe: () => void } | null = null;
+    let active = true;
+    let challengeSub: (() => void) | null = null;
+    let badgeSub: (() => void) | null = null;
     let taskSub: (() => void) | null = null;
     let questSub: (() => void) | null = null;
 
@@ -1281,25 +1633,35 @@ export function Index() {
       try {
         const { data: { user } } = await supabase.auth.getUser();
 
+        // Check if component is still mounted
+        if (!active) return;
+
         if (user) {
           // Sync challenges
           const { challenges: syncedChallenges } = await syncChallengesWithCloud(user.id);
-          if (syncedChallenges) {
+          if (active && syncedChallenges) {
             setChallenges(syncedChallenges);
           }
 
           // Sync badges
           const { badges: syncedBadges } = await syncBadgesWithCloud(user.id);
-          if (syncedBadges) {
+          if (active && syncedBadges) {
             setBadges(syncedBadges);
           }
+
+          // Check again before continuing
+          if (!active) return;
 
           // Sync tasks and quests (updates localStorage for Panels to read)
           await syncTasks();
           await syncQuests();
 
+          // Check again before setting up subscriptions
+          if (!active) return;
+
           // Subscribe to real-time updates
           challengeSub = subscribeToChallengeUpdates(user.id, (updatedChallenge) => {
+            if (!active) return;
             setChallenges(prev => {
               const index = prev.findIndex(c => c.id === updatedChallenge.id);
               if (index !== -1) {
@@ -1312,6 +1674,7 @@ export function Index() {
           });
 
           badgeSub = subscribeToBadgeUpdates(user.id, (updatedBadge) => {
+            if (!active) return;
             setBadges(prev => {
               const index = prev.findIndex(b => b.id === updatedBadge.id);
               if (index !== -1) {
@@ -1325,10 +1688,12 @@ export function Index() {
 
           // Subscribe to tasks/quests updates to keep localStorage fresh
           taskSub = subscribeToTaskUpdates(user.id, () => {
+            if (!active) return;
             logger.log('[Index] Tasks updated from cloud');
           });
 
           questSub = subscribeToQuestUpdates(user.id, () => {
+            if (!active) return;
             logger.log('[Index] Quests updated from cloud');
           });
         }
@@ -1340,8 +1705,9 @@ export function Index() {
     syncWithCloudIfLoggedIn();
 
     return () => {
-      challengeSub?.unsubscribe();
-      badgeSub?.unsubscribe();
+      active = false;
+      challengeSub?.();
+      badgeSub?.();
       taskSub?.();
       questSub?.();
     };
@@ -1391,6 +1757,19 @@ export function Index() {
     return <LanguageSelector onComplete={handleLanguageSelected} />;
   }
 
+  // Google Auth screen (optional - can be skipped)
+  // Shown after language selection, before tutorial
+  // Check both googleAuthChecked (IndexedDB) and authBypassFlag (synchronous)
+  // authBypassFlag provides immediate skip while IndexedDB writes are pending
+  if (!googleAuthChecked && !authBypassFlag) {
+    return (
+      <GoogleAuthScreen
+        onComplete={handleGoogleAuthComplete}
+        onSkip={handleGoogleAuthSkip}
+      />
+    );
+  }
+
   // Show tutorial before onboarding for new users
   // Now tutorial will be in the language user just selected
   if (!tutorialComplete) {
@@ -1412,12 +1791,31 @@ export function Index() {
 
   return (
     <div className="min-h-screen zen-gradient-hero">
+      {/* Skip to main content link for accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:shadow-lg"
+      >
+        {t.skipToContent || 'Skip to main content'}
+      </a>
+
       {/* Dynamic mood-based background overlay */}
       <MoodBackgroundOverlay />
 
       {/* GDPR Consent Banner - shows once after onboarding */}
       {!privacy.consentShown && onboardingComplete && (
         <ConsentBanner onConsent={handleConsentResponse} />
+      )}
+
+      {/* App Update Banner - shows when Google Play update is available */}
+      {updateState && updateState.available && (
+        <UpdatePrompt
+          updateState={updateState}
+          onDismiss={() => {
+            dismissUpdate();
+            setUpdateState(null);
+          }}
+        />
       )}
 
       {/* Progressive Onboarding - Welcome overlay for new users */}
@@ -1452,19 +1850,23 @@ export function Index() {
             setMoods(prev => [...prev, newMood]);
             awardXp('mood');
             earnTreats('mood', 5, 'Welcome back mood');
+            triggerSync(); // Sync mood and inner world
           }}
         />
       )}
 
-      <div
+      <main
+        id="main-content"
+        role="main"
         className="max-w-lg mx-auto px-4 py-6"
-        style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))' }}
+        style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom))' }}
       >
         {/* Global Schedule Bar - visible on all tabs when events exist */}
-        {todayScheduleEvents.length > 0 && activeTab !== 'settings' && (
+        {/* v1.4.0: Use todayAllEvents to include both manual and habit-generated events */}
+        {todayAllEvents.length > 0 && activeTab !== 'settings' && (
           <div className="mb-4">
             <GlobalScheduleBar
-              events={todayScheduleEvents}
+              events={todayAllEvents}
               onTap={() => setActiveTab('garden')}
             />
           </div>
@@ -1484,14 +1886,14 @@ export function Index() {
               {/* Progressive Onboarding - Day progress indicator */}
               <DayProgressIndicator />
 
-              <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={habits} />
+              <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={safeHabits} />
 
               {/* Streak Banner - Prominent streak display with Rest Mode button */}
               <StreakBanner
-                moods={moods}
-                habits={habits}
-                focusSessions={focusSessions}
-                gratitudeEntries={gratitudeEntries}
+                moods={safeMoods}
+                habits={safeHabits}
+                focusSessions={safeFocusSessions}
+                gratitudeEntries={safeGratitudeEntries}
                 restDays={innerWorld.restDays}
                 onRestMode={activateRestMode}
                 isRestMode={isRestMode}
@@ -1499,20 +1901,28 @@ export function Index() {
                 daysUntilRestAvailable={daysUntilRestAvailable}
               />
 
+              {/* Quick Stats Row - At-a-glance progress overview */}
+              <QuickStatsRow
+                habitsCompleted={completedTodayCount}
+                habitsTotal={safeHabits.length}
+                focusMinutes={todayFocusMinutes}
+                level={userLevel.level}
+                labels={{
+                  habits: t.habits,
+                  focus: t.focus,
+                  level: t.level || 'Level',
+                }}
+              />
+
               {/* Personal Insights - Data-driven pattern detection */}
               <InsightsPanel
-                moods={moods}
-                habits={habits}
-                focusSessions={focusSessions}
+                moods={safeMoods}
+                habits={safeHabits}
+                focusSessions={safeFocusSessions}
                 compact={true}
               />
 
-              {/* Schedule Timeline - Horizontal day planner (moved to home) */}
-              <ScheduleTimeline
-                events={todayScheduleEvents}
-                onAddEvent={handleAddScheduleEvent}
-                onDeleteEvent={handleDeleteScheduleEvent}
-              />
+              {/* v1.4.0: ScheduleTimeline moved to "My World" tab */}
 
               {/* Rest Mode UI - Simplified interface when taking a break */}
               {isRestMode ? (
@@ -1530,10 +1940,9 @@ export function Index() {
                   {/* Mood Tracker - Primary or Collapsed */}
                   <div ref={moodRef}>
                     {currentPrimaryCTA === 'mood' ? (
-                      <MoodTracker
-                        entries={moods}
+                      <EmotionWheel
+                        entries={safeMoods}
                         onAddEntry={handleAddMood}
-                        onUpdateEntry={handleUpdateMood}
                         isPrimaryCTA={true}
                       />
                     ) : hasMoodToday ? (
@@ -1542,49 +1951,50 @@ export function Index() {
                         icon="💜"
                         accentColor="primary"
                       >
-                        <MoodTracker
-                          entries={moods}
+                        <EmotionWheel
+                          entries={safeMoods}
                           onAddEntry={handleAddMood}
-                          onUpdateEntry={handleUpdateMood}
                         />
                       </CompletedSection>
                     ) : (
-                      <MoodTracker
-                        entries={moods}
+                      <EmotionWheel
+                        entries={safeMoods}
                         onAddEntry={handleAddMood}
-                        onUpdateEntry={handleUpdateMood}
                       />
                     )}
                   </div>
 
                   {/* Breathing Exercise - Compact mindfulness card */}
-                  <BreathingExercise
-                    compact
-                    onComplete={(pattern) => {
-                      const treatResult = earnTreats('breathing', 5, `Breathing: ${pattern.name}`);
-                      triggerXpPopup(treatResult.earned, 'breathing');
-                    }}
-                  />
+                  <Suspense fallback={<div className="h-24 bg-card rounded-3xl animate-pulse" />}>
+                    <BreathingExercise
+                      compact
+                      onComplete={(pattern) => {
+                        const treatResult = earnTreats('breathing', 5, `Breathing: ${pattern.name}`);
+                        triggerXpPopup(treatResult.earned, 'breathing');
+                        triggerSync(); // Sync inner world treats
+                      }}
+                    />
+                  </Suspense>
 
                   {/* Habit Tracker - Primary or Collapsed */}
                   <div ref={habitsRef}>
                     {currentPrimaryCTA === 'habits' ? (
                       <HabitTracker
-                        habits={habits}
+                        habits={safeHabits}
                         onToggleHabit={handleToggleHabit}
                         onAdjustHabit={handleAdjustHabit}
                         onAddHabit={handleAddHabit}
                         onDeleteHabit={handleDeleteHabit}
                         isPrimaryCTA={true}
                       />
-                    ) : !hasUncompletedHabits && habits.length > 0 ? (
+                    ) : !hasUncompletedHabits && safeHabits.length > 0 ? (
                       <CompletedSection
                         title={t.habitsCompletedShort || t.habits}
                         icon="✅"
                         accentColor="emerald"
                       >
                         <HabitTracker
-                          habits={habits}
+                          habits={safeHabits}
                           onToggleHabit={handleToggleHabit}
                           onAdjustHabit={handleAdjustHabit}
                           onAddHabit={handleAddHabit}
@@ -1593,7 +2003,7 @@ export function Index() {
                       </CompletedSection>
                     ) : (
                       <HabitTracker
-                        habits={habits}
+                        habits={safeHabits}
                         onToggleHabit={handleToggleHabit}
                         onAdjustHabit={handleAdjustHabit}
                         onAddHabit={handleAddHabit}
@@ -1607,7 +2017,7 @@ export function Index() {
                     <div ref={focusRef}>
                       {currentPrimaryCTA === 'focus' ? (
                         <FocusTimer
-                          sessions={focusSessions}
+                          sessions={safeFocusSessions}
                           onCompleteSession={handleCompleteFocusSession}
                           onMinuteUpdate={setCurrentFocusMinutes}
                           isPrimaryCTA={true}
@@ -1619,14 +2029,14 @@ export function Index() {
                           accentColor="violet"
                         >
                           <FocusTimer
-                            sessions={focusSessions}
+                            sessions={safeFocusSessions}
                             onCompleteSession={handleCompleteFocusSession}
                             onMinuteUpdate={setCurrentFocusMinutes}
                           />
                         </CompletedSection>
                       ) : (
                         <FocusTimer
-                          sessions={focusSessions}
+                          sessions={safeFocusSessions}
                           onCompleteSession={handleCompleteFocusSession}
                           onMinuteUpdate={setCurrentFocusMinutes}
                         />
@@ -1634,31 +2044,44 @@ export function Index() {
                     </div>
                   )}
 
+                  {/* Daily Prompt Card - visible prompt for journaling */}
+                  <DailyPromptCard
+                    onUsePrompt={handleUseJournalPrompt}
+                  />
+
                   {/* Gratitude Journal - Primary or Collapsed */}
                   <div ref={gratitudeRef}>
-                    {currentPrimaryCTA === 'gratitude' ? (
-                      <GratitudeJournal
-                        entries={gratitudeEntries}
-                        onAddEntry={handleAddGratitude}
-                        isPrimaryCTA={true}
-                      />
-                    ) : hasGratitudeToday ? (
-                      <CompletedSection
-                        title={t.gratitudeAddedShort || t.gratitude}
-                        icon="🙏"
-                        accentColor="pink"
-                      >
+                    <Suspense fallback={<div className="h-32 bg-card rounded-3xl animate-pulse" />}>
+                      {currentPrimaryCTA === 'gratitude' ? (
                         <GratitudeJournal
-                          entries={gratitudeEntries}
+                          entries={safeGratitudeEntries}
                           onAddEntry={handleAddGratitude}
+                          isPrimaryCTA={true}
+                          initialText={journalPromptText}
+                          onInitialTextUsed={handleJournalPromptUsed}
                         />
-                      </CompletedSection>
-                    ) : (
-                      <GratitudeJournal
-                        entries={gratitudeEntries}
-                        onAddEntry={handleAddGratitude}
-                      />
-                    )}
+                      ) : hasGratitudeToday ? (
+                        <CompletedSection
+                          title={t.gratitudeAddedShort || t.gratitude}
+                          icon="🙏"
+                          accentColor="pink"
+                        >
+                          <GratitudeJournal
+                            entries={safeGratitudeEntries}
+                            onAddEntry={handleAddGratitude}
+                            initialText={journalPromptText}
+                            onInitialTextUsed={handleJournalPromptUsed}
+                          />
+                        </CompletedSection>
+                      ) : (
+                        <GratitudeJournal
+                          entries={safeGratitudeEntries}
+                          onAddEntry={handleAddGratitude}
+                          initialText={journalPromptText}
+                          onInitialTextUsed={handleJournalPromptUsed}
+                        />
+                      )}
+                    </Suspense>
                   </div>
                 </>
               )}
@@ -1675,24 +2098,19 @@ export function Index() {
               onOpenQuests={isFeatureUnlocked('quests') ? () => setShowQuestsPanel(true) : undefined}
             />
 
-            {/* Visual Day Clock - ADHD-friendly energy meter */}
-            <DayClock
-              moods={moods}
-              habits={habits}
-              focusSessions={focusSessions}
-              gratitudeEntries={gratitudeEntries}
-              onTimeBlockClick={handleNavigateToSection}
+            {/* v1.4.0: Schedule Timeline - ADHD-friendly day planner with habits auto-synced */}
+            <ScheduleTimeline
+              events={todayAllEvents}
+              onAddEvent={handleAddScheduleEvent}
+              onDeleteEvent={handleDeleteScheduleEvent}
             />
-
-            {/* Weekly Calendar */}
-            <WeeklyCalendar moods={moods} habits={habits} />
 
             {/* AI Insights - Personalized mood pattern analysis */}
             <MoodInsights
-              moods={moods}
-              habits={habits}
-              focusSessions={focusSessions}
-              gratitudeEntries={gratitudeEntries}
+              moods={safeMoods}
+              habits={safeHabits}
+              focusSessions={safeFocusSessions}
+              gratitudeEntries={safeGratitudeEntries}
             />
           </div>
         )}
@@ -1704,10 +2122,10 @@ export function Index() {
             </div>
           }>
             <StatsPage
-              moods={moods}
-              habits={habits}
-              focusSessions={focusSessions}
-              gratitudeEntries={gratitudeEntries}
+              moods={safeMoods}
+              habits={safeHabits}
+              focusSessions={safeFocusSessions}
+              gratitudeEntries={safeGratitudeEntries}
               restDays={innerWorld.restDays}
               currentFocusMinutes={currentFocusMinutes}
             />
@@ -1715,11 +2133,17 @@ export function Index() {
         )}
 
         {activeTab === 'achievements' && (
-          <div className="pb-24 px-4">
+          <div className="content-with-nav px-4">
             <AchievementsPanel
               stats={stats}
               unlockedAchievements={gamificationState.unlockedAchievements}
             />
+            {/* Leaderboard - Social Feature from v1.3.0 "Harmony" */}
+            <Suspense fallback={null}>
+              <div className="mt-6">
+                <Leaderboard />
+              </div>
+            </Suspense>
           </div>
         )}
 
@@ -1735,47 +2159,54 @@ export function Index() {
               onResetData={handleResetData}
               reminders={reminders}
               onRemindersChange={setReminders}
-              habits={habits}
+              habits={safeHabits}
+              moods={safeMoods}
+              focusSessions={safeFocusSessions}
+              gratitudeEntries={safeGratitudeEntries}
               privacy={privacy}
               onPrivacyChange={setPrivacy}
               onOpenWidgetSettings={() => setShowWidgetSettings(true)}
             />
           </Suspense>
         )}
-      </div>
+      </main>
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
       {/* Weekly Report Modal */}
       {showWeeklyReport && (
         <WeeklyReport
-          moods={moods}
-          habits={habits}
-          focusSessions={focusSessions}
-          gratitudeEntries={gratitudeEntries}
+          moods={safeMoods}
+          habits={safeHabits}
+          focusSessions={safeFocusSessions}
+          gratitudeEntries={safeGratitudeEntries}
           onClose={() => setShowWeeklyReport(false)}
         />
       )}
 
       {/* Widget Settings Modal */}
       {showWidgetSettings && (
-        <div className="fixed inset-0 z-50 bg-background">
-          <WidgetSettings onBack={() => setShowWidgetSettings(false)} />
-        </div>
+        <Suspense fallback={<div className="fixed inset-0 z-50 bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+          <div className="fixed inset-0 z-50 bg-background">
+            <WidgetSettings onBack={() => setShowWidgetSettings(false)} />
+          </div>
+        </Suspense>
       )}
 
       {/* Challenges Panel Modal (Progressive: Day 4) */}
       {showChallenges && isFeatureUnlocked('challenges') && (
-        <ChallengesPanel
-          activeChallenges={challenges}
-          badges={badges}
-          onStartChallenge={(challenge) => {
-            addChallenge(challenge);
-            setChallenges(getChallenges());
-            setBadges(getBadges());
-          }}
-          onClose={() => setShowChallenges(false)}
-        />
+        <Suspense fallback={null}>
+          <ChallengesPanel
+            activeChallenges={challenges}
+            badges={safeBadges}
+            onStartChallenge={(challenge) => {
+              addChallenge(challenge);
+              setChallenges(getChallenges());
+              setBadges(getBadges());
+            }}
+            onClose={() => setShowChallenges(false)}
+          />
+        </Suspense>
       )}
 
       {/* Time Helper Modal */}
@@ -1785,26 +2216,31 @@ export function Index() {
 
       {/* Tasks Panel Modal (Progressive: Day 4) */}
       {showTasksPanel && isFeatureUnlocked('tasks') && (
-        <TasksPanel
-          onClose={() => setShowTasksPanel(false)}
-          onAwardXp={(_source, amount) => {
-            // Award XP through gamification (using habit as proxy for task)
-            for (let i = 0; i < Math.ceil(amount / 15); i++) {
-              awardXp('habit');
-            }
-          }}
-          onEarnTreats={(_source, amount, reason) => {
-            // Use 'habit' as treat source since 'task' is not a valid TreatSource
-            earnTreats('habit', amount, reason);
-          }}
-        />
+        <Suspense fallback={null}>
+          <TasksPanel
+            onClose={() => setShowTasksPanel(false)}
+            onAwardXp={(_source, amount) => {
+              // Award XP through gamification (using habit as proxy for task)
+              for (let i = 0; i < Math.ceil(amount / 15); i++) {
+                awardXp('habit');
+              }
+            }}
+            onEarnTreats={(_source, amount, reason) => {
+              // Use 'habit' as treat source since 'task' is not a valid TreatSource
+              earnTreats('habit', amount, reason);
+              triggerSync(); // Sync inner world treats
+            }}
+          />
+        </Suspense>
       )}
 
       {/* Quests Panel Modal (Progressive: Day 3) */}
       {showQuestsPanel && isFeatureUnlocked('quests') && (
-        <QuestsPanel
-          onClose={() => setShowQuestsPanel(false)}
-        />
+        <Suspense fallback={null}>
+          <QuestsPanel
+            onClose={() => setShowQuestsPanel(false)}
+          />
+        </Suspense>
       )}
 
       {/* Companion Panel Modal (Progressive: Day 3, legacy - kept for reference) */}
@@ -1821,11 +2257,33 @@ export function Index() {
           feedCost={FEED_COST}
           streak={innerWorld.currentActiveStreak}
           hasMoodToday={hasMoodToday}
-          hasHabitsToday={habits.length > 0 && habits.every(h => h.completedDates?.includes(currentDate))}
+          hasHabitsToday={safeHabits.length > 0 && safeHabits.every(h => h.completedDates?.includes(currentDate))}
           hasFocusToday={hasFocusToday}
           hasGratitudeToday={hasGratitudeToday}
         />
       )}
+
+      {/* Challenge Modal - for deep link invites */}
+      <ChallengeModal
+        open={showChallengeModal}
+        onOpenChange={(open) => {
+          setShowChallengeModal(open);
+          if (!open) setChallengeInvite(undefined);
+        }}
+        initialInvite={challengeInvite}
+        username={userName}
+      />
+
+      {/* What's New Modal - shows after app update */}
+      <WhatsNewModal />
+
+      {/* MindfulMoment - shows after focus session completion */}
+      <MindfulMoment
+        isOpen={showMindfulMoment}
+        onClose={() => setShowMindfulMoment(false)}
+        onComplete={handleMindfulMomentComplete}
+        trigger="focus"
+      />
 
     </div>
   );

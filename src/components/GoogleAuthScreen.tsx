@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
-import { Leaf, Mail, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Leaf, Mail, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { getAuthRedirectUrl, isNativePlatform, AUTH_COMPLETE_EVENT } from '@/lib/authRedirect';
+import { App } from '@capacitor/app';
+import { logger } from '@/lib/logger';
 
 interface GoogleAuthScreenProps {
   onComplete: (userData: { name: string; email: string }) => void;
@@ -11,24 +13,185 @@ interface GoogleAuthScreenProps {
 export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
+
+  // Prevent double onComplete calls (race condition with Index.tsx listener)
+  const hasCompletedRef = useRef(false);
+  // Ref for OAuth timeout
+  const oauthTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Safe completion helper - ensures onComplete is called exactly once
+  // This function atomically checks and sets the flag to prevent race conditions
+  const tryComplete = (userData: { name: string; email: string }, source: string): boolean => {
+    if (hasCompletedRef.current) {
+      logger.log(`[Auth] Completion already done, ignoring from ${source}`);
+      return false;
+    }
+    hasCompletedRef.current = true;
+
+    // Clear timeout
+    if (oauthTimeoutRef.current) {
+      clearTimeout(oauthTimeoutRef.current);
+      oauthTimeoutRef.current = null;
+    }
+
+    // Clear loading state
+    setLoading(false);
+
+    logger.log(`[Auth] Completing auth from ${source}:`, userData.email);
+    onComplete(userData);
+    return true;
+  };
 
   // Check if already signed in
   useEffect(() => {
     const checkSession = async () => {
       if (!supabase) return;
+      if (hasCompletedRef.current) return; // Already completed
 
-      const { data } = await supabase.auth.getSession();
-      if (data.session?.user) {
-        const metadata = data.session.user.user_metadata;
-        const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
-        const email = data.session.user.email || '';
+      try {
+        const { data, error: sessionError } = await supabase.auth.getSession();
 
-        onComplete({ name, email });
+        if (sessionError) {
+          logger.error('[Auth] Session check error:', sessionError);
+          setDebugInfo(`Session error: ${sessionError.message}`);
+          return;
+        }
+
+        if (data.session?.user) {
+          const metadata = data.session.user.user_metadata;
+          const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
+          const email = data.session.user.email || '';
+
+          tryComplete({ name, email }, 'checkSession');
+        }
+      } catch (err) {
+        logger.error('[Auth] Unexpected error checking session:', err);
+        setDebugInfo(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
       }
     };
 
     checkSession();
   }, [onComplete]);
+
+  // Listen for auth state changes (handles OAuth callback)
+  useEffect(() => {
+    if (!supabase) return;
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      logger.log('[Auth] Auth state changed:', event);
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        const metadata = session.user.user_metadata;
+        const name = metadata?.full_name || metadata?.name || session.user.email?.split('@')[0] || 'Friend';
+        const email = session.user.email || '';
+
+        tryComplete({ name, email }, 'onAuthStateChange');
+      } else if (event === 'SIGNED_OUT') {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      subscription?.subscription?.unsubscribe?.();
+    };
+  }, [onComplete]);
+
+  // LEVEL 1: Check session when app resumes from OAuth browser
+  useEffect(() => {
+    if (!supabase) return;
+
+    let isMounted = true;
+    let listenerHandle: { remove: () => Promise<void> } | null = null;
+
+    const checkSessionOnResume = async () => {
+      // Early exit if already completed or not in loading state
+      if (!isMounted || !loading || hasCompletedRef.current) return;
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Re-check after delay - another handler might have completed
+      if (!isMounted || hasCompletedRef.current) return;
+
+      try {
+        const { data } = await supabase.auth.getSession();
+
+        if (!isMounted) return;
+
+        if (data.session?.user) {
+          const metadata = data.session.user.user_metadata;
+          const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
+          const email = data.session.user.email || '';
+
+          tryComplete({ name, email }, 'checkSessionOnResume');
+        } else if (!hasCompletedRef.current) {
+          logger.log('[Auth] No session on resume, user may have canceled');
+          setLoading(false);
+          if (oauthTimeoutRef.current) {
+            clearTimeout(oauthTimeoutRef.current);
+            oauthTimeoutRef.current = null;
+          }
+        }
+      } catch (err) {
+        logger.error('[Auth] Error checking session on resume:', err);
+        if (isMounted && !hasCompletedRef.current) setLoading(false);
+      }
+    };
+
+    if (isNativePlatform()) {
+      // Setup native app state listener
+      App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive && loading) {
+          checkSessionOnResume();
+        }
+      }).then(listener => {
+        listenerHandle = listener;
+      }).catch(err => {
+        logger.error('[Auth] Failed to add appStateChange listener:', err);
+      });
+
+      return () => {
+        isMounted = false;
+        if (listenerHandle) {
+          listenerHandle.remove().catch(() => {});
+        }
+      };
+    }
+
+    // Web fallback
+    const handleFocus = () => {
+      if (loading) checkSessionOnResume();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loading, onComplete]);
+
+  // LEVEL 2: Listen for auth completion from Index.tsx
+  useEffect(() => {
+    const handleAuthComplete = () => {
+      logger.log('[Auth] Received auth complete event from Index.tsx');
+      setLoading(false);
+      if (oauthTimeoutRef.current) {
+        clearTimeout(oauthTimeoutRef.current);
+        oauthTimeoutRef.current = null;
+      }
+    };
+
+    window.addEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
+    return () => window.removeEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (oauthTimeoutRef.current) {
+        clearTimeout(oauthTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleGoogleSignIn = async () => {
     if (!supabase) {
@@ -38,12 +201,31 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
 
     setLoading(true);
     setError(null);
+    setDebugInfo(null);
+
+    // LEVEL 3: OAuth timeout (60 seconds)
+    if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
+    oauthTimeoutRef.current = setTimeout(() => {
+      if (!hasCompletedRef.current) {
+        logger.warn('[Auth] OAuth timeout after 60s');
+        setLoading(false);
+        setError('Sign-in took too long. Please try again.');
+      }
+    }, 60000);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const redirectUrl = getAuthRedirectUrl();
+      logger.log('[Auth] Starting Google sign-in with redirect URL:', redirectUrl);
+
+      // Log platform info for debugging
+      const platform = isNativePlatform() ? 'native' : 'web';
+      logger.log('[Auth] Platform:', platform);
+      setDebugInfo(`Platform: ${platform}, Redirect: ${redirectUrl}`);
+
+      const { data, error: signInError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: getAuthRedirectUrl(),
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -51,10 +233,40 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
         },
       });
 
-      if (error) throw error;
+      if (signInError) {
+        logger.error('[Auth] Google sign-in error:', signInError);
+
+        // Enhanced error messages
+        let errorMessage = 'Failed to sign in with Google.';
+
+        if (signInError.message.includes('invalid_client')) {
+          errorMessage = 'Google OAuth not configured correctly. Please check:\n' +
+            '1. SHA-1 fingerprint added to Google Cloud Console\n' +
+            '2. Android Client ID added to Supabase\n' +
+            '3. Redirect URI added to Supabase';
+        } else if (signInError.message.includes('redirect_uri')) {
+          errorMessage = 'Redirect URI mismatch. Please add com.zenflow.app://login-callback to Supabase allowed URLs.';
+        } else if (signInError.message.includes('unauthorized')) {
+          errorMessage = 'OAuth client not authorized. Please enable Google provider in Supabase.';
+        }
+
+        setError(errorMessage);
+        setDebugInfo(`Error code: ${signInError.status || 'unknown'}, Message: ${signInError.message}`);
+        if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
+        setLoading(false);
+        return;
+      }
+
+      // Log OAuth URL for debugging
+      if (data?.url) {
+        logger.log('[Auth] OAuth URL generated:', data.url);
+        setDebugInfo(`OAuth URL generated successfully`);
+      }
     } catch (err) {
-      console.error('Google sign-in error:', err);
-      setError('Failed to sign in with Google. Please try again.');
+      logger.error('[Auth] Unexpected error during sign-in:', err);
+      setError('Unexpected error occurred. Please try again.');
+      setDebugInfo(`Exception: ${err instanceof Error ? err.message : String(err)}`);
+      if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
       setLoading(false);
     }
   };
@@ -66,6 +278,29 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
 
   const handleSkip = () => {
     onSkip();
+  };
+
+  // Export debug info
+  const exportDebugInfo = () => {
+    const info = {
+      timestamp: new Date().toISOString(),
+      platform: isNativePlatform() ? 'native' : 'web',
+      redirectUrl: getAuthRedirectUrl(),
+      supabaseConfigured: !!supabase,
+      error: error,
+      debugInfo: debugInfo,
+      userAgent: navigator.userAgent
+    };
+
+    const blob = new Blob([JSON.stringify(info, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `zenflow-auth-debug-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -126,15 +361,34 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
           </button>
 
           {!supabase && (
-            <p className="text-sm text-destructive text-center">
-              Authentication not configured. Configure Supabase to enable sign-in.
-            </p>
+            <div className="p-3 bg-destructive/10 rounded-xl flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-destructive">
+                Authentication not configured. Configure Supabase to enable sign-in.
+              </p>
+            </div>
           )}
 
           {error && (
-            <p className="text-sm text-destructive text-center">
-              {error}
-            </p>
+            <div className="p-3 bg-destructive/10 rounded-xl flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-destructive whitespace-pre-wrap">
+                  {error}
+                </p>
+                {debugInfo && (
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {debugInfo}
+                  </p>
+                )}
+                <button
+                  onClick={exportDebugInfo}
+                  className="text-xs text-primary underline mt-2"
+                >
+                  Export debug info
+                </button>
+              </div>
+            </div>
           )}
 
           {/* Divider */}

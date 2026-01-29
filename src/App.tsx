@@ -4,14 +4,18 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
-import { MoodThemeProvider } from "@/contexts/MoodThemeContext";
+import { EmotionThemeProvider } from "@/contexts/EmotionThemeContext";
 import { XpPopupProvider } from "@/components/XpPopup";
 import { FlyingEmojiProvider } from "@/components/FlyingMoodEmoji";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+import { preloadShareCardAssets } from "@/lib/shareCards";
 
 const queryClient = new QueryClient();
+
+// Preload html2canvas in the background to speed up share modal
+preloadShareCardAssets();
 
 // Determine basename: use "/" for Capacitor/native, or BASE_URL for web
 const getBasename = () => {
@@ -26,7 +30,7 @@ const getBasename = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
-      <MoodThemeProvider>
+      <EmotionThemeProvider>
         <XpPopupProvider>
           <FlyingEmojiProvider>
             <ErrorBoundary>
@@ -43,7 +47,7 @@ const App = () => (
           </ErrorBoundary>
           </FlyingEmojiProvider>
         </XpPopupProvider>
-      </MoodThemeProvider>
+      </EmotionThemeProvider>
     </LanguageProvider>
   </QueryClientProvider>
 );

@@ -1,9 +1,11 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { MoodType, MoodEntry } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getLocale } from '@/lib/timeUtils';
+import { moodNoteSchema, sanitizeString } from '@/lib/validation';
 import { Sparkles, Sun, Cloud, Moon, Plus, ChevronDown, Edit3 } from 'lucide-react';
 import { MoodChangedToast, ConfirmDialog } from './Celebrations';
 import { AnimatedMoodEmoji } from './AnimatedMoodEmoji';
@@ -38,7 +40,7 @@ function getTimeOfDayFromTimestamp(timestamp: number): TimeOfDay {
 }
 
 export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA = false }: MoodTrackerProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [note, setNote] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
@@ -171,6 +173,18 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
   const handleSubmit = () => {
     if (!selectedMood) return;
 
+    // Validate and sanitize note to prevent XSS
+    let sanitizedNote: string | undefined;
+    const trimmedNote = note.trim();
+    if (trimmedNote) {
+      const validationResult = moodNoteSchema.safeParse(trimmedNote);
+      if (!validationResult.success) {
+        logger.warn('[MoodTracker] Invalid note:', validationResult.error.message);
+        return;
+      }
+      sanitizedNote = sanitizeString(validationResult.data);
+    }
+
     // Trigger flying emoji animation
     const moodData = moods.find(m => m.type === selectedMood);
     const buttonRef = moodButtonRefs.current[selectedMood];
@@ -185,7 +199,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     const entry: MoodEntry = {
       id: generateId(),
       mood: selectedMood,
-      note: note.trim() || undefined,
+      note: sanitizedNote,
       date: today,
       timestamp: Date.now(),
     };
@@ -193,7 +207,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     // Show celebration first
     setCelebrationData({
       mood: selectedMood,
-      note: note.trim() || undefined,
+      note: sanitizedNote,
       timeOfDay: currentTimeOfDay,
     });
     setShowCelebration(true);
@@ -206,16 +220,16 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
   };
 
   // Handle starting edit mode for an entry
-  const handleStartEdit = (entry: MoodEntry) => {
+  const handleStartEdit = useCallback((entry: MoodEntry) => {
     setEditingEntryId(entry.id);
     setEditingMood(entry.mood);
     setEditingNote(entry.note || '');
-  };
+  }, []);
 
   // Handle selecting a new mood during edit
-  const handleEditMoodSelect = (entry: MoodEntry, newMood: MoodType) => {
+  const handleEditMoodSelect = useCallback((_entry: MoodEntry, newMood: MoodType) => {
     setEditingMood(newMood);
-  };
+  }, []);
 
   // Handle saving the edit (mood + note)
   const handleSaveEdit = (entry: MoodEntry) => {
@@ -230,17 +244,29 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
       return;
     }
 
+    // Validate and sanitize note to prevent XSS
+    let sanitizedNote: string | undefined;
+    const trimmedNote = editingNote.trim();
+    if (trimmedNote) {
+      const validationResult = moodNoteSchema.safeParse(trimmedNote);
+      if (!validationResult.success) {
+        logger.warn('[MoodTracker] Invalid edit note:', validationResult.error.message);
+        return;
+      }
+      sanitizedNote = sanitizeString(validationResult.data);
+    }
+
     // Show confirmation dialog
     setConfirmChange({
       entryId: entry.id,
       newMood: editingMood || entry.mood,
       oldMood: entry.mood,
-      newNote: editingNote.trim() || undefined,
+      newNote: sanitizedNote,
     });
   };
 
   // Confirm and apply mood change
-  const confirmMoodChange = () => {
+  const confirmMoodChange = useCallback(() => {
     if (!confirmChange || !onUpdateEntry) return;
 
     const { entryId, newMood, newNote } = confirmChange;
@@ -258,15 +284,15 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     setEditingEntryId(null);
     setEditingMood(null);
     setEditingNote('');
-  };
+  }, [confirmChange, onUpdateEntry, moods]);
 
   // Cancel mood change
-  const cancelMoodChange = () => {
+  const cancelMoodChange = useCallback(() => {
     setConfirmChange(null);
     setEditingEntryId(null);
     setEditingMood(null);
     setEditingNote('');
-  };
+  }, []);
 
   // Show full input view (mood icons) when current time period has no entry
   // This ensures fresh mood selection at start of each time period (morning/afternoon/evening)
@@ -302,10 +328,10 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
           )}>
             {latestMood && <AnimatedMoodEmoji mood={latestMood.type} size="lg" />}
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
               <LatestTimeIcon className="w-4 h-4 text-muted-foreground" />
-              <p className="font-medium text-foreground">{latestMood?.label}</p>
+              <p className="font-medium text-foreground truncate">{latestMood?.label}</p>
             </div>
             {latestEntry.note && (
               <p className="text-sm text-muted-foreground mt-1 line-clamp-1">{latestEntry.note}</p>
@@ -337,7 +363,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
               const entryMood = moods.find(m => m.type === entry.mood);
               const tod = getTimeOfDayFromTimestamp(entry.timestamp);
               const TimeIcon = timeIcons[tod];
-              const time = new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const time = new Date(entry.timestamp).toLocaleTimeString(getLocale(language), { hour: '2-digit', minute: '2-digit' });
               const isEditing = editingEntryId === entry.id;
 
               return (
@@ -569,17 +595,26 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
         {showAddNew ? (t.howAreYouNow || 'How are you now?') : t.howAreYouFeeling}
       </h3>
 
-      <div className={cn(
-        "flex justify-center gap-2 sm:gap-4 mb-6 relative flex-wrap",
-        isPrimaryCTA && "bg-card/50 rounded-2xl p-3 -mx-2"
-      )}>
+      <div
+        role="radiogroup"
+        aria-label={t.selectMood || 'Select your mood'}
+        className={cn(
+          "flex justify-center gap-2 sm:gap-4 mb-6 relative flex-wrap",
+          isPrimaryCTA && "bg-card/50 rounded-2xl p-3 -mx-2"
+        )}
+      >
         {moods.map((mood, index) => (
           <button
             key={mood.type}
             ref={(el) => { moodButtonRefs.current[mood.type] = el; }}
             onClick={() => setSelectedMood(mood.type)}
+            role="radio"
+            aria-checked={selectedMood === mood.type}
+            aria-label={mood.label}
+            tabIndex={selectedMood === mood.type || (!selectedMood && index === 0) ? 0 : -1}
             className={cn(
-              "mood-btn flex flex-col items-center gap-1 p-2 sm:p-3 rounded-xl transition-all relative min-w-[56px]",
+              "mood-btn flex flex-col items-center gap-1 p-2 sm:p-3 rounded-xl transition-all relative min-w-[56px] min-h-[56px]",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               selectedMood === mood.type
                 ? `${mood.color} bg-opacity-20 scale-110 zen-shadow-soft selected ring-2 ring-primary/50`
                 : "hover:bg-secondary/80 hover:scale-105"
@@ -605,7 +640,8 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder={t.addNote}
-            className="w-full p-4 bg-secondary rounded-xl text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+            aria-label={t.addNote || 'Add a note about your mood'}
+            className="w-full p-4 bg-secondary rounded-lg text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
             rows={2}
           />
           <button

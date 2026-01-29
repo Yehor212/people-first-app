@@ -5,6 +5,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/logger';
+import { safeJsonParse } from '@/lib/safeJson';
+import { safeParseInt } from '@/lib/validation';
+
 import {
   ComboState,
   TimeChallenge,
@@ -47,21 +50,21 @@ export function useADHDHooks(currentStreak: number) {
   useEffect(() => {
     const loadState = () => {
       try {
-        // Combo
+        // Combo - use safe parse to prevent crashes from corrupted data
         const savedCombo = localStorage.getItem(ADHD_STORAGE_KEYS.COMBO_STATE);
-        const combo = savedCombo ? JSON.parse(savedCombo) : initCombo();
+        const combo = safeJsonParse(savedCombo, initCombo());
 
         // Spin tokens
         const savedSpins = localStorage.getItem(ADHD_STORAGE_KEYS.SPIN_TOKENS);
-        const spinTokens = savedSpins ? parseInt(savedSpins) : 0;
+        const spinTokens = safeParseInt(savedSpins, 0, 0, 100);
 
-        // Mystery boxes
+        // Mystery boxes - use safe parse
         const savedBoxes = localStorage.getItem(ADHD_STORAGE_KEYS.MYSTERY_BOXES);
-        const mysteryBoxes = savedBoxes ? JSON.parse(savedBoxes) : [];
+        const mysteryBoxes: MysteryBox[] = safeJsonParse(savedBoxes, []);
 
-        // Challenges
+        // Challenges - use safe parse
         const savedChallenges = localStorage.getItem(ADHD_STORAGE_KEYS.TIME_CHALLENGES);
-        let activeChallenges: TimeChallenge[] = savedChallenges ? JSON.parse(savedChallenges) : [];
+        let activeChallenges: TimeChallenge[] = safeJsonParse(savedChallenges, []);
 
         // Filter expired challenges
         const now = Date.now();
@@ -69,7 +72,7 @@ export function useADHDHooks(currentStreak: number) {
 
         // Last login
         const lastLoginDate = localStorage.getItem(ADHD_STORAGE_KEYS.LAST_LOGIN);
-        const loginStreak = parseInt(localStorage.getItem(ADHD_STORAGE_KEYS.LOGIN_STREAK) || '0');
+        const loginStreak = safeParseInt(localStorage.getItem(ADHD_STORAGE_KEYS.LOGIN_STREAK), 0, 0, 1000);
 
         // Check if should show daily rewards
         const today = new Date().toDateString();

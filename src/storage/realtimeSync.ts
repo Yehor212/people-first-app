@@ -1,7 +1,8 @@
 /**
  * Real-time Sync Service
  * Provides granular sync for individual data items (moods, habits, etc.)
- * Falls back to full backup sync if granular sync fails
+ * Uses offline queue when device is offline for reliable sync.
+ * Falls back to full backup sync if granular sync fails.
  */
 
 import { logger } from '@/lib/logger';
@@ -9,9 +10,40 @@ import { supabase, getCurrentUserId } from '@/lib/supabaseClient';
 import { db } from '@/storage/db';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import { offlineQueue } from '@/lib/offlineQueue';
 
 // Track active subscriptions
 let realtimeChannel: RealtimeChannel | null = null;
+
+// Timeout wrapper for promises
+const withTimeout = <T>(promise: Promise<T>, ms: number, operation: string): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout: ${operation} took longer than ${ms}ms`)), ms)
+    )
+  ]);
+};
+
+const SYNC_TIMEOUT = 30000; // 30 seconds per operation
+const BATCH_SIZE = 20; // Max concurrent sync operations
+const BATCH_DELAY = 50; // ms between batches
+
+// Process array in batches to avoid overwhelming the backend
+async function processBatched<T>(
+  items: T[],
+  processor: (item: T) => Promise<void>,
+  batchSize: number = BATCH_SIZE
+): Promise<void> {
+  for (let i = 0; i < items.length; i += batchSize) {
+    const batch = items.slice(i, i + batchSize);
+    await Promise.all(batch.map(processor));
+    // Small pause between batches to avoid rate limiting
+    if (i + batchSize < items.length) {
+      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+    }
+  }
+}
 
 // ============================================
 // MOOD SYNC
@@ -20,6 +52,13 @@ let realtimeChannel: RealtimeChannel | null = null;
 export const syncMood = async (mood: MoodEntry): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
+
+  // If offline, queue for later sync
+  if (!navigator.onLine) {
+    await offlineQueue.enqueue('CREATE_MOOD', mood.id, mood);
+    logger.log('[Sync] Mood queued for offline sync:', mood.id);
+    return;
+  }
 
   try {
     const { error } = await supabase.from('moods').upsert({
@@ -30,18 +69,45 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
       tags: mood.tags || [],
       date: mood.date,
       timestamp: mood.timestamp,
+      emotion: mood.emotion || null,
     }, { onConflict: 'id' });
 
     if (error) throw error;
     logger.log('[Sync] Mood synced:', mood.id);
   } catch (error) {
-    logger.error('[Sync] Failed to sync mood:', error);
+    // On network error, queue for retry
+    // Check for various network error patterns
+    const isNetworkError = error instanceof Error && (
+      error.message.includes('network') ||
+      error.message.includes('Network') ||
+      error.message.includes('Failed to fetch') ||
+      error.message.includes('fetch failed') ||
+      error.message.includes('NetworkError') ||
+      error.message.includes('ECONNREFUSED') ||
+      error.message.includes('ETIMEDOUT') ||
+      error.message.includes('ENOTFOUND') ||
+      error.name === 'TypeError' // fetch failures are often TypeErrors
+    );
+
+    if (isNetworkError) {
+      await offlineQueue.enqueue('CREATE_MOOD', mood.id, mood);
+      logger.log('[Sync] Mood queued after network error:', mood.id);
+    } else {
+      logger.error('[Sync] Failed to sync mood:', error);
+    }
   }
 };
 
 export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
+
+  // If offline, queue for later
+  if (!navigator.onLine) {
+    await offlineQueue.enqueue('DELETE_MOOD', moodId, { id: moodId });
+    logger.log('[Sync] Mood delete queued for offline:', moodId);
+    return;
+  }
 
   try {
     const { error } = await supabase
@@ -64,6 +130,13 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
 export const syncHabit = async (habit: Habit): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
+
+  // If offline, queue for later sync
+  if (!navigator.onLine) {
+    await offlineQueue.enqueue('UPDATE_HABIT', habit.id, habit);
+    logger.log('[Sync] Habit queued for offline sync:', habit.id);
+    return;
+  }
 
   try {
     // Sync habit metadata
@@ -103,16 +176,14 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
       if (completionError) throw completionError;
     }
 
-    // Sync reminders
+    // Sync reminders - use safe insert-then-delete pattern to prevent data loss
     if (habit.reminders && habit.reminders.length > 0) {
-      // Delete existing reminders
-      await supabase
-        .from('habit_reminders')
-        .delete()
-        .eq('habit_id', habit.id);
+      // Generate deterministic IDs based on habit + time + days
+      const generateReminderId = (habitId: string, time: string, days: number[]) =>
+        `${habitId}-${time}-${days.sort().join('')}`;
 
-      // Insert new reminders
       const reminders = habit.reminders.map(r => ({
+        id: generateReminderId(habit.id, r.time, r.days),
         user_id: userId,
         habit_id: habit.id,
         enabled: r.enabled,
@@ -120,11 +191,35 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
         days: r.days,
       }));
 
+      // Upsert reminders (safe - won't lose data on failure)
       const { error: reminderError } = await supabase
         .from('habit_reminders')
-        .insert(reminders);
+        .upsert(reminders, { onConflict: 'id' });
 
       if (reminderError) throw reminderError;
+
+      // Clean up orphan reminders (non-critical - duplicates are better than data loss)
+      const currentIds = reminders.map(r => r.id);
+      const { error: cleanupError } = await supabase
+        .from('habit_reminders')
+        .delete()
+        .eq('habit_id', habit.id)
+        .not('id', 'in', `(${currentIds.map(id => `'${id}'`).join(',')})`);
+
+      if (cleanupError) {
+        logger.warn('[Sync] Failed to cleanup old reminders for habit:', habit.id, cleanupError);
+        // Non-critical - continue anyway
+      }
+    } else {
+      // No reminders - safe to delete all
+      const { error: deleteError } = await supabase
+        .from('habit_reminders')
+        .delete()
+        .eq('habit_id', habit.id);
+
+      if (deleteError) {
+        logger.warn('[Sync] Failed to delete reminders for habit:', habit.id, deleteError);
+      }
     }
 
     logger.log('[Sync] Habit synced:', habit.id);
@@ -136,6 +231,13 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
 export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
+
+  // If offline, queue for later
+  if (!navigator.onLine) {
+    await offlineQueue.enqueue('DELETE_HABIT', habitId, { id: habitId });
+    logger.log('[Sync] Habit delete queued for offline:', habitId);
+    return;
+  }
 
   try {
     const { error } = await supabase
@@ -189,6 +291,13 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
+  // If offline, queue for later sync
+  if (!navigator.onLine) {
+    await offlineQueue.enqueue('CREATE_FOCUS_SESSION', session.id, session);
+    logger.log('[Sync] Focus session queued for offline sync:', session.id);
+    return;
+  }
+
   try {
     const { error } = await supabase.from('focus_sessions').upsert({
       id: session.id,
@@ -216,6 +325,13 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
+  // If offline, queue for later sync
+  if (!navigator.onLine) {
+    await offlineQueue.enqueue('CREATE_GRATITUDE', entry.id, entry);
+    logger.log('[Sync] Gratitude queued for offline sync:', entry.id);
+    return;
+  }
+
   try {
     const { error } = await supabase.from('gratitude_entries').upsert({
       id: entry.id,
@@ -235,6 +351,13 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
 export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
+
+  // If offline, queue for later
+  if (!navigator.onLine) {
+    await offlineQueue.enqueue('DELETE_GRATITUDE', entryId, { id: entryId });
+    logger.log('[Sync] Gratitude delete queued for offline:', entryId);
+    return;
+  }
 
   try {
     const { error } = await supabase
@@ -281,7 +404,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
   if (!supabase || !userId) return false;
 
   try {
-    // Fetch all data in parallel
+    // Fetch all data in parallel with timeouts
     const [
       moodsRes,
       habitsRes,
@@ -291,13 +414,13 @@ export const pullFromCloud = async (): Promise<boolean> => {
       gratitudeRes,
       settingsRes,
     ] = await Promise.all([
-      supabase.from('moods').select('*').eq('user_id', userId),
-      supabase.from('habits').select('*').eq('user_id', userId).eq('is_archived', false),
-      supabase.from('habit_completions').select('*').eq('user_id', userId),
-      supabase.from('habit_reminders').select('*').eq('user_id', userId),
-      supabase.from('focus_sessions').select('*').eq('user_id', userId),
-      supabase.from('gratitude_entries').select('*').eq('user_id', userId),
-      supabase.from('user_settings').select('*').eq('user_id', userId),
+      withTimeout(supabase.from('moods').select('*').eq('user_id', userId), SYNC_TIMEOUT, 'fetch moods'),
+      withTimeout(supabase.from('habits').select('*').eq('user_id', userId).eq('is_archived', false), SYNC_TIMEOUT, 'fetch habits'),
+      withTimeout(supabase.from('habit_completions').select('*').eq('user_id', userId), SYNC_TIMEOUT, 'fetch completions'),
+      withTimeout(supabase.from('habit_reminders').select('*').eq('user_id', userId), SYNC_TIMEOUT, 'fetch reminders'),
+      withTimeout(supabase.from('focus_sessions').select('*').eq('user_id', userId), SYNC_TIMEOUT, 'fetch focus'),
+      withTimeout(supabase.from('gratitude_entries').select('*').eq('user_id', userId), SYNC_TIMEOUT, 'fetch gratitude'),
+      withTimeout(supabase.from('user_settings').select('*').eq('user_id', userId), SYNC_TIMEOUT, 'fetch settings'),
     ]);
 
     // Check for errors
@@ -317,6 +440,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       date: m.date,
       timestamp: m.timestamp,
       tags: m.tags,
+      emotion: m.emotion || undefined,
     }));
 
     // Group completions and reminders by habit
@@ -432,14 +556,12 @@ export const pushToCloud = async (): Promise<boolean> => {
       db.settings.toArray(),
     ]);
 
-    // Sync all data in parallel
-    await Promise.all([
-      ...moods.map(m => syncMood(m)),
-      ...habits.map(h => syncHabit(h)),
-      ...focusSessions.map(f => syncFocusSession(f)),
-      ...gratitudeEntries.map(g => syncGratitude(g)),
-      ...settings.map(s => syncSetting(s.key, s.value)),
-    ]);
+    // Sync all data in batches to avoid overwhelming the backend
+    await processBatched(moods, m => syncMood(m));
+    await processBatched(habits, h => syncHabit(h));
+    await processBatched(focusSessions, f => syncFocusSession(f));
+    await processBatched(gratitudeEntries, g => syncGratitude(g));
+    await processBatched(settings, s => syncSetting(s.key, s.value));
 
     logger.log('[Sync] Pushed to cloud:', {
       moods: moods.length,
@@ -499,6 +621,17 @@ export const subscribeToRealtime = async (): Promise<void> => {
     )
     .subscribe((status) => {
       logger.log('[Realtime] Subscription status:', status);
+
+      // Auto-reconnect on channel error or close
+      if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+        logger.warn('[Realtime] Connection lost, attempting reconnect in 5s...');
+        realtimeChannel = null;
+        setTimeout(() => {
+          subscribeToRealtime().catch((err) => {
+            logger.error('[Realtime] Reconnect failed:', err);
+          });
+        }, 5000);
+      }
     });
 };
 
@@ -511,55 +644,65 @@ export const unsubscribeFromRealtime = async (): Promise<void> => {
 };
 
 // Handle realtime changes from other devices
-const handleRealtimeChange = async (table: string, payload: { eventType: string; new: Record<string, unknown>; old: Record<string, unknown> }) => {
+const handleRealtimeChange = async (table: string, payload: { eventType: string; new: Record<string, unknown> | null; old: Record<string, unknown> | null }) => {
   logger.log('[Realtime] Change received:', table, payload.eventType);
 
   try {
     switch (table) {
       case 'moods':
         if (payload.eventType === 'DELETE') {
-          await db.moods.delete(payload.old.id as string);
-        } else {
+          const oldId = payload.old?.id;
+          if (oldId) await db.moods.delete(oldId as string);
+        } else if (payload.new) {
           const moodData = payload.new;
-          await db.moods.put({
-            id: moodData.id as string,
-            mood: moodData.mood as MoodEntry['mood'],
-            note: moodData.note as string | undefined,
-            date: moodData.date as string,
-            timestamp: moodData.timestamp as number,
-            tags: moodData.tags as string[],
-          });
+          if (moodData.id && moodData.mood && moodData.date) {
+            await db.moods.put({
+              id: moodData.id as string,
+              mood: moodData.mood as MoodEntry['mood'],
+              note: moodData.note as string | undefined,
+              date: moodData.date as string,
+              timestamp: (moodData.timestamp as number) || Date.now(),
+              tags: (moodData.tags as string[]) || [],
+              emotion: moodData.emotion as MoodEntry['emotion'] | undefined,
+            });
+          }
         }
         break;
 
       case 'focus_sessions':
         if (payload.eventType === 'DELETE') {
-          await db.focusSessions.delete(payload.old.id as string);
-        } else {
+          const oldId = payload.old?.id;
+          if (oldId) await db.focusSessions.delete(oldId as string);
+        } else if (payload.new) {
           const focusData = payload.new;
-          await db.focusSessions.put({
-            id: focusData.id as string,
-            duration: focusData.duration as number,
-            completedAt: focusData.completed_at as number,
-            date: focusData.date as string,
-            label: focusData.label as string | undefined,
-            status: focusData.status as FocusSession['status'],
-            reflection: focusData.reflection as number | undefined,
-          });
+          if (focusData.id && focusData.date) {
+            await db.focusSessions.put({
+              id: focusData.id as string,
+              duration: (focusData.duration as number) || 0,
+              completedAt: (focusData.completed_at as number) || Date.now(),
+              date: focusData.date as string,
+              label: focusData.label as string | undefined,
+              status: (focusData.status as FocusSession['status']) || 'completed',
+              reflection: focusData.reflection as number | undefined,
+            });
+          }
         }
         break;
 
       case 'gratitude_entries':
         if (payload.eventType === 'DELETE') {
-          await db.gratitudeEntries.delete(payload.old.id as string);
-        } else {
+          const oldId = payload.old?.id;
+          if (oldId) await db.gratitudeEntries.delete(oldId as string);
+        } else if (payload.new) {
           const gratData = payload.new;
-          await db.gratitudeEntries.put({
-            id: gratData.id as string,
-            text: gratData.text as string,
-            date: gratData.date as string,
-            timestamp: gratData.timestamp as number,
-          });
+          if (gratData.id && gratData.text && gratData.date) {
+            await db.gratitudeEntries.put({
+              id: gratData.id as string,
+              text: gratData.text as string,
+              date: gratData.date as string,
+              timestamp: (gratData.timestamp as number) || Date.now(),
+            });
+          }
         }
         break;
 

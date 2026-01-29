@@ -43,9 +43,10 @@ CREATE POLICY "Users can delete their own data"
 CREATE TABLE IF NOT EXISTS public.push_subscriptions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
-    subscription JSONB NOT NULL,
+    endpoint TEXT NOT NULL,
+    keys JSONB NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    UNIQUE(user_id, endpoint)
 );
 
 -- Create index
@@ -91,11 +92,7 @@ CREATE TRIGGER update_user_data_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
--- Trigger for push_subscriptions
-CREATE TRIGGER update_push_subscriptions_updated_at
-    BEFORE UPDATE ON public.push_subscriptions
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+-- Note: push_subscriptions doesn't have updated_at, no trigger needed
 
 -- Grant permissions
 GRANT ALL ON public.user_data TO authenticated;

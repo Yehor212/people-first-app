@@ -1,12 +1,23 @@
-import { useMemo, useState } from 'react';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType } from '@/types';
+import { useMemo, useState, memo } from 'react';
+import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType, PrimaryEmotion } from '@/types';
 import { calculateStreak, getDaysInMonth, getToday, cn } from '@/lib/utils';
 import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
-import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2 } from 'lucide-react';
+import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2, PlayCircle, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ShareProgress } from '@/components/ShareProgress';
 import { AnimatedAchievementsSection } from '@/components/AnimatedAchievementCard';
-import { AnimatedMoodDistribution, AnimatedCalendar } from '@/components/AnimatedStatsComponents';
+import { AnimatedMoodDistribution, AnimatedEmotionDistribution, AnimatedCalendar } from '@/components/AnimatedStatsComponents';
+import { TrendsView } from '@/components/TrendsView';
+import { ActivityHeatMap, calculateActivityLevel } from '@/components/ui/activity-heatmap';
+import { ProgressStoriesViewer } from '@/components/ProgressStoriesViewer';
+import { generateWeeklyStory, hasEnoughDataForStory, getCurrentWeekRange } from '@/lib/progressStories';
+import { WeeklyInsightsCard } from '@/components/WeeklyInsightsCard';
+import { WeeklyCalendar } from '@/components/WeeklyCalendar';
+import { hapticTap } from '@/lib/haptics';
+import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
+import { getEmotionScore, getEmotionLabels, EMOTION_ORDER, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
+import { getLocale } from '@/lib/timeUtils';
+import { safeParseInt } from '@/lib/validation';
 
 interface StatsPageProps {
   moods: MoodEntry[];
@@ -25,14 +36,15 @@ const moodEmojis: Record<string, string> = {
   terrible: '😢',
 };
 
-export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, restDays = [], currentFocusMinutes }: StatsPageProps) {
-  const { t } = useLanguage();
+export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions, gratitudeEntries, restDays = [], currentFocusMinutes }: StatsPageProps) {
+  const { t, language } = useLanguage();
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [range, setRange] = useState<'week' | 'month' | 'all'>('month');
   const todayKey = getToday();
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showStoryViewer, setShowStoryViewer] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
   const completedFocusSessions = useMemo(
@@ -44,6 +56,9 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
     t.january, t.february, t.march, t.april, t.may, t.june,
     t.july, t.august, t.september, t.october, t.november, t.december
   ];
+
+  // Short month names for compact displays (heatmap)
+  const shortMonthNames = monthNames.map(name => name?.slice(0, 3) || name);
   
   const moodLabels: Record<string, string> = {
     great: t.great,
@@ -53,6 +68,24 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
     terrible: t.terrible,
   };
 
+  // Score function that supports both legacy moods and new emotions
+  const getMoodEntryScore = (entry: MoodEntry): number => {
+    // Prefer emotion data if available
+    if (entry.emotion?.primary) {
+      return getEmotionScore(entry.emotion.primary, entry.emotion.intensity);
+    }
+    // Fallback to legacy mood
+    switch (entry.mood) {
+      case 'great': return 5;
+      case 'good': return 4;
+      case 'okay': return 3;
+      case 'bad': return 2;
+      case 'terrible': return 1;
+      default: return 0;
+    }
+  };
+
+  // Legacy moodScore for backward compat with components
   const moodScore = (mood: MoodEntry['mood']) => {
     switch (mood) {
       case 'great': return 5;
@@ -63,6 +96,9 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
       default: return 0;
     }
   };
+
+  // Get emotion labels for current language
+  const emotionLabels = useMemo(() => getEmotionLabels(t.locale || 'en'), [t.locale]);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -120,6 +156,24 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
       return acc;
     }, {} as Record<string, number>);
 
+    // v1.6.0: Count emotions with backward-compatible mapping of legacy moods
+    // This ensures 8-emotion wheel shows for ALL data, not just new entries
+    const emotionCounts = filteredMoods.reduce((acc, m) => {
+      if (m.emotion?.primary) {
+        // New format - use emotion directly
+        acc[m.emotion.primary] = (acc[m.emotion.primary] || 0) + 1;
+      } else if (m.mood) {
+        // Legacy format - map mood to emotion
+        const mappedEmotion = MOOD_TO_EMOTION_MAP[m.mood];
+        if (mappedEmotion) {
+          acc[mappedEmotion] = (acc[mappedEmotion] || 0) + 1;
+        }
+      }
+      return acc;
+    }, {} as Record<PrimaryEmotion, number>);
+
+    const totalEmotionEntries = Object.values(emotionCounts).reduce((a, b) => a + b, 0);
+
     const now = new Date();
     const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const today = getToday();
@@ -140,6 +194,8 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
       totalHabitCompletions,
       currentStreak,
       moodCounts,
+      emotionCounts,
+      totalEmotionEntries,
       thisMonthMoods: thisMonthMoods.length,
       thisMonthFocusMinutes: finalThisMonthFocusMinutes,
       thisMonthGratitude: thisMonthGratitude.length,
@@ -159,7 +215,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
     const moodByDay: Record<number, { total: number; count: number }> = {};
     filteredMoods.forEach((entry) => {
       const day = new Date(entry.date).getDay();
-      const score = moodScore(entry.mood);
+      const score = getMoodEntryScore(entry);
       const current = moodByDay[day] || { total: 0, count: 0 };
       current.total += score;
       current.count += 1;
@@ -172,11 +228,11 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
       if (!data.count) return;
       const avg = data.total / data.count;
       if (!bestDay || avg > bestDay.avg) {
-        bestDay = { day: dayNames[Number(dayIndex)] || '', avg };
+        bestDay = { day: dayNames[safeParseInt(dayIndex, 0, 0, 6)] || '', avg };
       }
     });
 
-    const moodByDate = new Map(filteredMoods.map((entry) => [entry.date, moodScore(entry.mood)]));
+    const moodByDate = new Map(filteredMoods.map((entry) => [entry.date, getMoodEntryScore(entry)]));
     const focusDates = new Set(completedFocusSessions.map((session) => session.date));
     let withFocusTotal = 0;
     let withFocusCount = 0;
@@ -288,17 +344,15 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
 
   const availableYears = useMemo(() => {
     const set = new Set<number>();
+    const currentYear = new Date().getFullYear();
     const addYear = (date: string) => {
-      const year = Number(date.split('-')[0]);
-      if (!Number.isNaN(year)) {
-        set.add(year);
-      }
+      const year = safeParseInt(date.split('-')[0], currentYear, 2000, 2100);
+      set.add(year);
     };
     [...moodByDate.keys()].forEach(addYear);
     [...focusMinutesByDate.keys()].forEach(addYear);
     [...gratitudeByDate.keys()].forEach(addYear);
     [...habitCompletionMap.keys()].forEach(addYear);
-    const currentYear = new Date().getFullYear();
     set.add(currentYear);
     set.add(selectedYear);
     const years = Array.from(set).sort((a, b) => b - a);
@@ -391,6 +445,50 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
     });
   }, [filteredMoods]);
 
+  // Activity Heat Map data (GitHub-style contribution graph)
+  const activityHeatmapData = useMemo(() => {
+    const moodDates = new Set(moods.map(m => m.date));
+    const focusDates = new Set(completedFocusSessions.map(f => f.date));
+    const gratitudeDates = new Set(gratitudeEntries.map(g => g.date));
+
+    // Get all unique dates from last 3 months
+    const allDates = new Set<string>();
+    const today = new Date();
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    // Add dates from all data sources
+    [...moodDates, ...focusDates, ...gratitudeDates].forEach(date => {
+      const d = new Date(date);
+      if (d >= threeMonthsAgo && d <= today) {
+        allDates.add(date);
+      }
+    });
+
+    // Also ensure we cover all dates in range (even empty ones get checked)
+    const current = new Date(threeMonthsAgo);
+    while (current <= today) {
+      allDates.add(current.toISOString().split('T')[0]);
+      current.setDate(current.getDate() + 1);
+    }
+
+    return Array.from(allDates).map(date => {
+      const habitsOnDate = habits.filter(h =>
+        getHabitCompletedDates(h).includes(date)
+      ).length;
+
+      const level = calculateActivityLevel(date, {
+        hasMood: moodDates.has(date),
+        habitsCompleted: habitsOnDate,
+        habitsTotal: habits.length,
+        hasFocus: focusDates.has(date),
+        hasGratitude: gratitudeDates.has(date),
+      });
+
+      return { date, level };
+    }).sort((a, b) => a.date.localeCompare(b.date));
+  }, [moods, habits, completedFocusSessions, gratitudeEntries]);
+
   const topHabit = habits.length > 0
     ? habits.reduce((a, b) => getHabitCompletionTotal(a) > getHabitCompletionTotal(b) ? a : b)
     : null;
@@ -411,12 +509,43 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
     });
   };
 
+  // Generate weekly story data
+  const canShowStory = useMemo(() => {
+    return hasEnoughDataForStory(moods, habits, focusSessions);
+  }, [moods, habits, focusSessions]);
+
+  const storySlides = useMemo(() => {
+    if (!canShowStory) return [];
+    return generateWeeklyStory(moods, habits, focusSessions, gratitudeEntries, [], stats.currentStreak, t as Record<string, string>);
+  }, [moods, habits, focusSessions, gratitudeEntries, stats.currentStreak, canShowStory, t]);
+
+  const weekRange = useMemo(() => getCurrentWeekRange().range, []);
+
   return (
-    <div className="space-y-6 animate-fade-in pb-24">
-      <h2 className="text-2xl font-bold text-foreground">{t.statistics}</h2>
+    <div className="space-y-4 animate-fade-in content-with-nav px-1">
+      {/* Header with Weekly Story button */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl sm:text-2xl font-bold text-foreground">{t.statistics}</h2>
+        {canShowStory && (
+          <button
+            onClick={() => {
+              hapticTap();
+              setShowStoryViewer(true);
+            }}
+            aria-label={t.weeklyStory || 'Weekly Story'}
+            className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white text-sm font-medium rounded-xl hover:opacity-90 transition-all zen-shadow-soft"
+          >
+            <PlayCircle className="w-4 h-4" />
+            {t.weeklyStory || 'Weekly Story'}
+          </button>
+        )}
+      </div>
+
+      {/* v1.4.0: Weekly Calendar - moved from My World tab */}
+      <WeeklyCalendar moods={moods} habits={habits} />
 
       {/* Monthly Overview */}
-      <div className="bg-card rounded-2xl p-6 zen-shadow-card">
+      <div className="bg-card rounded-2xl p-4 sm:p-6 zen-shadow-card">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 zen-gradient rounded-xl">
             <Calendar className="w-5 h-5 text-primary-foreground" />
@@ -424,39 +553,42 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
           <h3 className="text-lg font-semibold text-foreground">{stats.monthName}</h3>
         </div>
 
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4" role="group" aria-label={t.statsRange || 'Statistics range'}>
           <button
             onClick={() => setRange('week')}
+            aria-pressed={range === 'week'}
             className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${range === 'week' ? 'bg-primary/10 ring-2 ring-primary text-foreground' : 'bg-secondary text-muted-foreground hover:bg-muted'}`}
           >
             {t.statsRangeWeek}
           </button>
           <button
             onClick={() => setRange('month')}
+            aria-pressed={range === 'month'}
             className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${range === 'month' ? 'bg-primary/10 ring-2 ring-primary text-foreground' : 'bg-secondary text-muted-foreground hover:bg-muted'}`}
           >
             {t.statsRangeMonth}
           </button>
           <button
             onClick={() => setRange('all')}
+            aria-pressed={range === 'all'}
             className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${range === 'all' ? 'bg-primary/10 ring-2 ring-primary text-foreground' : 'bg-secondary text-muted-foreground hover:bg-muted'}`}
           >
             {t.statsRangeAll}
           </button>
         </div>
         
-        <div className="grid grid-cols-3 gap-4">
-          <div className="text-center p-3 bg-secondary rounded-xl">
-            <p className="text-2xl font-bold text-primary">{stats.thisMonthMoods}</p>
-            <p className="text-xs text-muted-foreground">{t.moodEntries}</p>
+        <div className="grid grid-cols-2 xs:grid-cols-3 gap-2 sm:gap-4">
+          <div className="text-center p-2 sm:p-3 bg-secondary rounded-xl">
+            <p className="text-lg sm:text-2xl font-bold text-primary">{stats.thisMonthMoods}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t.moodEntries}</p>
           </div>
-          <div className="text-center p-3 bg-secondary rounded-xl">
-            <p className="text-2xl font-bold text-accent">{stats.thisMonthFocusMinutes}</p>
-            <p className="text-xs text-muted-foreground">{t.focusMinutes}</p>
+          <div className="text-center p-2 sm:p-3 bg-secondary rounded-xl">
+            <p className="text-lg sm:text-2xl font-bold text-accent">{stats.thisMonthFocusMinutes}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t.focusMinutes}</p>
           </div>
-          <div className="text-center p-3 bg-secondary rounded-xl">
-            <p className="text-2xl font-bold text-mood-good">{stats.thisMonthGratitude}</p>
-            <p className="text-xs text-muted-foreground">{t.gratitudes}</p>
+          <div className="text-center p-2 sm:p-3 bg-secondary rounded-xl col-span-2 xs:col-span-1">
+            <p className="text-lg sm:text-2xl font-bold text-mood-good">{stats.thisMonthGratitude}</p>
+            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t.gratitudes}</p>
           </div>
         </div>
       </div>
@@ -477,11 +609,48 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
         onShare={() => setShowShareDialog(true)}
       />
 
-      {/* Mood Distribution - Animated */}
-      <AnimatedMoodDistribution
-        moodCounts={stats.moodCounts as Record<MoodType, number>}
-        totalMoods={filteredMoods.length}
+      {/* Trends View - Long-term Analytics */}
+      <div className="mb-8">
+        <TrendsView
+          moods={moods}
+          habits={habits}
+          focusSessions={focusSessions}
+        />
+      </div>
+
+      {/* Activity Heat Map - GitHub-style contribution graph */}
+      <ActivityHeatMap
+        data={activityHeatmapData}
+        months={3}
+        labels={{
+          title: t.activityHeatmap || 'Activity Overview',
+          less: t.less || 'Less',
+          more: t.more || 'More',
+          monthNames: shortMonthNames,
+        }}
+      />
+
+      {/* Weekly Insights - AI-powered recommendations */}
+      <WeeklyInsightsCard
+        moods={moods}
+        habits={habits}
+        focusSessions={completedFocusSessions}
+        gratitudeEntries={gratitudeEntries}
+        onRecommendationAction={(actionId) => {
+          hapticTap();
+          // Recommendations are actionable - clicking provides haptic feedback
+          // Future: could navigate to relevant section based on actionId
+          // e.g., 'low-focus' -> scroll to Focus Timer, 'more-gratitude' -> open Gratitude Journal
+        }}
+      />
+
+      {/* Emotion Distribution - v1.6.0: Always show 8-emotion Plutchik wheel */}
+      {/* Legacy moods are mapped to emotions for backward compatibility */}
+      <AnimatedEmotionDistribution
+        emotionCounts={stats.emotionCounts as Record<PrimaryEmotion, number>}
+        totalEmotions={filteredMoods.length}
         title={t.moodDistribution}
+        language={language}
         allTags={allTags}
         selectedTag={selectedTag}
         onTagChange={setSelectedTag}
@@ -490,7 +659,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
       />
 
       {/* Year Calendar - Redesigned */}
-      <div className="bg-card rounded-2xl p-6 zen-shadow-card overflow-hidden">
+      <div className="bg-card rounded-2xl p-3 sm:p-6 zen-shadow-card overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
           <div className="relative">
@@ -507,7 +676,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
           <label className="text-sm text-muted-foreground">{t.calendarYear}</label>
           <select
             value={selectedYear}
-            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            onChange={(e) => setSelectedYear(safeParseInt(e.target.value, new Date().getFullYear(), 2000, 2100))}
             className="p-2 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
           >
             {availableYears.map((year) => (
@@ -524,6 +693,8 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
             </button>
             <button
               onClick={() => setShowMonthSelector(!showMonthSelector)}
+              aria-expanded={showMonthSelector}
+              aria-label={t.calendarSelectMonth || 'Select month'}
               className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 text-sm font-medium hover:from-primary/20 hover:to-accent/20 transition-all flex items-center gap-2"
             >
               {monthNames[selectedMonth]} {selectedYear}
@@ -541,7 +712,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
 
         {/* Month Selector Grid */}
         {showMonthSelector && (
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-5 animate-fade-in">
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-5 animate-fade-in" role="listbox" aria-label={t.calendarSelectMonth || 'Select month'}>
             {monthNames.map((month, index) => (
               <button
                 key={month}
@@ -550,6 +721,8 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
                   setSelectedDate(null);
                   setShowMonthSelector(false);
                 }}
+                aria-selected={selectedMonth === index}
+                role="option"
                 className={cn(
                   "px-2 py-2.5 rounded-xl text-xs font-medium transition-all",
                   selectedMonth === index
@@ -612,8 +785,10 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
               <button
                 key={cell.dateKey}
                 onClick={() => setSelectedDate(cell.dateKey || null)}
+                aria-label={`${cell.day} ${monthNames[selectedMonth]} ${selectedYear}${mood ? `, ${t.mood}: ${t[mood] || mood}` : ''}`}
+                aria-pressed={cell.dateKey === selectedDate}
                 className={cn(
-                  "w-full aspect-square rounded-xl text-xs font-semibold flex items-center justify-center transition-all duration-200",
+                  "relative w-full aspect-square rounded-xl text-xs font-semibold flex items-center justify-center transition-all duration-200",
                   "hover:scale-105 hover:shadow-lg",
                   mood
                     ? `bg-gradient-to-br ${moodGradient} text-white shadow-md`
@@ -624,7 +799,10 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
                   cell.dateKey === selectedDate && "ring-2 ring-accent ring-offset-1 ring-offset-card scale-110"
                 )}
               >
-                {cell.day}
+                <span>{cell.day}</span>
+                {gratitudeByDate.has(cell.dateKey) && (
+                  <span className="absolute -top-0.5 -right-0.5 text-[8px]">✨</span>
+                )}
               </button>
             );
           })}
@@ -637,7 +815,11 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
               <div className="flex items-center justify-between">
                 <p className="font-bold text-foreground">{selectedDate}</p>
                 {selectedDayData.mood && (
-                  <span className="text-2xl">{moodEmojis[selectedDayData.mood.mood]}</span>
+                  selectedDayData.mood.emotion?.primary ? (
+                    <AnimatedEmotionEmoji emotion={selectedDayData.mood.emotion.primary} size="md" />
+                  ) : (
+                    <span className="text-2xl">{moodEmojis[selectedDayData.mood.mood]}</span>
+                  )
                 )}
               </div>
 
@@ -645,7 +827,11 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
                 <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
                   <span className="text-muted-foreground">{t.moodToday}</span>
                   <span className="font-medium">
-                    {selectedDayData.mood ? moodLabels[selectedDayData.mood.mood] : '—'}
+                    {selectedDayData.mood
+                      ? (selectedDayData.mood.emotion?.primary
+                          ? emotionLabels[selectedDayData.mood.emotion.primary]
+                          : moodLabels[selectedDayData.mood.mood])
+                      : '—'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
@@ -672,8 +858,14 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
                       className="p-3 bg-card/50 rounded-lg border-l-4 border-primary/50"
                     >
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-lg">{moodEmojis[entry.mood]}</span>
-                        <span className="text-sm font-medium">{moodLabels[entry.mood]}</span>
+                        {entry.emotion?.primary ? (
+                          <AnimatedEmotionEmoji emotion={entry.emotion.primary} size="sm" />
+                        ) : (
+                          <span className="text-lg">{moodEmojis[entry.mood]}</span>
+                        )}
+                        <span className="text-sm font-medium">
+                          {entry.emotion?.primary ? emotionLabels[entry.emotion.primary] : moodLabels[entry.mood]}
+                        </span>
                         <span className="text-xs text-muted-foreground ml-auto flex items-center gap-1">
                           {getTimeOfDayEmoji(entry.timestamp)} {getTimeOfDay(entry.timestamp)}
                         </span>
@@ -707,9 +899,26 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
               )}
 
               {selectedDayData.gratitude.length > 0 && (
-                <div className="text-xs text-muted-foreground space-y-1 bg-card/30 p-2 rounded-lg">
-                  {selectedDayData.gratitude.slice(0, 3).map((entry) => (
-                    <p key={entry.id}>• {entry.text}</p>
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    {t.gratitude || 'Gratitude'}
+                  </p>
+                  {selectedDayData.gratitude.map((entry) => (
+                    <div
+                      key={entry.id}
+                      className="p-3 bg-gradient-to-r from-amber-500/10 to-orange-500/5 rounded-lg border-l-4 border-amber-500/50"
+                    >
+                      <div className="flex items-start gap-2">
+                        <span className="text-base flex-shrink-0">✨</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-foreground">{entry.text}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {new Date(entry.timestamp).toLocaleTimeString(getLocale(language), { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -721,7 +930,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
       </div>
 
       {/* Mood Patterns */}
-      <div className="bg-card rounded-2xl p-6 zen-shadow-card">
+      <div className="bg-card rounded-2xl p-3 sm:p-6 zen-shadow-card">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 zen-gradient rounded-xl">
             <TrendingUp className="w-5 h-5 text-primary-foreground" />
@@ -783,7 +992,7 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
 
       {/* Top Habit */}
       {topHabit && (
-        <div className="bg-card rounded-2xl p-6 zen-shadow-card">
+        <div className="bg-card rounded-2xl p-3 sm:p-6 zen-shadow-card">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 zen-gradient-warm rounded-xl">
               <TrendingUp className="w-5 h-5 text-primary-foreground" />
@@ -818,6 +1027,16 @@ export function StatsPage({ moods, habits, focusSessions, gratitudeEntries, rest
           onClose={() => setShowShareDialog(false)}
         />
       )}
+
+      {/* Weekly Progress Stories Viewer */}
+      {showStoryViewer && storySlides.length > 0 && (
+        <ProgressStoriesViewer
+          slides={storySlides}
+          onClose={() => setShowStoryViewer(false)}
+          weekRange={weekRange}
+          streak={stats.currentStreak}
+        />
+      )}
     </div>
   );
-}
+});

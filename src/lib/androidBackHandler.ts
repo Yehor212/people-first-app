@@ -5,6 +5,7 @@
 
 import { App } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { logger } from './logger';
 
 // Track last back button press timestamp
 let lastBackPress = 0;
@@ -12,6 +13,27 @@ const DOUBLE_TAP_DELAY = 2000; // 2 seconds
 
 // Track if we're showing exit toast
 let isShowingExitToast = false;
+let toastTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let toastFadeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+let toastStyleAdded = false;
+
+// Modal close callback registry for React state-based modals
+type ModalCloseCallback = () => boolean; // returns true if modal was closed
+const modalCloseCallbacks: ModalCloseCallback[] = [];
+
+/**
+ * Register a callback to be called when back button is pressed.
+ * Callbacks are called in reverse order (LIFO - last registered first).
+ * Return true from callback if you handled the back press.
+ * Returns an unregister function.
+ */
+export function registerModalCloseCallback(callback: ModalCloseCallback): () => void {
+  modalCloseCallbacks.push(callback);
+  return () => {
+    const index = modalCloseCallbacks.indexOf(callback);
+    if (index > -1) modalCloseCallbacks.splice(index, 1);
+  };
+}
 
 /**
  * Show toast notification (simple implementation without dependencies)
@@ -41,36 +63,49 @@ function showExitToast(message: string) {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   `;
 
-  // Add animation keyframes
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes toast-slide-up {
-      from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(20px);
+  // Add animation keyframes only once
+  if (!toastStyleAdded) {
+    const style = document.createElement('style');
+    style.id = 'android-toast-styles';
+    style.textContent = `
+      @keyframes toast-slide-up {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
       }
-      to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
+      @keyframes toast-fade-out {
+        from {
+          opacity: 1;
+        }
+        to {
+          opacity: 0;
+        }
       }
-    }
-    @keyframes toast-fade-out {
-      from {
-        opacity: 1;
-      }
-      to {
-        opacity: 0;
-      }
-    }
-  `;
-  document.head.appendChild(style);
+    `;
+    document.head.appendChild(style);
+    toastStyleAdded = true;
+  }
 
   document.body.appendChild(toast);
 
+  // Clear any existing timeouts
+  if (toastTimeoutId) clearTimeout(toastTimeoutId);
+  if (toastFadeTimeoutId) clearTimeout(toastFadeTimeoutId);
+
   // Remove toast after delay
-  setTimeout(() => {
+  toastTimeoutId = setTimeout(() => {
+    // Check if toast still exists in DOM before animating
+    if (!toast.parentNode) {
+      isShowingExitToast = false;
+      return;
+    }
     toast.style.animation = 'toast-fade-out 0.2s ease-out';
-    setTimeout(() => {
+    toastFadeTimeoutId = setTimeout(() => {
       if (toast.parentNode) {
         toast.parentNode.removeChild(toast);
       }
@@ -119,7 +154,16 @@ function isModalOpen(): boolean {
  * Try to close the topmost modal
  */
 function closeTopModal(): boolean {
-  // Try to find and click close buttons
+  // First, try registered callbacks (for React state-based modals)
+  // Iterate in reverse order (LIFO) so the most recently opened modal closes first
+  for (let i = modalCloseCallbacks.length - 1; i >= 0; i--) {
+    if (modalCloseCallbacks[i]()) {
+      logger.log('[AndroidBackHandler] Modal closed via registered callback');
+      return true;
+    }
+  }
+
+  // Fallback: Try to find and click close buttons in DOM
   const closeButtonSelectors = [
     '[data-radix-dismissable-layer] button[aria-label*="close" i]',
     '[role="dialog"] button[aria-label*="close" i]',
@@ -180,21 +224,23 @@ export function initAndroidBackHandler() {
     return;
   }
 
-  console.log('[AndroidBackHandler] Initializing...');
+  logger.log('[AndroidBackHandler] Initializing...');
 
   App.addListener('backButton', ({ canGoBack }) => {
-    console.log('[AndroidBackHandler] Back button pressed, canGoBack:', canGoBack);
+    logger.log('[AndroidBackHandler] Back button pressed, canGoBack:', canGoBack);
 
-    // Priority 1: Close modal if open
-    if (isModalOpen()) {
-      console.log('[AndroidBackHandler] Modal detected, attempting to close');
-      closeTopModal();
-      return;
+    // Priority 1: Try to close modal via callbacks or DOM detection
+    // closeTopModal() first tries registered callbacks, then DOM-based closing
+    if (modalCloseCallbacks.length > 0 || isModalOpen()) {
+      logger.log('[AndroidBackHandler] Modal/panel may be open, attempting to close');
+      if (closeTopModal()) {
+        return;
+      }
     }
 
     // Priority 2: Navigate back if not on root route
     if (!isOnRootRoute()) {
-      console.log('[AndroidBackHandler] Not on root route, navigating back');
+      logger.log('[AndroidBackHandler] Not on root route, navigating back');
       window.history.back();
       return;
     }
@@ -205,17 +251,17 @@ export function initAndroidBackHandler() {
 
     if (timeSinceLastPress < DOUBLE_TAP_DELAY) {
       // Second tap within delay - exit app
-      console.log('[AndroidBackHandler] Double tap detected, exiting app');
+      logger.log('[AndroidBackHandler] Double tap detected, exiting app');
       App.exitApp();
     } else {
       // First tap - show toast and update timestamp
-      console.log('[AndroidBackHandler] First tap, showing exit toast');
+      logger.log('[AndroidBackHandler] First tap, showing exit toast');
       lastBackPress = now;
       showExitToast(getExitMessage());
     }
   });
 
-  console.log('[AndroidBackHandler] Back button handler registered');
+  logger.log('[AndroidBackHandler] Back button handler registered');
 }
 
 /**
@@ -227,5 +273,5 @@ export async function removeAndroidBackHandler() {
   }
 
   await App.removeAllListeners();
-  console.log('[AndroidBackHandler] Back button handler removed');
+  logger.log('[AndroidBackHandler] Back button handler removed');
 }

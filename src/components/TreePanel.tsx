@@ -206,14 +206,19 @@ export function TreePanel({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+          style={{ zIndex: 'var(--z-overlay)', marginBottom: 'var(--nav-height)' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tree-panel-title"
         >
           <motion.div
             className="w-full max-w-lg bg-gradient-to-b from-primary/10 to-background rounded-t-3xl max-h-[85vh] overflow-hidden"
+            style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom))' }}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -224,16 +229,17 @@ export function TreePanel({
             <div className="flex items-center justify-between p-4 border-b border-border/50">
               <div className="flex items-center gap-2">
                 <span className="text-lg">{getSeasonEmoji(season)}</span>
-                <h2 className="text-lg font-semibold">{t.myTree || 'My Tree'}</h2>
+                <h2 id="tree-panel-title" className="text-lg font-semibold">{t.myTree || 'My Tree'}</h2>
               </div>
               {/* Treats Balance */}
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 rounded-full">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 rounded-full" aria-label={`${t.treats || 'Treats'}: ${treatsBalance}`}>
                   <span className="text-lg">🍪</span>
                   <span className="font-bold text-orange-500">{treatsBalance}</span>
                 </div>
                 <button
                   onClick={onClose}
+                  aria-label={t.close || 'Close'}
                   className="p-2 rounded-full hover:bg-muted transition-colors"
                 >
                   <X className="w-5 h-5" />

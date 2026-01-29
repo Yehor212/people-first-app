@@ -35,7 +35,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
   const wheelRef = useRef<HTMLDivElement>(null);
 
   const prizes = getSpinWheelPrizes();
-  const segmentAngle = 360 / prizes.length;
+  const segmentAngle = prizes.length > 0 ? 360 / prizes.length : 0;
 
   const handleSpin = () => {
     if (isSpinning || spinsAvailable <= 0) return;
@@ -71,7 +71,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
       <div className="bg-card rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden animate-scale-in">
         {/* Header */}
         <div className="relative p-6 text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white">

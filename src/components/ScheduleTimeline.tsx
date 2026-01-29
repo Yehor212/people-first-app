@@ -1,14 +1,15 @@
 /**
  * Schedule Timeline - Horizontal day view for ADHD users
  * Shows current time, planned activities, and helps with time awareness
- * Supports week planning with day selector
+ * Supports ±30 days planning with auto-synced day selector
  */
 
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, Clock, X, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Plus, Clock, X, Check, Home } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn, getToday, formatDate } from '@/lib/utils';
 import { ScheduleEvent } from '@/types';
+import { safeParseInt } from '@/lib/validation';
 
 interface ScheduleTimelineProps {
   events: ScheduleEvent[];
@@ -16,11 +17,12 @@ interface ScheduleTimelineProps {
   onDeleteEvent?: (id: string) => void;
 }
 
-// Get array of dates for the week (today + 6 days ahead)
-function getWeekDates(): string[] {
+// Get array of dates for ±30 days range
+function getExtendedDates(): string[] {
   const dates: string[] = [];
   const today = new Date();
-  for (let i = 0; i < 7; i++) {
+  // 30 days back + today + 30 days forward = 61 days total
+  for (let i = -30; i <= 30; i++) {
     const date = new Date(today);
     date.setDate(today.getDate() + i);
     dates.push(formatDate(date));
@@ -31,7 +33,6 @@ function getWeekDates(): string[] {
 // Format date for display
 function formatDayShort(dateStr: string, language: string): { day: string; weekday: string; isToday: boolean } {
   const date = new Date(dateStr);
-  const today = new Date();
   const isToday = dateStr === getToday();
 
   const weekdayNames: Record<string, string[]> = {
@@ -62,10 +63,13 @@ const EVENT_PRESETS = [
   { id: 'meeting', emoji: '👥', color: '#ec4899', labelKey: 'scheduleMeeting' },
 ];
 
-// Time blocks for the day (6am to 11pm)
-const START_HOUR = 6;
-const END_HOUR = 23;
-const HOURS = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
+// Time blocks for the day - now full 24 hours
+const HOURS_PER_DAY = 24;
+const HOURS = Array.from({ length: HOURS_PER_DAY }, (_, i) => i);
+
+// Width in pixels for one hour in timeline
+const HOUR_WIDTH_PX = 60;
+const DAY_WIDTH_PX = HOURS_PER_DAY * HOUR_WIDTH_PX; // 1440px per day
 
 export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: ScheduleTimelineProps) {
   const { t, language } = useLanguage();
@@ -74,19 +78,29 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState(getToday());
   const timelineRef = useRef<HTMLDivElement>(null);
+  const daySelectorRef = useRef<HTMLDivElement>(null);
+  const isScrollingProgrammatically = useRef(false);
 
-  // Get week dates
-  const weekDates = useMemo(() => getWeekDates(), []);
+  // Ensure events is always an array
+  const safeEvents = Array.isArray(events) ? events : [];
+
+  // Get all dates (±30 days)
+  const allDates = useMemo(() => getExtendedDates(), []);
+
+  // Find index of a date in allDates
+  const getDateIndex = useCallback((date: string) => {
+    return allDates.indexOf(date);
+  }, [allDates]);
 
   // Filter events for selected date
   const filteredEvents = useMemo(() => {
-    return events.filter(e => e.date === selectedDate);
-  }, [events, selectedDate]);
+    return safeEvents.filter(e => e.date === selectedDate);
+  }, [safeEvents, selectedDate]);
 
   // Check if a date has events
-  const dateHasEvents = (date: string) => {
-    return events.some(e => e.date === date);
-  };
+  const dateHasEvents = useCallback((date: string) => {
+    return safeEvents.some(e => e.date === date);
+  }, [safeEvents]);
 
   // Check if selected date is today
   const isToday = selectedDate === getToday();
@@ -97,24 +111,94 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
     return () => clearInterval(interval);
   }, []);
 
-  // Scroll to current time on mount
-  useEffect(() => {
-    if (timelineRef.current) {
-      const currentHour = currentTime.getHours();
-      const scrollPosition = ((currentHour - START_HOUR) / (END_HOUR - START_HOUR)) * timelineRef.current.scrollWidth;
-      timelineRef.current.scrollLeft = Math.max(0, scrollPosition - timelineRef.current.clientWidth / 2);
+  // Scroll day selector to center the selected date
+  const scrollDaySelectorToDate = useCallback((date: string) => {
+    if (!daySelectorRef.current) return;
+    const index = getDateIndex(date);
+    if (index === -1) return;
+
+    const buttonWidth = 56; // min-w-[52px] + gap
+    const containerWidth = daySelectorRef.current.clientWidth;
+    const scrollPosition = (index * buttonWidth) - (containerWidth / 2) + (buttonWidth / 2);
+
+    daySelectorRef.current.scrollTo({
+      left: Math.max(0, scrollPosition),
+      behavior: 'smooth'
+    });
+  }, [getDateIndex]);
+
+  // Scroll timeline to specific date
+  const scrollTimelineToDate = useCallback((date: string, centerOnCurrentHour = false) => {
+    if (!timelineRef.current) return;
+    const index = getDateIndex(date);
+    if (index === -1) return;
+
+    isScrollingProgrammatically.current = true;
+
+    let scrollPosition = index * DAY_WIDTH_PX;
+
+    // If centering on current hour (for today), add hour offset
+    if (centerOnCurrentHour && date === getToday()) {
+      const currentHour = new Date().getHours();
+      scrollPosition += currentHour * HOUR_WIDTH_PX;
     }
-  }, []);
+
+    // Center in viewport
+    scrollPosition -= timelineRef.current.clientWidth / 2;
+
+    timelineRef.current.scrollTo({
+      left: Math.max(0, scrollPosition),
+      behavior: 'smooth'
+    });
+
+    // Reset flag after animation
+    setTimeout(() => {
+      isScrollingProgrammatically.current = false;
+    }, 500);
+  }, [getDateIndex]);
+
+  // Initial scroll to today and center on current time
+  useEffect(() => {
+    const today = getToday();
+    setSelectedDate(today);
+    scrollTimelineToDate(today, true);
+    scrollDaySelectorToDate(today);
+  }, [scrollTimelineToDate, scrollDaySelectorToDate]);
+
+  // Handle timeline scroll - update selected date based on scroll position
+  const handleTimelineScroll = useCallback(() => {
+    if (!timelineRef.current || isScrollingProgrammatically.current) return;
+
+    const scrollLeft = timelineRef.current.scrollLeft;
+    const viewportCenter = scrollLeft + timelineRef.current.clientWidth / 2;
+
+    // Determine which day is in the center of viewport
+    const dayIndex = Math.floor(viewportCenter / DAY_WIDTH_PX);
+    const clampedIndex = Math.max(0, Math.min(dayIndex, allDates.length - 1));
+    const newSelectedDate = allDates[clampedIndex];
+
+    if (newSelectedDate && newSelectedDate !== selectedDate) {
+      setSelectedDate(newSelectedDate);
+      scrollDaySelectorToDate(newSelectedDate);
+    }
+  }, [allDates, selectedDate, scrollDaySelectorToDate]);
+
+  // Handle day button click - scroll timeline to that day
+  const handleDayClick = useCallback((date: string) => {
+    setSelectedDate(date);
+    scrollTimelineToDate(date, date === getToday());
+  }, [scrollTimelineToDate]);
+
+  // Go to today button
+  const goToToday = useCallback(() => {
+    const today = getToday();
+    setSelectedDate(today);
+    scrollTimelineToDate(today, true);
+    scrollDaySelectorToDate(today);
+  }, [scrollTimelineToDate, scrollDaySelectorToDate]);
 
   const currentHour = currentTime.getHours();
   const currentMinute = currentTime.getMinutes();
-
-  // Calculate position percentage for current time indicator
-  const currentTimePosition = useMemo(() => {
-    const totalMinutes = (currentHour - START_HOUR) * 60 + currentMinute;
-    const maxMinutes = (END_HOUR - START_HOUR) * 60;
-    return Math.max(0, Math.min(100, (totalMinutes / maxMinutes) * 100));
-  }, [currentHour, currentMinute]);
 
   // Format time
   const formatTime = (hour: number, minute: number = 0) => {
@@ -124,11 +208,11 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
   // Get current time formatted
   const currentTimeFormatted = formatTime(currentHour, currentMinute);
 
-  // Calculate event position and width
+  // Calculate event position and width (within a single day)
   const getEventStyle = (event: ScheduleEvent) => {
-    const startMinutes = (event.startHour - START_HOUR) * 60 + event.startMinute;
-    const endMinutes = (event.endHour - START_HOUR) * 60 + event.endMinute;
-    const totalMinutes = (END_HOUR - START_HOUR) * 60;
+    const startMinutes = event.startHour * 60 + event.startMinute;
+    const endMinutes = event.endHour * 60 + event.endMinute;
+    const totalMinutes = HOURS_PER_DAY * 60;
 
     const left = (startMinutes / totalMinutes) * 100;
     const width = ((endMinutes - startMinutes) / totalMinutes) * 100;
@@ -150,6 +234,26 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
 
   // Find current event (only on today)
   const currentEvent = isToday ? filteredEvents.find(isEventCurrent) : null;
+
+  // Calculate current time position within a day (percentage)
+  const currentTimePositionPercent = useMemo(() => {
+    const totalMinutes = currentHour * 60 + currentMinute;
+    return (totalMinutes / (HOURS_PER_DAY * 60)) * 100;
+  }, [currentHour, currentMinute]);
+
+  // Get events grouped by date for rendering
+  const eventsByDate = useMemo(() => {
+    const map = new Map<string, ScheduleEvent[]>();
+    events.forEach(event => {
+      const existing = map.get(event.date) || [];
+      existing.push(event);
+      map.set(event.date, existing);
+    });
+    return map;
+  }, [events]);
+
+  // Get today's index in allDates
+  const todayIndex = useMemo(() => getDateIndex(getToday()), [getDateIndex]);
 
   return (
     <div className="bg-card rounded-3xl p-4 zen-shadow-card animate-fade-in">
@@ -174,19 +278,36 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
           </div>
         </div>
 
-        {onAddEvent && (
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="p-2 bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors"
-          >
-            <Plus className="w-5 h-5 text-primary" />
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {/* Go to Today button */}
+          {selectedDate !== getToday() && (
+            <button
+              onClick={goToToday}
+              className="p-2 bg-secondary/50 hover:bg-secondary rounded-xl transition-colors"
+              aria-label={t.today || 'Today'}
+            >
+              <Home className="w-5 h-5 text-muted-foreground" />
+            </button>
+          )}
+
+          {onAddEvent && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              aria-label={t.scheduleAddEvent || 'Add event'}
+              className="p-2 bg-primary/10 hover:bg-primary/20 rounded-xl transition-colors"
+            >
+              <Plus className="w-5 h-5 text-primary" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Week Day Selector */}
-      <div className="flex gap-1.5 mb-3 overflow-x-auto pb-1 -mx-1 px-1">
-        {weekDates.map((date) => {
+      {/* Extended Day Selector (±30 days with horizontal scroll) */}
+      <div
+        ref={daySelectorRef}
+        className="flex gap-1.5 mb-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-hide"
+      >
+        {allDates.map((date) => {
           const { day, weekday, isToday: dayIsToday } = formatDayShort(date, language);
           const isSelected = date === selectedDate;
           const hasEvents = dateHasEvents(date);
@@ -194,7 +315,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
           return (
             <button
               key={date}
-              onClick={() => setSelectedDate(date)}
+              onClick={() => handleDayClick(date)}
               className={cn(
                 "flex-shrink-0 flex flex-col items-center py-2 px-3 rounded-xl transition-all min-w-[52px]",
                 isSelected
@@ -218,80 +339,127 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
         })}
       </div>
 
-      {/* Timeline */}
+      {/* Continuous Timeline (all days in one scrollable view) */}
       <div className="relative">
-        {/* Scrollable timeline container */}
         <div
           ref={timelineRef}
+          onScroll={handleTimelineScroll}
           className="overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-primary/20"
         >
-          <div className="relative min-w-[600px] h-24">
-            {/* Hour markers */}
-            <div className="absolute inset-x-0 top-0 flex">
-              {HOURS.map((hour) => (
+          {/* Total width = number of days * day width */}
+          <div
+            className="relative h-24"
+            style={{ width: `${allDates.length * DAY_WIDTH_PX}px` }}
+          >
+            {/* Render each day segment */}
+            {allDates.map((date, dayIndex) => {
+              const dayOffset = dayIndex * DAY_WIDTH_PX;
+              const dayEvents = eventsByDate.get(date) || [];
+              const isDayToday = date === getToday();
+              const isDaySelected = date === selectedDate;
+
+              return (
                 <div
-                  key={hour}
-                  className="flex-1 text-center"
+                  key={date}
+                  className="absolute top-0 bottom-0"
+                  style={{ left: `${dayOffset}px`, width: `${DAY_WIDTH_PX}px` }}
                 >
-                  <span className={cn(
-                    "text-xs",
-                    hour === currentHour ? "text-primary font-bold" : "text-muted-foreground"
+                  {/* Hour markers */}
+                  <div className="absolute inset-x-0 top-0 flex">
+                    {HOURS.map((hour) => (
+                      <div
+                        key={hour}
+                        className="text-center"
+                        style={{ width: `${HOUR_WIDTH_PX}px` }}
+                      >
+                        <span className={cn(
+                          "text-xs",
+                          isDayToday && hour === currentHour
+                            ? "text-primary font-bold"
+                            : hour === 0
+                              ? "text-muted-foreground/70 font-medium"
+                              : "text-muted-foreground"
+                        )}>
+                          {hour === 0 ? formatDayShort(date, language).day : formatTime(hour)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Timeline track */}
+                  <div className={cn(
+                    "absolute left-0 right-0 top-6 h-12 rounded-xl overflow-hidden",
+                    isDaySelected ? "bg-secondary/70" : "bg-secondary/40"
                   )}>
-                    {formatTime(hour)}
-                  </span>
-                </div>
-              ))}
-            </div>
+                    {/* Hour grid lines */}
+                    <div className="absolute inset-0 flex">
+                      {HOURS.map((hour) => (
+                        <div
+                          key={hour}
+                          className={cn(
+                            "border-r",
+                            hour === 0
+                              ? "border-primary/30 border-r-2"
+                              : hour % 6 === 0
+                                ? "border-border/50"
+                                : "border-border/20"
+                          )}
+                          style={{ width: `${HOUR_WIDTH_PX}px` }}
+                        />
+                      ))}
+                    </div>
 
-            {/* Timeline track */}
-            <div className="absolute left-0 right-0 top-6 h-12 bg-secondary/50 rounded-xl overflow-hidden">
-              {/* Hour grid lines */}
-              <div className="absolute inset-0 flex">
-                {HOURS.map((hour, i) => (
-                  <div
-                    key={hour}
-                    className={cn(
-                      "flex-1 border-r border-border/30",
-                      i === HOURS.length - 1 && "border-r-0"
+                    {/* Events for this day */}
+                    {dayEvents.map((event) => {
+                      const isHabitEvent = event.source === 'habit';
+                      return (
+                        <button
+                          key={event.id}
+                          onClick={() => setSelectedEvent(event)}
+                          style={getEventStyle(event)}
+                          className={cn(
+                            "absolute top-1 bottom-1 rounded-lg flex items-center justify-center gap-1 text-white text-xs font-medium transition-all",
+                            // v1.4.0: Visual distinction for habit events
+                            isHabitEvent
+                              ? "opacity-90 border-2 border-dashed border-white/40"
+                              : "hover:scale-[1.02] hover:z-10",
+                            isDayToday && isEventCurrent(event) && "ring-2 ring-white ring-offset-2 ring-offset-card animate-pulse"
+                          )}
+                        >
+                          {/* v1.4.0: Habit indicator badge */}
+                          {isHabitEvent && (
+                            <span className="absolute -top-1 -left-1 text-[10px] bg-white/30 rounded-full w-4 h-4 flex items-center justify-center backdrop-blur-sm">
+                              🎯
+                            </span>
+                          )}
+                          <span>{event.emoji}</span>
+                          <span className="truncate px-1">{event.title}</span>
+                        </button>
+                      );
+                    })}
+
+                    {/* Current time indicator - only show for today */}
+                    {isDayToday && (
+                      <div
+                        className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
+                        style={{ left: `${currentTimePositionPercent}%` }}
+                      >
+                        <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                      </div>
                     )}
-                  />
-                ))}
-              </div>
+                  </div>
 
-              {/* Events */}
-              {filteredEvents.map((event) => (
-                <button
-                  key={event.id}
-                  onClick={() => setSelectedEvent(event)}
-                  style={getEventStyle(event)}
-                  className={cn(
-                    "absolute top-1 bottom-1 rounded-lg flex items-center justify-center gap-1 text-white text-xs font-medium transition-all hover:scale-[1.02] hover:z-10",
-                    isToday && isEventCurrent(event) && "ring-2 ring-white ring-offset-2 ring-offset-card animate-pulse"
-                  )}
-                >
-                  <span>{event.emoji}</span>
-                  <span className="truncate px-1">{event.title}</span>
-                </button>
-              ))}
-
-              {/* Current time indicator - only show for today */}
-              {isToday && (
-                <div
-                  className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
-                  style={{ left: `${currentTimePosition}%` }}
-                >
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                  {/* Period labels */}
+                  <div className="absolute left-0 right-0 bottom-0 flex text-[10px] text-muted-foreground">
+                    <div className="flex-1 text-center">{t.night || 'Night'}</div>
+                    <div className="flex-1 text-center">{t.morning || 'Morning'}</div>
+                    <div className="flex-1 text-center">{t.afternoon || 'Afternoon'}</div>
+                    <div className="flex-1 text-center">{t.evening || 'Evening'}</div>
+                  </div>
                 </div>
-              )}
-            </div>
-
-            {/* Period labels */}
-            <div className="absolute left-0 right-0 bottom-0 flex text-[10px] text-muted-foreground">
-              <div className="flex-1 text-center">{t.morning || 'Morning'}</div>
-              <div className="flex-1 text-center">{t.afternoon || 'Afternoon'}</div>
-              <div className="flex-1 text-center">{t.evening || 'Evening'}</div>
-            </div>
+              );
+            })}
           </div>
         </div>
 
@@ -315,6 +483,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
       {showAddModal && onAddEvent && (
         <AddEventModal
           selectedDate={selectedDate}
+          allDates={allDates}
           onClose={() => setShowAddModal(false)}
           onAdd={(event) => {
             onAddEvent(event);
@@ -341,10 +510,12 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
 // Add Event Modal
 function AddEventModal({
   selectedDate: initialDate,
+  allDates,
   onClose,
   onAdd,
 }: {
   selectedDate: string;
+  allDates: string[];
   onClose: () => void;
   onAdd: (event: Omit<ScheduleEvent, 'id'>) => void;
 }) {
@@ -358,25 +529,22 @@ function AddEventModal({
   const [customTitle, setCustomTitle] = useState('');
   const [note, setNote] = useState('');
 
-  // Generate next 14 days for date picker
-  const dateOptions = useMemo(() => {
-    const dates: { value: string; label: string }[] = [];
-    const today = new Date();
-    const locale = language === 'ru' ? 'ru-RU' : language === 'uk' ? 'uk-UA' : language === 'es' ? 'es-ES' : language === 'de' ? 'de-DE' : language === 'fr' ? 'fr-FR' : 'en-US';
+  // Format date for display in select
+  const formatDateOption = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const today = getToday();
+    const tomorrow = (() => {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      return formatDate(d);
+    })();
 
-    for (let i = 0; i < 14; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      const value = formatDate(date);
-      const label = i === 0
-        ? (t.today || 'Today')
-        : i === 1
-          ? (t.tomorrow || 'Tomorrow')
-          : date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
-      dates.push({ value, label });
-    }
-    return dates;
-  }, [language, t.today, t.tomorrow]);
+    if (dateStr === today) return t.today || 'Today';
+    if (dateStr === tomorrow) return t.tomorrow || 'Tomorrow';
+
+    const locale = language === 'ru' ? 'ru-RU' : language === 'uk' ? 'uk-UA' : language === 'es' ? 'es-ES' : language === 'de' ? 'de-DE' : language === 'fr' ? 'fr-FR' : 'en-US';
+    return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
+  };
 
   const handleAdd = () => {
     const title = customTitle || (t[selectedPreset.labelKey as keyof typeof t] as string) || selectedPreset.id;
@@ -394,16 +562,25 @@ function AddEventModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
-      <div className="bg-card rounded-3xl p-5 w-full max-w-sm animate-slide-up max-h-[90vh] overflow-y-auto">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="add-event-title"
+      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center p-4"
+      style={{ zIndex: 'var(--z-overlay)', marginBottom: 'var(--nav-height)' }}
+    >
+      <div
+        className="bg-card rounded-3xl p-5 w-full max-w-sm animate-slide-up max-h-[90vh] overflow-y-auto"
+        style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom))' }}
+      >
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold">{t.scheduleAddEvent || 'Add Event'}</h3>
-          <button onClick={onClose} className="p-2 hover:bg-muted rounded-xl">
+          <h3 id="add-event-title" className="text-lg font-semibold">{t.scheduleAddEvent || 'Add Event'}</h3>
+          <button onClick={onClose} aria-label={t.close || 'Close'} className="p-2 hover:bg-muted rounded-xl">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Date picker */}
+        {/* Date picker - now with all ±30 days */}
         <div className="mb-4">
           <label className="text-xs text-muted-foreground mb-1 block">{t.scheduleDate || 'Date'}</label>
           <select
@@ -411,29 +588,34 @@ function AddEventModal({
             onChange={(e) => setEventDate(e.target.value)}
             className="w-full p-3 bg-secondary/50 rounded-xl text-sm"
           >
-            {dateOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            {allDates.map((date) => (
+              <option key={date} value={date}>{formatDateOption(date)}</option>
             ))}
           </select>
         </div>
 
         {/* Event type presets */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {EVENT_PRESETS.map((preset) => (
-            <button
-              key={preset.id}
-              onClick={() => setSelectedPreset(preset)}
-              className={cn(
-                "p-3 rounded-xl flex flex-col items-center gap-1 transition-all",
-                selectedPreset.id === preset.id
-                  ? "ring-2 ring-primary bg-primary/10"
-                  : "bg-secondary/50 hover:bg-secondary"
-              )}
-            >
-              <span className="text-xl">{preset.emoji}</span>
-              <span className="text-xs">{(t[preset.labelKey as keyof typeof t] as string) || preset.id}</span>
-            </button>
-          ))}
+        <div className="grid grid-cols-3 gap-2 mb-4" role="group" aria-label={t.scheduleEventType || 'Event type'}>
+          {EVENT_PRESETS.map((preset) => {
+            const label = (t[preset.labelKey as keyof typeof t] as string) || preset.id;
+            return (
+              <button
+                key={preset.id}
+                onClick={() => setSelectedPreset(preset)}
+                aria-pressed={selectedPreset.id === preset.id}
+                aria-label={label}
+                className={cn(
+                  "p-3 rounded-xl flex flex-col items-center gap-1 transition-all",
+                  selectedPreset.id === preset.id
+                    ? "ring-2 ring-primary bg-primary/10"
+                    : "bg-secondary/50 hover:bg-secondary"
+                )}
+              >
+                <span className="text-xl" aria-hidden="true">{preset.emoji}</span>
+                <span className="text-xs">{label}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Custom title */}
@@ -445,14 +627,14 @@ function AddEventModal({
           className="w-full p-3 bg-secondary/50 rounded-xl text-sm mb-4"
         />
 
-        {/* Time pickers */}
+        {/* Time pickers - now with all 24 hours */}
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1">
             <label className="text-xs text-muted-foreground mb-1 block">{t.scheduleStart || 'Start'}</label>
             <div className="flex gap-1">
               <select
                 value={startHour}
-                onChange={(e) => setStartHour(Number(e.target.value))}
+                onChange={(e) => setStartHour(safeParseInt(e.target.value, 9, 0, 23))}
                 className="flex-1 p-2 bg-secondary/50 rounded-lg text-sm"
               >
                 {HOURS.map((h) => (
@@ -461,7 +643,7 @@ function AddEventModal({
               </select>
               <select
                 value={startMinute}
-                onChange={(e) => setStartMinute(Number(e.target.value))}
+                onChange={(e) => setStartMinute(safeParseInt(e.target.value, 0, 0, 59))}
                 className="flex-1 p-2 bg-secondary/50 rounded-lg text-sm"
               >
                 {[0, 15, 30, 45].map((m) => (
@@ -475,7 +657,7 @@ function AddEventModal({
             <div className="flex gap-1">
               <select
                 value={endHour}
-                onChange={(e) => setEndHour(Number(e.target.value))}
+                onChange={(e) => setEndHour(safeParseInt(e.target.value, 10, 0, 23))}
                 className="flex-1 p-2 bg-secondary/50 rounded-lg text-sm"
               >
                 {HOURS.map((h) => (
@@ -484,7 +666,7 @@ function AddEventModal({
               </select>
               <select
                 value={endMinute}
-                onChange={(e) => setEndMinute(Number(e.target.value))}
+                onChange={(e) => setEndMinute(safeParseInt(e.target.value, 0, 0, 59))}
                 className="flex-1 p-2 bg-secondary/50 rounded-lg text-sm"
               >
                 {[0, 15, 30, 45].map((m) => (
@@ -531,31 +713,57 @@ function EventDetailsModal({
   onDelete?: () => void;
 }) {
   const { t } = useLanguage();
+  const isHabitEvent = event.source === 'habit';
 
   const formatTime = (hour: number, minute: number) => {
     return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div role="dialog" aria-modal="true" aria-labelledby="event-details-title" className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4" onClick={onClose}>
       <div className="bg-card rounded-3xl p-5 w-full max-w-xs animate-scale-in" onClick={e => e.stopPropagation()}>
         <div className="text-center mb-4">
           <div
-            className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-3xl"
+            className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-3xl relative"
             style={{ backgroundColor: event.color }}
           >
-            {event.emoji}
+            <span aria-hidden="true">{event.emoji}</span>
+            {/* v1.4.0: Habit indicator badge */}
+            {isHabitEvent && (
+              <span className="absolute -top-1 -right-1 text-sm bg-primary rounded-full w-6 h-6 flex items-center justify-center" aria-hidden="true">
+                🎯
+              </span>
+            )}
           </div>
-          <h3 className="text-lg font-semibold">{event.title}</h3>
+          <h3 id="event-details-title" className="text-lg font-semibold">{event.title}</h3>
           <p className="text-sm text-muted-foreground">
             {formatTime(event.startHour, event.startMinute)} - {formatTime(event.endHour, event.endMinute)}
           </p>
+
+          {/* v1.4.0: Habit event indicator */}
+          {isHabitEvent && (
+            <div className="mt-2 px-3 py-1.5 bg-primary/10 rounded-full inline-flex items-center gap-1.5">
+              <span>🎯</span>
+              <span className="text-xs text-primary font-medium">
+                {t.habitReminder || 'Habit Reminder'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Note display */}
         {event.note && (
           <div className="mb-4 p-3 bg-secondary/50 rounded-xl">
             <p className="text-sm text-muted-foreground">{event.note}</p>
+          </div>
+        )}
+
+        {/* v1.4.0: Habit event explanation */}
+        {isHabitEvent && (
+          <div className="mb-4 p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
+            <p className="text-xs text-amber-600 dark:text-amber-400">
+              {t.habitEventExplanation || 'This event is from your habit. Edit the habit to change it.'}
+            </p>
           </div>
         )}
 
@@ -566,7 +774,8 @@ function EventDetailsModal({
           >
             {t.close || 'Close'}
           </button>
-          {onDelete && (
+          {/* v1.4.0: Hide delete button for habit events */}
+          {onDelete && !isHabitEvent && (
             <button
               onClick={onDelete}
               className="flex-1 py-3 bg-red-500/20 text-red-500 rounded-xl font-medium"

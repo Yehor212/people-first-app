@@ -130,6 +130,11 @@ export async function unlockAudio(): Promise<void> {
   return unlockPromise;
 }
 
+// Module-level reference for audio unlock handler (ensures same reference for add/remove)
+let audioUnlockHandler: (() => Promise<void>) | null = null;
+let audioUnlockCleanup: (() => void) | null = null;
+let audioUnlockTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
 /**
  * Setup global audio unlock listeners.
  * Call this once at app startup to enable audio unlock on first user interaction.
@@ -139,22 +144,50 @@ export function setupAudioUnlock(): void {
   if (audioUnlockSetup) return;
   audioUnlockSetup = true;
 
-  const handleInteraction = () => {
-    unlockAudio();
-    // Keep listeners for a while in case first attempt fails
-    setTimeout(() => {
-      document.removeEventListener('touchstart', handleInteraction, true);
-      document.removeEventListener('touchend', handleInteraction, true);
-      document.removeEventListener('click', handleInteraction, true);
-      document.removeEventListener('keydown', handleInteraction, true);
-    }, 5000);
+  let cleaned = false;
+
+  // Define handler first so it's available for cleanup
+  audioUnlockHandler = async () => {
+    try {
+      await unlockAudio();
+      // Immediately remove listeners after successful unlock
+      if (audioUnlocked && audioUnlockCleanup) {
+        audioUnlockCleanup();
+      }
+    } catch {
+      // Keep listeners for retry on error
+    }
+  };
+
+  // Store cleanup function with reference to handler
+  audioUnlockCleanup = () => {
+    if (cleaned || !audioUnlockHandler) return;
+    cleaned = true;
+
+    // Clear timeout if it hasn't fired yet
+    if (audioUnlockTimeoutId) {
+      clearTimeout(audioUnlockTimeoutId);
+      audioUnlockTimeoutId = null;
+    }
+
+    document.removeEventListener('touchstart', audioUnlockHandler, true);
+    document.removeEventListener('touchend', audioUnlockHandler, true);
+    document.removeEventListener('click', audioUnlockHandler, true);
+    document.removeEventListener('keydown', audioUnlockHandler, true);
+    logger.log('[AmbientSounds] Audio unlock listeners removed');
+
+    // Clear references
+    audioUnlockHandler = null;
   };
 
   // Use capture phase to catch events before they're handled
-  document.addEventListener('touchstart', handleInteraction, { capture: true, passive: true });
-  document.addEventListener('touchend', handleInteraction, { capture: true, passive: true });
-  document.addEventListener('click', handleInteraction, { capture: true, passive: true });
-  document.addEventListener('keydown', handleInteraction, { capture: true, passive: true });
+  document.addEventListener('touchstart', audioUnlockHandler, { capture: true, passive: true });
+  document.addEventListener('touchend', audioUnlockHandler, { capture: true, passive: true });
+  document.addEventListener('click', audioUnlockHandler, { capture: true, passive: true });
+  document.addEventListener('keydown', audioUnlockHandler, { capture: true, passive: true });
+
+  // Fallback cleanup after 30 seconds (safety net)
+  audioUnlockTimeoutId = setTimeout(audioUnlockCleanup, 30000);
 
   logger.log('[AmbientSounds] Audio unlock listeners set up');
 }
@@ -263,6 +296,14 @@ export class AmbientSoundGenerator {
   private currentSoundId: string | null = null;
   private volume = 0.5; // 50% default volume
 
+  // Race condition prevention
+  private isTransitioning = false;
+  private playbackId = 0;
+  private pendingPlayback: {
+    id: number;
+    abortController: AbortController;
+  } | null = null;
+
   async play(soundId: string): Promise<void> {
     if (soundId === 'none') {
       this.stop();
@@ -275,21 +316,75 @@ export class AmbientSoundGenerator {
       return;
     }
 
-    // Stop current sound if any
-    if (this.isPlaying) {
-      this.stop();
+    // Skip if already playing this exact sound
+    if (this.currentSoundId === soundId && this.isPlaying && this.audioElement) {
+      logger.log(`[AmbientSounds] Already playing ${soundId}, skipping`);
+      return;
     }
 
-    this.currentSoundId = soundId;
-    this.isPlaying = true;
+    // Cancel any pending playback
+    if (this.pendingPlayback) {
+      this.pendingPlayback.abortController.abort();
+      this.pendingPlayback = null;
+    }
+
+    // Wait if another transition is in progress (mutex)
+    let waitCount = 0;
+    while (this.isTransitioning && waitCount < 20) {
+      await new Promise(resolve => setTimeout(resolve, 50));
+      waitCount++;
+    }
+
+    // Acquire lock
+    this.isTransitioning = true;
+    const myPlaybackId = ++this.playbackId;
+
+    // Create abort controller for this playback
+    const abortController = new AbortController();
+    this.pendingPlayback = { id: myPlaybackId, abortController };
 
     try {
-      await this.playAudioFile(sound.file);
+      // Synchronous cleanup first
+      this.stopImmediate();
+
+      // Check abort before async operations
+      if (abortController.signal.aborted) {
+        logger.log('[AmbientSounds] Playback aborted before start');
+        return;
+      }
+
+      // Load and play audio (async) - pass abort signal
+      await this.playAudioFile(sound.file, myPlaybackId, abortController.signal);
+
+      // Final check after async load
+      if (abortController.signal.aborted || myPlaybackId !== this.playbackId) {
+        logger.log('[AmbientSounds] Playback superseded after load');
+        if (this.audioElement) {
+          this.audioElement.pause();
+          this.audioElement.src = '';
+        }
+        return;
+      }
+
+      // CRITICAL: Only set state AFTER successful load
+      this.currentSoundId = soundId;
+      this.isPlaying = true;
+
       logger.log(`[AmbientSounds] Playing: ${sound.nameEn}`);
     } catch (error) {
-      logger.error(`[AmbientSounds] Failed to play ${sound.nameEn}:`, error);
-      this.isPlaying = false;
-      this.currentSoundId = null;
+      // Distinguish abort errors from real errors
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        logger.log('[AmbientSounds] Playback cancelled');
+      } else if (myPlaybackId === this.playbackId) {
+        logger.error(`[AmbientSounds] Failed to play:`, error);
+        this.isPlaying = false;
+        this.currentSoundId = null;
+      }
+    } finally {
+      if (this.pendingPlayback?.id === myPlaybackId) {
+        this.pendingPlayback = null;
+      }
+      this.isTransitioning = false;
     }
   }
 
@@ -307,22 +402,61 @@ export class AmbientSoundGenerator {
     }
   }
 
-  private async playAudioFile(url: string): Promise<void> {
+  /**
+   * Immediate synchronous stop - clears all handlers and resources
+   */
+  private stopImmediate(): void {
+    if (this.audioElement) {
+      try {
+        this.audioElement.pause();
+        // Clear ALL event handlers to prevent callbacks
+        this.audioElement.oncanplay = null;
+        this.audioElement.oncanplaythrough = null;
+        this.audioElement.onerror = null;
+        this.audioElement.onended = null;
+        this.audioElement.onloadstart = null;
+        this.audioElement.onloadeddata = null;
+        this.audioElement.onloadedmetadata = null;
+        this.audioElement.onpause = null;
+        this.audioElement.onplay = null;
+        this.audioElement.src = '';
+        this.audioElement.load(); // Force release
+      } catch (e) {
+        logger.warn('[AmbientSounds] Error during stopImmediate:', e);
+      }
+      this.audioElement = null;
+    }
+    this.isPlaying = false;
+    this.currentSoundId = null;
+  }
+
+  private async playAudioFile(url: string, playbackId: number, signal: AbortSignal): Promise<void> {
+    logger.log('[AmbientSounds] playAudioFile called with URL:', url);
+
+    // Check abort signal
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+
     // Try to unlock audio if not already done
     await unlockAudio();
 
-    // Ensure AudioContext is running (helps iOS)
+    // Check after async operation
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+    if (playbackId !== this.playbackId) throw new DOMException('Superseded', 'AbortError');
+
+    // Ensure global AudioContext is running (helps iOS)
     try {
-      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioContextClass) {
-        const ctx = new AudioContextClass();
-        if (ctx.state === 'suspended') {
-          await ctx.resume();
-        }
+      const ctx = getAudioContext();
+      if (ctx && ctx.state === 'suspended') {
+        await ctx.resume();
+        logger.log('[AmbientSounds] AudioContext resumed');
       }
     } catch (e) {
       logger.warn('[AmbientSounds] AudioContext resume failed:', e);
     }
+
+    // Check after context resume
+    if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
+    if (playbackId !== this.playbackId) throw new DOMException('Superseded', 'AbortError');
 
     // Create audio element with iOS-friendly settings
     this.audioElement = new Audio();
@@ -335,35 +469,84 @@ export class AmbientSoundGenerator {
     (this.audioElement as any).webkitPreservesPitch = true; // Safari
     this.audioElement.src = url;
 
-    // Wait for audio to be ready
+    logger.log('[AmbientSounds] Audio element created, volume:', this.volume);
+
+    // Wait for audio to be ready with proper cleanup
     await new Promise<void>((resolve, reject) => {
       if (!this.audioElement) return reject(new Error('No audio element'));
 
-      const timeout = setTimeout(() => {
-        // On iOS, sometimes oncanplaythrough doesn't fire - try anyway
+      let timeoutId: number | null = null;
+      let resolved = false;
+
+      const cleanup = () => {
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+        if (this.audioElement) {
+          this.audioElement.oncanplaythrough = null;
+          this.audioElement.oncanplay = null;
+          this.audioElement.onerror = null;
+        }
+      };
+
+      const handleResolve = () => {
+        if (resolved) return;
+        resolved = true;
+        cleanup();
+        resolve();
+      };
+
+      const handleReject = (error: any) => {
+        if (resolved) return;
+        resolved = true;
+        cleanup();
+        reject(error);
+      };
+
+      // Abort listener
+      signal.addEventListener('abort', () => {
+        handleReject(new DOMException('Aborted during load', 'AbortError'));
+      }, { once: true });
+
+      // Timeout
+      timeoutId = window.setTimeout(() => {
         logger.warn('[AmbientSounds] Audio load timeout - attempting play anyway');
-        resolve();
-      }, 10000); // 10 second timeout
+        handleResolve();
+      }, 10000);
 
+      // Ready listeners
       this.audioElement.oncanplaythrough = () => {
-        clearTimeout(timeout);
-        resolve();
+        logger.log('[AmbientSounds] Audio canplaythrough event');
+        handleResolve();
       };
 
-      // Also listen for canplay (fires earlier than canplaythrough)
       this.audioElement.oncanplay = () => {
-        clearTimeout(timeout);
-        resolve();
+        logger.log('[AmbientSounds] Audio canplay event');
+        handleResolve();
       };
 
+      // Error listener
       this.audioElement.onerror = (e) => {
-        clearTimeout(timeout);
-        logger.error('[AmbientSounds] Audio error:', e);
-        reject(new Error(`Failed to load audio: ${url}`));
+        const audioEl = this.audioElement;
+        const errorCode = audioEl?.error?.code;
+        const errorMsg = audioEl?.error?.message;
+        logger.error('[AmbientSounds] Audio load error:', { errorCode, errorMsg, url, event: e });
+        handleReject(new Error(`Failed to load audio: ${url} (code: ${errorCode})`));
       };
 
       this.audioElement.load();
     });
+
+    // Final check before play
+    if (signal.aborted) throw new DOMException('Aborted before play', 'AbortError');
+    if (playbackId !== this.playbackId) {
+      if (this.audioElement) {
+        this.audioElement.pause();
+        this.audioElement.src = '';
+      }
+      throw new DOMException('Superseded before play', 'AbortError');
+    }
 
     // Play the audio with retry for iOS
     try {
@@ -372,18 +555,28 @@ export class AmbientSoundGenerator {
       logger.warn('[AmbientSounds] First play attempt failed, retrying...', playError);
       // iOS sometimes needs a second attempt
       await new Promise(resolve => setTimeout(resolve, 100));
-      await this.audioElement.play();
+
+      // Check again before retry
+      if (signal.aborted || playbackId !== this.playbackId) {
+        throw new DOMException('Aborted before retry', 'AbortError');
+      }
+
+      if (this.audioElement) {
+        await this.audioElement.play();
+      }
     }
   }
 
   stop(): void {
-    if (this.audioElement) {
-      this.audioElement.pause();
-      this.audioElement.src = '';
-      this.audioElement = null;
+    // Cancel any pending playback
+    if (this.pendingPlayback) {
+      this.pendingPlayback.abortController.abort();
+      this.pendingPlayback = null;
     }
-    this.isPlaying = false;
-    this.currentSoundId = null;
+
+    // Invalidate any pending playback requests
+    this.playbackId++;
+    this.stopImmediate();
   }
 
   setVolume(volume: number): void {
@@ -403,9 +596,30 @@ export class AmbientSoundGenerator {
     }
   }
 
-  resume(): void {
-    if (this.audioElement && this.isPlaying) {
-      this.audioElement.play().catch(err => logger.error('Failed to resume audio:', err));
+  async resume(): Promise<void> {
+    if (!this.audioElement || !this.isPlaying) return;
+
+    try {
+      // Re-unlock audio for mobile (iOS especially needs this after pause)
+      await unlockAudio();
+
+      // Ensure AudioContext is running
+      const ctx = getAudioContext();
+      if (ctx && ctx.state === 'suspended') {
+        await ctx.resume();
+        logger.log('[AmbientSounds] AudioContext resumed for playback');
+      }
+
+      // Try to play with retry for iOS
+      try {
+        await this.audioElement.play();
+      } catch (firstError) {
+        logger.warn('[AmbientSounds] Resume first attempt failed, retrying...', firstError);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        await this.audioElement.play();
+      }
+    } catch (err) {
+      logger.error('[AmbientSounds] Failed to resume audio:', err);
     }
   }
 

@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Trophy, Target, Lock, CheckCircle2, Plus, X } from 'lucide-react';
+import { Trophy, Target, Lock, CheckCircle2, Plus, X, Share2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { getLocale } from '@/lib/timeUtils';
 import { Challenge, Badge } from '@/types';
 import { challengeTemplates, createChallengeFromTemplate } from '@/lib/challenges';
 import { badgeDefinitions, getBadgeById, getRarityColor, getRarityGradient } from '@/lib/badges';
+import { ShareModal } from './ShareModal';
+import { hapticTap } from '@/lib/haptics';
+import { VirtualGrid, shouldVirtualize } from '@/components/ui/virtual-list';
 
 interface ChallengesPanelProps {
   activeChallenges: Challenge[];
@@ -20,6 +24,14 @@ export function ChallengesPanel({
 }: ChallengesPanelProps) {
   const { t, language } = useLanguage();
   const [selectedTab, setSelectedTab] = useState<'active' | 'available' | 'badges'>('active');
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
+
+  const handleShareBadge = (badge: Badge) => {
+    hapticTap();
+    setSelectedBadge(badge);
+    setShareModalOpen(true);
+  };
 
   const getProgressPercent = (challenge: Challenge) => {
     return Math.min(100, Math.round((challenge.progress / challenge.target) * 100));
@@ -55,12 +67,12 @@ export function ChallengesPanel({
   };
 
   return (
-    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-labelledby="challenges-title" className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
       <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-card rounded-3xl zen-shadow-card overflow-hidden">
         {/* Header */}
         <div className="zen-gradient p-6 flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-primary-foreground mb-1">
+            <h2 id="challenges-title" className="text-2xl font-bold text-primary-foreground mb-1">
               {t.challengesTitle || 'Challenges & Badges'}
             </h2>
             <p className="text-sm text-primary-foreground/80">
@@ -69,6 +81,7 @@ export function ChallengesPanel({
           </div>
           <button
             onClick={onClose}
+            aria-label={t.close || 'Close'}
             className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
           >
             <X className="w-6 h-6 text-primary-foreground" />
@@ -76,20 +89,20 @@ export function ChallengesPanel({
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-2 p-4 border-b border-border">
+        <div className="flex gap-2 p-4 border-b border-border overflow-x-auto scrollbar-hide">
           <button
             onClick={() => setSelectedTab('active')}
-            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+            className={`flex-shrink-0 py-2.5 px-3 rounded-xl font-medium text-sm transition-all ${
               selectedTab === 'active'
                 ? 'bg-primary text-primary-foreground zen-shadow'
                 : 'bg-secondary text-secondary-foreground hover:bg-muted'
             }`}
           >
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-1.5">
               <Target className="w-4 h-4" />
               {t.activeChallenges || 'Active'}
               {activeChallenges.length > 0 && (
-                <span className="bg-primary-foreground/20 px-2 py-0.5 rounded-full text-xs">
+                <span className="bg-primary-foreground/20 px-1.5 py-0.5 rounded-full text-xs">
                   {activeChallenges.length}
                 </span>
               )}
@@ -97,30 +110,30 @@ export function ChallengesPanel({
           </button>
           <button
             onClick={() => setSelectedTab('available')}
-            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+            className={`flex-shrink-0 py-2.5 px-3 rounded-xl font-medium text-sm transition-all ${
               selectedTab === 'available'
                 ? 'bg-primary text-primary-foreground zen-shadow'
                 : 'bg-secondary text-secondary-foreground hover:bg-muted'
             }`}
           >
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-1.5">
               <Plus className="w-4 h-4" />
               {t.availableChallenges || 'Available'}
             </div>
           </button>
           <button
             onClick={() => setSelectedTab('badges')}
-            className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all ${
+            className={`flex-shrink-0 py-2.5 px-3 rounded-xl font-medium text-sm transition-all ${
               selectedTab === 'badges'
                 ? 'bg-primary text-primary-foreground zen-shadow'
                 : 'bg-secondary text-secondary-foreground hover:bg-muted'
             }`}
           >
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex items-center justify-center gap-1.5">
               <Trophy className="w-4 h-4" />
               {t.badges || 'Badges'}
               {badges.filter(b => b.unlocked).length > 0 && (
-                <span className="bg-primary-foreground/20 px-2 py-0.5 rounded-full text-xs">
+                <span className="bg-primary-foreground/20 px-1.5 py-0.5 rounded-full text-xs">
                   {badges.filter(b => b.unlocked).length}
                 </span>
               )}
@@ -302,41 +315,113 @@ export function ChallengesPanel({
 
           {/* Badges Tab */}
           {selectedTab === 'badges' && (
-            <div className="grid grid-cols-2 gap-3">
-              {badges.map((badge) => (
-                <div
-                  key={badge.id}
-                  className={`bg-secondary rounded-2xl p-4 zen-shadow-card transition-all ${
-                    badge.unlocked ? 'hover:zen-shadow-hover' : 'opacity-50'
-                  }`}
-                >
-                  <div className="text-center">
-                    <div className={`text-5xl mb-3 ${!badge.unlocked && 'grayscale'}`}>
-                      {badge.unlocked ? badge.icon : <Lock className="w-12 h-12 mx-auto text-muted-foreground" />}
+            <>
+              {shouldVirtualize(badges.length) ? (
+                // Use virtualized grid for large badge lists
+                <VirtualGrid
+                  items={badges}
+                  columns={2}
+                  itemHeight={180}
+                  gap={12}
+                  containerClassName="h-full"
+                  getItemKey={(badge) => badge.id}
+                  renderItem={(badge) => (
+                    <div
+                      className={`relative bg-secondary rounded-2xl p-4 zen-shadow-card transition-all h-full ${
+                        badge.unlocked ? 'hover:zen-shadow-hover' : 'opacity-50'
+                      }`}
+                    >
+                      {badge.unlocked && (
+                        <button
+                          onClick={() => handleShareBadge(badge)}
+                          className="absolute top-2 right-2 p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                          aria-label={t.shareButton || 'Share'}
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <div className="text-center">
+                        <div className={`text-5xl mb-3 ${!badge.unlocked && 'grayscale'}`}>
+                          {badge.unlocked ? badge.icon : <Lock className="w-12 h-12 mx-auto text-muted-foreground" />}
+                        </div>
+                        <h3 className={`font-semibold mb-1 ${badge.unlocked ? getRarityColor(badge.rarity) : 'text-muted-foreground'}`}>
+                          {badge.title[language]}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mb-2 line-clamp-2">
+                          {badge.description[language]}
+                        </p>
+                        {badge.unlocked && badge.unlockedDate && (
+                          <p className="text-xs text-primary">
+                            {new Date(badge.unlockedDate).toLocaleDateString(getLocale(language))}
+                          </p>
+                        )}
+                        {!badge.unlocked && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {t.requirement || 'Requirement'}: {badge.requirement}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                    <h3 className={`font-semibold mb-1 ${badge.unlocked ? getRarityColor(badge.rarity) : 'text-muted-foreground'}`}>
-                      {badge.title[language]}
-                    </h3>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      {badge.description[language]}
-                    </p>
-                    {badge.unlocked && badge.unlockedDate && (
-                      <p className="text-xs text-primary">
-                        {new Date(badge.unlockedDate).toLocaleDateString()}
-                      </p>
-                    )}
-                    {!badge.unlocked && (
-                      <p className="text-xs text-muted-foreground">
-                        {t.requirement || 'Requirement'}: {badge.requirement}
-                      </p>
-                    )}
-                  </div>
+                  )}
+                />
+              ) : (
+                // Regular grid for small badge lists
+                <div className="grid grid-cols-2 gap-3">
+                  {badges.map((badge) => (
+                    <div
+                      key={badge.id}
+                      className={`relative bg-secondary rounded-2xl p-4 zen-shadow-card transition-all ${
+                        badge.unlocked ? 'hover:zen-shadow-hover' : 'opacity-50'
+                      }`}
+                    >
+                      {badge.unlocked && (
+                        <button
+                          onClick={() => handleShareBadge(badge)}
+                          className="absolute top-2 right-2 p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                          aria-label={t.shareButton || 'Share'}
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <div className="text-center">
+                        <div className={`text-5xl mb-3 ${!badge.unlocked && 'grayscale'}`}>
+                          {badge.unlocked ? badge.icon : <Lock className="w-12 h-12 mx-auto text-muted-foreground" />}
+                        </div>
+                        <h3 className={`font-semibold mb-1 ${badge.unlocked ? getRarityColor(badge.rarity) : 'text-muted-foreground'}`}>
+                          {badge.title[language]}
+                        </h3>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {badge.description[language]}
+                        </p>
+                        {badge.unlocked && badge.unlockedDate && (
+                          <p className="text-xs text-primary">
+                            {new Date(badge.unlockedDate).toLocaleDateString(getLocale(language))}
+                          </p>
+                        )}
+                        {!badge.unlocked && (
+                          <p className="text-xs text-muted-foreground">
+                            {t.requirement || 'Requirement'}: {badge.requirement}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>
+
+      {/* Share Modal for badges */}
+      {selectedBadge && (
+        <ShareModal
+          open={shareModalOpen}
+          onOpenChange={setShareModalOpen}
+          mode="achievement"
+          badge={selectedBadge}
+        />
+      )}
     </div>
   );
 }

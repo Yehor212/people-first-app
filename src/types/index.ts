@@ -7,6 +7,52 @@ export interface MoodEntry {
   date: string;
   timestamp: number;
   tags?: string[];
+  // v1.5.0: Emotion Wheel (Plutchik model)
+  emotion?: EmotionData;
+}
+
+// ============================================
+// EMOTION WHEEL - Plutchik's 8 Primary Emotions
+// ============================================
+
+/** 8 primary emotions from Plutchik's Wheel of Emotions */
+export type PrimaryEmotion =
+  | 'joy'          // Радость
+  | 'trust'        // Доверие
+  | 'fear'         // Страх
+  | 'surprise'     // Удивление
+  | 'sadness'      // Грусть
+  | 'disgust'      // Отвращение
+  | 'anger'        // Гнев
+  | 'anticipation'; // Ожидание
+
+/** Emotion intensity levels (ADHD-friendly: 3 levels instead of slider) */
+export type EmotionIntensity = 'mild' | 'moderate' | 'intense';
+
+/** Secondary emotions derived from primary + intensity */
+export type SecondaryEmotion =
+  // Joy variants
+  | 'serenity' | 'ecstasy'
+  // Trust variants
+  | 'acceptance' | 'admiration'
+  // Fear variants
+  | 'apprehension' | 'terror'
+  // Surprise variants
+  | 'distraction' | 'amazement'
+  // Sadness variants
+  | 'pensiveness' | 'grief'
+  // Disgust variants
+  | 'boredom' | 'loathing'
+  // Anger variants
+  | 'annoyance' | 'rage'
+  // Anticipation variants
+  | 'interest' | 'vigilance';
+
+/** Full emotion data captured from the wheel */
+export interface EmotionData {
+  primary: PrimaryEmotion;
+  secondary?: SecondaryEmotion;
+  intensity: EmotionIntensity;
 }
 
 export type HabitType =
@@ -92,7 +138,12 @@ export interface UserStats {
 
 export interface ReminderSettings {
   enabled: boolean;
-  moodTime: string;
+  // Mood reminders - 3 times per day
+  moodTimeMorning: string;
+  moodTimeAfternoon: string;
+  moodTimeEvening: string;
+  // Legacy field for backwards compatibility
+  moodTime?: string;
   habitTime: string;
   focusTime: string;
   days: number[];
@@ -161,13 +212,17 @@ export interface ScheduleEvent {
   emoji?: string;
   date: string;               // Which day this event is for
   note?: string;              // Optional note/description
+  // v1.4.0: Habit-schedule sync
+  source?: 'manual' | 'habit'; // Event origin
+  habitId?: string;            // Reference to source habit (if source='habit')
+  isEditable?: boolean;        // false for habit-generated events
 }
 
 // ============================================
 // TREATS SYSTEM - Unified reward currency
 // ============================================
 
-export type TreatSource = 'mood' | 'habit' | 'focus' | 'gratitude' | 'breathing' | 'streak_bonus' | 'daily_reward';
+export type TreatSource = 'mood' | 'habit' | 'focus' | 'gratitude' | 'breathing' | 'streak_bonus' | 'daily_reward' | 'mindful';
 
 export interface TreatTransaction {
   id: string;
@@ -322,4 +377,122 @@ export interface InnerWorld {
 
   // Rest mode - days when user took a break but keeps streak
   restDays: string[]; // YYYY-MM-DD format
+}
+
+// ============ Insights Engine Types ============
+
+export type InsightType =
+  | 'mood-habit-correlation'  // Habit improves mood
+  | 'focus-pattern'            // Best time/label for focus
+  | 'habit-timing'             // Best time of day for habit
+  | 'mood-tag'                 // Mood correlation with tags
+  | 'energy-pattern';          // Energy levels over time
+
+export type InsightSeverity = 'info' | 'tip' | 'warning' | 'celebration';
+
+export interface Insight {
+  id: string;
+  type: InsightType;
+  severity: InsightSeverity;
+  title: string;                // "Meditation improves your mood"
+  description: string;          // Detailed explanation
+  confidence: number;           // 0-100: statistical confidence
+  dataPoints: number;           // How many data points used
+  createdAt: number;            // Timestamp when insight was generated
+
+  // Type-specific data
+  metadata: InsightMetadata;
+}
+
+// Metadata varies by insight type
+export type InsightMetadata =
+  | MoodHabitCorrelationMetadata
+  | FocusPatternMetadata
+  | HabitTimingMetadata
+  | MoodTagMetadata
+  | EnergyPatternMetadata;
+
+// Mood-Habit Correlation: "Meditation improves mood +15%"
+export interface MoodHabitCorrelationMetadata {
+  type: 'mood-habit-correlation';
+  habitId: string;
+  habitName: string;
+  moodImprovement: number;      // Percentage improvement
+  avgMoodWith: number;          // Average mood (1-5) on days WITH habit
+  avgMoodWithout: number;       // Average mood (1-5) on days WITHOUT habit
+  sampleDays: number;           // Days with habit completed
+}
+
+// Focus Pattern: "You focus best on 'Deep Work' tasks"
+export interface FocusPatternMetadata {
+  type: 'focus-pattern';
+  bestLabel?: string;           // Best focus label
+  bestTime?: string;            // Best time of day (HH:00)
+  avgDuration: number;          // Average focus duration for this pattern
+  successRate: number;          // Percentage of successful sessions
+  totalSessions: number;
+}
+
+// Habit Timing: "Morning runs: 85% completion vs Evening: 40%"
+export interface HabitTimingMetadata {
+  type: 'habit-timing';
+  habitId: string;
+  habitName: string;
+  bestTime: 'morning' | 'afternoon' | 'evening';
+  bestTimeRate: number;         // Completion rate at best time
+  worstTimeRate: number;        // Completion rate at worst time
+  morningCount: number;
+  afternoonCount: number;
+  eveningCount: number;
+}
+
+// Mood Tag: "Days with 'exercise' tag: mood +20%"
+export interface MoodTagMetadata {
+  type: 'mood-tag';
+  tag: string;
+  avgMoodWith: number;          // Average mood with this tag
+  avgMoodWithout: number;       // Average mood without this tag
+  improvement: number;          // Percentage improvement
+  occurrences: number;          // How many times tag was used
+}
+
+// Energy Pattern: "Low energy follows days with <3h focus"
+export interface EnergyPatternMetadata {
+  type: 'energy-pattern';
+  pattern: string;              // Description of pattern
+  correlation: number;          // Correlation coefficient
+  recommendation: string;       // What to do about it
+}
+
+// ====== Onboarding System Types ======
+
+// Features that can be progressively unlocked
+export type FeatureId =
+  | 'mood'          // Always unlocked
+  | 'habits'        // Always unlocked
+  | 'focusTimer'    // Day 2
+  | 'xp'            // Day 3
+  | 'quests'        // Day 3
+  | 'companion'     // Day 3
+  | 'tasks'         // Day 4
+  | 'challenges';   // Day 4
+
+// Tutorial steps
+export type TutorialStep =
+  | 'welcome'           // Welcome message
+  | 'mood-first'        // First mood entry
+  | 'habit-created'     // First habit created
+  | 'habit-completed'   // First habit completed
+  | 'focus-first'       // First focus session
+  | 'xp-explanation'    // XP system explained
+  | 'quest-first';      // First quest shown
+
+// Progressive onboarding state
+export interface OnboardingState {
+  isNewUser: boolean;           // false for existing users (skip onboarding)
+  firstLoginDate: number;       // timestamp
+  daysActive: number;           // 1-4+
+  unlockedFeatures: FeatureId[];
+  completedSteps: TutorialStep[];
+  hasSeenWelcome: boolean;
 }

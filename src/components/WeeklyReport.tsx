@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
+import { safeAverage } from '@/lib/validation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { TrendingUp, TrendingDown, Minus, Flame, Brain, Heart, Target, Calendar, Award } from 'lucide-react';
 import { cn, formatDate } from '@/lib/utils';
@@ -63,7 +64,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
 
     // This week stats
     const thisWeekHabits = habits.flatMap(h =>
-      h.completedDates.filter(d => thisWeek.includes(d))
+      (h.completedDates || []).filter(d => thisWeek.includes(d))
     );
     const thisWeekFocus = focusSessions
       .filter(s => thisWeek.includes(s.date))
@@ -71,14 +72,13 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
     const thisWeekGratitude = gratitudeEntries.filter(e => thisWeek.includes(e.date)).length;
 
     const thisWeekMoods = moods.filter(m => thisWeek.includes(m.date));
-    const moodValues = { great: 5, good: 4, okay: 3, bad: 2, terrible: 1 };
-    const avgMood = thisWeekMoods.length > 0
-      ? thisWeekMoods.reduce((acc, m) => acc + moodValues[m.mood], 0) / thisWeekMoods.length
-      : 3;
+    const moodValues: Record<string, number> = { great: 5, good: 4, okay: 3, bad: 2, terrible: 1 };
+    const moodScores = thisWeekMoods.map(m => moodValues[m.mood] || 3);
+    const avgMood = moodScores.length > 0 ? safeAverage(moodScores) : 3;
 
     // Previous week stats for comparison
     const lastWeekHabits = habits.flatMap(h =>
-      h.completedDates.filter(d => lastWeek.includes(d))
+      (h.completedDates || []).filter(d => lastWeek.includes(d))
     ).length;
 
     const improvement = lastWeekHabits > 0
@@ -88,7 +88,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
     // Find best day
     const dayStats = thisWeek.map(date => ({
       date,
-      count: habits.filter(h => h.completedDates.includes(date)).length
+      count: habits.filter(h => h.completedDates?.includes(date)).length
     }));
     const bestDay = dayStats.reduce((max, day) => day.count > max.count ? day : max, dayStats[0]);
 
@@ -138,12 +138,17 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
   const motivation = getMotivationalMessage();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="weekly-report-title"
+    >
       <div className="relative max-w-2xl w-full bg-card rounded-3xl p-8 shadow-2xl border border-primary/20 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="text-6xl mb-4">{motivation.emoji}</div>
-          <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+          <h2 id="weekly-report-title" className="text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
             {t.weeklyReport}
           </h2>
           <p className="text-muted-foreground">

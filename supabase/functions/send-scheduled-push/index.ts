@@ -8,20 +8,30 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY");
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:egorsamraev@gmail.com";
+const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT");
 const FCM_PROJECT_ID = Deno.env.get("FCM_PROJECT_ID");
 const FCM_SERVICE_ACCOUNT_B64 = Deno.env.get("FCM_SERVICE_ACCOUNT_B64");
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS"
-};
+const CRON_SECRET = Deno.env.get("CRON_SECRET"); // Secret for cron job authentication
 
-const jsonResponse = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" }
-  });
+// Allowed origins for CORS (production only - no http://localhost)
+const ALLOWED_ORIGINS = [
+  "https://zenflow.app",
+  "https://www.zenflow.app",
+  "capacitor://localhost", // Required for mobile app
+];
+
+const getCorsHeaders = (origin: string | null) => {
+  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "X-XSS-Protection": "1; mode=block",
+    "Referrer-Policy": "strict-origin-when-cross-origin"
+  };
+};
 
 const toMinutes = (time: string) => {
   const [hours, minutes] = time.split(":").map(Number);
@@ -159,6 +169,15 @@ const sendFcmNotifications = async (
 };
 
 Deno.serve(async (req) => {
+  const origin = req.headers.get("Origin");
+  const corsHeaders = getCorsHeaders(origin);
+
+  const jsonResponse = (payload: unknown, status = 200) =>
+    new Response(JSON.stringify(payload), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" }
+    });
+
   try {
     if (req.method === "OPTIONS") {
       return new Response(null, { status: 204, headers: corsHeaders });
@@ -166,6 +185,23 @@ Deno.serve(async (req) => {
     if (req.method !== "POST") {
       return jsonResponse({ error: "Method not allowed" }, 405);
     }
+
+    // ============================================
+    // AUTHENTICATION: Require cron secret or service role
+    // ============================================
+    const authHeader = req.headers.get("Authorization");
+    const cronSecretHeader = req.headers.get("X-Cron-Secret");
+
+    // Allow if: valid cron secret OR service role key
+    const isAuthorized =
+      (CRON_SECRET && cronSecretHeader === CRON_SECRET) ||
+      (authHeader === `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`);
+
+    if (!isAuthorized) {
+      console.warn("[ScheduledPush] Unauthorized request attempt");
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     const { data: settings, error } = await supabase

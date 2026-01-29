@@ -223,14 +223,19 @@ export function CompanionPanel({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 flex items-end justify-center bg-black/50 backdrop-blur-sm"
+          style={{ zIndex: 'var(--z-overlay)', marginBottom: 'var(--nav-height)' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="companion-panel-title"
         >
           <motion.div
             className="w-full max-w-lg bg-gradient-to-b from-primary/10 to-background rounded-t-3xl max-h-[85vh] overflow-hidden"
+            style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom))' }}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -239,15 +244,16 @@ export function CompanionPanel({
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border/50">
-              <h2 className="text-lg font-semibold">{t.myCompanion}</h2>
+              <h2 id="companion-panel-title" className="text-lg font-semibold">{t.myCompanion}</h2>
               {/* Treats Balance */}
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 rounded-full">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 rounded-full" aria-label={`${t.treats || 'Treats'}: ${treatsBalance}`}>
                   <span className="text-lg">🍪</span>
                   <span className="font-bold text-orange-500">{treatsBalance}</span>
                 </div>
                 <button
                   onClick={onClose}
+                  aria-label={t.close || 'Close'}
                   className="p-2 rounded-full hover:bg-muted transition-colors"
                 >
                   <X className="w-5 h-5" />
@@ -308,9 +314,11 @@ export function CompanionPanel({
                         className="px-3 py-1 rounded-lg bg-muted border border-border text-center font-medium"
                         maxLength={20}
                         autoFocus
+                        aria-label={t.companionName || 'Companion name'}
                       />
                       <button
                         onClick={handleSaveName}
+                        aria-label={t.save || 'Save'}
                         className="p-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
                       >
                         <Check className="w-4 h-4" />
@@ -324,6 +332,7 @@ export function CompanionPanel({
                           setEditName(companion.name);
                           setIsEditing(true);
                         }}
+                        aria-label={t.editName || 'Edit name'}
                         className="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
                       >
                         <Edit3 className="w-5 h-5 text-muted-foreground" />
@@ -436,11 +445,13 @@ export function CompanionPanel({
                 <h4 className="text-sm font-medium text-muted-foreground mb-3 text-center">
                   {t.chooseCompanion || 'Choose companion'}
                 </h4>
-                <div className="flex justify-center gap-2">
+                <div className="flex justify-center gap-2 flex-wrap">
                   {COMPANION_TYPES.map((type) => (
                     <button
                       key={type}
                       onClick={() => handleTypeChange(type)}
+                      aria-label={`${t.selectCompanion || 'Select'} ${type}`}
+                      aria-pressed={companion.type === type}
                       className={cn(
                         "p-3 rounded-xl text-3xl transition-all",
                         companion.type === type

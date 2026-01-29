@@ -1,4 +1,5 @@
 import { PrivacySettings } from '@/types';
+import { logger } from './logger';
 
 // Simple analytics wrapper that respects user privacy settings
 class Analytics {
@@ -13,7 +14,7 @@ class Analytics {
 
     // Only log to console in development
     if (import.meta.env.DEV) {
-      console.log('[Analytics]', event, properties);
+      logger.log('[Analytics]', event, properties);
     }
 
     // In production, send to your analytics service
@@ -23,7 +24,7 @@ class Analytics {
         (window as any).gtag('event', event, properties);
       }
     } catch (error) {
-      console.error('Analytics error:', error);
+      logger.error('[Analytics] Error:', error);
     }
   }
 

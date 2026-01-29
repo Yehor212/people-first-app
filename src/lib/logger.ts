@@ -5,10 +5,13 @@
  */
 
 const isDev = import.meta.env.DEV;
+// Auth logging - ONLY enabled in development to prevent token leaks
+const DEBUG_AUTH = import.meta.env.DEV;
 
 export const logger = {
   log: (...args: unknown[]) => {
-    if (isDev) {
+    // Allow auth/index logs in production for debugging
+    if (isDev || (DEBUG_AUTH && typeof args[0] === 'string' && (args[0].includes('[Auth]') || args[0].includes('[Index]')))) {
       console.log(...args);
     }
   },
@@ -21,7 +24,7 @@ export const logger = {
 
   error: (...args: unknown[]) => {
     // Always log errors, but sanitize in production
-    if (isDev) {
+    if (isDev || DEBUG_AUTH) {
       console.error(...args);
     } else {
       // In production, only log generic error message

@@ -4,6 +4,7 @@ import { getToday, calculateStreak } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { StreakCelebration } from './StreakCelebration';
 import { shouldShowStreakMessage } from '@/lib/motivationalMessages';
+import { safeParseInt } from '@/lib/validation';
 
 interface StatsOverviewProps {
   moods: MoodEntry[];
@@ -20,7 +21,7 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
   const [showCelebration, setShowCelebration] = useState(false);
   const [lastShownStreak, setLastShownStreak] = useState<number>(() => {
     const saved = localStorage.getItem('zenflow-last-shown-streak');
-    return saved ? parseInt(saved) : 0;
+    return saved ? safeParseInt(saved, 0, 0) : 0;
   });
 
   const todayHabitsCompleted = habits.filter(h => h.completedDates.includes(today)).length;
@@ -93,7 +94,7 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {stats.map((stat, index) => (
           <div
             key={stat.label}

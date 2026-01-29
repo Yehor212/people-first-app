@@ -4,4 +4,15 @@
     <string name="title_activity_main">ZenFlow</string>
     <string name="package_name">com.zenflow.app</string>
     <string name="custom_url_scheme">com.zenflow.app</string>
+
+    <!-- Widget strings -->
+    <string name="widget_name_small">ZenFlow Small</string>
+    <string name="widget_name_medium">ZenFlow Medium</string>
+    <string name="widget_name_large">ZenFlow Large</string>
+    <string name="widget_description">Track your habits and focus time</string>
+    <string name="widget_streak_label">Streak</string>
+    <string name="widget_habits_label">Habits</string>
+    <string name="widget_focus_label">Focus</string>
+    <string name="widget_days">days</string>
+    <string name="widget_min">min</string>
 </resources>

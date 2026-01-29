@@ -3,6 +3,7 @@ import { Bell, X } from 'lucide-react';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Capacitor } from '@capacitor/core';
+import { logger } from '@/lib/logger';
 
 interface NotificationPermissionProps {
   onComplete: () => void;
@@ -41,7 +42,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
       // Show the prompt
       setShowPrompt(true);
     } catch (error) {
-      console.error('Failed to check notification permissions:', error);
+      logger.error('[Notifications] Failed to check permissions:', error);
       onComplete();
     }
   };
@@ -52,13 +53,13 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
       localStorage.setItem('notification-permission-asked', 'true');
 
       if (result.display === 'granted') {
-        console.log('Notification permission granted');
+        logger.log('[Notifications] Permission granted');
       }
 
       setShowPrompt(false);
       onComplete();
     } catch (error) {
-      console.error('Failed to request notification permissions:', error);
+      logger.error('[Notifications] Failed to request permissions:', error);
       setShowPrompt(false);
       onComplete();
     }
@@ -75,8 +76,8 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
   }
 
   return (
-    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
-      <div className="w-full max-w-md bg-card rounded-2xl p-6 zen-shadow-card animate-scale-in">
+    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
+      <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 zen-shadow-card animate-scale-in">
         {/* Close button */}
         <button
           onClick={handleDeny}

@@ -5,6 +5,199 @@ All notable changes to ZenFlow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - "Audit & Quality" - 2026-01-26
+
+### 🔒 Security Improvements
+
+#### Safe JSON Parsing
+- **IMPROVED:** All `JSON.parse()` calls now use `safeJsonParse()` wrapper
+  - Prevents app crashes from corrupted localStorage data
+  - Graceful fallback to default values on parse errors
+  - Updated 15+ files across the codebase:
+    - [Index.tsx](src/pages/Index.tsx)
+    - [DailyRewards.tsx](src/components/DailyRewards.tsx)
+    - [ErrorBoundary.tsx](src/components/ErrorBoundary.tsx)
+    - [FocusTimer.tsx](src/components/FocusTimer.tsx)
+    - [QuestsPanel.tsx](src/components/QuestsPanel.tsx)
+    - [TasksPanel.tsx](src/components/TasksPanel.tsx)
+    - [FeedbackForm.tsx](src/components/FeedbackForm.tsx)
+    - [useInsights.ts](src/hooks/useInsights.ts)
+    - [appVersion.ts](src/lib/appVersion.ts)
+    - [crashReporting.ts](src/lib/crashReporting.ts)
+    - [onboardingFlow.ts](src/lib/onboardingFlow.ts)
+    - [randomQuests.ts](src/lib/randomQuests.ts)
+    - [reviewPrompt.ts](src/lib/reviewPrompt.ts)
+
+#### File Import Validation
+- **NEW:** Comprehensive file import security in Settings
+  - MIME type validation (JSON only)
+  - File size limit (10MB max) to prevent DoS
+  - User confirmation dialog before import
+  - Safe JSON parsing with validation
+  - Updated [SettingsPanel.tsx](src/components/SettingsPanel.tsx)
+
+#### Cloud Sync Deadlock Prevention
+- **IMPROVED:** Sync lock now uses operation ID for safe ownership tracking
+  - Prevents data corruption when timeout fires during slow but legitimate operations
+  - Each sync operation gets a unique ID for lock ownership verification
+  - Timeout only releases lock if the same operation still owns it
+  - Detailed logging for debugging sync issues
+  - Updated [cloudSync.ts](src/storage/cloudSync.ts)
+
+### 🌐 Translation Improvements
+
+#### Hardcoded Text Removed
+- **FIXED:** AchievementsPanel no longer has hardcoded Russian text
+  - All strings now use translation keys
+  - Proper locale-aware date formatting
+  - Added 10 new translation keys for achievements
+  - Updated [AchievementsPanel.tsx](src/components/AchievementsPanel.tsx)
+
+- **FIXED:** DayClock uses proper locale from language context
+  - Removed hardcoded `ru-RU` locale
+  - Updated [DayClock.tsx](src/components/DayClock.tsx)
+
+#### New Translation Keys
+- **NEW:** Achievement-related translations for all 6 languages:
+  - `toLevel`, `unlockedPercent`, `all`, `unlocked`, `locked`
+  - `unlockedOn`, `hiddenAchievement`, `hidden`
+  - `noAchievementsYet`, `startUsingZenFlow`
+  - Updated [translations.ts](src/i18n/translations.ts)
+
+### 🐛 Bug Fixes
+
+#### Component Integration
+- **FIXED:** HabitTracker onToggle callback signature
+  - Callback parameters were being ignored
+  - Updated [HabitTracker.tsx:652](src/components/HabitTracker.tsx)
+
+#### Error Handling
+- **FIXED:** Leaderboard now shows error state instead of infinite loading
+  - Added proper error UI with retry button
+  - Replaced `console.error` with `logger.error`
+  - Updated [Leaderboard.tsx](src/components/Leaderboard.tsx)
+
+### 📊 Code Quality
+
+#### Console → Logger Migration
+- **IMPROVED:** Production code now uses `logger` instead of `console`
+  - [HealthConnectCard.tsx](src/components/HealthConnectCard.tsx)
+  - [ProgressStoriesViewer.tsx](src/components/ProgressStoriesViewer.tsx)
+  - [ShareModal.tsx](src/components/ShareModal.tsx)
+  - [StatsPage.tsx](src/components/StatsPage.tsx) - removed debug log
+
+#### Locale-Aware Date/Time Formatting
+- **NEW:** Added centralized locale utilities in `timeUtils.ts`
+  - `getLocale()`, `formatLocalizedDate()`, `formatLocalizedTime()`
+  - Updated [timeUtils.ts](src/lib/timeUtils.ts)
+
+- **FIXED:** Date/time formatting now uses proper locale from language context
+  - [ChallengesPanel.tsx](src/components/ChallengesPanel.tsx) - badge unlock dates
+  - [MoodTracker.tsx](src/components/MoodTracker.tsx) - mood entry times
+  - [TrendsView.tsx](src/components/TrendsView.tsx) - chart axis labels
+
+#### Accessibility Improvements
+- **IMPROVED:** Added `aria-label` attributes to interactive buttons
+  - [ProgressStoriesViewer.tsx](src/components/ProgressStoriesViewer.tsx) - close, pause/play, share buttons
+
+#### Type Safety
+- **FIXED:** Replaced `any` type with generic type parameter
+  - [HabitTracker.tsx:203](src/components/HabitTracker.tsx) - `handleReminderChange` function
+
+#### React Best Practices
+- **FIXED:** Added missing dependencies to useEffect
+  - [ShareModal.tsx](src/components/ShareModal.tsx) - image generation effect
+
+### 📝 Notes
+
+**Philosophy:** "Quality through comprehensive audit."
+
+This release focuses on:
+- Preventing crashes from malformed data
+- Removing hardcoded text for proper i18n
+- Fixing component integration bugs
+- Improving error visibility for users
+
+All changes are backward-compatible with no user-facing changes required.
+
+---
+
+## [1.3.5] - "Security & Stability" - 2026-01-25
+
+### 🔒 Security Improvements
+
+#### Authentication & Token Security
+- **IMPROVED:** Spotify PKCE verifier now uses `sessionStorage` instead of `localStorage`
+  - More secure: automatically cleared when browser tab closes
+  - Prevents token leakage in shared browser sessions
+  - Updated [spotifyIntegration.ts](src/lib/spotifyIntegration.ts)
+
+#### Data Sanitization
+- **NEW:** CSS color injection prevention in chart components
+  - Added `sanitizeCssColor()` and `sanitizeCssKey()` functions
+  - Validates hex, rgb, rgba, hsl, hsla, and named colors only
+  - Blocks malicious CSS injection via chart config
+  - Updated [chart.tsx](src/components/ui/chart.tsx)
+
+- **NEW:** Sensitive data redaction in crash reports
+  - Automatically redacts: password, token, secret, key, auth, credential, email, phone
+  - Prevents accidental PII leakage in error logs
+  - Updated [crashReporting.ts](src/lib/crashReporting.ts)
+
+- **NEW:** Filename sanitization for exports
+  - Removes unsafe characters: `< > : " / \ | ? *`
+  - Prevents path traversal attacks
+  - Updated [exportService.ts](src/lib/exportService.ts)
+
+#### Input Validation
+- **IMPROVED:** Deep link data validation with 10KB size limit
+  - Prevents DoS attacks via oversized challenge invites
+  - Updated [friendChallenge.ts](src/lib/friendChallenge.ts)
+
+### 🔧 Stability Improvements
+
+#### Deadlock Prevention
+- **FIXED:** Cloud sync mutex now has 60-second timeout
+  - Prevents permanent lock if sync operation hangs
+  - Auto-releases lock and logs warning
+  - Updated [cloudSync.ts](src/storage/cloudSync.ts)
+
+- **IMPROVED:** IndexedDB initialization lock timeout increased to 10 seconds
+  - Better handles slow devices during app startup
+  - Prevents UI freeze on older Android devices
+  - Updated [useIndexedDB.ts](src/hooks/useIndexedDB.ts)
+
+#### Error Handling
+- **IMPROVED:** File cleanup errors now logged (not silently ignored)
+  - Helps debug storage issues on Android
+  - Non-critical: doesn't affect share functionality
+  - Updated [socialShare.ts](src/lib/socialShare.ts)
+
+- **IMPROVED:** Spotify missing configuration now shows warning
+  - Clear feedback when VITE_SPOTIFY_CLIENT_ID not set
+  - Updated [spotifyIntegration.ts](src/lib/spotifyIntegration.ts)
+
+### 📊 Code Quality
+
+- **29 total security/code quality fixes** across the codebase
+- Comprehensive audit of all sync, storage, and authentication flows
+- Division by zero protection in analytics calculations
+- Null-safety improvements throughout the app
+
+### 📝 Notes
+
+**Philosophy:** "Security and stability without compromise."
+
+This release focuses on hardening the app against:
+- Token leakage vulnerabilities
+- CSS/HTML injection attacks
+- Deadlock conditions in async operations
+- PII exposure in error logs
+
+All changes are backward-compatible with no user-facing changes required.
+
+---
+
 ## [1.1.3] - "Android UX Improvements" - 2026-01-23
 
 ### 📱 Android UX Enhancements

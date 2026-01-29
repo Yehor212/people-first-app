@@ -2,6 +2,8 @@ import { exportBackup, importBackup } from "@/storage/backup";
 import { supabase } from "@/lib/supabaseClient";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
 import logger from "@/lib/logger";
+import { syncOrchestrator } from "@/lib/syncOrchestrator";
+import { generateSecureRandom } from "@/lib/validation";
 
 const BACKUP_TABLE = "user_backups";
 const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -12,97 +14,162 @@ let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 let lastSyncTime = 0;
 let autoSyncStarted = false;
 
+// Sync lock with operation ID for safe deadlock prevention
+// Using operation ID ensures that timeout-based release doesn't cause data corruption
+// when a legitimate slow operation is still running
+let syncLock = false;
+let syncLockOwner: string | null = null; // Unique ID of the operation holding the lock
+let syncLockTimeout: ReturnType<typeof setTimeout> | null = null;
+const SYNC_LOCK_TIMEOUT = 60000; // 60 seconds max lock time to prevent deadlock
+
+/**
+ * Generate a unique operation ID for lock ownership tracking.
+ * Format: timestamp-randomstring (e.g., "1706234567890-abc123xyz")
+ */
+const generateOperationId = (): string => {
+  return `${Date.now()}-${generateSecureRandom()}`;
+};
+
 // Store listener references for cleanup
 let visibilityChangeHandler: (() => void) | null = null;
 let beforeUnloadHandler: (() => void) | null = null;
 
-export const syncWithCloud = async (mode: "merge" | "replace" = "merge") => {
+export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promise<{ status: string }> => {
+  // Prevent concurrent sync operations
+  if (syncLock) {
+    logger.sync(`Sync already in progress (owner: ${syncLockOwner}), skipping`);
+    return { status: 'skipped' };
+  }
+
   if (!supabase) {
     throw new Error("Supabase not configured.");
   }
 
-  const {
-    data: { user }
-  } = await supabase.auth.getUser();
+  // Acquire lock with unique operation ID
+  const operationId = generateOperationId();
+  syncLock = true;
+  syncLockOwner = operationId;
+  logger.sync(`Sync started (operation: ${operationId})`);
 
-  if (!user) {
-    throw new Error("Not authenticated.");
-  }
-
-  const localBackup = await exportBackup();
-
-  const { data: remote, error: fetchError } = await supabase
-    .from(BACKUP_TABLE)
-    .select("payload, updated_at")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (fetchError) {
-    throw fetchError;
-  }
-
-  let syncStatus: "pulled" | "pushed" | "merged" = "pushed";
-
-  if (remote?.payload) {
-    const remotePayload = remote.payload;
-    const remoteData = remotePayload.data || {};
-    const localData = localBackup.data || {};
-
-    // Count items for logging
-    const localItemCount =
-      (localData.moods?.length || 0) +
-      (localData.habits?.length || 0) +
-      (localData.focusSessions?.length || 0) +
-      (localData.gratitudeEntries?.length || 0);
-
-    const remoteItemCount =
-      (remoteData.moods?.length || 0) +
-      (remoteData.habits?.length || 0) +
-      (remoteData.focusSessions?.length || 0) +
-      (remoteData.gratitudeEntries?.length || 0);
-
-    logger.sync(`Local items: ${localItemCount}, Remote items: ${remoteItemCount}`);
-
-    // ALWAYS merge if remote has any data - this ensures cross-device sync works
-    // The importBackup with mode="merge" will use bulkPut which updates existing or adds new
-    if (remoteItemCount > 0) {
-      logger.sync('Merging remote data into local...');
-      await importBackup(remotePayload, mode);
-      syncStatus = localItemCount === 0 ? "pulled" : "merged";
-      // Trigger React state refresh after importing cloud data
-      triggerDataRefresh();
-      logger.sync('Data refreshed after cloud merge');
+  // Set timeout to auto-release lock and prevent deadlock
+  // IMPORTANT: Only release if this operation still owns the lock
+  // This prevents data corruption when timeout fires during a slow but legitimate operation
+  syncLockTimeout = setTimeout(() => {
+    if (syncLock && syncLockOwner === operationId) {
+      logger.warn(`[Sync] Lock timeout exceeded, force releasing (operation: ${operationId})`);
+      syncLock = false;
+      syncLockOwner = null;
+    } else if (syncLock) {
+      // Lock is held by a different operation - this is unexpected but possible
+      // if the original operation completed and a new one started
+      logger.sync(`[Sync] Timeout fired but lock owned by different operation: ${syncLockOwner}`);
     }
-  } else {
-    logger.sync('No remote data found, will push local data');
+  }, SYNC_LOCK_TIMEOUT);
+
+  try {
+    const { data } = await supabase.auth.getUser();
+    const user = data?.user;
+
+    if (!user) {
+      throw new Error("Not authenticated.");
+    }
+
+    const localBackup = await exportBackup();
+
+    const { data: remote, error: fetchError } = await supabase
+      .from(BACKUP_TABLE)
+      .select("payload, updated_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (fetchError) {
+      throw fetchError;
+    }
+
+    let syncStatus: "pulled" | "pushed" | "merged" = "pushed";
+
+    if (remote?.payload) {
+      const remotePayload = remote.payload;
+      const remoteData = remotePayload.data || {};
+      const localData = localBackup.data || {};
+
+      // Count items for logging
+      const localItemCount =
+        (localData.moods?.length || 0) +
+        (localData.habits?.length || 0) +
+        (localData.focusSessions?.length || 0) +
+        (localData.gratitudeEntries?.length || 0);
+
+      const remoteItemCount =
+        (remoteData.moods?.length || 0) +
+        (remoteData.habits?.length || 0) +
+        (remoteData.focusSessions?.length || 0) +
+        (remoteData.gratitudeEntries?.length || 0);
+
+      logger.sync(`Local items: ${localItemCount}, Remote items: ${remoteItemCount}`);
+
+      // ALWAYS merge if remote has any data - this ensures cross-device sync works
+      // The importBackup with mode="merge" will use bulkPut which updates existing or adds new
+      if (remoteItemCount > 0) {
+        logger.sync('Merging remote data into local...');
+        await importBackup(remotePayload, mode);
+        syncStatus = localItemCount === 0 ? "pulled" : "merged";
+        // Trigger React state refresh after importing cloud data
+        triggerDataRefresh();
+        logger.sync('Data refreshed after cloud merge');
+      }
+    } else {
+      logger.sync('No remote data found, will push local data');
+    }
+
+    const mergedBackup = await exportBackup();
+    const { error: upsertError } = await supabase.from(BACKUP_TABLE).upsert(
+      {
+        user_id: user.id,
+        payload: mergedBackup,
+        updated_at: new Date().toISOString()
+      },
+      { onConflict: "user_id" }
+    );
+
+    if (upsertError) {
+      throw upsertError;
+    }
+
+    lastSyncTime = Date.now();
+    return { status: syncStatus };
+  } finally {
+    // Clear timeout
+    if (syncLockTimeout) {
+      clearTimeout(syncLockTimeout);
+      syncLockTimeout = null;
+    }
+
+    // Only release lock if we still own it
+    // This prevents releasing a lock that was already timed out and acquired by another operation
+    if (syncLockOwner === operationId) {
+      syncLock = false;
+      syncLockOwner = null;
+      logger.sync(`Sync completed, lock released (operation: ${operationId})`);
+    } else {
+      // Lock was released by timeout or is now owned by another operation
+      logger.sync(`Sync completed but lock already released or transferred (operation: ${operationId}, current owner: ${syncLockOwner})`);
+    }
   }
-
-  const mergedBackup = await exportBackup();
-  const { error: upsertError } = await supabase.from(BACKUP_TABLE).upsert(
-    {
-      user_id: user.id,
-      payload: mergedBackup,
-      updated_at: new Date().toISOString()
-    },
-    { onConflict: "user_id" }
-  );
-
-  if (upsertError) {
-    throw upsertError;
-  }
-
-  lastSyncTime = Date.now();
-  return { status: syncStatus };
 };
 
 // Silent sync (no errors thrown, just logs)
 export const silentSync = async () => {
-  try {
-    await syncWithCloud('merge');
-    logger.sync('Auto-sync completed');
-  } catch (error) {
-    logger.warn('[Sync] Auto-sync failed:', error);
-  }
+  // Use orchestrator for queue-based sync
+  await syncOrchestrator.sync('backup', async () => {
+    try {
+      await syncWithCloud('merge');
+      logger.sync('Auto-sync completed');
+    } catch (error) {
+      logger.warn('[Sync] Auto-sync failed:', error);
+      throw error; // Re-throw for orchestrator retry logic
+    }
+  }, { priority: 5, maxRetries: 3 });
 };
 
 // Start periodic sync
@@ -126,7 +193,9 @@ export const startAutoSync = () => {
   // Create and store listener references for later cleanup
   visibilityChangeHandler = () => {
     if (document.visibilityState === 'visible' && Date.now() - lastSyncTime > 60000) {
-      silentSync();
+      silentSync().catch((error) => {
+        logger.warn('[Sync] Visibility change sync failed:', error);
+      });
     }
   };
 
@@ -134,7 +203,9 @@ export const startAutoSync = () => {
     // Note: async operations in beforeunload are unreliable
     // This is a best-effort sync attempt
     if (navigator.sendBeacon && supabase) {
-      silentSync();
+      silentSync().catch((error) => {
+        logger.warn('[Sync] Beforeunload sync failed:', error);
+      });
     }
   };
 
@@ -181,5 +252,6 @@ export const triggerSync = () => {
   }
 
   // Debounce: wait 30s after last change before syncing
+  // The orchestrator will handle queue management
   syncTimeout = setTimeout(silentSync, SYNC_DEBOUNCE);
 };

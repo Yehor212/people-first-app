@@ -1,12 +1,23 @@
 import React from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { APP_VERSION, getAppMetadata } from "@/lib/appVersion";
+import { crashReporting } from "@/lib/crashReporting";
+import { safeLocalStorageGet } from "@/lib/safeJson";
 
 const LOG_KEY = "zenflow-error-log";
 
 const logError = (payload: Record<string, unknown>) => {
   try {
-    const existing = JSON.parse(localStorage.getItem(LOG_KEY) || "[]");
-    const next = [...existing, payload].slice(-5);
+    const metadata = getAppMetadata();
+    const enhancedPayload = {
+      ...payload,
+      appVersion: APP_VERSION,
+      dataSchemaVersion: metadata?.dataSchemaVersion || 'unknown',
+      time: new Date().toISOString()
+    };
+
+    const existing = safeLocalStorageGet<Record<string, unknown>[]>(LOG_KEY, []);
+    const next = [...existing, enhancedPayload].slice(-10); // Keep last 10 errors
     localStorage.setItem(LOG_KEY, JSON.stringify(next));
   } catch {
     // Ignore storage errors.
@@ -14,19 +25,35 @@ const logError = (payload: Record<string, unknown>) => {
 };
 
 const exportDebugReport = (error?: Error | null) => {
+  const metadata = getAppMetadata();
+
   const report = {
-    version: "1.0.0",
+    version: APP_VERSION,
+    dataSchemaVersion: metadata?.dataSchemaVersion || 'unknown',
+    updateCount: metadata?.updateCount || 0,
+    lastUpdateDate: metadata?.lastUpdateDate || 'unknown',
     timestamp: new Date().toISOString(),
     location: window.location.href,
     userAgent: navigator.userAgent,
-    error: error ? { message: error.message, stack: error.stack } : null
+    error: error ? {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    } : null,
+    // Add browser storage info
+    storageInfo: {
+      localStorageAvailable: typeof localStorage !== 'undefined',
+      indexedDBAvailable: typeof indexedDB !== 'undefined',
+    },
+    // Add last 10 errors from log
+    recentErrors: safeLocalStorageGet<Record<string, unknown>[]>(LOG_KEY, [])
   };
 
   const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "zenflow-debug-report.json";
+  link.download = `zenflow-debug-report-${Date.now()}.json`;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -57,11 +84,19 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     this.setState({ error });
+
+    // Log to localStorage
     logError({
       message: error.message,
       stack: error.stack,
       componentStack: info.componentStack,
       time: new Date().toISOString()
+    });
+
+    // Report to Crashlytics (native) or console (web)
+    crashReporting.recordError(error, {
+      componentStack: info.componentStack || 'unknown',
+      location: window.location.href
     });
   }
 

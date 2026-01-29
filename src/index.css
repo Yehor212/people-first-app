@@ -56,6 +56,29 @@
     --easing-default: cubic-bezier(0.4, 0, 0.2, 1);
     --easing-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 
+    /* ===== LAYOUT SYSTEM TOKENS ===== */
+    /* Navigation */
+    --nav-height: 5.5rem;           /* 88px - bottom navigation height */
+    --header-height: 3.5rem;        /* 56px - top header height */
+
+    /* Container */
+    --container-max-width: 32rem;   /* 512px - max-w-lg */
+    --container-padding: 1rem;      /* px-4 */
+
+    /* Safe Areas (unified) */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-left: env(safe-area-inset-left, 0px);
+    --safe-right: env(safe-area-inset-right, 0px);
+
+    /* Z-Index Layers */
+    --z-dropdown: 40;
+    --z-sticky: 50;
+    --z-overlay: 60;
+    --z-modal: 80;
+    --z-toast: 100;
+    --z-celebration: 200;
+
     /* Mood colors - softer, more visible */
     --mood-great: 158 60% 50%;
     --mood-good: 142 50% 55%;
@@ -73,49 +96,116 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
+  /* ===== DARK MODE 2.0 ===== */
+  /* Improved contrast, deeper background, warmer accents */
   .dark {
-    --background: 160 20% 8%;
-    --foreground: 45 30% 95%;
+    --background: 160 15% 6%;           /* Deeper, richer black */
+    --foreground: 45 10% 95%;           /* Warmer white */
 
-    --card: 160 18% 12%;
-    --card-foreground: 45 30% 95%;
+    --card: 160 12% 10%;                /* More contrast with bg */
+    --card-foreground: 45 10% 95%;
 
-    --popover: 160 18% 12%;
-    --popover-foreground: 45 30% 95%;
+    --popover: 160 12% 10%;
+    --popover-foreground: 45 10% 95%;
 
-    --primary: 158 50% 50%;
-    --primary-foreground: 160 25% 8%;
+    --primary: 158 55% 55%;             /* Brighter primary */
+    --primary-foreground: 160 20% 5%;
 
-    --secondary: 160 15% 18%;
-    --secondary-foreground: 45 30% 90%;
+    --secondary: 160 12% 15%;           /* Subtle secondary */
+    --secondary-foreground: 45 15% 90%;
 
-    --muted: 160 15% 18%;
-    --muted-foreground: 45 20% 60%;
+    --muted: 160 10% 15%;
+    --muted-foreground: 45 15% 65%;     /* Better readability */
 
-    --accent: 28 70% 55%;
-    --accent-foreground: 28 90% 95%;
+    --accent: 28 80% 60%;               /* More saturated accent */
+    --accent-foreground: 28 90% 98%;
 
-    --destructive: 0 60% 45%;
+    --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 160 15% 20%;
-    --input: 160 15% 20%;
-    --ring: 158 50% 50%;
+    --border: 160 12% 18%;              /* Subtle but visible */
+    --input: 160 12% 18%;
+    --ring: 158 55% 55%;
 
-    --zen-gradient-hero: linear-gradient(180deg, hsl(160 20% 8%) 0%, hsl(160 25% 12%) 100%);
-    --zen-shadow-soft: 0 4px 20px -4px hsl(158 50% 50% / 0.2);
-    --zen-shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.3);
-    --zen-shadow-glow: 0 0 30px hsl(158 50% 50% / 0.15);
-    --zen-shadow-hover: 0 8px 30px -6px hsl(158 50% 50% / 0.3);
+    /* Dark mode gradients */
+    --zen-gradient: linear-gradient(135deg, hsl(158 55% 45%) 0%, hsl(180 50% 35%) 100%);
+    --zen-gradient-warm: linear-gradient(135deg, hsl(28 80% 55%) 0%, hsl(38 75% 60%) 100%);
+    --zen-gradient-hero: linear-gradient(180deg, hsl(160 15% 6%) 0%, hsl(160 18% 10%) 100%);
+
+    /* Improved shadows for dark mode */
+    --zen-shadow-soft: 0 4px 20px -4px hsl(158 55% 55% / 0.25);
+    --zen-shadow-card: 0 2px 12px -2px hsl(0 0% 0% / 0.4);
+    --zen-shadow-glow: 0 0 30px hsl(158 55% 55% / 0.2);
+    --zen-shadow-hover: 0 8px 30px -6px hsl(158 55% 55% / 0.35);
+
+    /* Mood colors - adjusted for dark mode visibility */
+    --mood-great: 158 65% 55%;
+    --mood-good: 142 55% 50%;
+    --mood-okay: 45 80% 55%;
+    --mood-bad: 25 75% 55%;
+    --mood-terrible: 0 65% 55%;
   }
 
-  /* Safe Area Insets for Android/iOS notches and navigation bars */
-  :root {
-    --safe-area-inset-top: env(safe-area-inset-top, 0px);
-    --safe-area-inset-right: env(safe-area-inset-right, 0px);
-    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
-    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+  /* ===== OLED DARK MODE ===== */
+  /* Pure black for OLED screens - saves battery and reduces eye strain */
+  .dark.oled {
+    --background: 0 0% 0%;              /* Pure black */
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 5%;                    /* Very dark gray */
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 5%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 158 60% 50%;             /* Slightly brighter for contrast */
+    --primary-foreground: 0 0% 0%;
+
+    --secondary: 0 0% 8%;
+    --secondary-foreground: 0 0% 90%;
+
+    --muted: 0 0% 10%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 28 85% 55%;
+    --accent-foreground: 0 0% 0%;
+
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 158 60% 50%;
+
+    /* OLED-optimized gradients - subtle glow instead of gradient */
+    --zen-gradient: linear-gradient(135deg, hsl(158 60% 40%) 0%, hsl(180 55% 30%) 100%);
+    --zen-gradient-warm: linear-gradient(135deg, hsl(28 85% 50%) 0%, hsl(38 80% 55%) 100%);
+    --zen-gradient-hero: linear-gradient(180deg, hsl(0 0% 0%) 0%, hsl(0 0% 3%) 100%);
+
+    /* OLED shadows - subtle glow effects */
+    --zen-shadow-soft: 0 0 1px hsl(var(--primary) / 0.3);
+    --zen-shadow-card: 0 0 1px hsl(var(--primary) / 0.2);
+    --zen-shadow-glow: 0 0 20px hsl(var(--primary) / 0.15);
+    --zen-shadow-hover: 0 0 25px hsl(var(--primary) / 0.25);
+
+    /* Mood colors for OLED - high contrast */
+    --mood-great: 158 70% 50%;
+    --mood-good: 142 60% 45%;
+    --mood-okay: 45 85% 50%;
+    --mood-bad: 25 80% 50%;
+    --mood-terrible: 0 70% 50%;
+
+    /* Sidebar for OLED */
+    --sidebar-background: 0 0% 0%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 158 60% 50%;
+    --sidebar-primary-foreground: 0 0% 0%;
+    --sidebar-accent: 0 0% 8%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 158 60% 50%;
   }
+
 }
 
 @layer base {
@@ -132,8 +222,8 @@
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Nunito', sans-serif;
     /* Safe area padding for Android/iOS notches and navigation bars */
-    padding-top: var(--safe-area-inset-top);
-    padding-bottom: var(--safe-area-inset-bottom);
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
     /* Fill available viewport space */
     min-height: 100vh;
     min-height: -webkit-fill-available;
@@ -144,9 +234,105 @@
     min-height: 100vh;
     min-height: -webkit-fill-available;
   }
+
+  /* ===== ACCESSIBILITY: Focus Visible ===== */
+  /* Visible focus ring for keyboard navigation */
+  :focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+
+  /* Remove default focus for mouse users */
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  /* Skip to content link for screen readers */
+  .skip-to-content {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
+  .skip-to-content:focus {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: auto;
+    height: auto;
+    padding: 1rem;
+    background: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    z-index: 9999;
+  }
 }
 
 @layer utilities {
+  /* ===== LAYOUT SYSTEM UTILITIES ===== */
+
+  /* Main app container - accounts for nav height + safe area */
+  .app-main {
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-bottom: calc(var(--nav-height) + var(--safe-bottom));
+  }
+
+  /* Full-screen overlay (modals, tutorials, onboarding) */
+  .screen-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bottom);
+  }
+
+  /* Centered content container (for tutorials, onboarding, modals) */
+  .screen-centered {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--container-padding);
+  }
+
+  /* Bottom sheet style overlay */
+  .bottom-sheet {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: var(--z-modal);
+  }
+
+  /* Content with nav padding (for scrollable pages) */
+  .content-with-nav {
+    padding-bottom: calc(var(--nav-height) + var(--safe-bottom) + 1rem);
+  }
+
+  /* Modal backdrop */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: var(--z-overlay);
+  }
+
+  /* Modal content wrapper */
+  .modal-content {
+    position: relative;
+    z-index: var(--z-modal);
+    max-height: calc(100vh - var(--safe-top) - var(--safe-bottom) - 2rem);
+    max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 2rem);
+    overflow-y: auto;
+  }
+
   .zen-gradient {
     background: var(--zen-gradient);
   }
@@ -2050,4 +2236,43 @@ body.mood-bad .mood-particle {
     transform: translateY(0) !important;
     opacity: 1 !important;
   }
+}
+
+/* ========================================
+   MOBILE INPUT IMPROVEMENTS
+   ======================================== */
+
+/* Prevent iOS zoom on input focus (font-size < 16px triggers zoom) */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}
+
+/* Better touch target for mobile (44px is Apple's minimum recommendation) */
+input,
+textarea,
+button,
+[role="button"],
+.touchable {
+  min-height: 44px;
+}
+
+/* Ensure inputs are visible when keyboard appears */
+input:focus,
+textarea:focus {
+  scroll-margin-bottom: 100px;
+}
+
+/* Prevent input background color flash on focus (Android WebView) */
+input,
+textarea,
+select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Remove inner button padding in Firefox */
+input::-moz-focus-inner {
+  padding: 0;
+  border: 0;
 }

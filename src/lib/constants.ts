@@ -182,3 +182,50 @@ export const LIMITS = {
   /** Maximum task name length */
   MAX_TASK_NAME: 200,
 } as const;
+
+// ============================================
+// Z-INDEX LAYERS
+// Keep consistent with CSS variables in index.css
+// ============================================
+
+export const Z_INDEX = {
+  /** Dropdowns and tooltips */
+  DROPDOWN: 40,
+
+  /** Sticky headers and navigation */
+  STICKY: 50,
+
+  /** Overlays (sheets, sidebars) */
+  OVERLAY: 60,
+
+  /** Modals and dialogs */
+  MODAL: 80,
+
+  /** Toast notifications */
+  TOAST: 100,
+
+  /** Celebrations and confetti */
+  CELEBRATION: 200,
+} as const;
+
+// ============================================
+// MODAL SIZES
+// Consistent modal widths across the app
+// ============================================
+
+export const MODAL_SIZES = {
+  /** Small modals (confirmations, alerts) */
+  SM: 'max-w-sm',
+
+  /** Medium modals (forms, settings) */
+  MD: 'max-w-md',
+
+  /** Large modals (complex content) */
+  LG: 'max-w-lg',
+
+  /** Extra large modals (full features) */
+  XL: 'max-w-xl',
+
+  /** Full-width modals (stats, reports) */
+  FULL: 'max-w-2xl',
+} as const;

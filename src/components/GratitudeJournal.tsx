@@ -1,34 +1,74 @@
-import { useState } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { GratitudeEntry } from '@/types';
 import { getToday, generateId, cn } from '@/lib/utils';
-import { Sparkles, Plus, Zap } from 'lucide-react';
+import { Sparkles, Plus, Zap, AlertCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { gratitudeTextSchema, sanitizeString } from '@/lib/validation';
+import { logger } from '@/lib/logger';
+import { JournalPrompt } from '@/components/JournalPrompt';
 
 interface GratitudeJournalProps {
   entries: GratitudeEntry[];
   onAddEntry: (entry: GratitudeEntry) => void;
   isPrimaryCTA?: boolean;
+  initialText?: string;
+  onInitialTextUsed?: () => void;
 }
 
-export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false }: GratitudeJournalProps) {
+export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, initialText, onInitialTextUsed }: GratitudeJournalProps) {
   const { t } = useLanguage();
   const [text, setText] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
-  
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Handle initial text from DailyPromptCard
+  useEffect(() => {
+    if (initialText) {
+      setText(initialText + '\n\n');
+      setIsExpanded(true);
+      onInitialTextUsed?.();
+    }
+  }, [initialText, onInitialTextUsed]);
+
   const today = getToday();
   const todayEntries = entries.filter(e => e.date === today);
   const recentEntries = entries.slice(-5).reverse();
 
+  // Handle using a journal prompt
+  const handleUsePrompt = useCallback((promptText: string) => {
+    setText(promptText + '\n\n');
+  }, []);
+
   const handleSubmit = () => {
-    if (!text.trim()) return;
-    
+    const trimmedText = text.trim();
+    if (!trimmedText) return;
+
+    // Clear any previous error
+    setValidationError(null);
+
+    // Validate and sanitize input to prevent XSS
+    const validationResult = gratitudeTextSchema.safeParse(trimmedText);
+    if (!validationResult.success) {
+      logger.warn('[GratitudeJournal] Invalid gratitude text:', validationResult.error.message);
+      // Show user-friendly error message
+      const errorMessage = trimmedText.length > 2000
+        ? t.textTooLong
+        : t.invalidInput;
+      setValidationError(errorMessage);
+      // Auto-clear error after 3 seconds
+      setTimeout(() => setValidationError(null), 3000);
+      return;
+    }
+
+    const sanitizedText = sanitizeString(validationResult.data);
+
     const entry: GratitudeEntry = {
       id: generateId(),
-      text: text.trim(),
+      text: sanitizedText,
       date: today,
       timestamp: Date.now(),
     };
-    
+
     onAddEntry(entry);
     setText('');
     setIsExpanded(false);
@@ -78,15 +118,37 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false }: 
           <span>{t.whatAreYouGratefulFor}</span>
         </button>
       ) : (
-        <div className="animate-scale-in">
+        <div className="animate-scale-in space-y-3">
+          {/* Journal Prompt - helps with blank page anxiety */}
+          {!text.trim() && (
+            <JournalPrompt
+              onUsePrompt={handleUsePrompt}
+              category="gratitude"
+              compact
+            />
+          )}
+
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              if (validationError) setValidationError(null);
+            }}
             placeholder={t.iAmGratefulFor}
-            className="w-full p-4 bg-secondary rounded-xl text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-accent/30 transition-all"
+            className={cn(
+              "w-full p-4 bg-secondary rounded-lg text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 transition-all",
+              validationError ? "ring-2 ring-destructive/50 focus:ring-destructive/50" : "focus:ring-accent/30"
+            )}
             rows={3}
             autoFocus
           />
+          {/* Validation error message */}
+          {validationError && (
+            <div className="flex items-center gap-2 px-3 py-2 mt-2 bg-destructive/10 border border-destructive/20 rounded-lg text-sm text-destructive animate-fade-in">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              <span>{validationError}</span>
+            </div>
+          )}
           <div className="flex gap-2 mt-3">
             <button
               onClick={() => setIsExpanded(false)}

@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Wind, X, Play, Pause, RotateCcw } from 'lucide-react';
+import Lottie from 'lottie-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import {
@@ -15,6 +16,9 @@ import {
   getTotalDuration,
   formatDuration,
 } from '@/lib/breathingPatterns';
+
+// Meditation animation for breathing exercise background
+import meditationAnimation from '@/assets/animations/meditation-relax.json';
 
 interface BreathingExerciseProps {
   onComplete?: (pattern: BreathingPattern) => void;
@@ -181,15 +185,16 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
 
   // Full exercise modal
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-card rounded-3xl p-6 w-full max-w-sm animate-scale-in">
+    <div role="dialog" aria-modal="true" aria-labelledby="breathing-title" className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+      <div className="bg-card rounded-3xl p-4 sm:p-6 w-full max-w-sm animate-scale-in">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-foreground">
+          <h2 id="breathing-title" className="text-xl font-bold text-foreground">
             {t.breathingTitle || 'Breathing'}
           </h2>
           <button
             onClick={closeModal}
+            aria-label={t.close || 'Close'}
             className="p-2 hover:bg-muted rounded-xl transition-colors"
           >
             <X className="w-5 h-5" />
@@ -263,8 +268,18 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
         ) : (
           /* Active breathing state */
           <div className="text-center">
+            {/* Meditation animation background */}
+            <div className="absolute inset-0 flex items-center justify-center opacity-20 pointer-events-none overflow-hidden">
+              <Lottie
+                animationData={meditationAnimation}
+                loop
+                autoplay={!isPaused}
+                style={{ width: '100%', maxWidth: '280px', height: 'auto' }}
+              />
+            </div>
+
             {/* Breathing circle */}
-            <div className="relative w-48 h-48 mx-auto mb-6">
+            <div className="relative w-36 h-36 sm:w-48 sm:h-48 mx-auto mb-6 z-10">
               {/* Outer ring */}
               <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
 
@@ -326,6 +341,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
               </button>
               <button
                 onClick={resetExercise}
+                aria-label={t.resetTimer || 'Reset'}
                 className="py-3 px-4 bg-secondary rounded-xl"
               >
                 <RotateCcw className="w-5 h-5" />

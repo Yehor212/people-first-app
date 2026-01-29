@@ -23,8 +23,14 @@ export function ConsentBanner({ onConsent }: ConsentBannerProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-4 pb-24 sm:pb-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-md bg-card rounded-2xl p-6 shadow-2xl animate-scale-in max-h-[80vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 flex items-end sm:items-center justify-center p-4 sm:pb-4 bg-black/50 backdrop-blur-sm animate-fade-in"
+      style={{
+        zIndex: 'var(--z-overlay)',
+        paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom))'
+      }}
+    >
+      <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 shadow-2xl animate-scale-in max-h-[80vh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-primary/10 rounded-xl">
             <Shield className="w-6 h-6 text-primary" />

@@ -2,6 +2,7 @@
 // Generates daily/weekly quests with XP rewards and badge unlocks
 
 import { logger } from './logger';
+import { safeJsonParse } from './safeJson';
 import { translations } from '@/i18n/translations';
 
 // Quest translation key mapping
@@ -493,7 +494,7 @@ export function updateAllQuestsProgress(
     const stored = localStorage.getItem(QUESTS_STORAGE_KEY);
     if (!stored) return [];
 
-    const data = JSON.parse(stored);
+    const data = safeJsonParse<{ daily?: Quest | null; weekly?: Quest | null; bonus?: Quest | null }>(stored, {});
     const newlyCompleted: Quest[] = [];
 
     // Update each quest type

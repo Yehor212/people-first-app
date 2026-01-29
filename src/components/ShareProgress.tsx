@@ -1,10 +1,16 @@
-import { Share2, Download, X, Sparkles } from 'lucide-react';
+import { Share2, Download, X, Sparkles, Loader2 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
-import html2canvas from 'html2canvas';
+import { Filesystem, Directory } from '@capacitor/filesystem';
 import { useRef, useState } from 'react';
+
+// Lazy load html2canvas (~480KB) only when needed
+const getHtml2Canvas = async () => {
+  const module = await import('html2canvas');
+  return module.default;
+};
 import { formatDate } from '@/lib/utils';
 
 interface ShareProgressProps {
@@ -22,7 +28,8 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
   const { t } = useLanguage();
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
-  const [format, setFormat] = useState<'square' | 'story'>('square');
+  const [shareError, setShareError] = useState<string | null>(null);
+  const format = 'square'; // Fixed square format only
 
   const handleShare = async () => {
     if (!cardRef.current) return;
@@ -30,6 +37,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
     try {
       setDownloading(true);
       const scale = 2;
+      const html2canvas = await getHtml2Canvas();
       const canvas = await html2canvas(cardRef.current, {
         backgroundColor: null,
         scale: scale,
@@ -40,18 +48,49 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
       });
 
       if (Capacitor.isNativePlatform()) {
-        const file = new File([blob], 'zenflow-progress.png', { type: 'image/png' });
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onloadend = async () => {
-          const base64 = reader.result as string;
+        try {
+          // Convert blob to base64
+          const base64Data = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => {
+              const result = reader.result as string;
+              // Remove data:image/png;base64, prefix
+              const base64 = result.split(',')[1];
+              resolve(base64);
+            };
+          });
+
+          // Save to cache directory
+          const fileName = `zenflow-share-${Date.now()}.png`;
+          const savedFile = await Filesystem.writeFile({
+            path: fileName,
+            data: base64Data,
+            directory: Directory.Cache,
+          });
+
+          // Share using file URI
           await Share.share({
             title: t.shareTitle || 'My ZenFlow Progress',
             text: `${stats.currentStreak} day streak! 🔥`,
-            url: base64,
-            dialogTitle: t.shareDialogTitle || 'Share your progress',
+            files: [savedFile.uri],
+            dialogTitle: t.shareDialogTitle,
           });
-        };
+
+          // Clean up cached file after sharing
+          try {
+            await Filesystem.deleteFile({
+              path: fileName,
+              directory: Directory.Cache,
+            });
+          } catch (cleanupError) {
+            logger.warn('[ShareProgress] Failed to cleanup cached file:', cleanupError);
+          }
+        } catch (error) {
+          logger.error('[ShareProgress] Native share failed:', error);
+          setShareError(t.shareFailed);
+          return; // Don't close dialog on error
+        }
       } else {
         if (navigator.share && navigator.canShare) {
           const file = new File([blob], 'zenflow-progress.png', { type: 'image/png' });
@@ -67,6 +106,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
       onClose();
     } catch (error) {
       logger.error('Share failed:', error);
+      setShareError(t.shareFailed);
     } finally {
       setDownloading(false);
     }
@@ -80,6 +120,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
       let blob = existingBlob;
       if (!blob) {
         const scale = 2;
+        const html2canvas = await getHtml2Canvas();
         const canvas = await html2canvas(cardRef.current, {
           backgroundColor: null,
           scale: scale,
@@ -110,56 +151,31 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
 
   // Generate achievement message and emoji
   const getAchievementData = () => {
-    if (stats.currentStreak >= 30) return { emoji: '👑', text: t.shareAchievement30 || 'Legendary!', subtext: '30+ Day Master' };
-    if (stats.currentStreak >= 14) return { emoji: '💎', text: t.shareAchievement14 || 'Unstoppable!', subtext: '14+ Day Warrior' };
-    if (stats.currentStreak >= 7) return { emoji: '🔥', text: t.shareAchievement7 || 'On Fire!', subtext: '7+ Day Streak' };
-    if (stats.currentStreak >= 3) return { emoji: '⭐', text: t.shareAchievement3 || 'Rising Star!', subtext: '3+ Day Streak' };
-    return { emoji: '🌱', text: t.shareAchievementStart || 'Just Started!', subtext: 'Building Habits' };
+    if (stats.currentStreak >= 30) return { emoji: '👑', text: t.shareAchievement30, subtext: t.shareSubtext30 };
+    if (stats.currentStreak >= 14) return { emoji: '💎', text: t.shareAchievement14, subtext: t.shareSubtext14 };
+    if (stats.currentStreak >= 7) return { emoji: '🔥', text: t.shareAchievement7, subtext: t.shareSubtext7 };
+    if (stats.currentStreak >= 3) return { emoji: '⭐', text: t.shareAchievement3, subtext: t.shareSubtext3 };
+    return { emoji: '🌱', text: t.shareAchievementStart, subtext: t.shareSubtextStart };
   };
 
   const achievement = getAchievementData();
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-label={t.shareTitle || 'Share Progress'} className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4 pt-safe pb-safe animate-fade-in">
       {/* Close button */}
       <button
         onClick={onClose}
+        aria-label={t.close || 'Close'}
         className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
       >
         <X className="w-6 h-6 text-white" />
       </button>
 
       <div className="w-full max-w-sm">
-        {/* Format toggle */}
-        <div className="flex justify-center gap-2 mb-4">
-          <button
-            onClick={() => setFormat('square')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              format === 'square'
-                ? 'bg-white text-black'
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            1:1 Post
-          </button>
-          <button
-            onClick={() => setFormat('story')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              format === 'story'
-                ? 'bg-white text-black'
-                : 'bg-white/10 text-white hover:bg-white/20'
-            }`}
-          >
-            9:16 Story
-          </button>
-        </div>
-
         {/* Share Card */}
         <div
           ref={cardRef}
-          className={`relative overflow-hidden ${
-            format === 'story' ? 'aspect-[9/16]' : 'aspect-square'
-          }`}
+          className="relative overflow-hidden aspect-square"
           style={{
             background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
             borderRadius: '24px',
@@ -174,7 +190,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
             style={{ background: 'radial-gradient(circle, #a78bfa 0%, transparent 70%)' }} />
 
           {/* Content */}
-          <div className={`relative z-10 h-full flex flex-col ${format === 'story' ? 'p-8' : 'p-6'} text-white`}>
+          <div className="relative z-10 h-full flex flex-col p-6 text-white">
             {/* Header */}
             <div className="flex items-center gap-3 mb-auto">
               <div className="w-10 h-10 rounded-xl flex items-center justify-center"
@@ -188,11 +204,11 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
             </div>
 
             {/* Main Achievement */}
-            <div className={`text-center ${format === 'story' ? 'my-auto' : 'my-6'}`}>
-              <div className={`${format === 'story' ? 'text-8xl mb-6' : 'text-6xl mb-4'}`}>
+            <div className="text-center my-6">
+              <div className="text-6xl mb-4">
                 {achievement.emoji}
               </div>
-              <h2 className={`font-black ${format === 'story' ? 'text-4xl' : 'text-3xl'} mb-2`}
+              <h2 className="font-black text-3xl mb-2"
                 style={{
                   background: 'linear-gradient(135deg, #4ade80, #22d3ee, #a78bfa)',
                   WebkitBackgroundClip: 'text',
@@ -204,7 +220,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
             </div>
 
             {/* Stats Grid */}
-            <div className={`grid grid-cols-2 gap-3 ${format === 'story' ? 'mb-auto' : ''}`}>
+            <div className="grid grid-cols-2 gap-3">
               {/* Streak */}
               <div className="bg-white/5 backdrop-blur rounded-2xl p-4 border border-white/10">
                 <div className="text-3xl font-black mb-1"
@@ -267,29 +283,58 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
             </div>
 
             {/* Footer */}
-            <div className={`text-center ${format === 'story' ? 'mt-auto' : 'mt-4'}`}>
+            <div className="text-center mt-4">
               <p className="text-xs text-white/40">zenflow.app</p>
             </div>
           </div>
         </div>
 
+        {/* Error Message */}
+        {shareError && (
+          <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-center animate-fade-in">
+            <p className="text-red-400 text-sm">{shareError}</p>
+            <button
+              onClick={() => setShareError(null)}
+              className="mt-2 text-xs text-red-300 underline"
+            >
+              {t.dismiss}
+            </button>
+          </div>
+        )}
+
         {/* Action Buttons */}
         <div className="flex gap-3 mt-4">
           <button
-            onClick={handleShare}
+            onClick={() => {
+              setShareError(null);
+              handleShare();
+            }}
             disabled={downloading}
             className="flex-1 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
             style={{ background: 'linear-gradient(135deg, #4ade80, #22d3ee)' }}
           >
-            <Share2 className="w-5 h-5" />
-            {t.shareButton || 'Share'}
+            {downloading ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                {t.generating || 'Generating...'}
+              </>
+            ) : (
+              <>
+                <Share2 className="w-5 h-5" />
+                {t.shareButton || 'Share'}
+              </>
+            )}
           </button>
           <button
             onClick={() => downloadImage()}
             disabled={downloading}
             className="py-4 px-6 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
           >
-            <Download className="w-5 h-5" />
+            {downloading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Download className="w-5 h-5" />
+            )}
           </button>
         </div>
       </div>

@@ -7,6 +7,8 @@ import { useState, useEffect } from 'react';
 import { Gift, Sparkles, Check, Lock, Zap, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { safeJsonParse } from '@/lib/safeJson';
+import { safeParseInt } from '@/lib/validation';
 import {
   getDailyLoginRewards,
   getLoginStreakBonus,
@@ -38,17 +40,13 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
     const yesterday = new Date(Date.now() - 86400000).toDateString();
 
     if (savedLogin) {
-      try {
-        const data = JSON.parse(savedLogin);
-        setRewards(data.rewards || getDailyLoginRewards());
-        setCurrentDay(data.currentDay || 1);
-      } catch {
-        // Use defaults
-      }
+      const data = safeJsonParse<{ rewards?: DailyLoginReward[]; currentDay?: number }>(savedLogin, {});
+      setRewards(data.rewards || getDailyLoginRewards());
+      setCurrentDay(data.currentDay || 1);
     }
 
     if (savedStreak) {
-      setLoginStreak(parseInt(savedStreak) || 0);
+      setLoginStreak(safeParseInt(savedStreak, 0, 0, 1000));
     }
 
     // Check if can claim today
@@ -58,7 +56,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
       // Check if streak continues or resets
       if (lastLogin === yesterday) {
         // Continue streak
-        const newStreak = (parseInt(savedStreak || '0') || 0) + 1;
+        const newStreak = safeParseInt(savedStreak, 0, 0, 1000) + 1;
         setLoginStreak(newStreak);
         localStorage.setItem(ADHD_STORAGE_KEYS.LOGIN_STREAK, String(newStreak));
       } else if (lastLogin && lastLogin !== today) {
@@ -107,7 +105,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
   const bonusXp = getLoginStreakBonus(loginStreak);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
       {/* Confetti Effect */}
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">

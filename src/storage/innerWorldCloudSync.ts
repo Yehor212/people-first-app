@@ -1,6 +1,7 @@
 // Inner World Cloud Synchronization with Supabase
 
 import { logger } from '@/lib/logger';
+import { safeLocalStorageSet } from '@/lib/safeJson';
 import { supabase } from '@/lib/supabaseClient';
 import { InnerWorld } from '@/types';
 
@@ -64,7 +65,12 @@ export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
       return null;
     }
 
-    return data?.world_data as InnerWorld || null;
+    // Validate the data before returning
+    const worldData = data?.world_data;
+    if (worldData && typeof worldData === 'object' && typeof (worldData as InnerWorld).treatsBalance === 'number') {
+      return worldData as InnerWorld;
+    }
+    return null;
   } catch (err) {
     logger.error('[InnerWorld] Pull error:', err);
     return null;
@@ -98,8 +104,8 @@ export async function syncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld
 
     const winner = cloudScore > localScore ? cloudWorld : localWorld;
 
-    // Save merged state
-    localStorage.setItem(INNER_WORLD_STORAGE_KEY, JSON.stringify(winner));
+    // Save merged state (use safe wrapper for Safari Private Mode)
+    safeLocalStorageSet(INNER_WORLD_STORAGE_KEY, winner);
     await pushInnerWorldToCloud(winner);
 
     return winner;
@@ -130,8 +136,13 @@ export function subscribeToInnerWorldUpdates(
         filter: `user_id=eq.${userId}`,
       },
       (payload) => {
-        if (payload.new && (payload.new as any).world_data) {
-          callback((payload.new as any).world_data as InnerWorld);
+        const newData = payload.new as Record<string, unknown> | null;
+        if (newData && typeof newData.world_data === 'object' && newData.world_data !== null) {
+          const worldData = newData.world_data as InnerWorld;
+          // Basic validation: check required properties exist
+          if (worldData && typeof worldData.treatsBalance === 'number') {
+            callback(worldData);
+          }
         }
       }
     )
@@ -139,5 +150,6 @@ export function subscribeToInnerWorldUpdates(
 
   return () => {
     channel.unsubscribe();
+    supabase.removeChannel(channel);
   };
 }

@@ -8,7 +8,7 @@ export interface XpEvent {
   amount: number;
   x: number;
   y: number;
-  type: 'mood' | 'habit' | 'focus' | 'gratitude' | 'breathing' | 'streak' | 'bonus';
+  type: 'mood' | 'habit' | 'focus' | 'gratitude' | 'breathing' | 'streak' | 'bonus' | 'mindful';
   message?: string;
 }
 
@@ -20,6 +20,7 @@ function getXpConfig(type: XpEvent['type']) {
     case 'focus': return { icon: Zap, color: 'text-blue-400', glow: 'blue' };
     case 'gratitude': return { icon: Heart, color: 'text-pink-400', glow: 'pink' };
     case 'breathing': return { icon: Wind, color: 'text-cyan-400', glow: 'cyan' };
+    case 'mindful': return { icon: Wind, color: 'text-teal-400', glow: 'teal' };
     case 'streak': return { icon: Flame, color: 'text-orange-400', glow: 'orange' };
     case 'bonus': return { icon: Sparkles, color: 'text-amber-400', glow: 'amber' };
     default: return { icon: Sparkles, color: 'text-purple-400', glow: 'purple' };

@@ -2,6 +2,8 @@ import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
 import { Challenge, Badge } from '@/types';
 import { getChallenges, saveChallenges, getBadges, saveBadges } from '@/lib/challengeStorage';
+import { syncOrchestrator } from '@/lib/syncOrchestrator';
+import { triggerDataRefresh } from '@/hooks/useIndexedDB';
 
 // Supabase types
 interface SupabaseChallenge {
@@ -115,71 +117,87 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
   challenges: Challenge[];
   error?: string;
 }> {
-  try {
-    // 1. Get local challenges
-    const localChallenges = getChallenges();
+  // Use orchestrator for queue-based sync
+  let result: { challenges: Challenge[]; error?: string } = {
+    challenges: getChallenges(),
+  };
 
-    // 2. Pull from cloud
-    const { data: cloudChallenges, error: fetchError } = await supabase
-      .from('user_challenges')
-      .select('*')
-      .eq('user_id', userId);
+  await syncOrchestrator.sync('challenges', async () => {
+    try {
+      // 1. Get local challenges
+      const localChallenges = getChallenges();
 
-    if (fetchError) {
-      logger.error('Failed to fetch challenges from cloud:', fetchError);
-      return { challenges: localChallenges, error: fetchError.message };
-    }
-
-    // 3. Merge logic: cloud wins for conflicts (latest updated_at)
-    const cloudMap = new Map<string, SupabaseChallenge>();
-    (cloudChallenges || []).forEach(cc => {
-      cloudMap.set(cc.challenge_id, cc);
-    });
-
-    const localMap = new Map<string, Challenge>();
-    localChallenges.forEach(lc => {
-      localMap.set(lc.id, lc);
-    });
-
-    // Merged challenges
-    const merged: Challenge[] = [];
-    const toUpsert: Partial<SupabaseChallenge>[] = [];
-
-    // Process cloud challenges
-    cloudMap.forEach((cloudChallenge, challengeId) => {
-      merged.push(supabaseToChallengeLocal(cloudChallenge));
-    });
-
-    // Process local-only challenges (need to push to cloud)
-    localMap.forEach((localChallenge, challengeId) => {
-      if (!cloudMap.has(challengeId)) {
-        merged.push(localChallenge);
-        toUpsert.push(challengeToSupabase(localChallenge, userId));
-      }
-    });
-
-    // 4. Push local-only challenges to cloud
-    if (toUpsert.length > 0) {
-      const { error: upsertError } = await supabase
+      // 2. Pull from cloud
+      const { data: cloudChallenges, error: fetchError } = await supabase
         .from('user_challenges')
-        .upsert(toUpsert, { onConflict: 'user_id,challenge_id' });
+        .select('*')
+        .eq('user_id', userId);
 
-      if (upsertError) {
-        logger.error('Failed to push challenges to cloud:', upsertError);
+      if (fetchError) {
+        logger.error('Failed to fetch challenges from cloud:', fetchError);
+        result = { challenges: localChallenges, error: fetchError.message };
+        throw new Error(fetchError.message);
       }
+
+      // 3. Merge logic: cloud wins for conflicts (latest updated_at)
+      const cloudMap = new Map<string, SupabaseChallenge>();
+      (cloudChallenges || []).forEach(cc => {
+        cloudMap.set(cc.challenge_id, cc);
+      });
+
+      const localMap = new Map<string, Challenge>();
+      localChallenges.forEach(lc => {
+        localMap.set(lc.id, lc);
+      });
+
+      // Merged challenges
+      const merged: Challenge[] = [];
+      const toUpsert: Partial<SupabaseChallenge>[] = [];
+
+      // Process cloud challenges
+      cloudMap.forEach((cloudChallenge, challengeId) => {
+        merged.push(supabaseToChallengeLocal(cloudChallenge));
+      });
+
+      // Process local-only challenges (need to push to cloud)
+      localMap.forEach((localChallenge, challengeId) => {
+        if (!cloudMap.has(challengeId)) {
+          merged.push(localChallenge);
+          toUpsert.push(challengeToSupabase(localChallenge, userId));
+        }
+      });
+
+      // 4. Push local-only challenges to cloud
+      if (toUpsert.length > 0) {
+        const { error: upsertError } = await supabase
+          .from('user_challenges')
+          .upsert(toUpsert, { onConflict: 'user_id,challenge_id' });
+
+        if (upsertError) {
+          logger.error('Failed to push challenges to cloud:', upsertError);
+          throw new Error(upsertError.message);
+        }
+      }
+
+      // 5. Save merged challenges locally
+      saveChallenges(merged);
+
+      // Trigger React state refresh so UI updates
+      triggerDataRefresh();
+      logger.log('[ChallengesSync] Data refresh triggered after merge');
+
+      result = { challenges: merged };
+    } catch (error) {
+      logger.error('Sync challenges error:', error);
+      result = {
+        challenges: getChallenges(),
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+      throw error;
     }
+  }, { priority: 6, maxRetries: 3 });
 
-    // 5. Save merged challenges locally
-    saveChallenges(merged);
-
-    return { challenges: merged };
-  } catch (error) {
-    logger.error('Sync challenges error:', error);
-    return {
-      challenges: getChallenges(),
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
+  return result;
 }
 
 // Push single challenge update to cloud
@@ -208,75 +226,91 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
   badges: Badge[];
   error?: string;
 }> {
-  try {
-    // 1. Get local badges
-    const localBadges = getBadges();
+  // Use orchestrator for queue-based sync
+  let result: { badges: Badge[]; error?: string } = {
+    badges: getBadges(),
+  };
 
-    // 2. Pull from cloud
-    const { data: cloudBadges, error: fetchError } = await supabase
-      .from('user_badges')
-      .select('*')
-      .eq('user_id', userId);
+  await syncOrchestrator.sync('badges', async () => {
+    try {
+      // 1. Get local badges
+      const localBadges = getBadges();
 
-    if (fetchError) {
-      logger.error('Failed to fetch badges from cloud:', fetchError);
-      return { badges: localBadges, error: fetchError.message };
-    }
+      // 2. Pull from cloud
+      const { data: cloudBadges, error: fetchError } = await supabase
+        .from('user_badges')
+        .select('*')
+        .eq('user_id', userId);
 
-    // 3. Merge logic: cloud wins for unlocked status
-    const cloudMap = new Map<string, SupabaseBadge>();
-    (cloudBadges || []).forEach(cb => {
-      cloudMap.set(cb.badge_id, cb);
-    });
+      if (fetchError) {
+        logger.error('Failed to fetch badges from cloud:', fetchError);
+        result = { badges: localBadges, error: fetchError.message };
+        throw new Error(fetchError.message);
+      }
 
-    const localMap = new Map<string, Badge>();
-    localBadges.forEach(lb => {
-      localMap.set(lb.id, lb);
-    });
+      // 3. Merge logic: cloud wins for unlocked status
+      const cloudMap = new Map<string, SupabaseBadge>();
+      (cloudBadges || []).forEach(cb => {
+        cloudMap.set(cb.badge_id, cb);
+      });
 
-    // Merged badges
-    const merged: Badge[] = [];
-    const toUpsert: Partial<SupabaseBadge>[] = [];
+      const localMap = new Map<string, Badge>();
+      localBadges.forEach(lb => {
+        localMap.set(lb.id, lb);
+      });
 
-    // Process all local badges
-    localMap.forEach((localBadge, badgeId) => {
-      const cloudBadge = cloudMap.get(badgeId);
+      // Merged badges
+      const merged: Badge[] = [];
+      const toUpsert: Partial<SupabaseBadge>[] = [];
 
-      if (cloudBadge) {
-        // Cloud exists: use cloud unlock status
-        merged.push(supabaseToBadgeLocal(cloudBadge));
-      } else {
-        // Local only: keep local
-        merged.push(localBadge);
-        if (localBadge.unlocked) {
-          // If unlocked locally, push to cloud
-          toUpsert.push(badgeToSupabase(localBadge, userId));
+      // Process all local badges
+      localMap.forEach((localBadge, badgeId) => {
+        const cloudBadge = cloudMap.get(badgeId);
+
+        if (cloudBadge) {
+          // Cloud exists: use cloud unlock status
+          merged.push(supabaseToBadgeLocal(cloudBadge));
+        } else {
+          // Local only: keep local
+          merged.push(localBadge);
+          if (localBadge.unlocked) {
+            // If unlocked locally, push to cloud
+            toUpsert.push(badgeToSupabase(localBadge, userId));
+          }
+        }
+      });
+
+      // 4. Push local-only unlocked badges to cloud
+      if (toUpsert.length > 0) {
+        const { error: upsertError } = await supabase
+          .from('user_badges')
+          .upsert(toUpsert, { onConflict: 'user_id,badge_id' });
+
+        if (upsertError) {
+          logger.error('Failed to push badges to cloud:', upsertError);
+          throw new Error(upsertError.message);
         }
       }
-    });
 
-    // 4. Push local-only unlocked badges to cloud
-    if (toUpsert.length > 0) {
-      const { error: upsertError } = await supabase
-        .from('user_badges')
-        .upsert(toUpsert, { onConflict: 'user_id,badge_id' });
+      // 5. Save merged badges locally
+      saveBadges(merged);
 
-      if (upsertError) {
-        logger.error('Failed to push badges to cloud:', upsertError);
-      }
+      // Trigger React state refresh so UI updates
+      triggerDataRefresh();
+      logger.log('[BadgesSync] Data refresh triggered after merge');
+
+      result = { badges: merged };
+    } catch (error) {
+      logger.error('Sync badges error:', error);
+      result = {
+        badges: getBadges(),
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+      throw error;
     }
+  }, { priority: 6, maxRetries: 3 });
 
-    // 5. Save merged badges locally
-    saveBadges(merged);
-
-    return { badges: merged };
-  } catch (error) {
-    logger.error('Sync badges error:', error);
-    return {
-      badges: getBadges(),
-      error: error instanceof Error ? error.message : 'Unknown error'
-    };
-  }
+  return result;
 }
 
 // Push badge unlock to cloud
@@ -304,9 +338,9 @@ export async function pushBadgeUnlock(userId: string, badge: Badge): Promise<boo
 export function subscribeToChallengeUpdates(
   userId: string,
   onUpdate: (challenge: Challenge) => void
-) {
-  const subscription = supabase
-    .channel('user_challenges')
+): () => void {
+  const channel = supabase
+    .channel(`user_challenges-${userId}`)
     .on(
       'postgres_changes',
       {
@@ -324,16 +358,20 @@ export function subscribeToChallengeUpdates(
     )
     .subscribe();
 
-  return subscription;
+  // Return cleanup function
+  return () => {
+    channel.unsubscribe();
+    supabase.removeChannel(channel);
+  };
 }
 
 // Subscribe to real-time badge updates
 export function subscribeToBadgeUpdates(
   userId: string,
   onUpdate: (badge: Badge) => void
-) {
-  const subscription = supabase
-    .channel('user_badges')
+): () => void {
+  const channel = supabase
+    .channel(`user_badges-${userId}`)
     .on(
       'postgres_changes',
       {
@@ -351,7 +389,11 @@ export function subscribeToBadgeUpdates(
     )
     .subscribe();
 
-  return subscription;
+  // Return cleanup function
+  return () => {
+    channel.unsubscribe();
+    supabase.removeChannel(channel);
+  };
 }
 
 // Initialize badges in cloud for new users

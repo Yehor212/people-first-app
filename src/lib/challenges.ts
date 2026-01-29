@@ -1,5 +1,6 @@
 import { Challenge, ChallengeType } from '@/types';
 import { formatDate } from './utils';
+import { generateSecureId } from './validation';
 
 export const challengeTemplates: Omit<Challenge, 'id' | 'progress' | 'startDate' | 'completed'>[] = [
   // Streak Challenges
@@ -217,7 +218,7 @@ export function createChallengeFromTemplate(
   const template = challengeTemplates[templateIndex];
   return {
     ...template,
-    id: `challenge_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    id: generateSecureId('challenge'),
     progress: 0,
     startDate: formatDate(new Date()),
     completed: false,

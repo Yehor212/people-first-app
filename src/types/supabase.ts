@@ -224,18 +224,16 @@ export interface Database {
       user_settings: {
         Row: {
           user_id: string;
-          key: string;
-          value: unknown;
+          weekly_digest_enabled: boolean;
           updated_at: string;
         };
         Insert: {
           user_id: string;
-          key: string;
-          value?: unknown;
+          weekly_digest_enabled?: boolean;
           updated_at?: string;
         };
         Update: {
-          value?: unknown;
+          weekly_digest_enabled?: boolean;
           updated_at?: string;
         };
       };
@@ -595,6 +593,27 @@ export interface Database {
           world_data?: unknown;
           updated_at?: string;
         };
+      };
+      feedback: {
+        Row: {
+          id: string;
+          category: 'bug' | 'feature' | 'other';
+          message: string;
+          email: string | null;
+          device_info: unknown;
+          app_version: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          category: 'bug' | 'feature' | 'other';
+          message: string;
+          email?: string | null;
+          device_info?: unknown;
+          app_version?: string;
+          created_at?: string;
+        };
+        Update: never;
       };
     };
     Functions: {

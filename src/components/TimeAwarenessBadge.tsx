@@ -9,6 +9,7 @@ import { Clock, Sunset, Coffee, Moon, Sun, Calendar } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn, formatDate } from '@/lib/utils';
 import { ScheduleEvent } from '@/types';
+import { getLocale } from '@/lib/timeUtils';
 
 interface TimeAwarenessBadgeProps {
   scheduleEvents?: ScheduleEvent[];
@@ -50,7 +51,7 @@ export function TimeAwarenessBadge({
   workdayEnd = { hour: 18, minute: 0 },
   onClick,
 }: TimeAwarenessBadgeProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [currentTime, setCurrentTime] = useState(new Date());
 
   // Update every minute
@@ -137,7 +138,7 @@ export function TimeAwarenessBadge({
 
     return {
       primary: periodLabels[timeContext.period],
-      secondary: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      secondary: now.toLocaleTimeString(getLocale(language), { hour: '2-digit', minute: '2-digit' }),
       urgent: false,
     };
   };

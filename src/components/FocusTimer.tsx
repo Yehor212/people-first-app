@@ -1,9 +1,11 @@
-﻿import { useMemo, useState, useEffect, useRef } from 'react';
+﻿import { useMemo, useState, useEffect, useRef, memo } from 'react';
 import { logger } from '@/lib/logger';
 import { FocusSession } from '@/types';
 import { formatTime, getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
-import { Play, Pause, RotateCcw, Coffee, Zap } from 'lucide-react';
+import { safeJsonParse } from '@/lib/safeJson';
+import { safeParseInt } from '@/lib/validation';
+import { Play, Pause, RotateCcw, Coffee, Zap, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { HyperfocusMode } from './HyperfocusMode';
 import { haptics } from '@/lib/haptics';
@@ -24,6 +26,15 @@ interface TimerState {
   preset: '25' | '50' | 'custom';
 }
 
+// Load timer state from localStorage - outside component to avoid recreation on every render
+function loadTimerState(): TimerState | null {
+  const stored = localStorage.getItem(TIMER_STORAGE_KEY);
+  if (stored) {
+    return safeJsonParse<TimerState | null>(stored, null);
+  }
+  return null;
+}
+
 interface FocusTimerProps {
   sessions: FocusSession[];
   onCompleteSession: (session: FocusSession) => void;
@@ -31,30 +42,30 @@ interface FocusTimerProps {
   isPrimaryCTA?: boolean;
 }
 
-export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrimaryCTA = false }: FocusTimerProps) {
+export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrimaryCTA = false }: FocusTimerProps) {
   const { t } = useLanguage();
 
   // Hyperfocus Mode state
   const [showHyperfocus, setShowHyperfocus] = useState(false);
 
-  // Load persisted state
-  const loadTimerState = (): TimerState | null => {
-    try {
-      const stored = localStorage.getItem(TIMER_STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (e) {
-      logger.error('Failed to load timer state:', e);
-    }
-    return null;
-  };
-
-  const savedState = loadTimerState();
+  // Load persisted state once on mount
+  const savedStateRef = useRef<TimerState | null>(null);
+  if (savedStateRef.current === null) {
+    savedStateRef.current = loadTimerState();
+  }
+  const savedState = savedStateRef.current;
 
   const [preset, setPreset] = useState<'25' | '50' | 'custom'>(savedState?.preset || '25');
   const [focusMinutes, setFocusMinutes] = useState(savedState?.focusMinutes || DEFAULT_FOCUS_MINUTES);
   const [breakMinutes, setBreakMinutes] = useState(savedState?.breakMinutes || DEFAULT_BREAK_MINUTES);
+
+  // Bug fix: Store custom values separately to restore when switching back to 'custom'
+  const [savedCustomFocus, setSavedCustomFocus] = useState(savedState?.focusMinutes || 30);
+  const [savedCustomBreak, setSavedCustomBreak] = useState(savedState?.breakMinutes || 5);
+
+  // Bug fix: Use string state for inputs to allow free typing, validate on blur
+  const [focusInputValue, setFocusInputValue] = useState(String(focusMinutes));
+  const [breakInputValue, setBreakInputValue] = useState(String(breakMinutes));
   const [timeLeft, setTimeLeft] = useState(DEFAULT_FOCUS_MINUTES * 60);
   const [isRunning, setIsRunning] = useState(savedState?.isRunning || false);
   const [isBreak, setIsBreak] = useState(savedState?.isBreak || false);
@@ -64,6 +75,8 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
   const [reflectionValue, setReflectionValue] = useState<number | null>(null);
   const [pendingSession, setPendingSession] = useState<FocusSession | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalTickRef = useRef<number>(0);
   const endTimeRef = useRef<number | null>(savedState?.endTime || null);
   const focusStartRef = useRef<number | null>(savedState?.focusStartTime || null);
   const focusAccumulatedRef = useRef(savedState?.focusAccumulated || 0);
@@ -119,9 +132,22 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
     prevFocusDurationRef.current = focusDuration;
   }, [focusDuration, isRunning, isBreak]);
 
-  // Save state whenever it changes
+  // Save state whenever it changes (debounced to prevent race conditions with interval saves)
   useEffect(() => {
-    saveTimerState();
+    // Clear any pending save
+    if (saveDebounceRef.current) {
+      clearTimeout(saveDebounceRef.current);
+    }
+    // Debounce save by 100ms to avoid conflicts with interval saves
+    saveDebounceRef.current = setTimeout(() => {
+      saveTimerState();
+    }, 100);
+
+    return () => {
+      if (saveDebounceRef.current) {
+        clearTimeout(saveDebounceRef.current);
+      }
+    };
   }, [isRunning, isBreak, focusMinutes, breakMinutes, label, preset]);
 
   // Restore state on mount
@@ -209,7 +235,12 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
         localStorage.removeItem(TIMER_STORAGE_KEY);
       }
 
-      saveTimerState();
+      // Save state every 10 ticks (5 seconds) to reduce localStorage writes and prevent race conditions
+      intervalTickRef.current++;
+      if (intervalTickRef.current >= 10) {
+        intervalTickRef.current = 0;
+        saveTimerState();
+      }
     }, 500);
 
     return () => {
@@ -275,13 +306,29 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
   };
 
   const handlePresetSelect = (key: '25' | '50' | 'custom') => {
+    // Save current custom values before switching away from custom
+    if (preset === 'custom' && key !== 'custom') {
+      setSavedCustomFocus(focusMinutes);
+      setSavedCustomBreak(breakMinutes);
+    }
+
     setPreset(key);
     if (key === '25') {
       setFocusMinutes(25);
       setBreakMinutes(5);
+      setFocusInputValue('25');
+      setBreakInputValue('5');
     } else if (key === '50') {
       setFocusMinutes(50);
       setBreakMinutes(10);
+      setFocusInputValue('50');
+      setBreakInputValue('10');
+    } else if (key === 'custom') {
+      // Restore saved custom values
+      setFocusMinutes(savedCustomFocus);
+      setBreakMinutes(savedCustomBreak);
+      setFocusInputValue(String(savedCustomFocus));
+      setBreakInputValue(String(savedCustomBreak));
     }
   };
 
@@ -307,7 +354,7 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
     )}>
       {/* Animated background glow for CTA */}
       {isPrimaryCTA && (
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-500/5 via-transparent to-purple-500/5 animate-pulse" />
+        <div className="absolute inset-0 bg-gradient-to-r from-violet-500/5 via-transparent to-purple-500/5 animate-pulse pointer-events-none" />
       )}
 
       {/* Primary CTA Header */}
@@ -353,8 +400,14 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
                 type="number"
                 min={5}
                 max={120}
-                value={focusMinutes}
-                onChange={(e) => setFocusMinutes(Math.max(5, Math.min(120, Number(e.target.value) || 5)))}
+                value={focusInputValue}
+                onChange={(e) => setFocusInputValue(e.target.value)}
+                onBlur={(e) => {
+                  const validated = safeParseInt(e.target.value, 25, 5, 120);
+                  setFocusMinutes(validated);
+                  setSavedCustomFocus(validated);
+                  setFocusInputValue(String(validated));
+                }}
                 className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
@@ -364,8 +417,14 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
                 type="number"
                 min={1}
                 max={60}
-                value={breakMinutes}
-                onChange={(e) => setBreakMinutes(Math.max(1, Math.min(60, Number(e.target.value) || 1)))}
+                value={breakInputValue}
+                onChange={(e) => setBreakInputValue(e.target.value)}
+                onBlur={(e) => {
+                  const validated = safeParseInt(e.target.value, 5, 1, 60);
+                  setBreakMinutes(validated);
+                  setSavedCustomBreak(validated);
+                  setBreakInputValue(String(validated));
+                }}
                 className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
             </div>
@@ -406,14 +465,22 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
           />
         </svg>
         
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <span className={cn(
-            "text-4xl font-bold",
-            isBreak ? "text-accent" : "text-primary"
-          )}>
+        <div
+          role="timer"
+          aria-label={isBreak ? (t.takeRest || 'Break time') : (t.concentrate || 'Focus time')}
+          className="absolute inset-0 flex flex-col items-center justify-center"
+        >
+          <span
+            aria-live="polite"
+            aria-atomic="true"
+            className={cn(
+              "text-4xl font-bold",
+              isBreak ? "text-accent" : "text-primary"
+            )}
+          >
             {formatTime(timeLeft)}
           </span>
-          <span className="text-sm text-muted-foreground mt-1">
+          <span className="text-sm text-muted-foreground mt-1" aria-hidden="true">
             {isBreak ? t.takeRest : t.concentrate}
           </span>
         </div>
@@ -422,19 +489,22 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
       <div className="flex justify-center gap-4 mb-4">
         <button
           onClick={toggleTimer}
+          aria-label={isRunning ? (t.pause || 'Pause timer') : (t.start || 'Start timer')}
           className={cn(
-            "p-4 rounded-full transition-all zen-shadow-soft",
+            "p-4 min-w-[56px] min-h-[56px] rounded-full transition-all zen-shadow-soft active:scale-95",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             isBreak ? "zen-gradient-warm" : "zen-gradient",
             "text-primary-foreground hover:opacity-90"
           )}
         >
-          {isRunning ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+          {isRunning ? <Pause className="w-6 h-6" aria-hidden="true" /> : <Play className="w-6 h-6" aria-hidden="true" />}
         </button>
         <button
           onClick={resetTimer}
-          className="p-4 rounded-full bg-secondary text-secondary-foreground hover:bg-muted transition-colors"
+          aria-label={t.resetTimer}
+          className="p-4 min-w-[56px] min-h-[56px] rounded-full bg-secondary text-secondary-foreground hover:bg-muted transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
-          <RotateCcw className="w-6 h-6" />
+          <RotateCcw className="w-6 h-6" aria-hidden="true" />
         </button>
       </div>
 
@@ -443,7 +513,7 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
         onClick={() => setShowHyperfocus(true)}
         disabled={isRunning}
         className={cn(
-          "w-full py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2",
+          "w-full py-3 min-h-[48px] rounded-xl font-medium transition-all flex items-center justify-center gap-2 active:scale-[0.98]",
           isRunning
             ? "bg-muted text-muted-foreground cursor-not-allowed"
             : "zen-gradient-calm text-primary-foreground hover:opacity-90 zen-shadow"
@@ -454,9 +524,25 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
       </button>
 
       {showReflection && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-50">
-          <div className="w-full max-w-sm bg-card rounded-2xl p-6 zen-shadow-card">
-            <h4 className="text-lg font-semibold text-foreground">{t.focusReflectionTitle}</h4>
+        <div
+          className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-[60]"
+          onClick={(e) => {
+            // Close on backdrop click
+            if (e.target === e.currentTarget) {
+              handleSaveReflection(null);
+            }
+          }}
+        >
+          <div className="w-full max-w-sm bg-card rounded-2xl p-6 zen-shadow-card relative">
+            {/* Close button */}
+            <button
+              onClick={() => handleSaveReflection(null)}
+              className="absolute top-3 right-3 p-2 rounded-lg bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+              aria-label={t.close}
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <h4 className="text-lg font-semibold text-foreground pr-10">{t.focusReflectionTitle}</h4>
             <p className="text-sm text-muted-foreground mt-1">{t.focusReflectionQuestion}</p>
             <div className="flex justify-between mt-4">
               {[1, 2, 3, 4, 5].map((value) => (
@@ -514,4 +600,4 @@ export function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrim
       )}
     </div>
   );
-}
+});

@@ -6,6 +6,7 @@
 
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType } from '@/types';
 import { getToday, formatDate } from './utils';
+import { safeParseInt } from '@/lib/validation';
 
 // Mood scores for analysis
 const MOOD_SCORES: Record<MoodType, number> = {
@@ -21,8 +22,11 @@ export interface MoodInsight {
   id: string;
   type: 'pattern' | 'correlation' | 'tip' | 'achievement' | 'warning';
   icon: string;
-  title: string;
-  description: string;
+  titleKey: string;       // Translation key for title
+  descriptionKey: string; // Translation key for description
+  params?: Record<string, string | number>; // Interpolation parameters
+  title: string;          // Fallback English title
+  description: string;    // Fallback English description
   priority: number; // Higher = more important
   data?: Record<string, unknown>;
 }
@@ -84,11 +88,11 @@ function analyzeBestMoodDay(moods: MoodEntry[]): MoodInsight | null {
       const avg = average(scores);
       if (avg > bestAvg) {
         bestAvg = avg;
-        bestDay = parseInt(day);
+        bestDay = safeParseInt(day, 0, 0, 6);
       }
       if (avg < worstAvg) {
         worstAvg = avg;
-        worstDay = parseInt(day);
+        worstDay = safeParseInt(day, 0, 0, 6);
       }
     }
   });
@@ -99,6 +103,9 @@ function analyzeBestMoodDay(moods: MoodEntry[]): MoodInsight | null {
     id: 'best-mood-day',
     type: 'pattern',
     icon: DAY_EMOJIS[bestDay],
+    titleKey: 'insightBestDayTitle',
+    descriptionKey: 'insightBestDayDesc',
+    params: { day: DAY_NAMES[bestDay] },
     title: `${DAY_NAMES[bestDay]}s are your best!`,
     description: `Your mood tends to be highest on ${DAY_NAMES[bestDay]}s. Consider scheduling important tasks then.`,
     priority: 8,
@@ -150,6 +157,9 @@ function analyzeMoodByTimeOfDay(moods: MoodEntry[]): MoodInsight | null {
     id: 'best-time-of-day',
     type: 'pattern',
     icon: periodEmojis[bestPeriod as keyof typeof periodEmojis],
+    titleKey: 'insightBestTimeTitle',
+    descriptionKey: 'insightBestTimeDesc',
+    params: { period: bestPeriod },
     title: `You shine brightest in the ${bestPeriod}`,
     description: `Your mood is typically better during ${bestPeriod} hours. Schedule demanding tasks then!`,
     priority: 7,
@@ -207,6 +217,9 @@ function analyzeHabitMoodCorrelation(
     id: 'habit-mood-correlation',
     type: 'correlation',
     icon: bestHabit.icon,
+    titleKey: 'insightHabitBoostsTitle',
+    descriptionKey: 'insightHabitBoostsDesc',
+    params: { habit: bestHabit.name, percent: Math.round(bestCorrelation * 20) },
     title: `${bestHabit.name} boosts your mood!`,
     description: `When you complete "${bestHabit.name}", your mood tends to be ${Math.round(bestCorrelation * 20)}% better. Keep it up!`,
     priority: 9,
@@ -260,6 +273,9 @@ function analyzeFocusMoodCorrelation(
     id: 'focus-mood-correlation',
     type: 'correlation',
     icon: '🎯',
+    titleKey: 'insightFocusMoodTitle',
+    descriptionKey: 'insightFocusMoodDesc',
+    params: { percent: Math.round(diff * 20) },
     title: 'Focus time = Better mood!',
     description: `On days you do focus sessions, your mood is ${Math.round(diff * 20)}% better. Deep work pays off!`,
     priority: 8,
@@ -313,6 +329,9 @@ function analyzeGratitudeMoodCorrelation(
     id: 'gratitude-mood-correlation',
     type: 'correlation',
     icon: '🙏',
+    titleKey: 'insightGratitudeMoodTitle',
+    descriptionKey: 'insightGratitudeMoodDesc',
+    params: { percent: Math.round(diff * 20) },
     title: 'Gratitude lifts your mood!',
     description: `Days with gratitude entries show ${Math.round(diff * 20)}% better mood. Keep practicing gratitude!`,
     priority: 7,
@@ -363,6 +382,9 @@ function analyzeMoodTrend(moods: MoodEntry[]): MoodInsight | null {
       id: 'mood-trend-up',
       type: 'achievement',
       icon: '📈',
+      titleKey: 'insightMoodUpTitle',
+      descriptionKey: 'insightMoodUpDesc',
+      params: { percent: Math.round(change * 20) },
       title: 'Your mood is improving!',
       description: `Your average mood this week is ${Math.round(change * 20)}% better than last week. You're doing great!`,
       priority: 9,
@@ -373,6 +395,9 @@ function analyzeMoodTrend(moods: MoodEntry[]): MoodInsight | null {
       id: 'mood-trend-down',
       type: 'tip',
       icon: '💪',
+      titleKey: 'insightMoodDownTitle',
+      descriptionKey: 'insightMoodDownDesc',
+      params: {},
       title: 'Let\'s boost your mood!',
       description: `Your mood has dipped a bit. Try focusing on habits that usually make you feel good.`,
       priority: 10,
@@ -404,6 +429,9 @@ function analyzeConsistency(moods: MoodEntry[], habits: Habit[]): MoodInsight | 
       id: 'high-consistency',
       type: 'achievement',
       icon: '🌟',
+      titleKey: 'insightHighConsistencyTitle',
+      descriptionKey: 'insightHighConsistencyDesc',
+      params: { days: daysWithMood.size },
       title: 'Amazing consistency!',
       description: `You've logged your mood ${daysWithMood.size} of the last 14 days. This self-awareness is powerful!`,
       priority: 8,
@@ -416,6 +444,9 @@ function analyzeConsistency(moods: MoodEntry[], habits: Habit[]): MoodInsight | 
       id: 'low-consistency',
       type: 'tip',
       icon: '📱',
+      titleKey: 'insightLowConsistencyTitle',
+      descriptionKey: 'insightLowConsistencyDesc',
+      params: {},
       title: 'Build your logging habit',
       description: `Try logging your mood at the same time each day. Consistency helps you spot patterns!`,
       priority: 6,
@@ -428,6 +459,7 @@ function analyzeConsistency(moods: MoodEntry[], habits: Habit[]): MoodInsight | 
 
 /**
  * Main function: Generate all insights
+ * Limits analysis to last 90 days for performance
  */
 export function generateMoodInsights(
   moods: MoodEntry[],
@@ -435,17 +467,30 @@ export function generateMoodInsights(
   focusSessions: FocusSession[],
   gratitudeEntries: GratitudeEntry[]
 ): MoodInsight[] {
+  // Limit to last 90 days for performance with large datasets
+  const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
+  const recentMoods = moods.filter(m => m.timestamp >= ninetyDaysAgo);
+  const recentSessions = focusSessions.filter(s => s.completedAt >= ninetyDaysAgo);
+  const recentGratitude = gratitudeEntries.filter(g => g.timestamp >= ninetyDaysAgo);
+
+  // Filter habit completedDates to last 90 days
+  const cutoffDate = new Date(ninetyDaysAgo).toISOString().split('T')[0];
+  const recentHabits = habits.map(h => ({
+    ...h,
+    completedDates: (h.completedDates || []).filter(d => d >= cutoffDate)
+  }));
+
   const insights: MoodInsight[] = [];
 
   // Run all analysis functions
   const analyses = [
-    analyzeMoodTrend(moods),
-    analyzeHabitMoodCorrelation(moods, habits),
-    analyzeFocusMoodCorrelation(moods, focusSessions),
-    analyzeGratitudeMoodCorrelation(moods, gratitudeEntries),
-    analyzeBestMoodDay(moods),
-    analyzeMoodByTimeOfDay(moods),
-    analyzeConsistency(moods, habits),
+    analyzeMoodTrend(recentMoods),
+    analyzeHabitMoodCorrelation(recentMoods, recentHabits),
+    analyzeFocusMoodCorrelation(recentMoods, recentSessions),
+    analyzeGratitudeMoodCorrelation(recentMoods, recentGratitude),
+    analyzeBestMoodDay(recentMoods),
+    analyzeMoodByTimeOfDay(recentMoods),
+    analyzeConsistency(recentMoods, recentHabits),
   ];
 
   // Filter out nulls and add to insights

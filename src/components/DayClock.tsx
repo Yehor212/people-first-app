@@ -2,7 +2,14 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Language } from '@/i18n/translations';
 import { Zap, Flame, Star, Sparkles, Heart, Target, Brain, Trophy } from 'lucide-react';
+
+// Locale mapping for date/time formatting
+const localeMap: Record<Language, string> = {
+  ru: 'ru-RU', en: 'en-US', uk: 'uk-UA',
+  es: 'es-ES', de: 'de-DE', fr: 'fr-FR'
+};
 
 interface DayClockProps {
   moods: MoodEntry[];
@@ -100,7 +107,7 @@ export function DayClock({
   gratitudeEntries,
   onTimeBlockClick
 }: DayClockProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const today = getToday();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showCelebration, setShowCelebration] = useState(false);
@@ -180,9 +187,9 @@ export function DayClock({
     return Math.max(0, Math.min(100, (totalMinutes / maxMinutes) * 100));
   }, [currentHour, currentMinute]);
 
-  // Format time
+  // Format time with proper locale
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('ru-RU', {
+    return date.toLocaleTimeString(localeMap[language], {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false,
@@ -198,7 +205,7 @@ export function DayClock({
   };
 
   return (
-    <div className="bg-card rounded-3xl p-5 zen-shadow-card animate-fade-in overflow-hidden relative">
+    <div className="bg-card rounded-2xl p-3 sm:p-4 zen-shadow-card animate-fade-in overflow-hidden relative">
       {/* Celebration particles */}
       {showCelebration && (
         <div className="absolute inset-0 pointer-events-none z-20 flex items-center justify-center">
@@ -210,15 +217,15 @@ export function DayClock({
 
       {/* Background glow effect */}
       <div
-        className="absolute inset-0 opacity-20 rounded-3xl transition-all duration-1000"
+        className="absolute inset-0 opacity-20 rounded-2xl transition-all duration-1000"
         style={{
           background: `radial-gradient(circle at center, ${getEnergyColor()}40 0%, transparent 70%)`
         }}
       />
 
-      <div className="relative flex items-center gap-4">
-        {/* Circular Energy Meter */}
-        <div className="relative w-[200px] h-[200px] flex-shrink-0">
+      <div className="relative flex flex-col sm:flex-row items-center gap-3">
+        {/* Circular Energy Meter - Responsive size */}
+        <div className="relative w-[140px] h-[140px] sm:w-[160px] sm:h-[160px] flex-shrink-0">
           <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
             {/* Background ring */}
             <circle
@@ -289,7 +296,7 @@ export function DayClock({
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             {/* Mascot */}
             <div className={cn(
-              "text-5xl transition-all duration-300",
+              "text-3xl sm:text-4xl transition-all duration-300",
               energyLevel >= 80 && "animate-bounce-gentle",
               showCelebration && "scale-125"
             )}>
@@ -297,13 +304,13 @@ export function DayClock({
             </div>
 
             {/* Energy percentage */}
-            <div className="flex items-center gap-1 mt-1">
+            <div className="flex items-center gap-1 mt-0.5">
               <Zap className={cn(
-                "w-4 h-4 transition-colors",
+                "w-3 h-3 sm:w-4 sm:h-4 transition-colors",
                 energyLevel >= 60 ? "text-yellow-400" : "text-muted-foreground"
               )} />
               <span className={cn(
-                "text-lg font-bold",
+                "text-base sm:text-lg font-bold",
                 energyLevel >= 80 ? "text-green-400" :
                 energyLevel >= 60 ? "text-yellow-400" :
                 energyLevel >= 40 ? "text-orange-400" : "text-red-400"
@@ -313,14 +320,14 @@ export function DayClock({
             </div>
 
             {/* Current time */}
-            <span className="text-xs text-muted-foreground mt-1">
+            <span className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
               {formatTime(currentTime)}
             </span>
           </div>
         </div>
 
         {/* Activity checklist */}
-        <div className="flex-1 space-y-2.5">
+        <div className="flex-1 w-full sm:w-auto space-y-1.5 sm:space-y-2">
           {/* Mood */}
           <ActivityRow
             emoji="💜"
@@ -376,10 +383,10 @@ export function DayClock({
 
       {/* Bottom motivational message */}
       <div className={cn(
-        "mt-4 pt-3 border-t border-border/30 text-center transition-all duration-500",
-        energyLevel >= 80 && "bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-green-500/10 -mx-5 px-5 -mb-5 pb-4 rounded-b-3xl"
+        "mt-3 pt-2 border-t border-border/30 text-center transition-all duration-500",
+        energyLevel >= 80 && "bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-green-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4 -mb-3 sm:-mb-4 pb-3 rounded-b-2xl"
       )}>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           {energyLevel === 0 && (t.startYourDay || "Start your day! 🌅")}
           {energyLevel > 0 && energyLevel < 40 && (t.keepGoing || "Keep going! You're doing great 💪")}
           {energyLevel >= 40 && energyLevel < 80 && (t.almostThere || "Almost there! 🚀")}
@@ -391,7 +398,7 @@ export function DayClock({
   );
 }
 
-// Activity row component
+// Activity row component - compact version
 function ActivityRow({
   emoji,
   label,
@@ -409,14 +416,14 @@ function ActivityRow({
     <button
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-3 p-2.5 rounded-xl transition-all",
+        "w-full flex items-center gap-2 p-2 rounded-xl transition-all min-h-[44px]",
         completed
           ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 ring-1 ring-green-500/30"
           : "bg-secondary/50 hover:bg-secondary/80 hover:scale-[1.02]"
       )}
     >
       <div className={cn(
-        "w-9 h-9 rounded-full flex items-center justify-center text-xl transition-all",
+        "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-base sm:text-lg transition-all flex-shrink-0",
         completed
           ? "bg-green-500/30 animate-pulse-soft"
           : "bg-primary/10"
@@ -424,22 +431,22 @@ function ActivityRow({
         {completed ? '✅' : emoji}
       </div>
 
-      <div className="flex-1 text-left">
+      <div className="flex-1 text-left min-w-0">
         <span className={cn(
-          "text-sm font-medium",
+          "text-xs sm:text-sm font-medium truncate block",
           completed ? "text-green-400" : "text-foreground"
         )}>
           {label}
         </span>
         {progress && (
-          <span className="ml-2 text-xs text-muted-foreground">
+          <span className="text-[10px] sm:text-xs text-muted-foreground">
             {progress}
           </span>
         )}
       </div>
 
       {completed && (
-        <Sparkles className="w-4 h-4 text-green-400 animate-pulse" />
+        <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 animate-pulse flex-shrink-0" />
       )}
     </button>
   );

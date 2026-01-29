@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export function ThemeToggle() {
+  const { t } = useLanguage();
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [mounted, setMounted] = useState(false);
 
@@ -42,11 +44,14 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <button
-        className="relative w-16 h-8 rounded-full bg-secondary transition-colors"
-        aria-label="Toggle theme"
+        className="relative flex-shrink-0 w-[52px] h-[28px] rounded-full bg-slate-700 transition-colors"
+        style={{ minWidth: '52px', minHeight: '28px' }}
+        aria-label={t.toggleTheme || 'Toggle theme'}
         disabled
       >
-        <div className="absolute top-1 left-1 w-6 h-6 rounded-full bg-primary transition-transform" />
+        <div className="absolute top-[3px] left-[27px] w-[22px] h-[22px] rounded-full bg-slate-800 flex items-center justify-center">
+          <Moon className="w-3.5 h-3.5 text-slate-300" />
+        </div>
       </button>
     );
   }
@@ -55,41 +60,34 @@ export function ThemeToggle() {
     <button
       onClick={toggleTheme}
       className={cn(
-        "relative w-16 h-8 rounded-full transition-all duration-500",
-        theme === 'light' ? 'bg-sky-200' : 'bg-slate-700'
+        "relative flex-shrink-0 rounded-full transition-all duration-300",
+        "w-[52px] h-[28px]",
+        theme === 'light' ? 'bg-sky-300' : 'bg-slate-700'
       )}
-      aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+      style={{ minWidth: '52px', minHeight: '28px' }}
+      aria-label={theme === 'light' ? (t.switchToDark || 'Switch to dark mode') : (t.switchToLight || 'Switch to light mode')}
     >
       {/* Toggle circle */}
       <div
         className={cn(
-          "absolute top-1 w-6 h-6 rounded-full transition-all duration-500 flex items-center justify-center",
+          "absolute top-[3px] w-[22px] h-[22px] rounded-full transition-all duration-300 flex items-center justify-center shadow-sm",
           theme === 'light'
-            ? 'left-1 bg-yellow-400'
-            : 'left-9 bg-slate-900'
+            ? 'left-[3px] bg-yellow-400'
+            : 'left-[27px] bg-slate-800'
         )}
       >
         {theme === 'light' ? (
-          <Sun className="w-4 h-4 text-white animate-spin-slow" />
+          <Sun className="w-3.5 h-3.5 text-white" />
         ) : (
-          <Moon className="w-4 h-4 text-white" />
+          <Moon className="w-3.5 h-3.5 text-slate-300" />
         )}
       </div>
 
-      {/* Animated stars for dark mode */}
+      {/* Stars for dark mode */}
       {theme === 'dark' && (
         <>
-          <div className="absolute top-2 left-2 w-1 h-1 bg-white rounded-full animate-twinkle" />
-          <div className="absolute top-4 left-4 w-1 h-1 bg-white rounded-full animate-twinkle" style={{ animationDelay: '0.5s' }} />
-          <div className="absolute top-3 left-6 w-1 h-1 bg-white rounded-full animate-twinkle" style={{ animationDelay: '1s' }} />
-        </>
-      )}
-
-      {/* Animated clouds for light mode */}
-      {theme === 'light' && (
-        <>
-          <div className="absolute top-2 right-2 w-2 h-1 bg-white rounded-full opacity-70 animate-float" />
-          <div className="absolute top-4 right-4 w-3 h-1 bg-white rounded-full opacity-60 animate-float" style={{ animationDelay: '0.3s' }} />
+          <div className="absolute top-[6px] left-[6px] w-1 h-1 bg-white/60 rounded-full" />
+          <div className="absolute top-[14px] left-[12px] w-0.5 h-0.5 bg-white/40 rounded-full" />
         </>
       )}
     </button>

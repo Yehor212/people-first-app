@@ -2,6 +2,7 @@ import { memo, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Leaf, Trophy, ListTodo, Sparkles } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { SyncStatusIndicatorCompact } from '@/components/SyncStatusIndicator';
 
 interface HeaderProps {
   userName?: string;
@@ -37,57 +38,60 @@ export const Header = memo(function Header({ userName = 'Friend', onOpenChalleng
   }, [language]);
 
   return (
-    <header className="mb-6 animate-fade-in">
-      {/* Top row: Logo and theme toggle only */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 zen-gradient rounded-xl zen-shadow-soft">
-            <Leaf className="w-6 h-6 text-primary-foreground" />
+    <header className="mb-4 animate-fade-in">
+      {/* Top row: Logo, sync status, and theme toggle */}
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 zen-gradient rounded-lg zen-shadow-soft">
+            <Leaf className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold zen-text-gradient">{t.appName}</span>
+          <span className="text-lg font-bold zen-text-gradient">{t.appName}</span>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <SyncStatusIndicatorCompact />
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Greeting */}
-      <div className="mb-4">
-        <h1 className="text-2xl font-bold text-foreground">
+      <div className="mb-3">
+        <h1 className="text-xl font-bold text-foreground">
           {greeting}, {userName}! 👋
         </h1>
-        <p className="text-muted-foreground text-sm capitalize">{formattedDate}</p>
+        <p className="text-muted-foreground text-xs capitalize">{formattedDate}</p>
       </div>
 
-      {/* Quick Actions Bar - larger, more accessible buttons */}
+      {/* Quick Actions Bar - compact but accessible */}
       {(onOpenTasks || onOpenQuests || onOpenChallenges) && (
         <div className="flex gap-2">
           {onOpenTasks && (
             <button
               onClick={onOpenTasks}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl transition-all"
-              aria-label="Open Tasks"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl transition-all min-h-[44px]"
+              aria-label={t.openTasks}
             >
-              <ListTodo className="w-5 h-5" />
-              <span className="text-sm font-medium">{t.tasks}</span>
+              <ListTodo className="w-4 h-4 flex-shrink-0" />
+              <span className="text-xs font-medium truncate">{t.tasks}</span>
             </button>
           )}
           {onOpenQuests && (
             <button
               onClick={onOpenQuests}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded-xl transition-all"
-              aria-label="Open Quests"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded-xl transition-all min-h-[44px]"
+              aria-label={t.openQuests}
             >
-              <Sparkles className="w-5 h-5" />
-              <span className="text-sm font-medium">{t.quests}</span>
+              <Sparkles className="w-4 h-4 flex-shrink-0" />
+              <span className="text-xs font-medium truncate">{t.quests}</span>
             </button>
           )}
           {onOpenChallenges && (
             <button
               onClick={onOpenChallenges}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 px-3 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all"
-              aria-label="Open Challenges"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all min-h-[44px]"
+              aria-label={t.openChallenges}
             >
-              <Trophy className="w-5 h-5" />
-              <span className="text-sm font-medium">{t.challenges}</span>
+              <Trophy className="w-4 h-4 flex-shrink-0" />
+              <span className="text-xs font-medium truncate">{t.challenges}</span>
             </button>
           )}
         </div>

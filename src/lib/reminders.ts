@@ -2,9 +2,12 @@ import { ReminderSettings } from '@/types';
 
 export const defaultReminderSettings: ReminderSettings = {
   enabled: false,
-  moodTime: '09:00',
-  habitTime: '20:00',
-  focusTime: '13:00',
+  // Mood check-ins: morning, afternoon, evening
+  moodTimeMorning: '09:00',
+  moodTimeAfternoon: '14:00',
+  moodTimeEvening: '20:00',
+  habitTime: '21:00',
+  focusTime: '10:00',
   days: [1, 2, 3, 4, 5], // Monday to Friday
   quietHours: {
     start: '22:00',

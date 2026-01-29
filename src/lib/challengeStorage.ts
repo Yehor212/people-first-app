@@ -2,19 +2,14 @@ import { Challenge, Badge, UserStats } from '@/types';
 import { badgeDefinitions } from './badges';
 import { formatDate } from './utils';
 import { logger } from './logger';
+import { safeLocalStorageGet } from './safeJson';
 
 const CHALLENGES_KEY = 'zenflow_challenges';
 const BADGES_KEY = 'zenflow_badges';
 
 // Challenge Storage
 export function getChallenges(): Challenge[] {
-  try {
-    const data = localStorage.getItem(CHALLENGES_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch (error) {
-    logger.error('Failed to load challenges:', error);
-    return [];
-  }
+  return safeLocalStorageGet<Challenge[]>(CHALLENGES_KEY, []);
 }
 
 export function saveChallenges(challenges: Challenge[]): void {
@@ -48,17 +43,12 @@ export function deleteChallenge(challengeId: string): void {
 
 // Badge Storage
 export function getBadges(): Badge[] {
-  try {
-    const data = localStorage.getItem(BADGES_KEY);
-    if (data) {
-      return JSON.parse(data);
-    }
-    // Initialize with default badges if not found
-    return initializeBadges();
-  } catch (error) {
-    logger.error('Failed to load badges:', error);
-    return initializeBadges();
+  const data = safeLocalStorageGet<Badge[] | null>(BADGES_KEY, null);
+  if (data) {
+    return data;
   }
+  // Initialize with default badges if not found
+  return initializeBadges();
 }
 
 export function initializeBadges(): Badge[] {

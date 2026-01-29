@@ -11,6 +11,57 @@ export const triggerDataRefresh = () => {
   refreshListeners.forEach(listener => listener());
 };
 
+// Timeout for IndexedDB operations (5 seconds)
+const INDEXEDDB_TIMEOUT_MS = 5000;
+
+// Helper to add timeout to promises
+const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => {
+      setTimeout(() => {
+        logger.warn(`[useIndexedDB] Operation timed out after ${ms}ms, using fallback`);
+        resolve(fallback);
+      }, ms);
+    })
+  ]);
+};
+
+// Global initialization lock to prevent race conditions
+let globalInitLock = false;
+const initQueue: Array<() => void> = [];
+let lockTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const acquireInitLock = async (): Promise<void> => {
+  return new Promise((resolve) => {
+    if (!globalInitLock) {
+      globalInitLock = true;
+      // Auto-release lock after 10 seconds to prevent deadlock
+      // Increased from 3s to handle slow IndexedDB initialization on some devices
+      lockTimeout = setTimeout(() => {
+        logger.warn('[useIndexedDB] Lock timeout - force releasing');
+        releaseInitLock();
+      }, 10000);
+      resolve();
+    } else {
+      initQueue.push(() => resolve());
+    }
+  });
+};
+
+const releaseInitLock = (): void => {
+  if (lockTimeout) {
+    clearTimeout(lockTimeout);
+    lockTimeout = null;
+  }
+  const next = initQueue.shift();
+  if (next) {
+    next();
+  } else {
+    globalInitLock = false;
+  }
+};
+
 interface UseIndexedDBOptions<T> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   table: Table<any, string>;
@@ -29,65 +80,130 @@ export function useIndexedDB<T>({
   const [isLoading, setIsLoading] = useState(true);
   const [refreshCounter, setRefreshCounter] = useState(0);
   const initializedRef = useRef(false);
+  // Store initialValue in ref to avoid dependency issues (it's only used on first load)
+  const initialValueRef = useRef(initialValue);
 
   // Load data function (used both on init and refresh)
   const loadData = useCallback(async (isInitialLoad = false) => {
+    const defaults = initialValueRef.current;
+
+    // Acquire lock for initial load to prevent race conditions
+    if (isInitialLoad) {
+      await acquireInitLock();
+    }
+
     try {
       // For settings table with key field
       if (idField === 'key') {
-        const record = await table.get(localStorageKey);
+        // Use timeout to prevent hanging on IndexedDB operations
+        const record = await withTimeout(
+          table.get(localStorageKey),
+          INDEXEDDB_TIMEOUT_MS,
+          undefined
+        );
         if (record?.value !== undefined) {
-          setData(record.value as T);
+          // Only merge objects, not primitives (strings, booleans, numbers) or arrays
+          // Spreading primitives or arrays creates objects with numeric keys which breaks React rendering
+          const isPrimitive = typeof record.value !== 'object' || record.value === null;
+          const isArray = Array.isArray(record.value);
+          if (isPrimitive || isArray) {
+            // Don't merge primitives or arrays - just use the value directly
+            setData(record.value as T);
+          } else {
+            // Merge with initialValue to ensure all required fields exist (handles schema migrations)
+            setData({ ...defaults, ...record.value } as T);
+          }
         } else if (isInitialLoad) {
           // Try localStorage fallback only on initial load
-          const stored = localStorage.getItem(localStorageKey);
-          if (stored) {
-            try {
-              const parsed = JSON.parse(stored);
-              setData(parsed as T);
-              // Migrate to IndexedDB
-              await table.put({ key: localStorageKey, value: parsed });
-            } catch (parseError) {
-              logger.warn('Failed to parse localStorage data for migration:', parseError);
+          try {
+            const stored = localStorage.getItem(localStorageKey);
+            if (stored) {
+              try {
+                const parsed = JSON.parse(stored);
+                // Only merge objects, not primitives or arrays
+                const isPrimitive = typeof parsed !== 'object' || parsed === null;
+                const isArray = Array.isArray(parsed);
+                if (isPrimitive || isArray) {
+                  // Don't merge primitives or arrays - just use the value directly
+                  setData(parsed as T);
+                  table.put({ key: localStorageKey, value: parsed }).catch(() => {});
+                } else {
+                  // Merge with initialValue to ensure all required fields exist
+                  const merged = { ...defaults, ...parsed };
+                  setData(merged as T);
+                  // Migrate to IndexedDB (don't wait, fire and forget)
+                  table.put({ key: localStorageKey, value: merged }).catch(() => {});
+                }
+              } catch (parseError) {
+                logger.warn('Failed to parse localStorage data for migration:', parseError);
+              }
             }
+          } catch (storageError) {
+            // localStorage not available (Safari Private Mode, quota exceeded)
+            logger.warn('localStorage not available:', storageError);
           }
         }
       } else {
-        // For array tables
-        const records = await table.toArray();
+        // For array tables - use timeout
+        const records = await withTimeout(
+          table.toArray(),
+          INDEXEDDB_TIMEOUT_MS,
+          [] as unknown[]
+        );
         if (records.length > 0) {
           setData(records as T);
         } else if (isInitialLoad) {
           // Try localStorage fallback only on initial load
-          const stored = localStorage.getItem(localStorageKey);
-          if (stored) {
-            try {
-              const parsed = JSON.parse(stored);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                setData(parsed as T);
-                // Migrate to IndexedDB
-                await table.bulkPut(parsed);
+          try {
+            const stored = localStorage.getItem(localStorageKey);
+            if (stored) {
+              try {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                  setData(parsed as T);
+                  // Migrate to IndexedDB (don't wait, fire and forget)
+                  table.bulkPut(parsed).catch(() => {});
+                }
+              } catch (parseError) {
+                logger.warn('Failed to parse localStorage array data for migration:', parseError);
               }
-            } catch (parseError) {
-              logger.warn('Failed to parse localStorage array data for migration:', parseError);
             }
+          } catch (storageError) {
+            // localStorage not available (Safari Private Mode, quota exceeded)
+            logger.warn('localStorage not available:', storageError);
           }
         }
       }
     } catch (error) {
       logger.error('Error loading from IndexedDB:', error);
       // Fallback to localStorage
-      const stored = localStorage.getItem(localStorageKey);
-      if (stored) {
-        try {
-          setData(JSON.parse(stored) as T);
-        } catch (parseError) {
-          logger.warn('Failed to parse localStorage fallback data:', parseError);
+      try {
+        const stored = localStorage.getItem(localStorageKey);
+        if (stored) {
+          try {
+            const parsed = JSON.parse(stored);
+            // Only merge objects, not primitives or arrays
+            const isPrimitive = typeof parsed !== 'object' || parsed === null;
+            const isArray = Array.isArray(parsed);
+            if (isPrimitive || isArray) {
+              // Don't merge primitives or arrays - just use the value directly
+              setData(parsed as T);
+            } else {
+              // Merge with initialValue to ensure all required fields exist
+              setData({ ...defaults, ...parsed } as T);
+            }
+          } catch (parseError) {
+            logger.warn('Failed to parse localStorage fallback data:', parseError);
+          }
         }
+      } catch (storageError) {
+        // localStorage not available (Safari Private Mode, quota exceeded)
+        logger.warn('localStorage fallback not available:', storageError);
       }
     } finally {
       if (isInitialLoad) {
         setIsLoading(false);
+        releaseInitLock();
       }
     }
   }, [table, localStorageKey, idField]);
@@ -135,10 +251,21 @@ export function useIndexedDB<T>({
             }
           }
           // Also save to localStorage as backup
-          localStorage.setItem(localStorageKey, JSON.stringify(newValue));
+          try {
+            localStorage.setItem(localStorageKey, JSON.stringify(newValue));
+          } catch (storageError) {
+            // localStorage not available (Safari Private Mode, quota exceeded)
+            logger.warn('localStorage backup failed:', storageError);
+          }
         } catch (error) {
           logger.error('Error saving to IndexedDB:', error);
-          localStorage.setItem(localStorageKey, JSON.stringify(newValue));
+          // Try localStorage fallback
+          try {
+            localStorage.setItem(localStorageKey, JSON.stringify(newValue));
+          } catch (storageError) {
+            // localStorage also not available - data only in React state
+            logger.warn('localStorage fallback also failed:', storageError);
+          }
         }
       })();
 

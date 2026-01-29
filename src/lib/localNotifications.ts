@@ -1,7 +1,134 @@
-import { LocalNotifications, ActionPerformed } from '@capacitor/local-notifications';
+import { LocalNotifications, ActionPerformed, Channel } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
 import { logger } from './logger';
 import { ReminderSettings, Habit, CompanionType, MoodType } from '@/types';
 import { COMPANION_EMOJIS } from '@/lib/innerWorldConstants';
+import { getCurrentChannelId, initializeNotificationChannels } from './notificationSounds';
+import { parseTime } from './timeUtils';
+
+// Legacy notification channel ID for Android 8+ (kept for backwards compatibility)
+const CHANNEL_ID = 'zenflow_reminders';
+
+/**
+ * Get the active channel ID based on user's sound preference
+ */
+function getActiveChannelId(): string {
+  return getCurrentChannelId();
+}
+
+/**
+ * Initialize notification channel for Android 8+
+ * MUST be called before scheduling any notifications
+ * Now initializes multiple channels for different sound options
+ */
+export async function initializeNotificationChannel(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+
+  try {
+    // Initialize all sound-based channels
+    await initializeNotificationChannels();
+
+    // Also create legacy channel for backwards compatibility
+    const channel: Channel = {
+      id: CHANNEL_ID,
+      name: 'ZenFlow Reminders',
+      description: 'Reminders for habits, mood tracking, and focus sessions',
+      importance: 4, // HIGH - makes sound and shows heads-up
+      visibility: 1, // PUBLIC
+      vibration: true,
+      sound: 'default',
+      lights: true,
+      lightColor: '#10B981',
+    };
+
+    await LocalNotifications.createChannel(channel);
+    logger.log('[Notifications] All channels initialized');
+  } catch (error) {
+    logger.error('[Notifications] Failed to create channel:', error);
+  }
+}
+
+/**
+ * Send a test notification immediately (for debugging)
+ */
+export async function sendTestNotification(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) {
+    logger.log('[Notifications] Test skipped - not native platform');
+    return false;
+  }
+
+  try {
+    const permission = await LocalNotifications.checkPermissions();
+    if (permission.display !== 'granted') {
+      const request = await LocalNotifications.requestPermissions();
+      if (request.display !== 'granted') {
+        logger.error('[Notifications] Permission denied');
+        return false;
+      }
+    }
+
+    // Schedule notification for 5 seconds from now
+    const now = new Date();
+    now.setSeconds(now.getSeconds() + 5);
+
+    await LocalNotifications.schedule({
+      notifications: [
+        {
+          id: 9999,
+          title: '🧪 Test Notification',
+          body: 'If you see this, notifications work! 🎉',
+          channelId: getActiveChannelId(),
+          schedule: { at: now, allowWhileIdle: true },
+        },
+      ],
+    });
+
+    logger.log('[Notifications] Test notification scheduled for:', now.toLocaleTimeString());
+    return true;
+  } catch (error) {
+    logger.error('[Notifications] Test notification failed:', error);
+    return false;
+  }
+}
+
+/**
+ * Check if notifications are properly configured
+ */
+export async function checkNotificationStatus(): Promise<{
+  hasPermission: boolean;
+  pendingCount: number;
+  channelExists: boolean;
+}> {
+  if (!Capacitor.isNativePlatform()) {
+    return { hasPermission: false, pendingCount: 0, channelExists: false };
+  }
+
+  try {
+    const permission = await LocalNotifications.checkPermissions();
+    const pending = await LocalNotifications.getPending();
+
+    // Try to get channels (Android only)
+    let channelExists = true;
+    try {
+      const channels = await LocalNotifications.listChannels();
+      channelExists = channels.channels.some(c => c.id === CHANNEL_ID);
+    } catch {
+      // listChannels might not be available on all platforms
+    }
+
+    const status = {
+      hasPermission: permission.display === 'granted',
+      pendingCount: pending.notifications.length,
+      channelExists,
+    };
+
+    logger.log('[Notifications] Status:', status);
+    return status;
+  } catch (error) {
+    logger.error('[Notifications] Status check failed:', error);
+    return { hasPermission: false, pendingCount: 0, channelExists: false };
+  }
+}
 
 interface ReminderCopy {
   mood: { title: string; body: string };
@@ -81,36 +208,59 @@ export async function scheduleLocalReminders(
       id: number;
       title: string;
       body: string;
+      channelId: string;
       schedule: { on: { hour: number; minute: number }; every: 'day'; allowWhileIdle: boolean };
     }> = [];
 
-    const parseTime = (time: string) => {
-      const [hours, minutes] = time.split(':').map(Number);
-      return { hour: hours, minute: minutes };
-    };
+    // 3 mood reminders: morning, afternoon, evening
+    const moodTimeMorning = parseTime(reminders.moodTimeMorning, 9, 0);
+    const moodTimeAfternoon = parseTime(reminders.moodTimeAfternoon, 14, 0);
+    const moodTimeEvening = parseTime(reminders.moodTimeEvening, 20, 0);
+    const habitTime = parseTime(reminders.habitTime, 21, 0);
+    const focusTime = parseTime(reminders.focusTime, 10, 0);
 
-    const moodTime = parseTime(reminders.moodTime);
-    const habitTime = parseTime(reminders.habitTime);
-    const focusTime = parseTime(reminders.focusTime);
-
+    // Mood - Morning
     notifications.push({
       id: 1,
       title: copy.mood.title,
       body: copy.mood.body,
-      schedule: { on: moodTime, every: 'day', allowWhileIdle: true }
+      channelId: getActiveChannelId(),
+      schedule: { on: moodTimeMorning, every: 'day', allowWhileIdle: true }
     });
 
+    // Mood - Afternoon
     notifications.push({
       id: 2,
+      title: copy.mood.title,
+      body: copy.mood.body,
+      channelId: getActiveChannelId(),
+      schedule: { on: moodTimeAfternoon, every: 'day', allowWhileIdle: true }
+    });
+
+    // Mood - Evening
+    notifications.push({
+      id: 3,
+      title: copy.mood.title,
+      body: copy.mood.body,
+      channelId: getActiveChannelId(),
+      schedule: { on: moodTimeEvening, every: 'day', allowWhileIdle: true }
+    });
+
+    // Habit reminder
+    notifications.push({
+      id: 4,
       title: copy.habit.title,
       body: copy.habit.body,
+      channelId: getActiveChannelId(),
       schedule: { on: habitTime, every: 'day', allowWhileIdle: true }
     });
 
+    // Focus reminder
     notifications.push({
-      id: 3,
+      id: 5,
       title: copy.focus.title,
       body: copy.focus.body,
+      channelId: getActiveChannelId(),
       schedule: { on: focusTime, every: 'day', allowWhileIdle: true }
     });
 
@@ -148,13 +298,9 @@ export async function scheduleHabitReminders(
       id: number;
       title: string;
       body: string;
+      channelId: string;
       schedule: { on: { hour: number; minute: number; weekday?: number }; allowWhileIdle: boolean };
     }> = [];
-
-    const parseTime = (time: string) => {
-      const [hours, minutes] = time.split(':').map(Number);
-      return { hour: hours || 9, minute: minutes || 0 };
-    };
 
     let notificationId = 1000; // Start from 1000 to avoid conflicts with global reminders
 
@@ -165,7 +311,7 @@ export async function scheduleHabitReminders(
       for (const reminder of habit.reminders) {
         if (!reminder.enabled) continue;
 
-        const time = parseTime(reminder.time);
+        const time = parseTime(reminder.time, 9, 0);
 
         // If specific days are set, schedule for each day
         if (reminder.days && reminder.days.length > 0) {
@@ -174,6 +320,7 @@ export async function scheduleHabitReminders(
               id: notificationId++,
               title: `${habit.icon} ${habit.name}`,
               body: translations.reminderBody.replace('{habit}', habit.name),
+              channelId: getActiveChannelId(),
               schedule: {
                 on: { ...time, weekday: day },
                 allowWhileIdle: true
@@ -186,6 +333,7 @@ export async function scheduleHabitReminders(
             id: notificationId++,
             title: `${habit.icon} ${habit.name}`,
             body: translations.reminderBody.replace('{habit}', habit.name),
+            channelId: getActiveChannelId(),
             schedule: {
               on: time,
               allowWhileIdle: true
@@ -237,39 +385,48 @@ export async function scheduleCompanionReminders(
       id: number;
       title: string;
       body: string;
-      schedule: { on: { hour: number; minute: number }; every: 'day' };
+      channelId: string;
+      schedule: { on: { hour: number; minute: number }; every: 'day'; allowWhileIdle: boolean };
     }> = [];
 
-    const parseTime = (time: string) => {
-      const [hours, minutes] = time.split(':').map(Number);
-      return { hour: hours, minute: minutes };
-    };
-
-    // Mood reminder - companion misses you
-    const moodTime = parseTime(reminders.moodTime);
+    // Morning - companion misses you
+    const moodTimeMorning = parseTime(reminders.moodTimeMorning, 9, 0);
     notifications.push({
       id: 100,
       title: `${emoji} ${companion.name}`,
       body: translations.companionMissesYou,
-      schedule: { on: moodTime, every: 'day' }
+      channelId: getActiveChannelId(),
+      schedule: { on: moodTimeMorning, every: 'day', allowWhileIdle: true }
     });
 
-    // Habit reminder - companion waiting
-    const habitTime = parseTime(reminders.habitTime);
+    // Afternoon - companion wants to play
+    const moodTimeAfternoon = parseTime(reminders.moodTimeAfternoon, 14, 0);
     notifications.push({
       id: 101,
       title: `${emoji} ${companion.name}`,
-      body: translations.companionWaiting,
-      schedule: { on: habitTime, every: 'day' }
+      body: translations.companionWantsToPlay,
+      channelId: getActiveChannelId(),
+      schedule: { on: moodTimeAfternoon, every: 'day', allowWhileIdle: true }
     });
 
-    // Focus reminder - companion cheers you
-    const focusTime = parseTime(reminders.focusTime);
+    // Evening - companion waiting (habit time)
+    const habitTime = parseTime(reminders.habitTime, 21, 0);
     notifications.push({
       id: 102,
       title: `${emoji} ${companion.name}`,
+      body: translations.companionWaiting,
+      channelId: getActiveChannelId(),
+      schedule: { on: habitTime, every: 'day', allowWhileIdle: true }
+    });
+
+    // Focus reminder - companion cheers you
+    const focusTime = parseTime(reminders.focusTime, 10, 0);
+    notifications.push({
+      id: 103,
+      title: `${emoji} ${companion.name}`,
       body: translations.companionCheersYou,
-      schedule: { on: focusTime, every: 'day' }
+      channelId: getActiveChannelId(),
+      schedule: { on: focusTime, every: 'day', allowWhileIdle: true }
     });
 
     await LocalNotifications.schedule({ notifications });
@@ -370,7 +527,8 @@ export async function scheduleMoodQuickLogNotification(
           id: 150,
           title: `${emoji} ${companion.name}`,
           body: message,
-          schedule: { on: time, every: 'day' },
+          channelId: getActiveChannelId(),
+          schedule: { on: time, every: 'day', allowWhileIdle: true },
           actionTypeId: MOOD_ACTION_TYPE_ID,
         },
       ],

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -22,6 +22,8 @@ import {
   UserStats,
 } from '@/lib/gamification';
 import { Trophy, Star, Lock, TrendingUp } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { Language } from '@/i18n/translations';
 
 interface AchievementsPanelProps {
   stats: UserStats;
@@ -29,7 +31,14 @@ interface AchievementsPanelProps {
   onAchievementUnlock?: (achievement: Achievement) => void;
 }
 
-export function AchievementsPanel({ stats, unlockedAchievements, onAchievementUnlock }: AchievementsPanelProps) {
+// Locale mapping for date formatting
+const localeMap: Record<Language, string> = {
+  ru: 'ru-RU', en: 'en-US', uk: 'uk-UA',
+  es: 'es-ES', de: 'de-DE', fr: 'fr-FR'
+};
+
+export const AchievementsPanel = memo(function AchievementsPanel({ stats, unlockedAchievements, onAchievementUnlock }: AchievementsPanelProps) {
+  const { t, language } = useLanguage();
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const [achievementProgress, setAchievementProgress] = useState<Record<AchievementId, number>>({});
   const userLevel = calculateLevel(stats.totalXp);
@@ -64,19 +73,19 @@ export function AchievementsPanel({ stats, unlockedAchievements, onAchievementUn
           <div>
             <h3 className="text-2xl font-bold flex items-center gap-2">
               <Star className="w-6 h-6" fill="currentColor" />
-              Уровень {userLevel.level}
+              {t.userLevel || 'Level'} {userLevel.level}
             </h3>
             <p className="text-white/80 text-sm">{userLevel.title}</p>
           </div>
           <div className="text-right">
             <div className="text-3xl font-bold">{stats.totalXp}</div>
-            <div className="text-white/80 text-sm">XP</div>
+            <div className="text-white/80 text-sm">{t.xp || 'XP'}</div>
           </div>
         </div>
         <div className="space-y-2">
           <div className="flex justify-between text-sm">
-            <span>До уровня {userLevel.level + 1}</span>
-            <span>{userLevel.nextLevelXp - stats.totalXp} XP</span>
+            <span>{t.toLevel || 'To level'} {userLevel.level + 1}</span>
+            <span>{userLevel.nextLevelXp - stats.totalXp} {t.xp || 'XP'}</span>
           </div>
           <Progress value={(stats.totalXp / userLevel.nextLevelXp) * 100} className="bg-white/20" />
         </div>
@@ -87,7 +96,7 @@ export function AchievementsPanel({ stats, unlockedAchievements, onAchievementUn
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
             <Trophy className="w-5 h-5 text-[#4a9d7c]" />
-            Достижения
+            {t.achievements || 'Achievements'}
           </h3>
           <Badge variant="secondary">
             {unlockedCount} / {totalCount}
@@ -95,24 +104,23 @@ export function AchievementsPanel({ stats, unlockedAchievements, onAchievementUn
         </div>
         <Progress value={completionPercentage} className="mb-2" />
         <p className="text-sm text-muted-foreground">
-          Разблокировано {Math.round(completionPercentage)}%
+          {t.unlockedPercent?.replace('{percent}', String(Math.round(completionPercentage))) || `${Math.round(completionPercentage)}% unlocked`}
         </p>
       </Card>
 
       {/* Achievements Grid */}
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all">Все</TabsTrigger>
-          <TabsTrigger value="unlocked">Открытые</TabsTrigger>
-          <TabsTrigger value="locked">Закрытые</TabsTrigger>
+          <TabsTrigger value="all">{t.all || 'All'}</TabsTrigger>
+          <TabsTrigger value="unlocked">{t.unlocked || 'Unlocked'}</TabsTrigger>
+          <TabsTrigger value="locked">{t.locked || 'Locked'}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="all" className="mt-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <TabsContent value="all" className="mt-4 overflow-visible">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pb-4">
             {allAchievements.map((achievement) => {
               const isUnlocked = unlockedAchievements.includes(achievement.id);
               const progress = achievementProgress[achievement.id];
-              const hasProgress = progress !== undefined && achievement.total;
 
               return (
                 <AchievementCard
@@ -121,35 +129,39 @@ export function AchievementsPanel({ stats, unlockedAchievements, onAchievementUn
                   isUnlocked={isUnlocked}
                   progress={progress}
                   onClick={() => setSelectedAchievement({ ...achievement, progress })}
+                  hiddenText={t.hidden || 'Hidden'}
+                  hiddenTitle={t.hiddenAchievement || '???'}
                 />
               );
             })}
           </div>
         </TabsContent>
 
-        <TabsContent value="unlocked" className="mt-4">
+        <TabsContent value="unlocked" className="mt-4 overflow-visible">
           {unlockedList.length === 0 ? (
             <Card className="p-8 text-center">
               <Trophy className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
-              <p className="text-muted-foreground">Пока нет открытых достижений</p>
-              <p className="text-sm text-muted-foreground mt-1">Начните использовать ZenFlow!</p>
+              <p className="text-muted-foreground">{t.noAchievementsYet || 'No achievements yet'}</p>
+              <p className="text-sm text-muted-foreground mt-1">{t.startUsingZenFlow || 'Start using ZenFlow!'}</p>
             </Card>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pb-4">
               {unlockedList.map((achievement) => (
                 <AchievementCard
                   key={achievement.id}
                   achievement={achievement}
                   isUnlocked={true}
                   onClick={() => setSelectedAchievement(achievement)}
+                  hiddenText={t.hidden || 'Hidden'}
+                  hiddenTitle={t.hiddenAchievement || '???'}
                 />
               ))}
             </div>
           )}
         </TabsContent>
 
-        <TabsContent value="locked" className="mt-4">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        <TabsContent value="locked" className="mt-4 overflow-visible">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 pb-4">
             {lockedList.map((achievement) => {
               const progress = achievementProgress[achievement.id];
               return (
@@ -159,6 +171,8 @@ export function AchievementsPanel({ stats, unlockedAchievements, onAchievementUn
                   isUnlocked={false}
                   progress={progress}
                   onClick={() => setSelectedAchievement({ ...achievement, progress })}
+                  hiddenText={t.hidden || 'Hidden'}
+                  hiddenTitle={t.hiddenAchievement || '???'}
                 />
               );
             })}
@@ -168,7 +182,7 @@ export function AchievementsPanel({ stats, unlockedAchievements, onAchievementUn
 
       {/* Achievement Detail Dialog */}
       <Dialog open={!!selectedAchievement} onOpenChange={() => setSelectedAchievement(null)}>
-        <DialogContent>
+        <DialogContent className="max-h-[80vh] overflow-y-auto mx-4 sm:mx-auto">
           <DialogHeader>
             <div className={`text-6xl mb-4 text-center ${selectedAchievement && getBadgeGlow(selectedAchievement.rarity)}`}>
               {selectedAchievement?.icon}
@@ -184,7 +198,7 @@ export function AchievementsPanel({ stats, unlockedAchievements, onAchievementUn
                   </Badge>
                   <Badge variant="secondary">
                     <TrendingUp className="w-3 h-3 mr-1" />
-                    {selectedAchievement.points} XP
+                    {selectedAchievement.points} {t.xp || 'XP'}
                   </Badge>
                 </div>
               )}
@@ -192,7 +206,7 @@ export function AchievementsPanel({ stats, unlockedAchievements, onAchievementUn
               {selectedAchievement?.total && selectedAchievement.progress !== undefined && (
                 <div className="space-y-2 pt-4">
                   <div className="flex justify-between text-sm">
-                    <span>Прогресс</span>
+                    <span>{t.progress || 'Progress'}</span>
                     <span>{selectedAchievement.progress} / {selectedAchievement.total}</span>
                   </div>
                   <Progress value={(selectedAchievement.progress / selectedAchievement.total) * 100} />
@@ -201,7 +215,7 @@ export function AchievementsPanel({ stats, unlockedAchievements, onAchievementUn
 
               {selectedAchievement?.unlockedAt && (
                 <p className="text-xs text-muted-foreground pt-4">
-                  Разблокировано {new Date(selectedAchievement.unlockedAt).toLocaleDateString('ru-RU', {
+                  {t.unlockedOn || 'Unlocked on'} {new Date(selectedAchievement.unlockedAt).toLocaleDateString(localeMap[language], {
                     day: 'numeric',
                     month: 'long',
                     year: 'numeric',
@@ -214,16 +228,18 @@ export function AchievementsPanel({ stats, unlockedAchievements, onAchievementUn
       </Dialog>
     </div>
   );
-}
+});
 
 interface AchievementCardProps {
   achievement: Achievement;
   isUnlocked: boolean;
   progress?: number;
   onClick: () => void;
+  hiddenText: string;
+  hiddenTitle: string;
 }
 
-function AchievementCard({ achievement, isUnlocked, progress, onClick }: AchievementCardProps) {
+function AchievementCard({ achievement, isUnlocked, progress, onClick, hiddenText, hiddenTitle }: AchievementCardProps) {
   const hasProgress = progress !== undefined && achievement.total;
   const progressPercentage = hasProgress ? (progress / achievement.total!) * 100 : 0;
 
@@ -234,14 +250,14 @@ function AchievementCard({ achievement, isUnlocked, progress, onClick }: Achieve
       }`}
       onClick={onClick}
     >
-      <div className="text-center space-y-2">
+      <div className="text-center space-y-2 min-w-0">
         <div className={`text-4xl ${!isUnlocked && 'grayscale blur-[1px]'}`}>
           {isUnlocked ? achievement.icon : <Lock className="w-10 h-10 mx-auto text-muted-foreground" />}
         </div>
-        <div>
-          <h4 className="font-semibold text-sm line-clamp-1">{isUnlocked ? achievement.name : '???'}</h4>
+        <div className="min-w-0">
+          <h4 className="font-semibold text-sm line-clamp-1">{isUnlocked ? achievement.name : hiddenTitle}</h4>
           <p className="text-xs text-muted-foreground line-clamp-2">
-            {isUnlocked ? achievement.description : 'Скрыто'}
+            {isUnlocked ? achievement.description : hiddenText}
           </p>
         </div>
 
@@ -256,7 +272,7 @@ function AchievementCard({ achievement, isUnlocked, progress, onClick }: Achieve
 
         {isUnlocked && (
           <Badge className={`${getBadgeColor(achievement.rarity)} text-xs`}>
-            +{achievement.points} XP
+            +{achievement.points} {t.xp || 'XP'}
           </Badge>
         )}
       </div>
