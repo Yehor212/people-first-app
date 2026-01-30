@@ -2267,7 +2267,7 @@ export function Index() {
       )}
 
       {/* Time Helper Modal */}
-      {showTimeHelper && (
+      {isFeatureVisible('focusTimer') && showTimeHelper && (
         <TimeHelper onClose={() => setShowTimeHelper(false)} />
       )}
 
@@ -2321,26 +2321,30 @@ export function Index() {
       )}
 
       {/* Challenge Modal - for deep link invites */}
-      <ChallengeModal
-        open={showChallengeModal}
-        onOpenChange={(open) => {
-          setShowChallengeModal(open);
-          if (!open) setChallengeInvite(undefined);
-        }}
-        initialInvite={challengeInvite}
-        username={userName}
-      />
+      {isFeatureVisible('challenges') && (
+        <ChallengeModal
+          open={showChallengeModal}
+          onOpenChange={(open) => {
+            setShowChallengeModal(open);
+            if (!open) setChallengeInvite(undefined);
+          }}
+          initialInvite={challengeInvite}
+          username={userName}
+        />
+      )}
 
       {/* What's New Modal - shows after app update */}
       <WhatsNewModal />
 
       {/* MindfulMoment - shows after focus session completion */}
-      <MindfulMoment
-        isOpen={showMindfulMoment}
-        onClose={() => setShowMindfulMoment(false)}
-        onComplete={handleMindfulMomentComplete}
-        trigger="focus"
-      />
+      {isFeatureVisible('focusTimer') && (
+        <MindfulMoment
+          isOpen={showMindfulMoment}
+          onClose={() => setShowMindfulMoment(false)}
+          onComplete={handleMindfulMomentComplete}
+          trigger="focus"
+        />
+      )}
 
       {/* AI Coach Chat - bottom sheet for AI coaching */}
       {isFeatureVisible('aiCoach') && <AICoachChat />}
