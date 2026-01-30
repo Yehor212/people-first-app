@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { EmotionThemeProvider } from "@/contexts/EmotionThemeContext";
 import { AICoachProvider } from "@/contexts/AICoachContext";
+import { FeatureFlagsProvider } from "@/contexts/FeatureFlagsContext";
 import { XpPopupProvider } from "@/components/XpPopup";
 import { FlyingEmojiProvider } from "@/components/FlyingMoodEmoji";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -31,26 +32,28 @@ const getBasename = () => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
-      <EmotionThemeProvider>
-        <AICoachProvider>
-          <XpPopupProvider>
-            <FlyingEmojiProvider>
-              <ErrorBoundary>
-              <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter basename={getBasename()}>
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </BrowserRouter>
-            </TooltipProvider>
-            </ErrorBoundary>
-            </FlyingEmojiProvider>
-          </XpPopupProvider>
-        </AICoachProvider>
-      </EmotionThemeProvider>
+      <FeatureFlagsProvider>
+        <EmotionThemeProvider>
+          <AICoachProvider>
+            <XpPopupProvider>
+              <FlyingEmojiProvider>
+                <ErrorBoundary>
+                  <TooltipProvider>
+                    <Toaster />
+                    <Sonner />
+                    <BrowserRouter basename={getBasename()}>
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </BrowserRouter>
+                  </TooltipProvider>
+                </ErrorBoundary>
+              </FlyingEmojiProvider>
+            </XpPopupProvider>
+          </AICoachProvider>
+        </EmotionThemeProvider>
+      </FeatureFlagsProvider>
     </LanguageProvider>
   </QueryClientProvider>
 );

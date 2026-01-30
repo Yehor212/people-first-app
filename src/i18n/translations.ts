@@ -574,6 +574,32 @@ export interface Translations {
   settingsGroupAccount: string;
   settingsGroupAbout: string;
 
+  // Feature Toggles / Modules (v1.5.8)
+  settingsGroupModules: string;
+  settingsModulesDescription: string;
+  settingsModuleMood: string;
+  settingsModuleMoodDesc: string;
+  settingsModuleHabits: string;
+  settingsModuleHabitsDesc: string;
+  settingsModuleFocus: string;
+  settingsModuleFocusDesc: string;
+  settingsModuleBreathing: string;
+  settingsModuleBreathingDesc: string;
+  settingsModuleGratitude: string;
+  settingsModuleGratitudeDesc: string;
+  settingsModuleQuests: string;
+  settingsModuleQuestsDesc: string;
+  settingsModuleTasks: string;
+  settingsModuleTasksDesc: string;
+  settingsModuleChallenges: string;
+  settingsModuleChallengesDesc: string;
+  settingsModuleAICoach: string;
+  settingsModuleAICoachDesc: string;
+  settingsModuleGarden: string;
+  settingsModuleGardenDesc: string;
+  settingsModuleCoreLocked: string;
+  settingsModuleUnlockHint: string;
+
   // GDPR Consent
   consentTitle: string;
   consentDescription: string;
@@ -1839,6 +1865,32 @@ export const translations: Record<Language, Translations> = {
     settingsGroupData: 'Данные и приватность',
     settingsGroupAccount: 'Аккаунт',
     settingsGroupAbout: 'О приложении',
+
+    // Feature Toggles / Modules (v1.5.8)
+    settingsGroupModules: 'Модули',
+    settingsModulesDescription: 'Включайте и выключайте функции приложения',
+    settingsModuleMood: 'Трекер настроения',
+    settingsModuleMoodDesc: 'Основная функция — всегда включена',
+    settingsModuleHabits: 'Привычки',
+    settingsModuleHabitsDesc: 'Основная функция — всегда включена',
+    settingsModuleFocus: 'Таймер фокуса',
+    settingsModuleFocusDesc: 'Техника Помодоро и глубокая работа',
+    settingsModuleBreathing: 'Дыхательные упражнения',
+    settingsModuleBreathingDesc: 'Техники расслабления и медитации',
+    settingsModuleGratitude: 'Журнал благодарности',
+    settingsModuleGratitudeDesc: 'Записывайте, за что вы благодарны',
+    settingsModuleQuests: 'Квесты',
+    settingsModuleQuestsDesc: 'Ежедневные задания и награды',
+    settingsModuleTasks: 'Задачи',
+    settingsModuleTasksDesc: 'Список дел и управление задачами',
+    settingsModuleChallenges: 'Челленджи',
+    settingsModuleChallengesDesc: 'Испытания и достижения',
+    settingsModuleAICoach: 'AI Коуч',
+    settingsModuleAICoachDesc: 'Персональный помощник с ИИ',
+    settingsModuleGarden: 'Мой сад',
+    settingsModuleGardenDesc: 'Виртуальный сад и компаньон',
+    settingsModuleCoreLocked: 'Основной модуль',
+    settingsModuleUnlockHint: 'Разблокируется по мере прогресса',
 
     // GDPR Consent
     consentTitle: 'Настройки приватности',
@@ -3190,6 +3242,32 @@ export const translations: Record<Language, Translations> = {
     settingsGroupAccount: 'Account',
     settingsGroupAbout: 'About',
 
+    // Feature Toggles / Modules (v1.5.8)
+    settingsGroupModules: 'Modules',
+    settingsModulesDescription: 'Enable or disable app features',
+    settingsModuleMood: 'Mood Tracker',
+    settingsModuleMoodDesc: 'Core feature — always enabled',
+    settingsModuleHabits: 'Habits',
+    settingsModuleHabitsDesc: 'Core feature — always enabled',
+    settingsModuleFocus: 'Focus Timer',
+    settingsModuleFocusDesc: 'Pomodoro technique and deep work',
+    settingsModuleBreathing: 'Breathing Exercises',
+    settingsModuleBreathingDesc: 'Relaxation and meditation techniques',
+    settingsModuleGratitude: 'Gratitude Journal',
+    settingsModuleGratitudeDesc: 'Record what you are thankful for',
+    settingsModuleQuests: 'Quests',
+    settingsModuleQuestsDesc: 'Daily missions and rewards',
+    settingsModuleTasks: 'Tasks',
+    settingsModuleTasksDesc: 'To-do list and task management',
+    settingsModuleChallenges: 'Challenges',
+    settingsModuleChallengesDesc: 'Achievements and challenges',
+    settingsModuleAICoach: 'AI Coach',
+    settingsModuleAICoachDesc: 'Personal AI assistant',
+    settingsModuleGarden: 'My Garden',
+    settingsModuleGardenDesc: 'Virtual garden and companion',
+    settingsModuleCoreLocked: 'Core module',
+    settingsModuleUnlockHint: 'Unlocks as you progress',
+
     // GDPR Consent
     consentTitle: 'Privacy Settings',
     consentDescription: 'We respect your privacy. Help us improve the app by allowing anonymous analytics?',
@@ -4539,6 +4617,32 @@ export const translations: Record<Language, Translations> = {
     settingsGroupData: 'Дані та приватність',
     settingsGroupAccount: 'Акаунт',
     settingsGroupAbout: 'Про додаток',
+
+    // Feature Toggles / Modules (v1.5.8)
+    settingsGroupModules: 'Модулі',
+    settingsModulesDescription: 'Вмикайте та вимикайте функції додатку',
+    settingsModuleMood: 'Трекер настрою',
+    settingsModuleMoodDesc: 'Основна функція — завжди увімкнена',
+    settingsModuleHabits: 'Звички',
+    settingsModuleHabitsDesc: 'Основна функція — завжди увімкнена',
+    settingsModuleFocus: 'Таймер фокусу',
+    settingsModuleFocusDesc: 'Техніка Помодоро та глибока робота',
+    settingsModuleBreathing: 'Дихальні вправи',
+    settingsModuleBreathingDesc: 'Техніки розслаблення та медитації',
+    settingsModuleGratitude: 'Журнал вдячності',
+    settingsModuleGratitudeDesc: 'Записуйте, за що ви вдячні',
+    settingsModuleQuests: 'Квести',
+    settingsModuleQuestsDesc: 'Щоденні завдання та нагороди',
+    settingsModuleTasks: 'Завдання',
+    settingsModuleTasksDesc: 'Список справ та управління завданнями',
+    settingsModuleChallenges: 'Челенджі',
+    settingsModuleChallengesDesc: 'Досягнення та випробування',
+    settingsModuleAICoach: 'AI Коуч',
+    settingsModuleAICoachDesc: 'Персональний помічник з ШІ',
+    settingsModuleGarden: 'Мій сад',
+    settingsModuleGardenDesc: 'Віртуальний сад та компаньйон',
+    settingsModuleCoreLocked: 'Основний модуль',
+    settingsModuleUnlockHint: 'Розблоковується в міру прогресу',
 
     // GDPR Consent
     consentTitle: 'Налаштування приватності',
@@ -5891,6 +5995,32 @@ export const translations: Record<Language, Translations> = {
     settingsGroupAccount: 'Cuenta',
     settingsGroupAbout: 'Acerca de',
 
+    // Feature Toggles / Modules (v1.5.8)
+    settingsGroupModules: 'Módulos',
+    settingsModulesDescription: 'Activa o desactiva funciones de la app',
+    settingsModuleMood: 'Rastreador de ánimo',
+    settingsModuleMoodDesc: 'Función principal — siempre activa',
+    settingsModuleHabits: 'Hábitos',
+    settingsModuleHabitsDesc: 'Función principal — siempre activa',
+    settingsModuleFocus: 'Temporizador de enfoque',
+    settingsModuleFocusDesc: 'Técnica Pomodoro y trabajo profundo',
+    settingsModuleBreathing: 'Ejercicios de respiración',
+    settingsModuleBreathingDesc: 'Técnicas de relajación y meditación',
+    settingsModuleGratitude: 'Diario de gratitud',
+    settingsModuleGratitudeDesc: 'Registra por lo que estás agradecido',
+    settingsModuleQuests: 'Misiones',
+    settingsModuleQuestsDesc: 'Misiones diarias y recompensas',
+    settingsModuleTasks: 'Tareas',
+    settingsModuleTasksDesc: 'Lista de tareas y gestión',
+    settingsModuleChallenges: 'Desafíos',
+    settingsModuleChallengesDesc: 'Logros y retos',
+    settingsModuleAICoach: 'Coach IA',
+    settingsModuleAICoachDesc: 'Asistente personal con IA',
+    settingsModuleGarden: 'Mi jardín',
+    settingsModuleGardenDesc: 'Jardín virtual y compañero',
+    settingsModuleCoreLocked: 'Módulo principal',
+    settingsModuleUnlockHint: 'Se desbloquea con el progreso',
+
     // GDPR Consent
     consentTitle: 'Configuración de privacidad',
     consentDescription: 'Respetamos tu privacidad. ¿Permitir análisis anónimos para mejorar la app?',
@@ -7242,6 +7372,32 @@ export const translations: Record<Language, Translations> = {
     settingsGroupAccount: 'Konto',
     settingsGroupAbout: 'Über',
 
+    // Feature Toggles / Modules (v1.5.8)
+    settingsGroupModules: 'Module',
+    settingsModulesDescription: 'App-Funktionen aktivieren oder deaktivieren',
+    settingsModuleMood: 'Stimmungs-Tracker',
+    settingsModuleMoodDesc: 'Kernfunktion — immer aktiviert',
+    settingsModuleHabits: 'Gewohnheiten',
+    settingsModuleHabitsDesc: 'Kernfunktion — immer aktiviert',
+    settingsModuleFocus: 'Fokus-Timer',
+    settingsModuleFocusDesc: 'Pomodoro-Technik und Deep Work',
+    settingsModuleBreathing: 'Atemübungen',
+    settingsModuleBreathingDesc: 'Entspannungs- und Meditationstechniken',
+    settingsModuleGratitude: 'Dankbarkeits-Tagebuch',
+    settingsModuleGratitudeDesc: 'Notiere, wofür du dankbar bist',
+    settingsModuleQuests: 'Quests',
+    settingsModuleQuestsDesc: 'Tägliche Aufgaben und Belohnungen',
+    settingsModuleTasks: 'Aufgaben',
+    settingsModuleTasksDesc: 'To-do-Liste und Aufgabenverwaltung',
+    settingsModuleChallenges: 'Challenges',
+    settingsModuleChallengesDesc: 'Erfolge und Herausforderungen',
+    settingsModuleAICoach: 'KI-Coach',
+    settingsModuleAICoachDesc: 'Persönlicher KI-Assistent',
+    settingsModuleGarden: 'Mein Garten',
+    settingsModuleGardenDesc: 'Virtueller Garten und Begleiter',
+    settingsModuleCoreLocked: 'Kernmodul',
+    settingsModuleUnlockHint: 'Wird mit Fortschritt freigeschaltet',
+
     // GDPR Consent
     consentTitle: 'Datenschutzeinstellungen',
     consentDescription: 'Wir respektieren deine Privatsphäre. Anonyme Analysen erlauben, um die App zu verbessern?',
@@ -8592,6 +8748,32 @@ export const translations: Record<Language, Translations> = {
     settingsGroupData: 'Données et confidentialité',
     settingsGroupAccount: 'Compte',
     settingsGroupAbout: 'À propos',
+
+    // Feature Toggles / Modules (v1.5.8)
+    settingsGroupModules: 'Modules',
+    settingsModulesDescription: 'Activez ou désactivez les fonctionnalités',
+    settingsModuleMood: 'Suivi de l\'humeur',
+    settingsModuleMoodDesc: 'Fonction principale — toujours activée',
+    settingsModuleHabits: 'Habitudes',
+    settingsModuleHabitsDesc: 'Fonction principale — toujours activée',
+    settingsModuleFocus: 'Minuterie focus',
+    settingsModuleFocusDesc: 'Technique Pomodoro et travail profond',
+    settingsModuleBreathing: 'Exercices de respiration',
+    settingsModuleBreathingDesc: 'Techniques de relaxation et méditation',
+    settingsModuleGratitude: 'Journal de gratitude',
+    settingsModuleGratitudeDesc: 'Notez ce pour quoi vous êtes reconnaissant',
+    settingsModuleQuests: 'Quêtes',
+    settingsModuleQuestsDesc: 'Missions quotidiennes et récompenses',
+    settingsModuleTasks: 'Tâches',
+    settingsModuleTasksDesc: 'Liste de tâches et gestion',
+    settingsModuleChallenges: 'Défis',
+    settingsModuleChallengesDesc: 'Réalisations et challenges',
+    settingsModuleAICoach: 'Coach IA',
+    settingsModuleAICoachDesc: 'Assistant personnel avec IA',
+    settingsModuleGarden: 'Mon jardin',
+    settingsModuleGardenDesc: 'Jardin virtuel et compagnon',
+    settingsModuleCoreLocked: 'Module principal',
+    settingsModuleUnlockHint: 'Se débloque avec la progression',
 
     // GDPR Consent
     consentTitle: 'Paramètres de confidentialité',

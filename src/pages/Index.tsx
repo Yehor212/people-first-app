@@ -5,6 +5,7 @@ import { initializeApp } from '@/lib/appInitializer';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { triggerXpPopup } from '@/components/XpPopup';
 import { DayClock } from '@/components/DayClock';
@@ -127,6 +128,7 @@ type TabType = 'home' | 'garden' | 'stats' | 'achievements' | 'settings';
 export function Index() {
   const { t, language } = useLanguage();
   const { setEmotionFromEntries } = useEmotionTheme();
+  const { isFeatureVisible } = useFeatureFlags();
   const { syncFocusSession } = useHealthConnect();
   const { triggerLowMoodCheck, openCoach, setUserData, onboardingData, saveOnboardingAnswer } = useAICoach();
   const [activeTab, setActiveTab] = useState<TabType>('home');
@@ -1922,9 +1924,9 @@ export function Index() {
             <InstallBanner />
             <Header
               userName={userName}
-              onOpenChallenges={isFeatureUnlocked('challenges') ? () => setShowChallenges(true) : undefined}
-              onOpenTasks={isFeatureUnlocked('tasks') ? () => setShowTasksPanel(true) : undefined}
-              onOpenQuests={isFeatureUnlocked('quests') ? () => setShowQuestsPanel(true) : undefined}
+              onOpenChallenges={isFeatureVisible('challenges') ? () => setShowChallenges(true) : undefined}
+              onOpenTasks={isFeatureVisible('tasks') ? () => setShowTasksPanel(true) : undefined}
+              onOpenQuests={isFeatureVisible('quests') ? () => setShowQuestsPanel(true) : undefined}
             />
 
             <div className="space-y-4">
@@ -2010,16 +2012,18 @@ export function Index() {
                   </div>
 
                   {/* Breathing Exercise - Compact mindfulness card */}
-                  <Suspense fallback={<div className="h-24 bg-card rounded-3xl animate-pulse" />}>
-                    <BreathingExercise
-                      compact
-                      onComplete={(pattern) => {
-                        const treatResult = earnTreats('breathing', 5, `Breathing: ${pattern.name}`);
-                        triggerXpPopup(treatResult.earned, 'breathing');
-                        triggerSync(); // Sync inner world treats
-                      }}
-                    />
-                  </Suspense>
+                  {isFeatureVisible('breathingExercise') && (
+                    <Suspense fallback={<div className="h-24 bg-card rounded-3xl animate-pulse" />}>
+                      <BreathingExercise
+                        compact
+                        onComplete={(pattern) => {
+                          const treatResult = earnTreats('breathing', 5, `Breathing: ${pattern.name}`);
+                          triggerXpPopup(treatResult.earned, 'breathing');
+                          triggerSync(); // Sync inner world treats
+                        }}
+                      />
+                    </Suspense>
+                  )}
 
                   {/* Habit Tracker - Primary or Collapsed */}
                   <div ref={habitsRef}>
@@ -2058,7 +2062,7 @@ export function Index() {
                   </div>
 
                   {/* Focus Timer - Primary or Collapsed (Progressive: Day 2) */}
-                  {isFeatureUnlocked('focusTimer') && (
+                  {isFeatureVisible('focusTimer') && (
                     <div ref={focusRef}>
                       {currentPrimaryCTA === 'focus' ? (
                         <FocusTimer
@@ -2095,39 +2099,41 @@ export function Index() {
                   />
 
                   {/* Gratitude Journal - Primary or Collapsed */}
-                  <div ref={gratitudeRef}>
-                    <Suspense fallback={<div className="h-32 bg-card rounded-3xl animate-pulse" />}>
-                      {currentPrimaryCTA === 'gratitude' ? (
-                        <GratitudeJournal
-                          entries={safeGratitudeEntries}
-                          onAddEntry={handleAddGratitude}
-                          isPrimaryCTA={true}
-                          initialText={journalPromptText}
-                          onInitialTextUsed={handleJournalPromptUsed}
-                        />
-                      ) : hasGratitudeToday ? (
-                        <CompletedSection
-                          title={t.gratitudeAddedShort || t.gratitude}
-                          icon="🙏"
-                          accentColor="pink"
-                        >
+                  {isFeatureVisible('gratitudeJournal') && (
+                    <div ref={gratitudeRef}>
+                      <Suspense fallback={<div className="h-32 bg-card rounded-3xl animate-pulse" />}>
+                        {currentPrimaryCTA === 'gratitude' ? (
+                          <GratitudeJournal
+                            entries={safeGratitudeEntries}
+                            onAddEntry={handleAddGratitude}
+                            isPrimaryCTA={true}
+                            initialText={journalPromptText}
+                            onInitialTextUsed={handleJournalPromptUsed}
+                          />
+                        ) : hasGratitudeToday ? (
+                          <CompletedSection
+                            title={t.gratitudeAddedShort || t.gratitude}
+                            icon="🙏"
+                            accentColor="pink"
+                          >
+                            <GratitudeJournal
+                              entries={safeGratitudeEntries}
+                              onAddEntry={handleAddGratitude}
+                              initialText={journalPromptText}
+                              onInitialTextUsed={handleJournalPromptUsed}
+                            />
+                          </CompletedSection>
+                        ) : (
                           <GratitudeJournal
                             entries={safeGratitudeEntries}
                             onAddEntry={handleAddGratitude}
                             initialText={journalPromptText}
                             onInitialTextUsed={handleJournalPromptUsed}
                           />
-                        </CompletedSection>
-                      ) : (
-                        <GratitudeJournal
-                          entries={safeGratitudeEntries}
-                          onAddEntry={handleAddGratitude}
-                          initialText={journalPromptText}
-                          onInitialTextUsed={handleJournalPromptUsed}
-                        />
-                      )}
-                    </Suspense>
-                  </div>
+                        )}
+                      </Suspense>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -2138,9 +2144,9 @@ export function Index() {
           <div className="space-y-4">
             <Header
               userName={userName}
-              onOpenChallenges={isFeatureUnlocked('challenges') ? () => setShowChallenges(true) : undefined}
-              onOpenTasks={isFeatureUnlocked('tasks') ? () => setShowTasksPanel(true) : undefined}
-              onOpenQuests={isFeatureUnlocked('quests') ? () => setShowQuestsPanel(true) : undefined}
+              onOpenChallenges={isFeatureVisible('challenges') ? () => setShowChallenges(true) : undefined}
+              onOpenTasks={isFeatureVisible('tasks') ? () => setShowTasksPanel(true) : undefined}
+              onOpenQuests={isFeatureVisible('quests') ? () => setShowQuestsPanel(true) : undefined}
             />
 
             {/* v1.4.0: Schedule Timeline - ADHD-friendly day planner with habits auto-synced */}
@@ -2239,7 +2245,7 @@ export function Index() {
       )}
 
       {/* Challenges Panel Modal (Progressive: Day 4) */}
-      {showChallenges && isFeatureUnlocked('challenges') && (
+      {showChallenges && isFeatureVisible('challenges') && (
         <Suspense fallback={null}>
           <ChallengesPanel
             activeChallenges={challenges}
@@ -2260,7 +2266,7 @@ export function Index() {
       )}
 
       {/* Tasks Panel Modal (Progressive: Day 4) */}
-      {showTasksPanel && isFeatureUnlocked('tasks') && (
+      {showTasksPanel && isFeatureVisible('tasks') && (
         <Suspense fallback={null}>
           <TasksPanel
             onClose={() => setShowTasksPanel(false)}
@@ -2280,7 +2286,7 @@ export function Index() {
       )}
 
       {/* Quests Panel Modal (Progressive: Day 3) */}
-      {showQuestsPanel && isFeatureUnlocked('quests') && (
+      {showQuestsPanel && isFeatureVisible('quests') && (
         <Suspense fallback={null}>
           <QuestsPanel
             onClose={() => setShowQuestsPanel(false)}
@@ -2289,7 +2295,7 @@ export function Index() {
       )}
 
       {/* Companion Panel Modal (Progressive: Day 3, legacy - kept for reference) */}
-      {isFeatureUnlocked('companion') && (
+      {isFeatureUnlocked('companion') && isFeatureVisible('innerWorld') && (
         <CompanionPanel
           companion={innerWorld.companion}
           isOpen={showCompanionPanel}
@@ -2331,7 +2337,7 @@ export function Index() {
       />
 
       {/* AI Coach Chat - bottom sheet for AI coaching */}
-      <AICoachChat />
+      {isFeatureVisible('aiCoach') && <AICoachChat />}
 
     </div>
   );
