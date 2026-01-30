@@ -143,6 +143,7 @@ export const haptics = {
 
   // Navigation & UI
   buttonPress: hapticTap,
+  buttonTap: hapticTap,  // Alias for AI Coach compatibility
   tabChanged: hapticSelection,
   panelOpened: hapticTap,
   panelClosed: hapticTap,
