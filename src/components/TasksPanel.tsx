@@ -31,8 +31,10 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskMinutes, setNewTaskMinutes] = useState(15);
+  const [newTaskMinutesInput, setNewTaskMinutesInput] = useState('15');
   const [newTaskUrgent, setNewTaskUrgent] = useState(false);
   const [newTaskInterest, setNewTaskInterest] = useState(5);
+  const [newTaskInterestInput, setNewTaskInterestInput] = useState('5');
   const [consecutiveCompletions, setConsecutiveCompletions] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -106,8 +108,10 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
     setTasks(prev => [...prev, newTask]);
     setNewTaskName('');
     setNewTaskMinutes(15);
+    setNewTaskMinutesInput('15');
     setNewTaskUrgent(false);
     setNewTaskInterest(5);
+    setNewTaskInterestInput('5');
     setShowAddForm(false);
   }, [newTaskName, newTaskMinutes, newTaskUrgent, newTaskInterest]);
 
@@ -318,8 +322,13 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
                 </label>
                 <input
                   type="number"
-                  value={newTaskMinutes}
-                  onChange={(e) => setNewTaskMinutes(safeParseInt(e.target.value, 15, 1, 480))}
+                  value={newTaskMinutesInput}
+                  onChange={(e) => setNewTaskMinutesInput(e.target.value)}
+                  onBlur={(e) => {
+                    const validated = safeParseInt(e.target.value, 15, 1, 480);
+                    setNewTaskMinutes(validated);
+                    setNewTaskMinutesInput(String(validated));
+                  }}
                   min="1"
                   max="480"
                   className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -331,8 +340,13 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
                 </label>
                 <input
                   type="number"
-                  value={newTaskInterest}
-                  onChange={(e) => setNewTaskInterest(safeParseInt(e.target.value, 5, 1, 10))}
+                  value={newTaskInterestInput}
+                  onChange={(e) => setNewTaskInterestInput(e.target.value)}
+                  onBlur={(e) => {
+                    const validated = safeParseInt(e.target.value, 5, 1, 10);
+                    setNewTaskInterest(validated);
+                    setNewTaskInterestInput(String(validated));
+                  }}
                   min="1"
                   max="10"
                   className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"

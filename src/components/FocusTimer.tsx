@@ -128,6 +128,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
   const focusDuration = focusMinutes * 60;
   const breakDuration = breakMinutes * 60;
   const prevFocusDurationRef = useRef(focusDuration);
+  const prevBreakDurationRef = useRef(breakDuration);
 
   const presets = useMemo(() => ([
     { key: '25' as const, label: t.focusPreset25, focus: 25, break: 5 },
@@ -135,12 +136,21 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     { key: 'custom' as const, label: t.focusPresetCustom, focus: focusMinutes, break: breakMinutes },
   ]), [t, focusMinutes, breakMinutes]);
 
+  // Sync timeLeft when focusDuration changes (not running, not break)
   useEffect(() => {
     if (!isRunning && !isBreak && focusDuration !== prevFocusDurationRef.current) {
       setTimeLeft(focusDuration);
     }
     prevFocusDurationRef.current = focusDuration;
   }, [focusDuration, isRunning, isBreak]);
+
+  // Sync timeLeft when breakDuration changes (not running, during break)
+  useEffect(() => {
+    if (!isRunning && isBreak && breakDuration !== prevBreakDurationRef.current) {
+      setTimeLeft(breakDuration);
+    }
+    prevBreakDurationRef.current = breakDuration;
+  }, [breakDuration, isRunning, isBreak]);
 
   // Save state whenever it changes (debounced to prevent race conditions with interval saves)
   useEffect(() => {
