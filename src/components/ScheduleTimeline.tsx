@@ -579,6 +579,9 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
         </div>
       )}
 
+      {/* Task Focus Panel - detailed minute view when tasks exist */}
+      <TaskFocusPanel tasks={tasks} t={t} />
+
       {/* Add Event Modal */}
       {showAddModal && onAddEvent && (
         <AddEventModal
@@ -797,6 +800,109 @@ function AddEventModal({
           <Check className="w-5 h-5" />
           {t.scheduleAdd || 'Add to Schedule'}
         </button>
+      </div>
+    </div>
+  );
+}
+
+// Task Focus Panel - detailed minute view for active tasks
+function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string> }) {
+  const incompleteTasks = tasks.filter(task => !task.completed);
+  if (incompleteTasks.length === 0) return null;
+
+  let currentTimestamp = Date.now();
+  const blocks: Array<{
+    id: string;
+    title: string;
+    emoji: string;
+    startTime: Date;
+    endTime: Date;
+    duration: number;
+    color: string;
+    type: 'work' | 'break';
+  }> = [];
+
+  incompleteTasks.forEach(task => {
+    const workStart = new Date(currentTimestamp);
+    const workEnd = new Date(currentTimestamp + task.estimatedMinutes * 60000);
+
+    blocks.push({
+      id: `work-${task.id}`,
+      title: task.name,
+      emoji: '💼',
+      startTime: workStart,
+      endTime: workEnd,
+      duration: task.estimatedMinutes,
+      color: task.urgent ? '#ef4444' : '#3b82f6',
+      type: 'work',
+    });
+
+    currentTimestamp += task.estimatedMinutes * 60000;
+
+    if (task.breakMinutes && task.breakMinutes > 0) {
+      const breakStart = new Date(currentTimestamp);
+      const breakEnd = new Date(currentTimestamp + task.breakMinutes * 60000);
+
+      blocks.push({
+        id: `break-${task.id}`,
+        title: t.breakTime || 'Отдых',
+        emoji: '☕',
+        startTime: breakStart,
+        endTime: breakEnd,
+        duration: task.breakMinutes,
+        color: '#06b6d4',
+        type: 'break',
+      });
+
+      currentTimestamp += task.breakMinutes * 60000;
+    }
+  });
+
+  const formatTime = (date: Date) =>
+    `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+
+  const totalMinutes = blocks.reduce((sum, b) => sum + b.duration, 0);
+
+  return (
+    <div className="mt-3 p-3 bg-secondary/30 rounded-xl border border-primary/20">
+      <div className="flex items-center gap-2 mb-3">
+        <span className="text-lg">📋</span>
+        <span className="text-sm font-medium text-foreground">
+          {t.yourTasksNow || 'Your tasks now'}
+        </span>
+      </div>
+
+      {/* Progress bar showing all blocks */}
+      <div className="flex gap-1 h-10 rounded-lg overflow-hidden mb-2">
+        {blocks.map(block => (
+          <div
+            key={block.id}
+            className="flex items-center justify-center gap-1 text-white text-xs font-medium"
+            style={{
+              backgroundColor: block.color,
+              width: `${(block.duration / totalMinutes) * 100}%`,
+              minWidth: '60px',
+            }}
+          >
+            <span>{block.emoji}</span>
+            <span className="truncate">{block.title}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Time labels */}
+      <div className="flex gap-1">
+        {blocks.map(block => (
+          <div
+            key={`time-${block.id}`}
+            className="text-[10px] text-muted-foreground text-center"
+            style={{ width: `${(block.duration / totalMinutes) * 100}%`, minWidth: '60px' }}
+          >
+            {formatTime(block.startTime)} — {formatTime(block.endTime)}
+            <br />
+            ({block.duration} {t.min || 'min'})
+          </div>
+        ))}
       </div>
     </div>
   );

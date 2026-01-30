@@ -228,6 +228,7 @@ export interface Translations {
   breakTime: string;
   autoScheduled: string;
   taskEventExplanation: string;
+  yourTasksNow: string;
   todayMinutes: string;
   concentrate: string;
   takeRest: string;
@@ -1659,6 +1660,7 @@ export const translations: Record<Language, Translations> = {
     breakTime: 'Перерыв',
     autoScheduled: 'Авто-расписание',
     taskEventExplanation: 'Этот блок создан автоматически из ваших задач. Выполните задачу, чтобы удалить его.',
+    yourTasksNow: 'Ваши задачи на сейчас',
     todayMinutes: 'мин сегодня',
     concentrate: 'Сконцентрируйтесь',
     takeRest: 'Отдохните',
@@ -3044,6 +3046,7 @@ export const translations: Record<Language, Translations> = {
     breakTime: 'Break',
     autoScheduled: 'Auto-scheduled',
     taskEventExplanation: 'This block is auto-generated from your tasks. Complete the task to remove it.',
+    yourTasksNow: 'Your tasks now',
     todayMinutes: 'min today',
     concentrate: 'Concentrate',
     takeRest: 'Take a rest',
@@ -4429,6 +4432,7 @@ export const translations: Record<Language, Translations> = {
     breakTime: 'Перерва',
     autoScheduled: 'Авто-розклад',
     taskEventExplanation: 'Цей блок створено автоматично з ваших завдань. Виконайте завдання, щоб видалити його.',
+    yourTasksNow: 'Ваші завдання зараз',
     todayMinutes: 'хв сьогодні',
     concentrate: 'Сконцентруйтесь',
     takeRest: 'Відпочиньте',
@@ -5815,6 +5819,7 @@ export const translations: Record<Language, Translations> = {
     breakTime: 'Descanso',
     autoScheduled: 'Auto-programado',
     taskEventExplanation: 'Este bloque se genera automáticamente desde tus tareas. Completa la tarea para eliminarlo.',
+    yourTasksNow: 'Tus tareas ahora',
     todayMinutes: 'min hoy',
     concentrate: 'Concéntrate',
     takeRest: 'Descansa',
@@ -7201,6 +7206,7 @@ export const translations: Record<Language, Translations> = {
     breakTime: 'Pause',
     autoScheduled: 'Auto-geplant',
     taskEventExplanation: 'Dieser Block wird automatisch aus deinen Aufgaben erstellt. Schließe die Aufgabe ab, um ihn zu entfernen.',
+    yourTasksNow: 'Deine Aufgaben jetzt',
     todayMinutes: 'Min heute',
     concentrate: 'Konzentriere dich',
     takeRest: 'Mach eine Pause',
@@ -8587,6 +8593,7 @@ export const translations: Record<Language, Translations> = {
     breakTime: 'Pause',
     autoScheduled: 'Auto-planifié',
     taskEventExplanation: 'Ce bloc est généré automatiquement à partir de vos tâches. Terminez la tâche pour le supprimer.',
+    yourTasksNow: 'Vos tâches maintenant',
     todayMinutes: 'min aujourd\'hui',
     concentrate: 'Concentrez-vous',
     takeRest: 'Reposez-vous',
