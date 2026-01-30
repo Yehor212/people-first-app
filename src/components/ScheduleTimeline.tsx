@@ -818,6 +818,8 @@ function AddEventModal({
 // Task Focus Panel - detailed minute view for active tasks
 function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string> }) {
   const [now, setNow] = useState(Date.now());
+  // FIX: Store initial time so block startTimes don't change every minute
+  const initialTimeRef = useRef(Date.now());
 
   // Update every minute for progress tracking
   useEffect(() => {
@@ -828,7 +830,8 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
   const incompleteTasks = tasks.filter(task => !task.completed);
   if (incompleteTasks.length === 0) return null;
 
-  let currentTimestamp = now; // Use tracked time for consistent calculations
+  // Use FIXED initial time for block calculations, not changing `now`
+  let currentTimestamp = initialTimeRef.current;
   const blocks: Array<{
     id: string;
     title: string;
