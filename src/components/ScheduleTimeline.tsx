@@ -817,10 +817,18 @@ function AddEventModal({
 
 // Task Focus Panel - detailed minute view for active tasks
 function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string> }) {
+  const [now, setNow] = useState(Date.now());
+
+  // Update every minute for progress tracking
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 60000);
+    return () => clearInterval(interval);
+  }, []);
+
   const incompleteTasks = tasks.filter(task => !task.completed);
   if (incompleteTasks.length === 0) return null;
 
-  let currentTimestamp = Date.now();
+  let currentTimestamp = now; // Use tracked time for consistent calculations
   const blocks: Array<{
     id: string;
     title: string;
@@ -873,6 +881,14 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
 
   const totalMinutes = blocks.reduce((sum, b) => sum + b.duration, 0);
 
+  // Calculate progress for current block (first block is always active)
+  const getBlockProgress = (block: typeof blocks[0], index: number): number => {
+    if (index > 0) return 0; // Only first block is active
+    const elapsed = now - block.startTime.getTime();
+    const total = block.duration * 60000;
+    return Math.min(100, Math.max(0, (elapsed / total) * 100));
+  };
+
   return (
     <div className="mt-3 p-3 bg-secondary/30 rounded-xl border border-primary/20">
       <div className="flex items-center gap-2 mb-3">
@@ -884,20 +900,42 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
 
       {/* Progress bar showing all blocks */}
       <div className="flex gap-1 h-10 rounded-lg overflow-hidden mb-2">
-        {blocks.map(block => (
-          <div
-            key={block.id}
-            className="flex items-center justify-center gap-1 text-white text-xs font-medium"
-            style={{
-              backgroundColor: block.color,
-              width: `${(block.duration / totalMinutes) * 100}%`,
-              minWidth: '60px',
-            }}
-          >
-            <span>{block.emoji}</span>
-            <span className="truncate">{block.title}</span>
-          </div>
-        ))}
+        {blocks.map((block, index) => {
+          const progress = getBlockProgress(block, index);
+          const isActive = index === 0;
+          const remainingMinutes = Math.ceil(block.duration - (progress / 100 * block.duration));
+
+          return (
+            <div
+              key={block.id}
+              className="relative flex items-center justify-center gap-1 text-white text-xs font-medium overflow-hidden"
+              style={{
+                backgroundColor: block.color,
+                width: `${(block.duration / totalMinutes) * 100}%`,
+                minWidth: '60px',
+              }}
+            >
+              {/* Progress overlay - darkens as time passes */}
+              {isActive && progress > 0 && (
+                <div
+                  className="absolute inset-y-0 left-0 bg-black/30 transition-all duration-1000"
+                  style={{ width: `${progress}%` }}
+                />
+              )}
+
+              {/* Content on top */}
+              <span className="relative z-10">{block.emoji}</span>
+              <span className="relative z-10 truncate">{block.title}</span>
+
+              {/* Remaining time badge for active block */}
+              {isActive && progress > 0 && (
+                <span className="absolute bottom-0.5 right-1 text-[9px] bg-black/40 px-1 rounded z-10">
+                  {remainingMinutes} {t.min || 'min'}
+                </span>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* Time labels */}
