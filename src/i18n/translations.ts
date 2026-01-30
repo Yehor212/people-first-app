@@ -226,6 +226,8 @@ export interface Translations {
   // Focus timer
   focus: string;
   breakTime: string;
+  autoScheduled: string;
+  taskEventExplanation: string;
   todayMinutes: string;
   concentrate: string;
   takeRest: string;
@@ -1655,6 +1657,8 @@ export const translations: Record<Language, Translations> = {
 
     focus: 'Фокус',
     breakTime: 'Перерыв',
+    autoScheduled: 'Авто-расписание',
+    taskEventExplanation: 'Этот блок создан автоматически из ваших задач. Выполните задачу, чтобы удалить его.',
     todayMinutes: 'мин сегодня',
     concentrate: 'Сконцентрируйтесь',
     takeRest: 'Отдохните',
@@ -3038,6 +3042,8 @@ export const translations: Record<Language, Translations> = {
 
     focus: 'Focus',
     breakTime: 'Break',
+    autoScheduled: 'Auto-scheduled',
+    taskEventExplanation: 'This block is auto-generated from your tasks. Complete the task to remove it.',
     todayMinutes: 'min today',
     concentrate: 'Concentrate',
     takeRest: 'Take a rest',
@@ -4421,6 +4427,8 @@ export const translations: Record<Language, Translations> = {
 
     focus: 'Фокус',
     breakTime: 'Перерва',
+    autoScheduled: 'Авто-розклад',
+    taskEventExplanation: 'Цей блок створено автоматично з ваших завдань. Виконайте завдання, щоб видалити його.',
     todayMinutes: 'хв сьогодні',
     concentrate: 'Сконцентруйтесь',
     takeRest: 'Відпочиньте',
@@ -5805,6 +5813,8 @@ export const translations: Record<Language, Translations> = {
     // Focus timer
     focus: 'Enfoque',
     breakTime: 'Descanso',
+    autoScheduled: 'Auto-programado',
+    taskEventExplanation: 'Este bloque se genera automáticamente desde tus tareas. Completa la tarea para eliminarlo.',
     todayMinutes: 'min hoy',
     concentrate: 'Concéntrate',
     takeRest: 'Descansa',
@@ -7189,6 +7199,8 @@ export const translations: Record<Language, Translations> = {
     // Focus timer
     focus: 'Fokus',
     breakTime: 'Pause',
+    autoScheduled: 'Auto-geplant',
+    taskEventExplanation: 'Dieser Block wird automatisch aus deinen Aufgaben erstellt. Schließe die Aufgabe ab, um ihn zu entfernen.',
     todayMinutes: 'Min heute',
     concentrate: 'Konzentriere dich',
     takeRest: 'Mach eine Pause',
@@ -8573,6 +8585,8 @@ export const translations: Record<Language, Translations> = {
     // Focus timer
     focus: 'Focus',
     breakTime: 'Pause',
+    autoScheduled: 'Auto-planifié',
+    taskEventExplanation: 'Ce bloc est généré automatiquement à partir de vos tâches. Terminez la tâche pour le supprimer.',
     todayMinutes: 'min aujourd\'hui',
     concentrate: 'Concentrez-vous',
     takeRest: 'Reposez-vous',

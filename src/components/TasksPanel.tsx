@@ -32,6 +32,8 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskMinutes, setNewTaskMinutes] = useState(15);
   const [newTaskMinutesInput, setNewTaskMinutesInput] = useState('15');
+  const [newTaskBreak, setNewTaskBreak] = useState(5);
+  const [newTaskBreakInput, setNewTaskBreakInput] = useState('5');
   const [newTaskUrgent, setNewTaskUrgent] = useState(false);
   const [newTaskInterest, setNewTaskInterest] = useState(5);
   const [newTaskInterestInput, setNewTaskInterestInput] = useState('5');
@@ -103,17 +105,21 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
       estimatedMinutes: newTaskMinutes,
       userRating: newTaskInterest,
       completed: false,
+      breakMinutes: newTaskBreak > 0 ? newTaskBreak : undefined,
+      createdAt: Date.now(),
     };
 
     setTasks(prev => [...prev, newTask]);
     setNewTaskName('');
     setNewTaskMinutes(15);
     setNewTaskMinutesInput('15');
+    setNewTaskBreak(5);
+    setNewTaskBreakInput('5');
     setNewTaskUrgent(false);
     setNewTaskInterest(5);
     setNewTaskInterestInput('5');
     setShowAddForm(false);
-  }, [newTaskName, newTaskMinutes, newTaskUrgent, newTaskInterest]);
+  }, [newTaskName, newTaskMinutes, newTaskUrgent, newTaskInterest, newTaskBreak]);
 
   const handleToggleTask = useCallback((taskId: string) => {
     setTasks(prev => prev.map(task => {
@@ -315,10 +321,10 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
               onKeyDown={(e) => e.key === 'Enter' && handleAddTask()}
             />
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">
-                  {t.durationMinutes || 'Duration (minutes)'}
+                  {t.durationMinutes || 'Duration (min)'}
                 </label>
                 <input
                   type="number"
@@ -336,7 +342,25 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">
-                  {t.interestLevel || 'Interest (1-10)'}
+                  {t.breakTime || 'Break (min)'}
+                </label>
+                <input
+                  type="number"
+                  value={newTaskBreakInput}
+                  onChange={(e) => setNewTaskBreakInput(e.target.value)}
+                  onBlur={(e) => {
+                    const validated = safeParseInt(e.target.value, 5, 0, 60);
+                    setNewTaskBreak(validated);
+                    setNewTaskBreakInput(String(validated));
+                  }}
+                  min="0"
+                  max="60"
+                  className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">
+                  {t.interestLevel || 'Interest'}
                 </label>
                 <input
                   type="number"

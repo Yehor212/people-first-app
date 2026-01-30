@@ -11,6 +11,8 @@ export interface Task {
   completed: boolean;
   dueDate?: string;
   category?: string;
+  breakMinutes?: number; // Rest time after task completion
+  createdAt?: number; // Timestamp when task was created (for scheduling)
 }
 
 export interface PrioritizedTask extends Task {
