@@ -549,6 +549,13 @@ export interface Translations {
   settingsWhatsNewSecurity: string;
   settingsWhatsNewSecurityDesc: string;
   settingsWhatsNewGotIt: string;
+  // v1.5.8 What's New
+  settingsWhatsNewFeatureToggles: string;
+  settingsWhatsNewFeatureTogglesDesc: string;
+  settingsWhatsNewBugFixes158: string;
+  settingsWhatsNewBugFixes158Desc: string;
+  settingsWhatsNewUIImprovements: string;
+  settingsWhatsNewUIImprovementsDesc: string;
   settingsSectionAccount: string;
   settingsSectionData: string;
 
@@ -1829,7 +1836,7 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'Файл слишком большой (макс. 10 МБ)',
     importConfirm: 'Подтвердить импорт',
     invalidBackupFormat: 'Неверный формат резервной копии',
-    settingsWhatsNewTitle: 'Что нового в v1.3.0',
+    settingsWhatsNewTitle: 'Что нового в v1.5.8',
     settingsWhatsNewLeaderboards: 'Таблицы лидеров',
     settingsWhatsNewLeaderboardsDesc: 'Соревнуйтесь анонимно с другими',
     settingsWhatsNewSpotify: 'Интеграция Spotify',
@@ -1841,6 +1848,13 @@ export const translations: Record<Language, Translations> = {
     settingsWhatsNewSecurity: 'Улучшенная безопасность',
     settingsWhatsNewSecurityDesc: 'Лучшая защита данных и приватности',
     settingsWhatsNewGotIt: 'Понятно!',
+    // v1.5.8 What's New
+    settingsWhatsNewFeatureToggles: 'Переключатели модулей',
+    settingsWhatsNewFeatureTogglesDesc: 'Включайте/выключайте модули в Настройках',
+    settingsWhatsNewBugFixes158: 'Исправления багов',
+    settingsWhatsNewBugFixes158Desc: 'Исправлены проблемы синхронизации и стабильности',
+    settingsWhatsNewUIImprovements: 'Улучшения интерфейса',
+    settingsWhatsNewUIImprovementsDesc: 'Улучшенные переключатели и организация настроек',
     settingsSectionAccount: 'Аккаунт и облако',
     settingsSectionData: 'Данные и резервное копирование',
 
@@ -3205,7 +3219,7 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'File too large (max 10 MB)',
     importConfirm: 'Confirm import',
     invalidBackupFormat: 'Invalid backup format',
-    settingsWhatsNewTitle: 'What\'s New in v1.3.0',
+    settingsWhatsNewTitle: 'What\'s New in v1.5.8',
     settingsWhatsNewLeaderboards: 'Leaderboards',
     settingsWhatsNewLeaderboardsDesc: 'Compete anonymously with others',
     settingsWhatsNewSpotify: 'Spotify Integration',
@@ -3217,6 +3231,13 @@ export const translations: Record<Language, Translations> = {
     settingsWhatsNewSecurity: 'Enhanced Security',
     settingsWhatsNewSecurityDesc: 'Better data protection & privacy',
     settingsWhatsNewGotIt: 'Got it!',
+    // v1.5.8 What's New
+    settingsWhatsNewFeatureToggles: 'Feature Toggles',
+    settingsWhatsNewFeatureTogglesDesc: 'Enable/disable modules in Settings',
+    settingsWhatsNewBugFixes158: 'Bug Fixes',
+    settingsWhatsNewBugFixes158Desc: 'Fixed sync issues and improved stability',
+    settingsWhatsNewUIImprovements: 'UI Improvements',
+    settingsWhatsNewUIImprovementsDesc: 'Better toggle switches and settings organization',
     settingsSectionAccount: 'Account & Cloud',
     settingsSectionData: 'Data & Backup',
 
@@ -4581,18 +4602,25 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'Файл завеликий (макс. 10 МБ)',
     importConfirm: 'Підтвердити імпорт',
     invalidBackupFormat: 'Невірний формат резервної копії',
-    settingsWhatsNewTitle: 'Що нового в v1.3.0',
+    settingsWhatsNewTitle: 'Що нового в v1.5.8',
     settingsWhatsNewLeaderboards: 'Таблиці лідерів',
     settingsWhatsNewLeaderboardsDesc: 'Змагайтеся анонімно з іншими',
     settingsWhatsNewSpotify: 'Інтеграція Spotify',
     settingsWhatsNewSpotifyDesc: 'Автовідтворення музики під час фокусування',
-    settingsWhatsNewChallenges: 'Челенджі з друзями',
+    settingsWhatsNewChallenges: 'Виклики з друзями',
     settingsWhatsNewChallengesDesc: 'Запрошуйте друзів виробляти звички разом',
     settingsWhatsNewDigest: 'Щотижневий дайджест',
     settingsWhatsNewDigestDesc: 'Отримуйте звіти про прогрес на email',
     settingsWhatsNewSecurity: 'Покращена безпека',
     settingsWhatsNewSecurityDesc: 'Кращий захист даних та приватності',
     settingsWhatsNewGotIt: 'Зрозуміло!',
+    // v1.5.8 What's New
+    settingsWhatsNewFeatureToggles: 'Перемикачі модулів',
+    settingsWhatsNewFeatureTogglesDesc: 'Вмикайте/вимикайте модулі в Налаштуваннях',
+    settingsWhatsNewBugFixes158: 'Виправлення помилок',
+    settingsWhatsNewBugFixes158Desc: 'Виправлено проблеми синхронізації та стабільності',
+    settingsWhatsNewUIImprovements: 'Покращення інтерфейсу',
+    settingsWhatsNewUIImprovementsDesc: 'Покращені перемикачі та організація налаштувань',
     settingsSectionAccount: 'Акаунт і хмара',
     settingsSectionData: 'Дані та резервне копіювання',
 
@@ -5958,7 +5986,7 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'Archivo demasiado grande (máx. 10 MB)',
     importConfirm: 'Confirmar importación',
     invalidBackupFormat: 'Formato de copia de seguridad inválido',
-    settingsWhatsNewTitle: 'Novedades en v1.3.0',
+    settingsWhatsNewTitle: 'Novedades en v1.5.8',
     settingsWhatsNewLeaderboards: 'Tablas de clasificación',
     settingsWhatsNewLeaderboardsDesc: 'Compite anónimamente con otros',
     settingsWhatsNewSpotify: 'Integración Spotify',
@@ -5970,6 +5998,13 @@ export const translations: Record<Language, Translations> = {
     settingsWhatsNewSecurity: 'Seguridad mejorada',
     settingsWhatsNewSecurityDesc: 'Mejor protección de datos y privacidad',
     settingsWhatsNewGotIt: '¡Entendido!',
+    // v1.5.8 What's New
+    settingsWhatsNewFeatureToggles: 'Interruptores de funciones',
+    settingsWhatsNewFeatureTogglesDesc: 'Activa/desactiva módulos en Configuración',
+    settingsWhatsNewBugFixes158: 'Corrección de errores',
+    settingsWhatsNewBugFixes158Desc: 'Problemas de sincronización y estabilidad corregidos',
+    settingsWhatsNewUIImprovements: 'Mejoras de interfaz',
+    settingsWhatsNewUIImprovementsDesc: 'Mejores interruptores y organización de configuración',
     settingsSectionAccount: 'Cuenta y nube',
     settingsSectionData: 'Datos y copia de seguridad',
 
@@ -7335,7 +7370,7 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'Datei zu groß (max. 10 MB)',
     importConfirm: 'Import bestätigen',
     invalidBackupFormat: 'Ungültiges Backup-Format',
-    settingsWhatsNewTitle: 'Was ist neu in v1.3.0',
+    settingsWhatsNewTitle: 'Was ist neu in v1.5.8',
     settingsWhatsNewLeaderboards: 'Bestenlisten',
     settingsWhatsNewLeaderboardsDesc: 'Anonym mit anderen konkurrieren',
     settingsWhatsNewSpotify: 'Spotify-Integration',
@@ -7347,6 +7382,13 @@ export const translations: Record<Language, Translations> = {
     settingsWhatsNewSecurity: 'Verbesserte Sicherheit',
     settingsWhatsNewSecurityDesc: 'Besserer Datenschutz & Privatsphäre',
     settingsWhatsNewGotIt: 'Verstanden!',
+    // v1.5.8 What's New
+    settingsWhatsNewFeatureToggles: 'Funktions-Schalter',
+    settingsWhatsNewFeatureTogglesDesc: 'Module in Einstellungen aktivieren/deaktivieren',
+    settingsWhatsNewBugFixes158: 'Fehlerbehebungen',
+    settingsWhatsNewBugFixes158Desc: 'Sync-Probleme und Stabilität verbessert',
+    settingsWhatsNewUIImprovements: 'UI-Verbesserungen',
+    settingsWhatsNewUIImprovementsDesc: 'Bessere Schalter und Einstellungsorganisation',
     settingsSectionAccount: 'Konto & Cloud',
     settingsSectionData: 'Daten & Backup',
 
@@ -8712,7 +8754,7 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'Fichier trop volumineux (max 10 Mo)',
     importConfirm: 'Confirmer l\'importation',
     invalidBackupFormat: 'Format de sauvegarde invalide',
-    settingsWhatsNewTitle: 'Nouveautés dans v1.3.0',
+    settingsWhatsNewTitle: 'Nouveautés dans v1.5.8',
     settingsWhatsNewLeaderboards: 'Classements',
     settingsWhatsNewLeaderboardsDesc: 'Rivalisez anonymement avec les autres',
     settingsWhatsNewSpotify: 'Intégration Spotify',
@@ -8724,6 +8766,13 @@ export const translations: Record<Language, Translations> = {
     settingsWhatsNewSecurity: 'Sécurité améliorée',
     settingsWhatsNewSecurityDesc: 'Meilleure protection des données et confidentialité',
     settingsWhatsNewGotIt: 'Compris !',
+    // v1.5.8 What's New
+    settingsWhatsNewFeatureToggles: 'Interrupteurs de fonctionnalités',
+    settingsWhatsNewFeatureTogglesDesc: 'Activez/désactivez les modules dans Paramètres',
+    settingsWhatsNewBugFixes158: 'Corrections de bugs',
+    settingsWhatsNewBugFixes158Desc: 'Problèmes de synchronisation et stabilité corrigés',
+    settingsWhatsNewUIImprovements: 'Améliorations de l\'interface',
+    settingsWhatsNewUIImprovementsDesc: 'Meilleurs interrupteurs et organisation des paramètres',
     settingsSectionAccount: 'Compte et cloud',
     settingsSectionData: 'Données et sauvegarde',
 

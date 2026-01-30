@@ -210,12 +210,20 @@ class SyncOrchestrator {
         operation.retries++;
 
         // Don't retry on client errors (400, 404, 422) - these won't succeed on retry
+        // Also check for Supabase/Postgres-specific error messages
         const errorMessage = (error as Error).message || '';
         const isClientError = errorMessage.includes('400') ||
           errorMessage.includes('404') ||
           errorMessage.includes('422') ||
           errorMessage.includes('Bad Request') ||
-          errorMessage.includes('Not Found');
+          errorMessage.includes('Not Found') ||
+          errorMessage.includes('duplicate key') ||
+          errorMessage.includes('violates unique constraint') ||
+          errorMessage.includes('already exists') ||
+          errorMessage.includes('invalid input syntax') ||
+          errorMessage.includes('PGRST') || // PostgREST errors
+          errorMessage.includes('relation') || // Table not found
+          errorMessage.includes('column'); // Column not found
 
         // Check if we should retry (skip retry for client errors)
         if (!isClientError && operation.retries < operation.maxRetries) {

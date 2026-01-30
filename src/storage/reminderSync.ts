@@ -45,5 +45,5 @@ export const syncReminderSettings = async (
       logger.error('[ReminderSync] Failed to push settings:', error);
       throw new Error(error.message);
     }
-  }, { priority: 7, maxRetries: 3 }); // Higher priority for user settings
+  }, { priority: 7, maxRetries: 0 }); // No retries - settings sync failures shouldn't loop
 };

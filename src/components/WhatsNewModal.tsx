@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Sparkles, Shield, Zap, Download, Moon, X, RefreshCw, MessageSquare } from 'lucide-react';
+import { Sparkles, Shield, Zap, Download, Moon, X, RefreshCw, MessageSquare, ToggleRight, Bug } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { APP_VERSION, wasAppUpdated } from '@/lib/appVersion';
 import { cn } from '@/lib/utils';
@@ -25,6 +25,36 @@ interface ChangelogItem {
 
 // Changelog entries by version
 const CHANGELOG: Record<string, ChangelogItem[]> = {
+  '1.5.8': [
+    {
+      icon: <ToggleRight className="w-5 h-5 text-purple-500" />,
+      titleKey: 'whatsNew.featureToggles.title',
+      descriptionKey: 'whatsNew.featureToggles.description',
+      title: 'Feature Toggles',
+      description: 'Enable/disable app modules in Settings.',
+    },
+    {
+      icon: <Shield className="w-5 h-5 text-green-500" />,
+      titleKey: 'whatsNew.securityFixes.title',
+      descriptionKey: 'whatsNew.securityFixes.description',
+      title: 'Enhanced Security',
+      description: 'Fixed vulnerabilities and improved data protection.',
+    },
+    {
+      icon: <Bug className="w-5 h-5 text-orange-500" />,
+      titleKey: 'whatsNew.bugFixes158.title',
+      descriptionKey: 'whatsNew.bugFixes158.description',
+      title: 'Bug Fixes',
+      description: 'Fixed sync issues and improved stability.',
+    },
+    {
+      icon: <Zap className="w-5 h-5 text-yellow-500" />,
+      titleKey: 'whatsNew.uiImprovements.title',
+      descriptionKey: 'whatsNew.uiImprovements.description',
+      title: 'UI Improvements',
+      description: 'Better toggle switches and settings organization.',
+    },
+  ],
   '1.3.5': [
     {
       icon: <Shield className="w-5 h-5 text-green-500" />,

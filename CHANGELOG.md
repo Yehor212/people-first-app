@@ -5,6 +5,65 @@ All notable changes to ZenFlow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.8] - "Feature Toggles & Security" - 2026-01-29
+
+### 🎛️ Feature Toggles System
+- **NEW:** Module toggles in Settings - enable/disable app features
+- **NEW:** FeatureFlagsContext for centralized feature management
+- Toggle available modules: Focus Timer, Breathing, Gratitude, Quests, Tasks, Challenges, AI Coach, Garden
+- Core features (Mood, Habits) always enabled
+- Settings persist across sessions
+
+### 🔒 Security Fixes
+- **FIXED:** RLS enabled on user_stats table
+- **FIXED:** Function search_path vulnerability (9 functions patched)
+- **FIXED:** Feedback table RLS policy hardened
+- **IMPROVED:** Supabase error handling in syncOrchestrator
+- **IMPROVED:** Rate limiting for reminder sync
+
+### 🐛 Bug Fixes
+- **FIXED:** Infinite loop on user_reminder_settings 400 error
+- **FIXED:** Hidden components still visible when features disabled
+- **FIXED:** EmotionThemeContext TDZ error in production
+
+### 📱 UI Improvements
+- **IMPROVED:** Toggle switches - larger, more accessible design
+- **IMPROVED:** Settings panel organization
+
+---
+
+## [1.5.7] - "Stability & Sync" - 2026-01-28
+
+### 🔧 Stability Improvements
+- **FIXED:** Memory leaks in panels (CompanionPanel, TreePanel, QuestsPanel)
+- **FIXED:** Fetch timeout handling with AbortController
+- **FIXED:** CORS headers in edge functions
+- **FIXED:** Auth cleanup on unmount
+
+### 🔒 Security
+- **NEW:** Rate limiting on AI Coach endpoint
+- **NEW:** Push notification rate limiting
+- **IMPROVED:** Service key comparison (timing-safe)
+
+---
+
+## [1.5.0] - "AI Coach & Emotions" - 2026-01-27
+
+### 🤖 AI Coach
+- **NEW:** Personal AI coach for ADHD support
+- **NEW:** Onboarding flow for AI coach personalization
+- **NEW:** Context-aware suggestions based on mood and habits
+
+### 🎨 Emotion Theme System
+- **NEW:** Dynamic theme based on Plutchik's 8 primary emotions
+- **NEW:** Theme changes based on today's mood
+- **NEW:** Support messages for difficult emotions
+
+### 🌐 Translations
+- **IMPROVED:** All 6 languages updated with new feature strings
+
+---
+
 ## [1.4.0] - "Audit & Quality" - 2026-01-26
 
 ### 🔒 Security Improvements
