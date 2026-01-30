@@ -219,6 +219,32 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
   const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const endTransitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Smooth transition between emotions
+  // P1 Fix: Use refs and cleanup previous timeouts to prevent race conditions
+  // IMPORTANT: This must be defined BEFORE setEmotionFromEntries and setEmotionDirectly
+  const transitionToEmotion = useCallback((newEmotion: PrimaryEmotion | 'neutral') => {
+    // Clear any pending timeouts
+    if (transitionTimeoutRef.current) {
+      clearTimeout(transitionTimeoutRef.current);
+    }
+    if (endTransitionTimeoutRef.current) {
+      clearTimeout(endTransitionTimeoutRef.current);
+    }
+
+    setIsTransitioning(true);
+
+    // Start transition
+    transitionTimeoutRef.current = setTimeout(() => {
+      setCurrentEmotion(newEmotion);
+      setCurrentTheme(emotionThemes[newEmotion]);
+    }, 150);
+
+    // End transition
+    endTransitionTimeoutRef.current = setTimeout(() => {
+      setIsTransitioning(false);
+    }, 600);
+  }, []);
+
   // Update emotion from mood entries (looks at today's latest entry)
   // P1 Fix: Wrap in useCallback for stable reference
   const setEmotionFromEntries = useCallback((entries: MoodEntry[]) => {
@@ -243,31 +269,6 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
   const setEmotionDirectly = useCallback((emotion: PrimaryEmotion | 'neutral') => {
     transitionToEmotion(emotion);
   }, [transitionToEmotion]);
-
-  // Smooth transition between emotions
-  // P1 Fix: Use refs and cleanup previous timeouts to prevent race conditions
-  const transitionToEmotion = useCallback((newEmotion: PrimaryEmotion | 'neutral') => {
-    // Clear any pending timeouts
-    if (transitionTimeoutRef.current) {
-      clearTimeout(transitionTimeoutRef.current);
-    }
-    if (endTransitionTimeoutRef.current) {
-      clearTimeout(endTransitionTimeoutRef.current);
-    }
-
-    setIsTransitioning(true);
-
-    // Start transition
-    transitionTimeoutRef.current = setTimeout(() => {
-      setCurrentEmotion(newEmotion);
-      setCurrentTheme(emotionThemes[newEmotion]);
-    }, 150);
-
-    // End transition
-    endTransitionTimeoutRef.current = setTimeout(() => {
-      setIsTransitioning(false);
-    }, 600);
-  }, []);
 
   // P1 Fix: Cleanup timeouts on unmount
   useEffect(() => {
