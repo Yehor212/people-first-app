@@ -291,7 +291,10 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     const newMoodData = moods.find(m => m.type === newMood);
     setChangedMoodEmoji(newMoodData?.emoji || '');
     setShowMoodChangedToast(true);
-    // P0 Fix: Store timeout ref and check mounted before state update
+    // P0 Fix: Clear previous timeout before setting new one to prevent memory leak
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
     toastTimeoutRef.current = setTimeout(() => {
       if (mountedRef.current) {
         setShowMoodChangedToast(false);

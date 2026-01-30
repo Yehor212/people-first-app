@@ -85,8 +85,21 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
   const startXRef = useRef(0);
   const isSwipingRef = useRef(false);
 
+  // P0 Fix: Refs for timeout cleanup and race condition prevention
+  const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const transitionLockRef = useRef(false);
+
   // Get slides array inside component to avoid TDZ issues
   const slides = getSlides();
+
+  // P0 Fix: Cleanup timeout on unmount to prevent memory leak
+  useEffect(() => {
+    return () => {
+      if (animationTimeoutRef.current) {
+        clearTimeout(animationTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Tutorial content with translations
   const getSlideContent = (id: string) => {
@@ -155,36 +168,58 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
   };
 
   const handleNext = () => {
-    if (isAnimating) return;
+    // P0 Fix: Double protection with both state and ref to prevent race conditions
+    if (isAnimating || transitionLockRef.current) return;
     if (currentSlide === slides.length - 1) {
       onComplete();
       return;
     }
+    transitionLockRef.current = true;
     setDirection('next');
     setIsAnimating(true);
-    setTimeout(() => {
+
+    // P0 Fix: Clear previous timeout before setting new one
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+    }
+    animationTimeoutRef.current = setTimeout(() => {
       setCurrentSlide(prev => prev + 1);
       setIsAnimating(false);
+      transitionLockRef.current = false;
     }, 300);
   };
 
   const handlePrev = () => {
-    if (isAnimating || currentSlide === 0) return;
+    // P0 Fix: Double protection with both state and ref
+    if (isAnimating || transitionLockRef.current || currentSlide === 0) return;
+    transitionLockRef.current = true;
     setDirection('prev');
     setIsAnimating(true);
-    setTimeout(() => {
+
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+    }
+    animationTimeoutRef.current = setTimeout(() => {
       setCurrentSlide(prev => prev - 1);
       setIsAnimating(false);
+      transitionLockRef.current = false;
     }, 300);
   };
 
   const handleDotClick = (index: number) => {
-    if (isAnimating || index === currentSlide) return;
+    // P0 Fix: Double protection with both state and ref
+    if (isAnimating || transitionLockRef.current || index === currentSlide) return;
+    transitionLockRef.current = true;
     setDirection(index > currentSlide ? 'next' : 'prev');
     setIsAnimating(true);
-    setTimeout(() => {
+
+    if (animationTimeoutRef.current) {
+      clearTimeout(animationTimeoutRef.current);
+    }
+    animationTimeoutRef.current = setTimeout(() => {
       setCurrentSlide(index);
       setIsAnimating(false);
+      transitionLockRef.current = false;
     }, 300);
   };
 

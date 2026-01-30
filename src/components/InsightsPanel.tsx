@@ -147,13 +147,13 @@ export function InsightsPanel({
       {/* Insights List */}
       <div className="p-4 space-y-3">
         {displayInsights.map((insight, index) => (
-          <div key={insight.id} className="relative">
+          <div key={insight.id} className="relative group">
             <InsightCard insight={insight} />
 
-            {/* Dismiss button */}
+            {/* Dismiss button - P1 Fix: Added touch-friendly visibility */}
             <button
               onClick={() => dismissInsight(insight.id)}
-              className="absolute top-2 right-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-0 group-hover:opacity-100"
+              className="absolute top-2 right-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100"
               aria-label={t.insightsDismiss || 'Dismiss'}
             >
               <X className="w-4 h-4" />
@@ -189,9 +189,10 @@ export function InsightsPanel({
             {insights.slice(3).map(insight => (
               <div key={insight.id} className="relative group">
                 <InsightCard insight={insight} />
+                {/* P1 Fix: Added touch-friendly visibility */}
                 <button
                   onClick={() => dismissInsight(insight.id)}
-                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-0 group-hover:opacity-100"
+                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100"
                   aria-label={t.insightsDismiss || 'Dismiss'}
                 >
                   <X className="w-4 h-4" />

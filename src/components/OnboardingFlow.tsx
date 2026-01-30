@@ -29,7 +29,17 @@ interface OnboardingFlowProps {
 }
 
 // Floating particles component
+// P1 Fix: Added reduced-motion support for accessibility
 function FloatingParticles() {
+  // Check if user prefers reduced motion
+  const prefersReducedMotion = typeof window !== 'undefined'
+    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+  // Don't render particles if user prefers reduced motion
+  if (prefersReducedMotion) {
+    return null;
+  }
+
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {Array.from({ length: 20 }).map((_, i) => (
@@ -81,6 +91,27 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [animatingHabit, setAnimatingHabit] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
+  // P1 Fix: Responsive emotion wheel radius
+  const [emotionWheelRadius, setEmotionWheelRadius] = useState(100);
+  const emotionWheelRef = useRef<HTMLDivElement>(null);
+
+  // P1 Fix: Calculate radius based on container size
+  useEffect(() => {
+    const updateRadius = () => {
+      if (emotionWheelRef.current) {
+        const containerWidth = emotionWheelRef.current.offsetWidth;
+        // Button size is ~50px (p-2 + emoji + text), so we need margin
+        // Calculate radius as ~35% of container width, with min/max bounds
+        const calculatedRadius = Math.max(70, Math.min(110, containerWidth * 0.35));
+        setEmotionWheelRadius(calculatedRadius);
+      }
+    };
+
+    updateRadius();
+    window.addEventListener('resize', updateRadius);
+    return () => window.removeEventListener('resize', updateRadius);
+  }, [step]); // Recalculate when step changes to emotion step
+
   // Get emotion translations for current language
   const emotionT = getEmotionTranslations(language);
 
@@ -129,15 +160,22 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         transitionLockRef.current = false;
       }, 300);
     } else {
-      const habits = selectedHabits.map(id => {
-        const template = habitTemplates.find(h => h.id === id)!;
-        return {
-          id: template.id,
-          name: template.names[language],
-          icon: template.icon,
-          color: template.color
-        };
-      });
+      // P0 Fix: Filter out any invalid habit IDs and handle missing templates gracefully
+      const habits = selectedHabits
+        .map(id => {
+          const template = habitTemplates.find(h => h.id === id);
+          if (!template) {
+            console.warn(`[OnboardingFlow] Habit template not found for id: ${id}`);
+            return null;
+          }
+          return {
+            id: template.id,
+            name: template.names[language],
+            icon: template.icon,
+            color: template.color
+          };
+        })
+        .filter((habit): habit is NonNullable<typeof habit> => habit !== null);
 
       // Convert emotion to legacy mood for backward compatibility
       const legacyMood = selectedEmotion
@@ -247,7 +285,10 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               </p>
 
               {/* Circular emotion wheel layout */}
-              <div className="relative w-full aspect-square max-w-[280px] sm:max-w-[320px] mx-auto mb-4">
+              <div
+                ref={emotionWheelRef}
+                className="relative w-full aspect-square max-w-[280px] sm:max-w-[320px] mx-auto mb-4"
+              >
                 {/* Center decoration */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
                   <Heart className="w-6 h-6 text-primary/50" />
@@ -256,9 +297,9 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 {/* 8 emotions in a circle */}
                 {emotions.map((emotion, index) => {
                   const angle = (index * 45 - 90) * (Math.PI / 180); // Start from top
-                  const radius = 100; // Distance from center (px)
-                  const x = Math.cos(angle) * radius;
-                  const y = Math.sin(angle) * radius;
+                  // P1 Fix: Use dynamic radius instead of fixed 100px
+                  const x = Math.cos(angle) * emotionWheelRadius;
+                  const y = Math.sin(angle) * emotionWheelRadius;
 
                   return (
                     <button
