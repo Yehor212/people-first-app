@@ -209,8 +209,16 @@ class SyncOrchestrator {
         operation.error = error as Error;
         operation.retries++;
 
-        // Check if we should retry
-        if (operation.retries < operation.maxRetries) {
+        // Don't retry on client errors (400, 404, 422) - these won't succeed on retry
+        const errorMessage = (error as Error).message || '';
+        const isClientError = errorMessage.includes('400') ||
+          errorMessage.includes('404') ||
+          errorMessage.includes('422') ||
+          errorMessage.includes('Bad Request') ||
+          errorMessage.includes('Not Found');
+
+        // Check if we should retry (skip retry for client errors)
+        if (!isClientError && operation.retries < operation.maxRetries) {
           const delay = this.calculateRetryDelay(operation.retries);
           logger.sync(`Retrying ${operation.type} in ${delay}ms (attempt ${operation.retries + 1}/${operation.maxRetries})`);
 

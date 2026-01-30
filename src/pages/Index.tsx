@@ -271,6 +271,9 @@ export function Index() {
   // Guard against double habit toggles (prevents duplicate rewards)
   const processingHabitsRef = useRef<Set<string>>(new Set());
 
+  // Guard against concurrent reminder syncs (prevents infinite loop on 400 error)
+  const reminderSyncPendingRef = useRef(false);
+
   // Current focus minutes (real-time)
   const [currentFocusMinutes, setCurrentFocusMinutes] = useState<number | undefined>(undefined);
 
@@ -1275,14 +1278,23 @@ export function Index() {
   }, [language, safeHabits.length, setHabits]);
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase || reminderSyncPendingRef.current) return;
+
+    reminderSyncPendingRef.current = true;
     const timeoutId = window.setTimeout(() => {
-      syncReminderSettings(reminders, language).catch((error) => {
-        logger.error("Failed to sync reminder settings:", error);
-      });
+      syncReminderSettings(reminders, language)
+        .catch((error) => {
+          logger.error("Failed to sync reminder settings:", error);
+        })
+        .finally(() => {
+          reminderSyncPendingRef.current = false;
+        });
     }, 500);
 
-    return () => window.clearTimeout(timeoutId);
+    return () => {
+      window.clearTimeout(timeoutId);
+      // Don't reset pending flag here - let the promise complete
+    };
   }, [reminders, language]);
 
   useEffect(() => {
