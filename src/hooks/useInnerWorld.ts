@@ -204,14 +204,16 @@ export function useInnerWorld() {
   });
 
   // Update season if needed
+  // P1 Fix: Use functional update to prevent stale closure
   useEffect(() => {
     const currentSeason = getCurrentSeason();
     if (world.season !== currentSeason) {
-      setWorld({ ...world, season: currentSeason });
+      setWorld(prev => ({ ...prev, season: currentSeason }));
     }
-  }, [world.season]);
+  }, [world.season, setWorld]);
 
   // Check for welcome back state
+  // P1 Fix: Use functional update to prevent stale closure
   useEffect(() => {
     if (isLoading) return;
 
@@ -223,22 +225,23 @@ export function useInnerWorld() {
 
       if (daysDiff > 1) {
         // User was away - set supportive mode
-        setWorld({
-          ...world,
+        setWorld(prev => ({
+          ...prev,
           companion: {
-            ...world.companion,
+            ...prev.companion,
             mood: 'supportive',
           },
           pendingGrowth: {
-            ...world.pendingGrowth,
+            ...prev.pendingGrowth,
             companionMissedYou: true,
           },
-        });
+        }));
       }
     }
-  }, [isLoading, world.lastActiveDate]);
+  }, [isLoading, world.lastActiveDate, setWorld]);
 
   // Water decay effect - reduces water level over time
+  // P1 Fix: Use functional update to prevent stale closure
   useEffect(() => {
     if (isLoading) return;
 
@@ -246,21 +249,24 @@ export function useInnerWorld() {
     const DECAY_RATE = 2; // -2% per hour
 
     const checkWaterDecay = () => {
-      const lastWateredAt = world.companion.lastWateredAt || Date.now();
-      const hoursSinceWatered = (Date.now() - lastWateredAt) / (1000 * 60 * 60);
-      const expectedDecay = Math.floor(hoursSinceWatered) * DECAY_RATE;
-      const expectedWaterLevel = Math.max(0, 100 - expectedDecay);
+      setWorld(prev => {
+        const lastWateredAt = prev.companion.lastWateredAt || Date.now();
+        const hoursSinceWatered = (Date.now() - lastWateredAt) / (1000 * 60 * 60);
+        const expectedDecay = Math.floor(hoursSinceWatered) * DECAY_RATE;
+        const expectedWaterLevel = Math.max(0, 100 - expectedDecay);
 
-      // Only update if water level needs adjustment
-      if (world.companion.waterLevel > expectedWaterLevel) {
-        setWorld({
-          ...world,
-          companion: {
-            ...world.companion,
-            waterLevel: expectedWaterLevel,
-          },
-        });
-      }
+        // Only update if water level needs adjustment
+        if (prev.companion.waterLevel > expectedWaterLevel) {
+          return {
+            ...prev,
+            companion: {
+              ...prev.companion,
+              waterLevel: expectedWaterLevel,
+            },
+          };
+        }
+        return prev; // No change needed
+      });
     };
 
     // Check immediately on load
@@ -270,7 +276,7 @@ export function useInnerWorld() {
     const interval = setInterval(checkWaterDecay, DECAY_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [isLoading, world.companion.lastWateredAt]);
+  }, [isLoading, setWorld]);
 
   // Cloud sync - push to Supabase when world changes (debounced)
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -533,12 +539,8 @@ export function useInnerWorld() {
 
   // Spend treats (e.g., to feed companion)
   // P0 Fix: Use functional update to prevent race conditions
+  // P1 Fix: Removed world.treats?.balance from deps - functional update handles this
   const spendTreats = useCallback((amount: number, purpose: string): boolean => {
-    // Check balance synchronously first (may be stale but prevents unnecessary update)
-    if ((world.treats?.balance || 0) < amount) {
-      return false;
-    }
-
     let success = false;
     const transactionId = generateId();
     const now = Date.now();
@@ -573,131 +575,157 @@ export function useInnerWorld() {
     });
 
     return success;
-  }, [world.treats?.balance, setWorld]);
+  }, [setWorld]);
 
   // ============================================
   // COMPANION INTERACTIONS
   // ============================================
 
   // Pet the companion - FREE action, small XP gain, shows love
+  // P1 Fix: Use functional update to prevent stale closure race conditions
   const petCompanion = useCallback(() => {
     const now = Date.now();
-    const timeSinceLastPet = world.companion.lastPetTime
-      ? now - world.companion.lastPetTime
-      : Infinity;
+    let result = { xpGain: 0, canPetAgain: false, leveledUp: false, newLevel: 0 };
 
-    // Cooldown for full effect (1 minute)
-    const canPetAgain = timeSinceLastPet > COMPANION_COSTS.pet.cooldownMs;
-    const xpGain = canPetAgain ? COMPANION_COSTS.pet.xpGain : 2;
+    setWorld(prev => {
+      const timeSinceLastPet = prev.companion.lastPetTime
+        ? now - prev.companion.lastPetTime
+        : Infinity;
 
-    // Calculate level up
-    let newExperience = world.companion.experience + xpGain;
-    let newLevel = world.companion.level;
-    const xpNeeded = COMPANION_LEVELING.xpPerLevel(newLevel);
+      // Cooldown for full effect (1 minute)
+      const canPetAgain = timeSinceLastPet > COMPANION_COSTS.pet.cooldownMs;
+      const xpGain = canPetAgain ? COMPANION_COSTS.pet.xpGain : 2;
 
-    if (newExperience >= xpNeeded) {
-      newLevel += 1;
-      newExperience -= xpNeeded;
-    }
+      // Calculate level up
+      let newExperience = prev.companion.experience + xpGain;
+      let newLevel = prev.companion.level;
+      const xpNeeded = COMPANION_LEVELING.xpPerLevel(newLevel);
 
-    setWorld({
-      ...world,
-      companion: {
-        ...world.companion,
-        lastPetTime: now,
-        lastInteraction: now,
-        interactionCount: (world.companion.interactionCount || 0) + 1,
-        experience: newExperience,
-        level: newLevel,
-      },
+      if (newExperience >= xpNeeded) {
+        newLevel += 1;
+        newExperience -= xpNeeded;
+      }
+
+      result = {
+        xpGain,
+        canPetAgain,
+        leveledUp: newLevel > prev.companion.level,
+        newLevel,
+      };
+
+      return {
+        ...prev,
+        companion: {
+          ...prev.companion,
+          lastPetTime: now,
+          lastInteraction: now,
+          interactionCount: (prev.companion.interactionCount || 0) + 1,
+          experience: newExperience,
+          level: newLevel,
+        },
+      };
     });
 
-    return {
-      xpGain,
-      canPetAgain,
-      leveledUp: newLevel > world.companion.level,
-      newLevel,
-    };
-  }, [world, setWorld]);
+    return result;
+  }, [setWorld]);
 
   // Feed the companion - COSTS TREATS, increases fullness and XP
+  // P1 Fix: Use functional update to prevent stale closure race conditions
   const feedCompanion = useCallback(() => {
     const now = Date.now();
     const treatCost = COMPANION_COSTS.feed.treatCost;
-    const currentBalance = world.treats?.balance || 0;
+    let result: {
+      success: boolean;
+      reason?: string;
+      needed?: number;
+      have?: number;
+      fullnessGain: number;
+      xpGain: number;
+      treatCost?: number;
+      newBalance?: number;
+      leveledUp?: boolean;
+      newLevel?: number;
+    } = { success: false, fullnessGain: 0, xpGain: 0 };
 
-    // Check if enough treats
-    if (currentBalance < treatCost) {
-      return {
-        success: false,
-        reason: 'not_enough_treats',
-        needed: treatCost,
-        have: currentBalance,
-        fullnessGain: 0,
-        xpGain: 0,
+    setWorld(prev => {
+      const currentBalance = prev.treats?.balance || 0;
+
+      // Check if enough treats
+      if (currentBalance < treatCost) {
+        result = {
+          success: false,
+          reason: 'not_enough_treats',
+          needed: treatCost,
+          have: currentBalance,
+          fullnessGain: 0,
+          xpGain: 0,
+        };
+        return prev; // No state change
+      }
+
+      const fullnessGain = COMPANION_COSTS.feed.fullnessGain;
+      const xpGain = COMPANION_COSTS.feed.xpGain;
+
+      // Update fullness and derive hunger from it
+      const newFullness = Math.min(100, (prev.companion.fullness || 50) + fullnessGain);
+      const newHunger = 100 - newFullness; // Inverse relationship
+      const newHappiness = Math.min(100, Math.max(30, newFullness)); // Happiness linked to fullness
+
+      // Deduct treats
+      const transaction: TreatTransaction = {
+        id: generateId(),
+        amount: -treatCost,
+        source: 'mood',
+        timestamp: now,
+        description: 'Feed companion',
       };
-    }
+      const transactions = [transaction, ...(prev.treats?.transactions || [])].slice(0, 50);
 
-    const fullnessGain = COMPANION_COSTS.feed.fullnessGain;
-    const xpGain = COMPANION_COSTS.feed.xpGain;
+      // Calculate level up
+      let newExperience = prev.companion.experience + xpGain;
+      let newLevel = prev.companion.level;
+      const xpNeeded = COMPANION_LEVELING.xpPerLevel(newLevel);
 
-    // Update fullness and derive hunger from it
-    const newFullness = Math.min(100, (world.companion.fullness || 50) + fullnessGain);
-    const newHunger = 100 - newFullness; // Inverse relationship
-    const newHappiness = Math.min(100, Math.max(30, newFullness)); // Happiness linked to fullness
+      if (newExperience >= xpNeeded) {
+        newLevel += 1;
+        newExperience -= xpNeeded;
+      }
 
-    // Deduct treats
-    const transaction: TreatTransaction = {
-      id: generateId(),
-      amount: -treatCost,
-      source: 'mood',
-      timestamp: now,
-      description: 'Feed companion',
-    };
-    const transactions = [transaction, ...(world.treats?.transactions || [])].slice(0, 50);
+      result = {
+        success: true,
+        fullnessGain,
+        xpGain,
+        treatCost,
+        newBalance: currentBalance - treatCost,
+        leveledUp: newLevel > prev.companion.level,
+        newLevel,
+      };
 
-    // Calculate level up
-    let newExperience = world.companion.experience + xpGain;
-    let newLevel = world.companion.level;
-    const xpNeeded = COMPANION_LEVELING.xpPerLevel(newLevel);
-
-    if (newExperience >= xpNeeded) {
-      newLevel += 1;
-      newExperience -= xpNeeded;
-    }
-
-    setWorld({
-      ...world,
-      treats: {
-        ...world.treats!,
-        balance: currentBalance - treatCost,
-        lifetimeSpent: (world.treats?.lifetimeSpent || 0) + treatCost,
-        transactions,
-      },
-      companion: {
-        ...world.companion,
-        fullness: newFullness,
-        hunger: newHunger,
-        happiness: newHappiness,
-        lastFeedTime: now,
-        lastInteraction: now,
-        interactionCount: (world.companion.interactionCount || 0) + 1,
-        experience: newExperience,
-        level: newLevel,
-        mood: newHappiness >= 80 ? 'excited' : newHappiness >= 50 ? 'happy' : 'calm',
-      },
+      return {
+        ...prev,
+        treats: {
+          ...prev.treats!,
+          balance: currentBalance - treatCost,
+          lifetimeSpent: (prev.treats?.lifetimeSpent || 0) + treatCost,
+          transactions,
+        },
+        companion: {
+          ...prev.companion,
+          fullness: newFullness,
+          hunger: newHunger,
+          happiness: newHappiness,
+          lastFeedTime: now,
+          lastInteraction: now,
+          interactionCount: (prev.companion.interactionCount || 0) + 1,
+          experience: newExperience,
+          level: newLevel,
+          mood: newHappiness >= 80 ? 'excited' : newHappiness >= 50 ? 'happy' : 'calm',
+        },
+      };
     });
 
-    return {
-      success: true,
-      fullnessGain,
-      xpGain,
-      treatCost,
-      newBalance: currentBalance - treatCost,
-      leveledUp: newLevel > world.companion.level,
-      newLevel,
-    };
-  }, [world, setWorld]);
+    return result;
+  }, [setWorld]);
 
   // ============================================
   // SEASONAL TREE INTERACTIONS
@@ -717,138 +745,169 @@ export function useInnerWorld() {
   };
 
   // Water the tree - COSTS TREATS, increases water level and XP
+  // P1 Fix: Use functional update to prevent stale closure race conditions
   const waterTree = useCallback(() => {
     const now = Date.now();
     const treatCost = TREE_COSTS.water.treatCost;
-    const currentBalance = world.treats?.balance || 0;
+    let result: {
+      success: boolean;
+      reason?: string;
+      needed?: number;
+      have?: number;
+      waterGain: number;
+      xpGain: number;
+      treatCost?: number;
+      newBalance?: number;
+      newWaterLevel?: number;
+      newTreeXP?: number;
+      stageUp?: boolean;
+      newStage?: number;
+    } = { success: false, waterGain: 0, xpGain: 0 };
 
-    // Check if enough treats
-    if (currentBalance < treatCost) {
-      return {
-        success: false,
-        reason: 'not_enough_treats',
-        needed: treatCost,
-        have: currentBalance,
-        waterGain: 0,
-        xpGain: 0,
+    setWorld(prev => {
+      const currentBalance = prev.treats?.balance || 0;
+
+      // Check if enough treats
+      if (currentBalance < treatCost) {
+        result = {
+          success: false,
+          reason: 'not_enough_treats',
+          needed: treatCost,
+          have: currentBalance,
+          waterGain: 0,
+          xpGain: 0,
+        };
+        return prev; // No state change
+      }
+
+      const waterGain = TREE_COSTS.water.waterGain;
+      const xpGain = TREE_COSTS.water.xpGain;
+
+      // Update water level and XP
+      const newWaterLevel = Math.min(100, (prev.companion.waterLevel || 0) + waterGain);
+      const newTreeXP = (prev.companion.treeXP || 0) + xpGain;
+      const newTreeStage = getTreeStageFromXP(newTreeXP);
+
+      // Deduct treats
+      const transaction: TreatTransaction = {
+        id: generateId(),
+        amount: -treatCost,
+        source: 'mood',
+        timestamp: now,
+        description: 'Water tree',
       };
-    }
+      const transactions = [transaction, ...(prev.treats?.transactions || [])].slice(0, 50);
 
-    const waterGain = TREE_COSTS.water.waterGain;
-    const xpGain = TREE_COSTS.water.xpGain;
+      const stageUp = newTreeStage > (prev.companion.treeStage || 1);
 
-    // Update water level and XP
-    const newWaterLevel = Math.min(100, (world.companion.waterLevel || 0) + waterGain);
-    const newTreeXP = (world.companion.treeXP || 0) + xpGain;
-    const newTreeStage = getTreeStageFromXP(newTreeXP);
+      result = {
+        success: true,
+        waterGain,
+        xpGain,
+        treatCost,
+        newBalance: currentBalance - treatCost,
+        newWaterLevel,
+        newTreeXP,
+        stageUp,
+        newStage: newTreeStage,
+      };
 
-    // Deduct treats
-    const transaction: TreatTransaction = {
-      id: generateId(),
-      amount: -treatCost,
-      source: 'mood',
-      timestamp: now,
-      description: 'Water tree',
-    };
-    const transactions = [transaction, ...(world.treats?.transactions || [])].slice(0, 50);
-
-    const stageUp = newTreeStage > (world.companion.treeStage || 1);
-
-    setWorld({
-      ...world,
-      treats: {
-        ...world.treats!,
-        balance: currentBalance - treatCost,
-        lifetimeSpent: (world.treats?.lifetimeSpent || 0) + treatCost,
-        transactions,
-      },
-      companion: {
-        ...world.companion,
-        waterLevel: newWaterLevel,
-        treeXP: newTreeXP,
-        treeStage: newTreeStage,
-        lastWateredAt: now,
-        lastInteraction: now,
-        interactionCount: (world.companion.interactionCount || 0) + 1,
-      },
+      return {
+        ...prev,
+        treats: {
+          ...prev.treats!,
+          balance: currentBalance - treatCost,
+          lifetimeSpent: (prev.treats?.lifetimeSpent || 0) + treatCost,
+          transactions,
+        },
+        companion: {
+          ...prev.companion,
+          waterLevel: newWaterLevel,
+          treeXP: newTreeXP,
+          treeStage: newTreeStage,
+          lastWateredAt: now,
+          lastInteraction: now,
+          interactionCount: (prev.companion.interactionCount || 0) + 1,
+        },
+      };
     });
 
-    return {
-      success: true,
-      waterGain,
-      xpGain,
-      treatCost,
-      newBalance: currentBalance - treatCost,
-      newWaterLevel,
-      newTreeXP,
-      stageUp,
-      newStage: newTreeStage,
-    };
-  }, [world, setWorld]);
+    return result;
+  }, [setWorld]);
 
   // Touch the tree - FREE action, small XP gain
+  // P1 Fix: Use functional update to prevent stale closure race conditions
   const touchTree = useCallback(() => {
     const now = Date.now();
-    // P1 Fix: Use lastTouchTime instead of lastPetTime for tree cooldown
-    const timeSinceLastTouch = world.companion.lastTouchTime
-      ? now - world.companion.lastTouchTime
-      : Infinity;
+    let result = { xpGain: 0, canTouchAgain: false, stageUp: false, newStage: 1, newTreeXP: 0 };
 
-    // Cooldown for full effect (1 minute)
-    const canTouchAgain = timeSinceLastTouch > TREE_COSTS.touch.cooldownMs;
-    const xpGain = canTouchAgain ? TREE_COSTS.touch.xpGain : 2;
+    setWorld(prev => {
+      const timeSinceLastTouch = prev.companion.lastTouchTime
+        ? now - prev.companion.lastTouchTime
+        : Infinity;
 
-    const newTreeXP = (world.companion.treeXP || 0) + xpGain;
-    const newTreeStage = getTreeStageFromXP(newTreeXP);
-    const stageUp = newTreeStage > (world.companion.treeStage || 1);
+      // Cooldown for full effect (1 minute)
+      const canTouchAgain = timeSinceLastTouch > TREE_COSTS.touch.cooldownMs;
+      const xpGain = canTouchAgain ? TREE_COSTS.touch.xpGain : 2;
 
-    setWorld({
-      ...world,
-      companion: {
-        ...world.companion,
-        treeXP: newTreeXP,
-        treeStage: newTreeStage,
-        lastTouchTime: now, // P1 Fix: Update lastTouchTime, not lastPetTime
-        lastInteraction: now,
-        interactionCount: (world.companion.interactionCount || 0) + 1,
-      },
+      const newTreeXP = (prev.companion.treeXP || 0) + xpGain;
+      const newTreeStage = getTreeStageFromXP(newTreeXP);
+      const stageUp = newTreeStage > (prev.companion.treeStage || 1);
+
+      result = {
+        xpGain,
+        canTouchAgain,
+        stageUp,
+        newStage: newTreeStage,
+        newTreeXP,
+      };
+
+      return {
+        ...prev,
+        companion: {
+          ...prev.companion,
+          treeXP: newTreeXP,
+          treeStage: newTreeStage,
+          lastTouchTime: now,
+          lastInteraction: now,
+          interactionCount: (prev.companion.interactionCount || 0) + 1,
+        },
+      };
     });
 
-    return {
-      xpGain,
-      canTouchAgain,
-      stageUp,
-      newStage: newTreeStage,
-      newTreeXP,
-    };
-  }, [world, setWorld]);
+    return result;
+  }, [setWorld]);
 
   // Talk to companion - get advice and increase wisdom
+  // P1 Fix: Use functional update to prevent stale closure race conditions
   const talkToCompanion = useCallback(() => {
     const now = Date.now();
     const wisdomGain = 2;
     const xpGain = 3;
 
-    const newWisdom = Math.min(100, world.companion.personality.wisdom + wisdomGain);
+    setWorld(prev => {
+      const newWisdom = Math.min(100, prev.companion.personality.wisdom + wisdomGain);
 
-    setWorld({
-      ...world,
-      companion: {
-        ...world.companion,
-        lastInteraction: now,
-        interactionCount: (world.companion.interactionCount || 0) + 1,
-        experience: world.companion.experience + xpGain,
-        personality: {
-          ...world.companion.personality,
-          wisdom: newWisdom,
+      return {
+        ...prev,
+        companion: {
+          ...prev.companion,
+          lastInteraction: now,
+          interactionCount: (prev.companion.interactionCount || 0) + 1,
+          experience: prev.companion.experience + xpGain,
+          personality: {
+            ...prev.companion.personality,
+            wisdom: newWisdom,
+          },
         },
-      },
+      };
     });
 
     return { wisdomGain, xpGain };
-  }, [world, setWorld]);
+  }, [setWorld]);
 
   // Update companion stats based on user activity (call this from Index.tsx)
+  // P1 Fix: Use functional update to prevent stale closure race conditions
   const updateCompanionFromActivity = useCallback((
     activityType: 'mood' | 'habit' | 'focus' | 'gratitude',
     moodValue?: MoodType
@@ -885,25 +944,27 @@ export function useInnerWorld() {
         break;
     }
 
-    const newHappiness = Math.min(100, (world.companion.happiness || 50) + happinessChange);
-    const newHunger = Math.min(100, (world.companion.hunger || 50) + hungerIncrease);
+    setWorld(prev => {
+      const newHappiness = Math.min(100, (prev.companion.happiness || 50) + happinessChange);
+      const newHunger = Math.min(100, (prev.companion.hunger || 50) + hungerIncrease);
 
-    setWorld({
-      ...world,
-      companion: {
-        ...world.companion,
-        happiness: newHappiness,
-        hunger: newHunger,
-        lastInteraction: now,
-        mood: newHappiness >= 80 ? 'excited' : newHappiness >= 50 ? 'happy' : 'calm',
-        personality: {
-          energy: Math.min(100, world.companion.personality.energy + personalityChanges.energy),
-          wisdom: Math.min(100, world.companion.personality.wisdom + personalityChanges.wisdom),
-          warmth: Math.min(100, world.companion.personality.warmth + personalityChanges.warmth),
+      return {
+        ...prev,
+        companion: {
+          ...prev.companion,
+          happiness: newHappiness,
+          hunger: newHunger,
+          lastInteraction: now,
+          mood: newHappiness >= 80 ? 'excited' : newHappiness >= 50 ? 'happy' : 'calm',
+          personality: {
+            energy: Math.min(100, prev.companion.personality.energy + personalityChanges.energy),
+            wisdom: Math.min(100, prev.companion.personality.wisdom + personalityChanges.wisdom),
+            warmth: Math.min(100, prev.companion.personality.warmth + personalityChanges.warmth),
+          },
         },
-      },
+      };
     });
-  }, [world, setWorld]);
+  }, [setWorld]);
 
   // Computed values
   const gardenStats = useMemo(() => ({

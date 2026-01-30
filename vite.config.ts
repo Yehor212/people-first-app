@@ -9,8 +9,8 @@ import { changelogPlugin } from "./vite-plugin-changelog";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   // Use relative paths for Capacitor/Android builds
-  // Set to true for Android builds, false for web deployment
-  const isCapacitor = false; // Changed to false for web deployment
+  // Automatically determined by npm script (build vs build:android)
+  const isCapacitor = process.env.CAPACITOR_BUILD === 'true';
   const base = isCapacitor ? "./" : "/people-first-app/";
 
   // Read version from package.json

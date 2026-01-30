@@ -25,7 +25,7 @@ interface ChangelogItem {
 
 // Changelog entries by version
 const CHANGELOG: Record<string, ChangelogItem[]> = {
-  '1.5.8': [
+  '1.5.7': [
     {
       icon: <ToggleRight className="w-5 h-5 text-purple-500" />,
       titleKey: 'whatsNew.featureToggles.title',

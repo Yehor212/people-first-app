@@ -1,43 +1,87 @@
 import * as React from "react";
-import * as SwitchPrimitives from "@radix-ui/react-switch";
-
 import { cn } from "@/lib/utils";
 
-const Switch = React.forwardRef<
-  React.ElementRef<typeof SwitchPrimitives.Root>,
-  React.ComponentPropsWithoutRef<typeof SwitchPrimitives.Root>
->(({ className, ...props }, ref) => (
-  <SwitchPrimitives.Root
-    className={cn(
-      // Match ThemeToggle proportions exactly: 52×28px
-      "peer inline-flex w-[52px] h-[28px] shrink-0 cursor-pointer items-center rounded-full",
-      // Smooth transitions like ThemeToggle
-      "transition-all duration-300",
-      // States - match dark theme colors for consistency
-      "data-[state=checked]:bg-primary data-[state=unchecked]:bg-slate-600",
-      // Focus states
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-      // Disabled state
-      "disabled:cursor-not-allowed disabled:opacity-50",
-      className,
-    )}
-    {...props}
-    ref={ref}
-  >
-    <SwitchPrimitives.Thumb
-      className={cn(
-        // Match ThemeToggle thumb exactly: 22×22px with 3px padding
-        "pointer-events-none block w-[22px] h-[22px] rounded-full bg-background",
-        // Subtle shadow like ThemeToggle (not shadow-lg!)
-        "shadow-sm",
-        // Smooth transition like ThemeToggle
-        "transition-all duration-300",
-        // Translate: 24px travel (3px → 27px position)
-        "data-[state=checked]:translate-x-6 data-[state=unchecked]:translate-x-0.5",
-      )}
-    />
-  </SwitchPrimitives.Root>
-));
-Switch.displayName = SwitchPrimitives.Root.displayName;
+interface SwitchProps {
+  checked?: boolean;
+  defaultChecked?: boolean;
+  onCheckedChange?: (checked: boolean) => void;
+  disabled?: boolean;
+  className?: string;
+  'aria-label'?: string;
+}
+
+/**
+ * Custom Switch component - v4
+ *
+ * Built without Radix primitives to match ThemeToggle exactly.
+ * Uses absolute positioning and minWidth/minHeight to prevent flex deformation.
+ */
+const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
+  ({ checked, defaultChecked = false, onCheckedChange, disabled, className, ...props }, ref) => {
+    // Support both controlled and uncontrolled modes
+    const [internalChecked, setInternalChecked] = React.useState(defaultChecked);
+    const isChecked = checked !== undefined ? checked : internalChecked;
+
+    const handleClick = () => {
+      if (disabled) return;
+      const newValue = !isChecked;
+      if (checked === undefined) {
+        setInternalChecked(newValue);
+      }
+      onCheckedChange?.(newValue);
+    };
+
+    // Handle keyboard accessibility
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleClick();
+      }
+    };
+
+    return (
+      <button
+        type="button"
+        role="switch"
+        aria-checked={isChecked}
+        data-state={isChecked ? 'checked' : 'unchecked'}
+        disabled={disabled}
+        ref={ref}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          // Exact ThemeToggle dimensions: 52×28px
+          "relative flex-shrink-0 rounded-full transition-all duration-300",
+          "w-[52px] h-[28px]",
+          // Colors - match ThemeToggle dark mode
+          isChecked ? "bg-primary" : "bg-slate-600",
+          // Focus states
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+          // Disabled state
+          disabled && "cursor-not-allowed opacity-50",
+          !disabled && "cursor-pointer",
+          className,
+        )}
+        // Critical: minWidth/minHeight prevents flex container compression
+        style={{ minWidth: '52px', minHeight: '28px' }}
+        {...props}
+      >
+        {/* Thumb - absolute positioning like ThemeToggle */}
+        <div
+          className={cn(
+            // Exact thumb size: 22×22px positioned 3px from top
+            "absolute top-[3px] w-[22px] h-[22px] rounded-full transition-all duration-300",
+            // Background and shadow
+            "bg-background shadow-sm",
+            // Position: 3px (unchecked) → 27px (checked)
+            isChecked ? "left-[27px]" : "left-[3px]",
+          )}
+        />
+      </button>
+    );
+  }
+);
+
+Switch.displayName = "Switch";
 
 export { Switch };
