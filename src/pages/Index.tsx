@@ -1962,12 +1962,14 @@ export function Index() {
               />
 
               {/* Personal Insights - Data-driven pattern detection */}
-              <InsightsPanel
-                moods={safeMoods}
-                habits={safeHabits}
-                focusSessions={safeFocusSessions}
-                compact={true}
-              />
+              {isFeatureVisible('aiCoach') && (
+                <InsightsPanel
+                  moods={safeMoods}
+                  habits={safeHabits}
+                  focusSessions={safeFocusSessions}
+                  compact={true}
+                />
+              )}
 
               {/* v1.4.0: ScheduleTimeline moved to "My World" tab */}
 
@@ -2094,9 +2096,11 @@ export function Index() {
                   )}
 
                   {/* Daily Prompt Card - visible prompt for journaling */}
-                  <DailyPromptCard
-                    onUsePrompt={handleUseJournalPrompt}
-                  />
+                  {isFeatureVisible('gratitudeJournal') && (
+                    <DailyPromptCard
+                      onUsePrompt={handleUseJournalPrompt}
+                    />
+                  )}
 
                   {/* Gratitude Journal - Primary or Collapsed */}
                   {isFeatureVisible('gratitudeJournal') && (
@@ -2157,12 +2161,14 @@ export function Index() {
             />
 
             {/* AI Insights - Personalized mood pattern analysis */}
-            <MoodInsights
-              moods={safeMoods}
-              habits={safeHabits}
-              focusSessions={safeFocusSessions}
-              gratitudeEntries={safeGratitudeEntries}
-            />
+            {isFeatureVisible('aiCoach') && (
+              <MoodInsights
+                moods={safeMoods}
+                habits={safeHabits}
+                focusSessions={safeFocusSessions}
+                gratitudeEntries={safeGratitudeEntries}
+              />
+            )}
           </div>
         )}
 
