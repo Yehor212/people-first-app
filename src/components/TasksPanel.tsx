@@ -65,6 +65,9 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
     if (!isLoaded) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
 
+    // Dispatch custom event to notify ScheduleTimeline about task changes
+    window.dispatchEvent(new CustomEvent('zenflow-tasks-updated'));
+
     // Use syncOrchestrator to avoid race conditions with other sync operations
     syncOrchestrator.sync('tasks', async () => {
       await pushTasksToCloud(tasks);

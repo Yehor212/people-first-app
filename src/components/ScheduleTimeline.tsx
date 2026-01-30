@@ -93,16 +93,26 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
       if (stored) {
         const parsed = safeJsonParse<Task[]>(stored, []);
         setTasks(Array.isArray(parsed) ? parsed : []);
+      } else {
+        setTasks([]);
       }
     };
     loadTasks();
 
-    // Listen for storage changes (when tasks are updated elsewhere)
+    // Listen for storage changes (when tasks are updated elsewhere - different tab)
     const handleStorage = (e: StorageEvent) => {
       if (e.key === TASKS_STORAGE_KEY) loadTasks();
     };
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+
+    // Listen for custom event (when tasks are updated in the same tab)
+    const handleTasksUpdate = () => loadTasks();
+    window.addEventListener('zenflow-tasks-updated', handleTasksUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('zenflow-tasks-updated', handleTasksUpdate);
+    };
   }, []);
 
   // Generate auto-schedule events from incomplete tasks
