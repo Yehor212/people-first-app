@@ -1454,9 +1454,14 @@ export function Index() {
             const invite = decodeInviteData(data);
             if (invite) {
               logger.log('[Index] Challenge invite received:', invite.code);
-              setChallengeInvite(invite);
-              setShowChallengeModal(true);
-              return true;
+              // Only open challenge modal if challenges feature is enabled
+              if (isFeatureVisible('challenges')) {
+                setChallengeInvite(invite);
+                setShowChallengeModal(true);
+                return true;
+              } else {
+                logger.log('[Index] Challenges feature disabled, ignoring invite');
+              }
             }
           }
         }
@@ -1952,7 +1957,7 @@ export function Index() {
               <QuickStatsRow
                 habitsCompleted={completedTodayCount}
                 habitsTotal={safeHabits.length}
-                focusMinutes={todayFocusMinutes}
+                focusMinutes={isFeatureVisible('focusTimer') ? todayFocusMinutes : undefined}
                 level={userLevel.level}
                 labels={{
                   habits: t.habits,

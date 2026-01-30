@@ -41,7 +41,7 @@ export function StatCard({ icon: Icon, value, label, color = 'primary', classNam
 interface QuickStatsRowProps {
   habitsCompleted: number;
   habitsTotal: number;
-  focusMinutes: number;
+  focusMinutes?: number; // Optional - hidden when focusTimer feature is disabled
   level: number;
   xp?: number;
   xpForNextLevel?: number;
@@ -71,20 +71,24 @@ export function QuickStatsRow({
     return `${minutes}m`;
   };
 
+  const showFocus = focusMinutes !== undefined;
+
   return (
-    <div className={cn('grid grid-cols-3 gap-2', className)}>
+    <div className={cn(`grid gap-2`, showFocus ? 'grid-cols-3' : 'grid-cols-2', className)}>
       <StatCard
         icon={Target}
         value={`${habitsCompleted}/${habitsTotal}`}
         label={labels.habits}
         color="emerald"
       />
-      <StatCard
-        icon={Timer}
-        value={formatFocusTime(focusMinutes)}
-        label={labels.focus}
-        color="violet"
-      />
+      {showFocus && (
+        <StatCard
+          icon={Timer}
+          value={formatFocusTime(focusMinutes)}
+          label={labels.focus}
+          color="violet"
+        />
+      )}
       <StatCard
         icon={Sparkles}
         value={level}
