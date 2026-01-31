@@ -75,6 +75,23 @@ export default {
         xl: "calc(var(--radius) + 4px)",
         "2xl": "calc(var(--radius) + 8px)",
       },
+      boxShadow: {
+        'zen-xs': 'var(--zen-shadow-xs)',
+        'zen-sm': 'var(--zen-shadow-sm)',
+        'zen-md': 'var(--zen-shadow-md)',
+        'zen-lg': 'var(--zen-shadow-lg)',
+        'zen-xl': 'var(--zen-shadow-xl)',
+        'zen-soft': 'var(--zen-shadow-soft)',
+        'zen-card': 'var(--zen-shadow-card)',
+        'zen-glow': 'var(--zen-shadow-glow)',
+        'zen-hover': 'var(--zen-shadow-hover)',
+      },
+      backgroundColor: {
+        'surface': 'hsl(var(--surface-base))',
+        'surface-raised': 'hsl(var(--surface-raised))',
+        'surface-elevated': 'hsl(var(--surface-elevated))',
+        'surface-overlay': 'hsl(var(--surface-overlay))',
+      },
       keyframes: {
         "accordion-down": {
           from: { height: "0" },

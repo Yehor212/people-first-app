@@ -49,6 +49,46 @@
     --zen-shadow-glow: 0 0 30px hsl(158 45% 42% / 0.2);
     --zen-shadow-hover: 0 8px 30px -6px hsl(158 45% 42% / 0.25);
 
+    /* ===== PREMIUM UI TOKENS ===== */
+    /* Surface Elevation System */
+    --surface-base: var(--card);
+    --surface-raised: 45 35% 98%;
+    --surface-elevated: 0 0% 100%;
+    --surface-overlay: 0 0% 100%;
+
+    /* Extended Shadow Levels */
+    --zen-shadow-xs: 0 1px 2px -1px hsl(160 25% 15% / 0.05);
+    --zen-shadow-sm: 0 2px 8px -2px hsl(160 25% 15% / 0.08);
+    --zen-shadow-md: 0 4px 16px -4px hsl(160 25% 15% / 0.1);
+    --zen-shadow-lg: 0 8px 24px -6px hsl(160 25% 15% / 0.12);
+    --zen-shadow-xl: 0 20px 50px -12px hsl(160 25% 15% / 0.2);
+
+    /* Interactive States */
+    --button-press-scale: 0.97;
+    --transition-fast: 150ms;
+    --transition-normal: 200ms;
+    --transition-slow: 300ms;
+
+    /* Typography Scale (Mobile-Optimized, min 12px) */
+    --text-2xs: 0.6875rem;  /* 11px - only for badges */
+    --text-xs: 0.75rem;     /* 12px - minimum readable */
+    --text-sm: 0.8125rem;   /* 13px */
+    --text-base: 0.875rem;  /* 14px */
+    --text-lg: 1rem;        /* 16px */
+    --text-xl: 1.125rem;    /* 18px */
+    --text-2xl: 1.25rem;    /* 20px */
+    --text-3xl: 1.5rem;     /* 24px */
+    --text-4xl: 2rem;       /* 32px */
+
+    /* Border Radius Scale */
+    --radius-xs: 0.375rem;  /* 6px */
+    --radius-sm: 0.5rem;    /* 8px */
+    --radius-md: 0.75rem;   /* 12px */
+    --radius-lg: 1rem;      /* 16px */
+    --radius-xl: 1.25rem;   /* 20px */
+    --radius-2xl: 1.5rem;   /* 24px */
+    --radius-full: 9999px;
+
     /* Animation timing tokens */
     --duration-fast: 150ms;
     --duration-normal: 200ms;
@@ -138,6 +178,19 @@
     --zen-shadow-glow: 0 0 30px hsl(158 55% 55% / 0.2);
     --zen-shadow-hover: 0 8px 30px -6px hsl(158 55% 55% / 0.35);
 
+    /* Dark mode surface elevation */
+    --surface-base: 160 12% 10%;
+    --surface-raised: 160 10% 12%;
+    --surface-elevated: 160 10% 14%;
+    --surface-overlay: 160 8% 16%;
+
+    /* Dark mode extended shadows */
+    --zen-shadow-xs: 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --zen-shadow-sm: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
+    --zen-shadow-md: 0 4px 16px -4px hsl(0 0% 0% / 0.35);
+    --zen-shadow-lg: 0 8px 24px -6px hsl(0 0% 0% / 0.4);
+    --zen-shadow-xl: 0 20px 50px -12px hsl(0 0% 0% / 0.5);
+
     /* Mood colors - adjusted for dark mode visibility */
     --mood-great: 158 65% 55%;
     --mood-good: 142 55% 50%;
@@ -187,6 +240,19 @@
     --zen-shadow-card: 0 0 1px hsl(var(--primary) / 0.2);
     --zen-shadow-glow: 0 0 20px hsl(var(--primary) / 0.15);
     --zen-shadow-hover: 0 0 25px hsl(var(--primary) / 0.25);
+
+    /* OLED surface elevation */
+    --surface-base: 0 0% 5%;
+    --surface-raised: 0 0% 7%;
+    --surface-elevated: 0 0% 9%;
+    --surface-overlay: 0 0% 11%;
+
+    /* OLED extended shadows - glow-based */
+    --zen-shadow-xs: 0 0 1px hsl(var(--primary) / 0.1);
+    --zen-shadow-sm: 0 0 2px hsl(var(--primary) / 0.15);
+    --zen-shadow-md: 0 0 4px hsl(var(--primary) / 0.2);
+    --zen-shadow-lg: 0 0 8px hsl(var(--primary) / 0.25);
+    --zen-shadow-xl: 0 0 16px hsl(var(--primary) / 0.3);
 
     /* Mood colors for OLED - high contrast */
     --mood-great: 158 70% 50%;
@@ -367,6 +433,103 @@
 
   .zen-shadow-hover {
     box-shadow: var(--zen-shadow-hover);
+  }
+
+  /* Extended shadow utilities */
+  .zen-shadow-xs {
+    box-shadow: var(--zen-shadow-xs);
+  }
+
+  .zen-shadow-sm {
+    box-shadow: var(--zen-shadow-sm);
+  }
+
+  .zen-shadow-md {
+    box-shadow: var(--zen-shadow-md);
+  }
+
+  .zen-shadow-lg {
+    box-shadow: var(--zen-shadow-lg);
+  }
+
+  .zen-shadow-xl {
+    box-shadow: var(--zen-shadow-xl);
+  }
+
+  /* ===== PREMIUM UI UTILITIES ===== */
+
+  /* Button press effect - subtle scale on active */
+  .btn-press {
+    transition: transform var(--transition-fast) var(--easing-default);
+  }
+
+  .btn-press:active:not(:disabled) {
+    transform: scale(var(--button-press-scale));
+  }
+
+  /* Card hover lift - subtle elevation on hover */
+  .card-hover {
+    transition: transform var(--transition-normal) var(--easing-default),
+                box-shadow var(--transition-normal) var(--easing-default);
+  }
+
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--zen-shadow-lg);
+  }
+
+  /* Shimmer loading animation */
+  @keyframes shimmer {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--muted)) 0%,
+      hsl(var(--muted-foreground) / 0.1) 50%,
+      hsl(var(--muted)) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* Modal entrance animation */
+  @keyframes modal-enter {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .modal-enter {
+    animation: modal-enter 200ms var(--easing-default);
+  }
+
+  /* Surface elevation backgrounds */
+  .surface-base {
+    background-color: hsl(var(--surface-base));
+  }
+
+  .surface-raised {
+    background-color: hsl(var(--surface-raised));
+  }
+
+  .surface-elevated {
+    background-color: hsl(var(--surface-elevated));
+  }
+
+  .surface-overlay {
+    background-color: hsl(var(--surface-overlay));
   }
 
   /* Standard transitions using CSS variables */

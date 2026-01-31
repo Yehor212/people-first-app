@@ -3,6 +3,7 @@ import { Habit, HabitType, HabitReminder, HabitFrequency } from '@/types';
 import { getToday, generateId, formatDate, cn } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
 import { Plus, X, ChevronRight, Settings2, Zap, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { habitTemplates } from '@/lib/habitTemplates';
 import { AllHabitsComplete } from './Celebrations';
@@ -337,15 +338,16 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         )}>{t.habits}</h3>
         <div className="flex items-center gap-2">
           {/* Challenges button */}
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="icon"
             onClick={() => {
               hapticTap();
               setChallengeHabit(undefined);
               setShowChallengeModal(true);
             }}
-            className="btn-press p-2 rounded-full bg-secondary text-foreground hover:bg-muted transition-all cursor-pointer relative"
             aria-label={t.friendChallenges}
+            className="relative"
           >
             <Users className="w-5 h-5" />
             {activeChallengesCount > 0 && (
@@ -353,21 +355,19 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                 {activeChallengesCount}
               </span>
             )}
-          </button>
+          </Button>
           {/* Add button */}
-          <button
-            type="button"
+          <Button
+            variant={isAdding ? "destructive" : "gradient"}
+            size="icon"
             onClick={(e) => {
               e.preventDefault();
               setIsAdding(!isAdding);
             }}
-            className={cn(
-              "btn-press p-2 rounded-full transition-all cursor-pointer",
-              isAdding ? "bg-destructive text-destructive-foreground rotate-45" : "bg-primary text-primary-foreground"
-            )}
+            className={cn(isAdding && "rotate-45")}
           >
             <Plus className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -380,34 +380,35 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               .filter(template => !habits.some(h => h.name === (template.names[language] || template.names.en)))
               .slice(0, 6)
               .map((template) => (
-                <button
+                <Button
                   key={template.id}
-                  type="button"
+                  variant="outline"
+                  size="default"
                   onClick={() => handleQuickAdd(template.id)}
-                  className="btn-press flex items-center gap-2 p-3 min-h-[48px] bg-background rounded-xl hover:bg-muted transition-all text-left cursor-pointer active:scale-[0.98]"
+                  className="justify-start gap-2 min-h-[48px]"
                 >
                   <span className="text-xl">{template.icon}</span>
-                  <span className="text-sm font-medium text-foreground truncate">
+                  <span className="truncate">
                     {template.names[language] || template.names.en}
                   </span>
-                </button>
+                </Button>
               ))}
           </div>
 
           {/* Custom habit option */}
-          <button
-            type="button"
+          <Button
+            variant="outline"
             onClick={() => {
               setShowCustomForm(true);
             }}
-            className="btn-press w-full flex items-center justify-between p-3 min-h-[48px] bg-background rounded-xl hover:bg-muted transition-all cursor-pointer active:scale-[0.98]"
+            className="w-full justify-between min-h-[48px]"
           >
             <div className="flex items-center gap-2">
               <Settings2 className="w-5 h-5 text-primary" />
-              <span className="text-sm font-medium text-foreground">{t.createCustomHabit || 'Create custom habit'}</span>
+              <span>{t.createCustomHabit || 'Create custom habit'}</span>
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
-          </button>
+          </Button>
         </div>
       )}
 
@@ -620,17 +621,18 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             )}
           </div>
 
-          <button
-            type="button"
+          <Button
+            variant="gradient"
+            size="lg"
             onClick={(e) => {
               e.preventDefault();
               handleAddHabit();
             }}
             disabled={!newHabitName.trim()}
-            className="btn-press w-full py-3 zen-gradient text-primary-foreground font-medium rounded-xl disabled:opacity-50 transition-opacity cursor-pointer"
+            className="w-full"
           >
             {t.addHabit}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -643,17 +645,17 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           <p className="text-muted-foreground mb-4">
             {t.addFirstHabit}
           </p>
-          <button
-            type="button"
+          <Button
+            variant="gradient"
+            size="lg"
             onClick={(e) => {
               e.preventDefault();
               setIsAdding(true);
             }}
-            className="btn-press px-6 py-3 zen-gradient text-white font-bold rounded-xl hover:opacity-90 transition-all zen-shadow-soft cursor-pointer"
           >
-            <Plus className="w-5 h-5 inline-block mr-2" />
+            <Plus className="w-5 h-5" />
             {t.addHabit}
-          </button>
+          </Button>
         </div>
       ) : (
         <div

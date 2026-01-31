@@ -4,6 +4,7 @@
  */
 
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 interface EmptyStateProps {
   icon: React.ReactNode;
@@ -50,12 +51,13 @@ export function EmptyState({
       )}
 
       {action && (
-        <button
+        <Button
+          variant="gradient"
+          size="lg"
           onClick={action.onClick}
-          className="px-6 py-3 zen-gradient text-white font-medium rounded-xl hover:opacity-90 transition-opacity inline-flex items-center gap-2"
         >
           {action.label}
-        </button>
+        </Button>
       )}
     </div>
   );

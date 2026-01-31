@@ -1427,6 +1427,13 @@ export interface Translations {
   // Stats Empty States (v1.3.0)
   noMoodDataYet: string;
   noEmotionDataYet: string;
+  noDataYet: string;
+  noDataMessage: string;
+  startTracking: string;
+  noHabitsMessage: string;
+  noFocusSessions: string;
+  noFocusMessage: string;
+  selectTimeRange: string;
 
   // XP Display
   xp: string;
@@ -2814,6 +2821,13 @@ export const translations: Record<Language, Translations> = {
     // Stats Empty States
     noMoodDataYet: 'Нет данных о настроении',
     noEmotionDataYet: 'Нет данных об эмоциях',
+    noDataYet: 'Пока нет данных',
+    noDataMessage: 'Начните отслеживать своё состояние',
+    startTracking: 'Начать',
+    noHabitsMessage: 'Создайте первую привычку',
+    noFocusSessions: 'Нет сессий фокуса',
+    noFocusMessage: 'Начните таймер фокусировки',
+    selectTimeRange: 'Выбор периода',
 
     // XP Display
     xp: 'XP',
@@ -4200,6 +4214,13 @@ export const translations: Record<Language, Translations> = {
     // Stats Empty States
     noMoodDataYet: 'No mood data yet',
     noEmotionDataYet: 'No emotion data yet',
+    noDataYet: 'No data yet',
+    noDataMessage: 'Start tracking your wellness',
+    startTracking: 'Start',
+    noHabitsMessage: 'Create your first habit',
+    noFocusSessions: 'No focus sessions',
+    noFocusMessage: 'Start a focus timer',
+    selectTimeRange: 'Select time range',
 
     // XP Display
     xp: 'XP',
@@ -5586,6 +5607,13 @@ export const translations: Record<Language, Translations> = {
     // Stats Empty States
     noMoodDataYet: 'Немає даних про настрій',
     noEmotionDataYet: 'Немає даних про емоції',
+    noDataYet: 'Поки немає даних',
+    noDataMessage: 'Почніть відстежувати свій стан',
+    startTracking: 'Почати',
+    noHabitsMessage: 'Створіть першу звичку',
+    noFocusSessions: 'Немає сесій фокусу',
+    noFocusMessage: 'Запустіть таймер фокусування',
+    selectTimeRange: 'Вибір періоду',
 
     // XP Display
     xp: 'XP',
@@ -6973,6 +7001,13 @@ export const translations: Record<Language, Translations> = {
     // Stats Empty States
     noMoodDataYet: 'Sin datos de ánimo',
     noEmotionDataYet: 'Sin datos de emociones',
+    noDataYet: 'Sin datos aún',
+    noDataMessage: 'Empieza a registrar tu bienestar',
+    startTracking: 'Empezar',
+    noHabitsMessage: 'Crea tu primer hábito',
+    noFocusSessions: 'Sin sesiones de enfoque',
+    noFocusMessage: 'Inicia un temporizador de enfoque',
+    selectTimeRange: 'Seleccionar período',
 
     // XP Display
     xp: 'XP',
@@ -8360,6 +8395,13 @@ export const translations: Record<Language, Translations> = {
     // Stats Empty States
     noMoodDataYet: 'Noch keine Stimmungsdaten',
     noEmotionDataYet: 'Noch keine Emotionsdaten',
+    noDataYet: 'Noch keine Daten',
+    noDataMessage: 'Beginne dein Wohlbefinden zu verfolgen',
+    startTracking: 'Starten',
+    noHabitsMessage: 'Erstelle deine erste Gewohnheit',
+    noFocusSessions: 'Keine Fokus-Sitzungen',
+    noFocusMessage: 'Starte einen Fokus-Timer',
+    selectTimeRange: 'Zeitraum wählen',
 
     // XP Display
     xp: 'XP',
@@ -9747,6 +9789,13 @@ export const translations: Record<Language, Translations> = {
     // Stats Empty States
     noMoodDataYet: 'Pas encore de données d\'humeur',
     noEmotionDataYet: 'Pas encore de données d\'émotion',
+    noDataYet: 'Pas encore de données',
+    noDataMessage: 'Commencez à suivre votre bien-être',
+    startTracking: 'Commencer',
+    noHabitsMessage: 'Créez votre première habitude',
+    noFocusSessions: 'Aucune session de concentration',
+    noFocusMessage: 'Lancez un minuteur de concentration',
+    selectTimeRange: 'Sélectionner la période',
 
     // XP Display
     xp: 'XP',

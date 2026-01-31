@@ -14,6 +14,7 @@ import { safeJsonParse } from '@/lib/safeJson';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { Habit, ReminderSettings, PrivacySettings, MoodEntry, FocusSession, GratitudeEntry } from '@/types';
 import { Switch } from '@/components/ui/switch';
+import { TimeInputInline } from '@/components/ui/time-input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { SmartRemindersCard } from '@/components/SmartRemindersCard';
 import { HealthConnectCard } from '@/components/HealthConnectCard';
@@ -639,10 +640,12 @@ export function SettingsPanel({
       <Accordion type="multiple" defaultValue={["profile"]} className="space-y-3">
 
         {/* Group 1: Profile & Appearance */}
-        <AccordionItem value="profile" className="bg-card rounded-2xl zen-shadow-card border-none overflow-hidden">
-          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+        <AccordionItem value="profile" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
+          <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
             <div className="flex items-center gap-3">
-              <User className="w-5 h-5 text-primary" />
+              <div className="p-2 zen-gradient rounded-xl shadow-zen-soft">
+                <User className="w-5 h-5 text-primary-foreground" />
+              </div>
               <span className="text-lg font-semibold text-foreground">{t.settingsGroupProfile}</span>
             </div>
           </AccordionTrigger>
@@ -723,10 +726,12 @@ export function SettingsPanel({
         </AccordionItem>
 
         {/* Group 1.5: Modules / Feature Toggles */}
-        <AccordionItem value="modules" className="bg-card rounded-2xl zen-shadow-card border-none overflow-hidden">
-          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+        <AccordionItem value="modules" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
+          <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
             <div className="flex items-center gap-3">
-              <LayoutGrid className="w-5 h-5 text-primary" />
+              <div className="p-2 zen-gradient-calm rounded-xl shadow-[0_4px_20px_-4px_hsl(200_40%_50%/0.25)]">
+                <LayoutGrid className="w-5 h-5 text-primary-foreground" />
+              </div>
               <span className="text-lg font-semibold text-foreground">{t.settingsGroupModules}</span>
             </div>
           </AccordionTrigger>
@@ -821,10 +826,12 @@ export function SettingsPanel({
         </AccordionItem>
 
         {/* Group 2: Notifications */}
-        <AccordionItem value="notifications" className="bg-card rounded-2xl zen-shadow-card border-none overflow-hidden">
-          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+        <AccordionItem value="notifications" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
+          <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
             <div className="flex items-center gap-3">
-              <Bell className="w-5 h-5 text-primary" />
+              <div className="p-2 zen-gradient-warm rounded-xl shadow-[0_4px_20px_-4px_hsl(28_75%_65%/0.25)]">
+                <Bell className="w-5 h-5 text-primary-foreground" />
+              </div>
               <span className="text-lg font-semibold text-foreground">{t.settingsGroupNotifications}</span>
             </div>
           </AccordionTrigger>
@@ -850,66 +857,50 @@ export function SettingsPanel({
               </p>
 
               {/* Morning */}
-              <div className="flex items-center justify-between gap-3 pl-7">
-                <span className="text-sm text-muted-foreground">{t.morning || 'Morning'} 🌅</span>
-                <input
-                  type="time"
-                  value={reminders.moodTimeMorning || '09:00'}
-                  onChange={(e) => onRemindersChange(prev => ({ ...prev, moodTimeMorning: e.target.value }))}
-                  className="px-3 py-2 bg-secondary rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-              </div>
+              <TimeInputInline
+                icon="🌅"
+                label={t.morning || 'Morning'}
+                value={reminders.moodTimeMorning || '09:00'}
+                onChange={(value) => onRemindersChange(prev => ({ ...prev, moodTimeMorning: value }))}
+                className="ml-4"
+              />
 
               {/* Afternoon */}
-              <div className="flex items-center justify-between gap-3 pl-7">
-                <span className="text-sm text-muted-foreground">{t.afternoon || 'Afternoon'} ☀️</span>
-                <input
-                  type="time"
-                  value={reminders.moodTimeAfternoon || '14:00'}
-                  onChange={(e) => onRemindersChange(prev => ({ ...prev, moodTimeAfternoon: e.target.value }))}
-                  className="px-3 py-2 bg-secondary rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-              </div>
+              <TimeInputInline
+                icon="☀️"
+                label={t.afternoon || 'Afternoon'}
+                value={reminders.moodTimeAfternoon || '14:00'}
+                onChange={(value) => onRemindersChange(prev => ({ ...prev, moodTimeAfternoon: value }))}
+                className="ml-4"
+              />
 
               {/* Evening */}
-              <div className="flex items-center justify-between gap-3 pl-7">
-                <span className="text-sm text-muted-foreground">{t.evening || 'Evening'} 🌙</span>
-                <input
-                  type="time"
-                  value={reminders.moodTimeEvening || '20:00'}
-                  onChange={(e) => onRemindersChange(prev => ({ ...prev, moodTimeEvening: e.target.value }))}
-                  className="px-3 py-2 bg-secondary rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-              </div>
+              <TimeInputInline
+                icon="🌙"
+                label={t.evening || 'Evening'}
+                value={reminders.moodTimeEvening || '20:00'}
+                onChange={(value) => onRemindersChange(prev => ({ ...prev, moodTimeEvening: value }))}
+                className="ml-4"
+              />
             </div>
 
             {/* Habit Reminder Time */}
-            <div className="flex items-center justify-between gap-3 pt-2 border-t border-border">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">✨</span>
-                <span className="text-sm text-foreground">{t.habitReminder}</span>
-              </div>
-              <input
-                type="time"
+            <div className="pt-2 border-t border-border">
+              <TimeInputInline
+                icon="✨"
+                label={t.habitReminder}
                 value={reminders.habitTime}
-                onChange={(e) => onRemindersChange(prev => ({ ...prev, habitTime: e.target.value }))}
-                className="px-3 py-2 bg-secondary rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                onChange={(value) => onRemindersChange(prev => ({ ...prev, habitTime: value }))}
               />
             </div>
 
             {/* Focus Reminder Time */}
-            <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🎯</span>
-                <span className="text-sm text-foreground">{t.focusReminder}</span>
-              </div>
-              <input
-                type="time"
-                value={reminders.focusTime}
-                onChange={(e) => onRemindersChange(prev => ({ ...prev, focusTime: e.target.value }))}
-                className="px-3 py-2 bg-secondary rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </div>
+            <TimeInputInline
+              icon="🎯"
+              label={t.focusReminder}
+              value={reminders.focusTime}
+              onChange={(value) => onRemindersChange(prev => ({ ...prev, focusTime: value }))}
+            />
 
             {/* Reminder Days */}
             <div className="pt-2 border-t border-border">
@@ -1076,10 +1067,12 @@ export function SettingsPanel({
         </AccordionItem>
 
         {/* Group 3: Data & Privacy */}
-        <AccordionItem value="data" className="bg-card rounded-2xl zen-shadow-card border-none overflow-hidden">
-          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+        <AccordionItem value="data" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
+          <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
             <div className="flex items-center gap-3">
-              <Download className="w-5 h-5 text-primary" />
+              <div className="p-2 zen-gradient-sunset rounded-xl shadow-[0_4px_20px_-4px_hsl(350_60%_65%/0.25)]">
+                <Download className="w-5 h-5 text-primary-foreground" />
+              </div>
               <span className="text-lg font-semibold text-foreground">{t.settingsGroupData}</span>
             </div>
           </AccordionTrigger>
@@ -1261,10 +1254,12 @@ export function SettingsPanel({
         </AccordionItem>
 
         {/* Group 4: Account */}
-        <AccordionItem value="account" className="bg-card rounded-2xl zen-shadow-card border-none overflow-hidden">
-          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+        <AccordionItem value="account" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
+          <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
             <div className="flex items-center gap-3">
-              <Cloud className="w-5 h-5 text-primary" />
+              <div className="p-2 zen-gradient rounded-xl shadow-zen-soft">
+                <Cloud className="w-5 h-5 text-primary-foreground" />
+              </div>
               <span className="text-lg font-semibold text-foreground">{t.settingsGroupAccount}</span>
             </div>
           </AccordionTrigger>
@@ -1453,10 +1448,12 @@ export function SettingsPanel({
         </AccordionItem>
 
         {/* Group 5: About */}
-        <AccordionItem value="about" className="bg-card rounded-2xl zen-shadow-card border-none overflow-hidden">
-          <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+        <AccordionItem value="about" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
+          <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
             <div className="flex items-center gap-3">
-              <Sparkles className="w-5 h-5 text-primary" />
+              <div className="p-2 zen-gradient rounded-xl shadow-zen-soft">
+                <Sparkles className="w-5 h-5 text-primary-foreground" />
+              </div>
               <span className="text-lg font-semibold text-foreground">{t.settingsGroupAbout}</span>
             </div>
           </AccordionTrigger>

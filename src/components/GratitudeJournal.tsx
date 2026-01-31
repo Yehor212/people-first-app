@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { GratitudeEntry } from '@/types';
 import { getToday, generateId, cn } from '@/lib/utils';
 import { Sparkles, Plus, Zap, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { gratitudeTextSchema, sanitizeString } from '@/lib/validation';
 import { logger } from '@/lib/logger';
@@ -110,13 +111,15 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
       </div>
 
       {!isExpanded ? (
-        <button
+        <Button
+          variant="outline"
+          size="lg"
           onClick={() => setIsExpanded(true)}
-          className="w-full p-4 border-2 border-dashed border-border rounded-xl text-muted-foreground hover:border-primary hover:text-primary transition-colors flex items-center justify-center gap-2"
+          className="w-full border-2 border-dashed hover:border-primary"
         >
           <Plus className="w-5 h-5" />
           <span>{t.whatAreYouGratefulFor}</span>
-        </button>
+        </Button>
       ) : (
         <div className="animate-scale-in space-y-3">
           {/* Journal Prompt - helps with blank page anxiety */}
@@ -150,19 +153,21 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
             </div>
           )}
           <div className="flex gap-2 mt-3">
-            <button
+            <Button
+              variant="secondary"
               onClick={() => setIsExpanded(false)}
-              className="flex-1 py-2 bg-secondary text-secondary-foreground rounded-xl hover:bg-muted transition-colors"
+              className="flex-1"
             >
               {t.cancel}
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="gradient"
               onClick={handleSubmit}
               disabled={!text.trim()}
-              className="flex-1 py-2 zen-gradient-warm text-primary-foreground font-medium rounded-xl disabled:opacity-50 transition-opacity"
+              className="flex-1"
             >
               {t.save}
-            </button>
+            </Button>
           </div>
         </div>
       )}

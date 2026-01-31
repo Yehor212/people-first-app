@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { safeJsonParse } from '@/lib/safeJson';
 import { safeParseInt } from '@/lib/validation';
 import { Play, Pause, RotateCcw, Coffee, Zap, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { HyperfocusMode } from './HyperfocusMode';
 import { haptics } from '@/lib/haptics';
@@ -513,41 +514,41 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
       </div>
 
       <div className="flex justify-center gap-4 mb-4">
-        <button
+        <Button
+          variant="gradient"
+          size="icon-lg"
           onClick={toggleTimer}
           aria-label={isRunning ? (t.pause || 'Pause timer') : (t.start || 'Start timer')}
           className={cn(
-            "p-4 min-w-[56px] min-h-[56px] rounded-full transition-all zen-shadow-soft active:scale-95",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-            isBreak ? "zen-gradient-warm" : "zen-gradient",
-            "text-primary-foreground hover:opacity-90"
+            isBreak && "zen-gradient-warm"
           )}
         >
           {isRunning ? <Pause className="w-6 h-6" aria-hidden="true" /> : <Play className="w-6 h-6" aria-hidden="true" />}
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="secondary"
+          size="icon-lg"
           onClick={resetTimer}
           aria-label={t.resetTimer}
-          className="p-4 min-w-[56px] min-h-[56px] rounded-full bg-secondary text-secondary-foreground hover:bg-muted transition-colors active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <RotateCcw className="w-6 h-6" aria-hidden="true" />
-        </button>
+        </Button>
       </div>
 
       {/* Hyperfocus Mode Button */}
-      <button
+      <Button
+        variant={isRunning ? "secondary" : "gradient"}
+        size="lg"
         onClick={() => setShowHyperfocus(true)}
         disabled={isRunning}
         className={cn(
-          "w-full py-3 min-h-[48px] rounded-xl font-medium transition-all flex items-center justify-center gap-2 active:scale-[0.98]",
-          isRunning
-            ? "bg-muted text-muted-foreground cursor-not-allowed"
-            : "zen-gradient-calm text-primary-foreground hover:opacity-90 zen-shadow"
+          "w-full",
+          !isRunning && "zen-gradient-calm"
         )}
       >
         <Zap className="w-5 h-5" />
         {t.hyperfocusMode}
-      </button>
+      </Button>
 
       {showReflection && (
         <div
@@ -587,18 +588,20 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
               ))}
             </div>
             <div className="flex gap-2 mt-5">
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => handleSaveReflection(null)}
-                className="flex-1 py-2 bg-secondary text-secondary-foreground rounded-lg font-medium hover:bg-muted transition-colors"
+                className="flex-1"
               >
                 {t.focusReflectionSkip}
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="gradient"
                 onClick={() => handleSaveReflection(reflectionValue)}
-                className="flex-1 py-2 zen-gradient text-primary-foreground rounded-lg font-medium hover:opacity-90 transition-opacity"
+                className="flex-1"
               >
                 {t.focusReflectionSave}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -3,6 +3,8 @@ import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType, PrimaryEmotio
 import { calculateStreak, getDaysInMonth, getToday, cn } from '@/lib/utils';
 import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
 import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2, PlayCircle, Sparkles } from 'lucide-react';
+import { SegmentedControl } from '@/components/ui/segmented-control';
+import { SectionHeader } from '@/components/ui/section-header';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ShareProgress } from '@/components/ShareProgress';
 import { AnimatedAchievementsSection } from '@/components/AnimatedAchievementCard';
@@ -545,50 +547,37 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       <WeeklyCalendar moods={moods} habits={habits} />
 
       {/* Monthly Overview */}
-      <div className="bg-card rounded-2xl p-4 sm:p-6 zen-shadow-card">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 zen-gradient rounded-xl">
-            <Calendar className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground">{stats.monthName}</h3>
-        </div>
+      <div className="bg-card rounded-2xl p-4 sm:p-6 shadow-zen-md border">
+        <SectionHeader
+          icon={Calendar}
+          title={stats.monthName}
+          iconGradient="primary"
+        />
 
-        <div className="flex flex-wrap gap-2 mb-4" role="group" aria-label={t.statsRange || 'Statistics range'}>
-          <button
-            onClick={() => setRange('week')}
-            aria-pressed={range === 'week'}
-            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${range === 'week' ? 'bg-primary/10 ring-2 ring-primary text-foreground' : 'bg-secondary text-muted-foreground hover:bg-muted'}`}
-          >
-            {t.statsRangeWeek}
-          </button>
-          <button
-            onClick={() => setRange('month')}
-            aria-pressed={range === 'month'}
-            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${range === 'month' ? 'bg-primary/10 ring-2 ring-primary text-foreground' : 'bg-secondary text-muted-foreground hover:bg-muted'}`}
-          >
-            {t.statsRangeMonth}
-          </button>
-          <button
-            onClick={() => setRange('all')}
-            aria-pressed={range === 'all'}
-            className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors ${range === 'all' ? 'bg-primary/10 ring-2 ring-primary text-foreground' : 'bg-secondary text-muted-foreground hover:bg-muted'}`}
-          >
-            {t.statsRangeAll}
-          </button>
-        </div>
-        
+        <SegmentedControl
+          options={[
+            { value: 'week', label: t.statsRangeWeek },
+            { value: 'month', label: t.statsRangeMonth },
+            { value: 'all', label: t.statsRangeAll },
+          ]}
+          value={range}
+          onChange={setRange}
+          aria-label={t.statsRange || 'Statistics range'}
+          className="mb-4"
+        />
+
         <div className="grid grid-cols-2 xs:grid-cols-3 gap-2 sm:gap-4">
-          <div className="text-center p-2 sm:p-3 bg-secondary rounded-xl">
-            <p className="text-lg sm:text-2xl font-bold text-primary">{stats.thisMonthMoods}</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t.moodEntries}</p>
+          <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl">
+            <p className="text-xl sm:text-2xl font-bold text-primary">{stats.thisMonthMoods}</p>
+            <p className="text-xs text-muted-foreground truncate">{t.moodEntries}</p>
           </div>
-          <div className="text-center p-2 sm:p-3 bg-secondary rounded-xl">
-            <p className="text-lg sm:text-2xl font-bold text-accent">{stats.thisMonthFocusMinutes}</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t.focusMinutes}</p>
+          <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl">
+            <p className="text-xl sm:text-2xl font-bold text-accent">{stats.thisMonthFocusMinutes}</p>
+            <p className="text-xs text-muted-foreground truncate">{t.focusMinutes}</p>
           </div>
-          <div className="text-center p-2 sm:p-3 bg-secondary rounded-xl col-span-2 xs:col-span-1">
-            <p className="text-lg sm:text-2xl font-bold text-mood-good">{stats.thisMonthGratitude}</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">{t.gratitudes}</p>
+          <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl col-span-2 xs:col-span-1">
+            <p className="text-xl sm:text-2xl font-bold text-mood-good">{stats.thisMonthGratitude}</p>
+            <p className="text-xs text-muted-foreground truncate">{t.gratitudes}</p>
           </div>
         </div>
       </div>
@@ -740,24 +729,24 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
           <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
             <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-500">{yearStats.moodCount}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">{t.moodEntries}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t.moodEntries}</p>
           </div>
           <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
             <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-purple-500">{yearStats.focusMinutes}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">{t.focusMinutes}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t.focusMinutes}</p>
           </div>
           <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
             <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">{yearStats.habitCompletions}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">{t.habitsCompleted}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t.habitsCompleted}</p>
           </div>
           <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
             <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-500 to-orange-500">{yearStats.gratitudeCount}</p>
-            <p className="text-[10px] text-muted-foreground mt-1">{t.gratitudes}</p>
+            <p className="text-xs text-muted-foreground mt-1">{t.gratitudes}</p>
           </div>
         </div>
 
         {/* Day Names */}
-        <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-[10px] sm:text-xs text-muted-foreground mb-2">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-xs sm:text-xs text-muted-foreground mb-2">
           {[t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat].map((day) => (
             <div key={day} className="text-center font-medium py-1 sm:py-2">{day.slice(0, 2)}</div>
           ))}
