@@ -194,42 +194,56 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
           </SheetTitle>
         </SheetHeader>
 
-        {/* Tabs */}
+        {/* Tabs - Premium */}
         <div
           role="tablist"
           aria-label={t.leaderboardType || 'Leaderboard type'}
-          className="flex gap-2 mb-4"
+          className="flex gap-1.5 p-1.5 mb-4 rounded-xl"
+          style={{
+            background: 'rgba(255, 255, 255, 0.05)',
+          }}
         >
           {tabs.map((tab) => (
-            <button
+            <motion.button
               key={tab.type}
               role="tab"
               aria-selected={activeTab === tab.type}
               aria-controls={`leaderboard-${tab.type}`}
               onClick={() => setActiveTab(tab.type)}
               className={cn(
-                "flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg font-medium transition-all",
+                "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium transition-all",
                 activeTab === tab.type
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                  ? "bg-gradient-to-r from-violet-500/80 to-purple-600/80 text-white"
+                  : "text-white/60 hover:text-white hover:bg-white/5"
               )}
+              style={activeTab === tab.type ? {
+                boxShadow: '0 0 12px rgba(139, 92, 246, 0.3)'
+              } : undefined}
+              whileHover={{ scale: activeTab !== tab.type ? 1.02 : 1 }}
+              whileTap={{ scale: 0.98 }}
             >
               {tab.icon}
               <span className="text-sm">{tab.label}</span>
-            </button>
+            </motion.button>
           ))}
         </div>
 
-        {/* Opt-in Settings */}
-        <div className="bg-secondary/50 rounded-xl p-4 mb-4">
+        {/* Opt-in Settings - Premium */}
+        <div
+          className="rounded-xl p-4 mb-4"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+          }}
+        >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               {isOptedIn ? (
-                <Eye className="w-4 h-4 text-primary" />
+                <Eye className="w-4 h-4 text-violet-400" />
               ) : (
-                <EyeOff className="w-4 h-4 text-muted-foreground" />
+                <EyeOff className="w-4 h-4 text-white/40" />
               )}
-              <span className="font-medium text-sm">
+              <span className="font-medium text-sm text-white/80">
                 {t.showOnLeaderboard || 'Show on leaderboard'}
               </span>
             </div>
@@ -247,22 +261,29 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder={t.displayName || 'Display name'}
                 maxLength={20}
-                className="flex-1"
+                className="flex-1 bg-white/10 border-white/10 text-white placeholder:text-white/40"
                 onBlur={handleNameUpdate}
                 onKeyDown={(e) => e.key === 'Enter' && handleNameUpdate()}
               />
             </div>
           )}
 
-          {/* User's rank */}
+          {/* User's rank - Premium */}
           {isOptedIn && getCurrentRank() && (
-            <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
-              <Medal className="w-4 h-4" />
-              <span>
-                {t.yourRank || 'Your rank'}: <strong className="text-foreground">{formatRank(getCurrentRank()!)}</strong>
-                {userRanks && ` / ${userRanks.totalParticipants}`}
+            <motion.div
+              className="mt-3 flex items-center gap-2 text-sm px-3 py-2 rounded-lg"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              style={{
+                background: 'rgba(139, 92, 246, 0.15)',
+              }}
+            >
+              <Medal className="w-4 h-4 text-violet-400" />
+              <span className="text-white/70">
+                {t.yourRank || 'Your rank'}: <strong className="text-violet-300">{formatRank(getCurrentRank()!)}</strong>
+                {userRanks && <span className="text-white/40"> / {userRanks.totalParticipants}</span>}
               </span>
-            </div>
+            </motion.div>
           )}
         </div>
 
@@ -296,84 +317,121 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
             </div>
           ) : (
             <AnimatePresence>
-              {entries.map((entry, index) => (
-                <motion.div
-                  key={entry.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={cn(
-                    "flex items-center gap-3 p-3 rounded-xl transition-all",
-                    entry.isCurrentUser
-                      ? "bg-primary/10 ring-1 ring-primary/30"
-                      : "bg-secondary/50"
-                  )}
-                >
-                  {/* Rank */}
-                  <div className={cn(
-                    "w-8 h-8 flex items-center justify-center rounded-full font-bold text-sm",
-                    entry.rank === 1 && "bg-yellow-500/20 text-yellow-600",
-                    entry.rank === 2 && "bg-gray-300/30 text-gray-500",
-                    entry.rank === 3 && "bg-amber-600/20 text-amber-700",
-                    (entry.rank ?? 0) > 3 && "bg-secondary text-muted-foreground"
-                  )}>
-                    {getRankMedal(entry.rank ?? 0) || entry.rank}
-                  </div>
+              {entries.map((entry, index) => {
+                const rankConfig = {
+                  1: {
+                    bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(251, 191, 36, 0.1) 100%)',
+                    border: 'rgba(245, 158, 11, 0.3)',
+                    glow: '0 0 16px rgba(245, 158, 11, 0.2)',
+                    rankBg: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%)',
+                    textColor: 'text-amber-400',
+                  },
+                  2: {
+                    bg: 'linear-gradient(135deg, rgba(156, 163, 175, 0.2) 0%, rgba(209, 213, 219, 0.1) 100%)',
+                    border: 'rgba(156, 163, 175, 0.3)',
+                    glow: '0 0 12px rgba(156, 163, 175, 0.15)',
+                    rankBg: 'linear-gradient(135deg, #9ca3af 0%, #d1d5db 100%)',
+                    textColor: 'text-gray-300',
+                  },
+                  3: {
+                    bg: 'linear-gradient(135deg, rgba(180, 83, 9, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%)',
+                    border: 'rgba(180, 83, 9, 0.3)',
+                    glow: '0 0 12px rgba(180, 83, 9, 0.15)',
+                    rankBg: 'linear-gradient(135deg, #b45309 0%, #d97706 100%)',
+                    textColor: 'text-orange-400',
+                  },
+                }[entry.rank as 1 | 2 | 3];
 
-                  {/* User info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1">
-                      <span className={cn(
-                        "font-medium truncate",
-                        entry.isCurrentUser && "text-primary"
-                      )}>
-                        {entry.displayName}
+                return (
+                  <motion.div
+                    key={entry.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 20 }}
+                    transition={{ delay: index * 0.05 }}
+                    className={cn(
+                      "flex items-center gap-3 p-3.5 rounded-xl transition-all",
+                      entry.isCurrentUser && "ring-1 ring-violet-500/40"
+                    )}
+                    style={rankConfig ? {
+                      background: rankConfig.bg,
+                      border: `1px solid ${rankConfig.border}`,
+                      boxShadow: rankConfig.glow,
+                    } : {
+                      background: entry.isCurrentUser
+                        ? 'rgba(139, 92, 246, 0.1)'
+                        : 'rgba(255, 255, 255, 0.05)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                    }}
+                  >
+                    {/* Rank - Premium */}
+                    <div
+                      className="w-9 h-9 flex items-center justify-center rounded-lg font-bold text-sm"
+                      style={rankConfig ? {
+                        background: rankConfig.rankBg,
+                        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
+                      } : {
+                        background: 'rgba(255, 255, 255, 0.1)',
+                      }}
+                    >
+                      <span className={rankConfig ? 'text-white' : 'text-white/60'}>
+                        {getRankMedal(entry.rank ?? 0) || entry.rank}
                       </span>
-                      {entry.isCurrentUser && (
-                        <span className="text-xs text-primary">(you)</span>
-                      )}
-                      {entry.rank === 1 && (
-                        <Crown className="w-4 h-4 text-yellow-500" />
+                    </div>
+
+                    {/* User info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className={cn(
+                          "font-medium truncate",
+                          entry.isCurrentUser ? "text-violet-300" : "text-white"
+                        )}>
+                          {entry.displayName}
+                        </span>
+                        {entry.isCurrentUser && (
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-300">(you)</span>
+                        )}
+                        {entry.rank === 1 && (
+                          <Crown className="w-4 h-4 text-amber-400" />
+                        )}
+                      </div>
+                      {activeTab === 'streak' && entry.longestStreak > entry.currentStreak && (
+                        <span className="text-xs text-white/40">
+                          {t.best || 'Best'}: {entry.longestStreak} {t.days || 'days'}
+                        </span>
                       )}
                     </div>
-                    {activeTab === 'streak' && entry.longestStreak > entry.currentStreak && (
-                      <span className="text-xs text-muted-foreground">
-                        {t.best || 'Best'}: {entry.longestStreak} {t.days || 'days'}
-                      </span>
-                    )}
-                  </div>
 
-                  {/* Score */}
-                  <div className="text-right">
-                    <span className={cn(
-                      "font-bold",
-                      entry.rank === 1 && "text-yellow-600",
-                      entry.rank === 2 && "text-gray-500",
-                      entry.rank === 3 && "text-amber-700",
-                      (entry.rank ?? 0) > 3 && "text-foreground"
-                    )}>
-                      {getValue(entry).toLocaleString()}
-                    </span>
-                    <span className="text-xs text-muted-foreground ml-1">
-                      {getUnit()}
-                    </span>
-                  </div>
-                </motion.div>
-              ))}
+                    {/* Score - Premium */}
+                    <div className="text-right">
+                      <span className={cn(
+                        "font-bold text-lg",
+                        rankConfig?.textColor || (entry.isCurrentUser ? "text-violet-300" : "text-white")
+                      )}>
+                        {getValue(entry).toLocaleString()}
+                      </span>
+                      <span className="text-xs text-white/40 ml-1">
+                        {getUnit()}
+                      </span>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
           )}
         </div>
 
-        {/* Refresh button */}
-        <button
+        {/* Refresh button - Premium */}
+        <motion.button
           onClick={loadData}
           disabled={isLoading}
-          className="absolute top-4 right-12 p-2 rounded-lg hover:bg-secondary transition-colors"
+          className="absolute top-4 right-12 p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
           aria-label={t.refresh || 'Refresh'}
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
-          <RefreshCw className={cn("w-5 h-5", isLoading && "animate-spin")} />
-        </button>
+          <RefreshCw className={cn("w-5 h-5 text-white/60", isLoading && "animate-spin")} />
+        </motion.button>
       </SheetContent>
     </Sheet>
   );

@@ -17,6 +17,7 @@ import {
   Trash2,
   UserPlus,
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -68,42 +69,73 @@ function ChallengeCard({
   const progress = getChallengeProgress(challenge);
   const daysLeft = getDaysRemaining(challenge);
 
-  const statusColor = {
-    active: 'bg-[hsl(var(--mood-good))]',
-    completed: 'bg-accent',
-    expired: 'bg-muted-foreground/50',
+  const statusConfig = {
+    active: {
+      bg: 'bg-gradient-to-r from-emerald-500/80 to-teal-500/80',
+      glow: 'rgba(16, 185, 129, 0.4)',
+      progressBg: 'bg-gradient-to-r from-emerald-500 to-teal-500',
+    },
+    completed: {
+      bg: 'bg-gradient-to-r from-amber-500/80 to-orange-500/80',
+      glow: 'rgba(245, 158, 11, 0.4)',
+      progressBg: 'bg-gradient-to-r from-amber-500 to-orange-500',
+    },
+    expired: {
+      bg: 'bg-muted-foreground/50',
+      glow: 'transparent',
+      progressBg: 'bg-muted-foreground/50',
+    },
   }[challenge.status];
 
   return (
-    <button
+    <motion.button
       onClick={onClick}
-      className="w-full p-4 bg-card rounded-xl border border-border/50 text-left hover:bg-muted/50 transition-colors"
+      className={cn(
+        "relative w-full p-4 rounded-2xl text-left overflow-hidden",
+        "bg-white/5 backdrop-blur-sm border border-white/10",
+        "hover:bg-white/10 transition-all"
+      )}
+      whileHover={{ scale: 1.01, y: -2 }}
+      whileTap={{ scale: 0.99 }}
     >
-      <div className="flex items-start justify-between gap-3">
+      {/* Gradient accent on left */}
+      <div
+        className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-violet-500 to-purple-600"
+        style={{ boxShadow: '0 0 8px rgba(139, 92, 246, 0.4)' }}
+      />
+
+      <div className="flex items-start justify-between gap-3 pl-2">
         <div className="flex items-center gap-3">
-          <div className="text-3xl">{challenge.habitIcon}</div>
+          <div
+            className="text-3xl p-2 rounded-xl"
+            style={{
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(168, 85, 247, 0.1) 100%)',
+            }}
+          >
+            {challenge.habitIcon}
+          </div>
           <div>
-            <p className="font-medium text-foreground">{challenge.habitName}</p>
-            <p className="text-xs text-muted-foreground">
+            <p className="font-medium text-white">{challenge.habitName}</p>
+            <p className="text-xs text-white/60">
               {challenge.isCreator
                 ? t.youCreated || 'You created this'
                 : `${t.createdBy || 'Created by'} ${challenge.creatorName || t.friend || 'a friend'}`}
             </p>
           </div>
         </div>
-        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+        <ChevronRight className="w-5 h-5 text-white/40 flex-shrink-0" />
       </div>
 
-      {/* Progress bar */}
-      <div className="mt-3">
-        <div className="flex items-center justify-between text-xs mb-1">
-          <span className="text-muted-foreground">
+      {/* Progress bar - Premium */}
+      <div className="mt-3 pl-2">
+        <div className="flex items-center justify-between text-xs mb-1.5">
+          <span className="text-white/60">
             {challenge.myProgress}/{challenge.duration} {t.days || 'days'}
           </span>
-          <span className={cn(
-            'px-2 py-0.5 rounded-full text-white text-xs font-medium',
-            statusColor
-          )}>
+          <span
+            className={cn('px-2.5 py-1 rounded-full text-white text-xs font-medium', statusConfig.bg)}
+            style={{ boxShadow: `0 0 12px ${statusConfig.glow}` }}
+          >
             {challenge.status === 'active'
               ? `${daysLeft} ${t.daysLeft || 'days left'}`
               : challenge.status === 'completed'
@@ -111,19 +143,17 @@ function ChallengeCard({
                 : t.expired || 'Expired'}
           </span>
         </div>
-        <div className="h-2 bg-secondary rounded-full overflow-hidden">
-          <div
-            className={cn(
-              'h-full rounded-full transition-all',
-              challenge.status === 'completed'
-                ? 'bg-accent'
-                : 'bg-[hsl(var(--mood-good))]'
-            )}
-            style={{ width: `${progress}%` }}
+        <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
+          <motion.div
+            className={cn('h-full rounded-full', statusConfig.progressBg)}
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            style={{ boxShadow: `0 0 8px ${statusConfig.glow}` }}
           />
         </div>
       </div>
-    </button>
+    </motion.button>
   );
 }
 
@@ -160,61 +190,110 @@ function CreateChallengeView({
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Habit preview */}
-      <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-2xl">
-        <div className="text-5xl">{habit.icon}</div>
+      {/* Habit preview - Premium */}
+      <motion.div
+        className="flex items-center gap-4 p-4 rounded-2xl overflow-hidden relative"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{
+          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(168, 85, 247, 0.1) 100%)',
+          boxShadow: '0 0 20px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255,255,255,0.05)'
+        }}
+      >
+        <div
+          className="text-5xl p-3 rounded-xl"
+          style={{
+            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
+          }}
+        >
+          {habit.icon}
+        </div>
         <div>
-          <p className="font-semibold text-foreground text-lg">{habit.name}</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="font-semibold text-white text-lg">{habit.name}</p>
+          <p className="text-sm text-white/60">
             {t.challengeYourFriends || 'Challenge your friends to this habit!'}
           </p>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Duration selector */}
+      {/* Duration selector - Premium */}
       <div>
-        <label className="text-sm font-medium text-foreground mb-2 block">
+        <label className="text-sm font-medium text-white/80 mb-3 block">
           {t.challengeDuration || 'Challenge Duration'}
         </label>
-        <div className="grid grid-cols-2 gap-2">
-          {CHALLENGE_DURATIONS.map(opt => (
-            <button
+        <div className="grid grid-cols-2 gap-3">
+          {CHALLENGE_DURATIONS.map((opt, index) => (
+            <motion.button
               key={opt.value}
               onClick={() => {
                 hapticTap();
                 setDuration(opt.value);
               }}
               className={cn(
-                'p-3 rounded-xl border-2 transition-all',
+                'p-4 rounded-xl transition-all',
                 duration === opt.value
-                  ? 'border-primary bg-primary/10 text-primary'
-                  : 'border-border bg-card text-foreground hover:border-primary/50'
+                  ? 'bg-gradient-to-br from-violet-500/30 to-purple-600/20 border border-violet-500/40'
+                  : 'bg-white/5 border border-white/10 hover:bg-white/10'
               )}
+              style={duration === opt.value ? {
+                boxShadow: '0 0 16px rgba(139, 92, 246, 0.4)'
+              } : undefined}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <div className="text-2xl font-bold">{opt.value}</div>
-              <div className="text-xs opacity-70">{t.days || 'days'}</div>
-            </button>
+              <div className={cn(
+                "text-2xl font-bold",
+                duration === opt.value ? "text-violet-300" : "text-white"
+              )}>{opt.value}</div>
+              <div className={cn(
+                "text-xs",
+                duration === opt.value ? "text-violet-300/70" : "text-white/50"
+              )}>{t.days || 'days'}</div>
+            </motion.button>
           ))}
         </div>
       </div>
 
-      {/* Create button */}
-      <Button
+      {/* Create button - Premium */}
+      <motion.button
         onClick={handleCreate}
         disabled={isCreating}
-        className="w-full h-14 text-lg font-semibold"
-      >
-        {isCreating ? (
-          <span className="animate-pulse">{t.creating || 'Creating...'}</span>
-        ) : (
-          <>
-            <Users className="w-5 h-5 mr-2" />
-            {t.createChallenge || 'Create Challenge'}
-          </>
+        className={cn(
+          "relative w-full h-14 rounded-xl font-semibold text-lg text-white overflow-hidden",
+          isCreating
+            ? "bg-white/10 cursor-not-allowed"
+            : "bg-gradient-to-r from-violet-500 to-purple-600"
         )}
-      </Button>
+        style={!isCreating ? {
+          boxShadow: '0 0 20px rgba(139, 92, 246, 0.4)'
+        } : undefined}
+        whileHover={!isCreating ? { scale: 1.02 } : {}}
+        whileTap={!isCreating ? { scale: 0.98 } : {}}
+      >
+        {/* Pulse ring */}
+        {!isCreating && (
+          <motion.div
+            className="absolute inset-0 rounded-xl border-2 border-violet-400/30"
+            animate={{ scale: [1, 1.05], opacity: [0.5, 0] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
+        )}
+        <span className="relative z-10 flex items-center justify-center gap-2">
+          {isCreating ? (
+            <span className="animate-pulse">{t.creating || 'Creating...'}</span>
+          ) : (
+            <>
+              <Users className="w-5 h-5" />
+              {t.createChallenge || 'Create Challenge'}
+            </>
+          )}
+        </span>
+      </motion.button>
 
-      <p className="text-xs text-center text-muted-foreground">
+      <p className="text-xs text-center text-white/40">
         {t.challengeShareTip || "You'll be able to share this challenge with friends after creating it."}
       </p>
     </div>
@@ -306,49 +385,83 @@ function ChallengeDetailsView({
 
   return (
     <div className="space-y-6 pb-8">
-      {/* Header with icon */}
-      <div className="text-center py-6 bg-gradient-to-b from-primary/10 to-transparent rounded-2xl">
-        <div className="text-6xl mb-3">{challenge.habitIcon}</div>
-        <h3 className="text-xl font-bold text-foreground">{challenge.habitName}</h3>
-        <p className="text-sm text-muted-foreground">
+      {/* Header with icon - Premium */}
+      <motion.div
+        className="relative text-center py-8 rounded-2xl overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{
+          background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.15) 0%, transparent 100%)',
+        }}
+      >
+        {/* Glow behind icon */}
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full opacity-40"
+          style={{ background: 'radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%)' }}
+        />
+        <motion.div
+          className="text-6xl mb-3 relative z-10"
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+        >
+          {challenge.habitIcon}
+        </motion.div>
+        <h3 className="text-xl font-bold text-white relative z-10">{challenge.habitName}</h3>
+        <p className="text-sm text-white/60 relative z-10">
           {challenge.duration} {t.dayChallenge || 'day challenge'}
         </p>
-      </div>
+      </motion.div>
 
-      {/* Progress section */}
-      <div className="bg-card rounded-2xl p-4 border border-border/50">
+      {/* Progress section - Premium */}
+      <motion.div
+        className="rounded-2xl p-5 relative overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        style={{
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)'
+        }}
+      >
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-medium text-foreground">
+          <span className="text-sm font-medium text-white">
             {t.yourProgress || 'Your Progress'}
           </span>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-sm text-white/60">
             {challenge.myProgress}/{challenge.duration} {t.days || 'days'}
           </span>
         </div>
 
-        <div className="h-3 bg-secondary rounded-full overflow-hidden mb-2">
-          <div
-            className="h-full bg-gradient-to-r from-[hsl(var(--mood-good))] to-[hsl(var(--mood-good)/0.8)] rounded-full transition-all"
-            style={{ width: `${progress}%` }}
+        <div className="h-3 bg-white/10 rounded-full overflow-hidden mb-3">
+          <motion.div
+            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: `${progress}%` }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+            style={{ boxShadow: '0 0 12px rgba(16, 185, 129, 0.5)' }}
           />
         </div>
 
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
-          <span>{progress}% {t.complete || 'complete'}</span>
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-white/60">{progress}% {t.complete || 'complete'}</span>
           {challenge.status === 'active' && (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 text-white/60">
               <Clock className="w-3 h-3" />
               {daysLeft} {t.daysLeft || 'days left'}
             </span>
           )}
           {challenge.status === 'completed' && (
-            <span className="flex items-center gap-1 text-accent">
+            <span
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-amber-300"
+              style={{ background: 'rgba(245, 158, 11, 0.2)' }}
+            >
               <Trophy className="w-3 h-3" />
               {t.challengeCompleted || 'Challenge Complete!'}
             </span>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Motivational message */}
       <div className={cn(
@@ -382,29 +495,50 @@ function ChallengeDetailsView({
         </div>
       )}
 
-      {/* Challenge code */}
-      <div className="bg-card rounded-2xl p-4 border border-border/50">
-        <div className="text-sm font-medium text-foreground mb-2">
+      {/* Challenge code - Premium */}
+      <motion.div
+        className="relative rounded-2xl p-5 overflow-hidden"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        style={{
+          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(20, 184, 166, 0.05) 100%)',
+          boxShadow: '0 0 20px rgba(16, 185, 129, 0.15), inset 0 1px 0 rgba(255,255,255,0.05)'
+        }}
+      >
+        <div className="text-sm font-medium text-white/80 mb-3">
           {t.challengeCode || 'Challenge Code'}
         </div>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 bg-muted rounded-lg px-4 py-3 font-mono text-lg text-center tracking-wider">
+        <div className="flex items-center gap-3">
+          <div
+            className="flex-1 rounded-xl px-4 py-4 font-mono text-2xl text-center tracking-widest"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              color: '#34d399',
+              textShadow: '0 0 10px rgba(52, 211, 153, 0.5)'
+            }}
+          >
             {challenge.code}
           </div>
-          <Button
-            variant="outline"
-            size="icon"
+          <motion.button
             onClick={handleCopyCode}
-            className="h-12 w-12"
+            className={cn(
+              "h-14 w-14 rounded-xl flex items-center justify-center transition-all",
+              copied
+                ? "bg-emerald-500/20 border border-emerald-500/40"
+                : "bg-white/5 border border-white/10 hover:bg-white/10"
+            )}
+            style={copied ? { boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)' } : undefined}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             {copied ? (
-              <Check className="w-5 h-5 text-[hsl(var(--mood-good))]" />
+              <Check className="w-6 h-6 text-emerald-400" />
             ) : (
-              <Copy className="w-5 h-5" />
+              <Copy className="w-6 h-6 text-white/70" />
             )}
-          </Button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Actions */}
       <div className="grid grid-cols-2 gap-3">
