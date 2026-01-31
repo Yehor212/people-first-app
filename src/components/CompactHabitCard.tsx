@@ -1,16 +1,147 @@
 /**
  * CompactHabitCard - Premium compact habit card with glassmorphism
  * Part of v1.3.0 UI redesign → Phase 8 Premium Upgrade
+ * Enhanced with Nature Energy theme glow effects and animated fire streaks
  */
 
 import { Habit } from '@/types';
 import { cn, getToday } from '@/lib/utils';
-import { Check, Minus, Plus, Flame, Trash2, Users } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { Check, Minus, Plus, Trash2, Users, Star, Crown, Zap } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProgressRing, ProgressRingCompact } from './ui/progress-ring';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticTap } from '@/lib/haptics';
+
+// Animated Fire component for streak display
+function AnimatedFire({ intensity = 1, size = 'sm' }: { intensity?: number; size?: 'sm' | 'md' }) {
+  const sizeClass = size === 'md' ? 'w-5 h-5' : 'w-4 h-4';
+
+  // Intensity affects glow and animation speed
+  const glowIntensity = Math.min(intensity, 3);
+  const animationDuration = Math.max(0.3, 0.6 - intensity * 0.1);
+
+  return (
+    <motion.div
+      className="relative"
+      animate={{
+        scale: [1, 1.1, 1],
+      }}
+      transition={{
+        duration: animationDuration,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      }}
+    >
+      {/* Glow layer */}
+      <motion.div
+        className="absolute inset-0 rounded-full blur-sm"
+        style={{
+          background: `radial-gradient(circle, rgba(249, 115, 22, ${0.3 * glowIntensity}) 0%, transparent 70%)`,
+        }}
+        animate={{
+          scale: [1, 1.3, 1],
+          opacity: [0.5, 0.8, 0.5],
+        }}
+        transition={{
+          duration: animationDuration * 1.5,
+          repeat: Infinity,
+          ease: 'easeInOut',
+        }}
+      />
+      {/* Fire SVG */}
+      <svg className={cn(sizeClass, 'relative z-10')} viewBox="0 0 24 24" fill="none">
+        <defs>
+          <linearGradient id="fireGradient" x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="#f97316" />
+            <stop offset="50%" stopColor="#fb923c" />
+            <stop offset="100%" stopColor="#fbbf24" />
+          </linearGradient>
+        </defs>
+        <motion.path
+          d="M12 2C12 2 8 6 8 10C8 12 10 14 12 14C14 14 16 12 16 10C16 6 12 2 12 2Z"
+          fill="url(#fireGradient)"
+          animate={{
+            d: [
+              "M12 2C12 2 8 6 8 10C8 12 10 14 12 14C14 14 16 12 16 10C16 6 12 2 12 2Z",
+              "M12 1C12 1 7 5 7 10C7 13 10 15 12 15C14 15 17 13 17 10C17 5 12 1 12 1Z",
+              "M12 2C12 2 8 6 8 10C8 12 10 14 12 14C14 14 16 12 16 10C16 6 12 2 12 2Z",
+            ],
+          }}
+          transition={{
+            duration: animationDuration * 2,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+        <motion.path
+          d="M12 6C12 6 10 8 10 10C10 11 11 12 12 12C13 12 14 11 14 10C14 8 12 6 12 6Z"
+          fill="#fef3c7"
+          animate={{
+            d: [
+              "M12 6C12 6 10 8 10 10C10 11 11 12 12 12C13 12 14 11 14 10C14 8 12 6 12 6Z",
+              "M12 5C12 5 9 7 9 10C9 11.5 11 13 12 13C13 13 15 11.5 15 10C15 7 12 5 12 5Z",
+              "M12 6C12 6 10 8 10 10C10 11 11 12 12 12C13 12 14 11 14 10C14 8 12 6 12 6Z",
+            ],
+          }}
+          transition={{
+            duration: animationDuration * 2,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
+      </svg>
+    </motion.div>
+  );
+}
+
+// Milestone badge for streaks
+function StreakMilestoneBadge({ streak }: { streak: number }) {
+  // Determine milestone
+  if (streak >= 100) {
+    return (
+      <motion.div
+        className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-amber-500 to-yellow-500"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      >
+        <Crown className="w-3 h-3 text-white" />
+        <span className="text-[10px] font-bold text-white">100+</span>
+      </motion.div>
+    );
+  }
+
+  if (streak >= 30) {
+    return (
+      <motion.div
+        className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-violet-500 to-purple-500"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      >
+        <Star className="w-3 h-3 text-white" />
+        <span className="text-[10px] font-bold text-white">30+</span>
+      </motion.div>
+    );
+  }
+
+  if (streak >= 7) {
+    return (
+      <motion.div
+        className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500"
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+      >
+        <Zap className="w-3 h-3 text-white" />
+        <span className="text-[10px] font-bold text-white">7+</span>
+      </motion.div>
+    );
+  }
+
+  return null;
+}
 
 interface CompactHabitCardProps {
   habit: Habit;
@@ -64,6 +195,15 @@ export function CompactHabitCard({
   const { completed, progress, target } = getProgress();
   const progressPercent = target > 0 ? (progress / target) * 100 : completed ? 100 : 0;
 
+  // Calculate fire intensity based on streak
+  const fireIntensity = useMemo(() => {
+    if (streak >= 100) return 3;
+    if (streak >= 30) return 2.5;
+    if (streak >= 7) return 2;
+    if (streak >= 3) return 1.5;
+    return 1;
+  }, [streak]);
+
   // Swipe handling
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -95,9 +235,12 @@ export function CompactHabitCard({
       className={cn(
         'relative overflow-hidden rounded-2xl',
         'shadow-[0_4px_12px_-2px_hsl(var(--foreground)/0.05)]',
-        completed && 'ring-2 ring-[hsl(var(--mood-good))]/30',
+        completed && 'ring-2 ring-emerald-500/40',
         className
       )}
+      style={completed ? {
+        boxShadow: '0 0 20px rgba(16, 185, 129, 0.15), 0 4px 12px -2px rgba(0, 0, 0, 0.05)',
+      } : undefined}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -135,15 +278,39 @@ export function CompactHabitCard({
         </button>
       </div>
 
-      {/* Completion glow effect */}
+      {/* Premium completion glow effect */}
       <AnimatePresence>
         {completed && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--mood-good))]/10 to-transparent pointer-events-none z-0"
-          />
+            className="absolute inset-0 pointer-events-none z-0"
+          >
+            {/* Main gradient glow */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(20, 184, 166, 0.08) 50%, transparent 100%)',
+              }}
+            />
+            {/* Shimmer effect */}
+            <motion.div
+              className="absolute inset-0"
+              style={{
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%)',
+              }}
+              animate={{
+                x: ['-100%', '100%'],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                repeatDelay: 3,
+                ease: 'linear',
+              }}
+            />
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -160,37 +327,61 @@ export function CompactHabitCard({
         {/* Left: Icon + Info */}
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Habit Icon Button - Premium styling */}
-          <button
+          <motion.button
             onClick={handleToggle}
             aria-label={`${habit.name}: ${completed ? t.completed : t.markComplete || 'Mark complete'}`}
             aria-pressed={completed}
             className={cn(
-              'w-14 h-14 rounded-xl flex items-center justify-center text-2xl shrink-0',
-              'transition-all duration-300 active:scale-95',
+              'relative w-14 h-14 rounded-xl flex items-center justify-center text-2xl shrink-0',
+              'transition-all duration-300',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
               completed
-                ? 'bg-[hsl(var(--mood-good))] text-white shadow-lg shadow-[hsl(var(--mood-good))]/25 scale-105'
+                ? 'bg-gradient-to-br from-emerald-500 to-teal-500 text-white'
                 : 'bg-muted/50 hover:bg-muted/80'
             )}
+            style={completed ? {
+              boxShadow: '0 0 20px rgba(16, 185, 129, 0.4), 0 4px 8px rgba(0, 0, 0, 0.1)',
+            } : undefined}
+            whileHover={{ scale: completed ? 1.05 : 1.02 }}
+            whileTap={{ scale: 0.95 }}
           >
+            {/* Inner glow for completed */}
+            {completed && (
+              <motion.div
+                className="absolute inset-0 rounded-xl"
+                style={{
+                  background: 'radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%)',
+                }}
+                animate={{
+                  scale: [1, 1.1, 1],
+                  opacity: [0.5, 0.8, 0.5],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+            )}
             {completed ? (
               <motion.div
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="relative z-10"
               >
                 <Check className="w-7 h-7" strokeWidth={3} />
               </motion.div>
             ) : (
               <span>{habit.icon}</span>
             )}
-          </button>
+          </motion.button>
 
           {/* Name + Streak - Premium styling */}
           <div className="flex flex-col min-w-0">
             <p className={cn(
               'font-semibold text-base truncate transition-colors duration-300',
-              completed ? 'text-[hsl(var(--mood-good))]' : 'text-foreground'
+              completed ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
             )}>
               {habit.name}
             </p>
@@ -198,12 +389,26 @@ export function CompactHabitCard({
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                className="flex items-center gap-1.5 mt-0.5"
+                className="flex items-center gap-2 mt-0.5"
               >
-                <Flame className="w-3.5 h-3.5 text-orange-500" />
-                <span className="text-xs font-medium text-muted-foreground">
-                  {streak} {t.dayStreak || t.days}
-                </span>
+                <div className="flex items-center gap-1">
+                  <AnimatedFire intensity={fireIntensity} size="sm" />
+                  <span
+                    className={cn(
+                      'text-xs font-bold',
+                      streak >= 100 ? 'text-amber-500' :
+                      streak >= 30 ? 'text-violet-500' :
+                      streak >= 7 ? 'text-emerald-500' :
+                      'text-orange-500'
+                    )}
+                  >
+                    {streak}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {t.dayStreak || t.days}
+                  </span>
+                </div>
+                <StreakMilestoneBadge streak={streak} />
               </motion.div>
             )}
           </div>
@@ -212,28 +417,44 @@ export function CompactHabitCard({
         {/* Right: Progress indicator */}
         <div className="flex items-center gap-2 shrink-0">
           {habitType === 'reduce' ? (
-            // Reduce type: counter with +/- buttons
-            <div className="flex items-center gap-1">
-              <button
+            // Reduce type: counter with +/- buttons - Premium styling
+            <div className="flex items-center gap-1.5">
+              <motion.button
                 onClick={() => onAdjust?.(habit.id, today, -1)}
                 aria-label={t.decrease || 'Decrease'}
-                className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-lg bg-mood-good/20 flex items-center justify-center text-mood-good hover:bg-mood-good/30 dark:hover:bg-mood-good/40 transition-colors active:scale-95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+                className={cn(
+                  "w-10 h-10 min-w-[40px] min-h-[40px] rounded-lg flex items-center justify-center",
+                  "transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
+                  "bg-gradient-to-br from-emerald-500/20 to-teal-500/20 text-emerald-600 dark:text-emerald-400",
+                  "hover:from-emerald-500/30 hover:to-teal-500/30"
+                )}
+                style={{ boxShadow: '0 0 8px rgba(16, 185, 129, 0.15)' }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <Minus className="w-5 h-5" />
-              </button>
-              <span className={cn(
-                'w-8 text-center font-bold',
-                progress === 0 ? 'text-mood-good' : 'text-foreground'
-              )}>
+              </motion.button>
+              <motion.span
+                className={cn(
+                  'w-10 text-center font-bold text-lg',
+                  progress === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
+                )}
+                key={progress}
+                initial={{ scale: 1.2 }}
+                animate={{ scale: 1 }}
+                transition={{ type: 'spring', stiffness: 300 }}
+              >
                 {progress}
-              </span>
-              <button
+              </motion.span>
+              <motion.button
                 onClick={() => onAdjust?.(habit.id, today, 1)}
                 aria-label={t.increase || 'Increase'}
-                className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:bg-muted dark:hover:bg-muted/80 transition-colors active:scale-95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+                className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <Plus className="w-5 h-5" />
-              </button>
+              </motion.button>
             </div>
           ) : habitType === 'multiple' ? (
             // Multiple type: progress ring with count
@@ -248,11 +469,18 @@ export function CompactHabitCard({
               </span>
             </div>
           ) : habitType === 'continuous' ? (
-            // Continuous: days count
-            <div className="flex items-center gap-1 px-3 py-1 bg-primary/10 rounded-lg">
-              <span className="font-bold text-primary">{progress}</span>
+            // Continuous: days count - Premium styling
+            <motion.div
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg"
+              style={{
+                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(168, 85, 247, 0.1) 100%)',
+                boxShadow: completed ? '0 0 12px rgba(139, 92, 246, 0.2)' : undefined,
+              }}
+              whileHover={{ scale: 1.02 }}
+            >
+              <span className="font-bold text-violet-600 dark:text-violet-400">{progress}</span>
               <span className="text-xs text-muted-foreground">{t.days}</span>
-            </div>
+            </motion.div>
           ) : (
             // Daily/Scheduled: simple check or ring
             <ProgressRingCompact

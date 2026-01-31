@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { logger } from '@/lib/logger';
-import { X, Play, Pause, Volume2, VolumeX, Music, ExternalLink } from 'lucide-react';
+import { X, Play, Pause, Volume2, VolumeX, Music, ExternalLink, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getAmbientSoundGenerator, SOUNDS, unlockAudio, AmbientSoundGenerator } from '@/lib/ambientSounds';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,31 @@ import {
   stopFocusPlayback,
   SpotifyTrack
 } from '@/lib/spotifyIntegration';
+
+// Star particle for cosmic background
+function CosmicStar({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
+  return (
+    <motion.div
+      className="absolute rounded-full bg-white"
+      style={{
+        left: `${x}%`,
+        top: `${y}%`,
+        width: size,
+        height: size,
+      }}
+      animate={{
+        opacity: [0.2, 0.8, 0.2],
+        scale: [1, 1.3, 1],
+      }}
+      transition={{
+        duration: 2 + Math.random() * 2,
+        delay,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      }}
+    />
+  );
+}
 
 interface HyperfocusModeProps {
   duration: number; // в минутах
@@ -250,10 +276,53 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     };
   }, []);
 
+  // Generate stars for cosmic background
+  const cosmicStars = useMemo(() =>
+    Array.from({ length: 50 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 1 + Math.random() * 2,
+      delay: Math.random() * 3,
+    })),
+  []);
+
+  // Calculate color based on progress (purple -> pink -> orange as time runs out)
+  const progressColor = useMemo(() => {
+    if (progress < 70) return { from: '#8B5CF6', to: '#A855F7' }; // Purple
+    if (progress < 90) return { from: '#EC4899', to: '#F472B6' }; // Pink
+    return { from: '#F97316', to: '#FB923C' }; // Orange - ending soon
+  }, [progress]);
+
   return (
     <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center overflow-hidden touch-none">
-      {/* Background gradient */}
-      <div className="absolute inset-0 zen-gradient-calm opacity-20 pointer-events-none" />
+      {/* Deep space background */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: `radial-gradient(ellipse at center,
+            #0d0d2a 0%, #050510 50%, #000000 100%)`
+        }}
+      />
+
+      {/* Star field */}
+      {cosmicStars.map((star) => (
+        <CosmicStar key={star.id} {...star} />
+      ))}
+
+      {/* Animated nebula gradient */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        animate={{ opacity: [0.2, 0.4, 0.2] }}
+        transition={{ duration: 8, repeat: Infinity }}
+        style={{
+          background: `
+            radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+            radial-gradient(circle at 80% 70%, rgba(236, 72, 153, 0.1) 0%, transparent 40%),
+            radial-gradient(circle at 50% 90%, rgba(6, 182, 212, 0.08) 0%, transparent 30%)
+          `
+        }}
+      />
 
       {/* Breathing Animation */}
       {showBreathingAnimation && (
@@ -282,45 +351,114 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
       {/* Main Content */}
       <div className="relative z-20 text-center px-6">
-        {/* Timer Display */}
+        {/* Premium Timer Display */}
         <div className="mb-12">
-          <div className="relative w-64 h-64 mx-auto mb-8">
-            {/* Circular Progress */}
-            <svg className="w-full h-full transform -rotate-90">
+          <div className="relative w-72 h-72 mx-auto mb-8">
+            {/* Multi-layer Circular Progress */}
+            <svg className="w-full h-full transform -rotate-90" viewBox="0 0 280 280">
+              {/* Layer 1: Outer orbit path (dashed) */}
               <circle
-                cx="128"
-                cy="128"
-                r="120"
+                cx="140"
+                cy="140"
+                r="135"
                 fill="none"
                 stroke="rgba(255,255,255,0.1)"
+                strokeWidth="1"
+                strokeDasharray="4 4"
+              />
+
+              {/* Layer 2: Minute markers */}
+              {Array.from({ length: 60 }).map((_, i) => {
+                const angle = (i * 6 - 90) * (Math.PI / 180);
+                const isHour = i % 5 === 0;
+                const innerR = isHour ? 118 : 122;
+                const outerR = 128;
+                return (
+                  <line
+                    key={i}
+                    x1={140 + innerR * Math.cos(angle)}
+                    y1={140 + innerR * Math.sin(angle)}
+                    x2={140 + outerR * Math.cos(angle)}
+                    y2={140 + outerR * Math.sin(angle)}
+                    stroke={isHour ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.1)"}
+                    strokeWidth={isHour ? 2 : 1}
+                  />
+                );
+              })}
+
+              {/* Layer 3: Background track */}
+              <circle
+                cx="140"
+                cy="140"
+                r="110"
+                fill="none"
+                stroke="rgba(255,255,255,0.08)"
                 strokeWidth="8"
               />
-              <circle
-                cx="128"
-                cy="128"
-                r="120"
+
+              {/* Layer 4: Progress ring with dynamic color */}
+              <motion.circle
+                cx="140"
+                cy="140"
+                r="110"
                 fill="none"
-                stroke="url(#gradient)"
+                stroke="url(#hyperfocusGradient)"
                 strokeWidth="8"
                 strokeLinecap="round"
-                strokeDasharray={`${2 * Math.PI * 120}`}
-                strokeDashoffset={`${2 * Math.PI * 120 * (1 - progress / 100)}`}
-                className="transition-all duration-1000 ease-linear"
+                strokeDasharray={`${2 * Math.PI * 110}`}
+                initial={false}
+                animate={{
+                  strokeDashoffset: `${2 * Math.PI * 110 * (1 - progress / 100)}`
+                }}
+                transition={{ duration: 0.5, ease: "easeOut" }}
+                style={{
+                  filter: `drop-shadow(0 0 12px ${progressColor.from})`
+                }}
               />
+
+              {/* Gradient definition with dynamic colors */}
               <defs>
-                <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#8B5CF6" />
-                  <stop offset="100%" stopColor="#EC4899" />
+                <linearGradient id="hyperfocusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor={progressColor.from} />
+                  <stop offset="100%" stopColor={progressColor.to} />
                 </linearGradient>
               </defs>
             </svg>
 
+            {/* Inner breathing glow */}
+            {isRunning && !isPaused && (
+              <motion.div
+                className="absolute inset-12 rounded-full pointer-events-none"
+                style={{
+                  background: `radial-gradient(circle, ${progressColor.from}20 0%, transparent 70%)`
+                }}
+                animate={{
+                  scale: [1, 1.1, 1],
+                  opacity: [0.4, 0.7, 0.4],
+                }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              />
+            )}
+
             {/* Time Display */}
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
-                <div className="text-6xl font-bold text-white mb-2">
+                <motion.div
+                  className="text-6xl font-bold text-white mb-2"
+                  style={{
+                    textShadow: `0 0 30px ${progressColor.from}60`
+                  }}
+                  key={timeLeft}
+                  initial={{ scale: 0.95, opacity: 0.8 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ duration: 0.15 }}
+                >
                   {formatTime(timeLeft)}
-                </div>
+                </motion.div>
                 <div className="text-sm text-white/60">
                   {t.hyperfocusTimeLeft || 'осталось'}
                 </div>
@@ -344,20 +482,34 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           )}
         </div>
 
-        {/* Controls */}
+        {/* Premium Controls */}
         <div className="flex items-center justify-center gap-4 mb-8">
           {!isRunning ? (
-            <button
+            <motion.button
               onClick={handleStart}
-              className="btn-press px-8 py-4 min-h-[56px] zen-gradient rounded-2xl text-white font-bold text-lg flex items-center gap-3 hover:opacity-90 transition-opacity zen-shadow-xl active:scale-95"
+              className="relative px-8 py-4 min-h-[56px] rounded-2xl text-white font-bold text-lg flex items-center gap-3 overflow-hidden"
+              style={{
+                background: `linear-gradient(135deg, ${progressColor.from}, ${progressColor.to})`,
+                boxShadow: `0 0 30px ${progressColor.from}50`
+              }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
             >
-              <Play className="w-6 h-6" />
+              {/* Pulse ring */}
+              <motion.div
+                className="absolute inset-0 rounded-2xl border-2 border-white/30"
+                animate={{ scale: [1, 1.1], opacity: [0.5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              />
+              <Sparkles className="w-5 h-5" />
               {t.hyperfocusStart || 'Начать'}
-            </button>
+            </motion.button>
           ) : (
-            <button
+            <motion.button
               onClick={handlePause}
-              className="btn-press px-8 py-4 min-h-[56px] bg-white/10 hover:bg-white/20 rounded-2xl text-white font-bold text-lg flex items-center gap-3 transition-all zen-shadow-xl active:scale-95"
+              className="px-8 py-4 min-h-[56px] bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white font-bold text-lg flex items-center gap-3 transition-all"
+              whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
+              whileTap={{ scale: 0.95 }}
             >
               {isPaused ? (
                 <>
@@ -370,113 +522,141 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   {t.hyperfocusPause || 'Пауза'}
                 </>
               )}
-            </button>
+            </motion.button>
           )}
 
-          <button
+          <motion.button
             onClick={onExit}
-            className="btn-press px-6 py-4 min-h-[56px] bg-red-500/20 hover:bg-red-500/30 rounded-2xl text-white font-medium transition-all active:scale-95"
+            className="px-6 py-4 min-h-[56px] bg-red-500/20 backdrop-blur-sm border border-red-500/30 rounded-2xl text-red-300 font-medium transition-all"
+            whileHover={{ scale: 1.05, backgroundColor: 'rgba(239, 68, 68, 0.3)' }}
+            whileTap={{ scale: 0.95 }}
           >
             {t.hyperfocusExit || 'Выход'}
-          </button>
+          </motion.button>
         </div>
 
-        {/* Ambient Sound Selector - Simple list of local sounds */}
-        <div className="max-w-md mx-auto">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm text-white/70">
+        {/* Premium Ambient Sound Selector */}
+        <div className="max-w-md mx-auto bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm text-white/70 font-medium">
               {t.hyperfocusAmbientSound || 'Фоновый звук'}
             </p>
             {selectedSoundId && (
-              <button
+              <motion.button
                 onClick={toggleSound}
-                className="p-2.5 min-w-[44px] min-h-[44px] bg-white/10 hover:bg-white/20 rounded-lg transition-colors flex items-center justify-center active:scale-95"
+                className={cn(
+                  "p-2.5 min-w-[44px] min-h-[44px] rounded-xl transition-all flex items-center justify-center",
+                  isSoundPlaying
+                    ? "bg-violet-500/30 border border-violet-500/50"
+                    : "bg-white/10 border border-white/20"
+                )}
+                whileTap={{ scale: 0.95 }}
               >
                 {isSoundPlaying ? (
-                  <Volume2 className="w-5 h-5 text-white" />
+                  <Volume2 className="w-5 h-5 text-violet-300" />
                 ) : (
-                  <VolumeX className="w-5 h-5 text-white" />
+                  <VolumeX className="w-5 h-5 text-white/60" />
                 )}
-              </button>
+              </motion.button>
             )}
           </div>
 
-          {/* Sound selector - one button per sound */}
+          {/* Sound selector grid with glassmorphism */}
           <div className="grid grid-cols-3 gap-2">
             {/* None button */}
-            <button
+            <motion.button
               onClick={() => handleSoundSelect(null)}
               className={cn(
-                'btn-press px-2 py-3 min-h-[48px] rounded-xl text-xs font-medium transition-all active:scale-95',
+                'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium transition-all flex flex-col items-center justify-center gap-1',
                 !selectedSoundId
-                  ? 'bg-primary text-primary-foreground zen-shadow'
-                  : 'bg-white/10 text-white hover:bg-white/20'
+                  ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-white'
+                  : 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
               )}
+              style={!selectedSoundId ? {
+                boxShadow: '0 0 12px rgba(139, 92, 246, 0.3)'
+              } : {}}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
             >
-              🔇 {t.hyperfocusSoundNone || 'Без звуку'}
-            </button>
+              <span className="text-lg">🔇</span>
+              <span>{t.hyperfocusSoundNone || 'Без звуку'}</span>
+            </motion.button>
 
             {/* All available sounds */}
-            {SOUNDS.map(sound => (
-              <button
-                key={sound.id}
-                onClick={() => handleSoundSelect(sound.id)}
-                className={cn(
-                  'btn-press px-2 py-3 min-h-[48px] rounded-xl text-xs font-medium transition-all active:scale-95',
-                  selectedSoundId === sound.id
-                    ? 'bg-primary text-primary-foreground zen-shadow'
-                    : 'bg-white/10 text-white hover:bg-white/20'
-                )}
-              >
-                {sound.id === 'underwater' && '🌊'}
-                {sound.id === 'thunderstorm' && '⛈️'}
-                {sound.id === 'ocean' && '🏖️'}
-                {sound.id === 'river' && '🏞️'}
-                {sound.id === 'cafe' && '☕'}
-                {sound.id === 'fireplace' && '🔥'}
-                {' '}
-                {language === 'ru' || language === 'uk' ? sound.nameRu : sound.nameEn}
-              </button>
-            ))}
+            {SOUNDS.map(sound => {
+              const isSelected = selectedSoundId === sound.id;
+              const emoji = {
+                underwater: '🌊',
+                thunderstorm: '⛈️',
+                ocean: '🏖️',
+                river: '🏞️',
+                cafe: '☕',
+                fireplace: '🔥',
+              }[sound.id] || '🎵';
+
+              return (
+                <motion.button
+                  key={sound.id}
+                  onClick={() => handleSoundSelect(sound.id)}
+                  className={cn(
+                    'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium transition-all flex flex-col items-center justify-center gap-1',
+                    isSelected
+                      ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-white'
+                      : 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
+                  )}
+                  style={isSelected ? {
+                    boxShadow: '0 0 12px rgba(139, 92, 246, 0.3)'
+                  } : {}}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  <span className="text-lg">{emoji}</span>
+                  <span>{language === 'ru' || language === 'uk' ? sound.nameRu : sound.nameEn}</span>
+                </motion.button>
+              );
+            })}
           </div>
 
-          {/* Spotify Section */}
-          <div className="mt-6 pt-4 border-t border-white/10">
+          {/* Premium Spotify Section */}
+          <div className="mt-4 pt-4 border-t border-white/10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Music className="w-4 h-4 text-green-400" />
-                <p className="text-sm text-white/70">Spotify</p>
+                <Music className="w-4 h-4 text-[#1DB954]" />
+                <p className="text-sm text-white/70 font-medium">Spotify</p>
               </div>
               {spotifyConnected && (
-                <button
+                <motion.button
                   onClick={() => setSpotifyAutoPlay(!spotifyAutoPlay)}
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                     spotifyAutoPlay
-                      ? 'bg-green-500/20 text-green-400'
-                      : 'bg-white/10 text-white/60'
+                      ? 'bg-[#1DB954]/30 border border-[#1DB954]/50 text-[#1DB954]'
+                      : 'bg-white/10 border border-white/20 text-white/60'
                   )}
+                  whileTap={{ scale: 0.95 }}
                 >
                   {spotifyAutoPlay ? 'Auto-play ON' : 'Auto-play OFF'}
-                </button>
+                </motion.button>
               )}
             </div>
 
             {!spotifyConnected ? (
-              <button
+              <motion.button
                 onClick={handleSpotifyConnect}
-                className="w-full py-3 bg-[#1DB954]/20 hover:bg-[#1DB954]/30 rounded-xl text-[#1DB954] font-medium flex items-center justify-center gap-2 transition-all active:scale-95"
+                className="w-full py-3 bg-[#1DB954]/20 border border-[#1DB954]/30 rounded-xl text-[#1DB954] font-medium flex items-center justify-center gap-2 transition-all"
+                whileHover={{ backgroundColor: 'rgba(29, 185, 84, 0.3)' }}
+                whileTap={{ scale: 0.98 }}
               >
                 <ExternalLink className="w-4 h-4" />
                 {t.spotifyConnect || 'Подключить Spotify'}
-              </button>
+              </motion.button>
             ) : spotifyTrack ? (
-              <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl">
+              <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl">
                 {spotifyTrack.albumArt && (
                   <img
                     src={spotifyTrack.albumArt}
                     alt="Album"
-                    className="w-12 h-12 rounded-lg"
+                    className="w-12 h-12 rounded-lg shadow-lg"
                   />
                 )}
                 <div className="flex-1 min-w-0">
@@ -488,10 +668,22 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   </p>
                 </div>
                 {spotifyTrack.isPlaying && (
-                  <div className="flex gap-0.5">
-                    <div className="w-1 h-4 bg-green-400 rounded-full animate-pulse" />
-                    <div className="w-1 h-4 bg-green-400 rounded-full animate-pulse delay-75" />
-                    <div className="w-1 h-4 bg-green-400 rounded-full animate-pulse delay-150" />
+                  <div className="flex gap-0.5 items-end h-5">
+                    <motion.div
+                      className="w-1 bg-[#1DB954] rounded-full"
+                      animate={{ height: ['8px', '20px', '12px', '16px', '8px'] }}
+                      transition={{ duration: 1, repeat: Infinity }}
+                    />
+                    <motion.div
+                      className="w-1 bg-[#1DB954] rounded-full"
+                      animate={{ height: ['16px', '8px', '20px', '12px', '16px'] }}
+                      transition={{ duration: 1, repeat: Infinity, delay: 0.1 }}
+                    />
+                    <motion.div
+                      className="w-1 bg-[#1DB954] rounded-full"
+                      animate={{ height: ['12px', '16px', '8px', '20px', '12px'] }}
+                      transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
+                    />
                   </div>
                 )}
               </div>
@@ -503,18 +695,26 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           </div>
         </div>
 
-        {/* Tips */}
+        {/* Premium Tips */}
         {!isRunning && (
-          <div className="mt-8 max-w-sm mx-auto">
-            <div className="bg-white/5 backdrop-blur rounded-2xl p-4">
-              <p className="text-xs text-white/60 mb-2">
-                💡 {t.hyperfocusTip || 'Совет'}
-              </p>
+          <motion.div
+            className="mt-8 max-w-sm mx-auto"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+          >
+            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">💡</span>
+                <p className="text-xs text-white/60 font-medium">
+                  {t.hyperfocusTip || 'Совет'}
+                </p>
+              </div>
               <p className="text-sm text-white/80">
                 {t.hyperfocusTipText || 'Каждые 25 минут будет короткая дыхательная пауза. Это помогает избежать выгорания!'}
               </p>
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
 

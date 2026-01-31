@@ -1,15 +1,50 @@
 ﻿import { useMemo, useState, useEffect, useRef, memo } from 'react';
+import { motion } from 'framer-motion';
 import { logger } from '@/lib/logger';
 import { FocusSession } from '@/types';
 import { formatTime, getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { safeJsonParse } from '@/lib/safeJson';
 import { safeParseInt } from '@/lib/validation';
-import { Play, Pause, RotateCcw, Coffee, Zap, X } from 'lucide-react';
+import { Play, Pause, RotateCcw, Coffee, Zap, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { HyperfocusMode } from './HyperfocusMode';
 import { haptics } from '@/lib/haptics';
+
+// Star particle for cosmic background
+function CosmicStar({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
+  return (
+    <motion.div
+      className="absolute rounded-full bg-white"
+      style={{
+        left: `${x}%`,
+        top: `${y}%`,
+        width: size,
+        height: size,
+      }}
+      animate={{
+        opacity: [0.2, 0.8, 0.2],
+        scale: [1, 1.3, 1],
+      }}
+      transition={{
+        duration: 2 + Math.random() * 2,
+        delay,
+        repeat: Infinity,
+        ease: 'easeInOut',
+      }}
+    />
+  );
+}
+
+// Generate stars for background
+const cosmicStars = Array.from({ length: 15 }, (_, i) => ({
+  id: i,
+  x: Math.random() * 100,
+  y: Math.random() * 100,
+  size: 1 + Math.random() * 2,
+  delay: Math.random() * 3,
+}));
 
 const DEFAULT_FOCUS_MINUTES = 25;
 const DEFAULT_BREAK_MINUTES = 5;
@@ -372,57 +407,116 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     ? ((breakDuration - timeLeft) / breakDuration) * 100
     : ((focusDuration - timeLeft) / focusDuration) * 100;
 
+  // Preset colors for premium styling
+  const presetColors = {
+    '25': { glow: 'rgba(16, 185, 129, 0.5)', ring: 'ring-emerald-500/40', bg: 'from-emerald-500/20 to-emerald-600/10' },
+    '50': { glow: 'rgba(139, 92, 246, 0.5)', ring: 'ring-violet-500/40', bg: 'from-violet-500/20 to-violet-600/10' },
+    'custom': { glow: 'rgba(245, 158, 11, 0.5)', ring: 'ring-amber-500/40', bg: 'from-amber-500/20 to-amber-600/10' },
+  };
+
   return (
     <div className={cn(
       "rounded-2xl p-6 animate-fade-in transition-all relative overflow-hidden",
       isPrimaryCTA
-        ? "bg-gradient-to-br from-primary/15 via-card to-accent/10 ring-2 ring-primary/40 shadow-lg shadow-primary/20"
+        ? "ring-2 ring-violet-500/40 shadow-lg shadow-violet-500/20"
         : "bg-card zen-shadow-card"
     )}>
-      {/* Animated background glow for CTA */}
+      {/* Cosmic Background */}
       {isPrimaryCTA && (
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 animate-pulse pointer-events-none" />
+        <>
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `radial-gradient(ellipse at center,
+                #1a1a3e 0%, #0d0d2a 40%, #050510 100%)`
+            }}
+          />
+          {/* Star particles */}
+          {cosmicStars.map((star) => (
+            <CosmicStar key={star.id} {...star} />
+          ))}
+          {/* Nebula glow */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            animate={{ opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 5, repeat: Infinity }}
+            style={{
+              background: `
+                radial-gradient(circle at 30% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 70% 70%, rgba(236, 72, 153, 0.1) 0%, transparent 40%)
+              `
+            }}
+          />
+        </>
       )}
 
       {/* Primary CTA Header */}
       {isPrimaryCTA && (
-        <div className="relative flex items-center justify-center gap-2 mb-4">
-          <div className="flex items-center gap-2 px-4 py-2 bg-primary/25 rounded-full border border-primary/30">
-            <Zap className="w-4 h-4 text-primary" />
-            <span className="text-sm font-bold text-primary">{t.startHere}</span>
+        <motion.div
+          className="relative flex items-center justify-center gap-2 mb-4"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-2 px-4 py-2 bg-violet-500/25 backdrop-blur-sm rounded-full border border-violet-500/30">
+            <Sparkles className="w-4 h-4 text-violet-300" />
+            <span className="text-sm font-bold text-violet-200">{t.startHere}</span>
           </div>
-        </div>
+        </motion.div>
       )}
 
       <div className="mb-4 space-y-3 relative">
-        <label className="text-sm text-muted-foreground">{t.focusLabelPrompt}</label>
+        <label className={cn(
+          "text-sm",
+          isPrimaryCTA ? "text-white/60" : "text-muted-foreground"
+        )}>{t.focusLabelPrompt}</label>
         <input
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           placeholder={t.focusLabelPlaceholder}
-          className="w-full p-3 bg-secondary rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+          className={cn(
+            "w-full p-3 rounded-xl focus:outline-none focus:ring-2 transition-colors",
+            isPrimaryCTA
+              ? "bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/40 focus:ring-violet-500/50"
+              : "bg-secondary text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
+          )}
         />
         <div className="flex flex-wrap gap-2">
-          {presets.map((item) => (
-            <button
-              key={item.key}
-              onClick={() => handlePresetSelect(item.key)}
-              className={cn(
-                "px-3 py-2 rounded-lg text-xs font-medium transition-colors",
-                preset === item.key
-                  ? "bg-primary/10 ring-2 ring-primary text-foreground"
-                  : "bg-secondary text-muted-foreground hover:bg-muted"
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
+          {presets.map((item) => {
+            const colors = presetColors[item.key];
+            const isSelected = preset === item.key;
+            return (
+              <motion.button
+                key={item.key}
+                onClick={() => handlePresetSelect(item.key)}
+                className={cn(
+                  "px-4 py-2.5 rounded-xl text-xs font-semibold transition-all",
+                  isPrimaryCTA
+                    ? isSelected
+                      ? `bg-gradient-to-br ${colors.bg} backdrop-blur-sm border border-white/20 text-white`
+                      : "bg-white/5 backdrop-blur-sm border border-white/10 text-white/60 hover:bg-white/10 hover:text-white/80"
+                    : isSelected
+                      ? "bg-primary/10 ring-2 ring-primary text-foreground"
+                      : "bg-secondary text-muted-foreground hover:bg-muted"
+                )}
+                style={isPrimaryCTA && isSelected ? {
+                  boxShadow: `0 0 16px ${colors.glow}`
+                } : {}}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {item.label}
+              </motion.button>
+            );
+          })}
         </div>
         {preset === 'custom' && (
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <label className="text-xs text-muted-foreground">{t.focusCustomWork}</label>
+              <label className={cn(
+                "text-xs",
+                isPrimaryCTA ? "text-white/60" : "text-muted-foreground"
+              )}>{t.focusCustomWork}</label>
               <input
                 type="number"
                 min={5}
@@ -435,11 +529,19 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                   setSavedCustomFocus(validated);
                   setFocusInputValue(String(validated));
                 }}
-                className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className={cn(
+                  "w-full p-2 rounded-lg focus:outline-none focus:ring-2",
+                  isPrimaryCTA
+                    ? "bg-white/10 backdrop-blur-sm border border-white/20 text-white focus:ring-amber-500/50"
+                    : "bg-secondary text-foreground focus:ring-primary/30"
+                )}
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground">{t.focusCustomBreak}</label>
+              <label className={cn(
+                "text-xs",
+                isPrimaryCTA ? "text-white/60" : "text-muted-foreground"
+              )}>{t.focusCustomBreak}</label>
               <input
                 type="number"
                 min={1}
@@ -452,107 +554,269 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                   setSavedCustomBreak(validated);
                   setBreakInputValue(String(validated));
                 }}
-                className="w-full p-2 bg-secondary rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className={cn(
+                  "w-full p-2 rounded-lg focus:outline-none focus:ring-2",
+                  isPrimaryCTA
+                    ? "bg-white/10 backdrop-blur-sm border border-white/20 text-white focus:ring-amber-500/50"
+                    : "bg-secondary text-foreground focus:ring-primary/30"
+                )}
               />
             </div>
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-semibold text-foreground">
+      <div className="flex items-center justify-between mb-6 relative">
+        <h3 className={cn(
+          "text-lg font-semibold",
+          isPrimaryCTA ? "text-white" : "text-foreground"
+        )}>
           {isBreak ? t.breakTime : t.focus}
         </h3>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <div className={cn(
+          "flex items-center gap-2 text-sm",
+          isPrimaryCTA
+            ? "px-3 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-white/70"
+            : "text-muted-foreground"
+        )}>
           <Coffee className="w-4 h-4" />
           <span>{totalMinutesToday} {t.todayMinutes}</span>
         </div>
       </div>
 
-      <div className="relative w-48 h-48 mx-auto mb-6">
+      <div className="relative w-52 h-52 mx-auto mb-6">
+        {/* Premium multi-layer timer */}
         <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
+          {/* Layer 1: Orbit path (dashed) */}
+          {isPrimaryCTA && (
+            <circle
+              cx="50"
+              cy="50"
+              r="47"
+              fill="none"
+              stroke="rgba(255, 255, 255, 0.1)"
+              strokeWidth="1"
+              strokeDasharray="3 3"
+            />
+          )}
+
+          {/* Layer 2: Background track */}
           <circle
             cx="50"
             cy="50"
-            r="45"
+            r="42"
             fill="none"
-            stroke="hsl(var(--secondary))"
-            strokeWidth="8"
+            stroke={isPrimaryCTA ? "rgba(255, 255, 255, 0.1)" : "hsl(var(--secondary))"}
+            strokeWidth="6"
           />
-          <circle
+
+          {/* Layer 3: Progress ring with glow */}
+          <motion.circle
             cx="50"
             cy="50"
-            r="45"
+            r="42"
             fill="none"
-            stroke={isBreak ? "hsl(var(--accent))" : "hsl(var(--primary))"}
-            strokeWidth="8"
+            stroke={isPrimaryCTA
+              ? isBreak ? "url(#breakGradient)" : "url(#focusGradient)"
+              : isBreak ? "hsl(var(--accent))" : "hsl(var(--primary))"
+            }
+            strokeWidth="6"
             strokeLinecap="round"
-            strokeDasharray={`${2 * Math.PI * 45}`}
-            strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
-            className="transition-all duration-1000"
+            strokeDasharray={`${2 * Math.PI * 42}`}
+            strokeDashoffset={`${2 * Math.PI * 42 * (1 - progress / 100)}`}
+            style={isPrimaryCTA ? {
+              filter: `drop-shadow(0 0 8px ${isBreak ? 'rgba(236, 72, 153, 0.6)' : 'rgba(139, 92, 246, 0.6)'})`
+            } : {}}
+            initial={false}
+            animate={{ strokeDashoffset: `${2 * Math.PI * 42 * (1 - progress / 100)}` }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
           />
+
+          {/* Gradient definitions */}
+          <defs>
+            <linearGradient id="focusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#8b5cf6" />
+              <stop offset="50%" stopColor="#a855f7" />
+              <stop offset="100%" stopColor="#ec4899" />
+            </linearGradient>
+            <linearGradient id="breakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#ec4899" />
+              <stop offset="50%" stopColor="#f472b6" />
+              <stop offset="100%" stopColor="#fb7185" />
+            </linearGradient>
+          </defs>
         </svg>
-        
+
+        {/* Inner breathing glow */}
+        {isPrimaryCTA && isRunning && (
+          <motion.div
+            className="absolute inset-6 rounded-full pointer-events-none"
+            style={{
+              background: isBreak
+                ? 'radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%)'
+                : 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)'
+            }}
+            animate={{
+              scale: [1, 1.1, 1],
+              opacity: [0.5, 0.8, 0.5],
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+        )}
+
         <div
           role="timer"
           aria-label={isBreak ? (t.takeRest || 'Break time') : (t.concentrate || 'Focus time')}
           className="absolute inset-0 flex flex-col items-center justify-center"
         >
-          <span
+          <motion.span
             aria-live="polite"
             aria-atomic="true"
             className={cn(
-              "text-4xl font-bold",
-              isBreak ? "text-accent" : "text-primary"
+              "text-5xl font-bold tracking-tight",
+              isPrimaryCTA
+                ? "text-white"
+                : isBreak ? "text-accent" : "text-primary"
             )}
+            style={isPrimaryCTA ? {
+              textShadow: isBreak
+                ? '0 0 20px rgba(236, 72, 153, 0.5)'
+                : '0 0 20px rgba(139, 92, 246, 0.5)'
+            } : {}}
+            key={timeLeft}
+            initial={{ scale: 0.95, opacity: 0.8 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.2 }}
           >
             {formatTime(timeLeft)}
-          </span>
-          <span className="text-sm text-muted-foreground mt-1" aria-hidden="true">
+          </motion.span>
+          <span className={cn(
+            "text-sm mt-2",
+            isPrimaryCTA ? "text-white/60" : "text-muted-foreground"
+          )} aria-hidden="true">
             {isBreak ? t.takeRest : t.concentrate}
           </span>
         </div>
       </div>
 
       <div className="flex justify-center gap-4 mb-4">
-        <Button
-          variant="gradient"
-          size="icon-lg"
-          onClick={toggleTimer}
-          aria-label={isRunning ? (t.pause || 'Pause timer') : (t.start || 'Start timer')}
-          className={cn(
-            isBreak && "zen-gradient-warm"
-          )}
-        >
-          {isRunning ? <Pause className="w-6 h-6" aria-hidden="true" /> : <Play className="w-6 h-6" aria-hidden="true" />}
-        </Button>
-        <Button
-          variant="secondary"
-          size="icon-lg"
-          onClick={resetTimer}
-          aria-label={t.resetTimer}
-        >
-          <RotateCcw className="w-6 h-6" aria-hidden="true" />
-        </Button>
+        {isPrimaryCTA ? (
+          <>
+            {/* Premium Play/Pause Button */}
+            <motion.button
+              onClick={toggleTimer}
+              aria-label={isRunning ? (t.pause || 'Pause timer') : (t.start || 'Start timer')}
+              className={cn(
+                "relative w-16 h-16 rounded-full flex items-center justify-center",
+                "transition-all",
+                isBreak
+                  ? "bg-gradient-to-br from-pink-500 to-rose-600"
+                  : "bg-gradient-to-br from-violet-500 to-purple-600"
+              )}
+              style={{
+                boxShadow: isBreak
+                  ? '0 0 24px rgba(236, 72, 153, 0.5)'
+                  : '0 0 24px rgba(139, 92, 246, 0.5)'
+              }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {/* Pulse ring when paused */}
+              {!isRunning && (
+                <motion.div
+                  className="absolute inset-0 rounded-full border-2 border-white/30"
+                  animate={{ scale: [1, 1.3], opacity: [0.6, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+              )}
+              {isRunning ? (
+                <Pause className="w-7 h-7 text-white" aria-hidden="true" />
+              ) : (
+                <Play className="w-7 h-7 text-white ml-1" aria-hidden="true" />
+              )}
+            </motion.button>
+
+            {/* Premium Reset Button */}
+            <motion.button
+              onClick={resetTimer}
+              aria-label={t.resetTimer}
+              className="w-14 h-14 rounded-full flex items-center justify-center bg-white/10 backdrop-blur-sm border border-white/20 text-white/70 hover:text-white hover:bg-white/20 transition-colors"
+              whileHover={{ scale: 1.1, rotate: -90 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <RotateCcw className="w-5 h-5" aria-hidden="true" />
+            </motion.button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="gradient"
+              size="icon-lg"
+              onClick={toggleTimer}
+              aria-label={isRunning ? (t.pause || 'Pause timer') : (t.start || 'Start timer')}
+              className={cn(
+                isBreak && "zen-gradient-warm"
+              )}
+            >
+              {isRunning ? <Pause className="w-6 h-6" aria-hidden="true" /> : <Play className="w-6 h-6" aria-hidden="true" />}
+            </Button>
+            <Button
+              variant="secondary"
+              size="icon-lg"
+              onClick={resetTimer}
+              aria-label={t.resetTimer}
+            >
+              <RotateCcw className="w-6 h-6" aria-hidden="true" />
+            </Button>
+          </>
+        )}
       </div>
 
       {/* Hyperfocus Mode Button */}
-      <Button
-        variant={isRunning ? "secondary" : "gradient"}
-        size="lg"
-        onClick={() => setShowHyperfocus(true)}
-        disabled={isRunning}
-        className={cn(
-          "w-full",
-          !isRunning && "zen-gradient-calm"
-        )}
-      >
-        <Zap className="w-5 h-5" />
-        {t.hyperfocusMode}
-      </Button>
+      {isPrimaryCTA ? (
+        <motion.button
+          onClick={() => setShowHyperfocus(true)}
+          disabled={isRunning}
+          className={cn(
+            "w-full py-3.5 rounded-xl flex items-center justify-center gap-2",
+            "font-semibold transition-all",
+            isRunning
+              ? "bg-white/10 text-white/40 cursor-not-allowed"
+              : "bg-gradient-to-r from-cyan-500/80 to-violet-500/80 text-white hover:from-cyan-500 hover:to-violet-500"
+          )}
+          style={!isRunning ? {
+            boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)'
+          } : {}}
+          whileHover={!isRunning ? { scale: 1.02 } : {}}
+          whileTap={!isRunning ? { scale: 0.98 } : {}}
+        >
+          <Zap className="w-5 h-5" />
+          {t.hyperfocusMode}
+        </motion.button>
+      ) : (
+        <Button
+          variant={isRunning ? "secondary" : "gradient"}
+          size="lg"
+          onClick={() => setShowHyperfocus(true)}
+          disabled={isRunning}
+          className={cn(
+            "w-full",
+            !isRunning && "zen-gradient-calm"
+          )}
+        >
+          <Zap className="w-5 h-5" />
+          {t.hyperfocusMode}
+        </Button>
+      )}
 
       {showReflection && (
-        <div
-          className="fixed inset-0 bg-black/40 flex items-center justify-center px-4 z-[60]"
+        <motion.div
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 z-[60]"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           onClick={(e) => {
             // Close on backdrop click
             if (e.target === e.currentTarget) {
@@ -560,51 +824,94 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             }
           }}
         >
-          <div className="w-full max-w-sm bg-card rounded-2xl p-6 zen-shadow-card relative">
-            {/* Close button */}
-            <button
-              onClick={() => handleSaveReflection(null)}
-              className="absolute top-3 right-3 p-2 rounded-lg bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-              aria-label={t.close}
-            >
-              <X className="w-4 h-4" />
-            </button>
-            <h4 className="text-lg font-semibold text-foreground pr-10">{t.focusReflectionTitle}</h4>
-            <p className="text-sm text-muted-foreground mt-1">{t.focusReflectionQuestion}</p>
-            <div className="flex justify-between mt-4">
-              {[1, 2, 3, 4, 5].map((value) => (
-                <button
-                  key={value}
-                  onClick={() => setReflectionValue(value)}
-                  className={cn(
-                    "w-10 h-10 rounded-full text-sm font-semibold",
-                    reflectionValue === value
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-muted-foreground hover:bg-muted"
-                  )}
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
-            <div className="flex gap-2 mt-5">
-              <Button
-                variant="secondary"
+          <motion.div
+            className="w-full max-w-sm relative overflow-hidden rounded-2xl"
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', damping: 20 }}
+          >
+            {/* Premium background */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `radial-gradient(ellipse at top,
+                  #1a1a3e 0%, #0d0d2a 60%, #050510 100%)`
+              }}
+            />
+            {/* Star particles */}
+            {cosmicStars.slice(0, 8).map((star) => (
+              <CosmicStar key={star.id} {...star} />
+            ))}
+
+            <div className="relative p-6">
+              {/* Close button */}
+              <button
                 onClick={() => handleSaveReflection(null)}
-                className="flex-1"
+                className="absolute top-3 right-3 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
+                aria-label={t.close}
               >
-                {t.focusReflectionSkip}
-              </Button>
-              <Button
-                variant="gradient"
-                onClick={() => handleSaveReflection(reflectionValue)}
-                className="flex-1"
-              >
-                {t.focusReflectionSave}
-              </Button>
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-5 h-5 text-violet-400" />
+                <h4 className="text-lg font-semibold text-white pr-10">{t.focusReflectionTitle}</h4>
+              </div>
+              <p className="text-sm text-white/60 mt-1">{t.focusReflectionQuestion}</p>
+
+              <div className="flex justify-between mt-5">
+                {[1, 2, 3, 4, 5].map((value) => {
+                  const isSelected = reflectionValue === value;
+                  const colors = [
+                    'from-red-500 to-red-600',
+                    'from-orange-500 to-orange-600',
+                    'from-amber-500 to-amber-600',
+                    'from-emerald-500 to-emerald-600',
+                    'from-violet-500 to-violet-600',
+                  ];
+                  return (
+                    <motion.button
+                      key={value}
+                      onClick={() => setReflectionValue(value)}
+                      className={cn(
+                        "w-11 h-11 rounded-full text-sm font-bold transition-all",
+                        isSelected
+                          ? `bg-gradient-to-br ${colors[value - 1]} text-white`
+                          : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white"
+                      )}
+                      style={isSelected ? {
+                        boxShadow: '0 0 16px rgba(139, 92, 246, 0.5)'
+                      } : {}}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {value}
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              <div className="flex gap-2 mt-6">
+                <motion.button
+                  onClick={() => handleSaveReflection(null)}
+                  className="flex-1 py-3 rounded-xl bg-white/10 text-white/70 font-medium hover:bg-white/20 hover:text-white transition-colors"
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {t.focusReflectionSkip}
+                </motion.button>
+                <motion.button
+                  onClick={() => handleSaveReflection(reflectionValue)}
+                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium"
+                  style={{ boxShadow: '0 0 16px rgba(139, 92, 246, 0.4)' }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {t.focusReflectionSave}
+                </motion.button>
+              </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
 
       {/* Hyperfocus Mode Modal */}

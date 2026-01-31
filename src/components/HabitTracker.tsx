@@ -1,8 +1,9 @@
 import { useState, useCallback, useMemo, memo, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Habit, HabitType, HabitReminder, HabitFrequency } from '@/types';
 import { getToday, generateId, formatDate, cn, parseLocalDate } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
-import { Plus, X, ChevronRight, Settings2, Zap, Users } from 'lucide-react';
+import { Plus, X, ChevronRight, Settings2, Zap, Users, Sparkles, Leaf } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { habitTemplates } from '@/lib/habitTemplates';
@@ -304,16 +305,73 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     <div className={cn(
       "rounded-2xl p-6 animate-fade-in transition-all relative overflow-hidden",
       isPrimaryCTA
-        ? "bg-gradient-to-br from-[hsl(var(--mood-good))]/15 via-card to-[hsl(var(--mood-good))]/10 ring-2 ring-[hsl(var(--mood-good))]/40 shadow-lg shadow-[hsl(var(--mood-good))]/20"
+        ? "ring-2 ring-emerald-500/40 shadow-lg shadow-emerald-500/20"
         : "bg-card zen-shadow-card"
     )}>
-      {/* Animated background glow for CTA */}
+      {/* Nature Energy Background */}
       {isPrimaryCTA && (
-        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--mood-good))]/5 via-transparent to-[hsl(var(--mood-good))]/5 animate-pulse pointer-events-none" />
+        <>
+          <div
+            className="absolute inset-0"
+            style={{
+              background: `radial-gradient(ellipse at top,
+                rgba(34, 197, 94, 0.12) 0%,
+                rgba(16, 185, 129, 0.08) 30%,
+                hsl(var(--card)) 60%)`
+            }}
+          />
+          {/* Animated nature glow */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            animate={{ opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 4, repeat: Infinity }}
+            style={{
+              background: `radial-gradient(circle at 70% 20%, rgba(34, 197, 94, 0.1) 0%, transparent 40%)`
+            }}
+          />
+        </>
       )}
 
-      {/* Daily Progress Bar */}
-      {habits.length > 0 && (
+      {/* Premium Daily Progress - Crystal Segments */}
+      {habits.length > 0 && isPrimaryCTA ? (
+        <div className="relative mb-5">
+          <div className="flex gap-1.5">
+            {habits.map((habit, index) => {
+              const isComplete = completionStatusMap.get(habit.id) ?? false;
+              return (
+                <motion.div
+                  key={habit.id}
+                  className={cn(
+                    "flex-1 h-3 rounded-full transition-all",
+                    isComplete
+                      ? "bg-gradient-to-r from-emerald-400 to-teal-500"
+                      : "bg-white/10"
+                  )}
+                  style={isComplete ? {
+                    boxShadow: '0 0 8px rgba(16, 185, 129, 0.5)'
+                  } : {}}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ delay: index * 0.05, duration: 0.3 }}
+                />
+              );
+            })}
+          </div>
+          <div className="flex justify-between mt-2">
+            <span className="text-xs text-emerald-300/70">{completedTodayCount} / {habits.length}</span>
+            {completedTodayCount === habits.length && habits.length > 0 && (
+              <motion.span
+                className="text-xs text-emerald-300 flex items-center gap-1"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+              >
+                <Sparkles className="w-3 h-3" />
+                {t.allDone || 'All done!'}
+              </motion.span>
+            )}
+          </div>
+        </div>
+      ) : habits.length > 0 && (
         <DailyProgressBar
           completedCount={completedTodayCount}
           totalCount={habits.length}
@@ -323,76 +381,153 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
 
       {/* Primary CTA Header */}
       {isPrimaryCTA && (
-        <div className="relative flex items-center justify-center gap-2 mb-4">
-          <div className="flex items-center gap-2 px-4 py-2 bg-primary/25 rounded-full border border-primary/30">
-            <Zap className="w-4 h-4 text-primary" />
-            <span className="text-sm font-bold text-primary">{t.startHere}</span>
+        <motion.div
+          className="relative flex items-center justify-center gap-2 mb-4"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/25 backdrop-blur-sm rounded-full border border-emerald-500/30">
+            <Leaf className="w-4 h-4 text-emerald-300" />
+            <span className="text-sm font-bold text-emerald-200">{t.startHere}</span>
           </div>
-        </div>
+        </motion.div>
       )}
 
       <div className="flex items-center justify-between mb-4 relative">
         <h3 className={cn(
-          "font-semibold text-foreground",
-          isPrimaryCTA ? "text-xl" : "text-lg"
+          "font-semibold",
+          isPrimaryCTA ? "text-xl text-white" : "text-lg text-foreground"
         )}>{t.habits}</h3>
         <div className="flex items-center gap-2">
           {/* Challenges button */}
-          <Button
-            variant="secondary"
-            size="icon"
-            onClick={() => {
-              hapticTap();
-              setChallengeHabit(undefined);
-              setShowChallengeModal(true);
-            }}
-            aria-label={t.friendChallenges}
-            className="relative"
-          >
-            <Users className="w-5 h-5" />
-            {activeChallengesCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
-                {activeChallengesCount}
-              </span>
-            )}
-          </Button>
+          {isPrimaryCTA ? (
+            <motion.button
+              onClick={() => {
+                hapticTap();
+                setChallengeHabit(undefined);
+                setShowChallengeModal(true);
+              }}
+              aria-label={t.friendChallenges}
+              className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-white/10 backdrop-blur-sm border border-white/20 text-white/70 hover:text-white hover:bg-white/20 transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Users className="w-5 h-5" />
+              {activeChallengesCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  {activeChallengesCount}
+                </span>
+              )}
+            </motion.button>
+          ) : (
+            <Button
+              variant="secondary"
+              size="icon"
+              onClick={() => {
+                hapticTap();
+                setChallengeHabit(undefined);
+                setShowChallengeModal(true);
+              }}
+              aria-label={t.friendChallenges}
+              className="relative"
+            >
+              <Users className="w-5 h-5" />
+              {activeChallengesCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                  {activeChallengesCount}
+                </span>
+              )}
+            </Button>
+          )}
           {/* Add button */}
-          <Button
-            variant={isAdding ? "destructive" : "gradient"}
-            size="icon"
-            onClick={(e) => {
-              e.preventDefault();
-              setIsAdding(!isAdding);
-            }}
-            className={cn(isAdding && "rotate-45")}
-            aria-label={isAdding ? (t.cancel || 'Cancel') : (t.addHabit || 'Add habit')}
-          >
-            <Plus className="w-5 h-5" />
-          </Button>
+          {isPrimaryCTA ? (
+            <motion.button
+              onClick={(e) => {
+                e.preventDefault();
+                setIsAdding(!isAdding);
+              }}
+              aria-label={isAdding ? (t.cancel || 'Cancel') : (t.addHabit || 'Add habit')}
+              className={cn(
+                "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                isAdding
+                  ? "bg-red-500/30 border border-red-500/50 text-red-300"
+                  : "bg-gradient-to-br from-emerald-500/60 to-teal-600/60 border border-emerald-500/30 text-white"
+              )}
+              style={!isAdding ? { boxShadow: '0 0 12px rgba(16, 185, 129, 0.3)' } : {}}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Plus className={cn("w-5 h-5 transition-transform", isAdding && "rotate-45")} />
+            </motion.button>
+          ) : (
+            <Button
+              variant={isAdding ? "destructive" : "gradient"}
+              size="icon"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsAdding(!isAdding);
+              }}
+              className={cn(isAdding && "rotate-45")}
+              aria-label={isAdding ? (t.cancel || 'Cancel') : (t.addHabit || 'Add habit')}
+            >
+              <Plus className="w-5 h-5" />
+            </Button>
+          )}
         </div>
       </div>
 
       {isAdding && !showCustomForm && (
-        <div className="mb-4 p-4 bg-secondary rounded-2xl animate-scale-in">
+        <motion.div
+          className={cn(
+            "mb-4 p-4 rounded-2xl",
+            isPrimaryCTA
+              ? "bg-white/5 backdrop-blur-sm border border-white/10"
+              : "bg-secondary"
+          )}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.2 }}
+        >
           {/* Quick-add templates */}
-          <p className="text-sm font-medium text-foreground mb-3">{t.quickAdd || 'Quick Add'}</p>
+          <p className={cn(
+            "text-sm font-medium mb-3",
+            isPrimaryCTA ? "text-white/80" : "text-foreground"
+          )}>{t.quickAdd || 'Quick Add'}</p>
           <div className="grid grid-cols-2 gap-2 mb-4">
             {habitTemplates
               .filter(template => !habits.some(h => h.name === (template.names[language] || template.names.en)))
               .slice(0, 6)
-              .map((template) => (
-                <Button
-                  key={template.id}
-                  variant="outline"
-                  size="default"
-                  onClick={() => handleQuickAdd(template.id)}
-                  className="justify-start gap-2 min-h-[48px]"
-                >
-                  <span className="text-xl">{template.icon}</span>
-                  <span className="truncate">
-                    {template.names[language] || template.names.en}
-                  </span>
-                </Button>
+              .map((template, index) => (
+                isPrimaryCTA ? (
+                  <motion.button
+                    key={template.id}
+                    onClick={() => handleQuickAdd(template.id)}
+                    className="flex items-center gap-2 px-3 py-3 min-h-[52px] rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white transition-all text-left"
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span className="text-xl">{template.icon}</span>
+                    <span className="truncate text-sm font-medium">
+                      {template.names[language] || template.names.en}
+                    </span>
+                  </motion.button>
+                ) : (
+                  <Button
+                    key={template.id}
+                    variant="outline"
+                    size="default"
+                    onClick={() => handleQuickAdd(template.id)}
+                    className="justify-start gap-2 min-h-[48px]"
+                  >
+                    <span className="text-xl">{template.icon}</span>
+                    <span className="truncate">
+                      {template.names[language] || template.names.en}
+                    </span>
+                  </Button>
+                )
               ))}
           </div>
 
@@ -410,7 +545,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             </div>
             <ChevronRight className="w-5 h-5 text-muted-foreground" />
           </Button>
-        </div>
+        </motion.div>
       )}
 
       {isAdding && showCustomForm && (
