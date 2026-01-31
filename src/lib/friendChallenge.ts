@@ -8,6 +8,7 @@
 import { Habit } from '@/types';
 import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
 import { generateSecureRandom, generateSecureId } from './validation';
+import { parseLocalDate } from '@/lib/utils';
 
 // ============================================
 // TYPES
@@ -430,7 +431,8 @@ export function getChallengeProgress(challenge: Challenge): number {
  */
 export function getDaysRemaining(challenge: Challenge): number {
   const today = new Date();
-  const end = new Date(challenge.endDate);
+  // P0 Fix: Use parseLocalDate to avoid UTC parsing bug
+  const end = parseLocalDate(challenge.endDate);
   const diff = end.getTime() - today.getTime();
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 }

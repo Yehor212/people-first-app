@@ -9,6 +9,7 @@
 import { Habit, MoodEntry, FocusSession, ReminderSettings } from '@/types';
 import { getHabitCompletedDates } from '@/lib/habits';
 import { safeParseInt } from '@/lib/validation';
+import { parseLocalDate } from '@/lib/utils';
 
 // ============================================
 // TYPES
@@ -221,7 +222,8 @@ export function analyzeFocusPatterns(sessions: FocusSession[]): PatternAnalysis 
 
   completedSessions.forEach(session => {
     // Use completedAt time for analysis
-    const date = new Date(session.date);
+    // P0 Fix: Use parseLocalDate to avoid UTC parsing bug
+    const date = parseLocalDate(session.date);
     // Use completedAt timestamp or estimate from date
     const hour = session.completedAt
       ? getHourFromTimestamp(session.completedAt)
@@ -512,7 +514,7 @@ export function getOptimalQuietHours(
 ): { start: string; end: string } {
   const allTimestamps: number[] = [
     ...moods.map(m => m.timestamp),
-    ...focusSessions.map(s => s.completedAt || new Date(s.date).getTime()),
+    ...focusSessions.map(s => s.completedAt || parseLocalDate(s.date).getTime()),
   ];
 
   if (allTimestamps.length < 10) {

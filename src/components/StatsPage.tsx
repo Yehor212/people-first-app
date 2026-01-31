@@ -1,6 +1,6 @@
 import { useMemo, useState, memo } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType, PrimaryEmotion } from '@/types';
-import { calculateStreak, getDaysInMonth, getToday, cn } from '@/lib/utils';
+import { calculateStreak, getDaysInMonth, getToday, cn, parseLocalDate } from '@/lib/utils';
 import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
 import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2, PlayCircle, Sparkles } from 'lucide-react';
 import { SegmentedControl } from '@/components/ui/segmented-control';
@@ -119,7 +119,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     if (range === 'month') {
       scoped = moods.filter((entry) => entry.date.startsWith(monthKey));
     } else if (range === 'week') {
-      scoped = moods.filter((entry) => new Date(entry.date) >= weekStart);
+      scoped = moods.filter((entry) => parseLocalDate(entry.date) >= weekStart);
     }
 
     if (selectedTag === 'all') return scoped;
@@ -216,7 +216,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
 
     const moodByDay: Record<number, { total: number; count: number }> = {};
     filteredMoods.forEach((entry) => {
-      const day = new Date(entry.date).getDay();
+      const day = parseLocalDate(entry.date).getDay();
       const score = getMoodEntryScore(entry);
       const current = moodByDay[day] || { total: 0, count: 0 };
       current.total += score;
@@ -524,7 +524,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
   const weekRange = useMemo(() => getCurrentWeekRange().range, []);
 
   return (
-    <div className="space-y-4 animate-fade-in content-with-nav px-1">
+    <div className="space-y-4 animate-fade-in content-with-nav px-4">
       {/* Header with Weekly Story button */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">{t.statistics}</h2>
@@ -728,19 +728,19 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         {/* Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-5">
           <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 to-rose-500">{yearStats.moodCount}</p>
+            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-mood))] to-[hsl(var(--chart-mood)/0.7)]">{yearStats.moodCount}</p>
             <p className="text-xs text-muted-foreground mt-1">{t.moodEntries}</p>
           </div>
           <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">{yearStats.focusMinutes}</p>
+            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-focus))] to-[hsl(var(--chart-focus)/0.7)]">{yearStats.focusMinutes}</p>
             <p className="text-xs text-muted-foreground mt-1">{t.focusMinutes}</p>
           </div>
           <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--mood-good))] to-[hsl(var(--mood-good)/0.7)]">{yearStats.habitCompletions}</p>
+            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--chart-habit))] to-[hsl(var(--chart-habit)/0.7)]">{yearStats.habitCompletions}</p>
             <p className="text-xs text-muted-foreground mt-1">{t.habitsCompleted}</p>
           </div>
           <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-amber-500 to-orange-500">{yearStats.gratitudeCount}</p>
+            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-accent to-accent/70">{yearStats.gratitudeCount}</p>
             <p className="text-xs text-muted-foreground mt-1">{t.gratitudes}</p>
           </div>
         </div>
@@ -764,11 +764,11 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
               || habitCompletionMap.has(cell.dateKey)
               || gratitudeByDate.has(cell.dateKey);
 
-            const moodGradient = mood === 'great' ? 'from-emerald-400/80 to-teal-500/80' :
-                                 mood === 'good' ? 'from-green-400/80 to-emerald-500/80' :
-                                 mood === 'okay' ? 'from-amber-400/80 to-yellow-500/80' :
-                                 mood === 'bad' ? 'from-orange-400/80 to-amber-500/80' :
-                                 mood === 'terrible' ? 'from-red-400/80 to-rose-500/80' : '';
+            const moodGradient = mood === 'great' ? 'from-[hsl(var(--mood-great)/0.8)] to-[hsl(var(--mood-great)/0.6)]' :
+                                 mood === 'good' ? 'from-[hsl(var(--mood-good)/0.8)] to-[hsl(var(--mood-good)/0.6)]' :
+                                 mood === 'okay' ? 'from-[hsl(var(--mood-okay)/0.8)] to-[hsl(var(--mood-okay)/0.6)]' :
+                                 mood === 'bad' ? 'from-[hsl(var(--mood-bad)/0.8)] to-[hsl(var(--mood-bad)/0.6)]' :
+                                 mood === 'terrible' ? 'from-[hsl(var(--mood-terrible)/0.8)] to-[hsl(var(--mood-terrible)/0.6)]' : '';
 
             return (
               <button
@@ -890,7 +890,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
               {selectedDayData.gratitude.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-500" />
+                    <Sparkles className="w-3 h-3 text-accent" />
                     {t.gratitude || 'Gratitude'}
                   </p>
                   {selectedDayData.gratitude.map((entry) => (

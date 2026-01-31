@@ -146,6 +146,24 @@
     --insight-positive: 142 71% 45%;  /* Green - positive insights */
     --insight-warning: 0 72% 51%;     /* Red - warnings/alerts */
 
+    /* ===== CHART COLORS ===== */
+    /* For Recharts and data visualization */
+    --chart-mood: 263 70% 50%;        /* Purple - emotional data */
+    --chart-habit: 142 71% 45%;       /* Green - habit completion */
+    --chart-focus: 217 91% 60%;       /* Blue - focus time */
+    --chart-grid: var(--border);      /* Grid lines */
+
+    /* Activity Heatmap Gradient (GitHub-style) */
+    --chart-activity-1: 158 50% 85%;  /* Lightest - low activity */
+    --chart-activity-2: 158 60% 65%;  /* Light - medium activity */
+    --chart-activity-3: 158 70% 45%;  /* Medium - high activity */
+    --chart-activity-4: 158 80% 35%;  /* Dark - excellent activity */
+
+    /* Recommendation Priority */
+    --priority-high: var(--destructive);
+    --priority-medium: var(--mood-okay);
+    --priority-low: var(--mood-good);
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -234,6 +252,17 @@
     --insight-energy: 45 95% 60%;
     --insight-positive: 142 71% 50%;
     --insight-warning: 0 72% 55%;
+
+    /* Chart colors - dark mode (increased brightness) */
+    --chart-mood: 263 70% 60%;
+    --chart-habit: 142 71% 50%;
+    --chart-focus: 217 91% 65%;
+
+    /* Activity Heatmap - dark mode (visible on dark backgrounds) */
+    --chart-activity-1: 158 40% 20%;
+    --chart-activity-2: 158 55% 30%;
+    --chart-activity-3: 158 70% 40%;
+    --chart-activity-4: 158 85% 50%;
   }
 
   /* ===== OLED DARK MODE ===== */
@@ -314,6 +343,17 @@
     --insight-energy: 45 98% 58%;
     --insight-positive: 142 75% 48%;
     --insight-warning: 0 75% 52%;
+
+    /* Chart colors - OLED (high saturation for true black) */
+    --chart-mood: 263 80% 58%;
+    --chart-habit: 142 75% 48%;
+    --chart-focus: 217 95% 62%;
+
+    /* Activity Heatmap - OLED (high contrast) */
+    --chart-activity-1: 158 35% 15%;
+    --chart-activity-2: 158 55% 25%;
+    --chart-activity-3: 158 75% 38%;
+    --chart-activity-4: 158 90% 48%;
 
     /* Sidebar for OLED */
     --sidebar-background: 0 0% 0%;

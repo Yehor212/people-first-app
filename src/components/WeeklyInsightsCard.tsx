@@ -53,9 +53,9 @@ function RecommendationCard({
   onAction?: (actionId: string) => void;
 }) {
   const priorityColors = {
-    high: 'border-red-500/30 bg-red-500/5 hover:bg-red-500/10',
-    medium: 'border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10',
-    low: 'border-emerald-500/30 bg-emerald-500/5 hover:bg-emerald-500/10',
+    high: 'border-destructive/30 bg-destructive/5 hover:bg-destructive/10',
+    medium: 'border-[hsl(var(--mood-okay))]/30 bg-[hsl(var(--mood-okay))]/5 hover:bg-[hsl(var(--mood-okay))]/10',
+    low: 'border-[hsl(var(--mood-good))]/30 bg-[hsl(var(--mood-good))]/5 hover:bg-[hsl(var(--mood-good))]/10',
   };
 
   const typeIcons = {
@@ -132,8 +132,8 @@ function ComparisonBadge({
       <div
         className={cn(
           'inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium',
-          isPositive && 'bg-emerald-500/10 text-emerald-600',
-          value < 0 && 'bg-red-500/10 text-red-600',
+          isPositive && 'bg-[hsl(var(--mood-good))]/10 text-[hsl(var(--mood-good))]',
+          value < 0 && 'bg-destructive/10 text-destructive',
           isNeutral && 'bg-muted text-muted-foreground'
         )}
       >
@@ -203,8 +203,8 @@ export function WeeklyInsightsCard({
   const { currentWeek, comparison, recommendations, highlights } = insights;
 
   const trendIcon = {
-    improving: <TrendingUp className="w-4 h-4 text-emerald-500" />,
-    declining: <TrendingDown className="w-4 h-4 text-red-500" />,
+    improving: <TrendingUp className="w-4 h-4 text-[hsl(var(--mood-good))]" />,
+    declining: <TrendingDown className="w-4 h-4 text-destructive" />,
     stable: <Minus className="w-4 h-4 text-muted-foreground" />,
   };
 
@@ -215,14 +215,14 @@ export function WeeklyInsightsCard({
   return (
     <div className={cn('bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden', className)}>
       {/* Header */}
-      <div className="p-4 bg-gradient-to-r from-violet-500/10 to-fuchsia-500/10 border-b border-border">
+      <div className="p-4 bg-gradient-to-r from-primary/10 to-accent/10 border-b border-border">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-violet-500" />
+            <Sparkles className="w-5 h-5 text-primary" />
             <h3 className="font-semibold text-foreground">
               {t.weeklyInsights || 'Weekly Insights'}
             </h3>
-            <span className="text-xs bg-violet-500/20 text-violet-600 dark:text-violet-400 px-2 py-0.5 rounded-full font-medium">
+            <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
               {t.week || 'Week'} {insights.weekNumber}
             </span>
           </div>

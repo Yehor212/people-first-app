@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, memo, useRef } from 'react';
 import { Habit, HabitType, HabitReminder, HabitFrequency } from '@/types';
-import { getToday, generateId, formatDate, cn } from '@/lib/utils';
+import { getToday, generateId, formatDate, cn, parseLocalDate } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
 import { Plus, X, ChevronRight, Settings2, Zap, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -82,7 +82,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         progress = habit.completionsByDate?.[today] ?? 0;
       } else if (habitType === 'continuous') {
         if (habit.startDate) {
-          const start = new Date(habit.startDate);
+          const start = parseLocalDate(habit.startDate);
           const now = new Date();
           const daysSinceStart = Math.floor((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
           const failureCount = habit.failedDates?.length ?? 0;

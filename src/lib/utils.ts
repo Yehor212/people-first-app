@@ -19,6 +19,17 @@ export function getToday(): string {
 }
 
 /**
+ * Parse date string as LOCAL time, not UTC
+ * CRITICAL: new Date("2026-01-30") parses as UTC midnight!
+ * In negative UTC timezones, this causes off-by-one day errors.
+ * Use this function instead of new Date(dateStr) for date-only strings.
+ */
+export function parseLocalDate(dateStr: string): Date {
+  const [year, month, day] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day); // month is 0-indexed
+}
+
+/**
  * Generate cryptographically secure unique ID
  * Uses nanoid for collision-resistant IDs (21 chars, ~2 million years to 1% collision at 1000 IDs/hour)
  */

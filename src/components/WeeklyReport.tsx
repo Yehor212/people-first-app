@@ -3,7 +3,7 @@ import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { safeAverage } from '@/lib/validation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { TrendingUp, TrendingDown, Minus, Flame, Brain, Heart, Target, Calendar, Award, Sparkles, CalendarDays, X } from 'lucide-react';
-import { cn, formatDate } from '@/lib/utils';
+import { cn, formatDate, parseLocalDate } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
 interface WeeklyReportProps {
@@ -99,7 +99,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
       focusMinutes: thisWeekFocus,
       gratitudeCount: thisWeekGratitude,
       moodAverage: avgMood,
-      bestDay: new Date(bestDay.date).toLocaleDateString(language, { weekday: 'long' }),
+      bestDay: parseLocalDate(bestDay.date).toLocaleDateString(language, { weekday: 'long' }),
       improvement
     };
   }, [moods, habits, focusSessions, gratitudeEntries, language]);

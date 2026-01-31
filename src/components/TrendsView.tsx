@@ -171,11 +171,11 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
         </div>
         <div className="p-3 bg-card border border-border rounded-xl">
           <div className="text-xs text-muted-foreground mb-1">{t.trendsHabitRate || 'Habit Rate'}</div>
-          <div className="text-2xl font-bold text-green-600 dark:text-green-400">{stats.avgHabitRate}%</div>
+          <div className="text-2xl font-bold text-[hsl(var(--chart-habit))]">{stats.avgHabitRate}%</div>
         </div>
         <div className="p-3 bg-card border border-border rounded-xl">
           <div className="text-xs text-muted-foreground mb-1">{t.trendsFocusTime || 'Focus'}</div>
-          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.avgFocusMinutes}</div>
+          <div className="text-2xl font-bold text-[hsl(var(--chart-focus))]">{stats.avgFocusMinutes}</div>
           <div className="text-xs text-muted-foreground">{t.minPerDay || 'min/day'}</div>
         </div>
       </div>
@@ -189,28 +189,32 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
         <div role="img" aria-label={t.trendsMoodChart || 'Mood Over Time'}>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={moodTrendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} />
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" opacity={0.3} />
               <XAxis
                 dataKey="label"
                 tick={{ fontSize: 10 }}
                 interval={timeRange === '7' ? 0 : timeRange === '30' ? 5 : 14}
+                className="text-muted-foreground"
               />
-              <YAxis domain={[0, 5]} ticks={[1, 2, 3, 4, 5]} tick={{ fontSize: 10 }} />
+              <YAxis domain={[0, 5]} ticks={[1, 2, 3, 4, 5]} tick={{ fontSize: 10 }} className="text-muted-foreground" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'rgba(0,0,0,0.8)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '12px'
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  boxShadow: '0 4px 12px -2px hsl(var(--foreground) / 0.1)'
                 }}
+                labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
+                itemStyle={{ color: 'hsl(var(--foreground))' }}
               />
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="#8b5cf6"
+                stroke="hsl(var(--chart-mood))"
                 strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
+                dot={{ r: 3, fill: 'hsl(var(--chart-mood))' }}
+                activeDot={{ r: 5, fill: 'hsl(var(--chart-mood))' }}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -220,28 +224,32 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
       {/* Habit Completion Rate Chart */}
       <div className="bg-card rounded-2xl p-4 zen-shadow-card border border-border">
         <div className="flex items-center gap-2 mb-4">
-          <Calendar className="w-5 h-5 text-green-600" />
+          <Calendar className="w-5 h-5 text-[hsl(var(--chart-habit))]" />
           <h3 className="font-semibold text-foreground">{t.trendsHabitChart || 'Habit Completion'}</h3>
         </div>
         <div role="img" aria-label={t.trendsHabitChart || 'Habit Completion'}>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={habitCompletionData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} />
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" opacity={0.3} />
               <XAxis
                 dataKey="label"
                 tick={{ fontSize: 10 }}
                 interval={timeRange === '7' ? 0 : timeRange === '30' ? 5 : 14}
+                className="text-muted-foreground"
               />
-              <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} />
+              <YAxis domain={[0, 100]} tick={{ fontSize: 10 }} className="text-muted-foreground" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'rgba(0,0,0,0.8)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '12px'
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  boxShadow: '0 4px 12px -2px hsl(var(--foreground) / 0.1)'
                 }}
+                labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
+                itemStyle={{ color: 'hsl(var(--foreground))' }}
               />
-              <Bar dataKey="rate" fill="#22c55e" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="rate" fill="hsl(var(--chart-habit))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -250,28 +258,32 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
       {/* Focus Time Chart */}
       <div className="bg-card rounded-2xl p-4 zen-shadow-card border border-border">
         <div className="flex items-center gap-2 mb-4">
-          <Clock className="w-5 h-5 text-blue-600" />
+          <Clock className="w-5 h-5 text-[hsl(var(--chart-focus))]" />
           <h3 className="font-semibold text-foreground">{t.trendsFocusChart || 'Focus Time'}</h3>
         </div>
         <div role="img" aria-label={t.trendsFocusChart || 'Focus Time'}>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={focusTimeData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} />
+              <CartesianGrid strokeDasharray="3 3" className="stroke-border" opacity={0.3} />
               <XAxis
                 dataKey="label"
                 tick={{ fontSize: 10 }}
                 interval={timeRange === '7' ? 0 : timeRange === '30' ? 5 : 14}
+                className="text-muted-foreground"
               />
-              <YAxis tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} className="text-muted-foreground" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: 'rgba(0,0,0,0.8)',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '12px'
+                  backgroundColor: 'hsl(var(--card))',
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '12px',
+                  fontSize: '12px',
+                  boxShadow: '0 4px 12px -2px hsl(var(--foreground) / 0.1)'
                 }}
+                labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
+                itemStyle={{ color: 'hsl(var(--foreground))' }}
               />
-              <Bar dataKey="minutes" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="minutes" fill="hsl(var(--chart-focus))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

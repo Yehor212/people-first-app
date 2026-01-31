@@ -25,11 +25,11 @@ interface ActivityHeatMapProps {
 }
 
 const LEVEL_COLORS = [
-  'bg-secondary',                    // 0 - no activity
-  'bg-emerald-200 dark:bg-emerald-900', // 1 - low
-  'bg-emerald-400 dark:bg-emerald-700', // 2 - medium
-  'bg-emerald-500 dark:bg-emerald-500', // 3 - high
-  'bg-emerald-600 dark:bg-emerald-400', // 4 - highest
+  'bg-secondary',                                      // 0 - no activity
+  'bg-[hsl(var(--chart-activity-1))]',                 // 1 - low
+  'bg-[hsl(var(--chart-activity-2))]',                 // 2 - medium
+  'bg-[hsl(var(--chart-activity-3))]',                 // 3 - high
+  'bg-[hsl(var(--chart-activity-4))]',                 // 4 - highest
 ] as const;
 
 const DEFAULT_DAY_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -136,7 +136,7 @@ export function ActivityHeatMap({
                 <div
                   key={i}
                   className={cn(
-                    "w-3 h-3 text-[10px] text-muted-foreground text-right",
+                    "w-3 h-3 text-xs text-muted-foreground text-right leading-3",
                     i % 2 === 0 ? "opacity-100" : "opacity-0" // Show only Sun, Tue, Thu, Sat
                   )}
                 >
@@ -152,9 +152,10 @@ export function ActivityHeatMap({
                   <div
                     key={`${weekIndex}-${dayIndex}`}
                     className={cn(
-                      'w-[10px] h-[10px] rounded-[2px] transition-colors',
+                      'w-[10px] h-[10px] rounded-[2px] transition-all duration-200',
                       LEVEL_COLORS[day.level],
-                      day.date > new Date().toISOString().split('T')[0] && 'opacity-30'
+                      day.date > new Date().toISOString().split('T')[0] && 'opacity-30',
+                      'hover:scale-125 hover:ring-1 hover:ring-primary/40'
                     )}
                     title={`${day.date}: Level ${day.level}`}
                   />

@@ -7,7 +7,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Plus, Clock, X, Check, Home } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { cn, getToday, formatDate } from '@/lib/utils';
+import { cn, getToday, formatDate, parseLocalDate } from '@/lib/utils';
 import { ScheduleEvent } from '@/types';
 import { safeParseInt } from '@/lib/validation';
 import { Task } from '@/lib/taskMomentum';
@@ -36,7 +36,8 @@ function getExtendedDates(): string[] {
 
 // Format date for display
 function formatDayShort(dateStr: string, language: string): { day: string; weekday: string; isToday: boolean } {
-  const date = new Date(dateStr);
+  // P0 Fix: Use parseLocalDate to avoid UTC parsing bug
+  const date = parseLocalDate(dateStr);
   const isToday = dateStr === getToday();
 
   const weekdayNames: Record<string, string[]> = {
@@ -678,7 +679,8 @@ function AddEventModal({
 
   // Format date for display in select
   const formatDateOption = (dateStr: string): string => {
-    const date = new Date(dateStr);
+    // P0 Fix: Use parseLocalDate to avoid UTC parsing bug
+    const date = parseLocalDate(dateStr);
     const today = getToday();
     const tomorrow = (() => {
       const d = new Date();
