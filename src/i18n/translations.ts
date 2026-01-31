@@ -95,6 +95,7 @@ export interface Translations {
   scheduleMeeting: string;
   scheduleNote: string;
   scheduleNotePlaceholder: string;
+  addToMyWorld: string;
 
   // Mindfulness v1.5.0
   needInspiration: string;
@@ -1581,6 +1582,7 @@ export const translations: Record<Language, Translations> = {
     scheduleMeeting: 'Встреча',
     scheduleNote: 'Заметка (опционально)',
     scheduleNotePlaceholder: 'Добавьте детали или напоминания...',
+    addToMyWorld: 'Добавить в Мой мир',
 
     // Mindfulness v1.5.0
     needInspiration: 'Нужно вдохновение?',
@@ -3011,6 +3013,7 @@ export const translations: Record<Language, Translations> = {
     scheduleMeeting: 'Meeting',
     scheduleNote: 'Note (optional)',
     scheduleNotePlaceholder: 'Add details or reminders...',
+    addToMyWorld: 'Add to My World',
 
     // Mindfulness v1.5.0
     needInspiration: 'Need inspiration?',
@@ -4441,6 +4444,7 @@ export const translations: Record<Language, Translations> = {
     scheduleMeeting: 'Зустріч',
     scheduleNote: 'Нотатка (опціонально)',
     scheduleNotePlaceholder: 'Додайте деталі або нагадування...',
+    addToMyWorld: 'Додати в Мій Світ',
 
     // Mindfulness v1.5.0
     needInspiration: 'Потрібне натхнення?',
@@ -5871,6 +5875,7 @@ export const translations: Record<Language, Translations> = {
     scheduleMeeting: 'Reunión',
     scheduleNote: 'Nota (opcional)',
     scheduleNotePlaceholder: 'Agregar detalles o recordatorios...',
+    addToMyWorld: 'Agregar a Mi Mundo',
 
     // Mindfulness v1.5.0
     needInspiration: '¿Necesitas inspiración?',
@@ -7302,6 +7307,7 @@ export const translations: Record<Language, Translations> = {
     scheduleMeeting: 'Meeting',
     scheduleNote: 'Notiz (optional)',
     scheduleNotePlaceholder: 'Details oder Erinnerungen hinzufügen...',
+    addToMyWorld: 'Zu Meine Welt hinzufügen',
 
     // Mindfulness v1.5.0
     needInspiration: 'Brauchst du Inspiration?',
@@ -8733,6 +8739,7 @@ export const translations: Record<Language, Translations> = {
     scheduleMeeting: 'Réunion',
     scheduleNote: 'Note (optionnel)',
     scheduleNotePlaceholder: 'Ajouter des détails ou des rappels...',
+    addToMyWorld: 'Ajouter à Mon Monde',
 
     // Mindfulness v1.5.0
     needInspiration: 'Besoin d\'inspiration?',
