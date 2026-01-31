@@ -115,9 +115,9 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
           )}
           style={isPrimaryCTA ? {
             boxShadow: '0 0 16px rgba(236, 72, 153, 0.4)',
-          } : {}}
-          animate={isPrimaryCTA ? { scale: [1, 1.05, 1] } : {}}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          } : undefined}
+          animate={isPrimaryCTA ? { scale: [1, 1.05, 1] } : undefined}
+          transition={isPrimaryCTA ? { duration: 3, repeat: Infinity, ease: 'easeInOut' } : undefined}
         >
           🙏
         </motion.div>
