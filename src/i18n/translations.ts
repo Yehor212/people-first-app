@@ -893,6 +893,16 @@ export interface Translations {
   // Radial Dashboard
   tapToSee: string;
 
+  // Phase 13: Visual Worlds Stats Components
+  hallOfFame: string;
+  tapToFlip: string;
+  activityOverview: string;
+  emotionDistribution: string;
+  entries: string;
+  active: string;
+  empty: string;
+  perfect: string;
+
   // Language
   language: string;
   selectLanguage: string;
@@ -2897,6 +2907,16 @@ export const translations: Record<Language, Translations> = {
     aiCoachQuick2: 'Помоги сосредоточиться',
     aiCoachQuick3: 'Нужна мотивация',
     clearHistory: 'Очистить историю',
+
+    // Phase 13: Visual Worlds
+    hallOfFame: 'Зал Славы',
+    tapToFlip: 'Нажми, чтобы перевернуть',
+    activityOverview: 'Обзор активности',
+    emotionDistribution: 'Распределение эмоций',
+    entries: 'записей',
+    active: 'Активно',
+    empty: 'Пусто',
+    perfect: 'Идеально',
   },
 
   en: {
@@ -4314,6 +4334,16 @@ export const translations: Record<Language, Translations> = {
     aiCoachQuick2: 'Help me focus',
     aiCoachQuick3: 'Need motivation',
     clearHistory: 'Clear history',
+
+    // Phase 13: Visual Worlds
+    hallOfFame: 'Hall of Fame',
+    tapToFlip: 'Tap to flip',
+    activityOverview: 'Activity Overview',
+    emotionDistribution: 'Emotion Distribution',
+    entries: 'entries',
+    active: 'Active',
+    empty: 'Empty',
+    perfect: 'Perfect',
   },
 
   uk: {
@@ -5731,6 +5761,16 @@ export const translations: Record<Language, Translations> = {
     aiCoachQuick2: 'Допоможи зосередитись',
     aiCoachQuick3: 'Потрібна мотивація',
     clearHistory: 'Очистити історію',
+
+    // Phase 13: Visual Worlds
+    hallOfFame: 'Зал Слави',
+    tapToFlip: 'Натисни, щоб перевернути',
+    activityOverview: 'Огляд активності',
+    emotionDistribution: 'Розподіл емоцій',
+    entries: 'записів',
+    active: 'Активно',
+    empty: 'Порожньо',
+    perfect: 'Ідеально',
   },
 
   es: {
@@ -7149,6 +7189,16 @@ export const translations: Record<Language, Translations> = {
     aiCoachQuick2: 'Ayúdame a concentrarme',
     aiCoachQuick3: 'Necesito motivación',
     clearHistory: 'Borrar historial',
+
+    // Phase 13: Visual Worlds
+    hallOfFame: 'Salón de la Fama',
+    tapToFlip: 'Toca para voltear',
+    activityOverview: 'Resumen de actividad',
+    emotionDistribution: 'Distribución de emociones',
+    entries: 'entradas',
+    active: 'Activo',
+    empty: 'Vacío',
+    perfect: 'Perfecto',
   },
 
   de: {
@@ -8567,6 +8617,16 @@ export const translations: Record<Language, Translations> = {
     aiCoachQuick2: 'Hilf mir, mich zu konzentrieren',
     aiCoachQuick3: 'Motivation gebraucht',
     clearHistory: 'Verlauf löschen',
+
+    // Phase 13: Visual Worlds
+    hallOfFame: 'Ruhmeshalle',
+    tapToFlip: 'Tippen zum Umdrehen',
+    activityOverview: 'Aktivitätsübersicht',
+    emotionDistribution: 'Emotionsverteilung',
+    entries: 'Einträge',
+    active: 'Aktiv',
+    empty: 'Leer',
+    perfect: 'Perfekt',
   },
 
   fr: {
@@ -9985,6 +10045,16 @@ export const translations: Record<Language, Translations> = {
     aiCoachQuick2: 'Aide-moi à me concentrer',
     aiCoachQuick3: 'Besoin de motivation',
     clearHistory: 'Effacer l\'historique',
+
+    // Phase 13: Visual Worlds
+    hallOfFame: 'Temple de la Gloire',
+    tapToFlip: 'Appuie pour retourner',
+    activityOverview: 'Aperçu de l\'activité',
+    emotionDistribution: 'Distribution des émotions',
+    entries: 'entrées',
+    active: 'Actif',
+    empty: 'Vide',
+    perfect: 'Parfait',
   },
 };
 
