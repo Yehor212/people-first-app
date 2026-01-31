@@ -82,7 +82,10 @@ function OrbitingEmotion({
 
   return (
     <motion.g
-      style={{ transformOrigin: '50 50' }}
+      style={{
+        transformOrigin: 'center',
+        transformBox: 'fill-box'
+      }}
       animate={{ rotate: 360 }}
       transition={{
         duration: animationDuration,

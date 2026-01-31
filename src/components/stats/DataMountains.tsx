@@ -243,10 +243,23 @@ export function DataMountains({
       {/* SVG Visualization */}
       <svg
         viewBox="0 0 100 70"
-        className="w-full h-full"
+        className="w-full h-full relative z-10"
         preserveAspectRatio="none"
         style={{ minHeight: 180 }}
       >
+        {/* ALL GRADIENT DEFINITIONS FIRST */}
+        <defs>
+          <linearGradient id={`mountainGradient-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={colorConfig.mountain[2]} />
+            <stop offset="50%" stopColor={colorConfig.mountain[1]} />
+            <stop offset="100%" stopColor={colorConfig.mountain[0]} />
+          </linearGradient>
+          <linearGradient id="waterReflection" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.1)" />
+            <stop offset="100%" stopColor="transparent" />
+          </linearGradient>
+        </defs>
+
         {/* Clouds */}
         <Cloud x={15} y={12} size={0.8} delay={0} />
         <Cloud x={70} y={8} size={0.6} delay={2} />
@@ -271,15 +284,6 @@ export function DataMountains({
           transition={{ duration: 1, delay: 0.2 }}
         />
 
-        {/* Mountain gradient definition */}
-        <defs>
-          <linearGradient id={`mountainGradient-${color}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={colorConfig.mountain[2]} />
-            <stop offset="50%" stopColor={colorConfig.mountain[1]} />
-            <stop offset="100%" stopColor={colorConfig.mountain[0]} />
-          </linearGradient>
-        </defs>
-
         {/* Weather icons above peaks */}
         {data.map((point, i) => {
           const x = (i / (data.length - 1)) * 100;
@@ -303,12 +307,6 @@ export function DataMountains({
           x="0" y="62" width="100" height="8"
           fill="url(#waterReflection)"
         />
-        <defs>
-          <linearGradient id="waterReflection" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.1)" />
-            <stop offset="100%" stopColor="transparent" />
-          </linearGradient>
-        </defs>
       </svg>
 
       {/* Data labels */}
