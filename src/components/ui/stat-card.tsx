@@ -33,7 +33,7 @@ export function StatCard({ icon: Icon, value, label, color = 'primary', classNam
     >
       <Icon className="w-5 h-5 mb-1 opacity-80" />
       <span className="text-lg font-bold leading-tight">{value}</span>
-      <span className="text-[10px] uppercase tracking-wide opacity-70">{label}</span>
+      <span className="text-xs uppercase tracking-wide opacity-70">{label}</span>
     </div>
   );
 }

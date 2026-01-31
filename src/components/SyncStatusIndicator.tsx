@@ -131,14 +131,14 @@ export function SyncStatusIndicator() {
 
         {/* Queue info */}
         {state.queueLength > 0 && (
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {state.queueLength} {t.syncPending || 'pending'}
           </span>
         )}
 
         {/* Error message */}
         {state.status === 'error' && state.lastError && (
-          <span className="text-[10px] text-red-500 line-clamp-1">
+          <span className="text-xs text-red-500 line-clamp-1">
             {state.lastError}
           </span>
         )}
@@ -168,7 +168,7 @@ export function SyncStatusIndicatorCompact() {
     return (
       <div className="relative" aria-label={`${t.syncOffline || 'Offline'} - ${pendingCount}`}>
         <WifiOff className="w-5 h-5 text-amber-500" />
-        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold" aria-hidden="true">
+        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold" aria-hidden="true">
           {pendingCount > 9 ? '9+' : pendingCount}
         </span>
       </div>
@@ -188,7 +188,7 @@ export function SyncStatusIndicatorCompact() {
       <div className="relative" aria-label={`${t.syncSyncing || 'Syncing'} ${pendingCount}`}>
         <Loader className="w-5 h-5 text-blue-500 animate-spin" />
         {pendingCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[9px] rounded-full w-4 h-4 flex items-center justify-center font-bold" aria-hidden="true">
+          <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold" aria-hidden="true">
             {pendingCount > 9 ? '9+' : pendingCount}
           </span>
         )}

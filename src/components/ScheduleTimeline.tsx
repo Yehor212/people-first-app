@@ -425,7 +425,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                     : "bg-secondary/50 hover:bg-secondary text-foreground"
               )}
             >
-              <span className="text-[10px] uppercase opacity-70">{weekday}</span>
+              <span className="text-xs uppercase opacity-70">{weekday}</span>
               <span className="text-lg font-bold">{day}</span>
               {hasEvents && !isSelected && (
                 <div className="w-1.5 h-1.5 rounded-full bg-primary mt-0.5" />
@@ -532,13 +532,13 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                         >
                           {/* Habit indicator badge */}
                           {isHabitEvent && (
-                            <span className="absolute -top-1 -left-1 text-[10px] bg-white/30 rounded-full w-4 h-4 flex items-center justify-center backdrop-blur-sm">
+                            <span className="absolute -top-1 -left-1 text-xs bg-white/30 rounded-full w-4 h-4 flex items-center justify-center backdrop-blur-sm">
                               🎯
                             </span>
                           )}
                           {/* Task indicator badge */}
                           {isTaskEvent && (
-                            <span className="absolute -top-1 -left-1 text-[10px] bg-white/30 rounded-full w-4 h-4 flex items-center justify-center backdrop-blur-sm">
+                            <span className="absolute -top-1 -left-1 text-xs bg-white/30 rounded-full w-4 h-4 flex items-center justify-center backdrop-blur-sm">
                               📋
                             </span>
                           )}
@@ -561,7 +561,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                   </div>
 
                   {/* Period labels */}
-                  <div className="absolute left-0 right-0 bottom-0 flex text-[10px] text-muted-foreground">
+                  <div className="absolute left-0 right-0 bottom-0 flex text-xs text-muted-foreground">
                     <div className="flex-1 text-center">{t.night || 'Night'}</div>
                     <div className="flex-1 text-center">{t.morning || 'Morning'}</div>
                     <div className="flex-1 text-center">{t.afternoon || 'Afternoon'}</div>
@@ -932,7 +932,7 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
 
               {/* Remaining time badge for active block */}
               {isActive && progress > 0 && (
-                <span className="absolute bottom-0.5 right-1 text-[9px] bg-black/40 px-1 rounded z-10">
+                <span className="absolute bottom-0.5 right-1 text-[10px] bg-black/40 px-1 rounded z-10">
                   {remainingMinutes} {t.min || 'min'}
                 </span>
               )}
@@ -946,7 +946,7 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
         {blocks.map(block => (
           <div
             key={`time-${block.id}`}
-            className="text-[10px] text-muted-foreground text-center"
+            className="text-xs text-muted-foreground text-center"
             style={{ width: `${(block.duration / totalMinutes) * 100}%`, minWidth: '60px' }}
           >
             {formatTime(block.startTime)} — {formatTime(block.endTime)}

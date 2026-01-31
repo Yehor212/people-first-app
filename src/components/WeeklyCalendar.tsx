@@ -77,7 +77,7 @@ export const WeeklyCalendar = memo(function WeeklyCalendar({ moods, habits }: We
               day.isToday ? "bg-primary/10 ring-2 ring-primary" : "hover:bg-secondary"
             )}
           >
-            <span className="text-[10px] sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">{day.dayName.slice(0, 2)}</span>
+            <span className="text-xs sm:text-xs text-muted-foreground mb-0.5 sm:mb-1">{day.dayName.slice(0, 2)}</span>
             <span className={cn(
               "text-sm sm:text-lg font-semibold mb-1 sm:mb-2",
               day.isToday ? "text-primary" : "text-foreground"

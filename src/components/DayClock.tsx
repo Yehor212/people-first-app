@@ -320,7 +320,7 @@ export function DayClock({
             </div>
 
             {/* Current time */}
-            <span className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+            <span className="text-xs sm:text-xs text-muted-foreground mt-0.5">
               {formatTime(currentTime)}
             </span>
           </div>
@@ -439,7 +439,7 @@ function ActivityRow({
           {label}
         </span>
         {progress && (
-          <span className="text-[10px] sm:text-xs text-muted-foreground">
+          <span className="text-xs sm:text-xs text-muted-foreground">
             {progress}
           </span>
         )}

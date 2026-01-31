@@ -149,7 +149,7 @@ function ComparisonBadge({
           {value}{suffix}
         </span>
       </div>
-      <p className="text-[10px] text-muted-foreground mt-1">{label}</p>
+      <p className="text-xs text-muted-foreground mt-1">{label}</p>
     </div>
   );
 }
@@ -318,25 +318,25 @@ export function WeeklyInsightsCard({
             <p className="text-lg font-bold text-foreground">
               {currentWeek.moodAverage > 0 ? currentWeek.moodAverage : '-'}
             </p>
-            <p className="text-[10px] text-muted-foreground">{t.avgMood || 'Avg Mood'}</p>
+            <p className="text-xs text-muted-foreground">{t.avgMood || 'Avg Mood'}</p>
           </div>
           <div className="text-center">
             <p className="text-lg font-bold text-foreground">
               {currentWeek.habitCompletionRate}%
             </p>
-            <p className="text-[10px] text-muted-foreground">{t.habits || 'Habits'}</p>
+            <p className="text-xs text-muted-foreground">{t.habits || 'Habits'}</p>
           </div>
           <div className="text-center">
             <p className="text-lg font-bold text-foreground">
               {currentWeek.focusMinutes}m
             </p>
-            <p className="text-[10px] text-muted-foreground">{t.focus || 'Focus'}</p>
+            <p className="text-xs text-muted-foreground">{t.focus || 'Focus'}</p>
           </div>
           <div className="text-center">
             <p className="text-lg font-bold text-foreground">
               {currentWeek.streakDays}
             </p>
-            <p className="text-[10px] text-muted-foreground">{t.streak || 'Streak'}</p>
+            <p className="text-xs text-muted-foreground">{t.streak || 'Streak'}</p>
           </div>
         </div>
       </div>

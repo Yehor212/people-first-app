@@ -351,7 +351,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           >
             <Users className="w-5 h-5" />
             {activeChallengesCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-[10px] font-bold rounded-full flex items-center justify-center">
+              <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
                 {activeChallengesCount}
               </span>
             )}
@@ -432,18 +432,22 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           />
 
           <div className="mb-3">
-            <p className="text-sm text-muted-foreground mb-2">{t.icon}:</p>
-            <div className="flex gap-2 flex-wrap">
+            <p className="text-sm text-muted-foreground mb-2" id="icon-selector-label">{t.icon}:</p>
+            <div className="flex gap-2 flex-wrap" role="radiogroup" aria-labelledby="icon-selector-label">
               {habitIcons.map((icon) => (
                 <button
                   key={icon}
                   type="button"
+                  role="radio"
+                  aria-checked={selectedIcon === icon}
+                  aria-label={`${t.selectIcon || 'Select icon'} ${icon}`}
                   onClick={(e) => {
                     e.preventDefault();
                     setSelectedIcon(icon);
                   }}
                   className={cn(
                     "btn-press w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all cursor-pointer",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                     selectedIcon === icon ? "bg-primary/20 ring-2 ring-primary" : "bg-background hover:bg-muted"
                   )}
                 >
@@ -454,18 +458,22 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           </div>
 
           <div className="mb-4">
-            <p className="text-sm text-muted-foreground mb-2">{t.color}:</p>
-            <div className="flex gap-2">
+            <p className="text-sm text-muted-foreground mb-2" id="color-selector-label">{t.color}:</p>
+            <div className="flex gap-2" role="radiogroup" aria-labelledby="color-selector-label">
               {habitColors.map((color) => (
                 <button
                   key={color}
                   type="button"
+                  role="radio"
+                  aria-checked={selectedColor === color}
+                  aria-label={`${t.selectColor || 'Select color'} ${color.replace('bg-', '')}`}
                   onClick={(e) => {
                     e.preventDefault();
                     setSelectedColor(color);
                   }}
                   className={cn(
-                    "btn-press w-8 h-8 rounded-full transition-all cursor-pointer",
+                    "btn-press w-10 h-10 min-w-[40px] min-h-[40px] rounded-full transition-all cursor-pointer",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                     color,
                     selectedColor === color ? "ring-2 ring-offset-2 ring-foreground" : ""
                   )}
@@ -595,10 +603,11 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                             handleReminderChange(index, 'days', newDays);
                           }}
                           className={cn(
-                            "w-6 h-6 text-[10px] rounded transition-colors",
+                            "w-8 h-8 min-w-[32px] min-h-[32px] text-xs rounded-lg transition-colors font-medium",
+                            "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
                             reminder.days.includes(day)
                               ? "bg-primary text-primary-foreground"
-                              : "bg-secondary text-muted-foreground"
+                              : "bg-secondary text-muted-foreground hover:bg-muted"
                           )}
                         >
                           {label}

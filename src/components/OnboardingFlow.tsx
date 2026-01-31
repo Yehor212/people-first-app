@@ -322,7 +322,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                         isSelected={selectedEmotion === emotion.type}
                       />
                       <span className={cn(
-                        "text-[9px] sm:text-[10px] font-medium transition-colors whitespace-nowrap",
+                        "text-[10px] sm:text-xs font-medium transition-colors whitespace-nowrap",
                         selectedEmotion === emotion.type ? "text-white" : "text-muted-foreground"
                       )}>
                         {emotion.label}

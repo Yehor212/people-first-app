@@ -200,7 +200,7 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
                 }}
               >
                 <AnimatedEmotionEmoji emotion={emotion} size="md" />
-                <span className="text-[10px] font-medium text-foreground/80 whitespace-nowrap" aria-hidden="true">
+                <span className="text-xs font-medium text-foreground/80 whitespace-nowrap" aria-hidden="true">
                   {translations[emotion]}
                 </span>
               </button>

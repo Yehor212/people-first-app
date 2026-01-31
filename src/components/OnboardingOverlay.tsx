@@ -141,7 +141,7 @@ export function DayProgressIndicator() {
               .replace('{maxDay}', String(progress.maxDay))}
           </span>
         </div>
-        <span className="text-[10px] sm:text-xs text-muted-foreground">
+        <span className="text-xs sm:text-xs text-muted-foreground">
           {progress.unlockedCount}/{progress.totalCount} {t.onboardingFeaturesUnlocked || 'features'}
         </span>
       </div>
@@ -156,7 +156,7 @@ export function DayProgressIndicator() {
 
       {/* Next unlock hint */}
       {progress.nextUnlock && (
-        <p className="mt-1.5 sm:mt-2 text-[10px] sm:text-xs text-muted-foreground">
+        <p className="mt-1.5 sm:mt-2 text-xs sm:text-xs text-muted-foreground">
           {t.onboardingNextUnlock || 'Next unlock'}: <span className="font-medium">{progress.nextUnlock.requirement}</span>
         </p>
       )}

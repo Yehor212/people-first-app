@@ -236,7 +236,7 @@ export function HealthConnectCard({
               'w-4 h-4',
               state.permissions?.mindfulness ? 'text-green-500' : 'text-muted-foreground'
             )} />
-            <span className="text-[10px] text-center">
+            <span className="text-xs text-center">
               {t.mindfulness || 'Mindfulness'}
             </span>
             {state.permissions?.mindfulness ? (
@@ -255,7 +255,7 @@ export function HealthConnectCard({
               'w-4 h-4',
               state.permissions?.sleep ? 'text-purple-500' : 'text-muted-foreground'
             )} />
-            <span className="text-[10px] text-center">
+            <span className="text-xs text-center">
               {t.sleep || 'Sleep'}
             </span>
             {state.permissions?.sleep ? (
@@ -274,7 +274,7 @@ export function HealthConnectCard({
               'w-4 h-4',
               state.permissions?.steps ? 'text-blue-500' : 'text-muted-foreground'
             )} />
-            <span className="text-[10px] text-center">
+            <span className="text-xs text-center">
               {t.steps || 'Steps'}
             </span>
             {state.permissions?.steps ? (

@@ -110,7 +110,7 @@ export function MoodSelectionCelebration({
             {/* Day names */}
             <div className="grid grid-cols-7 gap-1 mb-2">
               {dayNames.map(day => (
-                <div key={day} className="text-[10px] text-center text-muted-foreground font-medium">
+                <div key={day} className="text-xs text-center text-muted-foreground font-medium">
                   {day}
                 </div>
               ))}
@@ -178,7 +178,7 @@ export function MoodSelectionCelebration({
                     )}
                   </div>
                   <span className={cn(
-                    "text-[10px]",
+                    "text-xs",
                     isActive ? "text-primary font-medium" : "text-muted-foreground"
                   )}>
                     {time === 'morning' ? (t.morning || 'Morning') :

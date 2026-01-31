@@ -101,7 +101,7 @@ function ChallengeCard({
             {challenge.myProgress}/{challenge.duration} {t.days || 'days'}
           </span>
           <span className={cn(
-            'px-2 py-0.5 rounded-full text-white text-[10px] font-medium',
+            'px-2 py-0.5 rounded-full text-white text-xs font-medium',
             statusColor
           )}>
             {challenge.status === 'active'

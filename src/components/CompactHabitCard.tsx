@@ -141,8 +141,11 @@ export function CompactHabitCard({
           {/* Habit Icon Button */}
           <button
             onClick={handleToggle}
+            aria-label={`${habit.name}: ${completed ? t.completed : t.markComplete || 'Mark complete'}`}
+            aria-pressed={completed}
             className={cn(
               'w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 transition-all duration-200 active:scale-95',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
               completed
                 ? `${habit.color} text-primary-foreground shadow-md`
                 : 'bg-secondary hover:bg-secondary/80'
@@ -175,9 +178,10 @@ export function CompactHabitCard({
             <div className="flex items-center gap-1">
               <button
                 onClick={() => onAdjust?.(habit.id, today, -1)}
-                className="w-8 h-8 rounded-lg bg-mood-good/20 flex items-center justify-center text-mood-good hover:bg-mood-good/30 transition-colors active:scale-95"
+                aria-label={t.decrease || 'Decrease'}
+                className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-lg bg-mood-good/20 flex items-center justify-center text-mood-good hover:bg-mood-good/30 dark:hover:bg-mood-good/40 transition-colors active:scale-95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
               >
-                <Minus className="w-4 h-4" />
+                <Minus className="w-5 h-5" />
               </button>
               <span className={cn(
                 'w-8 text-center font-bold',
@@ -187,9 +191,10 @@ export function CompactHabitCard({
               </span>
               <button
                 onClick={() => onAdjust?.(habit.id, today, 1)}
-                className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors active:scale-95"
+                aria-label={t.increase || 'Increase'}
+                className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-lg bg-secondary flex items-center justify-center text-muted-foreground hover:bg-muted dark:hover:bg-muted/80 transition-colors active:scale-95 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-5 h-5" />
               </button>
             </div>
           ) : habitType === 'multiple' ? (

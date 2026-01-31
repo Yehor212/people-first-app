@@ -144,7 +144,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
               </span>
             ))}
           </div>
-          <span className="text-[10px] text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {todayProgress.completed}/4
           </span>
         </div>

@@ -67,7 +67,7 @@ export const Header = memo(function Header({ userName = 'Friend', onOpenChalleng
           {onOpenTasks && (
             <button
               onClick={onOpenTasks}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 rounded-xl transition-all min-h-[44px]"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-emerald-500/10 dark:bg-emerald-500/20 hover:bg-emerald-500/20 dark:hover:bg-emerald-500/30 text-emerald-600 dark:text-emerald-400 rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2"
               aria-label={t.openTasks}
             >
               <ListTodo className="w-4 h-4 flex-shrink-0" />
@@ -77,7 +77,7 @@ export const Header = memo(function Header({ userName = 'Friend', onOpenChalleng
           {onOpenQuests && (
             <button
               onClick={onOpenQuests}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded-xl transition-all min-h-[44px]"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-yellow-500/10 dark:bg-yellow-500/20 hover:bg-yellow-500/20 dark:hover:bg-yellow-500/30 text-yellow-600 dark:text-yellow-400 rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 focus-visible:ring-offset-2"
               aria-label={t.openQuests}
             >
               <Sparkles className="w-4 h-4 flex-shrink-0" />
@@ -87,7 +87,7 @@ export const Header = memo(function Header({ userName = 'Friend', onOpenChalleng
           {onOpenChallenges && (
             <button
               onClick={onOpenChallenges}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-xl transition-all min-h-[44px]"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-primary/10 dark:bg-primary/20 hover:bg-primary/20 dark:hover:bg-primary/30 text-primary rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t.openChallenges}
             >
               <Trophy className="w-4 h-4 flex-shrink-0" />

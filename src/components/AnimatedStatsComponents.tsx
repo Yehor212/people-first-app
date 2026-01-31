@@ -144,7 +144,7 @@ export function AnimatedMoodDistribution({
 
                     {/* Percentage Label on Bar */}
                     {percentage > 15 && (
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-white/90">
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-white/90">
                         {Math.round(percentage)}%
                       </span>
                     )}
@@ -321,7 +321,7 @@ export function AnimatedEmotionDistribution({
 
                     {/* Percentage Label on Bar */}
                     {percentage > 20 && (
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-white/90">
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-bold text-white/90">
                         {Math.round(percentage)}%
                       </span>
                     )}
@@ -578,7 +578,7 @@ export function AnimatedCalendar({
             )}>
               {stat.value}
             </p>
-            <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1">{stat.label}</p>
+            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{stat.label}</p>
           </div>
         ))}
       </div>

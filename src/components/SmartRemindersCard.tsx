@@ -99,7 +99,7 @@ function SuggestionItem({
           </div>
 
           {suggestion.improvement && (
-            <p className="text-[10px] text-muted-foreground mt-2 flex items-center gap-1">
+            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
               <Lightbulb className="w-3 h-3" />
               {suggestion.improvement}
             </p>
@@ -159,7 +159,7 @@ function HabitSuggestionItem({
           <p className="text-sm font-medium text-foreground truncate">
             {suggestion.habitName}
           </p>
-          <p className="text-[10px] text-muted-foreground truncate">
+          <p className="text-xs text-muted-foreground truncate">
             {suggestion.reason}
           </p>
         </div>
@@ -169,7 +169,7 @@ function HabitSuggestionItem({
           {suggestion.suggestedTime}
         </span>
         {suggestion.patternBased && (
-          <span className="text-[10px] px-1.5 py-0.5 bg-violet-500/10 text-violet-600 rounded">
+          <span className="text-xs px-1.5 py-0.5 bg-violet-500/10 text-violet-600 rounded">
             {t.patternBased || 'Pattern'}
           </span>
         )}

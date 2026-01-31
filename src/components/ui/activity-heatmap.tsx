@@ -114,7 +114,7 @@ export function ActivityHeatMap({
             {monthLabels.map((m, i) => (
               <div
                 key={i}
-                className="text-[10px] text-muted-foreground"
+                className="text-xs text-muted-foreground"
                 style={{
                   position: 'relative',
                   left: `${m.weekIndex * 12}px`,
@@ -136,7 +136,7 @@ export function ActivityHeatMap({
                 <div
                   key={i}
                   className={cn(
-                    "w-3 h-[10px] text-[8px] text-muted-foreground text-right",
+                    "w-3 h-3 text-[10px] text-muted-foreground text-right",
                     i % 2 === 0 ? "opacity-100" : "opacity-0" // Show only Sun, Tue, Thu, Sat
                   )}
                 >
@@ -164,7 +164,7 @@ export function ActivityHeatMap({
           </div>
 
           {/* Legend */}
-          <div className="flex items-center justify-end gap-1 mt-2 text-[10px] text-muted-foreground">
+          <div className="flex items-center justify-end gap-1 mt-2 text-xs text-muted-foreground">
             <span>{labels.less}</span>
             {LEVEL_COLORS.map((color, i) => (
               <div

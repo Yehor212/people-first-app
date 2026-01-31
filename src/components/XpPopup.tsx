@@ -233,7 +233,7 @@ export function StreakFireAnimation({ streak }: { streak: number }) {
         }}
       />
       <span className={cn(
-        "absolute -top-1 -right-1 text-[10px] font-bold",
+        "absolute -top-1 -right-1 text-xs font-bold",
         "bg-orange-500 text-white rounded-full w-4 h-4 flex items-center justify-center",
         streak >= 7 && "bg-orange-400",
         streak >= 30 && "bg-amber-400"

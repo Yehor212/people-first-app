@@ -528,7 +528,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
                   )}
                 </div>
                 <span className={cn(
-                  "text-[10px]",
+                  "text-xs",
                   isCurrent ? "text-primary font-medium" : "text-muted-foreground"
                 )}>
                   {timeLabels[tod]}
