@@ -376,20 +376,20 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     <div className={cn(
       "rounded-2xl p-6 animate-fade-in transition-all relative overflow-hidden",
       isPrimaryCTA
-        ? "bg-gradient-to-br from-violet-500/15 via-card to-purple-500/15 ring-2 ring-violet-500/40 shadow-lg shadow-violet-500/20"
+        ? "bg-gradient-to-br from-primary/15 via-card to-accent/10 ring-2 ring-primary/40 shadow-lg shadow-primary/20"
         : "bg-card zen-shadow-card"
     )}>
       {/* Animated background glow for CTA */}
       {isPrimaryCTA && (
-        <div className="absolute inset-0 bg-gradient-to-r from-violet-500/5 via-transparent to-purple-500/5 animate-pulse pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-accent/5 animate-pulse pointer-events-none" />
       )}
 
       {/* Primary CTA Header */}
       {isPrimaryCTA && (
         <div className="relative flex items-center justify-center gap-2 mb-4">
-          <div className="flex items-center gap-2 px-4 py-2 bg-violet-500/25 rounded-full border border-violet-500/30">
-            <Zap className="w-4 h-4 text-violet-500" />
-            <span className="text-sm font-bold text-violet-600 dark:text-violet-400">{t.startHere}</span>
+          <div className="flex items-center gap-2 px-4 py-2 bg-primary/25 rounded-full border border-primary/30">
+            <Zap className="w-4 h-4 text-primary" />
+            <span className="text-sm font-bold text-primary">{t.startHere}</span>
           </div>
         </div>
       )}

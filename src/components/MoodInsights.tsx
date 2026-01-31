@@ -30,15 +30,15 @@ function getInsightIcon(type: MoodInsight['type']) {
   }
 }
 
-// Helper function to get color for insight type
+// Helper function to get color for insight type using CSS variables
 function getInsightColor(type: MoodInsight['type']) {
   switch (type) {
-    case 'pattern': return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30';
-    case 'correlation': return 'from-purple-500/20 to-pink-500/20 border-purple-500/30';
-    case 'tip': return 'from-amber-500/20 to-orange-500/20 border-amber-500/30';
-    case 'achievement': return 'from-green-500/20 to-emerald-500/20 border-green-500/30';
-    case 'warning': return 'from-red-500/20 to-rose-500/20 border-red-500/30';
-    default: return 'from-blue-500/20 to-cyan-500/20 border-blue-500/30';
+    case 'pattern': return 'from-[hsl(var(--insight-mood))]/20 to-[hsl(var(--insight-mood))]/10 border-[hsl(var(--insight-mood))]/30';
+    case 'correlation': return 'from-[hsl(var(--insight-habit))]/20 to-[hsl(var(--insight-habit))]/10 border-[hsl(var(--insight-habit))]/30';
+    case 'tip': return 'from-[hsl(var(--insight-energy))]/20 to-[hsl(var(--insight-energy))]/10 border-[hsl(var(--insight-energy))]/30';
+    case 'achievement': return 'from-[hsl(var(--insight-positive))]/20 to-[hsl(var(--insight-positive))]/10 border-[hsl(var(--insight-positive))]/30';
+    case 'warning': return 'from-[hsl(var(--insight-warning))]/20 to-[hsl(var(--insight-warning))]/10 border-[hsl(var(--insight-warning))]/30';
+    default: return 'from-[hsl(var(--insight-mood))]/20 to-[hsl(var(--insight-mood))]/10 border-[hsl(var(--insight-mood))]/30';
   }
 }
 

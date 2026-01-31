@@ -57,14 +57,35 @@ function formatDayShort(dateStr: string, language: string): { day: string; weekd
   };
 }
 
-// Preset event types with colors
+// Event color system using CSS variables (supports light/dark/OLED modes)
+const EVENT_COLORS = {
+  work: 'hsl(var(--event-work))',
+  meal: 'hsl(var(--event-meal))',
+  rest: 'hsl(var(--event-rest))',
+  exercise: 'hsl(var(--event-exercise))',
+  study: 'hsl(var(--event-study))',
+  meeting: 'hsl(var(--event-meeting))',
+  break: 'hsl(var(--event-break))',
+  urgent: 'hsl(var(--event-urgent))',
+} as const;
+
+// Helper to get color for event type with urgent support
+const getEventColor = (colorVar?: string, isUrgent?: boolean): string => {
+  if (isUrgent) return EVENT_COLORS.urgent;
+  if (colorVar && colorVar in EVENT_COLORS) {
+    return EVENT_COLORS[colorVar as keyof typeof EVENT_COLORS];
+  }
+  return EVENT_COLORS.work; // Default to work color
+};
+
+// Preset event types with CSS variable references
 const EVENT_PRESETS = [
-  { id: 'work', emoji: '💼', color: '#3b82f6', labelKey: 'scheduleWork' },
-  { id: 'meal', emoji: '🍽️', color: '#22c55e', labelKey: 'scheduleMeal' },
-  { id: 'rest', emoji: '😴', color: '#8b5cf6', labelKey: 'scheduleRest' },
-  { id: 'exercise', emoji: '🏃', color: '#f97316', labelKey: 'scheduleExercise' },
-  { id: 'study', emoji: '📚', color: '#06b6d4', labelKey: 'scheduleStudy' },
-  { id: 'meeting', emoji: '👥', color: '#ec4899', labelKey: 'scheduleMeeting' },
+  { id: 'work', emoji: '💼', colorVar: 'work', labelKey: 'scheduleWork' },
+  { id: 'meal', emoji: '🍽️', colorVar: 'meal', labelKey: 'scheduleMeal' },
+  { id: 'rest', emoji: '😴', colorVar: 'rest', labelKey: 'scheduleRest' },
+  { id: 'exercise', emoji: '🏃', colorVar: 'exercise', labelKey: 'scheduleExercise' },
+  { id: 'study', emoji: '📚', colorVar: 'study', labelKey: 'scheduleStudy' },
+  { id: 'meeting', emoji: '👥', colorVar: 'meeting', labelKey: 'scheduleMeeting' },
 ];
 
 // Time blocks for the day - now full 24 hours
@@ -131,7 +152,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
       const workStart = new Date(currentTimestamp);
       const workEnd = new Date(currentTimestamp + workDuration);
 
-      // Work block
+      // Work block - use CSS variables for dark mode support
       generatedEvents.push({
         id: `task-work-${task.id}`,
         title: task.name,
@@ -139,7 +160,9 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
         startMinute: workStart.getMinutes(),
         endHour: workEnd.getHours(),
         endMinute: workEnd.getMinutes(),
-        color: task.urgent ? '#ef4444' : '#3b82f6', // red for urgent, blue for normal
+        colorVar: task.urgent ? 'urgent' : 'work', // CSS variable reference
+        color: getEventColor('work', task.urgent), // Fallback for compatibility
+        urgent: task.urgent,
         emoji: '💼',
         date: today,
         source: 'task',
@@ -150,7 +173,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
 
       currentTimestamp += workDuration;
 
-      // Break block (if break time specified)
+      // Break block (if break time specified) - use CSS variables
       if (task.breakMinutes && task.breakMinutes > 0) {
         const breakStart = new Date(currentTimestamp);
         const breakEnd = new Date(currentTimestamp + breakDuration);
@@ -162,7 +185,8 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
           startMinute: breakStart.getMinutes(),
           endHour: breakEnd.getHours(),
           endMinute: breakEnd.getMinutes(),
-          color: '#06b6d4', // cyan for breaks
+          colorVar: 'break', // CSS variable reference
+          color: EVENT_COLORS.break, // Fallback for compatibility
           emoji: '☕',
           date: today,
           source: 'task',
@@ -317,10 +341,15 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
     const left = (startMinutes / totalMinutes) * 100;
     const width = ((endMinutes - startMinutes) / totalMinutes) * 100;
 
+    // Use CSS variable color if colorVar exists, fallback to event.color for backward compatibility
+    const backgroundColor = event.colorVar
+      ? getEventColor(event.colorVar, event.urgent)
+      : event.color;
+
     return {
       left: `${left}%`,
       width: `${Math.max(width, 2)}%`,
-      backgroundColor: event.color,
+      backgroundColor,
     };
   };
 
@@ -667,7 +696,8 @@ function AddEventModal({
       startMinute,
       endHour,
       endMinute,
-      color: selectedPreset.color,
+      colorVar: selectedPreset.colorVar, // CSS variable reference
+      color: getEventColor(selectedPreset.colorVar), // Fallback for compatibility
       emoji: selectedPreset.emoji,
       date: eventDate,
       note: note.trim() || undefined,
@@ -854,7 +884,7 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
       startTime: workStart,
       endTime: workEnd,
       duration: task.estimatedMinutes,
-      color: task.urgent ? '#ef4444' : '#3b82f6',
+      color: getEventColor('work', task.urgent), // CSS variable with dark mode support
       type: 'work',
     });
 
@@ -871,7 +901,7 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
         startTime: breakStart,
         endTime: breakEnd,
         duration: task.breakMinutes,
-        color: '#06b6d4',
+        color: EVENT_COLORS.break, // CSS variable with dark mode support
         type: 'break',
       });
 
@@ -932,7 +962,7 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
 
               {/* Remaining time badge for active block */}
               {isActive && progress > 0 && (
-                <span className="absolute bottom-0.5 right-1 text-[10px] bg-black/40 px-1 rounded z-10">
+                <span className="absolute bottom-0.5 right-1 text-xs bg-black/40 px-1 rounded z-10">
                   {remainingMinutes} {t.min || 'min'}
                 </span>
               )}
@@ -984,7 +1014,7 @@ function EventDetailsModal({
         <div className="text-center mb-4">
           <div
             className="w-16 h-16 rounded-2xl mx-auto mb-3 flex items-center justify-center text-3xl relative"
-            style={{ backgroundColor: event.color }}
+            style={{ backgroundColor: event.colorVar ? getEventColor(event.colorVar, event.urgent) : event.color }}
           >
             <span aria-hidden="true">{event.emoji}</span>
             {/* Habit indicator badge */}
@@ -995,7 +1025,7 @@ function EventDetailsModal({
             )}
             {/* Task indicator badge */}
             {isTaskEvent && (
-              <span className="absolute -top-1 -right-1 text-sm bg-blue-500 rounded-full w-6 h-6 flex items-center justify-center" aria-hidden="true">
+              <span className="absolute -top-1 -right-1 text-sm bg-primary rounded-full w-6 h-6 flex items-center justify-center" aria-hidden="true">
                 📋
               </span>
             )}
@@ -1017,9 +1047,9 @@ function EventDetailsModal({
 
           {/* Task event indicator */}
           {isTaskEvent && (
-            <div className="mt-2 px-3 py-1.5 bg-blue-500/10 rounded-full inline-flex items-center gap-1.5">
+            <div className="mt-2 px-3 py-1.5 bg-primary/10 rounded-full inline-flex items-center gap-1.5">
               <span>📋</span>
-              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+              <span className="text-xs text-primary font-medium">
                 {t.autoScheduled || 'Auto-scheduled'}
               </span>
             </div>
@@ -1035,8 +1065,8 @@ function EventDetailsModal({
 
         {/* Habit event explanation */}
         {isHabitEvent && (
-          <div className="mb-4 p-3 bg-amber-500/10 rounded-xl border border-amber-500/20">
-            <p className="text-xs text-amber-600 dark:text-amber-400">
+          <div className="mb-4 p-3 bg-[hsl(var(--mood-okay))]/10 rounded-xl border border-[hsl(var(--mood-okay))]/20">
+            <p className="text-xs text-[hsl(var(--mood-okay))]">
               {t.habitEventExplanation || 'This event is from your habit. Edit the habit to change it.'}
             </p>
           </div>
@@ -1044,8 +1074,8 @@ function EventDetailsModal({
 
         {/* Task event explanation */}
         {isTaskEvent && (
-          <div className="mb-4 p-3 bg-blue-500/10 rounded-xl border border-blue-500/20">
-            <p className="text-xs text-blue-600 dark:text-blue-400">
+          <div className="mb-4 p-3 bg-primary/10 rounded-xl border border-primary/20">
+            <p className="text-xs text-primary">
               {t.taskEventExplanation || 'This block is auto-generated from your tasks. Complete the task to remove it.'}
             </p>
           </div>
@@ -1062,7 +1092,7 @@ function EventDetailsModal({
           {onDelete && !isHabitEvent && !isAutoGenerated && (
             <button
               onClick={onDelete}
-              className="flex-1 py-3 bg-red-500/20 text-red-500 rounded-xl font-medium"
+              className="flex-1 py-3 bg-destructive/20 text-destructive rounded-xl font-medium"
             >
               {t.delete || 'Delete'}
             </button>

@@ -535,7 +535,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
               setShowStoryViewer(true);
             }}
             aria-label={t.weeklyStory || 'Weekly Story'}
-            className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white text-sm font-medium rounded-xl hover:opacity-90 transition-all zen-shadow-soft"
+            className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary to-accent text-white text-sm font-medium rounded-xl hover:opacity-90 transition-all zen-shadow-soft"
           >
             <PlayCircle className="w-4 h-4" />
             {t.weeklyStory || 'Weekly Story'}
@@ -652,10 +652,10 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
           <div className="relative">
-            <div className="p-2.5 bg-gradient-to-br from-violet-500 to-purple-500 rounded-xl shadow-lg shadow-violet-500/20">
+            <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg shadow-primary/20">
               <Calendar className="w-5 h-5 text-white" />
             </div>
-            <div className="absolute -top-1 -right-1 w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary/80 rounded-full animate-pulse" />
           </div>
           <h3 className="text-lg font-bold text-foreground">{t.calendarTitle}</h3>
         </div>
@@ -684,7 +684,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
               onClick={() => setShowMonthSelector(!showMonthSelector)}
               aria-expanded={showMonthSelector}
               aria-label={t.calendarSelectMonth || 'Select month'}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 text-sm font-medium hover:from-primary/20 hover:to-accent/20 transition-all flex items-center gap-2"
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-primary/20 to-accent/20 text-sm font-medium hover:from-primary/30 hover:to-accent/30 transition-all flex items-center gap-2"
             >
               {monthNames[selectedMonth]} {selectedYear}
               {showMonthSelector ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
@@ -732,11 +732,11 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             <p className="text-xs text-muted-foreground mt-1">{t.moodEntries}</p>
           </div>
           <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-500 to-purple-500">{yearStats.focusMinutes}</p>
+            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">{yearStats.focusMinutes}</p>
             <p className="text-xs text-muted-foreground mt-1">{t.focusMinutes}</p>
           </div>
           <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
-            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 to-teal-500">{yearStats.habitCompletions}</p>
+            <p className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[hsl(var(--mood-good))] to-[hsl(var(--mood-good)/0.7)]">{yearStats.habitCompletions}</p>
             <p className="text-xs text-muted-foreground mt-1">{t.habitsCompleted}</p>
           </div>
           <div className="text-center p-2 sm:p-3 bg-secondary/50 rounded-xl hover:bg-secondary transition-colors">
@@ -896,7 +896,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                   {selectedDayData.gratitude.map((entry) => (
                     <div
                       key={entry.id}
-                      className="p-3 bg-gradient-to-r from-amber-500/10 to-orange-500/5 rounded-lg border-l-4 border-amber-500/50"
+                      className="p-3 bg-gradient-to-r from-accent/10 to-accent/5 rounded-lg border-l-4 border-accent/50"
                     >
                       <div className="flex items-start gap-2">
                         <span className="text-base flex-shrink-0">✨</span>

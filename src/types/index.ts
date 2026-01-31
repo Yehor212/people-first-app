@@ -208,7 +208,9 @@ export interface ScheduleEvent {
   startMinute: number;
   endHour: number;
   endMinute: number;
-  color: string;
+  color: string;              // HEX color (kept for backward compatibility)
+  colorVar?: string;          // CSS variable reference (e.g., 'work', 'meal', 'urgent')
+  urgent?: boolean;           // For urgent task red styling
   emoji?: string;
   date: string;               // Which day this event is for
   note?: string;              // Optional note/description

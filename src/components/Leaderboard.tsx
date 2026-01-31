@@ -24,6 +24,7 @@ import {
   type LeaderboardType,
 } from '@/lib/leaderboard';
 import { announce } from '@/lib/a11y';
+import { SkeletonList } from '@/components/ui/skeleton';
 import {
   Trophy,
   Flame,
@@ -273,8 +274,8 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
           className="space-y-2 overflow-y-auto max-h-[45vh] pb-4"
         >
           {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+            <div className="py-4">
+              <SkeletonList count={5} />
             </div>
           ) : error ? (
             <div className="text-center py-12">

@@ -150,7 +150,7 @@ export function TimeAwarenessBadge({
       onClick={onClick}
       className={cn(
         "flex items-center gap-3 px-4 py-3 rounded-2xl transition-all",
-        "bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20",
+        "bg-gradient-to-r from-primary/10 to-accent/10 hover:from-primary/20 hover:to-accent/20 dark:from-primary/20 dark:to-accent/20 dark:hover:from-primary/30 dark:hover:to-accent/30",
         "border border-primary/20 hover:border-primary/30",
         urgencyClass
       )}
@@ -158,7 +158,7 @@ export function TimeAwarenessBadge({
       {/* Time icon */}
       <div className={cn(
         "p-2 rounded-xl",
-        message.urgent ? "bg-amber-500/20 text-amber-600" : "bg-primary/20 text-primary"
+        message.urgent ? "bg-amber-500/20 text-amber-600 dark:text-amber-400" : "bg-primary/20 text-primary"
       )}>
         {nextEvent && nextEvent.minutesUntil <= 30 ? (
           <Calendar className="w-5 h-5" />
@@ -171,13 +171,13 @@ export function TimeAwarenessBadge({
       <div className="text-left">
         <div className={cn(
           "text-xs font-medium",
-          message.urgent ? "text-amber-600" : "text-muted-foreground"
+          message.urgent ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
         )}>
           {message.primary}
         </div>
         <div className={cn(
           "text-lg font-bold",
-          message.urgent ? "text-amber-600" : "text-foreground"
+          message.urgent ? "text-amber-600 dark:text-amber-400" : "text-foreground"
         )}>
           {message.secondary}
         </div>
@@ -190,7 +190,7 @@ export function TimeAwarenessBadge({
             <div
               className={cn(
                 "h-full rounded-full transition-all",
-                isAlmostDone ? "bg-amber-500" : "bg-gradient-to-r from-primary to-accent"
+                isAlmostDone ? "bg-[hsl(var(--mood-okay))]" : "bg-gradient-to-r from-primary to-accent"
               )}
               style={{
                 width: `${Math.max(0, Math.min(100, (1 - minutesUntilWorkdayEnd / (9 * 60)) * 100))}%`

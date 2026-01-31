@@ -265,14 +265,14 @@ export function TreePanel({
               </div>
               {/* Treats Balance */}
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 rounded-full" aria-label={`${t.treats || 'Treats'}: ${treatsBalance}`}>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/20 rounded-full" aria-label={`${t.treats || 'Treats'}: ${treatsBalance}`}>
                   <span className="text-lg">🍪</span>
-                  <span className="font-bold text-orange-500">{treatsBalance}</span>
+                  <span className="font-bold text-accent">{treatsBalance}</span>
                 </div>
                 <button
                   onClick={onClose}
                   aria-label={t.close || 'Close'}
-                  className="p-2 rounded-full hover:bg-muted transition-colors"
+                  className="p-2 min-w-[44px] min-h-[44px] rounded-full hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -336,13 +336,13 @@ export function TreePanel({
                   disabled={isAnimating}
                   className={cn(
                     "flex flex-col items-center gap-2 p-5 rounded-2xl transition-all",
-                    "bg-gradient-to-br from-green-500/20 to-emerald-500/20",
-                    "hover:from-green-500/30 hover:to-emerald-500/30 hover:scale-105",
+                    "bg-[hsl(var(--mood-good))]/10 dark:bg-[hsl(var(--mood-good))]/15",
+                    "hover:bg-[hsl(var(--mood-good))]/20 dark:hover:bg-[hsl(var(--mood-good))]/25 hover:scale-105",
                     "active:scale-95",
                     isAnimating && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  <Hand className="w-8 h-8 text-green-500" />
+                  <Hand className="w-8 h-8 text-[hsl(var(--mood-good))]" />
                   <span className="text-sm font-medium">{t.touch || 'Touch'}</span>
                   <span className="text-xs text-muted-foreground">{t.free || 'Free'}</span>
                 </button>
@@ -353,16 +353,16 @@ export function TreePanel({
                   disabled={isAnimating || !canWater}
                   className={cn(
                     "flex flex-col items-center gap-2 p-5 rounded-2xl transition-all",
-                    "bg-gradient-to-br from-blue-500/20 to-cyan-500/20",
-                    "hover:from-blue-500/30 hover:to-cyan-500/30 hover:scale-105",
+                    "bg-accent/10 dark:bg-accent/15",
+                    "hover:bg-accent/20 dark:hover:bg-accent/25 hover:scale-105",
                     "active:scale-95",
-                    waterLevel < 30 && canWater && "ring-2 ring-blue-500 animate-pulse",
+                    waterLevel < 30 && canWater && "ring-2 ring-accent animate-pulse",
                     (isAnimating || !canWater) && "opacity-50 cursor-not-allowed"
                   )}
                 >
-                  <Droplets className="w-8 h-8 text-blue-500" />
+                  <Droplets className="w-8 h-8 text-accent" />
                   <span className="text-sm font-medium">{t.water || 'Water'}</span>
-                  <span className="text-xs text-blue-500 font-medium">🍪 {waterCost}</span>
+                  <span className="text-xs text-accent font-medium">🍪 {waterCost}</span>
                 </button>
               </div>
 
@@ -379,7 +379,7 @@ export function TreePanel({
                 </div>
                 <div className="h-2.5 bg-muted rounded-full overflow-hidden">
                   <motion.div
-                    className="h-full bg-gradient-to-r from-green-400 to-emerald-500"
+                    className="h-full bg-gradient-to-r from-primary to-primary/80"
                     initial={{ width: 0 }}
                     animate={{ width: `${xpProgress}%` }}
                     transition={{ duration: 0.5 }}
@@ -398,7 +398,7 @@ export function TreePanel({
                   <span className="text-sm font-medium">💧 {t.waterLevel || 'Water Level'}</span>
                   <span className={cn(
                     "text-sm font-bold",
-                    waterLevel >= 70 ? "text-blue-500" : waterLevel >= 30 ? "text-cyan-500" : "text-orange-500"
+                    waterLevel >= 70 ? "text-accent" : waterLevel >= 30 ? "text-primary" : "text-[hsl(var(--mood-okay))]"
                   )}>
                     {waterLevel}%
                   </span>
@@ -407,9 +407,9 @@ export function TreePanel({
                   <motion.div
                     className={cn(
                       "h-full rounded-full transition-all",
-                      waterLevel >= 70 ? "bg-gradient-to-r from-blue-400 to-cyan-500" :
-                      waterLevel >= 30 ? "bg-gradient-to-r from-cyan-400 to-teal-500" :
-                      "bg-gradient-to-r from-orange-400 to-yellow-500"
+                      waterLevel >= 70 ? "bg-gradient-to-r from-accent to-accent/80" :
+                      waterLevel >= 30 ? "bg-gradient-to-r from-primary to-primary/80" :
+                      "bg-gradient-to-r from-[hsl(var(--mood-okay))] to-[hsl(var(--mood-okay))]/80"
                     )}
                     initial={{ width: 0 }}
                     animate={{ width: `${waterLevel}%` }}
@@ -417,7 +417,7 @@ export function TreePanel({
                   />
                 </div>
                 {waterLevel < 30 && (
-                  <p className="text-xs text-orange-500 mt-2 text-center">
+                  <p className="text-xs text-[hsl(var(--mood-okay))] mt-2 text-center">
                     {t.treeNeedsWater || 'The tree needs water!'}
                   </p>
                 )}

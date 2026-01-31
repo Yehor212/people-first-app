@@ -69,9 +69,9 @@ function ChallengeCard({
   const daysLeft = getDaysRemaining(challenge);
 
   const statusColor = {
-    active: 'bg-emerald-500',
-    completed: 'bg-amber-500',
-    expired: 'bg-gray-400',
+    active: 'bg-[hsl(var(--mood-good))]',
+    completed: 'bg-accent',
+    expired: 'bg-muted-foreground/50',
   }[challenge.status];
 
   return (
@@ -116,8 +116,8 @@ function ChallengeCard({
             className={cn(
               'h-full rounded-full transition-all',
               challenge.status === 'completed'
-                ? 'bg-amber-500'
-                : 'bg-emerald-500'
+                ? 'bg-accent'
+                : 'bg-[hsl(var(--mood-good))]'
             )}
             style={{ width: `${progress}%` }}
           />
@@ -328,7 +328,7 @@ function ChallengeDetailsView({
 
         <div className="h-3 bg-secondary rounded-full overflow-hidden mb-2">
           <div
-            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all"
+            className="h-full bg-gradient-to-r from-[hsl(var(--mood-good))] to-[hsl(var(--mood-good)/0.8)] rounded-full transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -342,7 +342,7 @@ function ChallengeDetailsView({
             </span>
           )}
           {challenge.status === 'completed' && (
-            <span className="flex items-center gap-1 text-amber-500">
+            <span className="flex items-center gap-1 text-accent">
               <Trophy className="w-3 h-3" />
               {t.challengeCompleted || 'Challenge Complete!'}
             </span>
@@ -354,12 +354,12 @@ function ChallengeDetailsView({
       <div className={cn(
         'p-4 rounded-2xl text-center font-medium',
         challenge.status === 'completed'
-          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+          ? 'bg-accent/10 text-accent dark:bg-accent/20'
           : isAheadOfSchedule
-            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            ? 'bg-[hsl(var(--mood-good))]/10 text-[hsl(var(--mood-good))] dark:bg-[hsl(var(--mood-good))]/20'
             : isBehindSchedule
-              ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
-              : 'bg-blue-500/10 text-blue-600 dark:text-blue-400'
+              ? 'bg-[hsl(var(--mood-okay))]/10 text-[hsl(var(--mood-okay))] dark:bg-[hsl(var(--mood-okay))]/20'
+              : 'bg-primary/10 text-primary dark:bg-primary/20'
       )}>
         {getMotivationalMessage()}
       </div>
@@ -372,7 +372,7 @@ function ChallengeDetailsView({
             <div className="text-xs text-muted-foreground">{t.daysPassed || 'Days Passed'}</div>
           </div>
           <div className="bg-card rounded-xl p-3 border border-border/50 text-center">
-            <div className="text-2xl font-bold text-emerald-500">{challenge.myProgress}</div>
+            <div className="text-2xl font-bold text-[hsl(var(--mood-good))]">{challenge.myProgress}</div>
             <div className="text-xs text-muted-foreground">{t.daysCompleted || 'Completed'}</div>
           </div>
           <div className="bg-card rounded-xl p-3 border border-border/50 text-center">
@@ -398,7 +398,7 @@ function ChallengeDetailsView({
             className="h-12 w-12"
           >
             {copied ? (
-              <Check className="w-5 h-5 text-emerald-500" />
+              <Check className="w-5 h-5 text-[hsl(var(--mood-good))]" />
             ) : (
               <Copy className="w-5 h-5" />
             )}
@@ -489,7 +489,7 @@ function ChallengesListView({
       {activeChallenges.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+            <div className="w-2 h-2 rounded-full bg-[hsl(var(--mood-good))]" />
             {t.activeChallenges || 'Active Challenges'}
           </h3>
           <div className="space-y-2">
@@ -509,7 +509,7 @@ function ChallengesListView({
       {completedChallenges.length > 0 && (
         <div>
           <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-            <Trophy className="w-4 h-4 text-amber-500" />
+            <Trophy className="w-4 h-4 text-accent" />
             {t.completedChallenges || 'Completed'}
           </h3>
           <div className="space-y-2">
@@ -661,9 +661,9 @@ function JoinChallengeView({
             'w-full px-4 py-4 rounded-xl border-2 text-center text-xl font-mono tracking-widest',
             'bg-card focus:outline-none transition-colors',
             error
-              ? 'border-red-500 focus:border-red-500'
+              ? 'border-destructive focus:border-destructive'
               : isValidCode
-                ? 'border-emerald-500 focus:border-emerald-500'
+                ? 'border-[hsl(var(--mood-good))] focus:border-[hsl(var(--mood-good))]'
                 : 'border-border focus:border-primary'
           )}
           maxLength={10}
@@ -673,7 +673,7 @@ function JoinChallengeView({
           disabled={!!initialInvite?.habitName}
         />
         {error && (
-          <p className="text-sm text-red-500 mt-2 text-center">{error}</p>
+          <p className="text-sm text-destructive mt-2 text-center">{error}</p>
         )}
       </div>
 

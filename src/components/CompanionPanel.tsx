@@ -285,14 +285,14 @@ export function CompanionPanel({
               <h2 id="companion-panel-title" className="text-lg font-semibold">{t.myCompanion}</h2>
               {/* Treats Balance */}
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-500/20 rounded-full" aria-label={`${t.treats || 'Treats'}: ${treatsBalance}`}>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/20 rounded-full" aria-label={`${t.treats || 'Treats'}: ${treatsBalance}`}>
                   <span className="text-lg">🍪</span>
-                  <span className="font-bold text-orange-500">{treatsBalance}</span>
+                  <span className="font-bold text-accent">{treatsBalance}</span>
                 </div>
                 <button
                   onClick={onClose}
                   aria-label={t.close || 'Close'}
-                  className="p-2 rounded-full hover:bg-muted transition-colors"
+                  className="p-2 min-w-[44px] min-h-[44px] rounded-full hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -445,7 +445,7 @@ export function CompanionPanel({
                   <span className="text-sm font-medium">🍽️ {t.fullness || 'Fullness'}</span>
                   <span className={cn(
                     "text-sm font-bold",
-                    fullness >= 70 ? "text-green-500" : fullness >= 30 ? "text-yellow-500" : "text-red-500"
+                    fullness >= 70 ? "text-[hsl(var(--mood-good))]" : fullness >= 30 ? "text-[hsl(var(--mood-okay))]" : "text-destructive"
                   )}>
                     {fullness}%
                   </span>
@@ -454,9 +454,9 @@ export function CompanionPanel({
                   <motion.div
                     className={cn(
                       "h-full rounded-full transition-all",
-                      fullness >= 70 ? "bg-gradient-to-r from-green-400 to-emerald-500" :
-                      fullness >= 30 ? "bg-gradient-to-r from-yellow-400 to-orange-500" :
-                      "bg-gradient-to-r from-red-400 to-rose-500"
+                      fullness >= 70 ? "bg-gradient-to-r from-[hsl(var(--mood-good))] to-[hsl(var(--mood-good))]/80" :
+                      fullness >= 30 ? "bg-gradient-to-r from-[hsl(var(--mood-okay))] to-accent" :
+                      "bg-gradient-to-r from-destructive to-destructive/80"
                     )}
                     initial={{ width: 0 }}
                     animate={{ width: `${fullness}%` }}
@@ -464,7 +464,7 @@ export function CompanionPanel({
                   />
                 </div>
                 {fullness < 30 && (
-                  <p className="text-xs text-red-500 mt-2 text-center">
+                  <p className="text-xs text-destructive mt-2 text-center">
                     {t.companionNeedsFood || 'Your companion is hungry!'}
                   </p>
                 )}

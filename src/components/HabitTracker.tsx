@@ -304,12 +304,12 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     <div className={cn(
       "rounded-2xl p-6 animate-fade-in transition-all relative overflow-hidden",
       isPrimaryCTA
-        ? "bg-gradient-to-br from-emerald-500/15 via-card to-green-500/15 ring-2 ring-emerald-500/40 shadow-lg shadow-emerald-500/20"
+        ? "bg-gradient-to-br from-[hsl(var(--mood-good))]/15 via-card to-[hsl(var(--mood-good))]/10 ring-2 ring-[hsl(var(--mood-good))]/40 shadow-lg shadow-[hsl(var(--mood-good))]/20"
         : "bg-card zen-shadow-card"
     )}>
       {/* Animated background glow for CTA */}
       {isPrimaryCTA && (
-        <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/5 via-transparent to-green-500/5 animate-pulse pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(var(--mood-good))]/5 via-transparent to-[hsl(var(--mood-good))]/5 animate-pulse pointer-events-none" />
       )}
 
       {/* Daily Progress Bar */}
@@ -324,9 +324,9 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
       {/* Primary CTA Header */}
       {isPrimaryCTA && (
         <div className="relative flex items-center justify-center gap-2 mb-4">
-          <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/25 rounded-full border border-emerald-500/30">
-            <Zap className="w-4 h-4 text-emerald-500" />
-            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{t.startHere}</span>
+          <div className="flex items-center gap-2 px-4 py-2 bg-primary/25 rounded-full border border-primary/30">
+            <Zap className="w-4 h-4 text-primary" />
+            <span className="text-sm font-bold text-primary">{t.startHere}</span>
           </div>
         </div>
       )}
@@ -365,6 +365,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               setIsAdding(!isAdding);
             }}
             className={cn(isAdding && "rotate-45")}
+            aria-label={isAdding ? (t.cancel || 'Cancel') : (t.addHabit || 'Add habit')}
           >
             <Plus className="w-5 h-5" />
           </Button>
@@ -603,7 +604,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                             handleReminderChange(index, 'days', newDays);
                           }}
                           className={cn(
-                            "w-8 h-8 min-w-[32px] min-h-[32px] text-xs rounded-lg transition-colors font-medium",
+                            "w-10 h-10 min-w-[40px] min-h-[40px] text-xs rounded-lg transition-colors font-medium",
                             "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
                             reminder.days.includes(day)
                               ? "bg-primary text-primary-foreground"

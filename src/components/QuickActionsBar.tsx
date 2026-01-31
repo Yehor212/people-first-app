@@ -82,7 +82,7 @@ export function QuickActionsBar({
       {!isExpanded && (
         <button
           onClick={() => setIsExpanded(true)}
-          className="w-full flex items-center justify-between bg-gradient-to-r from-primary/5 to-accent/5 rounded-xl p-3 hover:from-primary/10 hover:to-accent/10 transition-all"
+          className="w-full flex items-center justify-between bg-gradient-to-r from-primary/5 to-accent/5 dark:from-primary/15 dark:to-accent/15 rounded-xl p-3 hover:from-primary/10 hover:to-accent/10 dark:hover:from-primary/20 dark:hover:to-accent/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
         >
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -111,7 +111,8 @@ export function QuickActionsBar({
             </h3>
             <button
               onClick={() => setIsExpanded(false)}
-              className="p-2.5 hover:bg-muted rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+              aria-label="Close"
+              className="p-2.5 hover:bg-muted rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               <X className="w-5 h-5" />
             </button>
@@ -121,7 +122,7 @@ export function QuickActionsBar({
           {hasUnclaimedReward && onOpenDailyRewards && (
             <button
               onClick={onOpenDailyRewards}
-              className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-pink-500/10 to-purple-500/10 rounded-xl hover:from-pink-500/20 hover:to-purple-500/20 transition-all"
+              className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-pink-500/10 to-purple-500/10 dark:from-pink-500/20 dark:to-purple-500/20 rounded-xl hover:from-pink-500/20 hover:to-purple-500/20 dark:hover:from-pink-500/30 dark:hover:to-purple-500/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               <div className="p-2 bg-pink-500/20 rounded-lg">
                 <Gift className="w-5 h-5 text-pink-500" />
@@ -142,7 +143,7 @@ export function QuickActionsBar({
           {spinTokens > 0 && onOpenSpinWheel && (
             <button
               onClick={onOpenSpinWheel}
-              className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-xl hover:from-yellow-500/20 hover:to-orange-500/20 transition-all"
+              className="w-full flex items-center gap-3 p-3 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 dark:from-yellow-500/20 dark:to-orange-500/20 rounded-xl hover:from-yellow-500/20 hover:to-orange-500/20 dark:hover:from-yellow-500/30 dark:hover:to-orange-500/30 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               <div className="p-2 bg-yellow-500/20 rounded-lg">
                 <Zap className="w-5 h-5 text-yellow-500" />
@@ -165,10 +166,10 @@ export function QuickActionsBar({
               key={challenge.id}
               onClick={() => onOpenChallenge?.(challenge)}
               className={cn(
-                'w-full flex items-center gap-3 p-3 rounded-xl transition-all',
+                'w-full flex items-center gap-3 p-3 rounded-xl transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
                 challenge.type === 'flash'
-                  ? 'bg-gradient-to-r from-red-500/10 to-orange-500/10 hover:from-red-500/20 hover:to-orange-500/20'
-                  : 'bg-gradient-to-r from-blue-500/10 to-cyan-500/10 hover:from-blue-500/20 hover:to-cyan-500/20'
+                  ? 'bg-gradient-to-r from-red-500/10 to-orange-500/10 dark:from-red-500/20 dark:to-orange-500/20 hover:from-red-500/20 hover:to-orange-500/20 dark:hover:from-red-500/30 dark:hover:to-orange-500/30'
+                  : 'bg-gradient-to-r from-blue-500/10 to-cyan-500/10 dark:from-blue-500/20 dark:to-cyan-500/20 hover:from-blue-500/20 hover:to-cyan-500/20 dark:hover:from-blue-500/30 dark:hover:to-cyan-500/30'
               )}
             >
               <div className={cn(
@@ -208,10 +209,10 @@ export function QuickActionsBar({
               className={cn(
                 'flex items-center gap-3 p-3 rounded-xl',
                 notification.type === 'warning'
-                  ? 'bg-yellow-500/10'
+                  ? 'bg-yellow-500/10 dark:bg-yellow-500/20'
                   : notification.type === 'success'
-                  ? 'bg-green-500/10'
-                  : 'bg-primary/10'
+                  ? 'bg-green-500/10 dark:bg-green-500/20'
+                  : 'bg-primary/10 dark:bg-primary/20'
               )}
             >
               <span className="text-xl">{notification.icon}</span>
@@ -222,7 +223,8 @@ export function QuickActionsBar({
               {onDismissNotification && (
                 <button
                   onClick={() => onDismissNotification(notification.id)}
-                  className="p-2.5 hover:bg-muted rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  aria-label="Dismiss notification"
+                  className="p-2.5 hover:bg-muted rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                   <X className="w-5 h-5" />
                 </button>

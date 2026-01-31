@@ -54,7 +54,12 @@ export function WelcomeBackModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="welcome-back-title"
+    >
       <div className="relative m-4 max-w-lg w-full bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden animate-scale-in">
         {/* Header */}
         <div className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
@@ -64,7 +69,7 @@ export function WelcomeBackModal({
                 <Sparkles className="w-6 h-6 text-primary" />
               </div>
               <div>
-                <h2 className="text-2xl font-bold text-foreground">
+                <h2 id="welcome-back-title" className="text-2xl font-bold text-foreground">
                   {t.reengageTitle || 'Welcome Back!'} 👋
                 </h2>
                 <p className="text-sm text-muted-foreground">
@@ -74,6 +79,7 @@ export function WelcomeBackModal({
             </div>
             <button
               onClick={onClose}
+              aria-label={t.close || 'Close'}
               className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
             >
               <X className="w-5 h-5 text-muted-foreground" />

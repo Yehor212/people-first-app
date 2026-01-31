@@ -62,6 +62,7 @@ export function ThemeToggle() {
       className={cn(
         "relative flex-shrink-0 rounded-full transition-all duration-300",
         "w-[52px] h-[28px]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         theme === 'light' ? 'bg-sky-300' : 'bg-slate-700'
       )}
       style={{ minWidth: '52px', minHeight: '28px' }}

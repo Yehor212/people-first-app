@@ -79,10 +79,10 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
     <div className={cn(
       "relative overflow-hidden rounded-2xl p-3 transition-all",
       streak >= 7
-        ? "bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-red-500/20 ring-1 ring-yellow-500/30"
+        ? "bg-gradient-to-r from-yellow-500/20 via-orange-500/20 to-red-500/20 dark:from-yellow-500/30 dark:via-orange-500/30 dark:to-red-500/30 ring-1 ring-yellow-500/30"
         : streak >= 3
-          ? "bg-gradient-to-r from-orange-500/20 to-red-500/20 ring-1 ring-orange-500/30"
-          : "bg-gradient-to-r from-primary/10 to-accent/10 ring-1 ring-primary/20"
+          ? "bg-gradient-to-r from-orange-500/20 to-red-500/20 dark:from-orange-500/30 dark:to-red-500/30 ring-1 ring-orange-500/30"
+          : "bg-gradient-to-r from-primary/10 to-accent/10 dark:from-primary/20 dark:to-accent/20 ring-1 ring-primary/20"
     )}>
       {/* Background glow for high streaks */}
       {streak >= 7 && (
@@ -135,7 +135,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                 key={i}
                 className={cn(
                   "text-sm transition-all",
-                  item.done ? "opacity-100 scale-100" : "opacity-30 scale-90"
+                  item.done ? "opacity-100 scale-100" : "opacity-50 scale-90"
                 )}
                 role="img"
                 aria-label={`${item.label}: ${item.done ? t.completed : ''}`}
@@ -157,7 +157,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
               setShowShareModal(true);
             }}
             className={cn(
-              "p-2 rounded-lg transition-colors flex-shrink-0",
+              "p-2 rounded-lg transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               streak >= 7
                 ? "bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500"
                 : "bg-orange-500/20 hover:bg-orange-500/30 text-orange-500"

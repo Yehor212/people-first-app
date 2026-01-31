@@ -126,6 +126,26 @@
     --mood-bad: 25 70% 58%;
     --mood-terrible: 0 60% 58%;
 
+    /* ===== EVENT TYPE COLORS ===== */
+    /* Semantic colors for schedule event types */
+    /* Light mode: optimized for readability on light backgrounds */
+    --event-work: 217 91% 60%;        /* Blue - professional, productive */
+    --event-meal: 142 71% 45%;        /* Green - food, health */
+    --event-rest: 262 83% 58%;        /* Purple - calm, recovery */
+    --event-exercise: 25 95% 53%;     /* Orange - energy, activity */
+    --event-study: 189 94% 43%;       /* Cyan - learning, focus */
+    --event-meeting: 330 81% 60%;     /* Pink - social, connection */
+    --event-break: 189 94% 43%;       /* Cyan - same as study (rest) */
+    --event-urgent: 0 72% 51%;        /* Red - attention needed */
+
+    /* ===== INSIGHT TYPE COLORS ===== */
+    /* Semantic colors for MoodInsights component */
+    --insight-mood: 217 91% 60%;      /* Blue - mood analysis */
+    --insight-habit: 262 83% 58%;     /* Purple - habit patterns */
+    --insight-energy: 45 95% 55%;     /* Amber - energy levels */
+    --insight-positive: 142 71% 45%;  /* Green - positive insights */
+    --insight-warning: 0 72% 51%;     /* Red - warnings/alerts */
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -197,6 +217,23 @@
     --mood-okay: 45 80% 55%;
     --mood-bad: 25 75% 55%;
     --mood-terrible: 0 65% 55%;
+
+    /* Event colors - increased saturation/brightness for dark backgrounds */
+    --event-work: 217 91% 65%;
+    --event-meal: 142 71% 50%;
+    --event-rest: 262 83% 63%;
+    --event-exercise: 25 95% 58%;
+    --event-study: 189 94% 48%;
+    --event-meeting: 330 81% 65%;
+    --event-break: 189 94% 48%;
+    --event-urgent: 0 72% 55%;
+
+    /* Insight colors - dark mode variants */
+    --insight-mood: 217 91% 65%;
+    --insight-habit: 262 83% 63%;
+    --insight-energy: 45 95% 60%;
+    --insight-positive: 142 71% 50%;
+    --insight-warning: 0 72% 55%;
   }
 
   /* ===== OLED DARK MODE ===== */
@@ -260,6 +297,23 @@
     --mood-okay: 45 85% 50%;
     --mood-bad: 25 80% 50%;
     --mood-terrible: 0 70% 50%;
+
+    /* Event colors for OLED - slightly more saturated for true black contrast */
+    --event-work: 217 95% 60%;
+    --event-meal: 142 75% 48%;
+    --event-rest: 262 87% 60%;
+    --event-exercise: 25 98% 55%;
+    --event-study: 189 98% 45%;
+    --event-meeting: 330 85% 62%;
+    --event-break: 189 98% 45%;
+    --event-urgent: 0 75% 52%;
+
+    /* Insight colors - OLED optimized */
+    --insight-mood: 217 95% 60%;
+    --insight-habit: 262 87% 60%;
+    --insight-energy: 45 98% 58%;
+    --insight-positive: 142 75% 48%;
+    --insight-warning: 0 75% 52%;
 
     /* Sidebar for OLED */
     --sidebar-background: 0 0% 0%;
@@ -864,6 +918,118 @@
 
 .animate-success-pulse {
   animation: success-pulse 0.6s ease-out;
+}
+
+/* ========================================
+   PREMIUM UI ANIMATIONS - Phase 3
+   ======================================== */
+
+/* Input Focus Ring - Subtle attention draw */
+@keyframes input-focus-ring {
+  0% {
+    box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+  }
+  50% {
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15);
+  }
+}
+
+/* Form Validation Shake - Error feedback */
+@keyframes input-shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  20%, 60% {
+    transform: translateX(-4px);
+  }
+  40%, 80% {
+    transform: translateX(4px);
+  }
+}
+
+/* List Item Stagger Entrance */
+@keyframes list-item-enter {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Fade Up Entrance - Cards, modals */
+@keyframes fade-up-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Scale Bounce - Success states */
+@keyframes scale-bounce {
+  0% {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Utility Classes for New Animations */
+.animate-input-focus {
+  animation: input-focus-ring 0.3s ease-out forwards;
+}
+
+.animate-shake {
+  animation: input-shake 0.4s ease-in-out;
+}
+
+.animate-list-enter {
+  animation: list-item-enter 0.3s ease-out forwards;
+}
+
+.animate-fade-up {
+  animation: fade-up-enter 0.25s ease-out forwards;
+}
+
+.animate-scale-bounce {
+  animation: scale-bounce 0.35s ease-out forwards;
+}
+
+/* Stagger delay utilities */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+.stagger-7 { animation-delay: 0.35s; }
+.stagger-8 { animation-delay: 0.4s; }
+
+/* Input focus enhancement - apply on focus */
+.input-focus-enhanced:focus {
+  animation: input-focus-ring 0.3s ease-out forwards;
+}
+
+/* Error state with shake */
+.input-error {
+  animation: input-shake 0.4s ease-in-out;
+  border-color: hsl(var(--destructive)) !important;
 }
 
 /* ========================================

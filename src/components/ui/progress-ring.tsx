@@ -10,7 +10,7 @@ interface ProgressRingProps {
 }
 
 const SIZES = {
-  sm: { size: 32, stroke: 3, fontSize: 'text-[10px]' },
+  sm: { size: 36, stroke: 3, fontSize: 'text-xs' },  // Increased from 32px to fit readable text
   md: { size: 44, stroke: 4, fontSize: 'text-xs' },
   lg: { size: 56, stroke: 5, fontSize: 'text-sm' },
 } as const;

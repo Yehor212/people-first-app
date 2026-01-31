@@ -66,7 +66,12 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in px-3 sm:px-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in px-3 sm:px-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="onboarding-welcome-title"
+    >
       <div className="relative max-w-lg w-full bg-card rounded-xl sm:rounded-2xl zen-shadow-card border border-border overflow-hidden animate-scale-in">
         {/* Header - responsive */}
         <div className="p-4 sm:p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
@@ -77,12 +82,13 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
                 markWelcomeSeen();
                 onClose();
               }}
+              aria-label="Close"
               className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
             >
               <X className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
             </button>
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-foreground mb-2">{currentStep.title}</h2>
+          <h2 id="onboarding-welcome-title" className="text-xl sm:text-2xl font-bold text-foreground mb-2">{currentStep.title}</h2>
           <p className="text-sm sm:text-base text-muted-foreground">{currentStep.description}</p>
         </div>
 

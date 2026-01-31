@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Plus, Zap, Clock, Star, Calendar, Trash2, CheckCircle2, Circle, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { SkeletonSection, SkeletonList } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/EmptyState';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { safeJsonParse } from '@/lib/safeJson';
@@ -449,24 +451,25 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
           </div>
         )}
 
-        {/* Empty State */}
-        {tasks.length === 0 && !showAddForm && (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
-              <Calendar className="w-8 h-8 text-primary" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">{t.noTasksYet || 'No tasks yet'}</h3>
-            <p className="text-muted-foreground mb-4">
-              {t.addFirstTaskMessage || 'Add your first task to get started with Task Momentum!'}
-            </p>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="px-6 py-3 zen-gradient text-white rounded-xl font-medium hover:opacity-90 transition-opacity inline-flex items-center gap-2"
-            >
-              <Plus className="w-5 h-5" />
-              {t.addFirstTask || 'Add Your First Task'}
-            </button>
+        {/* Loading State */}
+        {!isLoaded && (
+          <div className="space-y-4">
+            <SkeletonSection hasIcon />
+            <SkeletonList count={3} />
           </div>
+        )}
+
+        {/* Empty State */}
+        {isLoaded && tasks.length === 0 && !showAddForm && (
+          <EmptyState
+            icon={<Calendar className="w-8 h-8 text-primary" />}
+            title={t.noTasksYet || 'No tasks yet'}
+            message={t.addFirstTaskMessage || 'Add your first task to get started with Task Momentum!'}
+            action={{
+              label: t.addFirstTask || 'Add Your First Task',
+              onClick: () => setShowAddForm(true),
+            }}
+          />
         )}
 
         {/* ADHD Tips */}
