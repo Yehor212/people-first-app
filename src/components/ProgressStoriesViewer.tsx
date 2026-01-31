@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, Share2, Pause, Play, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { AnimatedMoodEmoji } from '@/components/AnimatedMoodEmoji';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 import { StorySlide, MoodTrendData, HabitStatsData, FocusStatsData } from '@/lib/progressStories';
@@ -140,7 +141,8 @@ function IntroSlide({ slide }: { slide: StorySlide }) {
 
 function MoodSlide({ slide, t }: { slide: StorySlide; t: Record<string, string> }) {
   const data = slide.data as MoodTrendData;
-  const moodEmojis = ['😢', '😔', '😐', '🙂', '😄'];
+  // Premium SVG mood icons instead of basic emojis
+  const moodTypes = ['terrible', 'bad', 'okay', 'good', 'great'] as const;
 
   return (
     <motion.div
@@ -159,31 +161,44 @@ function MoodSlide({ slide, t }: { slide: StorySlide; t: Record<string, string> 
         {slide.subtitle}
       </motion.p>
 
-      {/* Mood scale visualization - glassmorphism */}
+      {/* Premium SVG mood scale visualization */}
       <motion.div
         variants={fadeInUp}
-        className="flex gap-2 mb-6 p-3 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20"
+        className="flex gap-3 mb-6 p-4 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20"
         style={{ boxShadow: `0 4px 20px ${slide.accentColor}40` }}
       >
-        {moodEmojis.map((emoji, i) => (
-          <motion.div
-            key={i}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.3 + i * 0.1, type: 'spring' }}
-            className={cn(
-              'w-11 h-11 rounded-full flex items-center justify-center text-xl transition-all',
-              Math.round(data?.average || 3) === i + 1
-                ? 'bg-white/40 scale-125 shadow-lg'
-                : 'bg-white/10 hover:bg-white/20'
-            )}
-            style={Math.round(data?.average || 3) === i + 1 ? {
-              boxShadow: `0 0 20px ${slide.accentColor}`
-            } : {}}
-          >
-            {emoji}
-          </motion.div>
-        ))}
+        {moodTypes.map((mood, i) => {
+          const isSelected = Math.round(data?.average || 3) === i + 1;
+          return (
+            <motion.div
+              key={mood}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3 + i * 0.1, type: 'spring', stiffness: 200 }}
+              className={cn(
+                'relative transition-all duration-300',
+                isSelected
+                  ? 'scale-125 z-10'
+                  : 'opacity-60 hover:opacity-80 hover:scale-105'
+              )}
+            >
+              <AnimatedMoodEmoji
+                mood={mood}
+                size="md"
+                isSelected={isSelected}
+              />
+              {/* Glow effect for selected mood */}
+              {isSelected && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1.2 }}
+                  className="absolute inset-0 rounded-full blur-xl -z-10"
+                  style={{ backgroundColor: `${slide.accentColor}80` }}
+                />
+              )}
+            </motion.div>
+          );
+        })}
       </motion.div>
 
       {/* Gradient text for value */}
