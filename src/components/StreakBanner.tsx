@@ -5,13 +5,13 @@
  */
 
 import { memo, useMemo, useState } from 'react';
-import { Flame, Zap, Trophy, Moon, Share2 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Flame, Zap, Trophy, Moon, Share2, Check, Heart, Target, Brain, Sparkles } from 'lucide-react';
 import { ShareModal } from './ShareModal';
 import { FireAnimation } from './FireAnimation';
 import { hapticTap } from '@/lib/haptics';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { EmojiOrIcon } from '@/components/icons';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, calculateStreak } from '@/lib/utils';
 
@@ -123,30 +123,86 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
           </p>
         </div>
 
-        {/* Today's progress indicator */}
-        <div className="flex flex-col items-end gap-0.5 flex-shrink-0" role="group" aria-label={t.todayProgress}>
-          <div className="flex gap-1">
+        {/* Premium Progress Orbs */}
+        <div className="flex flex-col items-end gap-1 flex-shrink-0" role="group" aria-label={t.todayProgress}>
+          <div className="flex gap-1.5">
             {[
-              { emoji: '💜', iconName: undefined, label: t.moodToday, done: todayProgress.hasMood },
-              { emoji: '🎯', iconName: 'target', label: t.habits, done: todayProgress.hasHabits },
-              { emoji: '🧠', iconName: undefined, label: t.focus, done: todayProgress.hasFocus },
-              { emoji: '💖', iconName: 'heart', label: t.gratitude, done: todayProgress.hasGratitude }
-            ].map((item, i) => (
-              <span
-                key={i}
+              {
+                id: 'mood',
+                Icon: Heart,
+                done: todayProgress.hasMood,
+                gradient: 'from-purple-500/60 to-violet-600/60',
+                glowColor: 'rgba(139, 92, 246, 0.5)',
+                label: t.moodToday
+              },
+              {
+                id: 'habits',
+                Icon: Target,
+                done: todayProgress.hasHabits,
+                gradient: 'from-emerald-500/60 to-teal-600/60',
+                glowColor: 'rgba(16, 185, 129, 0.5)',
+                label: t.habits
+              },
+              {
+                id: 'focus',
+                Icon: Brain,
+                done: todayProgress.hasFocus,
+                gradient: 'from-amber-500/60 to-orange-600/60',
+                glowColor: 'rgba(245, 158, 11, 0.5)',
+                label: t.focus
+              },
+              {
+                id: 'gratitude',
+                Icon: Sparkles,
+                done: todayProgress.hasGratitude,
+                gradient: 'from-pink-500/60 to-rose-600/60',
+                glowColor: 'rgba(236, 72, 153, 0.5)',
+                label: t.gratitude
+              }
+            ].map((activity) => (
+              <motion.div
+                key={activity.id}
                 className={cn(
-                  "flex items-center justify-center transition-all",
-                  item.done ? "opacity-100 scale-100" : "opacity-50 scale-90"
+                  "relative w-7 h-7 rounded-full flex items-center justify-center",
+                  "border transition-all",
+                  activity.done
+                    ? `bg-gradient-to-br ${activity.gradient} border-white/30`
+                    : "bg-white/5 dark:bg-white/5 border-white/10"
                 )}
+                style={activity.done ? {
+                  boxShadow: `0 0 12px ${activity.glowColor}`
+                } : {}}
+                initial={false}
+                animate={activity.done ? { scale: [1, 1.1, 1] } : { scale: 1 }}
+                transition={{ duration: 0.3 }}
                 role="img"
-                aria-label={`${item.label}: ${item.done ? t.completed : ''}`}
+                aria-label={`${activity.label}: ${activity.done ? t.completed : ''}`}
               >
-                {item.done ? '✅' : <EmojiOrIcon emoji={item.emoji} iconName={item.iconName} size="xs" />}
-              </span>
+                {activity.done ? (
+                  <Check className="w-3.5 h-3.5 text-white" />
+                ) : (
+                  <activity.Icon className="w-3.5 h-3.5 text-white/40" />
+                )}
+
+                {/* Pulse ring animation when done */}
+                {activity.done && (
+                  <motion.div
+                    className="absolute inset-0 rounded-full border-2"
+                    style={{ borderColor: activity.glowColor }}
+                    initial={{ scale: 1, opacity: 0.6 }}
+                    animate={{ scale: 1.4, opacity: 0 }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: 'easeOut'
+                    }}
+                  />
+                )}
+              </motion.div>
             ))}
           </div>
-          <span className="text-xs text-muted-foreground">
-            {todayProgress.completed}/4
+          <span className="text-xs text-muted-foreground font-medium">
+            {todayProgress.completed} of 4
           </span>
         </div>
 
