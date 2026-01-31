@@ -861,7 +861,38 @@ export interface Translations {
   // Premium
   premium: string;
   premiumDescription: string;
-  
+
+  // Phase 10: Premium Stats Components
+  zenScore: string;
+  zenScoreExcellent: string;
+  zenScoreGood: string;
+  zenScoreOkay: string;
+  zenScoreNeedsWork: string;
+  seeBreakdown: string;
+  showLess: string;
+
+  // Mood Weather
+  weatherSunny: string;
+  weatherPartlyCloudy: string;
+  weatherCloudy: string;
+  weatherRainy: string;
+  weatherStormy: string;
+  weatherMessageGreat: string;
+  weatherMessageGood: string;
+  weatherMessageOkay: string;
+  weatherMessageBad: string;
+  weatherMessageTerrible: string;
+
+  // Week Crystal
+  weekCrystal: string;
+  crystalExcellentWeek: string;
+  crystalGoodWeek: string;
+  crystalAverageWeek: string;
+  crystalNeedsImprovement: string;
+
+  // Radial Dashboard
+  tapToSee: string;
+
   // Language
   language: string;
   selectLanguage: string;
@@ -2256,6 +2287,29 @@ export const translations: Record<Language, Translations> = {
     openBox: 'Открыть',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Разблокируйте расширенную аналитику, экспорт данных и премиум темы!',
+    zenScore: 'Zen Score',
+    zenScoreExcellent: 'Отлично!',
+    zenScoreGood: 'Хорошо',
+    zenScoreOkay: 'Продолжай',
+    zenScoreNeedsWork: 'Нужно поработать',
+    seeBreakdown: 'Показать детали',
+    showLess: 'Скрыть',
+    weatherSunny: 'Солнечно',
+    weatherPartlyCloudy: 'Переменная облачность',
+    weatherCloudy: 'Облачно',
+    weatherRainy: 'Дождливо',
+    weatherStormy: 'Гроза',
+    weatherMessageGreat: 'Твоё настроение сияет сегодня!',
+    weatherMessageGood: 'Светло с небольшими облаками',
+    weatherMessageOkay: 'Спокойный, нейтральный день',
+    weatherMessageBad: 'Немного дождливо, но это пройдёт',
+    weatherMessageTerrible: 'Буря уйдёт со временем',
+    weekCrystal: 'Кристалл недели',
+    crystalExcellentWeek: 'Отличная неделя',
+    crystalGoodWeek: 'Хорошая неделя',
+    crystalAverageWeek: 'Обычная неделя',
+    crystalNeedsImprovement: 'Нужно улучшение',
+    tapToSee: 'Нажми на кольцо',
     language: 'Язык',
     selectLanguage: 'Выберите язык',
     welcomeTitle: 'Добро пожаловать в ZenFlow',
@@ -3649,6 +3703,29 @@ export const translations: Record<Language, Translations> = {
     openBox: 'Open',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Unlock advanced analytics, data export and premium themes!',
+    zenScore: 'Zen Score',
+    zenScoreExcellent: 'Excellent!',
+    zenScoreGood: 'Good',
+    zenScoreOkay: 'Keep going',
+    zenScoreNeedsWork: 'Needs work',
+    seeBreakdown: 'See breakdown',
+    showLess: 'Show less',
+    weatherSunny: 'Sunny',
+    weatherPartlyCloudy: 'Partly Cloudy',
+    weatherCloudy: 'Cloudy',
+    weatherRainy: 'Rainy',
+    weatherStormy: 'Stormy',
+    weatherMessageGreat: 'Your mood is radiant today!',
+    weatherMessageGood: 'Looking bright with some clouds',
+    weatherMessageOkay: 'A balanced, neutral day',
+    weatherMessageBad: 'Some rain, but it will pass',
+    weatherMessageTerrible: 'Storms clear with time',
+    weekCrystal: 'Week Crystal',
+    crystalExcellentWeek: 'Excellent Week',
+    crystalGoodWeek: 'Good Week',
+    crystalAverageWeek: 'Average Week',
+    crystalNeedsImprovement: 'Needs Improvement',
+    tapToSee: 'Tap a ring',
     language: 'Language',
     selectLanguage: 'Select language',
     welcomeTitle: 'Welcome to ZenFlow',
@@ -5042,6 +5119,29 @@ export const translations: Record<Language, Translations> = {
     openBox: 'Відкрити',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Розблокуйте розширену аналітику, експорт даних та преміум теми!',
+    zenScore: 'Zen Score',
+    zenScoreExcellent: 'Чудово!',
+    zenScoreGood: 'Добре',
+    zenScoreOkay: 'Продовжуй',
+    zenScoreNeedsWork: 'Потрібно попрацювати',
+    seeBreakdown: 'Показати деталі',
+    showLess: 'Приховати',
+    weatherSunny: 'Сонячно',
+    weatherPartlyCloudy: 'Мінлива хмарність',
+    weatherCloudy: 'Хмарно',
+    weatherRainy: 'Дощить',
+    weatherStormy: 'Гроза',
+    weatherMessageGreat: 'Твій настрій сяє сьогодні!',
+    weatherMessageGood: 'Світло з невеликими хмарками',
+    weatherMessageOkay: 'Спокійний, нейтральний день',
+    weatherMessageBad: 'Трохи дощить, але це мине',
+    weatherMessageTerrible: 'Буря мине з часом',
+    weekCrystal: 'Кристал тижня',
+    crystalExcellentWeek: 'Чудовий тиждень',
+    crystalGoodWeek: 'Гарний тиждень',
+    crystalAverageWeek: 'Звичайний тиждень',
+    crystalNeedsImprovement: 'Потрібно покращення',
+    tapToSee: 'Натисни на кільце',
     language: 'Мова',
     selectLanguage: 'Оберіть мову',
     welcomeTitle: 'Ласкаво просимо до ZenFlow',
@@ -6436,6 +6536,29 @@ export const translations: Record<Language, Translations> = {
     openBox: 'Abrir',
     premium: 'ZenFlow Premium',
     premiumDescription: '¡Desbloquea análisis avanzados, exportación de datos y temas premium!',
+    zenScore: 'Zen Score',
+    zenScoreExcellent: '¡Excelente!',
+    zenScoreGood: 'Bien',
+    zenScoreOkay: 'Sigue así',
+    zenScoreNeedsWork: 'Necesita trabajo',
+    seeBreakdown: 'Ver detalles',
+    showLess: 'Mostrar menos',
+    weatherSunny: 'Soleado',
+    weatherPartlyCloudy: 'Parcialmente nublado',
+    weatherCloudy: 'Nublado',
+    weatherRainy: 'Lluvioso',
+    weatherStormy: 'Tormentoso',
+    weatherMessageGreat: '¡Tu ánimo brilla hoy!',
+    weatherMessageGood: 'Brillante con algunas nubes',
+    weatherMessageOkay: 'Un día equilibrado y neutral',
+    weatherMessageBad: 'Algo de lluvia, pero pasará',
+    weatherMessageTerrible: 'Las tormentas se despejan con el tiempo',
+    weekCrystal: 'Cristal de la semana',
+    crystalExcellentWeek: 'Semana excelente',
+    crystalGoodWeek: 'Buena semana',
+    crystalAverageWeek: 'Semana promedio',
+    crystalNeedsImprovement: 'Necesita mejorar',
+    tapToSee: 'Toca un anillo',
     language: 'Idioma',
     selectLanguage: 'Selecciona idioma',
     welcomeTitle: 'Bienvenido a ZenFlow',
@@ -7830,6 +7953,29 @@ export const translations: Record<Language, Translations> = {
     openBox: 'Öffnen',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Schalte erweiterte Analysen, Datenexport und Premium-Themes frei!',
+    zenScore: 'Zen-Punktzahl',
+    zenScoreExcellent: 'Ausgezeichnet!',
+    zenScoreGood: 'Gut',
+    zenScoreOkay: 'Weiter so',
+    zenScoreNeedsWork: 'Braucht Arbeit',
+    seeBreakdown: 'Details anzeigen',
+    showLess: 'Weniger anzeigen',
+    weatherSunny: 'Sonnig',
+    weatherPartlyCloudy: 'Teilweise bewölkt',
+    weatherCloudy: 'Bewölkt',
+    weatherRainy: 'Regnerisch',
+    weatherStormy: 'Stürmisch',
+    weatherMessageGreat: 'Deine Stimmung strahlt heute!',
+    weatherMessageGood: 'Hell mit einigen Wolken',
+    weatherMessageOkay: 'Ein ausgeglichener, neutraler Tag',
+    weatherMessageBad: 'Etwas Regen, aber es wird vorbeigehen',
+    weatherMessageTerrible: 'Stürme vergehen mit der Zeit',
+    weekCrystal: 'Wochenkristall',
+    crystalExcellentWeek: 'Ausgezeichnete Woche',
+    crystalGoodWeek: 'Gute Woche',
+    crystalAverageWeek: 'Durchschnittliche Woche',
+    crystalNeedsImprovement: 'Verbesserung nötig',
+    tapToSee: 'Ring antippen',
     language: 'Sprache',
     selectLanguage: 'Sprache wählen',
     welcomeTitle: 'Willkommen bei ZenFlow',
@@ -9224,6 +9370,29 @@ export const translations: Record<Language, Translations> = {
     openBox: 'Ouvrir',
     premium: 'ZenFlow Premium',
     premiumDescription: 'Débloquez des analyses avancées, l\'export de données et des thèmes premium!',
+    zenScore: 'Score Zen',
+    zenScoreExcellent: 'Excellent !',
+    zenScoreGood: 'Bien',
+    zenScoreOkay: 'Continue',
+    zenScoreNeedsWork: 'À améliorer',
+    seeBreakdown: 'Voir les détails',
+    showLess: 'Afficher moins',
+    weatherSunny: 'Ensoleillé',
+    weatherPartlyCloudy: 'Partiellement nuageux',
+    weatherCloudy: 'Nuageux',
+    weatherRainy: 'Pluvieux',
+    weatherStormy: 'Orageux',
+    weatherMessageGreat: 'Ton humeur rayonne aujourd\'hui !',
+    weatherMessageGood: 'Lumineux avec quelques nuages',
+    weatherMessageOkay: 'Une journée équilibrée et neutre',
+    weatherMessageBad: 'Un peu de pluie, mais ça passera',
+    weatherMessageTerrible: 'Les orages se dissipent avec le temps',
+    weekCrystal: 'Cristal de la semaine',
+    crystalExcellentWeek: 'Excellente semaine',
+    crystalGoodWeek: 'Bonne semaine',
+    crystalAverageWeek: 'Semaine moyenne',
+    crystalNeedsImprovement: 'À améliorer',
+    tapToSee: 'Touche un anneau',
     language: 'Langue',
     selectLanguage: 'Sélectionner la langue',
     welcomeTitle: 'Bienvenue sur ZenFlow',

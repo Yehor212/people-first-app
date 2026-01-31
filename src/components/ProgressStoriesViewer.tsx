@@ -1,10 +1,13 @@
 /**
  * ProgressStoriesViewer - Instagram-style weekly progress stories
  * Part of v1.4.0 Social & Sharing
+ *
+ * Premium upgrade in Phase 10.5: glassmorphism, gradient text, animations
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { X, ChevronLeft, ChevronRight, Share2, Pause, Play } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, ChevronLeft, ChevronRight, Share2, Pause, Play, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
@@ -12,6 +15,25 @@ import { StorySlide, MoodTrendData, HabitStatsData, FocusStatsData } from '@/lib
 import { generateWeeklyCard, WeeklyProgressData, shareImage, downloadImage } from '@/lib/shareCards';
 import { Badge } from '@/types';
 import { hapticTap, hapticSuccess } from '@/lib/haptics';
+
+// Premium animation variants
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.1, delayChildren: 0.2 }
+  }
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.8 },
+  visible: { opacity: 1, scale: 1, transition: { type: 'spring', stiffness: 200, damping: 20 } }
+};
 
 // ============================================
 // TYPES
@@ -33,19 +55,29 @@ function StoryProgressBar({
   total,
   current,
   progress,
+  accentColor,
 }: {
   total: number;
   current: number;
   progress: number;
+  accentColor?: string;
 }) {
   return (
-    <div className="flex gap-1 px-4 pt-4">
+    <div className="flex gap-1.5 px-4 pt-4">
       {Array.from({ length: total }).map((_, i) => (
-        <div key={i} className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-white rounded-full transition-all duration-100"
-            style={{
+        <div key={i} className="flex-1 h-1 bg-white/20 rounded-full overflow-hidden backdrop-blur-sm">
+          <motion.div
+            className="h-full rounded-full"
+            initial={{ width: 0 }}
+            animate={{
               width: i < current ? '100%' : i === current ? `${progress}%` : '0%',
+            }}
+            transition={{ duration: 0.1 }}
+            style={{
+              background: i <= current
+                ? `linear-gradient(90deg, white 0%, ${accentColor || 'white'} 100%)`
+                : 'white',
+              boxShadow: i === current ? `0 0 10px ${accentColor || 'rgba(255,255,255,0.5)'}` : 'none',
             }}
           />
         </div>
@@ -60,11 +92,49 @@ function StoryProgressBar({
 
 function IntroSlide({ slide }: { slide: StorySlide }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-white text-center px-8">
-      <div className="text-6xl mb-6 animate-bounce-slow">{slide.icon}</div>
-      <h1 className="text-3xl font-bold mb-2">{slide.title}</h1>
-      <p className="text-xl opacity-80">{slide.subtitle}</p>
-    </div>
+    <motion.div
+      className="flex flex-col items-center justify-center h-full text-white text-center px-8"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Floating sparkles */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute"
+            initial={{ opacity: 0, y: 0 }}
+            animate={{
+              opacity: [0, 0.6, 0],
+              y: [-20, -60],
+              x: Math.sin(i) * 30,
+            }}
+            transition={{
+              duration: 2 + i * 0.3,
+              repeat: Infinity,
+              delay: i * 0.4,
+            }}
+            style={{
+              left: `${15 + i * 15}%`,
+              top: `${40 + (i % 3) * 10}%`,
+            }}
+          >
+            <Sparkles className="w-4 h-4 text-white/40" />
+          </motion.div>
+        ))}
+      </div>
+
+      <motion.div variants={scaleIn} className="text-7xl mb-6">
+        {slide.icon}
+      </motion.div>
+      <motion.h1 variants={fadeInUp} className="text-3xl font-bold mb-3">
+        {slide.title}
+      </motion.h1>
+      <motion.p variants={fadeInUp} className="text-xl opacity-80">
+        {slide.subtitle}
+      </motion.p>
+    </motion.div>
   );
 }
 
@@ -73,31 +143,66 @@ function MoodSlide({ slide, t }: { slide: StorySlide; t: Record<string, string> 
   const moodEmojis = ['😢', '😔', '😐', '🙂', '😄'];
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-white text-center px-8">
-      <div className="text-7xl mb-4">{slide.icon}</div>
-      <h2 className="text-2xl font-bold mb-2">{slide.title}</h2>
-      <p className="text-lg opacity-80 mb-6">{slide.subtitle}</p>
+    <motion.div
+      className="flex flex-col items-center justify-center h-full text-white text-center px-8"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div variants={scaleIn} className="text-7xl mb-4">
+        {slide.icon}
+      </motion.div>
+      <motion.h2 variants={fadeInUp} className="text-2xl font-bold mb-2">
+        {slide.title}
+      </motion.h2>
+      <motion.p variants={fadeInUp} className="text-lg opacity-80 mb-6">
+        {slide.subtitle}
+      </motion.p>
 
-      {/* Mood scale visualization */}
-      <div className="flex gap-2 mb-4">
+      {/* Mood scale visualization - glassmorphism */}
+      <motion.div
+        variants={fadeInUp}
+        className="flex gap-2 mb-6 p-3 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20"
+        style={{ boxShadow: `0 4px 20px ${slide.accentColor}40` }}
+      >
         {moodEmojis.map((emoji, i) => (
-          <div
+          <motion.div
             key={i}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.3 + i * 0.1, type: 'spring' }}
             className={cn(
-              'w-10 h-10 rounded-full flex items-center justify-center text-xl transition-all',
+              'w-11 h-11 rounded-full flex items-center justify-center text-xl transition-all',
               Math.round(data?.average || 3) === i + 1
-                ? 'bg-white/30 scale-125'
-                : 'bg-white/10'
+                ? 'bg-white/40 scale-125 shadow-lg'
+                : 'bg-white/10 hover:bg-white/20'
             )}
+            style={Math.round(data?.average || 3) === i + 1 ? {
+              boxShadow: `0 0 20px ${slide.accentColor}`
+            } : {}}
           >
             {emoji}
-          </div>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
-      <div className="text-5xl font-black">{slide.value}</div>
-      <p className="text-sm opacity-60 mt-2">{t.storyAverageMoodScore || 'average mood score'}</p>
-    </div>
+      {/* Gradient text for value */}
+      <motion.div
+        variants={scaleIn}
+        className="text-6xl font-black"
+        style={{
+          background: `linear-gradient(135deg, white 0%, ${slide.accentColor} 100%)`,
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}
+      >
+        {slide.value}
+      </motion.div>
+      <motion.p variants={fadeInUp} className="text-sm opacity-60 mt-2">
+        {t.storyAverageMoodScore || 'average mood score'}
+      </motion.p>
+    </motion.div>
   );
 }
 
@@ -105,32 +210,61 @@ function HabitsSlide({ slide, t }: { slide: StorySlide; t: Record<string, string
   const data = slide.data as HabitStatsData;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-white text-center px-8">
-      <div className="text-7xl mb-4">{slide.icon}</div>
-      <h2 className="text-2xl font-bold mb-2">{slide.title}</h2>
+    <motion.div
+      className="flex flex-col items-center justify-center h-full text-white text-center px-8"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div variants={scaleIn} className="text-7xl mb-4">
+        {slide.icon}
+      </motion.div>
+      <motion.h2 variants={fadeInUp} className="text-2xl font-bold mb-2">
+        {slide.title}
+      </motion.h2>
 
-      {/* Big percentage */}
-      <div className="text-7xl font-black mb-2">{slide.value}</div>
-      <p className="text-lg opacity-80 mb-6">{t.storyCompletionRate || 'completion rate'}</p>
+      {/* Big percentage with gradient */}
+      <motion.div
+        variants={scaleIn}
+        className="text-7xl font-black mb-2"
+        style={{
+          background: `linear-gradient(135deg, white 0%, ${slide.accentColor} 100%)`,
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}
+      >
+        {slide.value}
+      </motion.div>
+      <motion.p variants={fadeInUp} className="text-lg opacity-80 mb-6">
+        {t.storyCompletionRate || 'completion rate'}
+      </motion.p>
 
-      {/* Top habit */}
+      {/* Top habit - glassmorphism card */}
       {data?.topHabit && (
-        <div className="bg-white/10 rounded-2xl px-6 py-4">
+        <motion.div
+          variants={fadeInUp}
+          className="bg-white/10 backdrop-blur-sm rounded-2xl px-6 py-4 border border-white/20"
+          style={{ boxShadow: `0 4px 20px ${slide.accentColor}40` }}
+        >
           <p className="text-sm opacity-60 mb-1">{t.storyTopHabit || 'Top habit'}</p>
           <p className="text-xl font-semibold">
             {data.topHabit.icon} {data.topHabit.name}
           </p>
           <p className="text-sm opacity-80">{data.topHabit.completions} {t.storyCompletions || 'completions'}</p>
-        </div>
+        </motion.div>
       )}
 
-      {/* Perfect days */}
+      {/* Perfect days with glow */}
       {data?.perfectDays > 0 && (
-        <p className="mt-4 text-sm opacity-80">
+        <motion.p
+          variants={fadeInUp}
+          className="mt-4 text-sm px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm"
+        >
           ⭐ {data.perfectDays} {t.storyPerfectDays || 'perfect days this week'}
-        </p>
+        </motion.p>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -138,32 +272,76 @@ function FocusSlide({ slide, t }: { slide: StorySlide; t: Record<string, string>
   const data = slide.data as FocusStatsData;
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-white text-center px-8">
-      <div className="text-7xl mb-4">{slide.icon}</div>
-      <h2 className="text-2xl font-bold mb-2">{slide.title}</h2>
+    <motion.div
+      className="flex flex-col items-center justify-center h-full text-white text-center px-8"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div variants={scaleIn} className="text-7xl mb-4">
+        {slide.icon}
+      </motion.div>
+      <motion.h2 variants={fadeInUp} className="text-2xl font-bold mb-2">
+        {slide.title}
+      </motion.h2>
 
-      {/* Total time */}
-      <div className="text-6xl font-black mb-2">{slide.value}</div>
-      <p className="text-lg opacity-80 mb-6">{slide.subtitle}</p>
+      {/* Total time with gradient */}
+      <motion.div
+        variants={scaleIn}
+        className="text-6xl font-black mb-2"
+        style={{
+          background: `linear-gradient(135deg, white 0%, ${slide.accentColor} 100%)`,
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}
+      >
+        {slide.value}
+      </motion.div>
+      <motion.p variants={fadeInUp} className="text-lg opacity-80 mb-6">
+        {slide.subtitle}
+      </motion.p>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-4 w-full max-w-xs">
-        <div className="bg-white/10 rounded-xl p-4">
-          <p className="text-2xl font-bold">{data?.averageSession}m</p>
+      {/* Stats grid - glassmorphism */}
+      <motion.div
+        variants={fadeInUp}
+        className="grid grid-cols-2 gap-4 w-full max-w-xs"
+      >
+        <div
+          className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20"
+          style={{ boxShadow: `0 4px 15px ${slide.accentColor}30` }}
+        >
+          <p
+            className="text-2xl font-bold"
+            style={{ color: slide.accentColor }}
+          >
+            {data?.averageSession}m
+          </p>
           <p className="text-xs opacity-60">{t.storyAvgSession || 'avg session'}</p>
         </div>
-        <div className="bg-white/10 rounded-xl p-4">
-          <p className="text-2xl font-bold">{data?.longestSession}m</p>
+        <div
+          className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20"
+          style={{ boxShadow: `0 4px 15px ${slide.accentColor}30` }}
+        >
+          <p
+            className="text-2xl font-bold"
+            style={{ color: slide.accentColor }}
+          >
+            {data?.longestSession}m
+          </p>
           <p className="text-xs opacity-60">{t.storyLongestSession || 'longest'}</p>
         </div>
-      </div>
+      </motion.div>
 
       {data?.topLabel && (
-        <p className="mt-4 text-sm opacity-80">
+        <motion.p
+          variants={fadeInUp}
+          className="mt-4 text-sm px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm"
+        >
           {t.storyMostFocusedOn || 'Most focused on:'} {data.topLabel}
-        </p>
+        </motion.p>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -172,71 +350,224 @@ function StreakSlide({ slide }: { slide: StorySlide }) {
   const fireCount = Math.min(streak, 7);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-white text-center px-8">
-      {/* Fire emojis */}
-      <div className="text-4xl mb-4 flex">
-        {'🔥'.repeat(fireCount)}
-      </div>
+    <motion.div
+      className="flex flex-col items-center justify-center h-full text-white text-center px-8 relative"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Fire glow background */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `radial-gradient(circle at 50% 40%, ${slide.accentColor}40 0%, transparent 60%)`,
+        }}
+      />
 
-      {/* Big streak number */}
-      <div className="text-8xl font-black mb-2">{streak}</div>
-      <h2 className="text-2xl font-bold tracking-wide uppercase mb-4">
+      {/* Fire emojis with animation */}
+      <motion.div
+        variants={fadeInUp}
+        className="text-4xl mb-4 flex gap-1"
+      >
+        {[...Array(fireCount)].map((_, i) => (
+          <motion.span
+            key={i}
+            initial={{ scale: 0, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ delay: 0.1 * i, type: 'spring', stiffness: 300 }}
+            className="inline-block"
+            style={{
+              filter: `drop-shadow(0 0 8px ${slide.accentColor})`,
+            }}
+          >
+            🔥
+          </motion.span>
+        ))}
+      </motion.div>
+
+      {/* Big streak number with glow */}
+      <motion.div
+        variants={scaleIn}
+        className="text-8xl font-black mb-2 relative"
+        style={{
+          background: `linear-gradient(135deg, white 0%, ${slide.accentColor} 100%)`,
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+          textShadow: `0 0 40px ${slide.accentColor}`,
+        }}
+      >
+        {streak}
+      </motion.div>
+      <motion.h2
+        variants={fadeInUp}
+        className="text-2xl font-bold tracking-wide uppercase mb-4"
+      >
         Day Streak
-      </h2>
+      </motion.h2>
 
-      <p className="text-xl opacity-90">{slide.subtitle}</p>
-    </div>
+      <motion.p variants={fadeInUp} className="text-xl opacity-90">
+        {slide.subtitle}
+      </motion.p>
+    </motion.div>
   );
 }
 
-function AchievementSlide({ slide }: { slide: StorySlide }) {
+function AchievementSlide({ slide, language }: { slide: StorySlide; language: string }) {
   const badges = (slide.data as Badge[]) || [];
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-white text-center px-8">
-      <div className="text-7xl mb-4">{slide.icon}</div>
-      <h2 className="text-2xl font-bold mb-6">{slide.title}</h2>
+    <motion.div
+      className="flex flex-col items-center justify-center h-full text-white text-center px-8"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div variants={scaleIn} className="text-7xl mb-4">
+        {slide.icon}
+      </motion.div>
+      <motion.h2 variants={fadeInUp} className="text-2xl font-bold mb-6">
+        {slide.title}
+      </motion.h2>
 
-      {/* Badges grid */}
-      <div className="flex flex-wrap justify-center gap-4 max-w-xs">
-        {badges.slice(0, 4).map(badge => (
-          <div
+      {/* Badges grid - premium cards */}
+      <motion.div variants={fadeInUp} className="flex flex-wrap justify-center gap-4 max-w-xs">
+        {badges.slice(0, 4).map((badge, i) => (
+          <motion.div
             key={badge.id}
-            className="bg-white/10 rounded-xl p-4 text-center"
+            initial={{ opacity: 0, scale: 0.5, rotateY: -30 }}
+            animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+            transition={{ delay: 0.2 + i * 0.15, type: 'spring', stiffness: 200 }}
+            className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/20 hover:bg-white/20 transition-colors"
+            style={{
+              boxShadow: `0 4px 20px ${slide.accentColor}40`,
+            }}
           >
-            <div className="text-4xl mb-2">{badge.icon}</div>
+            <div
+              className="text-4xl mb-2"
+              style={{ filter: `drop-shadow(0 0 8px ${slide.accentColor})` }}
+            >
+              {badge.icon}
+            </div>
             <p className="text-xs opacity-80 line-clamp-2">
-              {badge.title['en']}
+              {badge.title[language as keyof typeof badge.title] || badge.title['en']}
             </p>
-          </div>
+          </motion.div>
         ))}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
 
 function SummarySlide({ slide }: { slide: StorySlide }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-white text-center px-8">
-      <div className="text-7xl mb-6">{slide.icon}</div>
-      <h2 className="text-2xl font-bold mb-4">{slide.title}</h2>
-      <p className="text-lg opacity-80">{slide.subtitle}</p>
-    </div>
+    <motion.div
+      className="flex flex-col items-center justify-center h-full text-white text-center px-8"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
+      <motion.div
+        variants={scaleIn}
+        className="text-7xl mb-6"
+        style={{ filter: `drop-shadow(0 0 20px ${slide.accentColor})` }}
+      >
+        {slide.icon}
+      </motion.div>
+      <motion.h2
+        variants={fadeInUp}
+        className="text-2xl font-bold mb-4"
+        style={{
+          background: `linear-gradient(135deg, white 0%, ${slide.accentColor} 100%)`,
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        }}
+      >
+        {slide.title}
+      </motion.h2>
+      <motion.p variants={fadeInUp} className="text-lg opacity-80">
+        {slide.subtitle}
+      </motion.p>
+    </motion.div>
   );
 }
 
 function OutroSlide({ slide, t }: { slide: StorySlide; t: Record<string, string> }) {
   return (
-    <div className="flex flex-col items-center justify-center h-full text-white text-center px-8">
-      <div className="text-7xl mb-6 animate-pulse">{slide.icon}</div>
-      <h1 className="text-3xl font-bold mb-2">{slide.title}</h1>
-      <p className="text-xl opacity-80">{slide.subtitle}</p>
+    <motion.div
+      className="flex flex-col items-center justify-center h-full text-white text-center px-8 relative"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Background glow */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `radial-gradient(circle at 50% 50%, ${slide.accentColor}30 0%, transparent 50%)`,
+        }}
+      />
 
-      <div className="mt-12 text-sm opacity-60">
-        <p>{t.storyTrackYourJourney || 'Track your journey with'}</p>
-        <p className="font-semibold text-lg">ZenFlow</p>
+      {/* Floating sparkles */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {[...Array(8)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute"
+            initial={{ opacity: 0 }}
+            animate={{
+              opacity: [0, 0.8, 0],
+              y: [-10, -40],
+              scale: [0.5, 1, 0.5],
+            }}
+            transition={{
+              duration: 2.5 + i * 0.2,
+              repeat: Infinity,
+              delay: i * 0.3,
+            }}
+            style={{
+              left: `${10 + i * 12}%`,
+              top: `${30 + (i % 4) * 15}%`,
+            }}
+          >
+            <Sparkles className="w-5 h-5" style={{ color: slide.accentColor }} />
+          </motion.div>
+        ))}
       </div>
-    </div>
+
+      <motion.div
+        variants={scaleIn}
+        className="text-7xl mb-6"
+        style={{ filter: `drop-shadow(0 0 25px ${slide.accentColor})` }}
+      >
+        {slide.icon}
+      </motion.div>
+      <motion.h1 variants={fadeInUp} className="text-3xl font-bold mb-2">
+        {slide.title}
+      </motion.h1>
+      <motion.p variants={fadeInUp} className="text-xl opacity-80">
+        {slide.subtitle}
+      </motion.p>
+
+      <motion.div
+        variants={fadeInUp}
+        className="mt-12 px-6 py-3 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20"
+      >
+        <p className="text-sm opacity-60">{t.storyTrackYourJourney || 'Track your journey with'}</p>
+        <p
+          className="font-bold text-xl"
+          style={{
+            background: `linear-gradient(135deg, white 0%, ${slide.accentColor} 100%)`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
+          ZenFlow
+        </p>
+      </motion.div>
+    </motion.div>
   );
 }
 
@@ -417,7 +748,7 @@ export function ProgressStoriesViewer({
       case 'streak':
         return <StreakSlide slide={currentSlide} />;
       case 'achievement':
-        return <AchievementSlide slide={currentSlide} />;
+        return <AchievementSlide slide={currentSlide} language={language} />;
       case 'summary':
         return <SummarySlide slide={currentSlide} />;
       case 'outro':
@@ -440,6 +771,7 @@ export function ProgressStoriesViewer({
           total={slides.length}
           current={currentIndex}
           progress={progress}
+          accentColor={currentSlide.accentColor}
         />
 
         {/* Header controls */}
