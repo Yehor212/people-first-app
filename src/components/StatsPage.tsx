@@ -20,8 +20,17 @@ import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
 import { getEmotionScore, getEmotionLabels, EMOTION_ORDER, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
 import { getLocale } from '@/lib/timeUtils';
 import { safeParseInt } from '@/lib/validation';
-// Phase 10: Premium Stats Components
-import { ZenScoreHub, RadialDashboard, MoodWeather, WeekCrystal } from '@/components/stats';
+// Phase 10 & 13: Premium Stats Components
+import {
+  ZenScoreHub,
+  RadialDashboard,
+  MoodWeather,
+  WeekCrystal,
+  TrophyHall,
+  EnergyField,
+  EmotionGalaxy,
+  CrystalCalendar,
+} from '@/components/stats';
 
 interface StatsPageProps {
   moods: MoodEntry[];
@@ -582,6 +591,100 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     }).sort((a, b) => a.date.localeCompare(b.date));
   }, [moods, habits, completedFocusSessions, gratitudeEntries]);
 
+  // Phase 13: EmotionGalaxy data
+  const emotionGalaxyData = useMemo(() => {
+    const emotionColors: Record<string, string> = {
+      joy: '#fbbf24',
+      trust: '#22c55e',
+      fear: '#6366f1',
+      surprise: '#f97316',
+      sadness: '#3b82f6',
+      disgust: '#a855f7',
+      anger: '#ef4444',
+      anticipation: '#ec4899',
+    };
+
+    const emotionEmojis: Record<string, string> = {
+      joy: '😊',
+      trust: '🤝',
+      fear: '😨',
+      surprise: '😲',
+      sadness: '😢',
+      disgust: '🤢',
+      anger: '😠',
+      anticipation: '🤩',
+    };
+
+    return Object.entries(stats.emotionCounts || {})
+      .filter(([_, count]) => count > 0)
+      .map(([emotion, count]) => ({
+        emotion,
+        emoji: emotionEmojis[emotion] || '😐',
+        count: count as number,
+        color: emotionColors[emotion] || '#9ca3af',
+      }));
+  }, [stats.emotionCounts]);
+
+  // Phase 13: CrystalCalendar data
+  const crystalCalendarData = useMemo(() => {
+    const data: Record<string, {
+      date: string;
+      mood?: number;
+      habitsCompleted?: number;
+      totalHabits?: number;
+      focusMinutes?: number;
+      isPerfect?: boolean;
+    }> = {};
+
+    // Build data for last 3 months
+    const today = new Date();
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    const current = new Date(threeMonthsAgo);
+    while (current <= today) {
+      const dateStr = current.toISOString().split('T')[0];
+
+      // Get mood score
+      const dayMood = moodByDate.get(dateStr);
+      let moodScore = undefined;
+      if (dayMood) {
+        switch (dayMood) {
+          case 'great': moodScore = 5; break;
+          case 'good': moodScore = 4; break;
+          case 'okay': moodScore = 3; break;
+          case 'bad': moodScore = 2; break;
+          case 'terrible': moodScore = 1; break;
+        }
+      }
+
+      // Get habits data
+      const dayHabits = habitCompletionMap.get(dateStr) || [];
+      const habitsCompleted = dayHabits.length;
+
+      // Get focus minutes
+      const focusMins = focusMinutesByDate.get(dateStr) || 0;
+
+      // Is perfect day?
+      const isPerfect = moodScore === 5 && habitsCompleted >= habits.length && focusMins >= 30;
+
+      if (moodScore || habitsCompleted > 0 || focusMins > 0) {
+        data[dateStr] = {
+          date: dateStr,
+          mood: moodScore,
+          habitsCompleted,
+          totalHabits: habits.length,
+          focusMinutes: focusMins,
+          isPerfect,
+        };
+      }
+
+      current.setDate(current.getDate() + 1);
+    }
+
+    return data;
+  }, [moodByDate, habitCompletionMap, focusMinutesByDate, habits.length]);
+
   const topHabit = habits.length > 0
     ? habits.reduce((a, b) => getHabitCompletionTotal(a) > getHabitCompletionTotal(b) ? a : b)
     : null;
@@ -656,6 +759,13 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         focusPercent={premiumStats.focusScore}
       />
 
+      {/* Phase 13: Trophy Hall - Premium Achievements */}
+      <TrophyHall
+        streak={stats.currentStreak}
+        focusMinutes={stats.allTimeFocusMinutes}
+        habitsCompleted={stats.totalHabitCompletions}
+      />
+
       {/* v1.4.0: Weekly Calendar - moved from My World tab */}
       <WeeklyCalendar moods={moods} habits={habits} />
 
@@ -720,16 +830,10 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         />
       </div>
 
-      {/* Activity Heat Map - GitHub-style contribution graph */}
-      <ActivityHeatMap
+      {/* Phase 13: Energy Field - Fire-based Activity Heatmap */}
+      <EnergyField
         data={activityHeatmapData}
-        months={3}
-        labels={{
-          title: t.activityHeatmap || 'Activity Overview',
-          less: t.less || 'Less',
-          more: t.more || 'More',
-          monthNames: shortMonthNames,
-        }}
+        className="mb-4"
       />
 
       {/* Weekly Insights - AI-powered recommendations */}
@@ -746,6 +850,15 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         }}
       />
 
+      {/* Phase 13: Emotion Galaxy - Orbital Emotion Visualization */}
+      {emotionGalaxyData.length > 0 && (
+        <EmotionGalaxy
+          emotions={emotionGalaxyData}
+          totalEntries={filteredMoods.length}
+          className="mb-4"
+        />
+      )}
+
       {/* Emotion Distribution - v1.6.0: Always show 8-emotion Plutchik wheel */}
       {/* Legacy moods are mapped to emotions for backward compatibility */}
       <AnimatedEmotionDistribution
@@ -758,6 +871,16 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         onTagChange={setSelectedTag}
         tagFilterLabel={t.moodTagFilter}
         allTagsLabel={t.allTags}
+      />
+
+      {/* Phase 13: Crystal Calendar - Premium Calendar View */}
+      <CrystalCalendar
+        data={crystalCalendarData}
+        onDayClick={(date, dayData) => {
+          hapticTap();
+          setSelectedDate(date);
+        }}
+        className="mb-4"
       />
 
       {/* Year Calendar - Redesigned */}
