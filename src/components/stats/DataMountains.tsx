@@ -141,21 +141,21 @@ export function DataMountains({
 
   const maxValue = providedMax || Math.max(...data.map(d => d.value), 1);
 
-  // Colors based on type
+  // Colors based on type - LIGHTER mountains for contrast against dark sky
   const colorConfig = {
     mood: {
-      mountain: ['#7c3aed', '#8b5cf6', '#a78bfa'],
-      sky: 'from-indigo-900 via-purple-900 to-violet-800',
-      water: 'rgba(99, 102, 241, 0.3)',
+      mountain: ['#a855f7', '#c084fc', '#e9d5ff'], // Lighter purples
+      sky: 'from-slate-900 via-purple-950 to-indigo-950', // Darker sky
+      water: 'rgba(139, 92, 246, 0.3)',
     },
     habits: {
-      mountain: ['#059669', '#10b981', '#34d399'],
-      sky: 'from-emerald-900 via-teal-900 to-cyan-800',
+      mountain: ['#10b981', '#34d399', '#6ee7b7'], // Brighter greens
+      sky: 'from-slate-900 via-emerald-950 to-teal-950',
       water: 'rgba(20, 184, 166, 0.3)',
     },
     focus: {
-      mountain: ['#2563eb', '#3b82f6', '#60a5fa'],
-      sky: 'from-blue-900 via-indigo-900 to-sky-800',
+      mountain: ['#60a5fa', '#93c5fd', '#bfdbfe'], // Lighter blues
+      sky: 'from-slate-900 via-blue-950 to-indigo-950',
       water: 'rgba(59, 130, 246, 0.3)',
     },
   }[color];
@@ -279,6 +279,8 @@ export function DataMountains({
         <motion.path
           d={mountainPath}
           fill={`url(#mountainGradient-${color})`}
+          stroke="rgba(255, 255, 255, 0.2)"
+          strokeWidth="0.5"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 1, delay: 0.2 }}

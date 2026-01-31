@@ -54,6 +54,7 @@ function Star({ x, y, size, delay }: { x: number; y: number; size: number; delay
 }
 
 // Orbiting emotion component - uses SVG units (viewBox 0-100)
+// Uses CSS animation for reliable SVG rotation
 function OrbitingEmotion({
   emotion,
   orbitIndex,
@@ -81,16 +82,10 @@ function OrbitingEmotion({
   const cy = 50 + radius * Math.sin(angleRad);
 
   return (
-    <motion.g
+    <g
       style={{
-        transformOrigin: 'center',
-        transformBox: 'fill-box'
-      }}
-      animate={{ rotate: 360 }}
-      transition={{
-        duration: animationDuration,
-        repeat: Infinity,
-        ease: 'linear',
+        animation: `orbit-spin ${animationDuration}s linear infinite`,
+        transformOrigin: '50px 50px', // SVG center coordinates
       }}
     >
       {/* Orbit path (dashed circle) */}
@@ -135,7 +130,7 @@ function OrbitingEmotion({
           {emotion.emoji}
         </div>
       </foreignObject>
-    </motion.g>
+    </g>
   );
 }
 

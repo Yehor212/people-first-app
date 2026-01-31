@@ -3215,3 +3215,13 @@ input::-moz-focus-inner {
 .animate-stat-premium-enter-2 { animation-delay: 0.2s; }
 .animate-stat-premium-enter-3 { animation-delay: 0.3s; }
 .animate-stat-premium-enter-4 { animation-delay: 0.4s; }
+
+/* ===== ORBIT SPIN FOR EMOTION GALAXY ===== */
+@keyframes orbit-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}

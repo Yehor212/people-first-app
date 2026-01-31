@@ -1,4 +1,5 @@
 import { useMemo, useState, memo } from 'react';
+import { motion } from 'framer-motion';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType, PrimaryEmotion } from '@/types';
 import { calculateStreak, getDaysInMonth, getToday, cn, parseLocalDate } from '@/lib/utils';
 import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
@@ -956,7 +957,19 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       />
 
       {/* Year Calendar - Crystal Premium Design */}
-      <div className="bg-card rounded-2xl p-3 sm:p-6 zen-shadow-card overflow-hidden">
+      <div className="relative overflow-hidden rounded-2xl p-3 sm:p-6 shadow-lg shadow-black/10 dark:shadow-none ring-1 ring-black/5 dark:ring-0">
+        {/* Crystal cave cosmic background */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(ellipse at top,
+              rgba(20, 184, 166, 0.1) 0%,
+              #0f172a 40%,
+              #020617 100%)`,
+          }}
+        />
+        {/* Content wrapper */}
+        <div className="relative z-10">
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
           <div className="relative">
@@ -1095,29 +1108,52 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             const isSelected = cell.dateKey === selectedDate;
 
             return (
-              <button
+              <motion.button
                 key={cell.dateKey}
                 onClick={() => setSelectedDate(cell.dateKey || null)}
                 aria-label={`${cell.day} ${monthNames[selectedMonth]} ${selectedYear}${mood ? `, ${t.mood}: ${t[mood] || mood}` : ''}`}
                 aria-pressed={isSelected}
                 className="relative w-full aspect-square flex items-center justify-center"
+                whileHover={{ scale: 1.15, rotateY: 15, rotateX: -10 }}
+                whileTap={{ scale: 0.95 }}
+                style={{ perspective: 200 }}
               >
-                {/* Crystal shape (rotated square) */}
-                <div
+                {/* Crystal shape (rotated square) with animated glow */}
+                <motion.div
                   className={cn(
                     "absolute inset-1 rotate-45 rounded-sm border transition-all duration-200",
                     "bg-gradient-to-br",
                     crystalStyles.bg,
                     crystalStyles.border,
-                    "hover:scale-110",
                     isSelected && "scale-110 ring-2 ring-accent"
                   )}
                   style={{ boxShadow: crystalStyles.glow }}
+                  animate={
+                    activityLevel >= 2
+                      ? {
+                          boxShadow: [
+                            crystalStyles.glow,
+                            crystalStyles.glow.replace(/[\d.]+(?=\))/g, (m: string) =>
+                              String(parseFloat(m) * 1.4)
+                            ),
+                            crystalStyles.glow,
+                          ],
+                        }
+                      : {}
+                  }
+                  transition={{ duration: 2, repeat: Infinity }}
                 />
 
                 {/* Today pulse ring */}
                 {isToday && (
-                  <div className="absolute inset-0 rotate-45 rounded-sm border-2 border-white/60 animate-pulse" />
+                  <motion.div
+                    className="absolute inset-0 rotate-45 rounded-sm border-2 border-white/60"
+                    animate={{
+                      scale: [1, 1.05, 1],
+                      opacity: [0.6, 1, 0.6]
+                    }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
                 )}
 
                 {/* Day number (counter-rotated to stay upright) */}
@@ -1128,19 +1164,65 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                   {cell.day}
                 </span>
 
-                {/* Perfect day sparkles */}
+                {/* Perfect day sparkles - animated dots */}
                 {isPerfect && (
                   <>
-                    <span className="absolute top-0 right-1 text-[6px] animate-pulse">✨</span>
-                    <span className="absolute bottom-0 left-1 text-[6px] animate-pulse delay-300">✨</span>
+                    <motion.div
+                      className="absolute top-0 right-1 w-1 h-1 rounded-full bg-white"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{
+                        scale: [0, 1.5, 0],
+                        opacity: [0, 1, 0],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        delay: 0,
+                        repeat: Infinity,
+                        repeatDelay: 2,
+                      }}
+                    />
+                    <motion.div
+                      className="absolute bottom-0 left-1 w-1 h-1 rounded-full bg-white"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{
+                        scale: [0, 1.5, 0],
+                        opacity: [0, 1, 0],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        delay: 0.5,
+                        repeat: Infinity,
+                        repeatDelay: 2,
+                      }}
+                    />
+                    <motion.div
+                      className="absolute top-1 left-0 w-1 h-1 rounded-full bg-white"
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{
+                        scale: [0, 1.5, 0],
+                        opacity: [0, 1, 0],
+                      }}
+                      transition={{
+                        duration: 1.5,
+                        delay: 1,
+                        repeat: Infinity,
+                        repeatDelay: 2,
+                      }}
+                    />
                   </>
                 )}
 
                 {/* Gratitude indicator */}
                 {hasGratitude && !isPerfect && (
-                  <span className="absolute -top-0.5 -right-0.5 text-[6px]">💫</span>
+                  <motion.span
+                    className="absolute -top-0.5 -right-0.5 text-[6px]"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    💫
+                  </motion.span>
                 )}
-              </button>
+              </motion.button>
             );
           })}
         </div>
@@ -1264,6 +1346,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             <p className="text-sm text-muted-foreground text-center py-4">{t.calendarSelectDay}</p>
           )}
         </div>
+        </div>{/* End content wrapper */}
       </div>
 
       {/* Mood Patterns */}
