@@ -5,6 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Download, Share2, Copy, Check, Loader2, Image } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -236,12 +237,35 @@ export function ShareModal(props: ShareModalProps) {
           </SheetDescription>
         </SheetHeader>
 
-        {/* Preview */}
+        {/* Premium Preview Card */}
         <div className="flex-1 flex items-center justify-center py-4">
-          <div className="relative w-full max-w-[300px] aspect-square rounded-2xl overflow-hidden bg-muted shadow-xl">
+          <motion.div
+            className="relative w-full max-w-[300px] aspect-square rounded-2xl overflow-hidden"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            style={{
+              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.05) 100%)',
+              boxShadow: '0 0 30px rgba(139, 92, 246, 0.15), 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255,255,255,0.05)'
+            }}
+          >
+            {/* Shimmer effect */}
+            <motion.div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%)',
+              }}
+              animate={{ x: ['-100%', '100%'] }}
+              transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, ease: 'linear' }}
+            />
             {isGenerating ? (
               <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                >
+                  <Loader2 className="w-8 h-8 text-violet-400" />
+                </motion.div>
               </div>
             ) : imageUrl ? (
               <img
@@ -251,66 +275,115 @@ export function ShareModal(props: ShareModalProps) {
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center">
-                <Image className="w-12 h-12 text-muted-foreground" />
+                <Image className="w-12 h-12 text-white/30" />
               </div>
             )}
-          </div>
+          </motion.div>
         </div>
 
-        {/* Action buttons */}
+        {/* Premium Action Buttons */}
         <div className="grid grid-cols-3 gap-3 pt-4 pb-8">
-          <Button
-            variant="outline"
-            className="flex-col h-20 gap-2"
+          {/* Download Button */}
+          <motion.button
             onClick={handleDownload}
             disabled={!imageBlob || isGenerating}
-          >
-            <Download className="w-5 h-5" />
-            <span className="text-xs">{t.shareDownload || 'Download'}</span>
-          </Button>
-
-          <Button
-            variant="outline"
             className={cn(
-              "flex-col h-20 gap-2 transition-colors",
-              copied && "bg-emerald-500/10 border-emerald-500 text-emerald-600"
+              "flex flex-col items-center justify-center gap-2 h-20 rounded-xl transition-all",
+              "bg-white/5 backdrop-blur-sm border border-white/10",
+              "hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
             )}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(37, 99, 235, 0.2) 100%)',
+                boxShadow: '0 0 12px rgba(59, 130, 246, 0.3)'
+              }}
+            >
+              <Download className="w-5 h-5 text-blue-400" />
+            </div>
+            <span className="text-xs text-white/70">{t.shareDownload || 'Download'}</span>
+          </motion.button>
+
+          {/* Copy Button */}
+          <motion.button
             onClick={handleCopy}
             disabled={!imageBlob || isGenerating}
-          >
-            {copied ? (
-              <>
-                <Check className="w-5 h-5" />
-                <span className="text-xs">{t.shareCopied || 'Copied!'}</span>
-              </>
-            ) : (
-              <>
-                <Copy className="w-5 h-5" />
-                <span className="text-xs">{t.shareCopyLink || 'Copy'}</span>
-              </>
-            )}
-          </Button>
-
-          <Button
             className={cn(
-              "flex-col h-20 gap-2 transition-colors",
-              shared && "bg-emerald-500"
+              "flex flex-col items-center justify-center gap-2 h-20 rounded-xl transition-all",
+              copied
+                ? "bg-emerald-500/20 border border-emerald-500/40"
+                : "bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10",
+              "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
+            style={copied ? { boxShadow: '0 0 16px rgba(16, 185, 129, 0.4)' } : undefined}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{
+                background: copied
+                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.4) 0%, rgba(20, 184, 166, 0.3) 100%)'
+                  : 'linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%)',
+                boxShadow: copied
+                  ? '0 0 12px rgba(16, 185, 129, 0.4)'
+                  : '0 0 12px rgba(168, 85, 247, 0.3)'
+              }}
+            >
+              {copied ? (
+                <Check className="w-5 h-5 text-emerald-400" />
+              ) : (
+                <Copy className="w-5 h-5 text-purple-400" />
+              )}
+            </div>
+            <span className={cn("text-xs", copied ? "text-emerald-400" : "text-white/70")}>
+              {copied ? (t.shareCopied || 'Copied!') : (t.shareCopyLink || 'Copy')}
+            </span>
+          </motion.button>
+
+          {/* Share Button */}
+          <motion.button
             onClick={handleShare}
             disabled={!imageBlob || isGenerating}
-          >
-            {shared ? (
-              <>
-                <Check className="w-5 h-5" />
-                <span className="text-xs">{t.shareCopied || 'Shared!'}</span>
-              </>
-            ) : (
-              <>
-                <Share2 className="w-5 h-5" />
-                <span className="text-xs">{t.shareButton || 'Share'}</span>
-              </>
+            className={cn(
+              "flex flex-col items-center justify-center gap-2 h-20 rounded-xl transition-all",
+              shared
+                ? "bg-emerald-500/20 border border-emerald-500/40"
+                : "bg-gradient-to-br from-violet-500/20 to-purple-600/20 border border-violet-500/30",
+              "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
-          </Button>
+            style={{
+              boxShadow: shared
+                ? '0 0 16px rgba(16, 185, 129, 0.4)'
+                : '0 0 16px rgba(139, 92, 246, 0.3)'
+            }}
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <div
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{
+                background: shared
+                  ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.5) 0%, rgba(20, 184, 166, 0.4) 100%)'
+                  : 'linear-gradient(135deg, rgba(139, 92, 246, 0.5) 0%, rgba(168, 85, 247, 0.4) 100%)',
+                boxShadow: shared
+                  ? '0 0 16px rgba(16, 185, 129, 0.5)'
+                  : '0 0 16px rgba(139, 92, 246, 0.5)'
+              }}
+            >
+              {shared ? (
+                <Check className="w-5 h-5 text-white" />
+              ) : (
+                <Share2 className="w-5 h-5 text-white" />
+              )}
+            </div>
+            <span className={cn("text-xs font-medium", shared ? "text-emerald-400" : "text-violet-300")}>
+              {shared ? (t.shareCopied || 'Shared!') : (t.shareButton || 'Share')}
+            </span>
+          </motion.button>
         </div>
 
         {/* Tip */}

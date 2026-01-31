@@ -2,6 +2,7 @@ import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 import * as React from "react";
+import { motion } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
@@ -19,7 +20,7 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <SheetPrimitive.Overlay
     className={cn(
-      "fixed inset-0 z-[60] bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      "fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,
     )}
     {...props}
@@ -55,11 +56,40 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
   ({ side = "right", className, children, ...props }, ref) => (
     <SheetPortal>
       <SheetOverlay />
-      <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
-        {children}
+      <SheetPrimitive.Content
+        ref={ref}
+        className={cn(sheetVariants({ side }), "relative overflow-hidden", className)}
+        {...props}
+      >
+        {/* Cosmic background layer */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `radial-gradient(ellipse at top center,
+              rgba(139, 92, 246, 0.08) 0%, transparent 50%)`
+          }}
+        />
+
+        {/* Gradient border at top for bottom sheets */}
+        {(side === "bottom" || side === "top") && (
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+        )}
+
+        {/* Content wrapper */}
+        <div className="relative z-10">
+          {children}
+        </div>
+
+        {/* Premium close button */}
         <SheetPrimitive.Close
           aria-label="Close"
-          className="absolute right-4 top-4 rounded-lg p-1.5 opacity-70 ring-offset-background transition-all hover:opacity-100 hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+          className={cn(
+            "absolute right-4 top-4 rounded-xl p-2 z-20 transition-all",
+            "bg-white/10 backdrop-blur-sm border border-white/10",
+            "opacity-70 hover:opacity-100 hover:bg-white/20",
+            "focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:ring-offset-2 focus:ring-offset-background",
+            "disabled:pointer-events-none"
+          )}
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
@@ -71,7 +101,14 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
 const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col space-y-2 text-center sm:text-left", className)} {...props} />
+  <div className={cn("relative flex flex-col space-y-2 text-center sm:text-left", className)} {...props}>
+    {/* Subtle glow behind header */}
+    <div
+      className="absolute -top-8 left-1/2 -translate-x-1/2 w-40 h-20 rounded-full opacity-30 pointer-events-none"
+      style={{ background: 'radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%)' }}
+    />
+    {props.children}
+  </div>
 );
 SheetHeader.displayName = "SheetHeader";
 

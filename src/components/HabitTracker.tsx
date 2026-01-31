@@ -549,18 +549,71 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
       )}
 
       {isAdding && showCustomForm && (
-        <div className="mb-4 p-4 bg-secondary rounded-2xl animate-scale-in">
+        <motion.div
+          className={cn(
+            "mb-4 p-4 rounded-2xl relative overflow-hidden",
+            isPrimaryCTA
+              ? "bg-white/5 backdrop-blur-sm border border-white/10"
+              : "bg-secondary"
+          )}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          {/* Premium cosmic background */}
+          {isPrimaryCTA && (
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `radial-gradient(ellipse at top,
+                  rgba(139, 92, 246, 0.1) 0%, transparent 50%)`
+              }}
+            />
+          )}
+
           {/* Back button */}
-          <button
+          <motion.button
             onClick={() => setShowCustomForm(false)}
-            className="text-sm text-muted-foreground hover:text-foreground mb-3 flex items-center gap-1"
+            className={cn(
+              "relative text-sm mb-3 flex items-center gap-1 transition-colors",
+              isPrimaryCTA
+                ? "text-white/60 hover:text-white"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            whileHover={{ x: -2 }}
           >
             ← {t.back || 'Back'}
-          </button>
+          </motion.button>
 
-          {/* Live Preview Card */}
-          <div className="mb-4 p-4 rounded-2xl bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-sm border border-border/50 shadow-[0_4px_12px_-2px_hsl(var(--foreground)/0.05)]">
-            <p className="text-xs text-muted-foreground mb-2">{t.preview || 'Preview'}</p>
+          {/* Live Preview Card - Premium */}
+          <motion.div
+            className={cn(
+              "relative mb-4 p-4 rounded-2xl overflow-hidden",
+              isPrimaryCTA
+                ? "bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/20"
+                : "bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-sm border border-border/50"
+            )}
+            style={isPrimaryCTA ? {
+              boxShadow: '0 0 20px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255,255,255,0.05)'
+            } : {
+              boxShadow: '0 4px 12px -2px hsl(var(--foreground)/0.05)'
+            }}
+          >
+            {/* Shimmer effect for premium */}
+            {isPrimaryCTA && (
+              <motion.div
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%)',
+                }}
+                animate={{ x: ['-100%', '100%'] }}
+                transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, ease: 'linear' }}
+              />
+            )}
+            <p className={cn(
+              "text-xs mb-2",
+              isPrimaryCTA ? "text-white/60" : "text-muted-foreground"
+            )}>{t.preview || 'Preview'}</p>
             <div className="flex items-center gap-3">
               <div className={cn(
                 "w-12 h-12 rounded-xl flex items-center justify-center text-xl transition-all duration-300",
@@ -569,10 +622,16 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                 {selectedIcon}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-base truncate">
+                <p className={cn(
+                  "font-semibold text-base truncate",
+                  isPrimaryCTA ? "text-white" : "text-foreground"
+                )}>
                   {newHabitName || (t.habitNamePlaceholder || 'Enter habit name...')}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className={cn(
+                  "text-xs",
+                  isPrimaryCTA ? "text-white/60" : "text-muted-foreground"
+                )}>
                   {selectedType === 'daily' && (t.habitTypeDaily || 'Daily')}
                   {selectedType === 'multiple' && `${dailyTarget}× ${t.perDay || 'per day'}`}
                   {selectedType === 'continuous' && (t.habitTypeContinuous || 'Continuous')}
@@ -580,22 +639,35 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                 </p>
               </div>
             </div>
-          </div>
+          </motion.div>
 
+          {/* Premium Name Input */}
           <input
             type="text"
             value={newHabitName}
             onChange={(e) => setNewHabitName(e.target.value)}
             placeholder={t.habitName}
-            className="w-full p-3 bg-background rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 mb-3 transition-all"
+            className={cn(
+              "relative w-full p-3 rounded-xl mb-3 transition-all",
+              "focus:outline-none focus:ring-2",
+              isPrimaryCTA
+                ? "bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/40 focus:ring-violet-500/50 focus:border-violet-500/30"
+                : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
+            )}
+            style={isPrimaryCTA ? {
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)'
+            } : undefined}
             autoFocus
           />
 
-          <div className="mb-4">
-            <p className="text-sm font-medium text-foreground mb-2" id="icon-selector-label">{t.icon}:</p>
+          <div className="relative mb-4">
+            <p className={cn(
+              "text-sm font-medium mb-2",
+              isPrimaryCTA ? "text-white/80" : "text-foreground"
+            )} id="icon-selector-label">{t.icon}:</p>
             <div className="flex gap-2 flex-wrap" role="radiogroup" aria-labelledby="icon-selector-label">
               {habitIcons.map((icon) => (
-                <button
+                <motion.button
                   key={icon}
                   type="button"
                   role="radio"
@@ -606,158 +678,202 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                     setSelectedIcon(icon);
                   }}
                   className={cn(
-                    "btn-press w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-xl transition-all duration-200 cursor-pointer",
+                    "w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-xl transition-all duration-200 cursor-pointer",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                    selectedIcon === icon
-                      ? "bg-primary/20 ring-2 ring-primary scale-105 shadow-sm"
-                      : "bg-background hover:bg-muted hover:scale-105"
+                    isPrimaryCTA
+                      ? selectedIcon === icon
+                        ? "bg-gradient-to-br from-violet-500/30 to-purple-600/20 border border-violet-500/40"
+                        : "bg-white/5 border border-white/10 hover:bg-white/10"
+                      : selectedIcon === icon
+                        ? "bg-primary/20 ring-2 ring-primary scale-105 shadow-sm"
+                        : "bg-background hover:bg-muted hover:scale-105"
                   )}
+                  style={isPrimaryCTA && selectedIcon === icon ? {
+                    boxShadow: '0 0 16px rgba(139, 92, 246, 0.4)'
+                  } : undefined}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   {icon}
-                </button>
+                </motion.button>
               ))}
             </div>
           </div>
 
-          <div className="mb-4">
-            <p className="text-sm font-medium text-foreground mb-2" id="color-selector-label">{t.color}:</p>
+          <div className="relative mb-4">
+            <p className={cn(
+              "text-sm font-medium mb-2",
+              isPrimaryCTA ? "text-white/80" : "text-foreground"
+            )} id="color-selector-label">{t.color}:</p>
             <div className="flex gap-3" role="radiogroup" aria-labelledby="color-selector-label">
-              {habitColors.map((color) => (
-                <button
-                  key={color}
+              {habitColors.map((color) => {
+                // Map color classes to hex for glow effect
+                const glowColors: Record<string, string> = {
+                  'bg-primary': 'rgba(52, 152, 117, 0.5)',
+                  'bg-accent': 'rgba(224, 157, 107, 0.5)',
+                  'bg-mood-good': 'rgba(16, 185, 129, 0.5)',
+                  'bg-mood-okay': 'rgba(234, 179, 8, 0.5)',
+                  'bg-mood-great': 'rgba(139, 92, 246, 0.5)',
+                };
+                const glowColor = glowColors[color] || 'rgba(139, 92, 246, 0.5)';
+
+                return (
+                  <motion.button
+                    key={color}
+                    type="button"
+                    role="radio"
+                    aria-checked={selectedColor === color}
+                    aria-label={`${t.selectColor || 'Select color'} ${color.replace('bg-', '')}`}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setSelectedColor(color);
+                    }}
+                    className={cn(
+                      "w-11 h-11 min-w-[44px] min-h-[44px] rounded-full transition-all duration-200 cursor-pointer",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                      color,
+                      selectedColor === color
+                        ? isPrimaryCTA
+                          ? "ring-2 ring-offset-2 ring-white/50 scale-110"
+                          : "ring-2 ring-offset-2 ring-foreground scale-110"
+                        : "hover:scale-105"
+                    )}
+                    style={{
+                      boxShadow: selectedColor === color
+                        ? `0 0 20px ${glowColor}`
+                        : `0 2px 8px ${glowColor.replace('0.5', '0.2')}`
+                    }}
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="relative mb-4">
+            <p className={cn(
+              "text-sm font-medium mb-2",
+              isPrimaryCTA ? "text-white/80" : "text-foreground"
+            )}>{t.habitType}:</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { type: 'daily' as HabitType, icon: '✓', label: t.habitTypeDaily },
+                { type: 'multiple' as HabitType, icon: '🔄', label: t.habitTypeMultiple },
+                { type: 'continuous' as HabitType, icon: '📈', label: t.habitTypeContinuous },
+                { type: 'reduce' as HabitType, icon: '📉', label: t.habitTypeReduce || 'Reduce' },
+              ].map(({ type, icon, label }) => (
+                <motion.button
+                  key={type}
                   type="button"
-                  role="radio"
-                  aria-checked={selectedColor === color}
-                  aria-label={`${t.selectColor || 'Select color'} ${color.replace('bg-', '')}`}
                   onClick={(e) => {
                     e.preventDefault();
-                    setSelectedColor(color);
+                    setSelectedType(type);
                   }}
                   className={cn(
-                    "btn-press w-11 h-11 min-w-[44px] min-h-[44px] rounded-full transition-all duration-200 cursor-pointer",
+                    "p-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-h-[44px]",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                    "shadow-sm hover:shadow-md",
-                    color,
-                    selectedColor === color
-                      ? "ring-2 ring-offset-2 ring-foreground scale-110"
-                      : "hover:scale-105"
+                    isPrimaryCTA
+                      ? selectedType === type
+                        ? "bg-gradient-to-br from-emerald-500/30 to-teal-600/20 border border-emerald-500/40 text-white"
+                        : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                      : selectedType === type
+                        ? "bg-primary text-primary-foreground shadow-md"
+                        : "bg-background hover:bg-muted border border-border/50"
                   )}
-                />
+                  style={isPrimaryCTA && selectedType === type ? {
+                    boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)'
+                  } : undefined}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {icon} {label}
+                </motion.button>
               ))}
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <p className="text-sm font-medium text-foreground mb-2">{t.habitType}:</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setSelectedType('daily');
-                }}
-                className={cn(
-                  "btn-press p-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-h-[44px]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                  selectedType === 'daily'
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-background hover:bg-muted border border-border/50"
-                )}
-              >
-                ✓ {t.habitTypeDaily}
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setSelectedType('multiple');
-                }}
-                className={cn(
-                  "btn-press p-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-h-[44px]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                  selectedType === 'multiple'
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-background hover:bg-muted border border-border/50"
-                )}
-              >
-                🔄 {t.habitTypeMultiple}
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setSelectedType('continuous');
-                }}
-                className={cn(
-                  "btn-press p-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-h-[44px]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                  selectedType === 'continuous'
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-background hover:bg-muted border border-border/50"
-                )}
-              >
-                📈 {t.habitTypeContinuous}
-              </button>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setSelectedType('reduce');
-                }}
-                className={cn(
-                  "btn-press p-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-h-[44px]",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                  selectedType === 'reduce'
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-background hover:bg-muted border border-border/50"
-                )}
-              >
-                📉 {t.habitTypeReduce || 'Reduce'}
-              </button>
             </div>
           </div>
 
           {(selectedType === 'multiple' || selectedType === 'reduce') && (
-            <div className="mb-4">
-              <label className="text-sm text-muted-foreground mb-2 block">{t.habitDailyTarget}:</label>
+            <div className="relative mb-4">
+              <label className={cn(
+                "text-sm mb-2 block",
+                isPrimaryCTA ? "text-white/60" : "text-muted-foreground"
+              )}>{t.habitDailyTarget}:</label>
               <input
                 type="number"
                 min="1"
                 max="50"
                 value={dailyTarget}
                 onChange={(e) => setDailyTarget(safeParseInt(e.target.value, 1, 1, 50))}
-                className="w-full p-2 bg-background rounded-lg text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+                className={cn(
+                  "w-full p-2 rounded-lg transition-all",
+                  "focus:outline-none focus:ring-2",
+                  isPrimaryCTA
+                    ? "bg-white/10 backdrop-blur-sm border border-white/20 text-white focus:ring-violet-500/50"
+                    : "bg-background text-foreground focus:ring-primary/30"
+                )}
               />
             </div>
           )}
 
-          {/* Reminders Section */}
-          <div className="mb-4">
+          {/* Reminders Section - Premium */}
+          <div className={cn(
+            "relative mb-4 p-4 rounded-xl",
+            isPrimaryCTA
+              ? "bg-white/5 backdrop-blur-sm border border-white/10"
+              : "bg-secondary/50"
+          )}>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-sm text-muted-foreground">{t.reminders || 'Reminders'}</label>
-              <button
+              <label className={cn(
+                "text-sm",
+                isPrimaryCTA ? "text-white/70" : "text-muted-foreground"
+              )}>{t.reminders || 'Reminders'}</label>
+              <motion.button
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   handleAddReminder();
                 }}
-                className="text-xs px-2 py-1 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors"
+                className={cn(
+                  "text-xs px-3 py-1.5 rounded-lg transition-colors",
+                  isPrimaryCTA
+                    ? "bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30"
+                    : "bg-primary/10 text-primary hover:bg-primary/20"
+                )}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
                 + {t.addReminder || 'Add'}
-              </button>
+              </motion.button>
             </div>
 
             {reminders.length === 0 ? (
-              <p className="text-xs text-muted-foreground italic">{t.noReminders || 'No reminders set'}</p>
+              <p className={cn(
+                "text-xs italic",
+                isPrimaryCTA ? "text-white/40" : "text-muted-foreground"
+              )}>{t.noReminders || 'No reminders set'}</p>
             ) : (
               <div className="space-y-2">
                 {reminders.map((reminder, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-background rounded-lg">
+                  <div
+                    key={index}
+                    className={cn(
+                      "flex items-center gap-2 p-2 rounded-lg",
+                      isPrimaryCTA
+                        ? "bg-white/5 border border-white/10"
+                        : "bg-background"
+                    )}
+                  >
                     <input
                       type="time"
                       value={reminder.time}
                       onChange={(e) => handleReminderChange(index, 'time', e.target.value)}
-                      className="flex-1 p-1 bg-secondary rounded text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                      className={cn(
+                        "flex-1 p-1 rounded text-sm focus:outline-none focus:ring-1",
+                        isPrimaryCTA
+                          ? "bg-white/10 border border-white/20 text-white focus:ring-violet-500/50"
+                          : "bg-secondary text-foreground focus:ring-primary/30"
+                      )}
                     />
                     <div className="flex gap-1">
                       {[
@@ -769,7 +885,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                         { day: 6, label: t.sat?.slice(0, 2) || 'Sa' },
                         { day: 0, label: t.sun?.slice(0, 2) || 'Su' },
                       ].map(({ day, label }) => (
-                        <button
+                        <motion.button
                           key={day}
                           type="button"
                           onClick={(e) => {
@@ -780,46 +896,92 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                             handleReminderChange(index, 'days', newDays);
                           }}
                           className={cn(
-                            "w-10 h-10 min-w-[40px] min-h-[40px] text-xs rounded-lg transition-colors font-medium",
+                            "w-8 h-8 min-w-[32px] min-h-[32px] text-[10px] rounded-lg transition-colors font-medium",
                             "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
-                            reminder.days.includes(day)
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-secondary text-muted-foreground hover:bg-muted"
+                            isPrimaryCTA
+                              ? reminder.days.includes(day)
+                                ? "bg-gradient-to-br from-violet-500/60 to-purple-600/60 text-white"
+                                : "bg-white/5 text-white/50 hover:bg-white/10"
+                              : reminder.days.includes(day)
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary text-muted-foreground hover:bg-muted"
                           )}
+                          style={isPrimaryCTA && reminder.days.includes(day) ? {
+                            boxShadow: '0 0 8px rgba(139, 92, 246, 0.4)'
+                          } : undefined}
+                          whileTap={{ scale: 0.95 }}
                         >
                           {label}
-                        </button>
+                        </motion.button>
                       ))}
                     </div>
-                    <button
+                    <motion.button
                       type="button"
                       onClick={(e) => {
                         e.preventDefault();
                         handleRemoveReminder(index);
                       }}
-                      className="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-destructive hover:bg-destructive/10 rounded-lg"
+                      className={cn(
+                        "p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors",
+                        isPrimaryCTA
+                          ? "text-red-400 hover:bg-red-500/20"
+                          : "text-destructive hover:bg-destructive/10"
+                      )}
+                      whileTap={{ scale: 0.95 }}
                     >
-                      <X className="w-5 h-5" />
-                    </button>
+                      <X className="w-4 h-4" />
+                    </motion.button>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          <Button
-            variant="gradient"
-            size="lg"
-            onClick={(e) => {
-              e.preventDefault();
-              handleAddHabit();
-            }}
-            disabled={!newHabitName.trim()}
-            className="w-full"
-          >
-            {t.addHabit}
-          </Button>
-        </div>
+          {/* Premium Submit Button */}
+          {isPrimaryCTA ? (
+            <motion.button
+              onClick={(e) => {
+                e.preventDefault();
+                handleAddHabit();
+              }}
+              disabled={!newHabitName.trim()}
+              className={cn(
+                "relative w-full py-3.5 rounded-xl font-semibold text-white transition-all overflow-hidden",
+                newHabitName.trim()
+                  ? "bg-gradient-to-r from-emerald-500 to-teal-500"
+                  : "bg-white/10 text-white/40 cursor-not-allowed"
+              )}
+              style={newHabitName.trim() ? {
+                boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)'
+              } : undefined}
+              whileHover={newHabitName.trim() ? { scale: 1.02 } : {}}
+              whileTap={newHabitName.trim() ? { scale: 0.98 } : {}}
+            >
+              {/* Pulse ring when enabled */}
+              {newHabitName.trim() && (
+                <motion.div
+                  className="absolute inset-0 rounded-xl border-2 border-emerald-400/30"
+                  animate={{ scale: [1, 1.05], opacity: [0.5, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                />
+              )}
+              <span className="relative z-10">{t.addHabit}</span>
+            </motion.button>
+          ) : (
+            <Button
+              variant="gradient"
+              size="lg"
+              onClick={(e) => {
+                e.preventDefault();
+                handleAddHabit();
+              }}
+              disabled={!newHabitName.trim()}
+              className="w-full"
+            >
+              {t.addHabit}
+            </Button>
+          )}
+        </motion.div>
       )}
 
       {habits.length === 0 ? (
