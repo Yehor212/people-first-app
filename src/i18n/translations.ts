@@ -348,6 +348,8 @@ export interface Translations {
   totalTimes: string;
   moodDistribution: string;
   moodTrend: string;
+  habitsTrend: string;
+  focusTrend: string;
   moodHeatmap: string;
   activityHeatmap: string;
   less: string;
@@ -1824,6 +1826,8 @@ export const translations: Record<Language, Translations> = {
     totalTimes: 'Всего раз',
     moodDistribution: 'Распределение настроения',
     moodTrend: 'Тренд настроения',
+    habitsTrend: 'Тренд привычек',
+    focusTrend: 'Тренд фокуса',
     moodHeatmap: 'Календарь настроения',
     activityHeatmap: 'Обзор активности',
     less: 'Меньше',
@@ -3252,6 +3256,8 @@ export const translations: Record<Language, Translations> = {
     totalTimes: 'Total times',
     moodDistribution: 'Mood distribution',
     moodTrend: 'Mood Trend',
+    habitsTrend: 'Habits Trend',
+    focusTrend: 'Focus Trend',
     moodHeatmap: 'Mood heatmap',
     activityHeatmap: 'Activity Overview',
     less: 'Less',
@@ -4680,6 +4686,8 @@ export const translations: Record<Language, Translations> = {
     totalTimes: 'Всього разів',
     moodDistribution: 'Розподіл настрою',
     moodTrend: 'Тренд настрою',
+    habitsTrend: 'Тренд звичок',
+    focusTrend: 'Тренд фокусу',
     moodHeatmap: 'Календар настрою',
     activityHeatmap: 'Огляд активності',
     less: 'Менше',
@@ -6109,6 +6117,8 @@ export const translations: Record<Language, Translations> = {
     totalTimes: 'Veces totales',
     moodDistribution: 'Distribución del ánimo',
     moodTrend: 'Tendencia del ánimo',
+    habitsTrend: 'Tendencia de hábitos',
+    focusTrend: 'Tendencia de enfoque',
     moodHeatmap: 'Mapa de ánimo',
     activityHeatmap: 'Resumen de actividad',
     less: 'Menos',
@@ -7538,6 +7548,8 @@ export const translations: Record<Language, Translations> = {
     totalTimes: 'Insgesamt Mal',
     moodDistribution: 'Stimmungsverteilung',
     moodTrend: 'Stimmungstrend',
+    habitsTrend: 'Gewohnheitstrend',
+    focusTrend: 'Fokustrend',
     moodHeatmap: 'Stimmungs-Heatmap',
     activityHeatmap: 'Aktivitätsübersicht',
     less: 'Weniger',
@@ -8967,6 +8979,8 @@ export const translations: Record<Language, Translations> = {
     totalTimes: 'Fois au total',
     moodDistribution: 'Distribution de l\'humeur',
     moodTrend: 'Tendance de l\'humeur',
+    habitsTrend: 'Tendance des habitudes',
+    focusTrend: 'Tendance de concentration',
     moodHeatmap: 'Calendrier d\'humeur',
     activityHeatmap: 'Aperçu de l\'activité',
     less: 'Moins',

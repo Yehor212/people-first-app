@@ -82,7 +82,7 @@ function OrbitingEmotion({
 
   return (
     <motion.g
-      style={{ transformOrigin: '50px 50px' }}
+      style={{ transformOrigin: '50 50' }}
       animate={{ rotate: 360 }}
       transition={{
         duration: animationDuration,
@@ -169,7 +169,13 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
   }, [sortedEmotions]);
 
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl", className)}>
+    <div className={cn(
+      "relative overflow-hidden rounded-2xl",
+      // Light mode: add shadow and ring for visual separation
+      "shadow-lg shadow-black/10 dark:shadow-none",
+      "ring-1 ring-black/5 dark:ring-0",
+      className
+    )}>
       {/* Deep space background */}
       <div
         className="absolute inset-0"
@@ -254,7 +260,7 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
             transition={{ duration: 3, repeat: Infinity }}
           >
             <span className="text-lg font-bold text-white">{totalEntries}</span>
-            <span className="text-[8px] text-purple-300">{t.entries || 'entries'}</span>
+            <span className="text-[10px] text-purple-300">{t.entries || 'entries'}</span>
           </motion.div>
         </foreignObject>
       </svg>

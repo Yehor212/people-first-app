@@ -182,7 +182,13 @@ export function EnergyField({ data, className }: EnergyFieldProps) {
   const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
   return (
-    <div className={cn("relative overflow-hidden rounded-2xl p-4", className)}>
+    <div className={cn(
+      "relative overflow-hidden rounded-2xl p-4",
+      // Light mode: add shadow and ring for visual separation
+      "shadow-lg shadow-black/10 dark:shadow-none",
+      "ring-1 ring-black/5 dark:ring-0",
+      className
+    )}>
       {/* Dark volcanic background */}
       <div
         className="absolute inset-0"
