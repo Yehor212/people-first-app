@@ -83,11 +83,11 @@ function OrbitingEmotion({
       style={{
         left: '50%',
         top: '50%',
-        width: 0,
-        height: 0,
+        width: 1,           // Must have dimensions for Framer Motion rotation
+        height: 1,          // Must have dimensions for Framer Motion rotation
+        transformOrigin: '0 0',  // Rotate around the center point (50%, 50% of parent)
       }}
-      initial={{ rotate: angle }}
-      animate={{ rotate: angle + 360 }}
+      animate={{ rotate: [angle, angle + 360] }}
       transition={{
         duration: animationDuration,
         repeat: Infinity,
@@ -110,8 +110,7 @@ function OrbitingEmotion({
           transform: `translateX(${radiusPercent * 2.8}px)`,
         }}
         // Counter-rotate to keep emoji upright
-        initial={{ rotate: -angle }}
-        animate={{ rotate: -angle - 360 }}
+        animate={{ rotate: [-angle, -angle - 360] }}
         transition={{
           duration: animationDuration,
           repeat: Infinity,
