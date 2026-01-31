@@ -20,6 +20,8 @@ import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
 import { getEmotionScore, getEmotionLabels, EMOTION_ORDER, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
 import { getLocale } from '@/lib/timeUtils';
 import { safeParseInt } from '@/lib/validation';
+// Phase 10: Premium Stats Components
+import { ZenScoreHub, RadialDashboard, MoodWeather, WeekCrystal } from '@/components/stats';
 
 interface StatsPageProps {
   moods: MoodEntry[];
@@ -428,6 +430,95 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     return '🌙';
   };
 
+  // Phase 10: Premium Stats Calculations
+  const premiumStats = useMemo(() => {
+    // Calculate average mood score (1-5)
+    const moodScores = filteredMoods.map(m => {
+      switch (m.mood) {
+        case 'great': return 5;
+        case 'good': return 4;
+        case 'okay': return 3;
+        case 'bad': return 2;
+        case 'terrible': return 1;
+        default: return 3;
+      }
+    });
+    const avgMoodScore = moodScores.length > 0
+      ? moodScores.reduce((a, b) => a + b, 0) / moodScores.length
+      : 3;
+
+    // Calculate habit completion rate (0-100)
+    const daysInRange = range === 'week' ? 7 : range === 'month' ? 30 : 90;
+    const totalPossibleCompletions = habits.length * daysInRange;
+    const habitRate = totalPossibleCompletions > 0
+      ? Math.min(100, (stats.totalHabitCompletions / totalPossibleCompletions) * 100)
+      : 0;
+
+    // Calculate focus score (0-100 based on daily target of 60min)
+    const dailyFocusTarget = 60; // minutes
+    const avgDailyFocus = stats.totalFocusMinutes / Math.max(1, daysInRange);
+    const focusScore = Math.min(100, (avgDailyFocus / dailyFocusTarget) * 100);
+
+    // Get current mood for weather
+    const latestMood = moods.length > 0 ? moods[moods.length - 1]?.mood : 'okay';
+
+    // Calculate week score for crystal
+    const weekScore = Math.round(
+      (((avgMoodScore - 1) / 4) * 100) * 0.3 +
+      habitRate * 0.4 +
+      focusScore * 0.3
+    );
+
+    // Weekly change calculation (simplified - compare this week vs last week)
+    let weeklyChange = 0;
+    const now = new Date();
+    const oneWeekAgo = new Date(now);
+    oneWeekAgo.setDate(now.getDate() - 7);
+    const twoWeeksAgo = new Date(now);
+    twoWeeksAgo.setDate(now.getDate() - 14);
+
+    const thisWeekMoods = moods.filter(m => parseLocalDate(m.date) >= oneWeekAgo);
+    const lastWeekMoods = moods.filter(m => {
+      const date = parseLocalDate(m.date);
+      return date >= twoWeeksAgo && date < oneWeekAgo;
+    });
+
+    if (thisWeekMoods.length > 0 && lastWeekMoods.length > 0) {
+      const thisWeekAvg = thisWeekMoods.reduce((sum, m) => {
+        switch (m.mood) {
+          case 'great': return sum + 5;
+          case 'good': return sum + 4;
+          case 'okay': return sum + 3;
+          case 'bad': return sum + 2;
+          case 'terrible': return sum + 1;
+          default: return sum + 3;
+        }
+      }, 0) / thisWeekMoods.length;
+
+      const lastWeekAvg = lastWeekMoods.reduce((sum, m) => {
+        switch (m.mood) {
+          case 'great': return sum + 5;
+          case 'good': return sum + 4;
+          case 'okay': return sum + 3;
+          case 'bad': return sum + 2;
+          case 'terrible': return sum + 1;
+          default: return sum + 3;
+        }
+      }, 0) / lastWeekMoods.length;
+
+      weeklyChange = Math.round(((thisWeekAvg - lastWeekAvg) / lastWeekAvg) * 100);
+    }
+
+    return {
+      moodScore: avgMoodScore,
+      habitRate: Math.round(habitRate),
+      focusScore: Math.round(focusScore),
+      currentMood: latestMood as 'great' | 'good' | 'okay' | 'bad' | 'terrible',
+      weekScore,
+      weeklyChange,
+    };
+  }, [filteredMoods, habits, stats, range, moods]);
+
   const heatmapDays = useMemo(() => {
     const now = new Date();
     const year = now.getFullYear();
@@ -542,6 +633,28 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           </button>
         )}
       </div>
+
+      {/* Phase 10: Premium Stats Components */}
+      <ZenScoreHub
+        moodScore={premiumStats.moodScore}
+        habitRate={premiumStats.habitRate}
+        focusScore={premiumStats.focusScore}
+        streakDays={stats.currentStreak}
+        weeklyChange={premiumStats.weeklyChange}
+      />
+
+      {/* Mood Weather + Week Crystal side by side */}
+      <div className="grid grid-cols-2 gap-3">
+        <MoodWeather mood={premiumStats.currentMood} />
+        <WeekCrystal score={premiumStats.weekScore} />
+      </div>
+
+      {/* Radial Dashboard */}
+      <RadialDashboard
+        moodPercent={Math.round(((premiumStats.moodScore - 1) / 4) * 100)}
+        habitsPercent={premiumStats.habitRate}
+        focusPercent={premiumStats.focusScore}
+      />
 
       {/* v1.4.0: Weekly Calendar - moved from My World tab */}
       <WeeklyCalendar moods={moods} habits={habits} />
