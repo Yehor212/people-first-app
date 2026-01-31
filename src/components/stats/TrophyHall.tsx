@@ -8,8 +8,9 @@
  * - 3D flip cards for each achievement
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Share2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { FireIcon, StarIcon, TrophyIcon, TargetIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -222,6 +223,55 @@ function AchievementCard({
 
 export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }: TrophyHallProps) {
   const { t } = useLanguage();
+  const [isSharing, setIsSharing] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Share achievements as image
+  const handleShare = async () => {
+    if (!cardRef.current || isSharing) return;
+    setIsSharing(true);
+
+    try {
+      // Lazy load html2canvas
+      const html2canvas = (await import('html2canvas')).default;
+
+      // Generate image
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: '#0a0a0a',
+        scale: 2,
+        useCORS: true,
+      });
+
+      // Convert to blob
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((b) => {
+          b ? resolve(b) : reject(new Error('Failed to create blob'));
+        }, 'image/png', 1.0);
+      });
+
+      // Share or download
+      const file = new File([blob], 'zenflow-achievements.png', { type: 'image/png' });
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: 'My ZenFlow Achievements',
+          text: `🏆 ${streak} day streak | ⏱️ ${focusMinutes} focus mins | ✅ ${habitsCompleted} habits`,
+        });
+      } else {
+        // Fallback: download
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'zenflow-achievements.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch (error) {
+      console.error('Share failed:', error);
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   const achievements: Achievement[] = useMemo(() => [
     { id: 'streak', type: 'streak', value: streak, label: t.currentStreak || 'Current Streak', icon: 'fire' },
@@ -249,13 +299,42 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
   []);
 
   return (
-    <div className={cn(
-      "relative overflow-hidden rounded-2xl",
-      // Light mode: add shadow and ring for visual separation
-      "shadow-lg shadow-black/10 dark:shadow-none",
-      "ring-1 ring-black/5 dark:ring-0",
-      className
-    )}>
+    <div
+      ref={cardRef}
+      className={cn(
+        "relative overflow-hidden rounded-2xl",
+        // Light mode: add shadow and ring for visual separation
+        "shadow-lg shadow-black/10 dark:shadow-none",
+        "ring-1 ring-black/5 dark:ring-0",
+        className
+      )}
+    >
+      {/* Share button */}
+      <motion.button
+        onClick={handleShare}
+        disabled={isSharing}
+        className={cn(
+          "absolute top-3 right-3 z-20 p-2.5 rounded-full transition-all",
+          "bg-amber-500/20 hover:bg-amber-500/40",
+          "backdrop-blur-sm border border-amber-500/30",
+          isSharing && "opacity-50 cursor-wait"
+        )}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        aria-label={t.shareAchievements || 'Share achievements'}
+      >
+        {isSharing ? (
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          >
+            <Share2 className="w-4 h-4 text-amber-200" />
+          </motion.div>
+        ) : (
+          <Share2 className="w-4 h-4 text-amber-200" />
+        )}
+      </motion.button>
+
       {/* Dark temple background */}
       <div
         className="absolute inset-0"
