@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ChevronRight } from 'lucide-react';
 import { setCalendarPosition } from './FlyingMoodEmoji';
+import { EmojiOrIcon } from '@/components/icons';
 
 interface DailyProgressProps {
   moods: MoodEntry[];
@@ -18,6 +19,7 @@ interface ProgressItem {
   key: string;
   label: string;
   emoji: string;
+  iconName?: string;
   completedEmoji: string;
   completed: boolean;
   progress?: string;
@@ -58,6 +60,7 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
       key: 'habits',
       label: t.habits || 'Habits',
       emoji: '🎯',
+      iconName: 'target',
       completedEmoji: '✅',
       completed: progress.habits.total > 0 && progress.habits.completed >= progress.habits.total,
       progress: progress.habits.total > 0 ? `${progress.habits.completed}/${progress.habits.total}` : undefined,
@@ -159,9 +162,11 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
                 ? `${item.color} bg-opacity-20`
                 : "bg-primary/10"
             )}>
-              <span className="text-xl">
-                {item.completed ? item.completedEmoji : item.emoji}
-              </span>
+              {item.completed ? (
+                <span className="text-xl">{item.completedEmoji}</span>
+              ) : (
+                <EmojiOrIcon emoji={item.emoji} iconName={item.iconName} size="sm" />
+              )}
             </div>
             <span className={cn(
               "text-xs font-medium truncate w-full text-center",

@@ -1,9 +1,10 @@
 /**
  * ActivityHeatMap - GitHub-style activity contribution graph
- * Part of v1.3.0 UI redesign
+ * Phase 12: Premium upgrade with glow effects and staggered animations
  */
 
 import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 interface ActivityData {
@@ -24,12 +25,37 @@ interface ActivityHeatMapProps {
   };
 }
 
+// Premium level colors with glow shadows
+const LEVEL_STYLES = {
+  0: {
+    bg: 'bg-secondary',
+    shadow: ''
+  },
+  1: {
+    bg: 'bg-[hsl(var(--chart-activity-1))]',
+    shadow: 'shadow-[0_0_6px_hsl(var(--chart-activity-1)/0.5)]'
+  },
+  2: {
+    bg: 'bg-[hsl(var(--chart-activity-2))]',
+    shadow: 'shadow-[0_0_8px_hsl(var(--chart-activity-2)/0.6)]'
+  },
+  3: {
+    bg: 'bg-[hsl(var(--chart-activity-3))]',
+    shadow: 'shadow-[0_0_10px_hsl(var(--chart-activity-3)/0.7)]'
+  },
+  4: {
+    bg: 'bg-[hsl(var(--chart-activity-4))]',
+    shadow: 'shadow-[0_0_12px_hsl(var(--chart-activity-4)/0.8)]'
+  }
+} as const;
+
+// Keep simple array for legend
 const LEVEL_COLORS = [
-  'bg-secondary',                                      // 0 - no activity
-  'bg-[hsl(var(--chart-activity-1))]',                 // 1 - low
-  'bg-[hsl(var(--chart-activity-2))]',                 // 2 - medium
-  'bg-[hsl(var(--chart-activity-3))]',                 // 3 - high
-  'bg-[hsl(var(--chart-activity-4))]',                 // 4 - highest
+  'bg-secondary',
+  'bg-[hsl(var(--chart-activity-1))]',
+  'bg-[hsl(var(--chart-activity-2))]',
+  'bg-[hsl(var(--chart-activity-3))]',
+  'bg-[hsl(var(--chart-activity-4))]',
 ] as const;
 
 const DEFAULT_DAY_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -103,81 +129,121 @@ export function ActivityHeatMap({
     return { weeks, monthLabels };
   }, [data, months, labels.monthNames]);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+
   return (
-    <div className={cn('bg-card rounded-2xl p-4 zen-shadow-card', className)}>
-      <h3 className="text-sm font-semibold text-foreground mb-4">{labels.title}</h3>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className={cn('relative overflow-hidden bg-card/80 backdrop-blur-sm rounded-2xl p-4 zen-shadow-card border border-border/50', className)}
+    >
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--chart-activity-4)/0.03)] to-transparent pointer-events-none" />
 
-      <div className="overflow-x-auto">
-        <div className="inline-flex flex-col gap-1 min-w-max">
-          {/* Month labels row */}
-          <div className="flex ml-7">
-            {monthLabels.map((m, i) => (
-              <div
-                key={i}
-                className="text-xs text-muted-foreground"
-                style={{
-                  position: 'relative',
-                  left: `${m.weekIndex * 12}px`,
-                  marginRight: i < monthLabels.length - 1
-                    ? `${(monthLabels[i + 1]?.weekIndex - m.weekIndex - 3) * 12}px`
-                    : 0
-                }}
-              >
-                {m.label}
-              </div>
-            ))}
-          </div>
+      <div className="relative">
+        <h3 className="text-sm font-semibold text-foreground mb-4">{labels.title}</h3>
 
-          {/* Grid */}
-          <div className="flex gap-[2px]">
-            {/* Day labels column */}
-            <div className="flex flex-col gap-[2px] mr-1 justify-center">
-              {(labels.dayNames || DEFAULT_DAY_NAMES).map((day, i) => (
+        <div className="overflow-x-auto">
+          <div className="inline-flex flex-col gap-1 min-w-max">
+            {/* Month labels row */}
+            <div className="flex ml-7">
+              {monthLabels.map((m, i) => (
                 <div
                   key={i}
-                  className={cn(
-                    "w-3 h-3 text-xs text-muted-foreground text-right leading-3",
-                    i % 2 === 0 ? "opacity-100" : "opacity-0" // Show only Sun, Tue, Thu, Sat
-                  )}
+                  className="text-xs text-muted-foreground"
+                  style={{
+                    position: 'relative',
+                    left: `${m.weekIndex * 12}px`,
+                    marginRight: i < monthLabels.length - 1
+                      ? `${(monthLabels[i + 1]?.weekIndex - m.weekIndex - 3) * 12}px`
+                      : 0
+                  }}
                 >
-                  {day}
+                  {m.label}
                 </div>
               ))}
             </div>
 
-            {/* Weeks */}
-            {weeks.map((week, weekIndex) => (
-              <div key={weekIndex} className="flex flex-col gap-[2px]">
-                {week.map((day, dayIndex) => (
+            {/* Grid with staggered entrance */}
+            <div className="flex gap-[2px]">
+              {/* Day labels column */}
+              <div className="flex flex-col gap-[2px] mr-1 justify-center">
+                {(labels.dayNames || DEFAULT_DAY_NAMES).map((day, i) => (
                   <div
-                    key={`${weekIndex}-${dayIndex}`}
+                    key={i}
                     className={cn(
-                      'w-[10px] h-[10px] rounded-[2px] transition-all duration-200',
-                      LEVEL_COLORS[day.level],
-                      day.date > new Date().toISOString().split('T')[0] && 'opacity-30',
-                      'hover:scale-125 hover:ring-1 hover:ring-primary/40'
+                      "w-3 h-3 text-xs text-muted-foreground text-right leading-3",
+                      i % 2 === 0 ? "opacity-100" : "opacity-0"
                     )}
-                    title={`${day.date}: Level ${day.level}`}
-                  />
+                  >
+                    {day}
+                  </div>
                 ))}
               </div>
-            ))}
-          </div>
 
-          {/* Legend */}
-          <div className="flex items-center justify-end gap-1 mt-2 text-xs text-muted-foreground">
-            <span>{labels.less}</span>
-            {LEVEL_COLORS.map((color, i) => (
-              <div
-                key={i}
-                className={cn('w-[10px] h-[10px] rounded-[2px]', color)}
-              />
-            ))}
-            <span>{labels.more}</span>
+              {/* Weeks with animation */}
+              {weeks.map((week, weekIndex) => (
+                <div key={weekIndex} className="flex flex-col gap-[2px]">
+                  {week.map((day, dayIndex) => {
+                    const levelStyle = LEVEL_STYLES[day.level as keyof typeof LEVEL_STYLES];
+                    const isFuture = day.date > todayStr;
+                    const isToday = day.date === todayStr;
+
+                    return (
+                      <motion.div
+                        key={`${weekIndex}-${dayIndex}`}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{
+                          delay: (weekIndex * 7 + dayIndex) * 0.003,
+                          type: 'spring',
+                          stiffness: 500,
+                          damping: 30
+                        }}
+                        whileHover={{
+                          scale: 1.4,
+                          transition: { duration: 0.15 }
+                        }}
+                        className={cn(
+                          'w-[10px] h-[10px] rounded-[2px] transition-shadow duration-200 cursor-pointer',
+                          levelStyle.bg,
+                          day.level > 0 && levelStyle.shadow,
+                          isFuture && 'opacity-30',
+                          isToday && 'ring-2 ring-primary/60 ring-offset-1 ring-offset-background',
+                          'hover:ring-2 hover:ring-primary/50'
+                        )}
+                        title={`${day.date}: Level ${day.level}`}
+                      />
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+
+            {/* Premium Legend */}
+            <div className="flex items-center justify-end gap-1.5 mt-3 text-xs text-muted-foreground">
+              <span>{labels.less}</span>
+              {[0, 1, 2, 3, 4].map((level) => {
+                const style = LEVEL_STYLES[level as keyof typeof LEVEL_STYLES];
+                return (
+                  <motion.div
+                    key={level}
+                    whileHover={{ scale: 1.3 }}
+                    className={cn(
+                      'w-[10px] h-[10px] rounded-[2px] transition-all duration-200',
+                      style.bg,
+                      level > 0 && style.shadow
+                    )}
+                  />
+                );
+              })}
+              <span>{labels.more}</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 

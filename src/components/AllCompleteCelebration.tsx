@@ -8,6 +8,7 @@ import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Star, Sparkles, Heart } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EmojiOrIcon, IconName } from '@/components/icons';
 
 interface AllCompleteCelebrationProps {
   streak?: number;
@@ -17,12 +18,12 @@ export const AllCompleteCelebration = memo(function AllCompleteCelebration({ str
   const { t } = useLanguage();
 
   // Celebration messages based on streak
-  const getMessage = () => {
-    if (streak >= 30) return { emoji: '👑', text: t.allCompleteLegend || 'Legendary day!' };
-    if (streak >= 14) return { emoji: '💎', text: t.allCompleteAmazing || 'Amazing work!' };
-    if (streak >= 7) return { emoji: '🌟', text: t.allCompleteGreat || 'Great job!' };
-    if (streak >= 3) return { emoji: '✨', text: t.allCompleteNice || 'Nice work!' };
-    return { emoji: '🎉', text: t.allComplete || 'All done!' };
+  const getMessage = (): { emoji: string; iconName: IconName; text: string } => {
+    if (streak >= 30) return { emoji: '👑', iconName: 'crown', text: t.allCompleteLegend || 'Legendary day!' };
+    if (streak >= 14) return { emoji: '💎', iconName: 'diamond', text: t.allCompleteAmazing || 'Amazing work!' };
+    if (streak >= 7) return { emoji: '🌟', iconName: 'star', text: t.allCompleteGreat || 'Great job!' };
+    if (streak >= 3) return { emoji: '✨', iconName: 'sparkles', text: t.allCompleteNice || 'Nice work!' };
+    return { emoji: '🎉', iconName: 'celebration', text: t.allComplete || 'All done!' };
   };
 
   const message = getMessage();
@@ -67,7 +68,9 @@ export const AllCompleteCelebration = memo(function AllCompleteCelebration({ str
         animate={{ y: [0, -8, 0] }}
         transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <div className="text-7xl">{message.emoji}</div>
+        <div className="flex items-center justify-center">
+          <EmojiOrIcon emoji={message.emoji} iconName={message.iconName} size="xl" />
+        </div>
         <motion.div
           className="absolute -right-2 -top-2"
           animate={{ rotate: [0, 15, 0, -15, 0], scale: [1, 1.1, 1] }}
@@ -105,7 +108,7 @@ export const AllCompleteCelebration = memo(function AllCompleteCelebration({ str
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4 }}
         >
-          <span className="text-xl">🔥</span>
+          <EmojiOrIcon emoji="🔥" iconName="fire" size="sm" />
           <span className="font-bold text-orange-500 text-lg">{streak}</span>
           <span className="text-sm text-orange-400">{t.daysStreak || 'days streak'}</span>
         </motion.div>
@@ -120,7 +123,7 @@ export const AllCompleteCelebration = memo(function AllCompleteCelebration({ str
       >
         <Heart className="w-4 h-4 text-pink-500" />
         <span>{t.allCompleteSupportive || 'See you tomorrow!'}</span>
-        <span>💚</span>
+        <EmojiOrIcon emoji="💚" iconName="heart" size="xs" />
       </motion.div>
     </motion.div>
   );

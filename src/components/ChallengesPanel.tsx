@@ -8,6 +8,7 @@ import { badgeDefinitions, getBadgeById, getRarityColor, getRarityGradient } fro
 import { ShareModal } from './ShareModal';
 import { hapticTap } from '@/lib/haptics';
 import { VirtualGrid, shouldVirtualize } from '@/components/ui/virtual-list';
+import { EmojiOrIcon } from '@/components/icons';
 
 interface ChallengesPanelProps {
   activeChallenges: Challenge[];
@@ -204,7 +205,7 @@ export function ChallengesPanel({
                           {/* Reward Badge */}
                           {badge && (
                             <div className="flex items-center gap-2 mt-3 p-2 bg-card rounded-xl">
-                              <div className="text-2xl">{badge.icon}</div>
+                              <EmojiOrIcon emoji={badge.icon} iconName={badge.iconName} size="md" />
                               <div className="flex-1">
                                 <p className="text-xs text-muted-foreground">
                                   {t.reward || 'Reward'}
@@ -266,7 +267,7 @@ export function ChallengesPanel({
                         {/* Reward Badge */}
                         {badge && (
                           <div className="flex items-center gap-2 mb-3 p-2 bg-card rounded-xl">
-                            <div className="text-2xl">{badge.icon}</div>
+                            <EmojiOrIcon emoji={badge.icon} iconName={badge.iconName} size="md" />
                             <div className="flex-1">
                               <p className="text-xs text-muted-foreground">
                                 {t.reward || 'Reward'}
@@ -341,8 +342,12 @@ export function ChallengesPanel({
                         </button>
                       )}
                       <div className="text-center">
-                        <div className={`text-5xl mb-3 ${!badge.unlocked && 'grayscale'}`}>
-                          {badge.unlocked ? badge.icon : <Lock className="w-12 h-12 mx-auto text-muted-foreground" />}
+                        <div className={`flex items-center justify-center mb-3 ${!badge.unlocked && 'grayscale'}`}>
+                          {badge.unlocked ? (
+                            <EmojiOrIcon emoji={badge.icon} iconName={badge.iconName} size="xl" />
+                          ) : (
+                            <Lock className="w-12 h-12 text-muted-foreground" />
+                          )}
                         </div>
                         <h3 className={`font-semibold mb-1 ${badge.unlocked ? getRarityColor(badge.rarity) : 'text-muted-foreground'}`}>
                           {badge.title[language]}
@@ -384,8 +389,12 @@ export function ChallengesPanel({
                         </button>
                       )}
                       <div className="text-center">
-                        <div className={`text-5xl mb-3 ${!badge.unlocked && 'grayscale'}`}>
-                          {badge.unlocked ? badge.icon : <Lock className="w-12 h-12 mx-auto text-muted-foreground" />}
+                        <div className={`flex items-center justify-center mb-3 ${!badge.unlocked && 'grayscale'}`}>
+                          {badge.unlocked ? (
+                            <EmojiOrIcon emoji={badge.icon} iconName={badge.iconName} size="xl" />
+                          ) : (
+                            <Lock className="w-12 h-12 text-muted-foreground" />
+                          )}
                         </div>
                         <h3 className={`font-semibold mb-1 ${badge.unlocked ? getRarityColor(badge.rarity) : 'text-muted-foreground'}`}>
                           {badge.title[language]}

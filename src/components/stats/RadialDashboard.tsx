@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import { Heart, Target, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EmojiOrIcon } from '@/components/icons';
 
 interface RingData {
   id: string;
@@ -18,6 +19,7 @@ interface RingData {
   color: string;
   icon: React.ReactNode;
   emoji: string;
+  iconName: string;
 }
 
 interface RadialDashboardProps {
@@ -55,6 +57,7 @@ export function RadialDashboard({
       color: 'hsl(var(--chart-mood))',
       icon: <Heart className="w-4 h-4" />,
       emoji: '💜',
+      iconName: 'heart',
     },
     {
       id: 'habits',
@@ -63,6 +66,7 @@ export function RadialDashboard({
       color: 'hsl(var(--chart-habit))',
       icon: <Target className="w-4 h-4" />,
       emoji: '🎯',
+      iconName: 'target',
     },
     {
       id: 'focus',
@@ -71,6 +75,7 @@ export function RadialDashboard({
       color: 'hsl(var(--chart-focus))',
       icon: <Brain className="w-4 h-4" />,
       emoji: '🧠',
+      iconName: 'brain',
     },
   ], [t, moodPercent, habitsPercent, focusPercent]);
 
@@ -161,9 +166,13 @@ export function RadialDashboard({
                 animate={{ scale: 1, opacity: 1 }}
                 className="text-center"
               >
-                <span className="text-2xl" role="img" aria-hidden="true">
-                  {rings.find(r => r.id === activeRing)?.emoji}
-                </span>
+                <div className="flex justify-center mb-1">
+                  <EmojiOrIcon
+                    emoji={rings.find(r => r.id === activeRing)?.emoji || ''}
+                    iconName={rings.find(r => r.id === activeRing)?.iconName}
+                    size="lg"
+                  />
+                </div>
                 <p className="text-2xl font-bold text-foreground">
                   {rings.find(r => r.id === activeRing)?.value}%
                 </p>

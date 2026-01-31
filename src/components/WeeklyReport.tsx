@@ -3,6 +3,7 @@ import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { safeAverage } from '@/lib/validation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { TrendingUp, TrendingDown, Minus, Flame, Brain, Heart, Target, Calendar, Award, Sparkles, CalendarDays, X } from 'lucide-react';
+import { EmojiOrIcon } from '@/components/icons';
 import { cn, formatDate, parseLocalDate } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -112,24 +113,28 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
     if (completion >= 90) {
       return {
         emoji: '🏆',
+        iconName: 'trophy' as const,
         title: t.incredibleWeek,
         message: t.pathToMastery
       };
     } else if (completion >= 70) {
       return {
         emoji: '🌟',
+        iconName: 'star' as const,
         title: t.greatWork,
         message: t.keepMomentum
       };
     } else if (completion >= 50) {
       return {
         emoji: '💪',
+        iconName: 'muscle' as const,
         title: t.goodProgress,
         message: t.everyStepCounts
       };
     } else {
       return {
         emoji: '🌱',
+        iconName: 'seedling' as const,
         title: t.newWeekOpportunities,
         message: t.startSmall
       };
@@ -180,7 +185,11 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
                 transition={{ delay: 0.2, type: 'spring', stiffness: 300 }}
                 className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-background/80 backdrop-blur-sm shadow-lg mb-4"
               >
-                <span className="text-5xl">{motivation.emoji}</span>
+                <EmojiOrIcon
+                  emoji={motivation.emoji}
+                  iconName={motivation.iconName}
+                  size="xl"
+                />
               </motion.div>
               <h2 id="weekly-report-title" className="text-2xl sm:text-3xl font-bold mb-2 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 {t.weeklyReport}

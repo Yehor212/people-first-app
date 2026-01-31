@@ -36,6 +36,7 @@ export interface Achievement {
   name: string;
   description: string;
   icon: string;
+  iconName?: string;  // Premium SVG icon name (fire, star, diamond, etc.)
   rarity: BadgeRarity;
   points: number;
   unlockedAt?: number;
@@ -78,6 +79,7 @@ export const ACHIEVEMENTS: Record<AchievementId, Omit<Achievement, 'unlockedAt' 
     name: 'Первая привычка',
     description: 'Создайте свою первую привычку',
     icon: '🎯',
+    iconName: 'target',
     rarity: 'common',
     points: 10,
   },
@@ -104,6 +106,7 @@ export const ACHIEVEMENTS: Record<AchievementId, Omit<Achievement, 'unlockedAt' 
     name: 'На старте!',
     description: 'Ведите дневник 3 дня подряд',
     icon: '🔥',
+    iconName: 'fire',
     rarity: 'common',
     points: 25,
     total: 3,
@@ -113,6 +116,7 @@ export const ACHIEVEMENTS: Record<AchievementId, Omit<Achievement, 'unlockedAt' 
     name: 'Неделя силы',
     description: 'Ведите дневник 7 дней подряд',
     icon: '💪',
+    iconName: 'muscle',
     rarity: 'rare',
     points: 50,
     total: 7,
@@ -122,6 +126,7 @@ export const ACHIEVEMENTS: Record<AchievementId, Omit<Achievement, 'unlockedAt' 
     name: 'Месячный марафон',
     description: 'Ведите дневник 30 дней подряд',
     icon: '🏆',
+    iconName: 'trophy',
     rarity: 'epic',
     points: 150,
     total: 30,
@@ -131,6 +136,7 @@ export const ACHIEVEMENTS: Record<AchievementId, Omit<Achievement, 'unlockedAt' 
     name: 'Легенда дисциплины',
     description: 'Ведите дневник 100 дней подряд',
     icon: '👑',
+    iconName: 'crown',
     rarity: 'legendary',
     points: 500,
     total: 100,
@@ -142,6 +148,7 @@ export const ACHIEVEMENTS: Record<AchievementId, Omit<Achievement, 'unlockedAt' 
     name: 'Мастер привычек',
     description: 'Выполните 100 привычек',
     icon: '✨',
+    iconName: 'sparkles',
     rarity: 'epic',
     points: 100,
     total: 100,
@@ -153,6 +160,7 @@ export const ACHIEVEMENTS: Record<AchievementId, Omit<Achievement, 'unlockedAt' 
     name: 'Воин фокуса',
     description: 'Завершите 50 часов фокус-сессий',
     icon: '🧘',
+    iconName: 'brain',
     rarity: 'epic',
     points: 200,
     total: 50,
@@ -164,6 +172,7 @@ export const ACHIEVEMENTS: Record<AchievementId, Omit<Achievement, 'unlockedAt' 
     name: 'Благодарное сердце',
     description: 'Запишите 100 благодарностей',
     icon: '💖',
+    iconName: 'heart',
     rarity: 'rare',
     points: 75,
     total: 100,
@@ -186,6 +195,7 @@ export const ACHIEVEMENTS: Record<AchievementId, Omit<Achievement, 'unlockedAt' 
     name: 'Идеальная неделя',
     description: 'Выполните все привычки 7 дней подряд',
     icon: '⭐',
+    iconName: 'star',
     rarity: 'epic',
     points: 120,
     total: 7,
@@ -196,6 +206,7 @@ export const ACHIEVEMENTS: Record<AchievementId, Omit<Achievement, 'unlockedAt' 
     name: 'Мастер дзен',
     description: 'Достигните 1000 XP',
     icon: '🌟',
+    iconName: 'star',
     rarity: 'legendary',
     points: 250,
     total: 1000,
@@ -216,6 +227,7 @@ export const ACHIEVEMENTS: Record<AchievementId, Omit<Achievement, 'unlockedAt' 
     name: 'Король постоянства',
     description: 'Ведите дневник 365 дней подряд',
     icon: '🎖️',
+    iconName: 'medal',
     rarity: 'legendary',
     points: 1000,
     total: 365,

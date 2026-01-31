@@ -6,6 +6,7 @@ export const badgeDefinitions: Badge[] = [
     id: 'badge_streak_7',
     category: 'streak',
     icon: '🔥',
+    iconName: 'fire',
     title: {
       en: 'Week Warrior',
       ru: 'Воин недели',
@@ -30,6 +31,7 @@ export const badgeDefinitions: Badge[] = [
     id: 'badge_streak_30',
     category: 'streak',
     icon: '🌟',
+    iconName: 'star',
     title: {
       en: 'Monthly Master',
       ru: 'Мастер месяца',
@@ -54,6 +56,7 @@ export const badgeDefinitions: Badge[] = [
     id: 'badge_streak_100',
     category: 'streak',
     icon: '💎',
+    iconName: 'diamond',
     title: {
       en: 'Century Legend',
       ru: 'Легенда столетия',
@@ -80,6 +83,7 @@ export const badgeDefinitions: Badge[] = [
     id: 'badge_focus_300',
     category: 'focus',
     icon: '🎯',
+    iconName: 'target',
     title: {
       en: 'Focus Initiate',
       ru: 'Посвященный в фокус',
@@ -104,6 +108,7 @@ export const badgeDefinitions: Badge[] = [
     id: 'badge_focus_1000',
     category: 'focus',
     icon: '⚡',
+    iconName: 'lightning',
     title: {
       en: 'Deep Work Master',
       ru: 'Мастер глубокой работы',
@@ -128,6 +133,7 @@ export const badgeDefinitions: Badge[] = [
     id: 'badge_focus_3000',
     category: 'focus',
     icon: '🧠',
+    iconName: 'brain',
     title: {
       en: 'Concentration Virtuoso',
       ru: 'Виртуоз концентрации',
@@ -204,6 +210,7 @@ export const badgeDefinitions: Badge[] = [
     id: 'badge_habit_50',
     category: 'habit',
     icon: '💪',
+    iconName: 'heart',
     title: {
       en: 'Habit Builder',
       ru: 'Строитель привычек',
@@ -228,6 +235,7 @@ export const badgeDefinitions: Badge[] = [
     id: 'badge_habit_200',
     category: 'habit',
     icon: '🏆',
+    iconName: 'trophy',
     title: {
       en: 'Habit Hero',
       ru: 'Герой привычек',
@@ -252,6 +260,7 @@ export const badgeDefinitions: Badge[] = [
     id: 'badge_habit_500',
     category: 'habit',
     icon: '👑',
+    iconName: 'crown',
     title: {
       en: 'Habit Royalty',
       ru: 'Королевская привычка',
@@ -302,6 +311,7 @@ export const badgeDefinitions: Badge[] = [
     id: 'badge_special_perfectionist',
     category: 'special',
     icon: '⭐',
+    iconName: 'star',
     title: {
       en: 'Perfectionist',
       ru: 'Перфекционист',

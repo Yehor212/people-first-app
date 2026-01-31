@@ -11,6 +11,7 @@ import { Sparkles, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } fro
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ParticleBackground } from './ParticleBackground';
+import { EmojiOrIcon } from '@/components/icons';
 
 interface ZenScoreHubProps {
   /** Average mood score (1-5) */
@@ -102,30 +103,34 @@ export function ZenScoreHub({
   const circumference = 2 * Math.PI * 45; // radius = 45
   const strokeDashoffset = circumference - (zenScore / 100) * circumference;
 
-  // Breakdown items
+  // Breakdown items with premium SVG icons
   const breakdownItems = [
     {
       label: t.mood || 'Mood',
       value: Math.round(((moodScore - 1) / 4) * 100),
       emoji: '😊',
+      iconName: 'heart',
       color: 'text-[hsl(var(--chart-mood))]'
     },
     {
       label: t.habits || 'Habits',
       value: Math.round(habitRate),
       emoji: '🎯',
+      iconName: 'target',
       color: 'text-[hsl(var(--chart-habit))]'
     },
     {
       label: t.focus || 'Focus',
       value: Math.round(focusScore),
       emoji: '🧠',
+      iconName: 'brain',
       color: 'text-[hsl(var(--chart-focus))]'
     },
     {
       label: t.streak || 'Streak',
       value: streakDays,
       emoji: '🔥',
+      iconName: 'fire',
       color: 'text-orange-500',
       suffix: 'd'
     },
@@ -282,9 +287,14 @@ export function ZenScoreHub({
                     transition={{ delay: index * 0.1 }}
                     className="text-center"
                   >
-                    <span className="text-xl" role="img" aria-label={item.label}>
-                      {item.emoji}
-                    </span>
+                    <div className="flex justify-center mb-1">
+                      <EmojiOrIcon
+                        emoji={item.emoji}
+                        iconName={item.iconName}
+                        size="sm"
+                        animated={false}
+                      />
+                    </div>
                     <p className={cn('text-lg font-bold tabular-nums', item.color)}>
                       {item.value}{item.suffix || '%'}
                     </p>

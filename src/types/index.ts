@@ -192,7 +192,8 @@ export type BadgeCategory =
 export interface Badge {
   id: string;
   category: BadgeCategory;
-  icon: string;               // Эмодзи или иконка
+  icon: string;               // Эмодзи (fallback)
+  iconName?: string;          // Premium SVG icon name (fire, star, diamond, etc.)
   title: Record<string, string>;
   description: Record<string, string>;
   requirement: number;        // Требование для получения

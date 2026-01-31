@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 import { Flame, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ComboState, getComboMessage, formatTimeRemaining } from '@/lib/adhdHooks';
+import { PremiumIcon } from '@/components/icons';
 
 interface ComboIndicatorProps {
   combo: ComboState;
@@ -163,7 +164,7 @@ export function ComboIndicatorCompact({ combo }: ComboIndicatorProps) {
     >
       {combo.count >= 5 && <Flame className="w-3 h-3" />}
       {combo.count}x
-      {isMaxCombo && '🔥'}
+      {isMaxCombo && <PremiumIcon name="fire" size="xs" />}
     </div>
   );
 }

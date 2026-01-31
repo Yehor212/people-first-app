@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EmojiOrIcon } from '@/components/icons';
 
 /**
  * Streak Celebration - Duolingo-style fire animation
@@ -39,9 +40,15 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
       >
         {/* Fire animation */}
         <div className="relative">
-          <div className="text-8xl animate-bounce-fire">🔥</div>
-          <div className="absolute -top-2 -left-4 text-6xl animate-bounce-fire-delayed">🔥</div>
-          <div className="absolute -top-2 -right-4 text-6xl animate-bounce-fire-delayed-2">🔥</div>
+          <div className="animate-bounce-fire">
+            <EmojiOrIcon emoji="🔥" iconName="fire" size="xl" className="w-20 h-20" />
+          </div>
+          <div className="absolute -top-2 -left-4 animate-bounce-fire-delayed">
+            <EmojiOrIcon emoji="🔥" iconName="fire" size="lg" className="w-14 h-14" />
+          </div>
+          <div className="absolute -top-2 -right-4 animate-bounce-fire-delayed-2">
+            <EmojiOrIcon emoji="🔥" iconName="fire" size="lg" className="w-14 h-14" />
+          </div>
         </div>
 
         {/* Streak number */}
@@ -167,7 +174,9 @@ export function AllHabitsComplete({ onClose }: AllHabitsCompleteProps) {
           show ? "scale-100 opacity-100" : "scale-50 opacity-0"
         )}
       >
-        <div className="text-7xl animate-bounce">🎉</div>
+        <div className="animate-bounce">
+          <EmojiOrIcon emoji="🎉" iconName="celebration" size="xl" className="w-16 h-16" />
+        </div>
         <p className="mt-4 text-3xl font-black text-white text-center">
           {t.allHabitsComplete || 'All Habits Done!'}
         </p>
@@ -211,7 +220,7 @@ export function MoodChangedToast({ emoji, message, onClose }: MoodChangedToastPr
       style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
     >
       <div className="flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-full shadow-lg animate-success-pulse">
-        <span className="text-2xl">{emoji}</span>
+        <EmojiOrIcon emoji={emoji} size="sm" />
         <span className="font-semibold">{message || t.moodUpdated || 'Mood updated'}</span>
       </div>
     </div>

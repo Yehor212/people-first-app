@@ -17,6 +17,11 @@ import { TargetIcon } from './TargetIcon';
 import { LightningIcon } from './LightningIcon';
 import { HeartIcon } from './HeartIcon';
 import { MedalIcon } from './MedalIcon';
+import { BrainIcon } from './BrainIcon';
+import { MuscleIcon } from './MuscleIcon';
+import { SparklesIcon } from './SparklesIcon';
+import { CelebrationIcon } from './CelebrationIcon';
+import { SeedlingIcon } from './SeedlingIcon';
 
 // All available icon names
 export type IconName =
@@ -28,7 +33,12 @@ export type IconName =
   | 'target'
   | 'lightning'
   | 'heart'
-  | 'medal';
+  | 'medal'
+  | 'brain'
+  | 'muscle'
+  | 'sparkles'
+  | 'celebration'
+  | 'seedling';
 
 // Map icon names to components
 const iconMap: Record<IconName, React.ComponentType<IconProps>> = {
@@ -41,6 +51,11 @@ const iconMap: Record<IconName, React.ComponentType<IconProps>> = {
   lightning: LightningIcon,
   heart: HeartIcon,
   medal: MedalIcon,
+  brain: BrainIcon,
+  muscle: MuscleIcon,
+  sparkles: SparklesIcon,
+  celebration: CelebrationIcon,
+  seedling: SeedlingIcon,
 };
 
 // Emoji to icon name mapping for migration
@@ -57,6 +72,11 @@ export const emojiToIconName: Record<string, IconName> = {
   '💖': 'heart',
   '💗': 'heart',
   '🎖️': 'medal',
+  '🧠': 'brain',
+  '💪': 'muscle',
+  '✨': 'sparkles',
+  '🎉': 'celebration',
+  '🌱': 'seedling',
 };
 
 interface PremiumIconProps extends IconProps {
@@ -94,26 +114,27 @@ export function PremiumIcon({
 }
 
 /**
- * Helper to convert emoji to PremiumIcon if mapping exists
- * Falls back to emoji if no mapping found
+ * Helper to render PremiumIcon or fallback to emoji
+ * Priority: iconName > emojiToIconName mapping > raw emoji
  */
 export function EmojiOrIcon({
   emoji,
+  iconName,
   size = 'md',
   animated = true,
   className,
 }: {
   emoji: string;
+  iconName?: string;
   size?: IconProps['size'];
   animated?: boolean;
   className?: string;
 }) {
-  const iconName = emojiToIconName[emoji];
-
-  if (iconName) {
+  // Priority 1: Direct iconName prop
+  if (iconName && iconMap[iconName as IconName]) {
     return (
       <PremiumIcon
-        name={iconName}
+        name={iconName as IconName}
         size={size}
         animated={animated}
         className={className}
@@ -121,7 +142,20 @@ export function EmojiOrIcon({
     );
   }
 
-  // Fallback to emoji
+  // Priority 2: Emoji to icon mapping
+  const mappedIconName = emojiToIconName[emoji];
+  if (mappedIconName) {
+    return (
+      <PremiumIcon
+        name={mappedIconName}
+        size={size}
+        animated={animated}
+        className={className}
+      />
+    );
+  }
+
+  // Fallback: Raw emoji
   return <span className={cn('inline-block', className)}>{emoji}</span>;
 }
 

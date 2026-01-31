@@ -25,3 +25,8 @@ export { TargetIcon } from './TargetIcon';
 export { LightningIcon } from './LightningIcon';
 export { HeartIcon } from './HeartIcon';
 export { MedalIcon } from './MedalIcon';
+export { BrainIcon } from './BrainIcon';
+export { MuscleIcon } from './MuscleIcon';
+export { SparklesIcon } from './SparklesIcon';
+export { CelebrationIcon } from './CelebrationIcon';
+export { SeedlingIcon } from './SeedlingIcon';

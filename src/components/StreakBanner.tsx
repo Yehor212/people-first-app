@@ -11,6 +11,7 @@ import { FireAnimation } from './FireAnimation';
 import { hapticTap } from '@/lib/haptics';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EmojiOrIcon } from '@/components/icons';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, calculateStreak } from '@/lib/utils';
 
@@ -124,23 +125,23 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
 
         {/* Today's progress indicator */}
         <div className="flex flex-col items-end gap-0.5 flex-shrink-0" role="group" aria-label={t.todayProgress}>
-          <div className="flex gap-0.5">
+          <div className="flex gap-1">
             {[
-              { emoji: '💜', label: t.moodToday, done: todayProgress.hasMood },
-              { emoji: '🎯', label: t.habits, done: todayProgress.hasHabits },
-              { emoji: '🧠', label: t.focus, done: todayProgress.hasFocus },
-              { emoji: '💖', label: t.gratitude, done: todayProgress.hasGratitude }
+              { emoji: '💜', iconName: undefined, label: t.moodToday, done: todayProgress.hasMood },
+              { emoji: '🎯', iconName: 'target', label: t.habits, done: todayProgress.hasHabits },
+              { emoji: '🧠', iconName: undefined, label: t.focus, done: todayProgress.hasFocus },
+              { emoji: '💖', iconName: 'heart', label: t.gratitude, done: todayProgress.hasGratitude }
             ].map((item, i) => (
               <span
                 key={i}
                 className={cn(
-                  "text-sm transition-all",
+                  "flex items-center justify-center transition-all",
                   item.done ? "opacity-100 scale-100" : "opacity-50 scale-90"
                 )}
                 role="img"
                 aria-label={`${item.label}: ${item.done ? t.completed : ''}`}
               >
-                {item.done ? '✅' : item.emoji}
+                {item.done ? '✅' : <EmojiOrIcon emoji={item.emoji} iconName={item.iconName} size="xs" />}
               </span>
             ))}
           </div>
