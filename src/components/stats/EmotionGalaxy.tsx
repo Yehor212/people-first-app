@@ -82,12 +82,17 @@ function OrbitingEmotion({
   const cy = 50 + radius * Math.sin(angleRad);
 
   return (
-    <g
-      style={{
-        animation: `orbit-spin ${animationDuration}s linear infinite`,
-        transformOrigin: 'center', // Use visual center regardless of SVG scale
-      }}
-    >
+    <g>
+      {/* SVG native rotation around center (50, 50) */}
+      <animateTransform
+        attributeName="transform"
+        type="rotate"
+        from="0 50 50"
+        to="360 50 50"
+        dur={`${animationDuration}s`}
+        repeatCount="indefinite"
+      />
+
       {/* Orbit path (dashed circle) */}
       <circle
         cx={50}
