@@ -303,15 +303,15 @@ export function DayClock({
               {mascotState}
             </div>
 
-            {/* Energy percentage */}
-            <div className="flex items-center gap-1 mt-0.5">
+            {/* Energy percentage - larger, more visible */}
+            <div className="flex items-center gap-1.5 mt-1">
               <Zap className={cn(
-                "w-3 h-3 sm:w-4 sm:h-4 transition-colors",
+                "w-4 h-4 sm:w-5 sm:h-5 transition-colors",
                 energyLevel >= 60 ? "text-yellow-400" : "text-muted-foreground"
               )} />
               <span className={cn(
-                "text-base sm:text-lg font-bold",
-                energyLevel >= 80 ? "text-green-400" :
+                "text-lg sm:text-xl font-bold tabular-nums",
+                energyLevel >= 80 ? "text-[hsl(var(--mood-good))]" :
                 energyLevel >= 60 ? "text-yellow-400" :
                 energyLevel >= 40 ? "text-orange-400" : "text-red-400"
               )}>
@@ -319,8 +319,8 @@ export function DayClock({
               </span>
             </div>
 
-            {/* Current time */}
-            <span className="text-xs sm:text-xs text-muted-foreground mt-0.5">
+            {/* Current time - more prominent */}
+            <span className="text-sm sm:text-base font-medium text-muted-foreground mt-1 tabular-nums">
               {formatTime(currentTime)}
             </span>
           </div>
@@ -362,16 +362,16 @@ export function DayClock({
             onClick={() => onTimeBlockClick?.('gratitude')}
           />
 
-          {/* Streak indicator */}
+          {/* Streak indicator - premium styling */}
           {energyLevel >= 100 && (
-            <div className="flex items-center gap-2 pt-2 mt-2 border-t border-border/50">
-              <div className="flex items-center gap-1 text-orange-400">
-                <Flame className="w-5 h-5 animate-flame-flicker" />
-                <span className="text-sm font-bold">{t.perfectDay || 'Perfect Day!'}</span>
+            <div className="flex items-center justify-center gap-3 pt-3 mt-2 border-t border-border/50">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-orange-500/20 to-amber-500/20 rounded-full">
+                <Flame className="w-5 h-5 text-orange-400 animate-flame-flicker" />
+                <span className="text-sm font-bold text-orange-400">{t.perfectDay || 'Perfect Day!'}</span>
               </div>
               <div className="flex -space-x-1">
                 {['✨', '🌟', '⭐'].map((star, i) => (
-                  <span key={i} className="text-lg animate-bounce-gentle" style={{ animationDelay: `${i * 150}ms` }}>
+                  <span key={i} className="text-xl animate-bounce-gentle" style={{ animationDelay: `${i * 150}ms` }}>
                     {star}
                   </span>
                 ))}
@@ -381,12 +381,12 @@ export function DayClock({
         </div>
       </div>
 
-      {/* Bottom motivational message */}
+      {/* Bottom motivational message - premium styling */}
       <div className={cn(
-        "mt-3 pt-2 border-t border-border/30 text-center transition-all duration-500",
-        energyLevel >= 80 && "bg-gradient-to-r from-green-500/10 via-emerald-500/10 to-green-500/10 -mx-3 sm:-mx-4 px-3 sm:px-4 -mb-3 sm:-mb-4 pb-3 rounded-b-2xl"
+        "mt-3 pt-3 border-t border-border/30 text-center transition-all duration-500",
+        energyLevel >= 80 && "bg-gradient-to-r from-[hsl(var(--mood-good))]/10 via-[hsl(var(--mood-good))]/5 to-[hsl(var(--mood-good))]/10 -mx-3 sm:-mx-4 px-3 sm:px-4 -mb-3 sm:-mb-4 pb-3 rounded-b-2xl"
       )}>
-        <p className="text-xs sm:text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground font-medium">
           {energyLevel === 0 && (t.startYourDay || "Start your day! 🌅")}
           {energyLevel > 0 && energyLevel < 40 && (t.keepGoing || "Keep going! You're doing great 💪")}
           {energyLevel >= 40 && energyLevel < 80 && (t.almostThere || "Almost there! 🚀")}
@@ -398,7 +398,7 @@ export function DayClock({
   );
 }
 
-// Activity row component - compact version
+// Activity row component - premium compact version
 function ActivityRow({
   emoji,
   label,
@@ -416,16 +416,17 @@ function ActivityRow({
     <button
       onClick={onClick}
       className={cn(
-        "w-full flex items-center gap-2 p-2 rounded-xl transition-all min-h-[44px]",
+        "w-full flex items-center gap-3 p-2.5 rounded-xl transition-all duration-300 min-h-[48px]",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         completed
-          ? "bg-gradient-to-r from-green-500/20 to-emerald-500/20 ring-1 ring-green-500/30"
-          : "bg-secondary/50 hover:bg-secondary/80 hover:scale-[1.02]"
+          ? "bg-gradient-to-r from-[hsl(var(--mood-good))]/15 to-[hsl(var(--mood-good))]/5 ring-1 ring-[hsl(var(--mood-good))]/30"
+          : "bg-secondary/50 hover:bg-secondary/80 hover:scale-[1.02] active:scale-[0.98]"
       )}
     >
       <div className={cn(
-        "w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-base sm:text-lg transition-all flex-shrink-0",
+        "w-9 h-9 rounded-xl flex items-center justify-center text-lg transition-all flex-shrink-0",
         completed
-          ? "bg-green-500/30 animate-pulse-soft"
+          ? "bg-[hsl(var(--mood-good))]/20"
           : "bg-primary/10"
       )}>
         {completed ? '✅' : emoji}
@@ -433,20 +434,20 @@ function ActivityRow({
 
       <div className="flex-1 text-left min-w-0">
         <span className={cn(
-          "text-xs sm:text-sm font-medium truncate block",
-          completed ? "text-green-400" : "text-foreground"
+          "text-sm font-medium truncate block",
+          completed ? "text-[hsl(var(--mood-good))]" : "text-foreground"
         )}>
           {label}
         </span>
         {progress && (
-          <span className="text-xs sm:text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {progress}
           </span>
         )}
       </div>
 
       {completed && (
-        <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-green-400 animate-pulse flex-shrink-0" />
+        <Sparkles className="w-4 h-4 text-[hsl(var(--mood-good))] animate-pulse flex-shrink-0" />
       )}
     </button>
   );

@@ -423,17 +423,41 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             ← {t.back || 'Back'}
           </button>
 
+          {/* Live Preview Card */}
+          <div className="mb-4 p-4 rounded-2xl bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-sm border border-border/50 shadow-[0_4px_12px_-2px_hsl(var(--foreground)/0.05)]">
+            <p className="text-xs text-muted-foreground mb-2">{t.preview || 'Preview'}</p>
+            <div className="flex items-center gap-3">
+              <div className={cn(
+                "w-12 h-12 rounded-xl flex items-center justify-center text-xl transition-all duration-300",
+                selectedColor.replace('bg-', 'bg-') + '/20'
+              )}>
+                {selectedIcon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-base truncate">
+                  {newHabitName || (t.habitNamePlaceholder || 'Enter habit name...')}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedType === 'daily' && (t.habitTypeDaily || 'Daily')}
+                  {selectedType === 'multiple' && `${dailyTarget}× ${t.perDay || 'per day'}`}
+                  {selectedType === 'continuous' && (t.habitTypeContinuous || 'Continuous')}
+                  {selectedType === 'reduce' && (t.habitTypeReduce || 'Reduce')}
+                </p>
+              </div>
+            </div>
+          </div>
+
           <input
             type="text"
             value={newHabitName}
             onChange={(e) => setNewHabitName(e.target.value)}
             placeholder={t.habitName}
-            className="w-full p-3 bg-background rounded-lg text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 mb-3"
+            className="w-full p-3 bg-background rounded-xl text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 mb-3 transition-all"
             autoFocus
           />
 
-          <div className="mb-3">
-            <p className="text-sm text-muted-foreground mb-2" id="icon-selector-label">{t.icon}:</p>
+          <div className="mb-4">
+            <p className="text-sm font-medium text-foreground mb-2" id="icon-selector-label">{t.icon}:</p>
             <div className="flex gap-2 flex-wrap" role="radiogroup" aria-labelledby="icon-selector-label">
               {habitIcons.map((icon) => (
                 <button
@@ -447,9 +471,11 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                     setSelectedIcon(icon);
                   }}
                   className={cn(
-                    "btn-press w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-all cursor-pointer",
+                    "btn-press w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-xl transition-all duration-200 cursor-pointer",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                    selectedIcon === icon ? "bg-primary/20 ring-2 ring-primary" : "bg-background hover:bg-muted"
+                    selectedIcon === icon
+                      ? "bg-primary/20 ring-2 ring-primary scale-105 shadow-sm"
+                      : "bg-background hover:bg-muted hover:scale-105"
                   )}
                 >
                   {icon}
@@ -459,8 +485,8 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           </div>
 
           <div className="mb-4">
-            <p className="text-sm text-muted-foreground mb-2" id="color-selector-label">{t.color}:</p>
-            <div className="flex gap-2" role="radiogroup" aria-labelledby="color-selector-label">
+            <p className="text-sm font-medium text-foreground mb-2" id="color-selector-label">{t.color}:</p>
+            <div className="flex gap-3" role="radiogroup" aria-labelledby="color-selector-label">
               {habitColors.map((color) => (
                 <button
                   key={color}
@@ -473,10 +499,13 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                     setSelectedColor(color);
                   }}
                   className={cn(
-                    "btn-press w-10 h-10 min-w-[40px] min-h-[40px] rounded-full transition-all cursor-pointer",
+                    "btn-press w-11 h-11 min-w-[44px] min-h-[44px] rounded-full transition-all duration-200 cursor-pointer",
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                    "shadow-sm hover:shadow-md",
                     color,
-                    selectedColor === color ? "ring-2 ring-offset-2 ring-foreground" : ""
+                    selectedColor === color
+                      ? "ring-2 ring-offset-2 ring-foreground scale-110"
+                      : "hover:scale-105"
                   )}
                 />
               ))}
@@ -484,7 +513,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           </div>
 
           <div className="mb-4">
-            <p className="text-sm text-muted-foreground mb-2">{t.habitType}:</p>
+            <p className="text-sm font-medium text-foreground mb-2">{t.habitType}:</p>
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -493,11 +522,14 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                   setSelectedType('daily');
                 }}
                 className={cn(
-                  "btn-press p-2 rounded-lg text-sm transition-all cursor-pointer",
-                  selectedType === 'daily' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                  "btn-press p-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-h-[44px]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                  selectedType === 'daily'
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "bg-background hover:bg-muted border border-border/50"
                 )}
               >
-                {t.habitTypeDaily}
+                ✓ {t.habitTypeDaily}
               </button>
               <button
                 type="button"
@@ -506,11 +538,14 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                   setSelectedType('multiple');
                 }}
                 className={cn(
-                  "btn-press p-2 rounded-lg text-sm transition-all cursor-pointer",
-                  selectedType === 'multiple' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                  "btn-press p-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-h-[44px]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                  selectedType === 'multiple'
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "bg-background hover:bg-muted border border-border/50"
                 )}
               >
-                {t.habitTypeMultiple}
+                🔄 {t.habitTypeMultiple}
               </button>
               <button
                 type="button"
@@ -519,11 +554,14 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                   setSelectedType('continuous');
                 }}
                 className={cn(
-                  "btn-press p-2 rounded-lg text-sm transition-all cursor-pointer",
-                  selectedType === 'continuous' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                  "btn-press p-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-h-[44px]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                  selectedType === 'continuous'
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "bg-background hover:bg-muted border border-border/50"
                 )}
               >
-                {t.habitTypeContinuous}
+                📈 {t.habitTypeContinuous}
               </button>
               <button
                 type="button"
@@ -532,11 +570,14 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                   setSelectedType('reduce');
                 }}
                 className={cn(
-                  "btn-press p-2 rounded-lg text-sm transition-all cursor-pointer",
-                  selectedType === 'reduce' ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"
+                  "btn-press p-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-h-[44px]",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+                  selectedType === 'reduce'
+                    ? "bg-primary text-primary-foreground shadow-md"
+                    : "bg-background hover:bg-muted border border-border/50"
                 )}
               >
-                {t.habitTypeReduce || 'Reduce'}
+                📉 {t.habitTypeReduce || 'Reduce'}
               </button>
             </div>
           </div>

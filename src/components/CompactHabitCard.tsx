@@ -1,12 +1,13 @@
 /**
- * CompactHabitCard - Redesigned compact habit card with circular progress
- * Part of v1.3.0 UI redesign
+ * CompactHabitCard - Premium compact habit card with glassmorphism
+ * Part of v1.3.0 UI redesign → Phase 8 Premium Upgrade
  */
 
 import { Habit } from '@/types';
 import { cn, getToday } from '@/lib/utils';
 import { Check, Minus, Plus, Flame, Trash2, Users } from 'lucide-react';
 import { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ProgressRing, ProgressRingCompact } from './ui/progress-ring';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticTap } from '@/lib/haptics';
@@ -83,12 +84,18 @@ export function CompactHabitCard({
   };
 
   return (
-    <div
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
       role="listitem"
       aria-label={`${habit.icon} ${habit.name}${completed ? `, ${t.completed || 'completed'}` : ''}`}
       aria-checked={completed}
       className={cn(
-        'relative overflow-hidden rounded-xl',
+        'relative overflow-hidden rounded-2xl',
+        'shadow-[0_4px_12px_-2px_hsl(var(--foreground)/0.05)]',
+        completed && 'ring-2 ring-[hsl(var(--mood-good))]/30',
         className
       )}
       onTouchStart={handleTouchStart}
@@ -128,45 +135,76 @@ export function CompactHabitCard({
         </button>
       </div>
 
+      {/* Completion glow effect */}
+      <AnimatePresence>
+        {completed && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--mood-good))]/10 to-transparent pointer-events-none z-0"
+          />
+        )}
+      </AnimatePresence>
+
       {/* Main card */}
       <div
         className={cn(
-          'flex items-center justify-between p-4 bg-card rounded-xl border border-border/50 transition-all duration-200',
+          'relative flex items-center justify-between p-4',
+          'bg-card/80 backdrop-blur-sm rounded-2xl',
+          'border border-border/50 transition-all duration-300',
           isSwiped && (onChallenge ? '-translate-x-28' : '-translate-x-14'),
-          completed && 'bg-primary/5 border-primary/20'
+          completed && 'bg-[hsl(var(--mood-good))]/5 border-[hsl(var(--mood-good))]/20'
         )}
       >
         {/* Left: Icon + Info */}
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          {/* Habit Icon Button */}
+          {/* Habit Icon Button - Premium styling */}
           <button
             onClick={handleToggle}
             aria-label={`${habit.name}: ${completed ? t.completed : t.markComplete || 'Mark complete'}`}
             aria-pressed={completed}
             className={cn(
-              'w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0 transition-all duration-200 active:scale-95',
+              'w-14 h-14 rounded-xl flex items-center justify-center text-2xl shrink-0',
+              'transition-all duration-300 active:scale-95',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
               completed
-                ? `${habit.color} text-primary-foreground shadow-md`
-                : 'bg-secondary hover:bg-secondary/80'
+                ? 'bg-[hsl(var(--mood-good))] text-white shadow-lg shadow-[hsl(var(--mood-good))]/25 scale-105'
+                : 'bg-muted/50 hover:bg-muted/80'
             )}
           >
-            {completed ? <Check className="w-6 h-6" /> : habit.icon}
+            {completed ? (
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+              >
+                <Check className="w-7 h-7" strokeWidth={3} />
+              </motion.div>
+            ) : (
+              <span>{habit.icon}</span>
+            )}
           </button>
 
-          {/* Name + Streak */}
+          {/* Name + Streak - Premium styling */}
           <div className="flex flex-col min-w-0">
             <p className={cn(
-              'font-medium truncate',
-              completed && 'text-primary'
+              'font-semibold text-base truncate transition-colors duration-300',
+              completed ? 'text-[hsl(var(--mood-good))]' : 'text-foreground'
             )}>
               {habit.name}
             </p>
             {streak > 1 && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                <Flame className="w-3 h-3 text-orange-500" />
-                <span>{streak} {t.days}</span>
-              </div>
+              <motion.div
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="flex items-center gap-1.5 mt-0.5"
+              >
+                <Flame className="w-3.5 h-3.5 text-orange-500" />
+                <span className="text-xs font-medium text-muted-foreground">
+                  {streak} {t.dayStreak || t.days}
+                </span>
+              </motion.div>
             )}
           </div>
         </div>
@@ -224,6 +262,6 @@ export function CompactHabitCard({
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
