@@ -27,6 +27,7 @@ import {
   MoodWeather,
   WeekCrystal,
   TrophyHall,
+  DataMountains,
   EnergyField,
   EmotionGalaxy,
   CrystalCalendar,
@@ -625,6 +626,35 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       }));
   }, [stats.emotionCounts]);
 
+  // Phase 13: DataMountains mood trend data (last 14 days)
+  const moodTrendData = useMemo(() => {
+    const moodScores: Record<MoodType, number> = {
+      great: 5,
+      good: 4,
+      okay: 3,
+      bad: 2,
+      terrible: 1,
+    };
+
+    const today = new Date();
+    const data: Array<{ label: string; value: number; date: string }> = [];
+
+    for (let i = 13; i >= 0; i--) {
+      const date = new Date(today);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      const mood = moodByDate.get(dateStr);
+
+      data.push({
+        label: date.toLocaleDateString(language, { weekday: 'short' }),
+        value: mood ? moodScores[mood.mood] : 0,
+        date: dateStr,
+      });
+    }
+
+    return data;
+  }, [moodByDate, language]);
+
   // Phase 13: CrystalCalendar data
   const crystalCalendarData = useMemo(() => {
     const data: Record<string, {
@@ -805,22 +835,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         </div>
       </div>
 
-      {/* Achievements - Animated Cards */}
-      <AnimatedAchievementsSection
-        currentStreak={stats.currentStreak}
-        totalFocusMinutes={stats.allTimeFocusMinutes}
-        habitsCompleted={stats.totalHabitCompletions}
-        streakLabel={t.currentStreak}
-        streakSublabel={t.daysInRow}
-        focusLabel={t.totalFocus}
-        focusSublabel={t.allTime}
-        habitsLabel={t.habitsCompleted}
-        habitsSublabel={t.totalTimes}
-        focusSuffix={t.min}
-        title={t.achievements}
-        onShare={() => setShowShareDialog(true)}
-      />
-
       {/* Trends View - Long-term Analytics */}
       <div className="mb-8">
         <TrendsView
@@ -829,6 +843,17 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           focusSessions={focusSessions}
         />
       </div>
+
+      {/* Phase 13: DataMountains - Mood Trend as Mountain Landscape */}
+      {moodTrendData.some(d => d.value > 0) && (
+        <DataMountains
+          data={moodTrendData}
+          maxValue={5}
+          title={t.moodTrend || 'Mood Trend'}
+          color="mood"
+          className="mb-4 h-48"
+        />
+      )}
 
       {/* Phase 13: Energy Field - Fire-based Activity Heatmap */}
       <EnergyField
@@ -873,17 +898,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         allTagsLabel={t.allTags}
       />
 
-      {/* Phase 13: Crystal Calendar - Premium Calendar View */}
-      <CrystalCalendar
-        data={crystalCalendarData}
-        onDayClick={(date, dayData) => {
-          hapticTap();
-          setSelectedDate(date);
-        }}
-        className="mb-4"
-      />
-
-      {/* Year Calendar - Redesigned */}
+      {/* Year Calendar - Crystal Premium Design */}
       <div className="bg-card rounded-2xl p-3 sm:p-6 zen-shadow-card overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 mb-5">
@@ -988,45 +1003,85 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           ))}
         </div>
 
-        {/* Calendar Days - Redesigned */}
-        <div className="grid grid-cols-7 gap-0.5 sm:gap-1.5">
+        {/* Calendar Days - Crystal Premium Design */}
+        <div className="grid grid-cols-7 gap-1 sm:gap-2 py-2">
           {calendarDays.map((cell, index) => {
             if (!cell.dateKey) {
               return <div key={`empty-${index}`} className="w-full aspect-square" />;
             }
             const mood = moodByDate.get(cell.dateKey)?.mood;
-            const hasData = moodByDate.has(cell.dateKey)
-              || focusMinutesByDate.has(cell.dateKey)
-              || habitCompletionMap.has(cell.dateKey)
-              || gratitudeByDate.has(cell.dateKey);
+            const focusMinutes = focusMinutesByDate.get(cell.dateKey) || 0;
+            const habitCount = habitCompletionMap.get(cell.dateKey)?.length || 0;
+            const hasGratitude = gratitudeByDate.has(cell.dateKey);
+            const hasData = mood || focusMinutes > 0 || habitCount > 0 || hasGratitude;
 
-            const moodGradient = mood === 'great' ? 'from-[hsl(var(--mood-great)/0.8)] to-[hsl(var(--mood-great)/0.6)]' :
-                                 mood === 'good' ? 'from-[hsl(var(--mood-good)/0.8)] to-[hsl(var(--mood-good)/0.6)]' :
-                                 mood === 'okay' ? 'from-[hsl(var(--mood-okay)/0.8)] to-[hsl(var(--mood-okay)/0.6)]' :
-                                 mood === 'bad' ? 'from-[hsl(var(--mood-bad)/0.8)] to-[hsl(var(--mood-bad)/0.6)]' :
-                                 mood === 'terrible' ? 'from-[hsl(var(--mood-terrible)/0.8)] to-[hsl(var(--mood-terrible)/0.6)]' : '';
+            // Calculate activity level for glow intensity (0-4)
+            let activityLevel = 0;
+            if (mood) activityLevel += mood === 'great' ? 2 : mood === 'good' ? 1.5 : 1;
+            if (focusMinutes > 0) activityLevel += Math.min(focusMinutes / 30, 1);
+            if (habitCount > 0) activityLevel += Math.min(habitCount / 3, 1);
+            activityLevel = Math.min(Math.round(activityLevel), 4);
+
+            // Perfect day = great mood + habits + focus
+            const isPerfect = mood === 'great' && habitCount >= 1 && focusMinutes >= 30;
+
+            // Crystal glow styles based on activity
+            const crystalStyles = {
+              0: { glow: 'none', bg: 'from-zinc-800/30 to-zinc-700/20', border: 'border-zinc-700/30' },
+              1: { glow: '0 0 8px rgba(20, 184, 166, 0.3)', bg: 'from-teal-900/40 to-teal-800/30', border: 'border-teal-700/40' },
+              2: { glow: '0 0 12px rgba(16, 185, 129, 0.4)', bg: 'from-teal-700/50 to-emerald-600/40', border: 'border-emerald-600/50' },
+              3: { glow: '0 0 16px rgba(34, 197, 94, 0.5)', bg: 'from-emerald-600/60 to-green-500/50', border: 'border-green-500/60' },
+              4: { glow: '0 0 20px rgba(52, 211, 153, 0.6)', bg: 'from-green-500/70 to-emerald-400/60', border: 'border-emerald-400/70' },
+            }[activityLevel] || { glow: 'none', bg: 'from-zinc-800/30 to-zinc-700/20', border: 'border-zinc-700/30' };
+
+            const isToday = cell.dateKey === todayKey;
+            const isSelected = cell.dateKey === selectedDate;
 
             return (
               <button
                 key={cell.dateKey}
                 onClick={() => setSelectedDate(cell.dateKey || null)}
                 aria-label={`${cell.day} ${monthNames[selectedMonth]} ${selectedYear}${mood ? `, ${t.mood}: ${t[mood] || mood}` : ''}`}
-                aria-pressed={cell.dateKey === selectedDate}
-                className={cn(
-                  "relative w-full aspect-square rounded-xl text-xs font-semibold flex items-center justify-center transition-all duration-200",
-                  "hover:scale-105 hover:shadow-lg",
-                  mood
-                    ? `bg-gradient-to-br ${moodGradient} text-white shadow-md`
-                    : hasData
-                      ? "bg-primary/20 text-foreground"
-                      : "bg-secondary/50 text-muted-foreground hover:bg-secondary",
-                  cell.dateKey === todayKey && "ring-2 ring-primary ring-offset-2 ring-offset-card",
-                  cell.dateKey === selectedDate && "ring-2 ring-accent ring-offset-1 ring-offset-card scale-110"
-                )}
+                aria-pressed={isSelected}
+                className="relative w-full aspect-square flex items-center justify-center"
               >
-                <span>{cell.day}</span>
-                {gratitudeByDate.has(cell.dateKey) && (
-                  <span className="absolute -top-0.5 -right-0.5 text-[8px]">✨</span>
+                {/* Crystal shape (rotated square) */}
+                <div
+                  className={cn(
+                    "absolute inset-1 rotate-45 rounded-sm border transition-all duration-200",
+                    "bg-gradient-to-br",
+                    crystalStyles.bg,
+                    crystalStyles.border,
+                    "hover:scale-110",
+                    isSelected && "scale-110 ring-2 ring-accent"
+                  )}
+                  style={{ boxShadow: crystalStyles.glow }}
+                />
+
+                {/* Today pulse ring */}
+                {isToday && (
+                  <div className="absolute inset-0 rotate-45 rounded-sm border-2 border-white/60 animate-pulse" />
+                )}
+
+                {/* Day number (counter-rotated to stay upright) */}
+                <span className={cn(
+                  "relative z-10 text-xs font-medium",
+                  isToday ? "text-white font-bold" : hasData ? "text-white/90" : "text-white/50"
+                )}>
+                  {cell.day}
+                </span>
+
+                {/* Perfect day sparkles */}
+                {isPerfect && (
+                  <>
+                    <span className="absolute top-0 right-1 text-[6px] animate-pulse">✨</span>
+                    <span className="absolute bottom-0 left-1 text-[6px] animate-pulse delay-300">✨</span>
+                  </>
+                )}
+
+                {/* Gratitude indicator */}
+                {hasGratitude && !isPerfect && (
+                  <span className="absolute -top-0.5 -right-0.5 text-[6px]">💫</span>
                 )}
               </button>
             );

@@ -53,7 +53,7 @@ function Star({ x, y, size, delay }: { x: number; y: number; size: number; delay
   );
 }
 
-// Orbiting emotion component
+// Orbiting emotion component - uses SVG units (viewBox 0-100)
 function OrbitingEmotion({
   emotion,
   orbitIndex,
@@ -67,17 +67,22 @@ function OrbitingEmotion({
   angle: number;
   animationDuration: number;
 }) {
-  // Calculate orbit radius based on position (inner = higher frequency)
-  const minRadius = 35;
-  const maxRadius = 85;
+  // Calculate orbit radius in SVG units (viewBox is 0-100, center is 50,50)
+  const minRadius = 18;
+  const maxRadius = 40;
   const radius = minRadius + (orbitIndex / Math.max(totalOrbits - 1, 1)) * (maxRadius - minRadius);
 
-  // Size based on count (normalized)
-  const size = 28 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 16;
+  // Size based on frequency (inner = more frequent = larger)
+  const size = 12 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 8;
+
+  // Calculate position using trigonometry (angle in degrees -> radians)
+  const angleRad = (angle * Math.PI) / 180;
+  const cx = 50 + radius * Math.cos(angleRad);
+  const cy = 50 + radius * Math.sin(angleRad);
 
   return (
     <motion.g
-      style={{ transformOrigin: '50% 50%' }}
+      style={{ transformOrigin: '50px 50px' }}
       animate={{ rotate: 360 }}
       transition={{
         duration: animationDuration,
@@ -87,44 +92,46 @@ function OrbitingEmotion({
     >
       {/* Orbit path (dashed circle) */}
       <circle
-        cx="50%"
-        cy="50%"
+        cx={50}
+        cy={50}
         r={radius}
         fill="none"
-        stroke="rgba(255, 255, 255, 0.1)"
-        strokeWidth="1"
-        strokeDasharray="4 4"
+        stroke="rgba(255, 255, 255, 0.15)"
+        strokeWidth="0.5"
+        strokeDasharray="2 2"
       />
 
-      {/* Emotion at initial angle */}
-      <g transform={`rotate(${angle})`}>
-        <foreignObject
-          x={`calc(50% + ${radius}px - ${size / 2}px)`}
-          y={`calc(50% - ${size / 2}px)`}
-          width={size}
-          height={size}
-          style={{ overflow: 'visible' }}
+      {/* Emotion glow background */}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={size / 2 + 2}
+        fill={`${emotion.color}30`}
+        style={{ filter: `drop-shadow(0 0 3px ${emotion.color})` }}
+      >
+        <animate
+          attributeName="r"
+          values={`${size / 2 + 1};${size / 2 + 3};${size / 2 + 1}`}
+          dur="2s"
+          repeatCount="indefinite"
+        />
+      </circle>
+
+      {/* Emoji via foreignObject with proper SVG coordinates */}
+      <foreignObject
+        x={cx - size / 2}
+        y={cy - size / 2}
+        width={size}
+        height={size}
+        style={{ overflow: 'visible' }}
+      >
+        <div
+          className="w-full h-full flex items-center justify-center"
+          style={{ fontSize: `${size * 0.7}px` }}
         >
-          <motion.div
-            className="w-full h-full flex items-center justify-center rounded-full cursor-pointer"
-            style={{
-              background: `radial-gradient(circle, ${emotion.color}40 0%, ${emotion.color}20 70%, transparent 100%)`,
-              boxShadow: `0 0 15px ${emotion.color}50`,
-            }}
-            whileHover={{ scale: 1.3 }}
-            animate={{
-              boxShadow: [
-                `0 0 15px ${emotion.color}50`,
-                `0 0 25px ${emotion.color}70`,
-                `0 0 15px ${emotion.color}50`,
-              ],
-            }}
-            transition={{ duration: 2, repeat: Infinity }}
-          >
-            <span style={{ fontSize: size * 0.6 }}>{emotion.emoji}</span>
-          </motion.div>
-        </foreignObject>
-      </g>
+          {emotion.emoji}
+        </div>
+      </foreignObject>
     </motion.g>
   );
 }
@@ -214,7 +221,7 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
             <stop offset="100%" stopColor="transparent" />
           </radialGradient>
         </defs>
-        <circle cx="50%" cy="50%" r="25" fill="url(#centerGlow)" />
+        <circle cx={50} cy={50} r={15} fill="url(#centerGlow)" />
 
         {/* Orbiting emotions */}
         {sortedEmotions.map((emotion, i) => (
@@ -229,25 +236,25 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
         ))}
 
         {/* Center content */}
-        <foreignObject x="35%" y="35%" width="30%" height="30%">
+        <foreignObject x={35} y={38} width={30} height={24}>
           <motion.div
             className="w-full h-full flex flex-col items-center justify-center rounded-full"
             style={{
               background: 'radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.1) 100%)',
-              boxShadow: '0 0 30px rgba(139, 92, 246, 0.4)',
+              boxShadow: '0 0 20px rgba(139, 92, 246, 0.4)',
             }}
             animate={{
               scale: [1, 1.05, 1],
               boxShadow: [
-                '0 0 30px rgba(139, 92, 246, 0.4)',
-                '0 0 40px rgba(139, 92, 246, 0.6)',
-                '0 0 30px rgba(139, 92, 246, 0.4)',
+                '0 0 20px rgba(139, 92, 246, 0.4)',
+                '0 0 30px rgba(139, 92, 246, 0.6)',
+                '0 0 20px rgba(139, 92, 246, 0.4)',
               ],
             }}
             transition={{ duration: 3, repeat: Infinity }}
           >
-            <span className="text-2xl font-bold text-white">{totalEntries}</span>
-            <span className="text-xs text-purple-300">{t.entries || 'entries'}</span>
+            <span className="text-lg font-bold text-white">{totalEntries}</span>
+            <span className="text-[8px] text-purple-300">{t.entries || 'entries'}</span>
           </motion.div>
         </foreignObject>
       </svg>

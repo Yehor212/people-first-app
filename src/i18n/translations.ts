@@ -347,6 +347,7 @@ export interface Translations {
   habitsCompleted: string;
   totalTimes: string;
   moodDistribution: string;
+  moodTrend: string;
   moodHeatmap: string;
   activityHeatmap: string;
   less: string;
@@ -1822,6 +1823,7 @@ export const translations: Record<Language, Translations> = {
     habitsCompleted: 'Привычки выполнены',
     totalTimes: 'Всего раз',
     moodDistribution: 'Распределение настроения',
+    moodTrend: 'Тренд настроения',
     moodHeatmap: 'Календарь настроения',
     activityHeatmap: 'Обзор активности',
     less: 'Меньше',
@@ -3249,6 +3251,7 @@ export const translations: Record<Language, Translations> = {
     habitsCompleted: 'Habits completed',
     totalTimes: 'Total times',
     moodDistribution: 'Mood distribution',
+    moodTrend: 'Mood Trend',
     moodHeatmap: 'Mood heatmap',
     activityHeatmap: 'Activity Overview',
     less: 'Less',
@@ -4676,6 +4679,7 @@ export const translations: Record<Language, Translations> = {
     habitsCompleted: 'Звички виконані',
     totalTimes: 'Всього разів',
     moodDistribution: 'Розподіл настрою',
+    moodTrend: 'Тренд настрою',
     moodHeatmap: 'Календар настрою',
     activityHeatmap: 'Огляд активності',
     less: 'Менше',
@@ -6104,6 +6108,7 @@ export const translations: Record<Language, Translations> = {
     habitsCompleted: 'Hábitos completados',
     totalTimes: 'Veces totales',
     moodDistribution: 'Distribución del ánimo',
+    moodTrend: 'Tendencia del ánimo',
     moodHeatmap: 'Mapa de ánimo',
     activityHeatmap: 'Resumen de actividad',
     less: 'Menos',
@@ -7532,6 +7537,7 @@ export const translations: Record<Language, Translations> = {
     habitsCompleted: 'Gewohnheiten abgeschlossen',
     totalTimes: 'Insgesamt Mal',
     moodDistribution: 'Stimmungsverteilung',
+    moodTrend: 'Stimmungstrend',
     moodHeatmap: 'Stimmungs-Heatmap',
     activityHeatmap: 'Aktivitätsübersicht',
     less: 'Weniger',
@@ -8960,6 +8966,7 @@ export const translations: Record<Language, Translations> = {
     habitsCompleted: 'Habitudes complétées',
     totalTimes: 'Fois au total',
     moodDistribution: 'Distribution de l\'humeur',
+    moodTrend: 'Tendance de l\'humeur',
     moodHeatmap: 'Calendrier d\'humeur',
     activityHeatmap: 'Aperçu de l\'activité',
     less: 'Moins',
