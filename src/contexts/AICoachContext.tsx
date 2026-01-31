@@ -223,24 +223,50 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     } catch (error) {
       clearTimeout(timeoutId);
 
-      // Handle abort/timeout specifically
+      // Handle different error types
       const isTimeout = error instanceof Error && error.name === 'AbortError';
-      logger.error('[AICoach] Send message error:', isTimeout ? 'Request timeout' : error);
+      const isAuthError = error instanceof Error && error.message === 'Not authenticated';
+      logger.error('[AICoach] Send message error:', isTimeout ? 'Request timeout' : isAuthError ? 'Not authenticated' : error);
 
-      // Fallback message based on language
-      const fallbackMessages: Record<string, string> = {
-        ru: isTimeout ? 'Превышено время ожидания. Попробуй позже.' : 'Извини, сейчас не могу ответить. Попробуй позже.',
-        en: isTimeout ? 'Request timed out. Try again later.' : 'Sorry, I cannot respond right now. Try again later.',
-        uk: isTimeout ? 'Час очікування вичерпано. Спробуй пізніше.' : 'Вибач, зараз не можу відповісти. Спробуй пізніше.',
-        es: isTimeout ? 'Tiempo de espera agotado. Intenta más tarde.' : 'Lo siento, no puedo responder ahora. Intenta más tarde.',
-        de: isTimeout ? 'Zeitüberschreitung. Versuche es später.' : 'Entschuldige, ich kann gerade nicht antworten. Versuche es später.',
-        fr: isTimeout ? 'Délai dépassé. Réessaie plus tard.' : 'Désolé, je ne peux pas répondre maintenant. Réessaie plus tard.',
+      // P0 Fix: Better fallback messages for different error types
+      const getFallbackMessage = (): string => {
+        if (isAuthError) {
+          const authMessages: Record<string, string> = {
+            ru: 'Войди в аккаунт в настройках, чтобы использовать AI Coach.',
+            en: 'Please sign in from Settings to use AI Coach.',
+            uk: 'Увійди в акаунт в налаштуваннях, щоб використовувати AI Coach.',
+            es: 'Por favor, inicia sesión en Configuración para usar AI Coach.',
+            de: 'Bitte melde dich in den Einstellungen an, um AI Coach zu nutzen.',
+            fr: 'Connecte-toi dans les Paramètres pour utiliser AI Coach.',
+          };
+          return authMessages[language] || authMessages.en;
+        }
+        if (isTimeout) {
+          const timeoutMessages: Record<string, string> = {
+            ru: 'Превышено время ожидания. Попробуй позже.',
+            en: 'Request timed out. Try again later.',
+            uk: 'Час очікування вичерпано. Спробуй пізніше.',
+            es: 'Tiempo de espera agotado. Intenta más tarde.',
+            de: 'Zeitüberschreitung. Versuche es später.',
+            fr: 'Délai dépassé. Réessaie plus tard.',
+          };
+          return timeoutMessages[language] || timeoutMessages.en;
+        }
+        const genericMessages: Record<string, string> = {
+          ru: 'Извини, сейчас не могу ответить. Попробуй позже.',
+          en: 'Sorry, I cannot respond right now. Try again later.',
+          uk: 'Вибач, зараз не можу відповісти. Спробуй пізніше.',
+          es: 'Lo siento, no puedo responder ahora. Intenta más tarde.',
+          de: 'Entschuldige, ich kann gerade nicht antworten. Versuche es später.',
+          fr: 'Désolé, je ne peux pas répondre maintenant. Réessaie plus tard.',
+        };
+        return genericMessages[language] || genericMessages.en;
       };
 
       const fallbackMessage: ChatMessage = {
         id: `msg_${Date.now()}_fallback`,
         role: 'coach',
-        content: fallbackMessages[language] || fallbackMessages.en,
+        content: getFallbackMessage(),
         timestamp: Date.now(),
       };
       setMessages(prev => [...prev, fallbackMessage]);
@@ -255,11 +281,18 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     setCurrentTrigger(trigger);
     setIsOpen(true);
 
-    // Auto-send initial message for certain triggers
+    // P0 Fix: Add initial message as COACH message, not user message
+    // The greeting should appear from the coach, not from the user
     if (initialMessage) {
-      setTimeout(() => sendMessage(initialMessage), 500);
+      const greetingMessage: ChatMessage = {
+        id: `msg_${Date.now()}_greeting`,
+        role: 'coach', // Coach greeting, not user message
+        content: initialMessage,
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, greetingMessage]);
     }
-  }, [sendMessage]);
+  }, [setMessages]);
 
   // Close coach
   const closeCoach = useCallback(() => {
