@@ -85,7 +85,7 @@ function OrbitingEmotion({
     <g
       style={{
         animation: `orbit-spin ${animationDuration}s linear infinite`,
-        transformOrigin: '50px 50px', // SVG center coordinates
+        transformOrigin: 'center', // Use visual center regardless of SVG scale
       }}
     >
       {/* Orbit path (dashed circle) */}
