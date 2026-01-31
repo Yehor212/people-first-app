@@ -20,11 +20,15 @@ const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const IS_PRODUCTION = Deno.env.get("ENVIRONMENT") === "production";
 
 // Allowed origins for CORS
-// P0 Fix #8: Only allow localhost in non-production
+// P0 Fix: Allow all Capacitor and common development origins
 const ALLOWED_ORIGINS = [
   "https://yehor212.github.io",
-  "capacitor://localhost", // Required for Capacitor app
-  ...(IS_PRODUCTION ? [] : ["http://localhost:5173", "http://localhost:8100"]),
+  "capacitor://localhost",       // Capacitor iOS
+  "http://localhost",            // Capacitor Android WebView
+  "https://localhost",           // Capacitor Android HTTPS
+  "http://localhost:5173",       // Vite dev server
+  "http://localhost:8100",       // Ionic dev server
+  "null",                        // Some Android WebViews send null origin
 ];
 
 // P0 Fix #5: Rate limiting - 10 requests per minute per user
@@ -62,11 +66,23 @@ function checkRateLimit(userId: string): boolean {
 }
 
 const getCorsHeaders = (origin: string | null) => {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  // P0 Fix: Better origin handling for Android/iOS apps
+  const effectiveOrigin = origin || "null";
+  const isAllowed = ALLOWED_ORIGINS.includes(effectiveOrigin);
+
+  // Log origin for debugging (only in non-production)
+  if (!IS_PRODUCTION) {
+    console.log(`[AICoach] Origin: ${effectiveOrigin}, Allowed: ${isAllowed}`);
+  }
+
+  // If origin is allowed, echo it back. Otherwise use wildcard for Capacitor apps.
+  const allowedOrigin = isAllowed ? effectiveOrigin : "*";
+
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
+    "Access-Control-Allow-Credentials": "true",
   };
 };
 
