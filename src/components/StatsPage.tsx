@@ -10,7 +10,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { ShareProgress } from '@/components/ShareProgress';
 import { AnimatedAchievementsSection } from '@/components/AnimatedAchievementCard';
 import { AnimatedMoodDistribution, AnimatedEmotionDistribution, AnimatedCalendar } from '@/components/AnimatedStatsComponents';
-// TrendsView replaced with DataMountains in Phase 13
+// Phase 13.3: TrendsView restored (DataMountains removed)
+import { TrendsView } from '@/components/TrendsView';
 import { ActivityHeatMap, calculateActivityLevel } from '@/components/ui/activity-heatmap';
 import { ProgressStoriesViewer } from '@/components/ProgressStoriesViewer';
 import { generateWeeklyStory, hasEnoughDataForStory, getCurrentWeekRange } from '@/lib/progressStories';
@@ -28,7 +29,6 @@ import {
   MoodWeather,
   WeekCrystal,
   TrophyHall,
-  DataMountains,
   EnergyField,
   EmotionGalaxy,
   CrystalCalendar,
@@ -627,79 +627,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       }));
   }, [stats.emotionCounts]);
 
-  // Phase 13: DataMountains mood trend data (last 14 days)
-  const moodTrendData = useMemo(() => {
-    const moodScores: Record<MoodType, number> = {
-      great: 5,
-      good: 4,
-      okay: 3,
-      bad: 2,
-      terrible: 1,
-    };
-
-    const today = new Date();
-    const data: Array<{ label: string; value: number; date: string }> = [];
-
-    for (let i = 13; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      const mood = moodByDate.get(dateStr);
-
-      data.push({
-        label: date.toLocaleDateString(language, { weekday: 'short' }),
-        value: mood ? moodScores[mood.mood] : 0,
-        date: dateStr,
-      });
-    }
-
-    return data;
-  }, [moodByDate, language]);
-
-  // Phase 13: DataMountains habits trend data (last 14 days)
-  const habitsTrendData = useMemo(() => {
-    const today = new Date();
-    const data: Array<{ label: string; value: number; date: string }> = [];
-    const totalHabits = habits.length || 1; // Avoid division by zero
-
-    for (let i = 13; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      const completedHabits = habitCompletionMap.get(dateStr)?.length || 0;
-      const completionPercent = Math.round((completedHabits / totalHabits) * 100);
-
-      data.push({
-        label: date.toLocaleDateString(language, { weekday: 'short' }),
-        value: completionPercent,
-        date: dateStr,
-      });
-    }
-
-    return data;
-  }, [habitCompletionMap, habits.length, language]);
-
-  // Phase 13: DataMountains focus trend data (last 14 days)
-  const focusTrendData = useMemo(() => {
-    const today = new Date();
-    const data: Array<{ label: string; value: number; date: string }> = [];
-
-    for (let i = 13; i >= 0; i--) {
-      const date = new Date(today);
-      date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
-      const minutes = focusMinutesByDate.get(dateStr) || 0;
-
-      data.push({
-        label: date.toLocaleDateString(language, { weekday: 'short' }),
-        value: minutes,
-        date: dateStr,
-      });
-    }
-
-    return data;
-  }, [focusMinutesByDate, language]);
-
   // Phase 13: CrystalCalendar data
   const crystalCalendarData = useMemo(() => {
     const data: Record<string, {
@@ -880,38 +807,12 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         </div>
       </div>
 
-      {/* Phase 13: DataMountains Trend Visualizations */}
-      {/* Mood Trend - Purple Mountains */}
-      {moodTrendData.some(d => d.value > 0) && (
-        <DataMountains
-          data={moodTrendData}
-          maxValue={5}
-          title={t.moodTrend || 'Mood Trend'}
-          color="mood"
-          className="mb-4 h-48"
-        />
-      )}
-
-      {/* Habits Trend - Green Mountains */}
-      {habitsTrendData.some(d => d.value > 0) && (
-        <DataMountains
-          data={habitsTrendData}
-          maxValue={100}
-          title={t.habitsTrend || 'Habits Trend'}
-          color="habits"
-          className="mb-4 h-48"
-        />
-      )}
-
-      {/* Focus Trend - Blue Mountains */}
-      {focusTrendData.some(d => d.value > 0) && (
-        <DataMountains
-          data={focusTrendData}
-          title={t.focusTrend || 'Focus Trend'}
-          color="focus"
-          className="mb-4 h-48"
-        />
-      )}
+      {/* Phase 13.3: TrendsView - Clean Recharts-based trend visualization */}
+      <TrendsView
+        moods={moods}
+        habits={habits}
+        focusSessions={focusSessions}
+      />
 
       {/* Phase 13: Energy Field - Fire-based Activity Heatmap */}
       <EnergyField
