@@ -1023,6 +1023,7 @@ export interface Translations {
   storyAvgSession: string;
   storyLongestSession: string;
   storyMostFocusedOn: string;
+  storyTotalFocus: string;
   storyTrackYourJourney: string;
   storyTapLeft: string;
   storyTapCenter: string;
@@ -2418,6 +2419,7 @@ export const translations: Record<Language, Translations> = {
     storyAvgSession: 'сред. сессия',
     storyLongestSession: 'самая долгая',
     storyMostFocusedOn: 'Больше всего фокус на:',
+    storyTotalFocus: 'общий фокус',
     storyTrackYourJourney: 'Отслеживайте свой путь с',
     storyTapLeft: '← Влево',
     storyTapCenter: 'Центр - пауза',
@@ -3834,6 +3836,7 @@ export const translations: Record<Language, Translations> = {
     storyAvgSession: 'avg session',
     storyLongestSession: 'longest',
     storyMostFocusedOn: 'Most focused on:',
+    storyTotalFocus: 'total focus',
     storyTrackYourJourney: 'Track your journey with',
     storyTapLeft: '← Tap left',
     storyTapCenter: 'Tap center to pause',
@@ -5250,6 +5253,7 @@ export const translations: Record<Language, Translations> = {
     storyAvgSession: 'сер. сесія',
     storyLongestSession: 'найдовша',
     storyMostFocusedOn: 'Найбільше фокус на:',
+    storyTotalFocus: 'загальний фокус',
     storyTrackYourJourney: 'Відстежуйте свій шлях з',
     storyTapLeft: '← Вліво',
     storyTapCenter: 'Центр - пауза',
@@ -6667,6 +6671,7 @@ export const translations: Record<Language, Translations> = {
     storyAvgSession: 'sesión prom.',
     storyLongestSession: 'más larga',
     storyMostFocusedOn: 'Más enfocado en:',
+    storyTotalFocus: 'enfoque total',
     storyTrackYourJourney: 'Sigue tu camino con',
     storyTapLeft: '← Toca izquierda',
     storyTapCenter: 'Toca centro para pausar',
@@ -8084,6 +8089,7 @@ export const translations: Record<Language, Translations> = {
     storyAvgSession: 'Durchschn.',
     storyLongestSession: 'längste',
     storyMostFocusedOn: 'Am meisten fokussiert auf:',
+    storyTotalFocus: 'Gesamtfokus',
     storyTrackYourJourney: 'Verfolge deine Reise mit',
     storyTapLeft: '← Links tippen',
     storyTapCenter: 'Mitte tippen zum Pausieren',
@@ -9501,6 +9507,7 @@ export const translations: Record<Language, Translations> = {
     storyAvgSession: 'session moy.',
     storyLongestSession: 'plus longue',
     storyMostFocusedOn: 'Plus concentré sur:',
+    storyTotalFocus: 'focus total',
     storyTrackYourJourney: 'Suivez votre parcours avec',
     storyTapLeft: '← Appuyez à gauche',
     storyTapCenter: 'Appuyez au centre pour pause',
