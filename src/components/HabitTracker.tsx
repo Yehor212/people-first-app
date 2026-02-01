@@ -10,7 +10,6 @@ import { habitTemplates } from '@/lib/habitTemplates';
 import { AllHabitsComplete } from './Celebrations';
 import { HabitCompletionCelebration, DailyProgressBar } from './HabitCompletionCelebration';
 import { CompactHabitCard } from './CompactHabitCard';
-import { ChallengeModal } from './ChallengeModal';
 import { hapticTap } from '@/lib/haptics';
 import { getActiveChallenges } from '@/lib/friendChallenge';
 
@@ -30,9 +29,10 @@ interface HabitTrackerProps {
   onAddHabit: (habit: Habit) => void;
   onDeleteHabit: (habitId: string) => void;
   isPrimaryCTA?: boolean;
+  onOpenChallenge?: (habit?: Habit) => void;
 }
 
-export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit, onDeleteHabit, isPrimaryCTA = false }: HabitTrackerProps) {
+export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit, onDeleteHabit, isPrimaryCTA = false, onOpenChallenge }: HabitTrackerProps) {
   const { t, language } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [showCustomForm, setShowCustomForm] = useState(false);
@@ -58,9 +58,6 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     streakDays?: number;
   } | null>(null);
 
-  // Challenge states
-  const [showChallengeModal, setShowChallengeModal] = useState(false);
-  const [challengeHabit, setChallengeHabit] = useState<Habit | undefined>(undefined);
 
   // Get active challenges count
   const activeChallengesCount = useMemo(() => getActiveChallenges().length, []);
@@ -404,8 +401,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             <motion.button
               onClick={() => {
                 hapticTap();
-                setChallengeHabit(undefined);
-                setShowChallengeModal(true);
+                onOpenChallenge?.();
               }}
               aria-label={t.friendChallenges}
               className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-white/10 backdrop-blur-sm border border-white/20 text-white/70 hover:text-white hover:bg-white/20 transition-colors"
@@ -425,8 +421,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               size="icon"
               onClick={() => {
                 hapticTap();
-                setChallengeHabit(undefined);
-                setShowChallengeModal(true);
+                onOpenChallenge?.();
               }}
               aria-label={t.friendChallenges}
               className="relative"
@@ -1018,10 +1013,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               onToggle={() => handleHabitToggle(habit)}
               onAdjust={onAdjustHabit}
               onDelete={onDeleteHabit}
-              onChallenge={(h) => {
-                setChallengeHabit(h);
-                setShowChallengeModal(true);
-              }}
+              onChallenge={onOpenChallenge ? (h) => onOpenChallenge(h) : undefined}
               streak={habitStreaks.get(habit.id) || 0}
             />
           ))}
@@ -1045,12 +1037,6 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         <AllHabitsComplete onClose={() => setShowAllComplete(false)} />
       )}
 
-      {/* Challenge Modal */}
-      <ChallengeModal
-        open={showChallengeModal}
-        onOpenChange={setShowChallengeModal}
-        habit={challengeHabit}
-      />
     </div>
   );
 });

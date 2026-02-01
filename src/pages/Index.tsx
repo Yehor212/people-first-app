@@ -287,6 +287,7 @@ export function Index() {
   const [showChallenges, setShowChallenges] = useState(false);
   const [showChallengeModal, setShowChallengeModal] = useState(false);
   const [challengeInvite, setChallengeInvite] = useState<ChallengeInvite | undefined>(undefined);
+  const [challengeHabit, setChallengeHabit] = useState<Habit | undefined>(undefined);
   const [showTimeHelper, setShowTimeHelper] = useState(false);
   const [showTasksPanel, setShowTasksPanel] = useState(false);
   const [showQuestsPanel, setShowQuestsPanel] = useState(false);
@@ -1093,6 +1094,12 @@ export function Index() {
   // Clear journal prompt text after it's been used
   const handleJournalPromptUsed = useCallback(() => {
     setJournalPromptText(undefined);
+  }, []);
+
+  // Open challenge modal from HabitTracker
+  const handleOpenChallenge = useCallback((habit?: Habit) => {
+    setChallengeHabit(habit);
+    setShowChallengeModal(true);
   }, []);
 
   const handleResetData = () => {
@@ -2054,6 +2061,7 @@ export function Index() {
                         onAddHabit={handleAddHabit}
                         onDeleteHabit={handleDeleteHabit}
                         isPrimaryCTA={true}
+                        onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
                       />
                     ) : !hasUncompletedHabits && safeHabits.length > 0 ? (
                       <CompletedSection
@@ -2067,6 +2075,7 @@ export function Index() {
                           onAdjustHabit={handleAdjustHabit}
                           onAddHabit={handleAddHabit}
                           onDeleteHabit={handleDeleteHabit}
+                          onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
                         />
                       </CompletedSection>
                     ) : (
@@ -2076,6 +2085,7 @@ export function Index() {
                         onAdjustHabit={handleAdjustHabit}
                         onAddHabit={handleAddHabit}
                         onDeleteHabit={handleDeleteHabit}
+                        onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
                       />
                     )}
                   </div>
@@ -2337,14 +2347,18 @@ export function Index() {
         />
       )}
 
-      {/* Challenge Modal - for deep link invites */}
+      {/* Challenge Modal - for deep link invites and habit challenges */}
       {isFeatureVisible('challenges') && (
         <ChallengeModal
           open={showChallengeModal}
           onOpenChange={(open) => {
             setShowChallengeModal(open);
-            if (!open) setChallengeInvite(undefined);
+            if (!open) {
+              setChallengeInvite(undefined);
+              setChallengeHabit(undefined);
+            }
           }}
+          habit={challengeHabit}
           initialInvite={challengeInvite}
           username={userName}
         />
