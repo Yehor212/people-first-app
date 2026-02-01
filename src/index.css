@@ -164,6 +164,29 @@
     --priority-medium: var(--mood-okay);
     --priority-low: var(--mood-good);
 
+    /* ===== COSMIC/VISUALIZATION TOKENS ===== */
+    /* For EmotionGalaxy, ScheduleTimeline, and other premium visualizations */
+    --cosmic-text-primary: 263 70% 35%;       /* Deep violet */
+    --cosmic-text-secondary: 263 50% 50%;     /* Medium violet */
+    --cosmic-text-muted: 263 30% 60%;         /* Light violet */
+
+    --cosmic-orbit-stroke: 263 60% 70%;       /* Visible purple orbits */
+    --cosmic-orbit-glow: 263 80% 60%;         /* Glow effect */
+
+    --cosmic-star-bg: 263 70% 70%;            /* Colored stars */
+    --cosmic-star-glow: 263 80% 80%;
+
+    --cosmic-clock-ring: 263 50% 70%;         /* Clock ring strokes */
+    --cosmic-clock-marker: 263 60% 55%;       /* Hour markers */
+
+    --cosmic-pill-bg: 263 40% 90%;            /* Day pill background */
+    --cosmic-pill-text: 263 40% 40%;          /* Day pill text */
+    --cosmic-pill-selected-text: 0 0% 100%;   /* Selected = white */
+
+    --cosmic-input-text: 160 25% 20%;         /* Form input text */
+    --cosmic-input-border: 263 30% 75%;       /* Input borders */
+    --cosmic-label-text: 263 30% 45%;         /* Label text */
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -263,6 +286,28 @@
     --chart-activity-2: 158 55% 30%;
     --chart-activity-3: 158 70% 40%;
     --chart-activity-4: 158 85% 50%;
+
+    /* ===== COSMIC/VISUALIZATION TOKENS (Dark Mode) ===== */
+    --cosmic-text-primary: 0 0% 100%;         /* White */
+    --cosmic-text-secondary: 0 0% 90%;
+    --cosmic-text-muted: 0 0% 60%;
+
+    --cosmic-orbit-stroke: 0 0% 100%;         /* White orbits */
+    --cosmic-orbit-glow: 263 80% 70%;
+
+    --cosmic-star-bg: 0 0% 100%;              /* White stars */
+    --cosmic-star-glow: 0 0% 100%;
+
+    --cosmic-clock-ring: 0 0% 100%;
+    --cosmic-clock-marker: 0 0% 100%;
+
+    --cosmic-pill-bg: 0 0% 10%;               /* Dark pill background */
+    --cosmic-pill-text: 0 0% 60%;
+    --cosmic-pill-selected-text: 0 0% 100%;
+
+    --cosmic-input-text: 0 0% 100%;
+    --cosmic-input-border: 0 0% 25%;
+    --cosmic-label-text: 0 0% 60%;
   }
 
   /* ===== OLED DARK MODE ===== */
@@ -354,6 +399,28 @@
     --chart-activity-2: 158 55% 25%;
     --chart-activity-3: 158 75% 38%;
     --chart-activity-4: 158 90% 48%;
+
+    /* ===== COSMIC/VISUALIZATION TOKENS (OLED) ===== */
+    --cosmic-text-primary: 0 0% 100%;
+    --cosmic-text-secondary: 0 0% 90%;
+    --cosmic-text-muted: 0 0% 55%;
+
+    --cosmic-orbit-stroke: 0 0% 100%;
+    --cosmic-orbit-glow: 263 85% 65%;
+
+    --cosmic-star-bg: 0 0% 100%;
+    --cosmic-star-glow: 0 0% 100%;
+
+    --cosmic-clock-ring: 0 0% 100%;
+    --cosmic-clock-marker: 0 0% 100%;
+
+    --cosmic-pill-bg: 0 0% 5%;
+    --cosmic-pill-text: 0 0% 55%;
+    --cosmic-pill-selected-text: 0 0% 100%;
+
+    --cosmic-input-text: 0 0% 100%;
+    --cosmic-input-border: 0 0% 20%;
+    --cosmic-label-text: 0 0% 55%;
 
     /* Sidebar for OLED */
     --sidebar-background: 0 0% 0%;

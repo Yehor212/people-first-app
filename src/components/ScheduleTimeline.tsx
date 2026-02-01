@@ -144,13 +144,14 @@ function AnimatedClockRing({ currentHour, currentMinute }: { currentHour: number
           </linearGradient>
         </defs>
 
-        {/* Background ring */}
+        {/* Background ring - theme-aware */}
         <circle
           cx="50"
           cy="50"
           r="42"
           fill="none"
-          stroke="rgba(255, 255, 255, 0.1)"
+          stroke="hsl(var(--cosmic-clock-ring))"
+          strokeOpacity="0.2"
           strokeWidth="4"
         />
 
@@ -170,7 +171,7 @@ function AnimatedClockRing({ currentHour, currentMinute }: { currentHour: number
           transition={{ duration: 1, ease: 'easeOut' }}
         />
 
-        {/* Hour markers */}
+        {/* Hour markers - theme-aware */}
         {[0, 6, 12, 18].map((hour) => {
           const angle = (hour / 24) * 360 - 90;
           const x = 50 + 35 * Math.cos((angle * Math.PI) / 180);
@@ -181,17 +182,21 @@ function AnimatedClockRing({ currentHour, currentMinute }: { currentHour: number
               cx={x}
               cy={y}
               r="2"
-              fill="rgba(255, 255, 255, 0.4)"
+              fill="hsl(var(--cosmic-clock-marker))"
+              fillOpacity="0.5"
             />
           );
         })}
       </svg>
 
-      {/* Center time */}
+      {/* Center time - theme-aware */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <motion.span
-          className="text-xl font-bold text-white"
-          style={{ textShadow: '0 0 10px rgba(139, 92, 246, 0.5)' }}
+          className="text-xl font-bold"
+          style={{
+            color: 'hsl(var(--cosmic-text-primary))',
+            textShadow: '0 0 10px rgba(139, 92, 246, 0.5)'
+          }}
           animate={{ opacity: [1, 0.8, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
         >
@@ -230,7 +235,7 @@ function PremiumDayPill({
         "backdrop-blur-md border",
         isSelected
           ? "bg-gradient-to-br from-primary/40 to-accent/30 border-primary/50 shadow-lg shadow-primary/30"
-          : "bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20"
+          : "bg-slate-100/60 dark:bg-white/5 border-slate-200/60 dark:border-white/10 hover:bg-slate-200/60 dark:hover:bg-white/10 hover:border-slate-300/60 dark:hover:border-white/20"
       )}
       style={{ perspective: 500 }}
     >
@@ -249,16 +254,16 @@ function PremiumDayPill({
         />
       )}
 
-      <span className={cn(
-        "text-xs font-medium uppercase",
-        isSelected ? "text-white" : "text-white/60"
-      )}>
+      <span
+        className={cn("text-xs font-medium uppercase", isSelected && "text-white")}
+        style={!isSelected ? { color: 'hsl(var(--cosmic-pill-text))' } : undefined}
+      >
         {weekday}
       </span>
-      <span className={cn(
-        "text-lg font-bold",
-        isSelected ? "text-white" : "text-white/90"
-      )}>
+      <span
+        className={cn("text-lg font-bold", isSelected && "text-white")}
+        style={!isSelected ? { color: 'hsl(var(--cosmic-text-primary))' } : undefined}
+      >
         {day}
       </span>
 
@@ -696,7 +701,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
             <div>
               {/* Title with sparkle */}
               <motion.h3
-                className="text-lg font-bold text-white flex items-center gap-2"
+                className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2"
                 style={{ textShadow: '0 0 10px rgba(139, 92, 246, 0.3)' }}
               >
                 <motion.span
@@ -711,12 +716,12 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
               {/* Current event badge */}
               {currentEvent && (
                 <motion.div
-                  className="mt-1 px-3 py-1 bg-white/10 backdrop-blur-sm rounded-full inline-flex items-center gap-2"
+                  className="mt-1 px-3 py-1 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-full inline-flex items-center gap-2"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                 >
                   <span>{currentEvent.emoji}</span>
-                  <span className="text-sm text-white/80">{currentEvent.title}</span>
+                  <span className="text-sm text-slate-600 dark:text-white/80">{currentEvent.title}</span>
                 </motion.div>
               )}
             </div>
@@ -729,10 +734,10 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                 onClick={goToToday}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                className="p-2.5 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-xl border border-white/10 transition-colors"
+                className="p-2.5 bg-slate-100/60 dark:bg-white/10 hover:bg-slate-200/60 dark:hover:bg-white/20 backdrop-blur-sm rounded-xl border border-slate-200/60 dark:border-white/10 transition-colors"
                 aria-label={t.today || 'Today'}
               >
-                <Home className="w-5 h-5 text-white/80" />
+                <Home className="w-5 h-5 text-slate-600 dark:text-white/80" />
               </motion.button>
             )}
 
@@ -800,14 +805,17 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                           className="text-center"
                           style={{ width: `${HOUR_WIDTH_PX}px` }}
                         >
-                          <span className={cn(
-                            "text-sm font-medium tabular-nums",
-                            isDayToday && hour === currentHour
-                              ? "text-purple-700 dark:text-purple-300 font-bold"
-                              : hour === 0
-                                ? "text-white/90 font-semibold"
-                                : "text-white/50"
-                          )}>
+                          <span
+                            className={cn(
+                              "text-sm font-medium tabular-nums",
+                              isDayToday && hour === currentHour && "text-purple-700 dark:text-purple-300 font-bold"
+                            )}
+                            style={!(isDayToday && hour === currentHour) ? {
+                              color: hour === 0
+                                ? 'hsl(var(--cosmic-text-primary))'
+                                : 'hsl(var(--cosmic-text-muted))'
+                            } : undefined}
+                          >
                             {hour === 0 ? formatDayShort(date, language).day : formatTime(hour)}
                           </span>
                         </div>
@@ -819,8 +827,8 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                       "absolute left-0 right-0 top-8 h-16 rounded-2xl overflow-hidden",
                       "backdrop-blur-sm border",
                       isDaySelected
-                        ? "bg-white/10 border-white/20"
-                        : "bg-white/5 border-white/10"
+                        ? "bg-slate-200/40 dark:bg-white/10 border-slate-300/50 dark:border-white/20"
+                        : "bg-slate-100/40 dark:bg-white/5 border-slate-200/50 dark:border-white/10"
                     )}>
                       {/* Gradient river background */}
                       <div
@@ -865,7 +873,10 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                     </div>
 
                     {/* Period labels */}
-                    <div className="absolute left-0 right-0 bottom-0 flex text-xs text-white/40">
+                    <div
+                      className="absolute left-0 right-0 bottom-0 flex text-xs"
+                      style={{ color: 'hsl(var(--cosmic-text-muted))' }}
+                    >
                       <div className="flex-1 text-center">{t.night || 'Night'}</div>
                       <div className="flex-1 text-center">{t.morning || 'Morning'}</div>
                       <div className="flex-1 text-center">{t.afternoon || 'Afternoon'}</div>
@@ -885,11 +896,11 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
         {/* Empty state */}
         {filteredEvents.length === 0 && (
           <motion.div
-            className="mt-3 text-center py-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10"
+            className="mt-3 text-center py-4 bg-slate-100/60 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-slate-200/60 dark:border-white/10"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <p className="text-sm text-white/60">
+            <p className="text-sm text-slate-500 dark:text-white/60">
               {isToday
                 ? (t.scheduleEmpty || 'No events planned. Tap + to add your schedule!')
                 : (t.scheduleEmptyDay || 'No events for this day')}
@@ -1048,17 +1059,17 @@ function AddEventModal({
               className="p-2 hover:bg-white/10 rounded-xl transition-colors"
               aria-label={t.close || 'Close'}
             >
-              <X className="w-5 h-5 text-white/80" />
+              <X className="w-5 h-5 text-slate-600 dark:text-white/80" />
             </motion.button>
           </div>
 
           {/* Date picker */}
           <div className="mb-4">
-            <label className="text-xs text-white/60 mb-1 block">{t.scheduleDate || 'Date'}</label>
+            <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">{t.scheduleDate || 'Date'}</label>
             <select
               value={eventDate}
               onChange={(e) => setEventDate(e.target.value)}
-              className="w-full p-3 bg-white/10 backdrop-blur-sm rounded-xl text-sm text-white border border-white/20 focus:border-primary/50 focus:outline-none"
+              className="w-full p-3 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20 focus:border-primary/50 focus:outline-none"
             >
               {allDates.map((date) => (
                 <option key={date} value={date} className="bg-white dark:bg-slate-900 text-foreground">{formatDateOption(date)}</option>
@@ -1086,7 +1097,7 @@ function AddEventModal({
                     "backdrop-blur-sm border",
                     isSelected
                       ? `bg-gradient-to-br ${gradient} border-white/30 shadow-lg`
-                      : "bg-white/5 border-white/10 hover:bg-white/10"
+                      : "bg-slate-100/60 dark:bg-white/5 border-slate-200/60 dark:border-white/10 hover:bg-slate-200/60 dark:hover:bg-white/10"
                   )}
                 >
                   <motion.span
@@ -1097,7 +1108,7 @@ function AddEventModal({
                   >
                     {preset.emoji}
                   </motion.span>
-                  <span className="text-xs text-white/80">{label}</span>
+                  <span className="text-xs text-slate-600 dark:text-white/80">{label}</span>
                 </motion.button>
               );
             })}
@@ -1109,18 +1120,18 @@ function AddEventModal({
             value={customTitle}
             onChange={(e) => setCustomTitle(e.target.value)}
             placeholder={t.scheduleCustomTitle || 'Custom title (optional)'}
-            className="w-full p-3 bg-white/10 backdrop-blur-sm rounded-xl text-sm text-white border border-white/20 focus:border-primary/50 focus:outline-none mb-4 placeholder:text-white/40"
+            className="w-full p-3 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20 focus:border-primary/50 focus:outline-none mb-4 placeholder:text-slate-400 dark:placeholder:text-white/40"
           />
 
           {/* Time pickers */}
           <div className="flex items-center gap-3 mb-4">
             <div className="flex-1">
-              <label className="text-xs text-white/60 mb-1 block">{t.scheduleStart || 'Start'}</label>
+              <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">{t.scheduleStart || 'Start'}</label>
               <div className="flex gap-1">
                 <select
                   value={startHour}
                   onChange={(e) => setStartHour(safeParseInt(e.target.value, 9, 0, 23))}
-                  className="flex-1 p-2 bg-white/10 backdrop-blur-sm rounded-lg text-sm text-white border border-white/20"
+                  className="flex-1 p-2 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20"
                 >
                   {HOURS.map((h) => (
                     <option key={h} value={h} className="bg-white dark:bg-slate-900 text-foreground">{h.toString().padStart(2, '0')}</option>
@@ -1129,7 +1140,7 @@ function AddEventModal({
                 <select
                   value={startMinute}
                   onChange={(e) => setStartMinute(safeParseInt(e.target.value, 0, 0, 59))}
-                  className="flex-1 p-2 bg-white/10 backdrop-blur-sm rounded-lg text-sm text-white border border-white/20"
+                  className="flex-1 p-2 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20"
                 >
                   {[0, 15, 30, 45].map((m) => (
                     <option key={m} value={m} className="bg-white dark:bg-slate-900 text-foreground">{m.toString().padStart(2, '0')}</option>
@@ -1138,12 +1149,12 @@ function AddEventModal({
               </div>
             </div>
             <div className="flex-1">
-              <label className="text-xs text-white/60 mb-1 block">{t.scheduleEnd || 'End'}</label>
+              <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">{t.scheduleEnd || 'End'}</label>
               <div className="flex gap-1">
                 <select
                   value={endHour}
                   onChange={(e) => setEndHour(safeParseInt(e.target.value, 10, 0, 23))}
-                  className="flex-1 p-2 bg-white/10 backdrop-blur-sm rounded-lg text-sm text-white border border-white/20"
+                  className="flex-1 p-2 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20"
                 >
                   {HOURS.map((h) => (
                     <option key={h} value={h} className="bg-white dark:bg-slate-900 text-foreground">{h.toString().padStart(2, '0')}</option>
@@ -1152,7 +1163,7 @@ function AddEventModal({
                 <select
                   value={endMinute}
                   onChange={(e) => setEndMinute(safeParseInt(e.target.value, 0, 0, 59))}
-                  className="flex-1 p-2 bg-white/10 backdrop-blur-sm rounded-lg text-sm text-white border border-white/20"
+                  className="flex-1 p-2 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20"
                 >
                   {[0, 15, 30, 45].map((m) => (
                     <option key={m} value={m} className="bg-white dark:bg-slate-900 text-foreground">{m.toString().padStart(2, '0')}</option>
@@ -1164,12 +1175,12 @@ function AddEventModal({
 
           {/* Note */}
           <div className="mb-4">
-            <label className="text-xs text-white/60 mb-1 block">{t.scheduleNote || 'Note (optional)'}</label>
+            <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">{t.scheduleNote || 'Note (optional)'}</label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={t.scheduleNotePlaceholder || 'Add details or reminders...'}
-              className="w-full p-3 bg-white/10 backdrop-blur-sm rounded-xl text-sm text-white border border-white/20 focus:border-primary/50 focus:outline-none resize-none placeholder:text-white/40"
+              className="w-full p-3 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20 focus:border-primary/50 focus:outline-none resize-none placeholder:text-slate-400 dark:placeholder:text-white/40"
               rows={2}
             />
           </div>
@@ -1265,13 +1276,13 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
 
   return (
     <motion.div
-      className="mt-3 p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10"
+      className="mt-3 p-4 bg-slate-100/60 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-slate-200/60 dark:border-white/10"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
       <div className="flex items-center gap-2 mb-3">
         <span className="text-lg">📋</span>
-        <span className="text-sm font-medium text-white/90">
+        <span className="text-sm font-medium text-slate-700 dark:text-white/90">
           {t.yourTasksNow || 'Your tasks now'}
         </span>
       </div>
@@ -1322,7 +1333,7 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
         {blocks.map(block => (
           <div
             key={`time-${block.id}`}
-            className="text-xs text-white/50 text-center"
+            className="text-xs text-slate-500 dark:text-white/50 text-center"
             style={{ width: `${(block.duration / totalMinutes) * 100}%`, minWidth: '70px' }}
           >
             {formatTime(block.startTime)} — {formatTime(block.endTime)}
@@ -1436,8 +1447,8 @@ function EventDetailsModal({
               )}
             </motion.div>
 
-            <h3 id="event-details-title" className="text-lg font-bold text-white">{event.title}</h3>
-            <p className="text-sm text-white/60">
+            <h3 id="event-details-title" className="text-lg font-bold text-slate-800 dark:text-white">{event.title}</h3>
+            <p className="text-sm text-slate-500 dark:text-white/60">
               {formatTime(event.startHour, event.startMinute)} - {formatTime(event.endHour, event.endMinute)}
             </p>
 
@@ -1461,8 +1472,8 @@ function EventDetailsModal({
           </div>
 
           {event.note && (
-            <div className="mb-4 p-3 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
-              <p className="text-sm text-white/80">{event.note}</p>
+            <div className="mb-4 p-3 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-xl border border-slate-200/60 dark:border-white/20">
+              <p className="text-sm text-slate-600 dark:text-white/80">{event.note}</p>
             </div>
           )}
 
@@ -1487,7 +1498,7 @@ function EventDetailsModal({
               onClick={onClose}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="flex-1 py-3 bg-white/10 backdrop-blur-sm rounded-xl font-medium text-white border border-white/20"
+              className="flex-1 py-3 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-xl font-medium text-slate-800 dark:text-white border border-slate-200/60 dark:border-white/20"
             >
               {t.close || 'Close'}
             </motion.button>

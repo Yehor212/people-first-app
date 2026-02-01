@@ -46,12 +46,13 @@ interface StarData {
 function Star({ x, y, size, opacity, duration, delay }: Omit<StarData, 'id'>) {
   return (
     <motion.div
-      className="absolute rounded-full bg-slate-200 dark:bg-white"
+      className="absolute rounded-full"
       style={{
         left: `${x}%`,
         top: `${y}%`,
         width: size,
         height: size,
+        backgroundColor: 'hsl(var(--cosmic-star-bg))',
       }}
       animate={{
         opacity: [opacity * 0.5, opacity, opacity * 0.5],
@@ -481,7 +482,8 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
                 ry={ry}
                 transform={`rotate(${tilt} 50 50)`}
                 fill="none"
-                stroke="rgba(255, 255, 255, 0.12)"
+                stroke="hsl(var(--cosmic-orbit-stroke))"
+                strokeOpacity="0.2"
                 strokeWidth="0.4"
                 strokeDasharray="2.5 2"
                 filter="url(#orbitGlow)"
