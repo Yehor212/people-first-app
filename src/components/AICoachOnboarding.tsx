@@ -43,6 +43,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: '¡Hola! Soy tu coach de IA',
         de: 'Hallo! Ich bin dein AI-Coach',
         fr: 'Salut! Je suis ton coach IA',
+        ja: 'こんにちは！私はあなたのAIコーチです',
       },
       subtitle: {
         ru: 'Помогу тебе достигать целей и поддержу в трудные моменты',
@@ -51,6 +52,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'Te ayudaré a alcanzar metas y te apoyaré en momentos difíciles',
         de: 'Ich helfe dir, Ziele zu erreichen und unterstütze dich in schweren Momenten',
         fr: 'Je t\'aiderai à atteindre tes objectifs et te soutiendrai dans les moments difficiles',
+        ja: '目標達成をサポートし、困難な時に支えます',
       },
     },
     goal: {
@@ -61,6 +63,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: '¿Qué te trae a ZenFlow?',
         de: 'Was bringt dich zu ZenFlow?',
         fr: 'Qu\'est-ce qui t\'amène à ZenFlow?',
+        ja: 'ZenFlowを始めたきっかけは？',
       },
       subtitle: {
         ru: 'Это поможет мне персонализировать твой опыт',
@@ -69,6 +72,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'Esto me ayuda a personalizar tu experiencia',
         de: 'Das hilft mir, dein Erlebnis zu personalisieren',
         fr: 'Cela m\'aide à personnaliser ton expérience',
+        ja: 'あなたに合った体験を提供するために教えてください',
       },
     },
     concern: {
@@ -79,6 +83,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: '¿Qué tienes en mente últimamente?',
         de: 'Was beschäftigt dich gerade?',
         fr: 'Qu\'est-ce qui te préoccupe en ce moment?',
+        ja: '最近気になっていることは？',
       },
       subtitle: {
         ru: 'Поделись тем, над чем хочешь поработать',
@@ -87,6 +92,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'Comparte en qué te gustaría trabajar',
         de: 'Teile mit, woran du arbeiten möchtest',
         fr: 'Partage ce sur quoi tu aimerais travailler',
+        ja: '取り組みたいことを教えてください',
       },
       placeholder: {
         ru: 'Например: сложно сосредоточиться, прокрастинация...',
@@ -95,6 +101,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'ej., difícil concentrarse, procrastinación...',
         de: 'z.B., schwer zu fokussieren, Prokrastination...',
         fr: 'ex., difficile de se concentrer, procrastination...',
+        ja: '例：集中できない、先延ばし...',
       },
     },
     stress: {
@@ -105,6 +112,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: '¿Cómo manejas el estrés normalmente?',
         de: 'Wie gehst du normalerweise mit Stress um?',
         fr: 'Comment gères-tu le stress habituellement?',
+        ja: 'ストレス解消法は？',
       },
       subtitle: {
         ru: 'Я напомню тебе об этом, когда будет нужно',
@@ -113,6 +121,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'Te lo recordaré cuando sea necesario',
         de: 'Ich erinnere dich daran, wenn nötig',
         fr: 'Je te le rappellerai quand ce sera nécessaire',
+        ja: '必要なときにお知らせします',
       },
       placeholder: {
         ru: 'Например: гуляю, слушаю музыку, дышу...',
@@ -121,6 +130,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'ej., caminar, escuchar música, respirar...',
         de: 'z.B., spazieren, Musik hören, atmen...',
         fr: 'ex., marcher, écouter de la musique, respirer...',
+        ja: '例：散歩、音楽を聴く、深呼吸...',
       },
     },
     goals: {
@@ -131,6 +141,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'Bienestar',
         de: 'Wohlbefinden',
         fr: 'Bien-être',
+        ja: 'ウェルビーイング',
       },
       productivity: {
         ru: 'Продуктивность',
@@ -139,6 +150,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'Productividad',
         de: 'Produktivität',
         fr: 'Productivité',
+        ja: '生産性',
       },
       habits: {
         ru: 'Привычки',
@@ -147,6 +159,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'Hábitos',
         de: 'Gewohnheiten',
         fr: 'Habitudes',
+        ja: '習慣',
       },
       mood: {
         ru: 'Настроение',
@@ -155,6 +168,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'Estado de ánimo',
         de: 'Stimmung',
         fr: 'Humeur',
+        ja: '気分',
       },
     },
     buttons: {
@@ -165,6 +179,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'Omitir',
         de: 'Überspringen',
         fr: 'Passer',
+        ja: 'スキップ',
       },
       next: {
         ru: 'Далее',
@@ -173,6 +188,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'Siguiente',
         de: 'Weiter',
         fr: 'Suivant',
+        ja: '次へ',
       },
       start: {
         ru: 'Начать',
@@ -181,6 +197,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: 'Empezar',
         de: 'Starten',
         fr: 'Commencer',
+        ja: '開始',
       },
       letsGo: {
         ru: 'Поехали!',
@@ -189,6 +206,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
         es: '¡Vamos!',
         de: 'Los geht\'s!',
         fr: 'C\'est parti!',
+        ja: 'レッツゴー！',
       },
     },
   };
@@ -271,6 +289,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
               <p className="text-sm text-muted-foreground">
                 {language === 'ru' ? 'Отвечу на вопросы, помогу с мотивацией и поддержу в трудные моменты' :
                  language === 'uk' ? 'Відповім на питання, допоможу з мотивацією і підтримаю в важкі моменти' :
+                 language === 'ja' ? '質問に答え、モチベーションを高め、困難な時にサポートします' :
                  'I\'ll answer questions, help with motivation and support you in difficult moments'}
               </p>
             </div>

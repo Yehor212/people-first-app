@@ -8,7 +8,7 @@ import { Zap, Flame, Star, Sparkles, Heart, Target, Brain, Trophy } from 'lucide
 // Locale mapping for date/time formatting
 const localeMap: Record<Language, string> = {
   ru: 'ru-RU', en: 'en-US', uk: 'uk-UA',
-  es: 'es-ES', de: 'de-DE', fr: 'fr-FR'
+  es: 'es-ES', de: 'de-DE', fr: 'fr-FR', ja: 'ja-JP'
 };
 
 interface DayClockProps {

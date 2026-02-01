@@ -10,7 +10,7 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const SUPPORTED_LANGUAGES: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr'];
+const SUPPORTED_LANGUAGES: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr', 'ja'];
 
 function detectBrowserLanguage(): Language {
   try {

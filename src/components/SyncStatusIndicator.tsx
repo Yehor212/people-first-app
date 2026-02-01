@@ -14,7 +14,7 @@ import { isCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
 import { Cloud, CloudOff, AlertCircle, CheckCircle, Loader, WifiOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { ru, enUS, uk, es, de, fr } from 'date-fns/locale';
+import { ru, enUS, uk, es, de, fr, ja } from 'date-fns/locale';
 import { getLocale } from '@/lib/timeUtils';
 
 const localeMap = {
@@ -24,6 +24,7 @@ const localeMap = {
   es,
   de,
   fr,
+  ja,
 };
 
 export function SyncStatusIndicator() {

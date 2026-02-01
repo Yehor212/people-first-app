@@ -7,7 +7,7 @@ interface LanguageSelectorProps {
   onComplete: () => void;
 }
 
-const languages: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr'];
+const languages: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr', 'ja'];
 
 export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
   const { language, setLanguage, t } = useLanguage();
@@ -96,6 +96,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
            language === 'es' ? '🌐 Auto-detectado: Español' :
            language === 'de' ? '🌐 Automatisch erkannt: Deutsch' :
            language === 'fr' ? '🌐 Détection automatique: Français' :
+           language === 'ja' ? '🌐 自動検出: 日本語' :
            '🌐 Auto-detected language'}
         </p>
       </div>

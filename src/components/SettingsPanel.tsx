@@ -56,7 +56,7 @@ interface SettingsPanelProps {
   onOpenWidgetSettings?: () => void;
 }
 
-const languages: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr'];
+const languages: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr', 'ja'];
 
 export function SettingsPanel({
   userName,

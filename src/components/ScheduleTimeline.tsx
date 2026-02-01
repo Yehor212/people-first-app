@@ -971,7 +971,7 @@ function AddEventModal({
     if (dateStr === today) return t.today || 'Today';
     if (dateStr === tomorrow) return t.tomorrow || 'Tomorrow';
 
-    const locale = language === 'ru' ? 'ru-RU' : language === 'uk' ? 'uk-UA' : language === 'es' ? 'es-ES' : language === 'de' ? 'de-DE' : language === 'fr' ? 'fr-FR' : 'en-US';
+    const locale = language === 'ru' ? 'ru-RU' : language === 'uk' ? 'uk-UA' : language === 'es' ? 'es-ES' : language === 'de' ? 'de-DE' : language === 'fr' ? 'fr-FR' : language === 'ja' ? 'ja-JP' : 'en-US';
     return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
   };
 

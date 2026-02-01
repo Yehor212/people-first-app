@@ -366,6 +366,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
                language === 'es' ? 'Sorpresa del día' :
                language === 'de' ? 'Tagesüberraschung' :
                language === 'fr' ? 'Surprise du jour' :
+               language === 'ja' ? '今日のサプライズ' :
                'Daily Surprise'}
             </p>
             <p className="text-sm text-muted-foreground">
@@ -374,6 +375,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
                language === 'es' ? '¡Toca para abrir!' :
                language === 'de' ? 'Tippe zum Öffnen!' :
                language === 'fr' ? 'Appuie pour ouvrir!' :
+               language === 'ja' ? 'タップして開こう！' :
                'Tap to reveal!'}
             </p>
           </div>

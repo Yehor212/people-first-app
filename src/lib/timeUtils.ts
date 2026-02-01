@@ -88,7 +88,8 @@ export const localeMap: Record<Language, string> = {
   uk: 'uk-UA',
   es: 'es-ES',
   de: 'de-DE',
-  fr: 'fr-FR'
+  fr: 'fr-FR',
+  ja: 'ja-JP'
 };
 
 /**
