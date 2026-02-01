@@ -212,7 +212,33 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
 
   await db.transaction("rw", db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, async () => {
     if (validMoods.valid.length) await db.moods.bulkPut(validMoods.valid);
-    if (validHabits.valid.length) await db.habits.bulkPut(validHabits.valid);
+
+    // For habits: use timestamp-based conflict resolution to prevent data loss
+    if (validHabits.valid.length) {
+      const localHabits = await db.habits.toArray();
+      const localHabitMap = new Map(localHabits.map(h => [h.id, h]));
+
+      const mergedHabits = validHabits.valid.map(remoteHabit => {
+        const localHabit = localHabitMap.get(remoteHabit.id);
+
+        // If no local habit exists, use remote
+        if (!localHabit) return remoteHabit;
+
+        // Compare timestamps - keep the more recent version
+        const localTime = localHabit.updatedAt ? new Date(localHabit.updatedAt).getTime() : 0;
+        const remoteTime = remoteHabit.updatedAt ? new Date(remoteHabit.updatedAt).getTime() : 0;
+
+        // If local is newer, preserve local data (don't overwrite with stale remote)
+        if (localTime > remoteTime) {
+          return localHabit;
+        }
+
+        return remoteHabit;
+      });
+
+      await db.habits.bulkPut(mergedHabits);
+    }
+
     if (validFocus.valid.length) await db.focusSessions.bulkPut(validFocus.valid);
     if (validGratitude.valid.length) await db.gratitudeEntries.bulkPut(validGratitude.valid);
     if (validSettings.valid.length) await db.settings.bulkPut(validSettings.valid);

@@ -174,8 +174,8 @@ export function ShareModal(props: ShareModalProps) {
         setTimeout(() => setShared(false), 2000);
       } else {
         // shareImage already downloaded the file as fallback
-        // Show info toast instead of error
-        toast.info(t.shareDownloaded || 'Share not available. Image downloaded instead.');
+        // Show success toast - the image was saved
+        toast.success(t.imageSaved || 'Image saved to downloads!');
         hapticSuccess();
       }
     } catch (error) {

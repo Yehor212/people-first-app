@@ -934,7 +934,8 @@ export function Index() {
           completionsByDate,
           completedDates: completionsByDate[date] >= target
             ? [...new Set([...existingDates, date])]
-            : existingDates.filter(d => d !== date)
+            : existingDates.filter(d => d !== date),
+          updatedAt: new Date().toISOString(), // Timestamp for conflict resolution
         };
       }
 
@@ -956,6 +957,7 @@ export function Index() {
         completedDates: completed
           ? existingDates.filter(d => d !== date)
           : [...existingDates, date],
+        updatedAt: new Date().toISOString(), // Timestamp for conflict resolution
       };
     }));
     triggerSync(); // Auto-sync to cloud

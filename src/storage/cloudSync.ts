@@ -7,7 +7,7 @@ import { generateSecureRandom } from "@/lib/validation";
 
 const BACKUP_TABLE = "user_backups";
 const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
-const SYNC_DEBOUNCE = 30 * 1000; // 30 seconds after data change
+const SYNC_DEBOUNCE = 60 * 1000; // 60 seconds after data change (increased to reduce race conditions)
 
 let syncInterval: ReturnType<typeof setInterval> | null = null;
 let syncTimeout: ReturnType<typeof setTimeout> | null = null;
