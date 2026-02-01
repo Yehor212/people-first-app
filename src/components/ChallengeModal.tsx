@@ -1159,6 +1159,9 @@ export const ChallengeModal = memo(function ChallengeModal({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl flex flex-col p-0">
+        {/* Visually hidden title for accessibility */}
+        <SheetTitle className="sr-only">{getTitle()}</SheetTitle>
+
         {/* Premium Header - like AICoachChat */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200/60 dark:border-white/10 relative">
           {/* Subtle gradient glow */}
