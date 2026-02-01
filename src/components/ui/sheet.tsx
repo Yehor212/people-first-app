@@ -84,8 +84,8 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-400/30 dark:via-white/20 to-transparent" />
           )}
 
-          {/* Content wrapper */}
-          <div className="relative z-10 flex flex-col flex-1 min-h-0 overflow-y-auto">
+          {/* Content - rendered directly without wrapper to avoid flex conflicts */}
+          <div className="relative z-10 flex-1 flex flex-col">
             {children}
           </div>
 
