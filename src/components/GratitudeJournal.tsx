@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GratitudeEntry } from '@/types';
 import { getToday, generateId, cn } from '@/lib/utils';
@@ -17,11 +17,32 @@ interface GratitudeJournalProps {
   onInitialTextUsed?: () => void;
 }
 
+// Floating particle for premium effect
+interface FloatingParticle {
+  id: number;
+  x: number;
+  emoji: string;
+  delay: number;
+  duration: number;
+}
+
 export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, initialText, onInitialTextUsed }: GratitudeJournalProps) {
   const { t } = useLanguage();
   const [text, setText] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Generate floating particles for premium CTA mode
+  const floatingParticles = useMemo<FloatingParticle[]>(() => {
+    const emojis = ['✨', '💖', '🌟', '💫', '✨', '💗'];
+    return Array.from({ length: 6 }, (_, i) => ({
+      id: i,
+      x: 12 + i * 14,
+      emoji: emojis[i % emojis.length],
+      delay: i * 0.4,
+      duration: 3 + Math.random() * 1.5,
+    }));
+  }, []);
 
   // Handle initial text from DailyPromptCard
   useEffect(() => {
@@ -96,13 +117,58 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
           <motion.div
             className="absolute inset-0"
             style={{
-              background: 'radial-gradient(circle at 70% 30%, rgba(236, 72, 153, 0.1) 0%, transparent 50%)',
+              background: 'radial-gradient(circle at 70% 30%, rgba(236, 72, 153, 0.12) 0%, transparent 50%)',
             }}
             animate={{ opacity: [0.3, 0.5, 0.3] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           />
+          {/* Secondary nebula */}
+          <motion.div
+            className="absolute inset-0"
+            style={{
+              background: 'radial-gradient(circle at 20% 80%, rgba(244, 114, 182, 0.08) 0%, transparent 40%)',
+            }}
+            animate={{ opacity: [0.2, 0.4, 0.2] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1 }}
+          />
         </div>
       )}
+
+      {/* Floating particles when expanded in CTA mode */}
+      <AnimatePresence>
+        {isExpanded && isPrimaryCTA && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {floatingParticles.map((particle) => (
+              <motion.div
+                key={particle.id}
+                className="absolute text-pink-400/50"
+                style={{
+                  left: `${particle.x}%`,
+                  bottom: '15%',
+                  fontSize: 14,
+                }}
+                initial={{ y: 0, opacity: 0, scale: 0.5 }}
+                animate={{
+                  y: [-20, -70, -100],
+                  x: [0, particle.id % 2 === 0 ? 8 : -8, 0],
+                  opacity: [0, 0.7, 0],
+                  scale: [0.5, 1, 0.7],
+                  rotate: [0, particle.id % 2 === 0 ? 15 : -15, 0],
+                }}
+                exit={{ opacity: 0 }}
+                transition={{
+                  duration: particle.duration,
+                  repeat: Infinity,
+                  delay: particle.delay,
+                  ease: 'easeOut',
+                }}
+              >
+                {particle.emoji}
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Header */}
       <div className="relative p-4 flex items-center gap-3">
@@ -143,7 +209,14 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
               border: '1px solid rgba(236, 72, 153, 0.3)',
               boxShadow: '0 0 12px rgba(236, 72, 153, 0.3)',
             }}
-            animate={{ scale: [1, 1.05, 1] }}
+            animate={{
+              scale: [1, 1.05, 1],
+              boxShadow: [
+                '0 0 12px rgba(236, 72, 153, 0.3)',
+                '0 0 18px rgba(236, 72, 153, 0.5)',
+                '0 0 12px rgba(236, 72, 153, 0.3)',
+              ],
+            }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           >
             <Zap className="w-3 h-3 text-pink-400" />
@@ -239,19 +312,39 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
                 >
                   {t.cancel}
                 </Button>
+
+                {/* Premium save button with shimmer effect */}
                 <motion.button
                   onClick={handleSubmit}
                   disabled={!text.trim()}
                   className={cn(
-                    'flex-1 py-2.5 rounded-xl font-medium',
+                    'flex-1 py-2.5 rounded-xl font-medium relative overflow-hidden',
                     'bg-gradient-to-r from-pink-500 to-rose-500 text-white',
                     'disabled:opacity-50 disabled:cursor-not-allowed'
                   )}
-                  style={{ boxShadow: text.trim() ? '0 0 16px rgba(236, 72, 153, 0.4)' : 'none' }}
-                  whileHover={text.trim() ? { scale: 1.02 } : {}}
-                  whileTap={text.trim() ? { scale: 0.98 } : {}}
+                  style={{
+                    boxShadow: text.trim()
+                      ? '0 0 20px rgba(236, 72, 153, 0.5), 0 4px 12px rgba(236, 72, 153, 0.3)'
+                      : 'none'
+                  }}
+                  whileHover={text.trim() ? {
+                    scale: 1.02,
+                    boxShadow: '0 0 25px rgba(236, 72, 153, 0.6), 0 4px 15px rgba(236, 72, 153, 0.4)'
+                  } : undefined}
+                  whileTap={text.trim() ? { scale: 0.98 } : undefined}
                 >
-                  {t.save}
+                  {/* Shimmer effect when button is enabled */}
+                  {text.trim() && (
+                    <motion.div
+                      className="absolute inset-0 pointer-events-none"
+                      style={{
+                        background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%)',
+                      }}
+                      animate={{ x: ['-100%', '200%'] }}
+                      transition={{ duration: 2.5, repeat: Infinity, ease: 'linear' }}
+                    />
+                  )}
+                  <span className="relative z-10">{t.save}</span>
                 </motion.button>
               </div>
             </motion.div>
@@ -267,15 +360,36 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
             <motion.div
               key={entry.id}
               className={cn(
-                'p-3 rounded-xl text-sm',
-                'bg-gradient-to-r from-pink-500/10 to-transparent',
-                'border-l-2 border-pink-500/40'
+                'p-3 rounded-xl text-sm relative overflow-hidden cursor-default',
+                'bg-gradient-to-r from-pink-500/12 via-pink-500/5 to-transparent',
+                'border-l-2 border-pink-500/50'
               )}
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
+              initial={{ opacity: 0, x: -15, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{
+                delay: index * 0.08,
+                type: 'spring',
+                stiffness: 200,
+                damping: 20,
+              }}
+              whileHover={{
+                x: 4,
+                backgroundColor: 'rgba(236, 72, 153, 0.12)',
+                transition: { duration: 0.2 },
+              }}
             >
-              <span className="text-pink-400 mr-2">✨</span>
+              <motion.span
+                className="text-pink-400 mr-2"
+                animate={{ scale: [1, 1.15, 1], rotate: [0, 8, -8, 0] }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  delay: index * 0.25,
+                  ease: 'easeInOut',
+                }}
+              >
+                ✨
+              </motion.span>
               <span className="text-foreground/80">{entry.text}</span>
             </motion.div>
           ))}

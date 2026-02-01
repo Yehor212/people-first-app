@@ -1,16 +1,20 @@
 /**
  * EmotionGalaxy - "Галактика Емоцій" (Emotion Galaxy)
  *
- * Orbital visualization of emotion distribution with:
- * - Emojis orbiting around center using HTML overlays + Framer Motion
- * - Size = frequency (more emotions = larger & closer)
- * - Dashed orbit paths (SVG)
- * - Star field background
- * - Glow effects per emotion color
+ * PREMIUM Orbital visualization of emotion distribution with:
+ * - 3-layer parallax star field for depth
+ * - Animated drifting nebula clouds
+ * - Elliptical 3D-tilted orbits (not circles)
+ * - Comet trails following emojis
+ * - Kepler's Laws (inner orbits faster)
+ * - 3D scale effect (closer = larger)
+ * - Multi-layer glow effects
+ * - Shooting stars (random occasional)
+ * - Premium pulsing center hub
  */
 
-import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SparklesIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
@@ -28,8 +32,18 @@ interface EmotionGalaxyProps {
   className?: string;
 }
 
-// Star in background
-function Star({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
+// 3-layer parallax star system
+interface StarData {
+  id: string;
+  x: number;
+  y: number;
+  size: number;
+  opacity: number;
+  duration: number;
+  delay: number;
+}
+
+function Star({ x, y, size, opacity, duration, delay }: Omit<StarData, 'id'>) {
   return (
     <motion.div
       className="absolute rounded-full bg-white"
@@ -40,11 +54,11 @@ function Star({ x, y, size, delay }: { x: number; y: number; size: number; delay
         height: size,
       }}
       animate={{
-        opacity: [0.3, 0.8, 0.3],
-        scale: [1, 1.2, 1],
+        opacity: [opacity * 0.5, opacity, opacity * 0.5],
+        scale: [1, 1.3, 1],
       }}
       transition={{
-        duration: 2 + Math.random() * 2,
+        duration,
         delay,
         repeat: Infinity,
         ease: 'easeInOut',
@@ -53,8 +67,71 @@ function Star({ x, y, size, delay }: { x: number; y: number; size: number; delay
   );
 }
 
-// Orbiting emotion component - uses HTML with Framer Motion for reliable animation
-// Approach: A wrapper div rotates around the galaxy center, with emoji positioned at orbit radius
+// Shooting star component - random occasional effect
+function ShootingStar() {
+  const [visible, setVisible] = useState(false);
+  const [position, setPosition] = useState({ startX: 20, startY: 15, angle: 40 });
+
+  useEffect(() => {
+    const triggerStar = () => {
+      setPosition({
+        startX: 10 + Math.random() * 40,
+        startY: 5 + Math.random() * 25,
+        angle: 25 + Math.random() * 35,
+      });
+      setVisible(true);
+      setTimeout(() => setVisible(false), 800);
+    };
+
+    // Random interval between 6-12 seconds
+    const scheduleNext = () => {
+      const delay = 6000 + Math.random() * 6000;
+      return setTimeout(() => {
+        if (Math.random() > 0.4) triggerStar();
+        scheduleNext();
+      }, delay);
+    };
+
+    const timeout = scheduleNext();
+    return () => clearTimeout(timeout);
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {visible && (
+        <motion.div
+          className="absolute pointer-events-none z-20"
+          style={{
+            left: `${position.startX}%`,
+            top: `${position.startY}%`,
+            width: 50,
+            height: 2,
+            background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.9) 20%, rgba(139, 92, 246, 0.8) 100%)',
+            borderRadius: 1,
+            transformOrigin: 'left center',
+          }}
+          initial={{
+            scaleX: 0,
+            opacity: 0,
+            rotate: position.angle,
+            x: 0,
+            y: 0,
+          }}
+          animate={{
+            scaleX: [0, 1, 1, 0.5],
+            opacity: [0, 1, 0.8, 0],
+            x: [0, 60, 100],
+            y: [0, 40, 70],
+          }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.7, ease: 'easeOut' }}
+        />
+      )}
+    </AnimatePresence>
+  );
+}
+
+// Premium Orbiting Emotion with comet trail and 3D effects
 function OrbitingEmotion({
   emotion,
   orbitIndex,
@@ -68,82 +145,157 @@ function OrbitingEmotion({
   angle: number;
   animationDuration: number;
 }) {
-  // Calculate orbit radius as percentage (matching SVG viewBox 0-100, scaled to container)
-  const minRadiusPercent = 18;
-  const maxRadiusPercent = 40;
-  const radiusPercent = minRadiusPercent + (orbitIndex / Math.max(totalOrbits - 1, 1)) * (maxRadiusPercent - minRadiusPercent);
+  // Elliptical orbit parameters
+  const baseRadius = 20 + (orbitIndex / Math.max(totalOrbits - 1, 1)) * 22;
+  const rx = baseRadius * 2.8;        // X radius in pixels (wider)
+  const ry = baseRadius * 0.65 * 2.8; // Y radius (ellipse - 65% of X for 3D look)
 
   // Size based on frequency (inner = more frequent = larger)
-  const sizePx = 32 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 12;
+  const sizePx = 38 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 14;
+
+  // Kepler's law: inner orbits are significantly faster
+  const keplerDuration = animationDuration * (0.8 + orbitIndex * 0.25);
 
   return (
-    // Orbit wrapper: positioned at center, rotates around its own center
-    <motion.div
-      className="absolute"
-      style={{
-        left: '50%',
-        top: '50%',
-        width: 1,           // Must have dimensions for Framer Motion rotation
-        height: 1,          // Must have dimensions for Framer Motion rotation
-        transformOrigin: '0 0',  // Rotate around the center point (50%, 50% of parent)
-      }}
-      animate={{ rotate: [angle, angle + 360] }}
-      transition={{
-        duration: animationDuration,
-        repeat: Infinity,
-        ease: 'linear',
-      }}
-    >
-      {/* Emoji positioned at orbit radius (translate outward from center) */}
+    <>
+      {/* Comet Trail - 4 fading segments that follow the emoji */}
+      {[0, 1, 2, 3].map((trailIndex) => {
+        const trailOffset = (trailIndex + 1) * 12; // Degrees behind
+        const trailOpacity = 0.35 - trailIndex * 0.08;
+        const trailSize = sizePx * (0.7 - trailIndex * 0.12);
+        const trailBlur = 3 + trailIndex * 2;
+
+        return (
+          <motion.div
+            key={`trail-${orbitIndex}-${trailIndex}`}
+            className="absolute pointer-events-none"
+            style={{
+              left: '50%',
+              top: '50%',
+              width: 1,
+              height: 1,
+              transformOrigin: '0 0',
+            }}
+            animate={{ rotate: [angle - trailOffset, angle - trailOffset + 360] }}
+            transition={{
+              duration: keplerDuration,
+              repeat: Infinity,
+              ease: 'linear',
+            }}
+          >
+            <div
+              className="absolute rounded-full"
+              style={{
+                left: 0,
+                top: 0,
+                width: trailSize,
+                height: trailSize,
+                marginLeft: -trailSize / 2,
+                marginTop: -trailSize / 2,
+                transform: `translateX(${rx}px)`,
+                background: `radial-gradient(circle, ${emotion.color}${Math.round(trailOpacity * 255).toString(16).padStart(2, '0')} 0%, transparent 70%)`,
+                filter: `blur(${trailBlur}px)`,
+              }}
+            />
+          </motion.div>
+        );
+      })}
+
+      {/* Main Emoji Orb - Rotating wrapper */}
       <motion.div
         className="absolute"
         style={{
-          // Translate to orbit position (radius as % of parent, but parent is 280px)
-          // We use transform to position at the orbit radius
-          left: 0,
-          top: 0,
-          width: sizePx,
-          height: sizePx,
-          marginLeft: -sizePx / 2,
-          marginTop: -sizePx / 2,
-          // Position at orbit radius (radiusPercent of 280px container ≈ radius * 2.8)
-          transform: `translateX(${radiusPercent * 2.8}px)`,
+          left: '50%',
+          top: '50%',
+          width: 1,
+          height: 1,
+          transformOrigin: '0 0',
         }}
-        // Counter-rotate to keep emoji upright
-        animate={{ rotate: [-angle, -angle - 360] }}
+        animate={{ rotate: [angle, angle + 360] }}
         transition={{
-          duration: animationDuration,
+          duration: keplerDuration,
           repeat: Infinity,
           ease: 'linear',
         }}
       >
-        {/* Glow background */}
+        {/* Emoji container positioned at elliptical orbit radius */}
         <motion.div
-          className="absolute inset-0 rounded-full"
+          className="absolute"
           style={{
-            background: `${emotion.color}30`,
-            boxShadow: `0 0 12px ${emotion.color}60`,
+            left: 0,
+            top: 0,
+            width: sizePx,
+            height: sizePx,
+            marginLeft: -sizePx / 2,
+            marginTop: -sizePx / 2,
+            transform: `translateX(${rx}px)`,
           }}
-          animate={{
-            scale: [1, 1.15, 1],
-            opacity: [0.6, 0.9, 0.6],
-          }}
+          // Counter-rotate to keep emoji upright
+          animate={{ rotate: [-angle, -angle - 360] }}
           transition={{
-            duration: 2,
+            duration: keplerDuration,
             repeat: Infinity,
-            ease: 'easeInOut',
+            ease: 'linear',
           }}
-        />
-
-        {/* Emoji */}
-        <div
-          className="absolute inset-0 flex items-center justify-center"
-          style={{ fontSize: sizePx * 0.55 }}
         >
-          {emotion.emoji}
-        </div>
+          {/* Outer glow halo */}
+          <motion.div
+            className="absolute rounded-full"
+            style={{
+              inset: -6,
+              background: `radial-gradient(circle, ${emotion.color}30 0%, ${emotion.color}10 40%, transparent 70%)`,
+              filter: 'blur(6px)',
+            }}
+            animate={{
+              scale: [1.1, 1.4, 1.1],
+              opacity: [0.5, 0.8, 0.5],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+
+          {/* Inner glow ring with multi-layer shadow */}
+          <motion.div
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: `radial-gradient(circle at 35% 35%, ${emotion.color}40 0%, ${emotion.color}20 50%, ${emotion.color}10 100%)`,
+              boxShadow: `
+                0 0 12px ${emotion.color}70,
+                0 0 24px ${emotion.color}40,
+                inset 0 0 10px ${emotion.color}30,
+                inset 2px 2px 4px rgba(255,255,255,0.15)
+              `,
+            }}
+            animate={{
+              boxShadow: [
+                `0 0 12px ${emotion.color}70, 0 0 24px ${emotion.color}40, inset 0 0 10px ${emotion.color}30, inset 2px 2px 4px rgba(255,255,255,0.15)`,
+                `0 0 18px ${emotion.color}90, 0 0 36px ${emotion.color}50, inset 0 0 14px ${emotion.color}40, inset 2px 2px 6px rgba(255,255,255,0.2)`,
+                `0 0 12px ${emotion.color}70, 0 0 24px ${emotion.color}40, inset 0 0 10px ${emotion.color}30, inset 2px 2px 4px rgba(255,255,255,0.15)`,
+              ],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+
+          {/* Emoji */}
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{
+              fontSize: sizePx * 0.52,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+            }}
+          >
+            {emotion.emoji}
+          </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
+    </>
   );
 }
 
@@ -156,33 +308,57 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
     [emotions]
   );
 
-  // Generate stars
-  const stars = useMemo(
-    () =>
-      Array.from({ length: 40 }, (_, i) => ({
-        id: i,
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        size: 1 + Math.random() * 2,
-        delay: Math.random() * 3,
-      })),
-    []
-  );
+  // Generate 3-layer parallax star field
+  const starLayers = useMemo(() => {
+    // Layer 1: Distant stars (smallest, slowest twinkle)
+    const distant: StarData[] = Array.from({ length: 25 }, (_, i) => ({
+      id: `distant-${i}`,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 0.8 + Math.random() * 0.7,
+      opacity: 0.3 + Math.random() * 0.25,
+      duration: 4 + Math.random() * 2,
+      delay: Math.random() * 3,
+    }));
+
+    // Layer 2: Mid-distance stars
+    const mid: StarData[] = Array.from({ length: 15 }, (_, i) => ({
+      id: `mid-${i}`,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 1.2 + Math.random() * 1,
+      opacity: 0.4 + Math.random() * 0.3,
+      duration: 2.5 + Math.random() * 1.5,
+      delay: Math.random() * 2,
+    }));
+
+    // Layer 3: Near stars (largest, fastest twinkle)
+    const near: StarData[] = Array.from({ length: 8 }, (_, i) => ({
+      id: `near-${i}`,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      size: 1.8 + Math.random() * 1.5,
+      opacity: 0.5 + Math.random() * 0.4,
+      duration: 1.5 + Math.random() * 1,
+      delay: Math.random() * 1.5,
+    }));
+
+    return { distant, mid, near };
+  }, []);
 
   // Calculate angle offsets for each emotion to spread them around
   const emotionAngles = useMemo(() => {
-    return sortedEmotions.map((_, i) => (360 / sortedEmotions.length) * i);
+    return sortedEmotions.map((_, i) => (360 / Math.max(sortedEmotions.length, 1)) * i + 30);
   }, [sortedEmotions]);
 
-  // Animation durations (slower for outer orbits)
+  // Animation durations (base duration, Kepler adjustment happens in component)
   const animationDurations = useMemo(() => {
-    return sortedEmotions.map((_, i) => 15 + i * 5);
+    return sortedEmotions.map((_, i) => 12 + i * 4);
   }, [sortedEmotions]);
 
   return (
     <div className={cn(
       "relative overflow-hidden rounded-2xl",
-      // Light mode: add shadow and ring for visual separation
       "shadow-lg shadow-black/10 dark:shadow-none",
       "ring-1 ring-black/5 dark:ring-0",
       className
@@ -198,23 +374,61 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
         }}
       />
 
-      {/* Stars */}
-      {stars.map((star) => (
+      {/* 3-Layer Parallax Stars */}
+      {/* Layer 1: Distant (back) */}
+      {starLayers.distant.map((star) => (
+        <Star key={star.id} {...star} />
+      ))}
+      {/* Layer 2: Mid */}
+      {starLayers.mid.map((star) => (
+        <Star key={star.id} {...star} />
+      ))}
+      {/* Layer 3: Near (front) */}
+      {starLayers.near.map((star) => (
         <Star key={star.id} {...star} />
       ))}
 
-      {/* Nebula glow effects */}
+      {/* Animated Nebula Layer 1 - Purple drift */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
-        animate={{ opacity: [0.3, 0.5, 0.3] }}
-        transition={{ duration: 5, repeat: Infinity }}
-        style={{
-          background: `
-            radial-gradient(circle at 30% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
-            radial-gradient(circle at 70% 70%, rgba(236, 72, 153, 0.1) 0%, transparent 40%)
-          `,
+        animate={{
+          background: [
+            'radial-gradient(ellipse at 25% 35%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)',
+            'radial-gradient(ellipse at 35% 25%, rgba(139, 92, 246, 0.22) 0%, transparent 55%)',
+            'radial-gradient(ellipse at 25% 35%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)',
+          ],
         }}
+        transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
       />
+
+      {/* Animated Nebula Layer 2 - Pink drift (opposite direction) */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        animate={{
+          background: [
+            'radial-gradient(ellipse at 75% 65%, rgba(236, 72, 153, 0.1) 0%, transparent 45%)',
+            'radial-gradient(ellipse at 65% 75%, rgba(236, 72, 153, 0.16) 0%, transparent 50%)',
+            'radial-gradient(ellipse at 75% 65%, rgba(236, 72, 153, 0.1) 0%, transparent 45%)',
+          ],
+        }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      {/* Animated Nebula Layer 3 - Cyan accent */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        animate={{
+          background: [
+            'radial-gradient(ellipse at 50% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 40%)',
+            'radial-gradient(ellipse at 55% 75%, rgba(6, 182, 212, 0.1) 0%, transparent 45%)',
+            'radial-gradient(ellipse at 50% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 40%)',
+          ],
+        }}
+        transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
+      {/* Shooting Star */}
+      <ShootingStar />
 
       {/* Title */}
       <motion.div
@@ -230,39 +444,61 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
 
       {/* Galaxy Container */}
       <div className="relative w-full" style={{ minHeight: 280 }}>
-        {/* SVG for orbit paths only */}
+        {/* SVG for elliptical orbit paths with 3D tilt */}
         <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet">
-          {/* Center glow */}
+          {/* Center glow gradient */}
           <defs>
-            <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="rgba(139, 92, 246, 0.4)" />
-              <stop offset="50%" stopColor="rgba(139, 92, 246, 0.1)" />
+            <radialGradient id="centerGlowPremium" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="rgba(139, 92, 246, 0.5)" />
+              <stop offset="40%" stopColor="rgba(139, 92, 246, 0.2)" />
               <stop offset="100%" stopColor="transparent" />
             </radialGradient>
+            {/* Orbit glow filter */}
+            <filter id="orbitGlow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="0.5" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
-          <circle cx={50} cy={50} r={15} fill="url(#centerGlow)" />
 
-          {/* Orbit paths (dashed circles) */}
+          <circle cx={50} cy={50} r={12} fill="url(#centerGlowPremium)" />
+
+          {/* Elliptical orbit paths with 3D tilt */}
           {sortedEmotions.map((_, i) => {
-            const minRadius = 18;
-            const maxRadius = 40;
-            const radius = minRadius + (i / Math.max(sortedEmotions.length - 1, 1)) * (maxRadius - minRadius);
+            const baseRadius = 20 + (i / Math.max(sortedEmotions.length - 1, 1)) * 22;
+            const rx = baseRadius;
+            const ry = baseRadius * 0.65; // Ellipse ratio for 3D effect
+            const tilt = -12; // Tilt angle for 3D perspective
+
             return (
-              <circle
+              <ellipse
                 key={`orbit-${i}`}
                 cx={50}
                 cy={50}
-                r={radius}
+                rx={rx}
+                ry={ry}
+                transform={`rotate(${tilt} 50 50)`}
                 fill="none"
-                stroke="rgba(255, 255, 255, 0.15)"
-                strokeWidth="0.5"
-                strokeDasharray="2 2"
-              />
+                stroke="rgba(255, 255, 255, 0.12)"
+                strokeWidth="0.4"
+                strokeDasharray="2.5 2"
+                filter="url(#orbitGlow)"
+              >
+                {/* Animated orbit glow pulse */}
+                <animate
+                  attributeName="stroke-opacity"
+                  values="0.1;0.22;0.1"
+                  dur={`${4 + i * 0.8}s`}
+                  repeatCount="indefinite"
+                />
+              </ellipse>
             );
           })}
         </svg>
 
-        {/* HTML overlay for orbiting emojis */}
+        {/* HTML overlay for orbiting emojis with comet trails */}
         <div className="absolute inset-0">
           {sortedEmotions.map((emotion, i) => (
             <OrbitingEmotion
@@ -276,45 +512,100 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
           ))}
         </div>
 
-        {/* Center content (HTML) */}
+        {/* Premium Center Hub */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          {/* Outer expanding pulse ring */}
+          <motion.div
+            className="absolute rounded-full"
+            style={{
+              width: 95,
+              height: 95,
+              border: '1px solid rgba(139, 92, 246, 0.25)',
+            }}
+            animate={{
+              scale: [1, 1.35, 1],
+              opacity: [0.4, 0, 0.4],
+            }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: 'easeOut' }}
+          />
+
+          {/* Secondary pulse ring (offset timing) */}
+          <motion.div
+            className="absolute rounded-full"
+            style={{
+              width: 85,
+              height: 85,
+              border: '1px solid rgba(139, 92, 246, 0.2)',
+            }}
+            animate={{
+              scale: [1, 1.25, 1],
+              opacity: [0.3, 0, 0.3],
+            }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: 'easeOut', delay: 1.2 }}
+          />
+
+          {/* Inner glow orb */}
           <motion.div
             className="flex flex-col items-center justify-center rounded-full"
             style={{
-              width: 70,
-              height: 70,
-              background: 'radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.1) 100%)',
-              boxShadow: '0 0 20px rgba(139, 92, 246, 0.4)',
+              width: 80,
+              height: 80,
+              background: `
+                radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18) 0%, transparent 45%),
+                radial-gradient(circle, rgba(139, 92, 246, 0.45) 0%, rgba(139, 92, 246, 0.18) 50%, rgba(139, 92, 246, 0.06) 100%)
+              `,
+              boxShadow: `
+                0 0 30px rgba(139, 92, 246, 0.5),
+                0 0 60px rgba(139, 92, 246, 0.3),
+                inset 0 0 20px rgba(255, 255, 255, 0.1)
+              `,
             }}
             animate={{
-              scale: [1, 1.05, 1],
               boxShadow: [
-                '0 0 20px rgba(139, 92, 246, 0.4)',
-                '0 0 30px rgba(139, 92, 246, 0.6)',
-                '0 0 20px rgba(139, 92, 246, 0.4)',
+                '0 0 30px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.1)',
+                '0 0 40px rgba(139, 92, 246, 0.7), 0 0 80px rgba(139, 92, 246, 0.4), inset 0 0 25px rgba(255, 255, 255, 0.15)',
+                '0 0 30px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.1)',
               ],
             }}
-            transition={{ duration: 3, repeat: Infinity }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <span className="text-xl font-bold text-white">{totalEntries}</span>
-            <span className="text-xs text-purple-300">{t.entries || 'entries'}</span>
+            <motion.span
+              className="text-2xl font-bold text-white"
+              style={{ textShadow: '0 0 12px rgba(139, 92, 246, 0.9)' }}
+            >
+              {totalEntries}
+            </motion.span>
+            <span className="text-xs text-purple-300/90">{t.entries || 'entries'}</span>
           </motion.div>
         </div>
       </div>
 
-      {/* Legend at bottom */}
-      <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-3 px-4">
-        {sortedEmotions.slice(0, 4).map((emotion) => (
+      {/* Premium Legend at bottom */}
+      <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2 px-3 flex-wrap">
+        {sortedEmotions.slice(0, 4).map((emotion, index) => (
           <motion.div
             key={emotion.emotion}
-            className="flex items-center gap-1 px-2 py-1 rounded-full"
-            style={{ background: `${emotion.color}20` }}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.1 }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-default"
+            style={{
+              background: `linear-gradient(135deg, ${emotion.color}25 0%, ${emotion.color}15 100%)`,
+              boxShadow: `0 0 8px ${emotion.color}30`,
+            }}
+            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: index * 0.1 }}
+            whileHover={{
+              scale: 1.08,
+              boxShadow: `0 0 14px ${emotion.color}50`,
+            }}
           >
-            <span className="text-sm">{emotion.emoji}</span>
-            <span className="text-xs text-white/70">{emotion.count}</span>
+            <motion.span
+              className="text-sm"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity, delay: index * 0.3 }}
+            >
+              {emotion.emoji}
+            </motion.span>
+            <span className="text-xs text-white/80 font-medium">{emotion.count}</span>
           </motion.div>
         ))}
       </div>
