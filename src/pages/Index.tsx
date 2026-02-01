@@ -501,12 +501,12 @@ export function Index() {
     }
   }, [isLoadingReminders, reminders.moodTime, reminders.moodTimeMorning, setReminders]);
 
-  // Update AI Coach context with user data
-  useEffect(() => {
-    if (!isLoading && !isLoadingInnerWorld) {
-      setUserData(safeMoods, safeHabits, innerWorld);
-    }
-  }, [isLoading, isLoadingInnerWorld, safeMoods, safeHabits, innerWorld, setUserData]);
+  // Update AI Coach context with user data - Hidden until AI ready
+  // useEffect(() => {
+  //   if (!isLoading && !isLoadingInnerWorld) {
+  //     setUserData(safeMoods, safeHabits, innerWorld);
+  //   }
+  // }, [isLoading, isLoadingInnerWorld, safeMoods, safeHabits, innerWorld, setUserData]);
 
   // Schedule event handlers (moved here to avoid TDZ errors)
   const handleAddScheduleEvent = (event: Omit<ScheduleEvent, 'id'>) => {
