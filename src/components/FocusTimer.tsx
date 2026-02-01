@@ -785,7 +785,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
           disabled={isRunning}
           className={cn(
             "w-full py-3.5 rounded-xl flex items-center justify-center gap-2",
-            "font-semibold transition-all",
+            "font-semibold transition-all relative z-10",
             isRunning
               ? "bg-slate-200/50 dark:bg-white/10 text-slate-400 dark:text-white/40 cursor-not-allowed"
               : "bg-gradient-to-r from-cyan-500/80 to-violet-500/80 text-white hover:from-cyan-500 hover:to-violet-500"
@@ -806,7 +806,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
           onClick={() => setShowHyperfocus(true)}
           disabled={isRunning}
           className={cn(
-            "w-full",
+            "w-full relative z-10",
             !isRunning && "zen-gradient-calm"
           )}
         >
