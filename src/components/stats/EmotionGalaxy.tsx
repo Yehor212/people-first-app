@@ -161,9 +161,9 @@ function OrbitingEmotion({
       {/* Comet Trail - 4 fading segments that follow the emoji */}
       {[0, 1, 2, 3].map((trailIndex) => {
         const trailOffset = (trailIndex + 1) * 12; // Degrees behind
-        const trailOpacity = 0.35 - trailIndex * 0.08;
-        const trailSize = sizePx * (0.7 - trailIndex * 0.12);
-        const trailBlur = 3 + trailIndex * 2;
+        const trailOpacity = 0.3 - trailIndex * 0.06;
+        const trailSize = sizePx * (0.6 - trailIndex * 0.1);
+        const trailBlur = 2 + trailIndex * 1; // Reduced blur: 2-5px instead of 3-9px
 
         return (
           <motion.div
@@ -238,57 +238,30 @@ function OrbitingEmotion({
             ease: 'linear',
           }}
         >
-          {/* Outer glow halo */}
-          <motion.div
+          {/* Minimal glow - NO blur for visibility */}
+          <div
             className="absolute rounded-full"
             style={{
-              inset: -6,
-              background: `radial-gradient(circle, ${emotion.color}30 0%, ${emotion.color}10 40%, transparent 70%)`,
-              filter: 'blur(6px)',
-            }}
-            animate={{
-              scale: [1.1, 1.4, 1.1],
-              opacity: [0.5, 0.8, 0.5],
-            }}
-            transition={{
-              duration: 2.5,
-              repeat: Infinity,
-              ease: 'easeInOut',
+              inset: -2,
+              background: `radial-gradient(circle, ${emotion.color}25 0%, transparent 70%)`,
             }}
           />
 
-          {/* Inner glow ring with multi-layer shadow */}
-          <motion.div
+          {/* Inner glow ring - simplified for emoji visibility */}
+          <div
             className="absolute inset-0 rounded-full"
             style={{
-              background: `radial-gradient(circle at 35% 35%, ${emotion.color}40 0%, ${emotion.color}20 50%, ${emotion.color}10 100%)`,
-              boxShadow: `
-                0 0 12px ${emotion.color}70,
-                0 0 24px ${emotion.color}40,
-                inset 0 0 10px ${emotion.color}30,
-                inset 2px 2px 4px rgba(255,255,255,0.15)
-              `,
-            }}
-            animate={{
-              boxShadow: [
-                `0 0 12px ${emotion.color}70, 0 0 24px ${emotion.color}40, inset 0 0 10px ${emotion.color}30, inset 2px 2px 4px rgba(255,255,255,0.15)`,
-                `0 0 18px ${emotion.color}90, 0 0 36px ${emotion.color}50, inset 0 0 14px ${emotion.color}40, inset 2px 2px 6px rgba(255,255,255,0.2)`,
-                `0 0 12px ${emotion.color}70, 0 0 24px ${emotion.color}40, inset 0 0 10px ${emotion.color}30, inset 2px 2px 4px rgba(255,255,255,0.15)`,
-              ],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
+              background: `radial-gradient(circle at 35% 35%, ${emotion.color}35 0%, ${emotion.color}15 100%)`,
+              boxShadow: `0 0 8px ${emotion.color}60`,
             }}
           />
 
-          {/* Emoji */}
+          {/* Emoji - larger for visibility */}
           <div
             className="absolute inset-0 flex items-center justify-center"
             style={{
-              fontSize: sizePx * 0.52,
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+              fontSize: sizePx * 0.75,
+              filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.4))',
             }}
           >
             {emotion.emoji}
