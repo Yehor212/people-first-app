@@ -145,20 +145,61 @@ function OrbitingEmotion({
   angle: number;
   animationDuration: number;
 }) {
-  // Elliptical orbit parameters - moderate radius (no center hub to avoid)
-  const baseRadius = 32 + (orbitIndex / Math.max(totalOrbits - 1, 1)) * 18;
-  const rx = baseRadius * 2.5;        // X radius: 80px - good visibility
-  const ry = baseRadius * 0.65 * 2.5; // Y radius (ellipse - 65% of X for 3D look)
+  // Elliptical orbit parameters - ORIGINAL VALUES (fits in container)
+  const baseRadius = 20 + (orbitIndex / Math.max(totalOrbits - 1, 1)) * 22;
+  const rx = baseRadius * 2.8;        // X radius: 56-117px (fits in 280px container)
+  const ry = baseRadius * 0.65 * 2.8; // Y radius (ellipse - 65% of X for 3D look)
 
-  // Size based on frequency (inner = more frequent = larger) - reduced for better fit
-  const sizePx = 32 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 10;
+  // Size based on frequency (inner = more frequent = larger)
+  const sizePx = 38 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 14;
 
   // Kepler's law: inner orbits are significantly faster
   const keplerDuration = animationDuration * (0.8 + orbitIndex * 0.25);
 
   return (
     <>
-      {/* COMET TRAILS DISABLED FOR DEBUGGING - uncomment when emojis work */}
+      {/* Comet Trail - 4 fading segments that follow the emoji */}
+      {[0, 1, 2, 3].map((trailIndex) => {
+        const trailOffset = (trailIndex + 1) * 12; // Degrees behind
+        const trailOpacity = 0.35 - trailIndex * 0.08;
+        const trailSize = sizePx * (0.7 - trailIndex * 0.12);
+        const trailBlur = 3 + trailIndex * 2;
+
+        return (
+          <motion.div
+            key={`trail-${orbitIndex}-${trailIndex}`}
+            className="absolute pointer-events-none"
+            style={{
+              left: '50%',
+              top: '50%',
+              width: 1,
+              height: 1,
+              transformOrigin: '0 0',
+            }}
+            animate={{ rotate: [angle - trailOffset, angle - trailOffset + 360] }}
+            transition={{
+              duration: keplerDuration,
+              repeat: Infinity,
+              ease: 'linear',
+            }}
+          >
+            <div
+              className="absolute rounded-full"
+              style={{
+                left: 0,
+                top: 0,
+                width: trailSize,
+                height: trailSize,
+                marginLeft: -trailSize / 2,
+                marginTop: -trailSize / 2,
+                transform: `translateX(${rx}px)`,
+                background: `radial-gradient(circle, ${emotion.color}${Math.round(trailOpacity * 255).toString(16).padStart(2, '0')} 0%, transparent 70%)`,
+                filter: `blur(${trailBlur}px)`,
+              }}
+            />
+          </motion.div>
+        );
+      })}
 
       {/* Main Emoji Orb - Rotating wrapper */}
       <motion.div
@@ -197,30 +238,57 @@ function OrbitingEmotion({
             ease: 'linear',
           }}
         >
-          {/* Minimal glow - NO blur for visibility */}
-          <div
+          {/* Outer glow halo */}
+          <motion.div
             className="absolute rounded-full"
             style={{
-              inset: -2,
-              background: `radial-gradient(circle, ${emotion.color}25 0%, transparent 70%)`,
+              inset: -6,
+              background: `radial-gradient(circle, ${emotion.color}30 0%, ${emotion.color}10 40%, transparent 70%)`,
+              filter: 'blur(6px)',
+            }}
+            animate={{
+              scale: [1.1, 1.4, 1.1],
+              opacity: [0.5, 0.8, 0.5],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: 'easeInOut',
             }}
           />
 
-          {/* Inner glow ring - simplified for emoji visibility */}
-          <div
+          {/* Inner glow ring with multi-layer shadow */}
+          <motion.div
             className="absolute inset-0 rounded-full"
             style={{
-              background: `radial-gradient(circle at 35% 35%, ${emotion.color}35 0%, ${emotion.color}15 100%)`,
-              boxShadow: `0 0 8px ${emotion.color}60`,
+              background: `radial-gradient(circle at 35% 35%, ${emotion.color}40 0%, ${emotion.color}20 50%, ${emotion.color}10 100%)`,
+              boxShadow: `
+                0 0 12px ${emotion.color}70,
+                0 0 24px ${emotion.color}40,
+                inset 0 0 10px ${emotion.color}30,
+                inset 2px 2px 4px rgba(255,255,255,0.15)
+              `,
+            }}
+            animate={{
+              boxShadow: [
+                `0 0 12px ${emotion.color}70, 0 0 24px ${emotion.color}40, inset 0 0 10px ${emotion.color}30, inset 2px 2px 4px rgba(255,255,255,0.15)`,
+                `0 0 18px ${emotion.color}90, 0 0 36px ${emotion.color}50, inset 0 0 14px ${emotion.color}40, inset 2px 2px 6px rgba(255,255,255,0.2)`,
+                `0 0 12px ${emotion.color}70, 0 0 24px ${emotion.color}40, inset 0 0 10px ${emotion.color}30, inset 2px 2px 4px rgba(255,255,255,0.15)`,
+              ],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
             }}
           />
 
-          {/* Emoji - MAXIMUM size for visibility testing */}
+          {/* Emoji */}
           <div
             className="absolute inset-0 flex items-center justify-center"
             style={{
-              fontSize: sizePx * 1.0,
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+              fontSize: sizePx * 0.52,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
             }}
           >
             {emotion.emoji}
@@ -399,9 +467,9 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
 
           {/* Elliptical orbit paths with 3D tilt - matches HTML emoji positions */}
           {sortedEmotions.map((_, i) => {
-            const baseRadius = 32 + (i / Math.max(sortedEmotions.length - 1, 1)) * 18;
-            const rx = baseRadius * 0.9;    // Matches HTML (2.5/2.8 ≈ 0.9)
-            const ry = rx * 0.65;           // Ellipse ratio for 3D effect
+            const baseRadius = 20 + (i / Math.max(sortedEmotions.length - 1, 1)) * 22;
+            const rx = baseRadius;          // 20-42 in SVG units (viewBox 0-100)
+            const ry = baseRadius * 0.65;   // Ellipse ratio for 3D effect
             const tilt = -12; // Tilt angle for 3D perspective
 
             return (
