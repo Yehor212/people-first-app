@@ -5,6 +5,40 @@ All notable changes to ZenFlow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.9] - "Premium Design & Challenges" - 2026-02-01
+
+### 🎨 Premium Design Overhaul
+- **REDESIGNED:** Sheet component - simplified structure for better flex layout support
+- **REDESIGNED:** ChallengeModal - migrated from bottom Sheet to centered Dialog
+- **IMPROVED:** Dialog now appears in screen center with smooth zoom animation
+- **IMPROVED:** Premium header with animated gradient icon
+- **IMPROVED:** Light theme WCAG AA compliance
+
+### 🏆 Friend Challenges
+- **FIXED:** Challenge modal visibility bug - content now displays correctly
+- **FIXED:** Flex layout conflicts in Sheet component
+- **IMPROVED:** Challenge creation flow with premium styling
+- **IMPROVED:** Leaderboard with real-time cloud sync
+
+### 🔔 Push Notifications (FCM)
+- **NEW:** Firebase Cloud Messaging integration
+- **NEW:** Scheduled mood check-in reminders (morning/afternoon/evening)
+- **NEW:** Habit reminder notifications
+- **IMPROVED:** Notification settings sync to cloud
+
+### 🛠️ Technical Improvements
+- **FIXED:** Sheet content wrapper causing flex-1 height issues
+- **FIXED:** DialogContent properly overrides default grid with flex-col
+- **UPGRADED:** datastore-preferences to 1.1.1 for Firebase compatibility
+- **ADDED:** mood_time_morning/afternoon/evening columns to reminder settings
+
+### 🐛 Bug Fixes
+- **FIXED:** user_reminder_settings 400 error (missing columns)
+- **FIXED:** Sheet animations not completing properly
+- **FIXED:** Radix DialogTitle accessibility warning
+
+---
+
 ## [1.5.7] - "Feature Toggles & Security" - 2026-01-29
 
 ### 🎛️ Feature Toggles System
