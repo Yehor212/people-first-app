@@ -83,32 +83,32 @@ function CrystalDay({
     return Math.min(Math.round((score / 3) * 4), 4) as 0 | 1 | 2 | 3 | 4;
   }, [data]);
 
-  // Crystal styles based on activity - theme-aware
+  // Crystal styles based on activity - using theme tokens for WCAG compliance
   const crystalStyles = {
     0: {
-      bg: 'from-slate-200/60 to-slate-100/40 dark:from-zinc-800/30 dark:to-zinc-700/20',
+      bg: 'from-[hsl(var(--chart-activity-0))] to-[hsl(var(--chart-activity-0))]/80',
       glow: 'none',
-      border: 'border-slate-300/50 dark:border-zinc-700/30',
+      border: 'border-[hsl(var(--border))]',
     },
     1: {
-      bg: 'from-teal-200/60 to-teal-100/40 dark:from-teal-900/40 dark:to-teal-800/30',
+      bg: 'from-[hsl(var(--chart-activity-1))] to-[hsl(var(--chart-activity-1))]/80',
       glow: '0 0 8px rgba(20, 184, 166, 0.3)',
-      border: 'border-teal-400/50 dark:border-teal-700/40',
+      border: 'border-[hsl(var(--chart-activity-1))]/70',
     },
     2: {
-      bg: 'from-teal-300/60 to-emerald-200/50 dark:from-teal-700/50 dark:to-emerald-600/40',
+      bg: 'from-[hsl(var(--chart-activity-2))] to-[hsl(var(--chart-activity-2))]/80',
       glow: '0 0 12px rgba(16, 185, 129, 0.4)',
-      border: 'border-emerald-500/60 dark:border-emerald-600/50',
+      border: 'border-[hsl(var(--chart-activity-2))]/70',
     },
     3: {
-      bg: 'from-emerald-300/70 to-green-200/60 dark:from-emerald-600/60 dark:to-green-500/50',
+      bg: 'from-[hsl(var(--chart-activity-3))] to-[hsl(var(--chart-activity-3))]/80',
       glow: '0 0 16px rgba(34, 197, 94, 0.5)',
-      border: 'border-green-500/70 dark:border-green-500/60',
+      border: 'border-[hsl(var(--chart-activity-3))]/70',
     },
     4: {
-      bg: 'from-green-300/80 to-emerald-200/70 dark:from-green-500/70 dark:to-emerald-400/60',
+      bg: 'from-[hsl(var(--chart-activity-4))] to-[hsl(var(--chart-activity-4))]/80',
       glow: '0 0 20px rgba(52, 211, 153, 0.6), 0 0 30px rgba(16, 185, 129, 0.3)',
-      border: 'border-emerald-400/80 dark:border-emerald-400/70',
+      border: 'border-[hsl(var(--chart-activity-4))]/70',
     },
   }[activityLevel];
 
@@ -344,14 +344,14 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
       </AnimatePresence>
 
       {/* Legend */}
-      <div className="relative flex items-center justify-center gap-4 mt-4 pt-4 border-t border-slate-300/50 dark:border-slate-700/50">
+      <div className="relative flex items-center justify-center gap-4 mt-4 pt-4 border-t border-border/50">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rotate-45 rounded-sm bg-gradient-to-br from-green-300/80 to-emerald-200/70 dark:from-green-500/70 dark:to-emerald-400/60 border border-emerald-400/80 dark:border-emerald-400/70" />
-          <span className="text-xs text-emerald-600 dark:text-emerald-400">{t.active || 'Active'}</span>
+          <div className="w-4 h-4 rotate-45 rounded-sm bg-[hsl(var(--chart-activity-4))] border border-[hsl(var(--chart-activity-4))]/70" />
+          <span className="text-xs text-primary">{t.active || 'Active'}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rotate-45 rounded-sm bg-gradient-to-br from-slate-200/60 to-slate-100/40 dark:from-zinc-800/30 dark:to-zinc-700/20 border border-slate-300/50 dark:border-zinc-700/30" />
-          <span className="text-xs text-slate-600 dark:text-slate-400">{t.empty || 'Empty'}</span>
+          <div className="w-4 h-4 rotate-45 rounded-sm bg-[hsl(var(--chart-activity-0))] border border-border" />
+          <span className="text-xs text-muted-foreground">{t.empty || 'Empty'}</span>
         </div>
         <div className="flex items-center gap-2">
           <SparklesIcon size="xs" />

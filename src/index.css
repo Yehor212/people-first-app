@@ -6,34 +6,34 @@
 
 @layer base {
   :root {
-    /* ZenFlow - Warm Nature Palette */
-    --background: 45 25% 94%;
+    /* ZenFlow - Premium Light Theme (WCAG AA Compliant) */
+    --background: 45 20% 96%;
     --foreground: 160 25% 15%;
 
-    --card: 45 30% 97%;
+    --card: 45 25% 99%;
     --card-foreground: 160 25% 15%;
 
-    --popover: 45 35% 99%;
+    --popover: 45 20% 99%;
     --popover-foreground: 160 25% 15%;
 
-    --primary: 158 45% 42%;
+    --primary: 158 45% 38%;
     --primary-foreground: 45 30% 98%;
 
-    --secondary: 45 35% 89%;
-    --secondary-foreground: 160 25% 25%;
+    --secondary: 45 30% 84%;
+    --secondary-foreground: 160 30% 20%;
 
-    --muted: 45 20% 89%;
-    --muted-foreground: 160 20% 35%;
+    --muted: 45 25% 82%;
+    --muted-foreground: 160 25% 30%;
 
-    --accent: 28 75% 65%;
+    --accent: 28 75% 55%;
     --accent-foreground: 28 90% 15%;
 
-    --destructive: 0 65% 55%;
+    --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 45 20% 82%;
-    --input: 45 20% 82%;
-    --ring: 158 45% 42%;
+    --border: 45 25% 75%;
+    --input: 45 25% 75%;
+    --ring: 158 45% 38%;
 
     --radius: 1rem;
 
@@ -42,7 +42,7 @@
     --zen-gradient-warm: linear-gradient(135deg, hsl(28 75% 65%), hsl(38 80% 70%));
     --zen-gradient-calm: linear-gradient(135deg, hsl(200 40% 50%), hsl(180 45% 55%));
     --zen-gradient-sunset: linear-gradient(135deg, hsl(350 60% 65%), hsl(28 75% 65%));
-    --zen-gradient-hero: linear-gradient(180deg, hsl(45 30% 97%) 0%, hsl(158 30% 95%) 100%);
+    --zen-gradient-hero: linear-gradient(180deg, hsl(45 20% 98%) 0%, hsl(158 25% 92%) 100%);
     
     --zen-shadow-soft: 0 4px 20px -4px hsl(158 45% 42% / 0.08);
     --zen-shadow-card: 0 2px 12px -2px hsl(160 25% 15% / 0.04);
@@ -50,11 +50,11 @@
     --zen-shadow-hover: 0 8px 30px -6px hsl(158 45% 42% / 0.12);
 
     /* ===== PREMIUM UI TOKENS ===== */
-    /* Surface Elevation System */
-    --surface-base: var(--card);
-    --surface-raised: 45 30% 95%;
-    --surface-elevated: 45 25% 98%;
-    --surface-overlay: 45 25% 98%;
+    /* Surface Elevation System - Enhanced contrast for light mode */
+    --surface-base: 45 25% 98%;
+    --surface-raised: 45 20% 92%;
+    --surface-elevated: 45 15% 88%;
+    --surface-overlay: 45 15% 85%;
 
     /* Extended Shadow Levels */
     --zen-shadow-xs: 0 1px 2px -1px hsl(160 25% 15% / 0.05);
@@ -153,11 +153,12 @@
     --chart-focus: 217 91% 60%;       /* Blue - focus time */
     --chart-grid: var(--border);      /* Grid lines */
 
-    /* Activity Heatmap Gradient (GitHub-style) */
-    --chart-activity-1: 158 50% 85%;  /* Lightest - low activity */
-    --chart-activity-2: 158 60% 65%;  /* Light - medium activity */
-    --chart-activity-3: 158 70% 45%;  /* Medium - high activity */
-    --chart-activity-4: 158 80% 35%;  /* Dark - excellent activity */
+    /* Activity Heatmap Gradient (WCAG AA Compliant) */
+    --chart-activity-0: 45 20% 92%;   /* Empty - visible on background */
+    --chart-activity-1: 158 40% 70%;  /* Low - clearly visible green */
+    --chart-activity-2: 158 50% 55%;  /* Medium - distinct step */
+    --chart-activity-3: 158 65% 42%;  /* High - saturated */
+    --chart-activity-4: 158 75% 32%;  /* Excellent - deep green */
 
     /* Recommendation Priority */
     --priority-high: var(--destructive);

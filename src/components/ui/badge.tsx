@@ -12,10 +12,10 @@ const badgeVariants = cva(
         secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground border-border",
-        // Status variants
-        success: "border-transparent bg-[hsl(var(--mood-good))] text-white hover:bg-[hsl(var(--mood-good))]/80",
-        warning: "border-transparent bg-[hsl(var(--mood-okay))] text-white hover:bg-[hsl(var(--mood-okay))]/80",
-        info: "border-transparent bg-blue-500 text-white dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700",
+        // Status variants (WCAG AA compliant - dark text in light mode, white in dark)
+        success: "border-transparent bg-[hsl(var(--mood-good))] text-green-950 dark:text-white hover:bg-[hsl(var(--mood-good))]/80",
+        warning: "border-transparent bg-[hsl(var(--mood-okay))] text-amber-950 dark:text-white hover:bg-[hsl(var(--mood-okay))]/80",
+        info: "border-transparent bg-blue-500 text-blue-950 dark:text-white hover:bg-blue-600",
         // Soft variants
         soft: "border-transparent bg-primary/15 text-primary hover:bg-primary/25",
         "soft-success": "border-transparent bg-[hsl(var(--mood-good))]/15 text-[hsl(var(--mood-good))] hover:bg-[hsl(var(--mood-good))]/25",

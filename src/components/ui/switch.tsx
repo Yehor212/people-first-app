@@ -53,8 +53,8 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
           // Exact ThemeToggle dimensions: 52×28px
           "relative flex-shrink-0 rounded-full transition-all duration-300",
           "w-[52px] h-[28px]",
-          // Colors - match ThemeToggle dark mode
-          isChecked ? "bg-primary" : "bg-slate-600",
+          // Colors - semantic theme colors
+          isChecked ? "bg-primary" : "bg-muted-foreground/40",
           // Focus states
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
           // Disabled state

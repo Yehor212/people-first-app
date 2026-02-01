@@ -25,10 +25,10 @@ interface ActivityHeatMapProps {
   };
 }
 
-// Premium level colors with glow shadows
+// Premium level colors with glow shadows - using theme tokens
 const LEVEL_STYLES = {
   0: {
-    bg: 'bg-secondary',
+    bg: 'bg-[hsl(var(--chart-activity-0))]',
     shadow: ''
   },
   1: {
@@ -49,9 +49,9 @@ const LEVEL_STYLES = {
   }
 } as const;
 
-// Keep simple array for legend
+// Keep simple array for legend - using theme tokens
 const LEVEL_COLORS = [
-  'bg-secondary',
+  'bg-[hsl(var(--chart-activity-0))]',
   'bg-[hsl(var(--chart-activity-1))]',
   'bg-[hsl(var(--chart-activity-2))]',
   'bg-[hsl(var(--chart-activity-3))]',
