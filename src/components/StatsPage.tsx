@@ -1192,7 +1192,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                     animate={{ scale: [1, 1.05, 1] }}
                     transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                   >
-                    <Calendar className="w-5 h-5 text-violet-300" />
+                    <Calendar className="w-5 h-5 text-violet-600 dark:text-violet-300" />
                   </motion.div>
                   <div>
                     <p className="font-bold text-lg text-foreground">{selectedDate}</p>
@@ -1207,11 +1207,11 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                     animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
                     transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
                   >
-                    {selectedDayData.mood.emotion?.primary ? (
-                      <AnimatedEmotionEmoji emotion={selectedDayData.mood.emotion.primary} size="lg" />
-                    ) : (
-                      <span className="text-3xl">{moodEmojis[selectedDayData.mood.mood]}</span>
-                    )}
+                    {/* Always use AnimatedEmotionEmoji - convert legacy moods via MOOD_TO_EMOTION_MAP */}
+                    <AnimatedEmotionEmoji
+                      emotion={selectedDayData.mood.emotion?.primary || MOOD_TO_EMOTION_MAP[selectedDayData.mood.mood]}
+                      size="lg"
+                    />
                   </motion.div>
                 )}
               </div>
@@ -1222,10 +1222,9 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                   {
                     icon: Heart,
                     label: t.moodToday,
+                    // Always show new emotion label - convert legacy moods via MOOD_TO_EMOTION_MAP
                     value: selectedDayData.mood
-                      ? (selectedDayData.mood.emotion?.primary
-                          ? emotionLabels[selectedDayData.mood.emotion.primary]
-                          : moodLabels[selectedDayData.mood.mood])
+                      ? emotionLabels[selectedDayData.mood.emotion?.primary || MOOD_TO_EMOTION_MAP[selectedDayData.mood.mood]]
                       : '—',
                     color: '#ec4899'
                   },
@@ -1250,7 +1249,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 ].map((stat, i) => (
                   <motion.div
                     key={i}
-                    className="p-3 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10"
+                    className="p-3 rounded-xl bg-black/5 dark:bg-white/5 backdrop-blur-sm border border-black/10 dark:border-white/10"
                     style={{ boxShadow: `0 0 10px ${stat.color}20` }}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -1276,12 +1275,12 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
 
                   <div className="space-y-3">
                     {selectedDayData.moods.map((entry, idx) => {
-                      const emotionColor = entry.emotion?.primary
-                        ? {
-                            joy: '#fbbf24', trust: '#22c55e', fear: '#6366f1', surprise: '#f97316',
-                            sadness: '#3b82f6', disgust: '#a855f7', anger: '#ef4444', anticipation: '#ec4899'
-                          }[entry.emotion.primary] || '#9ca3af'
-                        : '#8b5cf6';
+                      // Map legacy moods to new emotions for consistent colors
+                      const mappedEmotion = entry.emotion?.primary || MOOD_TO_EMOTION_MAP[entry.mood];
+                      const emotionColor = {
+                        joy: '#fbbf24', trust: '#22c55e', fear: '#6366f1', surprise: '#f97316',
+                        sadness: '#3b82f6', disgust: '#a855f7', anger: '#ef4444', anticipation: '#ec4899'
+                      }[mappedEmotion] || '#9ca3af';
 
                       return (
                         <motion.div
@@ -1306,16 +1305,16 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                             animate={{ scale: [1, 1.2, 1] }}
                             transition={{ duration: 2, repeat: Infinity, delay: idx * 0.2 }}
                           />
-                          {/* Entry card */}
-                          <div className="ml-4 p-3 rounded-xl bg-white/5 border border-white/10">
+                          {/* Entry card - light/dark theme compatible */}
+                          <div className="ml-4 p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
                             <div className="flex items-center gap-2">
-                              {entry.emotion?.primary ? (
-                                <AnimatedEmotionEmoji emotion={entry.emotion.primary} size="sm" />
-                              ) : (
-                                <span className="text-lg">{moodEmojis[entry.mood]}</span>
-                              )}
+                              {/* Always use AnimatedEmotionEmoji - convert legacy moods */}
+                              <AnimatedEmotionEmoji
+                                emotion={mappedEmotion}
+                                size="sm"
+                              />
                               <span className="font-medium text-foreground">
-                                {entry.emotion?.primary ? emotionLabels[entry.emotion.primary] : moodLabels[entry.mood]}
+                                {emotionLabels[mappedEmotion]}
                               </span>
                               <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
                                 {getTimeOfDayEmoji(entry.timestamp)} {getTimeOfDay(entry.timestamp)}
@@ -1329,12 +1328,8 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                                 {entry.tags.map((tag) => (
                                   <span
                                     key={tag}
-                                    className="px-2 py-0.5 text-xs rounded-full"
-                                    style={{
-                                      background: 'rgba(139, 92, 246, 0.2)',
-                                      color: 'rgb(196, 181, 253)',
-                                      boxShadow: '0 0 6px rgba(139, 92, 246, 0.3)',
-                                    }}
+                                    className="px-2 py-0.5 text-xs rounded-full bg-violet-500/20 text-violet-700 dark:text-violet-300"
+                                    style={{ boxShadow: '0 0 6px rgba(139, 92, 246, 0.3)' }}
                                   >
                                     #{tag}
                                   </span>

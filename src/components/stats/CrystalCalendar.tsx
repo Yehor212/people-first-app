@@ -35,7 +35,7 @@ interface CrystalCalendarProps {
 function PerfectSparkle({ delay }: { delay: number }) {
   return (
     <motion.div
-      className="absolute w-1 h-1 rounded-full bg-white"
+      className="absolute w-1 h-1 rounded-full bg-amber-200"
       style={{
         left: `${20 + Math.random() * 60}%`,
         top: `${20 + Math.random() * 60}%`,
@@ -154,20 +154,20 @@ function CrystalDay({
       {/* Today indicator - pulse ring */}
       {isToday && (
         <motion.div
-          className="absolute inset-0 rotate-45 rounded-sm border-2 border-white/60"
+          className="absolute inset-0 rotate-45 rounded-sm border-2 border-emerald-400/80"
           animate={{
             scale: [1, 1.1, 1],
-            opacity: [0.6, 0.3, 0.6],
+            opacity: [0.8, 0.4, 0.8],
           }}
           transition={{ duration: 1.5, repeat: Infinity }}
         />
       )}
 
-      {/* Day number */}
+      {/* Day number - always visible on dark background */}
       <span
         className={cn(
           "relative z-10 text-xs font-medium",
-          isToday ? "text-white font-bold" : "text-white/80"
+          isToday ? "text-emerald-300 font-bold" : "text-slate-200"
         )}
       >
         {dayNum}
@@ -268,7 +268,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
       {/* Header with month navigation */}
       <div className="relative flex items-center justify-between mb-4">
         <motion.button
-          className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+          className="p-2 rounded-lg text-slate-300 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={goToPrevMonth}
@@ -279,7 +279,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
 
         <motion.h3
           key={monthName}
-          className="text-sm font-semibold text-emerald-200 flex items-center gap-2"
+          className="text-sm font-semibold text-emerald-300 flex items-center gap-2"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -288,7 +288,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
         </motion.h3>
 
         <motion.button
-          className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+          className="p-2 rounded-lg text-slate-300 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={goToNextMonth}
@@ -303,7 +303,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
         {weekdays.map((day, i) => (
           <div
             key={i}
-            className="text-center text-xs text-emerald-400/60 font-medium py-1"
+            className="text-center text-xs text-teal-400 font-medium py-1"
           >
             {day}
           </div>
@@ -341,18 +341,18 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
       </AnimatePresence>
 
       {/* Legend */}
-      <div className="relative flex items-center justify-center gap-4 mt-4 pt-4 border-t border-white/10">
+      <div className="relative flex items-center justify-center gap-4 mt-4 pt-4 border-t border-slate-700/50">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rotate-45 rounded-sm bg-gradient-to-br from-green-500/70 to-emerald-400/60 border border-emerald-400/70" />
-          <span className="text-xs text-emerald-300/70">{t.active || 'Active'}</span>
+          <span className="text-xs text-emerald-400">{t.active || 'Active'}</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rotate-45 rounded-sm bg-gradient-to-br from-zinc-800/30 to-zinc-700/20 border border-zinc-700/30" />
-          <span className="text-xs text-zinc-400/70">{t.empty || 'Empty'}</span>
+          <span className="text-xs text-slate-400">{t.empty || 'Empty'}</span>
         </div>
         <div className="flex items-center gap-2">
           <SparklesIcon size="xs" />
-          <span className="text-xs text-amber-300/70">{t.perfect || 'Perfect'}</span>
+          <span className="text-xs text-amber-400">{t.perfect || 'Perfect'}</span>
         </div>
       </div>
 

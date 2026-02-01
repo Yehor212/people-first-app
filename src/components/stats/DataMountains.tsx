@@ -214,7 +214,7 @@ export function DataMountains({
         {Array.from({ length: 20 }).map((_, i) => (
           <motion.div
             key={i}
-            className="absolute w-0.5 h-0.5 rounded-full bg-white"
+            className="absolute w-0.5 h-0.5 rounded-full bg-slate-300 dark:bg-white"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 40}%`,
@@ -232,7 +232,7 @@ export function DataMountains({
       {/* Title */}
       {title && (
         <motion.h4
-          className="absolute top-3 left-4 text-sm font-medium text-white/80 z-10"
+          className="absolute top-3 left-4 text-sm font-medium text-slate-700 dark:text-white/80 z-10"
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
         >
@@ -315,8 +315,8 @@ export function DataMountains({
       <div className="absolute bottom-2 left-0 right-0 flex justify-between px-4">
         {data.length > 0 && (
           <>
-            <span className="text-xs text-white/50">{data[0].label}</span>
-            <span className="text-xs text-white/50">{data[data.length - 1].label}</span>
+            <span className="text-xs text-slate-600 dark:text-white/50">{data[0].label}</span>
+            <span className="text-xs text-slate-600 dark:text-white/50">{data[data.length - 1].label}</span>
           </>
         )}
       </div>

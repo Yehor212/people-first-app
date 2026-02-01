@@ -46,7 +46,7 @@ interface StarData {
 function Star({ x, y, size, opacity, duration, delay }: Omit<StarData, 'id'>) {
   return (
     <motion.div
-      className="absolute rounded-full bg-white"
+      className="absolute rounded-full bg-slate-200 dark:bg-white"
       style={{
         left: `${x}%`,
         top: `${y}%`,
@@ -537,7 +537,7 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
             >
               {emotion.emoji}
             </motion.span>
-            <span className="text-xs text-white/80 font-medium">{emotion.count}</span>
+            <span className="text-xs text-slate-700 dark:text-white/80 font-medium">{emotion.count}</span>
           </motion.div>
         ))}
       </div>

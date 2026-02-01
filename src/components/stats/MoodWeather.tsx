@@ -90,14 +90,14 @@ function PartlyCloudyWeather() {
         transition={{ duration: 3, repeat: Infinity }}
       />
 
-      {/* Cloud */}
+      {/* Cloud - light theme: darker, dark theme: lighter */}
       <motion.div
         className="relative animate-cloud-drift"
       >
         <div className="flex items-end">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-b from-white to-slate-200 dark:from-slate-300 dark:to-slate-400" />
-          <div className="w-12 h-12 rounded-full bg-gradient-to-b from-white to-slate-200 dark:from-slate-300 dark:to-slate-400 -ml-4" />
-          <div className="w-8 h-8 rounded-full bg-gradient-to-b from-white to-slate-200 dark:from-slate-300 dark:to-slate-400 -ml-4" />
+          <div className="w-8 h-8 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 dark:from-white dark:to-slate-200" />
+          <div className="w-12 h-12 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 dark:from-white dark:to-slate-200 -ml-4" />
+          <div className="w-8 h-8 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 dark:from-white dark:to-slate-200 -ml-4" />
         </div>
       </motion.div>
     </div>
@@ -118,14 +118,14 @@ function CloudyWeather() {
         </div>
       </motion.div>
 
-      {/* Main cloud */}
+      {/* Main cloud - light theme: darker, dark theme: lighter */}
       <motion.div
         className="relative animate-cloud-drift"
       >
         <div className="flex items-end">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-b from-slate-200 to-slate-400 dark:from-slate-400 dark:to-slate-500" />
-          <div className="w-14 h-14 rounded-full bg-gradient-to-b from-slate-200 to-slate-400 dark:from-slate-400 dark:to-slate-500 -ml-4" />
-          <div className="w-10 h-10 rounded-full bg-gradient-to-b from-slate-200 to-slate-400 dark:from-slate-400 dark:to-slate-500 -ml-5" />
+          <div className="w-8 h-8 rounded-full bg-gradient-to-b from-slate-400 to-slate-500 dark:from-slate-300 dark:to-slate-400" />
+          <div className="w-14 h-14 rounded-full bg-gradient-to-b from-slate-400 to-slate-500 dark:from-slate-300 dark:to-slate-400 -ml-4" />
+          <div className="w-10 h-10 rounded-full bg-gradient-to-b from-slate-400 to-slate-500 dark:from-slate-300 dark:to-slate-400 -ml-5" />
         </div>
         {/* Face */}
         <div className="absolute inset-0 flex items-center justify-center">
