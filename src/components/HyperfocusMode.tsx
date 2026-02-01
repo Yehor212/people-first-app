@@ -296,9 +296,10 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
   return (
     <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center overflow-hidden touch-none">
-      {/* Deep space background */}
+      {/* Deep space background - Theme-aware */}
+      <div className="absolute inset-0 bg-gradient-to-b from-slate-100 via-indigo-50 to-violet-100 dark:bg-none" />
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 hidden dark:block"
         style={{
           background: `radial-gradient(ellipse at center,
             #0d0d2a 0%, #050510 50%, #000000 100%)`
@@ -329,7 +330,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
           <div className="breathing-circle zen-gradient rounded-full opacity-40" />
           <div className="absolute text-center">
-            <p className="text-4xl font-bold text-white mb-4">
+            <p className="text-4xl font-bold text-slate-800 dark:text-white mb-4">
               {t.hyperfocusBreathe || 'Дышите...'}
             </p>
             <p className="text-xl text-white/70">

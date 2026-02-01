@@ -880,9 +880,12 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
 
       {/* Year Calendar - Crystal Premium Design */}
       <div className="relative overflow-hidden rounded-2xl p-3 sm:p-6 shadow-lg shadow-black/10 dark:shadow-none ring-1 ring-black/5 dark:ring-0">
-        {/* Crystal cave cosmic background */}
+        {/* Theme-aware crystal cave background */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 bg-gradient-to-b from-teal-50 via-emerald-50/80 to-slate-100 dark:bg-none"
+        />
+        <div
+          className="absolute inset-0 hidden dark:block"
           style={{
             background: `radial-gradient(ellipse at top,
               rgba(20, 184, 166, 0.1) 0%,
@@ -1017,14 +1020,14 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             // Perfect day = great mood + habits + focus
             const isPerfect = mood === 'great' && habitCount >= 1 && focusMinutes >= 30;
 
-            // Crystal glow styles based on activity
+            // Crystal glow styles based on activity - theme-aware
             const crystalStyles = {
-              0: { glow: 'none', bg: 'from-zinc-800/30 to-zinc-700/20', border: 'border-zinc-700/30' },
-              1: { glow: '0 0 8px rgba(20, 184, 166, 0.3)', bg: 'from-teal-900/40 to-teal-800/30', border: 'border-teal-700/40' },
-              2: { glow: '0 0 12px rgba(16, 185, 129, 0.4)', bg: 'from-teal-700/50 to-emerald-600/40', border: 'border-emerald-600/50' },
-              3: { glow: '0 0 16px rgba(34, 197, 94, 0.5)', bg: 'from-emerald-600/60 to-green-500/50', border: 'border-green-500/60' },
-              4: { glow: '0 0 20px rgba(52, 211, 153, 0.6)', bg: 'from-green-500/70 to-emerald-400/60', border: 'border-emerald-400/70' },
-            }[activityLevel] || { glow: 'none', bg: 'from-zinc-800/30 to-zinc-700/20', border: 'border-zinc-700/30' };
+              0: { glow: 'none', bg: 'from-slate-200/60 to-slate-100/40 dark:from-zinc-800/30 dark:to-zinc-700/20', border: 'border-slate-300/50 dark:border-zinc-700/30' },
+              1: { glow: '0 0 8px rgba(20, 184, 166, 0.3)', bg: 'from-teal-200/60 to-teal-100/40 dark:from-teal-900/40 dark:to-teal-800/30', border: 'border-teal-400/50 dark:border-teal-700/40' },
+              2: { glow: '0 0 12px rgba(16, 185, 129, 0.4)', bg: 'from-teal-300/60 to-emerald-200/50 dark:from-teal-700/50 dark:to-emerald-600/40', border: 'border-emerald-500/60 dark:border-emerald-600/50' },
+              3: { glow: '0 0 16px rgba(34, 197, 94, 0.5)', bg: 'from-emerald-300/70 to-green-200/60 dark:from-emerald-600/60 dark:to-green-500/50', border: 'border-green-500/70 dark:border-green-500/60' },
+              4: { glow: '0 0 20px rgba(52, 211, 153, 0.6)', bg: 'from-green-300/80 to-emerald-200/70 dark:from-green-500/70 dark:to-emerald-400/60', border: 'border-emerald-400/80 dark:border-emerald-400/70' },
+            }[activityLevel] || { glow: 'none', bg: 'from-slate-200/60 to-slate-100/40 dark:from-zinc-800/30 dark:to-zinc-700/20', border: 'border-slate-300/50 dark:border-zinc-700/30' };
 
             const isToday = cell.dateKey === todayKey;
             const isSelected = cell.dateKey === selectedDate;
@@ -1081,7 +1084,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 {/* Day number (counter-rotated to stay upright) */}
                 <span className={cn(
                   "relative z-10 text-xs font-medium",
-                  isToday ? "text-white font-bold" : hasData ? "text-white/90" : "text-white/50"
+                  isToday ? "text-teal-700 dark:text-white font-bold" : hasData ? "text-slate-700 dark:text-white/90" : "text-slate-500 dark:text-white/50"
                 )}>
                   {cell.day}
                 </span>

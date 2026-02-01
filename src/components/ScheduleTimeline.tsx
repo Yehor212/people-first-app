@@ -651,9 +651,10 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
 
   return (
     <div className="relative overflow-hidden rounded-3xl animate-fade-in">
-      {/* Cosmic background */}
+      {/* Cosmic background - Theme-aware */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-violet-50 to-indigo-50 dark:bg-none" />
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 hidden dark:block"
         style={{
           background: `linear-gradient(135deg,
             #0f0f23 0%,
@@ -876,9 +877,9 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
             </div>
           </div>
 
-          {/* Scroll fade indicators */}
-          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#0f0f23] to-transparent pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-[#0f0f23] to-transparent pointer-events-none" />
+          {/* Scroll fade indicators - Theme-aware */}
+          <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-50 dark:from-[#0f0f23] to-transparent pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-slate-50 dark:from-[#0f0f23] to-transparent pointer-events-none" />
         </div>
 
         {/* Empty state */}
@@ -1019,9 +1020,10 @@ function AddEventModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.9, y: 50 }}
       >
-        {/* Cosmic background */}
+        {/* Cosmic background - Theme-aware */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-violet-50 to-indigo-50 dark:bg-none" />
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 hidden dark:block"
           style={{
             background: `linear-gradient(135deg,
               #0f0f23 0%,
@@ -1035,8 +1037,8 @@ function AddEventModal({
         {/* Content */}
         <div className="relative z-10 p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 id="add-event-title" className="text-lg font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-400" />
+            <h3 id="add-event-title" className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               {t.scheduleAddEvent || 'Add Event'}
             </h3>
             <motion.button
@@ -1381,9 +1383,10 @@ function EventDetailsModal({
         exit={{ opacity: 0, scale: 0.9, y: 20 }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Cosmic background */}
+        {/* Cosmic background - Theme-aware */}
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-violet-50 to-indigo-50 dark:bg-none" />
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 hidden dark:block"
           style={{
             background: `linear-gradient(135deg,
               #0f0f23 0%,

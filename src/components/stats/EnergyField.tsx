@@ -66,7 +66,7 @@ function FireCell({
   // Fire gradient colors based on level
   const levelStyles = {
     0: {
-      bg: 'bg-zinc-800/50',
+      bg: 'bg-zinc-200/60 dark:bg-zinc-800/50',
       shadow: 'none',
       glow: false,
     },
@@ -189,9 +189,15 @@ export function EnergyField({ data, className }: EnergyFieldProps) {
       "ring-1 ring-black/5 dark:ring-0",
       className
     )}>
-      {/* Dark volcanic background */}
+      {/* Theme-aware volcanic background */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 bg-gradient-to-b from-amber-100/80 via-orange-50/60 to-amber-50 dark:bg-none"
+        style={{
+          // Dark mode: volcanic gradient
+        }}
+      />
+      <div
+        className="absolute inset-0 hidden dark:block"
         style={{
           background: `radial-gradient(ellipse at center bottom,
             rgba(127, 29, 29, 0.3) 0%,
@@ -230,7 +236,7 @@ export function EnergyField({ data, className }: EnergyFieldProps) {
         >
           🔥
         </motion.span>
-        <h3 className="text-sm font-semibold text-amber-100">
+        <h3 className="text-sm font-semibold text-amber-800 dark:text-amber-100">
           {t.activityOverview || 'Activity Overview'}
         </h3>
       </motion.div>
@@ -242,7 +248,7 @@ export function EnergyField({ data, className }: EnergyFieldProps) {
           {dayLabels.map((label, i) => (
             <div
               key={i}
-              className="h-3 flex items-center text-[10px] text-zinc-500"
+              className="h-3 flex items-center text-[10px] text-zinc-600 dark:text-zinc-500"
             >
               {i % 2 === 1 ? label : ''}
             </div>
@@ -267,13 +273,13 @@ export function EnergyField({ data, className }: EnergyFieldProps) {
 
       {/* Legend */}
       <div className="relative flex items-center justify-end gap-2 mt-4">
-        <span className="text-xs text-zinc-500">{t.less || 'Less'}</span>
+        <span className="text-xs text-zinc-600 dark:text-zinc-500">{t.less || 'Less'}</span>
         {[0, 1, 2, 3, 4].map((level) => (
           <motion.div
             key={level}
             className={cn(
               "w-3 h-3 rounded-sm",
-              level === 0 && "bg-zinc-800/50",
+              level === 0 && "bg-zinc-200/60 dark:bg-zinc-800/50",
               level === 1 && "bg-gradient-to-t from-orange-900/60 to-orange-700/40",
               level === 2 && "bg-gradient-to-t from-orange-700/70 to-orange-500/50",
               level === 3 && "bg-gradient-to-t from-orange-600/80 to-yellow-500/60",
@@ -282,7 +288,7 @@ export function EnergyField({ data, className }: EnergyFieldProps) {
             whileHover={{ scale: 1.3 }}
           />
         ))}
-        <span className="text-xs text-zinc-500">{t.more || 'More'}</span>
+        <span className="text-xs text-zinc-600 dark:text-zinc-500">{t.more || 'More'}</span>
       </div>
 
       {/* Bottom lava glow */}

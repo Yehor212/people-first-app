@@ -83,32 +83,32 @@ function CrystalDay({
     return Math.min(Math.round((score / 3) * 4), 4) as 0 | 1 | 2 | 3 | 4;
   }, [data]);
 
-  // Crystal styles based on activity
+  // Crystal styles based on activity - theme-aware
   const crystalStyles = {
     0: {
-      bg: 'from-zinc-800/30 to-zinc-700/20',
+      bg: 'from-slate-200/60 to-slate-100/40 dark:from-zinc-800/30 dark:to-zinc-700/20',
       glow: 'none',
-      border: 'border-zinc-700/30',
+      border: 'border-slate-300/50 dark:border-zinc-700/30',
     },
     1: {
-      bg: 'from-teal-900/40 to-teal-800/30',
+      bg: 'from-teal-200/60 to-teal-100/40 dark:from-teal-900/40 dark:to-teal-800/30',
       glow: '0 0 8px rgba(20, 184, 166, 0.3)',
-      border: 'border-teal-700/40',
+      border: 'border-teal-400/50 dark:border-teal-700/40',
     },
     2: {
-      bg: 'from-teal-700/50 to-emerald-600/40',
+      bg: 'from-teal-300/60 to-emerald-200/50 dark:from-teal-700/50 dark:to-emerald-600/40',
       glow: '0 0 12px rgba(16, 185, 129, 0.4)',
-      border: 'border-emerald-600/50',
+      border: 'border-emerald-500/60 dark:border-emerald-600/50',
     },
     3: {
-      bg: 'from-emerald-600/60 to-green-500/50',
+      bg: 'from-emerald-300/70 to-green-200/60 dark:from-emerald-600/60 dark:to-green-500/50',
       glow: '0 0 16px rgba(34, 197, 94, 0.5)',
-      border: 'border-green-500/60',
+      border: 'border-green-500/70 dark:border-green-500/60',
     },
     4: {
-      bg: 'from-green-500/70 to-emerald-400/60',
+      bg: 'from-green-300/80 to-emerald-200/70 dark:from-green-500/70 dark:to-emerald-400/60',
       glow: '0 0 20px rgba(52, 211, 153, 0.6), 0 0 30px rgba(16, 185, 129, 0.3)',
-      border: 'border-emerald-400/70',
+      border: 'border-emerald-400/80 dark:border-emerald-400/70',
     },
   }[activityLevel];
 
@@ -243,9 +243,12 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
 
   return (
     <div className={cn("relative overflow-hidden rounded-2xl p-4", className)}>
-      {/* Crystal cave background */}
+      {/* Theme-aware crystal cave background */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 bg-gradient-to-b from-teal-50 via-emerald-50/80 to-slate-100 dark:bg-none"
+      />
+      <div
+        className="absolute inset-0 hidden dark:block"
         style={{
           background: `radial-gradient(ellipse at top,
             rgba(20, 184, 166, 0.1) 0%,
@@ -341,18 +344,18 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
       </AnimatePresence>
 
       {/* Legend */}
-      <div className="relative flex items-center justify-center gap-4 mt-4 pt-4 border-t border-slate-700/50">
+      <div className="relative flex items-center justify-center gap-4 mt-4 pt-4 border-t border-slate-300/50 dark:border-slate-700/50">
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rotate-45 rounded-sm bg-gradient-to-br from-green-500/70 to-emerald-400/60 border border-emerald-400/70" />
-          <span className="text-xs text-emerald-400">{t.active || 'Active'}</span>
+          <div className="w-4 h-4 rotate-45 rounded-sm bg-gradient-to-br from-green-300/80 to-emerald-200/70 dark:from-green-500/70 dark:to-emerald-400/60 border border-emerald-400/80 dark:border-emerald-400/70" />
+          <span className="text-xs text-emerald-600 dark:text-emerald-400">{t.active || 'Active'}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rotate-45 rounded-sm bg-gradient-to-br from-zinc-800/30 to-zinc-700/20 border border-zinc-700/30" />
+          <div className="w-4 h-4 rotate-45 rounded-sm bg-gradient-to-br from-slate-200/60 to-slate-100/40 dark:from-zinc-800/30 dark:to-zinc-700/20 border border-slate-300/50 dark:border-zinc-700/30" />
           <span className="text-xs text-slate-600 dark:text-slate-400">{t.empty || 'Empty'}</span>
         </div>
         <div className="flex items-center gap-2">
           <SparklesIcon size="xs" />
-          <span className="text-xs text-amber-400">{t.perfect || 'Perfect'}</span>
+          <span className="text-xs text-amber-600 dark:text-amber-400">{t.perfect || 'Perfect'}</span>
         </div>
       </div>
 

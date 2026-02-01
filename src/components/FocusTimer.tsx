@@ -421,11 +421,14 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
         ? "ring-2 ring-violet-500/40 shadow-lg shadow-violet-500/20"
         : "bg-card zen-shadow-card"
     )}>
-      {/* Cosmic Background */}
+      {/* Cosmic Background - Theme-aware */}
       {isPrimaryCTA && (
         <>
+          {/* Light mode background */}
+          <div className="absolute inset-0 bg-gradient-to-b from-violet-100 via-indigo-50 to-slate-100 dark:bg-none" />
+          {/* Dark mode cosmic gradient */}
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 hidden dark:block"
             style={{
               background: `radial-gradient(ellipse at center,
                 #1a1a3e 0%, #0d0d2a 40%, #050510 100%)`
@@ -830,9 +833,10 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', damping: 20 }}
           >
-            {/* Premium background */}
+            {/* Premium background - Theme-aware */}
+            <div className="absolute inset-0 bg-gradient-to-b from-indigo-50 via-purple-50 to-slate-100 dark:bg-none" />
             <div
-              className="absolute inset-0"
+              className="absolute inset-0 hidden dark:block"
               style={{
                 background: `radial-gradient(ellipse at top,
                   #1a1a3e 0%, #0d0d2a 60%, #050510 100%)`
@@ -847,17 +851,17 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
               {/* Close button */}
               <button
                 onClick={() => handleSaveReflection(null)}
-                className="absolute top-3 right-3 p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white/60 hover:text-white transition-colors"
+                className="absolute top-3 right-3 p-2 rounded-lg bg-slate-200/50 dark:bg-white/10 hover:bg-slate-300/50 dark:hover:bg-white/20 text-slate-600 dark:text-white/60 hover:text-slate-800 dark:hover:text-white transition-colors"
                 aria-label={t.close}
               >
                 <X className="w-4 h-4" />
               </button>
 
               <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-5 h-5 text-violet-400" />
-                <h4 className="text-lg font-semibold text-white pr-10">{t.focusReflectionTitle}</h4>
+                <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+                <h4 className="text-lg font-semibold text-slate-800 dark:text-white pr-10">{t.focusReflectionTitle}</h4>
               </div>
-              <p className="text-sm text-white/60 mt-1">{t.focusReflectionQuestion}</p>
+              <p className="text-sm text-slate-600 dark:text-white/60 mt-1">{t.focusReflectionQuestion}</p>
 
               <div className="flex justify-between mt-5">
                 {[1, 2, 3, 4, 5].map((value) => {
