@@ -145,10 +145,10 @@ function OrbitingEmotion({
   angle: number;
   animationDuration: number;
 }) {
-  // Elliptical orbit parameters - ORIGINAL VALUES (fits in container)
-  const baseRadius = 20 + (orbitIndex / Math.max(totalOrbits - 1, 1)) * 22;
-  const rx = baseRadius * 2.8;        // X radius: 56-117px (fits in 280px container)
-  const ry = baseRadius * 0.65 * 2.8; // Y radius (ellipse - 65% of X for 3D look)
+  // Elliptical orbit parameters - increased min radius to keep center empty
+  const baseRadius = 35 + (orbitIndex / Math.max(totalOrbits - 1, 1)) * 25;
+  const rx = baseRadius * 2.5;        // X radius: 87-150px (inner orbit far from center)
+  const ry = baseRadius * 0.65 * 2.5; // Y radius (ellipse - 65% of X for 3D look)
 
   // Size based on frequency (inner = more frequent = larger)
   const sizePx = 38 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 14;
@@ -463,13 +463,13 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
             </filter>
           </defs>
 
-          <circle cx={50} cy={50} r={12} fill="url(#centerGlowPremium)" />
+          {/* CENTER GLOW REMOVED - empty center now */}
 
           {/* Elliptical orbit paths with 3D tilt - matches HTML emoji positions */}
           {sortedEmotions.map((_, i) => {
-            const baseRadius = 20 + (i / Math.max(sortedEmotions.length - 1, 1)) * 22;
-            const rx = baseRadius;          // 20-42 in SVG units (viewBox 0-100)
-            const ry = baseRadius * 0.65;   // Ellipse ratio for 3D effect
+            const baseRadius = 35 + (i / Math.max(sortedEmotions.length - 1, 1)) * 25;
+            const rx = baseRadius * 0.9;    // 31-54 in SVG units (matches HTML 2.5/2.8)
+            const ry = rx * 0.65;           // Ellipse ratio for 3D effect
             const tilt = -12; // Tilt angle for 3D perspective
 
             return (
