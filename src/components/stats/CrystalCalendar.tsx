@@ -167,7 +167,7 @@ function CrystalDay({
       <span
         className={cn(
           "relative z-10 text-xs font-medium",
-          isToday ? "text-emerald-300 font-bold" : "text-slate-200"
+          isToday ? "text-emerald-700 dark:text-emerald-300 font-bold" : "text-slate-700 dark:text-slate-200"
         )}
       >
         {dayNum}
@@ -268,7 +268,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
       {/* Header with month navigation */}
       <div className="relative flex items-center justify-between mb-4">
         <motion.button
-          className="p-2 rounded-lg text-slate-300 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+          className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={goToPrevMonth}
@@ -279,7 +279,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
 
         <motion.h3
           key={monthName}
-          className="text-sm font-semibold text-emerald-300 flex items-center gap-2"
+          className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-2"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
@@ -288,7 +288,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
         </motion.h3>
 
         <motion.button
-          className="p-2 rounded-lg text-slate-300 hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+          className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={goToNextMonth}
@@ -303,7 +303,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
         {weekdays.map((day, i) => (
           <div
             key={i}
-            className="text-center text-xs text-teal-400 font-medium py-1"
+            className="text-center text-xs text-teal-600 dark:text-teal-400 font-medium py-1"
           >
             {day}
           </div>

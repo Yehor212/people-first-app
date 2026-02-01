@@ -280,7 +280,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
             >
               <Medal className="w-4 h-4 text-violet-400" />
               <span className="text-white/70">
-                {t.yourRank || 'Your rank'}: <strong className="text-violet-300">{formatRank(getCurrentRank()!)}</strong>
+                {t.yourRank || 'Your rank'}: <strong className="text-violet-700 dark:text-violet-300">{formatRank(getCurrentRank()!)}</strong>
                 {userRanks && <span className="text-white/40"> / {userRanks.totalParticipants}</span>}
               </span>
             </motion.div>
@@ -331,7 +331,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                     border: 'rgba(156, 163, 175, 0.3)',
                     glow: '0 0 12px rgba(156, 163, 175, 0.15)',
                     rankBg: 'linear-gradient(135deg, #9ca3af 0%, #d1d5db 100%)',
-                    textColor: 'text-gray-300',
+                    textColor: 'text-gray-600 dark:text-gray-300',
                   },
                   3: {
                     bg: 'linear-gradient(135deg, rgba(180, 83, 9, 0.2) 0%, rgba(217, 119, 6, 0.1) 100%)',
@@ -384,12 +384,12 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                       <div className="flex items-center gap-1.5">
                         <span className={cn(
                           "font-medium truncate",
-                          entry.isCurrentUser ? "text-violet-300" : "text-white"
+                          entry.isCurrentUser ? "text-violet-700 dark:text-violet-300" : "text-gray-900 dark:text-white"
                         )}>
                           {entry.displayName}
                         </span>
                         {entry.isCurrentUser && (
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-300">(you)</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-700 dark:text-violet-300">(you)</span>
                         )}
                         {entry.rank === 1 && (
                           <Crown className="w-4 h-4 text-amber-400" />
@@ -406,7 +406,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                     <div className="text-right">
                       <span className={cn(
                         "font-bold text-lg",
-                        rankConfig?.textColor || (entry.isCurrentUser ? "text-violet-300" : "text-white")
+                        rankConfig?.textColor || (entry.isCurrentUser ? "text-violet-700 dark:text-violet-300" : "text-gray-900 dark:text-white")
                       )}>
                         {getValue(entry).toLocaleString()}
                       </span>

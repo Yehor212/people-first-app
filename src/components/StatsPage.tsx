@@ -1354,7 +1354,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 >
                   <div className="flex items-center gap-2 mb-2">
                     <Target className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-medium text-emerald-300">{t.habitsCompleted}</span>
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t.habitsCompleted}</span>
                   </div>
                   <p className="text-sm text-foreground/80">{selectedDayData.habits.join(' • ')}</p>
                 </motion.div>
@@ -1370,7 +1370,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                     >
                       <Sparkles className="w-4 h-4 text-amber-400" />
                     </motion.div>
-                    <span className="text-sm font-medium text-amber-300/80">{t.gratitude || 'Gratitude'}</span>
+                    <span className="text-sm font-medium text-amber-700/80 dark:text-amber-300/80">{t.gratitude || 'Gratitude'}</span>
                   </div>
                   {selectedDayData.gratitude.map((entry, idx) => (
                     <motion.div

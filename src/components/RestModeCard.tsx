@@ -85,7 +85,7 @@ export const RestModeCard = memo(function RestModeCard({ streak, onCancel }: Res
       >
         <span className="text-xl">🔥</span>
         <span className="font-bold text-orange-500 text-lg">{streak}</span>
-        <span className="text-sm text-orange-400">{t.daysSaved || 'дней сохранено'}</span>
+        <span className="text-sm text-orange-600 dark:text-orange-400">{t.daysSaved || 'дней сохранено'}</span>
       </motion.div>
 
       {/* Supportive message */}

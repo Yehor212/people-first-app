@@ -358,10 +358,10 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             })}
           </div>
           <div className="flex justify-between mt-2">
-            <span className="text-xs text-emerald-300/70">{completedTodayCount} / {habits.length}</span>
+            <span className="text-xs text-emerald-700/70 dark:text-emerald-300/70">{completedTodayCount} / {habits.length}</span>
             {completedTodayCount === habits.length && habits.length > 0 && (
               <motion.span
-                className="text-xs text-emerald-300 flex items-center gap-1"
+                className="text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-1"
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
               >
@@ -387,8 +387,8 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           animate={{ opacity: 1, y: 0 }}
         >
           <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/25 backdrop-blur-sm rounded-full border border-emerald-500/30">
-            <Leaf className="w-4 h-4 text-emerald-300" />
-            <span className="text-sm font-bold text-emerald-200">{t.startHere}</span>
+            <Leaf className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />
+            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-200">{t.startHere}</span>
           </div>
         </motion.div>
       )}

@@ -246,11 +246,11 @@ function CreateChallengeView({
             >
               <div className={cn(
                 "text-2xl font-bold",
-                duration === opt.value ? "text-violet-300" : "text-white"
+                duration === opt.value ? "text-violet-700 dark:text-violet-300" : "text-white"
               )}>{opt.value}</div>
               <div className={cn(
                 "text-xs",
-                duration === opt.value ? "text-violet-300/70" : "text-white/50"
+                duration === opt.value ? "text-violet-700/70 dark:text-violet-300/70" : "text-white/50"
               )}>{t.days || 'days'}</div>
             </motion.button>
           ))}
@@ -453,7 +453,7 @@ function ChallengeDetailsView({
           )}
           {challenge.status === 'completed' && (
             <span
-              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-amber-300"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-amber-700 dark:text-amber-300"
               style={{ background: 'rgba(245, 158, 11, 0.2)' }}
             >
               <Trophy className="w-3 h-3" />

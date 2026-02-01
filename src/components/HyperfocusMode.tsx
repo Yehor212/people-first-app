@@ -553,7 +553,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 whileTap={{ scale: 0.95 }}
               >
                 {isSoundPlaying ? (
-                  <Volume2 className="w-5 h-5 text-violet-300" />
+                  <Volume2 className="w-5 h-5 text-violet-700 dark:text-violet-300" />
                 ) : (
                   <VolumeX className="w-5 h-5 text-white/60" />
                 )}

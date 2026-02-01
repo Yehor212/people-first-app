@@ -50,7 +50,7 @@ export function ThemeToggle() {
         disabled
       >
         <div className="absolute top-[3px] left-[27px] w-[22px] h-[22px] rounded-full bg-slate-800 flex items-center justify-center">
-          <Moon className="w-3.5 h-3.5 text-slate-300" />
+          <Moon className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
         </div>
       </button>
     );
@@ -80,7 +80,7 @@ export function ThemeToggle() {
         {theme === 'light' ? (
           <Sun className="w-3.5 h-3.5 text-white" />
         ) : (
-          <Moon className="w-3.5 h-3.5 text-slate-300" />
+          <Moon className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
         )}
       </div>
 

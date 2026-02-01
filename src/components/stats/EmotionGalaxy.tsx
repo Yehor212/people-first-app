@@ -433,7 +433,7 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h3 className="text-sm font-semibold text-purple-200 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-purple-700 dark:text-purple-200 flex items-center gap-2">
           <SparklesIcon size="sm" animated />
           {t.emotionDistribution || 'Emotion Distribution'}
         </h3>

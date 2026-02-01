@@ -102,11 +102,11 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
             {streak}
           </div>
           <div className="flex items-center gap-2 mt-1">
-            <Flame className="w-5 h-5 text-orange-400" />
-            <span className="text-xl font-bold text-orange-300 uppercase tracking-wider">
+            <Flame className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+            <span className="text-xl font-bold text-orange-600 dark:text-orange-300 uppercase tracking-wider">
               {t.dayStreak}
             </span>
-            <Flame className="w-5 h-5 text-orange-400" />
+            <Flame className="w-5 h-5 text-orange-600 dark:text-orange-400" />
           </div>
         </div>
 

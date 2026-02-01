@@ -190,7 +190,7 @@ function AchievementCard({
           }}
         >
           <IconComponent size="sm" animated />
-          <span className="text-xs text-amber-200/80 text-center mt-2 leading-tight">
+          <span className="text-xs text-amber-700/80 dark:text-amber-200/80 text-center mt-2 leading-tight">
             {achievement.label}
           </span>
         </div>
@@ -328,10 +328,10 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           >
-            <Share2 className="w-4 h-4 text-amber-200" />
+            <Share2 className="w-4 h-4 text-amber-700 dark:text-amber-200" />
           </motion.div>
         ) : (
-          <Share2 className="w-4 h-4 text-amber-200" />
+          <Share2 className="w-4 h-4 text-amber-700 dark:text-amber-200" />
         )}
       </motion.button>
 
@@ -400,7 +400,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
 
         {/* Tap hint */}
         <motion.p
-          className="text-xs text-amber-200/40 mt-8"
+          className="text-xs text-amber-700/40 dark:text-amber-200/40 mt-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}

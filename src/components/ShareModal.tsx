@@ -334,12 +334,12 @@ export function ShareModal(props: ShareModalProps) {
               }}
             >
               {copied ? (
-                <Check className="w-5 h-5 text-emerald-400" />
+                <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               ) : (
                 <Copy className="w-5 h-5 text-purple-400" />
               )}
             </div>
-            <span className={cn("text-xs", copied ? "text-emerald-400" : "text-white/70")}>
+            <span className={cn("text-xs", copied ? "text-emerald-600 dark:text-emerald-400" : "text-white/70")}>
               {copied ? (t.shareCopied || 'Copied!') : (t.shareCopyLink || 'Copy')}
             </span>
           </motion.button>
@@ -380,7 +380,7 @@ export function ShareModal(props: ShareModalProps) {
                 <Share2 className="w-5 h-5 text-white" />
               )}
             </div>
-            <span className={cn("text-xs font-medium", shared ? "text-emerald-400" : "text-violet-300")}>
+            <span className={cn("text-xs font-medium", shared ? "text-emerald-600 dark:text-emerald-400" : "text-violet-700 dark:text-violet-300")}>
               {shared ? (t.shareCopied || 'Shared!') : (t.shareButton || 'Share')}
             </span>
           </motion.button>

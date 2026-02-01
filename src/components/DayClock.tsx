@@ -312,8 +312,8 @@ export function DayClock({
               <span className={cn(
                 "text-lg sm:text-xl font-bold tabular-nums",
                 energyLevel >= 80 ? "text-[hsl(var(--mood-good))]" :
-                energyLevel >= 60 ? "text-yellow-400" :
-                energyLevel >= 40 ? "text-orange-400" : "text-red-400"
+                energyLevel >= 60 ? "text-yellow-600 dark:text-yellow-400" :
+                energyLevel >= 40 ? "text-orange-600 dark:text-orange-400" : "text-red-600 dark:text-red-400"
               )}>
                 {energyLevel}%
               </span>
@@ -366,8 +366,8 @@ export function DayClock({
           {energyLevel >= 100 && (
             <div className="flex items-center justify-center gap-3 pt-3 mt-2 border-t border-border/50">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-orange-500/20 to-amber-500/20 rounded-full">
-                <Flame className="w-5 h-5 text-orange-400 animate-flame-flicker" />
-                <span className="text-sm font-bold text-orange-400">{t.perfectDay || 'Perfect Day!'}</span>
+                <Flame className="w-5 h-5 text-orange-600 dark:text-orange-400 animate-flame-flicker" />
+                <span className="text-sm font-bold text-orange-600 dark:text-orange-400">{t.perfectDay || 'Perfect Day!'}</span>
               </div>
               <div className="flex -space-x-1">
                 {['✨', '🌟', '⭐'].map((star, i) => (

@@ -110,7 +110,7 @@ export const AllCompleteCelebration = memo(function AllCompleteCelebration({ str
         >
           <EmojiOrIcon emoji="🔥" iconName="fire" size="sm" />
           <span className="font-bold text-orange-500 text-lg">{streak}</span>
-          <span className="text-sm text-orange-400">{t.daysStreak || 'days streak'}</span>
+          <span className="text-sm text-orange-600 dark:text-orange-400">{t.daysStreak || 'days streak'}</span>
         </motion.div>
       )}
 

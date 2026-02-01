@@ -802,7 +802,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                           <span className={cn(
                             "text-sm font-medium tabular-nums",
                             isDayToday && hour === currentHour
-                              ? "text-purple-300 font-bold"
+                              ? "text-purple-700 dark:text-purple-300 font-bold"
                               : hour === 0
                                 ? "text-white/90 font-semibold"
                                 : "text-white/50"
