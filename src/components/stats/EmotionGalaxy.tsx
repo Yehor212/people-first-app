@@ -145,10 +145,10 @@ function OrbitingEmotion({
   angle: number;
   animationDuration: number;
 }) {
-  // Elliptical orbit parameters - large min radius to keep center EMPTY
-  const baseRadius = 50 + (orbitIndex / Math.max(totalOrbits - 1, 1)) * 20;
-  const rx = baseRadius * 2.0;        // X radius: 100-140px (far from center!)
-  const ry = baseRadius * 0.5 * 2.0;  // Y radius: 50-70px (flatter ellipse)
+  // Elliptical orbit parameters - VERY large radius to guarantee empty center
+  // Min radius = 80px, ensures NO emoji can be in center
+  const rx = 80 + orbitIndex * 15;    // X radius: 80-155px (ALWAYS far from center!)
+  const ry = rx * 0.5;                // Y radius: 40-78px
 
   // Size based on frequency (inner = more frequent = larger)
   const sizePx = 38 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 14;
@@ -186,13 +186,12 @@ function OrbitingEmotion({
             <div
               className="absolute rounded-full"
               style={{
-                left: 0,
+                left: rx,  // Position at orbit radius
                 top: 0,
                 width: trailSize,
                 height: trailSize,
                 marginLeft: -trailSize / 2,
                 marginTop: -trailSize / 2,
-                transform: `translateX(${rx}px)`,
                 background: `radial-gradient(circle, ${emotion.color}${Math.round(trailOpacity * 255).toString(16).padStart(2, '0')} 0%, transparent 70%)`,
                 filter: `blur(${trailBlur}px)`,
               }}
@@ -218,17 +217,16 @@ function OrbitingEmotion({
           ease: 'linear',
         }}
       >
-        {/* Emoji container positioned at elliptical orbit radius */}
+        {/* Emoji container positioned at orbit radius using calc() */}
         <motion.div
           className="absolute"
           style={{
-            left: 0,
+            left: rx,      // Position directly at rx pixels from rotation center
             top: 0,
             width: sizePx,
             height: sizePx,
             marginLeft: -sizePx / 2,
             marginTop: -sizePx / 2,
-            transform: `translateX(${rx}px)`,
           }}
           // Counter-rotate to keep emoji upright
           animate={{ rotate: [-angle, -angle - 360] }}
@@ -466,9 +464,9 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
 
           {/* Elliptical orbit paths with 3D tilt - matches HTML emoji positions */}
           {sortedEmotions.map((_, i) => {
-            const baseRadius = 50 + (i / Math.max(sortedEmotions.length - 1, 1)) * 20;
-            const rx = baseRadius * 0.7;    // 35-49 in SVG units (matches HTML 2.0/2.8)
-            const ry = rx * 0.5;            // Flatter ellipse ratio
+            // SVG units: viewBox is 0-100, so divide HTML pixels by ~2.8
+            const rx = (80 + i * 15) / 2.8;  // ~29-55 in SVG units
+            const ry = rx * 0.5;             // Flatter ellipse
             const tilt = -12; // Tilt angle for 3D perspective
 
             return (
