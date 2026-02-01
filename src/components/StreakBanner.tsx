@@ -4,16 +4,25 @@
  * Includes Rest Mode button for low-energy days
  */
 
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, Zap, Trophy, Moon, Share2, Check, Heart, Target, Brain, Sparkles } from 'lucide-react';
-import { ShareModal } from './ShareModal';
+import { Flame, Zap, Trophy, Moon, Share2, Check, Heart, Target, Brain, Sparkles, X, Download, Loader2 } from 'lucide-react';
 import { FireAnimation } from './FireAnimation';
 import { hapticTap } from '@/lib/haptics';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, calculateStreak } from '@/lib/utils';
+import { Share } from '@capacitor/share';
+import { Capacitor } from '@capacitor/core';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { logger } from '@/lib/logger';
+
+// Lazy load html2canvas
+const getHtml2Canvas = async () => {
+  const module = await import('html2canvas');
+  return module.default;
+};
 
 interface StreakBannerProps {
   moods: MoodEntry[];
@@ -30,7 +39,10 @@ interface StreakBannerProps {
 export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSessions, gratitudeEntries, restDays = [], onRestMode, isRestMode = false, canActivateRestMode = true, daysUntilRestAvailable = 0 }: StreakBannerProps) {
   const { t } = useLanguage();
   const today = getToday();
-  const [showShareModal, setShowShareModal] = useState(false);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [shareError, setShareError] = useState<string | null>(null);
+  const shareCardRef = useRef<HTMLDivElement>(null);
 
   // Calculate streak based on ANY activity (including rest days)
   const streak = useMemo(() => {
@@ -75,6 +87,117 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
 
   // Get icon based on streak
   const Icon = streak >= 7 ? Trophy : streak >= 3 ? Flame : Zap;
+
+  // Get achievement data for share card
+  const getAchievementData = () => {
+    if (streak >= 30) return { emoji: '👑', text: t.shareAchievement30 || 'Legendary!', subtext: t.shareSubtext30 || '30+ day streak' };
+    if (streak >= 14) return { emoji: '💎', text: t.shareAchievement14 || 'Diamond!', subtext: t.shareSubtext14 || '14+ day streak' };
+    if (streak >= 7) return { emoji: '🔥', text: t.shareAchievement7 || 'On Fire!', subtext: t.shareSubtext7 || '7+ day streak' };
+    if (streak >= 3) return { emoji: '⭐', text: t.shareAchievement3 || 'Rising Star!', subtext: t.shareSubtext3 || '3+ day streak' };
+    return { emoji: '🌱', text: t.shareAchievementStart || 'Just Started!', subtext: t.shareSubtextStart || 'Beginning the journey' };
+  };
+
+  const achievement = getAchievementData();
+
+  // Handle share action
+  const handleShare = async () => {
+    if (!shareCardRef.current) return;
+
+    try {
+      setIsSharing(true);
+      setShareError(null);
+      const html2canvas = await getHtml2Canvas();
+      const canvas = await html2canvas(shareCardRef.current, {
+        backgroundColor: null,
+        scale: 2,
+      });
+
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob!), 'image/png');
+      });
+
+      if (Capacitor.isNativePlatform()) {
+        try {
+          const base64Data = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(blob);
+            reader.onloadend = () => {
+              const result = reader.result as string;
+              resolve(result.split(',')[1]);
+            };
+          });
+
+          const fileName = `zenflow-streak-${Date.now()}.png`;
+          const savedFile = await Filesystem.writeFile({
+            path: fileName,
+            data: base64Data,
+            directory: Directory.Cache,
+          });
+
+          await Share.share({
+            title: t.shareTitle || 'My ZenFlow Streak',
+            text: `${streak} ${t.shareStreak || 'day streak'}! 🔥`,
+            files: [savedFile.uri],
+            dialogTitle: t.shareDialogTitle,
+          });
+
+          try {
+            await Filesystem.deleteFile({ path: fileName, directory: Directory.Cache });
+          } catch (e) {
+            logger.warn('[StreakBanner] Cleanup failed:', e);
+          }
+        } catch (error) {
+          logger.error('[StreakBanner] Native share failed:', error);
+          setShareError(t.shareFailed || 'Share failed');
+          return;
+        }
+      } else {
+        if (navigator.share && navigator.canShare) {
+          const file = new File([blob], 'zenflow-streak.png', { type: 'image/png' });
+          await navigator.share({
+            title: t.shareTitle || 'My ZenFlow Streak',
+            text: `${streak} ${t.shareStreak || 'day streak'}! 🔥`,
+            files: [file],
+          });
+        } else {
+          downloadImage(blob);
+        }
+      }
+      setShowShareDialog(false);
+    } catch (error) {
+      logger.error('[StreakBanner] Share failed:', error);
+      setShareError(t.shareFailed || 'Share failed');
+    } finally {
+      setIsSharing(false);
+    }
+  };
+
+  const downloadImage = async (existingBlob?: Blob) => {
+    if (!shareCardRef.current) return;
+    setIsSharing(true);
+    try {
+      let blob = existingBlob;
+      if (!blob) {
+        const html2canvas = await getHtml2Canvas();
+        const canvas = await html2canvas(shareCardRef.current, { backgroundColor: null, scale: 2 });
+        blob = await new Promise<Blob>((resolve) => {
+          canvas.toBlob((blob) => resolve(blob!), 'image/png');
+        });
+      }
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `zenflow-streak-${streak}-days.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      logger.error('[StreakBanner] Download failed:', error);
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   return (
     <div className={cn(
@@ -211,7 +334,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
           <button
             onClick={() => {
               hapticTap();
-              setShowShareModal(true);
+              setShowShareDialog(true);
             }}
             className={cn(
               "p-2 rounded-lg transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
@@ -259,13 +382,123 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
         </div>
       )}
 
-      {/* Share Modal */}
-      <ShareModal
-        open={showShareModal}
-        onOpenChange={setShowShareModal}
-        mode="streak"
-        streak={streak}
-      />
+      {/* Inline Share Dialog */}
+      {showShareDialog && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-fade-in">
+          {/* Close button */}
+          <button
+            onClick={() => setShowShareDialog(false)}
+            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+
+          <div className="w-full max-w-sm">
+            {/* Share Card */}
+            <div
+              ref={shareCardRef}
+              className="relative overflow-hidden aspect-square"
+              style={{
+                background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+                borderRadius: '24px',
+              }}
+            >
+              {/* Animated gradient orbs */}
+              <div className="absolute top-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full opacity-40"
+                style={{ background: 'radial-gradient(circle, #f97316 0%, transparent 70%)' }} />
+              <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-30"
+                style={{ background: 'radial-gradient(circle, #ef4444 0%, transparent 70%)' }} />
+
+              {/* Content */}
+              <div className="relative z-10 h-full flex flex-col p-6 text-white">
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-auto">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{ background: 'linear-gradient(135deg, #f97316, #ef4444)' }}>
+                    <Flame className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold">ZenFlow</h1>
+                    <p className="text-xs text-white/60">Streak Achievement</p>
+                  </div>
+                </div>
+
+                {/* Main Achievement */}
+                <div className="text-center my-6">
+                  <div className="text-7xl mb-4">{achievement.emoji}</div>
+                  <h2 className="font-black text-4xl mb-2"
+                    style={{
+                      background: 'linear-gradient(135deg, #f97316, #ef4444, #fbbf24)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                    }}>
+                    {streak} {t.days || 'Days'}
+                  </h2>
+                  <p className="text-white/60 text-lg">{achievement.text}</p>
+                </div>
+
+                {/* Stats */}
+                <div className="bg-white/5 backdrop-blur rounded-2xl p-4 border border-white/10">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white/60">{t.todayProgress || "Today's Progress"}</span>
+                    <span className="font-bold text-lg">{todayProgress.completed}/4</span>
+                  </div>
+                  <div className="mt-2 h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${(todayProgress.completed / 4) * 100}%`,
+                        background: 'linear-gradient(90deg, #f97316, #ef4444)',
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="text-center mt-4">
+                  <p className="text-xs text-white/40">zenflow.app</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {shareError && (
+              <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-center">
+                <p className="text-red-400 text-sm">{shareError}</p>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 mt-4">
+              <button
+                onClick={handleShare}
+                disabled={isSharing}
+                className="flex-1 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #f97316, #ef4444)' }}
+              >
+                {isSharing ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    {t.generating || 'Generating...'}
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="w-5 h-5" />
+                    {t.shareButton || 'Share'}
+                  </>
+                )}
+              </button>
+              <button
+                onClick={() => downloadImage()}
+                disabled={isSharing}
+                className="py-4 px-6 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              >
+                {isSharing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });
