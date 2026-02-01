@@ -82,9 +82,9 @@ import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdat
 import { syncTasks, syncQuests, subscribeToTaskUpdates, subscribeToQuestUpdates } from '@/storage/tasksCloudSync';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { CompanionPanel } from '@/components/CompanionPanel';
-// import { MoodInsights } from '@/components/MoodInsights'; // Hidden until AI ready
+import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
-// import { InsightsPanel } from '@/components/InsightsPanel'; // Hidden until AI ready
+import { InsightsPanel } from '@/components/InsightsPanel';
 import { RestModeCard } from '@/components/RestModeCard';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
 import { ChallengeModal } from '@/components/ChallengeModal';
@@ -1926,16 +1926,13 @@ export function Index() {
                 }}
               />
 
-              {/* Personal Insights - Hidden until AI ready
-              {isFeatureVisible('aiCoach') && (
-                <InsightsPanel
-                  moods={safeMoods}
-                  habits={safeHabits}
-                  focusSessions={safeFocusSessions}
-                  compact={true}
-                />
-              )}
-              */}
+              {/* Personal Insights */}
+              <InsightsPanel
+                moods={safeMoods}
+                habits={safeHabits}
+                focusSessions={safeFocusSessions}
+                compact={true}
+              />
 
               {/* v1.4.0: ScheduleTimeline moved to "My World" tab */}
 
@@ -2129,16 +2126,13 @@ export function Index() {
               onDeleteEvent={handleDeleteScheduleEvent}
             />
 
-            {/* AI Insights - Hidden until AI ready
-            {isFeatureVisible('aiCoach') && (
-              <MoodInsights
-                moods={safeMoods}
-                habits={safeHabits}
-                focusSessions={safeFocusSessions}
-                gratitudeEntries={safeGratitudeEntries}
-              />
-            )}
-            */}
+            {/* Insights */}
+            <MoodInsights
+              moods={safeMoods}
+              habits={safeHabits}
+              focusSessions={safeFocusSessions}
+              gratitudeEntries={safeGratitudeEntries}
+            />
           </div>
         )}
 
