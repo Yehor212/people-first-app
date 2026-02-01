@@ -145,10 +145,10 @@ function OrbitingEmotion({
   angle: number;
   animationDuration: number;
 }) {
-  // Elliptical orbit parameters - REDUCED to fit within container (overflow-hidden)
+  // Elliptical orbit parameters - moderate radius (no center hub to avoid)
   const baseRadius = 32 + (orbitIndex / Math.max(totalOrbits - 1, 1)) * 18;
-  const rx = baseRadius * 2.0;        // X radius: 64px fits in container
-  const ry = baseRadius * 0.65 * 2.0; // Y radius (ellipse - 65% of X for 3D look)
+  const rx = baseRadius * 2.5;        // X radius: 80px - good visibility
+  const ry = baseRadius * 0.65 * 2.5; // Y radius (ellipse - 65% of X for 3D look)
 
   // Size based on frequency (inner = more frequent = larger) - reduced for better fit
   const sizePx = 32 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 10;
@@ -397,10 +397,10 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
 
           <circle cx={50} cy={50} r={12} fill="url(#centerGlowPremium)" />
 
-          {/* Elliptical orbit paths with 3D tilt - REDUCED to match HTML emoji positions */}
+          {/* Elliptical orbit paths with 3D tilt - matches HTML emoji positions */}
           {sortedEmotions.map((_, i) => {
             const baseRadius = 32 + (i / Math.max(sortedEmotions.length - 1, 1)) * 18;
-            const rx = baseRadius * 0.7;    // Reduced to match HTML (2.0/2.8 ≈ 0.7)
+            const rx = baseRadius * 0.9;    // Matches HTML (2.5/2.8 ≈ 0.9)
             const ry = rx * 0.65;           // Ellipse ratio for 3D effect
             const tilt = -12; // Tilt angle for 3D perspective
 
@@ -444,67 +444,7 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
           ))}
         </div>
 
-        {/* Premium Center Hub - z-10 to appear behind orbiting emojis */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-          {/* Outer expanding pulse ring - compact */}
-          <motion.div
-            className="absolute rounded-full"
-            style={{
-              width: 60,
-              height: 60,
-              border: '1px solid rgba(139, 92, 246, 0.25)',
-            }}
-            animate={{
-              scale: [1, 1.35, 1],
-              opacity: [0.4, 0, 0.4],
-            }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: 'easeOut' }}
-          />
-
-          {/* Secondary pulse ring (offset timing) - compact */}
-          <motion.div
-            className="absolute rounded-full"
-            style={{
-              width: 55,
-              height: 55,
-              border: '1px solid rgba(139, 92, 246, 0.2)',
-            }}
-            animate={{
-              scale: [1, 1.25, 1],
-              opacity: [0.3, 0, 0.3],
-            }}
-            transition={{ duration: 3.5, repeat: Infinity, ease: 'easeOut', delay: 1.2 }}
-          />
-
-          {/* Inner glow orb - compact with minimal blur for emoji visibility */}
-          <motion.div
-            className="flex flex-col items-center justify-center rounded-full"
-            style={{
-              width: 52,
-              height: 52,
-              background: `
-                radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18) 0%, transparent 45%),
-                radial-gradient(circle, rgba(139, 92, 246, 0.45) 0%, rgba(139, 92, 246, 0.18) 50%, rgba(139, 92, 246, 0.06) 100%)
-              `,
-              boxShadow: `
-                0 0 12px rgba(139, 92, 246, 0.4),
-                inset 0 0 8px rgba(255, 255, 255, 0.1)
-              `,
-            }}
-            animate={{
-              scale: [1, 1.03, 1],
-            }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <motion.span
-              className="text-2xl font-bold text-white"
-              style={{ textShadow: '0 0 12px rgba(139, 92, 246, 0.9)' }}
-            >
-              {totalEntries}
-            </motion.span>
-            <span className="text-xs text-purple-300/90">{t.entries || 'entries'}</span>
-          </motion.div>
-        </div>
+        {/* CENTER HUB REMOVED - only orbiting emojis now */}
       </div>
 
       {/* Premium Legend at bottom */}
