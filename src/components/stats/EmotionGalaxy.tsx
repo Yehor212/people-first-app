@@ -145,10 +145,10 @@ function OrbitingEmotion({
   angle: number;
   animationDuration: number;
 }) {
-  // Elliptical orbit parameters - increased min radius to keep center empty
-  const baseRadius = 35 + (orbitIndex / Math.max(totalOrbits - 1, 1)) * 25;
-  const rx = baseRadius * 2.5;        // X radius: 87-150px (inner orbit far from center)
-  const ry = baseRadius * 0.65 * 2.5; // Y radius (ellipse - 65% of X for 3D look)
+  // Elliptical orbit parameters - large min radius to keep center EMPTY
+  const baseRadius = 50 + (orbitIndex / Math.max(totalOrbits - 1, 1)) * 20;
+  const rx = baseRadius * 2.0;        // X radius: 100-140px (far from center!)
+  const ry = baseRadius * 0.5 * 2.0;  // Y radius: 50-70px (flatter ellipse)
 
   // Size based on frequency (inner = more frequent = larger)
   const sizePx = 38 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 14;
@@ -238,17 +238,16 @@ function OrbitingEmotion({
             ease: 'linear',
           }}
         >
-          {/* Outer glow halo */}
+          {/* Outer glow halo - NO BLUR for clarity */}
           <motion.div
             className="absolute rounded-full"
             style={{
-              inset: -6,
-              background: `radial-gradient(circle, ${emotion.color}30 0%, ${emotion.color}10 40%, transparent 70%)`,
-              filter: 'blur(6px)',
+              inset: -4,
+              background: `radial-gradient(circle, ${emotion.color}20 0%, transparent 70%)`,
             }}
             animate={{
-              scale: [1.1, 1.4, 1.1],
-              opacity: [0.5, 0.8, 0.5],
+              scale: [1.0, 1.2, 1.0],
+              opacity: [0.3, 0.5, 0.3],
             }}
             transition={{
               duration: 2.5,
@@ -467,9 +466,9 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
 
           {/* Elliptical orbit paths with 3D tilt - matches HTML emoji positions */}
           {sortedEmotions.map((_, i) => {
-            const baseRadius = 35 + (i / Math.max(sortedEmotions.length - 1, 1)) * 25;
-            const rx = baseRadius * 0.9;    // 31-54 in SVG units (matches HTML 2.5/2.8)
-            const ry = rx * 0.65;           // Ellipse ratio for 3D effect
+            const baseRadius = 50 + (i / Math.max(sortedEmotions.length - 1, 1)) * 20;
+            const rx = baseRadius * 0.7;    // 35-49 in SVG units (matches HTML 2.0/2.8)
+            const ry = rx * 0.5;            // Flatter ellipse ratio
             const tilt = -12; // Tilt angle for 3D perspective
 
             return (
