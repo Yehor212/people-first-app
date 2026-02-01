@@ -335,9 +335,12 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
         )}
       </motion.button>
 
-      {/* Dark temple background */}
+      {/* Theme-aware temple background */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 bg-gradient-to-b from-amber-50 via-orange-100/80 to-amber-100 dark:bg-none"
+      />
+      <div
+        className="absolute inset-0 hidden dark:block"
         style={{
           background: `linear-gradient(180deg,
             #0a0a0a 0%,
@@ -363,7 +366,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
 
       {/* Marble floor reflection */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-16"
+        className="absolute bottom-0 left-0 right-0 h-16 hidden dark:block"
         style={{
           background: `linear-gradient(180deg,
             transparent 0%,
@@ -381,7 +384,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
           animate={{ opacity: 1, y: 0 }}
         >
           <TrophyIcon size="md" animated />
-          <h3 className="text-lg font-bold text-amber-100">
+          <h3 className="text-lg font-bold text-amber-800 dark:text-amber-100">
             {t.hallOfFame || 'Hall of Fame'}
           </h3>
         </motion.div>

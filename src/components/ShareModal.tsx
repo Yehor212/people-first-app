@@ -6,6 +6,7 @@
 import { useState, useEffect } from 'react';
 import { X, Download, Share2, Copy, Check, Loader2, Image } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -164,12 +165,19 @@ export function ShareModal(props: ShareModalProps) {
     const title = getShareTitle();
     const text = getShareText();
 
-    const success = await shareImage(imageBlob, title, text);
+    try {
+      const success = await shareImage(imageBlob, title, text);
 
-    if (success) {
-      hapticSuccess();
-      setShared(true);
-      setTimeout(() => setShared(false), 2000);
+      if (success) {
+        hapticSuccess();
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+      } else {
+        toast.error(t.shareError || 'Could not share. Try downloading instead.');
+      }
+    } catch (error) {
+      logger.error('Share failed:', error);
+      toast.error(t.shareError || 'Could not share. Try downloading instead.');
     }
   };
 
@@ -177,12 +185,19 @@ export function ShareModal(props: ShareModalProps) {
     if (!imageBlob) return;
     hapticTap();
 
-    const success = await copyImageToClipboard(imageBlob);
+    try {
+      const success = await copyImageToClipboard(imageBlob);
 
-    if (success) {
-      hapticSuccess();
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (success) {
+        hapticSuccess();
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        toast.error(t.copyError || 'Could not copy to clipboard.');
+      }
+    } catch (error) {
+      logger.error('Copy failed:', error);
+      toast.error(t.copyError || 'Could not copy to clipboard.');
     }
   };
 

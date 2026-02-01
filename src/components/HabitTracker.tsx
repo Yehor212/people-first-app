@@ -393,7 +393,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
       <div className="flex items-center justify-between mb-4 relative">
         <h3 className={cn(
           "font-semibold",
-          isPrimaryCTA ? "text-xl text-white" : "text-lg text-foreground"
+          isPrimaryCTA ? "text-xl text-slate-800 dark:text-white" : "text-lg text-foreground"
         )}>{t.habits}</h3>
         <div className="flex items-center gap-2">
           {/* Challenges button */}
@@ -404,7 +404,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                 onOpenChallenge?.();
               }}
               aria-label={t.friendChallenges}
-              className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-white/10 backdrop-blur-sm border border-white/20 text-white/70 hover:text-white hover:bg-white/20 transition-colors"
+              className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm border border-slate-200/60 dark:border-white/20 text-slate-600 dark:text-white/70 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/20 transition-colors"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -486,7 +486,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           {/* Quick-add templates */}
           <p className={cn(
             "text-sm font-medium mb-3",
-            isPrimaryCTA ? "text-white/80" : "text-foreground"
+            isPrimaryCTA ? "text-slate-700 dark:text-white/80" : "text-foreground"
           )}>{t.quickAdd || 'Quick Add'}</p>
           <div className="grid grid-cols-2 gap-2 mb-4">
             {habitTemplates
@@ -572,7 +572,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             className={cn(
               "relative text-sm mb-3 flex items-center gap-1 transition-colors",
               isPrimaryCTA
-                ? "text-white/60 hover:text-white"
+                ? "text-slate-500 dark:text-white/60 hover:text-slate-800 dark:hover:text-white"
                 : "text-muted-foreground hover:text-foreground"
             )}
             whileHover={{ x: -2 }}
@@ -607,7 +607,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             )}
             <p className={cn(
               "text-xs mb-2",
-              isPrimaryCTA ? "text-white/60" : "text-muted-foreground"
+              isPrimaryCTA ? "text-slate-500 dark:text-white/60" : "text-muted-foreground"
             )}>{t.preview || 'Preview'}</p>
             <div className="flex items-center gap-3">
               <div className={cn(
@@ -619,13 +619,13 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               <div className="flex-1 min-w-0">
                 <p className={cn(
                   "font-semibold text-base truncate",
-                  isPrimaryCTA ? "text-white" : "text-foreground"
+                  isPrimaryCTA ? "text-slate-800 dark:text-white" : "text-foreground"
                 )}>
                   {newHabitName || (t.habitNamePlaceholder || 'Enter habit name...')}
                 </p>
                 <p className={cn(
                   "text-xs",
-                  isPrimaryCTA ? "text-white/60" : "text-muted-foreground"
+                  isPrimaryCTA ? "text-slate-500 dark:text-white/60" : "text-muted-foreground"
                 )}>
                   {selectedType === 'daily' && (t.habitTypeDaily || 'Daily')}
                   {selectedType === 'multiple' && `${dailyTarget}× ${t.perDay || 'per day'}`}
@@ -658,7 +658,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           <div className="relative mb-4">
             <p className={cn(
               "text-sm font-medium mb-2",
-              isPrimaryCTA ? "text-white/80" : "text-foreground"
+              isPrimaryCTA ? "text-slate-700 dark:text-white/80" : "text-foreground"
             )} id="icon-selector-label">{t.icon}:</p>
             <div className="flex gap-2 flex-wrap" role="radiogroup" aria-labelledby="icon-selector-label">
               {habitIcons.map((icon) => (
@@ -698,7 +698,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           <div className="relative mb-4">
             <p className={cn(
               "text-sm font-medium mb-2",
-              isPrimaryCTA ? "text-white/80" : "text-foreground"
+              isPrimaryCTA ? "text-slate-700 dark:text-white/80" : "text-foreground"
             )} id="color-selector-label">{t.color}:</p>
             <div className="flex gap-3" role="radiogroup" aria-labelledby="color-selector-label">
               {habitColors.map((color) => {
@@ -749,7 +749,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           <div className="relative mb-4">
             <p className={cn(
               "text-sm font-medium mb-2",
-              isPrimaryCTA ? "text-white/80" : "text-foreground"
+              isPrimaryCTA ? "text-slate-700 dark:text-white/80" : "text-foreground"
             )}>{t.habitType}:</p>
             <div className="grid grid-cols-2 gap-2">
               {[
@@ -792,7 +792,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             <div className="relative mb-4">
               <label className={cn(
                 "text-sm mb-2 block",
-                isPrimaryCTA ? "text-white/60" : "text-muted-foreground"
+                isPrimaryCTA ? "text-slate-500 dark:text-white/60" : "text-muted-foreground"
               )}>{t.habitDailyTarget}:</label>
               <input
                 type="number"
@@ -821,7 +821,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             <div className="flex items-center justify-between mb-2">
               <label className={cn(
                 "text-sm",
-                isPrimaryCTA ? "text-white/70" : "text-muted-foreground"
+                isPrimaryCTA ? "text-slate-600 dark:text-white/70" : "text-muted-foreground"
               )}>{t.reminders || 'Reminders'}</label>
               <motion.button
                 type="button"
@@ -845,7 +845,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             {reminders.length === 0 ? (
               <p className={cn(
                 "text-xs italic",
-                isPrimaryCTA ? "text-white/40" : "text-muted-foreground"
+                isPrimaryCTA ? "text-slate-400 dark:text-white/40" : "text-muted-foreground"
               )}>{t.noReminders || 'No reminders set'}</p>
             ) : (
               <div className="space-y-2">

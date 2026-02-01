@@ -92,8 +92,8 @@ function ChallengeCard({
       onClick={onClick}
       className={cn(
         "relative w-full p-4 rounded-2xl text-left overflow-hidden",
-        "bg-white/5 backdrop-blur-sm border border-white/10",
-        "hover:bg-white/10 transition-all"
+        "bg-slate-100/60 dark:bg-white/5 backdrop-blur-sm border border-slate-200/60 dark:border-white/10",
+        "hover:bg-slate-200/60 dark:hover:bg-white/10 transition-all"
       )}
       whileHover={{ scale: 1.01, y: -2 }}
       whileTap={{ scale: 0.99 }}
@@ -115,21 +115,21 @@ function ChallengeCard({
             {challenge.habitIcon}
           </div>
           <div>
-            <p className="font-medium text-white">{challenge.habitName}</p>
-            <p className="text-xs text-white/60">
+            <p className="font-medium text-slate-800 dark:text-white">{challenge.habitName}</p>
+            <p className="text-xs text-slate-500 dark:text-white/60">
               {challenge.isCreator
                 ? t.youCreated || 'You created this'
                 : `${t.createdBy || 'Created by'} ${challenge.creatorName || t.friend || 'a friend'}`}
             </p>
           </div>
         </div>
-        <ChevronRight className="w-5 h-5 text-white/40 flex-shrink-0" />
+        <ChevronRight className="w-5 h-5 text-slate-400 dark:text-white/40 flex-shrink-0" />
       </div>
 
       {/* Progress bar - Premium */}
       <div className="mt-3 pl-2">
         <div className="flex items-center justify-between text-xs mb-1.5">
-          <span className="text-white/60">
+          <span className="text-slate-500 dark:text-white/60">
             {challenge.myProgress}/{challenge.duration} {t.days || 'days'}
           </span>
           <span
@@ -143,7 +143,7 @@ function ChallengeCard({
                 : t.expired || 'Expired'}
           </span>
         </div>
-        <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
+        <div className="h-2.5 bg-slate-200/60 dark:bg-white/10 rounded-full overflow-hidden">
           <motion.div
             className={cn('h-full rounded-full', statusConfig.progressBg)}
             initial={{ width: 0 }}
@@ -209,8 +209,8 @@ function CreateChallengeView({
           {habit.icon}
         </div>
         <div>
-          <p className="font-semibold text-white text-lg">{habit.name}</p>
-          <p className="text-sm text-white/60">
+          <p className="font-semibold text-slate-800 dark:text-white text-lg">{habit.name}</p>
+          <p className="text-sm text-slate-500 dark:text-white/60">
             {t.challengeYourFriends || 'Challenge your friends to this habit!'}
           </p>
         </div>
@@ -218,7 +218,7 @@ function CreateChallengeView({
 
       {/* Duration selector - Premium */}
       <div>
-        <label className="text-sm font-medium text-white/80 mb-3 block">
+        <label className="text-sm font-medium text-slate-600 dark:text-white/80 mb-3 block">
           {t.challengeDuration || 'Challenge Duration'}
         </label>
         <div className="grid grid-cols-2 gap-3">
@@ -233,7 +233,7 @@ function CreateChallengeView({
                 'p-4 rounded-xl transition-all',
                 duration === opt.value
                   ? 'bg-gradient-to-br from-violet-500/30 to-purple-600/20 border border-violet-500/40'
-                  : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                  : 'bg-slate-100/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 hover:bg-slate-200/60 dark:hover:bg-white/10'
               )}
               style={duration === opt.value ? {
                 boxShadow: '0 0 16px rgba(139, 92, 246, 0.4)'
@@ -246,11 +246,11 @@ function CreateChallengeView({
             >
               <div className={cn(
                 "text-2xl font-bold",
-                duration === opt.value ? "text-violet-700 dark:text-violet-300" : "text-white"
+                duration === opt.value ? "text-violet-700 dark:text-violet-300" : "text-slate-700 dark:text-white"
               )}>{opt.value}</div>
               <div className={cn(
                 "text-xs",
-                duration === opt.value ? "text-violet-700/70 dark:text-violet-300/70" : "text-white/50"
+                duration === opt.value ? "text-violet-700/70 dark:text-violet-300/70" : "text-slate-500 dark:text-white/50"
               )}>{t.days || 'days'}</div>
             </motion.button>
           ))}
@@ -293,7 +293,7 @@ function CreateChallengeView({
         </span>
       </motion.button>
 
-      <p className="text-xs text-center text-white/40">
+      <p className="text-xs text-center text-slate-400 dark:text-white/40">
         {t.challengeShareTip || "You'll be able to share this challenge with friends after creating it."}
       </p>
     </div>
@@ -407,8 +407,8 @@ function ChallengeDetailsView({
         >
           {challenge.habitIcon}
         </motion.div>
-        <h3 className="text-xl font-bold text-white relative z-10">{challenge.habitName}</h3>
-        <p className="text-sm text-white/60 relative z-10">
+        <h3 className="text-xl font-bold text-slate-800 dark:text-white relative z-10">{challenge.habitName}</h3>
+        <p className="text-sm text-slate-500 dark:text-white/60 relative z-10">
           {challenge.duration} {t.dayChallenge || 'day challenge'}
         </p>
       </motion.div>
@@ -425,15 +425,15 @@ function ChallengeDetailsView({
         }}
       >
         <div className="flex items-center justify-between mb-4">
-          <span className="text-sm font-medium text-white">
+          <span className="text-sm font-medium text-slate-800 dark:text-white">
             {t.yourProgress || 'Your Progress'}
           </span>
-          <span className="text-sm text-white/60">
+          <span className="text-sm text-slate-500 dark:text-white/60">
             {challenge.myProgress}/{challenge.duration} {t.days || 'days'}
           </span>
         </div>
 
-        <div className="h-3 bg-white/10 rounded-full overflow-hidden mb-3">
+        <div className="h-3 bg-slate-200/60 dark:bg-white/10 rounded-full overflow-hidden mb-3">
           <motion.div
             className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
             initial={{ width: 0 }}
@@ -444,9 +444,9 @@ function ChallengeDetailsView({
         </div>
 
         <div className="flex items-center justify-between text-xs">
-          <span className="text-white/60">{progress}% {t.complete || 'complete'}</span>
+          <span className="text-slate-500 dark:text-white/60">{progress}% {t.complete || 'complete'}</span>
           {challenge.status === 'active' && (
-            <span className="flex items-center gap-1 text-white/60">
+            <span className="flex items-center gap-1 text-slate-500 dark:text-white/60">
               <Clock className="w-3 h-3" />
               {daysLeft} {t.daysLeft || 'days left'}
             </span>
@@ -505,7 +505,7 @@ function ChallengeDetailsView({
           boxShadow: '0 0 20px rgba(16, 185, 129, 0.15), inset 0 1px 0 rgba(255,255,255,0.05)'
         }}
       >
-        <div className="text-sm font-medium text-white/80 mb-3">
+        <div className="text-sm font-medium text-slate-600 dark:text-white/80 mb-3">
           {t.challengeCode || 'Challenge Code'}
         </div>
         <div className="flex items-center gap-3">
@@ -534,7 +534,7 @@ function ChallengeDetailsView({
             {copied ? (
               <Check className="w-6 h-6 text-emerald-400" />
             ) : (
-              <Copy className="w-6 h-6 text-white/70" />
+              <Copy className="w-6 h-6 text-slate-600 dark:text-white/70" />
             )}
           </motion.button>
         </div>
