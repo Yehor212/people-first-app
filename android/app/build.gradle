@@ -75,6 +75,9 @@ dependencies {
 
     // Health Connect SDK
     implementation 'androidx.health.connect:connect-client:1.1.0-alpha10'
+
+    // Required for Firebase Sessions (datastore-preferences)
+    implementation 'androidx.datastore:datastore-preferences:1.0.0'
 }
 
 apply from: 'capacitor.build.gradle'
