@@ -2,7 +2,6 @@ import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
@@ -46,87 +45,64 @@ const sheetVariants = cva(
   },
 );
 
-// Framer motion variants for reliable animations
-const slideVariants = {
-  top: {
-    initial: { y: '-100%' },
-    animate: { y: 0 },
-    exit: { y: '-100%' },
-  },
-  bottom: {
-    initial: { y: '100%' },
-    animate: { y: 0 },
-    exit: { y: '100%' },
-  },
-  left: {
-    initial: { x: '-100%' },
-    animate: { x: 0 },
-    exit: { x: '-100%' },
-  },
-  right: {
-    initial: { x: '100%' },
-    animate: { x: 0 },
-    exit: { x: '100%' },
-  },
-};
-
 interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
     VariantProps<typeof sheetVariants> {}
 
 const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
   ({ side = "right", className, children, ...props }, ref) => {
-    const variants = slideVariants[side || 'right'];
-
     return (
       <SheetPortal>
         <SheetOverlay />
         <SheetPrimitive.Content
           ref={ref}
-          className={cn(sheetVariants({ side }), "relative overflow-hidden", className)}
-          asChild
+          className={cn(
+            sheetVariants({ side }),
+            "relative overflow-hidden",
+            // CSS animations - работают надёжно с Radix Portal
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=open]:duration-300 data-[state=closed]:duration-200",
+            side === "bottom" && "data-[state=open]:slide-in-from-bottom data-[state=closed]:slide-out-to-bottom",
+            side === "top" && "data-[state=open]:slide-in-from-top data-[state=closed]:slide-out-to-top",
+            side === "left" && "data-[state=open]:slide-in-from-left data-[state=closed]:slide-out-to-left",
+            side === "right" && "data-[state=open]:slide-in-from-right data-[state=closed]:slide-out-to-right",
+            className
+          )}
           {...props}
         >
-          <motion.div
-            initial={variants.initial}
-            animate={variants.animate}
-            exit={variants.exit}
-            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-          >
-            {/* Cosmic background layer */}
-            <div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: `radial-gradient(ellipse at top center,
-                  rgba(139, 92, 246, 0.08) 0%, transparent 50%)`
-              }}
-            />
+          {/* Cosmic background layer */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: `radial-gradient(ellipse at top center,
+                rgba(139, 92, 246, 0.08) 0%, transparent 50%)`
+            }}
+          />
 
-            {/* Gradient border at top for bottom sheets */}
-            {(side === "bottom" || side === "top") && (
-              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-400/30 dark:via-white/20 to-transparent" />
+          {/* Gradient border at top for bottom sheets */}
+          {(side === "bottom" || side === "top") && (
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-400/30 dark:via-white/20 to-transparent" />
+          )}
+
+          {/* Content wrapper */}
+          <div className="relative z-10 h-full overflow-y-auto">
+            {children}
+          </div>
+
+          {/* Premium close button */}
+          <SheetPrimitive.Close
+            aria-label="Close"
+            className={cn(
+              "absolute right-4 top-4 rounded-xl p-2 z-20 transition-all",
+              "bg-slate-200/80 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/10",
+              "opacity-70 hover:opacity-100 hover:bg-slate-300/80 dark:hover:bg-white/20",
+              "focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:ring-offset-2 focus:ring-offset-background",
+              "disabled:pointer-events-none"
             )}
-
-            {/* Content wrapper */}
-            <div className="relative z-10 h-full overflow-y-auto">
-              {children}
-            </div>
-
-            {/* Premium close button */}
-            <SheetPrimitive.Close
-              aria-label="Close"
-              className={cn(
-                "absolute right-4 top-4 rounded-xl p-2 z-20 transition-all",
-                "bg-slate-200/80 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/10",
-                "opacity-70 hover:opacity-100 hover:bg-slate-300/80 dark:hover:bg-white/20",
-                "focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:ring-offset-2 focus:ring-offset-background",
-                "disabled:pointer-events-none"
-              )}
-            >
-              <X className="h-4 w-4" />
-              <span className="sr-only">Close</span>
-            </SheetPrimitive.Close>
-          </motion.div>
+          >
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </SheetPrimitive.Close>
         </SheetPrimitive.Content>
       </SheetPortal>
     );
