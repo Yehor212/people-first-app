@@ -1158,37 +1158,63 @@ export const ChallengeModal = memo(function ChallengeModal({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl flex flex-col">
-        <SheetHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            {(mode === 'details' || mode === 'join') && (
-              <button
-                onClick={handleBack}
-                className="p-2 -ml-2 text-muted-foreground hover:text-foreground"
-              >
-                ←
-              </button>
-            )}
-            <SheetTitle className={cn(
-              "text-center flex-1",
-              (mode === 'details' || mode === 'join') && 'text-left'
-            )}>
-              {getTitle()}
-            </SheetTitle>
-            {(mode === 'details' || mode === 'join') && <div className="w-8" />}
-          </div>
-          <SheetDescription className="text-center text-sm">
-            {mode === 'create'
-              ? t.challengeDescription || 'Challenge friends to build habits together'
-              : mode === 'join'
-                ? t.enterCodeToJoin || 'Enter a challenge code to join your friends'
-                : mode === 'details' && newlyCreatedChallenge
-                  ? t.shareToInvite || 'Share to invite friends!'
-                  : t.trackWithFriends || 'Track your challenges with friends'}
-          </SheetDescription>
-        </SheetHeader>
+      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl flex flex-col p-0">
+        {/* Premium Header - like AICoachChat */}
+        <div className="flex items-center justify-between p-4 border-b border-slate-200/60 dark:border-white/10 relative">
+          {/* Subtle gradient glow */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.05) 0%, transparent 100%)'
+            }}
+          />
 
-        <div className="flex-1 overflow-y-auto">
+          <div className="flex items-center gap-3 relative z-10">
+            {(mode === 'details' || mode === 'join') && (
+              <motion.button
+                onClick={handleBack}
+                className="p-2 rounded-xl bg-slate-100/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <ChevronRight className="w-5 h-5 rotate-180" />
+              </motion.button>
+            )}
+
+            <motion.div
+              className="w-10 h-10 rounded-xl flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.5) 0%, rgba(168, 85, 247, 0.4) 100%)',
+                boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
+              }}
+              animate={{ scale: [1, 1.05, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <Users className="w-5 h-5 text-white" />
+            </motion.div>
+
+            <div>
+              <h2 className="font-semibold text-slate-800 dark:text-white">
+                {getTitle()}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-white/60">
+                {mode === 'create'
+                  ? t.challengeDescription || 'Challenge friends'
+                  : mode === 'join'
+                    ? t.enterCodeToJoin || 'Enter code to join'
+                    : t.trackWithFriends || 'Track with friends'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Content - flex-1 with its own padding */}
+        <div
+          className="flex-1 overflow-y-auto p-4"
+          style={{
+            background: 'radial-gradient(ellipse at bottom, rgba(139, 92, 246, 0.03) 0%, transparent 50%)'
+          }}
+        >
           {mode === 'create' && habit && (
             <CreateChallengeView
               habit={habit}
