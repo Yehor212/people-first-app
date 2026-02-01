@@ -1,7 +1,10 @@
 create table if not exists public.user_reminder_settings (
   user_id uuid primary key references auth.users (id) on delete cascade,
   enabled boolean not null default false,
-  mood_time text,
+  mood_time text, -- deprecated, use mood_time_morning/afternoon/evening
+  mood_time_morning text,
+  mood_time_afternoon text,
+  mood_time_evening text,
   habit_time text,
   focus_time text,
   days int[] not null default '{}',
