@@ -2112,12 +2112,12 @@ export function Index() {
                     </div>
                   )}
 
-                  {/* Daily Prompt Card - visible prompt for journaling */}
-                  {isFeatureVisible('gratitudeJournal') && (
+                  {/* Daily Prompt Card - HIDDEN: prompt is now built into GratitudeJournal via JournalPrompt */}
+                  {/* {isFeatureVisible('gratitudeJournal') && (
                     <DailyPromptCard
                       onUsePrompt={handleUseJournalPrompt}
                     />
-                  )}
+                  )} */}
 
                   {/* Gratitude Journal - Primary or Collapsed */}
                   {isFeatureVisible('gratitudeJournal') && (

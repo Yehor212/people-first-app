@@ -145,13 +145,13 @@ function OrbitingEmotion({
   angle: number;
   animationDuration: number;
 }) {
-  // Elliptical orbit parameters
-  const baseRadius = 20 + (orbitIndex / Math.max(totalOrbits - 1, 1)) * 22;
+  // Elliptical orbit parameters - increased radius to avoid center hub overlap
+  const baseRadius = 32 + (orbitIndex / Math.max(totalOrbits - 1, 1)) * 18;
   const rx = baseRadius * 2.8;        // X radius in pixels (wider)
   const ry = baseRadius * 0.65 * 2.8; // Y radius (ellipse - 65% of X for 3D look)
 
-  // Size based on frequency (inner = more frequent = larger)
-  const sizePx = 38 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 14;
+  // Size based on frequency (inner = more frequent = larger) - reduced for better fit
+  const sizePx = 32 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 10;
 
   // Kepler's law: inner orbits are significantly faster
   const keplerDuration = animationDuration * (0.8 + orbitIndex * 0.25);
@@ -465,9 +465,9 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
 
           <circle cx={50} cy={50} r={12} fill="url(#centerGlowPremium)" />
 
-          {/* Elliptical orbit paths with 3D tilt */}
+          {/* Elliptical orbit paths with 3D tilt - increased radius to match emoji positions */}
           {sortedEmotions.map((_, i) => {
-            const baseRadius = 20 + (i / Math.max(sortedEmotions.length - 1, 1)) * 22;
+            const baseRadius = 32 + (i / Math.max(sortedEmotions.length - 1, 1)) * 18;
             const rx = baseRadius;
             const ry = baseRadius * 0.65; // Ellipse ratio for 3D effect
             const tilt = -12; // Tilt angle for 3D perspective
@@ -498,8 +498,8 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
           })}
         </svg>
 
-        {/* HTML overlay for orbiting emojis with comet trails */}
-        <div className="absolute inset-0">
+        {/* HTML overlay for orbiting emojis with comet trails - z-20 to appear above center hub */}
+        <div className="absolute inset-0 z-20">
           {sortedEmotions.map((emotion, i) => (
             <OrbitingEmotion
               key={emotion.emotion}
@@ -512,14 +512,14 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
           ))}
         </div>
 
-        {/* Premium Center Hub */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          {/* Outer expanding pulse ring */}
+        {/* Premium Center Hub - z-10 to appear behind orbiting emojis */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+          {/* Outer expanding pulse ring - reduced size */}
           <motion.div
             className="absolute rounded-full"
             style={{
-              width: 95,
-              height: 95,
+              width: 75,
+              height: 75,
               border: '1px solid rgba(139, 92, 246, 0.25)',
             }}
             animate={{
@@ -529,12 +529,12 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
             transition={{ duration: 3.5, repeat: Infinity, ease: 'easeOut' }}
           />
 
-          {/* Secondary pulse ring (offset timing) */}
+          {/* Secondary pulse ring (offset timing) - reduced size */}
           <motion.div
             className="absolute rounded-full"
             style={{
-              width: 85,
-              height: 85,
+              width: 70,
+              height: 70,
               border: '1px solid rgba(139, 92, 246, 0.2)',
             }}
             animate={{
@@ -544,12 +544,12 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
             transition={{ duration: 3.5, repeat: Infinity, ease: 'easeOut', delay: 1.2 }}
           />
 
-          {/* Inner glow orb */}
+          {/* Inner glow orb - reduced size for better emoji visibility */}
           <motion.div
             className="flex flex-col items-center justify-center rounded-full"
             style={{
-              width: 80,
-              height: 80,
+              width: 64,
+              height: 64,
               background: `
                 radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18) 0%, transparent 45%),
                 radial-gradient(circle, rgba(139, 92, 246, 0.45) 0%, rgba(139, 92, 246, 0.18) 50%, rgba(139, 92, 246, 0.06) 100%)
