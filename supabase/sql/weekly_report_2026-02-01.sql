@@ -119,14 +119,14 @@ LIMIT 5;
 SELECT
   'Active Challenges' as metric,
   COUNT(*) as value
-FROM challenges
+FROM friend_challenges
 WHERE status = 'active';
 
 -- New challenges this week
 SELECT
   'New Challenges (This Week)' as metric,
   COUNT(*) as value
-FROM challenges
+FROM friend_challenges
 WHERE created_at >= '2026-01-26'::timestamptz
   AND created_at < '2026-02-02'::timestamptz;
 
@@ -134,7 +134,7 @@ WHERE created_at >= '2026-01-26'::timestamptz
 SELECT
   'Total Challenge Participants' as metric,
   COUNT(*) as value
-FROM challenge_members;
+FROM friend_challenge_members;
 
 -- ============================================
 -- 5. PUSH NOTIFICATIONS
