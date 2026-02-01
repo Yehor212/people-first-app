@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType, PrimaryEmotion } from '@/types';
 import { calculateStreak, getDaysInMonth, getToday, cn, parseLocalDate } from '@/lib/utils';
 import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
-import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2, PlayCircle, Sparkles } from 'lucide-react';
+import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2, PlayCircle, Sparkles, Brain, Target } from 'lucide-react';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { SectionHeader } from '@/components/ui/section-header';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -593,7 +593,13 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     }).sort((a, b) => a.date.localeCompare(b.date));
   }, [moods, habits, completedFocusSessions, gratitudeEntries]);
 
-  // Phase 13: EmotionGalaxy data
+  // Phase 13: EmotionGalaxy data - ONLY TODAY'S emotions
+  // Galaxy resets each calendar day, showing only current day's moods
+  const todayMoods = useMemo(() => {
+    const today = getToday(); // format 'YYYY-MM-DD'
+    return moods.filter(m => m.date === today);
+  }, [moods]);
+
   const emotionGalaxyData = useMemo(() => {
     const emotionColors: Record<string, string> = {
       joy: '#fbbf24',
@@ -617,15 +623,29 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       anticipation: '🤩',
     };
 
-    return Object.entries(stats.emotionCounts || {})
+    // Count only TODAY's emotions for the galaxy
+    const todayCounts: Record<string, number> = {};
+    todayMoods.forEach(m => {
+      if (m.emotion?.primary) {
+        todayCounts[m.emotion.primary] = (todayCounts[m.emotion.primary] || 0) + 1;
+      } else if (m.mood) {
+        // Legacy mood mapping
+        const mapped = MOOD_TO_EMOTION_MAP[m.mood];
+        if (mapped) {
+          todayCounts[mapped] = (todayCounts[mapped] || 0) + 1;
+        }
+      }
+    });
+
+    return Object.entries(todayCounts)
       .filter(([_, count]) => count > 0)
       .map(([emotion, count]) => ({
         emotion,
         emoji: emotionEmojis[emotion] || '😐',
-        count: count as number,
+        count,
         color: emotionColors[emotion] || '#9ca3af',
       }));
-  }, [stats.emotionCounts]);
+  }, [todayMoods]);
 
   // Phase 13: CrystalCalendar data
   const crystalCalendarData = useMemo(() => {
@@ -834,11 +854,12 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         }}
       />
 
-      {/* Phase 13: Emotion Galaxy - Orbital Emotion Visualization */}
+      {/* Phase 13: Emotion Galaxy - TODAY'S emotions only */}
+      {/* Galaxy resets each calendar day, showing only current day's moods */}
       {emotionGalaxyData.length > 0 && (
         <EmotionGalaxy
           emotions={emotionGalaxyData}
-          totalEntries={filteredMoods.length}
+          totalEntries={todayMoods.length}
           className="mb-4"
         />
       )}
@@ -1128,109 +1149,254 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           })}
         </div>
 
-        {/* Selected Day Details - Redesigned */}
-        <div className="mt-5 p-4 bg-gradient-to-br from-secondary/80 to-secondary rounded-xl">
+        {/* Selected Day Details - PREMIUM Cosmic Design */}
+        <motion.div
+          className="mt-5 relative overflow-hidden rounded-2xl border border-violet-500/20"
+          style={{
+            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.08) 50%, rgba(6, 182, 212, 0.1) 100%)',
+            boxShadow: '0 0 30px rgba(139, 92, 246, 0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
+          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          {/* Animated nebula background */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'radial-gradient(circle at 70% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)',
+            }}
+            animate={{ opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          />
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              background: 'radial-gradient(circle at 20% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 40%)',
+            }}
+            animate={{ opacity: [0.2, 0.4, 0.2] }}
+            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+          />
+
           {selectedDate && selectedDayData ? (
-            <div className="space-y-3 animate-fade-in">
-              <div className="flex items-center justify-between">
-                <p className="font-bold text-foreground">{selectedDate}</p>
+            <div className="relative">
+              {/* Premium Header */}
+              <div className="flex items-center justify-between p-4 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <motion.div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.2))',
+                      boxShadow: '0 0 15px rgba(139, 92, 246, 0.4)',
+                    }}
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    <Calendar className="w-5 h-5 text-violet-300" />
+                  </motion.div>
+                  <div>
+                    <p className="font-bold text-lg text-foreground">{selectedDate}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(selectedDate).toLocaleDateString(getLocale(language), { weekday: 'long' })}
+                    </p>
+                  </div>
+                </div>
                 {selectedDayData.mood && (
-                  selectedDayData.mood.emotion?.primary ? (
-                    <AnimatedEmotionEmoji emotion={selectedDayData.mood.emotion.primary} size="md" />
-                  ) : (
-                    <span className="text-2xl">{moodEmojis[selectedDayData.mood.mood]}</span>
-                  )
+                  <motion.div
+                    style={{ filter: 'drop-shadow(0 0 12px rgba(139, 92, 246, 0.6))' }}
+                    animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  >
+                    {selectedDayData.mood.emotion?.primary ? (
+                      <AnimatedEmotionEmoji emotion={selectedDayData.mood.emotion.primary} size="lg" />
+                    ) : (
+                      <span className="text-3xl">{moodEmojis[selectedDayData.mood.mood]}</span>
+                    )}
+                  </motion.div>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-sm">
-                <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
-                  <span className="text-muted-foreground">{t.moodToday}</span>
-                  <span className="font-medium">
-                    {selectedDayData.mood
+              {/* Premium Stats Grid */}
+              <div className="grid grid-cols-2 gap-3 p-4">
+                {[
+                  {
+                    icon: Heart,
+                    label: t.moodToday,
+                    value: selectedDayData.mood
                       ? (selectedDayData.mood.emotion?.primary
                           ? emotionLabels[selectedDayData.mood.emotion.primary]
                           : moodLabels[selectedDayData.mood.mood])
-                      : '—'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
-                  <span className="text-muted-foreground">{t.focusMinutes}</span>
-                  <span className="font-medium">{selectedDayData.focusMinutes}</span>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
-                  <span className="text-muted-foreground">{t.habitsCompleted}</span>
-                  <span className="font-medium">{selectedDayData.habits.length}</span>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-card/50 rounded-lg">
-                  <span className="text-muted-foreground">{t.gratitudes}</span>
-                  <span className="font-medium">{selectedDayData.gratitude.length}</span>
-                </div>
+                      : '—',
+                    color: '#ec4899'
+                  },
+                  {
+                    icon: Brain,
+                    label: t.focusMinutes,
+                    value: `${selectedDayData.focusMinutes}m`,
+                    color: '#3b82f6'
+                  },
+                  {
+                    icon: Target,
+                    label: t.habitsCompleted,
+                    value: selectedDayData.habits.length,
+                    color: '#22c55e'
+                  },
+                  {
+                    icon: Sparkles,
+                    label: t.gratitudes,
+                    value: selectedDayData.gratitude.length,
+                    color: '#f59e0b'
+                  },
+                ].map((stat, i) => (
+                  <motion.div
+                    key={i}
+                    className="p-3 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10"
+                    style={{ boxShadow: `0 0 10px ${stat.color}20` }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    whileHover={{ scale: 1.02, borderColor: `${stat.color}40` }}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <stat.icon className="w-4 h-4" style={{ color: stat.color }} />
+                      <span className="text-xs text-muted-foreground">{stat.label}</span>
+                    </div>
+                    <p className="text-lg font-bold text-foreground">{stat.value}</p>
+                  </motion.div>
+                ))}
               </div>
 
-              {/* All Mood Entries with Notes */}
+              {/* Mood Journey Timeline */}
               {selectedDayData.moods.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground">{t.moodNotes || 'Mood Notes'}</p>
-                  {selectedDayData.moods.map((entry, idx) => (
-                    <div
-                      key={entry.id || `mood-${idx}`}
-                      className="p-3 bg-card/50 rounded-lg border-l-4 border-primary/50"
-                    >
-                      <div className="flex items-center gap-2 mb-1">
-                        {entry.emotion?.primary ? (
-                          <AnimatedEmotionEmoji emotion={entry.emotion.primary} size="sm" />
-                        ) : (
-                          <span className="text-lg">{moodEmojis[entry.mood]}</span>
-                        )}
-                        <span className="text-sm font-medium">
-                          {entry.emotion?.primary ? emotionLabels[entry.emotion.primary] : moodLabels[entry.mood]}
-                        </span>
-                        <span className="text-xs text-muted-foreground ml-auto flex items-center gap-1">
-                          {getTimeOfDayEmoji(entry.timestamp)} {getTimeOfDay(entry.timestamp)}
-                        </span>
-                      </div>
-                      {entry.note && (
-                        <p className="text-sm text-foreground mt-2 pl-7 italic">
-                          "{entry.note}"
-                        </p>
-                      )}
-                      {entry.tags && entry.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-2 pl-7">
-                          {entry.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="px-2 py-0.5 bg-primary/10 text-primary text-xs rounded-full"
-                            >
-                              #{tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                <div className="px-4 pb-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-1 h-4 bg-gradient-to-b from-violet-500 to-cyan-500 rounded-full" />
+                    <span className="text-sm font-medium text-foreground/80">{t.moodNotes || 'Mood Journey'}</span>
+                  </div>
+
+                  <div className="space-y-3">
+                    {selectedDayData.moods.map((entry, idx) => {
+                      const emotionColor = entry.emotion?.primary
+                        ? {
+                            joy: '#fbbf24', trust: '#22c55e', fear: '#6366f1', surprise: '#f97316',
+                            sadness: '#3b82f6', disgust: '#a855f7', anger: '#ef4444', anticipation: '#ec4899'
+                          }[entry.emotion.primary] || '#9ca3af'
+                        : '#8b5cf6';
+
+                      return (
+                        <motion.div
+                          key={entry.id || `mood-${idx}`}
+                          className="relative pl-6"
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: idx * 0.1 }}
+                        >
+                          {/* Timeline line */}
+                          {idx < selectedDayData.moods.length - 1 && (
+                            <div className="absolute left-[9px] top-6 bottom-0 w-px bg-gradient-to-b from-violet-500/50 to-cyan-500/30" />
+                          )}
+                          {/* Timeline dot */}
+                          <motion.div
+                            className="absolute left-0 top-3 w-5 h-5 rounded-full border-2"
+                            style={{
+                              borderColor: emotionColor,
+                              background: `radial-gradient(circle, ${emotionColor}40, transparent)`,
+                              boxShadow: `0 0 10px ${emotionColor}60`,
+                            }}
+                            animate={{ scale: [1, 1.2, 1] }}
+                            transition={{ duration: 2, repeat: Infinity, delay: idx * 0.2 }}
+                          />
+                          {/* Entry card */}
+                          <div className="ml-4 p-3 rounded-xl bg-white/5 border border-white/10">
+                            <div className="flex items-center gap-2">
+                              {entry.emotion?.primary ? (
+                                <AnimatedEmotionEmoji emotion={entry.emotion.primary} size="sm" />
+                              ) : (
+                                <span className="text-lg">{moodEmojis[entry.mood]}</span>
+                              )}
+                              <span className="font-medium text-foreground">
+                                {entry.emotion?.primary ? emotionLabels[entry.emotion.primary] : moodLabels[entry.mood]}
+                              </span>
+                              <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
+                                {getTimeOfDayEmoji(entry.timestamp)} {getTimeOfDay(entry.timestamp)}
+                              </span>
+                            </div>
+                            {entry.note && (
+                              <p className="mt-2 text-sm text-foreground/70 italic pl-6">"{entry.note}"</p>
+                            )}
+                            {entry.tags && entry.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-2 pl-6">
+                                {entry.tags.map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="px-2 py-0.5 text-xs rounded-full"
+                                    style={{
+                                      background: 'rgba(139, 92, 246, 0.2)',
+                                      color: 'rgb(196, 181, 253)',
+                                      boxShadow: '0 0 6px rgba(139, 92, 246, 0.3)',
+                                    }}
+                                  >
+                                    #{tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
+              {/* Habits completed */}
               {selectedDayData.habits.length > 0 && (
-                <div className="text-xs text-muted-foreground bg-card/30 p-2 rounded-lg">
-                  {selectedDayData.habits.join(', ')}
-                </div>
+                <motion.div
+                  className="mx-4 mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs font-medium text-emerald-300">{t.habitsCompleted}</span>
+                  </div>
+                  <p className="text-sm text-foreground/80">{selectedDayData.habits.join(' • ')}</p>
+                </motion.div>
               )}
 
+              {/* Gratitude entries with premium styling */}
               {selectedDayData.gratitude.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-accent" />
-                    {t.gratitude || 'Gratitude'}
-                  </p>
-                  {selectedDayData.gratitude.map((entry) => (
-                    <div
+                <div className="px-4 pb-4 space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <motion.div
+                      animate={{ rotate: [0, 15, -15, 0], scale: [1, 1.2, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    >
+                      <Sparkles className="w-4 h-4 text-amber-400" />
+                    </motion.div>
+                    <span className="text-sm font-medium text-amber-300/80">{t.gratitude || 'Gratitude'}</span>
+                  </div>
+                  {selectedDayData.gratitude.map((entry, idx) => (
+                    <motion.div
                       key={entry.id}
-                      className="p-3 bg-gradient-to-r from-accent/10 to-accent/5 rounded-lg border-l-4 border-accent/50"
+                      className="p-3 rounded-xl border border-amber-500/20"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(249, 115, 22, 0.05) 100%)',
+                        boxShadow: '0 0 15px rgba(245, 158, 11, 0.1)',
+                      }}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.1 }}
                     >
                       <div className="flex items-start gap-2">
-                        <span className="text-base flex-shrink-0">✨</span>
+                        <motion.span
+                          className="text-base flex-shrink-0"
+                          animate={{ scale: [1, 1.2, 1] }}
+                          transition={{ duration: 2, repeat: Infinity, delay: idx * 0.3 }}
+                        >
+                          ✨
+                        </motion.span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm text-foreground">{entry.text}</p>
                           <p className="text-xs text-muted-foreground mt-1">
@@ -1238,15 +1404,24 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                           </p>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground text-center py-4">{t.calendarSelectDay}</p>
+            <div className="p-8 text-center">
+              <motion.div
+                className="inline-block mb-3"
+                animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Calendar className="w-8 h-8 text-violet-400/50" />
+              </motion.div>
+              <p className="text-sm text-muted-foreground">{t.calendarSelectDay}</p>
+            </div>
           )}
-        </div>
+        </motion.div>
         </div>{/* End content wrapper */}
       </div>
 
