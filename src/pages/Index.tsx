@@ -95,6 +95,7 @@ import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
 import { ConsentBanner } from '@/components/ConsentBanner';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { haptics } from '@/lib/haptics';
+import { preloadShareCardAssets } from '@/lib/shareCards';
 import { AICoachChat } from '@/components/AICoachChat';
 import { useAICoach } from '@/contexts/AICoachContext';
 import { OnboardingOverlay, DayProgressIndicator } from '@/components/OnboardingOverlay';
@@ -169,6 +170,9 @@ export function Index() {
         });
         return;
       }
+
+      // Preload share card assets in background for faster sharing
+      preloadShareCardAssets();
 
       if (result.wasUpdated) {
         logger.log('[Index] App was updated, showing update message');

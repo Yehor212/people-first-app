@@ -22,11 +22,14 @@ async function getHtml2Canvas() {
  * Preload html2canvas module in the background to avoid delay when sharing
  * Call this during app initialization
  */
-export function preloadShareCardAssets(): void {
-  // Start loading html2canvas in the background (don't await)
-  getHtml2Canvas().catch(() => {
-    // Silently fail - will retry when actually needed
-  });
+export async function preloadShareCardAssets(): Promise<void> {
+  try {
+    await getHtml2Canvas();
+    logger.log('[ShareCards] html2canvas preloaded successfully');
+  } catch (error) {
+    logger.warn('[ShareCards] Failed to preload html2canvas:', error);
+    // Will retry when actually needed
+  }
 }
 import { Badge } from '@/types';
 import { Share } from '@capacitor/share';

@@ -9,6 +9,12 @@ import { Habit } from '@/types';
 import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
 import { generateSecureRandom, generateSecureId } from './validation';
 import { parseLocalDate } from '@/lib/utils';
+import { logger } from './logger';
+import {
+  isCloudChallengesAvailable,
+  syncLocalChallengeToCloud,
+  updateMyProgress as updateCloudProgress,
+} from './challengeService';
 
 // ============================================
 // TYPES
@@ -136,6 +142,18 @@ export function createChallenge(
   challenges.push(challenge);
   saveChallenges(challenges);
 
+  // Sync to cloud (non-blocking)
+  if (isCloudChallengesAvailable()) {
+    syncLocalChallengeToCloud(
+      challenge.code,
+      challenge.habitName,
+      challenge.habitIcon,
+      challenge.duration,
+      challenge.startDate,
+      creatorName || 'Zen User'
+    ).catch(err => logger.warn('[FriendChallenge] Cloud sync failed:', err));
+  }
+
   return challenge;
 }
 
@@ -222,6 +240,18 @@ export function joinChallenge(invite: ChallengeInvite): Challenge {
 
   challenges.push(challenge);
   saveChallenges(challenges);
+
+  // Sync to cloud (non-blocking)
+  if (isCloudChallengesAvailable()) {
+    syncLocalChallengeToCloud(
+      challenge.code,
+      challenge.habitName,
+      challenge.habitIcon,
+      challenge.duration,
+      challenge.startDate,
+      'Zen User'
+    ).catch(err => logger.warn('[FriendChallenge] Cloud sync failed:', err));
+  }
 
   return challenge;
 }
@@ -328,7 +358,39 @@ export function updateChallengeProgress(
   }
 
   saveChallenges(challenges);
+
+  // Sync progress to cloud (non-blocking)
+  if (isCloudChallengesAvailable()) {
+    syncProgressToCloud(challenge).catch(err =>
+      logger.warn('[FriendChallenge] Cloud progress sync failed:', err)
+    );
+  }
+
   return challenge;
+}
+
+/**
+ * Sync challenge progress to cloud
+ */
+async function syncProgressToCloud(challenge: Challenge): Promise<void> {
+  // First ensure the challenge exists in cloud
+  const cloudChallenge = await syncLocalChallengeToCloud(
+    challenge.code,
+    challenge.habitName,
+    challenge.habitIcon,
+    challenge.duration,
+    challenge.startDate,
+    'Zen User'
+  );
+
+  if (!cloudChallenge) return;
+
+  // Calculate streak (simplified - assume consecutive days)
+  // A more accurate calculation would check actual completion dates
+  const streak = challenge.myProgress;
+
+  // Update progress in cloud
+  await updateCloudProgress(cloudChallenge.id, challenge.myProgress, streak);
 }
 
 /**

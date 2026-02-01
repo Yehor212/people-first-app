@@ -145,6 +145,7 @@ export function ShareModal(props: ShareModalProps) {
       setImageUrl(URL.createObjectURL(blob));
     } catch (error) {
       logger.error('Failed to generate share image:', error);
+      toast.error(t.shareGenerateError || 'Failed to generate image. Try again.');
     } finally {
       setIsGenerating(false);
     }
