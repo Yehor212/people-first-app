@@ -1158,7 +1158,7 @@ export const ChallengeModal = memo(function ChallengeModal({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl">
+      <SheetContent side="bottom" className="max-h-[85vh] rounded-t-3xl">
         <SheetHeader className="pb-4">
           <div className="flex items-center justify-between">
             {(mode === 'details' || mode === 'join') && (

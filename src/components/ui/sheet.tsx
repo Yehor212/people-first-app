@@ -58,7 +58,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
           ref={ref}
           className={cn(
             sheetVariants({ side }),
-            "relative overflow-hidden",
+            "relative",
             // CSS animations - работают надёжно с Radix Portal
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=open]:duration-300 data-[state=closed]:duration-200",
@@ -85,7 +85,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
           )}
 
           {/* Content wrapper */}
-          <div className="relative z-10 flex-1 overflow-y-auto">
+          <div className="relative z-10 flex-1 overflow-y-auto h-full">
             {children}
           </div>
 
