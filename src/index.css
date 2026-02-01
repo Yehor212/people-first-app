@@ -7,10 +7,10 @@
 @layer base {
   :root {
     /* ZenFlow - Warm Nature Palette */
-    --background: 45 30% 97%;
+    --background: 45 25% 94%;
     --foreground: 160 25% 15%;
 
-    --card: 45 35% 99%;
+    --card: 45 30% 97%;
     --card-foreground: 160 25% 15%;
 
     --popover: 45 35% 99%;
@@ -19,11 +19,11 @@
     --primary: 158 45% 42%;
     --primary-foreground: 45 30% 98%;
 
-    --secondary: 45 40% 92%;
+    --secondary: 45 35% 89%;
     --secondary-foreground: 160 25% 25%;
 
-    --muted: 45 25% 93%;
-    --muted-foreground: 160 15% 45%;
+    --muted: 45 20% 89%;
+    --muted-foreground: 160 20% 35%;
 
     --accent: 28 75% 65%;
     --accent-foreground: 28 90% 15%;
@@ -31,8 +31,8 @@
     --destructive: 0 65% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 45 25% 88%;
-    --input: 45 25% 88%;
+    --border: 45 20% 82%;
+    --input: 45 20% 82%;
     --ring: 158 45% 42%;
 
     --radius: 1rem;
@@ -45,22 +45,22 @@
     --zen-gradient-hero: linear-gradient(180deg, hsl(45 30% 97%) 0%, hsl(158 30% 95%) 100%);
     
     --zen-shadow-soft: 0 4px 20px -4px hsl(158 45% 42% / 0.15);
-    --zen-shadow-card: 0 2px 12px -2px hsl(160 25% 15% / 0.08);
+    --zen-shadow-card: 0 2px 12px -2px hsl(160 25% 15% / 0.05);
     --zen-shadow-glow: 0 0 30px hsl(158 45% 42% / 0.2);
     --zen-shadow-hover: 0 8px 30px -6px hsl(158 45% 42% / 0.25);
 
     /* ===== PREMIUM UI TOKENS ===== */
     /* Surface Elevation System */
     --surface-base: var(--card);
-    --surface-raised: 45 35% 98%;
-    --surface-elevated: 0 0% 100%;
-    --surface-overlay: 0 0% 100%;
+    --surface-raised: 45 30% 95%;
+    --surface-elevated: 45 25% 98%;
+    --surface-overlay: 45 25% 98%;
 
     /* Extended Shadow Levels */
     --zen-shadow-xs: 0 1px 2px -1px hsl(160 25% 15% / 0.05);
     --zen-shadow-sm: 0 2px 8px -2px hsl(160 25% 15% / 0.08);
-    --zen-shadow-md: 0 4px 16px -4px hsl(160 25% 15% / 0.1);
-    --zen-shadow-lg: 0 8px 24px -6px hsl(160 25% 15% / 0.12);
+    --zen-shadow-md: 0 4px 16px -4px hsl(160 25% 15% / 0.06);
+    --zen-shadow-lg: 0 8px 24px -6px hsl(160 25% 15% / 0.08);
     --zen-shadow-xl: 0 20px 50px -12px hsl(160 25% 15% / 0.2);
 
     /* Interactive States */

@@ -2200,20 +2200,23 @@ export function Index() {
         )}
 
         {activeTab === 'stats' && (
-          <Suspense fallback={
-            <div className="flex items-center justify-center min-h-[50vh]">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-          }>
-            <StatsPage
-              moods={safeMoods}
-              habits={safeHabits}
-              focusSessions={safeFocusSessions}
-              gratitudeEntries={safeGratitudeEntries}
-              restDays={innerWorld.restDays}
-              currentFocusMinutes={currentFocusMinutes}
-            />
-          </Suspense>
+          <>
+            <Header userName={userName} />
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-[50vh]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            }>
+              <StatsPage
+                moods={safeMoods}
+                habits={safeHabits}
+                focusSessions={safeFocusSessions}
+                gratitudeEntries={safeGratitudeEntries}
+                restDays={innerWorld.restDays}
+                currentFocusMinutes={currentFocusMinutes}
+              />
+            </Suspense>
+          </>
         )}
 
         {activeTab === 'achievements' && (
@@ -2232,26 +2235,29 @@ export function Index() {
         )}
 
         {activeTab === 'settings' && (
-          <Suspense fallback={
-            <div className="flex items-center justify-center min-h-[50vh]">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            </div>
-          }>
-            <SettingsPanel
-              userName={userName}
-              onNameChange={handleNameChange}
-              onResetData={handleResetData}
-              reminders={reminders}
-              onRemindersChange={setReminders}
-              habits={safeHabits}
-              moods={safeMoods}
-              focusSessions={safeFocusSessions}
-              gratitudeEntries={safeGratitudeEntries}
-              privacy={privacy}
-              onPrivacyChange={setPrivacy}
-              onOpenWidgetSettings={() => setShowWidgetSettings(true)}
-            />
-          </Suspense>
+          <>
+            <Header userName={userName} />
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-[50vh]">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+              </div>
+            }>
+              <SettingsPanel
+                userName={userName}
+                onNameChange={handleNameChange}
+                onResetData={handleResetData}
+                reminders={reminders}
+                onRemindersChange={setReminders}
+                habits={safeHabits}
+                moods={safeMoods}
+                focusSessions={safeFocusSessions}
+                gratitudeEntries={safeGratitudeEntries}
+                privacy={privacy}
+                onPrivacyChange={setPrivacy}
+                onOpenWidgetSettings={() => setShowWidgetSettings(true)}
+              />
+            </Suspense>
+          </>
         )}
       </main>
 
