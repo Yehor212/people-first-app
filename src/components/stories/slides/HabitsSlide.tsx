@@ -1,9 +1,9 @@
 /**
- * HabitsSlide - "Волшебный сад" (Magic Garden)
+ * HabitsSlide - "Лунный сад" (Moonlit Garden)
  *
- * Habits visualized as a growing garden.
- * Completion rate determines garden density.
- * Butterflies and fireflies add magic atmosphere.
+ * Premium redesign: Central glowing Tree of Life
+ * with completion rate integrated into the crown.
+ * Minimal, elegant, atmospheric design.
  */
 
 import { useMemo } from 'react';
@@ -16,167 +16,30 @@ interface HabitsSlideProps {
   t: Record<string, string>;
 }
 
-// Plant SVG Component based on growth stage
-function Plant({ x, stage, delay }: { x: number; stage: 'seed' | 'sprout' | 'bush' | 'tree'; delay: number }) {
-  const heights = { seed: 10, sprout: 30, bush: 60, tree: 100 };
-  const height = heights[stage];
-
+// Soft particle for atmosphere
+function SoftParticle({ delay, x, y }: { delay: number; x: number; y: number }) {
   return (
-    <motion.g
-      initial={{ scale: 0, y: 20 }}
-      animate={{ scale: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 200, damping: 15, delay }}
-      style={{ transformOrigin: `${x}px bottom` }}
-    >
-      {stage === 'tree' && (
-        <>
-          {/* Tree trunk */}
-          <motion.rect
-            x={x - 4}
-            y={180 - height}
-            width={8}
-            height={height * 0.4}
-            fill="#8B4513"
-            rx={2}
-          />
-          {/* Tree foliage with glow */}
-          <motion.ellipse
-            cx={x}
-            cy={180 - height}
-            rx={25}
-            ry={30}
-            fill="#228B22"
-            animate={{ scale: [1, 1.03, 1] }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            style={{ filter: 'drop-shadow(0 0 12px rgba(34, 139, 34, 0.5))' }}
-          />
-          <motion.ellipse
-            cx={x - 15}
-            cy={180 - height + 15}
-            rx={18}
-            ry={22}
-            fill="#2E8B2E"
-          />
-          <motion.ellipse
-            cx={x + 15}
-            cy={180 - height + 15}
-            rx={18}
-            ry={22}
-            fill="#3CB371"
-          />
-          {/* Flowers on tree */}
-          {[...Array(3)].map((_, i) => (
-            <motion.circle
-              key={i}
-              cx={x - 10 + i * 10}
-              cy={180 - height - 10 + (i % 2) * 15}
-              r={4}
-              fill="#FFB6C1"
-              animate={{ scale: [1, 1.3, 1], opacity: [0.8, 1, 0.8] }}
-              transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
-            />
-          ))}
-        </>
-      )}
-
-      {stage === 'bush' && (
-        <>
-          {/* Bush stem */}
-          <rect x={x - 2} y={180 - height * 0.3} width={4} height={height * 0.3} fill="#6B8E23" rx={1} />
-          {/* Bush leaves */}
-          <ellipse cx={x} cy={180 - height * 0.5} rx={20} ry={25} fill="#32CD32" />
-          <ellipse cx={x - 10} cy={180 - height * 0.35} rx={15} ry={18} fill="#3CB371" />
-          <ellipse cx={x + 10} cy={180 - height * 0.35} rx={15} ry={18} fill="#2E8B57" />
-        </>
-      )}
-
-      {stage === 'sprout' && (
-        <>
-          {/* Stem */}
-          <motion.path
-            d={`M${x} 180 Q${x - 5} ${180 - height * 0.5} ${x} ${180 - height}`}
-            stroke="#6B8E23"
-            strokeWidth={3}
-            fill="none"
-            initial={{ pathLength: 0 }}
-            animate={{ pathLength: 1 }}
-            transition={{ duration: 1, delay }}
-          />
-          {/* Leaves */}
-          <ellipse cx={x - 8} cy={180 - height * 0.6} rx={8} ry={5} fill="#90EE90" transform={`rotate(-30 ${x - 8} ${180 - height * 0.6})`} />
-          <ellipse cx={x + 8} cy={180 - height * 0.7} rx={8} ry={5} fill="#98FB98" transform={`rotate(30 ${x + 8} ${180 - height * 0.7})`} />
-        </>
-      )}
-
-      {stage === 'seed' && (
-        <motion.circle
-          cx={x}
-          cy={178}
-          r={5}
-          fill="#8B4513"
-          animate={{ y: [0, -2, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        />
-      )}
-    </motion.g>
-  );
-}
-
-// Butterfly Component
-function Butterfly({ id }: { id: number }) {
-  const startX = 20 + Math.random() * 60;
-  const startY = 30 + Math.random() * 40;
-
-  return (
-    <motion.g
-      initial={{ x: startX, y: startY }}
-      animate={{
-        x: [startX, startX + 15, startX - 10, startX + 5, startX],
-        y: [startY, startY - 12, startY - 20, startY - 10, startY],
+    <motion.div
+      className="absolute rounded-full"
+      style={{
+        left: `${x}%`,
+        top: `${y}%`,
+        width: 4,
+        height: 4,
+        background: 'radial-gradient(circle, rgba(74,222,128,0.8) 0%, transparent 70%)',
+        boxShadow: '0 0 10px rgba(74,222,128,0.5)',
       }}
-      transition={{ duration: 12, repeat: Infinity, ease: [0.4, 0, 0.2, 1] }}
-    >
-      {/* Wing animation */}
-      <motion.path
-        d="M0 0 Q-15 -10 -20 0 Q-15 10 0 0"
-        fill={id % 2 === 0 ? '#FFB6C1' : '#DDA0DD'}
-        animate={{ scaleX: [1, 0.3, 1] }}
-        transition={{ duration: 0.15, repeat: Infinity }}
-      />
-      <motion.path
-        d="M0 0 Q15 -10 20 0 Q15 10 0 0"
-        fill={id % 2 === 0 ? '#FFC0CB' : '#EE82EE'}
-        animate={{ scaleX: [1, 0.3, 1] }}
-        transition={{ duration: 0.15, repeat: Infinity }}
-      />
-      <circle cx={0} cy={0} r={2} fill="#333" />
-    </motion.g>
-  );
-}
-
-// Firefly Component
-function Firefly({ id }: { id: number }) {
-  const x = 10 + Math.random() * 80;
-  const y = 20 + Math.random() * 60;
-
-  return (
-    <motion.circle
-      cx={`${x}%`}
-      cy={`${y}%`}
-      r={3}
-      fill="#FFFF99"
-      initial={{ opacity: 0 }}
+      initial={{ opacity: 0, scale: 0.5 }}
       animate={{
-        opacity: [0, 1, 0],
+        opacity: [0, 0.8, 0],
         scale: [0.5, 1, 0.5],
+        y: [0, -30, 0],
       }}
       transition={{
-        duration: 2 + Math.random() * 2,
+        duration: 4,
+        delay,
         repeat: Infinity,
-        delay: id * 0.3,
-      }}
-      style={{
-        filter: 'blur(1px) drop-shadow(0 0 10px rgba(255, 255, 100, 0.9))',
+        ease: 'easeInOut',
       }}
     />
   );
@@ -186,205 +49,234 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
   const data = slide.data as HabitStatsData;
   const completionRate = data?.completionRate || 0;
 
-  // Generate plants based on completion rate
-  const plants = useMemo(() => {
-    const plantCount = Math.max(3, Math.floor(completionRate / 10));
-    return Array.from({ length: plantCount }, (_, i) => {
-      const normalizedRate = completionRate / 100;
-      let stage: 'seed' | 'sprout' | 'bush' | 'tree';
-
-      if (i < plantCount * normalizedRate * 0.3) stage = 'tree';
-      else if (i < plantCount * normalizedRate * 0.6) stage = 'bush';
-      else if (i < plantCount * normalizedRate * 0.9) stage = 'sprout';
-      else stage = 'seed';
-
-      return {
-        id: i,
-        x: 30 + (i * 250) / plantCount + Math.random() * 20,
-        stage,
-        delay: 0.5 + i * 0.15,
-      };
-    });
-  }, [completionRate]);
-
-  const butterflies = useMemo(() => Array.from({ length: 3 }, (_, i) => i), []);
-  const fireflies = useMemo(() => Array.from({ length: 8 }, (_, i) => i), []);
+  // Generate minimal soft particles (only 4)
+  const particles = useMemo(() => [
+    { id: 0, x: 25, y: 60, delay: 0 },
+    { id: 1, x: 75, y: 55, delay: 1.5 },
+    { id: 2, x: 30, y: 40, delay: 3 },
+    { id: 3, x: 70, y: 45, delay: 2 },
+  ], []);
 
   return (
     <div className="relative w-full h-full overflow-hidden">
-      {/* Sky gradient - radial for depth (like FocusSlide) */}
+      {/* Deep forest cosmos background */}
       <div
         className="absolute inset-0"
         style={{
-          background: `radial-gradient(ellipse at 50% 20%,
-            #4a2c6e 0%,
-            #2d1b4e 25%,
-            #1a1a2e 50%,
-            #0d0d1a 100%
+          background: `radial-gradient(ellipse at 50% 30%,
+            #1a2f1a 0%,
+            #0d1a0d 40%,
+            #050a05 100%
           )`,
         }}
       />
 
-      {/* Animated nebula overlay (premium effect) */}
+      {/* Green nebula breathing */}
       <motion.div
         className="absolute inset-0 pointer-events-none"
-        animate={{ opacity: [0.3, 0.5, 0.3] }}
+        animate={{ opacity: [0.2, 0.35, 0.2] }}
         transition={{ duration: 8, repeat: Infinity }}
         style={{
           background: `
-            radial-gradient(circle at 30% 30%, rgba(139, 92, 246, 0.2) 0%, transparent 50%),
-            radial-gradient(circle at 70% 60%, rgba(236, 72, 153, 0.15) 0%, transparent 50%)
-          `
+            radial-gradient(circle at 50% 45%, rgba(74,222,128,0.15) 0%, transparent 50%),
+            radial-gradient(circle at 30% 30%, rgba(34,197,94,0.1) 0%, transparent 40%)
+          `,
         }}
       />
 
-      {/* Corner glows for cinematic framing */}
+      {/* Corner glows */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           background: `
-            radial-gradient(circle at top left, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
-            radial-gradient(circle at bottom right, rgba(74, 222, 128, 0.1) 0%, transparent 40%)
-          `
+            radial-gradient(circle at top left, rgba(74,222,128,0.08) 0%, transparent 40%),
+            radial-gradient(circle at bottom right, rgba(251,191,36,0.05) 0%, transparent 40%)
+          `,
         }}
       />
 
-      {/* Sunset glow at bottom */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-2/5 pointer-events-none"
-        style={{
-          background: `linear-gradient(180deg,
-            transparent 0%,
-            rgba(201, 123, 132, 0.3) 40%,
-            rgba(240, 195, 142, 0.4) 100%
-          )`,
-        }}
-      />
+      {/* Soft particles */}
+      {particles.map((p) => (
+        <SoftParticle key={p.id} x={p.x} y={p.y} delay={p.delay} />
+      ))}
 
-      {/* Stars in upper sky - gentle rotation for premium feel */}
-      <motion.div
-        className="absolute top-0 left-0 right-0 h-1/3"
-        animate={{ rotate: 360 }}
-        transition={{ duration: 180, repeat: Infinity, ease: 'linear' }}
-        style={{ transformOrigin: 'center 200%' }}
-      >
-        {[...Array(20)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-1 h-1 rounded-full bg-white"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              opacity: Math.random() * 0.5 + 0.3,
-            }}
-            animate={{ opacity: [0.3, 0.8, 0.3] }}
-            transition={{ duration: 2 + Math.random() * 2, repeat: Infinity }}
-          />
-        ))}
-      </motion.div>
-
-      {/* Ground */}
-      <div
-        className="absolute bottom-0 left-0 right-0 h-1/4"
-        style={{
-          background: `linear-gradient(180deg, #2d5016 0%, #1a3009 50%, #0d1a04 100%)`,
-        }}
-      />
-
-      {/* Garden SVG */}
-      <svg className="absolute inset-0 w-full h-full" viewBox="0 0 300 200" preserveAspectRatio="xMidYMax slice">
-        {/* Grass texture */}
-        <defs>
-          <pattern id="grass" patternUnits="userSpaceOnUse" width="20" height="20">
-            <path d="M10 20 Q9 10 10 0" stroke="#3a7d10" strokeWidth="1" fill="none" />
-            <path d="M5 20 Q4 12 5 5" stroke="#4a9d20" strokeWidth="1" fill="none" />
-            <path d="M15 20 Q16 12 15 5" stroke="#3a7d10" strokeWidth="1" fill="none" />
-          </pattern>
-        </defs>
-        <rect x="0" y="160" width="300" height="40" fill="url(#grass)" opacity={0.5} />
-
-        {/* Plants */}
-        {plants.map((plant) => (
-          <Plant key={plant.id} x={plant.x} stage={plant.stage} delay={plant.delay} />
-        ))}
-
-        {/* Butterflies */}
-        {butterflies.map((id) => (
-          <Butterfly key={id} id={id} />
-        ))}
-      </svg>
-
-      {/* Fireflies overlay */}
-      <svg className="absolute inset-0 w-full h-full pointer-events-none">
-        {fireflies.map((id) => (
-          <Firefly key={id} id={id} />
-        ))}
-      </svg>
-
-      {/* Content overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-start pt-16 px-8">
-        <motion.h2
-          className="text-2xl font-bold text-white mb-4 drop-shadow-lg"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          {slide.title}
-        </motion.h2>
-
-        {/* Big percentage */}
+      {/* Central Tree of Life */}
+      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+        {/* Tree crown - glowing orb */}
         <motion.div
-          className="text-7xl font-black text-white mb-2"
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 100, delay: 0.5 }}
-          style={{
-            textShadow: '0 0 30px rgba(74, 222, 128, 0.5)',
-          }}
+          className="relative"
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 100, delay: 0.3 }}
         >
-          {slide.value}
+          {/* Outer glow ring 1 */}
+          <motion.div
+            className="absolute -inset-8 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(74,222,128,0.15) 0%, transparent 70%)',
+            }}
+            animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
+            transition={{ duration: 4, repeat: Infinity }}
+          />
+
+          {/* Outer glow ring 2 */}
+          <motion.div
+            className="absolute -inset-16 rounded-full"
+            style={{
+              background: 'radial-gradient(circle, rgba(74,222,128,0.08) 0%, transparent 70%)',
+            }}
+            animate={{ scale: [1.1, 1, 1.1], opacity: [0.3, 0.5, 0.3] }}
+            transition={{ duration: 6, repeat: Infinity }}
+          />
+
+          {/* Main crown orb */}
+          <motion.div
+            className="relative w-48 h-48 rounded-full flex items-center justify-center"
+            style={{
+              background: `radial-gradient(circle at 30% 30%,
+                rgba(134,239,172,0.4) 0%,
+                rgba(74,222,128,0.3) 30%,
+                rgba(34,197,94,0.2) 60%,
+                rgba(22,163,74,0.1) 100%
+              )`,
+              boxShadow: `
+                0 0 60px rgba(74,222,128,0.4),
+                inset 0 0 40px rgba(134,239,172,0.2)
+              `,
+              border: '1px solid rgba(74,222,128,0.2)',
+            }}
+            animate={{
+              boxShadow: [
+                '0 0 60px rgba(74,222,128,0.4), inset 0 0 40px rgba(134,239,172,0.2)',
+                '0 0 80px rgba(74,222,128,0.5), inset 0 0 50px rgba(134,239,172,0.3)',
+                '0 0 60px rgba(74,222,128,0.4), inset 0 0 40px rgba(134,239,172,0.2)',
+              ],
+            }}
+            transition={{ duration: 4, repeat: Infinity }}
+          >
+            {/* Completion percentage inside crown */}
+            <motion.div
+              className="text-center"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.6 }}
+            >
+              <motion.div
+                className="text-6xl font-black text-white"
+                style={{
+                  textShadow: '0 0 30px rgba(74,222,128,0.6)',
+                }}
+              >
+                {slide.value}
+              </motion.div>
+              <p className="text-sm text-emerald-200/80 mt-1">
+                {t.storyCompletionRate || 'completion rate'}
+              </p>
+            </motion.div>
+          </motion.div>
+
+          {/* Rotating ring around crown */}
+          <motion.div
+            className="absolute -inset-4 rounded-full border border-emerald-500/20"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+          />
+          <motion.div
+            className="absolute -inset-12 rounded-full border border-emerald-400/10"
+            animate={{ rotate: -360 }}
+            transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
+          />
         </motion.div>
 
-        <motion.p
-          className="text-lg text-white/80 mb-6"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
+        {/* Tree trunk */}
+        <motion.div
+          className="relative -mt-2"
+          initial={{ scaleY: 0, opacity: 0 }}
+          animate={{ scaleY: 1, opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          style={{ transformOrigin: 'top center' }}
         >
-          {t.storyCompletionRate || 'completion rate'}
-        </motion.p>
+          <div
+            style={{
+              width: 16,
+              height: 80,
+              background: 'linear-gradient(180deg, #5D4E37 0%, #3D2E1F 50%, #2D1E0F 100%)',
+              borderRadius: '4px 4px 8px 8px',
+              boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+            }}
+          />
+          {/* Trunk glow */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(180deg, rgba(74,222,128,0.1) 0%, transparent 30%)',
+              borderRadius: '4px 4px 8px 8px',
+            }}
+          />
+        </motion.div>
 
-        {/* Top habit card */}
-        {data?.topHabit && (
-          <motion.div
-            className="bg-black/30 backdrop-blur-md rounded-2xl px-6 py-4 border border-white/10"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1 }}
-          >
-            <p className="text-sm text-white/60 mb-1">{t.storyTopHabit || 'Top habit'}</p>
-            <p className="text-xl font-semibold text-white">
-              {data.topHabit.icon} {data.topHabit.name}
-            </p>
-            <p className="text-sm text-white/70">{data.topHabit.completions} {t.storyCompletions || 'completions'}</p>
-          </motion.div>
-        )}
-
-        {/* Perfect days badge */}
-        {data?.perfectDays > 0 && (
-          <motion.div
-            className="mt-4 flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-500/20 backdrop-blur-sm border border-yellow-500/30"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2 }}
-          >
-            <StarIcon size="sm" animated />
-            <span className="text-sm text-white font-medium">
-              {data.perfectDays} {t.storyPerfectDays || 'perfect days'}
-            </span>
-          </motion.div>
-        )}
+        {/* Ground glow */}
+        <motion.div
+          className="absolute -bottom-4 left-1/2 -translate-x-1/2"
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.7 }}
+          style={{
+            width: 120,
+            height: 20,
+            background: 'radial-gradient(ellipse, rgba(74,222,128,0.2) 0%, transparent 70%)',
+            filter: 'blur(8px)',
+          }}
+        />
       </div>
+
+      {/* Title at top */}
+      <motion.h2
+        className="absolute top-12 left-0 right-0 text-center text-2xl font-bold text-white"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2 }}
+        style={{ textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}
+      >
+        {slide.title}
+      </motion.h2>
+
+      {/* Top habit card - bottom left */}
+      {data?.topHabit && (
+        <motion.div
+          className="absolute bottom-24 left-6 bg-black/30 backdrop-blur-md rounded-2xl px-5 py-4 border border-emerald-500/20"
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1 }}
+          style={{
+            boxShadow: '0 0 30px rgba(74,222,128,0.1)',
+          }}
+        >
+          <p className="text-xs text-emerald-200/60 mb-1">{t.storyTopHabit || 'Top habit'}</p>
+          <p className="text-lg font-semibold text-white">
+            {data.topHabit.icon} {data.topHabit.name}
+          </p>
+          <p className="text-sm text-emerald-200/70">{data.topHabit.completions} {t.storyCompletions || 'completions'}</p>
+        </motion.div>
+      )}
+
+      {/* Perfect days badge - bottom right */}
+      {data?.perfectDays > 0 && (
+        <motion.div
+          className="absolute bottom-24 right-6 flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 backdrop-blur-sm border border-amber-500/30"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 1.2 }}
+          style={{
+            boxShadow: '0 0 20px rgba(251,191,36,0.2)',
+          }}
+        >
+          <StarIcon size="sm" animated />
+          <span className="text-sm text-white font-medium">
+            {data.perfectDays} {t.storyPerfectDays || 'perfect days'}
+          </span>
+        </motion.div>
+      )}
     </div>
   );
 }
