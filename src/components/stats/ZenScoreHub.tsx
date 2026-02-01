@@ -194,7 +194,7 @@ export function ZenScoreHub({
 
         {/* Score ring */}
         <div className="flex flex-col items-center py-4">
-          <div className="relative w-40 h-40">
+          <div className="relative w-40 h-40 rounded-full overflow-hidden">
             {/* Background ring */}
             <svg
               className="w-full h-full -rotate-90"

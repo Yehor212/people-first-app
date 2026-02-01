@@ -113,7 +113,7 @@ export function InsightCard({ insight }: InsightCardProps) {
       <div className="px-4 pb-3">
         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
           <span>{t.insightConfidence || 'Confidence'}: {insight.confidence}%</span>
-          <span className="text-gray-400">•</span>
+          <span className="text-gray-500 dark:text-gray-400">•</span>
           <span>{insight.dataPoints} {t.insightDataPoints || 'data points'}</span>
         </div>
         <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">

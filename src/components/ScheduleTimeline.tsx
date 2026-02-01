@@ -1059,7 +1059,7 @@ function AddEventModal({
               className="w-full p-3 bg-white/10 backdrop-blur-sm rounded-xl text-sm text-white border border-white/20 focus:border-primary/50 focus:outline-none"
             >
               {allDates.map((date) => (
-                <option key={date} value={date} className="bg-slate-900">{formatDateOption(date)}</option>
+                <option key={date} value={date} className="bg-white dark:bg-slate-900 text-foreground">{formatDateOption(date)}</option>
               ))}
             </select>
           </div>
@@ -1121,7 +1121,7 @@ function AddEventModal({
                   className="flex-1 p-2 bg-white/10 backdrop-blur-sm rounded-lg text-sm text-white border border-white/20"
                 >
                   {HOURS.map((h) => (
-                    <option key={h} value={h} className="bg-slate-900">{h.toString().padStart(2, '0')}</option>
+                    <option key={h} value={h} className="bg-white dark:bg-slate-900 text-foreground">{h.toString().padStart(2, '0')}</option>
                   ))}
                 </select>
                 <select
@@ -1130,7 +1130,7 @@ function AddEventModal({
                   className="flex-1 p-2 bg-white/10 backdrop-blur-sm rounded-lg text-sm text-white border border-white/20"
                 >
                   {[0, 15, 30, 45].map((m) => (
-                    <option key={m} value={m} className="bg-slate-900">{m.toString().padStart(2, '0')}</option>
+                    <option key={m} value={m} className="bg-white dark:bg-slate-900 text-foreground">{m.toString().padStart(2, '0')}</option>
                   ))}
                 </select>
               </div>
@@ -1144,7 +1144,7 @@ function AddEventModal({
                   className="flex-1 p-2 bg-white/10 backdrop-blur-sm rounded-lg text-sm text-white border border-white/20"
                 >
                   {HOURS.map((h) => (
-                    <option key={h} value={h} className="bg-slate-900">{h.toString().padStart(2, '0')}</option>
+                    <option key={h} value={h} className="bg-white dark:bg-slate-900 text-foreground">{h.toString().padStart(2, '0')}</option>
                   ))}
                 </select>
                 <select
@@ -1153,7 +1153,7 @@ function AddEventModal({
                   className="flex-1 p-2 bg-white/10 backdrop-blur-sm rounded-lg text-sm text-white border border-white/20"
                 >
                   {[0, 15, 30, 45].map((m) => (
-                    <option key={m} value={m} className="bg-slate-900">{m.toString().padStart(2, '0')}</option>
+                    <option key={m} value={m} className="bg-white dark:bg-slate-900 text-foreground">{m.toString().padStart(2, '0')}</option>
                   ))}
                 </select>
               </div>

@@ -348,7 +348,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 rotate-45 rounded-sm bg-gradient-to-br from-zinc-800/30 to-zinc-700/20 border border-zinc-700/30" />
-          <span className="text-xs text-slate-400">{t.empty || 'Empty'}</span>
+          <span className="text-xs text-slate-600 dark:text-slate-400">{t.empty || 'Empty'}</span>
         </div>
         <div className="flex items-center gap-2">
           <SparklesIcon size="xs" />
