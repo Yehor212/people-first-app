@@ -2,7 +2,7 @@ import * as SheetPrimitive from "@radix-ui/react-dialog";
 import { cva, type VariantProps } from "class-variance-authority";
 import { X } from "lucide-react";
 import * as React from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { cn } from "@/lib/utils";
 
@@ -30,16 +30,14 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  "fixed z-[70] flex flex-col gap-4 bg-background p-6 shadow-lg transition ease-in-out data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:duration-250",
+  "fixed z-[70] flex flex-col gap-4 bg-background p-6 shadow-lg",
   {
     variants: {
       side: {
-        top: "inset-x-0 top-0 border-b data-[state=closed]:slide-out-to-top data-[state=open]:slide-in-from-top",
-        bottom:
-          "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-        left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
-        right:
-          "inset-y-0 right-0 h-full w-3/4  border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
+        top: "inset-x-0 top-0 border-b",
+        bottom: "inset-x-0 bottom-0 border-t",
+        left: "inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
+        right: "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
       },
     },
     defaultVariants: {
@@ -48,63 +46,99 @@ const sheetVariants = cva(
   },
 );
 
+// Framer motion variants for reliable animations
+const slideVariants = {
+  top: {
+    initial: { y: '-100%' },
+    animate: { y: 0 },
+    exit: { y: '-100%' },
+  },
+  bottom: {
+    initial: { y: '100%' },
+    animate: { y: 0 },
+    exit: { y: '100%' },
+  },
+  left: {
+    initial: { x: '-100%' },
+    animate: { x: 0 },
+    exit: { x: '-100%' },
+  },
+  right: {
+    initial: { x: '100%' },
+    animate: { x: 0 },
+    exit: { x: '100%' },
+  },
+};
+
 interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
     VariantProps<typeof sheetVariants> {}
 
 const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
-  ({ side = "right", className, children, ...props }, ref) => (
-    <SheetPortal>
-      <SheetOverlay />
-      <SheetPrimitive.Content
-        ref={ref}
-        className={cn(sheetVariants({ side }), "relative overflow-hidden", className)}
-        {...props}
-      >
-        {/* Cosmic background layer */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(ellipse at top center,
-              rgba(139, 92, 246, 0.08) 0%, transparent 50%)`
-          }}
-        />
+  ({ side = "right", className, children, ...props }, ref) => {
+    const variants = slideVariants[side || 'right'];
 
-        {/* Gradient border at top for bottom sheets */}
-        {(side === "bottom" || side === "top") && (
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
-        )}
-
-        {/* Content wrapper */}
-        <div className="relative z-10">
-          {children}
-        </div>
-
-        {/* Premium close button */}
-        <SheetPrimitive.Close
-          aria-label="Close"
-          className={cn(
-            "absolute right-4 top-4 rounded-xl p-2 z-20 transition-all",
-            "bg-white/10 backdrop-blur-sm border border-white/10",
-            "opacity-70 hover:opacity-100 hover:bg-white/20",
-            "focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:ring-offset-2 focus:ring-offset-background",
-            "disabled:pointer-events-none"
-          )}
+    return (
+      <SheetPortal>
+        <SheetOverlay />
+        <SheetPrimitive.Content
+          ref={ref}
+          className={cn(sheetVariants({ side }), "relative overflow-hidden", className)}
+          asChild
+          {...props}
         >
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
-        </SheetPrimitive.Close>
-      </SheetPrimitive.Content>
-    </SheetPortal>
-  ),
+          <motion.div
+            initial={variants.initial}
+            animate={variants.animate}
+            exit={variants.exit}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+          >
+            {/* Cosmic background layer */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `radial-gradient(ellipse at top center,
+                  rgba(139, 92, 246, 0.08) 0%, transparent 50%)`
+              }}
+            />
+
+            {/* Gradient border at top for bottom sheets */}
+            {(side === "bottom" || side === "top") && (
+              <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-400/30 dark:via-white/20 to-transparent" />
+            )}
+
+            {/* Content wrapper */}
+            <div className="relative z-10 h-full overflow-y-auto">
+              {children}
+            </div>
+
+            {/* Premium close button */}
+            <SheetPrimitive.Close
+              aria-label="Close"
+              className={cn(
+                "absolute right-4 top-4 rounded-xl p-2 z-20 transition-all",
+                "bg-slate-200/80 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/10",
+                "opacity-70 hover:opacity-100 hover:bg-slate-300/80 dark:hover:bg-white/20",
+                "focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:ring-offset-2 focus:ring-offset-background",
+                "disabled:pointer-events-none"
+              )}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Close</span>
+            </SheetPrimitive.Close>
+          </motion.div>
+        </SheetPrimitive.Content>
+      </SheetPortal>
+    );
+  },
 );
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
 const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
   <div className={cn("relative flex flex-col space-y-2 text-center sm:text-left", className)} {...props}>
-    {/* Subtle glow behind header */}
+    {/* Subtle glow behind header - hidden in light mode */}
     <div
-      className="absolute -top-8 left-1/2 -translate-x-1/2 w-40 h-20 rounded-full opacity-30 pointer-events-none"
+      className="absolute -top-8 left-1/2 -translate-x-1/2 w-40 h-20 rounded-full opacity-30 pointer-events-none hidden dark:block"
       style={{ background: 'radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%)' }}
     />
     {props.children}

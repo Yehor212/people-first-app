@@ -96,6 +96,7 @@ import { ConsentBanner } from '@/components/ConsentBanner';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { haptics } from '@/lib/haptics';
 import { preloadShareCardAssets } from '@/lib/shareCards';
+import { initializePushNotifications } from '@/lib/pushNotifications';
 import { AICoachChat } from '@/components/AICoachChat';
 import { useAICoach } from '@/contexts/AICoachContext';
 import { OnboardingOverlay, DayProgressIndicator } from '@/components/OnboardingOverlay';
@@ -1351,6 +1352,14 @@ export function Index() {
     if (!isNativePlatform()) return;
     initializeNotificationChannel().catch((error) => {
       logger.error('Failed to initialize notification channel:', error);
+    });
+  }, []);
+
+  // Initialize FCM push notifications (Android)
+  useEffect(() => {
+    if (!isNativePlatform()) return;
+    initializePushNotifications().catch((error) => {
+      logger.error('Failed to initialize push notifications:', error);
     });
   }, []);
 

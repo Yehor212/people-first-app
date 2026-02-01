@@ -308,8 +308,8 @@ export function ShareModal(props: ShareModalProps) {
             disabled={!imageBlob || isGenerating}
             className={cn(
               "flex flex-col items-center justify-center gap-2 h-20 rounded-xl transition-all",
-              "bg-white/5 backdrop-blur-sm border border-white/10",
-              "hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
+              "bg-slate-100 dark:bg-white/5 backdrop-blur-sm border border-slate-200 dark:border-white/10",
+              "hover:bg-slate-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
             )}
             whileHover={{ scale: 1.02, y: -2 }}
             whileTap={{ scale: 0.98 }}
@@ -321,9 +321,9 @@ export function ShareModal(props: ShareModalProps) {
                 boxShadow: '0 0 12px rgba(59, 130, 246, 0.3)'
               }}
             >
-              <Download className="w-5 h-5 text-blue-400" />
+              <Download className="w-5 h-5 text-blue-500 dark:text-blue-400" />
             </div>
-            <span className="text-xs text-white/70">{t.shareDownload || 'Download'}</span>
+            <span className="text-xs text-slate-600 dark:text-white/70">{t.shareDownload || 'Download'}</span>
           </motion.button>
 
           {/* Copy Button */}
@@ -334,7 +334,7 @@ export function ShareModal(props: ShareModalProps) {
               "flex flex-col items-center justify-center gap-2 h-20 rounded-xl transition-all",
               copied
                 ? "bg-emerald-500/20 border border-emerald-500/40"
-                : "bg-white/5 backdrop-blur-sm border border-white/10 hover:bg-white/10",
+                : "bg-slate-100 dark:bg-white/5 backdrop-blur-sm border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
             style={copied ? { boxShadow: '0 0 16px rgba(16, 185, 129, 0.4)' } : undefined}
@@ -355,10 +355,10 @@ export function ShareModal(props: ShareModalProps) {
               {copied ? (
                 <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               ) : (
-                <Copy className="w-5 h-5 text-purple-400" />
+                <Copy className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               )}
             </div>
-            <span className={cn("text-xs", copied ? "text-emerald-600 dark:text-emerald-400" : "text-white/70")}>
+            <span className={cn("text-xs", copied ? "text-emerald-600 dark:text-emerald-400" : "text-slate-600 dark:text-white/70")}>
               {copied ? (t.shareCopied || 'Copied!') : (t.shareCopyLink || 'Copy')}
             </span>
           </motion.button>

@@ -28,6 +28,7 @@ import { sanitizeUserName, userNameSchema } from '@/lib/validation';
 import { DopamineSettingsComponent } from '@/components/DopamineSettings';
 import { sendTestNotification, checkNotificationStatus } from '@/lib/localNotifications';
 import { isCloudSyncEnabled, setCloudSyncEnabled } from '@/lib/cloudSyncSettings';
+import { removePushToken } from '@/lib/pushNotifications';
 import { FeedbackForm } from '@/components/FeedbackForm';
 import { MessageSquare, Zap, Volume2, RefreshCw, History } from 'lucide-react';
 import { ChangelogPanel } from '@/components/ChangelogPanel';
@@ -369,6 +370,8 @@ export function SettingsPanel({
 
   const handleSignOut = async () => {
     if (!supabase) return;
+    // Remove FCM push token before signing out
+    await removePushToken();
     await supabase.auth.signOut();
     setAuthStatus(t.authSignedOut);
   };
