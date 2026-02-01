@@ -107,12 +107,21 @@ export function getOnboardingState(): OnboardingState {
     }
   }
 
-  // Default state for new users
+  // Default state for new users - ALL features unlocked immediately
   return {
     isNewUser: true,
     firstLoginDate: Date.now(),
     daysActive: 1,
-    unlockedFeatures: ['mood', 'habits'],
+    unlockedFeatures: [
+      'mood',
+      'habits',
+      'focusTimer',
+      'xp',
+      'quests',
+      'companion',
+      'tasks',
+      'challenges',
+    ],
     completedSteps: [],
     hasSeenWelcome: false,
   };

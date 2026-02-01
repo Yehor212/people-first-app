@@ -614,6 +614,12 @@ export interface Translations {
   settingsModuleCoreLocked: string;
   settingsModuleUnlockHint: string;
 
+  // Modules Onboarding (v1.6.0)
+  modulesOnboardingTitle: string;
+  modulesOnboardingSubtitle: string;
+  modulesSelected: string;
+  coreModulesNote: string;
+
   // GDPR Consent
   consentTitle: string;
   consentDescription: string;
@@ -1968,6 +1974,12 @@ export const translations: Record<Language, Translations> = {
     settingsModuleGardenDesc: 'Виртуальный сад и компаньон',
     settingsModuleCoreLocked: 'Основной модуль',
     settingsModuleUnlockHint: 'Разблокируется по мере прогресса',
+
+    // Modules Onboarding
+    modulesOnboardingTitle: 'Выберите функции',
+    modulesOnboardingSubtitle: 'Вы можете изменить это позже в настройках',
+    modulesSelected: 'функций выбрано',
+    coreModulesNote: 'Трекер настроения и Привычки всегда включены',
 
     // GDPR Consent
     consentTitle: 'Настройки приватности',
@@ -3400,6 +3412,12 @@ export const translations: Record<Language, Translations> = {
     settingsModuleCoreLocked: 'Core module',
     settingsModuleUnlockHint: 'Unlocks as you progress',
 
+    // Modules Onboarding
+    modulesOnboardingTitle: 'Choose Features',
+    modulesOnboardingSubtitle: 'You can change this later in settings',
+    modulesSelected: 'features selected',
+    coreModulesNote: 'Mood Tracker and Habits are always enabled',
+
     // GDPR Consent
     consentTitle: 'Privacy Settings',
     consentDescription: 'We respect your privacy. Help us improve the app by allowing anonymous analytics?',
@@ -4830,6 +4848,12 @@ export const translations: Record<Language, Translations> = {
     settingsModuleGardenDesc: 'Віртуальний сад та компаньйон',
     settingsModuleCoreLocked: 'Основний модуль',
     settingsModuleUnlockHint: 'Розблоковується в міру прогресу',
+
+    // Modules Onboarding
+    modulesOnboardingTitle: 'Оберіть функції',
+    modulesOnboardingSubtitle: 'Ви можете змінити це пізніше в налаштуваннях',
+    modulesSelected: 'функцій обрано',
+    coreModulesNote: 'Трекер настрою та Звички завжди увімкнені',
 
     // GDPR Consent
     consentTitle: 'Налаштування приватності',
@@ -6263,6 +6287,12 @@ export const translations: Record<Language, Translations> = {
     settingsModuleCoreLocked: 'Módulo principal',
     settingsModuleUnlockHint: 'Se desbloquea con el progreso',
 
+    // Modules Onboarding
+    modulesOnboardingTitle: 'Elige funciones',
+    modulesOnboardingSubtitle: 'Puedes cambiar esto más tarde en ajustes',
+    modulesSelected: 'funciones seleccionadas',
+    coreModulesNote: 'El rastreador de humor y los hábitos siempre están habilitados',
+
     // GDPR Consent
     consentTitle: 'Configuración de privacidad',
     consentDescription: 'Respetamos tu privacidad. ¿Permitir análisis anónimos para mejorar la app?',
@@ -7694,6 +7724,12 @@ export const translations: Record<Language, Translations> = {
     settingsModuleGardenDesc: 'Virtueller Garten und Begleiter',
     settingsModuleCoreLocked: 'Kernmodul',
     settingsModuleUnlockHint: 'Wird mit Fortschritt freigeschaltet',
+
+    // Modules Onboarding
+    modulesOnboardingTitle: 'Funktionen wählen',
+    modulesOnboardingSubtitle: 'Sie können dies später in den Einstellungen ändern',
+    modulesSelected: 'Funktionen ausgewählt',
+    coreModulesNote: 'Stimmungs-Tracker und Gewohnheiten sind immer aktiviert',
 
     // GDPR Consent
     consentTitle: 'Datenschutzeinstellungen',
@@ -9127,6 +9163,12 @@ export const translations: Record<Language, Translations> = {
     settingsModuleCoreLocked: 'Module principal',
     settingsModuleUnlockHint: 'Se débloque avec la progression',
 
+    // Modules Onboarding
+    modulesOnboardingTitle: 'Choisir les fonctions',
+    modulesOnboardingSubtitle: 'Vous pouvez modifier cela plus tard dans les paramètres',
+    modulesSelected: 'fonctions sélectionnées',
+    coreModulesNote: 'Le suivi de l\'humeur et les habitudes sont toujours activés',
+
     // GDPR Consent
     consentTitle: 'Paramètres de confidentialité',
     consentDescription: 'Nous respectons votre vie privée. Autoriser les analyses anonymes pour améliorer l\'app ?',
@@ -10557,6 +10599,12 @@ export const translations: Record<Language, Translations> = {
     settingsModuleGardenDesc: 'バーチャルガーデンとコンパニオン',
     settingsModuleCoreLocked: 'コアモジュール',
     settingsModuleUnlockHint: '進捗に応じて解放',
+
+    // Modules Onboarding
+    modulesOnboardingTitle: '機能を選択',
+    modulesOnboardingSubtitle: '後で設定で変更できます',
+    modulesSelected: '機能を選択中',
+    coreModulesNote: '気分トラッカーと習慣は常に有効です',
 
     // GDPR Consent
     consentTitle: 'プライバシー設定',

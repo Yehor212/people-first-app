@@ -1,41 +1,31 @@
-import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Sparkles, Target, Bell, Check, Star, Heart } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { ChevronRight, Sparkles, Check, Timer, Wind, Heart, Target, ListTodo, Trophy, Flower2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { MoodType, PrimaryEmotion, EmotionIntensity } from '@/types';
-import { habitTemplates } from '@/lib/habitTemplates';
+import { useFeatureFlags, ToggleableFeature } from '@/contexts/FeatureFlagsContext';
 import { cn } from '@/lib/utils';
-import { AnimatedEmotionEmoji } from './AnimatedEmotionEmoji';
-import {
-  EMOTION_ORDER,
-  EMOTION_GRADIENTS,
-  getEmotionTranslations,
-  emotionToMoodType
-} from '@/lib/emotionConstants';
 
 interface OnboardingResult {
   skipped?: boolean;
-  mood: MoodType | null;
-  emotion?: {
-    primary: PrimaryEmotion;
-    intensity: EmotionIntensity;
-  };
-  habits: Array<{ id: string; name: string; icon: string; color: string }>;
-  enableReminders: boolean;
-  reminderTime: 'morning' | 'evening';
+  modules: ToggleableFeature[];
 }
 
 interface OnboardingFlowProps {
   onComplete: (result: OnboardingResult) => void;
 }
 
+// Module definition
+interface ModuleItem {
+  id: ToggleableFeature;
+  icon: React.ReactNode;
+  emoji: string;
+  gradient: string;
+}
+
 // Floating particles component
-// P1 Fix: Added reduced-motion support for accessibility
 function FloatingParticles() {
-  // Check if user prefers reduced motion
   const prefersReducedMotion = typeof window !== 'undefined'
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-  // Don't render particles if user prefers reduced motion
   if (prefersReducedMotion) {
     return null;
   }
@@ -59,150 +49,128 @@ function FloatingParticles() {
   );
 }
 
-// Celebration burst when selecting
-function SelectionBurst({ show }: { show: boolean }) {
-  if (!show) return null;
-
-  return (
-    <div className="absolute inset-0 pointer-events-none">
-      {Array.from({ length: 8 }).map((_, i) => (
-        <div
-          key={i}
-          className="absolute left-1/2 top-1/2 w-1.5 h-1.5 rounded-full animate-selection-burst"
-          style={{
-            backgroundColor: ['#FFD700', '#FF6B6B', '#4ECDC4', '#9B59B6'][i % 4],
-            '--burst-angle': `${i * 45}deg`,
-          } as React.CSSProperties}
-        />
-      ))}
-    </div>
-  );
-}
-
 export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
-  const { t, language } = useLanguage();
-  // Steps: 1=mood, 2=habits, 3=reminders
-  const [step, setStep] = useState(1);
-  const [selectedEmotion, setSelectedEmotion] = useState<PrimaryEmotion | null>(null);
-  const [selectedHabits, setSelectedHabits] = useState<string[]>([]);
-  const [enableReminders, setEnableReminders] = useState(true);
-  const [reminderTime, setReminderTime] = useState<'morning' | 'evening'>('morning');
-  const [showBurst, setShowBurst] = useState(false);
-  const [animatingHabit, setAnimatingHabit] = useState<string | null>(null);
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  const { t } = useLanguage();
+  const { setFlag } = useFeatureFlags();
 
-  // P1 Fix: Responsive emotion wheel radius
-  const [emotionWheelRadius, setEmotionWheelRadius] = useState(100);
-  const emotionWheelRef = useRef<HTMLDivElement>(null);
+  // All modules enabled by default
+  const [selectedModules, setSelectedModules] = useState<ToggleableFeature[]>([
+    'focusTimer',
+    'breathingExercise',
+    'gratitudeJournal',
+    'quests',
+    'tasks',
+    'challenges',
+    'innerWorld',
+  ]);
+  const [animatingModule, setAnimatingModule] = useState<string | null>(null);
 
-  // P1 Fix: Calculate radius based on container size
-  useEffect(() => {
-    const updateRadius = () => {
-      if (emotionWheelRef.current) {
-        const containerWidth = emotionWheelRef.current.offsetWidth;
-        // Button size is ~50px (p-2 + emoji + text), so we need margin
-        // Calculate radius as ~35% of container width, with min/max bounds
-        const calculatedRadius = Math.max(70, Math.min(110, containerWidth * 0.35));
-        setEmotionWheelRadius(calculatedRadius);
-      }
+  // Module definitions
+  const modules: ModuleItem[] = [
+    {
+      id: 'focusTimer',
+      icon: <Timer className="w-5 h-5" />,
+      emoji: '🕐',
+      gradient: 'from-orange-500 to-red-500'
+    },
+    {
+      id: 'breathingExercise',
+      icon: <Wind className="w-5 h-5" />,
+      emoji: '💨',
+      gradient: 'from-sky-400 to-blue-500'
+    },
+    {
+      id: 'gratitudeJournal',
+      icon: <Heart className="w-5 h-5" />,
+      emoji: '❤️',
+      gradient: 'from-pink-500 to-rose-500'
+    },
+    {
+      id: 'quests',
+      icon: <Target className="w-5 h-5" />,
+      emoji: '🎯',
+      gradient: 'from-yellow-500 to-amber-500'
+    },
+    {
+      id: 'tasks',
+      icon: <ListTodo className="w-5 h-5" />,
+      emoji: '📋',
+      gradient: 'from-blue-500 to-indigo-500'
+    },
+    {
+      id: 'challenges',
+      icon: <Trophy className="w-5 h-5" />,
+      emoji: '🏆',
+      gradient: 'from-amber-500 to-yellow-600'
+    },
+    {
+      id: 'innerWorld',
+      icon: <Flower2 className="w-5 h-5" />,
+      emoji: '🌸',
+      gradient: 'from-green-500 to-emerald-500'
+    },
+  ];
+
+  // Get module name translation
+  const getModuleName = (id: ToggleableFeature): string => {
+    const names: Record<ToggleableFeature, string> = {
+      focusTimer: t.moduleFocus || t.settingsModuleFocus || 'Focus Timer',
+      breathingExercise: t.moduleBreathing || t.settingsModuleBreathing || 'Breathing',
+      gratitudeJournal: t.moduleGratitude || t.settingsModuleGratitude || 'Gratitude',
+      quests: t.moduleQuests || t.settingsModuleQuests || 'Quests',
+      tasks: t.moduleTasks || t.settingsModuleTasks || 'Tasks',
+      challenges: t.moduleChallenges || t.settingsModuleChallenges || 'Challenges',
+      innerWorld: t.moduleGarden || t.settingsModuleGarden || 'Garden',
+      aiCoach: 'AI Coach', // Not shown
     };
-
-    updateRadius();
-    window.addEventListener('resize', updateRadius);
-    return () => window.removeEventListener('resize', updateRadius);
-  }, [step]); // Recalculate when step changes to emotion step
-
-  // Get emotion translations for current language
-  const emotionT = getEmotionTranslations(language);
-
-  // 8 Plutchik emotions with colors from emotionConstants
-  const emotions: { type: PrimaryEmotion; label: string; gradient: string }[] = EMOTION_ORDER.map(emotion => ({
-    type: emotion,
-    label: emotionT[emotion],
-    gradient: EMOTION_GRADIENTS[emotion].replace('/80', ''), // Remove opacity for onboarding
-  }));
-
-  const handleEmotionSelect = (emotion: PrimaryEmotion) => {
-    setSelectedEmotion(emotion);
-    setShowBurst(true);
-    setTimeout(() => setShowBurst(false), 500);
+    return names[id];
   };
 
-  const toggleHabit = (habitId: string) => {
-    setAnimatingHabit(habitId);
-    setTimeout(() => setAnimatingHabit(null), 400);
+  // Get module description translation
+  const getModuleDesc = (id: ToggleableFeature): string => {
+    const descs: Record<ToggleableFeature, string> = {
+      focusTimer: t.moduleFocusDesc || t.settingsModuleFocusDesc || 'Pomodoro timer for deep work',
+      breathingExercise: t.moduleBreathingDesc || t.settingsModuleBreathingDesc || 'Relaxation techniques',
+      gratitudeJournal: t.moduleGratitudeDesc || t.settingsModuleGratitudeDesc || 'Daily gratitude practice',
+      quests: t.moduleQuestsDesc || t.settingsModuleQuestsDesc || 'Daily challenges & goals',
+      tasks: t.moduleTasksDesc || t.settingsModuleTasksDesc || 'Task management',
+      challenges: t.moduleChallengesDesc || t.settingsModuleChallengesDesc || 'Compete with friends',
+      innerWorld: t.moduleGardenDesc || t.settingsModuleGardenDesc || 'Virtual companion & garden',
+      aiCoach: '', // Not shown
+    };
+    return descs[id];
+  };
 
-    setSelectedHabits(prev =>
-      prev.includes(habitId)
-        ? prev.filter(id => id !== habitId)
-        : [...prev, habitId]
+  const toggleModule = (moduleId: ToggleableFeature) => {
+    setAnimatingModule(moduleId);
+    setTimeout(() => setAnimatingModule(null), 400);
+
+    setSelectedModules(prev =>
+      prev.includes(moduleId)
+        ? prev.filter(id => id !== moduleId)
+        : [...prev, moduleId]
     );
   };
 
   const handleSkip = () => {
-    onComplete({ skipped: true, mood: null, habits: [], enableReminders: false, reminderTime: 'morning' });
+    // Enable all modules by default when skipping
+    modules.forEach(m => setFlag(m.id, true));
+    onComplete({ skipped: true, modules: modules.map(m => m.id) });
   };
 
-  // P1 Fix: Ref to prevent double-clicks during transition
   const transitionLockRef = useRef(false);
 
-  const handleNext = () => {
-    // P1 Fix: Prevent rapid double-clicks during transition
-    if (isTransitioning || transitionLockRef.current) return;
+  const handleComplete = () => {
+    if (transitionLockRef.current) return;
+    transitionLockRef.current = true;
 
-    // Steps: 1=mood, 2=habits, 3=reminders
-    if (step < 3) {
-      transitionLockRef.current = true;
-      setIsTransitioning(true);
-      setTimeout(() => {
-        setStep(step + 1);
-        setIsTransitioning(false);
-        transitionLockRef.current = false;
-      }, 300);
-    } else {
-      // P0 Fix: Filter out any invalid habit IDs and handle missing templates gracefully
-      const habits = selectedHabits
-        .map(id => {
-          const template = habitTemplates.find(h => h.id === id);
-          if (!template) {
-            console.warn(`[OnboardingFlow] Habit template not found for id: ${id}`);
-            return null;
-          }
-          return {
-            id: template.id,
-            name: template.names[language],
-            icon: template.icon,
-            color: template.color
-          };
-        })
-        .filter((habit): habit is NonNullable<typeof habit> => habit !== null);
+    // Save module preferences to feature flags
+    modules.forEach(m => {
+      setFlag(m.id, selectedModules.includes(m.id));
+    });
 
-      // Convert emotion to legacy mood for backward compatibility
-      const legacyMood = selectedEmotion
-        ? emotionToMoodType(selectedEmotion, 'moderate')
-        : null;
-
-      onComplete({
-        mood: legacyMood,
-        emotion: selectedEmotion ? {
-          primary: selectedEmotion,
-          intensity: 'moderate' as EmotionIntensity
-        } : undefined,
-        habits,
-        enableReminders,
-        reminderTime
-      });
-    }
+    onComplete({ modules: selectedModules });
   };
-
-  const stepIcons = [
-    { icon: Heart, label: t.onboardingMoodTitle || 'Mood' },
-    { icon: Target, label: t.onboardingHabitsTitle || 'Habits' },
-    { icon: Bell, label: t.onboardingRemindersTitle || 'Reminders' },
-  ];
-
-  // Calculate progress step (0-based for progress bar, excluding age verification)
-  const progressStep = step - 1;
 
   return (
     <div className="screen-overlay bg-gradient-to-br from-background via-primary/5 to-accent/5 overflow-hidden">
@@ -211,307 +179,103 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       <div className="screen-centered px-3 sm:px-4">
         <div className="w-full max-w-md relative z-10">
 
-        {/* Progress bar and main onboarding (steps 1-3) */}
-        <>
-            {/* Animated Progress Bar - responsive */}
-            <div className="flex gap-1.5 sm:gap-2 mb-4 sm:mb-8">
-              {[0, 1, 2].map(i => (
-                <div
-                  key={i}
-                  className="h-1.5 sm:h-2 flex-1 rounded-full bg-secondary/50 overflow-hidden"
-                >
-                  <div
-                    className={cn(
-                      "h-full rounded-full transition-all duration-500 ease-out",
-                      i < progressStep ? "w-full bg-gradient-to-r from-primary to-accent" :
-                      i === progressStep ? "w-full bg-gradient-to-r from-primary to-accent animate-pulse" :
-                      "w-0"
-                    )}
-                  />
-                </div>
-              ))}
+          {/* Header */}
+          <div className="text-center mb-6">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30 mb-4">
+              <Sparkles className="w-8 h-8 text-white" />
             </div>
+            <h1 className="text-2xl font-bold text-foreground mb-2">
+              {t.modulesOnboardingTitle || 'Choose Features'}
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              {t.modulesOnboardingSubtitle || 'You can change this later in settings'}
+            </p>
+          </div>
 
-            {/* Step Icons - responsive */}
-            <div className="flex justify-center gap-6 sm:gap-8 mb-4 sm:mb-6">
-              {stepIcons.map((item, i) => {
-                const Icon = item.icon;
-                const isActive = i === progressStep;
-                const isCompleted = i < progressStep;
+          {/* Modules Grid */}
+          <div className="bg-card/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xl shadow-primary/10 border border-primary/10">
+            <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pr-1">
+              {modules.map((module, index) => {
+                const isSelected = selectedModules.includes(module.id);
+                const isAnimating = animatingModule === module.id;
 
                 return (
-                  <div
-                    key={i}
+                  <button
+                    key={module.id}
+                    onClick={() => toggleModule(module.id)}
                     className={cn(
-                      "flex flex-col items-center gap-1 transition-all duration-300",
-                      isActive ? "scale-110" : "scale-90 opacity-50"
+                      "relative p-4 rounded-xl flex flex-col items-center gap-2 transition-all duration-200 text-center overflow-hidden",
+                      isSelected
+                        ? `bg-gradient-to-br ${module.gradient} shadow-lg`
+                        : "bg-secondary/50 hover:bg-secondary",
+                      isAnimating && "animate-selection-pop"
                     )}
+                    style={{ animationDelay: `${index * 50}ms` }}
                   >
-                    <div className={cn(
-                      "w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-300",
-                      isActive ? "bg-gradient-to-br from-primary to-accent shadow-lg shadow-primary/30" :
-                      isCompleted ? "bg-primary" : "bg-secondary"
+                    {/* Emoji */}
+                    <span className={cn(
+                      "text-3xl transition-transform",
+                      isSelected && "scale-110"
                     )}>
-                      {isCompleted ? (
-                        <Check className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                      ) : (
-                        <Icon className={cn(
-                          "w-5 h-5 sm:w-6 sm:h-6",
-                          isActive ? "text-white" : "text-muted-foreground"
-                        )} />
-                      )}
-                    </div>
-                  </div>
+                      {module.emoji}
+                    </span>
+
+                    {/* Name */}
+                    <span className={cn(
+                      "text-sm font-semibold",
+                      isSelected ? "text-white" : "text-foreground"
+                    )}>
+                      {getModuleName(module.id)}
+                    </span>
+
+                    {/* Description */}
+                    <span className={cn(
+                      "text-[10px] leading-tight",
+                      isSelected ? "text-white/80" : "text-muted-foreground"
+                    )}>
+                      {getModuleDesc(module.id)}
+                    </span>
+
+                    {/* Check mark */}
+                    {isSelected && (
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
+                        <Check className="w-3 h-3 text-white" />
+                      </div>
+                    )}
+                  </button>
                 );
               })}
             </div>
 
-        {/* Content Card - responsive */}
-        <div className={cn(
-          "bg-card/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-2xl shadow-primary/10 border border-primary/10 transition-all duration-300",
-          isTransitioning ? "opacity-0 translate-x-8" : "opacity-100 translate-x-0"
-        )}>
-          {/* Step 1: Emotion (Plutchik Wheel) */}
-          {step === 1 && (
-            <div className="animate-slide-up">
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                <h2 className="text-lg sm:text-xl font-bold text-foreground">
-                  {emotionT.whatDoYouFeel || t.onboardingMoodTitle || 'How are you feeling?'}
-                </h2>
-              </div>
-              <p className="text-muted-foreground mb-4 sm:mb-6 text-xs sm:text-sm">
-                {emotionT.selectEmotion || t.onboardingMoodDescription || 'Track your emotions daily'}
-              </p>
-
-              {/* Circular emotion wheel layout */}
-              <div
-                ref={emotionWheelRef}
-                className="relative w-full aspect-square max-w-[280px] sm:max-w-[320px] mx-auto mb-4"
-              >
-                {/* Center decoration */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
-                  <Heart className="w-6 h-6 text-primary/50" />
-                </div>
-
-                {/* 8 emotions in a circle */}
-                {emotions.map((emotion, index) => {
-                  const angle = (index * 45 - 90) * (Math.PI / 180); // Start from top
-                  // P1 Fix: Use dynamic radius instead of fixed 100px
-                  const x = Math.cos(angle) * emotionWheelRadius;
-                  const y = Math.sin(angle) * emotionWheelRadius;
-
-                  return (
-                    <button
-                      key={emotion.type}
-                      onClick={() => handleEmotionSelect(emotion.type)}
-                      className={cn(
-                        "absolute top-1/2 left-1/2 p-1.5 sm:p-2 rounded-2xl flex flex-col items-center gap-0.5 transition-all duration-300",
-                        selectedEmotion === emotion.type
-                          ? `bg-gradient-to-br ${emotion.gradient} shadow-lg scale-110 z-10`
-                          : "bg-secondary/60 hover:bg-secondary hover:scale-105"
-                      )}
-                      style={{
-                        transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
-                        animationDelay: `${index * 50}ms`
-                      }}
-                    >
-                      <AnimatedEmotionEmoji
-                        emotion={emotion.type}
-                        size="md"
-                        isSelected={selectedEmotion === emotion.type}
-                      />
-                      <span className={cn(
-                        "text-[10px] sm:text-xs font-medium transition-colors whitespace-nowrap",
-                        selectedEmotion === emotion.type ? "text-white" : "text-muted-foreground"
-                      )}>
-                        {emotion.label}
-                      </span>
-                      {selectedEmotion === emotion.type && <SelectionBurst show={showBurst} />}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {selectedEmotion && (
-                <div className="flex items-center justify-center gap-2 py-2 bg-primary/10 rounded-xl animate-fade-in">
-                  <Star className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-medium text-primary">
-                    {t.greatChoice || 'Great choice!'}
-                  </span>
-                </div>
-              )}
+            {/* Selection count */}
+            <div className="mt-4 flex items-center justify-center gap-2 py-2 bg-primary/10 rounded-xl">
+              <span className="text-sm font-medium text-primary">
+                {selectedModules.length} {t.modulesSelected || 'features selected'}
+              </span>
             </div>
-          )}
+          </div>
 
-          {/* Step 2: Habits */}
-          {step === 2 && (
-            <div className="animate-slide-up">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                <h2 className="text-lg sm:text-xl font-bold text-foreground">
-                  {t.onboardingHabitsTitle || 'Create your first habits'}
-                </h2>
-              </div>
-              <p className="text-muted-foreground mb-3 sm:mb-4 text-xs sm:text-sm">
-                {t.onboardingHabitsDescription || 'Start with small steps'}
-              </p>
+          {/* Note about core features */}
+          <p className="text-xs text-center text-muted-foreground mt-3">
+            {t.coreModulesNote || 'Mood Tracker and Habits are always enabled'}
+          </p>
 
-              <div className="grid grid-cols-2 gap-2 max-h-[340px] overflow-y-auto pr-1">
-                {habitTemplates.map((habit, index) => {
-                  const isSelected = selectedHabits.includes(habit.id);
-                  const isAnimating = animatingHabit === habit.id;
-
-                  return (
-                    <button
-                      key={habit.id}
-                      onClick={() => toggleHabit(habit.id)}
-                      className={cn(
-                        "relative p-3 rounded-xl flex items-center gap-2 transition-all duration-200 text-left overflow-hidden",
-                        isSelected
-                          ? "bg-primary/15 ring-2 ring-primary"
-                          : "bg-secondary/50 hover:bg-secondary",
-                        isAnimating && "animate-selection-pop"
-                      )}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <span className={cn(
-                        "text-xl transition-transform",
-                        isSelected && "scale-110"
-                      )}>
-                        {habit.icon}
-                      </span>
-                      <span className={cn(
-                        "text-xs font-medium flex-1",
-                        isSelected ? "text-primary" : "text-foreground"
-                      )}>
-                        {habit.names[language]}
-                      </span>
-                      {isSelected && (
-                        <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center animate-check-pop">
-                          <Check className="w-3 h-3 text-white" />
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {selectedHabits.length > 0 && (
-                <div className="mt-3 flex items-center justify-center gap-2 py-2 bg-primary/10 rounded-xl animate-fade-in">
-                  <span className="text-sm font-medium text-primary">
-                    {selectedHabits.length} {t.habitsSelected || 'habits selected'}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 3: Reminders */}
-          {step === 3 && (
-            <div className="animate-slide-up">
-              <div className="flex items-center gap-2 mb-2">
-                <Bell className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                <h2 className="text-lg sm:text-xl font-bold text-foreground">
-                  {t.onboardingRemindersTitle || 'Reminders'}
-                </h2>
-              </div>
-              <p className="text-muted-foreground mb-4 sm:mb-6 text-xs sm:text-sm">
-                {t.onboardingRemindersDescription || 'Get habit reminders'}
-              </p>
-
-              <div className="space-y-4">
-                <button
-                  onClick={() => setEnableReminders(!enableReminders)}
-                  className={cn(
-                    "w-full p-4 rounded-xl flex items-center justify-between transition-all",
-                    enableReminders ? "bg-primary/10 ring-2 ring-primary" : "bg-secondary/50"
-                  )}
-                >
-                  <span className="font-medium text-foreground">{t.enableReminders || 'Enable reminders'}</span>
-                  <div className={cn(
-                    "w-14 h-7 rounded-full transition-colors relative",
-                    enableReminders ? "bg-primary" : "bg-muted"
-                  )}>
-                    <div className={cn(
-                      "absolute top-1 w-5 h-5 rounded-full bg-white shadow-md transition-all",
-                      enableReminders ? "right-1" : "left-1"
-                    )} />
-                  </div>
-                </button>
-
-                {enableReminders && (
-                  <div className="grid grid-cols-2 gap-3 animate-slide-up">
-                    <button
-                      onClick={() => setReminderTime('morning')}
-                      className={cn(
-                        "p-4 rounded-xl text-center transition-all",
-                        reminderTime === 'morning'
-                          ? "bg-gradient-to-br from-amber-400 to-orange-400 shadow-lg"
-                          : "bg-secondary/50 hover:bg-secondary"
-                      )}
-                    >
-                      <span className="text-3xl">🌅</span>
-                      <p className={cn(
-                        "text-sm font-medium mt-2",
-                        reminderTime === 'morning' ? "text-white" : "text-foreground"
-                      )}>
-                        {t.morning || 'Morning'}
-                      </p>
-                      <p className={cn(
-                        "text-xs",
-                        reminderTime === 'morning' ? "text-white/80" : "text-muted-foreground"
-                      )}>
-                        9:00
-                      </p>
-                    </button>
-                    <button
-                      onClick={() => setReminderTime('evening')}
-                      className={cn(
-                        "p-4 rounded-xl text-center transition-all",
-                        reminderTime === 'evening'
-                          ? "bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg"
-                          : "bg-secondary/50 hover:bg-secondary"
-                      )}
-                    >
-                      <span className="text-3xl">🌙</span>
-                      <p className={cn(
-                        "text-sm font-medium mt-2",
-                        reminderTime === 'evening' ? "text-white" : "text-foreground"
-                      )}>
-                        {t.evening || 'Evening'}
-                      </p>
-                      <p className={cn(
-                        "text-xs",
-                        reminderTime === 'evening' ? "text-white/80" : "text-muted-foreground"
-                      )}>
-                        19:00
-                      </p>
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Actions - responsive */}
-        <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
-          <button
-            onClick={handleSkip}
-            className="flex-1 py-3 sm:py-4 bg-secondary/50 backdrop-blur-sm text-secondary-foreground rounded-xl sm:rounded-2xl font-semibold hover:bg-secondary transition-colors text-sm sm:text-base"
-          >
-            {t.skip || 'Skip'}
-          </button>
-          <button
-            onClick={handleNext}
-            className="flex-1 py-3 sm:py-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-xl sm:rounded-2xl font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/30 text-sm sm:text-base"
-          >
-            {step === 3 ? (t.getStarted || 'Start') : (t.next || 'Next')}
-            <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-        </div>
-        </>
+          {/* Actions */}
+          <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
+            <button
+              onClick={handleSkip}
+              className="flex-1 py-3 sm:py-4 bg-secondary/50 backdrop-blur-sm text-secondary-foreground rounded-xl sm:rounded-2xl font-semibold hover:bg-secondary transition-colors text-sm sm:text-base"
+            >
+              {t.skip || 'Skip'}
+            </button>
+            <button
+              onClick={handleComplete}
+              className="flex-1 py-3 sm:py-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-xl sm:rounded-2xl font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/30 text-sm sm:text-base"
+            >
+              {t.getStarted || 'Start'}
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </div>
         </div>
       </div>
     </div>

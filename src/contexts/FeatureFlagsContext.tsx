@@ -35,7 +35,7 @@ export interface FeatureFlags {
   innerWorld: boolean;
 }
 
-// Default: all features enabled
+// Default: all features enabled (except AI Coach - temporarily hidden)
 const DEFAULT_FLAGS: FeatureFlags = {
   focusTimer: true,
   breathingExercise: true,
@@ -43,7 +43,7 @@ const DEFAULT_FLAGS: FeatureFlags = {
   quests: true,
   tasks: true,
   challenges: true,
-  aiCoach: true,
+  aiCoach: false, // Hidden until AI is working
   innerWorld: true,
 };
 

@@ -60,7 +60,7 @@ import { InstallBanner } from '@/components/InstallBanner';
 import { RemindersPanel } from '@/components/RemindersPanel';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { WelcomeTutorial } from '@/components/WelcomeTutorial';
-import { AICoachOnboarding } from '@/components/AICoachOnboarding';
+// import { AICoachOnboarding } from '@/components/AICoachOnboarding'; // Hidden until AI ready
 import { AuthGate } from '@/components/AuthGate';
 import { AchievementsPanel } from '@/components/AchievementsPanel';
 import { NotificationPermission } from '@/components/NotificationPermission';
@@ -82,9 +82,9 @@ import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdat
 import { syncTasks, syncQuests, subscribeToTaskUpdates, subscribeToQuestUpdates } from '@/storage/tasksCloudSync';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { CompanionPanel } from '@/components/CompanionPanel';
-import { MoodInsights } from '@/components/MoodInsights';
+// import { MoodInsights } from '@/components/MoodInsights'; // Hidden until AI ready
 import { StreakBanner } from '@/components/StreakBanner';
-import { InsightsPanel } from '@/components/InsightsPanel';
+// import { InsightsPanel } from '@/components/InsightsPanel'; // Hidden until AI ready
 import { RestModeCard } from '@/components/RestModeCard';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
 import { ChallengeModal } from '@/components/ChallengeModal';
@@ -97,8 +97,8 @@ import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { haptics } from '@/lib/haptics';
 import { preloadShareCardAssets } from '@/lib/shareCards';
 import { initializePushNotifications } from '@/lib/pushNotifications';
-import { AICoachChat } from '@/components/AICoachChat';
-import { useAICoach } from '@/contexts/AICoachContext';
+// import { AICoachChat } from '@/components/AICoachChat'; // Hidden until AI ready
+// import { useAICoach } from '@/contexts/AICoachContext'; // Hidden until AI ready
 import { OnboardingOverlay, DayProgressIndicator } from '@/components/OnboardingOverlay';
 import { FeatureUnlock } from '@/components/FeatureUnlock';
 import { QuickStatsRow } from '@/components/ui/stat-card';
@@ -132,9 +132,9 @@ export function Index() {
   const { setEmotionFromEntries } = useEmotionTheme();
   const { isFeatureVisible } = useFeatureFlags();
   const { syncFocusSession } = useHealthConnect();
-  const { triggerLowMoodCheck, openCoach, setUserData, onboardingData, saveOnboardingAnswer } = useAICoach();
+  // const { triggerLowMoodCheck, openCoach, setUserData, onboardingData, saveOnboardingAnswer } = useAICoach(); // Hidden until AI ready
   const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [showAIOnboarding, setShowAIOnboarding] = useState(false);
+  // const [showAIOnboarding, setShowAIOnboarding] = useState(false); // Hidden until AI ready
   const lastSyncedUserIdRef = useRef<string | null>(null);
 
   // App initialization state (must be first)
@@ -1159,87 +1159,13 @@ export function Index() {
     setGoogleAuthChecked(true);
   };
 
+  // New simplified onboarding - just modules selection
   const handleOnboardingComplete = (result: {
     skipped?: boolean;
-    mood: MoodEntry['mood'] | null;
-    habits: Array<{ id: string; name: string; icon: string; color: string }>;
-    enableReminders: boolean;
-    reminderTime: 'morning' | 'evening';
+    modules?: string[];
   }) => {
-    if (!result.skipped) {
-      if (result.mood) {
-        const today = getToday();
-        setMoods(prev => {
-          const filtered = prev.filter(e => e.date !== today);
-          return [
-            ...filtered,
-            {
-              id: generateId(),
-              mood: result.mood,
-              date: today,
-              timestamp: Date.now()
-            }
-          ];
-        });
-      }
-
-      let selectedHabitIds: string[] = [];
-      if (result.habits.length > 0) {
-        const existingByName = new Map(
-          safeHabits.map(habit => [habit.name.toLowerCase(), habit.id])
-        );
-        const additions: Habit[] = [];
-
-        result.habits.forEach(habit => {
-          const key = habit.name.toLowerCase();
-          const existingId = existingByName.get(key);
-          if (existingId) {
-            selectedHabitIds.push(existingId);
-            return;
-          }
-          const newHabit: Habit = {
-            id: generateId(),
-            name: habit.name,
-            icon: habit.icon,
-            color: habit.color,
-            templateId: habit.id,
-            completedDates: [],
-            createdAt: Date.now(),
-            type: 'daily',
-            reminders: [],
-            frequency: 'daily'
-          };
-          additions.push(newHabit);
-          selectedHabitIds.push(newHabit.id);
-        });
-
-        if (additions.length > 0) {
-          setHabits(prev => [...prev, ...additions]);
-        }
-      }
-
-      if (selectedHabitIds.length > 0) {
-        setReminders(prev => ({
-          ...prev,
-          habitIds: selectedHabitIds
-        }));
-      }
-
-      if (result.enableReminders) {
-        const isMorning = result.reminderTime === 'morning';
-        setReminders(prev => ({
-          ...prev,
-          enabled: true,
-          moodTimeMorning: isMorning ? '09:00' : '08:00',
-          moodTimeAfternoon: '14:00',
-          moodTimeEvening: isMorning ? '19:00' : '20:00',
-          habitTime: isMorning ? '20:00' : '21:00',
-          focusTime: isMorning ? '10:00' : '11:00',
-          habitIds: selectedHabitIds.length > 0 ? selectedHabitIds : prev.habitIds
-        }));
-      }
-    }
-
+    // Module preferences are already saved by OnboardingFlow via FeatureFlags context
+    // Just mark onboarding as complete
     setOnboardingComplete(true);
   };
 
@@ -1854,18 +1780,18 @@ export function Index() {
     );
   }
 
-  // P0 Fix: AI Coach Onboarding (personalization questions)
-  if (showAIOnboarding) {
-    return (
-      <AICoachOnboarding
-        onComplete={() => {
-          saveOnboardingAnswer('completedAt', String(Date.now()));
-          setShowAIOnboarding(false);
-        }}
-        onSkip={() => setShowAIOnboarding(false)}
-      />
-    );
-  }
+  // AI Coach Onboarding hidden until AI ready
+  // if (showAIOnboarding) {
+  //   return (
+  //     <AICoachOnboarding
+  //       onComplete={() => {
+  //         saveOnboardingAnswer('completedAt', String(Date.now()));
+  //         setShowAIOnboarding(false);
+  //       }}
+  //       onSkip={() => setShowAIOnboarding(false)}
+  //     />
+  //   );
+  // }
 
   if (!onboardingComplete) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
@@ -2000,7 +1926,7 @@ export function Index() {
                 }}
               />
 
-              {/* Personal Insights - Data-driven pattern detection */}
+              {/* Personal Insights - Hidden until AI ready
               {isFeatureVisible('aiCoach') && (
                 <InsightsPanel
                   moods={safeMoods}
@@ -2009,6 +1935,7 @@ export function Index() {
                   compact={true}
                 />
               )}
+              */}
 
               {/* v1.4.0: ScheduleTimeline moved to "My World" tab */}
 
@@ -2202,7 +2129,7 @@ export function Index() {
               onDeleteEvent={handleDeleteScheduleEvent}
             />
 
-            {/* AI Insights - Personalized mood pattern analysis */}
+            {/* AI Insights - Hidden until AI ready
             {isFeatureVisible('aiCoach') && (
               <MoodInsights
                 moods={safeMoods}
@@ -2211,6 +2138,7 @@ export function Index() {
                 gratitudeEntries={safeGratitudeEntries}
               />
             )}
+            */}
           </div>
         )}
 
@@ -2398,8 +2326,9 @@ export function Index() {
         />
       )}
 
-      {/* AI Coach Chat - bottom sheet for AI coaching */}
+      {/* AI Coach Chat - Hidden until AI ready
       {isFeatureVisible('aiCoach') && <AICoachChat />}
+      */}
 
     </div>
   );

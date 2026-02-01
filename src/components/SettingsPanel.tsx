@@ -810,6 +810,7 @@ export function SettingsPanel({
                 isLocked={!isFeatureUnlocked('challenges')}
                 lockedMessage={t.settingsModuleUnlockHint}
               />
+              {/* AI Coach hidden until ready
               <FeatureToggleItem
                 icon={<Bot className="w-4 h-4 text-violet-500" />}
                 title={t.settingsModuleAICoach}
@@ -817,6 +818,7 @@ export function SettingsPanel({
                 enabled={isFeatureEnabled('aiCoach')}
                 onToggle={(enabled) => setFlag('aiCoach', enabled)}
               />
+              */}
               <FeatureToggleItem
                 icon={<Flower2 className="w-4 h-4 text-green-500" />}
                 title={t.settingsModuleGarden}
