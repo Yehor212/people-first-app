@@ -145,10 +145,10 @@ function OrbitingEmotion({
   angle: number;
   animationDuration: number;
 }) {
-  // Elliptical orbit parameters - radius increased to clear center hub glow (112px visual radius)
+  // Elliptical orbit parameters - REDUCED to fit within container (overflow-hidden)
   const baseRadius = 32 + (orbitIndex / Math.max(totalOrbits - 1, 1)) * 18;
-  const rx = baseRadius * 3.8;        // X radius in pixels - 121.6px clears 112px glow
-  const ry = baseRadius * 0.65 * 3.8; // Y radius (ellipse - 65% of X for 3D look)
+  const rx = baseRadius * 2.0;        // X radius: 64px fits in container
+  const ry = baseRadius * 0.65 * 2.0; // Y radius (ellipse - 65% of X for 3D look)
 
   // Size based on frequency (inner = more frequent = larger) - reduced for better fit
   const sizePx = 32 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 10;
@@ -158,48 +158,7 @@ function OrbitingEmotion({
 
   return (
     <>
-      {/* Comet Trail - 4 fading segments that follow the emoji */}
-      {[0, 1, 2, 3].map((trailIndex) => {
-        const trailOffset = (trailIndex + 1) * 12; // Degrees behind
-        const trailOpacity = 0.3 - trailIndex * 0.06;
-        const trailSize = sizePx * (0.6 - trailIndex * 0.1);
-        const trailBlur = 2 + trailIndex * 1; // Reduced blur: 2-5px instead of 3-9px
-
-        return (
-          <motion.div
-            key={`trail-${orbitIndex}-${trailIndex}`}
-            className="absolute pointer-events-none"
-            style={{
-              left: '50%',
-              top: '50%',
-              width: 1,
-              height: 1,
-              transformOrigin: '0 0',
-            }}
-            animate={{ rotate: [angle - trailOffset, angle - trailOffset + 360] }}
-            transition={{
-              duration: keplerDuration,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
-          >
-            <div
-              className="absolute rounded-full"
-              style={{
-                left: 0,
-                top: 0,
-                width: trailSize,
-                height: trailSize,
-                marginLeft: -trailSize / 2,
-                marginTop: -trailSize / 2,
-                transform: `translateX(${rx}px)`,
-                background: `radial-gradient(circle, ${emotion.color}${Math.round(trailOpacity * 255).toString(16).padStart(2, '0')} 0%, transparent 70%)`,
-                filter: `blur(${trailBlur}px)`,
-              }}
-            />
-          </motion.div>
-        );
-      })}
+      {/* COMET TRAILS DISABLED FOR DEBUGGING - uncomment when emojis work */}
 
       {/* Main Emoji Orb - Rotating wrapper */}
       <motion.div
@@ -256,12 +215,12 @@ function OrbitingEmotion({
             }}
           />
 
-          {/* Emoji - larger for visibility */}
+          {/* Emoji - MAXIMUM size for visibility testing */}
           <div
             className="absolute inset-0 flex items-center justify-center"
             style={{
-              fontSize: sizePx * 0.75,
-              filter: 'drop-shadow(0 2px 3px rgba(0,0,0,0.4))',
+              fontSize: sizePx * 1.0,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
             }}
           >
             {emotion.emoji}
@@ -438,10 +397,10 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
 
           <circle cx={50} cy={50} r={12} fill="url(#centerGlowPremium)" />
 
-          {/* Elliptical orbit paths with 3D tilt - radius matches HTML emoji positions */}
+          {/* Elliptical orbit paths with 3D tilt - REDUCED to match HTML emoji positions */}
           {sortedEmotions.map((_, i) => {
             const baseRadius = 32 + (i / Math.max(sortedEmotions.length - 1, 1)) * 18;
-            const rx = baseRadius * 1.35;   // Proportional increase for SVG viewBox (3.8/2.8 ≈ 1.35)
+            const rx = baseRadius * 0.7;    // Reduced to match HTML (2.0/2.8 ≈ 0.7)
             const ry = rx * 0.65;           // Ellipse ratio for 3D effect
             const tilt = -12; // Tilt angle for 3D perspective
 
