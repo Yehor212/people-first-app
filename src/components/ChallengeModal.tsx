@@ -1188,7 +1188,7 @@ export const ChallengeModal = memo(function ChallengeModal({
           </SheetDescription>
         </SheetHeader>
 
-        <div className="overflow-y-auto max-h-[calc(85vh-120px)]">
+        <div className="overflow-y-auto max-h-[calc(85vh-120px)] min-h-[200px]">
           {mode === 'create' && habit && (
             <CreateChallengeView
               habit={habit}

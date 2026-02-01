@@ -85,7 +85,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
           )}
 
           {/* Content wrapper */}
-          <div className="relative z-10 flex-1 overflow-y-auto min-h-0">
+          <div className="relative z-10 flex-1 overflow-y-auto">
             {children}
           </div>
 

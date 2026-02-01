@@ -396,43 +396,45 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           isPrimaryCTA ? "text-xl text-slate-800 dark:text-white" : "text-lg text-foreground"
         )}>{t.habits}</h3>
         <div className="flex items-center gap-2">
-          {/* Challenges button */}
-          {isPrimaryCTA ? (
-            <motion.button
-              onClick={() => {
-                hapticTap();
-                onOpenChallenge?.();
-              }}
-              aria-label={t.friendChallenges}
-              className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm border border-slate-200/60 dark:border-white/20 text-slate-600 dark:text-white/70 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/20 transition-colors"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Users className="w-5 h-5" />
-              {activeChallengesCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                  {activeChallengesCount}
-                </span>
-              )}
-            </motion.button>
-          ) : (
-            <Button
-              variant="secondary"
-              size="icon"
-              onClick={() => {
-                hapticTap();
-                onOpenChallenge?.();
-              }}
-              aria-label={t.friendChallenges}
-              className="relative"
-            >
-              <Users className="w-5 h-5" />
-              {activeChallengesCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
-                  {activeChallengesCount}
-                </span>
-              )}
-            </Button>
+          {/* Challenges button - only show when challenges feature is enabled */}
+          {onOpenChallenge && (
+            isPrimaryCTA ? (
+              <motion.button
+                onClick={() => {
+                  hapticTap();
+                  onOpenChallenge();
+                }}
+                aria-label={t.friendChallenges}
+                className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm border border-slate-200/60 dark:border-white/20 text-slate-600 dark:text-white/70 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/20 transition-colors"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Users className="w-5 h-5" />
+                {activeChallengesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    {activeChallengesCount}
+                  </span>
+                )}
+              </motion.button>
+            ) : (
+              <Button
+                variant="secondary"
+                size="icon"
+                onClick={() => {
+                  hapticTap();
+                  onOpenChallenge();
+                }}
+                aria-label={t.friendChallenges}
+                className="relative"
+              >
+                <Users className="w-5 h-5" />
+                {activeChallengesCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                    {activeChallengesCount}
+                  </span>
+                )}
+              </Button>
+            )
           )}
           {/* Add button */}
           {isPrimaryCTA ? (
