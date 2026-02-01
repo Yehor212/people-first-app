@@ -21,7 +21,7 @@ import {
   CloudOff,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -1157,10 +1157,10 @@ export const ChallengeModal = memo(function ChallengeModal({
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl flex flex-col p-0">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 gap-0 rounded-2xl">
         {/* Visually hidden title for accessibility */}
-        <SheetTitle className="sr-only">{getTitle()}</SheetTitle>
+        <DialogTitle className="sr-only">{getTitle()}</DialogTitle>
 
         {/* Premium Header - like AICoachChat */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200/60 dark:border-white/10 relative">
@@ -1253,8 +1253,8 @@ export const ChallengeModal = memo(function ChallengeModal({
             />
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 });
 
