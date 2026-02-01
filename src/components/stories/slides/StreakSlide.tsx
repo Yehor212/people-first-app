@@ -98,18 +98,41 @@ export function StreakSlide({ slide }: StreakSlideProps) {
 
   return (
     <div className="relative w-full h-full overflow-hidden">
-      {/* Dark sky with red glow */}
+      {/* Dark sky with radial glow - premium depth */}
       <div
         className="absolute inset-0"
         style={{
-          background: `linear-gradient(180deg,
-            #0a0000 0%,
-            #1a0505 20%,
-            #2d0a0a 40%,
-            #4a1010 60%,
-            #662020 80%,
-            #883030 100%
+          background: `radial-gradient(ellipse at 50% 70%,
+            #4a1515 0%,
+            #2d0a0a 30%,
+            #1a0505 50%,
+            #0a0000 100%
           )`,
+        }}
+      />
+
+      {/* Animated lava nebula - premium effect */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        animate={{ opacity: [0.4, 0.6, 0.4] }}
+        transition={{ duration: 5, repeat: Infinity }}
+        style={{
+          background: `
+            radial-gradient(ellipse at 50% 80%, rgba(255, 100, 0, 0.35) 0%, transparent 50%),
+            radial-gradient(circle at 30% 60%, rgba(255, 50, 0, 0.15) 0%, transparent 40%),
+            radial-gradient(circle at 70% 50%, rgba(255, 150, 0, 0.1) 0%, transparent 35%)
+          `,
+        }}
+      />
+
+      {/* Corner glows for cinematic framing */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at top left, rgba(255, 100, 0, 0.08) 0%, transparent 40%),
+            radial-gradient(circle at bottom right, rgba(255, 50, 0, 0.08) 0%, transparent 40%)
+          `,
         }}
       />
 
@@ -194,6 +217,44 @@ export function StreakSlide({ slide }: StreakSlideProps) {
       {/* Lava flows */}
       <LavaFlow x={45} width={15} />
       <LavaFlow x={52} width={8} />
+
+      {/* Crater orbital ring system - premium like FocusSlide */}
+      <motion.div
+        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{
+          top: '42%',
+          width: 100,
+          height: 25,
+          border: '1px solid rgba(255, 100, 0, 0.4)',
+          borderRadius: '50%',
+        }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+      />
+      <motion.div
+        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{
+          top: '40%',
+          width: 140,
+          height: 35,
+          border: '1px solid rgba(255, 150, 0, 0.25)',
+          borderRadius: '50%',
+        }}
+        animate={{ rotate: -360 }}
+        transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
+      />
+      <motion.div
+        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{
+          top: '38%',
+          width: 180,
+          height: 45,
+          border: '1px solid rgba(255, 200, 0, 0.15)',
+          borderRadius: '50%',
+        }}
+        animate={{ rotate: 360 }}
+        transition={{ duration: 35, repeat: Infinity, ease: 'linear' }}
+      />
 
       {/* Rotating energy ring at volcano base - premium effect */}
       <motion.div

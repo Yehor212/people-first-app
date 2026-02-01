@@ -34,7 +34,7 @@ const sheetVariants = cva(
     variants: {
       side: {
         top: "inset-x-0 top-0 border-b",
-        bottom: "inset-x-0 bottom-0 border-t",
+        bottom: "inset-x-0 bottom-0 border-t min-h-[50vh]",
         left: "inset-y-0 left-0 h-full w-3/4 border-r sm:max-w-sm",
         right: "inset-y-0 right-0 h-full w-3/4 border-l sm:max-w-sm",
       },
@@ -85,7 +85,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
           )}
 
           {/* Content wrapper */}
-          <div className="relative z-10 h-full overflow-y-auto">
+          <div className="relative z-10 flex-1 overflow-y-auto min-h-0">
             {children}
           </div>
 

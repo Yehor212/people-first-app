@@ -39,7 +39,7 @@ function Plant({ x, stage, delay }: { x: number; stage: 'seed' | 'sprout' | 'bus
             fill="#8B4513"
             rx={2}
           />
-          {/* Tree foliage */}
+          {/* Tree foliage with glow */}
           <motion.ellipse
             cx={x}
             cy={180 - height}
@@ -48,6 +48,7 @@ function Plant({ x, stage, delay }: { x: number; stage: 'seed' | 'sprout' | 'bus
             fill="#228B22"
             animate={{ scale: [1, 1.03, 1] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ filter: 'drop-shadow(0 0 12px rgba(34, 139, 34, 0.5))' }}
           />
           <motion.ellipse
             cx={x - 15}
@@ -175,8 +176,7 @@ function Firefly({ id }: { id: number }) {
         delay: id * 0.3,
       }}
       style={{
-        filter: 'blur(1px)',
-        boxShadow: '0 0 10px 5px rgba(255, 255, 0, 0.5)',
+        filter: 'blur(1px) drop-shadow(0 0 10px rgba(255, 255, 100, 0.9))',
       }}
     />
   );
@@ -212,17 +212,51 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
 
   return (
     <div className="relative w-full h-full overflow-hidden">
-      {/* Sky gradient - dusk/magical hour */}
+      {/* Sky gradient - radial for depth (like FocusSlide) */}
       <div
         className="absolute inset-0"
         style={{
+          background: `radial-gradient(ellipse at 50% 20%,
+            #4a2c6e 0%,
+            #2d1b4e 25%,
+            #1a1a2e 50%,
+            #0d0d1a 100%
+          )`,
+        }}
+      />
+
+      {/* Animated nebula overlay (premium effect) */}
+      <motion.div
+        className="absolute inset-0 pointer-events-none"
+        animate={{ opacity: [0.3, 0.5, 0.3] }}
+        transition={{ duration: 8, repeat: Infinity }}
+        style={{
+          background: `
+            radial-gradient(circle at 30% 30%, rgba(139, 92, 246, 0.2) 0%, transparent 50%),
+            radial-gradient(circle at 70% 60%, rgba(236, 72, 153, 0.15) 0%, transparent 50%)
+          `
+        }}
+      />
+
+      {/* Corner glows for cinematic framing */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `
+            radial-gradient(circle at top left, rgba(139, 92, 246, 0.1) 0%, transparent 40%),
+            radial-gradient(circle at bottom right, rgba(74, 222, 128, 0.1) 0%, transparent 40%)
+          `
+        }}
+      />
+
+      {/* Sunset glow at bottom */}
+      <div
+        className="absolute bottom-0 left-0 right-0 h-2/5 pointer-events-none"
+        style={{
           background: `linear-gradient(180deg,
-            #1a1a2e 0%,
-            #2d1b4e 20%,
-            #4a2c6e 40%,
-            #7b4b94 60%,
-            #c97b84 80%,
-            #f0c38e 100%
+            transparent 0%,
+            rgba(201, 123, 132, 0.3) 40%,
+            rgba(240, 195, 142, 0.4) 100%
           )`,
         }}
       />
