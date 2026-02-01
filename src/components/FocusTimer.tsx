@@ -416,7 +416,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
 
   return (
     <div className={cn(
-      "rounded-2xl p-6 animate-fade-in transition-all relative overflow-hidden",
+      "rounded-2xl p-6 animate-fade-in transition-all relative",
       isPrimaryCTA
         ? "ring-2 ring-violet-500/40 shadow-lg shadow-violet-500/20"
         : "bg-card zen-shadow-card"
