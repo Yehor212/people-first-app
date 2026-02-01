@@ -1,7 +1,7 @@
 import { useMemo, useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType, PrimaryEmotion } from '@/types';
-import { calculateStreak, getDaysInMonth, getToday, cn, parseLocalDate } from '@/lib/utils';
+import { calculateStreak, getDaysInMonth, getToday, cn, parseLocalDate, formatDate } from '@/lib/utils';
 import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
 import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2, PlayCircle, Sparkles, Brain, Target } from 'lucide-react';
 import { SegmentedControl } from '@/components/ui/segmented-control';
@@ -572,7 +572,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     // Also ensure we cover all dates in range (even empty ones get checked)
     const current = new Date(threeMonthsAgo);
     while (current <= today) {
-      allDates.add(current.toISOString().split('T')[0]);
+      allDates.add(formatDate(current));
       current.setDate(current.getDate() + 1);
     }
 
@@ -665,7 +665,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
 
     const current = new Date(threeMonthsAgo);
     while (current <= today) {
-      const dateStr = current.toISOString().split('T')[0];
+      const dateStr = formatDate(current);
 
       // Get mood score
       const dayMood = moodByDate.get(dateStr);

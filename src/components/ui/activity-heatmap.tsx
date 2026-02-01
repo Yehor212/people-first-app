@@ -5,7 +5,7 @@
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, formatDate, getToday } from '@/lib/utils';
 
 interface ActivityData {
   date: string; // YYYY-MM-DD format
@@ -95,7 +95,7 @@ export function ActivityHeatMap({
     let weekIndex = 0;
 
     while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split('T')[0];
+      const dateStr = formatDate(currentDate);
       const month = currentDate.getMonth();
       const day = currentDate.getDate();
 
@@ -129,7 +129,7 @@ export function ActivityHeatMap({
     return { weeks, monthLabels };
   }, [data, months, labels.monthNames]);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getToday();
 
   return (
     <motion.div

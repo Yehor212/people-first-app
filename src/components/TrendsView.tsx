@@ -14,7 +14,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocale } from '@/lib/timeUtils';
 import { MoodEntry, Habit, FocusSession } from '@/types';
 import { safeAverage } from '@/lib/validation';
-import { cn } from '@/lib/utils';
+import { cn, formatDate } from '@/lib/utils';
 
 // Animation variants for staggered entrance
 const containerVariants = {
@@ -64,7 +64,7 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDate(date);
 
       // Find moods for this day
       const dayMoods = moods.filter(m => m.date === dateStr);
@@ -98,7 +98,7 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDate(date);
 
       // Count how many habits were completed on this day
       const completedCount = habits.filter(h => h.completedDates?.includes(dateStr)).length;
@@ -125,7 +125,7 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = formatDate(date);
 
       // Sum focus session minutes for this day (exclude aborted sessions)
       const dayMinutes = focusSessions

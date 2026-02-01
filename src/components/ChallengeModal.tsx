@@ -577,7 +577,9 @@ function ChallengesListView({
   onJoinChallenge: () => void;
   t: Record<string, string>;
 }) {
-  const challenges = useMemo(() => getAllChallenges(), []);
+  // Note: No useMemo - getAllChallenges reads from localStorage
+  // and we need fresh data every render to reflect changes
+  const challenges = getAllChallenges();
 
   const activeChallenges = challenges.filter(c => c.status === 'active');
   const completedChallenges = challenges.filter(c => c.status === 'completed');

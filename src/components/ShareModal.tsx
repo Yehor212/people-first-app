@@ -173,7 +173,10 @@ export function ShareModal(props: ShareModalProps) {
         setShared(true);
         setTimeout(() => setShared(false), 2000);
       } else {
-        toast.error(t.shareError || 'Could not share. Try downloading instead.');
+        // shareImage already downloaded the file as fallback
+        // Show info toast instead of error
+        toast.info(t.shareDownloaded || 'Share not available. Image downloaded instead.');
+        hapticSuccess();
       }
     } catch (error) {
       logger.error('Share failed:', error);

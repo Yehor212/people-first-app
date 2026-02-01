@@ -11,7 +11,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { cn } from '@/lib/utils';
+import { cn, getToday } from '@/lib/utils';
 
 interface DayData {
   date: string;
@@ -60,8 +60,9 @@ function FireCell({
   index: number;
   onHover?: (day: DayData | null) => void;
 }) {
-  const isToday = day.date === new Date().toISOString().split('T')[0];
-  const isFuture = day.date > new Date().toISOString().split('T')[0];
+  const todayStr = getToday();
+  const isToday = day.date === todayStr;
+  const isFuture = day.date > todayStr;
 
   // Fire gradient colors based on level
   const levelStyles = {

@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DiamondIcon, SparklesIcon } from '@/components/icons';
-import { cn } from '@/lib/utils';
+import { cn, formatDate, getToday } from '@/lib/utils';
 
 interface DayData {
   date: string;
@@ -239,7 +239,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
   const monthName = currentDate.toLocaleDateString(language, { month: 'long', year: 'numeric' });
 
   // Today's date string for comparison
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getToday();
 
   return (
     <div className={cn("relative overflow-hidden rounded-2xl p-4", className)}>
@@ -324,7 +324,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
           transition={{ duration: 0.2 }}
         >
           {calendarDays.map((day, i) => {
-            const dateStr = day.date.toISOString().split('T')[0];
+            const dateStr = formatDate(day.date);
             return (
               <CrystalDay
                 key={i}
