@@ -195,6 +195,39 @@ export function StreakSlide({ slide }: StreakSlideProps) {
       <LavaFlow x={45} width={15} />
       <LavaFlow x={52} width={8} />
 
+      {/* Rotating energy ring at volcano base - premium effect */}
+      <motion.div
+        className="absolute left-1/2 -translate-x-1/2 pointer-events-none"
+        style={{
+          bottom: '38%',
+          width: 320,
+          height: 80,
+          background: 'radial-gradient(ellipse, rgba(255,100,0,0.25) 0%, transparent 70%)',
+          borderRadius: '50%',
+        }}
+        animate={{
+          rotate: 360,
+          scale: [1, 1.08, 1],
+        }}
+        transition={{
+          rotate: { duration: 25, repeat: Infinity, ease: 'linear' },
+          scale: { duration: 3, repeat: Infinity },
+        }}
+      />
+
+      {/* Heat shimmer effect */}
+      <motion.div
+        className="absolute inset-x-0 bottom-0 h-2/3 pointer-events-none"
+        style={{
+          background: 'linear-gradient(transparent 40%, rgba(255,80,0,0.08) 100%)',
+        }}
+        animate={{
+          y: [0, -8, 0],
+          opacity: [0.4, 0.6, 0.4],
+        }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
+      />
+
       {/* Embers */}
       {embers.map((id) => (
         <Ember key={id} id={id} intensity={intensity} />

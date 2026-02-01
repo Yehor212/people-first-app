@@ -43,7 +43,7 @@ function CrystalSparkle({ delay }: { delay: number }) {
   );
 }
 
-// Orbiting metric display
+// Orbiting metric display - actually orbits around the sphere!
 function OrbitingMetric({
   icon,
   label,
@@ -61,40 +61,59 @@ function OrbitingMetric({
   color: string;
   delay: number;
 }) {
-  const x = Math.cos((angle * Math.PI) / 180) * radius;
-  const y = Math.sin((angle * Math.PI) / 180) * radius;
-
   return (
     <motion.div
       className="absolute left-1/2 top-1/2"
       style={{
-        transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
+        width: radius * 2,
+        height: radius * 2,
+        marginLeft: -radius,
+        marginTop: -radius,
       }}
-      initial={{ opacity: 0, scale: 0 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ delay, type: 'spring', stiffness: 100 }}
+      initial={{ opacity: 0, rotate: angle }}
+      animate={{ opacity: 1, rotate: angle + 360 }}
+      transition={{
+        opacity: { delay, duration: 0.5 },
+        rotate: { duration: 40, repeat: Infinity, ease: 'linear', delay },
+      }}
     >
-      <motion.div
-        className="flex flex-col items-center px-3 py-2 rounded-xl"
+      {/* Positioned at the edge of the orbit */}
+      <div
+        className="absolute"
         style={{
-          background: `linear-gradient(135deg, ${color}20, ${color}10)`,
-          border: `1px solid ${color}40`,
-          boxShadow: `0 0 20px ${color}30`,
+          left: '50%',
+          top: 0,
+          transform: 'translateX(-50%)',
         }}
-        whileHover={{ scale: 1.1 }}
-        animate={{
-          boxShadow: [
-            `0 0 20px ${color}30`,
-            `0 0 30px ${color}50`,
-            `0 0 20px ${color}30`,
-          ],
-        }}
-        transition={{ duration: 3, repeat: Infinity }}
       >
-        <span className="text-xl">{icon}</span>
-        <span className="text-lg font-bold text-white">{value}</span>
-        <span className="text-xs text-white/60">{label}</span>
-      </motion.div>
+        {/* Counter-rotate to keep content upright */}
+        <motion.div
+          animate={{ rotate: -360 }}
+          transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
+        >
+          <motion.div
+            className="flex flex-col items-center px-3 py-2 rounded-xl"
+            style={{
+              background: `linear-gradient(135deg, ${color}20, ${color}10)`,
+              border: `1px solid ${color}40`,
+              boxShadow: `0 0 20px ${color}30`,
+            }}
+            whileHover={{ scale: 1.1 }}
+            animate={{
+              boxShadow: [
+                `0 0 20px ${color}30`,
+                `0 0 30px ${color}50`,
+                `0 0 20px ${color}30`,
+              ],
+            }}
+            transition={{ duration: 3, repeat: Infinity }}
+          >
+            <span className="text-xl">{icon}</span>
+            <span className="text-lg font-bold text-white">{value}</span>
+            <span className="text-xs text-white/60">{label}</span>
+          </motion.div>
+        </motion.div>
+      </div>
     </motion.div>
   );
 }
@@ -168,6 +187,13 @@ export function SummarySlide({ slide }: SummarySlideProps) {
             className="absolute inset-10 rounded-full border border-blue-500/20"
             animate={{ rotate: -360 }}
             transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+          />
+
+          {/* Rotating ring 3 - innermost, fastest */}
+          <motion.div
+            className="absolute inset-16 rounded-full border border-cyan-400/25"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 10, repeat: Infinity, ease: 'linear' }}
           />
 
           {/* Crystal sphere */}

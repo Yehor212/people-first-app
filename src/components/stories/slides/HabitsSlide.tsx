@@ -25,7 +25,7 @@ function Plant({ x, stage, delay }: { x: number; stage: 'seed' | 'sprout' | 'bus
     <motion.g
       initial={{ scale: 0, y: 20 }}
       animate={{ scale: 1, y: 0 }}
-      transition={{ type: 'spring', stiffness: 100, delay }}
+      transition={{ type: 'spring', stiffness: 200, damping: 15, delay }}
       style={{ transformOrigin: `${x}px bottom` }}
     >
       {stage === 'tree' && (
@@ -46,8 +46,8 @@ function Plant({ x, stage, delay }: { x: number; stage: 'seed' | 'sprout' | 'bus
             rx={25}
             ry={30}
             fill="#228B22"
-            animate={{ scale: [1, 1.05, 1] }}
-            transition={{ duration: 3, repeat: Infinity }}
+            animate={{ scale: [1, 1.03, 1] }}
+            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           />
           <motion.ellipse
             cx={x - 15}
@@ -130,10 +130,10 @@ function Butterfly({ id }: { id: number }) {
     <motion.g
       initial={{ x: startX, y: startY }}
       animate={{
-        x: [startX, startX + 30, startX - 20, startX + 10, startX],
-        y: [startY, startY - 20, startY - 10, startY - 30, startY],
+        x: [startX, startX + 15, startX - 10, startX + 5, startX],
+        y: [startY, startY - 12, startY - 20, startY - 10, startY],
       }}
-      transition={{ duration: 8 + id * 2, repeat: Infinity, ease: 'easeInOut' }}
+      transition={{ duration: 12, repeat: Infinity, ease: [0.4, 0, 0.2, 1] }}
     >
       {/* Wing animation */}
       <motion.path
@@ -227,8 +227,13 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
         }}
       />
 
-      {/* Stars in upper sky */}
-      <div className="absolute top-0 left-0 right-0 h-1/3">
+      {/* Stars in upper sky - gentle rotation for premium feel */}
+      <motion.div
+        className="absolute top-0 left-0 right-0 h-1/3"
+        animate={{ rotate: 360 }}
+        transition={{ duration: 180, repeat: Infinity, ease: 'linear' }}
+        style={{ transformOrigin: 'center 200%' }}
+      >
         {[...Array(20)].map((_, i) => (
           <motion.div
             key={i}
@@ -242,7 +247,7 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
             transition={{ duration: 2 + Math.random() * 2, repeat: Infinity }}
           />
         ))}
-      </div>
+      </motion.div>
 
       {/* Ground */}
       <div
