@@ -70,30 +70,11 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
           )}
           {...props}
         >
-          {/* Cosmic background layer */}
-          <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: `radial-gradient(ellipse at top center,
-                rgba(139, 92, 246, 0.08) 0%, transparent 50%)`
-            }}
-          />
-
-          {/* Gradient border at top for bottom sheets */}
-          {(side === "bottom" || side === "top") && (
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-400/30 dark:via-white/20 to-transparent" />
-          )}
-
-          {/* Content - rendered directly without wrapper to avoid flex conflicts */}
-          <div className="relative z-10 flex-1 flex flex-col">
-            {children}
-          </div>
-
-          {/* Premium close button */}
+          {/* Close button - absolute positioned, doesn't affect flex layout */}
           <SheetPrimitive.Close
             aria-label="Close"
             className={cn(
-              "absolute right-4 top-4 rounded-xl p-2 z-20 transition-all",
+              "absolute right-4 top-4 rounded-xl p-2 z-50 transition-all",
               "bg-slate-200/80 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/10",
               "opacity-70 hover:opacity-100 hover:bg-slate-300/80 dark:hover:bg-white/20",
               "focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:ring-offset-2 focus:ring-offset-background",
@@ -103,6 +84,9 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
             <X className="h-4 w-4" />
             <span className="sr-only">Close</span>
           </SheetPrimitive.Close>
+
+          {/* Children rendered directly - no wrapper to interfere with flex layout */}
+          {children}
         </SheetPrimitive.Content>
       </SheetPortal>
     );
@@ -111,14 +95,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
 SheetContent.displayName = SheetPrimitive.Content.displayName;
 
 const SheetHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("relative flex flex-col space-y-2 text-center sm:text-left", className)} {...props}>
-    {/* Subtle glow behind header - hidden in light mode */}
-    <div
-      className="absolute -top-8 left-1/2 -translate-x-1/2 w-40 h-20 rounded-full opacity-30 pointer-events-none hidden dark:block"
-      style={{ background: 'radial-gradient(circle, rgba(139, 92, 246, 0.3) 0%, transparent 70%)' }}
-    />
-    {props.children}
-  </div>
+  <div className={cn("flex flex-col space-y-2 text-center sm:text-left", className)} {...props} />
 );
 SheetHeader.displayName = "SheetHeader";
 
