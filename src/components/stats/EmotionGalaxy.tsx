@@ -514,12 +514,12 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
 
         {/* Premium Center Hub - z-10 to appear behind orbiting emojis */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
-          {/* Outer expanding pulse ring - reduced size */}
+          {/* Outer expanding pulse ring - compact */}
           <motion.div
             className="absolute rounded-full"
             style={{
-              width: 75,
-              height: 75,
+              width: 60,
+              height: 60,
               border: '1px solid rgba(139, 92, 246, 0.25)',
             }}
             animate={{
@@ -529,12 +529,12 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
             transition={{ duration: 3.5, repeat: Infinity, ease: 'easeOut' }}
           />
 
-          {/* Secondary pulse ring (offset timing) - reduced size */}
+          {/* Secondary pulse ring (offset timing) - compact */}
           <motion.div
             className="absolute rounded-full"
             style={{
-              width: 70,
-              height: 70,
+              width: 55,
+              height: 55,
               border: '1px solid rgba(139, 92, 246, 0.2)',
             }}
             animate={{
@@ -544,28 +544,23 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
             transition={{ duration: 3.5, repeat: Infinity, ease: 'easeOut', delay: 1.2 }}
           />
 
-          {/* Inner glow orb - reduced size for better emoji visibility */}
+          {/* Inner glow orb - compact with minimal blur for emoji visibility */}
           <motion.div
             className="flex flex-col items-center justify-center rounded-full"
             style={{
-              width: 64,
-              height: 64,
+              width: 52,
+              height: 52,
               background: `
                 radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.18) 0%, transparent 45%),
                 radial-gradient(circle, rgba(139, 92, 246, 0.45) 0%, rgba(139, 92, 246, 0.18) 50%, rgba(139, 92, 246, 0.06) 100%)
               `,
               boxShadow: `
-                0 0 30px rgba(139, 92, 246, 0.5),
-                0 0 60px rgba(139, 92, 246, 0.3),
-                inset 0 0 20px rgba(255, 255, 255, 0.1)
+                0 0 12px rgba(139, 92, 246, 0.4),
+                inset 0 0 8px rgba(255, 255, 255, 0.1)
               `,
             }}
             animate={{
-              boxShadow: [
-                '0 0 30px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.1)',
-                '0 0 40px rgba(139, 92, 246, 0.7), 0 0 80px rgba(139, 92, 246, 0.4), inset 0 0 25px rgba(255, 255, 255, 0.15)',
-                '0 0 30px rgba(139, 92, 246, 0.5), 0 0 60px rgba(139, 92, 246, 0.3), inset 0 0 20px rgba(255, 255, 255, 0.1)',
-              ],
+              scale: [1, 1.03, 1],
             }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
           >
