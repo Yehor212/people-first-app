@@ -98,6 +98,7 @@ import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { haptics } from '@/lib/haptics';
 import { preloadShareCardAssets } from '@/lib/shareCards';
 import { initializePushNotifications } from '@/lib/pushNotifications';
+import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 // import { AICoachChat } from '@/components/AICoachChat'; // Hidden until AI ready
 // import { useAICoach } from '@/contexts/AICoachContext'; // Hidden until AI ready
 import { OnboardingOverlay, DayProgressIndicator } from '@/components/OnboardingOverlay';
@@ -134,6 +135,10 @@ export function Index() {
   const { isFeatureVisible } = useFeatureFlags();
   const { syncFocusSession } = useHealthConnect();
   // const { triggerLowMoodCheck, openCoach, setUserData, onboardingData, saveOnboardingAnswer } = useAICoach(); // Hidden until AI ready
+
+  // Security: Auto-logout after 15 minutes of inactivity (when supabase is configured)
+  useSessionTimeout(!!supabase);
+
   const [activeTab, setActiveTab] = useState<TabType>('home');
   // const [showAIOnboarding, setShowAIOnboarding] = useState(false); // Hidden until AI ready
   const lastSyncedUserIdRef = useRef<string | null>(null);

@@ -5,6 +5,7 @@ import { setupAudioUnlock } from "./lib/ambientSounds";
 import { initAudioManager } from "./lib/audioManager";
 import { initAndroidBackHandler } from "./lib/androidBackHandler";
 import { logger } from "./lib/logger";
+import { setupDeepLinks } from "./lib/deepLinks";
 
 // Global error handlers for unhandled exceptions and promise rejections
 // These catch errors that escape React's error boundary
@@ -26,6 +27,9 @@ initAudioManager();
 
 // Initialize Android back button handler (double-tap to exit + modal handling)
 initAndroidBackHandler();
+
+// Initialize deep link handler for challenge invites and other app URLs
+setupDeepLinks();
 
 // Only unregister service workers on Capacitor (native apps don't need PWA)
 // Web PWA keeps SW for offline support
