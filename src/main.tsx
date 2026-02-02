@@ -4,6 +4,19 @@ import "./index.css";
 import { setupAudioUnlock } from "./lib/ambientSounds";
 import { initAudioManager } from "./lib/audioManager";
 import { initAndroidBackHandler } from "./lib/androidBackHandler";
+import { logger } from "./lib/logger";
+
+// Global error handlers for unhandled exceptions and promise rejections
+// These catch errors that escape React's error boundary
+window.addEventListener('unhandledrejection', (event) => {
+  logger.error('[Global] Unhandled promise rejection:', event.reason);
+  // Prevent the default browser behavior (console error)
+  // but still log it for debugging
+});
+
+window.addEventListener('error', (event) => {
+  logger.error('[Global] Uncaught error:', event.error || event.message);
+});
 
 // Setup audio unlock for iOS - attaches to first user interaction
 setupAudioUnlock();
