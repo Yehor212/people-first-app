@@ -15,4 +15,5 @@
     <string name="widget_focus_label">Focus</string>
     <string name="widget_days">days</string>
     <string name="widget_min">min</string>
+    <string name="widget_no_habits">No habits yet</string>
 </resources>

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Widget Background Colors (Dark Theme) -->
+    <color name="widget_bg">#1E1E2E</color>
+    <color name="widget_surface">#2A2A3E</color>
+    <color name="widget_border">#3D3D5C</color>
+
+    <!-- Widget Text Colors (Dark Theme) -->
+    <color name="widget_text_primary">#F8FAFC</color>
+    <color name="widget_text_secondary">#94A3B8</color>
+    <color name="widget_text_muted">#64748B</color>
+
+    <!-- Streak Accent (Dark) -->
+    <color name="widget_streak">#FB923C</color>
+    <color name="widget_streak_bg">#7C2D12</color>
+    <color name="widget_streak_border">#9A3412</color>
+
+    <!-- Habits Accent (Dark) -->
+    <color name="widget_habits">#34D399</color>
+    <color name="widget_habits_bg">#064E3B</color>
+    <color name="widget_habits_border">#065F46</color>
+
+    <!-- Focus Accent (Dark) -->
+    <color name="widget_focus">#A78BFA</color>
+    <color name="widget_focus_bg">#4C1D95</color>
+    <color name="widget_focus_border">#5B21B6</color>
+
+    <!-- Badge Accent (Dark) -->
+    <color name="widget_badge">#FBBF24</color>
+    <color name="widget_badge_bg">#78350F</color>
+    <color name="widget_badge_border">#92400E</color>
+
+    <!-- Progress Colors (Dark) -->
+    <color name="widget_progress_bg">#3D3D5C</color>
+    <color name="widget_progress_fill">#34D399</color>
+
+    <!-- Insight Message (Dark) -->
+    <color name="widget_insight_text">#CBD5E1</color>
+</resources>

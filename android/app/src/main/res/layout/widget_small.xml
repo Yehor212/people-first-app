@@ -3,54 +3,103 @@
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_background"
+    android:background="@drawable/widget_bg_premium"
     android:gravity="center"
     android:orientation="vertical"
     android:padding="12dp">
 
-    <!-- Streak Icon -->
-    <TextView
-        android:id="@+id/streak_icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="🔥"
-        android:textSize="28sp" />
+    <!-- Stats Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="horizontal">
 
-    <!-- Streak Number -->
-    <TextView
-        android:id="@+id/streak_count"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="0"
-        android:textColor="#FFFFFF"
-        android:textSize="24sp"
-        android:textStyle="bold" />
+        <!-- Streak Card -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/stat_card_streak"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="8dp">
 
-    <!-- Streak Label -->
-    <TextView
-        android:id="@+id/streak_label"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/widget_days"
-        android:textColor="#9CA3AF"
-        android:textSize="12sp" />
+            <TextView
+                android:id="@+id/streak_icon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🔥"
+                android:textSize="20sp" />
 
-    <!-- Habits Progress -->
+            <TextView
+                android:id="@+id/streak_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="@color/widget_streak"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/streak_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/widget_days"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <!-- Habits Card -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/stat_card_habits"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✓"
+                android:textColor="@color/widget_habits"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/habits_progress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0/0"
+                android:textColor="@color/widget_habits"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/widget_habits_label"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="11sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Insight Message -->
     <TextView
-        android:id="@+id/habits_progress"
-        android:layout_width="wrap_content"
+        android:id="@+id/insight_message"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="0/0"
-        android:textColor="#10B981"
-        android:textSize="14sp"
-        android:textStyle="bold" />
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/widget_habits_label"
-        android:textColor="#9CA3AF"
-        android:textSize="10sp" />
+        android:gravity="center"
+        android:text=""
+        android:textColor="@color/widget_insight_text"
+        android:textSize="11sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
 
 </LinearLayout>

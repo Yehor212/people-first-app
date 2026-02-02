@@ -29,12 +29,16 @@ public class WidgetProviderSmall extends AppWidgetProvider {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String dataJson = prefs.getString(DATA_KEY, "{}");
 
+        int streak = 0;
+        int habitsToday = 0;
+        int habitsTotalToday = 0;
+
         try {
             JSONObject data = new JSONObject(dataJson);
 
-            int streak = data.optInt("streak", 0);
-            int habitsToday = data.optInt("habitsToday", 0);
-            int habitsTotalToday = data.optInt("habitsTotalToday", 0);
+            streak = data.optInt("streak", 0);
+            habitsToday = data.optInt("habitsToday", 0);
+            habitsTotalToday = data.optInt("habitsTotalToday", 0);
 
             // Update views
             views.setTextViewText(R.id.streak_count, String.valueOf(streak));
@@ -45,6 +49,10 @@ public class WidgetProviderSmall extends AppWidgetProvider {
             views.setTextViewText(R.id.streak_count, "0");
             views.setTextViewText(R.id.habits_progress, "0/0");
         }
+
+        // Generate smart insight message
+        String insight = getSmartInsight(streak, habitsToday, habitsTotalToday);
+        views.setTextViewText(R.id.insight_message, insight);
 
         // Set click intent to open the app
         Intent intent = new Intent(context, MainActivity.class);
@@ -59,6 +67,41 @@ public class WidgetProviderSmall extends AppWidgetProvider {
 
         // Update the widget
         appWidgetManager.updateAppWidget(appWidgetId, views);
+    }
+
+    /**
+     * Generate a smart insight message based on current stats
+     */
+    private static String getSmartInsight(int streak, int habitsToday, int habitsTotalToday) {
+        // Streak milestones
+        if (streak == 7) return "🎉 1 week streak!";
+        if (streak == 14) return "🔥 2 weeks strong!";
+        if (streak == 30) return "🏆 30 day champion!";
+        if (streak == 100) return "💯 100 day legend!";
+
+        // Completion status
+        if (habitsTotalToday > 0 && habitsToday == habitsTotalToday) {
+            return "✨ All done today!";
+        }
+
+        int remaining = habitsTotalToday - habitsToday;
+        if (remaining == 1) {
+            return "🎯 1 habit to go!";
+        }
+        if (remaining > 1 && remaining <= 3) {
+            return "💪 " + remaining + " habits left";
+        }
+
+        if (habitsToday == 0 && habitsTotalToday > 0) {
+            return "🚀 Start your day!";
+        }
+
+        // Default based on streak
+        if (streak > 0) {
+            return "🔥 Keep going!";
+        }
+
+        return "";
     }
 
     @Override

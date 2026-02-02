@@ -3,140 +3,317 @@
     android:id="@+id/widget_container"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/widget_background"
+    android:background="@drawable/widget_bg_premium"
     android:orientation="vertical"
-    android:gravity="center"
     android:padding="16dp">
 
-    <!-- Top Row: Stats -->
+    <!-- Stats Row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:orientation="horizontal">
 
-        <!-- Streak -->
+        <!-- Streak Card -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/stat_card_streak"
             android:gravity="center"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="10dp">
 
             <TextView
                 android:id="@+id/streak_icon"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="🔥"
-                android:textSize="28sp" />
+                android:textSize="20sp" />
 
             <TextView
                 android:id="@+id/streak_count"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="0"
-                android:textColor="#FFFFFF"
-                android:textSize="24sp"
+                android:textColor="@color/widget_streak"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/widget_days"
-                android:textColor="#9CA3AF"
-                android:textSize="12sp" />
+                android:text="@string/widget_streak_label"
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="11sp" />
         </LinearLayout>
 
-        <!-- Habits -->
+        <!-- Habits Card -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/stat_card_habits"
             android:gravity="center"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="10dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="✅"
-                android:textSize="28sp" />
+                android:text="✓"
+                android:textColor="@color/widget_habits"
+                android:textSize="20sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/habits_progress"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="0/0"
-                android:textColor="#10B981"
-                android:textSize="24sp"
+                android:textColor="@color/widget_habits"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/widget_habits_label"
-                android:textColor="#9CA3AF"
-                android:textSize="12sp" />
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="11sp" />
         </LinearLayout>
 
-        <!-- Focus -->
+        <!-- Focus Card -->
         <LinearLayout
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/stat_card_focus"
             android:gravity="center"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:padding="10dp">
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="⏱️"
-                android:textSize="28sp" />
+                android:text="⏱"
+                android:textSize="20sp" />
 
             <TextView
                 android:id="@+id/focus_minutes"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="0"
-                android:textColor="#8B5CF6"
-                android:textSize="24sp"
+                android:textColor="@color/widget_focus"
+                android:textSize="20sp"
                 android:textStyle="bold" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/widget_min"
-                android:textColor="#9CA3AF"
-                android:textSize="12sp" />
+                android:textColor="@color/widget_text_secondary"
+                android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
 
-    <!-- Bottom: Badge (optional) -->
+    <!-- Habits List Container -->
+    <LinearLayout
+        android:id="@+id/habits_list_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/habit_item_bg"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <!-- Habit 1 -->
+        <LinearLayout
+            android:id="@+id/habit_row_1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/habit_check_1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="○"
+                android:textColor="@color/widget_text_muted"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/habit_name_1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text=""
+                android:textColor="@color/widget_text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Habit 2 -->
+        <LinearLayout
+            android:id="@+id/habit_row_2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/habit_check_2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="○"
+                android:textColor="@color/widget_text_muted"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/habit_name_2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text=""
+                android:textColor="@color/widget_text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Habit 3 -->
+        <LinearLayout
+            android:id="@+id/habit_row_3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/habit_check_3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="○"
+                android:textColor="@color/widget_text_muted"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/habit_name_3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text=""
+                android:textColor="@color/widget_text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Habit 4 -->
+        <LinearLayout
+            android:id="@+id/habit_row_4"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingTop="4dp"
+            android:paddingBottom="4dp"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/habit_check_4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="○"
+                android:textColor="@color/widget_text_muted"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/habit_name_4"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:text=""
+                android:textColor="@color/widget_text_primary"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Empty state message -->
+        <TextView
+            android:id="@+id/habits_empty_state"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="center"
+            android:text="@string/widget_no_habits"
+            android:textColor="@color/widget_text_muted"
+            android:textSize="12sp"
+            android:visibility="visible" />
+    </LinearLayout>
+
+    <!-- Badge Container -->
     <LinearLayout
         android:id="@+id/badge_container"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/stat_card_badge"
         android:gravity="center"
         android:orientation="horizontal"
+        android:padding="10dp"
         android:visibility="gone">
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="🏆"
-            android:textSize="20sp" />
+            android:textSize="18sp" />
 
         <TextView
             android:id="@+id/last_badge"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:layout_marginStart="8dp"
-            android:textColor="#F59E0B"
-            android:textSize="14sp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="@color/widget_badge"
+            android:textSize="13sp"
             android:textStyle="bold" />
     </LinearLayout>
+
+    <!-- Insight Message -->
+    <TextView
+        android:id="@+id/insight_message"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:gravity="center"
+        android:text=""
+        android:textColor="@color/widget_insight_text"
+        android:textSize="12sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
 
 </LinearLayout>

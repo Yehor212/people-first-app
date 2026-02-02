@@ -1,11 +1,105 @@
-import { useEffect, useState } from 'react';
-import { Flame, Target, Clock, Trophy } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { Flame, Clock, Trophy, Check, Circle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useWidgetData } from '@/hooks/useWidgetSync';
+import { cn } from '@/lib/utils';
 import type { WidgetData } from '@/plugins/WidgetPlugin';
 
 interface WidgetPreviewProps {
   data?: WidgetData;
+}
+
+/**
+ * Generate a smart insight message based on current stats
+ */
+function getSmartInsight(
+  streak: number,
+  habitsToday: number,
+  habitsTotalToday: number,
+  focusMinutes: number,
+  lastBadge?: string
+): string {
+  // Badge announcement
+  if (lastBadge) {
+    return `🏆 ${lastBadge}`;
+  }
+
+  // Streak milestones
+  if (streak === 7) return '🎉 1 week streak!';
+  if (streak === 14) return '🔥 2 weeks strong!';
+  if (streak === 30) return '🏆 30 day champion!';
+  if (streak === 100) return '💯 100 day legend!';
+
+  // Focus milestones
+  if (focusMinutes >= 120) return '🧠 Deep focus master!';
+  if (focusMinutes >= 60) return '⚡ 1 hour focused!';
+
+  // Completion status
+  if (habitsTotalToday > 0 && habitsToday === habitsTotalToday) {
+    return '✨ All habits done!';
+  }
+
+  const remaining = habitsTotalToday - habitsToday;
+  if (remaining === 1) {
+    return '🎯 1 habit to go!';
+  }
+  if (remaining > 1 && remaining <= 3) {
+    return `💪 ${remaining} habits left`;
+  }
+
+  if (habitsToday === 0 && habitsTotalToday > 0) {
+    return '🚀 Start your day!';
+  }
+
+  // Default based on streak
+  if (streak > 0) {
+    return '🔥 Keep going!';
+  }
+
+  return '';
+}
+
+/**
+ * Stat Card component for widgets
+ */
+function StatCard({
+  icon,
+  value,
+  label,
+  colorClass,
+  bgClass,
+}: {
+  icon: React.ReactNode;
+  value: string | number;
+  label: string;
+  colorClass: string;
+  bgClass: string;
+}) {
+  return (
+    <div className={cn('flex flex-col items-center justify-center rounded-xl p-3 border', bgClass)}>
+      <div className={colorClass}>{icon}</div>
+      <div className={cn('text-xl font-bold mt-1', colorClass)}>{value}</div>
+      <div className="text-xs text-muted-foreground">{label}</div>
+    </div>
+  );
+}
+
+/**
+ * Progress indicator for habits
+ */
+function HabitsProgress({ done, total }: { done: number; total: number }) {
+  const percentage = total > 0 ? (done / total) * 100 : 0;
+
+  return (
+    <div className="w-full">
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+        <div
+          className="h-full bg-emerald-500 rounded-full transition-all duration-500 ease-out"
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
 }
 
 export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
@@ -21,9 +115,31 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
     }
   }, [providedData, widgetData]);
 
+  // Generate insights for each widget
+  const smallInsight = useMemo(() => {
+    if (!data) return '';
+    return getSmartInsight(data.streak, data.habitsToday, data.habitsTotalToday, 0);
+  }, [data]);
+
+  const mediumInsight = useMemo(() => {
+    if (!data) return '';
+    return getSmartInsight(data.streak, data.habitsToday, data.habitsTotalToday, data.focusMinutes);
+  }, [data]);
+
+  const largeInsight = useMemo(() => {
+    if (!data) return '';
+    return getSmartInsight(
+      data.streak,
+      data.habitsToday,
+      data.habitsTotalToday,
+      data.focusMinutes,
+      data.lastBadge
+    );
+  }, [data]);
+
   if (!data) {
     return (
-      <div className="bg-muted rounded-2xl p-6 text-center">
+      <div className="bg-card rounded-2xl p-6 text-center border border-border">
         <p className="text-sm text-muted-foreground">
           {t.widgetNoData || 'Нет данных для виджета'}
         </p>
@@ -32,169 +148,171 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Small Widget Preview */}
-      <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-2xl p-6 border-2 border-primary/20">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-muted-foreground">
-            {t.widgetSmall || 'Маленький виджет'}
+    <div className="space-y-6">
+      {/* Small Widget Preview (2x2) */}
+      <div className="bg-card rounded-3xl p-4 border border-border shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {t.widgetSmall || 'Маленький'}
           </h3>
-          <span className="text-xs text-muted-foreground">2x2</span>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">2×2</span>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          {/* Streak */}
-          <div className="flex flex-col items-center justify-center bg-background/50 rounded-xl p-3">
-            <Flame className="w-6 h-6 text-orange-500 mb-1" />
-            <div className="text-2xl font-bold">{data.streak}</div>
-            <div className="text-xs text-muted-foreground">{t.streak || 'Стрик'}</div>
+        <div className="grid grid-cols-2 gap-2">
+          {/* Streak Card */}
+          <StatCard
+            icon={<span className="text-lg">🔥</span>}
+            value={data.streak}
+            label={t.days || 'дней'}
+            colorClass="text-orange-500"
+            bgClass="bg-orange-500/10 border-orange-500/20"
+          />
+
+          {/* Habits Card */}
+          <StatCard
+            icon={<span className="text-lg font-bold text-emerald-500">✓</span>}
+            value={`${data.habitsToday}/${data.habitsTotalToday}`}
+            label={t.habits || 'привычки'}
+            colorClass="text-emerald-500"
+            bgClass="bg-emerald-500/10 border-emerald-500/20"
+          />
+        </div>
+
+        {/* Smart Insight */}
+        {smallInsight && (
+          <div className="mt-3 text-center">
+            <span className="text-xs text-muted-foreground">{smallInsight}</span>
           </div>
+        )}
+      </div>
+
+      {/* Medium Widget Preview (4x2) */}
+      <div className="bg-card rounded-3xl p-4 border border-border shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {t.widgetMedium || 'Средний'}
+          </h3>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">4×2</span>
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {/* Streak */}
+          <StatCard
+            icon={<span className="text-base">🔥</span>}
+            value={data.streak}
+            label={t.streak || 'стрик'}
+            colorClass="text-orange-500"
+            bgClass="bg-orange-500/10 border-orange-500/20"
+          />
 
           {/* Habits */}
-          <div className="flex flex-col items-center justify-center bg-background/50 rounded-xl p-3">
-            <Target className="w-6 h-6 text-green-500 mb-1" />
-            <div className="text-2xl font-bold">
-              {data.habitsToday}/{data.habitsTotalToday}
-            </div>
-            <div className="text-xs text-muted-foreground">{t.habits || 'Привычки'}</div>
-          </div>
+          <StatCard
+            icon={<span className="text-base font-bold text-emerald-500">✓</span>}
+            value={`${data.habitsToday}/${data.habitsTotalToday}`}
+            label={t.habits || 'привычки'}
+            colorClass="text-emerald-500"
+            bgClass="bg-emerald-500/10 border-emerald-500/20"
+          />
+
+          {/* Focus */}
+          <StatCard
+            icon={<span className="text-base">⏱</span>}
+            value={data.focusMinutes}
+            label={t.minutes || 'мин'}
+            colorClass="text-violet-500"
+            bgClass="bg-violet-500/10 border-violet-500/20"
+          />
         </div>
+
+        {/* Smart Insight */}
+        {mediumInsight && (
+          <div className="mt-3 text-center">
+            <span className="text-xs text-muted-foreground">{mediumInsight}</span>
+          </div>
+        )}
       </div>
 
-      {/* Medium Widget Preview */}
-      <div className="bg-gradient-to-br from-purple-500/10 via-pink-500/5 to-transparent rounded-2xl p-6 border-2 border-purple-500/20">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-muted-foreground">
-            {t.widgetMedium || 'Средний виджет'}
+      {/* Large Widget Preview (4x4) */}
+      <div className="bg-card rounded-3xl p-4 border border-border shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            {t.widgetLarge || 'Большой'}
           </h3>
-          <span className="text-xs text-muted-foreground">4x2</span>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">4×4</span>
         </div>
 
-        <div className="space-y-3">
-          {/* Stats Row */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="flex flex-col items-center bg-background/50 rounded-xl p-3">
-              <Flame className="w-5 h-5 text-orange-500 mb-1" />
-              <div className="text-xl font-bold">{data.streak}</div>
-              <div className="text-xs text-muted-foreground">{t.days || 'дней'}</div>
-            </div>
+        {/* Stats Row */}
+        <div className="grid grid-cols-3 gap-2 mb-3">
+          <StatCard
+            icon={<span className="text-base">🔥</span>}
+            value={data.streak}
+            label={t.streak || 'стрик'}
+            colorClass="text-orange-500"
+            bgClass="bg-orange-500/10 border-orange-500/20"
+          />
 
-            <div className="flex flex-col items-center bg-background/50 rounded-xl p-3">
-              <Target className="w-5 h-5 text-green-500 mb-1" />
-              <div className="text-xl font-bold">{data.habitsToday}</div>
-              <div className="text-xs text-muted-foreground">{t.done || 'готово'}</div>
-            </div>
+          <StatCard
+            icon={<span className="text-base font-bold text-emerald-500">✓</span>}
+            value={`${data.habitsToday}/${data.habitsTotalToday}`}
+            label={t.habits || 'привычки'}
+            colorClass="text-emerald-500"
+            bgClass="bg-emerald-500/10 border-emerald-500/20"
+          />
 
-            <div className="flex flex-col items-center bg-background/50 rounded-xl p-3">
-              <Clock className="w-5 h-5 text-blue-500 mb-1" />
-              <div className="text-xl font-bold">{data.focusMinutes}</div>
-              <div className="text-xs text-muted-foreground">{t.minutes || 'мин'}</div>
-            </div>
-          </div>
-
-          {/* Badge */}
-          {data.lastBadge && (
-            <div className="flex items-center gap-2 bg-background/50 rounded-xl p-2">
-              <Trophy className="w-4 h-4 text-yellow-500" />
-              <span className="text-xs font-medium">{data.lastBadge}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Large Widget Preview */}
-      <div className="bg-gradient-to-br from-blue-500/10 via-cyan-500/5 to-transparent rounded-2xl p-6 border-2 border-blue-500/20">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-muted-foreground">
-            {t.widgetLarge || 'Большой виджет'}
-          </h3>
-          <span className="text-xs text-muted-foreground">4x4</span>
+          <StatCard
+            icon={<span className="text-base">⏱</span>}
+            value={data.focusMinutes}
+            label={t.minutes || 'мин'}
+            colorClass="text-violet-500"
+            bgClass="bg-violet-500/10 border-violet-500/20"
+          />
         </div>
 
-        <div className="space-y-4">
-          {/* Stats Grid */}
-          <div className="grid grid-cols-3 gap-3">
-            <div className="flex flex-col items-center bg-background/50 rounded-xl p-4">
-              <Flame className="w-6 h-6 text-orange-500 mb-2" />
-              <div className="text-2xl font-bold">{data.streak}</div>
-              <div className="text-xs text-muted-foreground">{t.streakDays || 'дней стрика'}</div>
-            </div>
-
-            <div className="flex flex-col items-center bg-background/50 rounded-xl p-4">
-              <Target className="w-6 h-6 text-green-500 mb-2" />
-              <div className="text-2xl font-bold">
-                {data.habitsToday}/{data.habitsTotalToday}
-              </div>
-              <div className="text-xs text-muted-foreground">{t.habitsToday || 'привычек'}</div>
-            </div>
-
-            <div className="flex flex-col items-center bg-background/50 rounded-xl p-4">
-              <Clock className="w-6 h-6 text-blue-500 mb-2" />
-              <div className="text-2xl font-bold">{data.focusMinutes}</div>
-              <div className="text-xs text-muted-foreground">{t.focusMinutes || 'минут фокуса'}</div>
-            </div>
-          </div>
-
-          {/* Habits List */}
-          <div className="space-y-2">
-            <h4 className="text-xs font-semibold text-muted-foreground mb-2">
-              {t.todayHabits || 'Привычки на сегодня'}:
-            </h4>
-            {(data.habits ?? []).slice(0, 5).map((habit, index) => (
-              <div
-                key={index}
-                className="flex items-center gap-2 bg-background/50 rounded-lg p-2"
+        {/* Habits List */}
+        <div className="bg-muted/50 rounded-xl p-3 space-y-2">
+          {(data.habits ?? []).slice(0, 4).map((habit, index) => (
+            <div key={index} className="flex items-center gap-2">
+              <span
+                className={cn(
+                  'text-sm',
+                  habit.completed ? 'text-emerald-500' : 'text-muted-foreground'
+                )}
               >
-                <div
-                  className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${
-                    habit.completed
-                      ? 'bg-green-500 border-green-500'
-                      : 'border-muted-foreground/30'
-                  }`}
-                >
-                  {habit.completed && (
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={3}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  )}
-                </div>
-                <span
-                  className={`text-sm ${
-                    habit.completed ? 'line-through text-muted-foreground' : ''
-                  }`}
-                >
-                  {habit.name}
-                </span>
-              </div>
-            ))}
-            {(!data.habits || data.habits.length === 0) && (
-              <p className="text-xs text-muted-foreground text-center py-2">
-                {t.noHabitsYet || 'Нет привычек'}
-              </p>
-            )}
-          </div>
-
-          {/* Last Badge */}
-          {data.lastBadge && (
-            <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded-xl p-3">
-              <Trophy className="w-6 h-6 text-yellow-500" />
-              <div>
-                <div className="text-xs text-muted-foreground">{t.lastBadge || 'Последний бейдж'}</div>
-                <div className="text-sm font-semibold">{data.lastBadge}</div>
-              </div>
+                {habit.completed ? '✓' : '○'}
+              </span>
+              <span
+                className={cn(
+                  'text-sm flex-1 truncate',
+                  habit.completed && 'text-muted-foreground'
+                )}
+              >
+                {habit.name}
+              </span>
             </div>
+          ))}
+          {(!data.habits || data.habits.length === 0) && (
+            <p className="text-xs text-muted-foreground text-center py-2">
+              {t.noHabitsYet || 'Нет привычек'}
+            </p>
           )}
         </div>
+
+        {/* Badge (if present) */}
+        {data.lastBadge && (
+          <div className="mt-3 bg-amber-500/10 border border-amber-500/20 rounded-xl p-3 flex items-center gap-2">
+            <span className="text-lg">🏆</span>
+            <span className="text-sm font-medium text-amber-600 dark:text-amber-400 truncate">
+              {data.lastBadge}
+            </span>
+          </div>
+        )}
+
+        {/* Smart Insight */}
+        {largeInsight && (
+          <div className="mt-3 text-center">
+            <span className="text-xs text-muted-foreground">{largeInsight}</span>
+          </div>
+        )}
       </div>
     </div>
   );
