@@ -556,7 +556,7 @@ export interface Translations {
   settingsWhatsNewSecurity: string;
   settingsWhatsNewSecurityDesc: string;
   settingsWhatsNewGotIt: string;
-  // v1.5.8 What's New
+  // v1.5.9 What's New
   settingsWhatsNewFeatureToggles: string;
   settingsWhatsNewFeatureTogglesDesc: string;
   settingsWhatsNewBugFixes158: string;
@@ -588,7 +588,7 @@ export interface Translations {
   settingsGroupAccount: string;
   settingsGroupAbout: string;
 
-  // Feature Toggles / Modules (v1.5.8)
+  // Feature Toggles / Modules (v1.5.9)
   settingsGroupModules: string;
   settingsModulesDescription: string;
   settingsModuleMood: string;
@@ -1905,7 +1905,7 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'Файл слишком большой (макс. 10 МБ)',
     importConfirm: 'Подтвердить импорт',
     invalidBackupFormat: 'Неверный формат резервной копии',
-    settingsWhatsNewTitle: 'Что нового в v1.5.8',
+    settingsWhatsNewTitle: 'Что нового в v1.5.9',
     settingsWhatsNewLeaderboards: 'Таблицы лидеров',
     settingsWhatsNewLeaderboardsDesc: 'Соревнуйтесь анонимно с другими',
     settingsWhatsNewSpotify: 'Интеграция Spotify',
@@ -1917,7 +1917,7 @@ export const translations: Record<Language, Translations> = {
     settingsWhatsNewSecurity: 'Улучшенная безопасность',
     settingsWhatsNewSecurityDesc: 'Лучшая защита данных и приватности',
     settingsWhatsNewGotIt: 'Понятно!',
-    // v1.5.8 What's New
+    // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: 'Переключатели модулей',
     settingsWhatsNewFeatureTogglesDesc: 'Включайте/выключайте модули в Настройках',
     settingsWhatsNewBugFixes158: 'Исправления багов',
@@ -1949,7 +1949,7 @@ export const translations: Record<Language, Translations> = {
     settingsGroupAccount: 'Аккаунт',
     settingsGroupAbout: 'О приложении',
 
-    // Feature Toggles / Modules (v1.5.8)
+    // Feature Toggles / Modules (v1.5.9)
     settingsGroupModules: 'Модули',
     settingsModulesDescription: 'Включайте и выключайте функции приложения',
     settingsModuleMood: 'Трекер настроения',
@@ -3342,7 +3342,7 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'File too large (max 10 MB)',
     importConfirm: 'Confirm import',
     invalidBackupFormat: 'Invalid backup format',
-    settingsWhatsNewTitle: 'What\'s New in v1.5.8',
+    settingsWhatsNewTitle: 'What\'s New in v1.5.9',
     settingsWhatsNewLeaderboards: 'Leaderboards',
     settingsWhatsNewLeaderboardsDesc: 'Compete anonymously with others',
     settingsWhatsNewSpotify: 'Spotify Integration',
@@ -3354,7 +3354,7 @@ export const translations: Record<Language, Translations> = {
     settingsWhatsNewSecurity: 'Enhanced Security',
     settingsWhatsNewSecurityDesc: 'Better data protection & privacy',
     settingsWhatsNewGotIt: 'Got it!',
-    // v1.5.8 What's New
+    // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: 'Feature Toggles',
     settingsWhatsNewFeatureTogglesDesc: 'Enable/disable modules in Settings',
     settingsWhatsNewBugFixes158: 'Bug Fixes',
@@ -3386,7 +3386,7 @@ export const translations: Record<Language, Translations> = {
     settingsGroupAccount: 'Account',
     settingsGroupAbout: 'About',
 
-    // Feature Toggles / Modules (v1.5.8)
+    // Feature Toggles / Modules (v1.5.9)
     settingsGroupModules: 'Modules',
     settingsModulesDescription: 'Enable or disable app features',
     settingsModuleMood: 'Mood Tracker',
@@ -4779,7 +4779,7 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'Файл завеликий (макс. 10 МБ)',
     importConfirm: 'Підтвердити імпорт',
     invalidBackupFormat: 'Невірний формат резервної копії',
-    settingsWhatsNewTitle: 'Що нового в v1.5.8',
+    settingsWhatsNewTitle: 'Що нового в v1.5.9',
     settingsWhatsNewLeaderboards: 'Таблиці лідерів',
     settingsWhatsNewLeaderboardsDesc: 'Змагайтеся анонімно з іншими',
     settingsWhatsNewSpotify: 'Інтеграція Spotify',
@@ -4791,7 +4791,7 @@ export const translations: Record<Language, Translations> = {
     settingsWhatsNewSecurity: 'Покращена безпека',
     settingsWhatsNewSecurityDesc: 'Кращий захист даних та приватності',
     settingsWhatsNewGotIt: 'Зрозуміло!',
-    // v1.5.8 What's New
+    // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: 'Перемикачі модулів',
     settingsWhatsNewFeatureTogglesDesc: 'Вмикайте/вимикайте модулі в Налаштуваннях',
     settingsWhatsNewBugFixes158: 'Виправлення помилок',
@@ -4823,7 +4823,7 @@ export const translations: Record<Language, Translations> = {
     settingsGroupAccount: 'Акаунт',
     settingsGroupAbout: 'Про додаток',
 
-    // Feature Toggles / Modules (v1.5.8)
+    // Feature Toggles / Modules (v1.5.9)
     settingsGroupModules: 'Модулі',
     settingsModulesDescription: 'Вмикайте та вимикайте функції додатку',
     settingsModuleMood: 'Трекер настрою',
@@ -6217,7 +6217,7 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'Archivo demasiado grande (máx. 10 MB)',
     importConfirm: 'Confirmar importación',
     invalidBackupFormat: 'Formato de copia de seguridad inválido',
-    settingsWhatsNewTitle: 'Novedades en v1.5.8',
+    settingsWhatsNewTitle: 'Novedades en v1.5.9',
     settingsWhatsNewLeaderboards: 'Tablas de clasificación',
     settingsWhatsNewLeaderboardsDesc: 'Compite anónimamente con otros',
     settingsWhatsNewSpotify: 'Integración Spotify',
@@ -6229,7 +6229,7 @@ export const translations: Record<Language, Translations> = {
     settingsWhatsNewSecurity: 'Seguridad mejorada',
     settingsWhatsNewSecurityDesc: 'Mejor protección de datos y privacidad',
     settingsWhatsNewGotIt: '¡Entendido!',
-    // v1.5.8 What's New
+    // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: 'Interruptores de funciones',
     settingsWhatsNewFeatureTogglesDesc: 'Activa/desactiva módulos en Configuración',
     settingsWhatsNewBugFixes158: 'Corrección de errores',
@@ -6261,7 +6261,7 @@ export const translations: Record<Language, Translations> = {
     settingsGroupAccount: 'Cuenta',
     settingsGroupAbout: 'Acerca de',
 
-    // Feature Toggles / Modules (v1.5.8)
+    // Feature Toggles / Modules (v1.5.9)
     settingsGroupModules: 'Módulos',
     settingsModulesDescription: 'Activa o desactiva funciones de la app',
     settingsModuleMood: 'Rastreador de ánimo',
@@ -7655,7 +7655,7 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'Datei zu groß (max. 10 MB)',
     importConfirm: 'Import bestätigen',
     invalidBackupFormat: 'Ungültiges Backup-Format',
-    settingsWhatsNewTitle: 'Was ist neu in v1.5.8',
+    settingsWhatsNewTitle: 'Was ist neu in v1.5.9',
     settingsWhatsNewLeaderboards: 'Bestenlisten',
     settingsWhatsNewLeaderboardsDesc: 'Anonym mit anderen konkurrieren',
     settingsWhatsNewSpotify: 'Spotify-Integration',
@@ -7667,7 +7667,7 @@ export const translations: Record<Language, Translations> = {
     settingsWhatsNewSecurity: 'Verbesserte Sicherheit',
     settingsWhatsNewSecurityDesc: 'Besserer Datenschutz & Privatsphäre',
     settingsWhatsNewGotIt: 'Verstanden!',
-    // v1.5.8 What's New
+    // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: 'Funktions-Schalter',
     settingsWhatsNewFeatureTogglesDesc: 'Module in Einstellungen aktivieren/deaktivieren',
     settingsWhatsNewBugFixes158: 'Fehlerbehebungen',
@@ -7699,7 +7699,7 @@ export const translations: Record<Language, Translations> = {
     settingsGroupAccount: 'Konto',
     settingsGroupAbout: 'Über',
 
-    // Feature Toggles / Modules (v1.5.8)
+    // Feature Toggles / Modules (v1.5.9)
     settingsGroupModules: 'Module',
     settingsModulesDescription: 'App-Funktionen aktivieren oder deaktivieren',
     settingsModuleMood: 'Stimmungs-Tracker',
@@ -9093,7 +9093,7 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'Fichier trop volumineux (max 10 Mo)',
     importConfirm: 'Confirmer l\'importation',
     invalidBackupFormat: 'Format de sauvegarde invalide',
-    settingsWhatsNewTitle: 'Nouveautés dans v1.5.8',
+    settingsWhatsNewTitle: 'Nouveautés dans v1.5.9',
     settingsWhatsNewLeaderboards: 'Classements',
     settingsWhatsNewLeaderboardsDesc: 'Rivalisez anonymement avec les autres',
     settingsWhatsNewSpotify: 'Intégration Spotify',
@@ -9105,7 +9105,7 @@ export const translations: Record<Language, Translations> = {
     settingsWhatsNewSecurity: 'Sécurité améliorée',
     settingsWhatsNewSecurityDesc: 'Meilleure protection des données et confidentialité',
     settingsWhatsNewGotIt: 'Compris !',
-    // v1.5.8 What's New
+    // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: 'Interrupteurs de fonctionnalités',
     settingsWhatsNewFeatureTogglesDesc: 'Activez/désactivez les modules dans Paramètres',
     settingsWhatsNewBugFixes158: 'Corrections de bugs',
@@ -9137,7 +9137,7 @@ export const translations: Record<Language, Translations> = {
     settingsGroupAccount: 'Compte',
     settingsGroupAbout: 'À propos',
 
-    // Feature Toggles / Modules (v1.5.8)
+    // Feature Toggles / Modules (v1.5.9)
     settingsGroupModules: 'Modules',
     settingsModulesDescription: 'Activez ou désactivez les fonctionnalités',
     settingsModuleMood: 'Suivi de l\'humeur',
@@ -10530,7 +10530,7 @@ export const translations: Record<Language, Translations> = {
     fileTooLarge: 'ファイルが大きすぎます（最大10 MB）',
     importConfirm: 'インポートを確認',
     invalidBackupFormat: '無効なバックアップ形式',
-    settingsWhatsNewTitle: 'v1.5.8の新機能',
+    settingsWhatsNewTitle: 'v1.5.9の新機能',
     settingsWhatsNewLeaderboards: 'リーダーボード',
     settingsWhatsNewLeaderboardsDesc: '匿名で他のユーザーと競争',
     settingsWhatsNewSpotify: 'Spotify連携',
@@ -10542,7 +10542,7 @@ export const translations: Record<Language, Translations> = {
     settingsWhatsNewSecurity: 'セキュリティ強化',
     settingsWhatsNewSecurityDesc: 'データ保護とプライバシーを改善',
     settingsWhatsNewGotIt: '了解！',
-    // v1.5.8 What's New
+    // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: '機能トグル',
     settingsWhatsNewFeatureTogglesDesc: '設定でモジュールを有効/無効化',
     settingsWhatsNewBugFixes158: 'バグ修正',
@@ -10574,7 +10574,7 @@ export const translations: Record<Language, Translations> = {
     settingsGroupAccount: 'アカウント',
     settingsGroupAbout: '情報',
 
-    // Feature Toggles / Modules (v1.5.8)
+    // Feature Toggles / Modules (v1.5.9)
     settingsGroupModules: 'モジュール',
     settingsModulesDescription: 'アプリ機能を有効/無効化',
     settingsModuleMood: '気分トラッカー',

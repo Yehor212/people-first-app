@@ -5,15 +5,21 @@
 
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
 import { Capacitor } from '@capacitor/core';
+import { shouldTriggerHaptics } from './animationUtils';
 
 // Check if haptics are available (native platform only)
 const isHapticsAvailable = Capacitor.isNativePlatform();
+
+// Combined check for availability AND user preference
+function canTriggerHaptics(): boolean {
+  return isHapticsAvailable && shouldTriggerHaptics();
+}
 
 /**
  * Light haptic tap - for button presses, selections
  */
 export async function hapticTap(): Promise<void> {
-  if (!isHapticsAvailable) return;
+  if (!canTriggerHaptics()) return;
   try {
     await Haptics.impact({ style: ImpactStyle.Light });
   } catch (error) {
@@ -25,7 +31,7 @@ export async function hapticTap(): Promise<void> {
  * Medium haptic impact - for mood selections, habit toggles
  */
 export async function hapticMedium(): Promise<void> {
-  if (!isHapticsAvailable) return;
+  if (!canTriggerHaptics()) return;
   try {
     await Haptics.impact({ style: ImpactStyle.Medium });
   } catch (error) {
@@ -37,7 +43,7 @@ export async function hapticMedium(): Promise<void> {
  * Heavy haptic impact - for significant actions, achievements
  */
 export async function hapticHeavy(): Promise<void> {
-  if (!isHapticsAvailable) return;
+  if (!canTriggerHaptics()) return;
   try {
     await Haptics.impact({ style: ImpactStyle.Heavy });
   } catch (error) {
@@ -49,7 +55,7 @@ export async function hapticHeavy(): Promise<void> {
  * Success haptic - for completed actions, achievements unlocked
  */
 export async function hapticSuccess(): Promise<void> {
-  if (!isHapticsAvailable) return;
+  if (!canTriggerHaptics()) return;
   try {
     await Haptics.notification({ type: NotificationType.Success });
   } catch (error) {
@@ -61,7 +67,7 @@ export async function hapticSuccess(): Promise<void> {
  * Warning haptic - for time alerts, approaching deadlines
  */
 export async function hapticWarning(): Promise<void> {
-  if (!isHapticsAvailable) return;
+  if (!canTriggerHaptics()) return;
   try {
     await Haptics.notification({ type: NotificationType.Warning });
   } catch (error) {
@@ -73,7 +79,7 @@ export async function hapticWarning(): Promise<void> {
  * Error haptic - for invalid actions, errors
  */
 export async function hapticError(): Promise<void> {
-  if (!isHapticsAvailable) return;
+  if (!canTriggerHaptics()) return;
   try {
     await Haptics.notification({ type: NotificationType.Error });
   } catch (error) {
@@ -85,7 +91,7 @@ export async function hapticError(): Promise<void> {
  * Selection changed haptic - for scrolling through options
  */
 export async function hapticSelection(): Promise<void> {
-  if (!isHapticsAvailable) return;
+  if (!canTriggerHaptics()) return;
   try {
     await Haptics.selectionChanged();
   } catch (error) {
@@ -97,7 +103,7 @@ export async function hapticSelection(): Promise<void> {
  * Selection start - call before a selection session
  */
 export async function hapticSelectionStart(): Promise<void> {
-  if (!isHapticsAvailable) return;
+  if (!canTriggerHaptics()) return;
   try {
     await Haptics.selectionStart();
   } catch (error) {
@@ -109,7 +115,7 @@ export async function hapticSelectionStart(): Promise<void> {
  * Selection end - call after a selection session
  */
 export async function hapticSelectionEnd(): Promise<void> {
-  if (!isHapticsAvailable) return;
+  if (!canTriggerHaptics()) return;
   try {
     await Haptics.selectionEnd();
   } catch (error) {

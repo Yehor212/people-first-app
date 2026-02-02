@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { EmojiOrIcon } from '@/components/icons';
+import { useDopamineSettings } from './DopamineSettings';
 
 /**
  * Streak Celebration - Duolingo-style fire animation
@@ -13,46 +14,56 @@ interface StreakCelebrationProps {
 
 export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProps) {
   const { t } = useLanguage();
+  const dopamine = useDopamineSettings();
   const [show, setShow] = useState(false);
+
+  const showAnimations = dopamine.animations;
+  const showStreakFire = dopamine.streakFire && showAnimations;
 
   useEffect(() => {
     setShow(true);
     const timer = setTimeout(() => {
       setShow(false);
-      setTimeout(onClose, 300);
-    }, 3000);
+      setTimeout(onClose, showAnimations ? 300 : 0);
+    }, showAnimations ? 3000 : 1500);
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, [onClose, showAnimations]);
 
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm transition-opacity duration-300",
+        "fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm",
+        showAnimations && "transition-opacity duration-300",
         show ? "opacity-100" : "opacity-0"
       )}
       onClick={onClose}
     >
       <div
         className={cn(
-          "relative flex flex-col items-center transition-all duration-500",
-          show ? "scale-100 opacity-100" : "scale-50 opacity-0"
+          "relative flex flex-col items-center",
+          showAnimations && "transition-all duration-500",
+          show ? "scale-100 opacity-100" : (showAnimations ? "scale-50 opacity-0" : "opacity-0")
         )}
       >
-        {/* Fire animation */}
+        {/* Fire animation - only if streakFire enabled */}
         <div className="relative">
-          <div className="animate-bounce-fire">
+          <div className={showStreakFire ? "animate-bounce-fire" : ""}>
             <EmojiOrIcon emoji="🔥" iconName="fire" size="xl" className="w-20 h-20" />
           </div>
-          <div className="absolute -top-2 -left-4 animate-bounce-fire-delayed">
-            <EmojiOrIcon emoji="🔥" iconName="fire" size="lg" className="w-14 h-14" />
-          </div>
-          <div className="absolute -top-2 -right-4 animate-bounce-fire-delayed-2">
-            <EmojiOrIcon emoji="🔥" iconName="fire" size="lg" className="w-14 h-14" />
-          </div>
+          {showStreakFire && (
+            <>
+              <div className="absolute -top-2 -left-4 animate-bounce-fire-delayed">
+                <EmojiOrIcon emoji="🔥" iconName="fire" size="lg" className="w-14 h-14" />
+              </div>
+              <div className="absolute -top-2 -right-4 animate-bounce-fire-delayed-2">
+                <EmojiOrIcon emoji="🔥" iconName="fire" size="lg" className="w-14 h-14" />
+              </div>
+            </>
+          )}
         </div>
 
         {/* Streak number */}
-        <div className="mt-4 text-6xl font-black text-white animate-scale-in">
+        <div className={cn("mt-4 text-6xl font-black text-white", showAnimations && "animate-scale-in")}>
           {streakDays}
         </div>
 
@@ -64,21 +75,23 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
           {t.keepItUp || 'Keep it up!'}
         </p>
 
-        {/* Sparkles */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
-          {Array.from({ length: 20 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-2 h-2 bg-yellow-400 rounded-full animate-sparkle"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${1 + Math.random()}s`,
-              }}
-            />
-          ))}
-        </div>
+        {/* Sparkles - only if animations enabled */}
+        {showAnimations && (
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            {Array.from({ length: 20 }).map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-2 h-2 bg-yellow-400 rounded-full animate-sparkle"
+                style={{
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  animationDelay: `${Math.random() * 2}s`,
+                  animationDuration: `${1 + Math.random()}s`,
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -93,27 +106,31 @@ interface HabitCompletionProps {
 }
 
 export function HabitCompletion({ habitName, onClose }: HabitCompletionProps) {
+  const dopamine = useDopamineSettings();
   const [show, setShow] = useState(false);
+
+  const showAnimations = dopamine.animations;
 
   useEffect(() => {
     setShow(true);
     const timer = setTimeout(() => {
       setShow(false);
-      setTimeout(onClose, 200);
+      setTimeout(onClose, showAnimations ? 200 : 0);
     }, 1500);
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, [onClose, showAnimations]);
 
   return (
     <div
       className={cn(
-        "fixed left-1/2 -translate-x-1/2 z-[150] transition-all duration-300",
-        show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+        "fixed left-1/2 -translate-x-1/2 z-[150]",
+        showAnimations && "transition-all duration-300",
+        show ? "opacity-100 translate-y-0" : (showAnimations ? "opacity-0 translate-y-4" : "opacity-0")
       )}
       style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
     >
       <div className="flex items-center gap-3 px-6 py-3 bg-mood-good text-white rounded-full shadow-lg">
-        <span className="text-2xl animate-bounce-check">✓</span>
+        <span className={cn("text-2xl", showAnimations && "animate-bounce-check")}>✓</span>
         <span className="font-semibold">{habitName}</span>
       </div>
     </div>
@@ -129,52 +146,60 @@ interface AllHabitsCompleteProps {
 
 export function AllHabitsComplete({ onClose }: AllHabitsCompleteProps) {
   const { t } = useLanguage();
+  const dopamine = useDopamineSettings();
   const [show, setShow] = useState(false);
+
+  const showAnimations = dopamine.animations;
+  const showConfetti = dopamine.confetti && showAnimations;
 
   useEffect(() => {
     setShow(true);
     const timer = setTimeout(() => {
       setShow(false);
-      setTimeout(onClose, 300);
-    }, 3500);
+      setTimeout(onClose, showAnimations ? 300 : 0);
+    }, showAnimations ? 3500 : 1500);
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, [onClose, showAnimations]);
 
   const confettiColors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3'];
 
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-300",
+        "fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm",
+        showAnimations && "transition-opacity duration-300",
         show ? "opacity-100" : "opacity-0"
       )}
       onClick={onClose}
     >
-      {/* Confetti */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {Array.from({ length: 50 }).map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-3 h-3 animate-confetti"
-            style={{
-              left: `${Math.random() * 100}%`,
-              backgroundColor: confettiColors[i % confettiColors.length],
-              animationDelay: `${Math.random() * 0.5}s`,
-              animationDuration: `${2 + Math.random() * 2}s`,
-              transform: `rotate(${Math.random() * 360}deg)`,
-            }}
-          />
-        ))}
-      </div>
+      {/* Confetti - only if confetti enabled */}
+      {showConfetti && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {Array.from({ length: 50 }).map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-3 h-3 animate-confetti"
+              style={{
+                left: `${Math.random() * 100}%`,
+                backgroundColor: confettiColors[i % confettiColors.length],
+                animationDelay: `${Math.random() * 0.5}s`,
+                animationDuration: `${2 + Math.random() * 2}s`,
+                transform: `rotate(${Math.random() * 360}deg)`,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Content */}
       <div
         className={cn(
-          "relative flex flex-col items-center transition-all duration-500",
-          show ? "scale-100 opacity-100" : "scale-50 opacity-0"
+          "relative flex flex-col items-center",
+          showAnimations && "transition-all duration-500",
+          show ? "scale-100 opacity-100" : (showAnimations ? "scale-50 opacity-0" : "opacity-0")
         )}
       >
-        <div className="animate-bounce">
+        <div className={showAnimations ? "animate-bounce" : ""}>
           <EmojiOrIcon emoji="🎉" iconName="celebration" size="xl" className="w-16 h-16" />
         </div>
         <p className="mt-4 text-3xl font-black text-white text-center">
@@ -199,27 +224,34 @@ interface MoodChangedToastProps {
 
 export function MoodChangedToast({ emoji, message, onClose }: MoodChangedToastProps) {
   const { t } = useLanguage();
+  const dopamine = useDopamineSettings();
   const [show, setShow] = useState(true);
+
+  const showAnimations = dopamine.animations;
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setShow(false);
       if (onClose) {
-        setTimeout(onClose, 200);
+        setTimeout(onClose, showAnimations ? 200 : 0);
       }
     }, 2000);
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, [onClose, showAnimations]);
 
   return (
     <div
       className={cn(
-        "fixed left-1/2 -translate-x-1/2 z-[150] transition-all duration-300",
-        show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+        "fixed left-1/2 -translate-x-1/2 z-[150]",
+        showAnimations && "transition-all duration-300",
+        show ? "opacity-100 translate-y-0" : (showAnimations ? "opacity-0 translate-y-4" : "opacity-0")
       )}
       style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
     >
-      <div className="flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-full shadow-lg animate-success-pulse">
+      <div className={cn(
+        "flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-full shadow-lg",
+        showAnimations && "animate-success-pulse"
+      )}>
         <EmojiOrIcon emoji={emoji} size="sm" />
         <span className="font-semibold">{message || t.moodUpdated || 'Mood updated'}</span>
       </div>

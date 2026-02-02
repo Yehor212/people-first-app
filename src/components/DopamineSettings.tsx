@@ -3,6 +3,7 @@ import { safeJsonParse } from '@/lib/safeJson';
 import { Volume2, VolumeX, Sparkles, Zap, Award, Music } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
 
 export interface DopamineSettings {
   intensity: 'minimal' | 'normal' | 'adhd';
@@ -201,23 +202,10 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => updateSettings({ animations: !settings.animations })}
-                role="switch"
-                aria-checked={settings.animations}
-                aria-label={t.dopamineAnimations || 'Animations'}
-                className={cn(
-                  'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
-                  settings.animations ? 'bg-primary' : 'bg-muted'
-                )}
-              >
-                <div
-                  className={cn(
-                    'absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform',
-                    settings.animations ? 'translate-x-[22px]' : 'translate-x-1'
-                  )}
-                />
-              </button>
+              <Switch
+                checked={settings.animations}
+                onCheckedChange={(checked) => updateSettings({ animations: checked })}
+              />
             </div>
 
             {/* Sounds */}
@@ -237,23 +225,10 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => updateSettings({ sounds: !settings.sounds })}
-                role="switch"
-                aria-checked={settings.sounds}
-                aria-label={t.dopamineSounds || 'Sounds'}
-                className={cn(
-                  'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
-                  settings.sounds ? 'bg-primary' : 'bg-muted'
-                )}
-              >
-                <div
-                  className={cn(
-                    'absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform',
-                    settings.sounds ? 'translate-x-[22px]' : 'translate-x-1'
-                  )}
-                />
-              </button>
+              <Switch
+                checked={settings.sounds}
+                onCheckedChange={(checked) => updateSettings({ sounds: checked })}
+              />
             </div>
 
             {/* Haptics */}
@@ -269,23 +244,10 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => updateSettings({ haptics: !settings.haptics })}
-                role="switch"
-                aria-checked={settings.haptics}
-                aria-label={t.dopamineHaptics || 'Haptics'}
-                className={cn(
-                  'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
-                  settings.haptics ? 'bg-primary' : 'bg-muted'
-                )}
-              >
-                <div
-                  className={cn(
-                    'absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform',
-                    settings.haptics ? 'translate-x-[22px]' : 'translate-x-1'
-                  )}
-                />
-              </button>
+              <Switch
+                checked={settings.haptics}
+                onCheckedChange={(checked) => updateSettings({ haptics: checked })}
+              />
             </div>
 
             {/* Confetti */}
@@ -301,23 +263,10 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => updateSettings({ confetti: !settings.confetti })}
-                role="switch"
-                aria-checked={settings.confetti}
-                aria-label={t.dopamineConfetti || 'Confetti'}
-                className={cn(
-                  'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
-                  settings.confetti ? 'bg-primary' : 'bg-muted'
-                )}
-              >
-                <div
-                  className={cn(
-                    'absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform',
-                    settings.confetti ? 'translate-x-[22px]' : 'translate-x-1'
-                  )}
-                />
-              </button>
+              <Switch
+                checked={settings.confetti}
+                onCheckedChange={(checked) => updateSettings({ confetti: checked })}
+              />
             </div>
 
             {/* Streak Fire */}
@@ -333,23 +282,10 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => updateSettings({ streakFire: !settings.streakFire })}
-                role="switch"
-                aria-checked={settings.streakFire}
-                aria-label={t.dopamineStreakFire || 'Streak fire'}
-                className={cn(
-                  'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
-                  settings.streakFire ? 'bg-primary' : 'bg-muted'
-                )}
-              >
-                <div
-                  className={cn(
-                    'absolute top-1 w-4 h-4 bg-white rounded-full shadow-sm transition-transform',
-                    settings.streakFire ? 'translate-x-[22px]' : 'translate-x-1'
-                  )}
-                />
-              </button>
+              <Switch
+                checked={settings.streakFire}
+                onCheckedChange={(checked) => updateSettings({ streakFire: checked })}
+              />
             </div>
           </div>
 

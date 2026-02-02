@@ -2675,6 +2675,56 @@ body.mood-bad .mood-particle {
   }
 }
 
+/* =============================================
+   User-controlled Reduced Motion (.reduce-motion on body)
+   Applied when user disables animations in Dopamine Settings
+   ============================================= */
+body.reduce-motion *,
+body.reduce-motion *::before,
+body.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+body.reduce-motion .animate-float,
+body.reduce-motion .animate-pulse-soft,
+body.reduce-motion .animate-fade-in,
+body.reduce-motion .animate-slide-up,
+body.reduce-motion .animate-scale-in,
+body.reduce-motion .animate-bounce-gentle,
+body.reduce-motion .animate-press,
+body.reduce-motion .animate-ripple,
+body.reduce-motion .animate-pulse-subtle,
+body.reduce-motion .animate-glow-pulse,
+body.reduce-motion .animate-bounce-fire,
+body.reduce-motion .animate-sparkle,
+body.reduce-motion .animate-confetti,
+body.reduce-motion .animate-bounce-check,
+body.reduce-motion .animate-checkmark-draw,
+body.reduce-motion .animate-success-pulse,
+body.reduce-motion .animate-ring-fill,
+body.reduce-motion .animate-energy-glow,
+body.reduce-motion .animate-pulse,
+body.reduce-motion .animate-bounce,
+body.reduce-motion .animate-spin,
+body.reduce-motion [class*="animate-"] {
+  animation: none !important;
+}
+
+body.reduce-motion .animate-fade-in {
+  opacity: 1 !important;
+}
+
+body.reduce-motion .animate-scale-in {
+  transform: scale(1) !important;
+}
+
+body.reduce-motion .animate-slide-up {
+  transform: translateY(0) !important;
+  opacity: 1 !important;
+}
+
 /* ========================================
    MOBILE INPUT IMPROVEMENTS
    ======================================== */

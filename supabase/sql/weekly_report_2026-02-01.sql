@@ -111,29 +111,16 @@ GROUP BY h.id, h.name, h.icon
 ORDER BY completions DESC
 LIMIT 5;
 
--- ============================================
 -- 4. CHALLENGES STATISTICS
--- ============================================
 
--- Active challenges
-SELECT
-  'Active Challenges' as metric,
-  COUNT(*) as value
+SELECT 'Active Challenges' as metric, COUNT(*) as value
+FROM friend_challenges WHERE status = 'active';
+
+SELECT 'New Challenges (This Week)' as metric, COUNT(*) as value
 FROM friend_challenges
-WHERE status = 'active';
+WHERE created_at >= '2026-01-26'::timestamptz AND created_at < '2026-02-02'::timestamptz;
 
--- New challenges this week
-SELECT
-  'New Challenges (This Week)' as metric,
-  COUNT(*) as value
-FROM friend_challenges
-WHERE created_at >= '2026-01-26'::timestamptz
-  AND created_at < '2026-02-02'::timestamptz;
-
--- Challenge participants
-SELECT
-  'Total Challenge Participants' as metric,
-  COUNT(*) as value
+SELECT 'Total Challenge Participants' as metric, COUNT(*) as value
 FROM friend_challenge_members;
 
 -- ============================================

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,11 +14,36 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { preloadShareCardAssets } from "@/lib/shareCards";
+import { useDopamineSettings } from "@/components/DopamineSettings";
 
 const queryClient = new QueryClient();
 
 // Preload html2canvas in the background to speed up share modal
 preloadShareCardAssets();
+
+// Controls reduce-motion class on body based on Dopamine Settings
+function ReduceMotionController() {
+  const dopamine = useDopamineSettings();
+
+  useEffect(() => {
+    // Check user preference AND system preference
+    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const shouldReduce = !dopamine.animations || prefersReducedMotion;
+
+    if (shouldReduce) {
+      document.body.classList.add('reduce-motion');
+    } else {
+      document.body.classList.remove('reduce-motion');
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('reduce-motion');
+    };
+  }, [dopamine.animations]);
+
+  return null;
+}
 
 // Determine basename: use "/" for Capacitor/native, or BASE_URL for web
 const getBasename = () => {
@@ -39,6 +65,7 @@ const App = () => (
               <FlyingEmojiProvider>
                 <ErrorBoundary>
                   <TooltipProvider>
+                    <ReduceMotionController />
                     <Toaster />
                     <Sonner />
                     <BrowserRouter basename={getBasename()}>

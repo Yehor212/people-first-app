@@ -17,6 +17,7 @@ import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { logger } from '@/lib/logger';
+import { useDopamineSettings } from './DopamineSettings';
 
 // Lazy load html2canvas
 const getHtml2Canvas = async () => {
@@ -38,11 +39,16 @@ interface StreakBannerProps {
 
 export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSessions, gratitudeEntries, restDays = [], onRestMode, isRestMode = false, canActivateRestMode = true, daysUntilRestAvailable = 0 }: StreakBannerProps) {
   const { t } = useLanguage();
+  const dopamine = useDopamineSettings();
   const today = getToday();
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const shareCardRef = useRef<HTMLDivElement>(null);
+
+  // Animation flags
+  const showAnimations = dopamine.animations;
+  const showStreakFire = dopamine.streakFire && showAnimations;
 
   // Calculate streak based on ANY activity (including rest days)
   const streak = useMemo(() => {
@@ -210,19 +216,22 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
     )}>
       {/* Background glow for high streaks */}
       {streak >= 7 && (
-        <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 via-transparent to-orange-500/10 animate-pulse" />
+        <div className={cn(
+          "absolute inset-0 bg-gradient-to-r from-yellow-500/10 via-transparent to-orange-500/10",
+          showAnimations && "animate-pulse"
+        )} />
       )}
 
       <div className="relative flex items-center gap-3">
         {/* Icon / Fire Animation */}
-        {streak >= 3 ? (
+        {streak >= 3 && showStreakFire ? (
           <div className="w-11 h-11 flex items-center justify-center flex-shrink-0 -ml-1">
             <FireAnimation size="md" />
           </div>
         ) : (
           <div className={cn(
             "w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0",
-            "bg-primary/20 text-primary"
+            streak >= 3 ? "bg-orange-500/20 text-orange-500" : "bg-primary/20 text-primary"
           )}>
             <Icon className="w-5 h-5" />
           </div>
@@ -283,45 +292,69 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                 label: t.gratitude
               }
             ].map((activity) => (
-              <motion.div
-                key={activity.id}
-                className={cn(
-                  "relative w-7 h-7 rounded-full flex items-center justify-center",
-                  "border transition-all",
-                  activity.done
-                    ? `bg-gradient-to-br ${activity.gradient} border-white/30`
-                    : "bg-white/5 dark:bg-white/5 border-white/10"
-                )}
-                style={activity.done ? {
-                  boxShadow: `0 0 12px ${activity.glowColor}`
-                } : {}}
-                initial={false}
-                animate={activity.done ? { scale: [1, 1.1, 1] } : { scale: 1 }}
-                transition={{ duration: 0.3 }}
-                role="img"
-                aria-label={`${activity.label}: ${activity.done ? t.completed : ''}`}
-              >
-                {activity.done ? (
-                  <Check className="w-3.5 h-3.5 text-white" />
-                ) : (
-                  <activity.Icon className="w-3.5 h-3.5 text-white/40" />
-                )}
+              showAnimations ? (
+                <motion.div
+                  key={activity.id}
+                  className={cn(
+                    "relative w-7 h-7 rounded-full flex items-center justify-center",
+                    "border transition-all",
+                    activity.done
+                      ? `bg-gradient-to-br ${activity.gradient} border-white/30`
+                      : "bg-white/5 dark:bg-white/5 border-white/10"
+                  )}
+                  style={activity.done ? {
+                    boxShadow: `0 0 12px ${activity.glowColor}`
+                  } : {}}
+                  initial={false}
+                  animate={activity.done ? { scale: [1, 1.1, 1] } : { scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                  role="img"
+                  aria-label={`${activity.label}: ${activity.done ? t.completed : ''}`}
+                >
+                  {activity.done ? (
+                    <Check className="w-3.5 h-3.5 text-white" />
+                  ) : (
+                    <activity.Icon className="w-3.5 h-3.5 text-white/40" />
+                  )}
 
-                {/* Pulse ring animation when done */}
-                {activity.done && (
-                  <motion.div
-                    className="absolute inset-0 rounded-full border-2"
-                    style={{ borderColor: activity.glowColor }}
-                    initial={{ scale: 1, opacity: 0.6 }}
-                    animate={{ scale: 1.4, opacity: 0 }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: 'easeOut'
-                    }}
-                  />
-                )}
-              </motion.div>
+                  {/* Pulse ring animation when done */}
+                  {activity.done && (
+                    <motion.div
+                      className="absolute inset-0 rounded-full border-2"
+                      style={{ borderColor: activity.glowColor }}
+                      initial={{ scale: 1, opacity: 0.6 }}
+                      animate={{ scale: 1.4, opacity: 0 }}
+                      transition={{
+                        duration: 1.5,
+                        repeat: Infinity,
+                        ease: 'easeOut'
+                      }}
+                    />
+                  )}
+                </motion.div>
+              ) : (
+                <div
+                  key={activity.id}
+                  className={cn(
+                    "relative w-7 h-7 rounded-full flex items-center justify-center",
+                    "border",
+                    activity.done
+                      ? `bg-gradient-to-br ${activity.gradient} border-white/30`
+                      : "bg-white/5 dark:bg-white/5 border-white/10"
+                  )}
+                  style={activity.done ? {
+                    boxShadow: `0 0 12px ${activity.glowColor}`
+                  } : {}}
+                  role="img"
+                  aria-label={`${activity.label}: ${activity.done ? t.completed : ''}`}
+                >
+                  {activity.done ? (
+                    <Check className="w-3.5 h-3.5 text-white" />
+                  ) : (
+                    <activity.Icon className="w-3.5 h-3.5 text-white/40" />
+                  )}
+                </div>
+              )
             ))}
           </div>
           <span className="text-xs text-muted-foreground font-medium">

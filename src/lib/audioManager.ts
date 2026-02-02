@@ -3,6 +3,7 @@
 
 import { logger } from './logger';
 import { safeParseFloat } from '@/lib/validation';
+import { shouldPlaySounds } from './animationUtils';
 
 type SoundType = 'success' | 'complete' | 'streak' | 'levelUp' | 'notification';
 
@@ -90,7 +91,7 @@ function playTone(frequency: number, duration: number, type: OscillatorType = 's
 
 // Play success chime (task completed)
 export function playSuccess(): void {
-  if (state.isMuted) return;
+  if (state.isMuted || !shouldPlaySounds()) return;
 
   const ctx = getAudioContext();
   if (!ctx) return;
@@ -109,7 +110,7 @@ export function playSuccess(): void {
 
 // Play streak milestone sound
 export function playStreakMilestone(): void {
-  if (state.isMuted) return;
+  if (state.isMuted || !shouldPlaySounds()) return;
 
   const ctx = getAudioContext();
   if (!ctx) return;
@@ -128,7 +129,7 @@ export function playStreakMilestone(): void {
 
 // Play level up fanfare
 export function playLevelUp(): void {
-  if (state.isMuted) return;
+  if (state.isMuted || !shouldPlaySounds()) return;
 
   const ctx = getAudioContext();
   if (!ctx) return;
@@ -152,7 +153,7 @@ export function playLevelUp(): void {
 
 // Play notification ping
 export function playNotification(): void {
-  if (state.isMuted) return;
+  if (state.isMuted || !shouldPlaySounds()) return;
   playTone(880, 0.15, 'sine'); // A5
 }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
+import { shouldAnimate } from '@/lib/animationUtils';
 
 interface FlyingEmoji {
   id: string;
@@ -26,6 +27,9 @@ export function triggerFlyingEmoji(
   emoji: string,
   startPosition: { x: number; y: number }
 ) {
+  // Skip if animations are disabled
+  if (!shouldAnimate()) return;
+
   const flyingEmoji: FlyingEmoji = {
     id: `${Date.now()}-${Math.random()}`,
     emoji,
