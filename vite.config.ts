@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
     mode === "development" && componentTagger(),
     // Disable PWA for Capacitor builds (native apps don't need service workers)
     !isCapacitor ? VitePWA({
-      registerType: "prompt", // User controls updates
+      registerType: "autoUpdate", // Auto-update SW on new version (no user prompt)
       includeAssets: [
         "favicon.ico",
         "apple-touch-icon.png",
@@ -98,6 +98,9 @@ export default defineConfig(({ mode }) => {
 
       // Workbox configuration
       workbox: {
+        // Auto-activate new SW immediately (no waiting for tabs to close)
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
           // Only cache Supabase Storage (public assets) - NOT auth/database/realtime
