@@ -2364,6 +2364,42 @@ body.mood-neutral .mood-background-overlay {
 }
 
 /* ========================================
+   🚫 MOOD-DISABLED - No dynamic theming
+   When user disables "Mood Visuals" in settings
+   ======================================== */
+body.mood-disabled {
+  /* Reset to standard theme values */
+  --emotion-primary-hue: 250;
+  --emotion-accent-hue: 200;
+  --emotion-saturation: 50%;
+  --emotion-brightness: 1;
+  --emotion-animation-speed: 1;
+  --emotion-particle-intensity: 0;
+  --emotion-shadow-intensity: 0.5;
+  --emotion-border-radius: 1;
+
+  /* Reset mood variables too */
+  --mood-primary-hue: 250;
+  --mood-accent-hue: 200;
+  --mood-saturation: 50%;
+  --mood-brightness: 1;
+  --mood-animation-speed: 1;
+  --mood-particle-intensity: 0;
+  --mood-shadow-intensity: 0.5;
+  --mood-border-radius: 1;
+}
+
+body.mood-disabled .mood-background-overlay {
+  /* Hide mood overlay completely */
+  display: none !important;
+}
+
+body.mood-disabled * {
+  /* Standard animation speed */
+  --animation-duration-modifier: 1;
+}
+
+/* ========================================
    Animation Speed Adjustments
    ======================================== */
 body.mood-great * {

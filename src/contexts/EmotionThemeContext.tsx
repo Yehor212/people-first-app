@@ -7,6 +7,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo, useCallback } from 'react';
 import { PrimaryEmotion, MoodEntry, EmotionIntensity } from '@/types';
 import { getToday } from '@/lib/utils';
+import { shouldShowMoodEffects } from '@/lib/animationUtils';
 
 // Theme configuration for each emotion
 export interface EmotionTheme {
@@ -214,10 +215,27 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
   const [currentEmotion, setCurrentEmotion] = useState<PrimaryEmotion | 'neutral'>('neutral');
   const [currentTheme, setCurrentTheme] = useState<EmotionTheme>(emotionThemes.neutral);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [moodDrivenUIEnabled, setMoodDrivenUIEnabled] = useState(() => shouldShowMoodEffects());
 
   // P1 Fix: Store timeout refs for cleanup
   const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const endTransitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Listen for dopamine settings changes
+  useEffect(() => {
+    const handleSettingsChange = () => {
+      setMoodDrivenUIEnabled(shouldShowMoodEffects());
+    };
+
+    // Listen for both storage events (cross-tab) and custom events (same-tab)
+    window.addEventListener('storage', handleSettingsChange);
+    window.addEventListener('dopamine-settings-change', handleSettingsChange);
+
+    return () => {
+      window.removeEventListener('storage', handleSettingsChange);
+      window.removeEventListener('dopamine-settings-change', handleSettingsChange);
+    };
+  }, []);
 
   // Smooth transition between emotions
   // P1 Fix: Use refs and cleanup previous timeouts to prevent race conditions
@@ -294,31 +312,34 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
 
+    // Determine which theme to apply based on moodDrivenUI setting
+    const themeToApply = moodDrivenUIEnabled ? currentTheme : emotionThemes.neutral;
+
     // Apply theme CSS variables
-    root.style.setProperty('--emotion-primary-hue', String(currentTheme.primaryHue));
-    root.style.setProperty('--emotion-accent-hue', String(currentTheme.accentHue));
-    root.style.setProperty('--emotion-saturation', `${currentTheme.saturation}%`);
-    root.style.setProperty('--emotion-brightness', String(currentTheme.brightness));
-    root.style.setProperty('--emotion-gradient-from', currentTheme.gradientFrom);
-    root.style.setProperty('--emotion-gradient-via', currentTheme.gradientVia);
-    root.style.setProperty('--emotion-gradient-to', currentTheme.gradientTo);
-    root.style.setProperty('--emotion-animation-speed', String(currentTheme.animationSpeed));
-    root.style.setProperty('--emotion-particle-intensity', String(currentTheme.particleIntensity));
-    root.style.setProperty('--emotion-shadow-intensity', String(currentTheme.shadowIntensity));
-    root.style.setProperty('--emotion-border-radius', String(currentTheme.borderRadius));
+    root.style.setProperty('--emotion-primary-hue', String(themeToApply.primaryHue));
+    root.style.setProperty('--emotion-accent-hue', String(themeToApply.accentHue));
+    root.style.setProperty('--emotion-saturation', `${themeToApply.saturation}%`);
+    root.style.setProperty('--emotion-brightness', String(themeToApply.brightness));
+    root.style.setProperty('--emotion-gradient-from', themeToApply.gradientFrom);
+    root.style.setProperty('--emotion-gradient-via', themeToApply.gradientVia);
+    root.style.setProperty('--emotion-gradient-to', themeToApply.gradientTo);
+    root.style.setProperty('--emotion-animation-speed', String(themeToApply.animationSpeed));
+    root.style.setProperty('--emotion-particle-intensity', String(themeToApply.particleIntensity));
+    root.style.setProperty('--emotion-shadow-intensity', String(themeToApply.shadowIntensity));
+    root.style.setProperty('--emotion-border-radius', String(themeToApply.borderRadius));
 
     // Also set the old mood variables for backward compatibility
-    root.style.setProperty('--mood-primary-hue', String(currentTheme.primaryHue));
-    root.style.setProperty('--mood-accent-hue', String(currentTheme.accentHue));
-    root.style.setProperty('--mood-saturation', `${currentTheme.saturation}%`);
-    root.style.setProperty('--mood-brightness', String(currentTheme.brightness));
-    root.style.setProperty('--mood-gradient-from', currentTheme.gradientFrom);
-    root.style.setProperty('--mood-gradient-via', currentTheme.gradientVia);
-    root.style.setProperty('--mood-gradient-to', currentTheme.gradientTo);
-    root.style.setProperty('--mood-animation-speed', String(currentTheme.animationSpeed));
-    root.style.setProperty('--mood-particle-intensity', String(currentTheme.particleIntensity));
-    root.style.setProperty('--mood-shadow-intensity', String(currentTheme.shadowIntensity));
-    root.style.setProperty('--mood-border-radius', String(currentTheme.borderRadius));
+    root.style.setProperty('--mood-primary-hue', String(themeToApply.primaryHue));
+    root.style.setProperty('--mood-accent-hue', String(themeToApply.accentHue));
+    root.style.setProperty('--mood-saturation', `${themeToApply.saturation}%`);
+    root.style.setProperty('--mood-brightness', String(themeToApply.brightness));
+    root.style.setProperty('--mood-gradient-from', themeToApply.gradientFrom);
+    root.style.setProperty('--mood-gradient-via', themeToApply.gradientVia);
+    root.style.setProperty('--mood-gradient-to', themeToApply.gradientTo);
+    root.style.setProperty('--mood-animation-speed', String(themeToApply.animationSpeed));
+    root.style.setProperty('--mood-particle-intensity', String(themeToApply.particleIntensity));
+    root.style.setProperty('--mood-shadow-intensity', String(themeToApply.shadowIntensity));
+    root.style.setProperty('--mood-border-radius', String(themeToApply.borderRadius));
 
     // Remove old mood classes and add new emotion class
     const allEmotionClasses = [
@@ -326,12 +347,19 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
       'emotion-sadness', 'emotion-disgust', 'emotion-anger', 'emotion-anticipation',
       'emotion-neutral',
       // Also remove legacy mood classes
-      'mood-great', 'mood-good', 'mood-okay', 'mood-bad', 'mood-terrible', 'mood-neutral'
+      'mood-great', 'mood-good', 'mood-okay', 'mood-bad', 'mood-terrible', 'mood-neutral',
+      'mood-disabled'
     ];
     document.body.classList.remove(...allEmotionClasses);
-    document.body.classList.add(`emotion-${currentEmotion}`);
 
-  }, [currentTheme, currentEmotion]);
+    // Add mood-disabled class when feature is off, or emotion class when on
+    if (moodDrivenUIEnabled) {
+      document.body.classList.add(`emotion-${currentEmotion}`);
+    } else {
+      document.body.classList.add('mood-disabled');
+    }
+
+  }, [currentTheme, currentEmotion, moodDrivenUIEnabled]);
 
   // P1 Fix: Memoize provider value to prevent unnecessary re-renders
   const value = useMemo(() => ({

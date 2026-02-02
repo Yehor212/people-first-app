@@ -12,6 +12,7 @@ interface DopamineSettings {
   haptics: boolean;
   confetti: boolean;
   streakFire: boolean;
+  moodDrivenUI: boolean;
 }
 
 const DEFAULT_DOPAMINE_SETTINGS: DopamineSettings = {
@@ -21,6 +22,7 @@ const DEFAULT_DOPAMINE_SETTINGS: DopamineSettings = {
   haptics: false,
   confetti: true,
   streakFire: true,
+  moodDrivenUI: true,
 };
 
 /**
@@ -93,6 +95,14 @@ export function shouldShowStreakFire(): boolean {
 }
 
 /**
+ * Check if mood-driven UI effects should show
+ * This controls dynamic theming based on user's mood
+ */
+export function shouldShowMoodEffects(): boolean {
+  return getDopamineSettings().moodDrivenUI;
+}
+
+/**
  * Apply or remove reduce-motion class on document body
  * Call this when dopamine settings change
  */
@@ -105,5 +115,21 @@ export function applyReduceMotionClass(): void {
     document.body.classList.remove('reduce-motion');
   } else {
     document.body.classList.add('reduce-motion');
+  }
+}
+
+/**
+ * Apply or remove mood-disabled class on document body
+ * Call this when dopamine settings change
+ */
+export function applyMoodDisabledClass(): void {
+  if (typeof document === 'undefined') return;
+
+  const showMood = shouldShowMoodEffects();
+
+  if (showMood) {
+    document.body.classList.remove('mood-disabled');
+  } else {
+    document.body.classList.add('mood-disabled');
   }
 }

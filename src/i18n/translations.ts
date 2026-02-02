@@ -818,6 +818,8 @@ export interface Translations {
   dopamineConfettiDesc: string;
   dopamineStreakFire: string;
   dopamineStreakFireDesc: string;
+  dopamineMoodDrivenUI: string;
+  dopamineMoodDrivenUIDesc: string;
   dopamineTip: string;
   dopamineTipText: string;
   dopamineSave: string;
@@ -2295,6 +2297,8 @@ export const translations: Record<Language, Translations> = {
     dopamineConfettiDesc: 'Празднуйте завершение привычек',
     dopamineStreakFire: 'Огонь стрика',
     dopamineStreakFireDesc: 'Анимация огня для стриков',
+    dopamineMoodDrivenUI: 'Визуалы настроения',
+    dopamineMoodDrivenUIDesc: 'UI адаптируется к вашему настроению',
     dopamineTip: 'Совет для СДВГ',
     dopamineTipText: 'Мозгу с СДВГ нужно больше допамина! Попробуйте режим СДВГ для максимальной мотивации. Можно настроить отдельные параметры.',
     dopamineSave: 'Сохранить и закрыть',
@@ -3732,6 +3736,8 @@ export const translations: Record<Language, Translations> = {
     dopamineConfettiDesc: 'Celebrate habit completions',
     dopamineStreakFire: 'Streak Fire',
     dopamineStreakFireDesc: 'Animated fire for streaks',
+    dopamineMoodDrivenUI: 'Mood Visuals',
+    dopamineMoodDrivenUIDesc: 'UI adapts to your mood',
     dopamineTip: 'ADHD Tip',
     dopamineTipText: 'ADHD brains need more dopamine! Try ADHD mode for maximum motivation and feedback. You can always adjust individual settings.',
     dopamineSave: 'Save & Close',
@@ -5169,6 +5175,8 @@ export const translations: Record<Language, Translations> = {
     dopamineConfettiDesc: 'Святкуйте завершення звичок',
     dopamineStreakFire: 'Вогонь стріка',
     dopamineStreakFireDesc: 'Анімація вогню для стріків',
+    dopamineMoodDrivenUI: 'Візуали настрою',
+    dopamineMoodDrivenUIDesc: 'UI адаптується до вашого настрою',
     dopamineTip: 'Порада для ADHD',
     dopamineTipText: 'Мозку з ADHD потрібно більше дофаміну! Спробуйте режим ADHD для максимальної мотивації. Можна налаштувати окремі параметри.',
     dopamineSave: 'Зберегти і закрити',
@@ -6607,6 +6615,8 @@ export const translations: Record<Language, Translations> = {
     dopamineConfettiDesc: 'Celebra los hábitos completados',
     dopamineStreakFire: 'Fuego de racha',
     dopamineStreakFireDesc: 'Fuego animado para rachas',
+    dopamineMoodDrivenUI: 'Visuales de ánimo',
+    dopamineMoodDrivenUIDesc: 'La UI se adapta a tu estado de ánimo',
     dopamineTip: 'Consejo TDAH',
     dopamineTipText: '¡Los cerebros con TDAH necesitan más dopamina! Prueba el modo TDAH para máxima motivación. Siempre puedes ajustar configuraciones individuales.',
     dopamineSave: 'Guardar y cerrar',
@@ -8045,6 +8055,8 @@ export const translations: Record<Language, Translations> = {
     dopamineConfettiDesc: 'Feiere abgeschlossene Gewohnheiten',
     dopamineStreakFire: 'Streak-Feuer',
     dopamineStreakFireDesc: 'Animiertes Feuer für Streaks',
+    dopamineMoodDrivenUI: 'Stimmungsvisualisierung',
+    dopamineMoodDrivenUIDesc: 'UI passt sich deiner Stimmung an',
     dopamineTip: 'ADHS-Tipp',
     dopamineTipText: 'ADHS-Gehirne brauchen mehr Dopamin! Probiere den ADHS-Modus für maximale Motivation. Du kannst jederzeit einzelne Einstellungen anpassen.',
     dopamineSave: 'Speichern & Schließen',
@@ -9483,6 +9495,8 @@ export const translations: Record<Language, Translations> = {
     dopamineConfettiDesc: 'Célébrez les habitudes complétées',
     dopamineStreakFire: 'Feu de série',
     dopamineStreakFireDesc: 'Feu animé pour les séries',
+    dopamineMoodDrivenUI: 'Visuels d\'humeur',
+    dopamineMoodDrivenUIDesc: 'L\'UI s\'adapte à votre humeur',
     dopamineTip: 'Astuce TDAH',
     dopamineTipText: 'Les cerveaux TDAH ont besoin de plus de dopamine! Essayez le mode TDAH pour une motivation maximale. Vous pouvez toujours ajuster les paramètres individuels.',
     dopamineSave: 'Enregistrer et fermer',
@@ -10920,6 +10934,8 @@ export const translations: Record<Language, Translations> = {
     dopamineConfettiDesc: '習慣完了をお祝い',
     dopamineStreakFire: '連続の炎',
     dopamineStreakFireDesc: '連続記録のアニメーション炎',
+    dopamineMoodDrivenUI: 'ムードビジュアル',
+    dopamineMoodDrivenUIDesc: 'UIが気分に合わせて変化',
     dopamineTip: 'ADHDのヒント',
     dopamineTipText: 'ADHDの脳はより多くのドーパミンを必要とします！最大のモチベーションとフィードバックのためにADHDモードを試してみてください。個別設定はいつでも調整可能。',
     dopamineSave: '保存して閉じる',

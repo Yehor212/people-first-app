@@ -12,6 +12,7 @@ export interface DopamineSettings {
   haptics: boolean;
   confetti: boolean;
   streakFire: boolean;
+  moodDrivenUI: boolean;
 }
 
 const DEFAULT_SETTINGS: DopamineSettings = {
@@ -21,6 +22,7 @@ const DEFAULT_SETTINGS: DopamineSettings = {
   haptics: false,
   confetti: true,
   streakFire: true,
+  moodDrivenUI: true,
 };
 
 const STORAGE_KEY = 'zenflow_dopamine_settings';
@@ -63,6 +65,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
         haptics: true,
         confetti: true,
         streakFire: true,
+        moodDrivenUI: true,
       });
     } else if (intensity === 'minimal') {
       // Minimal mode = quiet experience
@@ -73,6 +76,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
         haptics: false,
         confetti: false,
         streakFire: false,
+        moodDrivenUI: false,
       });
     } else {
       // Normal mode = balanced
@@ -83,6 +87,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
         haptics: false,
         confetti: true,
         streakFire: true,
+        moodDrivenUI: true,
       });
     }
   }, [updateSettings]);
@@ -285,6 +290,25 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
               <Switch
                 checked={settings.streakFire}
                 onCheckedChange={(checked) => updateSettings({ streakFire: checked })}
+              />
+            </div>
+
+            {/* Mood-Driven UI */}
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="w-9 h-9 flex-shrink-0 bg-primary/10 rounded-lg flex items-center justify-center">
+                  <span className="text-lg leading-none">🎨</span>
+                </div>
+                <div className="min-w-0">
+                  <div className="font-medium truncate">{t.dopamineMoodDrivenUI || 'Mood Visuals'}</div>
+                  <div className="text-xs text-muted-foreground line-clamp-1">
+                    {t.dopamineMoodDrivenUIDesc || 'UI adapts to your mood'}
+                  </div>
+                </div>
+              </div>
+              <Switch
+                checked={settings.moodDrivenUI}
+                onCheckedChange={(checked) => updateSettings({ moodDrivenUI: checked })}
               />
             </div>
           </div>
