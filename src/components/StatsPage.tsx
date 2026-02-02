@@ -193,15 +193,40 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
     const today = getToday();
 
-    const thisMonthMoods = moods.filter(m => m.date.startsWith(thisMonth));
-    const thisMonthFocus = completedFocusSessions.filter(s => s.date.startsWith(thisMonth));
-    const thisMonthGratitude = gratitudeEntries.filter(g => g.date.startsWith(thisMonth));
+    // Filter data based on selected range (not always current month!)
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - 6);
+    weekStart.setHours(0, 0, 0, 0);
+
+    const filterByRange = <T extends { date: string }>(data: T[]): T[] => {
+      if (range === 'week') {
+        return data.filter(item => parseLocalDate(item.date) >= weekStart);
+      }
+      if (range === 'month') {
+        return data.filter(item => item.date.startsWith(thisMonth));
+      }
+      return data; // 'all'
+    };
+
+    const rangeMoods = filterByRange(moods);
+    const rangeFocus = filterByRange(completedFocusSessions);
+    const rangeGratitude = filterByRange(gratitudeEntries);
 
     // Calculate current running minutes if available
-    const thisMonthBaseFocusMinutes = thisMonthFocus.reduce((acc, s) => acc + s.duration, 0);
-    const finalThisMonthFocusMinutes = currentFocusMinutes !== undefined && today.startsWith(thisMonth)
-      ? currentFocusMinutes
-      : thisMonthBaseFocusMinutes;
+    const rangeBaseFocusMinutes = rangeFocus.reduce((acc, s) => acc + s.duration, 0);
+    const isCurrentInRange = range === 'all' ||
+      (range === 'month' && today.startsWith(thisMonth)) ||
+      (range === 'week' && parseLocalDate(today) >= weekStart);
+    const finalRangeFocusMinutes = currentFocusMinutes !== undefined && isCurrentInRange
+      ? rangeBaseFocusMinutes + currentFocusMinutes
+      : rangeBaseFocusMinutes;
+
+    // Range title for display
+    const rangeTitle = range === 'week'
+      ? (t.thisWeek || 'This Week')
+      : range === 'month'
+        ? monthNames[now.getMonth()]
+        : (t.allTime || 'All Time');
 
     return {
       totalFocusMinutes,
@@ -211,10 +236,10 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       moodCounts,
       emotionCounts,
       totalEmotionEntries,
-      thisMonthMoods: thisMonthMoods.length,
-      thisMonthFocusMinutes: finalThisMonthFocusMinutes,
-      thisMonthGratitude: thisMonthGratitude.length,
-      monthName: monthNames[now.getMonth()],
+      thisMonthMoods: rangeMoods.length,
+      thisMonthFocusMinutes: finalRangeFocusMinutes,
+      thisMonthGratitude: rangeGratitude.length,
+      monthName: rangeTitle,
     };
   }, [moods, habits, completedFocusSessions, gratitudeEntries, monthNames, filteredMoods, range, currentFocusMinutes]);
 
@@ -459,7 +484,10 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       : 3;
 
     // Calculate habit completion rate (0-100)
-    const daysInRange = range === 'week' ? 7 : range === 'month' ? 30 : 90;
+    // Use actual days in month instead of hardcoded 30
+    const now = new Date();
+    const actualDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daysInRange = range === 'week' ? 7 : range === 'month' ? actualDaysInMonth : 90;
     const totalPossibleCompletions = habits.length * daysInRange;
     const habitRate = totalPossibleCompletions > 0
       ? Math.min(100, (stats.totalHabitCompletions / totalPossibleCompletions) * 100)
@@ -482,7 +510,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
 
     // Weekly change calculation (simplified - compare this week vs last week)
     let weeklyChange = 0;
-    const now = new Date();
     const oneWeekAgo = new Date(now);
     oneWeekAgo.setDate(now.getDate() - 7);
     const twoWeeksAgo = new Date(now);

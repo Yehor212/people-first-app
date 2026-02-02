@@ -147,10 +147,18 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
     const moodsInRange = moodTrendData.filter(d => d.value > 0);
     const avgMood = safeAverage(moodsInRange.map(d => d.value));
 
-    const avgHabitRate = safeAverage(habitCompletionData.map(d => d.rate));
+    // Only count days with actual habit activity for rate
+    const daysWithHabits = habitCompletionData.filter(d => d.rate > 0);
+    const avgHabitRate = daysWithHabits.length > 0
+      ? safeAverage(daysWithHabits.map(d => d.rate))
+      : 0;
 
     const totalFocusMinutes = focusTimeData.reduce((sum, d) => sum + d.minutes, 0);
-    const avgFocusMinutes = safeAverage(focusTimeData.map(d => d.minutes));
+    // Only count days with actual focus activity for average
+    const daysWithFocus = focusTimeData.filter(d => d.minutes > 0);
+    const avgFocusMinutes = daysWithFocus.length > 0
+      ? safeAverage(daysWithFocus.map(d => d.minutes))
+      : 0;
 
     return {
       avgMood: avgMood.toFixed(1),
