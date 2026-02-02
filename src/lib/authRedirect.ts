@@ -33,7 +33,19 @@ export const getAuthRedirectUrl = () => {
   if (Capacitor.isNativePlatform()) {
     return NATIVE_REDIRECT_URL;
   }
-  return `${window.location.origin}${import.meta.env.BASE_URL || "/"}`;
+
+  // Web: construct clean redirect URL
+  const origin = window.location.origin;
+  const basePath = import.meta.env.BASE_URL || '/';
+
+  // Ensure proper path format (no double slashes)
+  const cleanBase = basePath.startsWith('/') ? basePath : `/${basePath}`;
+  const finalPath = cleanBase.endsWith('/') ? cleanBase : `${cleanBase}/`;
+
+  const redirectUrl = `${origin}${finalPath}`;
+  logger.log('[Auth] Generated redirect URL:', redirectUrl);
+
+  return redirectUrl;
 };
 
 export const isNativePlatform = () => Capacitor.isNativePlatform();

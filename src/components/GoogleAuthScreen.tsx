@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Leaf, Mail, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { getAuthRedirectUrl, isNativePlatform, AUTH_COMPLETE_EVENT } from '@/lib/authRedirect';
+import { canStartAuthFlow, startAuthFlow, endAuthFlow } from '@/lib/authGuard';
 import { App } from '@capacitor/app';
 import { logger } from '@/lib/logger';
 
@@ -82,12 +83,14 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
       logger.log('[Auth] Auth state changed:', event);
 
       if (event === 'SIGNED_IN' && session?.user) {
+        endAuthFlow(); // Clear auth guard flag on successful sign-in
         const metadata = session.user.user_metadata;
         const name = metadata?.full_name || metadata?.name || session.user.email?.split('@')[0] || 'Friend';
         const email = session.user.email || '';
 
         tryComplete({ name, email }, 'onAuthStateChange');
       } else if (event === 'SIGNED_OUT') {
+        endAuthFlow();
         setLoading(false);
       }
     });
@@ -199,6 +202,14 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
       return;
     }
 
+    // Guard against redirect loops
+    if (!canStartAuthFlow()) {
+      setError('Too many sign-in attempts. Please wait a moment and try again.');
+      logger.warn('[Auth] Auth flow blocked by guard');
+      return;
+    }
+
+    startAuthFlow();
     setLoading(true);
     setError(null);
     setDebugInfo(null);
@@ -253,6 +264,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
         setError(errorMessage);
         setDebugInfo(`Error code: ${signInError.status || 'unknown'}, Message: ${signInError.message}`);
         if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
+        endAuthFlow();
         setLoading(false);
         return;
       }
@@ -267,6 +279,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
       setError('Unexpected error occurred. Please try again.');
       setDebugInfo(`Exception: ${err instanceof Error ? err.message : String(err)}`);
       if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
+      endAuthFlow();
       setLoading(false);
     }
   };

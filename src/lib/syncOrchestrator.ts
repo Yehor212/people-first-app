@@ -13,6 +13,7 @@ import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { isCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { generateSecureRandom } from '@/lib/validation';
+import { is401Error, AUTH_SESSION_EXPIRED_EVENT } from '@/lib/apiClient';
 
 // Sync operation types
 export type SyncOperationType =
@@ -209,6 +210,23 @@ class SyncOrchestrator {
         operation.error = error as Error;
         operation.retries++;
 
+        // Check for 401 authentication errors - these need special handling
+        if (is401Error(error)) {
+          logger.warn(`[SyncOrchestrator] 401 error on ${operation.type} - session expired`);
+          // Remove from queue immediately
+          this.queue.shift();
+          // Notify UI that session has expired
+          window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
+          this.updateState({
+            status: 'error',
+            lastError: 'Session expired. Please sign in again.',
+            queueLength: this.queue.length,
+            currentOperation: undefined,
+          });
+          // Stop processing the queue
+          break;
+        }
+
         // Don't retry on client errors (400, 404, 422) - these won't succeed on retry
         // Also check for Supabase/Postgres-specific error messages
         const errorMessage = (error as Error).message || '';
@@ -221,7 +239,7 @@ class SyncOrchestrator {
           errorMessage.includes('violates unique constraint') ||
           errorMessage.includes('already exists') ||
           errorMessage.includes('invalid input syntax') ||
-          errorMessage.includes('PGRST') || // PostgREST errors
+          errorMessage.includes('PGRST') || // PostgREST errors (except auth)
           errorMessage.includes('relation') || // Table not found
           errorMessage.includes('column'); // Column not found
 

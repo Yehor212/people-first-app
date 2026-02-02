@@ -31,6 +31,7 @@ import {
   setPendingAuthUrl,
   getPendingAuthUrl
 } from '@/lib/authRedirect';
+import { AUTH_SESSION_EXPIRED_EVENT } from '@/lib/apiClient';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 import {
   scheduleLocalReminders,
@@ -1572,6 +1573,19 @@ export function Index() {
       subscription?.unsubscribe();
     };
   }, [userNameCustom, userName, setUserName]);
+
+  // Session expired handler - listens for 401 errors from API/sync
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      logger.warn('[Index] Session expired event received');
+      // Reset auth state to show GoogleAuthScreen again
+      setAuthBypassFlag(false);
+      setGoogleAuthChecked(false);
+    };
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+  }, [setGoogleAuthChecked]);
 
   // Weekly report auto-show on Monday
   useEffect(() => {
