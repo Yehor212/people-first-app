@@ -14,11 +14,11 @@ import {
   SpotifyTrack
 } from '@/lib/spotifyIntegration';
 
-// Star particle for cosmic background
+// Star particle for cosmic background (dark theme only)
 function CosmicStar({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
   return (
     <motion.div
-      className="absolute rounded-full bg-white"
+      className="absolute rounded-full bg-white hidden dark:block"
       style={{
         left: `${x}%`,
         top: `${y}%`,
@@ -295,7 +295,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   }, [progress]);
 
   return (
-    <div className="fixed inset-0 bg-black z-[100] flex items-center justify-center overflow-hidden touch-none">
+    <div className="fixed inset-0 bg-slate-100 dark:bg-black z-[100] flex items-center justify-center overflow-hidden touch-none">
       {/* Deep space background - Theme-aware */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-100 via-indigo-50 to-violet-100 dark:bg-none" />
       <div
@@ -343,7 +343,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       {/* Close Button - Fixed position with safe area for iOS */}
       <button
         onClick={onExit}
-        className="fixed top-4 right-4 z-[110] p-3 min-w-[48px] min-h-[48px] bg-white/10 hover:bg-white/20 rounded-xl transition-all text-white flex items-center justify-center active:scale-95"
+        className="fixed top-4 right-4 z-[110] p-3 min-w-[48px] min-h-[48px] bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300/80 dark:hover:bg-white/20 rounded-xl transition-all text-slate-600 dark:text-white flex items-center justify-center active:scale-95"
         style={{ top: 'max(1rem, env(safe-area-inset-top, 1rem))', right: 'max(1rem, env(safe-area-inset-right, 1rem))' }}
         aria-label="Close"
       >
@@ -357,13 +357,13 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           <div className="relative w-72 h-72 mx-auto mb-8">
             {/* Multi-layer Circular Progress */}
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 280 280">
-              {/* Layer 1: Outer orbit path (dashed) */}
+              {/* Layer 1: Outer orbit path (dashed) - dark mode only */}
               <circle
                 cx="140"
                 cy="140"
                 r="135"
                 fill="none"
-                stroke="rgba(255,255,255,0.1)"
+                className="stroke-slate-300 dark:stroke-white/10"
                 strokeWidth="1"
                 strokeDasharray="4 4"
               />
@@ -381,7 +381,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                     y1={140 + innerR * Math.sin(angle)}
                     x2={140 + outerR * Math.cos(angle)}
                     y2={140 + outerR * Math.sin(angle)}
-                    stroke={isHour ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.1)"}
+                    className={isHour ? "stroke-slate-400 dark:stroke-white/30" : "stroke-slate-300 dark:stroke-white/10"}
                     strokeWidth={isHour ? 2 : 1}
                   />
                 );
@@ -393,7 +393,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 cy="140"
                 r="110"
                 fill="none"
-                stroke="rgba(255,255,255,0.08)"
+                className="stroke-slate-200 dark:stroke-white/[0.08]"
                 strokeWidth="8"
               />
 
@@ -449,7 +449,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <motion.div
-                  className="text-6xl font-bold text-white mb-2"
+                  className="text-6xl font-bold text-violet-700 dark:text-white mb-2"
                   style={{
                     textShadow: `0 0 30px ${progressColor.from}60`
                   }}
@@ -460,7 +460,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 >
                   {formatTime(timeLeft)}
                 </motion.div>
-                <div className="text-sm text-white/60">
+                <div className="text-sm text-slate-600 dark:text-white/60">
                   {t.hyperfocusTimeLeft || 'осталось'}
                 </div>
               </div>
@@ -468,7 +468,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           </div>
 
           {/* Status Text */}
-          <p className="text-xl text-white/80 mb-2">
+          <p className="text-xl text-slate-700 dark:text-white/80 mb-2">
             {isPaused
               ? t.hyperfocusPaused || 'Приостановлено'
               : !isRunning
@@ -477,7 +477,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           </p>
 
           {isPaused && (
-            <p className="text-sm text-white/60">
+            <p className="text-sm text-slate-600 dark:text-white/60">
               {t.hyperfocusPauseMsg || 'Нажмите Play, чтобы продолжить'}
             </p>
           )}
@@ -508,8 +508,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           ) : (
             <motion.button
               onClick={handlePause}
-              className="px-8 py-4 min-h-[56px] bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl text-white font-bold text-lg flex items-center gap-3 transition-all"
-              whileHover={{ scale: 1.05, backgroundColor: 'rgba(255,255,255,0.15)' }}
+              className="px-8 py-4 min-h-[56px] bg-slate-200/80 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/20 rounded-2xl text-slate-700 dark:text-white font-bold text-lg flex items-center gap-3 transition-all"
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
               {isPaused ? (
@@ -528,8 +528,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
           <motion.button
             onClick={onExit}
-            className="px-6 py-4 min-h-[56px] bg-red-500/20 backdrop-blur-sm border border-red-500/30 rounded-2xl text-red-300 font-medium transition-all"
-            whileHover={{ scale: 1.05, backgroundColor: 'rgba(239, 68, 68, 0.3)' }}
+            className="px-6 py-4 min-h-[56px] bg-red-100 dark:bg-red-500/20 backdrop-blur-sm border border-red-300 dark:border-red-500/30 rounded-2xl text-red-600 dark:text-red-300 font-medium transition-all"
+            whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
             {t.hyperfocusExit || 'Выход'}
@@ -537,9 +537,9 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         </div>
 
         {/* Premium Ambient Sound Selector */}
-        <div className="max-w-md mx-auto bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+        <div className="max-w-md mx-auto bg-slate-200/80 dark:bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-slate-300 dark:border-white/10">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-white/70 font-medium">
+            <p className="text-sm text-slate-600 dark:text-white/70 font-medium">
               {t.hyperfocusAmbientSound || 'Фоновый звук'}
             </p>
             {selectedSoundId && (
@@ -549,14 +549,14 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   "p-2.5 min-w-[44px] min-h-[44px] rounded-xl transition-all flex items-center justify-center",
                   isSoundPlaying
                     ? "bg-violet-500/30 border border-violet-500/50"
-                    : "bg-white/10 border border-white/20"
+                    : "bg-slate-300/50 dark:bg-white/10 border border-slate-400 dark:border-white/20"
                 )}
                 whileTap={{ scale: 0.95 }}
               >
                 {isSoundPlaying ? (
                   <Volume2 className="w-5 h-5 text-violet-700 dark:text-violet-300" />
                 ) : (
-                  <VolumeX className="w-5 h-5 text-white/60" />
+                  <VolumeX className="w-5 h-5 text-slate-500 dark:text-white/60" />
                 )}
               </motion.button>
             )}
@@ -570,8 +570,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
               className={cn(
                 'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium transition-all flex flex-col items-center justify-center gap-1',
                 !selectedSoundId
-                  ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-white'
-                  : 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
+                  ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-violet-700 dark:text-white'
+                  : 'bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200 dark:hover:bg-white/10'
               )}
               style={!selectedSoundId ? {
                 boxShadow: '0 0 12px rgba(139, 92, 246, 0.3)'
@@ -602,8 +602,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   className={cn(
                     'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium transition-all flex flex-col items-center justify-center gap-1',
                     isSelected
-                      ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-white'
-                      : 'bg-white/5 border border-white/10 text-white/70 hover:bg-white/10'
+                      ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-violet-700 dark:text-white'
+                      : 'bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200 dark:hover:bg-white/10'
                   )}
                   style={isSelected ? {
                     boxShadow: '0 0 12px rgba(139, 92, 246, 0.3)'
@@ -619,11 +619,11 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           </div>
 
           {/* Premium Spotify Section */}
-          <div className="mt-4 pt-4 border-t border-white/10">
+          <div className="mt-4 pt-4 border-t border-slate-300 dark:border-white/10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Music className="w-4 h-4 text-[#1DB954]" />
-                <p className="text-sm text-white/70 font-medium">Spotify</p>
+                <p className="text-sm text-slate-600 dark:text-white/70 font-medium">Spotify</p>
               </div>
               {spotifyConnected && (
                 <motion.button
@@ -632,7 +632,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                     'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                     spotifyAutoPlay
                       ? 'bg-[#1DB954]/30 border border-[#1DB954]/50 text-[#1DB954]'
-                      : 'bg-white/10 border border-white/20 text-white/60'
+                      : 'bg-slate-300/50 dark:bg-white/10 border border-slate-400 dark:border-white/20 text-slate-500 dark:text-white/60'
                   )}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -652,7 +652,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 {t.spotifyConnect || 'Подключить Spotify'}
               </motion.button>
             ) : spotifyTrack ? (
-              <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-xl">
+              <div className="flex items-center gap-3 p-3 bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl">
                 {spotifyTrack.albumArt && (
                   <img
                     src={spotifyTrack.albumArt}
@@ -661,10 +661,10 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white font-medium truncate">
+                  <p className="text-sm text-slate-800 dark:text-white font-medium truncate">
                     {spotifyTrack.name}
                   </p>
-                  <p className="text-xs text-white/60 truncate">
+                  <p className="text-xs text-slate-600 dark:text-white/60 truncate">
                     {spotifyTrack.artist}
                   </p>
                 </div>
@@ -689,7 +689,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 )}
               </div>
             ) : (
-              <p className="text-xs text-white/40 text-center py-2">
+              <p className="text-xs text-slate-500 dark:text-white/40 text-center py-2">
                 {t.spotifyNoTrack || 'Откройте Spotify и включите музыку'}
               </p>
             )}
@@ -704,14 +704,14 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4">
+            <div className="bg-slate-200/80 dark:bg-white/5 backdrop-blur-md border border-slate-300 dark:border-white/10 rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">💡</span>
-                <p className="text-xs text-white/60 font-medium">
+                <p className="text-xs text-slate-600 dark:text-white/60 font-medium">
                   {t.hyperfocusTip || 'Совет'}
                 </p>
               </div>
-              <p className="text-sm text-white/80">
+              <p className="text-sm text-slate-700 dark:text-white/80">
                 {t.hyperfocusTipText || 'Каждые 25 минут будет короткая дыхательная пауза. Это помогает избежать выгорания!'}
               </p>
             </div>
