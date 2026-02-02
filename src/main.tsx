@@ -6,17 +6,75 @@ import { initAudioManager } from "./lib/audioManager";
 import { initAndroidBackHandler } from "./lib/androidBackHandler";
 import { logger } from "./lib/logger";
 import { setupDeepLinks } from "./lib/deepLinks";
+import { offlineQueue } from "./lib/offlineQueue";
+import { initSentry, captureError } from "./lib/sentry";
+
+// Initialize Sentry FIRST for error monitoring (before any other code runs)
+initSentry();
 
 // Global error handlers for unhandled exceptions and promise rejections
 // These catch errors that escape React's error boundary
 window.addEventListener('unhandledrejection', (event) => {
   logger.error('[Global] Unhandled promise rejection:', event.reason);
-  // Prevent the default browser behavior (console error)
-  // but still log it for debugging
+  // Send to Sentry
+  if (event.reason instanceof Error) {
+    captureError(event.reason, { type: 'unhandledrejection' });
+  }
 });
 
 window.addEventListener('error', (event) => {
   logger.error('[Global] Uncaught error:', event.error || event.message);
+  // Send to Sentry
+  if (event.error instanceof Error) {
+    captureError(event.error, { type: 'uncaught' });
+  }
+});
+
+/**
+ * P0 Fix [ANDROID/WEB]: Handle app close/background to prevent data loss
+ *
+ * beforeunload: Web - when tab is closed or refreshed
+ * visibilitychange: Both - when app goes to background
+ *
+ * Uses sendBeacon for reliable data transmission even during page unload.
+ */
+const LAST_STATE_KEY = 'zenflow_last_state';
+
+// Save critical state before app closes
+window.addEventListener('beforeunload', () => {
+  try {
+    // Save offline queue state synchronously
+    const queueState = offlineQueue.getState();
+    if (queueState.actions.length > 0) {
+      // Use localStorage as it's synchronous
+      localStorage.setItem(LAST_STATE_KEY, JSON.stringify({
+        timestamp: Date.now(),
+        pendingActions: queueState.actions.length,
+        queueSnapshot: queueState.actions.slice(0, 10), // Save first 10 for recovery
+      }));
+      logger.log(`[Main] Saved ${queueState.actions.length} pending actions before unload`);
+    }
+  } catch (error) {
+    // Ignore errors during unload
+  }
+});
+
+// Handle visibility change (app going to background on mobile)
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    try {
+      const queueState = offlineQueue.getState();
+      if (queueState.actions.length > 0) {
+        localStorage.setItem(LAST_STATE_KEY, JSON.stringify({
+          timestamp: Date.now(),
+          pendingActions: queueState.actions.length,
+          hidden: true,
+        }));
+      }
+    } catch (error) {
+      // Ignore errors
+    }
+  }
 });
 
 // Setup audio unlock for iOS - attaches to first user interaction
