@@ -266,14 +266,16 @@ export function DataMountains({
         <Cloud x={45} y={15} size={0.7} delay={1} />
 
         {/* Background mountain layer (darker, further) */}
-        <motion.path
-          d={bgMountainPath}
-          fill={colorConfig.mountain[0]}
-          opacity={0.4}
-          initial={{ y: 10, opacity: 0 }}
-          animate={{ y: 0, opacity: 0.4 }}
-          transition={{ duration: 1 }}
-        />
+        {bgMountainPath && (
+          <motion.path
+            d={bgMountainPath}
+            fill={colorConfig.mountain[0]}
+            opacity={0.4}
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 0.4 }}
+            transition={{ duration: 1 }}
+          />
+        )}
 
         {/* Main data mountain */}
         {mountainPath && (
