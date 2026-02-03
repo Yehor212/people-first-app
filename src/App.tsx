@@ -11,6 +11,7 @@ import { FeatureFlagsProvider } from "@/contexts/FeatureFlagsContext";
 import { XpPopupProvider } from "@/components/XpPopup";
 import { FlyingEmojiProvider } from "@/components/FlyingMoodEmoji";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { PWAUpdateNotifier } from "@/components/PWAUpdateNotifier";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { preloadShareCardAssets } from "@/lib/shareCards";
@@ -68,6 +69,7 @@ const App = () => (
                     <ReduceMotionController />
                     <Toaster />
                     <Sonner />
+                    <PWAUpdateNotifier />
                     <BrowserRouter basename={getBasename()}>
                       <Routes>
                         <Route path="/" element={<Index />} />

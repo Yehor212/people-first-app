@@ -1,3 +1,30 @@
+/**
+ * Local Notifications Manager
+ *
+ * Handles scheduling and managing local notifications for:
+ * - Habit reminders
+ * - Mood check-ins
+ * - Focus session alerts
+ * - Daily digests
+ *
+ * IMPORTANT: Android Notification Channel Behavior (Android 8+)
+ * ============================================================
+ * Android notification channels are IMMUTABLE after first creation.
+ * The following properties CANNOT be changed programmatically once set:
+ *   - importance/priority level
+ *   - sound
+ *   - vibration pattern
+ *   - lights
+ *
+ * To change these settings for existing users:
+ * 1. Create a NEW channel with a versioned ID (e.g., 'zenflow_reminders_v2')
+ * 2. Update all notification code to use the new channel ID
+ * 3. Optionally delete the old channel for cleanup
+ *
+ * Users can always manually adjust settings in Android System Settings.
+ * See: https://developer.android.com/develop/ui/views/notifications/channels
+ */
+
 import { LocalNotifications, ActionPerformed, Channel } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { logger } from './logger';
