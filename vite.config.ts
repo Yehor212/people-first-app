@@ -32,7 +32,11 @@ export default defineConfig(({ mode }) => {
     mode === "development" && componentTagger(),
     // Disable PWA for Capacitor builds (native apps don't need service workers)
     !isCapacitor ? VitePWA({
-      registerType: "autoUpdate", // Auto-update SW on new version (no user prompt)
+      // P1 Fix: Use injectManifest for custom SW with Background Sync support
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      registerType: "autoUpdate",
       includeAssets: [
         "favicon.ico",
         "apple-touch-icon.png",
@@ -96,55 +100,9 @@ export default defineConfig(({ mode }) => {
         ],
       },
 
-      // Workbox configuration
-      // P0 Fix [WEB]: Changed to prompt-based update to prevent serving stale code
-      // When skipWaiting is true, new SW activates immediately which can cause
-      // issues if the JS code changes significantly. Setting to false requires
-      // user to close all tabs or reload to get updates.
-      workbox: {
-        // P0 Fix: Disable immediate activation - let user control when to update
-        // This prevents serving stale JS code with new API responses
-        skipWaiting: false, // Changed from true - new SW waits for all tabs to close
-        clientsClaim: false, // Changed from true - don't take over existing tabs
+      // P1 Fix: injectManifest configuration for custom SW
+      injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-        runtimeCaching: [
-          // Only cache Supabase Storage (public assets) - NOT auth/database/realtime
-          {
-            urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/v1\/object\/public\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "supabase-storage",
-              expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "google-fonts-stylesheets",
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
-              },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: "CacheFirst",
-            options: {
-              cacheName: "google-fonts-webfonts",
-              expiration: {
-                maxEntries: 20,
-                maxAgeSeconds: 365 * 24 * 60 * 60, // 1 year
-              },
-            },
-          },
-        ],
-        navigateFallback: `${base}index.html`,
-        navigateFallbackDenylist: [/^\/api/, /\.(?:png|jpg|jpeg|svg|gif|woff2?)$/],
       },
 
       devOptions: {

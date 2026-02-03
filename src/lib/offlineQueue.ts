@@ -11,7 +11,26 @@
  * - Retry logic with exponential backoff
  * - Action deduplication
  * - Conflict resolution (last-write-wins)
+ * - P1 Fix: Background Sync API support for sync after browser close
  */
+
+// P1 Fix: Type declarations for Background Sync API
+declare global {
+  interface SyncManager {
+    register(tag: string): Promise<void>;
+    getTags(): Promise<string[]>;
+  }
+
+  interface ServiceWorkerRegistration {
+    sync: SyncManager;
+  }
+
+  interface Window {
+    SyncManager: {
+      prototype: SyncManager;
+    };
+  }
+}
 
 import { logger } from './logger';
 import { generateSecureRandom } from './validation';
@@ -77,6 +96,21 @@ class OfflineQueue {
     if (typeof window !== 'undefined') {
       window.addEventListener('online', this.boundHandleOnline);
       window.addEventListener('offline', this.boundHandleOffline);
+
+      // P1 Fix: Listen for Background Sync messages from Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', this.handleSWMessage.bind(this));
+      }
+    }
+  }
+
+  /**
+   * Handle messages from Service Worker (e.g., Background Sync trigger)
+   */
+  private handleSWMessage(event: MessageEvent): void {
+    if (event.data?.type === 'SYNC_REQUESTED') {
+      logger.log('[OfflineQueue] Background Sync triggered by SW');
+      void this.processQueue();
     }
   }
 
@@ -143,6 +177,28 @@ class OfflineQueue {
     // If online, try to process immediately
     if (navigator.onLine) {
       void this.processQueue();
+    } else {
+      // P1 Fix: Register for Background Sync when offline
+      this.requestBackgroundSync();
+    }
+  }
+
+  /**
+   * Request Background Sync via Service Worker
+   * This allows sync to happen even if user closes the browser
+   */
+  private requestBackgroundSync(): void {
+    if ('serviceWorker' in navigator && 'sync' in window.SyncManager.prototype) {
+      navigator.serviceWorker.ready
+        .then((registration) => {
+          return registration.sync.register('zenflow-sync');
+        })
+        .then(() => {
+          logger.log('[OfflineQueue] Background Sync registered');
+        })
+        .catch((err) => {
+          logger.warn('[OfflineQueue] Background Sync registration failed:', err);
+        });
     }
   }
 
