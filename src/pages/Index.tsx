@@ -1798,10 +1798,10 @@ export function Index() {
       <WelcomeTutorial
         onComplete={() => {
           setTutorialComplete(true);
-          // P0 Fix: Show AI Coach Onboarding after Welcome Tutorial
-          if (!onboardingData.completedAt) {
-            setShowAIOnboarding(true);
-          }
+          // AI Coach Onboarding hidden until AI ready
+          // if (!onboardingData.completedAt) {
+          //   setShowAIOnboarding(true);
+          // }
         }}
         onSkip={() => {
           setTutorialComplete(true);
