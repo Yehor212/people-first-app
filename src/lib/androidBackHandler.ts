@@ -123,25 +123,64 @@ function isOnRootRoute(): boolean {
 }
 
 /**
+ * P1 Fix: Check if an element is truly visible (not just has dimensions)
+ * Checks computed styles for opacity, display, visibility
+ */
+function isElementVisible(element: Element): boolean {
+  const rect = element.getBoundingClientRect();
+
+  // Must have dimensions
+  if (rect.width <= 0 || rect.height <= 0) {
+    return false;
+  }
+
+  // Check computed styles
+  const styles = window.getComputedStyle(element);
+
+  // Must not be hidden
+  if (styles.display === 'none') return false;
+  if (styles.visibility === 'hidden') return false;
+  if (styles.opacity === '0') return false;
+
+  // Check if element is within viewport (not scrolled away)
+  const inViewport = (
+    rect.top < window.innerHeight &&
+    rect.bottom > 0 &&
+    rect.left < window.innerWidth &&
+    rect.right > 0
+  );
+
+  return inViewport;
+}
+
+/**
  * Check if any modal/dialog is open
+ * P1 Fix: Improved selectors and visibility checks
  */
 function isModalOpen(): boolean {
-  // Check for common modal/dialog selectors
+  // P1 Fix: More specific modal selectors
+  // - [data-state="open"] is now scoped to specific Radix components
+  // - Added specific Radix dialog/sheet selectors
   const modalSelectors = [
     '[role="dialog"]',
     '[role="alertdialog"]',
     '.modal',
     '.dialog',
-    '[data-state="open"]',
     '.drawer',
+    // Radix UI specific - more targeted than generic [data-state="open"]
+    '[data-radix-dialog-content]',
+    '[data-radix-alert-dialog-content]',
+    '[data-radix-sheet-content]',
+    '[data-radix-drawer-content]',
+    // Radix popover/dropdown only if they have overlay (true modals)
+    '[data-radix-popper-content-wrapper][data-side]',
   ];
 
   for (const selector of modalSelectors) {
     const elements = document.querySelectorAll(selector);
     for (const element of Array.from(elements)) {
-      // Check if element is visible
-      const rect = element.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
+      // P1 Fix: Use comprehensive visibility check
+      if (isElementVisible(element)) {
         return true;
       }
     }

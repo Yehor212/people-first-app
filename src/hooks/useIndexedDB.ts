@@ -323,6 +323,14 @@ export function useIndexedDB<T>({
           } catch (storageError) {
             // localStorage also not available - data only in React state
             logger.warn('localStorage fallback also failed:', storageError);
+            // P1 Fix: Emit storage error event for user notification
+            window.dispatchEvent(new CustomEvent('zenflow:storage-error', {
+              detail: {
+                type: 'write_failed',
+                message: 'Unable to save data. You may be in Private Mode or storage is full.',
+                table,
+              }
+            }));
           }
         }
       })();

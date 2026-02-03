@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
-import { LazyErrorBoundary } from '@/components/ErrorBoundary';
+import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { logger } from '@/lib/logger';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
 import { initializeApp } from '@/lib/appInitializer';
@@ -49,6 +49,7 @@ import {
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
 import { OfflineBanner } from '@/components/OfflineBanner';
+import { StorageErrorBanner } from '@/components/StorageErrorBanner';
 import { EmotionWheel } from '@/components/mindfulness/EmotionWheel';
 import { HabitTracker } from '@/components/HabitTracker';
 import { FocusTimer } from '@/components/FocusTimer';
@@ -1899,6 +1900,9 @@ export function Index() {
       {/* P2 UX: Offline banner - shows when user loses connection */}
       <OfflineBanner />
 
+      {/* P1 Fix: Storage error banner - shows when localStorage/IndexedDB fails */}
+      <StorageErrorBanner />
+
       <main
         id="main-content"
         role="main"
@@ -1983,29 +1987,31 @@ export function Index() {
 
                   {/* Mood Tracker - Primary or Collapsed */}
                   <div ref={moodRef}>
-                    {currentPrimaryCTA === 'mood' ? (
-                      <EmotionWheel
-                        entries={safeMoods}
-                        onAddEntry={handleAddMood}
-                        isPrimaryCTA={true}
-                      />
-                    ) : hasMoodToday ? (
-                      <CompletedSection
-                        title={t.moodRecordedShort || t.moodToday}
-                        icon="💜"
-                        accentColor="primary"
-                      >
+                    <ModalErrorBoundary fallbackTitle="Mood Tracker Error" fallbackBody="Unable to load mood tracker. Try refreshing.">
+                      {currentPrimaryCTA === 'mood' ? (
+                        <EmotionWheel
+                          entries={safeMoods}
+                          onAddEntry={handleAddMood}
+                          isPrimaryCTA={true}
+                        />
+                      ) : hasMoodToday ? (
+                        <CompletedSection
+                          title={t.moodRecordedShort || t.moodToday}
+                          icon="💜"
+                          accentColor="primary"
+                        >
+                          <EmotionWheel
+                            entries={safeMoods}
+                            onAddEntry={handleAddMood}
+                          />
+                        </CompletedSection>
+                      ) : (
                         <EmotionWheel
                           entries={safeMoods}
                           onAddEntry={handleAddMood}
                         />
-                      </CompletedSection>
-                    ) : (
-                      <EmotionWheel
-                        entries={safeMoods}
-                        onAddEntry={handleAddMood}
-                      />
-                    )}
+                      )}
+                    </ModalErrorBoundary>
                   </div>
 
                   {/* Breathing Exercise - Compact mindfulness card */}
@@ -2026,22 +2032,33 @@ export function Index() {
 
                   {/* Habit Tracker - Primary or Collapsed */}
                   <div ref={habitsRef}>
-                    {currentPrimaryCTA === 'habits' ? (
-                      <HabitTracker
-                        habits={safeHabits}
-                        onToggleHabit={handleToggleHabit}
-                        onAdjustHabit={handleAdjustHabit}
-                        onAddHabit={handleAddHabit}
-                        onDeleteHabit={handleDeleteHabit}
-                        isPrimaryCTA={true}
-                        onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
-                      />
-                    ) : !hasUncompletedHabits && safeHabits.length > 0 ? (
-                      <CompletedSection
-                        title={t.habitsCompletedShort || t.habits}
-                        icon="✅"
-                        accentColor="emerald"
-                      >
+                    <ModalErrorBoundary fallbackTitle="Habit Tracker Error" fallbackBody="Unable to load habit tracker. Try refreshing.">
+                      {currentPrimaryCTA === 'habits' ? (
+                        <HabitTracker
+                          habits={safeHabits}
+                          onToggleHabit={handleToggleHabit}
+                          onAdjustHabit={handleAdjustHabit}
+                          onAddHabit={handleAddHabit}
+                          onDeleteHabit={handleDeleteHabit}
+                          isPrimaryCTA={true}
+                          onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
+                        />
+                      ) : !hasUncompletedHabits && safeHabits.length > 0 ? (
+                        <CompletedSection
+                          title={t.habitsCompletedShort || t.habits}
+                          icon="✅"
+                          accentColor="emerald"
+                        >
+                          <HabitTracker
+                            habits={safeHabits}
+                            onToggleHabit={handleToggleHabit}
+                            onAdjustHabit={handleAdjustHabit}
+                            onAddHabit={handleAddHabit}
+                            onDeleteHabit={handleDeleteHabit}
+                            onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
+                          />
+                        </CompletedSection>
+                      ) : (
                         <HabitTracker
                           habits={safeHabits}
                           onToggleHabit={handleToggleHabit}
@@ -2050,48 +2067,41 @@ export function Index() {
                           onDeleteHabit={handleDeleteHabit}
                           onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
                         />
-                      </CompletedSection>
-                    ) : (
-                      <HabitTracker
-                        habits={safeHabits}
-                        onToggleHabit={handleToggleHabit}
-                        onAdjustHabit={handleAdjustHabit}
-                        onAddHabit={handleAddHabit}
-                        onDeleteHabit={handleDeleteHabit}
-                        onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
-                      />
-                    )}
+                      )}
+                    </ModalErrorBoundary>
                   </div>
 
                   {/* Focus Timer - Primary or Collapsed (Progressive: Day 2) */}
                   {isFeatureVisible('focusTimer') && (
                     <div ref={focusRef}>
-                      {currentPrimaryCTA === 'focus' ? (
-                        <FocusTimer
-                          sessions={safeFocusSessions}
-                          onCompleteSession={handleCompleteFocusSession}
-                          onMinuteUpdate={setCurrentFocusMinutes}
-                          isPrimaryCTA={true}
-                        />
-                      ) : hasFocusToday ? (
-                        <CompletedSection
-                          title={t.focusCompletedShort || t.focus}
-                          icon="🎯"
-                          accentColor="violet"
-                        >
+                      <ModalErrorBoundary fallbackTitle="Focus Timer Error" fallbackBody="Unable to load focus timer. Try refreshing.">
+                        {currentPrimaryCTA === 'focus' ? (
+                          <FocusTimer
+                            sessions={safeFocusSessions}
+                            onCompleteSession={handleCompleteFocusSession}
+                            onMinuteUpdate={setCurrentFocusMinutes}
+                            isPrimaryCTA={true}
+                          />
+                        ) : hasFocusToday ? (
+                          <CompletedSection
+                            title={t.focusCompletedShort || t.focus}
+                            icon="🎯"
+                            accentColor="violet"
+                          >
+                            <FocusTimer
+                              sessions={safeFocusSessions}
+                              onCompleteSession={handleCompleteFocusSession}
+                              onMinuteUpdate={setCurrentFocusMinutes}
+                            />
+                          </CompletedSection>
+                        ) : (
                           <FocusTimer
                             sessions={safeFocusSessions}
                             onCompleteSession={handleCompleteFocusSession}
                             onMinuteUpdate={setCurrentFocusMinutes}
                           />
-                        </CompletedSection>
-                      ) : (
-                        <FocusTimer
-                          sessions={safeFocusSessions}
-                          onCompleteSession={handleCompleteFocusSession}
-                          onMinuteUpdate={setCurrentFocusMinutes}
-                        />
-                      )}
+                        )}
+                      </ModalErrorBoundary>
                     </div>
                   )}
 

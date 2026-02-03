@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import { Heart, TrendingUp, Calendar, Sparkles, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { MoodEntry, Habit } from '@/types';
 
 interface WelcomeBackModalProps {
@@ -34,6 +35,15 @@ export function WelcomeBackModal({
   const { t } = useLanguage();
   const [selectedMood, setSelectedMood] = useState<MoodEntry['mood'] | null>(null);
 
+  // P1 Fix: Add keyboard accessibility (escape, focus trap, focus restore)
+  const { modalProps } = useModalKeyboard({
+    isOpen: true, // Component only renders when open
+    onClose,
+    closeOnEscape: true,
+    trapFocus: true,
+    restoreFocus: true,
+  });
+
   const moods: Array<{ emoji: string; value: MoodEntry['mood']; label: string }> = [
     { emoji: '😊', value: 'great', label: t.moodGreat || 'Great' },
     { emoji: '🙂', value: 'good', label: t.moodGood || 'Good' },
@@ -54,13 +64,12 @@ export function WelcomeBackModal({
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="welcome-back-title"
-    >
-      <div className="relative m-4 max-w-lg w-full bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden animate-scale-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div
+        {...modalProps}
+        aria-labelledby="welcome-back-title"
+        className="relative m-4 max-w-lg w-full bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden animate-scale-in"
+      >
         {/* Header */}
         <div className="p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
           <div className="flex items-center justify-between mb-4">

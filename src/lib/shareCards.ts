@@ -37,6 +37,80 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { logger } from '@/lib/logger';
 
+// P1 Fix: Cache cleanup constants
+const CACHE_FILE_PREFIX = 'zenflow-share-';
+const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
+const DELETE_RETRY_DELAYS = [100, 500, 1000]; // Retry delays in ms
+
+/**
+ * P1 Fix: Delete file with retry logic
+ */
+async function deleteFileWithRetry(fileName: string): Promise<void> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= DELETE_RETRY_DELAYS.length; attempt++) {
+    try {
+      await Filesystem.deleteFile({
+        path: fileName,
+        directory: Directory.Cache,
+      });
+      return; // Success
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      if (attempt < DELETE_RETRY_DELAYS.length) {
+        await new Promise(resolve => setTimeout(resolve, DELETE_RETRY_DELAYS[attempt]));
+      }
+    }
+  }
+
+  // All retries failed
+  logger.warn('[ShareCards] Failed to delete file after retries:', fileName, lastError?.message);
+}
+
+/**
+ * P1 Fix: Clean up stale cache files on app resume
+ * Should be called when app becomes active
+ */
+export async function cleanupShareCache(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+
+  try {
+    const result = await Filesystem.readdir({
+      path: '',
+      directory: Directory.Cache,
+    });
+
+    const now = Date.now();
+    let cleanedCount = 0;
+
+    for (const file of result.files) {
+      // Only clean up our share files
+      if (file.name.startsWith(CACHE_FILE_PREFIX)) {
+        // Extract timestamp from filename: zenflow-share-{timestamp}.png
+        const match = file.name.match(/zenflow-share-(\d+)\.png/);
+        if (match) {
+          const fileTime = parseInt(match[1], 10);
+          const age = now - fileTime;
+
+          // Delete if older than 24 hours
+          if (age > CACHE_MAX_AGE_MS) {
+            await deleteFileWithRetry(file.name);
+            cleanedCount++;
+          }
+        }
+      }
+    }
+
+    if (cleanedCount > 0) {
+      logger.log(`[ShareCards] Cleaned up ${cleanedCount} stale cache files`);
+    }
+  } catch (error) {
+    // Non-critical - just log and continue
+    logger.warn('[ShareCards] Cache cleanup failed:', error);
+  }
+}
+
 // ============================================
 // SECURITY HELPERS
 // ============================================
@@ -744,15 +818,8 @@ export async function shareImage(
         dialogTitle: title,
       });
 
-      // Clean up cached file after sharing
-      try {
-        await Filesystem.deleteFile({
-          path: fileName,
-          directory: Directory.Cache,
-        });
-      } catch (cleanupError) {
-        logger.warn('[ShareCards] Failed to cleanup cached file:', cleanupError);
-      }
+      // P1 Fix: Clean up cached file after sharing with retry
+      await deleteFileWithRetry(fileName);
 
       return true;
     } catch (err) {

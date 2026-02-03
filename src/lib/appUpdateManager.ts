@@ -47,6 +47,61 @@ interface RemoteVersionConfig {
 /** Google Play Store package URL */
 const GOOGLE_PLAY_URL = 'https://play.google.com/store/apps/details?id=com.zenflow.app';
 
+/** P1 Fix: Retry configuration */
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [1000, 3000, 5000]; // Exponential backoff: 1s, 3s, 5s
+const CHECK_TIMEOUT = 10000; // 10 second timeout
+
+/**
+ * P1 Fix: Sleep helper for retry delays
+ */
+const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * P1 Fix: Wrap promise with timeout
+ */
+async function withTimeout<T>(promise: Promise<T>, ms: number, operation: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`Timeout: ${operation} took longer than ${ms}ms`)), ms)
+    )
+  ]);
+}
+
+/**
+ * P1 Fix: Retry wrapper with exponential backoff
+ */
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  operation: string,
+  maxRetries = MAX_RETRIES,
+  delays = RETRY_DELAYS
+): Promise<T> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // Check network before attempting
+      if (!navigator.onLine) {
+        throw new Error('Device is offline');
+      }
+
+      return await withTimeout(fn(), CHECK_TIMEOUT, operation);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      if (attempt < maxRetries) {
+        const delay = delays[attempt] || delays[delays.length - 1];
+        logger.warn(`[AppUpdate] ${operation} failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`, lastError.message);
+        await sleep(delay);
+      }
+    }
+  }
+
+  throw lastError || new Error(`${operation} failed after ${maxRetries + 1} attempts`);
+}
+
 /**
  * Compare semantic versions.
  * Returns: 1 if v1 > v2, -1 if v1 < v2, 0 if equal
@@ -145,6 +200,7 @@ const getPriorityLevel = (priority: number, stalenessDays: number): UpdatePriori
  * Check for app updates on Google Play.
  * Falls back to Supabase version check if Google Play In-App Updates is unavailable.
  * Only works on Android native platform.
+ * P1 Fix: Now includes retry logic with exponential backoff.
  */
 export async function checkForAppUpdate(): Promise<UpdateState> {
   // Skip on non-native platforms
@@ -157,9 +213,24 @@ export async function checkForAppUpdate(): Promise<UpdateState> {
     };
   }
 
-  // First, try Google Play In-App Updates
+  // P1 Fix: Check network before attempting
+  if (!navigator.onLine) {
+    logger.warn('[AppUpdate] Device is offline, skipping update check');
+    return {
+      available: false,
+      priority: 'low',
+      checked: true,
+      stalenessDays: 0,
+      error: 'Device is offline',
+    };
+  }
+
+  // First, try Google Play In-App Updates with retry
   try {
-    const info: AppUpdateInfo = await AppUpdate.checkForUpdate();
+    const info: AppUpdateInfo = await withRetry(
+      () => AppUpdate.checkForUpdate(),
+      'Google Play update check'
+    );
 
     logger.log('[AppUpdate] Google Play check result:', {
       updateAvailable: info.updateAvailable,
@@ -179,9 +250,9 @@ export async function checkForAppUpdate(): Promise<UpdateState> {
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    logger.warn('[AppUpdate] Google Play check failed, trying fallback:', message);
+    logger.warn('[AppUpdate] Google Play check failed after retries, trying fallback:', message);
 
-    // Fallback: Check version from Supabase
+    // Fallback: Check version from Supabase (also with retry)
     return await checkForAppUpdateFallback();
   }
 }
@@ -190,9 +261,25 @@ export async function checkForAppUpdate(): Promise<UpdateState> {
  * Fallback update check using Supabase app_config table.
  * Used when Google Play In-App Updates is unavailable
  * (e.g., app not installed from Google Play, or on emulator).
+ * P1 Fix: Now includes retry logic with exponential backoff.
  */
 async function checkForAppUpdateFallback(): Promise<UpdateState> {
-  const remoteConfig = await checkVersionFromRemote();
+  let remoteConfig: RemoteVersionConfig | null = null;
+
+  // P1 Fix: Retry fallback check with 2 attempts (less aggressive than primary)
+  try {
+    remoteConfig = await withRetry(
+      () => checkVersionFromRemote().then(config => {
+        if (!config) throw new Error('No remote config returned');
+        return config;
+      }),
+      'Supabase version check',
+      2, // Max 2 retries for fallback
+      [1000, 2000] // Shorter delays for fallback
+    );
+  } catch (error) {
+    logger.warn('[AppUpdate] Fallback check failed after retries:', error);
+  }
 
   if (!remoteConfig) {
     logger.warn('[AppUpdate] Fallback check failed - no remote config');

@@ -8,6 +8,7 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, Shield, Zap, Download, Moon, X, RefreshCw, MessageSquare, ToggleRight, Bug } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { APP_VERSION, wasAppUpdated } from '@/lib/appVersion';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
@@ -172,6 +173,20 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
 
+  // P1 Fix: Add keyboard accessibility (escape, focus trap, focus restore)
+  const { modalProps } = useModalKeyboard({
+    isOpen: isVisible,
+    onClose: () => {
+      localStorage.setItem(LAST_SEEN_VERSION_KEY, APP_VERSION);
+      setIsVisible(false);
+      onClose?.();
+      logger.log('[WhatsNew] Modal dismissed via keyboard');
+    },
+    closeOnEscape: true,
+    trapFocus: true,
+    restoreFocus: true,
+  });
+
   useEffect(() => {
     // Check if we should show the modal
     const lastSeenVersion = localStorage.getItem(LAST_SEEN_VERSION_KEY);
@@ -221,6 +236,8 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
       <div
+        {...modalProps}
+        aria-labelledby="whats-new-title"
         className={cn(
           'w-full max-w-md bg-card rounded-2xl shadow-2xl',
           'border border-border overflow-hidden'
@@ -241,7 +258,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
               <Sparkles className="w-6 h-6 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-foreground">
+              <h2 id="whats-new-title" className="text-xl font-bold text-foreground">
                 {getText('whatsNew.title', "What's New")}
               </h2>
               <p className="text-sm text-muted-foreground">
