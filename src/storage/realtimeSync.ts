@@ -15,6 +15,67 @@ import { offlineQueue } from '@/lib/offlineQueue';
 // Track active subscriptions
 let realtimeChannel: RealtimeChannel | null = null;
 
+/**
+ * P0 Fix: Robust network error detection
+ * Uses multiple signals instead of fragile string matching:
+ * 1. navigator.onLine - browser's network status
+ * 2. error.name - DOMException names like 'NetworkError', 'AbortError'
+ * 3. error.code - numeric error codes (some browsers use these)
+ * 4. String patterns as fallback for edge cases
+ */
+const detectNetworkError = (error: unknown): boolean => {
+  // First check: browser reports offline
+  if (!navigator.onLine) {
+    return true;
+  }
+
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  // Check error name (more reliable than message)
+  const networkErrorNames = [
+    'NetworkError',
+    'AbortError',      // Can indicate network abort
+    'TimeoutError',
+    'TypeError',       // fetch failures are often TypeErrors
+  ];
+  if (networkErrorNames.includes(error.name)) {
+    // TypeError is only network-related if it's a fetch error
+    if (error.name === 'TypeError') {
+      return error.message.includes('fetch') || error.message.includes('network');
+    }
+    return true;
+  }
+
+  // Check for DOMException with network-related code
+  if (error instanceof DOMException) {
+    // NetworkError is code 19 in some browsers
+    if (error.code === 19 || error.name === 'NetworkError') {
+      return true;
+    }
+  }
+
+  // Fallback: check message for known patterns (case-insensitive)
+  const message = error.message.toLowerCase();
+  const networkPatterns = [
+    'network',
+    'failed to fetch',
+    'fetch failed',
+    'networkerror',
+    'econnrefused',
+    'etimedout',
+    'enotfound',
+    'enetunreach',
+    'connection refused',
+    'connection reset',
+    'socket hang up',
+    'dns',
+  ];
+
+  return networkPatterns.some(pattern => message.includes(pattern));
+};
+
 // Timeout wrapper for promises
 const withTimeout = <T>(promise: Promise<T>, ms: number, operation: string): Promise<T> => {
   return Promise.race([
@@ -80,19 +141,9 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     if (error) throw error;
     logger.log('[Sync] Mood synced:', mood.id);
   } catch (error) {
-    // On network error, queue for retry
-    // Check for various network error patterns
-    const isNetworkError = error instanceof Error && (
-      error.message.includes('network') ||
-      error.message.includes('Network') ||
-      error.message.includes('Failed to fetch') ||
-      error.message.includes('fetch failed') ||
-      error.message.includes('NetworkError') ||
-      error.message.includes('ECONNREFUSED') ||
-      error.message.includes('ETIMEDOUT') ||
-      error.message.includes('ENOTFOUND') ||
-      error.name === 'TypeError' // fetch failures are often TypeErrors
-    );
+    // P0 Fix: More robust network error detection
+    // Check multiple signals instead of relying on fragile string matching
+    const isNetworkError = detectNetworkError(error);
 
     if (isNetworkError) {
       await offlineQueue.enqueue('CREATE_MOOD', mood.id, mood);

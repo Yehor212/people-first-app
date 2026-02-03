@@ -132,12 +132,14 @@ class SyncOrchestrator {
 
   /**
    * Start processing with mutex protection
+   * P0 Fix: Lock release is now inside processQueue() to prevent race condition
    */
   private async startProcessing(): Promise<void> {
     // If already processing, wait for it to complete
     if (this.processingPromise) {
       await this.processingPromise;
       // After waiting, recursively check if we need to process more
+      // P0 Fix: Both isProcessing and processingPromise are now cleared atomically in processQueue()
       if (this.queue.length > 0 && !this.isProcessing) {
         void this.startProcessing();
       }
@@ -146,16 +148,13 @@ class SyncOrchestrator {
 
     // Acquire the lock by creating the promise
     this.processingPromise = this.processQueue();
-    try {
-      await this.processingPromise;
-    } finally {
-      // Release the lock
-      this.processingPromise = null;
-    }
+    await this.processingPromise;
+    // P0 Fix: Lock release moved inside processQueue() to ensure atomic release with isProcessing
   }
 
   /**
    * Process the sync queue sequentially
+   * P0 Fix: Uses try/finally to ensure atomic release of both isProcessing and processingPromise
    */
   private async processQueue(): Promise<void> {
     if (this.isProcessing || this.queue.length === 0) {
@@ -172,6 +171,7 @@ class SyncOrchestrator {
     this.isProcessing = true;
     this.updateState({ status: 'syncing' });
 
+    try {
     while (this.queue.length > 0) {
       const operation = this.queue[0];
 
@@ -269,13 +269,17 @@ class SyncOrchestrator {
       }
     }
 
-    this.isProcessing = false;
-
     if (this.queue.length === 0) {
       this.updateState({
         status: 'idle', // Queue empty - return to idle state
         currentOperation: undefined,
       });
+    }
+    } finally {
+      // P0 Fix: Release both flags atomically to prevent race condition
+      // where another caller sees processingPromise = null but isProcessing = true
+      this.isProcessing = false;
+      this.processingPromise = null;
     }
   }
 

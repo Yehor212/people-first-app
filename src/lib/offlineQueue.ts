@@ -442,14 +442,19 @@ class OfflineQueue {
    * P0 Fix: Initialize storage with proper async/await
    * Loads from localStorage first (sync), then IndexedDB (async)
    * Operations that modify the queue must await initPromise
+   *
+   * P0 Fix #2: Do NOT set initPromise = null after completion.
+   * Keeping the resolved promise ensures future awaits immediately resolve,
+   * preventing race conditions where one enqueue() is still modifying state
+   * while another skips the await entirely.
    */
   private async initializeStorage(): Promise<void> {
     // Synchronous load from localStorage for immediate fallback
     this.loadFromLocalStorage();
     // Then async load from IndexedDB (will override if has data)
     await this.loadFromStorageAsync();
-    // Clear initPromise to indicate initialization complete
-    this.initPromise = null;
+    // P0 Fix: Keep initPromise as resolved promise instead of nulling it
+    // This ensures all callers properly await, even if it resolves immediately
     logger.log('[OfflineQueue] Initialization complete');
   }
 

@@ -6,23 +6,51 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
 
+    // P0 Fix #6: Store pending intent for OAuth callbacks that arrive before bridge is ready
+    private Intent pendingDeepLinkIntent = null;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // P0 Fix #5: Call super.onCreate() FIRST before registering plugins
+        // This ensures the Capacitor Bridge is properly initialized
+        super.onCreate(savedInstanceState);
+
+        // Register plugins AFTER bridge initialization
         registerPlugin(WidgetPlugin.class);
         registerPlugin(ReviewPlugin.class);
         registerPlugin(AppUpdatePlugin.class);
         registerPlugin(HealthConnectPlugin.class);
         registerPlugin(DndPlugin.class);
-        super.onCreate(savedInstanceState);
+
+        // P0 Fix #6: Process any pending deep link intent after bridge is ready
+        if (pendingDeepLinkIntent != null) {
+            handleDeepLinkIntent(pendingDeepLinkIntent);
+            pendingDeepLinkIntent = null;
+        }
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        // Forward deep link intent to Capacitor bridge for OAuth callback handling
         setIntent(intent);
+
+        // P0 Fix #6: Check if this is a deep link (OAuth callback)
+        if (intent != null && intent.getData() != null) {
+            handleDeepLinkIntent(intent);
+        }
+    }
+
+    /**
+     * P0 Fix #6: Handle deep link intent, storing it if bridge isn't ready yet
+     */
+    private void handleDeepLinkIntent(Intent intent) {
         if (this.bridge != null) {
+            // Bridge is ready, forward the intent immediately
             this.bridge.onNewIntent(intent);
+        } else {
+            // Bridge not ready yet, store for later processing
+            // This can happen if OAuth callback returns very quickly
+            pendingDeepLinkIntent = intent;
         }
     }
 }

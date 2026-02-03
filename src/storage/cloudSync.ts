@@ -21,6 +21,7 @@ let syncLock = false;
 let syncLockOwner: string | null = null; // Unique ID of the operation holding the lock
 let syncLockTimeout: ReturnType<typeof setTimeout> | null = null;
 let syncLockStartTime: number | null = null; // Track when lock was acquired
+let syncAbortController: AbortController | null = null; // P0 Fix: AbortController for timeout cancellation
 const SYNC_LOCK_TIMEOUT = 60000; // P0 Fix: Reduced from 120s to 60s - most sync ops should complete in <30s
 
 /**
@@ -51,18 +52,25 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
   syncLock = true;
   syncLockOwner = operationId;
   syncLockStartTime = Date.now();
+  // P0 Fix: Create AbortController for timeout cancellation
+  syncAbortController = new AbortController();
+  const abortSignal = syncAbortController.signal;
   logger.sync(`Sync started (operation: ${operationId})`);
 
   // Set timeout to auto-release lock and prevent deadlock
-  // IMPORTANT: Only release if this operation still owns the lock
-  // This prevents data corruption when timeout fires during a slow but legitimate operation
+  // P0 Fix: Now uses AbortController to actually cancel the operation, not just release the lock
   syncLockTimeout = setTimeout(() => {
     if (syncLock && syncLockOwner === operationId) {
       const duration = syncLockStartTime ? Date.now() - syncLockStartTime : 0;
-      logger.warn(`[Sync] Lock timeout exceeded after ${duration}ms, force releasing (operation: ${operationId})`);
+      logger.warn(`[Sync] Lock timeout exceeded after ${duration}ms, aborting operation (operation: ${operationId})`);
+      // P0 Fix: Abort the operation instead of just releasing the lock
+      if (syncAbortController) {
+        syncAbortController.abort();
+      }
       syncLock = false;
       syncLockOwner = null;
       syncLockStartTime = null;
+      syncAbortController = null;
     } else if (syncLock) {
       // Lock is held by a different operation - this is unexpected but possible
       // if the original operation completed and a new one started
@@ -71,6 +79,11 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
   }, SYNC_LOCK_TIMEOUT);
 
   try {
+    // P0 Fix: Check if operation was aborted before starting
+    if (abortSignal.aborted) {
+      throw new Error("Sync operation aborted due to timeout");
+    }
+
     const { data } = await supabase.auth.getUser();
     const user = data?.user;
 
@@ -78,7 +91,17 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
       throw new Error("Not authenticated.");
     }
 
+    // P0 Fix: Check abort status before heavy operations
+    if (abortSignal.aborted) {
+      throw new Error("Sync operation aborted due to timeout");
+    }
+
     const localBackup = await exportBackup();
+
+    // P0 Fix: Check abort status before network call
+    if (abortSignal.aborted) {
+      throw new Error("Sync operation aborted due to timeout");
+    }
 
     const { data: remote, error: fetchError } = await supabase
       .from(BACKUP_TABLE)
@@ -88,6 +111,11 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
 
     if (fetchError) {
       throw fetchError;
+    }
+
+    // P0 Fix: Check abort status after network call
+    if (abortSignal.aborted) {
+      throw new Error("Sync operation aborted due to timeout");
     }
 
     let syncStatus: "pulled" | "pushed" | "merged" = "pushed";
@@ -126,7 +154,18 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
       logger.sync('No remote data found, will push local data');
     }
 
+    // P0 Fix: Check abort status before final operations
+    if (abortSignal.aborted) {
+      throw new Error("Sync operation aborted due to timeout");
+    }
+
     const mergedBackup = await exportBackup();
+
+    // P0 Fix: Final abort check before upsert
+    if (abortSignal.aborted) {
+      throw new Error("Sync operation aborted due to timeout");
+    }
+
     const { error: upsertError } = await supabase.from(BACKUP_TABLE).upsert(
       {
         user_id: user.id,
@@ -156,9 +195,12 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
       syncLock = false;
       syncLockOwner = null;
       syncLockStartTime = null;
+      // P0 Fix: Clean up AbortController
+      syncAbortController = null;
       logger.sync(`Sync completed in ${duration}ms, lock released (operation: ${operationId})`);
     } else {
       // Lock was released by timeout or is now owned by another operation
+      // P0 Fix: AbortController already cleaned up by timeout handler
       logger.sync(`Sync completed but lock already released or transferred (operation: ${operationId}, current owner: ${syncLockOwner})`);
     }
   }
