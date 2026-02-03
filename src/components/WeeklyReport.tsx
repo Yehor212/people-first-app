@@ -57,51 +57,71 @@ function getPreviousWeekDates() {
   return dates;
 }
 
+function getWeekBeforeLastDates() {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const twoWeeksAgoMonday = new Date(now);
+  // Go back to Monday 2 weeks ago
+  twoWeeksAgoMonday.setDate(now.getDate() - (dayOfWeek === 0 ? 20 : dayOfWeek + 13));
+  twoWeeksAgoMonday.setHours(0, 0, 0, 0);
+
+  const dates: string[] = [];
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(twoWeeksAgoMonday);
+    date.setDate(twoWeeksAgoMonday.getDate() + i);
+    dates.push(formatDate(date));
+  }
+  return dates;
+}
+
 export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, onClose }: WeeklyReportProps) {
   const { t, language } = useLanguage();
 
   const weekStats = useMemo(() => {
-    const thisWeek = getWeekDates();
+    // Weekly report shows PREVIOUS week (Mon-Sun that just ended)
     const lastWeek = getPreviousWeekDates();
+    const weekBeforeLast = getWeekBeforeLastDates();
 
-    // This week stats
-    const thisWeekHabits = habits.flatMap(h =>
-      (h.completedDates || []).filter(d => thisWeek.includes(d))
-    );
-    const thisWeekFocus = focusSessions
-      .filter(s => thisWeek.includes(s.date))
-      .reduce((acc, s) => acc + s.duration, 0);
-    const thisWeekGratitude = gratitudeEntries.filter(e => thisWeek.includes(e.date)).length;
-
-    const thisWeekMoods = moods.filter(m => thisWeek.includes(m.date));
-    const moodValues: Record<string, number> = { great: 5, good: 4, okay: 3, bad: 2, terrible: 1 };
-    const moodScores = thisWeekMoods.map(m => moodValues[m.mood] || 3);
-    const avgMood = moodScores.length > 0 ? safeAverage(moodScores) : 3;
-
-    // Previous week stats for comparison
+    // Previous week stats (this is what we show in the report)
     const lastWeekHabits = habits.flatMap(h =>
       (h.completedDates || []).filter(d => lastWeek.includes(d))
+    );
+    const lastWeekFocus = focusSessions
+      .filter(s => lastWeek.includes(s.date))
+      .reduce((acc, s) => acc + s.duration, 0);
+    const lastWeekGratitude = gratitudeEntries.filter(e => lastWeek.includes(e.date)).length;
+
+    const lastWeekMoods = moods.filter(m => lastWeek.includes(m.date));
+    const moodValues: Record<string, number> = { great: 5, good: 4, okay: 3, bad: 2, terrible: 1 };
+    const moodScores = lastWeekMoods.map(m => moodValues[m.mood] || 3);
+    const avgMood = moodScores.length > 0 ? safeAverage(moodScores) : 3;
+
+    // Week before last for comparison (to calculate improvement)
+    const weekBeforeLastHabits = habits.flatMap(h =>
+      (h.completedDates || []).filter(d => weekBeforeLast.includes(d))
     ).length;
 
-    const improvement = lastWeekHabits > 0
-      ? ((thisWeekHabits.length - lastWeekHabits) / lastWeekHabits) * 100
+    const improvement = weekBeforeLastHabits > 0
+      ? ((lastWeekHabits.length - weekBeforeLastHabits) / weekBeforeLastHabits) * 100
       : 0;
 
-    // Find best day
-    const dayStats = thisWeek.map(date => ({
+    // Find best day from previous week
+    const dayStats = lastWeek.map(date => ({
       date,
       count: habits.filter(h => h.completedDates?.includes(date)).length
     }));
     const bestDay = dayStats.reduce((max, day) => day.count > max.count ? day : max, dayStats[0]);
 
     return {
-      habitsCompleted: thisWeekHabits.length,
+      habitsCompleted: lastWeekHabits.length,
       totalHabitsGoal: habits.length * 7,
-      focusMinutes: thisWeekFocus,
-      gratitudeCount: thisWeekGratitude,
+      focusMinutes: lastWeekFocus,
+      gratitudeCount: lastWeekGratitude,
       moodAverage: avgMood,
       bestDay: parseLocalDate(bestDay.date).toLocaleDateString(language, { weekday: 'long' }),
-      improvement
+      improvement,
+      reportWeekStart: lastWeek[0],
+      reportWeekEnd: lastWeek[6]
     };
   }, [moods, habits, focusSessions, gratitudeEntries, language]);
 
@@ -195,7 +215,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
                 {t.weeklyReport}
               </h2>
               <p className="text-sm text-muted-foreground">
-                {new Date().toLocaleDateString(language, { month: 'long', day: 'numeric', year: 'numeric' })}
+                {parseLocalDate(weekStats.reportWeekStart).toLocaleDateString(language, { month: 'long', day: 'numeric' })} - {parseLocalDate(weekStats.reportWeekEnd).toLocaleDateString(language, { month: 'long', day: 'numeric', year: 'numeric' })}
               </p>
             </div>
           </div>
