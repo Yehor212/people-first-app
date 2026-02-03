@@ -40,8 +40,23 @@ export function initSentry(): void {
 
     // Integrations
     integrations: [
-      // Browser tracing for performance
-      Sentry.browserTracingIntegration(),
+      // Browser tracing for performance with optimizations
+      Sentry.browserTracingIntegration({
+        // Enable distributed tracing for Supabase API calls
+        tracePropagationTargets: [
+          'localhost',
+          /^https:\/\/.*\.supabase\.co/,
+        ],
+        // Filter out noisy requests from tracing
+        shouldCreateSpanForRequest: (url) => {
+          // Skip health checks, analytics, and internal Sentry calls
+          if (url.includes('/health')) return false;
+          if (url.includes('sentry.io')) return false;
+          if (url.includes('google-analytics')) return false;
+          if (url.includes('googletagmanager')) return false;
+          return true;
+        },
+      }),
       // Session replay for debugging (masked for privacy)
       Sentry.replayIntegration({
         maskAllText: true,
