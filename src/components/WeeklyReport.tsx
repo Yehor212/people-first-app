@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { safeAverage } from '@/lib/validation';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { TrendingUp, TrendingDown, Minus, Flame, Brain, Heart, Target, Calendar, Award, Sparkles, CalendarDays, X } from 'lucide-react';
 import { EmojiOrIcon } from '@/components/icons';
 import { cn, formatDate, parseLocalDate } from '@/lib/utils';
@@ -76,6 +77,15 @@ function getWeekBeforeLastDates() {
 
 export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, onClose }: WeeklyReportProps) {
   const { t, language } = useLanguage();
+
+  // P2 Accessibility: Keyboard navigation for modal
+  const { modalRef, handleKeyDown } = useModalKeyboard({
+    isOpen: true,
+    onClose,
+    closeOnEscape: true,
+    trapFocus: true,
+    restoreFocus: true,
+  });
 
   const weekStats = useMemo(() => {
     // Weekly report shows PREVIOUS week (Mon-Sun that just ended)
@@ -165,6 +175,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
 
   return (
     <motion.div
+      ref={modalRef}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -172,6 +183,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
       role="dialog"
       aria-modal="true"
       aria-labelledby="weekly-report-title"
+      onKeyDown={handleKeyDown}
     >
       <motion.div
         initial={{ scale: 0.9, opacity: 0, y: 20 }}

@@ -48,6 +48,7 @@ import {
 
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
+import { OfflineBanner } from '@/components/OfflineBanner';
 import { EmotionWheel } from '@/components/mindfulness/EmotionWheel';
 import { HabitTracker } from '@/components/HabitTracker';
 import { FocusTimer } from '@/components/FocusTimer';
@@ -1894,6 +1895,9 @@ export function Index() {
           }}
         />
       )}
+
+      {/* P2 UX: Offline banner - shows when user loses connection */}
+      <OfflineBanner />
 
       <main
         id="main-content"

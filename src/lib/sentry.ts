@@ -66,13 +66,50 @@ export function initSentry(): void {
       }),
     ],
 
-    // Privacy: Strip PII before sending
+    // Privacy: Strip PII and tokens before sending
     beforeSend(event) {
       // Remove user email and IP
       if (event.user) {
         delete event.user.email;
         delete event.user.ip_address;
         delete event.user.username;
+      }
+
+      // P1 Security Fix: Scrub tokens from breadcrumbs and request data
+      const sensitivePatterns = [
+        /Bearer\s+[A-Za-z0-9\-_\.]+/gi,
+        /access_token[=:]\s*["']?[A-Za-z0-9\-_\.]+["']?/gi,
+        /refresh_token[=:]\s*["']?[A-Za-z0-9\-_\.]+["']?/gi,
+        /token[=:]\s*["']?[A-Za-z0-9\-_\.]{20,}["']?/gi,
+      ];
+
+      const scrubString = (str: string): string => {
+        let result = str;
+        sensitivePatterns.forEach(pattern => {
+          result = result.replace(pattern, '[REDACTED]');
+        });
+        return result;
+      };
+
+      // Scrub breadcrumb messages
+      if (event.breadcrumbs) {
+        event.breadcrumbs = event.breadcrumbs.map(bc => ({
+          ...bc,
+          message: bc.message ? scrubString(bc.message) : bc.message,
+          data: bc.data ? JSON.parse(scrubString(JSON.stringify(bc.data))) : bc.data,
+        }));
+      }
+
+      // Scrub request URLs
+      if (event.request?.url) {
+        event.request.url = scrubString(event.request.url);
+      }
+      if (event.request?.headers) {
+        const headers: Record<string, string> = {};
+        for (const [key, value] of Object.entries(event.request.headers)) {
+          headers[key] = key.toLowerCase() === 'authorization' ? '[REDACTED]' : scrubString(String(value));
+        }
+        event.request.headers = headers;
       }
 
       // Don't send events in development

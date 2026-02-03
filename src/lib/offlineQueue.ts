@@ -87,9 +87,10 @@ class OfflineQueue {
   // P0 Fix: Promise to track initialization - operations must await this before modifying queue
   private initPromise: Promise<void> | null = null;
 
-  // Bound event handlers for proper cleanup
+  // Bound event handlers for proper cleanup (P1 Fix: all handlers must be bound for removal)
   private boundHandleOnline = () => this.handleOnline();
   private boundHandleOffline = () => this.handleOffline();
+  private boundHandleSWMessage = (event: MessageEvent) => this.handleSWMessage(event);
 
   constructor() {
     // Load persisted queue on init - now properly awaited via initPromise
@@ -102,7 +103,7 @@ class OfflineQueue {
 
       // P1 Fix: Listen for Background Sync messages from Service Worker
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.addEventListener('message', this.handleSWMessage.bind(this));
+        navigator.serviceWorker.addEventListener('message', this.boundHandleSWMessage);
       }
     }
   }
@@ -119,11 +120,17 @@ class OfflineQueue {
 
   /**
    * Cleanup event listeners - call when destroying the queue
+   * P1 Fix: Now properly removes ALL listeners including SW message handler
    */
   destroy(): void {
     if (typeof window !== 'undefined') {
       window.removeEventListener('online', this.boundHandleOnline);
       window.removeEventListener('offline', this.boundHandleOffline);
+
+      // P1 Fix: Remove SW message listener to prevent memory leak
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', this.boundHandleSWMessage);
+      }
     }
     this.listeners.clear();
     this.syncHandlers.clear();
@@ -155,9 +162,21 @@ class OfflineQueue {
     const { maxRetries = DEFAULT_MAX_RETRIES, deduplicate = true } = options;
 
     // Check queue size limit
+    // P1 Fix: Emit event when data is dropped so UI can warn user
     if (this.state.actions.length >= MAX_QUEUE_SIZE) {
-      logger.warn('[OfflineQueue] Queue size limit reached, removing oldest action');
-      this.state.actions.shift();
+      const droppedAction = this.state.actions.shift();
+      logger.warn('[OfflineQueue] Queue size limit reached, removing oldest action:', droppedAction?.type);
+
+      // Emit custom event for UI to show warning
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('zenflow:offline-data-dropped', {
+          detail: {
+            droppedAction,
+            queueSize: MAX_QUEUE_SIZE,
+            message: 'Too many offline changes. Some data may be lost. Please connect to sync.'
+          }
+        }));
+      }
     }
 
     // Deduplicate: remove previous action for same entity and type

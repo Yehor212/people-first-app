@@ -12,6 +12,7 @@
 
 import { logger } from './logger';
 import { safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
+import { rateLimiter, RateLimitError } from './rateLimiter';
 
 // ============================================
 // TYPES
@@ -45,7 +46,33 @@ export interface SpotifyPlaylist {
 
 const STORAGE_KEY = 'zenflow_spotify_tokens';
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || '';
-const REDIRECT_URI = `${window.location.origin}/spotify-callback`;
+
+// P0 Security Fix: Whitelist allowed redirect URIs to prevent OAuth hijacking
+const ALLOWED_ORIGINS = [
+  'https://yehor212.github.io',
+  'http://localhost:5173',
+  'http://localhost:4173',
+  'capacitor://localhost',
+] as const;
+
+function getSecureRedirectUri(): string {
+  const currentOrigin = window.location.origin;
+
+  // Check if current origin is in whitelist
+  if (ALLOWED_ORIGINS.includes(currentOrigin as typeof ALLOWED_ORIGINS[number])) {
+    // For GitHub Pages, append the base path
+    if (currentOrigin === 'https://yehor212.github.io') {
+      return `${currentOrigin}/people-first-app/spotify-callback`;
+    }
+    return `${currentOrigin}/spotify-callback`;
+  }
+
+  // Fallback to production URL if origin is not whitelisted (prevents hijacking)
+  logger.warn('[Spotify] Origin not in whitelist, using production redirect:', currentOrigin);
+  return 'https://yehor212.github.io/people-first-app/spotify-callback';
+}
+
+const REDIRECT_URI = getSecureRedirectUri();
 const SCOPES = [
   'user-read-playback-state',
   'user-modify-playback-state',
@@ -56,6 +83,22 @@ const SCOPES = [
 
 // Popular focus/study playlists (fallback)
 const FOCUS_PLAYLIST_QUERY = 'focus study concentration lo-fi';
+
+// ============================================
+// RATE-LIMITED FETCH
+// ============================================
+
+/**
+ * P0 Security Fix: Rate-limited fetch for Spotify API
+ * Prevents hitting Spotify's rate limits and getting blocked
+ */
+async function spotifyFetch(url: string, options?: RequestInit): Promise<Response> {
+  if (!rateLimiter.checkAndRecord('spotify')) {
+    const retryAfter = rateLimiter.getTimeUntilReset('spotify');
+    throw new RateLimitError('spotify', retryAfter);
+  }
+  return fetch(url, options);
+}
 
 // ============================================
 // OAUTH HELPERS
@@ -262,7 +305,7 @@ export async function getCurrentTrack(): Promise<SpotifyTrack | null> {
   if (!token) return null;
 
   try {
-    const response = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+    const response = await spotifyFetch('https://api.spotify.com/v1/me/player/currently-playing', {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -304,7 +347,7 @@ export async function play(contextUri?: string): Promise<boolean> {
   try {
     const body = contextUri ? JSON.stringify({ context_uri: contextUri }) : undefined;
 
-    const response = await fetch('https://api.spotify.com/v1/me/player/play', {
+    const response = await spotifyFetch('https://api.spotify.com/v1/me/player/play', {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -339,7 +382,7 @@ export async function pause(): Promise<boolean> {
   if (!token) return false;
 
   try {
-    const response = await fetch('https://api.spotify.com/v1/me/player/pause', {
+    const response = await spotifyFetch('https://api.spotify.com/v1/me/player/pause', {
       method: 'PUT',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -383,7 +426,7 @@ export async function searchFocusPlaylists(query?: string): Promise<SpotifyPlayl
 
   try {
     const searchQuery = encodeURIComponent(query || FOCUS_PLAYLIST_QUERY);
-    const response = await fetch(
+    const response = await spotifyFetch(
       `https://api.spotify.com/v1/search?q=${searchQuery}&type=playlist&limit=10`,
       {
         headers: {
@@ -418,7 +461,7 @@ export async function getUserPlaylists(): Promise<SpotifyPlaylist[]> {
   if (!token) return [];
 
   try {
-    const response = await fetch('https://api.spotify.com/v1/me/playlists?limit=20', {
+    const response = await spotifyFetch('https://api.spotify.com/v1/me/playlists?limit=20', {
       headers: {
         Authorization: `Bearer ${token}`,
       },

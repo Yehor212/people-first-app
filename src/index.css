@@ -217,7 +217,7 @@
     --secondary-foreground: 45 15% 90%;
 
     --muted: 160 10% 15%;
-    --muted-foreground: 45 15% 65%;     /* Better readability */
+    --muted-foreground: 45 15% 70%;     /* P2 Contrast Fix: Improved from 65% to 70% for WCAG AA */
 
     --accent: 28 80% 60%;               /* More saturated accent */
     --accent-foreground: 28 90% 98%;
@@ -3400,4 +3400,28 @@ input::-moz-focus-inner {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* ===== P2 CONTRAST FIX: Safe muted text colors ===== */
+/* Use these instead of text-white/40 which has poor contrast */
+.text-muted-safe {
+  color: hsl(var(--muted-foreground));
+}
+
+/* For overlays/modals with dark backgrounds */
+.dark .text-overlay-muted {
+  color: hsl(0 0% 100% / 0.6); /* 60% white - meets WCAG AA */
+}
+
+.text-overlay-muted {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Placeholder text with proper contrast */
+.placeholder-safe::placeholder {
+  color: hsl(var(--muted-foreground) / 0.7);
+}
+
+.dark .placeholder-safe::placeholder {
+  color: hsl(0 0% 100% / 0.5); /* 50% is minimum for placeholder text */
 }

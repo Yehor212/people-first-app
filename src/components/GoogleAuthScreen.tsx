@@ -329,26 +329,34 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
   };
 
   return (
-    <div className="min-h-screen zen-gradient-hero flex items-center justify-center p-4">
+    <div
+      className="min-h-screen zen-gradient-hero flex items-center justify-center p-4"
+      role="main"
+      aria-labelledby="auth-title"
+    >
       <div className="w-full max-w-md animate-fade-in">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center gap-3 mb-4">
+        <header className="text-center mb-8">
+          <div className="inline-flex items-center gap-3 mb-4" aria-hidden="true">
             <div className="p-3 zen-gradient rounded-2xl zen-shadow-glow">
               <Leaf className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold zen-text-gradient mb-2">
+          <h1 id="auth-title" className="text-3xl font-bold zen-text-gradient mb-2">
             Welcome to ZenFlow
           </h1>
           <p className="text-muted-foreground">
             Sign in to sync your data across devices
           </p>
-        </div>
+        </header>
 
         {/* Auth Card */}
-        <div className="bg-card rounded-2xl p-6 zen-shadow-card mb-4 space-y-4">
-          <h2 className="text-lg font-semibold text-foreground text-center mb-4">
+        <section
+          className="bg-card rounded-2xl p-6 zen-shadow-card mb-4 space-y-4"
+          aria-labelledby="auth-methods-title"
+          aria-busy={loading}
+        >
+          <h2 id="auth-methods-title" className="text-lg font-semibold text-foreground text-center mb-4">
             Continue with
           </h2>
 
@@ -356,10 +364,12 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
           <button
             onClick={handleGoogleSignIn}
             disabled={loading || !supabase}
+            aria-label={loading ? 'Signing in with Google...' : 'Sign in with Google'}
+            aria-disabled={loading || !supabase}
             className="w-full py-4 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
             ) : (
               <>
                 <svg className="w-5 h-5" viewBox="0 0 24 24">
@@ -386,8 +396,8 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
           </button>
 
           {!supabase && (
-            <div className="p-3 bg-destructive/10 rounded-xl flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+            <div role="alert" className="p-3 bg-destructive/10 rounded-xl flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" aria-hidden="true" />
               <p className="text-sm text-destructive">
                 Authentication not configured. Configure Supabase to enable sign-in.
               </p>
@@ -395,8 +405,8 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
           )}
 
           {error && (
-            <div className="p-3 bg-destructive/10 rounded-xl flex items-start gap-2">
-              <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" />
+            <div role="alert" aria-live="polite" className="p-3 bg-destructive/10 rounded-xl flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div className="flex-1">
                 <p className="text-sm text-destructive whitespace-pre-wrap">
                   {error}
@@ -408,6 +418,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
                 )}
                 <button
                   onClick={exportDebugInfo}
+                  aria-label="Export authentication debug information"
                   className="text-xs text-primary underline mt-2"
                 >
                   Export debug info
@@ -430,16 +441,18 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
           <button
             onClick={handleEmailSignIn}
             disabled={loading}
+            aria-label="Continue with Email"
             className="w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-2xl hover:bg-muted transition-colors flex items-center justify-center gap-2"
           >
-            <Mail className="w-5 h-5" />
+            <Mail className="w-5 h-5" aria-hidden="true" />
             Continue with Email
           </button>
-        </div>
+        </section>
 
         {/* Skip Button */}
         <button
           onClick={handleSkip}
+          aria-label="Skip sign-in and continue without an account"
           className="w-full py-3 bg-transparent text-muted-foreground font-medium rounded-2xl hover:bg-secondary/50 transition-colors"
         >
           Skip for now

@@ -13,6 +13,7 @@
 import { supabase } from './supabaseClient';
 import { logger } from './logger';
 import { safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
+import { rateLimiter, RateLimitError } from './rateLimiter';
 
 // ============================================
 // TYPES
@@ -42,6 +43,18 @@ export interface CalendarSyncState {
 const STORAGE_KEY = 'zenflow_calendar_cache';
 const CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
+
+/**
+ * P0 Security Fix: Rate-limited fetch for Google Calendar API
+ * Prevents hitting Google's rate limits
+ */
+async function calendarFetch(url: string, options?: RequestInit): Promise<Response> {
+  if (!rateLimiter.checkAndRecord('googleCalendar')) {
+    const retryAfter = rateLimiter.getTimeUntilReset('googleCalendar');
+    throw new RateLimitError('googleCalendar', retryAfter);
+  }
+  return fetch(url, options);
+}
 
 // ============================================
 // STATE MANAGEMENT
@@ -156,7 +169,7 @@ export async function fetchCalendarEvents(
       maxResults: '50',
     });
 
-    const response = await fetch(
+    const response = await calendarFetch(
       `${CALENDAR_API_BASE}/calendars/primary/events?${params}`,
       {
         headers: {

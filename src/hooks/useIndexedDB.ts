@@ -36,17 +36,43 @@ let lockTimeout: ReturnType<typeof setTimeout> | null = null;
 const LOCK_TIMEOUT_MS = 15000; // Reduced from 30s to 15s
 const MAX_QUEUE_SIZE = 50; // Prevent unbounded queue growth
 
+// P1 Fix: Track if we're in the middle of a flush to prevent re-entry
+let isFlushingQueue = false;
+
 const acquireInitLock = async (): Promise<void> => {
   return new Promise((resolve) => {
-    // P0 Fix: Prevent queue overflow - clear if too large
-    if (initQueue.length >= MAX_QUEUE_SIZE) {
+    // P1 Fix: Prevent queue overflow with atomic check
+    // Emit event so UI can warn user about potential delays
+    if (initQueue.length >= MAX_QUEUE_SIZE && !isFlushingQueue) {
+      isFlushingQueue = true;
       logger.warn(`[useIndexedDB] Queue overflow (${initQueue.length}), force clearing`);
-      // Resolve all waiting callbacks
-      while (initQueue.length > 0) {
-        const callback = initQueue.shift();
-        callback?.();
+
+      // Emit warning event
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('zenflow:indexeddb-queue-overflow', {
+          detail: { queueSize: initQueue.length }
+        }));
       }
-      globalInitLock = false;
+
+      // Clear timeout to prevent double-release
+      if (lockTimeout) {
+        clearTimeout(lockTimeout);
+        lockTimeout = null;
+      }
+
+      // Resolve all waiting callbacks sequentially with small delay
+      // This prevents all callbacks from racing simultaneously
+      const flushQueue = async () => {
+        while (initQueue.length > 0) {
+          const callback = initQueue.shift();
+          callback?.();
+          // Small delay to prevent overwhelming the system
+          await new Promise(r => setTimeout(r, 10));
+        }
+        globalInitLock = false;
+        isFlushingQueue = false;
+      };
+      void flushQueue();
     }
 
     if (!globalInitLock) {
