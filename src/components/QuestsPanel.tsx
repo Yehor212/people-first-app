@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { safeJsonParse } from '@/lib/safeJson';
 import { Sparkles, Trophy, Clock, Zap, Target, X } from 'lucide-react';
@@ -50,7 +51,10 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
       bonus: bonusQuest,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    pushQuestsToCloud(data).catch(err => logger.error('Failed to push quests to cloud:', err));
+    pushQuestsToCloud(data).catch(err => {
+      logger.error('Failed to push quests to cloud:', err);
+      toast.error('Sync failed. Changes saved locally.');
+    });
   }, [dailyQuest, weeklyQuest, bonusQuest, isLoaded]);
 
   // Check and regenerate expired/completed quests

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { toast } from 'sonner';
 import { Plus, Zap, Clock, Star, Calendar, Trash2, CheckCircle2, Circle, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { SkeletonSection, SkeletonList } from '@/components/ui/skeleton';
@@ -73,7 +74,10 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
     // Use syncOrchestrator to avoid race conditions with other sync operations
     syncOrchestrator.sync('tasks', async () => {
       await pushTasksToCloud(tasks);
-    }).catch(err => logger.error('[TasksPanel] Cloud sync failed:', err));
+    }).catch(err => {
+      logger.error('[TasksPanel] Cloud sync failed:', err);
+      toast.error('Sync failed. Changes saved locally.');
+    });
   }, [tasks, isLoaded]);
 
   // Save momentum state

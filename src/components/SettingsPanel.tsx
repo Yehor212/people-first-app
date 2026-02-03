@@ -32,7 +32,7 @@ import { isCloudSyncEnabled, setCloudSyncEnabled } from '@/lib/cloudSyncSettings
 import { removePushToken } from '@/lib/pushNotifications';
 import { offlineQueue } from '@/lib/offlineQueue';
 import { FeedbackForm } from '@/components/FeedbackForm';
-import { MessageSquare, Zap, Volume2, RefreshCw, History } from 'lucide-react';
+import { MessageSquare, Zap, Volume2, RefreshCw, History, Loader2 } from 'lucide-react';
 import { ChangelogPanel } from '@/components/ChangelogPanel';
 import { checkForAppUpdate, openGooglePlayStore, UpdateState } from '@/lib/appUpdateManager';
 import { APP_VERSION } from '@/lib/appVersion';
@@ -83,6 +83,9 @@ export function SettingsPanel({
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [importMode, setImportMode] = useState<ImportMode>('merge');
   const [dataStatus, setDataStatus] = useState<string | null>(null);
+  // P1 Fix: Loading states for export/import operations
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [authEmail, setAuthEmail] = useState('');
   const [authStatus, setAuthStatus] = useState<string | null>(null);
@@ -461,6 +464,9 @@ export function SettingsPanel({
   };
 
   const handleExport = async () => {
+    // P1 Fix: Add loading state for better UX
+    setIsExporting(true);
+    setDataStatus(null);
     try {
       const payload = await exportBackup();
       const json = JSON.stringify(payload, null, 2);
@@ -498,6 +504,9 @@ export function SettingsPanel({
     } catch (error) {
       logger.error("Export failed:", error);
       setDataStatus(t.exportError);
+      toast.error(t.exportError || 'Export failed');
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -531,6 +540,10 @@ export function SettingsPanel({
       return;
     }
 
+    // P1 Fix: Add loading state for better UX
+    setIsImporting(true);
+    setDataStatus(null);
+
     try {
       const text = await file.text();
       const payload = safeJsonParse(text, null);
@@ -555,7 +568,9 @@ export function SettingsPanel({
     } catch (error) {
       logger.error("Import failed:", error);
       setDataStatus(t.importError);
+      toast.error(t.importError || 'Import failed');
     } finally {
+      setIsImporting(false);
       event.target.value = '';
     }
   };
@@ -1123,10 +1138,11 @@ export function SettingsPanel({
           {/* Export button - Primary style */}
           <button
             onClick={handleExport}
-            className="w-full py-4 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity zen-shadow-sm flex items-center justify-center gap-2"
+            disabled={isExporting}
+            className="w-full py-4 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity zen-shadow-sm flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Download className="w-5 h-5" />
-            <span>{t.settingsExportTitle || t.exportData}</span>
+            {isExporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+            <span>{isExporting ? (t.exporting || 'Exporting...') : (t.settingsExportTitle || t.exportData)}</span>
           </button>
 
           {/* Export CSV and PDF buttons */}
@@ -1196,10 +1212,11 @@ export function SettingsPanel({
             />
             <button
               onClick={handleImportClick}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2"
+              disabled={isImporting}
+              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Upload className="w-5 h-5" />
-              <span>{t.settingsImportTitle || t.importData}</span>
+              {isImporting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+              <span>{isImporting ? (t.importing || 'Importing...') : (t.settingsImportTitle || t.importData)}</span>
             </button>
           </div>
 
