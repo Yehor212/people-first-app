@@ -97,10 +97,15 @@ export default defineConfig(({ mode }) => {
       },
 
       // Workbox configuration
+      // P0 Fix [WEB]: Changed to prompt-based update to prevent serving stale code
+      // When skipWaiting is true, new SW activates immediately which can cause
+      // issues if the JS code changes significantly. Setting to false requires
+      // user to close all tabs or reload to get updates.
       workbox: {
-        // Auto-activate new SW immediately (no waiting for tabs to close)
-        skipWaiting: true,
-        clientsClaim: true,
+        // P0 Fix: Disable immediate activation - let user control when to update
+        // This prevents serving stale JS code with new API responses
+        skipWaiting: false, // Changed from true - new SW waits for all tabs to close
+        clientsClaim: false, // Changed from true - don't take over existing tabs
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
         runtimeCaching: [
           // Only cache Supabase Storage (public assets) - NOT auth/database/realtime

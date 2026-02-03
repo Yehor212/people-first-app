@@ -29,6 +29,7 @@ import { DopamineSettingsComponent } from '@/components/DopamineSettings';
 import { sendTestNotification, checkNotificationStatus } from '@/lib/localNotifications';
 import { isCloudSyncEnabled, setCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { removePushToken } from '@/lib/pushNotifications';
+import { offlineQueue } from '@/lib/offlineQueue';
 import { FeedbackForm } from '@/components/FeedbackForm';
 import { MessageSquare, Zap, Volume2, RefreshCw, History } from 'lucide-react';
 import { ChangelogPanel } from '@/components/ChangelogPanel';
@@ -370,6 +371,25 @@ export function SettingsPanel({
 
   const handleSignOut = async () => {
     if (!supabase) return;
+
+    // P0 Fix: Flush offline queue before signing out to prevent data loss
+    if (offlineQueue.hasPendingActions()) {
+      logger.log('[Settings] Flushing offline queue before sign-out...');
+      try {
+        // Process queue with 10s timeout to prevent hanging
+        await Promise.race([
+          offlineQueue.processQueue(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Queue flush timeout')), 10000)
+          )
+        ]);
+        logger.log('[Settings] Offline queue flushed successfully');
+      } catch (flushError) {
+        logger.warn('[Settings] Could not flush offline queue:', flushError);
+        // Continue with sign-out even if flush fails
+      }
+    }
+
     // Remove FCM push token before signing out
     await removePushToken();
     await supabase.auth.signOut();

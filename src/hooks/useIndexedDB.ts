@@ -32,16 +32,30 @@ let globalInitLock = false;
 const initQueue: Array<() => void> = [];
 let lockTimeout: ReturnType<typeof setTimeout> | null = null;
 
+// P0 Fix: Reduced timeout and added queue overflow protection
+const LOCK_TIMEOUT_MS = 15000; // Reduced from 30s to 15s
+const MAX_QUEUE_SIZE = 50; // Prevent unbounded queue growth
+
 const acquireInitLock = async (): Promise<void> => {
   return new Promise((resolve) => {
+    // P0 Fix: Prevent queue overflow - clear if too large
+    if (initQueue.length >= MAX_QUEUE_SIZE) {
+      logger.warn(`[useIndexedDB] Queue overflow (${initQueue.length}), force clearing`);
+      // Resolve all waiting callbacks
+      while (initQueue.length > 0) {
+        const callback = initQueue.shift();
+        callback?.();
+      }
+      globalInitLock = false;
+    }
+
     if (!globalInitLock) {
       globalInitLock = true;
-      // P0 Fix: Auto-release lock after 30 seconds to prevent deadlock
-      // Increased from 10s to handle slow IndexedDB initialization on low-end Android devices
+      // P0 Fix: Auto-release lock after 15 seconds to prevent deadlock
       lockTimeout = setTimeout(() => {
-        logger.warn('[useIndexedDB] Lock timeout (30s) - force releasing');
+        logger.warn(`[useIndexedDB] Lock timeout (${LOCK_TIMEOUT_MS}ms) - force releasing`);
         releaseInitLock();
-      }, 30000);
+      }, LOCK_TIMEOUT_MS);
       resolve();
     } else {
       initQueue.push(() => resolve());
@@ -56,6 +70,11 @@ const releaseInitLock = (): void => {
   }
   const next = initQueue.shift();
   if (next) {
+    // Set new timeout for next operation
+    lockTimeout = setTimeout(() => {
+      logger.warn(`[useIndexedDB] Lock timeout (${LOCK_TIMEOUT_MS}ms) - force releasing`);
+      releaseInitLock();
+    }, LOCK_TIMEOUT_MS);
     next();
   } else {
     globalInitLock = false;
@@ -82,6 +101,8 @@ export function useIndexedDB<T>({
   const initializedRef = useRef(false);
   // Store initialValue in ref to avoid dependency issues (it's only used on first load)
   const initialValueRef = useRef(initialValue);
+  // P0 Fix: Track mounted state to prevent memory leaks
+  const isMountedRef = useRef(true);
 
   // Load data function (used both on init and refresh)
   const loadData = useCallback(async (isInitialLoad = false) => {
@@ -215,10 +236,21 @@ export function useIndexedDB<T>({
     loadData(true);
   }, [loadData]);
 
+  // P0 Fix: Track mounted state to prevent memory leaks and state updates after unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Subscribe to refresh events
   useEffect(() => {
     const handleRefresh = () => {
-      setRefreshCounter(c => c + 1);
+      // P0 Fix: Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setRefreshCounter(c => c + 1);
+      }
     };
     refreshListeners.add(handleRefresh);
     return () => {

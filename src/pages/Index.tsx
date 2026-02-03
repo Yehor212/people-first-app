@@ -1596,6 +1596,8 @@ export function Index() {
   useEffect(() => {
     if (!onboardingComplete || isLoading) return;
 
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
     const checkWeeklyReport = () => {
       const lastShown = localStorage.getItem('zenflow-last-weekly-report');
       const today = new Date();
@@ -1618,7 +1620,7 @@ export function Index() {
       // Show on Monday (1) if not shown this week
       if (dayOfWeek === 1 && (!lastShown || isNewWeek(lastShown))) {
         // Delay to let data load
-        setTimeout(() => {
+        timeoutId = setTimeout(() => {
           setShowWeeklyReport(true);
           localStorage.setItem('zenflow-last-weekly-report', today.toISOString());
         }, 1000);
@@ -1626,6 +1628,10 @@ export function Index() {
     };
 
     checkWeeklyReport();
+
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
   }, [onboardingComplete, isLoading]);
 
   // Cloud sync for challenges and badges

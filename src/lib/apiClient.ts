@@ -6,10 +6,14 @@
  * 2. Attempt token refresh once
  * 3. Retry the operation
  * 4. Notify UI if session expired
+ *
+ * P0 Fix [WEB]: BroadcastChannel coordination for multi-tab token refresh
+ * Prevents cascading 401s when one tab refreshes the token.
  */
 
 import { supabase } from './supabaseClient';
 import { logger } from './logger';
+import { Capacitor } from '@capacitor/core';
 
 // Event name for session expiration
 export const AUTH_SESSION_EXPIRED_EVENT = 'auth:session-expired';
@@ -17,6 +21,76 @@ export const AUTH_SESSION_EXPIRED_EVENT = 'auth:session-expired';
 // Track if refresh is in progress to prevent concurrent refreshes
 let refreshInProgress = false;
 let refreshPromise: Promise<boolean> | null = null;
+
+// P0 Fix [WEB]: BroadcastChannel for multi-tab coordination
+// Only used on web platform (not native)
+const REFRESH_CHANNEL_NAME = 'zenflow-auth-refresh';
+let refreshChannel: BroadcastChannel | null = null;
+let waitingForRefresh = false;
+let refreshResolvers: Array<(success: boolean) => void> = [];
+
+// Initialize BroadcastChannel for web only
+const initRefreshChannel = (): void => {
+  if (Capacitor.isNativePlatform()) return;
+  if (refreshChannel) return;
+
+  try {
+    refreshChannel = new BroadcastChannel(REFRESH_CHANNEL_NAME);
+    refreshChannel.onmessage = (event) => {
+      const { type, success } = event.data;
+
+      if (type === 'REFRESH_START') {
+        // Another tab started refresh - we should wait
+        logger.log('[API] Another tab started token refresh');
+        waitingForRefresh = true;
+      } else if (type === 'REFRESH_COMPLETE') {
+        // Another tab completed refresh
+        logger.log(`[API] Another tab completed refresh: ${success ? 'success' : 'failed'}`);
+        waitingForRefresh = false;
+        // Resolve all waiting promises
+        refreshResolvers.forEach(resolve => resolve(success));
+        refreshResolvers = [];
+      }
+    };
+    logger.log('[API] BroadcastChannel initialized for multi-tab coordination');
+  } catch (error) {
+    // BroadcastChannel not supported (older browsers)
+    logger.warn('[API] BroadcastChannel not available:', error);
+  }
+};
+
+// Initialize on module load
+initRefreshChannel();
+
+/**
+ * Broadcast refresh status to other tabs
+ */
+const broadcastRefreshStatus = (type: 'REFRESH_START' | 'REFRESH_COMPLETE', success?: boolean): void => {
+  if (!refreshChannel) return;
+  try {
+    refreshChannel.postMessage({ type, success });
+  } catch (error) {
+    // Channel might be closed
+  }
+};
+
+/**
+ * Wait for another tab's refresh to complete
+ */
+const waitForOtherTabRefresh = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    // Timeout after 10 seconds
+    const timeout = setTimeout(() => {
+      waitingForRefresh = false;
+      resolve(false);
+    }, 10000);
+
+    refreshResolvers.push((success) => {
+      clearTimeout(timeout);
+      resolve(success);
+    });
+  });
+};
 
 /**
  * Check if an error is a 401/authentication error
@@ -45,6 +119,9 @@ export const is401Error = (error: any): boolean => {
 /**
  * Attempt to refresh the session
  * Returns true if successful, false otherwise
+ *
+ * P0 Fix [WEB]: Coordinates with other browser tabs via BroadcastChannel
+ * to prevent cascading 401 errors when one tab refreshes.
  */
 const tryRefreshSession = async (): Promise<boolean> => {
   if (!supabase) {
@@ -52,13 +129,22 @@ const tryRefreshSession = async (): Promise<boolean> => {
     return false;
   }
 
-  // If refresh already in progress, wait for it
+  // P0 Fix: If another tab is refreshing, wait for it instead of doing our own refresh
+  if (waitingForRefresh) {
+    logger.log('[API] Another tab is refreshing, waiting...');
+    return waitForOtherTabRefresh();
+  }
+
+  // If refresh already in progress in this tab, wait for it
   if (refreshInProgress && refreshPromise) {
     logger.log('[API] Refresh already in progress, waiting...');
     return refreshPromise;
   }
 
   refreshInProgress = true;
+  // P0 Fix: Notify other tabs that we're starting refresh
+  broadcastRefreshStatus('REFRESH_START');
+
   refreshPromise = (async () => {
     try {
       logger.log('[API] Attempting token refresh...');
@@ -66,18 +152,24 @@ const tryRefreshSession = async (): Promise<boolean> => {
 
       if (error) {
         logger.error('[API] Token refresh failed:', error.message);
+        // P0 Fix: Notify other tabs of failure
+        broadcastRefreshStatus('REFRESH_COMPLETE', false);
         return false;
       }
 
       if (data.session) {
         logger.log('[API] Token refresh successful');
+        // P0 Fix: Notify other tabs of success
+        broadcastRefreshStatus('REFRESH_COMPLETE', true);
         return true;
       }
 
       logger.warn('[API] Refresh returned no session');
+      broadcastRefreshStatus('REFRESH_COMPLETE', false);
       return false;
     } catch (err) {
       logger.error('[API] Token refresh error:', err);
+      broadcastRefreshStatus('REFRESH_COMPLETE', false);
       return false;
     } finally {
       refreshInProgress = false;

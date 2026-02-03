@@ -20,7 +20,8 @@ let autoSyncStarted = false;
 let syncLock = false;
 let syncLockOwner: string | null = null; // Unique ID of the operation holding the lock
 let syncLockTimeout: ReturnType<typeof setTimeout> | null = null;
-const SYNC_LOCK_TIMEOUT = 120000; // P0 Fix: 120 seconds max lock time (increased from 60s to prevent data corruption during slow operations)
+let syncLockStartTime: number | null = null; // Track when lock was acquired
+const SYNC_LOCK_TIMEOUT = 60000; // P0 Fix: Reduced from 120s to 60s - most sync ops should complete in <30s
 
 /**
  * Generate a unique operation ID for lock ownership tracking.
@@ -49,6 +50,7 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
   const operationId = generateOperationId();
   syncLock = true;
   syncLockOwner = operationId;
+  syncLockStartTime = Date.now();
   logger.sync(`Sync started (operation: ${operationId})`);
 
   // Set timeout to auto-release lock and prevent deadlock
@@ -56,9 +58,11 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
   // This prevents data corruption when timeout fires during a slow but legitimate operation
   syncLockTimeout = setTimeout(() => {
     if (syncLock && syncLockOwner === operationId) {
-      logger.warn(`[Sync] Lock timeout exceeded, force releasing (operation: ${operationId})`);
+      const duration = syncLockStartTime ? Date.now() - syncLockStartTime : 0;
+      logger.warn(`[Sync] Lock timeout exceeded after ${duration}ms, force releasing (operation: ${operationId})`);
       syncLock = false;
       syncLockOwner = null;
+      syncLockStartTime = null;
     } else if (syncLock) {
       // Lock is held by a different operation - this is unexpected but possible
       // if the original operation completed and a new one started
@@ -148,9 +152,11 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
     // Only release lock if we still own it
     // This prevents releasing a lock that was already timed out and acquired by another operation
     if (syncLockOwner === operationId) {
+      const duration = syncLockStartTime ? Date.now() - syncLockStartTime : 0;
       syncLock = false;
       syncLockOwner = null;
-      logger.sync(`Sync completed, lock released (operation: ${operationId})`);
+      syncLockStartTime = null;
+      logger.sync(`Sync completed in ${duration}ms, lock released (operation: ${operationId})`);
     } else {
       // Lock was released by timeout or is now owned by another operation
       logger.sync(`Sync completed but lock already released or transferred (operation: ${operationId}, current owner: ${syncLockOwner})`);

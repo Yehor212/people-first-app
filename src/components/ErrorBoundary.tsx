@@ -145,3 +145,114 @@ export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ childre
     </ErrorBoundaryBase>
   );
 };
+
+/**
+ * ModalErrorBoundary - Error boundary for modals and lazy-loaded components.
+ * Shows a contained error state instead of crashing the entire app.
+ * Use this to wrap any Suspense boundaries or modal content.
+ */
+interface ModalErrorBoundaryProps {
+  children: React.ReactNode;
+  onClose?: () => void;
+  fallbackTitle?: string;
+  fallbackBody?: string;
+}
+
+interface ModalErrorBoundaryState {
+  hasError: boolean;
+  error: Error | null;
+}
+
+class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, ModalErrorBoundaryState> {
+  state: ModalErrorBoundaryState = { hasError: false, error: null };
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    // Log to localStorage
+    logError({
+      message: error.message,
+      stack: error.stack,
+      componentStack: info.componentStack,
+      context: 'modal',
+      time: new Date().toISOString()
+    });
+
+    // Report to Crashlytics
+    crashReporting.recordError(error, {
+      componentStack: info.componentStack || 'unknown',
+      location: window.location.href,
+      context: 'modal'
+    });
+  }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null });
+  };
+
+  handleClose = () => {
+    this.setState({ hasError: false, error: null });
+    this.props.onClose?.();
+  };
+
+  render() {
+    if (!this.state.hasError) {
+      return this.props.children;
+    }
+
+    const title = this.props.fallbackTitle || "Something went wrong";
+    const body = this.props.fallbackBody || "This feature encountered an error. Try closing and reopening.";
+
+    return (
+      <div className="flex flex-col items-center justify-center p-6 text-center min-h-[200px]">
+        <div className="w-16 h-16 mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
+          <svg className="w-8 h-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+        <p className="text-sm text-muted-foreground mb-4 max-w-xs">{body}</p>
+        <div className="flex gap-3">
+          <button
+            onClick={this.handleRetry}
+            className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium hover:bg-muted transition-colors"
+          >
+            Try Again
+          </button>
+          {this.props.onClose && (
+            <button
+              onClick={this.handleClose}
+              className="px-4 py-2 zen-gradient text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
+            >
+              Close
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+}
+
+export const ModalErrorBoundary: React.FC<ModalErrorBoundaryProps> = (props) => {
+  return <ModalErrorBoundaryClass {...props} />;
+};
+
+/**
+ * LazyErrorBoundary - Error boundary specifically for lazy-loaded components.
+ * Provides a minimal error state that doesn't disrupt the UI flow.
+ */
+export const LazyErrorBoundary: React.FC<{ children: React.ReactNode; componentName?: string }> = ({
+  children,
+  componentName = 'component'
+}) => {
+  return (
+    <ModalErrorBoundaryClass
+      fallbackTitle={`Failed to load ${componentName}`}
+      fallbackBody="The component could not be loaded. Please try refreshing the page."
+    >
+      {children}
+    </ModalErrorBoundaryClass>
+  );
+};

@@ -8,9 +8,13 @@ import { logger } from "./lib/logger";
 import { setupDeepLinks } from "./lib/deepLinks";
 import { offlineQueue } from "./lib/offlineQueue";
 import { initSentry, captureError } from "./lib/sentry";
+import { initA11y } from "./lib/a11y";
 
 // Initialize Sentry FIRST for error monitoring (before any other code runs)
 initSentry();
+
+// P1 Fix: Initialize accessibility features (aria-live regions for screen readers)
+initA11y();
 
 // Global error handlers for unhandled exceptions and promise rejections
 // These catch errors that escape React's error boundary

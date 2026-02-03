@@ -2,6 +2,21 @@ import Dexie, { Table } from 'dexie';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { logger } from '@/lib/logger';
 
+/**
+ * Offline queue action stored in IndexedDB
+ * P0 Fix: Move from localStorage to IndexedDB for better quota handling
+ */
+export interface OfflineQueueItem {
+  id: string;
+  type: string;
+  entityId: string;
+  payload: unknown;
+  timestamp: number;
+  retries: number;
+  maxRetries: number;
+  lastError?: string;
+}
+
 // Определяем схему базы данных
 export class ZenFlowDB extends Dexie {
   moods!: Table<MoodEntry, string>;
@@ -9,6 +24,7 @@ export class ZenFlowDB extends Dexie {
   focusSessions!: Table<FocusSession, string>;
   gratitudeEntries!: Table<GratitudeEntry, string>;
   settings!: Table<{ key: string; value: unknown }, string>;
+  offlineQueue!: Table<OfflineQueueItem, string>;
 
   constructor() {
     super('ZenFlowDB');
@@ -31,8 +47,17 @@ export class ZenFlowDB extends Dexie {
       settings: 'key',
     });
 
-    // Future migrations can be added here:
-    // this.version(3).stores({ ... }).upgrade(tx => { ... });
+    // Version 3: Add offline queue table for P0 fix
+    // This moves offline queue from localStorage to IndexedDB
+    // for better quota handling and reliability
+    this.version(3).stores({
+      moods: 'id, timestamp, date',
+      habits: 'id, createdAt, type',
+      focusSessions: 'id, startTime, date',
+      gratitudeEntries: 'id, timestamp, date',
+      settings: 'key',
+      offlineQueue: 'id, type, entityId, timestamp',
+    });
   }
 }
 

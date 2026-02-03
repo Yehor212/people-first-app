@@ -68,26 +68,38 @@ const getOrCreateDeviceId = async () => {
   return deviceId;
 };
 
+/**
+ * Export backup atomically using Dexie transaction.
+ * P0 Fix: Ensures data doesn't change mid-export by using a read transaction.
+ * This prevents race conditions where user edits data during sync.
+ */
 export const exportBackup = async (): Promise<BackupPayloadV2> => {
-  const [moods, habits, focusSessions, gratitudeEntries, settings] = await Promise.all([
-    db.moods.toArray(),
-    db.habits.toArray(),
-    db.focusSessions.toArray(),
-    db.gratitudeEntries.toArray(),
-    db.settings.toArray()
-  ]);
+  // Get device ID before transaction (it may write to settings)
+  const deviceId = await getOrCreateDeviceId();
+
+  // Use Dexie transaction for atomic point-in-time snapshot
+  // This ensures all data is read consistently without interleaved writes
+  const data = await db.transaction(
+    'r',
+    [db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings],
+    async () => {
+      const [moods, habits, focusSessions, gratitudeEntries, settings] = await Promise.all([
+        db.moods.toArray(),
+        db.habits.toArray(),
+        db.focusSessions.toArray(),
+        db.gratitudeEntries.toArray(),
+        db.settings.toArray()
+      ]);
+
+      return { moods, habits, focusSessions, gratitudeEntries, settings };
+    }
+  );
 
   return {
     schemaVersion: BACKUP_SCHEMA_VERSION,
     createdAt: new Date().toISOString(),
-    deviceId: await getOrCreateDeviceId(),
-    data: {
-      moods,
-      habits,
-      focusSessions,
-      gratitudeEntries,
-      settings
-    }
+    deviceId,
+    data
   };
 };
 

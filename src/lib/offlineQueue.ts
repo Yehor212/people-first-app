@@ -5,7 +5,8 @@
  * Critical for ADHD users who may be in areas without internet.
  *
  * Features:
- * - IndexedDB-based persistent storage
+ * - IndexedDB-based persistent storage (P0 fix: moved from localStorage)
+ * - localStorage fallback if IndexedDB unavailable
  * - Automatic sync on reconnection
  * - Retry logic with exponential backoff
  * - Action deduplication
@@ -15,6 +16,7 @@
 import { logger } from './logger';
 import { generateSecureRandom } from './validation';
 import { safeJsonParse } from './safeJson';
+import { db, OfflineQueueItem } from '@/storage/db';
 
 // Action types that can be queued
 export type OfflineActionType =
@@ -295,27 +297,121 @@ class OfflineQueue {
     logger.log('[OfflineQueue] Device went offline');
   }
 
-  private loadFromStorage(): void {
+  /**
+   * Load queue from IndexedDB, with localStorage fallback
+   * P0 Fix: Primary storage is now IndexedDB for better quota handling
+   */
+  private async loadFromStorageAsync(): Promise<void> {
+    try {
+      // Try IndexedDB first
+      const items = await db.offlineQueue.toArray();
+      if (items.length > 0) {
+        this.state.actions = items.map(item => ({
+          id: item.id,
+          type: item.type as OfflineActionType,
+          entityId: item.entityId,
+          payload: item.payload,
+          timestamp: item.timestamp,
+          retries: item.retries,
+          maxRetries: item.maxRetries,
+          lastError: item.lastError,
+        }));
+        logger.log('[OfflineQueue] Loaded from IndexedDB:', this.state.actions.length, 'actions');
+
+        // Migrate localStorage data if any (one-time migration)
+        await this.migrateFromLocalStorage();
+        return;
+      }
+    } catch (idbError) {
+      logger.warn('[OfflineQueue] IndexedDB load failed, trying localStorage:', idbError);
+    }
+
+    // Fallback to localStorage
+    this.loadFromLocalStorage();
+  }
+
+  private loadFromLocalStorage(): void {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const data = safeJsonParse<{ actions: OfflineAction[] }>(stored, { actions: [] });
         this.state.actions = data.actions || [];
-        logger.log('[OfflineQueue] Loaded from storage:', this.state.actions.length, 'actions');
+        logger.log('[OfflineQueue] Loaded from localStorage:', this.state.actions.length, 'actions');
       }
     } catch (error) {
-      logger.error('[OfflineQueue] Failed to load from storage:', error);
+      logger.error('[OfflineQueue] Failed to load from localStorage:', error);
     }
   }
 
+  private loadFromStorage(): void {
+    // Synchronous load from localStorage for constructor
+    this.loadFromLocalStorage();
+    // Then async load from IndexedDB (will override if has data)
+    void this.loadFromStorageAsync();
+  }
+
+  /**
+   * Migrate data from localStorage to IndexedDB (one-time)
+   */
+  private async migrateFromLocalStorage(): Promise<void> {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const data = safeJsonParse<{ actions: OfflineAction[] }>(stored, { actions: [] });
+        if (data.actions && data.actions.length > 0) {
+          // Data already in IndexedDB, remove from localStorage
+          localStorage.removeItem(STORAGE_KEY);
+          logger.log('[OfflineQueue] Cleared localStorage after IndexedDB migration');
+        }
+      }
+    } catch (error) {
+      // Ignore migration errors
+    }
+  }
+
+  /**
+   * Persist queue to IndexedDB with localStorage fallback
+   * P0 Fix: Uses IndexedDB for better quota handling
+   */
   private persistToStorage(): void {
+    // Persist asynchronously to IndexedDB
+    void this.persistToIndexedDB();
+  }
+
+  private async persistToIndexedDB(): Promise<void> {
+    try {
+      // Clear and repopulate for simplicity
+      await db.transaction('rw', db.offlineQueue, async () => {
+        await db.offlineQueue.clear();
+        if (this.state.actions.length > 0) {
+          const items: OfflineQueueItem[] = this.state.actions.map(action => ({
+            id: action.id,
+            type: action.type,
+            entityId: action.entityId,
+            payload: action.payload,
+            timestamp: action.timestamp,
+            retries: action.retries,
+            maxRetries: action.maxRetries,
+            lastError: action.lastError,
+          }));
+          await db.offlineQueue.bulkAdd(items);
+        }
+      });
+    } catch (idbError) {
+      logger.warn('[OfflineQueue] IndexedDB persist failed, using localStorage fallback:', idbError);
+      // Fallback to localStorage
+      this.persistToLocalStorage();
+    }
+  }
+
+  private persistToLocalStorage(): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         actions: this.state.actions,
         lastProcessedAt: this.state.lastProcessedAt,
       }));
     } catch (error) {
-      logger.error('[OfflineQueue] Failed to persist to storage:', error);
+      logger.error('[OfflineQueue] Failed to persist to localStorage:', error);
     }
   }
 
