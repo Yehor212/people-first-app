@@ -47,7 +47,8 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
     // Clear loading state
     setLoading(false);
 
-    logger.log(`[Auth] Completing auth from ${source}:`, userData.email);
+    // P1 Fix: Don't log email (PII)
+    logger.log(`[Auth] Completing auth from ${source}`);
     onCompleteRef.current(userData);
     return true;
   };

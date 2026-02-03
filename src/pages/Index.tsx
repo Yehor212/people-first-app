@@ -1148,7 +1148,8 @@ export function Index() {
 
   // Google Auth handlers (shown once after language selection)
   const handleGoogleAuthComplete = (userData: { name: string; email: string }) => {
-    logger.log('[Index] Google auth completed:', userData.email);
+    // P1 Fix: Don't log email (PII)
+    logger.log('[Index] Google auth completed');
 
     // CRITICAL: Set synchronous bypass flag FIRST (immediate UI update)
     // This ensures we skip GoogleAuthScreen immediately, before IndexedDB writes
@@ -1392,9 +1393,9 @@ export function Index() {
         if (data.session?.user) {
           const metadata = data.session.user.user_metadata;
           const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
-          const email = data.session.user.email || '';
 
-          logger.log('[Auth] OAuth callback successful:', email);
+          // P1 Fix: Don't log email (PII)
+          logger.log('[Auth] OAuth callback successful');
           setAuthBypassFlag(true);
           notifyAuthComplete();
           setUserName(name);
@@ -1492,9 +1493,9 @@ export function Index() {
           if (data.session?.user) {
             const metadata = data.session.user.user_metadata;
             const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
-            const email = data.session.user.email || '';
 
-            logger.log('[Auth] Pending auth processed successfully:', email);
+            // P1 Fix: Don't log email (PII)
+            logger.log('[Auth] Pending auth processed successfully');
             setAuthBypassFlag(true);
             notifyAuthComplete();
             setUserName(name);

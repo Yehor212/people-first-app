@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { User, Bell, Trash2, Download, Upload, Crown, ExternalLink, Globe, CheckCircle, Shield, Sparkles, Smartphone, ChevronRight, TestTube, Cloud, Palette, Moon, Mail, LayoutGrid, Timer, Wind, Heart, Target, ListTodo, Trophy, Bot, Flower2 } from 'lucide-react';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
@@ -159,6 +160,8 @@ export function SettingsPanel({
     } catch (error) {
       logger.error('[Settings] Update check failed:', error);
       setUpdateCheckStatus('error');
+      // P1 Fix: Show toast for user feedback
+      toast.error(t.updateCheckFailed || 'Could not check for updates');
     }
   };
 
@@ -309,11 +312,15 @@ export function SettingsPanel({
       if (error) {
         setWeeklyDigestEnabled(!enabled); // Revert on error
         logger.error('[Settings] Failed to update weekly digest:', error);
+        // P1 Fix: Show toast for user feedback
+        toast.error(t.settingsSaveFailed || 'Failed to save setting');
       }
       // Note: Don't set enabled on success - already set optimistically
     } catch (error) {
       setWeeklyDigestEnabled(!enabled); // Revert on error
       logger.error('[Settings] Weekly digest toggle error:', error);
+      // P1 Fix: Show toast for user feedback
+      toast.error(t.settingsSaveFailed || 'Failed to save setting');
     } finally {
       setWeeklyDigestLoading(false);
     }
@@ -430,6 +437,8 @@ export function SettingsPanel({
       const errorMessage = formatError(error);
       logger.error("Sync failed:", errorMessage);
       setAuthStatus(`${t.syncError} ${errorMessage}`);
+      // P1 Fix: Also show toast for better visibility
+      toast.error(t.syncError || 'Sync failed');
     }
   };
 

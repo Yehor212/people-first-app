@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { Trophy, Target, Lock, CheckCircle2, Plus, X, Share2, Download, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocale } from '@/lib/timeUtils';
@@ -96,6 +97,8 @@ export function ChallengesPanel({
         } catch (error) {
           logger.error('[ChallengesPanel] Native share failed:', error);
           setShareError(t.shareFailed || 'Share failed');
+          // P1 Fix: Show toast for better visibility
+          toast.error(t.shareFailed || 'Share failed');
           return;
         }
       } else {
@@ -114,6 +117,8 @@ export function ChallengesPanel({
     } catch (error) {
       logger.error('[ChallengesPanel] Share failed:', error);
       setShareError(t.shareFailed || 'Share failed');
+      // P1 Fix: Show toast for better visibility
+      toast.error(t.shareFailed || 'Share failed');
     } finally {
       setIsSharing(false);
     }
