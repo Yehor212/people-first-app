@@ -12,26 +12,39 @@ export const syncReminderSettings = async (
   // Use orchestrator for queue-based sync
   await syncOrchestrator.sync('reminders', async () => {
     const {
-      data: { user }
+      data: { user },
+      error: authError
     } = await supabase.auth.getUser();
 
-    if (!user) return;
+    if (authError || !user) {
+      // Silently skip if not authenticated - not an error condition
+      logger.debug('[ReminderSync] Not authenticated, skipping sync');
+      return;
+    }
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 
+    // Ensure arrays are valid (Supabase expects proper array types)
+    const safeDays = Array.isArray(reminders.days)
+      ? reminders.days.filter(d => typeof d === 'number')
+      : [];
+    const safeHabitIds = Array.isArray(reminders.habitIds)
+      ? reminders.habitIds.filter(id => typeof id === 'string')
+      : [];
+
     const payload = {
       user_id: user.id,
-      enabled: reminders.enabled,
+      enabled: Boolean(reminders.enabled),
       // 3 mood times for morning/afternoon/evening check-ins
-      mood_time_morning: reminders.moodTimeMorning,
-      mood_time_afternoon: reminders.moodTimeAfternoon,
-      mood_time_evening: reminders.moodTimeEvening,
-      habit_time: reminders.habitTime,
-      focus_time: reminders.focusTime,
-      days: reminders.days,
-      quiet_start: reminders.quietHours.start,
-      quiet_end: reminders.quietHours.end,
-      habit_ids: reminders.habitIds,
+      mood_time_morning: reminders.moodTimeMorning || null,
+      mood_time_afternoon: reminders.moodTimeAfternoon || null,
+      mood_time_evening: reminders.moodTimeEvening || null,
+      habit_time: reminders.habitTime || null,
+      focus_time: reminders.focusTime || null,
+      days: safeDays,
+      quiet_start: reminders.quietHours?.start || null,
+      quiet_end: reminders.quietHours?.end || null,
+      habit_ids: safeHabitIds,
       timezone,
       language,
       updated_at: new Date().toISOString()
@@ -42,8 +55,15 @@ export const syncReminderSettings = async (
     });
 
     if (error) {
-      logger.error('[ReminderSync] Failed to push settings:', error);
-      throw new Error(error.message);
+      // Don't throw on table-related errors - the table might not exist yet in Supabase
+      // This is a non-critical feature, so we log and continue
+      if (error.code === '42P01' || error.message.includes('does not exist')) {
+        logger.warn('[ReminderSync] Table does not exist, skipping sync');
+        return;
+      }
+      // For other errors (like 400 Bad Request), log but don't retry endlessly
+      logger.error('[ReminderSync] Failed to push settings:', error.message);
+      // Don't throw - reminder sync is not critical
     }
   }, { priority: 7, maxRetries: 0 }); // No retries - settings sync failures shouldn't loop
 };

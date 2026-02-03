@@ -276,18 +276,20 @@ export function DataMountains({
         />
 
         {/* Main data mountain */}
-        <motion.path
-          d={mountainPath}
-          fill={`url(#mountainGradient-${color})`}
-          stroke="rgba(255, 255, 255, 0.2)"
-          strokeWidth="0.5"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 1, delay: 0.2 }}
-        />
+        {mountainPath && (
+          <motion.path
+            d={mountainPath}
+            fill={`url(#mountainGradient-${color})`}
+            stroke="rgba(255, 255, 255, 0.2)"
+            strokeWidth="0.5"
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 1, delay: 0.2 }}
+          />
+        )}
 
         {/* Weather icons above peaks */}
-        {data.map((point, i) => {
+        {data.length >= 2 && data.map((point, i) => {
           const x = (i / (data.length - 1)) * 100;
           const y = 60 - (point.value / maxValue) * 50 - 15;
           return (
