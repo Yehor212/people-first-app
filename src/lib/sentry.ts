@@ -31,8 +31,8 @@ export function initSentry(): void {
     environment: import.meta.env.MODE,
     release: `zenflow@${__APP_VERSION__}`,
 
-    // Performance monitoring - sample 10% of transactions
-    tracesSampleRate: 0.1,
+    // Performance monitoring - sample 100% for now (reduce to 0.1 after verification)
+    tracesSampleRate: 1.0,
 
     // Session replay - capture 10% of sessions, 100% on error
     replaysSessionSampleRate: 0.1,
