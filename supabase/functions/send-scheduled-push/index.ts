@@ -202,15 +202,31 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     const cronSecretHeader = req.headers.get("X-Cron-Secret");
 
+    // P1 Diagnostics: Log request details (NO secrets!)
+    console.log("[ScheduledPush] Request received", {
+      hasAuthHeader: !!authHeader,
+      authHeaderPrefix: authHeader ? authHeader.substring(0, 10) + "..." : null,
+      hasCronSecret: !!cronSecretHeader,
+      hasCronSecretEnv: !!CRON_SECRET,
+      userAgent: req.headers.get("User-Agent"),
+      origin: req.headers.get("Origin"),
+      timestamp: new Date().toISOString(),
+    });
+
     // P0 Fix: Use secure comparison to prevent timing attacks
     const isAuthorized =
       (CRON_SECRET && secureCompare(cronSecretHeader, CRON_SECRET)) ||
       secureCompare(authHeader, `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`);
 
     if (!isAuthorized) {
-      console.warn("[ScheduledPush] Unauthorized request attempt");
+      console.warn("[ScheduledPush] Unauthorized request - details:", {
+        cronSecretMatch: CRON_SECRET ? secureCompare(cronSecretHeader, CRON_SECRET) : "no_env",
+        authHeaderMatch: authHeader?.startsWith("Bearer ") ? "has_bearer" : "no_bearer",
+      });
       return jsonResponse({ error: "Unauthorized" }, 401);
     }
+
+    console.log("[ScheduledPush] Authorized successfully");
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 

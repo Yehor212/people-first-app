@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { LazyErrorBoundary } from '@/components/ErrorBoundary';
 import { logger } from '@/lib/logger';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
@@ -52,11 +53,11 @@ import { HabitTracker } from '@/components/HabitTracker';
 import { FocusTimer } from '@/components/FocusTimer';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 
-// Lazy-loaded components for better performance
-const StatsPage = lazy(() => import('@/components/StatsPage').then(m => ({ default: m.StatsPage })));
-const SettingsPanel = lazy(() => import('@/components/SettingsPanel').then(m => ({ default: m.SettingsPanel })));
-const GratitudeJournal = lazy(() => import('@/components/GratitudeJournal').then(m => ({ default: m.GratitudeJournal })));
-const BreathingExercise = lazy(() => import('@/components/BreathingExercise').then(m => ({ default: m.BreathingExercise })));
+// Lazy-loaded components with retry logic for chunk loading failures
+const StatsPage = lazyWithRetry(() => import('@/components/StatsPage').then(m => ({ default: m.StatsPage })), 'StatsPage');
+const SettingsPanel = lazyWithRetry(() => import('@/components/SettingsPanel').then(m => ({ default: m.SettingsPanel })), 'SettingsPanel');
+const GratitudeJournal = lazyWithRetry(() => import('@/components/GratitudeJournal').then(m => ({ default: m.GratitudeJournal })), 'GratitudeJournal');
+const BreathingExercise = lazyWithRetry(() => import('@/components/BreathingExercise').then(m => ({ default: m.BreathingExercise })), 'BreathingExercise');
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { InstallBanner } from '@/components/InstallBanner';
 import { RemindersPanel } from '@/components/RemindersPanel';
@@ -70,12 +71,12 @@ import { GoogleAuthScreen } from '@/components/GoogleAuthScreen';
 import { WeeklyReport } from '@/components/WeeklyReport';
 import { TimeHelper } from '@/components/TimeHelper';
 
-// More lazy-loaded components (opened via modals/sheets)
-const ChallengesPanel = lazy(() => import('@/components/ChallengesPanel').then(m => ({ default: m.ChallengesPanel })));
-const TasksPanel = lazy(() => import('@/components/TasksPanel').then(m => ({ default: m.TasksPanel })));
-const QuestsPanel = lazy(() => import('@/components/QuestsPanel').then(m => ({ default: m.QuestsPanel })));
-const WidgetSettings = lazy(() => import('@/pages/WidgetSettings').then(m => ({ default: m.WidgetSettings })));
-const Leaderboard = lazy(() => import('@/components/Leaderboard').then(m => ({ default: m.Leaderboard })));
+// More lazy-loaded components (opened via modals/sheets) with retry logic
+const ChallengesPanel = lazyWithRetry(() => import('@/components/ChallengesPanel').then(m => ({ default: m.ChallengesPanel })), 'ChallengesPanel');
+const TasksPanel = lazyWithRetry(() => import('@/components/TasksPanel').then(m => ({ default: m.TasksPanel })), 'TasksPanel');
+const QuestsPanel = lazyWithRetry(() => import('@/components/QuestsPanel').then(m => ({ default: m.QuestsPanel })), 'QuestsPanel');
+const WidgetSettings = lazyWithRetry(() => import('@/pages/WidgetSettings').then(m => ({ default: m.WidgetSettings })), 'WidgetSettings');
+const Leaderboard = lazyWithRetry(() => import('@/components/Leaderboard').then(m => ({ default: m.Leaderboard })), 'Leaderboard');
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';

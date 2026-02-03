@@ -204,6 +204,21 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
   }
 
   handleRetry = () => {
+    const error = this.state.error;
+
+    // Check if this was a chunk loading error (stale assets after deployment)
+    const isChunkError = error?.message &&
+      (error.message.includes('Failed to fetch dynamically imported module') ||
+       error.message.includes('Loading chunk') ||
+       error.message.includes('Loading CSS chunk'));
+
+    if (isChunkError) {
+      // Force reload to get fresh assets
+      console.log('[ErrorBoundary] Chunk error detected, reloading page...');
+      window.location.reload();
+      return;
+    }
+
     this.setState({ hasError: false, error: null });
   };
 
