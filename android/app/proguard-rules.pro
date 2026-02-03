@@ -58,3 +58,13 @@
 
 # Keep attributes for debugging
 -keepattributes Exceptions,InnerClasses,Signature,Deprecated,*Annotation*,EnclosingMethod
+
+# P2 Fix: Keep ZenFlow custom native plugins
+# These plugins are registered in MainActivity and called from JavaScript
+-keep class com.zenflow.app.** { *; }
+-keepclassmembers class com.zenflow.app.** { *; }
+
+# Keep plugin method annotations
+-keepclassmembers class * extends com.getcapacitor.Plugin {
+    @com.getcapacitor.PluginMethod public <methods>;
+}

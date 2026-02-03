@@ -29,6 +29,9 @@ let refreshChannel: BroadcastChannel | null = null;
 let waitingForRefresh = false;
 let refreshResolvers: Array<(success: boolean) => void> = [];
 
+// P1 Fix: Limit resolver queue size to prevent unbounded memory growth
+const MAX_REFRESH_RESOLVERS = 100;
+
 // Initialize BroadcastChannel for web only
 const initRefreshChannel = (): void => {
   if (Capacitor.isNativePlatform()) return;
@@ -76,9 +79,17 @@ const broadcastRefreshStatus = (type: 'REFRESH_START' | 'REFRESH_COMPLETE', succ
 
 /**
  * Wait for another tab's refresh to complete
+ * P1 Fix: Added queue size limit to prevent unbounded memory growth
  */
 const waitForOtherTabRefresh = (): Promise<boolean> => {
   return new Promise((resolve) => {
+    // P1 Fix: Reject oldest resolver if queue is at max size
+    if (refreshResolvers.length >= MAX_REFRESH_RESOLVERS) {
+      const oldest = refreshResolvers.shift();
+      oldest?.(false); // Resolve oldest with failure
+      logger.warn('[API] Resolver queue overflow, rejected oldest resolver');
+    }
+
     // Timeout after 10 seconds
     const timeout = setTimeout(() => {
       waitingForRefresh = false;

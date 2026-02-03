@@ -27,22 +27,40 @@ precacheAndRoute(self.__WB_MANIFEST);
 cleanupOutdatedCaches();
 
 // Background Sync Queue for offline actions
+// P0 Fix [WEB]: Continue processing queue even if individual requests fail
 const bgSyncPlugin = new BackgroundSyncPlugin('zenflow-offline-queue', {
   maxRetentionTime: 24 * 60, // Retry for max of 24 hours (in minutes)
   onSync: async ({ queue }) => {
     let entry;
+    let successCount = 0;
+    let failCount = 0;
+    const failedEntries: Array<{ request: Request; timestamp?: number }> = [];
+
     while ((entry = await queue.shiftRequest())) {
       try {
         await fetch(entry.request);
+        successCount++;
         console.log('[SW] Background sync: request succeeded', entry.request.url);
       } catch (error) {
-        console.error('[SW] Background sync: request failed', error);
-        // Put the entry back in the queue and re-throw to signal failure
-        await queue.unshiftRequest(entry);
-        throw error;
+        failCount++;
+        console.error('[SW] Background sync: request failed, will retry later', entry.request.url, error);
+        // Store failed entry to re-add after processing
+        failedEntries.push(entry);
+        // P0 Fix: Continue processing remaining items instead of throwing
       }
     }
-    console.log('[SW] Background sync complete');
+
+    // Re-add failed entries to the queue for retry
+    for (const failedEntry of failedEntries) {
+      await queue.unshiftRequest(failedEntry);
+    }
+
+    console.log(`[SW] Background sync complete: ${successCount} succeeded, ${failCount} failed`);
+
+    // Only throw if ALL requests failed (this triggers Workbox to retry later)
+    if (successCount === 0 && failCount > 0) {
+      throw new Error(`All ${failCount} sync requests failed, will retry`);
+    }
   },
 });
 

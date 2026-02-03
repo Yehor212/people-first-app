@@ -21,8 +21,16 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
   // Ref for OAuth timeout
   const oauthTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // P1 Fix: Use ref for onComplete to avoid dependency array issues
+  // This ensures callbacks don't cause effect re-runs if parent re-renders
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
+
   // Safe completion helper - ensures onComplete is called exactly once
   // This function atomically checks and sets the flag to prevent race conditions
+  // P1 Fix: Uses onCompleteRef.current to avoid closure issues
   const tryComplete = (userData: { name: string; email: string }, source: string): boolean => {
     if (hasCompletedRef.current) {
       logger.log(`[Auth] Completion already done, ignoring from ${source}`);
@@ -40,7 +48,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
     setLoading(false);
 
     logger.log(`[Auth] Completing auth from ${source}:`, userData.email);
-    onComplete(userData);
+    onCompleteRef.current(userData);
     return true;
   };
 
@@ -73,7 +81,8 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
     };
 
     checkSession();
-  }, [onComplete]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // P1 Fix: Removed onComplete from deps - uses onCompleteRef instead
 
   // Listen for auth state changes (handles OAuth callback)
   useEffect(() => {
@@ -98,7 +107,8 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
     return () => {
       subscription?.subscription?.unsubscribe?.();
     };
-  }, [onComplete]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // P1 Fix: Removed onComplete from deps - uses onCompleteRef instead
 
   // LEVEL 1: Check session when app resumes from OAuth browser
   useEffect(() => {
@@ -170,7 +180,8 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
       isMounted = false;
       window.removeEventListener('focus', handleFocus);
     };
-  }, [loading, onComplete]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading]); // P1 Fix: Removed onComplete from deps - uses onCompleteRef instead
 
   // LEVEL 2: Listen for auth completion from Index.tsx
   useEffect(() => {

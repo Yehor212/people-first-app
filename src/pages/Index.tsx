@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from 'react';
+import { LazyErrorBoundary } from '@/components/ErrorBoundary';
 import { logger } from '@/lib/logger';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
 import { initializeApp } from '@/lib/appInitializer';
@@ -2003,16 +2004,18 @@ export function Index() {
 
                   {/* Breathing Exercise - Compact mindfulness card */}
                   {isFeatureVisible('breathingExercise') && (
-                    <Suspense fallback={<div className="h-24 bg-card rounded-3xl animate-pulse" />}>
-                      <BreathingExercise
-                        compact
-                        onComplete={(pattern) => {
-                          const treatResult = earnTreats('breathing', 5, `Breathing: ${pattern.name}`);
-                          triggerXpPopup(treatResult.earned, 'breathing');
-                          triggerSync(); // Sync inner world treats
-                        }}
-                      />
-                    </Suspense>
+                    <LazyErrorBoundary componentName="Breathing Exercise">
+                      <Suspense fallback={<div className="h-24 bg-card rounded-3xl animate-pulse" />}>
+                        <BreathingExercise
+                          compact
+                          onComplete={(pattern) => {
+                            const treatResult = earnTreats('breathing', 5, `Breathing: ${pattern.name}`);
+                            triggerXpPopup(treatResult.earned, 'breathing');
+                            triggerSync(); // Sync inner world treats
+                          }}
+                        />
+                      </Suspense>
+                    </LazyErrorBoundary>
                   )}
 
                   {/* Habit Tracker - Primary or Collapsed */}
@@ -2096,37 +2099,39 @@ export function Index() {
                   {/* Gratitude Journal - Primary or Collapsed */}
                   {isFeatureVisible('gratitudeJournal') && (
                     <div ref={gratitudeRef}>
-                      <Suspense fallback={<div className="h-32 bg-card rounded-3xl animate-pulse" />}>
-                        {currentPrimaryCTA === 'gratitude' ? (
-                          <GratitudeJournal
-                            entries={safeGratitudeEntries}
-                            onAddEntry={handleAddGratitude}
-                            isPrimaryCTA={true}
-                            initialText={journalPromptText}
-                            onInitialTextUsed={handleJournalPromptUsed}
-                          />
-                        ) : hasGratitudeToday ? (
-                          <CompletedSection
-                            title={t.gratitudeAddedShort || t.gratitude}
-                            icon="🙏"
-                            accentColor="pink"
-                          >
+                      <LazyErrorBoundary componentName="Gratitude Journal">
+                        <Suspense fallback={<div className="h-32 bg-card rounded-3xl animate-pulse" />}>
+                          {currentPrimaryCTA === 'gratitude' ? (
+                            <GratitudeJournal
+                              entries={safeGratitudeEntries}
+                              onAddEntry={handleAddGratitude}
+                              isPrimaryCTA={true}
+                              initialText={journalPromptText}
+                              onInitialTextUsed={handleJournalPromptUsed}
+                            />
+                          ) : hasGratitudeToday ? (
+                            <CompletedSection
+                              title={t.gratitudeAddedShort || t.gratitude}
+                              icon="🙏"
+                              accentColor="pink"
+                            >
+                              <GratitudeJournal
+                                entries={safeGratitudeEntries}
+                                onAddEntry={handleAddGratitude}
+                                initialText={journalPromptText}
+                                onInitialTextUsed={handleJournalPromptUsed}
+                              />
+                            </CompletedSection>
+                          ) : (
                             <GratitudeJournal
                               entries={safeGratitudeEntries}
                               onAddEntry={handleAddGratitude}
                               initialText={journalPromptText}
                               onInitialTextUsed={handleJournalPromptUsed}
                             />
-                          </CompletedSection>
-                        ) : (
-                          <GratitudeJournal
-                            entries={safeGratitudeEntries}
-                            onAddEntry={handleAddGratitude}
-                            initialText={journalPromptText}
-                            onInitialTextUsed={handleJournalPromptUsed}
-                          />
-                        )}
-                      </Suspense>
+                          )}
+                        </Suspense>
+                      </LazyErrorBoundary>
                     </div>
                   )}
                 </>
@@ -2164,20 +2169,22 @@ export function Index() {
         {activeTab === 'stats' && (
           <>
             <Header userName={userName} />
-            <Suspense fallback={
-              <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            }>
-              <StatsPage
-                moods={safeMoods}
-                habits={safeHabits}
-                focusSessions={safeFocusSessions}
-                gratitudeEntries={safeGratitudeEntries}
-                restDays={innerWorld.restDays}
-                currentFocusMinutes={currentFocusMinutes}
-              />
-            </Suspense>
+            <LazyErrorBoundary componentName="Stats">
+              <Suspense fallback={
+                <div className="flex items-center justify-center min-h-[50vh]">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+              }>
+                <StatsPage
+                  moods={safeMoods}
+                  habits={safeHabits}
+                  focusSessions={safeFocusSessions}
+                  gratitudeEntries={safeGratitudeEntries}
+                  restDays={innerWorld.restDays}
+                  currentFocusMinutes={currentFocusMinutes}
+                />
+              </Suspense>
+            </LazyErrorBoundary>
           </>
         )}
 
@@ -2188,37 +2195,41 @@ export function Index() {
               unlockedAchievements={gamificationState.unlockedAchievements}
             />
             {/* Leaderboard - Social Feature from v1.3.0 "Harmony" */}
-            <Suspense fallback={null}>
-              <div className="mt-6">
-                <Leaderboard />
-              </div>
-            </Suspense>
+            <LazyErrorBoundary componentName="Leaderboard">
+              <Suspense fallback={null}>
+                <div className="mt-6">
+                  <Leaderboard />
+                </div>
+              </Suspense>
+            </LazyErrorBoundary>
           </div>
         )}
 
         {activeTab === 'settings' && (
           <>
             <Header userName={userName} />
-            <Suspense fallback={
-              <div className="flex items-center justify-center min-h-[50vh]">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-              </div>
-            }>
-              <SettingsPanel
-                userName={userName}
-                onNameChange={handleNameChange}
-                onResetData={handleResetData}
-                reminders={reminders}
-                onRemindersChange={setReminders}
-                habits={safeHabits}
-                moods={safeMoods}
-                focusSessions={safeFocusSessions}
-                gratitudeEntries={safeGratitudeEntries}
-                privacy={privacy}
-                onPrivacyChange={setPrivacy}
-                onOpenWidgetSettings={() => setShowWidgetSettings(true)}
-              />
-            </Suspense>
+            <LazyErrorBoundary componentName="Settings">
+              <Suspense fallback={
+                <div className="flex items-center justify-center min-h-[50vh]">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                </div>
+              }>
+                <SettingsPanel
+                  userName={userName}
+                  onNameChange={handleNameChange}
+                  onResetData={handleResetData}
+                  reminders={reminders}
+                  onRemindersChange={setReminders}
+                  habits={safeHabits}
+                  moods={safeMoods}
+                  focusSessions={safeFocusSessions}
+                  gratitudeEntries={safeGratitudeEntries}
+                  privacy={privacy}
+                  onPrivacyChange={setPrivacy}
+                  onOpenWidgetSettings={() => setShowWidgetSettings(true)}
+                />
+              </Suspense>
+            </LazyErrorBoundary>
           </>
         )}
       </main>
@@ -2238,27 +2249,31 @@ export function Index() {
 
       {/* Widget Settings Modal */}
       {showWidgetSettings && (
-        <Suspense fallback={<div className="fixed inset-0 z-50 bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
-          <div className="fixed inset-0 z-50 bg-background">
-            <WidgetSettings onBack={() => setShowWidgetSettings(false)} />
-          </div>
-        </Suspense>
+        <LazyErrorBoundary componentName="Widget Settings">
+          <Suspense fallback={<div className="fixed inset-0 z-50 bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+            <div className="fixed inset-0 z-50 bg-background">
+              <WidgetSettings onBack={() => setShowWidgetSettings(false)} />
+            </div>
+          </Suspense>
+        </LazyErrorBoundary>
       )}
 
       {/* Challenges Panel Modal (Progressive: Day 4) */}
       {showChallenges && isFeatureVisible('challenges') && (
-        <Suspense fallback={null}>
-          <ChallengesPanel
-            activeChallenges={challenges}
-            badges={safeBadges}
-            onStartChallenge={(challenge) => {
-              addChallenge(challenge);
-              setChallenges(getChallenges());
-              setBadges(getBadges());
-            }}
-            onClose={() => setShowChallenges(false)}
-          />
-        </Suspense>
+        <LazyErrorBoundary componentName="Challenges">
+          <Suspense fallback={null}>
+            <ChallengesPanel
+              activeChallenges={challenges}
+              badges={safeBadges}
+              onStartChallenge={(challenge) => {
+                addChallenge(challenge);
+                setChallenges(getChallenges());
+                setBadges(getBadges());
+              }}
+              onClose={() => setShowChallenges(false)}
+            />
+          </Suspense>
+        </LazyErrorBoundary>
       )}
 
       {/* Time Helper Modal */}
@@ -2268,31 +2283,35 @@ export function Index() {
 
       {/* Tasks Panel Modal (Progressive: Day 4) */}
       {showTasksPanel && isFeatureVisible('tasks') && (
-        <Suspense fallback={null}>
-          <TasksPanel
-            onClose={() => setShowTasksPanel(false)}
-            onAwardXp={(_source, amount) => {
-              // Award XP through gamification (using habit as proxy for task)
-              for (let i = 0; i < Math.ceil(amount / 15); i++) {
-                awardXp('habit');
-              }
-            }}
-            onEarnTreats={(_source, amount, reason) => {
-              // Use 'habit' as treat source since 'task' is not a valid TreatSource
-              earnTreats('habit', amount, reason);
-              triggerSync(); // Sync inner world treats
-            }}
-          />
-        </Suspense>
+        <LazyErrorBoundary componentName="Tasks">
+          <Suspense fallback={null}>
+            <TasksPanel
+              onClose={() => setShowTasksPanel(false)}
+              onAwardXp={(_source, amount) => {
+                // Award XP through gamification (using habit as proxy for task)
+                for (let i = 0; i < Math.ceil(amount / 15); i++) {
+                  awardXp('habit');
+                }
+              }}
+              onEarnTreats={(_source, amount, reason) => {
+                // Use 'habit' as treat source since 'task' is not a valid TreatSource
+                earnTreats('habit', amount, reason);
+                triggerSync(); // Sync inner world treats
+              }}
+            />
+          </Suspense>
+        </LazyErrorBoundary>
       )}
 
       {/* Quests Panel Modal (Progressive: Day 3) */}
       {showQuestsPanel && isFeatureVisible('quests') && (
-        <Suspense fallback={null}>
-          <QuestsPanel
-            onClose={() => setShowQuestsPanel(false)}
-          />
-        </Suspense>
+        <LazyErrorBoundary componentName="Quests">
+          <Suspense fallback={null}>
+            <QuestsPanel
+              onClose={() => setShowQuestsPanel(false)}
+            />
+          </Suspense>
+        </LazyErrorBoundary>
       )}
 
       {/* Companion Panel Modal (Progressive: Day 3, legacy - kept for reference) */}

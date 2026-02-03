@@ -84,13 +84,16 @@ class OfflineQueue {
   private syncHandlers: Map<OfflineActionType, (action: OfflineAction) => Promise<void>> = new Map();
   private processingPromise: Promise<void> | null = null;
 
+  // P0 Fix: Promise to track initialization - operations must await this before modifying queue
+  private initPromise: Promise<void> | null = null;
+
   // Bound event handlers for proper cleanup
   private boundHandleOnline = () => this.handleOnline();
   private boundHandleOffline = () => this.handleOffline();
 
   constructor() {
-    // Load persisted queue on init
-    this.loadFromStorage();
+    // Load persisted queue on init - now properly awaited via initPromise
+    this.initPromise = this.initializeStorage();
 
     // Listen for online/offline events
     if (typeof window !== 'undefined') {
@@ -136,6 +139,7 @@ class OfflineQueue {
 
   /**
    * Add an action to the queue
+   * P0 Fix: Now awaits initialization before modifying queue
    */
   async enqueue(
     type: OfflineActionType,
@@ -143,6 +147,11 @@ class OfflineQueue {
     payload: unknown,
     options: { maxRetries?: number; deduplicate?: boolean } = {}
   ): Promise<void> {
+    // P0 Fix: Wait for initialization to complete before modifying queue
+    if (this.initPromise) {
+      await this.initPromise;
+    }
+
     const { maxRetries = DEFAULT_MAX_RETRIES, deduplicate = true } = options;
 
     // Check queue size limit
@@ -213,8 +222,14 @@ class OfflineQueue {
 
   /**
    * Process all queued actions
+   * P0 Fix: Now awaits initialization before processing
    */
   async processQueue(): Promise<void> {
+    // P0 Fix: Wait for initialization to complete before processing
+    if (this.initPromise) {
+      await this.initPromise;
+    }
+
     // Mutex: prevent concurrent processing
     if (this.processingPromise) {
       await this.processingPromise;
@@ -334,8 +349,13 @@ class OfflineQueue {
 
   /**
    * Clear all pending actions (use with caution)
+   * P0 Fix: Now async to await initialization
    */
-  clearQueue(): void {
+  async clearQueue(): Promise<void> {
+    // P0 Fix: Wait for initialization before clearing
+    if (this.initPromise) {
+      await this.initPromise;
+    }
     this.state.actions = [];
     this.persistToStorage();
     this.notifyListeners();
@@ -399,11 +419,28 @@ class OfflineQueue {
     }
   }
 
-  private loadFromStorage(): void {
-    // Synchronous load from localStorage for constructor
+  /**
+   * P0 Fix: Initialize storage with proper async/await
+   * Loads from localStorage first (sync), then IndexedDB (async)
+   * Operations that modify the queue must await initPromise
+   */
+  private async initializeStorage(): Promise<void> {
+    // Synchronous load from localStorage for immediate fallback
     this.loadFromLocalStorage();
     // Then async load from IndexedDB (will override if has data)
-    void this.loadFromStorageAsync();
+    await this.loadFromStorageAsync();
+    // Clear initPromise to indicate initialization complete
+    this.initPromise = null;
+    logger.log('[OfflineQueue] Initialization complete');
+  }
+
+  /**
+   * Wait for initialization to complete (for external callers)
+   */
+  async waitForInit(): Promise<void> {
+    if (this.initPromise) {
+      await this.initPromise;
+    }
   }
 
   /**

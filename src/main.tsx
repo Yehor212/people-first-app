@@ -9,6 +9,8 @@ import { setupDeepLinks } from "./lib/deepLinks";
 import { offlineQueue } from "./lib/offlineQueue";
 import { initSentry, captureError } from "./lib/sentry";
 import { initA11y } from "./lib/a11y";
+import { App as CapacitorApp } from "@capacitor/app";
+import { Capacitor } from "@capacitor/core";
 
 // Initialize Sentry FIRST for error monitoring (before any other code runs)
 initSentry();
@@ -80,6 +82,37 @@ document.addEventListener('visibilitychange', () => {
     }
   }
 });
+
+/**
+ * P2 Fix [ANDROID]: Capacitor App lifecycle listeners
+ * Handles pause/resume events for better state preservation on native platforms
+ */
+if (Capacitor.isNativePlatform()) {
+  // App paused (going to background)
+  CapacitorApp.addListener('pause', () => {
+    logger.log('[Main] App paused - saving state');
+    try {
+      const queueState = offlineQueue.getState();
+      localStorage.setItem(LAST_STATE_KEY, JSON.stringify({
+        timestamp: Date.now(),
+        pendingActions: queueState.actions.length,
+        paused: true,
+      }));
+    } catch (error) {
+      // Ignore errors during pause
+    }
+  });
+
+  // App resumed (coming back to foreground)
+  CapacitorApp.addListener('resume', () => {
+    logger.log('[Main] App resumed - checking for pending sync');
+    // Trigger sync if online and there are pending actions
+    if (navigator.onLine && offlineQueue.hasPendingActions()) {
+      logger.log('[Main] Processing pending offline queue on resume');
+      void offlineQueue.processQueue();
+    }
+  });
+}
 
 // Setup audio unlock for iOS - attaches to first user interaction
 setupAudioUnlock();
