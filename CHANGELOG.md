@@ -5,6 +5,44 @@ All notable changes to ZenFlow will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - "Stability & Production Readiness" - 2026-02-02
+
+### ⭐ Главное для пользователей
+
+1. **🔄 Надёжная синхронизация** — данные больше не теряются при плохом интернете
+2. **📱 Стабильный вход через Google** — OAuth работает без сбоев на Android
+3. **⚡ Быстрее загрузка** — исправлены ошибки при обновлении приложения
+4. **📊 Правильная статистика** — недельный отчёт теперь показывает прошлую неделю
+5. **🔒 Улучшенная приватность** — персональные данные не попадают в логи
+
+### 🛡️ Production Stability (P0 Fixes)
+- **FIXED:** Sync race condition — данные больше не дублируются при одновременной записи
+- **FIXED:** Offline queue initialization — очередь корректно загружается при старте
+- **FIXED:** Cloud sync timeout — операции корректно отменяются по таймауту
+- **FIXED:** Network error detection — надёжное определение offline статуса
+- **FIXED:** Android OAuth callback — deep links обрабатываются даже при быстром возврате
+- **FIXED:** Android plugin registration — плагины регистрируются после инициализации bridge
+
+### 🔧 Reliability Improvements
+- **IMPROVED:** Chunk loading errors — graceful recovery при обновлении приложения
+- **IMPROVED:** Loading states — индикаторы при синхронизации и экспорте
+- **IMPROVED:** Error feedback — понятные сообщения об ошибках
+- **ADDED:** Background Sync API — синхронизация даже после закрытия браузера
+- **ADDED:** Sentry error monitoring — автоматическое отслеживание ошибок
+
+### 🐛 Bug Fixes
+- **FIXED:** Weekly Report показывал текущую неделю вместо прошлой
+- **FIXED:** SVG path undefined error в фоновых изображениях
+- **FIXED:** Logger methods compatibility (info/debug → log)
+- **FIXED:** Reminder sync race conditions
+
+### 🔐 Privacy & Security
+- **REMOVED:** PII (email, user_id) из логов
+- **IMPROVED:** Error messages без sensitive data
+- **REDUCED:** Sentry sampling rate для production
+
+---
+
 ## [1.5.9] - "Premium Design & Challenges" - 2026-02-01
 
 ### 🎨 Premium Design Overhaul
