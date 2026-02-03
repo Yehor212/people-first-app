@@ -18,7 +18,7 @@ export const syncReminderSettings = async (
 
     if (authError || !user) {
       // Silently skip if not authenticated - not an error condition
-      logger.debug('[ReminderSync] Not authenticated, skipping sync');
+      logger.log('[ReminderSync] Not authenticated, skipping sync');
       return;
     }
 
