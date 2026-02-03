@@ -34,19 +34,20 @@ export function initSentry(): void {
     // Performance monitoring - sample 100% for now (reduce to 0.1 after verification)
     tracesSampleRate: 1.0,
 
+    // Distributed tracing targets - MUST be at root level for SDK v8+
+    tracePropagationTargets: [
+      'localhost',
+      /^https:\/\/.*\.supabase\.co/,
+    ],
+
     // Session replay - capture 10% of sessions, 100% on error
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
 
     // Integrations
     integrations: [
-      // Browser tracing for performance with optimizations
+      // Browser tracing for performance
       Sentry.browserTracingIntegration({
-        // Enable distributed tracing for Supabase API calls
-        tracePropagationTargets: [
-          'localhost',
-          /^https:\/\/.*\.supabase\.co/,
-        ],
         // Filter out noisy requests from tracing
         shouldCreateSpanForRequest: (url) => {
           // Skip health checks, analytics, and internal Sentry calls
