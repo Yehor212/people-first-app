@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { User, Bell, Trash2, Download, Upload, Crown, ExternalLink, Globe, CheckCircle, Shield, Sparkles, Smartphone, ChevronRight, TestTube, Cloud, Palette, Moon, Mail, LayoutGrid, Timer, Wind, Heart, Target, ListTodo, Trophy, Bot, Flower2 } from 'lucide-react';
+import { User, Bell, Trash2, Download, Upload, Crown, ExternalLink, Globe, CheckCircle, Shield, Sparkles, Smartphone, ChevronRight, TestTube, Cloud, Palette, Moon, Sun, Mail, LayoutGrid, Timer, Wind, Heart, Target, ListTodo, Trophy, Bot, Flower2 } from 'lucide-react';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
@@ -34,6 +34,7 @@ import { offlineQueue } from '@/lib/offlineQueue';
 import { FeedbackForm } from '@/components/FeedbackForm';
 import { MessageSquare, Zap, Volume2, RefreshCw, History, Loader2 } from 'lucide-react';
 import { ChangelogPanel } from '@/components/ChangelogPanel';
+import { useTheme, ThemeOption } from '@/components/ThemeToggle';
 import { checkForAppUpdate, openGooglePlayStore, UpdateState } from '@/lib/appUpdateManager';
 import { APP_VERSION } from '@/lib/appVersion';
 import { useQuickActions } from '@/hooks/useQuickActions';
@@ -110,6 +111,9 @@ export function SettingsPanel({
   const [oledMode, setOledMode] = useState(() => {
     return localStorage.getItem('zenflow_oled_mode') === 'true';
   });
+
+  // Theme preference (light/dark/system)
+  const { theme: currentTheme, changeTheme } = useTheme();
 
   // Update check state
   const [updateCheckStatus, setUpdateCheckStatus] = useState<'idle' | 'checking' | 'available' | 'latest' | 'error'>('idle');
@@ -749,12 +753,48 @@ export function SettingsPanel({
                 </div>
               </div>
 
-              {/* Appearance / OLED Mode */}
-              <div>
+              {/* Appearance / Theme Selector */}
+              <div className="space-y-4">
                 <div className="flex items-center gap-2 mb-3">
                   <Palette className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm font-medium text-foreground">{t.appearance || 'Appearance'}</span>
                 </div>
+
+                {/* Theme Options: Light / Dark / System */}
+                <div className="space-y-2">
+                  <label className="text-xs text-muted-foreground">{t.themeLabel || 'Theme'}</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {([
+                      { value: 'light' as ThemeOption, icon: Sun, label: t.themeLight || 'Light' },
+                      { value: 'dark' as ThemeOption, icon: Moon, label: t.themeDark || 'Dark' },
+                      { value: 'system' as ThemeOption, icon: Smartphone, label: t.themeSystem || 'System' },
+                    ]).map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => changeTheme(option.value)}
+                        className={cn(
+                          "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
+                          currentTheme === option.value
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-primary/50 bg-secondary/30"
+                        )}
+                      >
+                        <option.icon className={cn(
+                          "w-5 h-5",
+                          currentTheme === option.value ? "text-primary" : "text-muted-foreground"
+                        )} />
+                        <span className={cn(
+                          "text-xs font-medium",
+                          currentTheme === option.value ? "text-primary" : "text-foreground"
+                        )}>
+                          {option.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* OLED Mode */}
                 <div className="flex items-start justify-between gap-4 p-4 bg-secondary/50 rounded-xl">
                   <div>
                     <div className="flex items-center gap-2">

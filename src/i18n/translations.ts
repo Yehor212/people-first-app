@@ -520,6 +520,12 @@ export interface Translations {
   oledDarkMode: string;
   oledDarkModeHint: string;
 
+  // v1.6.0 Theme Selector
+  themeLabel: string;
+  themeLight: string;
+  themeDark: string;
+  themeSystem: string;
+
   // What's New Modal
   whatsNewTitle: string;
   whatsNewVersion: string;
@@ -1882,6 +1888,10 @@ export const translations: Record<Language, Translations> = {
     appearance: 'Внешний вид',
     oledDarkMode: 'OLED тёмная тема',
     oledDarkModeHint: 'Чисто чёрная тема для OLED экранов. Экономит батарею.',
+    themeLabel: 'Тема',
+    themeLight: 'Светлая',
+    themeDark: 'Тёмная',
+    themeSystem: 'Системная',
 
     // What's New Modal
     whatsNewTitle: 'Что нового',
@@ -3321,6 +3331,10 @@ export const translations: Record<Language, Translations> = {
     appearance: 'Appearance',
     oledDarkMode: 'OLED Dark Mode',
     oledDarkModeHint: 'Pure black theme for OLED screens. Saves battery.',
+    themeLabel: 'Theme',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    themeSystem: 'System',
 
     // What's New Modal
     whatsNewTitle: "What's New",
@@ -4760,6 +4774,10 @@ export const translations: Record<Language, Translations> = {
     appearance: 'Зовнішній вигляд',
     oledDarkMode: 'OLED темна тема',
     oledDarkModeHint: 'Чисто чорна тема для OLED екранів. Економить батарею.',
+    themeLabel: 'Тема',
+    themeLight: 'Світла',
+    themeDark: 'Темна',
+    themeSystem: 'Системна',
 
     // What's New Modal
     whatsNewTitle: 'Що нового',
@@ -6200,6 +6218,10 @@ export const translations: Record<Language, Translations> = {
     appearance: 'Apariencia',
     oledDarkMode: 'Modo oscuro OLED',
     oledDarkModeHint: 'Tema negro puro para pantallas OLED. Ahorra batería.',
+    themeLabel: 'Tema',
+    themeLight: 'Claro',
+    themeDark: 'Oscuro',
+    themeSystem: 'Sistema',
 
     // What's New Modal
     whatsNewTitle: 'Novedades',
@@ -7640,6 +7662,10 @@ export const translations: Record<Language, Translations> = {
     appearance: 'Darstellung',
     oledDarkMode: 'OLED Dunkelmodus',
     oledDarkModeHint: 'Reines Schwarz für OLED-Bildschirme. Spart Akku.',
+    themeLabel: 'Design',
+    themeLight: 'Hell',
+    themeDark: 'Dunkel',
+    themeSystem: 'System',
 
     // What's New Modal
     whatsNewTitle: 'Was ist neu',
@@ -9079,6 +9105,10 @@ export const translations: Record<Language, Translations> = {
     // v1.2.0 Appearance
     appearance: 'Apparence',
     oledDarkMode: 'Mode sombre OLED',
+    themeLabel: 'Thème',
+    themeLight: 'Clair',
+    themeDark: 'Sombre',
+    themeSystem: 'Système',
     oledDarkModeHint: 'Thème noir pur pour écrans OLED. Économise la batterie.',
 
     // What's New Modal
@@ -10519,6 +10549,10 @@ export const translations: Record<Language, Translations> = {
     appearance: '外観',
     oledDarkMode: 'OLEDダークモード',
     oledDarkModeHint: 'OLED画面用の真っ黒テーマ。バッテリー節約に。',
+    themeLabel: 'テーマ',
+    themeLight: 'ライト',
+    themeDark: 'ダーク',
+    themeSystem: 'システム',
 
     // What's New Modal
     whatsNewTitle: '新機能',
