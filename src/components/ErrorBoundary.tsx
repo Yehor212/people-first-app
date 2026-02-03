@@ -3,6 +3,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { APP_VERSION, getAppMetadata } from "@/lib/appVersion";
 import { crashReporting } from "@/lib/crashReporting";
 import { safeLocalStorageGet } from "@/lib/safeJson";
+import { captureError } from "@/lib/sentry";
 
 const LOG_KEY = "zenflow-error-log";
 
@@ -98,6 +99,13 @@ class ErrorBoundaryBase extends React.Component<ErrorBoundaryBaseProps, ErrorBou
       componentStack: info.componentStack || 'unknown',
       location: window.location.href
     });
+
+    // Send to Sentry for error monitoring
+    captureError(error, {
+      componentStack: info.componentStack || 'unknown',
+      location: window.location.href,
+      context: 'ErrorBoundary'
+    });
   }
 
   render() {
@@ -185,6 +193,13 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
       componentStack: info.componentStack || 'unknown',
       location: window.location.href,
       context: 'modal'
+    });
+
+    // Send to Sentry for error monitoring
+    captureError(error, {
+      componentStack: info.componentStack || 'unknown',
+      location: window.location.href,
+      context: 'ModalErrorBoundary'
     });
   }
 
