@@ -117,39 +117,16 @@ export async function syncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld
 /**
  * Subscribe to real-time Inner World updates
  */
+/**
+ * DISABLED: Realtime subscriptions for inner world
+ *
+ * Performance optimization: WAL query was consuming 96% of database time.
+ * Data syncs on app resume via pullInnerWorldFromCloud() instead.
+ */
 export function subscribeToInnerWorldUpdates(
-  userId: string,
-  callback: (world: InnerWorld) => void
+  _userId: string,
+  _callback: (world: InnerWorld) => void
 ): () => void {
-  if (!supabase || !userId) {
-    return () => {};
-  }
-
-  const channel = supabase
-    .channel(`inner_world_${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'user_inner_world',
-        filter: `user_id=eq.${userId}`,
-      },
-      (payload) => {
-        const newData = payload.new as Record<string, unknown> | null;
-        if (newData && typeof newData.world_data === 'object' && newData.world_data !== null) {
-          const worldData = newData.world_data as InnerWorld;
-          // Basic validation: check required properties exist
-          if (worldData && typeof worldData.treatsBalance === 'number') {
-            callback(worldData);
-          }
-        }
-      }
-    )
-    .subscribe();
-
-  return () => {
-    channel.unsubscribe();
-    supabase.removeChannel(channel);
-  };
+  // Disabled for performance - data syncs on app resume
+  return () => {};
 }

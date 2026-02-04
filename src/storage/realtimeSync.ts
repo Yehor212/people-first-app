@@ -667,63 +667,19 @@ export const pushToCloud = async (): Promise<boolean> => {
 // REALTIME SUBSCRIPTIONS
 // ============================================
 
+/**
+ * DISABLED: Realtime subscriptions for core tables
+ *
+ * Performance optimization: WAL query was consuming 96% of database time.
+ * Data now syncs via pullFromCloud() on app resume instead of realtime.
+ *
+ * friend_challenge_members remains realtime-enabled via challengeService.ts
+ * for live leaderboard updates.
+ */
 export const subscribeToRealtime = async (): Promise<void> => {
-  const userId = await getCurrentUserId();
-  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
-  if (!supabase) return;
-  if (!userId) {
-    logger.warn('[Realtime] Cannot subscribe: User not authenticated');
-    return;
-  }
-
-  // Unsubscribe from existing channel
-  if (realtimeChannel) {
-    await supabase.removeChannel(realtimeChannel);
-    realtimeChannel = null;
-  }
-
-  // Subscribe to all user tables
-  realtimeChannel = supabase
-    .channel(`user-${userId}`)
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'moods', filter: `user_id=eq.${userId}` },
-      (payload) => handleRealtimeChange('moods', payload)
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${userId}` },
-      (payload) => handleRealtimeChange('habits', payload)
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'habit_completions', filter: `user_id=eq.${userId}` },
-      (payload) => handleRealtimeChange('habit_completions', payload)
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'focus_sessions', filter: `user_id=eq.${userId}` },
-      (payload) => handleRealtimeChange('focus_sessions', payload)
-    )
-    .on(
-      'postgres_changes',
-      { event: '*', schema: 'public', table: 'gratitude_entries', filter: `user_id=eq.${userId}` },
-      (payload) => handleRealtimeChange('gratitude_entries', payload)
-    )
-    .subscribe((status) => {
-      logger.log('[Realtime] Subscription status:', status);
-
-      // Auto-reconnect on channel error or close
-      if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-        logger.warn('[Realtime] Connection lost, attempting reconnect in 5s...');
-        realtimeChannel = null;
-        setTimeout(() => {
-          subscribeToRealtime().catch((err) => {
-            logger.error('[Realtime] Reconnect failed:', err);
-          });
-        }, 5000);
-      }
-    });
+  // Disabled to reduce WAL overhead - data syncs on app resume via pullFromCloud()
+  logger.log('[Realtime] Subscriptions disabled for performance optimization');
+  return;
 };
 
 export const unsubscribeFromRealtime = async (): Promise<void> => {

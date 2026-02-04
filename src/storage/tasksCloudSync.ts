@@ -320,89 +320,28 @@ export async function syncQuests(): Promise<QuestsState> {
 }
 
 /**
- * Subscribe to real-time task updates
- * @param userId - Filter changes to only this user's tasks
- * @param callback - Function to call with updated tasks
+ * DISABLED: Realtime subscriptions for tasks and quests
+ *
+ * Performance optimization: WAL query was consuming 96% of database time.
+ * Data syncs on app resume via pullTasksFromCloud()/pullQuestsFromCloud() instead.
  */
-export function subscribeToTaskUpdates(userId: string, callback: (tasks: Task[]) => void) {
-  if (!userId) {
-    logger.warn('[TasksSync] No userId provided for subscription');
-    return () => {};
-  }
 
-  // Validate userId to prevent injection attacks
-  if (!isValidUUID(userId)) {
-    logger.warn('[TasksSync] Invalid userId format for subscription');
-    return () => {};
-  }
-
-  const channel = supabase
-    .channel(`tasks-changes-${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'user_tasks',
-        filter: `user_id=eq.${userId}`,
-      },
-      async () => {
-        const tasks = await pullTasksFromCloud();
-        if (tasks !== null) {
-          safeLocalStorageSet(TASKS_STORAGE_KEY, tasks);
-          triggerDataRefresh();
-          callback(tasks);
-        }
-      }
-    )
-    .subscribe();
-
-  return () => {
-    channel.unsubscribe();
-    supabase.removeChannel(channel);
-  };
+/**
+ * Subscribe to real-time task updates (DISABLED)
+ * @param _userId - Filter changes to only this user's tasks
+ * @param _callback - Function to call with updated tasks
+ */
+export function subscribeToTaskUpdates(_userId: string, _callback: (tasks: Task[]) => void) {
+  // Disabled for performance - data syncs on app resume
+  return () => {};
 }
 
 /**
- * Subscribe to real-time quest updates
- * @param userId - Filter changes to only this user's quests
- * @param callback - Function to call with updated quests
+ * Subscribe to real-time quest updates (DISABLED)
+ * @param _userId - Filter changes to only this user's quests
+ * @param _callback - Function to call with updated quests
  */
-export function subscribeToQuestUpdates(userId: string, callback: (quests: { daily: Quest | null; weekly: Quest | null; bonus: Quest | null }) => void) {
-  if (!userId) {
-    logger.warn('[QuestsSync] No userId provided for subscription');
-    return () => {};
-  }
-
-  // Validate userId to prevent injection attacks
-  if (!isValidUUID(userId)) {
-    logger.warn('[QuestsSync] Invalid userId format for subscription');
-    return () => {};
-  }
-
-  const channel = supabase
-    .channel(`quests-changes-${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'user_quests',
-        filter: `user_id=eq.${userId}`,
-      },
-      async () => {
-        const quests = await pullQuestsFromCloud();
-        if (quests !== undefined) {
-          safeLocalStorageSet(QUESTS_STORAGE_KEY, quests);
-          triggerDataRefresh();
-          callback(quests);
-        }
-      }
-    )
-    .subscribe();
-
-  return () => {
-    channel.unsubscribe();
-    supabase.removeChannel(channel);
-  };
+export function subscribeToQuestUpdates(_userId: string, _callback: (quests: { daily: Quest | null; weekly: Quest | null; bonus: Quest | null }) => void) {
+  // Disabled for performance - data syncs on app resume
+  return () => {};
 }

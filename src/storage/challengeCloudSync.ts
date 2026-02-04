@@ -334,66 +334,29 @@ export async function pushBadgeUnlock(userId: string, badge: Badge): Promise<boo
   }
 }
 
-// Subscribe to real-time challenge updates
-export function subscribeToChallengeUpdates(
-  userId: string,
-  onUpdate: (challenge: Challenge) => void
-): () => void {
-  const channel = supabase
-    .channel(`user_challenges-${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'user_challenges',
-        filter: `user_id=eq.${userId}`
-      },
-      (payload) => {
-        if (payload.new) {
-          const challenge = supabaseToChallengeLocal(payload.new as SupabaseChallenge);
-          onUpdate(challenge);
-        }
-      }
-    )
-    .subscribe();
+/**
+ * DISABLED: Realtime subscriptions for challenges and badges
+ *
+ * Performance optimization: WAL query was consuming 96% of database time.
+ * Data syncs on app resume via pullChallengesFromCloud() instead.
+ */
 
-  // Return cleanup function
-  return () => {
-    channel.unsubscribe();
-    supabase.removeChannel(channel);
-  };
+// Subscribe to real-time challenge updates (DISABLED)
+export function subscribeToChallengeUpdates(
+  _userId: string,
+  _onUpdate: (challenge: Challenge) => void
+): () => void {
+  // Disabled for performance - data syncs on app resume
+  return () => {};
 }
 
-// Subscribe to real-time badge updates
+// Subscribe to real-time badge updates (DISABLED)
 export function subscribeToBadgeUpdates(
-  userId: string,
-  onUpdate: (badge: Badge) => void
+  _userId: string,
+  _onUpdate: (badge: Badge) => void
 ): () => void {
-  const channel = supabase
-    .channel(`user_badges-${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'user_badges',
-        filter: `user_id=eq.${userId}`
-      },
-      (payload) => {
-        if (payload.new) {
-          const badge = supabaseToBadgeLocal(payload.new as SupabaseBadge);
-          onUpdate(badge);
-        }
-      }
-    )
-    .subscribe();
-
-  // Return cleanup function
-  return () => {
-    channel.unsubscribe();
-    supabase.removeChannel(channel);
-  };
+  // Disabled for performance - data syncs on app resume
+  return () => {};
 }
 
 // Initialize badges in cloud for new users
