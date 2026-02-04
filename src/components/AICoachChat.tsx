@@ -32,10 +32,11 @@ export function AICoachChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Focus input when opened
+  // Focus input when opened (minimal delay for DOM update)
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 300);
+      // Use requestAnimationFrame for reliable focus after render
+      requestAnimationFrame(() => inputRef.current?.focus());
     }
   }, [isOpen]);
 

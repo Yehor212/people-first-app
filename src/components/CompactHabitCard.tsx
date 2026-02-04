@@ -329,7 +329,7 @@ export function CompactHabitCard({
           {/* Habit Icon Button - Premium styling */}
           <motion.button
             onClick={handleToggle}
-            aria-label={`${habit.name}: ${completed ? t.completed : t.markComplete || 'Mark complete'}`}
+            aria-label={`${habit.name}: ${completed ? (t.completed || 'Completed') : (t.markComplete || 'Mark complete')}`}
             aria-pressed={completed}
             className={cn(
               'relative w-14 h-14 rounded-xl flex items-center justify-center text-2xl shrink-0',
