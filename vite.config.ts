@@ -5,6 +5,7 @@ import { readFileSync } from 'fs';
 import { componentTagger } from "lovable-tagger";
 import { VitePWA } from "vite-plugin-pwa";
 import { changelogPlugin } from "./vite-plugin-changelog";
+import { versionPlugin } from "./vite-plugin-version";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -29,6 +30,7 @@ export default defineConfig(({ mode }) => {
   plugins: [
     react(),
     changelogPlugin(),
+    versionPlugin(),
     mode === "development" && componentTagger(),
     // Disable PWA for Capacitor builds (native apps don't need service workers)
     !isCapacitor ? VitePWA({

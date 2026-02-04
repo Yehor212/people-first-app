@@ -113,7 +113,23 @@ self.addEventListener('sync', (event) => {
 // Listen for messages from the main app
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
+    console.log('[SW] Skip waiting requested');
     self.skipWaiting();
+  }
+
+  if (event.data?.type === 'CLEAR_CACHES') {
+    // Clear all caches when app detects version mismatch
+    console.log('[SW] Clear caches requested');
+    event.waitUntil(
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            console.log('[SW] Deleting cache:', cacheName);
+            return caches.delete(cacheName);
+          })
+        );
+      })
+    );
   }
 
   if (event.data?.type === 'REGISTER_SYNC') {

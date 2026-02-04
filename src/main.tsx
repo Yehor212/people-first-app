@@ -12,6 +12,12 @@ import { cleanupShareCache } from "./lib/shareCards";
 import { initA11y } from "./lib/a11y";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
+import {
+  checkAppVersion,
+  forceHardReload,
+  isOAuthReturn,
+  shouldCheckVersion,
+} from "./lib/versionCheck";
 
 // Initialize Sentry FIRST for error monitoring (before any other code runs)
 initSentry();
@@ -156,4 +162,37 @@ if (isCapacitor) {
   }
 }
 
-createRoot(document.getElementById("root")!).render(<App />);
+/**
+ * P0 Fix: Check app version before rendering.
+ *
+ * This prevents chunk load errors after deployment by detecting
+ * version mismatch BEFORE lazy loading tries to load non-existent chunks.
+ *
+ * Especially important after OAuth redirects where user was away
+ * on external auth page while app was updated.
+ */
+async function initializeApp(): Promise<boolean> {
+  // Check if we should verify version (after OAuth or after chunk error reload)
+  const needsVersionCheck = isOAuthReturn() || shouldCheckVersion();
+
+  if (needsVersionCheck) {
+    logger.log('[Main] Checking app version...');
+
+    const isUpToDate = await checkAppVersion();
+
+    if (!isUpToDate) {
+      logger.log('[Main] Outdated version detected, performing hard reload...');
+      await forceHardReload();
+      return false; // Don't render, page will reload
+    }
+  }
+
+  return true;
+}
+
+// Initialize app with version check, then render
+initializeApp().then((shouldRender) => {
+  if (shouldRender) {
+    createRoot(document.getElementById("root")!).render(<App />);
+  }
+});

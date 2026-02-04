@@ -1,4 +1,5 @@
 import { lazy, ComponentType } from 'react';
+import { forceHardReload, markForVersionCheck } from './versionCheck';
 
 type ImportFn<T> = () => Promise<{ default: T }>;
 
@@ -48,8 +49,8 @@ export function lazyWithRetry<T extends ComponentType<any>>(
       }
     }
 
-    // All retries failed - force reload to get new index.html
-    console.error(`[LazyLoad] All retries failed for ${moduleName}, reloading page...`);
+    // All retries failed - force hard reload to get new index.html
+    console.error(`[LazyLoad] All retries failed for ${moduleName}, performing hard reload...`);
 
     // Mark that we're reloading to prevent infinite loop
     const reloadKey = `chunk_reload_${moduleName}`;
@@ -58,7 +59,10 @@ export function lazyWithRetry<T extends ComponentType<any>>(
 
     if (!lastReload || now - parseInt(lastReload) > 60000) {
       sessionStorage.setItem(reloadKey, now.toString());
-      window.location.reload();
+      // Mark for version check on reload and perform hard reload
+      // This clears SW caches and adds cache-busting query param
+      markForVersionCheck();
+      await forceHardReload();
     }
 
     // If we already reloaded recently, throw the error instead of infinite loop
