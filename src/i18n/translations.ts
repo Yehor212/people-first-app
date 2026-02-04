@@ -762,6 +762,12 @@ export interface Translations {
   hyperfocusTipText: string;
   hyperfocusPauseMsg: string;
 
+  // Audio Status (P0 Fix)
+  audioLoading: string;
+  audioTapToEnable: string;
+  audioRetry: string;
+  audioError: string;
+
   // Widget Settings
   widgetSettings: string;
   widgetSettingsDesc: string;
@@ -2252,6 +2258,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTipText: 'Каждые 25 минут будет короткая дыхательная пауза. Это помогает избежать выгорания!',
     hyperfocusPauseMsg: 'Нажмите Play, чтобы продолжить',
 
+    // Audio Status (P0 Fix)
+    audioLoading: 'Загрузка...',
+    audioTapToEnable: 'Нажмите для включения звука',
+    audioRetry: 'Повторить',
+    audioError: 'Ошибка аудио',
+
     // Widget Settings
     widgetSettings: 'Настройки виджетов',
     widgetSettingsDesc: 'Настройте виджеты для домашнего экрана',
@@ -3698,6 +3710,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTipText: 'Every 25 minutes there will be a short breathing pause. This helps prevent burnout!',
     hyperfocusPauseMsg: 'Press Play to continue',
 
+    // Audio Status (P0 Fix)
+    audioLoading: 'Loading...',
+    audioTapToEnable: 'Tap to enable sound',
+    audioRetry: 'Retry',
+    audioError: 'Audio error',
+
     // Widget Settings
     widgetSettings: 'Widget Settings',
     widgetSettingsDesc: 'Configure widgets for your home screen',
@@ -5143,6 +5161,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTip: 'Порада',
     hyperfocusTipText: 'Кожні 25 хвилин буде коротка дихальна пауза. Це допомагає уникнути вигорання!',
     hyperfocusPauseMsg: 'Натисніть Play, щоб продовжити',
+
+    // Audio Status (P0 Fix)
+    audioLoading: 'Завантаження...',
+    audioTapToEnable: 'Натисніть для увімкнення звуку',
+    audioRetry: 'Повторити',
+    audioError: 'Помилка аудіо',
 
     // Widget Settings
     widgetSettings: 'Налаштування віджетів',
@@ -6591,6 +6615,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTipText: 'Cada 25 minutos habrá una breve pausa de respiración. ¡Esto ayuda a prevenir el agotamiento!',
     hyperfocusPauseMsg: 'Presiona Play para continuar',
 
+    // Audio Status (P0 Fix)
+    audioLoading: 'Cargando...',
+    audioTapToEnable: 'Toca para habilitar sonido',
+    audioRetry: 'Reintentar',
+    audioError: 'Error de audio',
+
     // Widget Settings
     widgetSettings: 'Configuración de Widgets',
     widgetSettingsDesc: 'Configura widgets para tu pantalla de inicio',
@@ -8037,6 +8067,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTip: 'Tipp',
     hyperfocusTipText: 'Alle 25 Minuten gibt es eine kurze Atempause. Das hilft, Burnout zu vermeiden!',
     hyperfocusPauseMsg: 'Drücke Play zum Fortfahren',
+
+    // Audio Status (P0 Fix)
+    audioLoading: 'Wird geladen...',
+    audioTapToEnable: 'Tippen zum Aktivieren',
+    audioRetry: 'Erneut versuchen',
+    audioError: 'Audiofehler',
 
     // Widget Settings
     widgetSettings: 'Widget-Einstellungen',
@@ -9485,6 +9521,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTipText: 'Toutes les 25 minutes, il y aura une courte pause respiratoire. Cela aide à prévenir l\'épuisement!',
     hyperfocusPauseMsg: 'Appuyez sur Play pour continuer',
 
+    // Audio Status (P0 Fix)
+    audioLoading: 'Chargement...',
+    audioTapToEnable: 'Appuyez pour activer le son',
+    audioRetry: 'Réessayer',
+    audioError: 'Erreur audio',
+
     // Widget Settings
     widgetSettings: 'Paramètres des Widgets',
     widgetSettingsDesc: 'Configurez les widgets pour votre écran d\'accueil',
@@ -10931,6 +10973,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTipText: '25分ごとに短い呼吸休憩があります。燃え尽き症候群を防ぎます！',
     hyperfocusPauseMsg: '再生を押して続行',
 
+    // Audio Status (P0 Fix)
+    audioLoading: '読み込み中...',
+    audioTapToEnable: 'タップして音声を有効化',
+    audioRetry: '再試行',
+    audioError: 'オーディオエラー',
+
     // Widget Settings
     widgetSettings: 'ウィジェット設定',
     widgetSettingsDesc: 'ホーム画面のウィジェットを設定',
@@ -12281,6 +12329,12 @@ const arabicOverrides: Partial<Translations> = {
   hyperfocusTip: 'نصيحة',
   hyperfocusTipText: 'أغلق كل المشتتات للتركيز الأقصى',
   hyperfocusPauseMsg: 'خذ استراحة قصيرة',
+
+  // Audio Status (P0 Fix)
+  audioLoading: 'جاري التحميل...',
+  audioTapToEnable: 'اضغط لتفعيل الصوت',
+  audioRetry: 'إعادة المحاولة',
+  audioError: 'خطأ في الصوت',
 
   // Widget
   widgetSettings: 'إعدادات الويدجت',

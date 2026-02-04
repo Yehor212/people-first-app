@@ -13,6 +13,27 @@
 
 import { logger } from './logger';
 
+// ============================================
+// AUDIO STATUS TRACKING (P0 Fix)
+// ============================================
+
+export type AudioState = 'idle' | 'loading' | 'playing' | 'paused' | 'blocked' | 'error';
+
+export interface AudioError {
+  code: string;
+  message: string;
+  recoverable: boolean;
+}
+
+export interface AudioStatus {
+  state: AudioState;
+  soundId: string | null;
+  error?: AudioError;
+  isUnlocked: boolean;
+}
+
+export type AudioStatusListener = (status: AudioStatus) => void;
+
 // Extend Window interface for webkit AudioContext (Safari)
 declare global {
   interface Window {
@@ -224,6 +245,7 @@ export interface SoundInfo {
   nameRu: string;
   nameEn: string;
   file: string;
+  fallbackFile?: string; // P0 Fix: MP3 fallback for WAV files
   description: string;
 }
 
@@ -233,6 +255,13 @@ const BASE_PATH = import.meta.env.BASE_URL || '/people-first-app/';
 /**
  * All available sounds - LOCAL ONLY
  * Names honestly describe what's in each file
+ *
+ * P0 Fix: WAV files have MP3 fallbacks for better cross-device compatibility.
+ * Currently using WAV as primary (files exist), with MP3 as future optimization.
+ * When MP3 files are created, swap file/fallbackFile order.
+ *
+ * To create MP3 files (P2 optimization):
+ * ffmpeg -i input.wav -codec:a libmp3lame -qscale:a 4 output.mp3
  */
 export const SOUNDS: SoundInfo[] = [
   {
@@ -241,6 +270,7 @@ export const SOUNDS: SoundInfo[] = [
     nameRu: 'Подводный гул',
     nameEn: 'Underwater Hum',
     file: `${BASE_PATH}sounds/mixkit-underwater-transmitter-hum-2135.wav`,
+    fallbackFile: `${BASE_PATH}sounds/underwater.mp3`, // P2: Add MP3 for smaller size
     description: 'Deep underwater ambient sound'
   },
   {
@@ -249,6 +279,7 @@ export const SOUNDS: SoundInfo[] = [
     nameRu: 'Гроза в джунглях',
     nameEn: 'Jungle Thunderstorm',
     file: `${BASE_PATH}sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.wav`,
+    fallbackFile: `${BASE_PATH}sounds/thunderstorm.mp3`, // P2: Add MP3 for smaller size
     description: 'Thunder and rain in tropical jungle'
   },
   {
@@ -257,6 +288,7 @@ export const SOUNDS: SoundInfo[] = [
     nameRu: 'Волны у скал',
     nameEn: 'Waves on Rocks',
     file: `${BASE_PATH}sounds/mixkit-small-waves-harbor-rocks-1208.wav`,
+    fallbackFile: `${BASE_PATH}sounds/ocean.mp3`, // P2: Add MP3 for smaller size
     description: 'Small waves hitting harbor rocks'
   },
   {
@@ -265,6 +297,7 @@ export const SOUNDS: SoundInfo[] = [
     nameRu: 'Природа у реки',
     nameEn: 'River Wildlife',
     file: `${BASE_PATH}sounds/mixkit-wildlife-environment-in-a-river-2456.wav`,
+    fallbackFile: `${BASE_PATH}sounds/river.mp3`, // P2: Add MP3 for smaller size
     description: 'River sounds with wildlife'
   },
   {
@@ -314,6 +347,70 @@ export class AmbientSoundGenerator {
     abortController: AbortController;
   } | null = null;
 
+  // P0 Fix: Status tracking
+  private status: AudioStatus = {
+    state: 'idle',
+    soundId: null,
+    isUnlocked: false,
+  };
+  private statusListeners: Set<AudioStatusListener> = new Set();
+  private usedFallback = false; // Track if fallback was used (for diagnostics)
+
+  /**
+   * P0 Fix: Subscribe to status changes
+   */
+  addStatusListener(listener: AudioStatusListener): () => void {
+    this.statusListeners.add(listener);
+    // Immediately emit current status
+    listener(this.status);
+    return () => this.statusListeners.delete(listener);
+  }
+
+  /**
+   * P0 Fix: Update and emit status
+   */
+  private setStatus(updates: Partial<AudioStatus>): void {
+    this.status = { ...this.status, ...updates };
+    this.statusListeners.forEach(listener => {
+      try {
+        listener(this.status);
+      } catch (e) {
+        logger.warn('[AmbientSounds] Status listener error:', e);
+      }
+    });
+    logger.log('[AmbientSounds] Status updated:', this.status.state, this.status.soundId);
+  }
+
+  /**
+   * P0 Fix: Get current status (for debugging)
+   */
+  getStatus(): AudioStatus {
+    return { ...this.status };
+  }
+
+  /**
+   * P0 Fix: Get debug info for diagnostics
+   */
+  getDebugInfo(): Record<string, unknown> {
+    const ctx = globalAudioContext;
+    return {
+      status: this.status,
+      audioContextState: ctx?.state ?? 'not created',
+      audioUnlocked,
+      currentSoundId: this.currentSoundId,
+      isPlaying: this.isPlaying,
+      isTransitioning: this.isTransitioning,
+      volume: this.volume,
+      usedFallback: this.usedFallback,
+      audioElementState: this.audioElement ? {
+        paused: this.audioElement.paused,
+        readyState: this.audioElement.readyState,
+        networkState: this.audioElement.networkState,
+        error: this.audioElement.error?.message,
+      } : null,
+    };
+  }
+
   async play(soundId: string): Promise<void> {
     if (soundId === 'none') {
       this.stop();
@@ -323,6 +420,11 @@ export class AmbientSoundGenerator {
     const sound = getSoundById(soundId);
     if (!sound) {
       logger.error(`[AmbientSounds] Sound not found: ${soundId}`);
+      this.setStatus({
+        state: 'error',
+        soundId: null,
+        error: { code: 'SOUND_NOT_FOUND', message: `Sound "${soundId}" not found`, recoverable: false },
+      });
       return;
     }
 
@@ -337,6 +439,9 @@ export class AmbientSoundGenerator {
       this.pendingPlayback.abortController.abort();
       this.pendingPlayback = null;
     }
+
+    // P0 Fix: Set loading status
+    this.setStatus({ state: 'loading', soundId, error: undefined });
 
     // Wait if another transition is in progress (mutex)
     let waitCount = 0;
@@ -360,11 +465,27 @@ export class AmbientSoundGenerator {
       // Check abort before async operations
       if (abortController.signal.aborted) {
         logger.log('[AmbientSounds] Playback aborted before start');
+        this.setStatus({ state: 'idle', soundId: null });
         return;
       }
 
-      // Load and play audio (async) - pass abort signal
-      await this.playAudioFile(sound.file, myPlaybackId, abortController.signal);
+      // P0 Fix: Check if audio is blocked by browser policy
+      if (!audioUnlocked) {
+        this.setStatus({
+          state: 'blocked',
+          soundId,
+          isUnlocked: false,
+          error: { code: 'AUDIO_BLOCKED', message: 'Tap to enable sound', recoverable: true },
+        });
+        // Still try to unlock
+        await unlockAudio();
+        if (audioUnlocked) {
+          this.setStatus({ state: 'loading', soundId, isUnlocked: true, error: undefined });
+        }
+      }
+
+      // Load and play audio (async) - pass abort signal and sound info for fallback
+      await this.playAudioFile(sound.file, myPlaybackId, abortController.signal, sound.fallbackFile);
 
       // Final check after async load
       if (abortController.signal.aborted || myPlaybackId !== this.playbackId) {
@@ -373,6 +494,7 @@ export class AmbientSoundGenerator {
           this.audioElement.pause();
           this.audioElement.src = '';
         }
+        this.setStatus({ state: 'idle', soundId: null });
         return;
       }
 
@@ -380,15 +502,32 @@ export class AmbientSoundGenerator {
       this.currentSoundId = soundId;
       this.isPlaying = true;
 
+      // P0 Fix: Set playing status
+      this.setStatus({ state: 'playing', soundId, isUnlocked: true, error: undefined });
+
       logger.log(`[AmbientSounds] Playing: ${sound.nameEn}`);
     } catch (error) {
       // Distinguish abort errors from real errors
       if (error instanceof DOMException && error.name === 'AbortError') {
         logger.log('[AmbientSounds] Playback cancelled');
+        this.setStatus({ state: 'idle', soundId: null });
       } else if (myPlaybackId === this.playbackId) {
         logger.error(`[AmbientSounds] Failed to play:`, error);
         this.isPlaying = false;
         this.currentSoundId = null;
+
+        // P0 Fix: Set error status with helpful message
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const isNetworkError = errorMessage.includes('load') || errorMessage.includes('network');
+        this.setStatus({
+          state: 'error',
+          soundId,
+          error: {
+            code: isNetworkError ? 'LOAD_ERROR' : 'PLAYBACK_ERROR',
+            message: isNetworkError ? 'Failed to load audio file' : errorMessage,
+            recoverable: true,
+          },
+        });
       }
     } finally {
       if (this.pendingPlayback?.id === myPlaybackId) {
@@ -440,14 +579,21 @@ export class AmbientSoundGenerator {
     this.currentSoundId = null;
   }
 
-  private async playAudioFile(url: string, playbackId: number, signal: AbortSignal): Promise<void> {
+  private async playAudioFile(
+    url: string,
+    playbackId: number,
+    signal: AbortSignal,
+    fallbackUrl?: string
+  ): Promise<void> {
     logger.log('[AmbientSounds] playAudioFile called with URL:', url);
+    this.usedFallback = false;
 
     // Check abort signal
     if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
 
     // Try to unlock audio if not already done
     await unlockAudio();
+    this.setStatus({ isUnlocked: audioUnlocked });
 
     // Check after async operation
     if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
@@ -468,6 +614,53 @@ export class AmbientSoundGenerator {
     if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
     if (playbackId !== this.playbackId) throw new DOMException('Superseded', 'AbortError');
 
+    // P0 Fix: Try primary URL, then fallback if it fails
+    let loadError: Error | null = null;
+    const urlsToTry = [url];
+    if (fallbackUrl) {
+      urlsToTry.push(fallbackUrl);
+    }
+
+    for (let i = 0; i < urlsToTry.length; i++) {
+      const currentUrl = urlsToTry[i];
+      const isFallback = i > 0;
+
+      if (isFallback) {
+        logger.log('[AmbientSounds] Primary file failed, trying fallback:', currentUrl);
+        this.usedFallback = true;
+      }
+
+      try {
+        await this.loadAndPlayUrl(currentUrl, playbackId, signal);
+        // Success - exit loop
+        if (isFallback) {
+          logger.log('[AmbientSounds] Fallback file loaded successfully');
+        }
+        return;
+      } catch (error) {
+        loadError = error instanceof Error ? error : new Error(String(error));
+
+        // If it's an abort error, don't try fallback
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          throw error;
+        }
+
+        // If there's a fallback, continue to next iteration
+        if (i < urlsToTry.length - 1) {
+          logger.warn('[AmbientSounds] Failed to load, will try fallback:', loadError.message);
+          continue;
+        }
+      }
+    }
+
+    // All URLs failed
+    throw loadError || new Error('Failed to load audio');
+  }
+
+  /**
+   * P0 Fix: Extracted URL loading logic for reuse with fallback
+   */
+  private async loadAndPlayUrl(url: string, playbackId: number, signal: AbortSignal): Promise<void> {
     // Create audio element with iOS-friendly settings
     this.audioElement = new Audio();
     this.audioElement.loop = true;
@@ -479,7 +672,11 @@ export class AmbientSoundGenerator {
     this.audioElement.webkitPreservesPitch = true; // Safari
     this.audioElement.src = url;
 
-    logger.log('[AmbientSounds] Audio element created, volume:', this.volume);
+    logger.log('[AmbientSounds] Audio element created, volume:', this.volume, 'url:', url);
+
+    // P0 Fix: Determine timeout based on file type (WAV files are larger, need more time)
+    const isWavFile = url.toLowerCase().endsWith('.wav');
+    const loadTimeout = isWavFile ? 30000 : 15000; // 30s for WAV, 15s for MP3
 
     // Wait for audio to be ready with proper cleanup
     await new Promise<void>((resolve, reject) => {
@@ -519,11 +716,11 @@ export class AmbientSoundGenerator {
         handleReject(new DOMException('Aborted during load', 'AbortError'));
       }, { once: true });
 
-      // Timeout
+      // P0 Fix: Longer timeout for large files
       timeoutId = window.setTimeout(() => {
-        logger.warn('[AmbientSounds] Audio load timeout - attempting play anyway');
+        logger.warn(`[AmbientSounds] Audio load timeout (${loadTimeout}ms) - attempting play anyway`);
         handleResolve();
-      }, 10000);
+      }, loadTimeout);
 
       // Ready listeners
       this.audioElement.oncanplaythrough = () => {
@@ -587,6 +784,9 @@ export class AmbientSoundGenerator {
     // Invalidate any pending playback requests
     this.playbackId++;
     this.stopImmediate();
+
+    // P0 Fix: Update status
+    this.setStatus({ state: 'idle', soundId: null, error: undefined });
   }
 
   setVolume(volume: number): void {
@@ -603,15 +803,21 @@ export class AmbientSoundGenerator {
   pause(): void {
     if (this.audioElement) {
       this.audioElement.pause();
+      // P0 Fix: Update status
+      this.setStatus({ state: 'paused' });
     }
   }
 
   async resume(): Promise<void> {
     if (!this.audioElement || !this.isPlaying) return;
 
+    // P0 Fix: Set loading while resuming
+    this.setStatus({ state: 'loading' });
+
     try {
       // Re-unlock audio for mobile (iOS especially needs this after pause)
       await unlockAudio();
+      this.setStatus({ isUnlocked: audioUnlocked });
 
       // Ensure AudioContext is running
       const ctx = getAudioContext();
@@ -623,13 +829,26 @@ export class AmbientSoundGenerator {
       // Try to play with retry for iOS
       try {
         await this.audioElement.play();
+        // P0 Fix: Update status on success
+        this.setStatus({ state: 'playing', error: undefined });
       } catch (firstError) {
         logger.warn('[AmbientSounds] Resume first attempt failed, retrying...', firstError);
         await new Promise(resolve => setTimeout(resolve, 100));
         await this.audioElement.play();
+        // P0 Fix: Update status on success
+        this.setStatus({ state: 'playing', error: undefined });
       }
     } catch (err) {
       logger.error('[AmbientSounds] Failed to resume audio:', err);
+      // P0 Fix: Update status on error
+      this.setStatus({
+        state: 'error',
+        error: {
+          code: 'RESUME_ERROR',
+          message: 'Failed to resume audio',
+          recoverable: true,
+        },
+      });
     }
   }
 

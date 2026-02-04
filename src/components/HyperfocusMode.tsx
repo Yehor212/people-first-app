@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { logger } from '@/lib/logger';
-import { X, Play, Pause, Volume2, VolumeX, Music, ExternalLink, Sparkles } from 'lucide-react';
+import { X, Play, Pause, Volume2, VolumeX, Music, ExternalLink, Sparkles, Loader2, AlertCircle, RotateCcw, Bug, Copy, Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getAmbientSoundGenerator, SOUNDS, unlockAudio, AmbientSoundGenerator } from '@/lib/ambientSounds';
+import { getAmbientSoundGenerator, SOUNDS, unlockAudio, AmbientSoundGenerator, AudioStatus } from '@/lib/ambientSounds';
 import { cn } from '@/lib/utils';
 import {
   isSpotifyConnected,
@@ -56,10 +56,80 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   // Use global singleton to prevent audio overlap
   const soundGeneratorRef = useRef<AmbientSoundGenerator>(getAmbientSoundGenerator());
 
+  // P0 Fix: Audio status tracking for UI feedback
+  const [audioStatus, setAudioStatus] = useState<AudioStatus>({
+    state: 'idle',
+    soundId: null,
+    isUnlocked: false,
+  });
+
+  // P1 Fix: Debug panel state (activated by 5 taps on header)
+  const [showDebugPanel, setShowDebugPanel] = useState(false);
+  const [debugTapCount, setDebugTapCount] = useState(0);
+  const debugTapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [copiedDebug, setCopiedDebug] = useState(false);
+
   // Spotify state
   const [spotifyConnected, setSpotifyConnected] = useState(isSpotifyConnected());
   const [spotifyTrack, setSpotifyTrack] = useState<SpotifyTrack | null>(null);
   const [spotifyAutoPlay, setSpotifyAutoPlay] = useState(false);
+
+  // P0 Fix: Subscribe to audio status updates
+  useEffect(() => {
+    const generator = soundGeneratorRef.current;
+    if (!generator) return;
+
+    const unsubscribe = generator.addStatusListener((status) => {
+      setAudioStatus(status);
+      // Update isSoundPlaying based on status
+      if (status.state === 'playing') {
+        setIsSoundPlaying(true);
+      } else if (status.state === 'idle' || status.state === 'error') {
+        setIsSoundPlaying(false);
+      }
+    });
+
+    return unsubscribe;
+  }, []);
+
+  // P1 Fix: Debug panel tap handler
+  const handleDebugTap = useCallback(() => {
+    if (debugTapTimeoutRef.current) {
+      clearTimeout(debugTapTimeoutRef.current);
+    }
+
+    const newCount = debugTapCount + 1;
+    setDebugTapCount(newCount);
+
+    if (newCount >= 5) {
+      setShowDebugPanel(true);
+      setDebugTapCount(0);
+      logger.log('[HyperfocusMode] Debug panel activated');
+    } else {
+      // Reset tap count after 2 seconds of no taps
+      debugTapTimeoutRef.current = setTimeout(() => {
+        setDebugTapCount(0);
+      }, 2000);
+    }
+  }, [debugTapCount]);
+
+  // P1 Fix: Copy debug info to clipboard
+  const copyDebugInfo = useCallback(async () => {
+    const generator = soundGeneratorRef.current;
+    if (!generator) return;
+
+    const debugInfo = generator.getDebugInfo();
+    const debugText = JSON.stringify(debugInfo, null, 2);
+
+    try {
+      await navigator.clipboard.writeText(debugText);
+      setCopiedDebug(true);
+      setTimeout(() => setCopiedDebug(false), 2000);
+      logger.log('[HyperfocusMode] Debug info copied to clipboard');
+    } catch (e) {
+      logger.error('[HyperfocusMode] Failed to copy debug info:', e);
+    }
+  }, []);
 
   // Countdown timer
   useEffect(() => {
@@ -539,27 +609,83 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         {/* Premium Ambient Sound Selector */}
         <div className="max-w-md mx-auto bg-slate-200/80 dark:bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-slate-300 dark:border-white/10">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-slate-600 dark:text-white/70 font-medium">
+            {/* P1 Fix: 5-tap to activate debug panel */}
+            <button
+              onClick={handleDebugTap}
+              className="text-sm text-slate-600 dark:text-white/70 font-medium select-none"
+              aria-label={t.hyperfocusAmbientSound || 'Ambient sound'}
+            >
               {t.hyperfocusAmbientSound || 'Фоновый звук'}
-            </p>
-            {selectedSoundId && (
-              <motion.button
-                onClick={toggleSound}
-                className={cn(
-                  "p-2.5 min-w-[44px] min-h-[44px] rounded-xl transition-all flex items-center justify-center",
-                  isSoundPlaying
-                    ? "bg-violet-500/30 border border-violet-500/50"
-                    : "bg-slate-300/50 dark:bg-white/10 border border-slate-400 dark:border-white/20"
+            </button>
+
+            <div className="flex items-center gap-2">
+              {/* P0 Fix: Audio status indicator */}
+              <AnimatePresence mode="wait">
+                {audioStatus.state === 'loading' && selectedSoundId && (
+                  <motion.div
+                    key="loading"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg"
+                  >
+                    <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                    <span className="text-xs text-blue-600 dark:text-blue-400">
+                      {t.audioLoading || 'Loading...'}
+                    </span>
+                  </motion.div>
                 )}
-                whileTap={{ scale: 0.95 }}
-              >
-                {isSoundPlaying ? (
-                  <Volume2 className="w-5 h-5 text-violet-700 dark:text-violet-300" />
-                ) : (
-                  <VolumeX className="w-5 h-5 text-slate-500 dark:text-white/60" />
+                {audioStatus.state === 'blocked' && selectedSoundId && (
+                  <motion.div
+                    key="blocked"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/20 border border-amber-500/30 rounded-lg cursor-pointer"
+                    onClick={() => unlockAudio()}
+                  >
+                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                    <span className="text-xs text-amber-600 dark:text-amber-400">
+                      {t.audioTapToEnable || 'Tap to enable'}
+                    </span>
+                  </motion.div>
                 )}
-              </motion.button>
-            )}
+                {audioStatus.state === 'error' && selectedSoundId && (
+                  <motion.div
+                    key="error"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="flex items-center gap-1.5 px-2 py-1 bg-red-500/20 border border-red-500/30 rounded-lg cursor-pointer"
+                    onClick={() => selectedSoundId && playSound(selectedSoundId)}
+                  >
+                    <RotateCcw className="w-4 h-4 text-red-500" />
+                    <span className="text-xs text-red-600 dark:text-red-400">
+                      {t.audioRetry || 'Retry'}
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {selectedSoundId && audioStatus.state !== 'loading' && (
+                <motion.button
+                  onClick={toggleSound}
+                  className={cn(
+                    "p-2.5 min-w-[44px] min-h-[44px] rounded-xl transition-all flex items-center justify-center",
+                    isSoundPlaying
+                      ? "bg-violet-500/30 border border-violet-500/50"
+                      : "bg-slate-300/50 dark:bg-white/10 border border-slate-400 dark:border-white/20"
+                  )}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {isSoundPlaying ? (
+                    <Volume2 className="w-5 h-5 text-violet-700 dark:text-violet-300" />
+                  ) : (
+                    <VolumeX className="w-5 h-5 text-slate-500 dark:text-white/60" />
+                  )}
+                </motion.button>
+              )}
+            </div>
           </div>
 
           {/* Sound selector grid with glassmorphism */}
@@ -694,6 +820,84 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
               </p>
             )}
           </div>
+
+          {/* P1 Fix: Audio Debug Panel */}
+          <AnimatePresence>
+            {showDebugPanel && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="mt-4 pt-4 border-t border-slate-300 dark:border-white/10"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Bug className="w-4 h-4 text-orange-500" />
+                    <p className="text-sm text-slate-600 dark:text-white/70 font-medium">
+                      Audio Debug
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <motion.button
+                      onClick={copyDebugInfo}
+                      className="px-2 py-1 bg-slate-300/50 dark:bg-white/10 border border-slate-400 dark:border-white/20 rounded-lg text-xs text-slate-600 dark:text-white/70 flex items-center gap-1"
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      {copiedDebug ? (
+                        <>
+                          <Check className="w-3 h-3 text-green-500" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          Copy
+                        </>
+                      )}
+                    </motion.button>
+                    <motion.button
+                      onClick={() => setShowDebugPanel(false)}
+                      className="px-2 py-1 bg-slate-300/50 dark:bg-white/10 border border-slate-400 dark:border-white/20 rounded-lg text-xs text-slate-600 dark:text-white/70"
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      Close
+                    </motion.button>
+                  </div>
+                </div>
+                <div className="space-y-2 text-xs font-mono">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-white/50">State:</span>
+                    <span className={cn(
+                      "font-medium",
+                      audioStatus.state === 'playing' && "text-green-500",
+                      audioStatus.state === 'loading' && "text-blue-500",
+                      audioStatus.state === 'error' && "text-red-500",
+                      audioStatus.state === 'blocked' && "text-amber-500",
+                      (audioStatus.state === 'idle' || audioStatus.state === 'paused') && "text-slate-600 dark:text-white/70"
+                    )}>
+                      {audioStatus.state}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-white/50">Unlocked:</span>
+                    <span className={audioStatus.isUnlocked ? "text-green-500" : "text-red-500"}>
+                      {audioStatus.isUnlocked ? 'Yes' : 'No'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-white/50">Sound:</span>
+                    <span className="text-slate-600 dark:text-white/70">{audioStatus.soundId || 'None'}</span>
+                  </div>
+                  {audioStatus.error && (
+                    <div className="mt-2 p-2 bg-red-500/10 border border-red-500/30 rounded-lg">
+                      <p className="text-red-500 font-medium">{audioStatus.error.code}</p>
+                      <p className="text-red-400 text-[10px]">{audioStatus.error.message}</p>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Premium Tips */}
