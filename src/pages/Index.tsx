@@ -2191,12 +2191,14 @@ export function Index() {
             </LazyErrorBoundary>
 
             {/* Insights */}
-            <MoodInsights
-              moods={safeMoods}
-              habits={safeHabits}
-              focusSessions={safeFocusSessions}
-              gratitudeEntries={safeGratitudeEntries}
-            />
+            <LazyErrorBoundary componentName="Insights">
+              <MoodInsights
+                moods={safeMoods}
+                habits={safeHabits}
+                focusSessions={safeFocusSessions}
+                gratitudeEntries={safeGratitudeEntries}
+              />
+            </LazyErrorBoundary>
           </div>
         )}
 
@@ -2224,10 +2226,12 @@ export function Index() {
 
         {activeTab === 'achievements' && (
           <div className="content-with-nav px-4">
-            <AchievementsPanel
-              stats={stats}
-              unlockedAchievements={gamificationState.unlockedAchievements}
-            />
+            <LazyErrorBoundary componentName="Achievements">
+              <AchievementsPanel
+                stats={stats}
+                unlockedAchievements={gamificationState.unlockedAchievements}
+              />
+            </LazyErrorBoundary>
             {/* Leaderboard - Social Feature from v1.3.0 "Harmony" */}
             <LazyErrorBoundary componentName="Leaderboard">
               <Suspense fallback={null}>

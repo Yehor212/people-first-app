@@ -4,23 +4,58 @@
  * (Safari Private Mode, quota exceeded, etc.)
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { logger } from '@/lib/logger';
 
 interface StorageErrorEvent {
-  type: 'write_failed' | 'read_failed' | 'quota_exceeded';
+  type: 'write_failed' | 'read_failed' | 'quota_exceeded' | 'localStorage_write_failed';
   message: string;
   table?: string;
+  key?: string;
+}
+
+/**
+ * P1 Fix #10: Detect Safari Private Mode
+ * In Private Mode, localStorage quota is 0 and writes throw
+ */
+function detectPrivateMode(): boolean {
+  try {
+    const testKey = '__zenflow_storage_test__';
+    localStorage.setItem(testKey, 'test');
+    localStorage.removeItem(testKey);
+    return false;
+  } catch {
+    return true;
+  }
 }
 
 export function StorageErrorBanner() {
   const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isDismissed, setIsDismissed] = useState(false);
+  const hasCheckedPrivateMode = useRef(false);
 
+  // P1 Fix #10: Check for Safari Private Mode on mount
+  useEffect(() => {
+    if (hasCheckedPrivateMode.current || isDismissed) return;
+    hasCheckedPrivateMode.current = true;
+
+    if (detectPrivateMode()) {
+      logger.warn('[StorageErrorBanner] Private mode detected');
+      setErrorMessage(t.storageWarningPrivateMode || 'Private/Incognito mode detected. Your data will not be saved.');
+      setIsVisible(true);
+    }
+  }, [isDismissed, t]);
+
+  // Listen for storage errors
   useEffect(() => {
     const handleStorageError = (event: CustomEvent<StorageErrorEvent>) => {
+      if (isDismissed) return;
+
+      logger.warn('[StorageErrorBanner] Storage error event:', event.detail);
       setErrorMessage(event.detail.message);
       setIsVisible(true);
     };
@@ -30,10 +65,11 @@ export function StorageErrorBanner() {
     return () => {
       window.removeEventListener('zenflow:storage-error', handleStorageError as EventListener);
     };
-  }, []);
+  }, [isDismissed]);
 
   const handleDismiss = () => {
     setIsVisible(false);
+    setIsDismissed(true);
   };
 
   if (!isVisible) return null;

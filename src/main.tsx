@@ -8,6 +8,7 @@ import { logger } from "./lib/logger";
 import { setupDeepLinks } from "./lib/deepLinks";
 import { offlineQueue } from "./lib/offlineQueue";
 import { initSentry, captureError } from "./lib/sentry";
+import { cleanupShareCache } from "./lib/shareCards";
 import { initA11y } from "./lib/a11y";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
@@ -111,6 +112,8 @@ if (Capacitor.isNativePlatform()) {
       logger.log('[Main] Processing pending offline queue on resume');
       void offlineQueue.processQueue();
     }
+    // P1 Fix #12: Clean up stale share cache files (24+ hours old)
+    void cleanupShareCache();
   });
 }
 
