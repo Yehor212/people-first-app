@@ -60,19 +60,34 @@ const acquireInitLock = async (): Promise<void> => {
         lockTimeout = null;
       }
 
-      // Resolve all waiting callbacks sequentially with small delay
+      // P0 Fix: Resolve all waiting callbacks sequentially with error handling
       // This prevents all callbacks from racing simultaneously
       const flushQueue = async () => {
-        while (initQueue.length > 0) {
-          const callback = initQueue.shift();
-          callback?.();
-          // Small delay to prevent overwhelming the system
-          await new Promise(r => setTimeout(r, 10));
+        try {
+          while (initQueue.length > 0) {
+            const callback = initQueue.shift();
+            callback?.();
+            // Small delay to prevent overwhelming the system
+            await new Promise(r => setTimeout(r, 10));
+          }
+        } catch (error) {
+          logger.error('[useIndexedDB] Error during queue flush:', error);
+          // Emit error event so UI can handle
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('zenflow:storage-error', {
+              detail: { type: 'queue_flush_failed', message: 'Database queue flush failed' }
+            }));
+          }
+        } finally {
+          // Always release lock even on error to prevent permanent deadlock
+          globalInitLock = false;
+          isFlushingQueue = false;
         }
-        globalInitLock = false;
-        isFlushingQueue = false;
       };
-      void flushQueue();
+      // P0 Fix: Track flush promise with proper error handling (no fire-and-forget)
+      flushQueue().catch(err => {
+        logger.error('[useIndexedDB] Unhandled flush error:', err);
+      });
     }
 
     if (!globalInitLock) {

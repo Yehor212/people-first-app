@@ -15,6 +15,8 @@ export function PWAUpdateNotifier() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const hasShownToast = useRef(false);
+  // P0 Fix: Store interval ID in ref for proper cleanup
+  const updateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     // Skip on native platforms - they use Google Play updates
@@ -57,14 +59,13 @@ export function PWAUpdateNotifier() {
           }
         }
 
+        // P0 Fix: Store interval in ref for cleanup instead of returning cleanup function
         // Periodically check for updates (every 60 minutes)
-        const intervalId = setInterval(() => {
+        updateIntervalRef.current = setInterval(() => {
           registration.update().catch(() => {
             // Ignore update check errors
           });
         }, 60 * 60 * 1000);
-
-        return () => clearInterval(intervalId);
       } catch (error) {
         logger.warn('[PWA] Failed to check for updates:', error);
       }
@@ -100,10 +101,20 @@ export function PWAUpdateNotifier() {
     void checkForUpdates();
 
     // Listen for SW controller change (happens after skipWaiting)
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
+    const handleControllerChange = () => {
       // New SW has taken control
       logger.log('[PWA] New service worker activated');
-    });
+    };
+    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+
+    // P0 Fix: Proper cleanup to prevent memory leak from accumulating intervals
+    return () => {
+      if (updateIntervalRef.current) {
+        clearInterval(updateIntervalRef.current);
+        updateIntervalRef.current = null;
+      }
+      navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+    };
   }, [toast, t]);
 
   // This component doesn't render anything

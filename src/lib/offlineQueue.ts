@@ -161,19 +161,39 @@ class OfflineQueue {
 
     const { maxRetries = DEFAULT_MAX_RETRIES, deduplicate = true } = options;
 
-    // Check queue size limit
-    // P1 Fix: Emit event when data is dropped so UI can warn user
-    if (this.state.actions.length >= MAX_QUEUE_SIZE) {
-      const droppedAction = this.state.actions.shift();
-      logger.warn('[OfflineQueue] Queue size limit reached, removing oldest action:', droppedAction?.type);
+    // P0 Fix: Check queue size limit - BLOCK instead of silently dropping
+    // This prevents critical data loss without user awareness
+    const QUEUE_WARNING_THRESHOLD = MAX_QUEUE_SIZE - 10; // Warn at 90%
 
-      // Emit custom event for UI to show warning
+    if (this.state.actions.length >= MAX_QUEUE_SIZE) {
+      logger.error('[OfflineQueue] Queue FULL - blocking new action to prevent data loss');
+
+      // Emit blocking event - UI MUST show prompt to user
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('zenflow:offline-data-dropped', {
+        window.dispatchEvent(new CustomEvent('zenflow:offline-queue-full', {
           detail: {
-            droppedAction,
-            queueSize: MAX_QUEUE_SIZE,
-            message: 'Too many offline changes. Some data may be lost. Please connect to sync.'
+            queueSize: this.state.actions.length,
+            maxSize: MAX_QUEUE_SIZE,
+            message: 'Offline queue full. Please connect to internet to sync your data.',
+            actionType: type,
+            entityId,
+          }
+        }));
+      }
+
+      // Don't drop data - throw error so caller knows enqueue failed
+      throw new Error(`Offline queue full (${MAX_QUEUE_SIZE} items). Connect to sync.`);
+    }
+
+    // P0 Fix: Emit warning when approaching limit (90%)
+    if (this.state.actions.length >= QUEUE_WARNING_THRESHOLD) {
+      logger.warn(`[OfflineQueue] Queue at ${this.state.actions.length}/${MAX_QUEUE_SIZE} - approaching limit`);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('zenflow:offline-queue-warning', {
+          detail: {
+            queueSize: this.state.actions.length,
+            maxSize: MAX_QUEUE_SIZE,
+            remaining: MAX_QUEUE_SIZE - this.state.actions.length,
           }
         }));
       }

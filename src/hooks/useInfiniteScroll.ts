@@ -54,6 +54,7 @@ export function useInfiniteScroll<T>({
 
   const observerRef = useRef<IntersectionObserver | null>(null);
   const loadingRef = useRef(false); // Prevent concurrent loads
+  const initialLoadDoneRef = useRef(initialData.length > 0); // P0 Fix: Track initial load to prevent infinite loop
 
   const loadMore = useCallback(async () => {
     if (loadingRef.current || !hasMore) return;
@@ -82,6 +83,7 @@ export function useInfiniteScroll<T>({
     setHasMore(true);
     setError(null);
     loadingRef.current = false;
+    initialLoadDoneRef.current = false; // P0 Fix: Allow re-trigger of initial load
   }, []);
 
   // Sentinel ref callback for Intersection Observer
@@ -110,12 +112,14 @@ export function useInfiniteScroll<T>({
     [hasMore, loadMore, threshold]
   );
 
-  // Auto-load first page on mount
+  // P0 Fix: Auto-load first page on mount (with proper dependency tracking)
   useEffect(() => {
-    if (autoLoad && items.length === 0 && hasMore) {
+    // Only run initial load once, track via ref to prevent infinite loop
+    if (autoLoad && !initialLoadDoneRef.current && hasMore) {
+      initialLoadDoneRef.current = true;
       loadMore();
     }
-  }, [autoLoad]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [autoLoad, hasMore, loadMore]);
 
   // Cleanup observer on unmount
   useEffect(() => {
