@@ -76,17 +76,6 @@ const detectNetworkError = (error: unknown): boolean => {
   return networkPatterns.some(pattern => message.includes(pattern));
 };
 
-// Timeout wrapper for promises
-const withTimeout = <T>(promise: Promise<T>, ms: number, operation: string): Promise<T> => {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`Timeout: ${operation} took longer than ${ms}ms`)), ms)
-    )
-  ]);
-};
-
-const SYNC_TIMEOUT = 30000; // 30 seconds per operation
 const BATCH_SIZE = 20; // Max concurrent sync operations
 const BATCH_DELAY = 50; // ms between batches
 
@@ -485,7 +474,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
   }
 
   try {
-    // Fetch all data in parallel with timeouts
+    // Fetch all data in parallel
     const [
       moodsRes,
       habitsRes,
@@ -495,13 +484,13 @@ export const pullFromCloud = async (): Promise<boolean> => {
       gratitudeRes,
       settingsRes,
     ] = await Promise.all([
-      withTimeout(supabase.from('moods').select('*').eq('user_id', userId), SYNC_TIMEOUT, 'fetch moods'),
-      withTimeout(supabase.from('habits').select('*').eq('user_id', userId).eq('is_archived', false), SYNC_TIMEOUT, 'fetch habits'),
-      withTimeout(supabase.from('habit_completions').select('*').eq('user_id', userId), SYNC_TIMEOUT, 'fetch completions'),
-      withTimeout(supabase.from('habit_reminders').select('*').eq('user_id', userId), SYNC_TIMEOUT, 'fetch reminders'),
-      withTimeout(supabase.from('focus_sessions').select('*').eq('user_id', userId), SYNC_TIMEOUT, 'fetch focus'),
-      withTimeout(supabase.from('gratitude_entries').select('*').eq('user_id', userId), SYNC_TIMEOUT, 'fetch gratitude'),
-      withTimeout(supabase.from('user_settings').select('*').eq('user_id', userId), SYNC_TIMEOUT, 'fetch settings'),
+      supabase.from('moods').select('*').eq('user_id', userId),
+      supabase.from('habits').select('*').eq('user_id', userId).eq('is_archived', false),
+      supabase.from('habit_completions').select('*').eq('user_id', userId),
+      supabase.from('habit_reminders').select('*').eq('user_id', userId),
+      supabase.from('focus_sessions').select('*').eq('user_id', userId),
+      supabase.from('gratitude_entries').select('*').eq('user_id', userId),
+      supabase.from('user_settings').select('*').eq('user_id', userId),
     ]);
 
     // Check for errors
@@ -513,8 +502,24 @@ export const pullFromCloud = async (): Promise<boolean> => {
     if (gratitudeRes.error) throw gratitudeRes.error;
     if (settingsRes.error) throw settingsRes.error;
 
+    // Type assertions for Supabase data (needed for TypeScript inference)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const moodsData = (moodsRes.data || []) as any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const habitsData = (habitsRes.data || []) as any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const completionsData = (completionsRes.data || []) as any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const remindersData = (remindersRes.data || []) as any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const focusData = (focusRes.data || []) as any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const gratitudeData = (gratitudeRes.data || []) as any[];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const settingsData = (settingsRes.data || []) as any[];
+
     // Transform cloud data to local format
-    const moods: MoodEntry[] = (moodsRes.data || []).map(m => ({
+    const moods: MoodEntry[] = moodsData.map(m => ({
       id: m.id,
       mood: m.mood,
       note: m.note || undefined,
@@ -526,7 +531,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
 
     // Group completions and reminders by habit
     const completionsByHabit = new Map<string, { dates: string[], byDate: Record<string, number>, durationByDate: Record<string, number> }>();
-    for (const c of completionsRes.data || []) {
+    for (const c of completionsData) {
       if (!completionsByHabit.has(c.habit_id)) {
         completionsByHabit.set(c.habit_id, { dates: [], byDate: {}, durationByDate: {} });
       }
@@ -539,7 +544,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
     }
 
     const remindersByHabit = new Map<string, Array<{ enabled: boolean; time: string; days: number[] }>>();
-    for (const r of remindersRes.data || []) {
+    for (const r of remindersData) {
       if (!remindersByHabit.has(r.habit_id)) {
         remindersByHabit.set(r.habit_id, []);
       }
@@ -550,7 +555,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       });
     }
 
-    const habits: Habit[] = (habitsRes.data || []).map(h => {
+    const habits: Habit[] = habitsData.map(h => {
       const completions = completionsByHabit.get(h.id);
       const reminders = remindersByHabit.get(h.id) || [];
       return {
@@ -575,7 +580,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       };
     });
 
-    const focusSessions: FocusSession[] = (focusRes.data || []).map(f => ({
+    const focusSessions: FocusSession[] = focusData.map(f => ({
       id: f.id,
       duration: f.duration,
       completedAt: f.completed_at,
@@ -585,7 +590,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       reflection: f.reflection || undefined,
     }));
 
-    const gratitudeEntries: GratitudeEntry[] = (gratitudeRes.data || []).map(g => ({
+    const gratitudeEntries: GratitudeEntry[] = gratitudeData.map(g => ({
       id: g.id,
       text: g.text,
       date: g.date,
@@ -601,7 +606,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       if (gratitudeEntries.length) await db.gratitudeEntries.bulkPut(gratitudeEntries);
 
       // Settings
-      for (const s of settingsRes.data || []) {
+      for (const s of settingsData) {
         await db.settings.put({ key: s.key, value: s.value });
       }
     });
