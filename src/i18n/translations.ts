@@ -768,6 +768,24 @@ export interface Translations {
   audioRetry: string;
   audioError: string;
 
+  // Leaderboard (P1 Fix)
+  weekly: string;
+  monthly: string;
+  leaderboard: string;
+  leaderboardType: string;
+  leaderboardTimeout: string;
+  leaderboardLoadError: string;
+  leaderboardOptedIn: string;
+  leaderboardOptedOut: string;
+  showOnLeaderboard: string;
+  displayName: string;
+  yourRank: string;
+  retry: string;
+  noParticipants: string;
+  beFirst: string;
+  best: string;
+  nameUpdated: string;
+
   // Widget Settings
   widgetSettings: string;
   widgetSettingsDesc: string;
@@ -2264,6 +2282,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioRetry: 'Повторить',
     audioError: 'Ошибка аудио',
 
+    // Leaderboard (P1 Fix)
+    weekly: 'Неделя',
+    monthly: 'Месяц',
+    leaderboard: 'Лидерборд',
+    leaderboardType: 'Тип рейтинга',
+    leaderboardTimeout: 'Загрузка слишком долгая. Попробуйте снова.',
+    leaderboardLoadError: 'Не удалось загрузить лидерборд',
+    leaderboardOptedIn: 'Вы присоединились к лидерборду!',
+    leaderboardOptedOut: 'Вы вышли из лидерборда',
+    showOnLeaderboard: 'Показывать в лидерборде',
+    displayName: 'Отображаемое имя',
+    yourRank: 'Ваш ранг',
+    retry: 'Повторить',
+    noParticipants: 'Пока нет участников',
+    beFirst: 'Будьте первым!',
+    best: 'Лучший',
+    nameUpdated: 'Имя обновлено!',
+
     // Widget Settings
     widgetSettings: 'Настройки виджетов',
     widgetSettingsDesc: 'Настройте виджеты для домашнего экрана',
@@ -3716,6 +3752,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioRetry: 'Retry',
     audioError: 'Audio error',
 
+    // Leaderboard (P1 Fix)
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+    leaderboard: 'Leaderboard',
+    leaderboardType: 'Leaderboard type',
+    leaderboardTimeout: 'Loading took too long. Please try again.',
+    leaderboardLoadError: 'Failed to load leaderboard',
+    leaderboardOptedIn: 'You joined the leaderboard!',
+    leaderboardOptedOut: 'You left the leaderboard',
+    showOnLeaderboard: 'Show on leaderboard',
+    displayName: 'Display name',
+    yourRank: 'Your rank',
+    retry: 'Retry',
+    noParticipants: 'No participants yet',
+    beFirst: 'Be the first to join!',
+    best: 'Best',
+    nameUpdated: 'Display name updated!',
+
     // Widget Settings
     widgetSettings: 'Widget Settings',
     widgetSettingsDesc: 'Configure widgets for your home screen',
@@ -5167,6 +5221,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioTapToEnable: 'Натисніть для увімкнення звуку',
     audioRetry: 'Повторити',
     audioError: 'Помилка аудіо',
+
+    // Leaderboard (P1 Fix)
+    weekly: 'Тиждень',
+    monthly: 'Місяць',
+    leaderboard: 'Лідерборд',
+    leaderboardType: 'Тип рейтингу',
+    leaderboardTimeout: 'Завантаження тривало занадто довго. Спробуйте ще раз.',
+    leaderboardLoadError: 'Не вдалося завантажити лідерборд',
+    leaderboardOptedIn: 'Ви приєдналися до лідерборду!',
+    leaderboardOptedOut: 'Ви вийшли з лідерборду',
+    showOnLeaderboard: 'Показувати в лідерборді',
+    displayName: 'Відображуване ім\'я',
+    yourRank: 'Ваш ранг',
+    retry: 'Повторити',
+    noParticipants: 'Поки немає учасників',
+    beFirst: 'Будьте першим!',
+    best: 'Найкращий',
+    nameUpdated: 'Ім\'я оновлено!',
 
     // Widget Settings
     widgetSettings: 'Налаштування віджетів',
@@ -6621,6 +6693,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioRetry: 'Reintentar',
     audioError: 'Error de audio',
 
+    // Leaderboard (P1 Fix)
+    weekly: 'Semanal',
+    monthly: 'Mensual',
+    leaderboard: 'Clasificación',
+    leaderboardType: 'Tipo de clasificación',
+    leaderboardTimeout: 'La carga tardó demasiado. Inténtalo de nuevo.',
+    leaderboardLoadError: 'Error al cargar la clasificación',
+    leaderboardOptedIn: '¡Te uniste a la clasificación!',
+    leaderboardOptedOut: 'Saliste de la clasificación',
+    showOnLeaderboard: 'Mostrar en clasificación',
+    displayName: 'Nombre a mostrar',
+    yourRank: 'Tu posición',
+    retry: 'Reintentar',
+    noParticipants: 'Aún no hay participantes',
+    beFirst: '¡Sé el primero en unirte!',
+    best: 'Mejor',
+    nameUpdated: '¡Nombre actualizado!',
+
     // Widget Settings
     widgetSettings: 'Configuración de Widgets',
     widgetSettingsDesc: 'Configura widgets para tu pantalla de inicio',
@@ -8073,6 +8163,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioTapToEnable: 'Tippen zum Aktivieren',
     audioRetry: 'Erneut versuchen',
     audioError: 'Audiofehler',
+
+    // Leaderboard (P1 Fix)
+    weekly: 'Wöchentlich',
+    monthly: 'Monatlich',
+    leaderboard: 'Bestenliste',
+    leaderboardType: 'Listentyp',
+    leaderboardTimeout: 'Laden dauerte zu lange. Bitte erneut versuchen.',
+    leaderboardLoadError: 'Bestenliste konnte nicht geladen werden',
+    leaderboardOptedIn: 'Du bist der Bestenliste beigetreten!',
+    leaderboardOptedOut: 'Du hast die Bestenliste verlassen',
+    showOnLeaderboard: 'In Bestenliste anzeigen',
+    displayName: 'Anzeigename',
+    yourRank: 'Dein Rang',
+    retry: 'Erneut versuchen',
+    noParticipants: 'Noch keine Teilnehmer',
+    beFirst: 'Sei der Erste!',
+    best: 'Beste',
+    nameUpdated: 'Name aktualisiert!',
 
     // Widget Settings
     widgetSettings: 'Widget-Einstellungen',
@@ -9527,6 +9635,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioRetry: 'Réessayer',
     audioError: 'Erreur audio',
 
+    // Leaderboard (P1 Fix)
+    weekly: 'Hebdomadaire',
+    monthly: 'Mensuel',
+    leaderboard: 'Classement',
+    leaderboardType: 'Type de classement',
+    leaderboardTimeout: 'Le chargement a pris trop de temps. Veuillez réessayer.',
+    leaderboardLoadError: 'Échec du chargement du classement',
+    leaderboardOptedIn: 'Vous avez rejoint le classement !',
+    leaderboardOptedOut: 'Vous avez quitté le classement',
+    showOnLeaderboard: 'Afficher dans le classement',
+    displayName: 'Nom affiché',
+    yourRank: 'Votre rang',
+    retry: 'Réessayer',
+    noParticipants: 'Pas encore de participants',
+    beFirst: 'Soyez le premier à rejoindre !',
+    best: 'Meilleur',
+    nameUpdated: 'Nom mis à jour !',
+
     // Widget Settings
     widgetSettings: 'Paramètres des Widgets',
     widgetSettingsDesc: 'Configurez les widgets pour votre écran d\'accueil',
@@ -10979,6 +11105,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioRetry: '再試行',
     audioError: 'オーディオエラー',
 
+    // Leaderboard (P1 Fix)
+    weekly: '週間',
+    monthly: '月間',
+    leaderboard: 'リーダーボード',
+    leaderboardType: 'ランキングタイプ',
+    leaderboardTimeout: '読み込みに時間がかかりすぎました。もう一度お試しください。',
+    leaderboardLoadError: 'リーダーボードの読み込みに失敗しました',
+    leaderboardOptedIn: 'リーダーボードに参加しました！',
+    leaderboardOptedOut: 'リーダーボードから退出しました',
+    showOnLeaderboard: 'リーダーボードに表示',
+    displayName: '表示名',
+    yourRank: 'あなたの順位',
+    retry: '再試行',
+    noParticipants: 'まだ参加者がいません',
+    beFirst: '最初の参加者になりましょう！',
+    best: '最高',
+    nameUpdated: '表示名を更新しました！',
+
     // Widget Settings
     widgetSettings: 'ウィジェット設定',
     widgetSettingsDesc: 'ホーム画面のウィジェットを設定',
@@ -12335,6 +12479,24 @@ const arabicOverrides: Partial<Translations> = {
   audioTapToEnable: 'اضغط لتفعيل الصوت',
   audioRetry: 'إعادة المحاولة',
   audioError: 'خطأ في الصوت',
+
+  // Leaderboard (P1 Fix)
+  weekly: 'أسبوعي',
+  monthly: 'شهري',
+  leaderboard: 'لوحة المتصدرين',
+  leaderboardType: 'نوع التصنيف',
+  leaderboardTimeout: 'استغرق التحميل وقتاً طويلاً. يرجى المحاولة مرة أخرى.',
+  leaderboardLoadError: 'فشل تحميل لوحة المتصدرين',
+  leaderboardOptedIn: 'انضممت إلى لوحة المتصدرين!',
+  leaderboardOptedOut: 'غادرت لوحة المتصدرين',
+  showOnLeaderboard: 'العرض في لوحة المتصدرين',
+  displayName: 'الاسم المعروض',
+  yourRank: 'ترتيبك',
+  retry: 'إعادة المحاولة',
+  noParticipants: 'لا يوجد مشاركون بعد',
+  beFirst: 'كن أول من ينضم!',
+  best: 'الأفضل',
+  nameUpdated: 'تم تحديث الاسم!',
 
   // Widget
   widgetSettings: 'إعدادات الويدجت',
@@ -13884,6 +14046,24 @@ const hebrewOverrides: Partial<Translations> = {
   errorBoundaryBody: 'אירעה שגיאה בלתי צפויה',
   errorBoundaryExport: 'יצוא נתונים',
   errorBoundaryReload: 'טען מחדש',
+
+  // Leaderboard (P1 Fix)
+  weekly: 'שבועי',
+  monthly: 'חודשי',
+  leaderboard: 'טבלת מובילים',
+  leaderboardType: 'סוג דירוג',
+  leaderboardTimeout: 'הטעינה ארכה זמן רב מדי. נא לנסות שוב.',
+  leaderboardLoadError: 'טעינת טבלת המובילים נכשלה',
+  leaderboardOptedIn: 'הצטרפת לטבלת המובילים!',
+  leaderboardOptedOut: 'יצאת מטבלת המובילים',
+  showOnLeaderboard: 'הצג בטבלת המובילים',
+  displayName: 'שם תצוגה',
+  yourRank: 'הדירוג שלך',
+  retry: 'נסה שוב',
+  noParticipants: 'אין משתתפים עדיין',
+  beFirst: 'היה הראשון להצטרף!',
+  best: 'הכי טוב',
+  nameUpdated: 'שם התצוגה עודכן!',
 };
 
 // Add RTL languages with English fallback
