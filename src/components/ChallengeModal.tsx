@@ -217,7 +217,7 @@ function ParticipantsLeaderboard({
         challenge.habitIcon,
         challenge.duration,
         challenge.startDate,
-        'Zen User' // TODO: get actual username
+        username || 'Zen User'
       );
 
       if (!cloudChallenge) {
