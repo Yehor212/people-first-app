@@ -81,14 +81,17 @@ registerRoute(
 // Error was: "Failed to execute 'clone' on 'Request': Request body is already used"
 
 // Handle navigation requests
+// P0 Fix: Reduced TTL from 24h to 1h to prevent stale index.html issues
+// Added networkTimeoutSeconds for faster fallback to cache
 registerRoute(
   ({ request }) => request.mode === 'navigate',
   new NetworkFirst({
     cacheName: 'pages',
+    networkTimeoutSeconds: 3, // P0 Fix: Fast fallback to cache
     plugins: [
       new ExpirationPlugin({
         maxEntries: 10,
-        maxAgeSeconds: 24 * 60 * 60, // 1 day
+        maxAgeSeconds: 60 * 60, // P0 Fix: 1 hour instead of 24 hours
       }),
     ],
   })
@@ -137,6 +140,24 @@ self.addEventListener('message', (event) => {
     self.registration.sync?.register('zenflow-sync').catch((err) => {
       console.warn('[SW] Background sync registration failed:', err);
     });
+  }
+
+  if (event.data?.type === 'CHECK_VERSION') {
+    // P0 Fix: Clear navigation cache when app requests version check
+    // This ensures fresh index.html is fetched
+    console.log('[SW] Version check requested - clearing navigation cache');
+    event.waitUntil(
+      caches.open('pages').then((cache) => {
+        return cache.keys().then((keys) => {
+          return Promise.all(
+            keys.map((key) => {
+              console.log('[SW] Deleting cached page:', key.url);
+              return cache.delete(key);
+            })
+          );
+        });
+      })
+    );
   }
 });
 

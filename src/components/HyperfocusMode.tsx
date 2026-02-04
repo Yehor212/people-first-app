@@ -14,6 +14,9 @@ import {
   SpotifyTrack
 } from '@/lib/spotifyIntegration';
 
+// P0 Fix: Declare app version global
+declare const __APP_VERSION__: string;
+
 // Star particle for cosmic background (dark theme only)
 function CosmicStar({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
   return (
@@ -101,7 +104,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     const newCount = debugTapCount + 1;
     setDebugTapCount(newCount);
 
-    if (newCount >= 5) {
+    // P0 Fix: Reduced from 5 to 3 taps for easier debug access
+    if (newCount >= 3) {
       setShowDebugPanel(true);
       setDebugTapCount(0);
       logger.log('[HyperfocusMode] Debug panel activated');
@@ -415,7 +419,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         onClick={onExit}
         className="fixed top-4 right-4 z-[110] p-3 min-w-[48px] min-h-[48px] bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300/80 dark:hover:bg-white/20 rounded-xl transition-all text-slate-600 dark:text-white flex items-center justify-center active:scale-95"
         style={{ top: 'max(1rem, env(safe-area-inset-top, 1rem))', right: 'max(1rem, env(safe-area-inset-right, 1rem))' }}
-        aria-label="Close"
+        aria-label={t.close}
       >
         <X className="w-6 h-6" />
       </button>
@@ -865,6 +869,11 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   </div>
                 </div>
                 <div className="space-y-2 text-xs font-mono">
+                  {/* P0 Fix: Show app version for diagnostics */}
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 dark:text-white/50">App Version:</span>
+                    <span className="text-slate-600 dark:text-white/70">{__APP_VERSION__}</span>
+                  </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500 dark:text-white/50">State:</span>
                     <span className={cn(

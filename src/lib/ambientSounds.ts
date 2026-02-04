@@ -12,6 +12,7 @@
  */
 
 import { logger } from './logger';
+import * as Sentry from '@sentry/react';
 
 // ============================================
 // AUDIO STATUS TRACKING (P0 Fix)
@@ -149,10 +150,25 @@ export async function unlockAudio(): Promise<void> {
 
       audioUnlocked = true;
       logger.log('[AmbientSounds] Audio fully unlocked for mobile browser');
+
+      // P0 Fix: Sentry breadcrumb for unlock success
+      Sentry.addBreadcrumb({
+        category: 'audio',
+        message: 'Audio unlocked successfully',
+        level: 'info',
+      });
     } catch (e) {
       logger.warn('[AmbientSounds] Audio unlock had issues:', e);
       // Still mark as unlocked to avoid infinite retries
       audioUnlocked = true;
+
+      // P0 Fix: Sentry breadcrumb for unlock issues
+      Sentry.addBreadcrumb({
+        category: 'audio',
+        message: 'Audio unlock had issues',
+        level: 'warning',
+        data: { error: String(e) },
+      });
     } finally {
       unlockPromise = null;
     }
@@ -234,6 +250,13 @@ export function isAudioUnlocked(): boolean {
  * Force re-unlock audio (useful after app resume on iOS)
  */
 export async function forceUnlockAudio(): Promise<void> {
+  // P0 Fix: Sentry breadcrumb for force unlock
+  Sentry.addBreadcrumb({
+    category: 'audio',
+    message: 'Force re-unlocking audio (app resume)',
+    level: 'info',
+  });
+
   audioUnlocked = false;
   unlockPromise = null;
   await unlockAudio();
@@ -370,6 +393,7 @@ export class AmbientSoundGenerator {
    * P0 Fix: Update and emit status
    */
   private setStatus(updates: Partial<AudioStatus>): void {
+    const prevState = this.status.state;
     this.status = { ...this.status, ...updates };
     this.statusListeners.forEach(listener => {
       try {
@@ -379,6 +403,20 @@ export class AmbientSoundGenerator {
       }
     });
     logger.log('[AmbientSounds] Status updated:', this.status.state, this.status.soundId);
+
+    // P0 Fix: Sentry breadcrumb for state changes
+    if (this.status.state !== prevState) {
+      Sentry.addBreadcrumb({
+        category: 'audio',
+        message: `Audio state: ${prevState} → ${this.status.state}`,
+        level: this.status.error ? 'error' : 'info',
+        data: {
+          soundId: this.status.soundId,
+          isUnlocked: this.status.isUnlocked,
+          error: this.status.error?.code,
+        },
+      });
+    }
   }
 
   /**

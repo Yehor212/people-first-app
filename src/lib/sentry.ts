@@ -130,8 +130,16 @@ export function initSentry(): void {
     },
   });
 
-  console.log('[Sentry] Initialized successfully');
+  // P2 Fix: Only log in development
+  if (import.meta.env.DEV) {
+    console.log('[Sentry] Initialized successfully');
+  }
 }
+
+/**
+ * Error categories for filtering and analysis in Sentry dashboard
+ */
+export type ErrorCategory = 'audio' | 'cache' | 'version-mismatch' | 'storage' | 'network' | 'sync' | 'general';
 
 /**
  * Capture a custom error with context
@@ -139,6 +147,55 @@ export function initSentry(): void {
 export function captureError(error: Error, context?: Record<string, unknown>): void {
   Sentry.captureException(error, {
     extra: context,
+  });
+}
+
+/**
+ * P0 Fix: Capture error with category tag for filtering
+ * Use this for categorized errors (audio, cache, version issues)
+ */
+export function captureErrorWithCategory(
+  error: Error,
+  category: ErrorCategory,
+  context?: Record<string, unknown>
+): void {
+  Sentry.withScope((scope) => {
+    scope.setTag('category', category);
+
+    // Add extra context based on error type
+    if (error.name === 'AbortError') {
+      scope.setTag('error_type', 'abort');
+      scope.setExtra('abort_reason', error.message);
+    } else if (error.message.includes('Database deleted')) {
+      scope.setTag('error_type', 'database_deleted');
+      scope.setExtra('likely_cause', 'User cleared site data or Safari ITP');
+    } else if (error.message.includes('chunk') || error.message.includes('module')) {
+      scope.setTag('error_type', 'chunk_load');
+      scope.setExtra('likely_cause', 'Version mismatch after deployment');
+    }
+
+    if (context) {
+      scope.setExtras(context);
+    }
+
+    Sentry.captureException(error);
+  });
+}
+
+/**
+ * P0 Fix: Add breadcrumb with category
+ */
+export function addCategorizedBreadcrumb(
+  category: ErrorCategory,
+  message: string,
+  data?: Record<string, unknown>,
+  level: Sentry.SeverityLevel = 'info'
+): void {
+  Sentry.addBreadcrumb({
+    category,
+    message,
+    level,
+    data,
   });
 }
 

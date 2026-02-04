@@ -17,7 +17,11 @@ import {
   forceHardReload,
   isOAuthReturn,
   shouldCheckVersion,
+  shouldAutoCheckVersion,
+  markVersionChecked,
+  clearNavigationCache,
 } from "./lib/versionCheck";
+import { pauseAllAudio, resumeAllAudio } from "./lib/audioLifecycle";
 
 // Initialize Sentry FIRST for error monitoring (before any other code runs)
 initSentry();
@@ -75,6 +79,9 @@ window.addEventListener('beforeunload', () => {
 // Handle visibility change (app going to background on mobile)
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
+    // P0 Fix: Pause audio when tab/app goes to background
+    pauseAllAudio();
+
     try {
       const queueState = offlineQueue.getState();
       if (queueState.actions.length > 0) {
@@ -87,6 +94,9 @@ document.addEventListener('visibilitychange', () => {
     } catch (error) {
       // Ignore errors
     }
+  } else if (document.visibilityState === 'visible') {
+    // P0 Fix: Resume audio when tab/app becomes visible
+    void resumeAllAudio();
   }
 });
 
@@ -98,6 +108,10 @@ if (Capacitor.isNativePlatform()) {
   // App paused (going to background)
   CapacitorApp.addListener('pause', () => {
     logger.log('[Main] App paused - saving state');
+
+    // P0 Fix: Pause audio when app goes to background
+    pauseAllAudio();
+
     try {
       const queueState = offlineQueue.getState();
       localStorage.setItem(LAST_STATE_KEY, JSON.stringify({
@@ -113,6 +127,10 @@ if (Capacitor.isNativePlatform()) {
   // App resumed (coming back to foreground)
   CapacitorApp.addListener('resume', () => {
     logger.log('[Main] App resumed - checking for pending sync');
+
+    // P0 Fix: Resume audio when app comes to foreground
+    void resumeAllAudio();
+
     // Trigger sync if online and there are pending actions
     if (navigator.onLine && offlineQueue.hasPendingActions()) {
       logger.log('[Main] Processing pending offline queue on resume');
@@ -168,23 +186,33 @@ if (isCapacitor) {
  * This prevents chunk load errors after deployment by detecting
  * version mismatch BEFORE lazy loading tries to load non-existent chunks.
  *
- * Especially important after OAuth redirects where user was away
- * on external auth page while app was updated.
+ * Now checks on EVERY visit (with 5-minute throttle) to prevent stale cache issues.
+ * Priority checks (no throttle): OAuth returns, chunk error reloads.
  */
 async function initializeApp(): Promise<boolean> {
-  // Check if we should verify version (after OAuth or after chunk error reload)
-  const needsVersionCheck = isOAuthReturn() || shouldCheckVersion();
+  // Priority check: After OAuth or after chunk error reload (always check)
+  const priorityCheck = isOAuthReturn() || shouldCheckVersion();
+  // Auto check: Every 5 minutes for regular visits
+  const autoCheck = shouldAutoCheckVersion();
 
-  if (needsVersionCheck) {
-    logger.log('[Main] Checking app version...');
+  if (priorityCheck || autoCheck) {
+    logger.log(`[Main] Checking app version... (priority=${priorityCheck}, auto=${autoCheck})`);
+
+    // Clear navigation cache first to ensure fresh version.json
+    await clearNavigationCache();
 
     const isUpToDate = await checkAppVersion();
+
+    // Mark that we checked (for throttling)
+    markVersionChecked();
 
     if (!isUpToDate) {
       logger.log('[Main] Outdated version detected, performing hard reload...');
       await forceHardReload();
       return false; // Don't render, page will reload
     }
+
+    logger.log('[Main] Version is up to date');
   }
 
   return true;

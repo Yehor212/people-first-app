@@ -22,6 +22,8 @@ interface VersionManifest {
 
 const VERSION_CHECK_FLAG = 'zenflow_check_version';
 const RELOAD_TIMESTAMP_KEY = 'zenflow_hard_reload_ts';
+const LAST_VERSION_CHECK_KEY = 'zenflow_last_version_check';
+const VERSION_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
 
 /**
  * Check if the app version matches the server version.
@@ -145,4 +147,46 @@ export function isOAuthReturn(): boolean {
     referrer.includes('supabase.co/auth') ||
     referrer.includes('supabase.io/auth')
   );
+}
+
+/**
+ * Check if enough time has passed since last version check.
+ * Returns true if we should check (5+ minutes since last check).
+ */
+export function shouldAutoCheckVersion(): boolean {
+  try {
+    const lastCheck = localStorage.getItem(LAST_VERSION_CHECK_KEY);
+    if (!lastCheck) return true;
+
+    const elapsed = Date.now() - parseInt(lastCheck, 10);
+    return elapsed >= VERSION_CHECK_INTERVAL;
+  } catch {
+    return true; // If localStorage fails, check anyway
+  }
+}
+
+/**
+ * Mark the current time as last version check.
+ */
+export function markVersionChecked(): void {
+  try {
+    localStorage.setItem(LAST_VERSION_CHECK_KEY, Date.now().toString());
+  } catch {
+    // Ignore localStorage errors
+  }
+}
+
+/**
+ * Clear navigation cache in Service Worker.
+ * This ensures fresh index.html is fetched on next navigation.
+ */
+export async function clearNavigationCache(): Promise<void> {
+  try {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({ type: 'CHECK_VERSION' });
+      logger.log('[VersionCheck] Sent CHECK_VERSION to Service Worker');
+    }
+  } catch (error) {
+    logger.warn('[VersionCheck] Failed to clear navigation cache:', error);
+  }
 }

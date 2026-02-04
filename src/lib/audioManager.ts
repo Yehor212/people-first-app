@@ -40,7 +40,8 @@ function scheduleTimeout(callback: () => void, delay: number): void {
 }
 
 // Lazy initialization of AudioContext (required for mobile)
-function getAudioContext(): AudioContext | null {
+// Exported for shared use with ambientSounds
+export function getAudioContext(): AudioContext | null {
   if (state.context) return state.context;
 
   try {
@@ -231,6 +232,44 @@ export function initAudioManager(): void {
 // Resume context on user interaction (required for mobile)
 export async function resumeOnInteraction(): Promise<void> {
   await ensureContextResumed();
+}
+
+/**
+ * Suspend AudioContext when app goes to background.
+ * This releases audio resources and prevents battery drain.
+ */
+export async function suspendContext(): Promise<void> {
+  const ctx = state.context;
+  if (!ctx || ctx.state === 'closed') return;
+
+  try {
+    if (ctx.state === 'running') {
+      await ctx.suspend();
+      logger.log('[AudioManager] Context suspended');
+    }
+  } catch (e) {
+    logger.warn('[AudioManager] Failed to suspend context:', e);
+  }
+}
+
+/**
+ * Resume AudioContext when app comes to foreground.
+ * Returns true if context is running after resume attempt.
+ */
+export async function resumeContext(): Promise<boolean> {
+  const ctx = getAudioContext();
+  if (!ctx) return false;
+
+  try {
+    if (ctx.state === 'suspended') {
+      await ctx.resume();
+      logger.log('[AudioManager] Context resumed');
+    }
+    return ctx.state === 'running';
+  } catch (e) {
+    logger.warn('[AudioManager] Failed to resume context:', e);
+    return false;
+  }
 }
 
 // Cleanup (for testing/unmount)
