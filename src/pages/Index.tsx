@@ -840,14 +840,14 @@ export function Index() {
     updateChallengeProgress();
 
     // AI Coach: Check for low mood and offer support
-    // P0 Fix: Only trigger if data is loaded (so AI Coach has context)
-    if (entry.mood === 'bad' || entry.mood === 'terrible') {
-      if (!isLoading && !isLoadingInnerWorld) {
-        setTimeout(() => {
-          triggerLowMoodCheck(entry);
-        }, 1500);
-      }
-    }
+    // DISABLED: AI Coach hidden until ready (triggerLowMoodCheck not imported)
+    // if (entry.mood === 'bad' || entry.mood === 'terrible') {
+    //   if (!isLoading && !isLoadingInnerWorld) {
+    //     setTimeout(() => {
+    //       triggerLowMoodCheck(entry);
+    //     }, 1500);
+    //   }
+    // }
   };
 
   // Quick mood handler for one-tap notification actions
