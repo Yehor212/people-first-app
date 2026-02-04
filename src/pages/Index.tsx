@@ -426,6 +426,51 @@ export function Index() {
     idField: 'key'
   });
 
+  // P0 Fix: Track actual Supabase session state to prevent login loop
+  // null = unknown (checking), true = has session, false = no session
+  const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
+
+  // P0 Fix: Check Supabase session on mount - restore auth state if session exists
+  useEffect(() => {
+    let active = true;
+
+    const checkSession = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!active) return;
+
+        const sessionExists = !!data.session;
+        setHasValidSession(sessionExists);
+
+        // If session exists but googleAuthChecked is false, restore it
+        // This prevents the login loop after OAuth redirect
+        if (sessionExists && !googleAuthChecked && !isLoadingGoogleAuth) {
+          logger.log('[Index] Session exists but auth not checked - restoring state');
+          setGoogleAuthChecked(true);
+        }
+      } catch (error) {
+        logger.error('[Index] Error checking session:', error);
+        if (active) {
+          setHasValidSession(false);
+        }
+      }
+    };
+
+    checkSession();
+
+    // Also listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (active) {
+        setHasValidSession(!!session);
+      }
+    });
+
+    return () => {
+      active = false;
+      subscription?.unsubscribe();
+    };
+  }, [googleAuthChecked, isLoadingGoogleAuth, setGoogleAuthChecked]);
+
   // GDPR: analytics OFF by default (opt-in, not opt-out)
   const [privacy, setPrivacy, isLoadingPrivacy] = useIndexedDB<PrivacySettings>({
     table: db.settings,
@@ -1592,11 +1637,37 @@ export function Index() {
     };
   }, [userNameCustom, userName, setUserName]);
 
+  // P0 Fix: Throttle session expired events (not more than once per 5 seconds)
+  const lastSessionExpiredRef = useRef<number>(0);
+
   // Session expired handler - listens for 401 errors from API/sync
+  // P0 Fix: Verify actual session state before resetting auth
   useEffect(() => {
-    const handleSessionExpired = () => {
-      logger.warn('[Index] Session expired event received');
-      // Reset auth state to show GoogleAuthScreen again
+    const handleSessionExpired = async () => {
+      // P0 Fix: Throttle - ignore if we just handled one
+      const now = Date.now();
+      if (now - lastSessionExpiredRef.current < 5000) {
+        logger.log('[Index] Session expired event throttled');
+        return;
+      }
+      lastSessionExpiredRef.current = now;
+
+      logger.warn('[Index] Session expired event received, verifying session...');
+
+      // P0 Fix: Check if session is actually expired before resetting
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data.session) {
+          logger.log('[Index] Session still valid, ignoring expired event');
+          return; // Session is valid - don't reset!
+        }
+      } catch (error) {
+        logger.error('[Index] Error checking session:', error);
+        // On error, fall through to reset (safer)
+      }
+
+      // Session truly expired - reset auth state
+      logger.warn('[Index] Session confirmed expired, resetting auth state');
       setAuthBypassFlag(false);
       setGoogleAuthChecked(false);
     };
@@ -1790,7 +1861,9 @@ export function Index() {
   // Shown after language selection, before tutorial
   // Check both googleAuthChecked (IndexedDB) and authBypassFlag (synchronous)
   // authBypassFlag provides immediate skip while IndexedDB writes are pending
-  if (!googleAuthChecked && !authBypassFlag) {
+  // P0 Fix: Also check hasValidSession - if session exists, skip to app
+  // hasValidSession: null = checking, true = has session, false = no session
+  if (!googleAuthChecked && !authBypassFlag && hasValidSession === false) {
     return (
       <GoogleAuthScreen
         onComplete={handleGoogleAuthComplete}

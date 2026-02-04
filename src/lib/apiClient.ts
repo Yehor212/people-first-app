@@ -213,9 +213,24 @@ const tryRefreshSession = async (): Promise<boolean> => {
 
 /**
  * Dispatch session expired event for UI to handle
+ * P0 Fix: Verify session is truly expired before notifying
  */
-const notifySessionExpired = (): void => {
-  logger.warn('[API] Session expired - notifying UI');
+const notifySessionExpired = async (): Promise<void> => {
+  logger.warn('[API] Checking session before notifying expired...');
+
+  // P0 Fix: Double-check session state before triggering logout
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (data.session) {
+      logger.log('[API] Session still valid despite errors, not notifying expired');
+      return; // Don't dispatch - session is still valid
+    }
+  } catch (error) {
+    logger.error('[API] Error verifying session:', error);
+    // Fall through to notify expired
+  }
+
+  logger.warn('[API] Session confirmed expired - notifying UI');
   window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
 };
 
@@ -243,7 +258,7 @@ export const withAuthRetry = async <T>(
 
       if (!refreshed) {
         logger.error(`[API] Refresh failed for ${operationName}`);
-        notifySessionExpired();
+        await notifySessionExpired();
         throw new Error('Session expired. Please sign in again.');
       }
 
@@ -255,7 +270,7 @@ export const withAuthRetry = async <T>(
         // If retry also fails with 401, session is truly expired
         if (is401Error(retryError)) {
           logger.error(`[API] Retry failed with 401 for ${operationName}`);
-          notifySessionExpired();
+          await notifySessionExpired();
           throw new Error('Session expired. Please sign in again.');
         }
         throw retryError;

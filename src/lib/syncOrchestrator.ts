@@ -14,6 +14,7 @@ import { logger } from '@/lib/logger';
 import { isCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { generateSecureRandom } from '@/lib/validation';
 import { is401Error, AUTH_SESSION_EXPIRED_EVENT } from '@/lib/apiClient';
+import { supabase } from '@/lib/supabaseClient';
 
 // Sync operation types
 export type SyncOperationType =
@@ -212,7 +213,35 @@ class SyncOrchestrator {
 
         // Check for 401 authentication errors - these need special handling
         if (is401Error(error)) {
-          logger.warn(`[SyncOrchestrator] 401 error on ${operation.type} - session expired`);
+          logger.warn(`[SyncOrchestrator] 401 error on ${operation.type} - checking if session truly expired`);
+
+          // P0 Fix: Verify session before notifying UI
+          // 401 might be a transient error, check actual session state
+          let sessionValid = false;
+          try {
+            const { data } = await supabase.auth.getSession();
+            sessionValid = !!data.session;
+          } catch (sessionError) {
+            logger.error('[SyncOrchestrator] Error checking session:', sessionError);
+          }
+
+          if (sessionValid) {
+            // Session is still valid - treat as transient error, retry later
+            logger.log(`[SyncOrchestrator] Session valid despite 401, will retry ${operation.type}`);
+            // Don't dispatch expired event, just retry with other errors
+            operation.retries++;
+            if (operation.retries < operation.maxRetries) {
+              const delay = this.calculateRetryDelay(operation.retries);
+              this.queue.shift();
+              await this.sleep(delay);
+              this.queue.push(operation);
+              this.queue.sort((a, b) => b.priority - a.priority);
+              continue;
+            }
+          }
+
+          // Session truly expired
+          logger.warn(`[SyncOrchestrator] Session confirmed expired for ${operation.type}`);
           // Remove from queue immediately
           this.queue.shift();
           // Notify UI that session has expired
