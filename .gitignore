@@ -87,3 +87,4 @@ coverage/
 *.csv
 nul
 c:temp*
+supabase/.temp/
