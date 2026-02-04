@@ -24,6 +24,10 @@ export function AnimatedAchievementCard({
   const [hasEntered, setHasEntered] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
+  // P1 Fix: Track animation end timeout for proper cleanup
+  const animationEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
   // Animate value counting
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -35,7 +39,7 @@ export function AnimatedAchievementCard({
         const stepDuration = duration / steps;
         let currentStep = 0;
 
-        const interval = setInterval(() => {
+        intervalRef.current = setInterval(() => {
           currentStep++;
           const progress = currentStep / steps;
           // Ease out cubic
@@ -43,17 +47,21 @@ export function AnimatedAchievementCard({
           setDisplayValue(Math.round(eased * value));
 
           if (currentStep >= steps) {
-            clearInterval(interval);
+            if (intervalRef.current) clearInterval(intervalRef.current);
             setDisplayValue(value);
-            setTimeout(() => setIsAnimating(false), 500);
+            // P1 Fix: Store timeout ref for cleanup on unmount
+            animationEndTimeoutRef.current = setTimeout(() => setIsAnimating(false), 500);
           }
         }, stepDuration);
-
-        return () => clearInterval(interval);
       }
     }, delay);
 
-    return () => clearTimeout(timer);
+    // P1 Fix: Cleanup all timers on unmount or deps change
+    return () => {
+      clearTimeout(timer);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (animationEndTimeoutRef.current) clearTimeout(animationEndTimeoutRef.current);
+    };
   }, [value, delay]);
 
   const configs = {

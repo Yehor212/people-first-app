@@ -76,68 +76,80 @@ window.addEventListener('beforeunload', () => {
   }
 });
 
+/**
+ * P1 Fix: Lifecycle event deduplication
+ * On native platforms, both visibilitychange AND Capacitor pause/resume fire for the same event.
+ * This prevents double-calling pauseAllAudio()/resumeAllAudio() which can cause race conditions.
+ */
+let isHandlingPause = false;
+let isHandlingResume = false;
+
+function handleAppPause(): void {
+  if (isHandlingPause) return;
+  isHandlingPause = true;
+
+  pauseAllAudio();
+
+  try {
+    const queueState = offlineQueue.getState();
+    if (queueState.actions.length > 0) {
+      localStorage.setItem(LAST_STATE_KEY, JSON.stringify({
+        timestamp: Date.now(),
+        pendingActions: queueState.actions.length,
+        hidden: true,
+      }));
+    }
+  } catch (error) {
+    // Ignore errors
+  }
+
+  // Reset flag after short delay to allow next pause event
+  setTimeout(() => { isHandlingPause = false; }, 100);
+}
+
+async function handleAppResume(): Promise<void> {
+  if (isHandlingResume) return;
+  isHandlingResume = true;
+
+  await resumeAllAudio();
+
+  // Trigger sync if online and there are pending actions
+  if (navigator.onLine && offlineQueue.hasPendingActions()) {
+    logger.log('[Main] Processing pending offline queue on resume');
+    void offlineQueue.processQueue();
+  }
+  // P1 Fix #12: Clean up stale share cache files (24+ hours old)
+  void cleanupShareCache();
+
+  // Reset flag after short delay to allow next resume event
+  setTimeout(() => { isHandlingResume = false; }, 100);
+}
+
 // Handle visibility change (app going to background on mobile)
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
-    // P0 Fix: Pause audio when tab/app goes to background
-    pauseAllAudio();
-
-    try {
-      const queueState = offlineQueue.getState();
-      if (queueState.actions.length > 0) {
-        localStorage.setItem(LAST_STATE_KEY, JSON.stringify({
-          timestamp: Date.now(),
-          pendingActions: queueState.actions.length,
-          hidden: true,
-        }));
-      }
-    } catch (error) {
-      // Ignore errors
-    }
+    handleAppPause();
   } else if (document.visibilityState === 'visible') {
-    // P0 Fix: Resume audio when tab/app becomes visible
-    void resumeAllAudio();
+    void handleAppResume();
   }
 });
 
 /**
  * P2 Fix [ANDROID]: Capacitor App lifecycle listeners
  * Handles pause/resume events for better state preservation on native platforms
+ * Note: Uses deduplicated handlers to prevent race with visibilitychange
  */
 if (Capacitor.isNativePlatform()) {
   // App paused (going to background)
   CapacitorApp.addListener('pause', () => {
     logger.log('[Main] App paused - saving state');
-
-    // P0 Fix: Pause audio when app goes to background
-    pauseAllAudio();
-
-    try {
-      const queueState = offlineQueue.getState();
-      localStorage.setItem(LAST_STATE_KEY, JSON.stringify({
-        timestamp: Date.now(),
-        pendingActions: queueState.actions.length,
-        paused: true,
-      }));
-    } catch (error) {
-      // Ignore errors during pause
-    }
+    handleAppPause();
   });
 
   // App resumed (coming back to foreground)
   CapacitorApp.addListener('resume', () => {
     logger.log('[Main] App resumed - checking for pending sync');
-
-    // P0 Fix: Resume audio when app comes to foreground
-    void resumeAllAudio();
-
-    // Trigger sync if online and there are pending actions
-    if (navigator.onLine && offlineQueue.hasPendingActions()) {
-      logger.log('[Main] Processing pending offline queue on resume');
-      void offlineQueue.processQueue();
-    }
-    // P1 Fix #12: Clean up stale share cache files (24+ hours old)
-    void cleanupShareCache();
+    void handleAppResume();
   });
 }
 
@@ -148,7 +160,7 @@ setupAudioUnlock();
 initAudioManager();
 
 // Initialize Android back button handler (double-tap to exit + modal handling)
-initAndroidBackHandler();
+void initAndroidBackHandler();
 
 // Initialize deep link handler for challenge invites and other app URLs
 setupDeepLinks();

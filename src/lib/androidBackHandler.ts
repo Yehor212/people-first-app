@@ -3,13 +3,16 @@
  * Implements double-tap-to-exit functionality and proper navigation handling
  */
 
-import { App } from '@capacitor/app';
+import { App, type PluginListenerHandle } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { logger } from './logger';
 
 // Track last back button press timestamp
 let lastBackPress = 0;
 const DOUBLE_TAP_DELAY = 2000; // 2 seconds
+
+// P1 Fix: Store listener handle for targeted removal (instead of removeAllListeners)
+let backButtonListenerHandle: PluginListenerHandle | null = null;
 
 // Track if we're showing exit toast
 let isShowingExitToast = false;
@@ -257,15 +260,22 @@ function getExitMessage(): string {
 /**
  * Initialize Android back button handler
  */
-export function initAndroidBackHandler() {
+export async function initAndroidBackHandler(): Promise<void> {
   // Only run on Android
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') {
     return;
   }
 
+  // P1 Fix: Prevent double registration
+  if (backButtonListenerHandle) {
+    logger.log('[AndroidBackHandler] Already initialized, skipping');
+    return;
+  }
+
   logger.log('[AndroidBackHandler] Initializing...');
 
-  App.addListener('backButton', ({ canGoBack }) => {
+  // P1 Fix: Store handle for targeted removal later
+  backButtonListenerHandle = await App.addListener('backButton', ({ canGoBack }) => {
     logger.log('[AndroidBackHandler] Back button pressed, canGoBack:', canGoBack);
 
     // Priority 1: Try to close modal via callbacks or DOM detection
@@ -305,12 +315,17 @@ export function initAndroidBackHandler() {
 
 /**
  * Remove back button listener (cleanup)
+ * P1 Fix: Only removes backButton listener, not ALL Capacitor App listeners
+ * This preserves pause/resume listeners registered in main.tsx
  */
-export async function removeAndroidBackHandler() {
+export async function removeAndroidBackHandler(): Promise<void> {
   if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') {
     return;
   }
 
-  await App.removeAllListeners();
-  logger.log('[AndroidBackHandler] Back button handler removed');
+  if (backButtonListenerHandle) {
+    await backButtonListenerHandle.remove();
+    backButtonListenerHandle = null;
+    logger.log('[AndroidBackHandler] Back button handler removed');
+  }
 }
