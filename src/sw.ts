@@ -1,3 +1,4 @@
+/// <reference lib="webworker" />
 /**
  * Custom Service Worker with Background Sync support
  *
@@ -9,10 +10,11 @@ import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
 import { CacheFirst, NetworkFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
-import { BackgroundSyncPlugin } from 'workbox-background-sync';
+// REMOVED: BackgroundSyncPlugin - POST caching was causing "Request body already used" errors
+// import { BackgroundSyncPlugin } from 'workbox-background-sync';
 import { setCacheNameDetails } from 'workbox-core';
 
-declare let self: ServiceWorkerGlobalScope;
+declare const self: ServiceWorkerGlobalScope;
 
 // Set cache name prefix
 setCacheNameDetails({
@@ -26,43 +28,8 @@ precacheAndRoute(self.__WB_MANIFEST);
 // Clean up old caches
 cleanupOutdatedCaches();
 
-// Background Sync Queue for offline actions
-// P0 Fix [WEB]: Continue processing queue even if individual requests fail
-const bgSyncPlugin = new BackgroundSyncPlugin('zenflow-offline-queue', {
-  maxRetentionTime: 24 * 60, // Retry for max of 24 hours (in minutes)
-  onSync: async ({ queue }) => {
-    let entry;
-    let successCount = 0;
-    let failCount = 0;
-    const failedEntries: Array<{ request: Request; timestamp?: number }> = [];
-
-    while ((entry = await queue.shiftRequest())) {
-      try {
-        await fetch(entry.request);
-        successCount++;
-        console.log('[SW] Background sync: request succeeded', entry.request.url);
-      } catch (error) {
-        failCount++;
-        console.error('[SW] Background sync: request failed, will retry later', entry.request.url, error);
-        // Store failed entry to re-add after processing
-        failedEntries.push(entry);
-        // P0 Fix: Continue processing remaining items instead of throwing
-      }
-    }
-
-    // Re-add failed entries to the queue for retry
-    for (const failedEntry of failedEntries) {
-      await queue.unshiftRequest(failedEntry);
-    }
-
-    console.log(`[SW] Background sync complete: ${successCount} succeeded, ${failCount} failed`);
-
-    // Only throw if ALL requests failed (this triggers Workbox to retry later)
-    if (successCount === 0 && failCount > 0) {
-      throw new Error(`All ${failCount} sync requests failed, will retry`);
-    }
-  },
-});
+// REMOVED: Background Sync Queue - POST caching was causing "Request body already used" errors
+// The app uses its own offline queue system (src/lib/offlineQueue.ts) instead
 
 // Cache Supabase Storage (public assets only)
 registerRoute(
@@ -106,23 +73,12 @@ registerRoute(
   })
 );
 
-// Supabase API calls - NetworkFirst with Background Sync fallback
-registerRoute(
-  ({ url }) => url.hostname.includes('supabase.co') &&
-    (url.pathname.includes('/rest/') || url.pathname.includes('/auth/')),
-  new NetworkFirst({
-    cacheName: 'supabase-api',
-    plugins: [
-      bgSyncPlugin,
-      new ExpirationPlugin({
-        maxEntries: 50,
-        maxAgeSeconds: 5 * 60, // 5 minutes cache for API responses
-      }),
-    ],
-    networkTimeoutSeconds: 10,
-  }),
-  'POST'
-);
+// REMOVED: Supabase POST caching (P1 Fix)
+// POST requests should NOT be cached/synced at Service Worker level because:
+// 1. POST request bodies can only be read once - clone() fails after consumption
+// 2. POST requests have side effects and shouldn't be replayed automatically
+// 3. The app has its own offline queue system (src/lib/offlineQueue.ts)
+// Error was: "Failed to execute 'clone' on 'Request': Request body is already used"
 
 // Handle navigation requests
 registerRoute(
