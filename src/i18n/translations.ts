@@ -1,4 +1,4 @@
-export type Language = 'ru' | 'en' | 'uk' | 'es' | 'de' | 'fr' | 'ja';
+export type Language = 'ru' | 'en' | 'uk' | 'es' | 'de' | 'fr' | 'ja' | 'ar' | 'he';
 
 export interface Translations {
   // App
@@ -1509,7 +1509,8 @@ export interface Translations {
   clearHistory: string;
 }
 
-export const translations: Record<Language, Translations> = {
+// Base translations (RTL languages added dynamically below)
+const baseTranslations: Partial<Record<Language, Translations>> = {
   ru: {
     appName: 'ZenFlow',
     goodMorning: 'Доброе утро',
@@ -11615,6 +11616,80 @@ export const translations: Record<Language, Translations> = {
   },
 };
 
+// Arabic RTL overrides (merged with English)
+const arabicOverrides: Partial<Translations> = {
+  appName: 'زين فلو',
+  goodMorning: 'صباح الخير',
+  goodAfternoon: 'مساء الخير',
+  goodEvening: 'مساء الخير',
+  home: 'الرئيسية',
+  stats: 'الإحصائيات',
+  settings: 'الإعدادات',
+  streakDays: 'أيام متتالية',
+  days: 'أيام',
+  habitsToday: 'عادات اليوم',
+  focusToday: 'التركيز اليوم',
+  minutes: 'دقائق',
+  min: 'د',
+  gratitudes: 'الامتنان',
+  howAreYouFeeling: 'كيف تشعر؟',
+  howAreYouNow: 'كيف حالك الآن؟',
+  moodToday: 'مزاج اليوم',
+  great: 'ممتاز',
+  good: 'جيد',
+  okay: 'عادي',
+  bad: 'سيء',
+  terrible: 'سيء جداً',
+  completed: 'مكتمل',
+  save: 'حفظ',
+  cancel: 'إلغاء',
+  delete: 'حذف',
+};
+
+// Hebrew RTL overrides (merged with English)
+const hebrewOverrides: Partial<Translations> = {
+  appName: 'זן פלו',
+  goodMorning: 'בוקר טוב',
+  goodAfternoon: 'צהריים טובים',
+  goodEvening: 'ערב טוב',
+  home: 'בית',
+  stats: 'סטטיסטיקות',
+  settings: 'הגדרות',
+  streakDays: 'ימים רצופים',
+  days: 'ימים',
+  habitsToday: 'הרגלים היום',
+  focusToday: 'מיקוד היום',
+  minutes: 'דקות',
+  min: 'ד',
+  gratitudes: 'תודות',
+  howAreYouFeeling: 'איך את/ה מרגיש/ה?',
+  howAreYouNow: 'מה המצב עכשיו?',
+  moodToday: 'מצב רוח היום',
+  great: 'מצוין',
+  good: 'טוב',
+  okay: 'בסדר',
+  bad: 'רע',
+  terrible: 'נורא',
+  completed: 'הושלם',
+  save: 'שמור',
+  cancel: 'ביטול',
+  delete: 'מחק',
+};
+
+// Add RTL languages with English fallback
+baseTranslations.ar = {
+  ...baseTranslations.en!,
+  ...arabicOverrides,
+} as Translations;
+
+baseTranslations.he = {
+  ...baseTranslations.en!,
+  ...hebrewOverrides,
+} as Translations;
+
+// Export fully typed translations
+export const translations = baseTranslations as Record<Language, Translations>;
+
 export const languageNames: Record<Language, string> = {
   ru: 'Русский',
   en: 'English',
@@ -11623,6 +11698,8 @@ export const languageNames: Record<Language, string> = {
   de: 'Deutsch',
   fr: 'Français',
   ja: '日本語',
+  ar: 'العربية',
+  he: 'עברית',
 };
 
 export const languageFlags: Record<Language, string> = {
@@ -11633,4 +11710,6 @@ export const languageFlags: Record<Language, string> = {
   de: '🇩🇪',
   fr: '🇫🇷',
   ja: '🇯🇵',
+  ar: '🇸🇦',
+  he: '🇮🇱',
 };

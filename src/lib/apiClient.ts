@@ -104,20 +104,40 @@ const waitForOtherTabRefresh = (): Promise<boolean> => {
 };
 
 /**
+ * Type guard to check if error has status property
+ */
+const hasStatus = (error: unknown): error is { status: number } =>
+  typeof error === 'object' && error !== null && 'status' in error;
+
+/**
+ * Type guard to check if error has code property
+ */
+const hasCode = (error: unknown): error is { code: string } =>
+  typeof error === 'object' && error !== null && 'code' in error;
+
+/**
+ * Type guard to check if error has message property
+ */
+const hasMessage = (error: unknown): error is { message: string } =>
+  typeof error === 'object' && error !== null && 'message' in error;
+
+/**
  * Check if an error is a 401/authentication error
  */
-export const is401Error = (error: any): boolean => {
+export const is401Error = (error: unknown): boolean => {
   if (!error) return false;
 
   // HTTP status code
-  if (error.status === 401) return true;
+  if (hasStatus(error) && error.status === 401) return true;
 
   // Supabase/PostgREST error codes
-  if (error.code === 'PGRST301') return true; // JWT expired
-  if (error.code === 'PGRST302') return true; // JWT invalid
+  if (hasCode(error)) {
+    if (error.code === 'PGRST301') return true; // JWT expired
+    if (error.code === 'PGRST302') return true; // JWT invalid
+  }
 
   // Error message patterns
-  const message = error.message?.toLowerCase() || '';
+  const message = hasMessage(error) ? error.message.toLowerCase() : '';
   if (message.includes('jwt expired')) return true;
   if (message.includes('jwt invalid')) return true;
   if (message.includes('not authenticated')) return true;
@@ -213,7 +233,7 @@ export const withAuthRetry = async <T>(
 ): Promise<T> => {
   try {
     return await operation();
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Check if it's a 401 error
     if (is401Error(error)) {
       logger.log(`[API] 401 on ${operationName}, attempting refresh...`);
@@ -231,7 +251,7 @@ export const withAuthRetry = async <T>(
       logger.log(`[API] Retrying ${operationName} after refresh`);
       try {
         return await operation();
-      } catch (retryError: any) {
+      } catch (retryError: unknown) {
         // If retry also fails with 401, session is truly expired
         if (is401Error(retryError)) {
           logger.error(`[API] Retry failed with 401 for ${operationName}`);

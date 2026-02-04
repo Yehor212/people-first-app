@@ -13,6 +13,16 @@
 
 import { logger } from './logger';
 
+// Extend Window interface for webkit AudioContext (Safari)
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+  interface HTMLAudioElement {
+    webkitPreservesPitch?: boolean;
+  }
+}
+
 // Sound categories based on actual available files
 export type AmbientSoundType = 'none' | 'underwater' | 'thunderstorm' | 'ocean' | 'river' | 'cafe' | 'fireplace';
 
@@ -31,7 +41,7 @@ const SILENT_MP3 = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Lj
  */
 function getAudioContext(): AudioContext {
   if (!globalAudioContext) {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (AudioContextClass) {
       globalAudioContext = new AudioContextClass();
     }
@@ -466,7 +476,7 @@ export class AmbientSoundGenerator {
     this.audioElement.playsInline = true; // Required for iOS
     this.audioElement.setAttribute('playsinline', ''); // Fallback attribute
     this.audioElement.setAttribute('webkit-playsinline', ''); // Older Safari
-    (this.audioElement as any).webkitPreservesPitch = true; // Safari
+    this.audioElement.webkitPreservesPitch = true; // Safari
     this.audioElement.src = url;
 
     logger.log('[AmbientSounds] Audio element created, volume:', this.volume);
@@ -497,7 +507,7 @@ export class AmbientSoundGenerator {
         resolve();
       };
 
-      const handleReject = (error: any) => {
+      const handleReject = (error: unknown) => {
         if (resolved) return;
         resolved = true;
         cleanup();

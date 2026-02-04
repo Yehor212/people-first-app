@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType, PrimaryEmotion } from '@/types';
 import { calculateStreak, getDaysInMonth, getToday, cn, parseLocalDate, formatDate } from '@/lib/utils';
 import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
+import { useStatsCalculations } from '@/hooks/useStatsCalculations';
 import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2, PlayCircle, Sparkles, Brain, Target } from 'lucide-react';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { SectionHeader } from '@/components/ui/section-header';
@@ -62,15 +63,29 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
   const [showStoryViewer, setShowStoryViewer] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
-  const completedFocusSessions = useMemo(
-    () => focusSessions.filter((session) => session.status !== 'aborted'),
-    [focusSessions]
-  );
-  
   const monthNames = [
     t.january, t.february, t.march, t.april, t.may, t.june,
     t.july, t.august, t.september, t.october, t.november, t.december
   ];
+
+  // Use extracted stats calculations hook (only non-conflicting values)
+  // Local versions use Map for compatibility, hook provides additional stats
+  const {
+    completedFocusSessions,
+    filteredMoods,
+    stats,
+    premiumStats,
+  } = useStatsCalculations({
+    moods,
+    habits,
+    focusSessions,
+    gratitudeEntries,
+    restDays,
+    currentFocusMinutes,
+    range,
+    selectedTag,
+    monthNames,
+  });
 
   // Short month names for compact displays (heatmap)
   const shortMonthNames = monthNames.map(name => name?.slice(0, 3) || name);
@@ -121,127 +136,9 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     return Array.from(set).sort();
   }, [moods]);
 
-  const filteredMoods = useMemo(() => {
-    const now = new Date();
-    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - 6);
-    weekStart.setHours(0, 0, 0, 0);
+  // filteredMoods is now provided by useStatsCalculations hook
 
-    let scoped = moods;
-    if (range === 'month') {
-      scoped = moods.filter((entry) => entry.date.startsWith(monthKey));
-    } else if (range === 'week') {
-      scoped = moods.filter((entry) => parseLocalDate(entry.date) >= weekStart);
-    }
-
-    if (selectedTag === 'all') return scoped;
-    return scoped.filter((entry) => entry.tags?.includes(selectedTag));
-  }, [moods, selectedTag, range]);
-
-  const stats = useMemo(() => {
-    const rangeDates = new Set(filteredMoods.map((entry) => entry.date));
-    const totalFocusMinutes = completedFocusSessions
-      .filter((session) => range === 'all' || rangeDates.has(session.date))
-      .reduce((acc, s) => acc + s.duration, 0);
-
-    // All-time focus minutes for achievements section (not filtered by range)
-    // Include current running session minutes
-    const completedMinutes = completedFocusSessions.reduce((acc, s) => acc + s.duration, 0);
-    const allTimeFocusMinutes = completedMinutes + (currentFocusMinutes || 0);
-
-    const totalHabitCompletions = habits.reduce((acc, habit) => {
-      const count = getHabitCompletedDates(habit).filter((date) => range === 'all' || rangeDates.has(date)).length;
-      return acc + count;
-    }, 0);
-
-    // Calculate streak from ALL activities (same as StreakBanner)
-    const allActivityDates = [
-      ...moods.map(m => m.date),
-      ...habits.flatMap(h => getHabitCompletedDates(h)),
-      ...completedFocusSessions.map(f => f.date),
-      ...gratitudeEntries.map(g => g.date),
-      ...restDays, // Rest days count towards streak!
-    ];
-    const uniqueDates = [...new Set(allActivityDates)].sort();
-    const currentStreak = calculateStreak(uniqueDates);
-
-    const moodCounts = filteredMoods.reduce((acc, m) => {
-      acc[m.mood] = (acc[m.mood] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-
-    // v1.6.0: Count emotions with backward-compatible mapping of legacy moods
-    // This ensures 8-emotion wheel shows for ALL data, not just new entries
-    const emotionCounts = filteredMoods.reduce((acc, m) => {
-      if (m.emotion?.primary) {
-        // New format - use emotion directly
-        acc[m.emotion.primary] = (acc[m.emotion.primary] || 0) + 1;
-      } else if (m.mood) {
-        // Legacy format - map mood to emotion
-        const mappedEmotion = MOOD_TO_EMOTION_MAP[m.mood];
-        if (mappedEmotion) {
-          acc[mappedEmotion] = (acc[mappedEmotion] || 0) + 1;
-        }
-      }
-      return acc;
-    }, {} as Record<PrimaryEmotion, number>);
-
-    const totalEmotionEntries = Object.values(emotionCounts).reduce((a, b) => a + b, 0);
-
-    const now = new Date();
-    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const today = getToday();
-
-    // Filter data based on selected range (not always current month!)
-    const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - 6);
-    weekStart.setHours(0, 0, 0, 0);
-
-    const filterByRange = <T extends { date: string }>(data: T[]): T[] => {
-      if (range === 'week') {
-        return data.filter(item => parseLocalDate(item.date) >= weekStart);
-      }
-      if (range === 'month') {
-        return data.filter(item => item.date.startsWith(thisMonth));
-      }
-      return data; // 'all'
-    };
-
-    const rangeMoods = filterByRange(moods);
-    const rangeFocus = filterByRange(completedFocusSessions);
-    const rangeGratitude = filterByRange(gratitudeEntries);
-
-    // Calculate current running minutes if available
-    const rangeBaseFocusMinutes = rangeFocus.reduce((acc, s) => acc + s.duration, 0);
-    const isCurrentInRange = range === 'all' ||
-      (range === 'month' && today.startsWith(thisMonth)) ||
-      (range === 'week' && parseLocalDate(today) >= weekStart);
-    const finalRangeFocusMinutes = currentFocusMinutes !== undefined && isCurrentInRange
-      ? rangeBaseFocusMinutes + currentFocusMinutes
-      : rangeBaseFocusMinutes;
-
-    // Range title for display
-    const rangeTitle = range === 'week'
-      ? (t.thisWeek || 'This Week')
-      : range === 'month'
-        ? monthNames[now.getMonth()]
-        : (t.allTime || 'All Time');
-
-    return {
-      totalFocusMinutes,
-      allTimeFocusMinutes,
-      totalHabitCompletions,
-      currentStreak,
-      moodCounts,
-      emotionCounts,
-      totalEmotionEntries,
-      thisMonthMoods: rangeMoods.length,
-      thisMonthFocusMinutes: finalRangeFocusMinutes,
-      thisMonthGratitude: rangeGratitude.length,
-      monthName: rangeTitle,
-    };
-  }, [moods, habits, completedFocusSessions, gratitudeEntries, monthNames, filteredMoods, range, currentFocusMinutes]);
+  // stats is now provided by useStatsCalculations hook
 
   const moodInsights = useMemo(() => {
     if (filteredMoods.length === 0) {
@@ -466,96 +363,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     return '🌙';
   };
 
-  // Phase 10: Premium Stats Calculations
-  const premiumStats = useMemo(() => {
-    // Calculate average mood score (1-5)
-    const moodScores = filteredMoods.map(m => {
-      switch (m.mood) {
-        case 'great': return 5;
-        case 'good': return 4;
-        case 'okay': return 3;
-        case 'bad': return 2;
-        case 'terrible': return 1;
-        default: return 3;
-      }
-    });
-    const avgMoodScore = moodScores.length > 0
-      ? moodScores.reduce((a, b) => a + b, 0) / moodScores.length
-      : 3;
-
-    // Calculate habit completion rate (0-100)
-    // Use actual days in month instead of hardcoded 30
-    const now = new Date();
-    const actualDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const daysInRange = range === 'week' ? 7 : range === 'month' ? actualDaysInMonth : 90;
-    const totalPossibleCompletions = habits.length * daysInRange;
-    const habitRate = totalPossibleCompletions > 0
-      ? Math.min(100, (stats.totalHabitCompletions / totalPossibleCompletions) * 100)
-      : 0;
-
-    // Calculate focus score (0-100 based on daily target of 60min)
-    const dailyFocusTarget = 60; // minutes
-    const avgDailyFocus = stats.totalFocusMinutes / Math.max(1, daysInRange);
-    const focusScore = Math.min(100, (avgDailyFocus / dailyFocusTarget) * 100);
-
-    // Get current mood for weather
-    const latestMood = moods.length > 0 ? moods[moods.length - 1]?.mood : 'okay';
-
-    // Calculate week score for crystal
-    const weekScore = Math.round(
-      (((avgMoodScore - 1) / 4) * 100) * 0.3 +
-      habitRate * 0.4 +
-      focusScore * 0.3
-    );
-
-    // Weekly change calculation (simplified - compare this week vs last week)
-    let weeklyChange = 0;
-    const oneWeekAgo = new Date(now);
-    oneWeekAgo.setDate(now.getDate() - 7);
-    const twoWeeksAgo = new Date(now);
-    twoWeeksAgo.setDate(now.getDate() - 14);
-
-    const thisWeekMoods = moods.filter(m => parseLocalDate(m.date) >= oneWeekAgo);
-    const lastWeekMoods = moods.filter(m => {
-      const date = parseLocalDate(m.date);
-      return date >= twoWeeksAgo && date < oneWeekAgo;
-    });
-
-    if (thisWeekMoods.length > 0 && lastWeekMoods.length > 0) {
-      const thisWeekAvg = thisWeekMoods.reduce((sum, m) => {
-        switch (m.mood) {
-          case 'great': return sum + 5;
-          case 'good': return sum + 4;
-          case 'okay': return sum + 3;
-          case 'bad': return sum + 2;
-          case 'terrible': return sum + 1;
-          default: return sum + 3;
-        }
-      }, 0) / thisWeekMoods.length;
-
-      const lastWeekAvg = lastWeekMoods.reduce((sum, m) => {
-        switch (m.mood) {
-          case 'great': return sum + 5;
-          case 'good': return sum + 4;
-          case 'okay': return sum + 3;
-          case 'bad': return sum + 2;
-          case 'terrible': return sum + 1;
-          default: return sum + 3;
-        }
-      }, 0) / lastWeekMoods.length;
-
-      weeklyChange = Math.round(((thisWeekAvg - lastWeekAvg) / lastWeekAvg) * 100);
-    }
-
-    return {
-      moodScore: avgMoodScore,
-      habitRate: Math.round(habitRate),
-      focusScore: Math.round(focusScore),
-      currentMood: latestMood as 'great' | 'good' | 'okay' | 'bad' | 'terrible',
-      weekScore,
-      weeklyChange,
-    };
-  }, [filteredMoods, habits, stats, range, moods]);
+  // premiumStats is now provided by useStatsCalculations hook
 
   const heatmapDays = useMemo(() => {
     const now = new Date();

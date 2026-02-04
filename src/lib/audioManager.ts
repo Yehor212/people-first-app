@@ -2,6 +2,13 @@
 // Prevents conflicts from multiple AudioContext instances
 
 import { logger } from './logger';
+
+// Extend Window interface for webkit AudioContext (Safari)
+declare global {
+  interface Window {
+    webkitAudioContext?: typeof AudioContext;
+  }
+}
 import { safeParseFloat } from '@/lib/validation';
 import { shouldPlaySounds } from './animationUtils';
 
@@ -37,7 +44,7 @@ function getAudioContext(): AudioContext | null {
   if (state.context) return state.context;
 
   try {
-    state.context = new (window.AudioContext || (window as any).webkitAudioContext)();
+    state.context = new (window.AudioContext || window.webkitAudioContext!)();
     return state.context;
   } catch (e) {
     logger.warn('[AudioManager] AudioContext not available:', e);

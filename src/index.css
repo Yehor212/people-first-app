@@ -3435,3 +3435,61 @@ input::-moz-focus-inner {
 .dark .placeholder-safe::placeholder {
   color: hsl(0 0% 100% / 0.5); /* 50% is minimum for placeholder text */
 }
+
+/* ===== RTL (Right-to-Left) Language Support ===== */
+/* Applied when dir="rtl" is set on <html> element */
+
+/* Flip directional icons for RTL */
+[dir="rtl"] .icon-directional {
+  transform: scaleX(-1);
+}
+
+/* Maintain proper text alignment in RTL */
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+/* Flip margin/padding for common patterns */
+[dir="rtl"] .ml-auto {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+[dir="rtl"] .mr-auto {
+  margin-right: 0;
+  margin-left: auto;
+}
+
+/* Flip flex row for RTL */
+[dir="rtl"] .flex-row-rtl {
+  flex-direction: row-reverse;
+}
+
+/* Progress bars and sliders */
+[dir="rtl"] .progress-bar {
+  direction: rtl;
+}
+
+/* Tab lists scroll direction */
+[dir="rtl"] .tabs-scroll {
+  direction: rtl;
+}
+
+/* Number inputs should remain LTR */
+[dir="rtl"] input[type="number"],
+[dir="rtl"] input[type="tel"],
+[dir="rtl"] input[type="email"] {
+  direction: ltr;
+  text-align: right;
+}
+
+/* Keep code/monospace content LTR */
+[dir="rtl"] code,
+[dir="rtl"] pre,
+[dir="rtl"] .font-mono {
+  direction: ltr;
+}

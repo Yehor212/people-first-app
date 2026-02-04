@@ -36,6 +36,23 @@ export interface CalendarSyncState {
   enabled: boolean;
 }
 
+// Google Calendar API event item type
+interface GoogleCalendarEventItem {
+  id: string;
+  summary?: string;
+  description?: string;
+  start?: {
+    dateTime?: string;
+    date?: string;
+  };
+  end?: {
+    dateTime?: string;
+    date?: string;
+  };
+  location?: string;
+  colorId?: string;
+}
+
 // ============================================
 // CONSTANTS
 // ============================================
@@ -189,20 +206,20 @@ export async function fetchCalendarEvents(
     const data = await response.json();
 
     // Parse events - filter out items without valid dates
-    const events: CalendarEvent[] = (data.items || [])
-      .filter((item: any) => {
+    const events: CalendarEvent[] = ((data.items || []) as GoogleCalendarEventItem[])
+      .filter((item) => {
         // Must have either dateTime or date for both start and end
         const hasStart = item.start?.dateTime || item.start?.date;
         const hasEnd = item.end?.dateTime || item.end?.date;
         return hasStart && hasEnd;
       })
-      .map((item: any) => ({
+      .map((item) => ({
         id: item.id,
         title: item.summary || 'Untitled Event',
         description: item.description,
-        startTime: new Date(item.start.dateTime || item.start.date),
-        endTime: new Date(item.end.dateTime || item.end.date),
-        isAllDay: !item.start.dateTime,
+        startTime: new Date(item.start!.dateTime || item.start!.date!),
+        endTime: new Date(item.end!.dateTime || item.end!.date!),
+        isAllDay: !item.start!.dateTime,
         location: item.location,
         color: item.colorId ? getColorForId(item.colorId) : undefined,
       }));

@@ -16,13 +16,14 @@ interface AICoachOnboardingProps {
 }
 
 type Step = 'intro' | 'goal' | 'concern' | 'stress';
+type GoalId = 'wellbeing' | 'productivity' | 'habits' | 'mood';
 
-const GOALS = [
+const GOALS: readonly { id: GoalId; icon: typeof Heart; emoji: string }[] = [
   { id: 'wellbeing', icon: Heart, emoji: '🧘' },
   { id: 'productivity', icon: Target, emoji: '🎯' },
   { id: 'habits', icon: Zap, emoji: '✨' },
   { id: 'mood', icon: Brain, emoji: '💭' },
-] as const;
+];
 
 export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps) {
   const { t, language } = useLanguage();
@@ -216,10 +217,10 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
     return sectionTexts[key]?.[language] || sectionTexts[key]?.en || '';
   };
 
-  const handleGoalSelect = (goalId: string) => {
+  const handleGoalSelect = (goalId: GoalId) => {
     haptics.buttonTap();
     setSelectedGoal(goalId);
-    saveOnboardingAnswer('mainGoal', goalId as any);
+    saveOnboardingAnswer('mainGoal', goalId);
   };
 
   const handleNext = () => {

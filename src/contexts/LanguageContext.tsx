@@ -2,20 +2,31 @@ import { createContext, useContext, ReactNode, useEffect, useRef, useMemo } from
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Language, Translations, translations } from '@/i18n/translations';
 
+// Extend Navigator for IE compatibility (userLanguage property)
+declare global {
+  interface Navigator {
+    userLanguage?: string;
+  }
+}
+
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: Translations;
+  isRTL: boolean;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const SUPPORTED_LANGUAGES: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr', 'ja'];
+const SUPPORTED_LANGUAGES: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
+
+// RTL languages
+const RTL_LANGUAGES: Language[] = ['ar', 'he'];
 
 function detectBrowserLanguage(): Language {
   try {
     // Get browser language
-    const browserLang = navigator.language || (navigator as any).userLanguage;
+    const browserLang = navigator.language || navigator.userLanguage;
 
     // Guard against null/undefined browserLang
     if (!browserLang || typeof browserLang !== 'string') {
@@ -44,6 +55,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   // Ref to ensure auto-detection only runs once
   const hasAutoDetectedRef = useRef(false);
 
+  // Check if current language is RTL
+  const isRTL = RTL_LANGUAGES.includes(language);
+
+  // Apply RTL direction to document
+  useEffect(() => {
+    const dir = isRTL ? 'rtl' : 'ltr';
+    document.documentElement.setAttribute('dir', dir);
+    document.documentElement.setAttribute('lang', language);
+  }, [language, isRTL]);
+
   // Auto-detect language on first load
   useEffect(() => {
     // Only run once
@@ -67,7 +88,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     language,
     setLanguage,
     t,
-  }), [language, setLanguage, t]);
+    isRTL,
+  }), [language, setLanguage, t, isRTL]);
 
   return (
     <LanguageContext.Provider value={value}>

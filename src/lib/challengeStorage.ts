@@ -1,4 +1,4 @@
-import { Challenge, Badge, UserStats } from '@/types';
+import { Challenge, Badge, UserStats, Habit } from '@/types';
 import { badgeDefinitions } from './badges';
 import { formatDate } from './utils';
 import { logger } from './logger';
@@ -147,7 +147,7 @@ export function syncChallengeProgress(stats: UserStats, focusMinutes: number, gr
 }
 
 // Check and unlock special badges based on conditions
-export function checkSpecialBadges(stats: UserStats, habits: any[]): Badge[] {
+export function checkSpecialBadges(stats: UserStats, habits: Habit[]): Badge[] {
   const badges = getBadges();
   const newlyUnlocked: Badge[] = [];
 

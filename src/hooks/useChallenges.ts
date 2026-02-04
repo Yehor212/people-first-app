@@ -28,14 +28,14 @@ export function useChallenges() {
   };
 
   const updateProgress = (challengeId: string, progress: number) => {
-    return updateChallengeProgress(challengeId, progress);
+    return updateChallenge(challengeId, { progress });
   };
 
   return {
     challenges: getChallenges(),
     badges: getBadges(),
     addChallenge,
-    updateChallengeProgress,
+    updateChallenge,
     unlockBadge,
     syncChallengeProgress,
     checkSpecialBadges

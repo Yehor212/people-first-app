@@ -1,6 +1,13 @@
 import { PrivacySettings } from '@/types';
 import { logger } from './logger';
 
+// Google Analytics gtag type declaration
+declare global {
+  interface Window {
+    gtag?: (command: string, eventName: string, params?: Record<string, unknown>) => void;
+  }
+}
+
 // Simple analytics wrapper that respects user privacy settings
 class Analytics {
   private enabled = false;
@@ -9,7 +16,7 @@ class Analytics {
     this.enabled = privacy.analytics && !privacy.noTracking;
   }
 
-  track(event: string, properties?: Record<string, any>) {
+  track(event: string, properties?: Record<string, unknown>) {
     if (!this.enabled) return;
 
     // Only log to console in development
@@ -20,8 +27,8 @@ class Analytics {
     // In production, send to your analytics service
     // Example: Google Analytics, Mixpanel, etc.
     try {
-      if (typeof window !== 'undefined' && (window as any).gtag) {
-        (window as any).gtag('event', event, properties);
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', event, properties);
       }
     } catch (error) {
       logger.error('[Analytics] Error:', error);

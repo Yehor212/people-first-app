@@ -13,6 +13,12 @@ import {
 
 export type ImportMode = "merge" | "replace";
 
+// Settings entry type - value can be any JSON-serializable data
+export interface SettingsEntry {
+  key: string;
+  value: unknown;
+}
+
 export interface BackupPayloadV1 {
   schemaVersion: 1;
   exportedAt: string;
@@ -21,7 +27,7 @@ export interface BackupPayloadV1 {
     habits: Habit[];
     focusSessions: FocusSession[];
     gratitudeEntries: GratitudeEntry[];
-    settings: Array<{ key: string; value: any } & Record<string, any>>;
+    settings: SettingsEntry[];
   };
 }
 
@@ -35,7 +41,7 @@ export interface BackupPayloadV2 {
     habits: Habit[];
     focusSessions: FocusSession[];
     gratitudeEntries: GratitudeEntry[];
-    settings: Array<{ key: string; value: any } & Record<string, any>>;
+    settings: SettingsEntry[];
   };
 }
 

@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { User, Bell, Trash2, Download, Upload, Crown, ExternalLink, Globe, CheckCircle, Shield, Sparkles, Smartphone, ChevronRight, TestTube, Cloud, Palette, Moon, Sun, Mail, LayoutGrid, Timer, Wind, Heart, Target, ListTodo, Trophy, Bot, Flower2 } from 'lucide-react';
+import { Bell, Trash2, Download, Upload, CheckCircle, Sparkles, Smartphone, ChevronRight, TestTube, Cloud, Mail, LayoutGrid, Timer, Wind, Heart, Target, ListTodo, Trophy, Flower2 } from 'lucide-react';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useFeatureFlags, ToggleableFeature } from '@/contexts/FeatureFlagsContext';
-import { Language, languageNames, languageFlags } from '@/i18n/translations';
+import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeatureToggleItem } from '@/components/FeatureToggleItem';
 import { isFeatureUnlocked } from '@/lib/onboardingFlow';
 import { cn } from '@/lib/utils';
@@ -21,21 +20,15 @@ import { SmartRemindersCard } from '@/components/SmartRemindersCard';
 import { HealthConnectCard } from '@/components/HealthConnectCard';
 import { exportBackup, importBackup, ImportMode } from '@/storage/backup';
 import { exportAllToCSV, exportProgressReportPDF } from '@/lib/exportService';
-import { FileText, FileSpreadsheet } from 'lucide-react';
+import { FileText, FileSpreadsheet, Zap, Volume2, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { syncWithCloud } from '@/storage/cloudSync';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
-import { sanitizeUserName, userNameSchema } from '@/lib/validation';
 import { DopamineSettingsComponent } from '@/components/DopamineSettings';
 import { sendTestNotification, checkNotificationStatus } from '@/lib/localNotifications';
 import { isCloudSyncEnabled, setCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { removePushToken } from '@/lib/pushNotifications';
 import { offlineQueue } from '@/lib/offlineQueue';
-import { FeedbackForm } from '@/components/FeedbackForm';
-import { MessageSquare, Zap, Volume2, RefreshCw, History, Loader2 } from 'lucide-react';
-import { ChangelogPanel } from '@/components/ChangelogPanel';
-import { useTheme, ThemeOption } from '@/components/ThemeToggle';
-import { checkForAppUpdate, openGooglePlayStore, UpdateState } from '@/lib/appUpdateManager';
 import { APP_VERSION } from '@/lib/appVersion';
 import { useQuickActions } from '@/hooks/useQuickActions';
 import {
@@ -44,6 +37,7 @@ import {
   setNotificationSound,
   NotificationSoundType,
 } from '@/lib/notificationSounds';
+import { ProfileSection, AboutSection, PrivacySection } from '@/components/settings';
 
 interface SettingsPanelProps {
   userName: string;
@@ -76,11 +70,9 @@ export function SettingsPanel({
   onPrivacyChange,
   onOpenWidgetSettings
 }: SettingsPanelProps) {
-  const { t, language, setLanguage } = useLanguage();
-  const { flags, setFlag, isFeatureEnabled } = useFeatureFlags();
+  const { t } = useLanguage();
+  const { setFlag, isFeatureEnabled } = useFeatureFlags();
   const { canInstall, isInstalled, promptInstall } = usePwaInstall();
-  const [name, setName] = useState(userName);
-  const [nameStatus, setNameStatus] = useState<string | null>(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [importMode, setImportMode] = useState<ImportMode>('merge');
   const [dataStatus, setDataStatus] = useState<string | null>(null);
@@ -95,8 +87,6 @@ export function SettingsPanel({
   const [deleteStatus, setDeleteStatus] = useState<string | null>(null);
   const [showDopamineSettings, setShowDopamineSettings] = useState(false);
   const [notificationTestStatus, setNotificationTestStatus] = useState<string | null>(null);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [showChangelog, setShowChangelog] = useState(false);
   const [cloudSyncEnabled, setCloudSyncEnabledState] = useState(isCloudSyncEnabled());
   const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(false);
   const [weeklyDigestLoading, setWeeklyDigestLoading] = useState(false);
@@ -108,16 +98,6 @@ export function SettingsPanel({
     const dismissed = localStorage.getItem('zenflow_whats_new_v1_3_0_dismissed');
     return dismissed !== 'true';
   });
-  const [oledMode, setOledMode] = useState(() => {
-    return localStorage.getItem('zenflow_oled_mode') === 'true';
-  });
-
-  // Theme preference (light/dark/system)
-  const { theme: currentTheme, changeTheme } = useTheme();
-
-  // Update check state
-  const [updateCheckStatus, setUpdateCheckStatus] = useState<'idle' | 'checking' | 'available' | 'latest' | 'error'>('idle');
-  const [updateState, setUpdateState] = useState<UpdateState | null>(null);
 
   // Quick Actions for lock screen (Android only)
   const { isEnabled: quickActionsEnabled, isAndroid, toggle: toggleQuickActions } = useQuickActions();
@@ -133,47 +113,6 @@ export function SettingsPanel({
   const handleDismissWhatsNew = () => {
     localStorage.setItem('zenflow_whats_new_v1_3_0_dismissed', 'true');
     setShowWhatsNew(false);
-  };
-
-  // Apply OLED mode on mount and when changed
-  useEffect(() => {
-    if (oledMode) {
-      document.documentElement.classList.add('oled');
-    } else {
-      document.documentElement.classList.remove('oled');
-    }
-  }, [oledMode]);
-
-  const handleOledModeChange = (checked: boolean) => {
-    setOledMode(checked);
-    localStorage.setItem('zenflow_oled_mode', String(checked));
-  };
-
-  const handleCheckForUpdates = async () => {
-    setUpdateCheckStatus('checking');
-    setUpdateState(null);
-
-    try {
-      const result = await checkForAppUpdate();
-      setUpdateState(result);
-
-      if (result.available) {
-        setUpdateCheckStatus('available');
-      } else if (result.error) {
-        setUpdateCheckStatus('error');
-      } else {
-        setUpdateCheckStatus('latest');
-      }
-    } catch (error) {
-      logger.error('[Settings] Update check failed:', error);
-      setUpdateCheckStatus('error');
-      // P1 Fix: Show toast for user feedback
-      toast.error(t.updateCheckFailed || 'Could not check for updates');
-    }
-  };
-
-  const handleOpenGooglePlay = async () => {
-    await openGooglePlayStore();
   };
 
   const handleTestNotification = async () => {
@@ -214,33 +153,6 @@ export function SettingsPanel({
       }
     }
     return String(error);
-  };
-
-  useEffect(() => {
-    setName(userName);
-    setNameStatus(null);
-  }, [userName]);
-
-  const handleNameSave = async () => {
-    const sanitized = sanitizeUserName(name);
-    if (!sanitized) return;
-
-    // Validate name
-    try {
-      userNameSchema.parse(sanitized);
-    } catch (error) {
-      setNameStatus('Invalid name format');
-      return;
-    }
-
-    onNameChange(sanitized);
-    setNameStatus(t.nameSaved);
-    if (!supabase) return;
-    try {
-      await supabase.auth.updateUser({ data: { full_name: sanitized } });
-    } catch (error) {
-      logger.error("Failed to update profile name:", error);
-    }
   };
 
   const handleReset = () => {
@@ -332,12 +244,6 @@ export function SettingsPanel({
       setWeeklyDigestLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (!nameStatus) return;
-    const timer = window.setTimeout(() => setNameStatus(null), 2000);
-    return () => window.clearTimeout(timer);
-  }, [nameStatus]);
 
   const handleSignIn = async () => {
     if (!supabase) {
@@ -589,34 +495,7 @@ export function SettingsPanel({
     { value: 0, label: t.sun }
   ];
 
-  const handleNoTrackingChange = (checked: boolean) => {
-    // Prevent disabling both toggles
-    if (!checked && !privacy.analytics) {
-      return;
-    }
-    onPrivacyChange((prev) => ({
-      ...prev,
-      noTracking: checked,
-      analytics: checked ? false : prev.analytics
-    }));
-  };
-
-  const handleAnalyticsChange = (checked: boolean) => {
-    // Prevent disabling both toggles
-    if (!checked && !privacy.noTracking) {
-      return;
-    }
-    onPrivacyChange((prev) => ({
-      ...prev,
-      analytics: checked,
-      noTracking: checked ? false : prev.noTracking
-    }));
-  };
-
   const baseUrl = import.meta.env.BASE_URL || '/';
-  // Use main privacy.html for all languages (localized versions can be added later)
-  const privacyHref = `${baseUrl}privacy.html`;
-  const termsHref = `${baseUrl}terms.html`;
   const deleteAccountHref = `${baseUrl}delete-account.html`;
 
   const handleRemindersToggle = (checked: boolean) => {
@@ -691,126 +570,7 @@ export function SettingsPanel({
       <Accordion type="multiple" defaultValue={["profile"]} className="space-y-3">
 
         {/* Group 1: Profile & Appearance */}
-        <AccordionItem value="profile" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
-          <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 zen-gradient rounded-xl shadow-zen-soft">
-                <User className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="text-lg font-semibold text-foreground">{t.settingsGroupProfile}</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-6 pb-6">
-            <div className="space-y-6">
-              {/* Profile Name */}
-              <div>
-                <label className="text-sm text-muted-foreground mb-2 block">{t.yourName}</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="flex-1 p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                  <button
-                    onClick={handleNameSave}
-                    className="px-4 py-2 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
-                  >
-                    {t.save}
-                  </button>
-                </div>
-                {nameStatus && (
-                  <p className="text-sm text-muted-foreground mt-2">{nameStatus}</p>
-                )}
-              </div>
-
-              {/* Language */}
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <Globe className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">{t.language}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2" role="group" aria-label={t.language}>
-                  {languages.map((lang) => (
-                    <button
-                      key={lang}
-                      onClick={() => setLanguage(lang)}
-                      aria-pressed={language === lang}
-                      aria-label={languageNames[lang]}
-                      className={cn(
-                        "flex items-center gap-2 p-3 rounded-xl transition-all",
-                        language === lang
-                          ? "bg-primary/10 ring-2 ring-primary"
-                          : "bg-secondary hover:bg-muted"
-                      )}
-                    >
-                      <span className="text-xl" aria-hidden="true">{languageFlags[lang]}</span>
-                      <span className="font-medium text-foreground text-sm">
-                        {languageNames[lang]}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Appearance / Theme Selector */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <Palette className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">{t.appearance || 'Appearance'}</span>
-                </div>
-
-                {/* Theme Options: Light / Dark / System */}
-                <div className="space-y-2">
-                  <label className="text-xs text-muted-foreground">{t.themeLabel || 'Theme'}</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {([
-                      { value: 'light' as ThemeOption, icon: Sun, label: t.themeLight || 'Light' },
-                      { value: 'dark' as ThemeOption, icon: Moon, label: t.themeDark || 'Dark' },
-                      { value: 'system' as ThemeOption, icon: Smartphone, label: t.themeSystem || 'System' },
-                    ]).map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => changeTheme(option.value)}
-                        className={cn(
-                          "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
-                          currentTheme === option.value
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary/50 bg-secondary/30"
-                        )}
-                      >
-                        <option.icon className={cn(
-                          "w-5 h-5",
-                          currentTheme === option.value ? "text-primary" : "text-muted-foreground"
-                        )} />
-                        <span className={cn(
-                          "text-xs font-medium",
-                          currentTheme === option.value ? "text-primary" : "text-foreground"
-                        )}>
-                          {option.label}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* OLED Mode */}
-                <div className="flex items-start justify-between gap-4 p-4 bg-secondary/50 rounded-xl">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Moon className="w-4 h-4 text-muted-foreground" />
-                      <p className="text-sm font-medium text-foreground">{t.oledDarkMode || 'OLED Dark Mode'}</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {t.oledDarkModeHint || 'Pure black theme for OLED screens. Saves battery.'}
-                    </p>
-                  </div>
-                  <Switch checked={oledMode} onCheckedChange={handleOledModeChange} aria-label={t.oledDarkMode} className="mt-0.5 shrink-0" />
-                </div>
-              </div>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+        <ProfileSection userName={userName} onNameChange={onNameChange} />
 
         {/* Group 1.5: Modules / Feature Toggles */}
         <AccordionItem value="modules" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
@@ -1295,51 +1055,8 @@ export function SettingsPanel({
           )}
               </div>
 
-              {/* Privacy Section inside Data group */}
-              <div className="pt-4 border-t border-border">
-                <div className="flex items-center gap-2 mb-3">
-                  <Shield className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium text-foreground">{t.privacyTitle}</span>
-                </div>
-                <p className="text-xs text-muted-foreground mb-3">{t.privacyDescription}</p>
-
-                <div className="space-y-3">
-                  <div className="flex items-start justify-between gap-4 p-4 bg-secondary/50 rounded-xl">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{t.privacyNoTracking}</p>
-                      <p className="text-xs text-muted-foreground">{t.privacyNoTrackingHint}</p>
-                    </div>
-                    <Switch checked={privacy.noTracking} onCheckedChange={handleNoTrackingChange} aria-label={t.privacyNoTracking} className="mt-0.5 shrink-0" />
-                  </div>
-
-                  <div className="flex items-start justify-between gap-4 p-4 bg-secondary/50 rounded-xl">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{t.privacyAnalytics}</p>
-                      <p className="text-xs text-muted-foreground">{t.privacyAnalyticsHint}</p>
-                    </div>
-                    <Switch checked={privacy.analytics} onCheckedChange={handleAnalyticsChange} aria-label={t.privacyAnalytics} className="mt-0.5 shrink-0" />
-                  </div>
-
-                  <div className="flex flex-wrap gap-4 text-sm">
-                    <a
-                      href={privacyHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline hover:text-primary/90"
-                    >
-                      {t.privacyPolicy}
-                    </a>
-                    <a
-                      href={termsHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-primary underline hover:text-primary/90"
-                    >
-                      {t.termsOfService}
-                    </a>
-                  </div>
-                </div>
-              </div>
+              {/* Privacy Section */}
+              <PrivacySection privacy={privacy} onPrivacyChange={onPrivacyChange} />
             </div>
           </AccordionContent>
         </AccordionItem>
@@ -1539,98 +1256,7 @@ export function SettingsPanel({
         </AccordionItem>
 
         {/* Group 5: About */}
-        <AccordionItem value="about" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
-          <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
-            <div className="flex items-center gap-3">
-              <div className="p-2 zen-gradient rounded-xl shadow-zen-soft">
-                <Sparkles className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <span className="text-lg font-semibold text-foreground">{t.settingsGroupAbout}</span>
-            </div>
-          </AccordionTrigger>
-          <AccordionContent className="px-6 pb-6">
-            <div className="space-y-4">
-              {/* Version Info */}
-              <div className="text-center text-muted-foreground py-2">
-                <p className="text-sm font-medium text-foreground">{t.appName} v{APP_VERSION}</p>
-                <p className="text-xs mt-1">{t.tagline}</p>
-              </div>
-
-              {/* Version History Button */}
-              <button
-                onClick={() => setShowChangelog(true)}
-                className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2"
-              >
-                <History className="w-4 h-4" />
-                {t.changelogTitle || 'Version History'}
-              </button>
-
-              {/* Check for Updates Button - Only on native */}
-              {Capacitor.isNativePlatform() && (
-                <div className="space-y-3">
-                  <button
-                    onClick={handleCheckForUpdates}
-                    disabled={updateCheckStatus === 'checking'}
-                    className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    <RefreshCw className={`w-4 h-4 ${updateCheckStatus === 'checking' ? 'animate-spin' : ''}`} />
-                    {updateCheckStatus === 'checking'
-                      ? (t.checkingForUpdates || 'Checking...')
-                      : (t.checkForUpdates || 'Check for Updates')
-                    }
-                  </button>
-
-                  {/* Update Status Messages */}
-                  {updateCheckStatus === 'latest' && (
-                    <p className="text-sm text-center text-green-600 dark:text-green-400 flex items-center justify-center gap-1">
-                      <CheckCircle className="w-4 h-4" />
-                      {t.appUpToDate || 'App is up to date'}
-                    </p>
-                  )}
-
-                  {updateCheckStatus === 'available' && updateState && (
-                    <div className="p-3 bg-primary/10 border border-primary/20 rounded-xl">
-                      <p className="text-sm font-medium text-foreground text-center mb-2">
-                        {t.updateAvailable || 'Update Available'}
-                        {updateState.latestVersion && (
-                          <span className="text-primary ml-1">v{updateState.latestVersion}</span>
-                        )}
-                      </p>
-                      {updateState.releaseNotes && (
-                        <p className="text-xs text-muted-foreground text-center mb-2">{updateState.releaseNotes}</p>
-                      )}
-                      <button
-                        onClick={handleOpenGooglePlay}
-                        className="w-full py-2 zen-gradient text-primary-foreground rounded-lg font-medium flex items-center justify-center gap-2"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                        {t.openGooglePlay || 'Open Google Play'}
-                      </button>
-                    </div>
-                  )}
-
-                  {updateCheckStatus === 'error' && (
-                    <p className="text-sm text-center text-muted-foreground">
-                      {t.updateCheckFailed || 'Could not check for updates. Try again later.'}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {/* Feedback Button */}
-              <button
-                onClick={() => setShowFeedback(true)}
-                className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <MessageSquare className="w-5 h-5 text-primary" />
-                  <span className="font-medium">{t.sendFeedback}</span>
-                </div>
-                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-              </button>
-            </div>
-          </AccordionContent>
-        </AccordionItem>
+        <AboutSection />
       </Accordion>
 
       {/* Standalone: Widget Settings */}
@@ -1696,17 +1322,9 @@ export function SettingsPanel({
       )}
 
       {/* Modals */}
-      {/* Feedback Form */}
-      <FeedbackForm open={showFeedback} onOpenChange={setShowFeedback} />
-
       {/* Dopamine Settings Modal */}
       {showDopamineSettings && (
         <DopamineSettingsComponent onClose={() => setShowDopamineSettings(false)} />
-      )}
-
-      {/* Changelog Panel */}
-      {showChangelog && (
-        <ChangelogPanel onClose={() => setShowChangelog(false)} />
       )}
     </div>
   );

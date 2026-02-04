@@ -3,7 +3,7 @@
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
 import { Task } from '@/lib/taskMomentum';
-import { Quest } from '@/lib/randomQuests';
+import { Quest, QuestCondition, QuestReward } from '@/lib/randomQuests';
 import { syncOrchestrator } from '@/lib/syncOrchestrator';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import { triggerDataRefresh } from '@/hooks/useIndexedDB';
@@ -39,8 +39,8 @@ interface QuestRow {
   category: string;
   title: string;
   description: string;
-  condition: any;
-  reward: any;
+  condition: QuestCondition;
+  reward: QuestReward;
   progress: number;
   total: number;
   completed: boolean;

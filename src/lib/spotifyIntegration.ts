@@ -40,6 +40,14 @@ export interface SpotifyPlaylist {
   trackCount: number;
 }
 
+// Spotify API response types
+interface SpotifyApiPlaylistItem {
+  id: string;
+  name: string;
+  images?: Array<{ url: string }>;
+  tracks?: { total: number };
+}
+
 // ============================================
 // CONSTANTS
 // ============================================
@@ -441,7 +449,7 @@ export async function searchFocusPlaylists(query?: string): Promise<SpotifyPlayl
 
     const data = await response.json();
 
-    return (data.playlists?.items || []).map((playlist: any) => ({
+    return ((data.playlists?.items || []) as SpotifyApiPlaylistItem[]).map((playlist) => ({
       id: playlist.id,
       name: playlist.name,
       imageUrl: playlist.images?.[0]?.url,
@@ -473,7 +481,7 @@ export async function getUserPlaylists(): Promise<SpotifyPlaylist[]> {
 
     const data = await response.json();
 
-    return (data.items || []).map((playlist: any) => ({
+    return ((data.items || []) as SpotifyApiPlaylistItem[]).map((playlist) => ({
       id: playlist.id,
       name: playlist.name,
       imageUrl: playlist.images?.[0]?.url,
