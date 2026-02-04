@@ -1177,9 +1177,15 @@ export function Index() {
     skipped?: boolean;
     modules?: string[];
   }) => {
+    logger.log('[Index] handleOnboardingComplete called', result);
     // Module preferences are already saved by OnboardingFlow via FeatureFlags context
     // Just mark onboarding as complete
-    setOnboardingComplete(true);
+    try {
+      setOnboardingComplete(true);
+      logger.log('[Index] setOnboardingComplete(true) called successfully');
+    } catch (error) {
+      logger.error('[Index] Error in handleOnboardingComplete:', error);
+    }
   };
 
   const handleNotificationPermissionComplete = () => {
