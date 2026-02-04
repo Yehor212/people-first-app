@@ -248,7 +248,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
           <button
             onClick={handleDismiss}
             className="absolute top-4 right-4 p-1 rounded-full hover:bg-muted transition-colors"
-            aria-label="Close"
+            aria-label={t.close}
           >
             <X className="w-5 h-5 text-muted-foreground" />
           </button>

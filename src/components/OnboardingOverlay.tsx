@@ -82,7 +82,7 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
                 markWelcomeSeen();
                 onClose();
               }}
-              aria-label="Close"
+              aria-label={t.close}
               className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
             >
               <X className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />

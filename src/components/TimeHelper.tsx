@@ -259,7 +259,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
                 <button
                   onClick={playPing}
                   className="px-3 py-2 rounded-lg bg-muted hover:bg-muted/70 transition-colors text-sm font-medium"
-                  title="Test sound"
+                  title={t.testSound}
                 >
                   {t.testSound || '🔊 Test'}
                 </button>

@@ -1576,6 +1576,45 @@ export interface Translations {
   updateCheckFailedToast: string;
   allActivitiesComplete: string;
   letsStart: string;
+
+  // Spotify Integration (P0 fix)
+  spotifyConnect: string;
+  spotifyDisconnect: string;
+  spotifyNoTrack: string;
+  spotifyAutoPlayOn: string;
+  spotifyAutoPlayOff: string;
+  spotifyOpenApp: string;
+
+  // Pagination (P1 fix)
+  paginationPrevious: string;
+  paginationNext: string;
+  paginationMorePages: string;
+
+  // Dismiss notification
+  dismissNotification: string;
+
+  // Day names short (for heatmap)
+  dayShortSun: string;
+  dayShortMon: string;
+  dayShortTue: string;
+  dayShortWed: string;
+  dayShortThu: string;
+  dayShortFri: string;
+  dayShortSat: string;
+
+  // Month names short (for heatmap)
+  monthShortJan: string;
+  monthShortFeb: string;
+  monthShortMar: string;
+  monthShortApr: string;
+  monthShortMay: string;
+  monthShortJun: string;
+  monthShortJul: string;
+  monthShortAug: string;
+  monthShortSep: string;
+  monthShortOct: string;
+  monthShortNov: string;
+  monthShortDec: string;
 }
 
 // Base translations (RTL languages added dynamically below)
@@ -3078,6 +3117,45 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     updateCheckFailedToast: 'Не удалось проверить обновления',
     allActivitiesComplete: 'Вы выполнили все активности на сегодня',
     letsStart: 'Начнём!',
+
+    // Spotify Integration (P0 fix)
+    spotifyConnect: 'Подключить Spotify',
+    spotifyDisconnect: 'Отключить Spotify',
+    spotifyNoTrack: 'Откройте Spotify и включите музыку',
+    spotifyAutoPlayOn: 'Авто-плей ВКЛ',
+    spotifyAutoPlayOff: 'Авто-плей ВЫКЛ',
+    spotifyOpenApp: 'Открыть Spotify',
+
+    // Pagination (P1 fix)
+    paginationPrevious: 'Назад',
+    paginationNext: 'Вперёд',
+    paginationMorePages: 'Ещё страницы',
+
+    // Dismiss notification
+    dismissNotification: 'Скрыть уведомление',
+
+    // Day names short
+    dayShortSun: 'Вс',
+    dayShortMon: 'Пн',
+    dayShortTue: 'Вт',
+    dayShortWed: 'Ср',
+    dayShortThu: 'Чт',
+    dayShortFri: 'Пт',
+    dayShortSat: 'Сб',
+
+    // Month names short
+    monthShortJan: 'Янв',
+    monthShortFeb: 'Фев',
+    monthShortMar: 'Мар',
+    monthShortApr: 'Апр',
+    monthShortMay: 'Май',
+    monthShortJun: 'Июн',
+    monthShortJul: 'Июл',
+    monthShortAug: 'Авг',
+    monthShortSep: 'Сен',
+    monthShortOct: 'Окт',
+    monthShortNov: 'Ноя',
+    monthShortDec: 'Дек',
 
     // Phase 13: Visual Worlds
     hallOfFame: 'Зал Славы',
@@ -4589,6 +4667,45 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     allActivitiesComplete: "You've completed all activities for today",
     letsStart: "Let's start!",
 
+    // Spotify Integration (P0 fix)
+    spotifyConnect: 'Connect Spotify',
+    spotifyDisconnect: 'Disconnect Spotify',
+    spotifyNoTrack: 'Open Spotify and play music',
+    spotifyAutoPlayOn: 'Auto-play ON',
+    spotifyAutoPlayOff: 'Auto-play OFF',
+    spotifyOpenApp: 'Open Spotify',
+
+    // Pagination (P1 fix)
+    paginationPrevious: 'Previous',
+    paginationNext: 'Next',
+    paginationMorePages: 'More pages',
+
+    // Dismiss notification
+    dismissNotification: 'Dismiss notification',
+
+    // Day names short
+    dayShortSun: 'S',
+    dayShortMon: 'M',
+    dayShortTue: 'T',
+    dayShortWed: 'W',
+    dayShortThu: 'T',
+    dayShortFri: 'F',
+    dayShortSat: 'S',
+
+    // Month names short
+    monthShortJan: 'Jan',
+    monthShortFeb: 'Feb',
+    monthShortMar: 'Mar',
+    monthShortApr: 'Apr',
+    monthShortMay: 'May',
+    monthShortJun: 'Jun',
+    monthShortJul: 'Jul',
+    monthShortAug: 'Aug',
+    monthShortSep: 'Sep',
+    monthShortOct: 'Oct',
+    monthShortNov: 'Nov',
+    monthShortDec: 'Dec',
+
     // Phase 13: Visual Worlds
     hallOfFame: 'Hall of Fame',
     tapToFlip: 'Tap to flip',
@@ -6098,6 +6215,45 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     updateCheckFailedToast: 'Не вдалося перевірити оновлення',
     allActivitiesComplete: 'Ви виконали всі активності на сьогодні',
     letsStart: 'Почнімо!',
+
+    // Spotify Integration (P0 fix)
+    spotifyConnect: 'Підключити Spotify',
+    spotifyDisconnect: 'Відключити Spotify',
+    spotifyNoTrack: 'Відкрийте Spotify і увімкніть музику',
+    spotifyAutoPlayOn: 'Авто-плей УВІМК',
+    spotifyAutoPlayOff: 'Авто-плей ВИМК',
+    spotifyOpenApp: 'Відкрити Spotify',
+
+    // Pagination (P1 fix)
+    paginationPrevious: 'Назад',
+    paginationNext: 'Вперед',
+    paginationMorePages: 'Більше сторінок',
+
+    // Dismiss notification
+    dismissNotification: 'Сховати сповіщення',
+
+    // Day names short
+    dayShortSun: 'Нд',
+    dayShortMon: 'Пн',
+    dayShortTue: 'Вт',
+    dayShortWed: 'Ср',
+    dayShortThu: 'Чт',
+    dayShortFri: 'Пт',
+    dayShortSat: 'Сб',
+
+    // Month names short
+    monthShortJan: 'Січ',
+    monthShortFeb: 'Лют',
+    monthShortMar: 'Бер',
+    monthShortApr: 'Кві',
+    monthShortMay: 'Тра',
+    monthShortJun: 'Чер',
+    monthShortJul: 'Лип',
+    monthShortAug: 'Сер',
+    monthShortSep: 'Вер',
+    monthShortOct: 'Жов',
+    monthShortNov: 'Лис',
+    monthShortDec: 'Гру',
 
     // Phase 13: Visual Worlds
     hallOfFame: 'Зал Слави',
@@ -7610,6 +7766,45 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     allActivitiesComplete: 'Has completado todas las actividades de hoy',
     letsStart: '¡Empecemos!',
 
+    // Spotify Integration (P0 fix)
+    spotifyConnect: 'Conectar Spotify',
+    spotifyDisconnect: 'Desconectar Spotify',
+    spotifyNoTrack: 'Abre Spotify y reproduce música',
+    spotifyAutoPlayOn: 'Auto-reproducción ACTIVADA',
+    spotifyAutoPlayOff: 'Auto-reproducción DESACTIVADA',
+    spotifyOpenApp: 'Abrir Spotify',
+
+    // Pagination (P1 fix)
+    paginationPrevious: 'Anterior',
+    paginationNext: 'Siguiente',
+    paginationMorePages: 'Más páginas',
+
+    // Dismiss notification
+    dismissNotification: 'Descartar notificación',
+
+    // Day names short
+    dayShortSun: 'D',
+    dayShortMon: 'L',
+    dayShortTue: 'M',
+    dayShortWed: 'X',
+    dayShortThu: 'J',
+    dayShortFri: 'V',
+    dayShortSat: 'S',
+
+    // Month names short
+    monthShortJan: 'Ene',
+    monthShortFeb: 'Feb',
+    monthShortMar: 'Mar',
+    monthShortApr: 'Abr',
+    monthShortMay: 'May',
+    monthShortJun: 'Jun',
+    monthShortJul: 'Jul',
+    monthShortAug: 'Ago',
+    monthShortSep: 'Sep',
+    monthShortOct: 'Oct',
+    monthShortNov: 'Nov',
+    monthShortDec: 'Dic',
+
     // Phase 13: Visual Worlds
     hallOfFame: 'Salón de la Fama',
     tapToFlip: 'Toca para voltear',
@@ -9120,6 +9315,45 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     updateCheckFailedToast: 'Updates konnten nicht überprüft werden',
     allActivitiesComplete: 'Sie haben alle Aktivitäten für heute abgeschlossen',
     letsStart: 'Los geht\'s!',
+
+    // Spotify Integration (P0 fix)
+    spotifyConnect: 'Spotify verbinden',
+    spotifyDisconnect: 'Spotify trennen',
+    spotifyNoTrack: 'Öffne Spotify und spiele Musik',
+    spotifyAutoPlayOn: 'Auto-Play AN',
+    spotifyAutoPlayOff: 'Auto-Play AUS',
+    spotifyOpenApp: 'Spotify öffnen',
+
+    // Pagination (P1 fix)
+    paginationPrevious: 'Zurück',
+    paginationNext: 'Weiter',
+    paginationMorePages: 'Mehr Seiten',
+
+    // Dismiss notification
+    dismissNotification: 'Benachrichtigung schließen',
+
+    // Day names short
+    dayShortSun: 'So',
+    dayShortMon: 'Mo',
+    dayShortTue: 'Di',
+    dayShortWed: 'Mi',
+    dayShortThu: 'Do',
+    dayShortFri: 'Fr',
+    dayShortSat: 'Sa',
+
+    // Month names short
+    monthShortJan: 'Jan',
+    monthShortFeb: 'Feb',
+    monthShortMar: 'Mär',
+    monthShortApr: 'Apr',
+    monthShortMay: 'Mai',
+    monthShortJun: 'Jun',
+    monthShortJul: 'Jul',
+    monthShortAug: 'Aug',
+    monthShortSep: 'Sep',
+    monthShortOct: 'Okt',
+    monthShortNov: 'Nov',
+    monthShortDec: 'Dez',
 
     // Phase 13: Visual Worlds
     hallOfFame: 'Ruhmeshalle',
@@ -10632,6 +10866,45 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     allActivitiesComplete: 'Vous avez terminé toutes les activités pour aujourd\'hui',
     letsStart: 'Commençons !',
 
+    // Spotify Integration (P0 fix)
+    spotifyConnect: 'Connecter Spotify',
+    spotifyDisconnect: 'Déconnecter Spotify',
+    spotifyNoTrack: 'Ouvrez Spotify et lancez de la musique',
+    spotifyAutoPlayOn: 'Lecture auto ACTIVÉE',
+    spotifyAutoPlayOff: 'Lecture auto DÉSACTIVÉE',
+    spotifyOpenApp: 'Ouvrir Spotify',
+
+    // Pagination (P1 fix)
+    paginationPrevious: 'Précédent',
+    paginationNext: 'Suivant',
+    paginationMorePages: 'Plus de pages',
+
+    // Dismiss notification
+    dismissNotification: 'Fermer la notification',
+
+    // Day names short
+    dayShortSun: 'D',
+    dayShortMon: 'L',
+    dayShortTue: 'M',
+    dayShortWed: 'M',
+    dayShortThu: 'J',
+    dayShortFri: 'V',
+    dayShortSat: 'S',
+
+    // Month names short
+    monthShortJan: 'Jan',
+    monthShortFeb: 'Fév',
+    monthShortMar: 'Mar',
+    monthShortApr: 'Avr',
+    monthShortMay: 'Mai',
+    monthShortJun: 'Juin',
+    monthShortJul: 'Juil',
+    monthShortAug: 'Aoû',
+    monthShortSep: 'Sep',
+    monthShortOct: 'Oct',
+    monthShortNov: 'Nov',
+    monthShortDec: 'Déc',
+
     // Phase 13: Visual Worlds
     hallOfFame: 'Temple de la Gloire',
     tapToFlip: 'Appuie pour retourner',
@@ -12142,6 +12415,45 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     allActivitiesComplete: '今日のすべての活動を完了しました',
     letsStart: '始めましょう！',
 
+    // Spotify Integration (P0 fix)
+    spotifyConnect: 'Spotifyを接続',
+    spotifyDisconnect: 'Spotifyを切断',
+    spotifyNoTrack: 'Spotifyを開いて音楽を再生してください',
+    spotifyAutoPlayOn: '自動再生 オン',
+    spotifyAutoPlayOff: '自動再生 オフ',
+    spotifyOpenApp: 'Spotifyを開く',
+
+    // Pagination (P1 fix)
+    paginationPrevious: '前へ',
+    paginationNext: '次へ',
+    paginationMorePages: 'さらにページ',
+
+    // Dismiss notification
+    dismissNotification: '通知を閉じる',
+
+    // Day names short
+    dayShortSun: '日',
+    dayShortMon: '月',
+    dayShortTue: '火',
+    dayShortWed: '水',
+    dayShortThu: '木',
+    dayShortFri: '金',
+    dayShortSat: '土',
+
+    // Month names short
+    monthShortJan: '1月',
+    monthShortFeb: '2月',
+    monthShortMar: '3月',
+    monthShortApr: '4月',
+    monthShortMay: '5月',
+    monthShortJun: '6月',
+    monthShortJul: '7月',
+    monthShortAug: '8月',
+    monthShortSep: '9月',
+    monthShortOct: '10月',
+    monthShortNov: '11月',
+    monthShortDec: '12月',
+
     // Phase 13: Visual Worlds
     hallOfFame: '栄誉の殿堂',
     tapToFlip: 'タップして裏返す',
@@ -13614,6 +13926,45 @@ const arabicOverrides: Partial<Translations> = {
   updateCheckFailedToast: 'تعذر التحقق من التحديثات',
   allActivitiesComplete: 'أكملت جميع الأنشطة لهذا اليوم',
   letsStart: 'لنبدأ!',
+
+  // Spotify Integration (P0 fix)
+  spotifyConnect: 'ربط Spotify',
+  spotifyDisconnect: 'فصل Spotify',
+  spotifyNoTrack: 'افتح Spotify وشغّل الموسيقى',
+  spotifyAutoPlayOn: 'التشغيل التلقائي مفعّل',
+  spotifyAutoPlayOff: 'التشغيل التلقائي معطّل',
+  spotifyOpenApp: 'فتح Spotify',
+
+  // Pagination (P1 fix)
+  paginationPrevious: 'السابق',
+  paginationNext: 'التالي',
+  paginationMorePages: 'المزيد من الصفحات',
+
+  // Dismiss notification
+  dismissNotification: 'إغلاق الإشعار',
+
+  // Day names short
+  dayShortSun: 'أح',
+  dayShortMon: 'إث',
+  dayShortTue: 'ثل',
+  dayShortWed: 'أر',
+  dayShortThu: 'خم',
+  dayShortFri: 'جم',
+  dayShortSat: 'سب',
+
+  // Month names short
+  monthShortJan: 'يناير',
+  monthShortFeb: 'فبراير',
+  monthShortMar: 'مارس',
+  monthShortApr: 'أبريل',
+  monthShortMay: 'مايو',
+  monthShortJun: 'يونيو',
+  monthShortJul: 'يوليو',
+  monthShortAug: 'أغسطس',
+  monthShortSep: 'سبتمبر',
+  monthShortOct: 'أكتوبر',
+  monthShortNov: 'نوفمبر',
+  monthShortDec: 'ديسمبر',
 
   // Account
   account: 'الحساب',

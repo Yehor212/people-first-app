@@ -131,7 +131,7 @@ export function FeedbackButton({
               <button
                 onClick={handleClose}
                 className="p-2 rounded-lg hover:bg-muted transition-colors"
-                aria-label="Close"
+                aria-label={t.close}
               >
                 <X className="w-5 h-5" />
               </button>

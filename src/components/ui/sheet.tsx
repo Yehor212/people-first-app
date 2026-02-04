@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const Sheet = SheetPrimitive.Root;
 
@@ -51,6 +52,7 @@ interface SheetContentProps
 
 const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Content>, SheetContentProps>(
   ({ side = "right", className, children, ...props }, ref) => {
+    const { t } = useLanguage();
     return (
       <SheetPortal>
         <SheetOverlay />
@@ -72,7 +74,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
         >
           {/* Close button - absolute positioned, doesn't affect flex layout */}
           <SheetPrimitive.Close
-            aria-label="Close"
+            aria-label={t.close}
             className={cn(
               "absolute right-4 top-4 rounded-xl p-2 z-50 transition-all",
               "bg-slate-200/80 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/10",
@@ -82,7 +84,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
             )}
           >
             <X className="h-4 w-4" />
-            <span className="sr-only">Close</span>
+            <span className="sr-only">{t.close}</span>
           </SheetPrimitive.Close>
 
           {/* Children rendered directly - no wrapper to interfere with flex layout */}

@@ -111,7 +111,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
             <button
               onClick={handleDismiss}
               className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
-              aria-label="Dismiss"
+              aria-label={t.dismiss}
             >
               <X className="w-5 h-5" />
             </button>

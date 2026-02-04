@@ -44,7 +44,7 @@ function EmotionParticles() {
 // Support banner for difficult emotions
 function SupportBanner() {
   const { currentEmotion, getSupportMessage } = useEmotionTheme();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -96,7 +96,7 @@ function SupportBanner() {
         <button
           onClick={() => setDismissed(true)}
           className="text-muted-foreground hover:text-foreground transition-colors p-1"
-          aria-label="Dismiss"
+          aria-label={t.dismiss}
         >
           <span className="text-lg">&times;</span>
         </button>

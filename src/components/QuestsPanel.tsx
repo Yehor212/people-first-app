@@ -53,7 +53,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     pushQuestsToCloud(data).catch(err => {
       logger.error('Failed to push quests to cloud:', err);
-      toast.error('Sync failed. Changes saved locally.');
+      toast.error(t.syncFailedLocal);
     });
   }, [dailyQuest, weeklyQuest, bonusQuest, isLoaded]);
 

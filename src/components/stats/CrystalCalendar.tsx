@@ -275,7 +275,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={goToPrevMonth}
-          aria-label="Previous month"
+          aria-label={t.previousMonth}
         >
           <ChevronLeft className="w-5 h-5" />
         </motion.button>
@@ -295,7 +295,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={goToNextMonth}
-          aria-label="Next month"
+          aria-label={t.nextMonth}
         >
           <ChevronRight className="w-5 h-5" />
         </motion.button>

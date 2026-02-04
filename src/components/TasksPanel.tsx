@@ -76,7 +76,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
       await pushTasksToCloud(tasks);
     }).catch(err => {
       logger.error('[TasksPanel] Cloud sync failed:', err);
-      toast.error('Sync failed. Changes saved locally.');
+      toast.error(t.syncFailedLocal);
     });
   }, [tasks, isLoaded]);
 

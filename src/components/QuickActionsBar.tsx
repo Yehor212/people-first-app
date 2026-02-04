@@ -111,7 +111,7 @@ export function QuickActionsBar({
             </h3>
             <button
               onClick={() => setIsExpanded(false)}
-              aria-label="Close"
+              aria-label={t.close}
               className="p-2.5 hover:bg-muted rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             >
               <X className="w-5 h-5" />
@@ -223,7 +223,7 @@ export function QuickActionsBar({
               {onDismissNotification && (
                 <button
                   onClick={() => onDismissNotification(notification.id)}
-                  aria-label="Dismiss notification"
+                  aria-label={t.dismissNotification}
                   className="p-2.5 hover:bg-muted rounded-xl transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                 >
                   <X className="w-5 h-5" />
