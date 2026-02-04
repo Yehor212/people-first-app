@@ -121,6 +121,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const intervalTickRef = useRef<number>(0);
+  // P1 Fix: Track mounted state to prevent state updates after unmount
+  const isMountedRef = useRef(true);
   // P0 Fix: Flag to prevent interval saves while debounced save is pending
   const savePendingRef = useRef(false);
   const endTimeRef = useRef<number | null>(savedState?.endTime || null);
@@ -128,6 +130,14 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
   const focusAccumulatedRef = useRef(savedState?.focusAccumulated || 0);
   const lastMinuteRef = useRef<number>(0);
   
+  // P1 Fix: Manage mounted state for cleanup
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Persist timer state
   const saveTimerState = () => {
     const state: TimerState = {
@@ -234,7 +244,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     }
 
     intervalRef.current = setInterval(() => {
-      if (!endTimeRef.current) return;
+      // P1 Fix: Skip if component unmounted
+      if (!isMountedRef.current || !endTimeRef.current) return;
       const now = Date.now();
       const remaining = Math.max(0, Math.ceil((endTimeRef.current - now) / 1000));
       setTimeLeft(remaining);

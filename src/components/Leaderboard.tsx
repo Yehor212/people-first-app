@@ -5,11 +5,16 @@
  * Displays weekly/monthly/streak leaderboards with opt-in system.
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
+
+// P1 Fix: Constants for timeout and retry
+const FETCH_TIMEOUT = 10000; // 10 seconds
+const MAX_RETRIES = 3;
+const RETRY_DELAYS = [1000, 3000, 5000]; // Exponential backoff
 import {
   getLeaderboard,
   getUserLeaderboardEntry,
@@ -65,6 +70,17 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
   const [error, setError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [isOptedIn, setIsOptedIn] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // P1 Fix: Track mounted state to prevent state updates after unmount
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Tab config
   const tabs: { type: LeaderboardType; label: string; icon: React.ReactNode }[] = [
@@ -73,16 +89,36 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
     { type: 'streak', label: t.streak || 'Streak', icon: <Flame className="w-4 h-4" /> },
   ];
 
-  // Load leaderboard data
-  const loadData = useCallback(async () => {
+  // P1 Fix: Helper to add timeout to a promise
+  const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+    return Promise.race([
+      promise,
+      new Promise<T>((_, reject) =>
+        setTimeout(() => reject(new Error('Request timeout')), ms)
+      ),
+    ]);
+  };
+
+  // Load leaderboard data with timeout and retry
+  const loadData = useCallback(async (retry = 0) => {
+    if (!isMountedRef.current) return;
+
     setIsLoading(true);
     setError(null);
+    setRetryCount(retry);
+
     try {
-      const [leaderboardData, userData, ranksData] = await Promise.all([
-        getLeaderboard(activeTab, 10),
-        getUserLeaderboardEntry(),
-        getUserRanks(),
-      ]);
+      // P1 Fix: Add timeout to prevent indefinite loading
+      const [leaderboardData, userData, ranksData] = await withTimeout(
+        Promise.all([
+          getLeaderboard(activeTab, 10),
+          getUserLeaderboardEntry(),
+          getUserRanks(),
+        ]),
+        FETCH_TIMEOUT
+      );
+
+      if (!isMountedRef.current) return;
 
       setEntries(leaderboardData);
       setUserEntry(userData);
@@ -93,17 +129,39 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
         setIsOptedIn(userData.optIn);
       }
     } catch (err) {
-      logger.error('Failed to load leaderboard:', err);
-      setError(t.leaderboardLoadError || 'Failed to load leaderboard');
+      if (!isMountedRef.current) return;
+
+      const isTimeout = err instanceof Error && err.message === 'Request timeout';
+      logger.error('Failed to load leaderboard:', isTimeout ? 'Timeout' : err);
+
+      // P1 Fix: Retry with exponential backoff
+      if (retry < MAX_RETRIES) {
+        const delay = RETRY_DELAYS[retry] || 5000;
+        logger.log(`[Leaderboard] Retrying in ${delay}ms (attempt ${retry + 1}/${MAX_RETRIES})`);
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            loadData(retry + 1);
+          }
+        }, delay);
+        return;
+      }
+
+      setError(
+        isTimeout
+          ? (t.leaderboardTimeout || 'Loading took too long. Please try again.')
+          : (t.leaderboardLoadError || 'Failed to load leaderboard')
+      );
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
-  }, [activeTab, t.leaderboardLoadError]);
+  }, [activeTab, t.leaderboardLoadError, t.leaderboardTimeout]);
 
   // Load data when opened or tab changes
   useEffect(() => {
     if (isOpen) {
-      loadData();
+      loadData(0); // Start fresh with retry count 0
     }
   }, [isOpen, loadData]);
 
@@ -115,7 +173,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
         setIsOptedIn(true);
         toast.success(t.leaderboardOptedIn || 'You joined the leaderboard!');
         announce('You joined the leaderboard');
-        loadData();
+        loadData(0);
       }
     } else {
       const success = await optOutOfLeaderboard();
@@ -134,7 +192,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
     const success = await updateDisplayName(displayName);
     if (success) {
       toast.success(t.nameUpdated || 'Display name updated!');
-      loadData();
+      loadData(0);
     }
   };
 
@@ -303,7 +361,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
               <Trophy className="w-12 h-12 mx-auto mb-3 text-destructive/50" />
               <p className="text-destructive mb-3">{error}</p>
               <button
-                onClick={loadData}
+                onClick={() => loadData(0)}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
               >
                 {t.retry || 'Retry'}
@@ -423,7 +481,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
 
         {/* Refresh button - Premium */}
         <motion.button
-          onClick={loadData}
+          onClick={() => loadData(0)}
           disabled={isLoading}
           className="absolute top-4 right-12 p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
           aria-label={t.refresh || 'Refresh'}

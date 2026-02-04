@@ -6,6 +6,46 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 /**
+ * P1 Security Fix: Validate Supabase environment variables
+ * Returns validation status for use in UI notifications
+ */
+export interface SupabaseConfigStatus {
+  isConfigured: boolean;
+  missingUrl: boolean;
+  missingKey: boolean;
+}
+
+export function getSupabaseConfigStatus(): SupabaseConfigStatus {
+  const missingUrl = !SUPABASE_URL || typeof SUPABASE_URL !== 'string' || SUPABASE_URL.trim() === '';
+  const missingKey = !SUPABASE_ANON_KEY || typeof SUPABASE_ANON_KEY !== 'string' || SUPABASE_ANON_KEY.trim() === '';
+
+  return {
+    isConfigured: !missingUrl && !missingKey,
+    missingUrl,
+    missingKey,
+  };
+}
+
+// P1 Fix: Emit event if Supabase is not configured so UI can show notification
+const configStatus = getSupabaseConfigStatus();
+if (!configStatus.isConfigured && typeof window !== 'undefined') {
+  // Log warning in development
+  if (import.meta.env.DEV) {
+    console.warn(
+      '[Supabase] Cloud sync disabled - environment variables not configured.',
+      configStatus.missingUrl ? 'Missing VITE_SUPABASE_URL.' : '',
+      configStatus.missingKey ? 'Missing VITE_SUPABASE_ANON_KEY.' : ''
+    );
+  }
+  // Emit event for UI to show notification (async to not block initialization)
+  setTimeout(() => {
+    window.dispatchEvent(new CustomEvent('zenflow:supabase-not-configured', {
+      detail: configStatus
+    }));
+  }, 0);
+}
+
+/**
  * Get storage adapter for auth persistence
  * Uses localStorage which works well in both web and Capacitor
  */

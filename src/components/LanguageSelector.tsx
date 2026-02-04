@@ -90,16 +90,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
         </button>
 
         <p className="text-center text-sm text-muted-foreground mt-4">
-          {language === 'en' ? '🌐 Auto-detected: English' :
-           language === 'ru' ? '🌐 Автоопределено: Русский' :
-           language === 'uk' ? '🌐 Автовизначено: Українська' :
-           language === 'es' ? '🌐 Auto-detectado: Español' :
-           language === 'de' ? '🌐 Automatisch erkannt: Deutsch' :
-           language === 'fr' ? '🌐 Détection automatique: Français' :
-           language === 'ja' ? '🌐 自動検出: 日本語' :
-           language === 'ar' ? '🌐 تم الكشف تلقائياً: العربية' :
-           language === 'he' ? '🌐 זוהה אוטומטית: עברית' :
-           '🌐 Auto-detected language'}
+          🌐 {t.autoDetectedLanguage || 'Auto-detected'}: {languageNames[language]}
         </p>
       </div>
     </div>

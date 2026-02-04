@@ -140,7 +140,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({ stats, unlock
         <TabsContent value="unlocked" className="mt-4 overflow-visible">
           {unlockedList.length === 0 ? (
             <Card className="p-8 text-center">
-              <Trophy className="w-12 h-12 mx-auto mb-3 text-muted-foreground" />
+              <Trophy className="w-12 h-12 mx-auto mb-3 text-muted-foreground" aria-label={t.trophyIcon || 'Trophy'} role="img" />
               <p className="text-muted-foreground">{t.noAchievementsYet || 'No achievements yet'}</p>
               <p className="text-sm text-muted-foreground mt-1">{t.startUsingZenFlow || 'Start using ZenFlow!'}</p>
             </Card>

@@ -206,6 +206,30 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
   }
 };
 
+// P1 Fix: Track consecutive sync failures for UI notification
+let consecutiveSyncFailures = 0;
+const MAX_FAILURES_BEFORE_NOTIFY = 3; // Notify user after 3 consecutive failures
+
+// P1 Fix: Emit sync failure event for UI notification
+const emitSyncFailureEvent = (error: unknown, failureCount: number) => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('zenflow:sync-failure', {
+      detail: {
+        error: error instanceof Error ? error.message : 'Sync failed',
+        consecutiveFailures: failureCount,
+        shouldNotify: failureCount >= MAX_FAILURES_BEFORE_NOTIFY,
+      }
+    }));
+  }
+};
+
+// P1 Fix: Emit sync success event to clear UI notification
+const emitSyncSuccessEvent = () => {
+  if (typeof window !== 'undefined' && consecutiveSyncFailures > 0) {
+    window.dispatchEvent(new CustomEvent('zenflow:sync-success'));
+  }
+};
+
 // Silent sync (no errors thrown, just logs)
 export const silentSync = async () => {
   // Use orchestrator for queue-based sync
@@ -213,8 +237,16 @@ export const silentSync = async () => {
     try {
       await syncWithCloud('merge');
       logger.sync('Auto-sync completed');
+      // P1 Fix: Reset failure counter and emit success on successful sync
+      if (consecutiveSyncFailures > 0) {
+        consecutiveSyncFailures = 0;
+        emitSyncSuccessEvent();
+      }
     } catch (error) {
       logger.warn('[Sync] Auto-sync failed:', error);
+      // P1 Fix: Track failures and emit event for UI notification
+      consecutiveSyncFailures++;
+      emitSyncFailureEvent(error, consecutiveSyncFailures);
       throw error; // Re-throw for orchestrator retry logic
     }
   }, { priority: 5, maxRetries: 3 });

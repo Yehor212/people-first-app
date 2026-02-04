@@ -100,9 +100,56 @@ export const safeLocalStorageSet = (key: string, value: unknown): boolean => {
   }
 };
 
+/**
+ * P1 Security Fix: Safely get and parse a value from sessionStorage.
+ * sessionStorage is more secure for tokens as it's cleared when the tab closes.
+ *
+ * @param key - The sessionStorage key
+ * @param fallback - The fallback value
+ * @returns Parsed value or fallback
+ */
+export const safeSessionStorageGet = <T>(key: string, fallback: T): T => {
+  try {
+    const stored = sessionStorage.getItem(key);
+    return safeJsonParse(stored, fallback);
+  } catch (error) {
+    // sessionStorage itself might throw (e.g., in private browsing mode)
+    logger.warn('[SafeJSON] sessionStorage.getItem failed:', {
+      key,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    return fallback;
+  }
+};
+
+/**
+ * P1 Security Fix: Safely stringify and set a value in sessionStorage.
+ *
+ * @param key - The sessionStorage key
+ * @param value - The value to store
+ * @returns true if successful, false otherwise
+ */
+export const safeSessionStorageSet = (key: string, value: unknown): boolean => {
+  try {
+    const json = safeJsonStringify(value);
+    if (json === null) return false;
+    sessionStorage.setItem(key, json);
+    return true;
+  } catch (error) {
+    // sessionStorage might throw (quota exceeded, private mode, etc.)
+    logger.warn('[SafeJSON] sessionStorage.setItem failed:', {
+      key,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+    return false;
+  }
+};
+
 export default {
   parse: safeJsonParse,
   stringify: safeJsonStringify,
   localGet: safeLocalStorageGet,
   localSet: safeLocalStorageSet,
+  sessionGet: safeSessionStorageGet,
+  sessionSet: safeSessionStorageSet,
 };

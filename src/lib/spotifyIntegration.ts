@@ -11,7 +11,7 @@
  */
 
 import { logger } from './logger';
-import { safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
+import { safeSessionStorageGet, safeSessionStorageSet } from './safeJson';
 import { rateLimiter, RateLimitError } from './rateLimiter';
 
 // ============================================
@@ -75,8 +75,8 @@ function getSecureRedirectUri(): string {
     return `${currentOrigin}/spotify-callback`;
   }
 
-  // Fallback to production URL if origin is not whitelisted (prevents hijacking)
-  logger.warn('[Spotify] Origin not in whitelist, using production redirect:', currentOrigin);
+  // P1 Security Fix: Fallback to production URL without logging the invalid origin
+  // (logging could reveal the whitelist to attackers)
   return 'https://yehor212.github.io/people-first-app/spotify-callback';
 }
 
@@ -148,23 +148,26 @@ export function isSpotifyConnected(): boolean {
 
 /**
  * Get stored tokens
+ * P1 Security Fix: Use sessionStorage instead of localStorage for tokens
  */
 function getStoredTokens(): SpotifyTokens | null {
-  return safeLocalStorageGet<SpotifyTokens | null>(STORAGE_KEY, null);
+  return safeSessionStorageGet<SpotifyTokens | null>(STORAGE_KEY, null);
 }
 
 /**
  * Store tokens
+ * P1 Security Fix: Use sessionStorage instead of localStorage for tokens
  */
 function storeTokens(tokens: SpotifyTokens): void {
-  safeLocalStorageSet(STORAGE_KEY, tokens);
+  safeSessionStorageSet(STORAGE_KEY, tokens);
 }
 
 /**
  * Clear tokens (disconnect)
+ * P1 Security Fix: Use sessionStorage for token storage
  */
 export function disconnectSpotify(): void {
-  localStorage.removeItem(STORAGE_KEY);
+  sessionStorage.removeItem(STORAGE_KEY);
   sessionStorage.removeItem('spotify_pkce_verifier');
   logger.log('[Spotify] Disconnected');
 }

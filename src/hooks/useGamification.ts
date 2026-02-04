@@ -40,8 +40,13 @@ export function useGamification() {
   const [focusSessions, setFocusSessions] = useState<FocusSession[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeEntry[]>([]);
 
+  // P1 Fix: Track mounted state to prevent setState after unmount
+  const isMountedRef = useRef(true);
+
   // Load all data for stats
   useEffect(() => {
+    isMountedRef.current = true;
+
     const loadData = async () => {
       const [moodsData, habitsData, focusData, gratitudeData] = await Promise.all([
         db.moods.toArray(),
@@ -49,6 +54,9 @@ export function useGamification() {
         db.focusSessions.toArray(),
         db.gratitudeEntries.toArray(),
       ]);
+
+      // P1 Fix: Check if component is still mounted before updating state
+      if (!isMountedRef.current) return;
 
       setMoods(moodsData);
       setHabits(habitsData);
@@ -60,7 +68,10 @@ export function useGamification() {
 
     // Refresh periodically
     const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
+    return () => {
+      isMountedRef.current = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const stats: UserStats = {

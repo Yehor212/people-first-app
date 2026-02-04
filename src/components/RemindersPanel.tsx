@@ -24,6 +24,7 @@ export function RemindersPanel({ reminders, onUpdateReminders, habits }: Reminde
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         aria-expanded={isExpanded}
+        aria-label={t.remindersToggle || 'Toggle reminders panel'}
         className="w-full flex items-center justify-between"
       >
         <div className="flex items-center gap-3">

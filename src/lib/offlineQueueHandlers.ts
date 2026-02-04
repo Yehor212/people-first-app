@@ -12,26 +12,39 @@ import { syncFocusSession } from '@/storage/realtimeSync';
 import { syncGratitude, deleteGratitudeFromCloud } from '@/storage/realtimeSync';
 import { logger } from './logger';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
+import {
+  moodEntrySchema,
+  habitSchema,
+  focusSessionSchema,
+  gratitudeEntrySchema,
+  safeValidate,
+} from './validation';
 
-// P1 Fix: Basic payload validation to prevent corrupted data from crashing sync
+// P1 Fix: Use Zod schemas for robust payload validation
+// This validates field types, value constraints, and prevents corrupted data from syncing
+
 function isValidMoodEntry(payload: unknown): payload is MoodEntry {
-  const p = payload as Record<string, unknown>;
-  return p && typeof p.id === 'string' && typeof p.mood === 'string' && typeof p.date === 'string';
+  // Use Zod schema for comprehensive validation
+  const validated = safeValidate(moodEntrySchema, payload);
+  return validated !== null;
 }
 
 function isValidHabit(payload: unknown): payload is Habit {
-  const p = payload as Record<string, unknown>;
-  return p && typeof p.id === 'string' && typeof p.name === 'string';
+  // Use Zod schema for comprehensive validation
+  const validated = safeValidate(habitSchema, payload);
+  return validated !== null;
 }
 
 function isValidFocusSession(payload: unknown): payload is FocusSession {
-  const p = payload as Record<string, unknown>;
-  return p && typeof p.id === 'string' && typeof p.duration === 'number' && typeof p.date === 'string';
+  // Use Zod schema for comprehensive validation
+  const validated = safeValidate(focusSessionSchema, payload);
+  return validated !== null;
 }
 
 function isValidGratitudeEntry(payload: unknown): payload is GratitudeEntry {
-  const p = payload as Record<string, unknown>;
-  return p && typeof p.id === 'string' && typeof p.text === 'string' && typeof p.date === 'string';
+  // Use Zod schema for comprehensive validation
+  const validated = safeValidate(gratitudeEntrySchema, payload);
+  return validated !== null;
 }
 
 /**

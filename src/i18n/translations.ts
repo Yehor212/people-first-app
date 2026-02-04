@@ -927,6 +927,11 @@ export interface Translations {
   welcomeTitle: string;
   welcomeSubtitle: string;
   continue: string;
+  autoDetectedLanguage: string;
+
+  // 404 Page
+  notFoundMessage: string;
+  returnToHome: string;
   
   // Misc
   version: string;
@@ -2361,6 +2366,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     welcomeTitle: 'Добро пожаловать в ZenFlow',
     welcomeSubtitle: 'Ваш путь к осознанной жизни начинается здесь',
     continue: 'Продолжить',
+    autoDetectedLanguage: 'Автоопределение',
+    notFoundMessage: 'Ой! Страница не найдена',
+    returnToHome: 'Вернуться на главную',
     version: 'Версия',
     tagline: 'Ваш путь к осознанной жизни 🌿',
     sun: 'Вс', mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб',
@@ -3804,6 +3812,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     welcomeTitle: 'Welcome to ZenFlow',
     welcomeSubtitle: 'Your journey to mindful living starts here',
     continue: 'Continue',
+    autoDetectedLanguage: 'Auto-detected',
+    notFoundMessage: 'Oops! Page not found',
+    returnToHome: 'Return to Home',
     version: 'Version',
     tagline: 'Your path to mindful living 🌿',
     sun: 'Sun', mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat',
@@ -5247,6 +5258,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     welcomeTitle: 'Ласкаво просимо до ZenFlow',
     welcomeSubtitle: 'Ваш шлях до усвідомленого життя починається тут',
     continue: 'Продовжити',
+    autoDetectedLanguage: 'Автовизначення',
+    notFoundMessage: 'Ой! Сторінку не знайдено',
+    returnToHome: 'Повернутися на головну',
     version: 'Версія',
     tagline: 'Ваш шлях до усвідомленого життя 🌿',
     sun: 'Нд', mon: 'Пн', tue: 'Вт', wed: 'Ср', thu: 'Чт', fri: 'Пт', sat: 'Сб',
@@ -6691,6 +6705,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     welcomeTitle: 'Bienvenido a ZenFlow',
     welcomeSubtitle: 'Tu viaje hacia una vida consciente comienza aquí',
     continue: 'Continuar',
+    autoDetectedLanguage: 'Detectado automáticamente',
+    notFoundMessage: '¡Ups! Página no encontrada',
+    returnToHome: 'Volver al inicio',
     version: 'Versión',
     tagline: 'Tu camino hacia una vida consciente 🌿',
     sun: 'Dom', mon: 'Lun', tue: 'Mar', wed: 'Mié', thu: 'Jue', fri: 'Vie', sat: 'Sáb',
@@ -8135,6 +8152,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     welcomeTitle: 'Willkommen bei ZenFlow',
     welcomeSubtitle: 'Deine Reise zu einem achtsamen Leben beginnt hier',
     continue: 'Fortfahren',
+    autoDetectedLanguage: 'Automatisch erkannt',
+    notFoundMessage: 'Hoppla! Seite nicht gefunden',
+    returnToHome: 'Zur Startseite',
     version: 'Version',
     tagline: 'Dein Weg zu einem achtsamen Leben 🌿',
     sun: 'So', mon: 'Mo', tue: 'Di', wed: 'Mi', thu: 'Do', fri: 'Fr', sat: 'Sa',
@@ -9579,6 +9599,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     welcomeTitle: 'Bienvenue sur ZenFlow',
     welcomeSubtitle: 'Votre voyage vers une vie consciente commence ici',
     continue: 'Continuer',
+    autoDetectedLanguage: 'Détecté automatiquement',
+    notFoundMessage: 'Oups ! Page non trouvée',
+    returnToHome: 'Retour à l\'accueil',
     version: 'Version',
     tagline: 'Votre chemin vers une vie consciente 🌿',
     sun: 'Dim', mon: 'Lun', tue: 'Mar', wed: 'Mer', thu: 'Jeu', fri: 'Ven', sat: 'Sam',
@@ -11022,6 +11045,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     welcomeTitle: 'ZenFlowへようこそ',
     welcomeSubtitle: 'マインドフルな生活への旅はここから',
     continue: '続ける',
+    autoDetectedLanguage: '自動検出',
+    notFoundMessage: 'ページが見つかりません',
+    returnToHome: 'ホームに戻る',
     version: 'バージョン',
     tagline: 'マインドフルな生活への道 🌿',
     sun: '日', mon: '月', tue: '火', wed: '水', thu: '木', fri: '金', sat: '土',
@@ -12421,6 +12447,9 @@ const arabicOverrides: Partial<Translations> = {
   welcomeTitle: 'مرحباً بك في ZenFlow',
   welcomeSubtitle: 'رحلتك نحو الحياة الواعية تبدأ هنا',
   continue: 'متابعة',
+  autoDetectedLanguage: 'اكتشاف تلقائي',
+  notFoundMessage: 'عذراً! الصفحة غير موجودة',
+  returnToHome: 'العودة إلى الصفحة الرئيسية',
 
   // Misc
   version: 'الإصدار',
@@ -13677,6 +13706,9 @@ const hebrewOverrides: Partial<Translations> = {
   welcomeTitle: 'ברוכים הבאים ל-ZenFlow',
   welcomeSubtitle: 'המסע שלך לחיים מודעים מתחיל כאן',
   continue: 'המשך',
+  autoDetectedLanguage: 'זיהוי אוטומטי',
+  notFoundMessage: 'אופס! הדף לא נמצא',
+  returnToHome: 'חזרה לדף הבית',
   skip: 'דלג',
   getStarted: 'התחל עכשיו',
   next: 'הבא',
