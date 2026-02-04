@@ -5,6 +5,7 @@ import { getAuthRedirectUrl, isNativePlatform, AUTH_COMPLETE_EVENT } from '@/lib
 import { canStartAuthFlow, startAuthFlow, endAuthFlow } from '@/lib/authGuard';
 import { App } from '@capacitor/app';
 import { logger } from '@/lib/logger';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface GoogleAuthScreenProps {
   onComplete: (userData: { name: string; email: string }) => void;
@@ -12,6 +13,7 @@ interface GoogleAuthScreenProps {
 }
 
 export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
@@ -210,13 +212,13 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
 
   const handleGoogleSignIn = async () => {
     if (!supabase) {
-      setError('Supabase not configured. Please add your Supabase credentials.');
+      setError(t.authSupabaseNotConfigured);
       return;
     }
 
     // Guard against redirect loops
     if (!canStartAuthFlow()) {
-      setError('Too many sign-in attempts. Please wait a moment and try again.');
+      setError(t.authTooManyAttempts);
       logger.warn('[Auth] Auth flow blocked by guard');
       return;
     }
@@ -232,7 +234,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
       if (!hasCompletedRef.current) {
         logger.warn('[Auth] OAuth timeout after 60s');
         setLoading(false);
-        setError('Sign-in took too long. Please try again.');
+        setError(t.authSignInTooLong);
       }
     }, 60000);
 
@@ -288,7 +290,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
       }
     } catch (err) {
       logger.error('[Auth] Unexpected error during sign-in:', err);
-      setError('Unexpected error occurred. Please try again.');
+      setError(t.authUnexpectedError);
       setDebugInfo(`Exception: ${err instanceof Error ? err.message : String(err)}`);
       if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
       endAuthFlow();
@@ -343,10 +345,10 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
             </div>
           </div>
           <h1 id="auth-title" className="text-3xl font-bold zen-text-gradient mb-2">
-            Welcome to ZenFlow
+            {t.authWelcomeTitle}
           </h1>
           <p className="text-muted-foreground">
-            Sign in to sync your data across devices
+            {t.authWelcomeSubtitle}
           </p>
         </header>
 
@@ -357,14 +359,14 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
           aria-busy={loading}
         >
           <h2 id="auth-methods-title" className="text-lg font-semibold text-foreground text-center mb-4">
-            Continue with
+            {t.authContinueWith}
           </h2>
 
           {/* Google Sign In Button */}
           <button
             onClick={handleGoogleSignIn}
             disabled={loading || !supabase}
-            aria-label={loading ? 'Signing in with Google...' : 'Sign in with Google'}
+            aria-label={loading ? t.authSigningInGoogle : t.continueWithGoogle}
             aria-disabled={loading || !supabase}
             className="w-full py-4 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -390,7 +392,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                Continue with Google
+                {t.continueWithGoogle}
               </>
             )}
           </button>
@@ -399,7 +401,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
             <div role="alert" className="p-3 bg-destructive/10 rounded-xl flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-destructive mt-0.5 flex-shrink-0" aria-hidden="true" />
               <p className="text-sm text-destructive">
-                Authentication not configured. Configure Supabase to enable sign-in.
+                {t.authNotConfiguredMessage}
               </p>
             </div>
           )}
@@ -418,10 +420,10 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
                 )}
                 <button
                   onClick={exportDebugInfo}
-                  aria-label="Export authentication debug information"
+                  aria-label={t.authExportDebugInfo}
                   className="text-xs text-primary underline mt-2"
                 >
-                  Export debug info
+                  {t.authExportDebugInfo}
                 </button>
               </div>
             </div>
@@ -433,7 +435,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
               <div className="w-full border-t border-border"></div>
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">or</span>
+              <span className="bg-card px-2 text-muted-foreground">{t.authOr}</span>
             </div>
           </div>
 
@@ -441,28 +443,26 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
           <button
             onClick={handleEmailSignIn}
             disabled={loading}
-            aria-label="Continue with Email"
+            aria-label={t.authContinueEmail}
             className="w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-2xl hover:bg-muted transition-colors flex items-center justify-center gap-2"
           >
             <Mail className="w-5 h-5" aria-hidden="true" />
-            Continue with Email
+            {t.authContinueEmail}
           </button>
         </section>
 
         {/* Skip Button */}
         <button
           onClick={handleSkip}
-          aria-label="Skip sign-in and continue without an account"
+          aria-label={t.authSkipForNow}
           className="w-full py-3 bg-transparent text-muted-foreground font-medium rounded-2xl hover:bg-secondary/50 transition-colors"
         >
-          Skip for now
+          {t.authSkipForNow}
         </button>
 
         {/* Privacy Note */}
         <p className="text-center text-xs text-muted-foreground mt-4">
-          Your data is stored locally and optionally synced to the cloud.
-          <br />
-          We respect your privacy.
+          {t.authPrivacyNote}
         </p>
       </div>
     </div>

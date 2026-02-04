@@ -1536,6 +1536,46 @@ export interface Translations {
   aiCoachQuick2: string;
   aiCoachQuick3: string;
   clearHistory: string;
+
+  // Auth Screen (P0 fix)
+  authWelcomeTitle: string;
+  authWelcomeSubtitle: string;
+  authContinueWith: string;
+  authSigningInGoogle: string;
+  authNotConfiguredMessage: string;
+  authExportDebugInfo: string;
+  authOr: string;
+  authContinueEmail: string;
+  authSkipForNow: string;
+  authPrivacyNote: string;
+  authSignInTooLong: string;
+  authTooManyAttempts: string;
+  authSupabaseNotConfigured: string;
+  authUnexpectedError: string;
+
+  // Common UI actions (P0/P1 fix)
+  increase: string;
+  decrease: string;
+  previousMonth: string;
+  nextMonth: string;
+  goToPreviousPage: string;
+  goToNextPage: string;
+  pagination: string;
+  breadcrumb: string;
+  toggleSidebar: string;
+  sharePreview: string;
+  albumCover: string;
+  thanksFeedback: string;
+  feedbackFailed: string;
+  noVersionHistory: string;
+  syncFailedLocal: string;
+  imageGenerateFailed: string;
+  imageSavedDownloads: string;
+  shareFailedDownload: string;
+  clipboardCopyFailed: string;
+  updateCheckFailedToast: string;
+  allActivitiesComplete: string;
+  letsStart: string;
 }
 
 // Base translations (RTL languages added dynamically below)
@@ -2998,6 +3038,46 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     aiCoachQuick2: 'Помоги сосредоточиться',
     aiCoachQuick3: 'Нужна мотивация',
     clearHistory: 'Очистить историю',
+
+    // Auth Screen (P0 fix)
+    authWelcomeTitle: 'Добро пожаловать в ZenFlow',
+    authWelcomeSubtitle: 'Войдите, чтобы синхронизировать данные между устройствами',
+    authContinueWith: 'Продолжить с помощью',
+    authSigningInGoogle: 'Вход через Google...',
+    authNotConfiguredMessage: 'Аутентификация не настроена. Настройте Supabase для включения входа.',
+    authExportDebugInfo: 'Экспорт отладочной информации',
+    authOr: 'или',
+    authContinueEmail: 'Продолжить с Email',
+    authSkipForNow: 'Пропустить',
+    authPrivacyNote: 'Ваши данные хранятся локально и опционально синхронизируются в облако. Мы уважаем вашу приватность.',
+    authSignInTooLong: 'Вход занял слишком много времени. Попробуйте снова.',
+    authTooManyAttempts: 'Слишком много попыток входа. Подождите и попробуйте снова.',
+    authSupabaseNotConfigured: 'Supabase не настроен. Добавьте учётные данные Supabase.',
+    authUnexpectedError: 'Произошла непредвиденная ошибка. Попробуйте снова.',
+
+    // Common UI actions (P0/P1 fix)
+    increase: 'Увеличить',
+    decrease: 'Уменьшить',
+    previousMonth: 'Предыдущий месяц',
+    nextMonth: 'Следующий месяц',
+    goToPreviousPage: 'Предыдущая страница',
+    goToNextPage: 'Следующая страница',
+    pagination: 'Пагинация',
+    breadcrumb: 'Навигация',
+    toggleSidebar: 'Переключить боковую панель',
+    sharePreview: 'Превью для шаринга',
+    albumCover: 'Обложка альбома',
+    thanksFeedback: 'Спасибо за отзыв!',
+    feedbackFailed: 'Не удалось отправить отзыв',
+    noVersionHistory: 'История версий недоступна',
+    syncFailedLocal: 'Синхронизация не удалась. Изменения сохранены локально.',
+    imageGenerateFailed: 'Не удалось создать изображение. Попробуйте снова.',
+    imageSavedDownloads: 'Изображение сохранено в загрузки!',
+    shareFailedDownload: 'Не удалось поделиться. Попробуйте скачать.',
+    clipboardCopyFailed: 'Не удалось скопировать в буфер обмена.',
+    updateCheckFailedToast: 'Не удалось проверить обновления',
+    allActivitiesComplete: 'Вы выполнили все активности на сегодня',
+    letsStart: 'Начнём!',
 
     // Phase 13: Visual Worlds
     hallOfFame: 'Зал Славы',
@@ -4469,6 +4549,46 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     aiCoachQuick3: 'Need motivation',
     clearHistory: 'Clear history',
 
+    // Auth Screen (P0 fix)
+    authWelcomeTitle: 'Welcome to ZenFlow',
+    authWelcomeSubtitle: 'Sign in to sync your data across devices',
+    authContinueWith: 'Continue with',
+    authSigningInGoogle: 'Signing in with Google...',
+    authNotConfiguredMessage: 'Authentication not configured. Configure Supabase to enable sign-in.',
+    authExportDebugInfo: 'Export debug info',
+    authOr: 'or',
+    authContinueEmail: 'Continue with Email',
+    authSkipForNow: 'Skip for now',
+    authPrivacyNote: 'Your data is stored locally and optionally synced to the cloud. We respect your privacy.',
+    authSignInTooLong: 'Sign-in took too long. Please try again.',
+    authTooManyAttempts: 'Too many sign-in attempts. Please wait a moment and try again.',
+    authSupabaseNotConfigured: 'Supabase not configured. Please add your Supabase credentials.',
+    authUnexpectedError: 'Unexpected error occurred. Please try again.',
+
+    // Common UI actions (P0/P1 fix)
+    increase: 'Increase',
+    decrease: 'Decrease',
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
+    goToPreviousPage: 'Go to previous page',
+    goToNextPage: 'Go to next page',
+    pagination: 'Pagination',
+    breadcrumb: 'Breadcrumb',
+    toggleSidebar: 'Toggle Sidebar',
+    sharePreview: 'Share preview',
+    albumCover: 'Album cover',
+    thanksFeedback: 'Thanks for your feedback!',
+    feedbackFailed: 'Failed to send feedback',
+    noVersionHistory: 'No version history available',
+    syncFailedLocal: 'Sync failed. Changes saved locally.',
+    imageGenerateFailed: 'Failed to generate image. Try again.',
+    imageSavedDownloads: 'Image saved to downloads!',
+    shareFailedDownload: 'Could not share. Try downloading instead.',
+    clipboardCopyFailed: 'Could not copy to clipboard.',
+    updateCheckFailedToast: 'Could not check for updates',
+    allActivitiesComplete: "You've completed all activities for today",
+    letsStart: "Let's start!",
+
     // Phase 13: Visual Worlds
     hallOfFame: 'Hall of Fame',
     tapToFlip: 'Tap to flip',
@@ -5938,6 +6058,46 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     aiCoachQuick2: 'Допоможи зосередитись',
     aiCoachQuick3: 'Потрібна мотивація',
     clearHistory: 'Очистити історію',
+
+    // Auth Screen (P0 fix)
+    authWelcomeTitle: 'Ласкаво просимо до ZenFlow',
+    authWelcomeSubtitle: 'Увійдіть, щоб синхронізувати дані між пристроями',
+    authContinueWith: 'Продовжити через',
+    authSigningInGoogle: 'Вхід через Google...',
+    authNotConfiguredMessage: 'Автентифікацію не налаштовано. Налаштуйте Supabase для входу.',
+    authExportDebugInfo: 'Експорт налагоджувальної інформації',
+    authOr: 'або',
+    authContinueEmail: 'Продовжити з Email',
+    authSkipForNow: 'Пропустити',
+    authPrivacyNote: 'Ваші дані зберігаються локально та опціонально синхронізуються в хмару. Ми поважаємо вашу приватність.',
+    authSignInTooLong: 'Вхід тривав надто довго. Спробуйте знову.',
+    authTooManyAttempts: 'Забагато спроб входу. Зачекайте та спробуйте знову.',
+    authSupabaseNotConfigured: 'Supabase не налаштовано. Додайте облікові дані Supabase.',
+    authUnexpectedError: 'Сталася неочікувана помилка. Спробуйте знову.',
+
+    // Common UI actions (P0/P1 fix)
+    increase: 'Збільшити',
+    decrease: 'Зменшити',
+    previousMonth: 'Попередній місяць',
+    nextMonth: 'Наступний місяць',
+    goToPreviousPage: 'Попередня сторінка',
+    goToNextPage: 'Наступна сторінка',
+    pagination: 'Пагінація',
+    breadcrumb: 'Навігація',
+    toggleSidebar: 'Перемкнути бічну панель',
+    sharePreview: 'Попередній перегляд для шерингу',
+    albumCover: 'Обкладинка альбому',
+    thanksFeedback: 'Дякуємо за відгук!',
+    feedbackFailed: 'Не вдалося надіслати відгук',
+    noVersionHistory: 'Історія версій недоступна',
+    syncFailedLocal: 'Синхронізація не вдалася. Зміни збережено локально.',
+    imageGenerateFailed: 'Не вдалося створити зображення. Спробуйте знову.',
+    imageSavedDownloads: 'Зображення збережено в завантаження!',
+    shareFailedDownload: 'Не вдалося поділитися. Спробуйте завантажити.',
+    clipboardCopyFailed: 'Не вдалося скопіювати в буфер обміну.',
+    updateCheckFailedToast: 'Не вдалося перевірити оновлення',
+    allActivitiesComplete: 'Ви виконали всі активності на сьогодні',
+    letsStart: 'Почнімо!',
 
     // Phase 13: Visual Worlds
     hallOfFame: 'Зал Слави',
@@ -7410,6 +7570,46 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     aiCoachQuick3: 'Necesito motivación',
     clearHistory: 'Borrar historial',
 
+    // Auth Screen (P0 fix)
+    authWelcomeTitle: 'Bienvenido a ZenFlow',
+    authWelcomeSubtitle: 'Inicia sesión para sincronizar tus datos entre dispositivos',
+    authContinueWith: 'Continuar con',
+    authSigningInGoogle: 'Iniciando sesión con Google...',
+    authNotConfiguredMessage: 'Autenticación no configurada. Configura Supabase para habilitar el inicio de sesión.',
+    authExportDebugInfo: 'Exportar información de depuración',
+    authOr: 'o',
+    authContinueEmail: 'Continuar con Email',
+    authSkipForNow: 'Omitir por ahora',
+    authPrivacyNote: 'Tus datos se almacenan localmente y opcionalmente se sincronizan en la nube. Respetamos tu privacidad.',
+    authSignInTooLong: 'El inicio de sesión tardó demasiado. Por favor, inténtalo de nuevo.',
+    authTooManyAttempts: 'Demasiados intentos de inicio de sesión. Espera un momento e inténtalo de nuevo.',
+    authSupabaseNotConfigured: 'Supabase no configurado. Por favor, añade tus credenciales de Supabase.',
+    authUnexpectedError: 'Ocurrió un error inesperado. Por favor, inténtalo de nuevo.',
+
+    // Common UI actions (P0/P1 fix)
+    increase: 'Aumentar',
+    decrease: 'Disminuir',
+    previousMonth: 'Mes anterior',
+    nextMonth: 'Mes siguiente',
+    goToPreviousPage: 'Ir a la página anterior',
+    goToNextPage: 'Ir a la página siguiente',
+    pagination: 'Paginación',
+    breadcrumb: 'Migas de pan',
+    toggleSidebar: 'Alternar barra lateral',
+    sharePreview: 'Vista previa para compartir',
+    albumCover: 'Portada del álbum',
+    thanksFeedback: '¡Gracias por tu comentario!',
+    feedbackFailed: 'Error al enviar comentario',
+    noVersionHistory: 'Historial de versiones no disponible',
+    syncFailedLocal: 'Error de sincronización. Cambios guardados localmente.',
+    imageGenerateFailed: 'Error al generar imagen. Inténtalo de nuevo.',
+    imageSavedDownloads: '¡Imagen guardada en descargas!',
+    shareFailedDownload: 'No se pudo compartir. Intenta descargar.',
+    clipboardCopyFailed: 'No se pudo copiar al portapapeles.',
+    updateCheckFailedToast: 'No se pudieron verificar las actualizaciones',
+    allActivitiesComplete: 'Has completado todas las actividades de hoy',
+    letsStart: '¡Empecemos!',
+
     // Phase 13: Visual Worlds
     hallOfFame: 'Salón de la Fama',
     tapToFlip: 'Toca para voltear',
@@ -8880,6 +9080,46 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     aiCoachQuick2: 'Hilf mir, mich zu konzentrieren',
     aiCoachQuick3: 'Motivation gebraucht',
     clearHistory: 'Verlauf löschen',
+
+    // Auth Screen (P0 fix)
+    authWelcomeTitle: 'Willkommen bei ZenFlow',
+    authWelcomeSubtitle: 'Melden Sie sich an, um Ihre Daten geräteübergreifend zu synchronisieren',
+    authContinueWith: 'Weiter mit',
+    authSigningInGoogle: 'Anmeldung mit Google...',
+    authNotConfiguredMessage: 'Authentifizierung nicht konfiguriert. Konfigurieren Sie Supabase, um die Anmeldung zu aktivieren.',
+    authExportDebugInfo: 'Debug-Info exportieren',
+    authOr: 'oder',
+    authContinueEmail: 'Weiter mit E-Mail',
+    authSkipForNow: 'Vorerst überspringen',
+    authPrivacyNote: 'Ihre Daten werden lokal gespeichert und optional in der Cloud synchronisiert. Wir respektieren Ihre Privatsphäre.',
+    authSignInTooLong: 'Die Anmeldung hat zu lange gedauert. Bitte versuchen Sie es erneut.',
+    authTooManyAttempts: 'Zu viele Anmeldeversuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.',
+    authSupabaseNotConfigured: 'Supabase nicht konfiguriert. Bitte fügen Sie Ihre Supabase-Anmeldedaten hinzu.',
+    authUnexpectedError: 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.',
+
+    // Common UI actions (P0/P1 fix)
+    increase: 'Erhöhen',
+    decrease: 'Verringern',
+    previousMonth: 'Vorheriger Monat',
+    nextMonth: 'Nächster Monat',
+    goToPreviousPage: 'Zur vorherigen Seite',
+    goToNextPage: 'Zur nächsten Seite',
+    pagination: 'Seitennavigation',
+    breadcrumb: 'Brotkrumen',
+    toggleSidebar: 'Seitenleiste umschalten',
+    sharePreview: 'Vorschau zum Teilen',
+    albumCover: 'Albumcover',
+    thanksFeedback: 'Danke für Ihr Feedback!',
+    feedbackFailed: 'Feedback konnte nicht gesendet werden',
+    noVersionHistory: 'Keine Versionshistorie verfügbar',
+    syncFailedLocal: 'Synchronisierung fehlgeschlagen. Änderungen lokal gespeichert.',
+    imageGenerateFailed: 'Bild konnte nicht erstellt werden. Versuchen Sie es erneut.',
+    imageSavedDownloads: 'Bild in Downloads gespeichert!',
+    shareFailedDownload: 'Teilen fehlgeschlagen. Versuchen Sie den Download.',
+    clipboardCopyFailed: 'Kopieren in die Zwischenablage fehlgeschlagen.',
+    updateCheckFailedToast: 'Updates konnten nicht überprüft werden',
+    allActivitiesComplete: 'Sie haben alle Aktivitäten für heute abgeschlossen',
+    letsStart: 'Los geht\'s!',
 
     // Phase 13: Visual Worlds
     hallOfFame: 'Ruhmeshalle',
@@ -10352,6 +10592,46 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     aiCoachQuick3: 'Besoin de motivation',
     clearHistory: 'Effacer l\'historique',
 
+    // Auth Screen (P0 fix)
+    authWelcomeTitle: 'Bienvenue sur ZenFlow',
+    authWelcomeSubtitle: 'Connectez-vous pour synchroniser vos données entre appareils',
+    authContinueWith: 'Continuer avec',
+    authSigningInGoogle: 'Connexion avec Google...',
+    authNotConfiguredMessage: 'Authentification non configurée. Configurez Supabase pour activer la connexion.',
+    authExportDebugInfo: 'Exporter les infos de débogage',
+    authOr: 'ou',
+    authContinueEmail: 'Continuer avec Email',
+    authSkipForNow: 'Passer pour l\'instant',
+    authPrivacyNote: 'Vos données sont stockées localement et synchronisées optionnellement dans le cloud. Nous respectons votre vie privée.',
+    authSignInTooLong: 'La connexion a pris trop de temps. Veuillez réessayer.',
+    authTooManyAttempts: 'Trop de tentatives de connexion. Veuillez patienter et réessayer.',
+    authSupabaseNotConfigured: 'Supabase non configuré. Veuillez ajouter vos identifiants Supabase.',
+    authUnexpectedError: 'Une erreur inattendue s\'est produite. Veuillez réessayer.',
+
+    // Common UI actions (P0/P1 fix)
+    increase: 'Augmenter',
+    decrease: 'Diminuer',
+    previousMonth: 'Mois précédent',
+    nextMonth: 'Mois suivant',
+    goToPreviousPage: 'Page précédente',
+    goToNextPage: 'Page suivante',
+    pagination: 'Pagination',
+    breadcrumb: 'Fil d\'Ariane',
+    toggleSidebar: 'Basculer la barre latérale',
+    sharePreview: 'Aperçu du partage',
+    albumCover: 'Pochette d\'album',
+    thanksFeedback: 'Merci pour votre retour !',
+    feedbackFailed: 'Échec de l\'envoi du feedback',
+    noVersionHistory: 'Historique des versions non disponible',
+    syncFailedLocal: 'Échec de la synchronisation. Modifications enregistrées localement.',
+    imageGenerateFailed: 'Échec de la génération d\'image. Réessayez.',
+    imageSavedDownloads: 'Image enregistrée dans les téléchargements !',
+    shareFailedDownload: 'Impossible de partager. Essayez de télécharger.',
+    clipboardCopyFailed: 'Impossible de copier dans le presse-papiers.',
+    updateCheckFailedToast: 'Impossible de vérifier les mises à jour',
+    allActivitiesComplete: 'Vous avez terminé toutes les activités pour aujourd\'hui',
+    letsStart: 'Commençons !',
+
     // Phase 13: Visual Worlds
     hallOfFame: 'Temple de la Gloire',
     tapToFlip: 'Appuie pour retourner',
@@ -11822,6 +12102,46 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     aiCoachQuick3: 'やる気が必要',
     clearHistory: '履歴をクリア',
 
+    // Auth Screen (P0 fix)
+    authWelcomeTitle: 'ZenFlowへようこそ',
+    authWelcomeSubtitle: 'サインインしてデバイス間でデータを同期',
+    authContinueWith: '続行',
+    authSigningInGoogle: 'Googleでサインイン中...',
+    authNotConfiguredMessage: '認証が設定されていません。Supabaseを設定してサインインを有効にしてください。',
+    authExportDebugInfo: 'デバッグ情報をエクスポート',
+    authOr: 'または',
+    authContinueEmail: 'メールで続行',
+    authSkipForNow: '今はスキップ',
+    authPrivacyNote: 'データはローカルに保存され、オプションでクラウドに同期されます。プライバシーを尊重します。',
+    authSignInTooLong: 'サインインに時間がかかりすぎました。もう一度お試しください。',
+    authTooManyAttempts: 'サインイン試行が多すぎます。しばらく待ってからもう一度お試しください。',
+    authSupabaseNotConfigured: 'Supabaseが設定されていません。Supabaseの資格情報を追加してください。',
+    authUnexpectedError: '予期しないエラーが発生しました。もう一度お試しください。',
+
+    // Common UI actions (P0/P1 fix)
+    increase: '増加',
+    decrease: '減少',
+    previousMonth: '前月',
+    nextMonth: '翌月',
+    goToPreviousPage: '前のページへ',
+    goToNextPage: '次のページへ',
+    pagination: 'ページネーション',
+    breadcrumb: 'パンくずリスト',
+    toggleSidebar: 'サイドバーを切り替え',
+    sharePreview: '共有プレビュー',
+    albumCover: 'アルバムカバー',
+    thanksFeedback: 'フィードバックありがとうございます！',
+    feedbackFailed: 'フィードバックの送信に失敗しました',
+    noVersionHistory: 'バージョン履歴がありません',
+    syncFailedLocal: '同期に失敗しました。変更はローカルに保存されました。',
+    imageGenerateFailed: '画像の生成に失敗しました。もう一度お試しください。',
+    imageSavedDownloads: '画像がダウンロードに保存されました！',
+    shareFailedDownload: '共有できませんでした。ダウンロードをお試しください。',
+    clipboardCopyFailed: 'クリップボードにコピーできませんでした。',
+    updateCheckFailedToast: 'アップデートを確認できませんでした',
+    allActivitiesComplete: '今日のすべての活動を完了しました',
+    letsStart: '始めましょう！',
+
     // Phase 13: Visual Worlds
     hallOfFame: '栄誉の殿堂',
     tapToFlip: 'タップして裏返す',
@@ -13254,6 +13574,46 @@ const arabicOverrides: Partial<Translations> = {
   aiCoachQuick2: 'نصائح للتركيز',
   aiCoachQuick3: 'كيف أبني عادات؟',
   clearHistory: 'مسح المحادثة',
+
+  // Auth Screen (P0 fix)
+  authWelcomeTitle: 'مرحباً بك في ZenFlow',
+  authWelcomeSubtitle: 'سجل الدخول لمزامنة بياناتك عبر الأجهزة',
+  authContinueWith: 'المتابعة باستخدام',
+  authSigningInGoogle: 'جاري تسجيل الدخول بـ Google...',
+  authNotConfiguredMessage: 'لم يتم تكوين المصادقة. قم بتكوين Supabase لتمكين تسجيل الدخول.',
+  authExportDebugInfo: 'تصدير معلومات التصحيح',
+  authOr: 'أو',
+  authContinueEmail: 'المتابعة بالبريد الإلكتروني',
+  authSkipForNow: 'تخطي الآن',
+  authPrivacyNote: 'بياناتك مخزنة محلياً ويمكن مزامنتها اختيارياً مع السحابة. نحن نحترم خصوصيتك.',
+  authSignInTooLong: 'استغرق تسجيل الدخول وقتاً طويلاً. حاول مرة أخرى.',
+  authTooManyAttempts: 'محاولات تسجيل دخول كثيرة. انتظر لحظة وحاول مرة أخرى.',
+  authSupabaseNotConfigured: 'Supabase غير مهيأ. أضف بيانات اعتماد Supabase.',
+  authUnexpectedError: 'حدث خطأ غير متوقع. حاول مرة أخرى.',
+
+  // Common UI actions (P0/P1 fix)
+  increase: 'زيادة',
+  decrease: 'نقصان',
+  previousMonth: 'الشهر السابق',
+  nextMonth: 'الشهر التالي',
+  goToPreviousPage: 'الصفحة السابقة',
+  goToNextPage: 'الصفحة التالية',
+  pagination: 'ترقيم الصفحات',
+  breadcrumb: 'مسار التنقل',
+  toggleSidebar: 'تبديل الشريط الجانبي',
+  sharePreview: 'معاينة المشاركة',
+  albumCover: 'غلاف الألبوم',
+  thanksFeedback: 'شكراً لملاحظاتك!',
+  feedbackFailed: 'فشل إرسال الملاحظات',
+  noVersionHistory: 'لا يوجد سجل إصدارات',
+  syncFailedLocal: 'فشلت المزامنة. التغييرات محفوظة محلياً.',
+  imageGenerateFailed: 'فشل إنشاء الصورة. حاول مرة أخرى.',
+  imageSavedDownloads: 'تم حفظ الصورة في التنزيلات!',
+  shareFailedDownload: 'تعذرت المشاركة. جرب التنزيل بدلاً من ذلك.',
+  clipboardCopyFailed: 'تعذر النسخ إلى الحافظة.',
+  updateCheckFailedToast: 'تعذر التحقق من التحديثات',
+  allActivitiesComplete: 'أكملت جميع الأنشطة لهذا اليوم',
+  letsStart: 'لنبدأ!',
 
   // Account
   account: 'الحساب',
