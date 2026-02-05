@@ -67,7 +67,9 @@ export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
 
     // Validate the data before returning
     const worldData = data?.world_data;
-    if (worldData && typeof worldData === 'object' && typeof (worldData as InnerWorld).treatsBalance === 'number') {
+    // P0 Fix: Check treats.balance (not treatsBalance) - matches InnerWorld type
+    if (worldData && typeof worldData === 'object' &&
+        typeof (worldData as InnerWorld).treats?.balance === 'number') {
       return worldData as InnerWorld;
     }
     return null;

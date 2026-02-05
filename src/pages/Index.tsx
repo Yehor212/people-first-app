@@ -72,7 +72,7 @@ import { WelcomeTutorial } from '@/components/WelcomeTutorial';
 import { AuthGate } from '@/components/AuthGate';
 import { AchievementsPanel } from '@/components/AchievementsPanel';
 import { NotificationPermission } from '@/components/NotificationPermission';
-import { GoogleAuthScreen } from '@/components/GoogleAuthScreen';
+import { AuthScreen } from '@/components/AuthScreen';
 import { WeeklyReport } from '@/components/WeeklyReport';
 import { TimeHelper } from '@/components/TimeHelper';
 
@@ -333,7 +333,7 @@ export function Index() {
   // Journal prompt text - from DailyPromptCard to GratitudeJournal
   const [journalPromptText, setJournalPromptText] = useState<string | undefined>(undefined);
 
-  // Synchronous bypass flag for Google Auth - immediately skips GoogleAuthScreen
+  // Synchronous bypass flag for Auth - immediately skips AuthScreen
   // This is needed because setGoogleAuthChecked uses async IndexedDB write
   const [authBypassFlag, setAuthBypassFlag] = useState(false);
 
@@ -1202,7 +1202,7 @@ export function Index() {
     logger.log('[Index] Google auth completed');
 
     // CRITICAL: Set synchronous bypass flag FIRST (immediate UI update)
-    // This ensures we skip GoogleAuthScreen immediately, before IndexedDB writes
+    // This ensures we skip AuthScreen immediately, before IndexedDB writes
     setAuthBypassFlag(true);
 
     // Then set persistent values (async IndexedDB)
@@ -1668,7 +1668,7 @@ export function Index() {
 
       // Session truly expired - reset auth state
       logger.warn('[Index] Session confirmed expired, resetting auth state');
-      setHasValidSession(false);  // P0 Fix: Must set this for GoogleAuthScreen to show
+      setHasValidSession(false);  // P0 Fix: Must set this for AuthScreen to show
       setAuthBypassFlag(false);
       setGoogleAuthChecked(false);
     };
@@ -1866,7 +1866,7 @@ export function Index() {
   // hasValidSession: null = checking, true = has session, false = no session
   if (!googleAuthChecked && !authBypassFlag && hasValidSession === false) {
     return (
-      <GoogleAuthScreen
+      <AuthScreen
         onComplete={handleGoogleAuthComplete}
         onSkip={handleGoogleAuthSkip}
       />
@@ -2179,6 +2179,7 @@ export function Index() {
                                 sessions={safeFocusSessions}
                                 onCompleteSession={handleCompleteFocusSession}
                                 onMinuteUpdate={setCurrentFocusMinutes}
+                                isPrimaryCTA={true}
                               />
                             </CompletedSection>
                           ) : (
@@ -2186,6 +2187,7 @@ export function Index() {
                               sessions={safeFocusSessions}
                               onCompleteSession={handleCompleteFocusSession}
                               onMinuteUpdate={setCurrentFocusMinutes}
+                              isPrimaryCTA={true}
                             />
                           )}
                         </Suspense>

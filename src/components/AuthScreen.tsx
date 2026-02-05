@@ -7,14 +7,17 @@ import { App } from '@capacitor/app';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 
-interface GoogleAuthScreenProps {
+interface AuthScreenProps {
   onComplete: (userData: { name: string; email: string }) => void;
   onSkip: () => void;
 }
 
-export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) {
+// Track which provider is currently loading
+type AuthProvider = 'google' | 'apple' | 'facebook' | null;
+
+export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
   const { t } = useLanguage();
-  const [loading, setLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<AuthProvider>(null);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
 
@@ -47,7 +50,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
     }
 
     // Clear loading state
-    setLoading(false);
+    setLoadingProvider(null);
 
     // P1 Fix: Don't log email (PII)
     logger.log(`[Auth] Completing auth from ${source}`);
@@ -103,7 +106,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
         tryComplete({ name, email }, 'onAuthStateChange');
       } else if (event === 'SIGNED_OUT') {
         endAuthFlow();
-        setLoading(false);
+        setLoadingProvider(null);
       }
     });
 
@@ -122,7 +125,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
 
     const checkSessionOnResume = async () => {
       // Early exit if already completed or not in loading state
-      if (!isMounted || !loading || hasCompletedRef.current) return;
+      if (!isMounted || !loadingProvider || hasCompletedRef.current) return;
 
       await new Promise(resolve => setTimeout(resolve, 300));
 
@@ -142,7 +145,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
           tryComplete({ name, email }, 'checkSessionOnResume');
         } else if (!hasCompletedRef.current) {
           logger.log('[Auth] No session on resume, user may have canceled');
-          setLoading(false);
+          setLoadingProvider(null);
           if (oauthTimeoutRef.current) {
             clearTimeout(oauthTimeoutRef.current);
             oauthTimeoutRef.current = null;
@@ -150,14 +153,14 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
         }
       } catch (err) {
         logger.error('[Auth] Error checking session on resume:', err);
-        if (isMounted && !hasCompletedRef.current) setLoading(false);
+        if (isMounted && !hasCompletedRef.current) setLoadingProvider(null);
       }
     };
 
     if (isNativePlatform()) {
       // Setup native app state listener
       App.addListener('appStateChange', ({ isActive }) => {
-        if (isActive && loading) {
+        if (isActive && loadingProvider) {
           checkSessionOnResume();
         }
       }).then(listener => {
@@ -176,7 +179,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
 
     // Web fallback
     const handleFocus = () => {
-      if (loading) checkSessionOnResume();
+      if (loadingProvider) checkSessionOnResume();
     };
     window.addEventListener('focus', handleFocus);
     return () => {
@@ -184,13 +187,13 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
       window.removeEventListener('focus', handleFocus);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading]); // P1 Fix: Removed onComplete from deps - uses onCompleteRef instead
+  }, [loadingProvider]); // P1 Fix: Removed onComplete from deps - uses onCompleteRef instead
 
   // LEVEL 2: Listen for auth completion from Index.tsx
   useEffect(() => {
     const handleAuthComplete = () => {
       logger.log('[Auth] Received auth complete event from Index.tsx');
-      setLoading(false);
+      setLoadingProvider(null);
       if (oauthTimeoutRef.current) {
         clearTimeout(oauthTimeoutRef.current);
         oauthTimeoutRef.current = null;
@@ -210,7 +213,8 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
     };
   }, []);
 
-  const handleGoogleSignIn = async () => {
+  // Generic OAuth sign-in handler
+  const handleOAuthSignIn = async (provider: 'google' | 'apple' | 'facebook') => {
     if (!supabase) {
       setError(t.authSupabaseNotConfigured);
       return;
@@ -224,7 +228,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
     }
 
     startAuthFlow();
-    setLoading(true);
+    setLoadingProvider(provider);
     setError(null);
     setDebugInfo(null);
 
@@ -232,71 +236,86 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
     if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
     oauthTimeoutRef.current = setTimeout(() => {
       if (!hasCompletedRef.current) {
-        logger.warn('[Auth] OAuth timeout after 60s');
-        setLoading(false);
+        logger.warn(`[Auth] ${provider} OAuth timeout after 60s`);
+        setLoadingProvider(null);
         setError(t.authSignInTooLong);
       }
     }, 60000);
 
     try {
       const redirectUrl = getAuthRedirectUrl();
-      logger.log('[Auth] Starting Google sign-in with redirect URL:', redirectUrl);
+      logger.log(`[Auth] Starting ${provider} sign-in with redirect URL:`, redirectUrl);
 
       // Log platform info for debugging
       const platform = isNativePlatform() ? 'native' : 'web';
       logger.log('[Auth] Platform:', platform);
       setDebugInfo(`Platform: ${platform}, Redirect: ${redirectUrl}`);
 
+      // Provider-specific options
+      const options: {
+        redirectTo: string;
+        scopes?: string;
+        queryParams?: Record<string, string>;
+      } = {
+        redirectTo: redirectUrl,
+      };
+
+      if (provider === 'google') {
+        options.queryParams = {
+          access_type: 'offline',
+          prompt: 'consent',
+        };
+      } else if (provider === 'apple') {
+        options.scopes = 'name email';
+      } else if (provider === 'facebook') {
+        options.scopes = 'email,public_profile';
+      }
+
       const { data, error: signInError } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        },
+        provider,
+        options,
       });
 
       if (signInError) {
-        logger.error('[Auth] Google sign-in error:', signInError);
+        logger.error(`[Auth] ${provider} sign-in error:`, signInError);
 
         // Enhanced error messages
-        let errorMessage = 'Failed to sign in with Google.';
+        let errorMessage = `Failed to sign in with ${provider}.`;
 
         if (signInError.message.includes('invalid_client')) {
-          errorMessage = 'Google OAuth not configured correctly. Please check:\n' +
-            '1. SHA-1 fingerprint added to Google Cloud Console\n' +
-            '2. Android Client ID added to Supabase\n' +
-            '3. Redirect URI added to Supabase';
+          errorMessage = `${provider} OAuth not configured correctly. Please check the provider settings in Supabase.`;
         } else if (signInError.message.includes('redirect_uri')) {
           errorMessage = 'Redirect URI mismatch. Please add com.zenflow.app://login-callback to Supabase allowed URLs.';
         } else if (signInError.message.includes('unauthorized')) {
-          errorMessage = 'OAuth client not authorized. Please enable Google provider in Supabase.';
+          errorMessage = `OAuth client not authorized. Please enable ${provider} provider in Supabase.`;
         }
 
         setError(errorMessage);
         setDebugInfo(`Error code: ${signInError.status || 'unknown'}, Message: ${signInError.message}`);
         if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
         endAuthFlow();
-        setLoading(false);
+        setLoadingProvider(null);
         return;
       }
 
       // Log OAuth URL for debugging
       if (data?.url) {
-        logger.log('[Auth] OAuth URL generated:', data.url);
+        logger.log(`[Auth] ${provider} OAuth URL generated:`, data.url);
         setDebugInfo(`OAuth URL generated successfully`);
       }
     } catch (err) {
-      logger.error('[Auth] Unexpected error during sign-in:', err);
+      logger.error(`[Auth] Unexpected error during ${provider} sign-in:`, err);
       setError(t.authUnexpectedError);
       setDebugInfo(`Exception: ${err instanceof Error ? err.message : String(err)}`);
       if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
       endAuthFlow();
-      setLoading(false);
+      setLoadingProvider(null);
     }
   };
+
+  const handleGoogleSignIn = () => handleOAuthSignIn('google');
+  const handleAppleSignIn = () => handleOAuthSignIn('apple');
+  const handleFacebookSignIn = () => handleOAuthSignIn('facebook');
 
   const handleEmailSignIn = async () => {
     // For now, just skip - can implement magic link later
@@ -330,6 +349,8 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
     URL.revokeObjectURL(url);
   };
 
+  const isLoading = loadingProvider !== null;
+
   return (
     <div
       className="min-h-screen zen-gradient-hero flex items-center justify-center p-4"
@@ -354,9 +375,9 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
 
         {/* Auth Card */}
         <section
-          className="bg-card rounded-2xl p-6 zen-shadow-card mb-4 space-y-4"
+          className="bg-card rounded-2xl p-6 zen-shadow-card mb-4 space-y-3"
           aria-labelledby="auth-methods-title"
-          aria-busy={loading}
+          aria-busy={isLoading}
         >
           <h2 id="auth-methods-title" className="text-lg font-semibold text-foreground text-center mb-4">
             {t.authContinueWith}
@@ -365,12 +386,12 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
           {/* Google Sign In Button */}
           <button
             onClick={handleGoogleSignIn}
-            disabled={loading || !supabase}
-            aria-label={loading ? t.authSigningInGoogle : t.continueWithGoogle}
-            aria-disabled={loading || !supabase}
+            disabled={isLoading || !supabase}
+            aria-label={loadingProvider === 'google' ? t.authSigningInGoogle : t.continueWithGoogle}
+            aria-disabled={isLoading || !supabase}
             className="w-full py-4 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? (
+            {loadingProvider === 'google' ? (
               <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
             ) : (
               <>
@@ -393,6 +414,46 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
                   />
                 </svg>
                 {t.continueWithGoogle}
+              </>
+            )}
+          </button>
+
+          {/* Apple Sign In Button */}
+          <button
+            onClick={handleAppleSignIn}
+            disabled={isLoading || !supabase}
+            aria-label={loadingProvider === 'apple' ? t.authSigningIn : t.continueWithApple}
+            aria-disabled={isLoading || !supabase}
+            className="w-full py-4 bg-black hover:bg-gray-900 text-white font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loadingProvider === 'apple' ? (
+              <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+            ) : (
+              <>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/>
+                </svg>
+                {t.continueWithApple}
+              </>
+            )}
+          </button>
+
+          {/* Facebook Sign In Button */}
+          <button
+            onClick={handleFacebookSignIn}
+            disabled={isLoading || !supabase}
+            aria-label={loadingProvider === 'facebook' ? t.authSigningIn : t.continueWithFacebook}
+            aria-disabled={isLoading || !supabase}
+            className="w-full py-4 bg-[#1877F2] hover:bg-[#166FE5] text-white font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loadingProvider === 'facebook' ? (
+              <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
+            ) : (
+              <>
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+                {t.continueWithFacebook}
               </>
             )}
           </button>
@@ -442,7 +503,7 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
           {/* Email Sign In Button (Magic Link) */}
           <button
             onClick={handleEmailSignIn}
-            disabled={loading}
+            disabled={isLoading}
             aria-label={t.authContinueEmail}
             className="w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-2xl hover:bg-muted transition-colors flex items-center justify-center gap-2"
           >
@@ -468,3 +529,6 @@ export function GoogleAuthScreen({ onComplete, onSkip }: GoogleAuthScreenProps) 
     </div>
   );
 }
+
+// Export for backwards compatibility
+export { AuthScreen as GoogleAuthScreen };

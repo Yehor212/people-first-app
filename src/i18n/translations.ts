@@ -467,6 +467,9 @@ export interface Translations {
   emailPlaceholder: string;
   sendMagicLink: string;
   continueWithGoogle: string;
+  continueWithApple: string;
+  continueWithFacebook: string;
+  authSigningIn: string;
   signedInAs: string;
   signOut: string;
   syncNow: string;
@@ -2197,6 +2200,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     emailPlaceholder: 'you@email.com',
     sendMagicLink: 'Отправить ссылку',
     continueWithGoogle: 'Войти через Google',
+    continueWithApple: 'Войти через Apple',
+    continueWithFacebook: 'Войти через Facebook',
+    authSigningIn: 'Входим...',
     signedInAs: 'Вы вошли как',
     signOut: 'Выйти',
     syncNow: 'Синхронизировать',
@@ -3749,6 +3755,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     emailPlaceholder: 'you@email.com',
     sendMagicLink: 'Send magic link',
     continueWithGoogle: 'Continue with Google',
+    continueWithApple: 'Continue with Apple',
+    continueWithFacebook: 'Continue with Facebook',
+    authSigningIn: 'Signing in...',
     signedInAs: 'Signed in as',
     signOut: 'Sign out',
     syncNow: 'Sync now',
@@ -5301,6 +5310,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     emailPlaceholder: 'you@email.com',
     sendMagicLink: 'Надіслати посилання для входу',
     continueWithGoogle: 'Продовжити через Google',
+    continueWithApple: 'Продовжити через Apple',
+    continueWithFacebook: 'Продовжити через Facebook',
+    authSigningIn: 'Входимо...',
     signedInAs: 'Ви увійшли як',
     signOut: 'Вийти',
     syncNow: 'Синхронізувати зараз',
@@ -6854,6 +6866,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     emailPlaceholder: 'you@email.com',
     sendMagicLink: 'Enviar enlace de acceso',
     continueWithGoogle: 'Continuar con Google',
+    continueWithApple: 'Continuar con Apple',
+    continueWithFacebook: 'Continuar con Facebook',
+    authSigningIn: 'Iniciando sesión...',
     signedInAs: 'Conectado como',
     signOut: 'Cerrar sesión',
     syncNow: 'Sincronizar ahora',
@@ -8407,6 +8422,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     emailPlaceholder: 'ihre@email.com',
     sendMagicLink: 'Anmeldelink senden',
     continueWithGoogle: 'Mit Google fortfahren',
+    continueWithApple: 'Mit Apple fortfahren',
+    continueWithFacebook: 'Mit Facebook fortfahren',
+    authSigningIn: 'Anmeldung...',
     signedInAs: 'Angemeldet als',
     signOut: 'Abmelden',
     syncNow: 'Jetzt synchronisieren',
@@ -9960,6 +9978,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     emailPlaceholder: 'votre@email.com',
     sendMagicLink: 'Envoyer le lien de connexion',
     continueWithGoogle: 'Continuer avec Google',
+    continueWithApple: 'Continuer avec Apple',
+    continueWithFacebook: 'Continuer avec Facebook',
+    authSigningIn: 'Connexion...',
     signedInAs: 'Connecté en tant que',
     signOut: 'Se déconnecter',
     syncNow: 'Synchroniser maintenant',
@@ -11512,6 +11533,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     emailPlaceholder: 'you@email.com',
     sendMagicLink: 'マジックリンクを送信',
     continueWithGoogle: 'Googleで続ける',
+    continueWithApple: 'Appleで続ける',
+    continueWithFacebook: 'Facebookで続ける',
+    authSigningIn: 'サインイン中...',
     signedInAs: 'サインイン中',
     signOut: 'サインアウト',
     syncNow: '今すぐ同期',
@@ -13999,6 +14023,9 @@ const arabicOverrides: Partial<Translations> = {
   emailPlaceholder: 'بريدك الإلكتروني',
   sendMagicLink: 'إرسال رابط سحري',
   continueWithGoogle: 'المتابعة مع Google',
+  continueWithApple: 'المتابعة مع Apple',
+  continueWithFacebook: 'المتابعة مع Facebook',
+  authSigningIn: 'جارٍ تسجيل الدخول...',
   signedInAs: 'مسجل كـ',
   signOut: 'تسجيل الخروج',
   syncNow: 'مزامنة الآن',
