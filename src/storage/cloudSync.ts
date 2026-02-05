@@ -335,3 +335,35 @@ export const triggerSync = () => {
   // The orchestrator will handle queue management
   syncTimeout = setTimeout(silentSync, SYNC_DEBOUNCE);
 };
+
+/**
+ * P1 Fix: Complete cleanup of all cloudSync resources
+ * Call this when destroying the app or during hot reload to prevent memory leaks.
+ * This cleans up ALL intervals, timeouts, listeners, and abort controllers.
+ */
+export const destroyCloudSync = () => {
+  // Stop auto-sync (clears syncInterval, syncTimeout, and event listeners)
+  stopAutoSync();
+
+  // Clear sync lock timeout
+  if (syncLockTimeout) {
+    clearTimeout(syncLockTimeout);
+    syncLockTimeout = null;
+  }
+
+  // Abort any in-progress sync operation
+  if (syncAbortController) {
+    syncAbortController.abort();
+    syncAbortController = null;
+  }
+
+  // Reset lock state
+  syncLock = false;
+  syncLockOwner = null;
+  syncLockStartTime = null;
+
+  // Reset failure counter
+  consecutiveSyncFailures = 0;
+
+  logger.sync('CloudSync destroyed and cleaned up');
+};

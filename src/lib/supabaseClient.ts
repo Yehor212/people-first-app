@@ -1,6 +1,39 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { Database } from '@/types/supabase';
+import { z } from 'zod';
+
+/**
+ * P1 Fix #8: Zod schema for validating Supabase user object
+ * Ensures the user object has the expected shape before using it
+ */
+const supabaseUserSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email().optional().nullable(),
+  app_metadata: z.record(z.unknown()).optional(),
+  user_metadata: z.record(z.unknown()).optional(),
+  created_at: z.string().optional(),
+});
+
+/**
+ * P1 Fix #8: Validate user object from Supabase auth response
+ * Returns the validated user or null if validation fails
+ */
+export function validateSupabaseUser(user: unknown): User | null {
+  if (!user) return null;
+
+  const result = supabaseUserSchema.safeParse(user);
+  if (!result.success) {
+    // Log validation error in development
+    if (import.meta.env.DEV) {
+      console.warn('[Supabase] User validation failed:', result.error.issues);
+    }
+    return null;
+  }
+
+  // Return the original user (with full Supabase type) since it passed validation
+  return user as User;
+}
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -78,10 +111,21 @@ export const supabase: SupabaseClient<Database> | null =
     : null;
 
 // Helper to check if user is authenticated
+// P1 Fix #8: Validates user object shape before returning
 export const getCurrentUser = async () => {
   if (!supabase) return null;
-  const { data: { user } } = await supabase.auth.getUser();
-  return user;
+  const { data: { user }, error } = await supabase.auth.getUser();
+
+  // P1 Fix #8: Log errors for debugging
+  if (error) {
+    if (import.meta.env.DEV) {
+      console.warn('[Supabase] getUser error:', error.message);
+    }
+    return null;
+  }
+
+  // P1 Fix #8: Validate user object shape
+  return validateSupabaseUser(user);
 };
 
 // Helper to get user ID

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -113,10 +113,24 @@ export function DayClock({
   const [showCelebration, setShowCelebration] = useState(false);
   const [lastEnergy, setLastEnergy] = useState(0);
 
+  // P1 Fix: Track mounted state to prevent state updates after unmount
+  const isMountedRef = useRef(true);
+
   // Update time every minute
+  // P1 Fix: Check mounted state before calling setState to prevent React warnings
   useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(interval);
+    isMountedRef.current = true;
+
+    const interval = setInterval(() => {
+      if (isMountedRef.current) {
+        setCurrentTime(new Date());
+      }
+    }, 60000);
+
+    return () => {
+      isMountedRef.current = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const currentHour = currentTime.getHours();
@@ -154,12 +168,30 @@ export function DayClock({
   }, [todayActivities]);
 
   // Trigger celebration when energy increases
+  // P1 Fix: Use ref to store timeout for cleanup and check mounted state
+  const celebrationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     if (energyLevel > lastEnergy && lastEnergy > 0) {
       setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 1500);
+      // Clear any existing timeout
+      if (celebrationTimeoutRef.current) {
+        clearTimeout(celebrationTimeoutRef.current);
+      }
+      celebrationTimeoutRef.current = setTimeout(() => {
+        if (isMountedRef.current) {
+          setShowCelebration(false);
+        }
+      }, 1500);
     }
     setLastEnergy(energyLevel);
+
+    // Cleanup timeout on unmount or deps change
+    return () => {
+      if (celebrationTimeoutRef.current) {
+        clearTimeout(celebrationTimeoutRef.current);
+      }
+    };
   }, [energyLevel, lastEnergy]);
 
   // Get mascot state based on energy

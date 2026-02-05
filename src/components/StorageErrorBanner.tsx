@@ -10,10 +10,21 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 
 interface StorageErrorEvent {
-  type: 'write_failed' | 'read_failed' | 'quota_exceeded' | 'localStorage_write_failed';
+  type: 'write_failed' | 'read_failed' | 'quota_exceeded' | 'localStorage_write_failed' | 'persist_failed' | 'load_failed';
   message: string;
   table?: string;
   key?: string;
+  error?: string;
+  recoverable?: boolean;
+  queueSize?: number;
+}
+
+interface QueueFullEvent {
+  queueSize: number;
+  maxSize: number;
+  message: string;
+  actionType?: string;
+  entityId?: string;
 }
 
 /**
@@ -60,10 +71,21 @@ export function StorageErrorBanner() {
       setIsVisible(true);
     };
 
+    // P0 Fix: Also listen for offline queue full events
+    const handleQueueFull = (event: CustomEvent<QueueFullEvent>) => {
+      if (isDismissed) return;
+
+      logger.warn('[StorageErrorBanner] Queue full event:', event.detail);
+      setErrorMessage(event.detail.message);
+      setIsVisible(true);
+    };
+
     window.addEventListener('zenflow:storage-error', handleStorageError as EventListener);
+    window.addEventListener('zenflow:offline-queue-full', handleQueueFull as EventListener);
 
     return () => {
       window.removeEventListener('zenflow:storage-error', handleStorageError as EventListener);
+      window.removeEventListener('zenflow:offline-queue-full', handleQueueFull as EventListener);
     };
   }, [isDismissed]);
 

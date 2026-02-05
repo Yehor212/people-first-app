@@ -455,6 +455,19 @@ class OfflineQueue {
       }
     } catch (error) {
       logger.error('[OfflineQueue] Failed to load from localStorage:', error);
+
+      // P0 Fix: Emit storage error event if localStorage is unavailable
+      // This typically happens in Safari Private Mode or when storage is full
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('zenflow:storage-error', {
+          detail: {
+            type: 'load_failed',
+            error: error instanceof Error ? error.message : String(error),
+            message: 'Unable to load saved data. Your browser storage may be full or disabled.',
+            recoverable: true, // Can try to continue without previous data
+          }
+        }));
+      }
     }
   }
 
@@ -549,6 +562,20 @@ class OfflineQueue {
       }));
     } catch (error) {
       logger.error('[OfflineQueue] Failed to persist to localStorage:', error);
+
+      // P0 Fix: CRITICAL - Both IndexedDB AND localStorage failed!
+      // Emit storage error event so UI can warn user about potential data loss
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('zenflow:storage-error', {
+          detail: {
+            type: 'persist_failed',
+            queueSize: this.state.actions.length,
+            error: error instanceof Error ? error.message : String(error),
+            message: 'Unable to save your changes. Data may be lost if you close the app.',
+            recoverable: false,
+          }
+        }));
+      }
     }
   }
 

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Habit, HabitType, HabitReminder, HabitFrequency } from '@/types';
 import { getToday, generateId, formatDate, cn, parseLocalDate } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
-import { Plus, X, ChevronRight, Settings2, Zap, Users, Sparkles, Leaf } from 'lucide-react';
+import { Plus, X, ChevronRight, Settings2, Zap, Users, Sparkles, Leaf, Undo2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { habitTemplates } from '@/lib/habitTemplates';
@@ -12,6 +12,8 @@ import { HabitCompletionCelebration, DailyProgressBar } from './HabitCompletionC
 import { CompactHabitCard } from './CompactHabitCard';
 import { hapticTap } from '@/lib/haptics';
 import { getActiveChallenges } from '@/lib/friendChallenge';
+import { toast } from '@/hooks/use-toast';
+import { ToastAction } from '@/components/ui/toast';
 
 const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿', '🚭', '🍷', '🇬🇧', '💪', '🧠'];
 const habitColors = [
@@ -257,6 +259,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
 
   // Handle habit toggle with celebrations
   // P1 Fix: Added debounce to prevent rapid toggles causing multiple celebrations
+  // P1 Fix #7: Added undo toast for accidental toggles
   const handleHabitToggle = useCallback((habit: Habit) => {
     // P1 Fix: Prevent rapid double-toggle
     if (toggleDebounceRef.current.has(habit.id)) {
@@ -269,6 +272,31 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
 
     // Trigger the toggle
     onToggleHabit(habit.id, today);
+
+    // P1 Fix #7: Show undo toast for accidental toggles (for accessibility)
+    // This helps users with motor impairments who might accidentally tap
+    const undoLabel = t.undo || 'Undo';
+    const actionLabel = wasCompleted
+      ? (t.habitUnchecked || 'Habit unchecked')
+      : (t.habitCompleted || 'Habit completed');
+
+    toast({
+      description: `${habit.icon} ${actionLabel}`,
+      duration: 4000,
+      action: (
+        <ToastAction
+          altText={undoLabel}
+          onClick={() => {
+            // Undo by toggling again
+            onToggleHabit(habit.id, today);
+            hapticTap();
+          }}
+        >
+          <Undo2 className="w-3.5 h-3.5 mr-1" />
+          {undoLabel}
+        </ToastAction>
+      ),
+    });
 
     // If the habit is being completed (not uncompleted)
     if (!wasCompleted) {
@@ -296,7 +324,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         }, 1800); // Delay after celebration ends
       }
     }
-  }, [habits, onToggleHabit, today]);
+  }, [habits, onToggleHabit, today, t]);
 
   return (
     <div className={cn(

@@ -4,6 +4,7 @@ import { APP_VERSION, getAppMetadata } from "@/lib/appVersion";
 import { crashReporting } from "@/lib/crashReporting";
 import { safeLocalStorageGet } from "@/lib/safeJson";
 import { captureError } from "@/lib/sentry";
+import { createFocusTrap, announceError } from "@/lib/a11y";
 
 const LOG_KEY = "zenflow-error-log";
 
@@ -174,6 +175,10 @@ interface ModalErrorBoundaryState {
 class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, ModalErrorBoundaryState> {
   state: ModalErrorBoundaryState = { hasError: false, error: null };
 
+  // P1 Fix: Refs for focus trap and container
+  private containerRef = React.createRef<HTMLDivElement>();
+  private deactivateFocusTrap: (() => void) | null = null;
+
   static getDerivedStateFromError(error: Error) {
     return { hasError: true, error };
   }
@@ -201,6 +206,24 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
       location: window.location.href,
       context: 'ModalErrorBoundary'
     });
+
+    // P1 Fix: Announce error to screen readers
+    const title = this.props.fallbackTitle || "Something went wrong";
+    announceError(title);
+  }
+
+  componentDidUpdate(_prevProps: ModalErrorBoundaryProps, prevState: ModalErrorBoundaryState) {
+    // P1 Fix: Activate focus trap when error appears
+    if (this.state.hasError && !prevState.hasError && this.containerRef.current) {
+      this.deactivateFocusTrap = createFocusTrap(this.containerRef.current, {
+        autoFocus: true,
+      });
+    }
+  }
+
+  componentWillUnmount() {
+    // P1 Fix: Cleanup focus trap
+    this.deactivateFocusTrap?.();
   }
 
   handleRetry = () => {
@@ -219,12 +242,26 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
       return;
     }
 
+    // P1 Fix: Deactivate focus trap before resetting state
+    this.deactivateFocusTrap?.();
+    this.deactivateFocusTrap = null;
     this.setState({ hasError: false, error: null });
   };
 
   handleClose = () => {
+    // P1 Fix: Deactivate focus trap before closing
+    this.deactivateFocusTrap?.();
+    this.deactivateFocusTrap = null;
     this.setState({ hasError: false, error: null });
     this.props.onClose?.();
+  };
+
+  // P1 Fix: Handle Escape key to close error dialog
+  handleKeyDown = (event: React.KeyboardEvent) => {
+    if (event.key === 'Escape' && this.props.onClose) {
+      event.preventDefault();
+      this.handleClose();
+    }
   };
 
   render() {
@@ -236,14 +273,23 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
     const body = this.props.fallbackBody || "This feature encountered an error. Try closing and reopening.";
 
     return (
-      <div className="flex flex-col items-center justify-center p-6 text-center min-h-[200px]">
+      // P1 Fix: Add ref, role, aria-modal, and keyboard handler for a11y
+      <div
+        ref={this.containerRef}
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="error-boundary-title"
+        aria-describedby="error-boundary-desc"
+        onKeyDown={this.handleKeyDown}
+        className="flex flex-col items-center justify-center p-6 text-center min-h-[200px]"
+      >
         <div className="w-16 h-16 mb-4 rounded-full bg-destructive/10 flex items-center justify-center">
-          <svg className="w-8 h-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-8 h-8 text-destructive" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
-        <p className="text-sm text-muted-foreground mb-4 max-w-xs">{body}</p>
+        <h3 id="error-boundary-title" className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+        <p id="error-boundary-desc" className="text-sm text-muted-foreground mb-4 max-w-xs">{body}</p>
         <div className="flex gap-3">
           <button
             onClick={this.handleRetry}
