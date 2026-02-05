@@ -318,6 +318,9 @@ export const stopAutoSync = () => {
     beforeUnloadHandler = null;
   }
 
+  // P1-9 Fix: Reset failure counter when stopping sync (e.g., on logout)
+  consecutiveSyncFailures = 0;
+
   autoSyncStarted = false;
   logger.sync('Auto-sync stopped');
 };
