@@ -1668,6 +1668,7 @@ export function Index() {
 
       // Session truly expired - reset auth state
       logger.warn('[Index] Session confirmed expired, resetting auth state');
+      setHasValidSession(false);  // P0 Fix: Must set this for GoogleAuthScreen to show
       setAuthBypassFlag(false);
       setGoogleAuthChecked(false);
     };
