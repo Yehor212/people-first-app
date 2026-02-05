@@ -175,7 +175,12 @@ if (isCapacitor) {
     if ('serviceWorker' in navigator && navigator.serviceWorker) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         registrations.forEach((registration) => registration.unregister());
-      }).catch(() => {});
+      }).catch((err) => {
+        // LOW priority fix: Log SW unregister errors in dev mode
+        if (import.meta.env.DEV) {
+          console.warn('[main] SW unregister failed:', err);
+        }
+      });
     }
     // Clear workbox/PWA caches on Capacitor only
     if ('caches' in window && window.caches) {
@@ -185,10 +190,15 @@ if (isCapacitor) {
             window.caches.delete(name);
           }
         });
-      }).catch(() => {});
+      }).catch((err) => {
+        // LOW priority fix: Log cache clear errors in dev mode
+        if (import.meta.env.DEV) {
+          console.warn('[main] Cache clear failed:', err);
+        }
+      });
     }
   } catch (e) {
-    // Ignore errors
+    // Ignore errors - these are non-critical cleanup operations
   }
 }
 

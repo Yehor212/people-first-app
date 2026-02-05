@@ -3,6 +3,7 @@ import { ChevronRight, Sparkles, Check, Timer, Wind, Heart, Target, ListTodo, Tr
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFeatureFlags, ToggleableFeature } from '@/contexts/FeatureFlagsContext';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface OnboardingResult {
   skipped?: boolean;
@@ -70,14 +71,14 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   // Fallback: If user clicks multiple times and nothing happens, force complete
   useEffect(() => {
     if (clickAttempts >= 3) {
-      console.log('[OnboardingFlow] Multiple click attempts detected, forcing completion');
+      logger.log('[OnboardingFlow] Multiple click attempts detected, forcing completion');
       // Clear any pending timeout
       if (completionTimeoutRef.current) {
         clearTimeout(completionTimeoutRef.current);
       }
       // Force complete after 1 second
       completionTimeoutRef.current = setTimeout(() => {
-        console.log('[OnboardingFlow] Force completing onboarding');
+        logger.log('[OnboardingFlow] Force completing onboarding');
         onComplete({ modules: selectedModules });
       }, 1000);
     }
@@ -178,22 +179,22 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const transitionLockRef = useRef(false);
 
   const handleSkip = () => {
-    console.log('[OnboardingFlow] handleSkip called, transitionLockRef:', transitionLockRef.current);
+    logger.log('[OnboardingFlow] handleSkip called, transitionLockRef:', transitionLockRef.current);
     setClickAttempts(prev => prev + 1);
 
     if (transitionLockRef.current) {
-      console.log('[OnboardingFlow] handleSkip blocked by transitionLockRef');
+      logger.log('[OnboardingFlow] handleSkip blocked by transitionLockRef');
       return;
     }
     transitionLockRef.current = true;
 
     try {
-      console.log('[OnboardingFlow] Setting flags for all modules...');
+      logger.log('[OnboardingFlow] Setting flags for all modules...');
       // Enable all modules by default when skipping
       modules.forEach(m => setFlag(m.id, true));
-      console.log('[OnboardingFlow] Calling onComplete with skipped=true');
+      logger.log('[OnboardingFlow] Calling onComplete with skipped=true');
       onComplete({ skipped: true, modules: modules.map(m => m.id) });
-      console.log('[OnboardingFlow] onComplete called successfully');
+      logger.log('[OnboardingFlow] onComplete called successfully');
     } catch (error) {
       console.error('[OnboardingFlow] Error in handleSkip:', error);
       transitionLockRef.current = false;
@@ -201,25 +202,25 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   };
 
   const handleComplete = () => {
-    console.log('[OnboardingFlow] handleComplete called, transitionLockRef:', transitionLockRef.current);
+    logger.log('[OnboardingFlow] handleComplete called, transitionLockRef:', transitionLockRef.current);
     setClickAttempts(prev => prev + 1);
 
     if (transitionLockRef.current) {
-      console.log('[OnboardingFlow] handleComplete blocked by transitionLockRef');
+      logger.log('[OnboardingFlow] handleComplete blocked by transitionLockRef');
       return;
     }
     transitionLockRef.current = true;
 
     try {
-      console.log('[OnboardingFlow] Setting flags for selected modules:', selectedModules);
+      logger.log('[OnboardingFlow] Setting flags for selected modules:', selectedModules);
       // Save module preferences to feature flags
       modules.forEach(m => {
         setFlag(m.id, selectedModules.includes(m.id));
       });
 
-      console.log('[OnboardingFlow] Calling onComplete with modules:', selectedModules);
+      logger.log('[OnboardingFlow] Calling onComplete with modules:', selectedModules);
       onComplete({ modules: selectedModules });
-      console.log('[OnboardingFlow] onComplete called successfully');
+      logger.log('[OnboardingFlow] onComplete called successfully');
     } catch (error) {
       console.error('[OnboardingFlow] Error in handleComplete:', error);
       transitionLockRef.current = false;
@@ -319,12 +320,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             <button
               type="button"
               onClick={() => {
-                console.log('[OnboardingFlow] Skip button clicked');
+                logger.log('[OnboardingFlow] Skip button clicked');
                 handleSkip();
               }}
               onTouchEnd={(e) => {
                 e.preventDefault();
-                console.log('[OnboardingFlow] Skip button touched');
+                logger.log('[OnboardingFlow] Skip button touched');
                 handleSkip();
               }}
               className="flex-1 py-3 sm:py-4 bg-secondary/50 backdrop-blur-sm text-secondary-foreground rounded-xl sm:rounded-2xl font-semibold hover:bg-secondary transition-colors text-sm sm:text-base active:scale-95"
@@ -334,12 +335,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             <button
               type="button"
               onClick={() => {
-                console.log('[OnboardingFlow] Start button clicked');
+                logger.log('[OnboardingFlow] Start button clicked');
                 handleComplete();
               }}
               onTouchEnd={(e) => {
                 e.preventDefault();
-                console.log('[OnboardingFlow] Start button touched');
+                logger.log('[OnboardingFlow] Start button touched');
                 handleComplete();
               }}
               className="flex-1 py-3 sm:py-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-xl sm:rounded-2xl font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/30 text-sm sm:text-base active:scale-95"

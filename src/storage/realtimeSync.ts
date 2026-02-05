@@ -9,8 +9,18 @@ import { logger } from '@/lib/logger';
 import { supabase, getCurrentUserId } from '@/lib/supabaseClient';
 import { db } from '@/storage/db';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
+import { Database } from '@/types/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { offlineQueue } from '@/lib/offlineQueue';
+
+// Type aliases for Supabase table rows (LOW priority fix: replace `as any[]`)
+type MoodRow = Database['public']['Tables']['moods']['Row'];
+type HabitRow = Database['public']['Tables']['habits']['Row'];
+type HabitCompletionRow = Database['public']['Tables']['habit_completions']['Row'];
+type HabitReminderRow = Database['public']['Tables']['habit_reminders']['Row'];
+type FocusSessionRow = Database['public']['Tables']['focus_sessions']['Row'];
+type GratitudeEntryRow = Database['public']['Tables']['gratitude_entries']['Row'];
+type UserSettingsRow = Database['public']['Tables']['user_settings']['Row'];
 
 // Track active subscriptions
 let realtimeChannel: RealtimeChannel | null = null;
@@ -502,21 +512,14 @@ export const pullFromCloud = async (): Promise<boolean> => {
     if (gratitudeRes.error) throw gratitudeRes.error;
     if (settingsRes.error) throw settingsRes.error;
 
-    // Type assertions for Supabase data (needed for TypeScript inference)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const moodsData = (moodsRes.data || []) as any[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const habitsData = (habitsRes.data || []) as any[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const completionsData = (completionsRes.data || []) as any[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const remindersData = (remindersRes.data || []) as any[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const focusData = (focusRes.data || []) as any[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const gratitudeData = (gratitudeRes.data || []) as any[];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const settingsData = (settingsRes.data || []) as any[];
+    // Type-safe Supabase data (LOW priority fix: replaced `as any[]` with proper types)
+    const moodsData: MoodRow[] = moodsRes.data || [];
+    const habitsData: HabitRow[] = habitsRes.data || [];
+    const completionsData: HabitCompletionRow[] = completionsRes.data || [];
+    const remindersData: HabitReminderRow[] = remindersRes.data || [];
+    const focusData: FocusSessionRow[] = focusRes.data || [];
+    const gratitudeData: GratitudeEntryRow[] = gratitudeRes.data || [];
+    const settingsData: UserSettingsRow[] = settingsRes.data || [];
 
     // Transform cloud data to local format
     const moods: MoodEntry[] = moodsData.map(m => ({

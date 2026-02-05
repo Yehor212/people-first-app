@@ -188,13 +188,19 @@ export function useIndexedDB<T>({
                 if (isPrimitive || isArray) {
                   // Don't merge primitives or arrays - just use the value directly
                   setData(parsed as T);
-                  table.put({ key: localStorageKey, value: parsed }).catch(() => {});
+                  table.put({ key: localStorageKey, value: parsed }).catch((err) => {
+                    // LOW priority fix: Log migration errors
+                    logger.warn('[useIndexedDB] Migration put failed:', err);
+                  });
                 } else {
                   // Merge with initialValue to ensure all required fields exist
                   const merged = { ...defaults, ...parsed };
                   setData(merged as T);
                   // Migrate to IndexedDB (don't wait, fire and forget)
-                  table.put({ key: localStorageKey, value: merged }).catch(() => {});
+                  table.put({ key: localStorageKey, value: merged }).catch((err) => {
+                    // LOW priority fix: Log migration errors
+                    logger.warn('[useIndexedDB] Migration merge put failed:', err);
+                  });
                 }
               } catch (parseError) {
                 logger.warn('Failed to parse localStorage data for migration:', parseError);
@@ -224,7 +230,10 @@ export function useIndexedDB<T>({
                 if (Array.isArray(parsed) && parsed.length > 0) {
                   setData(parsed as T);
                   // Migrate to IndexedDB (don't wait, fire and forget)
-                  table.bulkPut(parsed).catch(() => {});
+                  table.bulkPut(parsed).catch((err) => {
+                    // LOW priority fix: Log migration errors
+                    logger.warn('[useIndexedDB] Migration bulkPut failed:', err);
+                  });
                 }
               } catch (parseError) {
                 logger.warn('Failed to parse localStorage array data for migration:', parseError);
