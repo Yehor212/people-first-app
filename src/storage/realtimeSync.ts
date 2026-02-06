@@ -698,6 +698,20 @@ export const unsubscribeFromRealtime = async (): Promise<void> => {
   logger.log('[Realtime] Unsubscribed');
 };
 
+// P1-10 Fix: Validation helpers for realtime data
+const isValidString = (val: unknown): val is string => typeof val === 'string' && val.length > 0;
+const isValidNumber = (val: unknown): val is number => typeof val === 'number' && !isNaN(val);
+const isValidStringArray = (val: unknown): val is string[] =>
+  Array.isArray(val) && val.every(item => typeof item === 'string');
+
+const VALID_MOODS = ['great', 'good', 'okay', 'bad', 'terrible'] as const;
+const isValidMood = (val: unknown): val is MoodEntry['mood'] =>
+  typeof val === 'string' && (VALID_MOODS as readonly string[]).includes(val);
+
+const VALID_FOCUS_STATUSES = ['completed', 'abandoned', 'paused'] as const;
+const isValidFocusStatus = (val: unknown): val is FocusSession['status'] =>
+  typeof val === 'string' && (VALID_FOCUS_STATUSES as readonly string[]).includes(val);
+
 // Handle realtime changes from other devices
 const handleRealtimeChange = async (table: string, payload: { eventType: string; new: Record<string, unknown> | null; old: Record<string, unknown> | null }) => {
   logger.log('[Realtime] Change received:', table, payload.eventType);
@@ -707,19 +721,26 @@ const handleRealtimeChange = async (table: string, payload: { eventType: string;
       case 'moods':
         if (payload.eventType === 'DELETE') {
           const oldId = payload.old?.id;
-          if (oldId) await db.moods.delete(oldId as string);
+          if (isValidString(oldId)) await db.moods.delete(oldId);
         } else if (payload.new) {
           const moodData = payload.new;
-          if (moodData.id && moodData.mood && moodData.date) {
+          // P1-10 Fix: Validate all required fields before inserting
+          if (
+            isValidString(moodData.id) &&
+            isValidMood(moodData.mood) &&
+            isValidString(moodData.date)
+          ) {
             await db.moods.put({
-              id: moodData.id as string,
-              mood: moodData.mood as MoodEntry['mood'],
-              note: moodData.note as string | undefined,
-              date: moodData.date as string,
-              timestamp: (moodData.timestamp as number) || Date.now(),
-              tags: (moodData.tags as string[]) || [],
-              emotion: moodData.emotion as MoodEntry['emotion'] | undefined,
+              id: moodData.id,
+              mood: moodData.mood,
+              note: isValidString(moodData.note) ? moodData.note : undefined,
+              date: moodData.date,
+              timestamp: isValidNumber(moodData.timestamp) ? moodData.timestamp : Date.now(),
+              tags: isValidStringArray(moodData.tags) ? moodData.tags : [],
+              emotion: isValidString(moodData.emotion) ? moodData.emotion as MoodEntry['emotion'] : undefined,
             });
+          } else {
+            logger.warn('[Realtime] Invalid mood data received, skipping:', moodData);
           }
         }
         break;
@@ -727,19 +748,25 @@ const handleRealtimeChange = async (table: string, payload: { eventType: string;
       case 'focus_sessions':
         if (payload.eventType === 'DELETE') {
           const oldId = payload.old?.id;
-          if (oldId) await db.focusSessions.delete(oldId as string);
+          if (isValidString(oldId)) await db.focusSessions.delete(oldId);
         } else if (payload.new) {
           const focusData = payload.new;
-          if (focusData.id && focusData.date) {
+          // P1-10 Fix: Validate all required fields before inserting
+          if (
+            isValidString(focusData.id) &&
+            isValidString(focusData.date)
+          ) {
             await db.focusSessions.put({
-              id: focusData.id as string,
-              duration: (focusData.duration as number) || 0,
-              completedAt: (focusData.completed_at as number) || Date.now(),
-              date: focusData.date as string,
-              label: focusData.label as string | undefined,
-              status: (focusData.status as FocusSession['status']) || 'completed',
-              reflection: focusData.reflection as number | undefined,
+              id: focusData.id,
+              duration: isValidNumber(focusData.duration) ? focusData.duration : 0,
+              completedAt: isValidNumber(focusData.completed_at) ? focusData.completed_at : Date.now(),
+              date: focusData.date,
+              label: isValidString(focusData.label) ? focusData.label : undefined,
+              status: isValidFocusStatus(focusData.status) ? focusData.status : 'completed',
+              reflection: isValidNumber(focusData.reflection) ? focusData.reflection : undefined,
             });
+          } else {
+            logger.warn('[Realtime] Invalid focus session data received, skipping:', focusData);
           }
         }
         break;
@@ -747,16 +774,23 @@ const handleRealtimeChange = async (table: string, payload: { eventType: string;
       case 'gratitude_entries':
         if (payload.eventType === 'DELETE') {
           const oldId = payload.old?.id;
-          if (oldId) await db.gratitudeEntries.delete(oldId as string);
+          if (isValidString(oldId)) await db.gratitudeEntries.delete(oldId);
         } else if (payload.new) {
           const gratData = payload.new;
-          if (gratData.id && gratData.text && gratData.date) {
+          // P1-10 Fix: Validate all required fields before inserting
+          if (
+            isValidString(gratData.id) &&
+            isValidString(gratData.text) &&
+            isValidString(gratData.date)
+          ) {
             await db.gratitudeEntries.put({
-              id: gratData.id as string,
-              text: gratData.text as string,
-              date: gratData.date as string,
-              timestamp: (gratData.timestamp as number) || Date.now(),
+              id: gratData.id,
+              text: gratData.text,
+              date: gratData.date,
+              timestamp: isValidNumber(gratData.timestamp) ? gratData.timestamp : Date.now(),
             });
+          } else {
+            logger.warn('[Realtime] Invalid gratitude data received, skipping:', gratData);
           }
         }
         break;

@@ -199,11 +199,31 @@ class OfflineQueue {
       }
     }
 
-    // Deduplicate: remove previous action for same entity and type
+    // Deduplicate: update existing action in-place to preserve queue order
     if (deduplicate) {
-      this.state.actions = this.state.actions.filter(
-        a => !(a.entityId === entityId && a.type === type)
+      const existingIndex = this.state.actions.findIndex(
+        a => a.entityId === entityId && a.type === type
       );
+
+      if (existingIndex !== -1) {
+        // Update existing action in-place (preserve position in queue)
+        const existing = this.state.actions[existingIndex];
+        existing.payload = payload;
+        existing.timestamp = Date.now();
+        existing.retries = 0; // Reset retries for updated action
+        existing.lastError = undefined;
+        logger.log('[OfflineQueue] Action deduplicated in-place:', type, entityId);
+        this.persistToStorage();
+        this.notifyListeners();
+
+        // If online, try to process immediately
+        if (navigator.onLine) {
+          void this.processQueue();
+        } else {
+          this.requestBackgroundSync();
+        }
+        return; // Don't add new action, we updated existing
+      }
     }
 
     const action: OfflineAction = {

@@ -189,17 +189,39 @@ export async function syncTasks(): Promise<Task[]> {
       return;
     }
 
-    // Merge strategy: cloud wins for conflicts
+    // Merge strategy: prefer completed tasks and higher progress
     const taskMap = new Map<string, Task>();
+    const localMap = new Map<string, Task>();
+    const cloudMap = new Map<string, Task>();
 
-    // Add local tasks
-    localTasks.forEach(task => {
-      taskMap.set(task.id, task);
-    });
+    localTasks.forEach(task => localMap.set(task.id, task));
+    cloudTasks.forEach(task => cloudMap.set(task.id, task));
 
-    // Override with cloud tasks (cloud wins)
-    cloudTasks.forEach(task => {
-      taskMap.set(task.id, task);
+    // Get all unique task IDs
+    const allTaskIds = new Set([...localMap.keys(), ...cloudMap.keys()]);
+
+    allTaskIds.forEach(taskId => {
+      const localTask = localMap.get(taskId);
+      const cloudTask = cloudMap.get(taskId);
+
+      if (localTask && cloudTask) {
+        // Both exist - use smart merge
+        if (localTask.completed && !cloudTask.completed) {
+          // Local is completed, cloud is not - keep local
+          taskMap.set(taskId, localTask);
+        } else if (cloudTask.completed && !localTask.completed) {
+          // Cloud is completed, local is not - keep cloud
+          taskMap.set(taskId, cloudTask);
+        } else {
+          // Both same completion status - prefer local to avoid losing edits
+          // (local changes are more recent since user just made them)
+          taskMap.set(taskId, localTask);
+        }
+      } else if (localTask) {
+        taskMap.set(taskId, localTask);
+      } else if (cloudTask) {
+        taskMap.set(taskId, cloudTask);
+      }
     });
 
     mergedTasks = Array.from(taskMap.values());
@@ -298,11 +320,30 @@ export async function syncQuests(): Promise<QuestsState> {
       return;
     }
 
-    // Merge strategy: cloud wins
+    // Merge strategy: prefer completed quests and higher progress
+    const mergeQuest = (local: Quest | null, cloud: Quest | null): Quest | null => {
+      if (!local && !cloud) return null;
+      if (!local) return cloud;
+      if (!cloud) return local;
+
+      // Both exist - smart merge
+      if (local.completed && !cloud.completed) {
+        return local; // Local is completed, keep it
+      } else if (cloud.completed && !local.completed) {
+        return cloud; // Cloud is completed, keep it
+      } else if (local.progress > cloud.progress) {
+        return local; // Local has more progress
+      } else if (cloud.progress > local.progress) {
+        return cloud; // Cloud has more progress
+      }
+      // Same progress - prefer local (more recent user changes)
+      return local;
+    };
+
     mergedQuests = {
-      daily: cloudQuests.daily || localQuests.daily,
-      weekly: cloudQuests.weekly || localQuests.weekly,
-      bonus: cloudQuests.bonus || localQuests.bonus,
+      daily: mergeQuest(localQuests.daily, cloudQuests.daily),
+      weekly: mergeQuest(localQuests.weekly, cloudQuests.weekly),
+      bonus: mergeQuest(localQuests.bonus, cloudQuests.bonus),
     };
 
     // Save merged to local

@@ -139,7 +139,8 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
         throw new Error(fetchError.message);
       }
 
-      // 3. Merge logic: cloud wins for conflicts (latest updated_at)
+      // 3. P1-1 Fix: Merge logic with progress-based conflict resolution
+      // Use the version with more progress (not just cloud wins)
       const cloudMap = new Map<string, SupabaseChallenge>();
       (cloudChallenges || []).forEach(cc => {
         cloudMap.set(cc.challenge_id, cc);
@@ -154,14 +155,36 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
       const merged: Challenge[] = [];
       const toUpsert: Partial<SupabaseChallenge>[] = [];
 
-      // Process cloud challenges
-      cloudMap.forEach((cloudChallenge, challengeId) => {
-        merged.push(supabaseToChallengeLocal(cloudChallenge));
-      });
+      // Process all challenges (merge conflicts by progress)
+      const allChallengeIds = new Set([...cloudMap.keys(), ...localMap.keys()]);
 
-      // Process local-only challenges (need to push to cloud)
-      localMap.forEach((localChallenge, challengeId) => {
-        if (!cloudMap.has(challengeId)) {
+      allChallengeIds.forEach(challengeId => {
+        const cloudChallenge = cloudMap.get(challengeId);
+        const localChallenge = localMap.get(challengeId);
+
+        if (cloudChallenge && localChallenge) {
+          // Both exist - use the one with more progress, or completed one
+          const cloudConverted = supabaseToChallengeLocal(cloudChallenge);
+          if (localChallenge.completed && !cloudConverted.completed) {
+            // Local is completed, cloud is not - use local
+            merged.push(localChallenge);
+            toUpsert.push(challengeToSupabase(localChallenge, userId));
+          } else if (cloudConverted.completed && !localChallenge.completed) {
+            // Cloud is completed, local is not - use cloud
+            merged.push(cloudConverted);
+          } else if (localChallenge.progress > cloudConverted.progress) {
+            // Local has more progress - use local
+            merged.push(localChallenge);
+            toUpsert.push(challengeToSupabase(localChallenge, userId));
+          } else {
+            // Cloud has equal or more progress - use cloud
+            merged.push(cloudConverted);
+          }
+        } else if (cloudChallenge) {
+          // Cloud-only challenge
+          merged.push(supabaseToChallengeLocal(cloudChallenge));
+        } else if (localChallenge) {
+          // Local-only challenge - push to cloud
           merged.push(localChallenge);
           toUpsert.push(challengeToSupabase(localChallenge, userId));
         }
