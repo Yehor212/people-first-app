@@ -1338,6 +1338,8 @@ export interface Translations {
   openTasks: string;
   openQuests: string;
   openChallenges: string;
+  challengesCompleted: string;
+  completeAllFor: string;
 
   // QuestsPanel UI
   randomQuests: string;
@@ -3037,6 +3039,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     openTasks: 'Открыть задачи',
     openQuests: 'Открыть квесты',
     openChallenges: 'Открыть вызовы',
+    challengesCompleted: 'выполнено',
+    completeAllFor: 'Выполните все для',
 
     // QuestsPanel UI
     randomQuests: 'Случайные квесты',
@@ -4742,6 +4746,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     openTasks: 'Open Tasks',
     openQuests: 'Open Quests',
     openChallenges: 'Open Challenges',
+    challengesCompleted: 'completed',
+    completeAllFor: 'Complete all for',
 
     // QuestsPanel UI
     randomQuests: 'Random Quests',
@@ -6447,6 +6453,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     openTasks: 'Відкрити задачі',
     openQuests: 'Відкрити квести',
     openChallenges: 'Відкрити виклики',
+    challengesCompleted: 'виконано',
+    completeAllFor: 'Виконайте все для',
 
     // QuestsPanel UI
     randomQuests: 'Випадкові квести',
@@ -8153,6 +8161,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     openTasks: 'Abrir tareas',
     openQuests: 'Abrir misiones',
     openChallenges: 'Abrir desafíos',
+    challengesCompleted: 'completados',
+    completeAllFor: 'Completa todo para',
 
     // QuestsPanel UI
     randomQuests: 'Misiones aleatorias',
@@ -9859,6 +9869,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     openTasks: 'Aufgaben öffnen',
     openQuests: 'Quests öffnen',
     openChallenges: 'Herausforderungen öffnen',
+    challengesCompleted: 'abgeschlossen',
+    completeAllFor: 'Alle abschließen für',
 
     // QuestsPanel UI
     randomQuests: 'Zufällige Quests',
@@ -11565,6 +11577,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     openTasks: 'Ouvrir les tâches',
     openQuests: 'Ouvrir les quêtes',
     openChallenges: 'Ouvrir les défis',
+    challengesCompleted: 'terminés',
+    completeAllFor: 'Terminez tout pour',
 
     // QuestsPanel UI
     randomQuests: 'Quêtes aléatoires',
@@ -13270,6 +13284,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     openTasks: 'タスクを開く',
     openQuests: 'クエストを開く',
     openChallenges: 'チャレンジを開く',
+    challengesCompleted: '完了',
+    completeAllFor: 'すべて完了で獲得',
 
     // QuestsPanel UI
     randomQuests: 'ランダムクエスト',
@@ -14917,6 +14933,8 @@ const arabicOverrides: Partial<Translations> = {
   openTasks: 'فتح المهام',
   openQuests: 'فتح المهام',
   openChallenges: 'فتح التحديات',
+  challengesCompleted: 'مكتمل',
+  completeAllFor: 'أكمل الكل للحصول على',
 
   // Quests Panel
   randomQuests: 'مهام عشوائية',
@@ -16161,6 +16179,8 @@ const hebrewOverrides: Partial<Translations> = {
   openTasks: 'פתח משימות',
   openQuests: 'פתח קווסטים',
   openChallenges: 'פתח אתגרים',
+  challengesCompleted: 'הושלמו',
+  completeAllFor: 'השלם הכל כדי לקבל',
   addTask: 'הוסף משימה',
   noTasksYet: 'אין משימות עדיין',
   addFirstTask: 'הוסף משימה ראשונה',
