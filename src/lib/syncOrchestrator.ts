@@ -11,6 +11,7 @@
 
 import { useState, useEffect } from 'react';
 import { logger } from '@/lib/logger';
+import { addCategorizedBreadcrumb } from '@/lib/sentry';
 import { isCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { generateSecureRandom } from '@/lib/validation';
 import { is401Error, AUTH_SESSION_EXPIRED_EVENT } from '@/lib/apiClient';
@@ -67,6 +68,9 @@ class SyncOrchestrator {
     queueLength: 0,
     isOnline: navigator.onLine,
   };
+
+  // P0 Fix: Prevent multiple AUTH_SESSION_EXPIRED_EVENT dispatches
+  private sessionExpiredEmitted = false;
 
   // Retry configuration
   private readonly RETRY_DELAY_BASE = 1000; // 1 second
@@ -181,6 +185,7 @@ class SyncOrchestrator {
       const operation = this.queue[0];
 
       try {
+        addCategorizedBreadcrumb('sync', `Starting ${operation.type} sync`, { operationId: operation.id, priority: operation.priority });
         logger.sync(`Starting ${operation.type} sync`);
         operation.startedAt = Date.now();
 
@@ -195,6 +200,7 @@ class SyncOrchestrator {
         operation.completedAt = Date.now();
         const duration = operation.completedAt - operation.startedAt!;
 
+        addCategorizedBreadcrumb('sync', `Completed ${operation.type} sync`, { duration, operationId: operation.id });
         logger.sync(`Completed ${operation.type} sync in ${duration}ms`);
 
         // Remove from queue
@@ -210,6 +216,10 @@ class SyncOrchestrator {
         });
 
       } catch (error) {
+        addCategorizedBreadcrumb('sync', `Sync error for ${operation.type}`, {
+          error: (error as Error).message,
+          retries: operation.retries,
+        }, 'error');
         logger.error(`Sync error for ${operation.type}:`, error);
 
         operation.error = error as Error;
@@ -218,6 +228,13 @@ class SyncOrchestrator {
         // Check for 401 authentication errors - these need special handling
         if (is401Error(error)) {
           logger.warn(`[SyncOrchestrator] 401 error on ${operation.type} - checking if session truly expired`);
+
+          // P0 Fix: If we already emitted session expired, just clear and stop
+          if (this.sessionExpiredEmitted) {
+            logger.log(`[SyncOrchestrator] Session already expired, clearing remaining queue`);
+            this.clearQueue();
+            break;
+          }
 
           // P0 Fix: Verify session before notifying UI
           // 401 might be a transient error, check actual session state
@@ -233,7 +250,7 @@ class SyncOrchestrator {
             // Session is still valid - treat as transient error, retry later
             logger.log(`[SyncOrchestrator] Session valid despite 401, will retry ${operation.type}`);
             // Don't dispatch expired event, just retry with other errors
-            operation.retries++;
+            // Note: retries was already incremented above (line 216), so check against maxRetries
             if (operation.retries < operation.maxRetries) {
               const delay = this.calculateRetryDelay(operation.retries);
               this.queue.shift();
@@ -245,15 +262,22 @@ class SyncOrchestrator {
           }
 
           // Session truly expired
+          addCategorizedBreadcrumb('sync', 'Session expired - clearing queue', { operation: operation.type }, 'warning');
           logger.warn(`[SyncOrchestrator] Session confirmed expired for ${operation.type}`);
-          // Remove from queue immediately
-          this.queue.shift();
-          // Notify UI that session has expired
+
+          // P0 Fix: Set flag BEFORE dispatching to prevent race condition
+          this.sessionExpiredEmitted = true;
+
+          // Clear entire queue - no point retrying with expired session
+          this.clearQueue();
+
+          // Notify UI that session has expired (only once due to flag)
           window.dispatchEvent(new CustomEvent(AUTH_SESSION_EXPIRED_EVENT));
+
           this.updateState({
             status: 'error',
             lastError: 'Session expired. Please sign in again.',
-            queueLength: this.queue.length,
+            queueLength: 0,
             currentOperation: undefined,
           });
           // Stop processing the queue
@@ -448,6 +472,14 @@ class SyncOrchestrator {
   }
 
   /**
+   * Reset session expired flag (call after successful re-authentication)
+   */
+  resetSessionExpired(): void {
+    this.sessionExpiredEmitted = false;
+    logger.sync('Session expired flag reset');
+  }
+
+  /**
    * Get queue info for debugging
    */
   getQueueInfo(): Array<{ type: SyncOperationType; priority: number; retries: number }> {
@@ -478,5 +510,6 @@ export function useSyncOrchestrator() {
     sync: syncOrchestrator.sync.bind(syncOrchestrator),
     clearQueue: syncOrchestrator.clearQueue.bind(syncOrchestrator),
     getQueueInfo: syncOrchestrator.getQueueInfo.bind(syncOrchestrator),
+    resetSessionExpired: syncOrchestrator.resetSessionExpired.bind(syncOrchestrator),
   };
 }

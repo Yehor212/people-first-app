@@ -919,3 +919,73 @@ export function getAmbientSoundGenerator(): AmbientSoundGenerator {
   }
   return globalSoundGenerator;
 }
+
+/**
+ * Preload sound files to improve initial playback latency.
+ * Uses browser's link prefetch for non-blocking background loading.
+ * Call this at app startup after initial render.
+ *
+ * P2: Only preloads MP3 files (smaller) - WAV files are too large for prefetch.
+ */
+export function preloadAmbientSounds(): void {
+  // Only preload MP3 files (cafe, fireplace) - WAV files are too large
+  const mp3Sounds = SOUNDS.filter(s => s.file.endsWith('.mp3'));
+
+  mp3Sounds.forEach(sound => {
+    try {
+      // Use link prefetch for non-blocking background loading
+      const link = document.createElement('link');
+      link.rel = 'prefetch';
+      link.as = 'audio';
+      link.href = sound.file;
+      document.head.appendChild(link);
+      logger.log('[AmbientSounds] Prefetch queued:', sound.id);
+    } catch (e) {
+      // Prefetch is best-effort, don't fail on errors
+      logger.warn('[AmbientSounds] Prefetch failed:', sound.id, e);
+    }
+  });
+}
+
+/**
+ * Check if all sound files are accessible.
+ * Useful for diagnostics and detecting CDN/path issues.
+ * Returns list of sounds with their load status.
+ */
+export async function checkSoundFilesAccessibility(): Promise<Array<{
+  id: string;
+  file: string;
+  accessible: boolean;
+  error?: string;
+}>> {
+  const results = await Promise.all(
+    SOUNDS.map(async (sound) => {
+      try {
+        const response = await fetch(sound.file, { method: 'HEAD' });
+        return {
+          id: sound.id,
+          file: sound.file,
+          accessible: response.ok,
+          error: response.ok ? undefined : `HTTP ${response.status}`,
+        };
+      } catch (e) {
+        return {
+          id: sound.id,
+          file: sound.file,
+          accessible: false,
+          error: e instanceof Error ? e.message : 'Unknown error',
+        };
+      }
+    })
+  );
+
+  // Log summary
+  const inaccessible = results.filter(r => !r.accessible);
+  if (inaccessible.length > 0) {
+    logger.warn('[AmbientSounds] Some sound files are inaccessible:', inaccessible);
+  } else {
+    logger.log('[AmbientSounds] All sound files accessible');
+  }
+
+  return results;
+}

@@ -97,12 +97,32 @@ export const checkDatabaseHealth = async (): Promise<boolean> => {
       } catch (openError) {
         // If opening fails, try to delete and recreate
         logger.warn('[DB] Database open failed, attempting recovery:', openError);
+
+        // P0 Fix: Emit event to notify UI about database recovery
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('zenflow:database-recovery-needed', {
+            detail: {
+              error: openError instanceof Error ? openError.message : 'Database open failed',
+              timestamp: Date.now(),
+            }
+          }));
+        }
+
         try {
           await db.delete();
           await db.open();
           return true;
         } catch (recoveryError) {
           logger.error('[DB] Database recovery failed:', recoveryError);
+          // Emit critical error event
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('zenflow:database-recovery-failed', {
+              detail: {
+                error: recoveryError instanceof Error ? recoveryError.message : 'Recovery failed',
+                timestamp: Date.now(),
+              }
+            }));
+          }
           // Still return true to allow app to work with localStorage
           return true;
         }

@@ -20,7 +20,16 @@ export default tseslint.config(
     rules: {
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
-      "@typescript-eslint/no-unused-vars": "off",
+      // P0 Premium Upgrade: Enable stricter rules
+      "@typescript-eslint/no-unused-vars": ["warn", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_",
+      }],
+      // Catch unhandled promises (common source of silent failures)
+      "@typescript-eslint/no-floating-promises": "warn",
+      // Ensure React hooks dependencies are correct
+      "react-hooks/exhaustive-deps": "warn",
     },
   },
 );

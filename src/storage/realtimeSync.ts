@@ -6,6 +6,7 @@
  */
 
 import { logger } from '@/lib/logger';
+import { addCategorizedBreadcrumb } from '@/lib/sentry';
 import { supabase, getCurrentUserId } from '@/lib/supabaseClient';
 import { db } from '@/storage/db';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
@@ -26,12 +27,28 @@ type UserSettingsRow = Database['public']['Tables']['user_settings']['Row'];
 let realtimeChannel: RealtimeChannel | null = null;
 
 /**
+ * P0 Fix: Check if error is an intentional abort (timeout or user navigation)
+ * AbortError should NOT be treated as a network error - it's intentional cancellation
+ */
+const isAbortError = (error: unknown): boolean => {
+  if (error instanceof DOMException && error.name === 'AbortError') {
+    return true;
+  }
+  if (error instanceof Error && error.name === 'AbortError') {
+    return true;
+  }
+  return false;
+};
+
+/**
  * P0 Fix: Robust network error detection
  * Uses multiple signals instead of fragile string matching:
  * 1. navigator.onLine - browser's network status
- * 2. error.name - DOMException names like 'NetworkError', 'AbortError'
+ * 2. error.name - DOMException names like 'NetworkError'
  * 3. error.code - numeric error codes (some browsers use these)
  * 4. String patterns as fallback for edge cases
+ *
+ * NOTE: AbortError is NOT a network error - it's handled separately
  */
 const detectNetworkError = (error: unknown): boolean => {
   // First check: browser reports offline
@@ -43,10 +60,14 @@ const detectNetworkError = (error: unknown): boolean => {
     return false;
   }
 
+  // AbortError is NOT a network error - it's intentional cancellation
+  if (isAbortError(error)) {
+    return false;
+  }
+
   // Check error name (more reliable than message)
   const networkErrorNames = [
     'NetworkError',
-    'AbortError',      // Can indicate network abort
     'TimeoutError',
     'TypeError',       // fetch failures are often TypeErrors
   ];
@@ -118,9 +139,12 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     return;
   }
 
+  addCategorizedBreadcrumb('sync', 'Starting mood sync', { moodId: mood.id, date: mood.date });
+
   // If offline, queue for later sync
   if (!navigator.onLine) {
     await offlineQueue.enqueue('CREATE_MOOD', mood.id, mood);
+    addCategorizedBreadcrumb('sync', 'Mood queued (offline)', { moodId: mood.id });
     logger.log('[Sync] Mood queued for offline sync:', mood.id);
     return;
   }
@@ -138,17 +162,27 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     }, { onConflict: 'id' });
 
     if (error) throw error;
+    addCategorizedBreadcrumb('sync', 'Mood synced successfully', { moodId: mood.id });
     logger.log('[Sync] Mood synced:', mood.id);
   } catch (error) {
+    // P0 Fix: Handle AbortError separately - it's intentional, don't retry/queue
+    if (isAbortError(error)) {
+      addCategorizedBreadcrumb('sync', 'Mood sync aborted', { moodId: mood.id }, 'warning');
+      logger.warn('[Sync] Mood sync aborted (timeout or navigation):', mood.id);
+      return; // Don't retry, don't queue - this was intentional
+    }
+
     // P0 Fix: More robust network error detection
     // Check multiple signals instead of relying on fragile string matching
     const isNetworkError = detectNetworkError(error);
 
     if (isNetworkError) {
       await offlineQueue.enqueue('CREATE_MOOD', mood.id, mood);
+      addCategorizedBreadcrumb('sync', 'Mood queued (network error)', { moodId: mood.id }, 'warning');
       logger.log('[Sync] Mood queued after network error:', mood.id);
       // Don't re-throw network errors - they're handled via offline queue
     } else {
+      addCategorizedBreadcrumb('sync', 'Mood sync failed', { moodId: mood.id, error: (error as Error).message }, 'error');
       logger.error('[Sync] Failed to sync mood:', error);
       // P0-4 Fix: Re-throw so callers (especially offline queue handlers) know sync failed
       // Without this, the offline queue removes the action thinking it succeeded
@@ -178,6 +212,11 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
     if (error) throw error;
     logger.log('[Sync] Mood deleted:', moodId);
   } catch (error) {
+    // P0 Fix: Handle AbortError separately
+    if (isAbortError(error)) {
+      logger.warn('[Sync] Mood delete aborted (timeout or navigation):', moodId);
+      return;
+    }
     logger.error('[Sync] Failed to delete mood:', error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
@@ -290,6 +329,11 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
 
     logger.log('[Sync] Habit synced:', habit.id);
   } catch (error) {
+    // P0 Fix: Handle AbortError separately
+    if (isAbortError(error)) {
+      logger.warn('[Sync] Habit sync aborted (timeout or navigation):', habit.id);
+      return;
+    }
     logger.error('[Sync] Failed to sync habit:', error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
@@ -317,6 +361,11 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
     if (error) throw error;
     logger.log('[Sync] Habit deleted:', habitId);
   } catch (error) {
+    // P0 Fix: Handle AbortError separately
+    if (isAbortError(error)) {
+      logger.warn('[Sync] Habit delete aborted (timeout or navigation):', habitId);
+      return;
+    }
     logger.error('[Sync] Failed to delete habit:', error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
@@ -366,6 +415,11 @@ export const syncHabitCompletion = async (habitId: string, date: string, complet
     }
     logger.log('[Sync] Habit completion synced:', habitId, date, completed);
   } catch (error) {
+    // P0 Fix: Handle AbortError separately
+    if (isAbortError(error)) {
+      logger.warn('[Sync] Habit completion sync aborted:', habitId, date);
+      return;
+    }
     logger.error('[Sync] Failed to sync habit completion:', error);
     // P0-4 Fix: Re-throw for retry logic
     throw error;
@@ -407,6 +461,11 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
     if (error) throw error;
     logger.log('[Sync] Focus session synced:', session.id);
   } catch (error) {
+    // P0 Fix: Handle AbortError separately
+    if (isAbortError(error)) {
+      logger.warn('[Sync] Focus session sync aborted:', session.id);
+      return;
+    }
     logger.error('[Sync] Failed to sync focus session:', error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
@@ -445,6 +504,11 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
     if (error) throw error;
     logger.log('[Sync] Gratitude synced:', entry.id);
   } catch (error) {
+    // P0 Fix: Handle AbortError separately
+    if (isAbortError(error)) {
+      logger.warn('[Sync] Gratitude sync aborted:', entry.id);
+      return;
+    }
     logger.error('[Sync] Failed to sync gratitude:', error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
@@ -472,6 +536,11 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
     if (error) throw error;
     logger.log('[Sync] Gratitude deleted:', entryId);
   } catch (error) {
+    // P0 Fix: Handle AbortError separately
+    if (isAbortError(error)) {
+      logger.warn('[Sync] Gratitude delete aborted:', entryId);
+      return;
+    }
     logger.error('[Sync] Failed to delete gratitude:', error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
@@ -501,6 +570,11 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
     if (error) throw error;
     logger.log('[Sync] Setting synced:', key);
   } catch (error) {
+    // P0 Fix: Handle AbortError separately
+    if (isAbortError(error)) {
+      logger.warn('[Sync] Setting sync aborted:', key);
+      return;
+    }
     logger.error('[Sync] Failed to sync setting:', error);
     // P0-4 Fix: Re-throw for offline queue handlers
     throw error;
@@ -519,6 +593,8 @@ export const pullFromCloud = async (): Promise<boolean> => {
     logger.warn('[Sync] Cannot pull from cloud: User not authenticated');
     return false;
   }
+
+  addCategorizedBreadcrumb('sync', 'Starting pullFromCloud');
 
   try {
     // Fetch all data in parallel
@@ -667,6 +743,12 @@ export const pullFromCloud = async (): Promise<boolean> => {
       throw transactionError; // Re-throw to be caught by outer catch
     }
 
+    addCategorizedBreadcrumb('sync', 'pullFromCloud completed', {
+      moods: moods.length,
+      habits: habits.length,
+      focusSessions: focusSessions.length,
+      gratitudeEntries: gratitudeEntries.length,
+    });
     logger.log('[Sync] Pulled from cloud:', {
       moods: moods.length,
       habits: habits.length,
@@ -676,6 +758,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
 
     return true;
   } catch (error) {
+    addCategorizedBreadcrumb('sync', 'pullFromCloud failed', { error: (error as Error).message }, 'error');
     logger.error('[Sync] Failed to pull from cloud:', error);
     return false;
   }
@@ -694,6 +777,8 @@ export const pushToCloud = async (): Promise<boolean> => {
     return false;
   }
 
+  addCategorizedBreadcrumb('sync', 'Starting pushToCloud');
+
   try {
     const [moods, habits, focusSessions, gratitudeEntries, settings] = await Promise.all([
       db.moods.toArray(),
@@ -710,6 +795,12 @@ export const pushToCloud = async (): Promise<boolean> => {
     await processBatched(gratitudeEntries, g => syncGratitude(g));
     await processBatched(settings, s => syncSetting(s.key, s.value));
 
+    addCategorizedBreadcrumb('sync', 'pushToCloud completed', {
+      moods: moods.length,
+      habits: habits.length,
+      focusSessions: focusSessions.length,
+      gratitudeEntries: gratitudeEntries.length,
+    });
     logger.log('[Sync] Pushed to cloud:', {
       moods: moods.length,
       habits: habits.length,
@@ -719,6 +810,7 @@ export const pushToCloud = async (): Promise<boolean> => {
 
     return true;
   } catch (error) {
+    addCategorizedBreadcrumb('sync', 'pushToCloud failed', { error: (error as Error).message }, 'error');
     logger.error('[Sync] Failed to push to cloud:', error);
     return false;
   }

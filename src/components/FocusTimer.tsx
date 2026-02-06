@@ -449,11 +449,11 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     ? ((breakDuration - timeLeft) / breakDuration) * 100
     : ((focusDuration - timeLeft) / focusDuration) * 100;
 
-  // Preset colors for premium styling
+  // Preset colors for premium styling (using CSS variables)
   const presetColors = {
-    '25': { glow: 'rgba(16, 185, 129, 0.5)', ring: 'ring-emerald-500/40', bg: 'from-emerald-500/20 to-emerald-600/10' },
-    '50': { glow: 'rgba(139, 92, 246, 0.5)', ring: 'ring-violet-500/40', bg: 'from-violet-500/20 to-violet-600/10' },
-    'custom': { glow: 'rgba(245, 158, 11, 0.5)', ring: 'ring-amber-500/40', bg: 'from-amber-500/20 to-amber-600/10' },
+    '25': { glow: 'hsl(var(--focus-emerald) / 0.5)', ring: 'ring-emerald-500/40', bg: 'from-emerald-500/20 to-emerald-600/10' },
+    '50': { glow: 'hsl(var(--focus-violet) / 0.5)', ring: 'ring-violet-500/40', bg: 'from-violet-500/20 to-violet-600/10' },
+    'custom': { glow: 'hsl(var(--focus-amber) / 0.5)', ring: 'ring-amber-500/40', bg: 'from-amber-500/20 to-amber-600/10' },
   };
 
   return (
@@ -473,7 +473,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             className="absolute inset-0 hidden dark:block"
             style={{
               background: `radial-gradient(ellipse at center,
-                #1a1a3e 0%, #0d0d2a 40%, #050510 100%)`
+                hsl(var(--focus-cosmic-light)) 0%, hsl(var(--focus-cosmic-mid)) 40%, hsl(var(--focus-cosmic-dark)) 100%)`
             }}
           />
           {/* Star particles */}
@@ -487,8 +487,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             transition={{ duration: 5, repeat: Infinity }}
             style={{
               background: `
-                radial-gradient(circle at 30% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 70% 70%, rgba(236, 72, 153, 0.1) 0%, transparent 40%)
+                radial-gradient(circle at 30% 30%, hsl(var(--focus-violet) / 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 70% 70%, hsl(var(--focus-pink) / 0.1) 0%, transparent 40%)
               `
             }}
           />
@@ -638,7 +638,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
               cy="50"
               r="47"
               fill="none"
-              stroke="rgba(255, 255, 255, 0.1)"
+              stroke="hsl(0 0% 100% / 0.1)"
               strokeWidth="1"
               strokeDasharray="3 3"
             />
@@ -650,7 +650,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             cy="50"
             r="42"
             fill="none"
-            stroke={isPrimaryCTA ? "rgba(255, 255, 255, 0.1)" : "hsl(var(--secondary))"}
+            stroke={isPrimaryCTA ? "hsl(0 0% 100% / 0.1)" : "hsl(var(--secondary))"}
             strokeWidth="6"
           />
 
@@ -669,7 +669,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             strokeDasharray={`${2 * Math.PI * 42}`}
             strokeDashoffset={`${2 * Math.PI * 42 * (1 - progress / 100)}`}
             style={isPrimaryCTA ? {
-              filter: `drop-shadow(0 0 8px ${isBreak ? 'rgba(236, 72, 153, 0.6)' : 'rgba(139, 92, 246, 0.6)'})`
+              filter: `drop-shadow(0 0 8px ${isBreak ? 'hsl(var(--focus-pink) / 0.6)' : 'hsl(var(--focus-violet) / 0.6)'})`
             } : {}}
             initial={false}
             animate={{ strokeDashoffset: `${2 * Math.PI * 42 * (1 - progress / 100)}` }}
@@ -679,14 +679,14 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
           {/* Gradient definitions */}
           <defs>
             <linearGradient id="focusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#8b5cf6" />
-              <stop offset="50%" stopColor="#a855f7" />
-              <stop offset="100%" stopColor="#ec4899" />
+              <stop offset="0%" stopColor="hsl(var(--focus-violet))" />
+              <stop offset="50%" stopColor="hsl(var(--focus-purple))" />
+              <stop offset="100%" stopColor="hsl(var(--focus-pink))" />
             </linearGradient>
             <linearGradient id="breakGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#ec4899" />
-              <stop offset="50%" stopColor="#f472b6" />
-              <stop offset="100%" stopColor="#fb7185" />
+              <stop offset="0%" stopColor="hsl(var(--focus-pink))" />
+              <stop offset="50%" stopColor="hsl(var(--focus-pink-mid))" />
+              <stop offset="100%" stopColor="hsl(var(--focus-rose))" />
             </linearGradient>
           </defs>
         </svg>
@@ -697,8 +697,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             className="absolute inset-6 rounded-full pointer-events-none"
             style={{
               background: isBreak
-                ? 'radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%)'
-                : 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)'
+                ? 'radial-gradient(circle, hsl(var(--focus-pink) / 0.15) 0%, transparent 70%)'
+                : 'radial-gradient(circle, hsl(var(--focus-violet) / 0.15) 0%, transparent 70%)'
             }}
             animate={{
               scale: [1, 1.1, 1],
@@ -728,8 +728,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             )}
             style={isPrimaryCTA ? {
               textShadow: isBreak
-                ? '0 0 20px rgba(236, 72, 153, 0.5)'
-                : '0 0 20px rgba(139, 92, 246, 0.5)'
+                ? '0 0 20px hsl(var(--focus-pink) / 0.5)'
+                : '0 0 20px hsl(var(--focus-violet) / 0.5)'
             } : {}}
             key={timeLeft}
             initial={{ scale: 0.95, opacity: 0.8 }}
@@ -763,8 +763,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
               )}
               style={{
                 boxShadow: isBreak
-                  ? '0 0 24px rgba(236, 72, 153, 0.5)'
-                  : '0 0 24px rgba(139, 92, 246, 0.5)'
+                  ? '0 0 24px hsl(var(--focus-pink) / 0.5)'
+                  : '0 0 24px hsl(var(--focus-violet) / 0.5)'
               }}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
@@ -833,7 +833,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
               : "bg-gradient-to-r from-cyan-500/80 to-violet-500/80 text-white hover:from-cyan-500 hover:to-violet-500"
           )}
           style={!isRunning ? {
-            boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)'
+            boxShadow: '0 0 20px hsl(var(--focus-violet) / 0.3)'
           } : {}}
           whileHover={!isRunning ? { scale: 1.02 } : {}}
           whileTap={!isRunning ? { scale: 0.98 } : {}}
@@ -881,7 +881,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
               className="absolute inset-0 hidden dark:block"
               style={{
                 background: `radial-gradient(ellipse at top,
-                  #1a1a3e 0%, #0d0d2a 60%, #050510 100%)`
+                  hsl(var(--focus-cosmic-dark)) 0%, hsl(var(--focus-cosmic-mid)) 60%, hsl(var(--focus-cosmic-deep)) 100%)`
               }}
             />
             {/* Star particles */}
@@ -926,7 +926,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                           : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white"
                       )}
                       style={isSelected ? {
-                        boxShadow: '0 0 16px rgba(139, 92, 246, 0.5)'
+                        boxShadow: '0 0 16px hsl(var(--focus-violet) / 0.5)'
                       } : {}}
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
@@ -948,7 +948,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                 <motion.button
                   onClick={() => handleSaveReflection(reflectionValue)}
                   className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium"
-                  style={{ boxShadow: '0 0 16px rgba(139, 92, 246, 0.4)' }}
+                  style={{ boxShadow: '0 0 16px hsl(var(--focus-violet) / 0.4)' }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >

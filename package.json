@@ -17,7 +17,10 @@
     "build:android": "cross-env CAPACITOR_BUILD=true vite build",
     "cap:sync": "npm run build:android && npx cap sync",
     "cap:sync:android": "npm run build:android && npx cap sync android",
-    "cap:open:android": "npx cap open android"
+    "cap:open:android": "npx cap open android",
+    "typecheck": "tsc --noEmit",
+    "check:colors": "npx tsx scripts/check-hardcoded-colors.ts",
+    "check:all": "npm run typecheck && npm run lint && npm run i18n:check && npm run check:colors"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",

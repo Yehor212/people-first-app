@@ -136,6 +136,35 @@
     --mood-bad: 25 70% 58%;
     --mood-terrible: 0 60% 58%;
 
+    /* Mood gradients for emoji and UI elements (P0 Premium Upgrade) */
+    --gradient-mood-great: linear-gradient(135deg, hsl(158 60% 50%), hsl(142 55% 45%));
+    --gradient-mood-good: linear-gradient(135deg, hsl(142 50% 55%), hsl(120 45% 50%));
+    --gradient-mood-okay: linear-gradient(135deg, hsl(45 75% 60%), hsl(38 70% 55%));
+    --gradient-mood-bad: linear-gradient(135deg, hsl(25 70% 58%), hsl(15 65% 52%));
+    --gradient-mood-terrible: linear-gradient(135deg, hsl(0 60% 58%), hsl(350 55% 52%));
+
+    /* ===== FOCUS TIMER COLORS (P0 Premium Upgrade) ===== */
+    /* Cosmic theme colors for focus mode */
+    --focus-cosmic-dark: 240 30% 8%;
+    --focus-cosmic-mid: 240 35% 15%;
+    --focus-cosmic-deep: 240 50% 3%;
+    --focus-cosmic-light: 240 40% 22%;
+    --focus-violet: 263 70% 58%;
+    --focus-violet-light: 270 70% 65%;
+    --focus-purple: 270 73% 65%;
+    --focus-pink: 330 81% 60%;
+    --focus-pink-mid: 333 71% 70%;
+    --focus-pink-light: 340 75% 65%;
+    --focus-rose: 351 83% 73%;
+    --focus-orange: 25 95% 53%;
+    --focus-orange-light: 27 96% 61%;
+    --focus-cyan: 189 94% 43%;
+    --focus-emerald: 160 84% 39%;
+    --focus-amber: 38 92% 50%;
+
+    /* Brand colors (external services) */
+    --brand-spotify: 142 76% 36%;
+
     /* ===== EVENT TYPE COLORS ===== */
     /* Semantic colors for schedule event types */
     /* Light mode: optimized for readability on light backgrounds */
@@ -269,6 +298,27 @@
     --mood-okay: 45 80% 55%;
     --mood-bad: 25 75% 55%;
     --mood-terrible: 0 65% 55%;
+
+    /* Focus timer colors - brighter for dark mode */
+    --focus-cosmic-dark: 240 30% 3%;
+    --focus-cosmic-mid: 240 35% 10%;
+    --focus-cosmic-deep: 240 50% 2%;
+    --focus-cosmic-light: 240 40% 18%;
+    --focus-violet: 263 75% 62%;
+    --focus-violet-light: 270 75% 70%;
+    --focus-purple: 270 78% 70%;
+    --focus-pink: 330 85% 65%;
+    --focus-pink-mid: 333 75% 73%;
+    --focus-pink-light: 340 80% 70%;
+    --focus-rose: 351 88% 76%;
+    --focus-orange: 25 95% 58%;
+    --focus-orange-light: 27 96% 66%;
+    --focus-cyan: 189 94% 48%;
+    --focus-emerald: 160 84% 45%;
+    --focus-amber: 38 92% 55%;
+
+    /* Brand colors (external services) */
+    --brand-spotify: 142 76% 40%;
 
     /* Event colors - increased saturation/brightness for dark backgrounds */
     --event-work: 217 91% 65%;
@@ -611,6 +661,23 @@
 
   .zen-gradient-hero {
     background: var(--zen-gradient-hero);
+  }
+
+  /* Mood gradient utilities (P0 Premium Upgrade) */
+  .gradient-mood-great {
+    background: var(--gradient-mood-great);
+  }
+  .gradient-mood-good {
+    background: var(--gradient-mood-good);
+  }
+  .gradient-mood-okay {
+    background: var(--gradient-mood-okay);
+  }
+  .gradient-mood-bad {
+    background: var(--gradient-mood-bad);
+  }
+  .gradient-mood-terrible {
+    background: var(--gradient-mood-terrible);
   }
 
   .zen-shadow-soft {

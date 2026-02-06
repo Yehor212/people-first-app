@@ -12,6 +12,8 @@ import { XpPopupProvider } from "@/components/XpPopup";
 import { FlyingEmojiProvider } from "@/components/FlyingMoodEmoji";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PWAUpdateNotifier } from "@/components/PWAUpdateNotifier";
+import { SyncStatusListener } from "@/components/SyncStatusListener";
+import { DatabaseRecoveryDialog } from "@/components/DatabaseRecoveryDialog";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { preloadShareCardAssets } from "@/lib/shareCards";
@@ -70,6 +72,8 @@ const App = () => (
                     <Toaster />
                     <Sonner />
                     <PWAUpdateNotifier />
+                    <SyncStatusListener />
+                    <DatabaseRecoveryDialog />
                     <BrowserRouter basename={getBasename()}>
                       <Routes>
                         <Route path="/" element={<Index />} />

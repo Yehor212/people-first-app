@@ -1575,6 +1575,24 @@ export interface Translations {
   feedbackFailed: string;
   noVersionHistory: string;
   syncFailedLocal: string;
+  // Sync status notifications (P0 Premium Upgrade)
+  syncQueueFull: string;
+  syncQueueFullDesc: string;
+  syncQueueWarning: string;
+  syncQueueWarningDesc: string;
+  storageError: string;
+  storageErrorDesc: string;
+  syncTransactionFailed: string;
+  syncTransactionFailedDesc: string;
+  backgroundSyncFailed: string;
+  backgroundSyncFailedDesc: string;
+  indexedDBTimeout: string;
+  indexedDBTimeoutDesc: string;
+  // Database recovery (P0 Premium Upgrade)
+  databaseRecoveryTitle: string;
+  databaseRecoveryDesc: string;
+  databaseRecoveryRestore: string;
+  databaseRecoveryStartFresh: string;
   imageGenerateFailed: string;
   imageSavedDownloads: string;
   shareFailedDownload: string;
@@ -3122,6 +3140,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     feedbackFailed: 'Не удалось отправить отзыв',
     noVersionHistory: 'История версий недоступна',
     syncFailedLocal: 'Синхронизация не удалась. Изменения сохранены локально.',
+    // Sync status notifications
+    syncQueueFull: 'Очередь синхронизации переполнена',
+    syncQueueFullDesc: 'Некоторые изменения могут не синхронизироваться. Подключитесь к интернету.',
+    syncQueueWarning: 'Очередь синхронизации заполняется',
+    syncQueueWarningDesc: 'Подключитесь к интернету для синхронизации изменений.',
+    storageError: 'Ошибка хранилища',
+    storageErrorDesc: 'Возникла проблема с сохранением данных локально.',
+    syncTransactionFailed: 'Ошибка сохранения данных',
+    syncTransactionFailedDesc: 'Не удалось сохранить данные. Попробуйте снова.',
+    backgroundSyncFailed: 'Фоновая синхронизация недоступна',
+    backgroundSyncFailedDesc: 'Изменения синхронизируются при возвращении в приложение.',
+    indexedDBTimeout: 'Хранилище работает медленно',
+    indexedDBTimeoutDesc: 'База данных отвечает дольше обычного.',
+    // Database recovery
+    databaseRecoveryTitle: 'Локальные данные сброшены',
+    databaseRecoveryDesc: 'Локальное хранилище было очищено (возможно, вы очистили данные браузера). Мы попробуем восстановить данные из облака.',
+    databaseRecoveryRestore: 'Восстановить из облака',
+    databaseRecoveryStartFresh: 'Начать заново',
     imageGenerateFailed: 'Не удалось создать изображение. Попробуйте снова.',
     imageSavedDownloads: 'Изображение сохранено в загрузки!',
     shareFailedDownload: 'Не удалось поделиться. Попробуйте скачать.',
@@ -4677,6 +4713,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     feedbackFailed: 'Failed to send feedback',
     noVersionHistory: 'No version history available',
     syncFailedLocal: 'Sync failed. Changes saved locally.',
+    // Sync status notifications
+    syncQueueFull: 'Sync queue is full',
+    syncQueueFullDesc: 'Some changes may not sync. Please connect to the internet.',
+    syncQueueWarning: 'Sync queue filling up',
+    syncQueueWarningDesc: 'Connect to the internet to sync your changes.',
+    storageError: 'Storage error',
+    storageErrorDesc: 'There was a problem saving your data locally.',
+    syncTransactionFailed: 'Data save failed',
+    syncTransactionFailedDesc: 'Could not save data. Please try again.',
+    backgroundSyncFailed: 'Background sync unavailable',
+    backgroundSyncFailedDesc: 'Changes will sync when you return to the app.',
+    indexedDBTimeout: 'Storage is slow',
+    indexedDBTimeoutDesc: 'The database is taking longer than expected.',
+    // Database recovery
+    databaseRecoveryTitle: 'Local data was reset',
+    databaseRecoveryDesc: 'Your local storage was cleared (possibly from clearing browser data). We will try to restore your data from the cloud.',
+    databaseRecoveryRestore: 'Restore from cloud',
+    databaseRecoveryStartFresh: 'Start fresh',
     imageGenerateFailed: 'Failed to generate image. Try again.',
     imageSavedDownloads: 'Image saved to downloads!',
     shareFailedDownload: 'Could not share. Try downloading instead.',
@@ -6232,6 +6286,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     feedbackFailed: 'Не вдалося надіслати відгук',
     noVersionHistory: 'Історія версій недоступна',
     syncFailedLocal: 'Синхронізація не вдалася. Зміни збережено локально.',
+    // Sync status notifications
+    syncQueueFull: 'Черга синхронізації переповнена',
+    syncQueueFullDesc: 'Деякі зміни можуть не синхронізуватися. Підключіться до інтернету.',
+    syncQueueWarning: 'Черга синхронізації заповнюється',
+    syncQueueWarningDesc: 'Підключіться до інтернету для синхронізації змін.',
+    storageError: 'Помилка сховища',
+    storageErrorDesc: 'Виникла проблема зі збереженням даних локально.',
+    syncTransactionFailed: 'Помилка збереження даних',
+    syncTransactionFailedDesc: 'Не вдалося зберегти дані. Спробуйте знову.',
+    backgroundSyncFailed: 'Фонова синхронізація недоступна',
+    backgroundSyncFailedDesc: 'Зміни синхронізуються при поверненні в додаток.',
+    indexedDBTimeout: 'Сховище працює повільно',
+    indexedDBTimeoutDesc: 'База даних відповідає довше за звичайне.',
+    // Database recovery
+    databaseRecoveryTitle: 'Локальні дані скинуті',
+    databaseRecoveryDesc: 'Локальне сховище було очищено. Ми спробуємо відновити дані з хмари.',
+    databaseRecoveryRestore: 'Відновити з хмари',
+    databaseRecoveryStartFresh: 'Почати заново',
     imageGenerateFailed: 'Не вдалося створити зображення. Спробуйте знову.',
     imageSavedDownloads: 'Зображення збережено в завантаження!',
     shareFailedDownload: 'Не вдалося поділитися. Спробуйте завантажити.',
@@ -7788,6 +7860,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     feedbackFailed: 'Error al enviar comentario',
     noVersionHistory: 'Historial de versiones no disponible',
     syncFailedLocal: 'Error de sincronización. Cambios guardados localmente.',
+    // Sync status notifications
+    syncQueueFull: 'Cola de sincronización llena',
+    syncQueueFullDesc: 'Algunos cambios pueden no sincronizarse. Conéctate a internet.',
+    syncQueueWarning: 'Cola de sincronización llenándose',
+    syncQueueWarningDesc: 'Conéctate a internet para sincronizar tus cambios.',
+    storageError: 'Error de almacenamiento',
+    storageErrorDesc: 'Hubo un problema al guardar tus datos localmente.',
+    syncTransactionFailed: 'Error al guardar datos',
+    syncTransactionFailedDesc: 'No se pudieron guardar los datos. Inténtalo de nuevo.',
+    backgroundSyncFailed: 'Sincronización en segundo plano no disponible',
+    backgroundSyncFailedDesc: 'Los cambios se sincronizarán cuando vuelvas a la app.',
+    indexedDBTimeout: 'El almacenamiento está lento',
+    indexedDBTimeoutDesc: 'La base de datos está tardando más de lo esperado.',
+    // Database recovery
+    databaseRecoveryTitle: 'Datos locales reiniciados',
+    databaseRecoveryDesc: 'Tu almacenamiento local fue borrado. Intentaremos restaurar tus datos desde la nube.',
+    databaseRecoveryRestore: 'Restaurar desde la nube',
+    databaseRecoveryStartFresh: 'Empezar de nuevo',
     imageGenerateFailed: 'Error al generar imagen. Inténtalo de nuevo.',
     imageSavedDownloads: '¡Imagen guardada en descargas!',
     shareFailedDownload: 'No se pudo compartir. Intenta descargar.',
@@ -9344,6 +9434,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     feedbackFailed: 'Feedback konnte nicht gesendet werden',
     noVersionHistory: 'Keine Versionshistorie verfügbar',
     syncFailedLocal: 'Synchronisierung fehlgeschlagen. Änderungen lokal gespeichert.',
+    // Sync status notifications
+    syncQueueFull: 'Synchronisierungswarteschlange voll',
+    syncQueueFullDesc: 'Einige Änderungen werden möglicherweise nicht synchronisiert. Bitte mit dem Internet verbinden.',
+    syncQueueWarning: 'Synchronisierungswarteschlange füllt sich',
+    syncQueueWarningDesc: 'Mit dem Internet verbinden, um Änderungen zu synchronisieren.',
+    storageError: 'Speicherfehler',
+    storageErrorDesc: 'Problem beim lokalen Speichern Ihrer Daten.',
+    syncTransactionFailed: 'Datenspeicherung fehlgeschlagen',
+    syncTransactionFailedDesc: 'Daten konnten nicht gespeichert werden. Bitte erneut versuchen.',
+    backgroundSyncFailed: 'Hintergrundsynchronisierung nicht verfügbar',
+    backgroundSyncFailedDesc: 'Änderungen werden synchronisiert, wenn Sie zur App zurückkehren.',
+    indexedDBTimeout: 'Speicher ist langsam',
+    indexedDBTimeoutDesc: 'Die Datenbank braucht länger als erwartet.',
+    // Database recovery
+    databaseRecoveryTitle: 'Lokale Daten zurückgesetzt',
+    databaseRecoveryDesc: 'Ihr lokaler Speicher wurde gelöscht. Wir versuchen, Ihre Daten aus der Cloud wiederherzustellen.',
+    databaseRecoveryRestore: 'Aus Cloud wiederherstellen',
+    databaseRecoveryStartFresh: 'Neu beginnen',
     imageGenerateFailed: 'Bild konnte nicht erstellt werden. Versuchen Sie es erneut.',
     imageSavedDownloads: 'Bild in Downloads gespeichert!',
     shareFailedDownload: 'Teilen fehlgeschlagen. Versuchen Sie den Download.',
@@ -10900,6 +11008,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     feedbackFailed: 'Échec de l\'envoi du feedback',
     noVersionHistory: 'Historique des versions non disponible',
     syncFailedLocal: 'Échec de la synchronisation. Modifications enregistrées localement.',
+    // Sync status notifications
+    syncQueueFull: 'File de synchronisation pleine',
+    syncQueueFullDesc: 'Certaines modifications peuvent ne pas être synchronisées. Connectez-vous à Internet.',
+    syncQueueWarning: 'File de synchronisation se remplit',
+    syncQueueWarningDesc: 'Connectez-vous à Internet pour synchroniser vos modifications.',
+    storageError: 'Erreur de stockage',
+    storageErrorDesc: 'Problème lors de l\'enregistrement local de vos données.',
+    syncTransactionFailed: 'Échec de l\'enregistrement des données',
+    syncTransactionFailedDesc: 'Impossible d\'enregistrer les données. Veuillez réessayer.',
+    backgroundSyncFailed: 'Synchronisation en arrière-plan non disponible',
+    backgroundSyncFailedDesc: 'Les modifications seront synchronisées à votre retour dans l\'app.',
+    indexedDBTimeout: 'Le stockage est lent',
+    indexedDBTimeoutDesc: 'La base de données prend plus de temps que prévu.',
+    // Database recovery
+    databaseRecoveryTitle: 'Données locales réinitialisées',
+    databaseRecoveryDesc: 'Votre stockage local a été effacé. Nous allons essayer de restaurer vos données depuis le cloud.',
+    databaseRecoveryRestore: 'Restaurer depuis le cloud',
+    databaseRecoveryStartFresh: 'Recommencer à zéro',
     imageGenerateFailed: 'Échec de la génération d\'image. Réessayez.',
     imageSavedDownloads: 'Image enregistrée dans les téléchargements !',
     shareFailedDownload: 'Impossible de partager. Essayez de télécharger.',
@@ -12455,6 +12581,24 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     feedbackFailed: 'フィードバックの送信に失敗しました',
     noVersionHistory: 'バージョン履歴がありません',
     syncFailedLocal: '同期に失敗しました。変更はローカルに保存されました。',
+    // Sync status notifications
+    syncQueueFull: '同期キューがいっぱいです',
+    syncQueueFullDesc: '一部の変更が同期されない可能性があります。インターネットに接続してください。',
+    syncQueueWarning: '同期キューが埋まりつつあります',
+    syncQueueWarningDesc: '変更を同期するにはインターネットに接続してください。',
+    storageError: 'ストレージエラー',
+    storageErrorDesc: 'ローカルにデータを保存する際に問題が発生しました。',
+    syncTransactionFailed: 'データの保存に失敗しました',
+    syncTransactionFailedDesc: 'データを保存できませんでした。もう一度お試しください。',
+    backgroundSyncFailed: 'バックグラウンド同期が利用できません',
+    backgroundSyncFailedDesc: 'アプリに戻ったときに変更が同期されます。',
+    indexedDBTimeout: 'ストレージが遅いです',
+    indexedDBTimeoutDesc: 'データベースの応答に予想以上の時間がかかっています。',
+    // Database recovery
+    databaseRecoveryTitle: 'ローカルデータがリセットされました',
+    databaseRecoveryDesc: 'ローカルストレージがクリアされました。クラウドからデータの復元を試みます。',
+    databaseRecoveryRestore: 'クラウドから復元',
+    databaseRecoveryStartFresh: '最初から始める',
     imageGenerateFailed: '画像の生成に失敗しました。もう一度お試しください。',
     imageSavedDownloads: '画像がダウンロードに保存されました！',
     shareFailedDownload: '共有できませんでした。ダウンロードをお試しください。',
@@ -13970,6 +14114,24 @@ const arabicOverrides: Partial<Translations> = {
   feedbackFailed: 'فشل إرسال الملاحظات',
   noVersionHistory: 'لا يوجد سجل إصدارات',
   syncFailedLocal: 'فشلت المزامنة. التغييرات محفوظة محلياً.',
+  // Sync status notifications
+  syncQueueFull: 'قائمة المزامنة ممتلئة',
+  syncQueueFullDesc: 'قد لا تتم مزامنة بعض التغييرات. يرجى الاتصال بالإنترنت.',
+  syncQueueWarning: 'قائمة المزامنة تمتلئ',
+  syncQueueWarningDesc: 'اتصل بالإنترنت لمزامنة تغييراتك.',
+  storageError: 'خطأ في التخزين',
+  storageErrorDesc: 'حدثت مشكلة في حفظ بياناتك محلياً.',
+  syncTransactionFailed: 'فشل حفظ البيانات',
+  syncTransactionFailedDesc: 'تعذر حفظ البيانات. يرجى المحاولة مرة أخرى.',
+  backgroundSyncFailed: 'المزامنة في الخلفية غير متاحة',
+  backgroundSyncFailedDesc: 'ستتم مزامنة التغييرات عند العودة إلى التطبيق.',
+  indexedDBTimeout: 'التخزين بطيء',
+  indexedDBTimeoutDesc: 'قاعدة البيانات تستغرق وقتاً أطول من المتوقع.',
+  // Database recovery
+  databaseRecoveryTitle: 'تم إعادة تعيين البيانات المحلية',
+  databaseRecoveryDesc: 'تم مسح التخزين المحلي. سنحاول استعادة بياناتك من السحابة.',
+  databaseRecoveryRestore: 'استعادة من السحابة',
+  databaseRecoveryStartFresh: 'البدء من جديد',
   imageGenerateFailed: 'فشل إنشاء الصورة. حاول مرة أخرى.',
   imageSavedDownloads: 'تم حفظ الصورة في التنزيلات!',
   shareFailedDownload: 'تعذرت المشاركة. جرب التنزيل بدلاً من ذلك.',

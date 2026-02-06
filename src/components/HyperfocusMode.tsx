@@ -363,9 +363,9 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
   // Calculate color based on progress (purple -> pink -> orange as time runs out)
   const progressColor = useMemo(() => {
-    if (progress < 70) return { from: '#8B5CF6', to: '#A855F7' }; // Purple
-    if (progress < 90) return { from: '#EC4899', to: '#F472B6' }; // Pink
-    return { from: '#F97316', to: '#FB923C' }; // Orange - ending soon
+    if (progress < 70) return { from: 'hsl(var(--focus-violet))', to: 'hsl(var(--focus-purple))' }; // Purple
+    if (progress < 90) return { from: 'hsl(var(--focus-pink))', to: 'hsl(var(--focus-pink-mid))' }; // Pink
+    return { from: 'hsl(var(--focus-orange))', to: 'hsl(var(--focus-orange-light))' }; // Orange - ending soon
   }, [progress]);
 
   return (
@@ -376,7 +376,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         className="absolute inset-0 hidden dark:block"
         style={{
           background: `radial-gradient(ellipse at center,
-            #0d0d2a 0%, #050510 50%, #000000 100%)`
+            hsl(var(--focus-cosmic-mid)) 0%, hsl(var(--focus-cosmic-deep)) 50%, hsl(0 0% 0%) 100%)`
         }}
       />
 
@@ -392,9 +392,9 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         transition={{ duration: 8, repeat: Infinity }}
         style={{
           background: `
-            radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
-            radial-gradient(circle at 80% 70%, rgba(236, 72, 153, 0.1) 0%, transparent 40%),
-            radial-gradient(circle at 50% 90%, rgba(6, 182, 212, 0.08) 0%, transparent 30%)
+            radial-gradient(circle at 20% 30%, hsl(var(--focus-violet) / 0.15) 0%, transparent 40%),
+            radial-gradient(circle at 80% 70%, hsl(var(--focus-pink) / 0.1) 0%, transparent 40%),
+            radial-gradient(circle at 50% 90%, hsl(var(--focus-cyan) / 0.08) 0%, transparent 30%)
           `
         }}
       />
@@ -704,7 +704,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   : 'bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200 dark:hover:bg-white/10'
               )}
               style={!selectedSoundId ? {
-                boxShadow: '0 0 12px rgba(139, 92, 246, 0.3)'
+                boxShadow: '0 0 12px hsl(var(--focus-violet) / 0.3)'
               } : {}}
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
@@ -736,7 +736,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                       : 'bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200 dark:hover:bg-white/10'
                   )}
                   style={isSelected ? {
-                    boxShadow: '0 0 12px rgba(139, 92, 246, 0.3)'
+                    boxShadow: '0 0 12px hsl(var(--focus-violet) / 0.3)'
                   } : {}}
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
@@ -752,7 +752,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           <div className="mt-4 pt-4 border-t border-slate-300 dark:border-white/10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Music className="w-4 h-4 text-[#1DB954]" />
+                <Music className="w-4 h-4 text-[hsl(var(--brand-spotify))]" />
                 <p className="text-sm text-slate-600 dark:text-white/70 font-medium">Spotify</p>
               </div>
               {spotifyConnected && (
@@ -761,7 +761,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                     spotifyAutoPlay
-                      ? 'bg-[#1DB954]/30 border border-[#1DB954]/50 text-[#1DB954]'
+                      ? 'bg-[hsl(var(--brand-spotify))]/30 border border-[hsl(var(--brand-spotify))]/50 text-[hsl(var(--brand-spotify))]'
                       : 'bg-slate-300/50 dark:bg-white/10 border border-slate-400 dark:border-white/20 text-slate-500 dark:text-white/60'
                   )}
                   whileTap={{ scale: 0.95 }}
@@ -775,8 +775,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             {!spotifyConnected ? (
               <motion.button
                 onClick={handleSpotifyConnect}
-                className="w-full py-3 bg-[#1DB954]/20 border border-[#1DB954]/30 rounded-xl text-[#1DB954] font-medium flex items-center justify-center gap-2 transition-all"
-                whileHover={{ backgroundColor: 'rgba(29, 185, 84, 0.3)' }}
+                className="w-full py-3 bg-[hsl(var(--brand-spotify))]/20 border border-[hsl(var(--brand-spotify))]/30 rounded-xl text-[hsl(var(--brand-spotify))] font-medium flex items-center justify-center gap-2 transition-all"
+                whileHover={{ backgroundColor: 'hsl(var(--brand-spotify) / 0.3)' }}
                 whileTap={{ scale: 0.98 }}
               >
                 <ExternalLink className="w-4 h-4" />
@@ -803,17 +803,17 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 {spotifyTrack.isPlaying && (
                   <div className="flex gap-0.5 items-end h-5">
                     <motion.div
-                      className="w-1 bg-[#1DB954] rounded-full"
+                      className="w-1 bg-[hsl(var(--brand-spotify))] rounded-full"
                       animate={{ height: ['8px', '20px', '12px', '16px', '8px'] }}
                       transition={{ duration: 1, repeat: Infinity }}
                     />
                     <motion.div
-                      className="w-1 bg-[#1DB954] rounded-full"
+                      className="w-1 bg-[hsl(var(--brand-spotify))] rounded-full"
                       animate={{ height: ['16px', '8px', '20px', '12px', '16px'] }}
                       transition={{ duration: 1, repeat: Infinity, delay: 0.1 }}
                     />
                     <motion.div
-                      className="w-1 bg-[#1DB954] rounded-full"
+                      className="w-1 bg-[hsl(var(--brand-spotify))] rounded-full"
                       animate={{ height: ['12px', '16px', '8px', '20px', '12px'] }}
                       transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
                     />
