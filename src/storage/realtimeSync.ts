@@ -147,8 +147,12 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     if (isNetworkError) {
       await offlineQueue.enqueue('CREATE_MOOD', mood.id, mood);
       logger.log('[Sync] Mood queued after network error:', mood.id);
+      // Don't re-throw network errors - they're handled via offline queue
     } else {
       logger.error('[Sync] Failed to sync mood:', error);
+      // P0-4 Fix: Re-throw so callers (especially offline queue handlers) know sync failed
+      // Without this, the offline queue removes the action thinking it succeeded
+      throw error;
     }
   }
 };
@@ -175,6 +179,8 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
     logger.log('[Sync] Mood deleted:', moodId);
   } catch (error) {
     logger.error('[Sync] Failed to delete mood:', error);
+    // P0-4 Fix: Re-throw for offline queue handlers
+    throw error;
   }
 };
 
@@ -285,6 +291,8 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
     logger.log('[Sync] Habit synced:', habit.id);
   } catch (error) {
     logger.error('[Sync] Failed to sync habit:', error);
+    // P0-4 Fix: Re-throw for offline queue handlers
+    throw error;
   }
 };
 
@@ -310,12 +318,31 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
     logger.log('[Sync] Habit deleted:', habitId);
   } catch (error) {
     logger.error('[Sync] Failed to delete habit:', error);
+    // P0-4 Fix: Re-throw for offline queue handlers
+    throw error;
   }
 };
 
+/**
+ * Sync habit completion to cloud
+ * P1-9 Fix: Now includes offline queue support and error re-throw
+ */
 export const syncHabitCompletion = async (habitId: string, date: string, completed: boolean, count?: number, duration?: number): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
+
+  // P1-9 Fix: Add offline queue support (was missing)
+  if (!navigator.onLine) {
+    await offlineQueue.enqueue('TOGGLE_HABIT', `${habitId}_${date}`, {
+      habitId,
+      date,
+      completed,
+      count,
+      duration,
+    });
+    logger.log('[Sync] Habit completion queued for offline:', habitId, date);
+    return;
+  }
 
   try {
     if (completed) {
@@ -340,6 +367,8 @@ export const syncHabitCompletion = async (habitId: string, date: string, complet
     logger.log('[Sync] Habit completion synced:', habitId, date, completed);
   } catch (error) {
     logger.error('[Sync] Failed to sync habit completion:', error);
+    // P0-4 Fix: Re-throw for retry logic
+    throw error;
   }
 };
 
@@ -379,6 +408,8 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
     logger.log('[Sync] Focus session synced:', session.id);
   } catch (error) {
     logger.error('[Sync] Failed to sync focus session:', error);
+    // P0-4 Fix: Re-throw for offline queue handlers
+    throw error;
   }
 };
 
@@ -415,6 +446,8 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
     logger.log('[Sync] Gratitude synced:', entry.id);
   } catch (error) {
     logger.error('[Sync] Failed to sync gratitude:', error);
+    // P0-4 Fix: Re-throw for offline queue handlers
+    throw error;
   }
 };
 
@@ -440,6 +473,8 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
     logger.log('[Sync] Gratitude deleted:', entryId);
   } catch (error) {
     logger.error('[Sync] Failed to delete gratitude:', error);
+    // P0-4 Fix: Re-throw for offline queue handlers
+    throw error;
   }
 };
 
@@ -467,6 +502,8 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
     logger.log('[Sync] Setting synced:', key);
   } catch (error) {
     logger.error('[Sync] Failed to sync setting:', error);
+    // P0-4 Fix: Re-throw for offline queue handlers
+    throw error;
   }
 };
 

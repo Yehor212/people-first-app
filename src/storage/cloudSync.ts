@@ -14,11 +14,12 @@ let syncTimeout: ReturnType<typeof setTimeout> | null = null;
 let lastSyncTime = 0;
 let autoSyncStarted = false;
 
-// Sync lock with operation ID for safe deadlock prevention
-// Using operation ID ensures that timeout-based release doesn't cause data corruption
-// when a legitimate slow operation is still running
-let syncLock = false;
-let syncLockOwner: string | null = null; // Unique ID of the operation holding the lock
+// P1-11 Fix: Promise-based sync lock instead of boolean
+// The boolean lock had issues:
+// 1. Concurrent callers that see syncLock===true would return 'skipped' and miss the result
+// 2. Race condition where two callers could both see syncLock===false
+// With Promise-based lock, concurrent callers wait for and return the same result
+let currentSyncPromise: Promise<{ status: string }> | null = null;
 let syncLockTimeout: ReturnType<typeof setTimeout> | null = null;
 let syncLockStartTime: number | null = null; // Track when lock was acquired
 let syncAbortController: AbortController | null = null; // P0 Fix: AbortController for timeout cancellation
@@ -37,44 +38,57 @@ let visibilityChangeHandler: (() => void) | null = null;
 let beforeUnloadHandler: (() => void) | null = null;
 
 export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promise<{ status: string }> => {
-  // Prevent concurrent sync operations
-  if (syncLock) {
-    logger.sync(`Sync already in progress (owner: ${syncLockOwner}), skipping`);
-    return { status: 'skipped' };
+  // P1-11 Fix: If sync is already in progress, wait for it and return the same result
+  // This prevents "skipped" status and ensures all callers get consistent data
+  if (currentSyncPromise) {
+    logger.sync('Sync already in progress, waiting for completion...');
+    try {
+      return await currentSyncPromise;
+    } catch (error) {
+      // Re-throw so caller knows sync failed
+      throw error;
+    }
   }
 
   if (!supabase) {
     throw new Error("Supabase not configured.");
   }
 
-  // Acquire lock with unique operation ID
+  // Create the sync promise
   const operationId = generateOperationId();
-  syncLock = true;
-  syncLockOwner = operationId;
   syncLockStartTime = Date.now();
   // P0 Fix: Create AbortController for timeout cancellation
   syncAbortController = new AbortController();
   const abortSignal = syncAbortController.signal;
   logger.sync(`Sync started (operation: ${operationId})`);
 
-  // Set timeout to auto-release lock and prevent deadlock
-  // P0 Fix: Now uses AbortController to actually cancel the operation, not just release the lock
+  // P1-11 Fix: Wrap the sync operation in a promise that concurrent callers can await
+  currentSyncPromise = doSyncWithCloud(mode, operationId, abortSignal);
+
+  try {
+    return await currentSyncPromise;
+  } finally {
+    currentSyncPromise = null;
+  }
+};
+
+/**
+ * Internal sync implementation
+ * P1-11 Fix: Extracted to allow Promise-based locking
+ */
+const doSyncWithCloud = async (
+  mode: "merge" | "replace",
+  operationId: string,
+  abortSignal: AbortSignal
+): Promise<{ status: string }> => {
+
+  // Set timeout to abort operation if it takes too long
+  // P1-11 Fix: Simplified - just abort the controller, Promise-based lock handles cleanup
   syncLockTimeout = setTimeout(() => {
-    if (syncLock && syncLockOwner === operationId) {
-      const duration = syncLockStartTime ? Date.now() - syncLockStartTime : 0;
-      logger.warn(`[Sync] Lock timeout exceeded after ${duration}ms, aborting operation (operation: ${operationId})`);
-      // P0 Fix: Abort the operation instead of just releasing the lock
-      if (syncAbortController) {
-        syncAbortController.abort();
-      }
-      syncLock = false;
-      syncLockOwner = null;
-      syncLockStartTime = null;
-      syncAbortController = null;
-    } else if (syncLock) {
-      // Lock is held by a different operation - this is unexpected but possible
-      // if the original operation completed and a new one started
-      logger.sync(`[Sync] Timeout fired but lock owned by different operation: ${syncLockOwner}`);
+    const duration = syncLockStartTime ? Date.now() - syncLockStartTime : 0;
+    logger.warn(`[Sync] Timeout exceeded after ${duration}ms, aborting operation (operation: ${operationId})`);
+    if (syncAbortController) {
+      syncAbortController.abort();
     }
   }, SYNC_LOCK_TIMEOUT);
 
@@ -182,27 +196,18 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
     lastSyncTime = Date.now();
     return { status: syncStatus };
   } finally {
+    // P1-11 Fix: Cleanup resources
     // Clear timeout
     if (syncLockTimeout) {
       clearTimeout(syncLockTimeout);
       syncLockTimeout = null;
     }
 
-    // Only release lock if we still own it
-    // This prevents releasing a lock that was already timed out and acquired by another operation
-    if (syncLockOwner === operationId) {
-      const duration = syncLockStartTime ? Date.now() - syncLockStartTime : 0;
-      syncLock = false;
-      syncLockOwner = null;
-      syncLockStartTime = null;
-      // P0 Fix: Clean up AbortController
-      syncAbortController = null;
-      logger.sync(`Sync completed in ${duration}ms, lock released (operation: ${operationId})`);
-    } else {
-      // Lock was released by timeout or is now owned by another operation
-      // P0 Fix: AbortController already cleaned up by timeout handler
-      logger.sync(`Sync completed but lock already released or transferred (operation: ${operationId}, current owner: ${syncLockOwner})`);
-    }
+    // Clean up state
+    const duration = syncLockStartTime ? Date.now() - syncLockStartTime : 0;
+    syncLockStartTime = null;
+    syncAbortController = null;
+    logger.sync(`Sync completed in ${duration}ms (operation: ${operationId})`);
   }
 };
 
@@ -360,9 +365,8 @@ export const destroyCloudSync = () => {
     syncAbortController = null;
   }
 
-  // Reset lock state
-  syncLock = false;
-  syncLockOwner = null;
+  // P1-11 Fix: Reset Promise-based lock state
+  currentSyncPromise = null;
   syncLockStartTime = null;
 
   // Reset failure counter

@@ -286,15 +286,30 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
       const merged: Badge[] = [];
       const toUpsert: Partial<SupabaseBadge>[] = [];
 
-      // Process all local badges
-      localMap.forEach((localBadge, badgeId) => {
+      // P1-7 Fix: Process ALL badges (both local and cloud)
+      // Previously only iterated localMap, losing cloud-only badges
+      const allBadgeIds = new Set([...localMap.keys(), ...cloudMap.keys()]);
+
+      allBadgeIds.forEach(badgeId => {
+        const localBadge = localMap.get(badgeId);
         const cloudBadge = cloudMap.get(badgeId);
 
-        if (cloudBadge) {
-          // Cloud exists: use cloud unlock status
+        if (localBadge && cloudBadge) {
+          // Both exist - prefer unlocked status from either source
+          const cloudConverted = supabaseToBadgeLocal(cloudBadge);
+          if (localBadge.unlocked && !cloudConverted.unlocked) {
+            // Local is unlocked, cloud is not - use local and push to cloud
+            merged.push(localBadge);
+            toUpsert.push(badgeToSupabase(localBadge, userId));
+          } else {
+            // Cloud is unlocked or both same - use cloud
+            merged.push(cloudConverted);
+          }
+        } else if (cloudBadge) {
+          // Cloud-only badge - P1-7 Fix: This was previously lost!
           merged.push(supabaseToBadgeLocal(cloudBadge));
-        } else {
-          // Local only: keep local
+        } else if (localBadge) {
+          // Local-only badge
           merged.push(localBadge);
           if (localBadge.unlocked) {
             // If unlocked locally, push to cloud

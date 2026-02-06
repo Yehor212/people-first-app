@@ -87,6 +87,11 @@ class OfflineQueue {
   // P0 Fix: Promise to track initialization - operations must await this before modifying queue
   private initPromise: Promise<void> | null = null;
 
+  // P0-2 Fix: Mutex for serializing enqueue operations to prevent race conditions
+  // Without this, rapid concurrent enqueue() calls could both read state.actions,
+  // both decide to add (missing deduplication), and create duplicates
+  private enqueueLock: Promise<void> | null = null;
+
   // Bound event handlers for proper cleanup (P1 Fix: all handlers must be bound for removal)
   private boundHandleOnline = () => this.handleOnline();
   private boundHandleOffline = () => this.handleOffline();
@@ -147,6 +152,7 @@ class OfflineQueue {
   /**
    * Add an action to the queue
    * P0 Fix: Now awaits initialization before modifying queue
+   * P0-2 Fix: Uses mutex to prevent race conditions in concurrent calls
    */
   async enqueue(
     type: OfflineActionType,
@@ -159,6 +165,38 @@ class OfflineQueue {
       await this.initPromise;
     }
 
+    // P0-2 Fix: Acquire mutex lock to serialize state modifications
+    // This prevents race conditions where two concurrent enqueue() calls
+    // both read the same state, both decide the action doesn't exist,
+    // and both create duplicates (bypassing deduplication logic)
+    if (this.enqueueLock) {
+      await this.enqueueLock;
+    }
+
+    // Create a new lock promise for this operation
+    let releaseLock: () => void;
+    this.enqueueLock = new Promise<void>(resolve => {
+      releaseLock = resolve;
+    });
+
+    try {
+      await this.doEnqueue(type, entityId, payload, options);
+    } finally {
+      // Release the lock so next caller can proceed
+      releaseLock!();
+      this.enqueueLock = null;
+    }
+  }
+
+  /**
+   * Internal enqueue implementation (called within mutex lock)
+   */
+  private async doEnqueue(
+    type: OfflineActionType,
+    entityId: string,
+    payload: unknown,
+    options: { maxRetries?: number; deduplicate?: boolean } = {}
+  ): Promise<void> {
     const { maxRetries = DEFAULT_MAX_RETRIES, deduplicate = true } = options;
 
     // P0 Fix: Check queue size limit - BLOCK instead of silently dropping

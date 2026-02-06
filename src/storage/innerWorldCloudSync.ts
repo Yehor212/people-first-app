@@ -46,8 +46,11 @@ function validateInnerWorldData(data: unknown): InnerWorld | null {
   return data as InnerWorld;
 }
 
-// Sync lock to prevent race conditions
-let isInnerWorldSyncing = false;
+// P1-8 Fix: Promise-based lock instead of boolean flag
+// The boolean flag had a race condition where two concurrent calls
+// could both see isInnerWorldSyncing === false before either sets it true
+// With a Promise, concurrent callers wait for and return the same result
+let syncInnerWorldPromise: Promise<InnerWorld> | null = null;
 
 /**
  * Push Inner World state to Supabase
@@ -115,51 +118,66 @@ export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
 
 /**
  * Sync Inner World: merge local and cloud state
- * Uses lock to prevent race conditions
+ * P1-8 Fix: Uses Promise-based lock to prevent race conditions
+ * Concurrent callers will wait for and receive the same result
  */
 export async function syncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld> {
-  if (isInnerWorldSyncing) {
-    // If already syncing, just return local state
+  // P1-8 Fix: If sync is already in progress, wait for it and return its result
+  // This prevents duplicate syncs and ensures all callers get consistent data
+  if (syncInnerWorldPromise) {
+    try {
+      return await syncInnerWorldPromise;
+    } catch {
+      // If the ongoing sync fails, return local state as fallback
+      return localWorld;
+    }
+  }
+
+  // Create a new sync promise
+  syncInnerWorldPromise = doSyncInnerWorld(localWorld);
+
+  try {
+    return await syncInnerWorldPromise;
+  } finally {
+    syncInnerWorldPromise = null;
+  }
+}
+
+/**
+ * Internal sync implementation (called within Promise lock)
+ */
+async function doSyncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld> {
+  const cloudWorld = await pullInnerWorldFromCloud();
+
+  if (!cloudWorld) {
+    // No cloud data - push local to cloud
+    await pushInnerWorldToCloud(localWorld);
     return localWorld;
   }
 
-  isInnerWorldSyncing = true;
+  // Merge strategy: use the one with more progress (higher streak or more plants)
+  // P1-4 Fix: On tie, use the one with more recent lastActiveDate
+  const localScore = (localWorld.currentActiveStreak || 0) + (localWorld.plants?.length || 0);
+  const cloudScore = (cloudWorld.currentActiveStreak || 0) + (cloudWorld.plants?.length || 0);
 
-  try {
-    const cloudWorld = await pullInnerWorldFromCloud();
-
-    if (!cloudWorld) {
-      // No cloud data - push local to cloud
-      await pushInnerWorldToCloud(localWorld);
-      return localWorld;
-    }
-
-    // Merge strategy: use the one with more progress (higher streak or more plants)
-    // P1-4 Fix: On tie, use the one with more recent lastActiveDate
-    const localScore = (localWorld.currentActiveStreak || 0) + (localWorld.plants?.length || 0);
-    const cloudScore = (cloudWorld.currentActiveStreak || 0) + (cloudWorld.plants?.length || 0);
-
-    let winner: InnerWorld;
-    if (cloudScore > localScore) {
-      winner = cloudWorld;
-    } else if (localScore > cloudScore) {
-      winner = localWorld;
-    } else {
-      // Tie: use the one with more recent activity
-      const localDate = localWorld.lastActiveDate ? new Date(localWorld.lastActiveDate).getTime() : 0;
-      const cloudDate = cloudWorld.lastActiveDate ? new Date(cloudWorld.lastActiveDate).getTime() : 0;
-      winner = cloudDate > localDate ? cloudWorld : localWorld;
-      logger.log(`[InnerWorld] Tie (score=${localScore}), using ${cloudDate > localDate ? 'cloud' : 'local'} (more recent)`);
-    }
-
-    // Save merged state (use safe wrapper for Safari Private Mode)
-    safeLocalStorageSet(INNER_WORLD_STORAGE_KEY, winner);
-    await pushInnerWorldToCloud(winner);
-
-    return winner;
-  } finally {
-    isInnerWorldSyncing = false;
+  let winner: InnerWorld;
+  if (cloudScore > localScore) {
+    winner = cloudWorld;
+  } else if (localScore > cloudScore) {
+    winner = localWorld;
+  } else {
+    // Tie: use the one with more recent activity
+    const localDate = localWorld.lastActiveDate ? new Date(localWorld.lastActiveDate).getTime() : 0;
+    const cloudDate = cloudWorld.lastActiveDate ? new Date(cloudWorld.lastActiveDate).getTime() : 0;
+    winner = cloudDate > localDate ? cloudWorld : localWorld;
+    logger.log(`[InnerWorld] Tie (score=${localScore}), using ${cloudDate > localDate ? 'cloud' : 'local'} (more recent)`);
   }
+
+  // Save merged state (use safe wrapper for Safari Private Mode)
+  safeLocalStorageSet(INNER_WORLD_STORAGE_KEY, winner);
+  await pushInnerWorldToCloud(winner);
+
+  return winner;
 }
 
 /**

@@ -1,6 +1,9 @@
 /**
  * React hook for offline queue status
  * Provides reactive state for UI components
+ *
+ * P0-1 Fix: clearQueue now properly returns the Promise
+ * P1-5 Fix: Event handlers use useCallback for stable references
  */
 
 import { useState, useEffect, useCallback } from 'react';
@@ -18,11 +21,12 @@ export function useOfflineQueue() {
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
 
+  // P1-5 Fix: Stable callback references for event handlers
+  const handleOnline = useCallback(() => setIsOnline(true), []);
+  const handleOffline = useCallback(() => setIsOnline(false), []);
+
   useEffect(() => {
     const unsubscribe = offlineQueue.subscribe(setState);
-
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
@@ -32,14 +36,17 @@ export function useOfflineQueue() {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, []);
+  }, [handleOnline, handleOffline]);
 
-  const processQueue = useCallback(() => {
+  // Returns Promise for callers who need to await completion
+  const processQueue = useCallback((): Promise<void> => {
     return offlineQueue.processQueue();
   }, []);
 
-  const clearQueue = useCallback(() => {
-    offlineQueue.clearQueue();
+  // P0-1 Fix: Return the Promise so callers can await if needed
+  // This prevents silent failures where async operations complete unobserved
+  const clearQueue = useCallback((): Promise<void> => {
+    return offlineQueue.clearQueue();
   }, []);
 
   return {
@@ -53,9 +60,9 @@ export function useOfflineQueue() {
     hasPendingActions: state.actions.length > 0,
     /** Timestamp of last successful processing */
     lastProcessedAt: state.lastProcessedAt,
-    /** Manually trigger queue processing */
+    /** Manually trigger queue processing (returns Promise) */
     processQueue,
-    /** Clear all pending actions (use with caution) */
+    /** Clear all pending actions - returns Promise (use with caution) */
     clearQueue,
     /** Full list of pending actions (for debugging) */
     actions: state.actions,
