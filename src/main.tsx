@@ -23,6 +23,7 @@ import {
 } from "./lib/versionCheck";
 import { pauseAllAudio, resumeAllAudio } from "./lib/audioLifecycle";
 import { setupChunkErrorHandler } from "./components/UpdateRequiredDialog";
+import { checkDatabaseHealth } from "./storage/db";
 
 // Initialize Sentry FIRST for error monitoring (before any other code runs)
 initSentry();
@@ -212,7 +213,7 @@ if (isCapacitor) {
 }
 
 /**
- * P0 Fix: Check app version before rendering.
+ * P0 Fix: Check app version and database health before rendering.
  *
  * This prevents chunk load errors after deployment by detecting
  * version mismatch BEFORE lazy loading tries to load non-existent chunks.
@@ -221,6 +222,23 @@ if (isCapacitor) {
  * Priority checks (no throttle): OAuth returns, chunk error reloads.
  */
 async function initializeApp(): Promise<boolean> {
+  // P0 Fix: Check database health early to detect IndexedDB issues
+  // This runs on every app start to catch database corruption/deletion
+  try {
+    logger.log('[Main] Checking database health...');
+    const dbHealthy = await checkDatabaseHealth();
+    if (!dbHealthy) {
+      logger.warn('[Main] Database health check failed - app will use localStorage fallback');
+      // Don't block app startup, just log the warning
+      // The useIndexedDB hook has its own fallback logic
+    } else {
+      logger.log('[Main] Database is healthy');
+    }
+  } catch (dbError) {
+    logger.warn('[Main] Database health check error:', dbError);
+    // Continue anyway - app has fallbacks
+  }
+
   // Priority check: After OAuth or after chunk error reload (always check)
   const priorityCheck = isOAuthReturn() || shouldCheckVersion();
   // Auto check: Every 5 minutes for regular visits

@@ -380,6 +380,10 @@ export class AmbientSoundGenerator {
   private statusListeners: Set<AudioStatusListener> = new Set();
   private usedFallback = false; // Track if fallback was used (for diagnostics)
 
+  // P0 Fix: Max retry attempts for resume to prevent infinite loops
+  private resumeRetryCount = 0;
+  private static readonly MAX_RESUME_RETRIES = 3;
+
   /**
    * P0 Fix: Subscribe to status changes
    */
@@ -850,6 +854,21 @@ export class AmbientSoundGenerator {
   async resume(): Promise<void> {
     if (!this.audioElement || !this.isPlaying) return;
 
+    // P0 Fix: Check retry limit before attempting
+    if (this.resumeRetryCount >= AmbientSoundGenerator.MAX_RESUME_RETRIES) {
+      logger.warn('[AmbientSounds] Max resume retries reached, giving up');
+      this.setStatus({
+        state: 'error',
+        error: {
+          code: 'MAX_RETRIES_EXCEEDED',
+          message: 'Unable to resume audio after multiple attempts',
+          recoverable: false,
+        },
+      });
+      this.resumeRetryCount = 0; // Reset for future attempts
+      return;
+    }
+
     // P0 Fix: Set loading while resuming
     this.setStatus({ state: 'loading' });
 
@@ -868,31 +887,41 @@ export class AmbientSoundGenerator {
       // Try to play with retry for iOS
       try {
         await this.audioElement.play();
-        // P0 Fix: Update status on success
+        // P0 Fix: Update status on success and reset retry counter
         this.setStatus({ state: 'playing', error: undefined });
+        this.resumeRetryCount = 0;
       } catch (firstError) {
-        logger.warn('[AmbientSounds] Resume first attempt failed, retrying...', firstError);
+        this.resumeRetryCount++;
+        logger.warn(`[AmbientSounds] Resume attempt ${this.resumeRetryCount} failed, retrying...`, firstError);
         await new Promise(resolve => setTimeout(resolve, 100));
-        await this.audioElement.play();
-        // P0 Fix: Update status on success
-        this.setStatus({ state: 'playing', error: undefined });
+
+        // Check again after delay
+        if (this.audioElement) {
+          await this.audioElement.play();
+          // P0 Fix: Update status on success and reset retry counter
+          this.setStatus({ state: 'playing', error: undefined });
+          this.resumeRetryCount = 0;
+        }
       }
     } catch (err) {
       // P0 Fix: Don't log abort errors as failures
       if (isAbortError(err)) {
         logger.debug('[AmbientSounds] Resume cancelled (abort)');
         this.setStatus({ state: 'paused' });
+        this.resumeRetryCount = 0; // Reset on abort
         return;
       }
 
-      logger.error('[AmbientSounds] Failed to resume audio:', err);
+      this.resumeRetryCount++;
+      logger.error(`[AmbientSounds] Failed to resume audio (attempt ${this.resumeRetryCount}):`, err);
+
       // P0 Fix: Update status on error
       this.setStatus({
         state: 'error',
         error: {
           code: 'RESUME_ERROR',
           message: 'Failed to resume audio',
-          recoverable: true,
+          recoverable: this.resumeRetryCount < AmbientSoundGenerator.MAX_RESUME_RETRIES,
         },
       });
     }

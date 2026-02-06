@@ -67,7 +67,37 @@ export function initSentry(): void {
     ],
 
     // Privacy: Strip PII and tokens before sending
-    beforeSend(event) {
+    // Also filter out expected/handled errors
+    beforeSend(event, hint) {
+      const error = hint?.originalException;
+
+      // P0 Fix: Filter out AbortErrors - these are expected and handled
+      // AbortError occurs during normal operation (user navigation, request cancellation)
+      if (error instanceof Error) {
+        const isAbortError =
+          error.name === 'AbortError' ||
+          (error as { code?: number }).code === 20 || // iOS DOMException code
+          error.message?.includes('aborted') ||
+          error.message?.includes('AbortError');
+
+        if (isAbortError) {
+          // Don't send to Sentry - these are handled gracefully in the app
+          return null;
+        }
+
+        // P0 Fix: Filter out handled chunk load errors
+        // These are shown to user via UpdateRequiredDialog
+        const isChunkError =
+          error.message?.includes('Failed to fetch dynamically imported module') ||
+          error.message?.includes('Loading chunk') ||
+          error.message?.includes('Loading CSS chunk');
+
+        if (isChunkError) {
+          // Mark as handled so we can still track frequency, but lower priority
+          event.tags = { ...event.tags, handled: 'true', error_type: 'chunk_load' };
+        }
+      }
+
       // Remove user email and IP
       if (event.user) {
         delete event.user.email;
