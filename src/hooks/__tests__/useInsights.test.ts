@@ -114,7 +114,8 @@ describe('useInsights', () => {
       expect(mockGenerateInsights).toHaveBeenCalledWith(
         mockMoods,
         mockHabits,
-        mockFocusSessions
+        mockFocusSessions,
+        undefined // translations parameter (optional)
       );
       expect(result.current.insights).toEqual(mockInsights);
     });

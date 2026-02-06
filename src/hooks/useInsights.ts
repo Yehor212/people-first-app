@@ -7,7 +7,7 @@
 
 import { useMemo, useEffect, useState } from 'react';
 import type { MoodEntry, Habit, FocusSession, Insight } from '@/types';
-import { generateInsights } from '@/lib/insightsEngine';
+import { generateInsights, type InsightTranslations } from '@/lib/insightsEngine';
 import { logger } from '@/lib/logger';
 import { safeJsonParse } from '@/lib/safeJson';
 
@@ -16,6 +16,7 @@ interface UseInsightsOptions {
   habits: Habit[];
   focusSessions: FocusSession[];
   autoRefresh?: boolean; // Refresh insights daily
+  translations?: InsightTranslations; // i18n support (v1.6.1)
 }
 
 /**
@@ -27,6 +28,7 @@ export function useInsights({
   habits,
   focusSessions,
   autoRefresh = true,
+  translations,
 }: UseInsightsOptions) {
   const [lastGeneratedDate, setLastGeneratedDate] = useState<string>('');
 
@@ -45,7 +47,7 @@ export function useInsights({
         focusSessions: focusSessions.length,
       });
 
-      const generated = generateInsights(moods, habits, focusSessions);
+      const generated = generateInsights(moods, habits, focusSessions, translations);
 
       logger.log('[useInsights] Generated insights:', {
         count: generated.length,
@@ -57,7 +59,7 @@ export function useInsights({
       logger.error('[useInsights] Failed to generate insights:', error);
       return [];
     }
-  }, [moods, habits, focusSessions]);
+  }, [moods, habits, focusSessions, translations]);
 
   // Check if insights should be refreshed (daily)
   useEffect(() => {

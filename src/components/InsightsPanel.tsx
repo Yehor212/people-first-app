@@ -5,9 +5,10 @@
  * Collapsible design to avoid overwhelming the user
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import type { MoodEntry, Habit, FocusSession } from '@/types';
 import { useInsights } from '@/hooks/useInsights';
+import type { InsightTranslations } from '@/lib/insightsEngine';
 import { InsightCard } from './InsightCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Sparkles, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
@@ -29,6 +30,23 @@ export function InsightsPanel({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
 
+  // Build insight translations from current language context
+  const insightTranslations = useMemo<InsightTranslations>(() => ({
+    morning: t.insightMorning || 'in the morning',
+    afternoon: t.insightAfternoon || 'in the afternoon',
+    evening: t.insightEvening || 'in the evening',
+    habitImprovesMood: t.insightHabitImprovesMood || '{habit} improves your mood',
+    habitImprovesMoodDesc: t.insightHabitImprovesMoodDesc || 'On days when you complete "{habit}", your mood is {percent}% better on average.',
+    focusBestLabel: t.insightFocusBestLabel || 'You focus best on "{label}" tasks',
+    focusBestLabelDesc: t.insightFocusBestLabelDesc || 'Your average focus time for "{label}" is {minutes} minutes, higher than other activities.',
+    peakFocusTime: t.insightPeakFocusTime || 'Your peak focus time is {timeOfDay}',
+    peakFocusTimeDesc: t.insightPeakFocusTimeDesc || 'You achieve your best focus around {time}, with an average of {minutes} minutes.',
+    bestTimeForHabit: t.insightBestTimeForHabit || 'Best time for {habit}: {time}',
+    bestTimeForHabitDesc: t.insightBestTimeForHabitDesc || 'You\'re {percent}% more likely to complete "{habit}" {time} compared to {worstTime} ({worstPercent}%).',
+    tagBoostsMood: t.insightTagBoostsMood || '"{tag}" boosts your mood',
+    tagBoostsMoodDesc: t.insightTagBoostsMoodDesc || 'Days tagged with "{tag}" show {percent}% better mood on average.',
+  }), [t]);
+
   const {
     insights,
     topInsight,
@@ -41,6 +59,7 @@ export function InsightsPanel({
     habits,
     focusSessions,
     autoRefresh: true,
+    translations: insightTranslations,
   });
 
   // Don't show panel if no data

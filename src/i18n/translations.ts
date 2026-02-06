@@ -151,6 +151,37 @@ export interface Translations {
   insightLowConsistencyTitle: string;
   insightLowConsistencyDesc: string;
 
+  // Dynamic Insight Templates (v1.6.1 - used by insightsEngine.ts)
+  insightMorning: string;
+  insightAfternoon: string;
+  insightEvening: string;
+  insightHabitImprovesMood: string;
+  insightHabitImprovesMoodDesc: string;
+  insightFocusBestLabel: string;
+  insightFocusBestLabelDesc: string;
+  insightPeakFocusTime: string;
+  insightPeakFocusTimeDesc: string;
+  insightBestTimeForHabit: string;
+  insightBestTimeForHabitDesc: string;
+  insightTagBoostsMood: string;
+  insightTagBoostsMoodDesc: string;
+
+  // Module names for OnboardingFlow (v1.6.1)
+  moduleFocus: string;
+  moduleBreathing: string;
+  moduleGratitude: string;
+  moduleQuests: string;
+  moduleTasks: string;
+  moduleChallenges: string;
+  moduleGarden: string;
+  moduleFocusDesc: string;
+  moduleBreathingDesc: string;
+  moduleGratitudeDesc: string;
+  moduleQuestsDesc: string;
+  moduleTasksDesc: string;
+  moduleChallengesDesc: string;
+  moduleGardenDesc: string;
+
   // Onboarding Hints
   hintFirstMoodTitle: string;
   hintFirstMoodDesc: string;
@@ -1789,6 +1820,37 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightLowConsistencyTitle: 'Создайте привычку записей',
     insightLowConsistencyDesc: 'Попробуйте записывать настроение в одно и то же время каждый день. Регулярность помогает выявлять закономерности!',
 
+    // Dynamic Insight Templates (v1.6.1)
+    insightMorning: 'утром',
+    insightAfternoon: 'днём',
+    insightEvening: 'вечером',
+    insightHabitImprovesMood: '{habit} улучшает настроение',
+    insightHabitImprovesMoodDesc: 'В дни, когда вы выполняете «{habit}», ваше настроение на {percent}% лучше.',
+    insightFocusBestLabel: 'Лучшая фокусировка на «{label}»',
+    insightFocusBestLabelDesc: 'Среднее время фокусировки для «{label}» составляет {minutes} минут — выше, чем для других занятий.',
+    insightPeakFocusTime: 'Пиковое время фокусировки: {timeOfDay}',
+    insightPeakFocusTimeDesc: 'Лучшая концентрация около {time}, в среднем {minutes} минут.',
+    insightBestTimeForHabit: 'Лучшее время для {habit}: {time}',
+    insightBestTimeForHabitDesc: 'Вы на {percent}% чаще выполняете «{habit}» {time} по сравнению с {worstTime} ({worstPercent}%).',
+    insightTagBoostsMood: '«{tag}» улучшает настроение',
+    insightTagBoostsMoodDesc: 'Дни с меткой «{tag}» показывают на {percent}% лучшее настроение в среднем.',
+
+    // Module names (v1.6.1 - OnboardingFlow)
+    moduleFocus: 'Таймер Фокусировки',
+    moduleBreathing: 'Дыхание',
+    moduleGratitude: 'Благодарность',
+    moduleQuests: 'Квесты',
+    moduleTasks: 'Задачи',
+    moduleChallenges: 'Челленджи',
+    moduleGarden: 'Сад',
+    moduleFocusDesc: 'Таймер Помодоро для глубокой концентрации',
+    moduleBreathingDesc: 'Техники релаксации и дыхательные упражнения',
+    moduleGratitudeDesc: 'Ежедневная практика благодарности',
+    moduleQuestsDesc: 'Ежедневные квесты и цели',
+    moduleTasksDesc: 'Управление задачами',
+    moduleChallengesDesc: 'Соревнуйтесь с друзьями',
+    moduleGardenDesc: 'Виртуальный компаньон и сад',
+
     // Onboarding Hints
     hintFirstMoodTitle: 'Как вы себя чувствуете?',
     hintFirstMoodDesc: 'Начните день с записи настроения. Это займёт 5 секунд и поможет лучше понять себя!',
@@ -3365,6 +3427,37 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightHighConsistencyDesc: 'You\'ve logged your mood {days} of the last 14 days. This self-awareness is powerful!',
     insightLowConsistencyTitle: 'Build your logging habit',
     insightLowConsistencyDesc: 'Try logging your mood at the same time each day. Consistency helps you spot patterns!',
+
+    // Dynamic Insight Templates (v1.6.1)
+    insightMorning: 'in the morning',
+    insightAfternoon: 'in the afternoon',
+    insightEvening: 'in the evening',
+    insightHabitImprovesMood: '{habit} improves your mood',
+    insightHabitImprovesMoodDesc: 'On days when you complete "{habit}", your mood is {percent}% better on average.',
+    insightFocusBestLabel: 'You focus best on "{label}" tasks',
+    insightFocusBestLabelDesc: 'Your average focus time for "{label}" is {minutes} minutes, higher than other activities.',
+    insightPeakFocusTime: 'Your peak focus time is {timeOfDay}',
+    insightPeakFocusTimeDesc: 'You achieve your best focus around {time}, with an average of {minutes} minutes.',
+    insightBestTimeForHabit: 'Best time for {habit}: {time}',
+    insightBestTimeForHabitDesc: 'You\'re {percent}% more likely to complete "{habit}" {time} compared to {worstTime} ({worstPercent}%).',
+    insightTagBoostsMood: '"{tag}" boosts your mood',
+    insightTagBoostsMoodDesc: 'Days tagged with "{tag}" show {percent}% better mood on average.',
+
+    // Module names (v1.6.1 - OnboardingFlow)
+    moduleFocus: 'Focus Timer',
+    moduleBreathing: 'Breathing',
+    moduleGratitude: 'Gratitude',
+    moduleQuests: 'Quests',
+    moduleTasks: 'Tasks',
+    moduleChallenges: 'Challenges',
+    moduleGarden: 'Garden',
+    moduleFocusDesc: 'Pomodoro timer for deep work',
+    moduleBreathingDesc: 'Relaxation and breathing exercises',
+    moduleGratitudeDesc: 'Daily gratitude practice',
+    moduleQuestsDesc: 'Daily challenges & goals',
+    moduleTasksDesc: 'Task management',
+    moduleChallengesDesc: 'Compete with friends',
+    moduleGardenDesc: 'Virtual companion & garden',
 
     // Onboarding Hints
     hintFirstMoodTitle: 'How are you feeling?',
@@ -4943,6 +5036,37 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightLowConsistencyTitle: 'Створіть звичку записів',
     insightLowConsistencyDesc: 'Спробуйте записувати настрій в один і той самий час щодня. Регулярність допомагає виявляти закономірності!',
 
+    // Dynamic Insight Templates (v1.6.1)
+    insightMorning: 'вранці',
+    insightAfternoon: 'вдень',
+    insightEvening: 'ввечері',
+    insightHabitImprovesMood: '{habit} покращує настрій',
+    insightHabitImprovesMoodDesc: 'У дні, коли ви виконуєте «{habit}», ваш настрій на {percent}% кращий.',
+    insightFocusBestLabel: 'Найкраща фокусировка на «{label}»',
+    insightFocusBestLabelDesc: 'Середній час фокусування для «{label}» становить {minutes} хвилин — вище, ніж для інших занять.',
+    insightPeakFocusTime: 'Піковий час фокусування: {timeOfDay}',
+    insightPeakFocusTimeDesc: 'Найкраща концентрація близько {time}, в середньому {minutes} хвилин.',
+    insightBestTimeForHabit: 'Найкращий час для {habit}: {time}',
+    insightBestTimeForHabitDesc: 'Ви на {percent}% частіше виконуєте «{habit}» {time} порівняно з {worstTime} ({worstPercent}%).',
+    insightTagBoostsMood: '«{tag}» покращує настрій',
+    insightTagBoostsMoodDesc: 'Дні з міткою «{tag}» показують на {percent}% кращий настрій в середньому.',
+
+    // Module names (v1.6.1 - OnboardingFlow)
+    moduleFocus: 'Таймер Фокусування',
+    moduleBreathing: 'Дихання',
+    moduleGratitude: 'Вдячність',
+    moduleQuests: 'Квести',
+    moduleTasks: 'Завдання',
+    moduleChallenges: 'Виклики',
+    moduleGarden: 'Сад',
+    moduleFocusDesc: 'Таймер Помодоро для глибокої концентрації',
+    moduleBreathingDesc: 'Техніки релаксації та дихальні вправи',
+    moduleGratitudeDesc: 'Щоденна практика вдячності',
+    moduleQuestsDesc: 'Щоденні квести та цілі',
+    moduleTasksDesc: 'Управління завданнями',
+    moduleChallengesDesc: 'Змагайтесь з друзями',
+    moduleGardenDesc: 'Віртуальний помічник і сад',
+
     // Onboarding Hints
     hintFirstMoodTitle: 'Як ви себе почуваєте?',
     hintFirstMoodDesc: 'Почніть день із запису настрою. Це займе 5 секунд і допоможе краще зрозуміти себе!',
@@ -6519,6 +6643,37 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightHighConsistencyDesc: 'Has registrado tu ánimo {days} de los últimos 14 días. ¡Esta autoconciencia es poderosa!',
     insightLowConsistencyTitle: 'Construye tu hábito de registro',
     insightLowConsistencyDesc: 'Intenta registrar tu ánimo a la misma hora cada día. ¡La consistencia te ayuda a detectar patrones!',
+
+    // Dynamic Insight Templates (v1.6.1)
+    insightMorning: 'por la mañana',
+    insightAfternoon: 'por la tarde',
+    insightEvening: 'por la noche',
+    insightHabitImprovesMood: '{habit} mejora tu ánimo',
+    insightHabitImprovesMoodDesc: 'Los días que completas "{habit}", tu ánimo es {percent}% mejor en promedio.',
+    insightFocusBestLabel: 'Te enfocas mejor en tareas de "{label}"',
+    insightFocusBestLabelDesc: 'Tu tiempo promedio de enfoque para "{label}" es {minutes} minutos, más alto que otras actividades.',
+    insightPeakFocusTime: 'Tu hora pico de enfoque es {timeOfDay}',
+    insightPeakFocusTimeDesc: 'Logras tu mejor enfoque alrededor de las {time}, con un promedio de {minutes} minutos.',
+    insightBestTimeForHabit: 'Mejor momento para {habit}: {time}',
+    insightBestTimeForHabitDesc: 'Tienes {percent}% más probabilidad de completar "{habit}" {time} comparado con {worstTime} ({worstPercent}%).',
+    insightTagBoostsMood: '"{tag}" mejora tu ánimo',
+    insightTagBoostsMoodDesc: 'Los días con etiqueta "{tag}" muestran {percent}% mejor ánimo en promedio.',
+
+    // Module names (v1.6.1 - OnboardingFlow)
+    moduleFocus: 'Temporizador de Enfoque',
+    moduleBreathing: 'Respiración',
+    moduleGratitude: 'Gratitud',
+    moduleQuests: 'Misiones',
+    moduleTasks: 'Tareas',
+    moduleChallenges: 'Desafíos',
+    moduleGarden: 'Jardín',
+    moduleFocusDesc: 'Temporizador Pomodoro para trabajo profundo',
+    moduleBreathingDesc: 'Ejercicios de relajación y respiración',
+    moduleGratitudeDesc: 'Práctica diaria de gratitud',
+    moduleQuestsDesc: 'Desafíos y metas diarias',
+    moduleTasksDesc: 'Gestión de tareas',
+    moduleChallengesDesc: 'Compite con amigos',
+    moduleGardenDesc: 'Compañero virtual y jardín',
 
     // Onboarding Hints
     hintFirstMoodTitle: '¿Cómo te sientes?',
@@ -8098,6 +8253,37 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightLowConsistencyTitle: 'Baue deine Notier-Gewohnheit auf',
     insightLowConsistencyDesc: 'Versuche, deine Stimmung jeden Tag zur gleichen Zeit zu notieren. Beständigkeit hilft, Muster zu erkennen!',
 
+    // Dynamic Insight Templates (v1.6.1)
+    insightMorning: 'am Morgen',
+    insightAfternoon: 'am Nachmittag',
+    insightEvening: 'am Abend',
+    insightHabitImprovesMood: '{habit} verbessert deine Stimmung',
+    insightHabitImprovesMoodDesc: 'An Tagen, an denen du "{habit}" erledigst, ist deine Stimmung im Durchschnitt {percent}% besser.',
+    insightFocusBestLabel: 'Du fokussierst dich am besten auf "{label}"',
+    insightFocusBestLabelDesc: 'Deine durchschnittliche Fokuszeit für "{label}" beträgt {minutes} Minuten, höher als bei anderen Aktivitäten.',
+    insightPeakFocusTime: 'Deine beste Fokuszeit ist {timeOfDay}',
+    insightPeakFocusTimeDesc: 'Du erreichst deinen besten Fokus gegen {time}, mit durchschnittlich {minutes} Minuten.',
+    insightBestTimeForHabit: 'Beste Zeit für {habit}: {time}',
+    insightBestTimeForHabitDesc: 'Du erledigst "{habit}" {time} mit {percent}% höherer Wahrscheinlichkeit als {worstTime} ({worstPercent}%).',
+    insightTagBoostsMood: '"{tag}" verbessert deine Stimmung',
+    insightTagBoostsMoodDesc: 'Tage mit dem Tag "{tag}" zeigen im Durchschnitt {percent}% bessere Stimmung.',
+
+    // Module names (v1.6.1 - OnboardingFlow)
+    moduleFocus: 'Fokus-Timer',
+    moduleBreathing: 'Atmung',
+    moduleGratitude: 'Dankbarkeit',
+    moduleQuests: 'Quests',
+    moduleTasks: 'Aufgaben',
+    moduleChallenges: 'Herausforderungen',
+    moduleGarden: 'Garten',
+    moduleFocusDesc: 'Pomodoro-Timer für tiefe Arbeit',
+    moduleBreathingDesc: 'Entspannungs- und Atemübungen',
+    moduleGratitudeDesc: 'Tägliche Dankbarkeitspraxis',
+    moduleQuestsDesc: 'Tägliche Herausforderungen & Ziele',
+    moduleTasksDesc: 'Aufgabenverwaltung',
+    moduleChallengesDesc: 'Mit Freunden konkurrieren',
+    moduleGardenDesc: 'Virtueller Begleiter & Garten',
+
     // Onboarding Hints
     hintFirstMoodTitle: 'Wie fühlst du dich?',
     hintFirstMoodDesc: 'Beginne den Tag mit einer Stimmungsnotiz. Es dauert nur 5 Sekunden und hilft dir, dich besser zu verstehen!',
@@ -9676,6 +9862,37 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightLowConsistencyTitle: 'Construisez votre habitude de notation',
     insightLowConsistencyDesc: 'Essayez de noter votre humeur à la même heure chaque jour. La constance aide à repérer les tendances !',
 
+    // Dynamic Insight Templates (v1.6.1)
+    insightMorning: 'le matin',
+    insightAfternoon: 'l\'après-midi',
+    insightEvening: 'le soir',
+    insightHabitImprovesMood: '{habit} améliore votre humeur',
+    insightHabitImprovesMoodDesc: 'Les jours où vous complétez "{habit}", votre humeur est {percent}% meilleure en moyenne.',
+    insightFocusBestLabel: 'Vous vous concentrez mieux sur "{label}"',
+    insightFocusBestLabelDesc: 'Votre temps de concentration moyen pour "{label}" est de {minutes} minutes, plus élevé que pour d\'autres activités.',
+    insightPeakFocusTime: 'Votre pic de concentration est {timeOfDay}',
+    insightPeakFocusTimeDesc: 'Vous atteignez votre meilleure concentration vers {time}, avec une moyenne de {minutes} minutes.',
+    insightBestTimeForHabit: 'Meilleur moment pour {habit}: {time}',
+    insightBestTimeForHabitDesc: 'Vous avez {percent}% plus de chances de compléter "{habit}" {time} par rapport à {worstTime} ({worstPercent}%).',
+    insightTagBoostsMood: '"{tag}" améliore votre humeur',
+    insightTagBoostsMoodDesc: 'Les jours avec le tag "{tag}" montrent {percent}% d\'humeur meilleure en moyenne.',
+
+    // Module names (v1.6.1 - OnboardingFlow)
+    moduleFocus: 'Minuteur Focus',
+    moduleBreathing: 'Respiration',
+    moduleGratitude: 'Gratitude',
+    moduleQuests: 'Quêtes',
+    moduleTasks: 'Tâches',
+    moduleChallenges: 'Défis',
+    moduleGarden: 'Jardin',
+    moduleFocusDesc: 'Minuteur Pomodoro pour le travail profond',
+    moduleBreathingDesc: 'Exercices de relaxation et de respiration',
+    moduleGratitudeDesc: 'Pratique quotidienne de gratitude',
+    moduleQuestsDesc: 'Défis et objectifs quotidiens',
+    moduleTasksDesc: 'Gestion des tâches',
+    moduleChallengesDesc: 'Compétition avec des amis',
+    moduleGardenDesc: 'Compagnon virtuel et jardin',
+
     // Onboarding Hints
     hintFirstMoodTitle: 'Comment vous sentez-vous ?',
     hintFirstMoodDesc: "Commencez la journée en notant votre humeur. Ça ne prend que 5 secondes et vous aide à mieux vous comprendre !",
@@ -11253,6 +11470,37 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightHighConsistencyDesc: '過去14日間のうち{days}日気分を記録しました。この自己認識は素晴らしい！',
     insightLowConsistencyTitle: '記録習慣を作ろう',
     insightLowConsistencyDesc: '毎日同じ時間に気分を記録してみて。継続するとパターンが見えてきます！',
+
+    // Dynamic Insight Templates (v1.6.1)
+    insightMorning: '午前中に',
+    insightAfternoon: '午後に',
+    insightEvening: '夕方に',
+    insightHabitImprovesMood: '{habit}は気分を改善します',
+    insightHabitImprovesMoodDesc: '「{habit}」を完了した日は、平均で{percent}%気分が良くなります。',
+    insightFocusBestLabel: '「{label}」タスクに最も集中できます',
+    insightFocusBestLabelDesc: '「{label}」の平均集中時間は{minutes}分で、他の活動より長いです。',
+    insightPeakFocusTime: '集中力のピークは{timeOfDay}',
+    insightPeakFocusTimeDesc: '{time}頃に最も集中でき、平均{minutes}分です。',
+    insightBestTimeForHabit: '{habit}に最適な時間: {time}',
+    insightBestTimeForHabitDesc: '「{habit}」を{time}に完了する確率は{worstTime}（{worstPercent}%）より{percent}%高いです。',
+    insightTagBoostsMood: '「{tag}」は気分を改善します',
+    insightTagBoostsMoodDesc: '「{tag}」タグの日は、平均で{percent}%気分が良いです。',
+
+    // Module names (v1.6.1 - OnboardingFlow)
+    moduleFocus: 'フォーカスタイマー',
+    moduleBreathing: '呼吸',
+    moduleGratitude: '感謝',
+    moduleQuests: 'クエスト',
+    moduleTasks: 'タスク',
+    moduleChallenges: 'チャレンジ',
+    moduleGarden: 'ガーデン',
+    moduleFocusDesc: 'ディープワーク用ポモドーロタイマー',
+    moduleBreathingDesc: 'リラクゼーションと呼吸エクササイズ',
+    moduleGratitudeDesc: '毎日の感謝の練習',
+    moduleQuestsDesc: '毎日のチャレンジと目標',
+    moduleTasksDesc: 'タスク管理',
+    moduleChallengesDesc: '友達と競争',
+    moduleGardenDesc: 'バーチャルコンパニオンとガーデン',
 
     // Onboarding Hints
     hintFirstMoodTitle: '今の気分は？',
@@ -12837,6 +13085,37 @@ const arabicOverrides: Partial<Translations> = {
   insightHighConsistencyDesc: 'سجلت مزاجك {days} من آخر 14 يوم. وعي ذاتي قوي!',
   insightLowConsistencyTitle: 'اصنع عادة التسجيل',
   insightLowConsistencyDesc: 'حاول تسجيل مزاجك في نفس الوقت يومياً. الانتظام يكشف الأنماط!',
+
+  // Dynamic Insight Templates (v1.6.1)
+  insightMorning: 'في الصباح',
+  insightAfternoon: 'بعد الظهر',
+  insightEvening: 'في المساء',
+  insightHabitImprovesMood: '{habit} يحسن مزاجك',
+  insightHabitImprovesMoodDesc: 'في الأيام التي تكمل فيها "{habit}"، يكون مزاجك أفضل بنسبة {percent}%.',
+  insightFocusBestLabel: 'أنت تركز أفضل على مهام "{label}"',
+  insightFocusBestLabelDesc: 'متوسط وقت تركيزك لـ "{label}" هو {minutes} دقيقة، أعلى من الأنشطة الأخرى.',
+  insightPeakFocusTime: 'وقت ذروة تركيزك هو {timeOfDay}',
+  insightPeakFocusTimeDesc: 'تحقق أفضل تركيز حوالي {time}، بمتوسط {minutes} دقيقة.',
+  insightBestTimeForHabit: 'أفضل وقت لـ {habit}: {time}',
+  insightBestTimeForHabitDesc: 'احتمال إكمالك لـ "{habit}" {time} أعلى بنسبة {percent}% مقارنة بـ {worstTime} ({worstPercent}%).',
+  insightTagBoostsMood: '"{tag}" يحسن مزاجك',
+  insightTagBoostsMoodDesc: 'الأيام التي تحمل علامة "{tag}" تظهر مزاجاً أفضل بنسبة {percent}%.',
+
+  // Module names (v1.6.1 - OnboardingFlow)
+  moduleFocus: 'مؤقت التركيز',
+  moduleBreathing: 'التنفس',
+  moduleGratitude: 'الامتنان',
+  moduleQuests: 'المهام',
+  moduleTasks: 'المهام',
+  moduleChallenges: 'التحديات',
+  moduleGarden: 'الحديقة',
+  moduleFocusDesc: 'مؤقت بومودورو للعمل العميق',
+  moduleBreathingDesc: 'تمارين الاسترخاء والتنفس',
+  moduleGratitudeDesc: 'ممارسة الامتنان اليومية',
+  moduleQuestsDesc: 'تحديات وأهداف يومية',
+  moduleTasksDesc: 'إدارة المهام',
+  moduleChallengesDesc: 'تنافس مع الأصدقاء',
+  moduleGardenDesc: 'رفيق افتراضي وحديقة',
 
   // Onboarding Hints
   hintFirstMoodTitle: 'كيف حالك؟',
@@ -14501,6 +14780,37 @@ const hebrewOverrides: Partial<Translations> = {
   insightHighConsistencyDesc: 'רשמת מצב רוח {days} מתוך 14 הימים האחרונים. מודעות עצמית חזקה!',
   insightLowConsistencyTitle: 'צור הרגל רישום',
   insightLowConsistencyDesc: 'נסה לרשום מצב רוח באותה שעה כל יום. עקביות חושפת דפוסים!',
+
+  // Dynamic Insight Templates (v1.6.1)
+  insightMorning: 'בבוקר',
+  insightAfternoon: 'אחר הצהריים',
+  insightEvening: 'בערב',
+  insightHabitImprovesMood: '{habit} משפר את מצב הרוח שלך',
+  insightHabitImprovesMoodDesc: 'בימים שאתה משלים "{habit}", מצב הרוח שלך טוב יותר ב-{percent}%.',
+  insightFocusBestLabel: 'אתה מתמקד הכי טוב במשימות "{label}"',
+  insightFocusBestLabelDesc: 'זמן הריכוז הממוצע שלך ל-"{label}" הוא {minutes} דקות, גבוה יותר מפעילויות אחרות.',
+  insightPeakFocusTime: 'שיא הריכוז שלך הוא {timeOfDay}',
+  insightPeakFocusTimeDesc: 'אתה משיג את הריכוז הטוב ביותר סביב {time}, עם ממוצע של {minutes} דקות.',
+  insightBestTimeForHabit: 'הזמן הטוב ביותר ל-{habit}: {time}',
+  insightBestTimeForHabitDesc: 'הסיכוי שלך להשלים "{habit}" {time} גבוה ב-{percent}% לעומת {worstTime} ({worstPercent}%).',
+  insightTagBoostsMood: '"{tag}" משפר את מצב הרוח שלך',
+  insightTagBoostsMoodDesc: 'ימים עם התגית "{tag}" מראים מצב רוח טוב יותר ב-{percent}%.',
+
+  // Module names (v1.6.1 - OnboardingFlow)
+  moduleFocus: 'טיימר ריכוז',
+  moduleBreathing: 'נשימה',
+  moduleGratitude: 'הכרת תודה',
+  moduleQuests: 'משימות',
+  moduleTasks: 'משימות',
+  moduleChallenges: 'אתגרים',
+  moduleGarden: 'גינה',
+  moduleFocusDesc: 'טיימר פומודורו לעבודה עמוקה',
+  moduleBreathingDesc: 'תרגילי הרפיה ונשימה',
+  moduleGratitudeDesc: 'תרגול הכרת תודה יומי',
+  moduleQuestsDesc: 'אתגרים ומטרות יומיות',
+  moduleTasksDesc: 'ניהול משימות',
+  moduleChallengesDesc: 'התחרה עם חברים',
+  moduleGardenDesc: 'חבר וירטואלי וגינה',
 
   // Onboarding Hints
   hintFirstMoodTitle: 'מה שלומך?',

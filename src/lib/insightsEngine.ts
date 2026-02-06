@@ -23,6 +23,52 @@ import type {
   MoodTagMetadata,
 } from '@/types';
 
+/**
+ * Translation strings for insights (v1.6.1)
+ * Used to generate localized insight text
+ */
+export interface InsightTranslations {
+  morning: string;
+  afternoon: string;
+  evening: string;
+  habitImprovesMood: string;
+  habitImprovesMoodDesc: string;
+  focusBestLabel: string;
+  focusBestLabelDesc: string;
+  peakFocusTime: string;
+  peakFocusTimeDesc: string;
+  bestTimeForHabit: string;
+  bestTimeForHabitDesc: string;
+  tagBoostsMood: string;
+  tagBoostsMoodDesc: string;
+}
+
+/**
+ * Default English translations (fallback)
+ */
+const defaultTranslations: InsightTranslations = {
+  morning: 'in the morning',
+  afternoon: 'in the afternoon',
+  evening: 'in the evening',
+  habitImprovesMood: '{habit} improves your mood',
+  habitImprovesMoodDesc: 'On days when you complete "{habit}", your mood is {percent}% better on average.',
+  focusBestLabel: 'You focus best on "{label}" tasks',
+  focusBestLabelDesc: 'Your average focus time for "{label}" is {minutes} minutes, higher than other activities.',
+  peakFocusTime: 'Your peak focus time is {timeOfDay}',
+  peakFocusTimeDesc: 'You achieve your best focus around {time}, with an average of {minutes} minutes.',
+  bestTimeForHabit: 'Best time for {habit}: {time}',
+  bestTimeForHabitDesc: 'You\'re {percent}% more likely to complete "{habit}" {time} compared to {worstTime} ({worstPercent}%).',
+  tagBoostsMood: '"{tag}" boosts your mood',
+  tagBoostsMoodDesc: 'Days tagged with "{tag}" show {percent}% better mood on average.',
+};
+
+/**
+ * Helper to interpolate template strings with values
+ */
+function interpolate(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? `{${key}}`));
+}
+
 // Minimum data requirements for insights
 const MIN_DAYS_FOR_INSIGHTS = 7;
 const MIN_HABIT_DAYS = 5;
@@ -83,7 +129,8 @@ function calculateConfidence(dataPoints: number, correlation: number): number {
  */
 export function analyzeMoodHabitCorrelation(
   moods: MoodEntry[],
-  habits: Habit[]
+  habits: Habit[],
+  translations: InsightTranslations = defaultTranslations
 ): Insight[] {
   const insights: Insight[] = [];
 
@@ -143,8 +190,11 @@ export function analyzeMoodHabitCorrelation(
         id: nanoid(),
         type: 'mood-habit-correlation',
         severity: improvement > 25 ? 'celebration' : 'tip',
-        title: `${habit.name} improves your mood`,
-        description: `On days when you complete "${habit.name}", your mood is ${Math.round(improvement)}% better on average.`,
+        title: interpolate(translations.habitImprovesMood, { habit: habit.name }),
+        description: interpolate(translations.habitImprovesMoodDesc, {
+          habit: habit.name,
+          percent: Math.round(improvement)
+        }),
         confidence,
         dataPoints: daysWithHabit.length + daysWithoutHabit.length,
         createdAt: Date.now(),
@@ -160,7 +210,10 @@ export function analyzeMoodHabitCorrelation(
  * Analyze focus session patterns
  * Returns insights about best times and labels for focus
  */
-export function analyzeFocusPatterns(sessions: FocusSession[]): Insight[] {
+export function analyzeFocusPatterns(
+  sessions: FocusSession[],
+  translations: InsightTranslations = defaultTranslations
+): Insight[] {
   const insights: Insight[] = [];
 
   if (sessions.length < MIN_FOCUS_SESSIONS) return insights;
@@ -224,8 +277,11 @@ export function analyzeFocusPatterns(sessions: FocusSession[]): Insight[] {
       id: nanoid(),
       type: 'focus-pattern',
       severity: 'tip',
-      title: `You focus best on '${bestLabel}' tasks`,
-      description: `Your average focus time for '${bestLabel}' is ${Math.round(bestLabelAvg)} minutes, higher than other activities.`,
+      title: interpolate(translations.focusBestLabel, { label: bestLabel }),
+      description: interpolate(translations.focusBestLabelDesc, {
+        label: bestLabel,
+        minutes: Math.round(bestLabelAvg)
+      }),
       confidence,
       dataPoints: bestLabelStats.completed,
       createdAt: Date.now(),
@@ -251,9 +307,9 @@ export function analyzeFocusPatterns(sessions: FocusSession[]): Insight[] {
   if (bestTime && bestTimeCount >= 2) {
     const hourParts = bestTime.split(':');
     const hour = hourParts.length > 0 ? safeParseInt(hourParts[0], 0, 0, 23) : 0;
-    let timeOfDay = 'morning';
-    if (hour >= 12 && hour < 17) timeOfDay = 'afternoon';
-    else if (hour >= 17) timeOfDay = 'evening';
+    let timeOfDay = translations.morning;
+    if (hour >= 12 && hour < 17) timeOfDay = translations.afternoon;
+    else if (hour >= 17) timeOfDay = translations.evening;
 
     const confidence = calculateConfidence(bestTimeCount, 0.7);
 
@@ -269,8 +325,11 @@ export function analyzeFocusPatterns(sessions: FocusSession[]): Insight[] {
       id: nanoid(),
       type: 'focus-pattern',
       severity: 'tip',
-      title: `Your peak focus time is ${timeOfDay}`,
-      description: `You achieve your best focus around ${bestTime}, with an average of ${Math.round(bestTimeAvg)} minutes.`,
+      title: interpolate(translations.peakFocusTime, { timeOfDay }),
+      description: interpolate(translations.peakFocusTimeDesc, {
+        time: bestTime,
+        minutes: Math.round(bestTimeAvg)
+      }),
       confidence,
       dataPoints: bestTimeCount,
       createdAt: Date.now(),
@@ -285,7 +344,11 @@ export function analyzeFocusPatterns(sessions: FocusSession[]): Insight[] {
  * Analyze habit completion timing
  * Returns insights about best times of day for habits
  */
-export function analyzeHabitTiming(habits: Habit[], moods: MoodEntry[]): Insight[] {
+export function analyzeHabitTiming(
+  habits: Habit[],
+  moods: MoodEntry[],
+  translations: InsightTranslations = defaultTranslations
+): Insight[] {
   const insights: Insight[] = [];
 
   // Group moods by date and time
@@ -321,9 +384,9 @@ export function analyzeHabitTiming(habits: Habit[], moods: MoodEntry[]): Insight
 
     // Find best time
     const rates = [
-      { time: 'morning' as const, rate: morningRate, count: morningCompletions.length },
-      { time: 'afternoon' as const, rate: afternoonRate, count: afternoonCompletions.length },
-      { time: 'evening' as const, rate: eveningRate, count: eveningCompletions.length },
+      { time: 'morning' as const, label: translations.morning, rate: morningRate, count: morningCompletions.length },
+      { time: 'afternoon' as const, label: translations.afternoon, rate: afternoonRate, count: afternoonCompletions.length },
+      { time: 'evening' as const, label: translations.evening, rate: eveningRate, count: eveningCompletions.length },
     ];
 
     rates.sort((a, b) => b.rate - a.rate);
@@ -350,8 +413,14 @@ export function analyzeHabitTiming(habits: Habit[], moods: MoodEntry[]): Insight
         id: nanoid(),
         type: 'habit-timing',
         severity: 'tip',
-        title: `Best time for ${habit.name}: ${best.time}`,
-        description: `You're ${Math.round(best.rate)}% more likely to complete "${habit.name}" in the ${best.time} compared to ${worst.time} (${Math.round(worst.rate)}%).`,
+        title: interpolate(translations.bestTimeForHabit, { habit: habit.name, time: best.label }),
+        description: interpolate(translations.bestTimeForHabitDesc, {
+          habit: habit.name,
+          percent: Math.round(best.rate),
+          time: best.label,
+          worstTime: worst.label,
+          worstPercent: Math.round(worst.rate)
+        }),
         confidence,
         dataPoints: total,
         createdAt: Date.now(),
@@ -367,7 +436,10 @@ export function analyzeHabitTiming(habits: Habit[], moods: MoodEntry[]): Insight
  * Analyze mood tags for patterns
  * Returns insights about which tags correlate with better mood
  */
-export function analyzeMoodTags(moods: MoodEntry[]): Insight[] {
+export function analyzeMoodTags(
+  moods: MoodEntry[],
+  translations: InsightTranslations = defaultTranslations
+): Insight[] {
   const insights: Insight[] = [];
 
   // Collect all tags
@@ -418,8 +490,11 @@ export function analyzeMoodTags(moods: MoodEntry[]): Insight[] {
         id: nanoid(),
         type: 'mood-tag',
         severity: improvement > 30 ? 'celebration' : 'tip',
-        title: `'${tag}' boosts your mood`,
-        description: `Days tagged with '${tag}' show ${Math.round(improvement)}% better mood on average.`,
+        title: interpolate(translations.tagBoostsMood, { tag }),
+        description: interpolate(translations.tagBoostsMoodDesc, {
+          tag,
+          percent: Math.round(improvement)
+        }),
         confidence,
         dataPoints: values.length + moodsWithoutTags.length,
         createdAt: Date.now(),
@@ -439,7 +514,8 @@ export function analyzeMoodTags(moods: MoodEntry[]): Insight[] {
 export function generateInsights(
   moods: MoodEntry[],
   habits: Habit[],
-  focusSessions: FocusSession[]
+  focusSessions: FocusSession[],
+  translations: InsightTranslations = defaultTranslations
 ): Insight[] {
   // Limit to last 90 days for performance with large datasets
   const ninetyDaysAgo = Date.now() - 90 * 24 * 60 * 60 * 1000;
@@ -456,10 +532,10 @@ export function generateInsights(
   const allInsights: Insight[] = [];
 
   // Generate all types of insights
-  allInsights.push(...analyzeMoodHabitCorrelation(recentMoods, recentHabits));
-  allInsights.push(...analyzeFocusPatterns(recentSessions));
-  allInsights.push(...analyzeHabitTiming(recentHabits, recentMoods));
-  allInsights.push(...analyzeMoodTags(recentMoods));
+  allInsights.push(...analyzeMoodHabitCorrelation(recentMoods, recentHabits, translations));
+  allInsights.push(...analyzeFocusPatterns(recentSessions, translations));
+  allInsights.push(...analyzeHabitTiming(recentHabits, recentMoods, translations));
+  allInsights.push(...analyzeMoodTags(recentMoods, translations));
 
   // Sort by confidence (highest first)
   allInsights.sort((a, b) => b.confidence - a.confidence);
