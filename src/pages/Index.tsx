@@ -4,7 +4,7 @@ import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundar
 import { logger } from '@/lib/logger';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
 import { initializeApp } from '@/lib/appInitializer';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent } from '@/types';
+import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent, Goal } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
@@ -92,6 +92,7 @@ import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
 import { InsightsPanel } from '@/components/InsightsPanel';
+import { GoalsPanel } from '@/components/GoalsPanel';
 import { RestModeCard } from '@/components/RestModeCard';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
 import { ChallengeModal } from '@/components/ChallengeModal';
@@ -390,6 +391,21 @@ export function Index() {
     localStorageKey: 'zenflow-gratitude',
     initialValue: []
   });
+
+  // Goals (localStorage for now - small data, no cloud sync needed)
+  const [goals, setGoals] = useState<Goal[]>(() => {
+    try {
+      const stored = localStorage.getItem('zenflow-goals');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Persist goals to localStorage
+  useEffect(() => {
+    localStorage.setItem('zenflow-goals', JSON.stringify(goals));
+  }, [goals]);
 
   const [reminders, setReminders, isLoadingReminders] = useIndexedDB<ReminderSettings>({
     table: db.settings,
@@ -2065,6 +2081,18 @@ export function Index() {
                 focusSessions={safeFocusSessions}
                 compact={true}
                 collapsible={true}
+              />
+
+              {/* Personal Goals */}
+              <GoalsPanel
+                goals={goals}
+                habits={safeHabits}
+                moods={safeMoods}
+                focusSessions={safeFocusSessions}
+                currentStreak={currentStreak}
+                onAddGoal={(goal) => setGoals(prev => [...prev, goal])}
+                onUpdateGoal={(goal) => setGoals(prev => prev.map(g => g.id === goal.id ? goal : g))}
+                onDeleteGoal={(goalId) => setGoals(prev => prev.filter(g => g.id !== goalId))}
               />
 
               {/* v1.4.0: ScheduleTimeline moved to "My World" tab */}
