@@ -16,47 +16,7 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { MoodEntry, Habit } from '@/types';
-
-// Comeback Challenge storage key
-const COMEBACK_CHALLENGE_KEY = 'zenflow_comeback_challenge';
-
-interface ComebackChallenge {
-  startDate: string;
-  targetDays: number;
-  targetHabits: number;
-  bonusXp: number;
-  completedDays: number;
-  status: 'active' | 'completed' | 'expired';
-}
-
-/**
- * Get or create comeback challenge
- */
-function getComebackChallenge(): ComebackChallenge | null {
-  const stored = localStorage.getItem(COMEBACK_CHALLENGE_KEY);
-  if (!stored) return null;
-  try {
-    return JSON.parse(stored) as ComebackChallenge;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Start a new comeback challenge
- */
-function startComebackChallenge(): ComebackChallenge {
-  const challenge: ComebackChallenge = {
-    startDate: new Date().toISOString().split('T')[0],
-    targetDays: 3,
-    targetHabits: 3,
-    bonusXp: 100,
-    completedDays: 0,
-    status: 'active',
-  };
-  localStorage.setItem(COMEBACK_CHALLENGE_KEY, JSON.stringify(challenge));
-  return challenge;
-}
+import { startComebackChallenge } from '@/lib/comebackChallenge';
 
 interface WelcomeBackModalProps {
   daysAway: number;

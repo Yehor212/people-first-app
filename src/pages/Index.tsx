@@ -130,6 +130,7 @@ import {
   wasStreakBroken,
   updateLastActiveDate
 } from '@/lib/reEngagement';
+import { recordHabitForChallenge } from '@/lib/comebackChallenge';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { checkForAppUpdate, wasUpdateDismissed, dismissUpdate, UpdateState } from '@/lib/appUpdateManager';
 
@@ -1013,6 +1014,14 @@ export function Index() {
         // Inner World: Plant a tree when completing habit
         plantSeed('habit');
         waterPlants('habit');
+
+        // Track comeback challenge progress
+        const challengeResult = recordHabitForChallenge(date);
+        if (challengeResult.challengeComplete) {
+          // Award bonus XP for completing comeback challenge
+          earnTreats('habit', challengeResult.bonusXp, 'Comeback Challenge Complete!');
+          triggerXpPopup(challengeResult.bonusXp, 'bonus');
+        }
       }
       return {
         ...habit,
