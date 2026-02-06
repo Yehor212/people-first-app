@@ -168,6 +168,67 @@ export async function pushTasksToCloud(tasks: Task[]): Promise<void> {
 }
 
 /**
+ * P2-1 Fix: Delete a task from cloud
+ * Call this when a task is deleted locally to maintain sync consistency
+ */
+export async function deleteTaskFromCloud(taskId: string): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // Validate taskId format
+  if (!taskId || typeof taskId !== 'string') {
+    logger.warn('[TasksSync] Invalid taskId for delete:', taskId);
+    return;
+  }
+
+  try {
+    const { error } = await supabase
+      .from('user_tasks')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('task_id', taskId);
+
+    if (error) {
+      logger.error('[TasksSync] Error deleting task from cloud:', error);
+      throw error;
+    }
+
+    logger.log('[TasksSync] Task deleted from cloud:', taskId);
+  } catch (error) {
+    logger.error('[TasksSync] Delete failed:', error);
+    throw error;
+  }
+}
+
+/**
+ * P2-1 Fix: Delete a quest from cloud
+ * Call this when a quest is deleted/expired locally
+ */
+export async function deleteQuestFromCloud(questId: string, questType: 'daily' | 'weekly' | 'bonus'): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  try {
+    const { error } = await supabase
+      .from('user_quests')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('quest_id', questId)
+      .eq('type', questType);
+
+    if (error) {
+      logger.error('[QuestsSync] Error deleting quest from cloud:', error);
+      throw error;
+    }
+
+    logger.log('[QuestsSync] Quest deleted from cloud:', questId);
+  } catch (error) {
+    logger.error('[QuestsSync] Delete failed:', error);
+    throw error;
+  }
+}
+
+/**
  * Sync tasks: pull from cloud and merge with local
  * Uses orchestrator for queue-based sync
  * Never loses local data on sync errors

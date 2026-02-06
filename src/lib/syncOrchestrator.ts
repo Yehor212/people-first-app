@@ -72,6 +72,10 @@ class SyncOrchestrator {
   private readonly RETRY_DELAY_BASE = 1000; // 1 second
   private readonly RETRY_DELAY_MAX = 30000; // 30 seconds
 
+  // P2-5 Fix: Timeout for individual sync operations (45 seconds)
+  // Prevents single operations from blocking the entire queue indefinitely
+  private readonly OPERATION_TIMEOUT = 45000;
+
   // Event handlers (stored for cleanup)
   private onlineHandler = () => this.handleOnlineStatusChange(true);
   private offlineHandler = () => this.handleOnlineStatusChange(false);
@@ -185,8 +189,8 @@ class SyncOrchestrator {
           status: 'syncing',
         });
 
-        // Execute the sync operation
-        await operation.executor();
+        // P2-5 Fix: Execute the sync operation with timeout protection
+        await this.executeWithTimeout(operation.executor, operation.type);
 
         operation.completedAt = Date.now();
         const duration = operation.completedAt - operation.startedAt!;
@@ -277,6 +281,10 @@ class SyncOrchestrator {
           const delay = this.calculateRetryDelay(operation.retries);
           logger.sync(`Retrying ${operation.type} in ${delay}ms (attempt ${operation.retries + 1}/${operation.maxRetries})`);
 
+          // P1-7 Fix: Reduce priority on retry to prevent starvation
+          // Without this, high-priority failing operations could block lower-priority ones indefinitely
+          operation.priority = Math.max(0, operation.priority - 1);
+
           // Move to end of queue and retry after delay
           this.queue.shift();
           await this.sleep(delay);
@@ -329,6 +337,52 @@ class SyncOrchestrator {
    */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * P2-5 Fix: Execute operation with timeout protection
+   * Prevents individual operations from blocking the queue indefinitely
+   */
+  private executeWithTimeout(
+    executor: () => Promise<void>,
+    operationType: SyncOperationType
+  ): Promise<void> {
+    return new Promise((resolve, reject) => {
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      let settled = false;
+
+      // Set up timeout
+      timeoutId = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          logger.warn(`[SyncOrchestrator] ${operationType} operation timed out after ${this.OPERATION_TIMEOUT}ms`);
+          // Emit event for UI awareness
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('zenflow:sync-operation-timeout', {
+              detail: { operationType, timeoutMs: this.OPERATION_TIMEOUT }
+            }));
+          }
+          reject(new Error(`Sync operation '${operationType}' timed out after ${this.OPERATION_TIMEOUT}ms`));
+        }
+      }, this.OPERATION_TIMEOUT);
+
+      // Execute the operation
+      executor()
+        .then(() => {
+          if (!settled) {
+            settled = true;
+            if (timeoutId) clearTimeout(timeoutId);
+            resolve();
+          }
+        })
+        .catch((error) => {
+          if (!settled) {
+            settled = true;
+            if (timeoutId) clearTimeout(timeoutId);
+            reject(error);
+          }
+        });
+    });
   }
 
   /**

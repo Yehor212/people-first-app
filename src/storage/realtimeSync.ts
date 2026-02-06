@@ -637,19 +637,35 @@ export const pullFromCloud = async (): Promise<boolean> => {
       timestamp: g.timestamp,
     }));
 
-    // Save to local DB (merge strategy - keep newer)
-    await db.transaction('rw', db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, async () => {
-      // Upsert all data
-      if (moods.length) await db.moods.bulkPut(moods);
-      if (habits.length) await db.habits.bulkPut(habits);
-      if (focusSessions.length) await db.focusSessions.bulkPut(focusSessions);
-      if (gratitudeEntries.length) await db.gratitudeEntries.bulkPut(gratitudeEntries);
+    // P2-4 Fix: Save to local DB with explicit transaction error handling
+    // Dexie transactions are atomic - if any operation fails, all changes roll back
+    try {
+      await db.transaction('rw', db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, async () => {
+        // Upsert all data
+        if (moods.length) await db.moods.bulkPut(moods);
+        if (habits.length) await db.habits.bulkPut(habits);
+        if (focusSessions.length) await db.focusSessions.bulkPut(focusSessions);
+        if (gratitudeEntries.length) await db.gratitudeEntries.bulkPut(gratitudeEntries);
 
-      // Settings
-      for (const s of settingsData) {
-        await db.settings.put({ key: s.key, value: s.value });
+        // Settings
+        for (const s of settingsData) {
+          await db.settings.put({ key: s.key, value: s.value });
+        }
+      });
+    } catch (transactionError) {
+      // P2-4 Fix: Emit event for UI awareness when transaction fails
+      logger.error('[Sync] Transaction failed during pullFromCloud:', transactionError);
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('zenflow:sync-transaction-failed', {
+          detail: {
+            operation: 'pullFromCloud',
+            error: transactionError instanceof Error ? transactionError.message : 'Transaction failed',
+            dataAffected: { moods: moods.length, habits: habits.length, focusSessions: focusSessions.length, gratitudeEntries: gratitudeEntries.length }
+          }
+        }));
       }
-    });
+      throw transactionError; // Re-throw to be caught by outer catch
+    }
 
     logger.log('[Sync] Pulled from cloud:', {
       moods: moods.length,

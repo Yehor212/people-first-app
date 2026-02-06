@@ -15,12 +15,19 @@ export const triggerDataRefresh = () => {
 const INDEXEDDB_TIMEOUT_MS = 10000;
 
 // Helper to add timeout to promises
+// P2-3 Fix: Emit event when timeout occurs so UI can show stale data warning
 const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
   return Promise.race([
     promise,
     new Promise<T>((resolve) => {
       setTimeout(() => {
         logger.warn(`[useIndexedDB] Operation timed out after ${ms}ms, using fallback`);
+        // P2-3 Fix: Emit event so UI can optionally show "data may be stale" indicator
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('zenflow:indexeddb-timeout', {
+            detail: { timeoutMs: ms, message: 'IndexedDB operation timed out, using cached data' }
+          }));
+        }
         resolve(fallback);
       }, ms);
     })

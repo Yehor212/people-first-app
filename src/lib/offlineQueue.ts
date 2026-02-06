@@ -292,20 +292,41 @@ class OfflineQueue {
   /**
    * Request Background Sync via Service Worker
    * This allows sync to happen even if user closes the browser
+   * P2-6 Fix: Improved error handling with event emission for UI awareness
    */
   private requestBackgroundSync(): void {
-    if ('serviceWorker' in navigator && 'sync' in window.SyncManager.prototype) {
-      navigator.serviceWorker.ready
-        .then((registration) => {
-          return registration.sync.register('zenflow-sync');
-        })
-        .then(() => {
-          logger.log('[OfflineQueue] Background Sync registered');
-        })
-        .catch((err) => {
-          logger.warn('[OfflineQueue] Background Sync registration failed:', err);
-        });
+    // Check if Background Sync API is available
+    if (!('serviceWorker' in navigator)) {
+      logger.log('[OfflineQueue] Service Worker not supported, skipping Background Sync');
+      return;
     }
+
+    // Check for SyncManager support
+    if (!('SyncManager' in window)) {
+      logger.log('[OfflineQueue] Background Sync API not supported');
+      return;
+    }
+
+    navigator.serviceWorker.ready
+      .then((registration) => {
+        return registration.sync.register('zenflow-sync');
+      })
+      .then(() => {
+        logger.log('[OfflineQueue] Background Sync registered');
+      })
+      .catch((err) => {
+        // P2-6 Fix: Emit event so UI can inform user about sync status
+        logger.warn('[OfflineQueue] Background Sync registration failed:', err);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('zenflow:background-sync-failed', {
+            detail: {
+              error: err instanceof Error ? err.message : String(err),
+              pendingActions: this.state.actions.length,
+              message: 'Background sync unavailable. Data will sync when you return to the app.',
+            }
+          }));
+        }
+      });
   }
 
   /**

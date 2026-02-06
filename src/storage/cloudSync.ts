@@ -84,12 +84,14 @@ const doSyncWithCloud = async (
 
   // Set timeout to abort operation if it takes too long
   // P1-11 Fix: Simplified - just abort the controller, Promise-based lock handles cleanup
+  // P0-7 Fix: Capture controller reference to avoid race condition where timeout fires
+  // just as finally block sets syncAbortController = null
+  const controllerRef = syncAbortController;
   syncLockTimeout = setTimeout(() => {
     const duration = syncLockStartTime ? Date.now() - syncLockStartTime : 0;
     logger.warn(`[Sync] Timeout exceeded after ${duration}ms, aborting operation (operation: ${operationId})`);
-    if (syncAbortController) {
-      syncAbortController.abort();
-    }
+    // P0-7 Fix: Use captured reference instead of global variable
+    controllerRef?.abort();
   }, SYNC_LOCK_TIMEOUT);
 
   try {

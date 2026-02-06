@@ -129,12 +129,43 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
   const focusStartRef = useRef<number | null>(savedState?.focusStartTime || null);
   const focusAccumulatedRef = useRef(savedState?.focusAccumulated || 0);
   const lastMinuteRef = useRef<number>(0);
-  
+
+  // Fix: Store latest state values in ref for synchronous unmount save
+  // This solves the stale closure problem when component unmounts
+  const stateRef = useRef({ isRunning, isBreak, focusMinutes, breakMinutes, label, preset });
+  stateRef.current = { isRunning, isBreak, focusMinutes, breakMinutes, label, preset };
+
   // P1 Fix: Manage mounted state for cleanup
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+    };
+  }, []);
+
+  // Fix: Synchronous save on unmount to prevent state loss when switching tabs
+  // The debounced save effect cancels pending saves on cleanup, so this ensures
+  // the final state is always persisted before the component unmounts
+  useEffect(() => {
+    return () => {
+      // Access latest state values via ref to avoid stale closure
+      const { isRunning, isBreak, focusMinutes, breakMinutes, label, preset } = stateRef.current;
+      const state: TimerState = {
+        endTime: endTimeRef.current,
+        focusMinutes,
+        breakMinutes,
+        isRunning,
+        isBreak,
+        label,
+        focusStartTime: focusStartRef.current,
+        focusAccumulated: focusAccumulatedRef.current,
+        preset,
+      };
+      try {
+        localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
+      } catch {
+        // Ignore storage errors on unmount
+      }
     };
   }, []);
 

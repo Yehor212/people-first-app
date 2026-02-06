@@ -771,6 +771,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
               )}
             </div>
 
+            {/* TODO: Restore Spotify Connect button when API keys are configured
             {!spotifyConnected ? (
               <motion.button
                 onClick={handleSpotifyConnect}
@@ -781,7 +782,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 <ExternalLink className="w-4 h-4" />
                 {t.spotifyConnect || 'Подключить Spotify'}
               </motion.button>
-            ) : spotifyTrack ? (
+            ) : */}
+            {spotifyTrack ? (
               <div className="flex items-center gap-3 p-3 bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl">
                 {spotifyTrack.albumArt && (
                   <img

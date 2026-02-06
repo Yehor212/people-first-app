@@ -244,6 +244,66 @@ export async function pushChallengeUpdate(userId: string, challenge: Challenge):
   }
 }
 
+/**
+ * P2-2 Fix: Delete a challenge from cloud
+ * Call this when a challenge is deleted/expired locally
+ */
+export async function deleteChallengeFromCloud(userId: string, challengeId: string): Promise<boolean> {
+  if (!challengeId || typeof challengeId !== 'string') {
+    logger.warn('[ChallengesSync] Invalid challengeId for delete:', challengeId);
+    return false;
+  }
+
+  try {
+    const { error } = await supabase
+      .from('user_challenges')
+      .delete()
+      .eq('user_id', userId)
+      .eq('challenge_id', challengeId);
+
+    if (error) {
+      logger.error('[ChallengesSync] Failed to delete challenge from cloud:', error);
+      return false;
+    }
+
+    logger.log('[ChallengesSync] Challenge deleted from cloud:', challengeId);
+    return true;
+  } catch (error) {
+    logger.error('[ChallengesSync] Delete challenge error:', error);
+    return false;
+  }
+}
+
+/**
+ * P2-2 Fix: Delete a badge from cloud
+ * Call this when a badge needs to be removed (rare case)
+ */
+export async function deleteBadgeFromCloud(userId: string, badgeId: string): Promise<boolean> {
+  if (!badgeId || typeof badgeId !== 'string') {
+    logger.warn('[BadgesSync] Invalid badgeId for delete:', badgeId);
+    return false;
+  }
+
+  try {
+    const { error } = await supabase
+      .from('user_badges')
+      .delete()
+      .eq('user_id', userId)
+      .eq('badge_id', badgeId);
+
+    if (error) {
+      logger.error('[BadgesSync] Failed to delete badge from cloud:', error);
+      return false;
+    }
+
+    logger.log('[BadgesSync] Badge deleted from cloud:', badgeId);
+    return true;
+  } catch (error) {
+    logger.error('[BadgesSync] Delete badge error:', error);
+    return false;
+  }
+}
+
 // Sync badges with cloud
 export async function syncBadgesWithCloud(userId: string): Promise<{
   badges: Badge[];
