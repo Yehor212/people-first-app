@@ -5,19 +5,22 @@
  * Collapsible design to avoid overwhelming the user
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import type { MoodEntry, Habit, FocusSession } from '@/types';
 import { useInsights } from '@/hooks/useInsights';
 import type { InsightTranslations } from '@/lib/insightsEngine';
 import { InsightCard } from './InsightCard';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Sparkles, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, X, Info, PanelTopClose, PanelTop } from 'lucide-react';
+
+const COLLAPSED_STORAGE_KEY = 'zenflow-insights-collapsed';
 
 interface InsightsPanelProps {
   moods: MoodEntry[];
   habits: Habit[];
   focusSessions: FocusSession[];
   compact?: boolean; // Show only top 3 insights
+  collapsible?: boolean; // Allow collapsing to a minimal header
 }
 
 export function InsightsPanel({
@@ -25,10 +28,27 @@ export function InsightsPanel({
   habits,
   focusSessions,
   compact = false,
+  collapsible = false,
 }: InsightsPanelProps) {
   const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+
+  // Collapsible state with localStorage persistence
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    if (!collapsible) return false;
+    const stored = localStorage.getItem(COLLAPSED_STORAGE_KEY);
+    return stored === 'true';
+  });
+
+  // Persist collapsed state
+  useEffect(() => {
+    if (collapsible) {
+      localStorage.setItem(COLLAPSED_STORAGE_KEY, String(isCollapsed));
+    }
+  }, [isCollapsed, collapsible]);
+
+  const toggleCollapsed = () => setIsCollapsed(prev => !prev);
 
   // Build insight translations from current language context
   const insightTranslations = useMemo<InsightTranslations>(() => ({
@@ -120,7 +140,7 @@ export function InsightsPanel({
   return (
     <div className="bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden">
       {/* Header */}
-      <div className="p-4 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
+      <div className={`p-4 bg-gradient-to-r from-primary/10 to-primary/5 ${!isCollapsed ? 'border-b border-border' : ''}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-primary" />
@@ -134,18 +154,38 @@ export function InsightsPanel({
             )}
           </div>
 
-          <button
-            onClick={() => setShowHelp(!showHelp)}
-            aria-expanded={showHelp}
-            aria-label={t.insightsHelpTitle || 'About Insights'}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Info className="w-4 h-4" />
-          </button>
+          <div className="flex items-center gap-2">
+            {!isCollapsed && (
+              <button
+                onClick={() => setShowHelp(!showHelp)}
+                aria-expanded={showHelp}
+                aria-label={t.insightsHelpTitle || 'About Insights'}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Info className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* Collapse/Expand toggle */}
+            {collapsible && (
+              <button
+                onClick={toggleCollapsed}
+                aria-expanded={!isCollapsed}
+                aria-label={isCollapsed ? (t.insightsExpand || 'Expand insights') : (t.insightsCollapse || 'Collapse insights')}
+                className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1"
+              >
+                {isCollapsed ? (
+                  <PanelTop className="w-4 h-4" />
+                ) : (
+                  <PanelTopClose className="w-4 h-4" />
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Help text */}
-        {showHelp && (
+        {!isCollapsed && showHelp && (
           <div className="mt-3 p-3 bg-card rounded-xl text-xs text-muted-foreground space-y-1">
             <p className="font-medium text-foreground mb-1">
               {t.insightsHelpTitle || 'About Insights'}
@@ -163,52 +203,15 @@ export function InsightsPanel({
         )}
       </div>
 
-      {/* Insights List */}
-      <div className="p-4 space-y-3">
-        {displayInsights.map((insight, index) => (
-          <div key={insight.id} className="relative group">
-            <InsightCard insight={insight} />
-
-            {/* Dismiss button - P1 Fix: Added touch-friendly visibility */}
-            <button
-              onClick={() => dismissInsight(insight.id)}
-              className="absolute top-2 right-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100"
-              aria-label={t.insightsDismiss || 'Dismiss'}
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
-
-        {/* Expand/Collapse for compact mode */}
-        {compact && hasMore && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="w-full py-3 flex items-center justify-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
-          >
-            {isExpanded ? (
-              <>
-                <span>{t.insightsShowLess || 'Show less'}</span>
-                <ChevronUp className="w-4 h-4" />
-              </>
-            ) : (
-              <>
-                <span>
-                  {t.insightsShowMore || `Show ${insights.length - 3} more insights`}
-                </span>
-                <ChevronDown className="w-4 h-4" />
-              </>
-            )}
-          </button>
-        )}
-
-        {/* All insights expanded */}
-        {compact && isExpanded && (
-          <div className="space-y-3 pt-3 border-t border-border">
-            {insights.slice(3).map(insight => (
+      {/* Insights List - Hidden when collapsed */}
+      {!isCollapsed && (
+        <>
+          <div className="p-4 space-y-3">
+            {displayInsights.map((insight, index) => (
               <div key={insight.id} className="relative group">
                 <InsightCard insight={insight} />
-                {/* P1 Fix: Added touch-friendly visibility */}
+
+                {/* Dismiss button - P1 Fix: Added touch-friendly visibility */}
                 <button
                   onClick={() => dismissInsight(insight.id)}
                   className="absolute top-2 right-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100"
@@ -218,17 +221,58 @@ export function InsightsPanel({
                 </button>
               </div>
             ))}
-          </div>
-        )}
-      </div>
 
-      {/* Footer stats */}
-      {totalGenerated > visibleCount && (
-        <div className="px-4 pb-4">
-          <p className="text-xs text-muted-foreground text-center">
-            {t.insightsDismissedCount || `${totalGenerated - visibleCount} insights dismissed`}
-          </p>
-        </div>
+            {/* Expand/Collapse for compact mode */}
+            {compact && hasMore && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full py-3 flex items-center justify-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+              >
+                {isExpanded ? (
+                  <>
+                    <span>{t.insightsShowLess || 'Show less'}</span>
+                    <ChevronUp className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>
+                      {t.insightsShowMore || `Show ${insights.length - 3} more insights`}
+                    </span>
+                    <ChevronDown className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            )}
+
+            {/* All insights expanded */}
+            {compact && isExpanded && (
+              <div className="space-y-3 pt-3 border-t border-border">
+                {insights.slice(3).map(insight => (
+                  <div key={insight.id} className="relative group">
+                    <InsightCard insight={insight} />
+                    {/* P1 Fix: Added touch-friendly visibility */}
+                    <button
+                      onClick={() => dismissInsight(insight.id)}
+                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100"
+                      aria-label={t.insightsDismiss || 'Dismiss'}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Footer stats */}
+          {totalGenerated > visibleCount && (
+            <div className="px-4 pb-4">
+              <p className="text-xs text-muted-foreground text-center">
+                {t.insightsDismissedCount || `${totalGenerated - visibleCount} insights dismissed`}
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

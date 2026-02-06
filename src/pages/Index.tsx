@@ -2050,6 +2050,7 @@ export function Index() {
                 habits={safeHabits}
                 focusSessions={safeFocusSessions}
                 compact={true}
+                collapsible={true}
               />
 
               {/* v1.4.0: ScheduleTimeline moved to "My World" tab */}

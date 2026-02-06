@@ -1321,6 +1321,8 @@ export interface Translations {
   insightsShowMore: string;
   insightsShowLess: string;
   insightsDismissedCount: string;
+  insightsExpand: string;
+  insightsCollapse: string;
   insightsMoodEntries: string;
   insightsHabitCount: string;
   insightsFocusSessions: string;
@@ -2922,6 +2924,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightsShowMore: 'Показать больше',
     insightsShowLess: 'Показать меньше',
     insightsDismissedCount: 'Скрыто инсайтов',
+    insightsExpand: 'Развернуть инсайты',
+    insightsCollapse: 'Свернуть инсайты',
     insightsMoodEntries: 'записей настроения',
     insightsHabitCount: 'привычка',
     insightsFocusSessions: 'фокус-сессий',
@@ -4530,6 +4534,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightsShowMore: 'Show more',
     insightsShowLess: 'Show less',
     insightsDismissedCount: 'insights dismissed',
+    insightsExpand: 'Expand insights',
+    insightsCollapse: 'Collapse insights',
     insightsMoodEntries: 'mood entries',
     insightsHabitCount: 'habit',
     insightsFocusSessions: 'focus sessions',
@@ -6138,6 +6144,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightsShowMore: 'Показати більше',
     insightsShowLess: 'Показати менше',
     insightsDismissedCount: 'Приховано інсайтів',
+    insightsExpand: 'Розгорнути інсайти',
+    insightsCollapse: 'Згорнути інсайти',
     insightsMoodEntries: 'записів настрою',
     insightsHabitCount: 'звичка',
     insightsFocusSessions: 'фокус-сесій',
@@ -7747,6 +7755,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightsShowMore: 'Mostrar más',
     insightsShowLess: 'Mostrar menos',
     insightsDismissedCount: 'perspectivas descartadas',
+    insightsExpand: 'Expandir perspectivas',
+    insightsCollapse: 'Contraer perspectivas',
     insightsMoodEntries: 'registros de ánimo',
     insightsHabitCount: 'hábito',
     insightsFocusSessions: 'sesiones de enfoque',
@@ -9356,6 +9366,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightsShowMore: 'Mehr anzeigen',
     insightsShowLess: 'Weniger anzeigen',
     insightsDismissedCount: 'Einblicke ausgeblendet',
+    insightsExpand: 'Einblicke erweitern',
+    insightsCollapse: 'Einblicke minimieren',
     insightsMoodEntries: 'Stimmungseinträge',
     insightsHabitCount: 'Gewohnheit',
     insightsFocusSessions: 'Fokus-Sitzungen',
@@ -10965,6 +10977,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightsShowMore: 'Afficher plus',
     insightsShowLess: 'Afficher moins',
     insightsDismissedCount: 'aperçus ignorés',
+    insightsExpand: 'Développer les aperçus',
+    insightsCollapse: 'Réduire les aperçus',
     insightsMoodEntries: 'entrées d\'humeur',
     insightsHabitCount: 'habitude',
     insightsFocusSessions: 'sessions de concentration',
@@ -12573,6 +12587,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     insightsShowMore: 'もっと見る',
     insightsShowLess: '少なく表示',
     insightsDismissedCount: '閉じたインサイト',
+    insightsExpand: 'インサイトを展開',
+    insightsCollapse: 'インサイトを折りたたむ',
     insightsMoodEntries: '気分記録',
     insightsHabitCount: '習慣',
     insightsFocusSessions: '集中セッション',
@@ -14138,6 +14154,8 @@ const arabicOverrides: Partial<Translations> = {
   insightsShowMore: 'عرض المزيد',
   insightsShowLess: 'عرض أقل',
   insightsDismissedCount: 'رؤى مخفية',
+  insightsExpand: 'توسيع الرؤى',
+  insightsCollapse: 'طي الرؤى',
   insightsMoodEntries: 'إدخالات المزاج',
   insightsHabitCount: 'عدد العادات',
   insightsFocusSessions: 'جلسات التركيز',
