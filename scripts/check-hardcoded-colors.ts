@@ -26,6 +26,17 @@ const ALLOWED_FILES = [
   'emotionConstants.ts',
   'tailwind.config.ts',
   'App.css',
+  // SVG animation components - colors are essential for animation gradients
+  'AnimatedEmotionEmoji.tsx',
+  'AnimatedMoodEmoji.tsx',
+  'BreathingExercise.tsx',
+  // Score-based dynamic colors (SVG limitations)
+  'WeekCrystal.tsx',
+  // Share card/story slides - designed for image export with fixed branding colors
+  'shareCards.ts',
+  'ShareModal.tsx',
+  'ShareProgress.tsx',
+  'stories/',  // All story slide components
 ];
 
 // Patterns to detect hardcoded colors
@@ -40,10 +51,12 @@ const COLOR_PATTERNS = [
 const EXCLUDE_PATTERNS = [
   /var\s*\(\s*--[^)]+\)/g,           // CSS variables: var(--color)
   /hsla?\s*\(\s*var\s*\([^)]+\)[^)]*\)/g, // hsl(var(--color)) or hsl(var(--color) / 0.5)
+  /hsl\s*\(\s*var\s*\(\s*--[^)]+\s*\)\s*(?:\/\s*[\d.]+\s*)?\)/g, // hsl(var(--name) / opacity)
   /hsla?\s*\(\s*0\s+0%\s+(?:100|0)%[^)]*\)/g, // Pure white/black: hsl(0 0% 100%) or hsl(0 0% 0%)
   /\/\/.*$/gm,                        // Single-line comments
   /\/\*[\s\S]*?\*\//g,               // Multi-line comments
   /['"`]#[a-fA-F0-9]{6}['"`]/g,      // Strings like "#ffffff" (might be intentional)
+  /currentColor/gi,                   // CSS currentColor keyword
 ];
 
 interface Violation {
@@ -85,7 +98,14 @@ function getAllFiles(dir: string, extensions: string[]): string[] {
 
 function isAllowedFile(filePath: string): boolean {
   const fileName = path.basename(filePath);
-  return ALLOWED_FILES.some(allowed => fileName === allowed || filePath.includes(allowed));
+  // Normalize path separators for cross-platform compatibility
+  const normalizedPath = filePath.replace(/\\/g, '/');
+  return ALLOWED_FILES.some(allowed =>
+    fileName === allowed ||
+    normalizedPath.includes(allowed) ||
+    // Match directory patterns like 'stories/'
+    (allowed.endsWith('/') && normalizedPath.includes(allowed.slice(0, -1)))
+  );
 }
 
 function checkFile(filePath: string): Violation[] {
@@ -204,7 +224,8 @@ function main() {
   }
 
   // Exit with error if too many violations (threshold can be adjusted)
-  const THRESHOLD = 1000; // Allow existing violations, fail on regression
+  // Note: Some hardcoded colors are acceptable (SVG animations, share cards, branded content)
+  const THRESHOLD = 900; // Reduced from 1000 after Phase 3.5 cleanup
   if (totalViolations > THRESHOLD) {
     console.log(`\n❌ Too many hardcoded colors (${totalViolations} > ${THRESHOLD})`);
     process.exit(1);

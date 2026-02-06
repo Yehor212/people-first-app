@@ -62,8 +62,8 @@ function Spotlight({ side }: { side: 'left' | 'right' }) {
       style={{
         [side]: '5%',
         background: `linear-gradient(${angle}deg,
-          rgba(255, 215, 0, 0.15) 0%,
-          rgba(255, 215, 0, 0.05) 50%,
+          hsl(var(--temple-spotlight) / 0.15) 0%,
+          hsl(var(--temple-spotlight) / 0.05) 50%,
           transparent 100%)`,
       }}
       animate={{
@@ -204,7 +204,7 @@ function AchievementCard({
             isMain ? "w-20 h-3" : "w-16 h-2"
           )}
           style={{
-            background: 'linear-gradient(180deg, #d4af37 0%, #b8960c 50%, #8b7200 100%)',
+            background: 'linear-gradient(180deg, hsl(var(--trophy-gold-bright)) 0%, hsl(var(--trophy-gold-mid)) 50%, hsl(var(--trophy-gold-dark)) 100%)',
           }}
         />
         <div
@@ -213,7 +213,7 @@ function AchievementCard({
             isMain ? "w-24 h-2" : "w-20 h-1.5"
           )}
           style={{
-            background: 'linear-gradient(180deg, #8b7200 0%, #6b5500 100%)',
+            background: 'linear-gradient(180deg, hsl(var(--trophy-gold-dark)) 0%, hsl(var(--trophy-gold-deep)) 100%)',
           }}
         />
       </div>
@@ -343,11 +343,11 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
         className="absolute inset-0 hidden dark:block"
         style={{
           background: `linear-gradient(180deg,
-            #0a0a0a 0%,
-            #1a1510 20%,
-            #2a2015 50%,
-            #1a1510 80%,
-            #0a0a0a 100%)`,
+            hsl(var(--temple-bg-top)) 0%,
+            hsl(var(--temple-bg-mid)) 20%,
+            hsl(var(--temple-bg-bottom)) 50%,
+            hsl(var(--temple-bg-mid)) 80%,
+            hsl(var(--temple-bg-top)) 100%)`,
         }}
       />
 
@@ -370,8 +370,8 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
         style={{
           background: `linear-gradient(180deg,
             transparent 0%,
-            rgba(139, 115, 85, 0.1) 50%,
-            rgba(139, 115, 85, 0.2) 100%)`,
+            hsl(var(--temple-marble) / 0.1) 50%,
+            hsl(var(--temple-marble) / 0.2) 100%)`,
         }}
       />
 
@@ -416,7 +416,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
       <div
         className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
         style={{
-          background: `radial-gradient(ellipse at bottom, rgba(255, 215, 0, 0.08) 0%, transparent 70%)`,
+          background: `radial-gradient(ellipse at bottom, hsl(var(--temple-ambient-glow) / 0.08) 0%, transparent 70%)`,
         }}
       />
     </div>

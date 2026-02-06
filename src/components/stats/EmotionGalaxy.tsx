@@ -107,7 +107,7 @@ function ShootingStar() {
             top: `${position.startY}%`,
             width: 50,
             height: 2,
-            background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.9) 20%, rgba(139, 92, 246, 0.8) 100%)',
+            background: 'linear-gradient(90deg, transparent 0%, hsl(0 0% 100% / 0.9) 20%, hsl(var(--cosmic-shooting-star) / 0.8) 100%)',
             borderRadius: 1,
             transformOrigin: 'left center',
           }}
@@ -369,9 +369,9 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
         className="absolute inset-0 hidden dark:block"
         style={{
           background: `radial-gradient(ellipse at center,
-            #1a1a3e 0%,
-            #0d0d2a 40%,
-            #050510 100%)`,
+            hsl(var(--cosmic-space-surface)) 0%,
+            hsl(var(--cosmic-space-mid)) 40%,
+            hsl(var(--cosmic-space-deep)) 100%)`,
         }}
       />
 
@@ -394,9 +394,9 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
         className="absolute inset-0 pointer-events-none"
         animate={{
           background: [
-            'radial-gradient(ellipse at 25% 35%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)',
-            'radial-gradient(ellipse at 35% 25%, rgba(139, 92, 246, 0.22) 0%, transparent 55%)',
-            'radial-gradient(ellipse at 25% 35%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)',
+            'radial-gradient(ellipse at 25% 35%, hsl(var(--cosmic-nebula-purple) / 0.15) 0%, transparent 50%)',
+            'radial-gradient(ellipse at 35% 25%, hsl(var(--cosmic-nebula-purple) / 0.22) 0%, transparent 55%)',
+            'radial-gradient(ellipse at 25% 35%, hsl(var(--cosmic-nebula-purple) / 0.15) 0%, transparent 50%)',
           ],
         }}
         transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut' }}
@@ -407,9 +407,9 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
         className="absolute inset-0 pointer-events-none"
         animate={{
           background: [
-            'radial-gradient(ellipse at 75% 65%, rgba(236, 72, 153, 0.1) 0%, transparent 45%)',
-            'radial-gradient(ellipse at 65% 75%, rgba(236, 72, 153, 0.16) 0%, transparent 50%)',
-            'radial-gradient(ellipse at 75% 65%, rgba(236, 72, 153, 0.1) 0%, transparent 45%)',
+            'radial-gradient(ellipse at 75% 65%, hsl(var(--cosmic-nebula-pink) / 0.1) 0%, transparent 45%)',
+            'radial-gradient(ellipse at 65% 75%, hsl(var(--cosmic-nebula-pink) / 0.16) 0%, transparent 50%)',
+            'radial-gradient(ellipse at 75% 65%, hsl(var(--cosmic-nebula-pink) / 0.1) 0%, transparent 45%)',
           ],
         }}
         transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
@@ -420,9 +420,9 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
         className="absolute inset-0 pointer-events-none"
         animate={{
           background: [
-            'radial-gradient(ellipse at 50% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 40%)',
-            'radial-gradient(ellipse at 55% 75%, rgba(6, 182, 212, 0.1) 0%, transparent 45%)',
-            'radial-gradient(ellipse at 50% 80%, rgba(6, 182, 212, 0.06) 0%, transparent 40%)',
+            'radial-gradient(ellipse at 50% 80%, hsl(var(--cosmic-nebula-cyan) / 0.06) 0%, transparent 40%)',
+            'radial-gradient(ellipse at 55% 75%, hsl(var(--cosmic-nebula-cyan) / 0.1) 0%, transparent 45%)',
+            'radial-gradient(ellipse at 50% 80%, hsl(var(--cosmic-nebula-cyan) / 0.06) 0%, transparent 40%)',
           ],
         }}
         transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
@@ -450,8 +450,8 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
           {/* Center glow gradient */}
           <defs>
             <radialGradient id="centerGlowPremium" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="rgba(139, 92, 246, 0.5)" />
-              <stop offset="40%" stopColor="rgba(139, 92, 246, 0.2)" />
+              <stop offset="0%" stopColor="hsl(var(--cosmic-nebula-purple) / 0.5)" />
+              <stop offset="40%" stopColor="hsl(var(--cosmic-nebula-purple) / 0.2)" />
               <stop offset="100%" stopColor="transparent" />
             </radialGradient>
             {/* Orbit glow filter */}

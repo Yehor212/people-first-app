@@ -31,7 +31,7 @@ function EmberParticle({ x, y, delay }: { x: number; y: number; delay: number })
       style={{
         left: x,
         top: y,
-        background: 'radial-gradient(circle, #fbbf24 0%, #f97316 50%, transparent 100%)',
+        background: 'radial-gradient(circle, hsl(var(--energy-ember-bright)) 0%, hsl(var(--energy-ember-mid)) 50%, transparent 100%)',
       }}
       initial={{ y: 0, opacity: 1, scale: 1 }}
       animate={{
@@ -201,9 +201,9 @@ export function EnergyField({ data, className }: EnergyFieldProps) {
         className="absolute inset-0 hidden dark:block"
         style={{
           background: `radial-gradient(ellipse at center bottom,
-            rgba(127, 29, 29, 0.3) 0%,
-            rgba(24, 24, 27, 0.95) 50%,
-            #18181b 100%)`,
+            hsl(var(--energy-volcanic-glow) / 0.3) 0%,
+            hsl(var(--energy-volcanic-dark) / 0.95) 50%,
+            hsl(var(--energy-volcanic-dark)) 100%)`,
         }}
       />
 
@@ -211,7 +211,7 @@ export function EnergyField({ data, className }: EnergyFieldProps) {
       <motion.div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: 'linear-gradient(0deg, transparent 0%, rgba(251, 191, 36, 0.02) 50%, transparent 100%)',
+          background: 'linear-gradient(0deg, transparent 0%, hsl(var(--energy-heat-shimmer) / 0.02) 50%, transparent 100%)',
         }}
         animate={{
           y: [0, -10, 0],
@@ -296,7 +296,7 @@ export function EnergyField({ data, className }: EnergyFieldProps) {
       <div
         className="absolute bottom-0 left-0 right-0 h-12 pointer-events-none"
         style={{
-          background: `radial-gradient(ellipse at bottom, rgba(249, 115, 22, 0.15) 0%, transparent 70%)`,
+          background: `radial-gradient(ellipse at bottom, hsl(var(--energy-ember-mid) / 0.15) 0%, transparent 70%)`,
         }}
       />
     </div>

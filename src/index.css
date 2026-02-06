@@ -227,6 +227,49 @@
     --cosmic-input-border: 263 30% 75%;       /* Input borders */
     --cosmic-label-text: 263 30% 45%;         /* Label text */
 
+    /* EmotionGalaxy nebula and space colors */
+    --cosmic-nebula-purple: 263 84% 66%;      /* rgb(139, 92, 246) */
+    --cosmic-nebula-pink: 330 81% 60%;        /* rgb(236, 72, 153) */
+    --cosmic-nebula-cyan: 189 94% 43%;        /* rgb(6, 182, 212) */
+    --cosmic-space-deep: 240 40% 10%;         /* Light mode: subtle */
+    --cosmic-space-mid: 240 30% 15%;
+    --cosmic-space-surface: 240 20% 20%;
+    --cosmic-shooting-star: 263 84% 66%;
+
+    /* ===== TROPHY HALL / TEMPLE TOKENS ===== */
+    /* Spotlight/ambient gold */
+    --temple-spotlight: 51 100% 50%;          /* Gold spotlight beam */
+    --temple-ambient-glow: 51 100% 50%;       /* Bottom ambient glow */
+
+    /* Temple column browns (stone pillars) */
+    --temple-column-dark: 30 30% 27%;         /* #5a4530 */
+    --temple-column-mid: 30 25% 44%;          /* #8b7355 */
+    --temple-column-cap: 30 20% 35%;          /* #6b5b45 */
+    --temple-column-base: 30 18% 40%;         /* #7a6a54 */
+
+    /* Trophy pedestal gold gradient */
+    --trophy-gold-bright: 45 65% 52%;         /* #d4af37 - top */
+    --trophy-gold-mid: 45 90% 38%;            /* #b8960c - middle */
+    --trophy-gold-dark: 50 100% 27%;          /* #8b7200 - base top */
+    --trophy-gold-deep: 50 100% 21%;          /* #6b5500 - base bottom */
+
+    /* Temple background (light mode - warm tones) */
+    --temple-bg-top: 35 35% 85%;              /* Warm light gray */
+    --temple-bg-mid: 35 30% 80%;
+    --temple-bg-bottom: 35 25% 75%;
+
+    /* Marble floor reflection */
+    --temple-marble: 35 24% 60%;              /* Stone tone */
+
+    /* ===== ENERGY FIELD / FIRE TOKENS ===== */
+    /* Fire/ember colors for activity heatmap */
+    --energy-ember-bright: 45 93% 56%;        /* #fbbf24 - bright amber */
+    --energy-ember-mid: 25 95% 53%;           /* #f97316 - orange */
+    --energy-ember-deep: 24 95% 42%;          /* Deeper orange */
+    --energy-volcanic-glow: 0 74% 31%;        /* rgba(127, 29, 29) - dark red */
+    --energy-volcanic-dark: 240 6% 10%;       /* #18181b - zinc-900 */
+    --energy-heat-shimmer: 45 93% 56%;        /* Amber for shimmer */
+
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -369,6 +412,47 @@
     --cosmic-input-text: 0 0% 100%;
     --cosmic-input-border: 0 0% 25%;
     --cosmic-label-text: 0 0% 60%;
+
+    /* EmotionGalaxy nebula and space colors - dark mode */
+    --cosmic-nebula-purple: 263 84% 66%;      /* Vibrant purple */
+    --cosmic-nebula-pink: 330 81% 60%;        /* Vibrant pink */
+    --cosmic-nebula-cyan: 189 94% 43%;        /* Vibrant cyan */
+    --cosmic-space-deep: 240 40% 3%;          /* #050510 */
+    --cosmic-space-mid: 240 45% 11%;          /* #0d0d2a */
+    --cosmic-space-surface: 240 40% 17%;      /* #1a1a3e */
+    --cosmic-shooting-star: 263 84% 66%;
+
+    /* ===== TROPHY HALL / TEMPLE TOKENS (Dark) ===== */
+    --temple-spotlight: 51 100% 50%;          /* Gold - same across themes */
+    --temple-ambient-glow: 51 100% 50%;
+
+    /* Column colors - slightly more saturated for dark */
+    --temple-column-dark: 30 35% 25%;
+    --temple-column-mid: 30 30% 42%;
+    --temple-column-cap: 30 25% 33%;
+    --temple-column-base: 30 22% 38%;
+
+    /* Trophy gold - same across themes (metallic) */
+    --trophy-gold-bright: 45 65% 52%;
+    --trophy-gold-mid: 45 90% 38%;
+    --trophy-gold-dark: 50 100% 27%;
+    --trophy-gold-deep: 50 100% 21%;
+
+    /* Temple background - dark browns */
+    --temple-bg-top: 0 0% 4%;                 /* #0a0a0a */
+    --temple-bg-mid: 35 25% 9%;               /* #1a1510 */
+    --temple-bg-bottom: 35 25% 13%;           /* #2a2015 */
+
+    /* Marble floor - visible on dark */
+    --temple-marble: 35 24% 44%;              /* rgb(139, 115, 85) */
+
+    /* ===== ENERGY FIELD / FIRE TOKENS (Dark) ===== */
+    --energy-ember-bright: 45 93% 60%;        /* Brighter for dark mode */
+    --energy-ember-mid: 25 95% 56%;
+    --energy-ember-deep: 24 95% 45%;
+    --energy-volcanic-glow: 0 74% 31%;
+    --energy-volcanic-dark: 240 6% 10%;
+    --energy-heat-shimmer: 45 93% 60%;
   }
 
   /* ===== OLED DARK MODE ===== */
@@ -482,6 +566,47 @@
     --cosmic-input-text: 0 0% 100%;
     --cosmic-input-border: 0 0% 20%;
     --cosmic-label-text: 0 0% 55%;
+
+    /* EmotionGalaxy nebula and space colors - OLED (deeper) */
+    --cosmic-nebula-purple: 263 84% 60%;
+    --cosmic-nebula-pink: 330 81% 55%;
+    --cosmic-nebula-cyan: 189 94% 40%;
+    --cosmic-space-deep: 0 0% 0%;             /* Pure black */
+    --cosmic-space-mid: 240 50% 5%;
+    --cosmic-space-surface: 240 45% 10%;
+    --cosmic-shooting-star: 263 84% 60%;
+
+    /* ===== TROPHY HALL / TEMPLE TOKENS (OLED) ===== */
+    --temple-spotlight: 51 100% 50%;          /* Gold - consistent */
+    --temple-ambient-glow: 51 100% 50%;
+
+    /* Column colors - higher contrast for OLED */
+    --temple-column-dark: 30 40% 22%;
+    --temple-column-mid: 30 35% 40%;
+    --temple-column-cap: 30 30% 30%;
+    --temple-column-base: 30 25% 35%;
+
+    /* Trophy gold - unchanged (metallic looks good on black) */
+    --trophy-gold-bright: 45 65% 52%;
+    --trophy-gold-mid: 45 90% 38%;
+    --trophy-gold-dark: 50 100% 27%;
+    --trophy-gold-deep: 50 100% 21%;
+
+    /* Temple background - true black base */
+    --temple-bg-top: 0 0% 0%;                 /* Pure black */
+    --temple-bg-mid: 35 30% 6%;
+    --temple-bg-bottom: 35 30% 10%;
+
+    /* Marble floor - subtle on OLED */
+    --temple-marble: 35 24% 40%;
+
+    /* ===== ENERGY FIELD / FIRE TOKENS (OLED) ===== */
+    --energy-ember-bright: 45 93% 58%;
+    --energy-ember-mid: 25 95% 55%;
+    --energy-ember-deep: 24 95% 43%;
+    --energy-volcanic-glow: 0 74% 28%;
+    --energy-volcanic-dark: 0 0% 0%;          /* Pure black for OLED */
+    --energy-heat-shimmer: 45 93% 58%;
 
     /* Sidebar for OLED */
     --sidebar-background: 0 0% 0%;

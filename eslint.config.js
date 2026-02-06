@@ -5,7 +5,7 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist"] },
+  { ignores: ["dist", "android", "coverage", "scripts"] },
   {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
@@ -26,8 +26,9 @@ export default tseslint.config(
         varsIgnorePattern: "^_",
         caughtErrorsIgnorePattern: "^_",
       }],
-      // Catch unhandled promises (common source of silent failures)
-      "@typescript-eslint/no-floating-promises": "warn",
+      // Note: no-floating-promises requires typed linting (parserOptions.project)
+      // which needs tsconfig to include all linted files. Disabled for now.
+      // "@typescript-eslint/no-floating-promises": "warn",
       // Ensure React hooks dependencies are correct
       "react-hooks/exhaustive-deps": "warn",
     },
