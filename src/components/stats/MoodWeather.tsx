@@ -3,14 +3,26 @@
  * Part of Phase 10 Premium Stats Redesign
  *
  * Shows current emotional state as animated weather visualization
+ * Expandable to show weather history and mood factors
  */
 
-import { useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 type WeatherType = 'sunny' | 'partly-cloudy' | 'cloudy' | 'rainy' | 'stormy';
+
+interface WeatherHistoryDay {
+  date: string;
+  mood: 'great' | 'good' | 'okay' | 'bad' | 'terrible';
+}
+
+interface MoodFactor {
+  name: string;
+  impact: 'positive' | 'negative' | 'neutral';
+}
 
 interface MoodWeatherProps {
   /** Current mood (great, good, okay, bad, terrible) */
@@ -19,6 +31,10 @@ interface MoodWeatherProps {
   message?: string;
   /** Optional class name */
   className?: string;
+  /** Weather history for past days */
+  weatherHistory?: WeatherHistoryDay[];
+  /** Factors influencing mood */
+  moodFactors?: MoodFactor[];
 }
 
 const MOOD_TO_WEATHER: Record<string, WeatherType> = {
@@ -233,12 +249,18 @@ export function MoodWeather({
   mood,
   message,
   className,
+  weatherHistory,
+  moodFactors,
 }: MoodWeatherProps) {
   const { t } = useLanguage();
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const weather = MOOD_TO_WEATHER[mood];
   const weatherInfo = WEATHER_LABELS[weather];
   const WeatherComponent = WEATHER_COMPONENTS[weather];
+
+  // Day names
+  const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
 
   const defaultMessage = useMemo(() => {
     switch (mood) {
@@ -283,6 +305,96 @@ export function MoodWeather({
       <p className="text-xs text-muted-foreground text-center mt-2">
         {message || defaultMessage}
       </p>
+
+      {/* Expand button - only show if history or factors available */}
+      {(weatherHistory?.length || moodFactors?.length) && (
+        <>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="mt-2 flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full py-1"
+            aria-expanded={isExpanded}
+          >
+            <span>{isExpanded ? (t.showLess || 'Less') : (t.weatherForecast || 'Forecast')}</span>
+            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                {/* Weather history */}
+                {weatherHistory && weatherHistory.length > 0 && (
+                  <div className="mt-3 pt-2 border-t border-border/30">
+                    <p className="text-[10px] text-muted-foreground mb-2 text-center">
+                      {t.weatherHistory || 'This Week'}
+                    </p>
+                    <div className="flex justify-center gap-1">
+                      {weatherHistory.slice(-7).map((day, idx) => {
+                        const dayOfWeek = new Date(day.date).getDay();
+                        const dayWeather = MOOD_TO_WEATHER[day.mood];
+                        const dayWeatherInfo = WEATHER_LABELS[dayWeather];
+                        const isToday = day.date === new Date().toISOString().split('T')[0];
+
+                        return (
+                          <motion.div
+                            key={day.date}
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: idx * 0.05 }}
+                            className={cn(
+                              'flex flex-col items-center py-1 px-1.5 rounded-lg',
+                              isToday && 'bg-primary/10 ring-1 ring-primary/30'
+                            )}
+                          >
+                            <span className="text-[8px] text-muted-foreground">
+                              {dayNames[dayOfWeek]?.slice(0, 1)}
+                            </span>
+                            <span className="text-sm" role="img" aria-label={dayWeatherInfo.en}>
+                              {dayWeatherInfo.emoji}
+                            </span>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Mood factors */}
+                {moodFactors && moodFactors.length > 0 && (
+                  <div className="mt-3 pt-2 border-t border-border/30">
+                    <p className="text-[10px] text-muted-foreground mb-2 text-center">
+                      {t.weatherFactors || 'Influencing Factors'}
+                    </p>
+                    <div className="flex flex-wrap justify-center gap-1">
+                      {moodFactors.slice(0, 3).map((factor, idx) => (
+                        <motion.span
+                          key={factor.name}
+                          initial={{ scale: 0.8, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ delay: idx * 0.1 }}
+                          className={cn(
+                            'text-[9px] px-1.5 py-0.5 rounded-full',
+                            factor.impact === 'positive' && 'bg-green-500/10 text-green-600 dark:text-green-400',
+                            factor.impact === 'negative' && 'bg-red-500/10 text-red-600 dark:text-red-400',
+                            factor.impact === 'neutral' && 'bg-muted text-muted-foreground'
+                          )}
+                        >
+                          {factor.impact === 'positive' ? '↑' : factor.impact === 'negative' ? '↓' : '•'} {factor.name}
+                        </motion.span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
     </motion.div>
   );
 }

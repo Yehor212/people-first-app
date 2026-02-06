@@ -13,6 +13,11 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { ParticleBackground } from './ParticleBackground';
 import { EmojiOrIcon } from '@/components/icons';
 
+interface WeeklyDataPoint {
+  date: string;
+  value: number;
+}
+
 interface ZenScoreHubProps {
   /** Average mood score (1-5) */
   moodScore: number;
@@ -24,6 +29,13 @@ interface ZenScoreHubProps {
   streakDays: number;
   /** Comparison to last week (-100 to +100) */
   weeklyChange?: number;
+  /** Weekly data for sparklines (optional) */
+  weeklyData?: {
+    mood: WeeklyDataPoint[];
+    habits: WeeklyDataPoint[];
+    focus: WeeklyDataPoint[];
+    streak: WeeklyDataPoint[];
+  };
   /** Optional class name */
   className?: string;
 }
@@ -43,12 +55,61 @@ const getScoreLabel = (score: number, t: Record<string, string>) => {
   return t.zenScoreNeedsWork || 'Needs work';
 };
 
+// Mini sparkline for breakdown items - compact 7-point line
+function MiniSparkline({ data, color }: { data: number[]; color: string }) {
+  if (!data || data.length < 2) return null;
+
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+  const height = 20;
+  const width = 40;
+  const padding = 2;
+
+  const points = data.slice(-7).map((value, i, arr) => {
+    const x = padding + (i / (arr.length - 1)) * (width - padding * 2);
+    const y = height - padding - ((value - min) / range) * (height - padding * 2);
+    return { x, y };
+  });
+
+  const pathD = points
+    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
+    .join(' ');
+
+  // Determine trend
+  const lastValue = data[data.length - 1];
+  const prevValue = data[data.length - 2] || lastValue;
+  const trend = lastValue > prevValue ? 'up' : lastValue < prevValue ? 'down' : 'flat';
+
+  return (
+    <svg width={width} height={height} className="opacity-60 hover:opacity-100 transition-opacity">
+      {/* Line */}
+      <path
+        d={pathD}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* End dot */}
+      <circle
+        cx={points[points.length - 1]?.x || 0}
+        cy={points[points.length - 1]?.y || 0}
+        r="2"
+        fill={color}
+      />
+    </svg>
+  );
+}
+
 export function ZenScoreHub({
   moodScore,
   habitRate,
   focusScore,
   streakDays,
   weeklyChange = 0,
+  weeklyData,
   className,
 }: ZenScoreHubProps) {
   const { t } = useLanguage();
@@ -103,28 +164,34 @@ export function ZenScoreHub({
   const circumference = 2 * Math.PI * 45; // radius = 45
   const strokeDashoffset = circumference - (zenScore / 100) * circumference;
 
-  // Breakdown items with premium SVG icons
+  // Breakdown items with premium SVG icons and sparklines
   const breakdownItems = [
     {
       label: t.mood || 'Mood',
       value: Math.round(((moodScore - 1) / 4) * 100),
       emoji: '😊',
       iconName: 'heart',
-      color: 'text-[hsl(var(--chart-mood))]'
+      color: 'text-[hsl(var(--chart-mood))]',
+      sparkColor: 'hsl(var(--chart-mood))',
+      sparkData: weeklyData?.mood.map(d => d.value) || [],
     },
     {
       label: t.habits || 'Habits',
       value: Math.round(habitRate),
       emoji: '🎯',
       iconName: 'target',
-      color: 'text-[hsl(var(--chart-habit))]'
+      color: 'text-[hsl(var(--chart-habit))]',
+      sparkColor: 'hsl(var(--chart-habit))',
+      sparkData: weeklyData?.habits.map(d => d.value) || [],
     },
     {
       label: t.focus || 'Focus',
       value: Math.round(focusScore),
       emoji: '🧠',
       iconName: 'brain',
-      color: 'text-[hsl(var(--chart-focus))]'
+      color: 'text-[hsl(var(--chart-focus))]',
+      sparkColor: 'hsl(var(--chart-focus))',
+      sparkData: weeklyData?.focus.map(d => d.value) || [],
     },
     {
       label: t.streak || 'Streak',
@@ -132,6 +199,8 @@ export function ZenScoreHub({
       emoji: '🔥',
       iconName: 'fire',
       color: 'text-orange-500',
+      sparkColor: '#f97316',
+      sparkData: weeklyData?.streak.map(d => d.value) || [],
       suffix: 'd'
     },
   ];
@@ -299,6 +368,12 @@ export function ZenScoreHub({
                       {item.value}{item.suffix || '%'}
                     </p>
                     <p className="text-xs text-muted-foreground">{item.label}</p>
+                    {/* Mini sparkline showing weekly trend */}
+                    {item.sparkData.length >= 2 && (
+                      <div className="flex justify-center mt-1">
+                        <MiniSparkline data={item.sparkData} color={item.sparkColor} />
+                      </div>
+                    )}
                   </motion.div>
                 ))}
               </div>

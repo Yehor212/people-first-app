@@ -3,13 +3,19 @@
  * Part of Phase 10 Premium Stats Redesign
  *
  * Shows a crystal with glow/color based on weekly performance
+ * Expandable to show day-by-day breakdown
  */
 
-import { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Sparkles, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+
+interface DayScore {
+  date: string;
+  score: number;
+}
 
 interface WeekCrystalProps {
   /** Week score (0-100) */
@@ -18,6 +24,10 @@ interface WeekCrystalProps {
   label?: string;
   /** Optional class name */
   className?: string;
+  /** Daily scores for expanded view */
+  dailyScores?: DayScore[];
+  /** Last week's score for comparison */
+  lastWeekScore?: number;
 }
 
 // Crystal color themes based on score
@@ -62,9 +72,18 @@ export function WeekCrystal({
   score,
   label,
   className,
+  dailyScores,
+  lastWeekScore,
 }: WeekCrystalProps) {
   const { t } = useLanguage();
+  const [isExpanded, setIsExpanded] = useState(false);
   const theme = useMemo(() => getCrystalTheme(score), [score]);
+
+  // Calculate week-over-week change
+  const weekChange = lastWeekScore !== undefined ? score - lastWeekScore : 0;
+
+  // Day names
+  const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
 
   // Sparkle positions
   const sparkles = useMemo(() => [
@@ -230,6 +249,94 @@ export function WeekCrystal({
           />
         </div>
       </div>
+
+      {/* Expand button - only show if dailyScores available */}
+      {dailyScores && dailyScores.length > 0 && (
+        <>
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="mt-3 flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full py-1"
+            aria-expanded={isExpanded}
+          >
+            <span>{isExpanded ? (t.showLess || 'Less') : (t.weekCrystalExpand || 'Details')}</span>
+            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </button>
+
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="w-full overflow-hidden"
+              >
+                {/* Week comparison */}
+                {lastWeekScore !== undefined && (
+                  <div className="flex items-center justify-center gap-2 mt-2 mb-3">
+                    {weekChange > 0 ? (
+                      <TrendingUp className="w-3 h-3 text-green-500" />
+                    ) : weekChange < 0 ? (
+                      <TrendingDown className="w-3 h-3 text-red-500" />
+                    ) : (
+                      <Minus className="w-3 h-3 text-muted-foreground" />
+                    )}
+                    <span className={cn(
+                      'text-xs font-medium',
+                      weekChange > 0 && 'text-green-500',
+                      weekChange < 0 && 'text-red-500',
+                      weekChange === 0 && 'text-muted-foreground'
+                    )}>
+                      {weekChange > 0 ? '+' : ''}{weekChange}% {t.weekCrystalVsLastWeek || 'vs last week'}
+                    </span>
+                  </div>
+                )}
+
+                {/* Daily crystals */}
+                <div className="grid grid-cols-7 gap-1 pt-2 border-t border-border/30">
+                  {dailyScores.slice(-7).map((day, idx) => {
+                    const dayOfWeek = new Date(day.date).getDay();
+                    const dayTheme = getCrystalTheme(day.score);
+                    const isToday = day.date === new Date().toISOString().split('T')[0];
+
+                    return (
+                      <motion.div
+                        key={day.date}
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ delay: idx * 0.05 }}
+                        className={cn(
+                          'flex flex-col items-center py-1 rounded-lg',
+                          isToday && 'bg-primary/10 ring-1 ring-primary/30'
+                        )}
+                      >
+                        <span className="text-[9px] text-muted-foreground mb-0.5">
+                          {dayNames[dayOfWeek]?.slice(0, 1)}
+                        </span>
+                        {/* Mini crystal */}
+                        <div
+                          className="w-3 h-4 rounded-sm"
+                          style={{
+                            background: `linear-gradient(135deg, ${dayTheme.gradient[0]}, ${dayTheme.gradient[2]})`,
+                            opacity: 0.3 + (day.score / 100) * 0.7,
+                            boxShadow: day.score >= 60 ? `0 0 4px ${dayTheme.glow}` : 'none'
+                          }}
+                        />
+                        <span
+                          className="text-[9px] font-bold mt-0.5"
+                          style={{ color: dayTheme.glow }}
+                        >
+                          {day.score > 0 ? day.score : '—'}
+                        </span>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </>
+      )}
     </motion.div>
   );
 }

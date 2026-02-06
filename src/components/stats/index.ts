@@ -7,6 +7,9 @@
 export { ParticleBackground } from './ParticleBackground';
 export { ZenScoreHub } from './ZenScoreHub';
 export { RadialDashboard } from './RadialDashboard';
+export type { RingId } from './RadialDashboard';
+export { RingDetailSheet } from './RingDetailSheet';
+export type { RingType } from './RingDetailSheet';
 export { MoodWeather } from './MoodWeather';
 export { WeekCrystal } from './WeekCrystal';
 

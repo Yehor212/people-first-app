@@ -33,7 +33,9 @@ import {
   EnergyField,
   EmotionGalaxy,
   CrystalCalendar,
+  RingDetailSheet,
 } from '@/components/stats';
+import type { RingType } from '@/components/stats';
 
 interface StatsPageProps {
   moods: MoodEntry[];
@@ -62,6 +64,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showStoryViewer, setShowStoryViewer] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
+  const [selectedRing, setSelectedRing] = useState<RingType | null>(null);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
   const monthNames = [
     t.january, t.february, t.march, t.april, t.may, t.june,
@@ -546,6 +549,45 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     ? habits.reduce((a, b) => getHabitCompletionTotal(a) > getHabitCompletionTotal(b) ? a : b)
     : null;
 
+  // Weekly data for ring detail sheet
+  const ringWeeklyData = useMemo(() => {
+    const today = new Date();
+    const weekDays: string[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      weekDays.push(formatDate(d));
+    }
+
+    // Mood data per day (average score 0-100)
+    const moodData = weekDays.map(date => {
+      const dayMoods = moods.filter(m => m.date === date);
+      if (dayMoods.length === 0) return { date, value: 0 };
+      const avgScore = dayMoods.reduce((sum, m) => {
+        const score = m.emotion?.primary
+          ? getEmotionScore(m.emotion.primary, m.emotion.intensity)
+          : moodScore(m.mood);
+        return sum + score;
+      }, 0) / dayMoods.length;
+      return { date, value: Math.round((avgScore / 5) * 100) };
+    });
+
+    // Habits data per day (completion rate 0-100)
+    const habitsData = weekDays.map(date => {
+      if (habits.length === 0) return { date, value: 0 };
+      const completed = habits.filter(h => isHabitCompletedOnDate(h, date)).length;
+      return { date, value: Math.round((completed / habits.length) * 100) };
+    });
+
+    // Focus data per day (minutes capped at 100% = 60 min)
+    const focusData = weekDays.map(date => {
+      const mins = focusMinutesByDate.get(date) || 0;
+      return { date, value: Math.min(Math.round((mins / 60) * 100), 100) };
+    });
+
+    return { mood: moodData, habits: habitsData, focus: focusData };
+  }, [moods, habits, focusMinutesByDate]);
+
   const handleMonthShift = (delta: number) => {
     setSelectedDate(null);
     setSelectedMonth((prev) => {
@@ -601,12 +643,42 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         focusScore={premiumStats.focusScore}
         streakDays={stats.currentStreak}
         weeklyChange={premiumStats.weeklyChange}
+        weeklyData={{
+          mood: ringWeeklyData.mood,
+          habits: ringWeeklyData.habits,
+          focus: ringWeeklyData.focus,
+          streak: ringWeeklyData.mood.map((d, i) => ({
+            date: d.date,
+            value: Math.min(i + 1, stats.currentStreak) // Approximate streak growth
+          })),
+        }}
       />
 
       {/* Mood Weather + Week Crystal side by side */}
       <div className="grid grid-cols-2 gap-3">
-        <MoodWeather mood={premiumStats.currentMood} />
-        <WeekCrystal score={premiumStats.weekScore} />
+        <MoodWeather
+          mood={premiumStats.currentMood}
+          weatherHistory={ringWeeklyData.mood.map(d => {
+            // Convert percentage back to mood type
+            const pct = d.value;
+            const moodType: 'great' | 'good' | 'okay' | 'bad' | 'terrible' =
+              pct >= 80 ? 'great' : pct >= 60 ? 'good' : pct >= 40 ? 'okay' : pct >= 20 ? 'bad' : 'terrible';
+            return { date: d.date, mood: moodType };
+          })}
+          moodFactors={[
+            ...(premiumStats.habitRate >= 70 ? [{ name: t.habits || 'Habits', impact: 'positive' as const }] : []),
+            ...(premiumStats.focusScore >= 60 ? [{ name: t.focus || 'Focus', impact: 'positive' as const }] : []),
+            ...(stats.currentStreak >= 3 ? [{ name: t.streak || 'Streak', impact: 'positive' as const }] : []),
+          ]}
+        />
+        <WeekCrystal
+          score={premiumStats.weekScore}
+          dailyScores={ringWeeklyData.mood.map(d => ({
+            date: d.date,
+            score: Math.round((d.value + (ringWeeklyData.habits.find(h => h.date === d.date)?.value || 0) + (ringWeeklyData.focus.find(f => f.date === d.date)?.value || 0)) / 3)
+          }))}
+          lastWeekScore={premiumStats.weekScore > 0 ? Math.max(0, premiumStats.weekScore - (premiumStats.weeklyChange || 0)) : undefined}
+        />
       </div>
 
       {/* Radial Dashboard */}
@@ -614,6 +686,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         moodPercent={Math.round(((premiumStats.moodScore - 1) / 4) * 100)}
         habitsPercent={premiumStats.habitRate}
         focusPercent={premiumStats.focusScore}
+        onRingClick={(ringId) => setSelectedRing(ringId)}
       />
 
       {/* Phase 13: Trophy Hall - Premium Achievements */}
@@ -1366,6 +1439,28 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           streak={stats.currentStreak}
         />
       )}
+
+      {/* Ring Detail Sheet */}
+      <RingDetailSheet
+        open={selectedRing !== null}
+        onOpenChange={(open) => !open && setSelectedRing(null)}
+        ringType={selectedRing}
+        currentValue={
+          selectedRing === 'mood' ? Math.round(((premiumStats.moodScore - 1) / 4) * 100) :
+          selectedRing === 'habits' ? premiumStats.habitRate :
+          selectedRing === 'focus' ? premiumStats.focusScore : 0
+        }
+        weeklyData={
+          selectedRing === 'mood' ? ringWeeklyData.mood :
+          selectedRing === 'habits' ? ringWeeklyData.habits :
+          selectedRing === 'focus' ? ringWeeklyData.focus : []
+        }
+        average={
+          selectedRing === 'mood' ? ringWeeklyData.mood.reduce((a, b) => a + b.value, 0) / 7 :
+          selectedRing === 'habits' ? ringWeeklyData.habits.reduce((a, b) => a + b.value, 0) / 7 :
+          selectedRing === 'focus' ? ringWeeklyData.focus.reduce((a, b) => a + b.value, 0) / 7 : 0
+        }
+      />
     </div>
   );
 });

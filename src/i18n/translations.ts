@@ -968,9 +968,26 @@ export interface Translations {
   crystalGoodWeek: string;
   crystalAverageWeek: string;
   crystalNeedsImprovement: string;
+  weekCrystalExpand: string;
+  weekCrystalVsLastWeek: string;
 
   // Radial Dashboard
   tapToSee: string;
+
+  // Ring Detail Sheet (Stats Page interactivity)
+  ringDetailMoodDesc: string;
+  ringDetailHabitsDesc: string;
+  ringDetailFocusDesc: string;
+  ringDetailToday: string;
+  ringDetailWeekTrend: string;
+  ringDetailDayByDay: string;
+  ringDetailVsAverage: string;
+  stable: string;
+
+  // Weather (MoodWeather expandable)
+  weatherForecast: string;
+  weatherHistory: string;
+  weatherFactors: string;
 
   // Phase 13: Visual Worlds Stats Components
   hallOfFame: string;
@@ -2585,7 +2602,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     crystalGoodWeek: 'Хорошая неделя',
     crystalAverageWeek: 'Обычная неделя',
     crystalNeedsImprovement: 'Нужно улучшение',
+    weekCrystalExpand: 'Детали',
+    weekCrystalVsLastWeek: 'vs прошлая неделя',
     tapToSee: 'Нажми на кольцо',
+    ringDetailMoodDesc: 'Твоё эмоциональное состояние за неделю',
+    ringDetailHabitsDesc: 'Процент выполнения привычек',
+    ringDetailFocusDesc: 'Продуктивность фокус-сессий',
+    ringDetailToday: 'Сегодня',
+    ringDetailWeekTrend: 'Эта неделя',
+    ringDetailDayByDay: 'По дням',
+    ringDetailVsAverage: 'vs среднее за неделю',
+    stable: 'Стабильно',
+    weatherForecast: 'Прогноз',
+    weatherHistory: 'Эта неделя',
+    weatherFactors: 'Влияющие факторы',
     language: 'Язык',
     selectLanguage: 'Выберите язык',
     welcomeTitle: 'Добро пожаловать в ZenFlow',
@@ -4195,7 +4225,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     crystalGoodWeek: 'Good Week',
     crystalAverageWeek: 'Average Week',
     crystalNeedsImprovement: 'Needs Improvement',
+    weekCrystalExpand: 'Details',
+    weekCrystalVsLastWeek: 'vs last week',
     tapToSee: 'Tap a ring',
+    ringDetailMoodDesc: 'Your emotional wellbeing over the past week',
+    ringDetailHabitsDesc: 'Daily habit completion rate',
+    ringDetailFocusDesc: 'Focus session productivity',
+    ringDetailToday: 'Today',
+    ringDetailWeekTrend: 'This Week',
+    ringDetailDayByDay: 'Day by Day',
+    ringDetailVsAverage: 'vs Weekly Average',
+    stable: 'Stable',
+    weatherForecast: 'Forecast',
+    weatherHistory: 'This Week',
+    weatherFactors: 'Influencing Factors',
     language: 'Language',
     selectLanguage: 'Select language',
     welcomeTitle: 'Welcome to ZenFlow',
@@ -5805,7 +5848,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     crystalGoodWeek: 'Гарний тиждень',
     crystalAverageWeek: 'Звичайний тиждень',
     crystalNeedsImprovement: 'Потрібно покращення',
+    weekCrystalExpand: 'Деталі',
+    weekCrystalVsLastWeek: 'vs минулий тиждень',
     tapToSee: 'Натисни на кільце',
+    ringDetailMoodDesc: 'Твій емоційний стан за тиждень',
+    ringDetailHabitsDesc: 'Відсоток виконання звичок',
+    ringDetailFocusDesc: 'Продуктивність фокус-сесій',
+    ringDetailToday: 'Сьогодні',
+    ringDetailWeekTrend: 'Цей тиждень',
+    ringDetailDayByDay: 'По днях',
+    ringDetailVsAverage: 'vs середнє за тиждень',
+    stable: 'Стабільно',
+    weatherForecast: 'Прогноз',
+    weatherHistory: 'Цей тиждень',
+    weatherFactors: 'Впливові фактори',
     language: 'Мова',
     selectLanguage: 'Оберіть мову',
     welcomeTitle: 'Ласкаво просимо до ZenFlow',
@@ -7416,7 +7472,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     crystalGoodWeek: 'Buena semana',
     crystalAverageWeek: 'Semana promedio',
     crystalNeedsImprovement: 'Necesita mejorar',
+    weekCrystalExpand: 'Detalles',
+    weekCrystalVsLastWeek: 'vs semana pasada',
     tapToSee: 'Toca un anillo',
+    ringDetailMoodDesc: 'Tu bienestar emocional durante la semana',
+    ringDetailHabitsDesc: 'Tasa de cumplimiento de hábitos',
+    ringDetailFocusDesc: 'Productividad de sesiones de enfoque',
+    ringDetailToday: 'Hoy',
+    ringDetailWeekTrend: 'Esta semana',
+    ringDetailDayByDay: 'Día a día',
+    ringDetailVsAverage: 'vs promedio semanal',
+    stable: 'Estable',
+    weatherForecast: 'Pronóstico',
+    weatherHistory: 'Esta semana',
+    weatherFactors: 'Factores de influencia',
     language: 'Idioma',
     selectLanguage: 'Selecciona idioma',
     welcomeTitle: 'Bienvenido a ZenFlow',
@@ -9027,7 +9096,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     crystalGoodWeek: 'Gute Woche',
     crystalAverageWeek: 'Durchschnittliche Woche',
     crystalNeedsImprovement: 'Verbesserung nötig',
+    weekCrystalExpand: 'Details',
+    weekCrystalVsLastWeek: 'vs letzte Woche',
     tapToSee: 'Ring antippen',
+    ringDetailMoodDesc: 'Dein emotionales Wohlbefinden der letzten Woche',
+    ringDetailHabitsDesc: 'Tägliche Gewohnheitserfüllung',
+    ringDetailFocusDesc: 'Fokus-Sitzung Produktivität',
+    ringDetailToday: 'Heute',
+    ringDetailWeekTrend: 'Diese Woche',
+    ringDetailDayByDay: 'Tag für Tag',
+    ringDetailVsAverage: 'vs Wochendurchschnitt',
+    stable: 'Stabil',
+    weatherForecast: 'Vorhersage',
+    weatherHistory: 'Diese Woche',
+    weatherFactors: 'Einflussfaktoren',
     language: 'Sprache',
     selectLanguage: 'Sprache wählen',
     welcomeTitle: 'Willkommen bei ZenFlow',
@@ -10638,7 +10720,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     crystalGoodWeek: 'Bonne semaine',
     crystalAverageWeek: 'Semaine moyenne',
     crystalNeedsImprovement: 'À améliorer',
+    weekCrystalExpand: 'Détails',
+    weekCrystalVsLastWeek: 'vs semaine dernière',
     tapToSee: 'Touche un anneau',
+    ringDetailMoodDesc: 'Ton bien-être émotionnel de la semaine',
+    ringDetailHabitsDesc: 'Taux d\'accomplissement des habitudes',
+    ringDetailFocusDesc: 'Productivité des sessions de focus',
+    ringDetailToday: 'Aujourd\'hui',
+    ringDetailWeekTrend: 'Cette semaine',
+    ringDetailDayByDay: 'Jour par jour',
+    ringDetailVsAverage: 'vs moyenne hebdomadaire',
+    stable: 'Stable',
+    weatherForecast: 'Prévisions',
+    weatherHistory: 'Cette semaine',
+    weatherFactors: 'Facteurs d\'influence',
     language: 'Langue',
     selectLanguage: 'Sélectionner la langue',
     welcomeTitle: 'Bienvenue sur ZenFlow',
@@ -12248,7 +12343,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     crystalGoodWeek: '良い週',
     crystalAverageWeek: '平均的な週',
     crystalNeedsImprovement: '改善が必要',
+    weekCrystalExpand: '詳細',
+    weekCrystalVsLastWeek: '先週との比較',
     tapToSee: 'リングをタップ',
+    ringDetailMoodDesc: '過去1週間の感情的な状態',
+    ringDetailHabitsDesc: '習慣達成率',
+    ringDetailFocusDesc: 'フォーカスセッションの生産性',
+    ringDetailToday: '今日',
+    ringDetailWeekTrend: '今週',
+    ringDetailDayByDay: '日ごと',
+    ringDetailVsAverage: '週平均との比較',
+    stable: '安定',
+    weatherForecast: '予報',
+    weatherHistory: '今週',
+    weatherFactors: '影響要因',
     language: '言語',
     selectLanguage: '言語を選択',
     welcomeTitle: 'ZenFlowへようこそ',

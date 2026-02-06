@@ -22,6 +22,8 @@ interface RingData {
   iconName: string;
 }
 
+export type RingId = 'mood' | 'habits' | 'focus';
+
 interface RadialDashboardProps {
   /** Mood percentage (0-100) */
   moodPercent: number;
@@ -31,6 +33,8 @@ interface RadialDashboardProps {
   focusPercent: number;
   /** Optional class name */
   className?: string;
+  /** Callback when a ring is clicked (for opening detail sheet) */
+  onRingClick?: (ringId: RingId) => void;
 }
 
 // Ring configurations (outer to inner)
@@ -45,6 +49,7 @@ export function RadialDashboard({
   habitsPercent,
   focusPercent,
   className,
+  onRingClick,
 }: RadialDashboardProps) {
   const { t } = useLanguage();
   const [activeRing, setActiveRing] = useState<string | null>(null);
@@ -174,7 +179,7 @@ export function RadialDashboard({
                   />
                 </div>
                 <p className="text-2xl font-bold text-foreground">
-                  {rings.find(r => r.id === activeRing)?.value}%
+                  {Math.round(rings.find(r => r.id === activeRing)?.value || 0)}%
                 </p>
                 <p className="text-xs text-muted-foreground">
                   {rings.find(r => r.id === activeRing)?.label}
@@ -200,7 +205,12 @@ export function RadialDashboard({
         {rings.map((ring) => (
           <button
             key={ring.id}
-            onClick={() => setActiveRing(activeRing === ring.id ? null : ring.id)}
+            onClick={() => {
+              setActiveRing(activeRing === ring.id ? null : ring.id);
+              if (onRingClick) {
+                onRingClick(ring.id as RingId);
+              }
+            }}
             className={cn(
               'flex items-center gap-1.5 px-2 py-1 rounded-lg',
               'text-xs font-medium transition-all',
@@ -215,7 +225,7 @@ export function RadialDashboard({
               style={{ backgroundColor: ring.color }}
             />
             <span className="text-muted-foreground">{ring.label}</span>
-            <span className="font-bold text-foreground">{ring.value}%</span>
+            <span className="font-bold text-foreground">{Math.round(ring.value)}%</span>
           </button>
         ))}
       </div>
