@@ -11,7 +11,7 @@ import { useInsights } from '@/hooks/useInsights';
 import type { InsightTranslations } from '@/lib/insightsEngine';
 import { InsightCard } from './InsightCard';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Sparkles, ChevronDown, ChevronUp, X, Info, PanelTopClose, PanelTop } from 'lucide-react';
+import { Sparkles, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
 
 const COLLAPSED_STORAGE_KEY = 'zenflow-insights-collapsed';
 
@@ -139,73 +139,97 @@ export function InsightsPanel({
 
   return (
     <div className="bg-card rounded-2xl zen-shadow-card border border-border overflow-hidden">
-      {/* Header */}
-      <div className={`p-4 bg-gradient-to-r from-primary/10 to-primary/5 ${!isCollapsed ? 'border-b border-border' : ''}`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            <h3 className="font-semibold">
-              {t.insightsTitle || 'Personal Insights'}
-            </h3>
-            {visibleCount > 0 && (
-              <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
-                {visibleCount}
-              </span>
-            )}
+      {/* Header - Full width clickable when collapsible */}
+      {collapsible ? (
+        <button
+          onClick={toggleCollapsed}
+          className={`w-full p-4 bg-gradient-to-r from-primary/10 to-primary/5 ${!isCollapsed ? 'border-b border-border' : ''} transition-colors hover:from-primary/15 hover:to-primary/10 active:from-primary/20`}
+          aria-expanded={!isCollapsed}
+          aria-label={isCollapsed ? (t.insightsExpand || 'Expand insights') : (t.insightsCollapse || 'Collapse insights')}
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-left">
+                {t.insightsTitle || 'Personal Insights'}
+              </h3>
+              {visibleCount > 0 && (
+                <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
+                  {visibleCount}
+                </span>
+              )}
+            </div>
+
+            {/* Expand/collapse indicator */}
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span className="text-xs">{isCollapsed ? (t.expand || 'Expand') : (t.collapse || 'Collapse')}</span>
+              <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isCollapsed ? '' : 'rotate-180'}`} />
+            </div>
           </div>
+        </button>
+      ) : (
+        <div className={`p-4 bg-gradient-to-r from-primary/10 to-primary/5 ${!isCollapsed ? 'border-b border-border' : ''}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold">
+                {t.insightsTitle || 'Personal Insights'}
+              </h3>
+              {visibleCount > 0 && (
+                <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
+                  {visibleCount}
+                </span>
+              )}
+            </div>
 
-          <div className="flex items-center gap-2">
-            {!isCollapsed && (
-              <button
-                onClick={() => setShowHelp(!showHelp)}
-                aria-expanded={showHelp}
-                aria-label={t.insightsHelpTitle || 'About Insights'}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <Info className="w-4 h-4" />
-              </button>
-            )}
-
-            {/* Collapse/Expand toggle */}
-            {collapsible && (
-              <button
-                onClick={toggleCollapsed}
-                aria-expanded={!isCollapsed}
-                aria-label={isCollapsed ? (t.insightsExpand || 'Expand insights') : (t.insightsCollapse || 'Collapse insights')}
-                className="text-muted-foreground hover:text-foreground transition-colors p-1 -m-1"
-              >
-                {isCollapsed ? (
-                  <PanelTop className="w-4 h-4" />
-                ) : (
-                  <PanelTopClose className="w-4 h-4" />
-                )}
-              </button>
-            )}
+            <button
+              onClick={() => setShowHelp(!showHelp)}
+              aria-expanded={showHelp}
+              aria-label={t.insightsHelpTitle || 'About Insights'}
+              className="text-muted-foreground hover:text-foreground transition-colors p-2 -m-2"
+            >
+              <Info className="w-5 h-5" />
+            </button>
           </div>
         </div>
-
-        {/* Help text */}
-        {!isCollapsed && showHelp && (
-          <div className="mt-3 p-3 bg-card rounded-xl text-xs text-muted-foreground space-y-1">
-            <p className="font-medium text-foreground mb-1">
-              {t.insightsHelpTitle || 'About Insights'}
-            </p>
-            <p>
-              {t.insightsHelp1 || 'Insights are generated from your personal data using statistical analysis.'}
-            </p>
-            <p>
-              {t.insightsHelp2 || 'All analysis happens locally on your device - your data never leaves.'}
-            </p>
-            <p>
-              {t.insightsHelp3 || 'Patterns with higher confidence are shown first.'}
-            </p>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Insights List - Hidden when collapsed */}
       {!isCollapsed && (
         <>
+          {/* Help button + Help text for collapsible mode */}
+          {collapsible && (
+            <div className="px-4 pt-4">
+              <button
+                onClick={() => setShowHelp(!showHelp)}
+                aria-expanded={showHelp}
+                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Info className="w-3.5 h-3.5" />
+                <span>{t.insightsHelpTitle || 'About Insights'}</span>
+              </button>
+              {showHelp && (
+                <div className="mt-2 p-3 bg-muted/50 rounded-xl text-xs text-muted-foreground space-y-1">
+                  <p>{t.insightsHelp1 || 'Insights are generated from your personal data using statistical analysis.'}</p>
+                  <p>{t.insightsHelp2 || 'All analysis happens locally on your device - your data never leaves.'}</p>
+                  <p>{t.insightsHelp3 || 'Patterns with higher confidence are shown first.'}</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Non-collapsible mode help text (shown when help button in header clicked) */}
+          {!collapsible && showHelp && (
+            <div className="px-4 pt-4">
+              <div className="p-3 bg-muted/50 rounded-xl text-xs text-muted-foreground space-y-1">
+                <p className="font-medium text-foreground mb-1">{t.insightsHelpTitle || 'About Insights'}</p>
+                <p>{t.insightsHelp1 || 'Insights are generated from your personal data using statistical analysis.'}</p>
+                <p>{t.insightsHelp2 || 'All analysis happens locally on your device - your data never leaves.'}</p>
+                <p>{t.insightsHelp3 || 'Patterns with higher confidence are shown first.'}</p>
+              </div>
+            </div>
+          )}
+
           <div className="p-4 space-y-3">
             {displayInsights.map((insight, index) => (
               <div key={insight.id} className="relative group">
