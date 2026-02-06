@@ -351,6 +351,16 @@ export interface Translations {
   completedGoals: string;
   claimReward: string;
 
+  // Urgency Alerts (5.1 Predictive)
+  urgencyHabitsPending: string;
+  urgencyHabitsPendingDesc: string;
+  urgencyLastChance: string;
+  urgencyLastChanceDesc: string;
+  urgencyStreakAtRisk: string;
+  urgencyStreakAtRiskDesc: string;
+  urgencyPerfectDay: string;
+  urgencyPerfectDayDesc: string;
+
   // Stats page
   statistics: string;
   monthlyOverview: string;
@@ -2066,6 +2076,16 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     completedGoals: 'Выполнено',
     claimReward: 'Получить награду',
 
+    // Urgency Alerts
+    urgencyHabitsPending: 'Привычки ждут вас',
+    urgencyHabitsPendingDesc: 'Осталось {hours} ч., чтобы выполнить {count} привычек',
+    urgencyLastChance: 'Последний шанс сегодня!',
+    urgencyLastChanceDesc: 'Осталось {count} привычек. Не теряй темп!',
+    urgencyStreakAtRisk: 'Серия {streak} дней под угрозой!',
+    urgencyStreakAtRiskDesc: 'Выполни хотя бы одну привычку, чтобы сохранить серию',
+    urgencyPerfectDay: 'Идеальный день на расстоянии руки!',
+    urgencyPerfectDayDesc: 'Осталась 1 привычка: {habit}',
+
     statistics: 'Статистика',
     monthlyOverview: 'Обзор месяца',
     statsRange: 'Период',
@@ -3723,6 +3743,16 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     completedGoals: 'Completed',
     claimReward: 'Claim Reward',
 
+    // Urgency Alerts
+    urgencyHabitsPending: 'Habits waiting for you',
+    urgencyHabitsPendingDesc: '{hours} hours left to complete {count} habits',
+    urgencyLastChance: 'Last chance today!',
+    urgencyLastChanceDesc: '{count} habits left. Don\'t break your momentum!',
+    urgencyStreakAtRisk: '{streak}-day streak at risk!',
+    urgencyStreakAtRiskDesc: 'Complete at least one habit to keep your streak alive',
+    urgencyPerfectDay: 'Perfect day within reach!',
+    urgencyPerfectDayDesc: 'Just 1 habit left: {habit}',
+
     statistics: 'Statistics',
     monthlyOverview: 'Monthly overview',
     statsRange: 'Range',
@@ -5379,6 +5409,16 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     setGoalHint: 'Встановіть ціль для відстеження прогресу',
     completedGoals: 'Виконано',
     claimReward: 'Отримати нагороду',
+
+    // Urgency Alerts
+    urgencyHabitsPending: 'Звички чекають на вас',
+    urgencyHabitsPendingDesc: 'Залишилось {hours} год., щоб виконати {count} звичок',
+    urgencyLastChance: 'Останній шанс сьогодні!',
+    urgencyLastChanceDesc: 'Залишилось {count} звичок. Не втрачай темп!',
+    urgencyStreakAtRisk: 'Серія {streak} днів під загрозою!',
+    urgencyStreakAtRiskDesc: 'Виконай хоча б одну звичку, щоб зберегти серію',
+    urgencyPerfectDay: 'Ідеальний день на відстані руки!',
+    urgencyPerfectDayDesc: 'Залишилась 1 звичка: {habit}',
 
     statistics: 'Статистика',
     monthlyOverview: 'Огляд місяця',
@@ -7038,6 +7078,16 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     completedGoals: 'Completadas',
     claimReward: 'Reclamar recompensa',
 
+    // Urgency Alerts
+    urgencyHabitsPending: 'Hábitos esperándote',
+    urgencyHabitsPendingDesc: 'Quedan {hours} h. para completar {count} hábitos',
+    urgencyLastChance: '¡Última oportunidad hoy!',
+    urgencyLastChanceDesc: 'Quedan {count} hábitos. ¡No pierdas el ritmo!',
+    urgencyStreakAtRisk: '¡Racha de {streak} días en riesgo!',
+    urgencyStreakAtRiskDesc: 'Completa al menos un hábito para mantener tu racha',
+    urgencyPerfectDay: '¡Día perfecto al alcance!',
+    urgencyPerfectDayDesc: 'Solo queda 1 hábito: {habit}',
+
     statistics: 'Estadísticas',
     monthlyOverview: 'Resumen mensual',
     statsRange: 'Período',
@@ -8695,6 +8745,16 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     setGoalHint: 'Setze ein Ziel, um deinen Fortschritt zu verfolgen',
     completedGoals: 'Abgeschlossen',
     claimReward: 'Belohnung einfordern',
+
+    // Urgency Alerts
+    urgencyHabitsPending: 'Gewohnheiten warten auf dich',
+    urgencyHabitsPendingDesc: 'Noch {hours} Std. um {count} Gewohnheiten abzuschließen',
+    urgencyLastChance: 'Letzte Chance heute!',
+    urgencyLastChanceDesc: 'Noch {count} Gewohnheiten. Verliere nicht den Schwung!',
+    urgencyStreakAtRisk: '{streak}-Tage-Serie in Gefahr!',
+    urgencyStreakAtRiskDesc: 'Schließe mindestens eine Gewohnheit ab, um deine Serie zu halten',
+    urgencyPerfectDay: 'Perfekter Tag in Reichweite!',
+    urgencyPerfectDayDesc: 'Nur noch 1 Gewohnheit: {habit}',
 
     statistics: 'Statistiken',
     monthlyOverview: 'Monatsübersicht',
@@ -10354,6 +10414,16 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     completedGoals: 'Complétés',
     claimReward: 'Réclamer récompense',
 
+    // Urgency Alerts
+    urgencyHabitsPending: 'Habitudes en attente',
+    urgencyHabitsPendingDesc: 'Il reste {hours} h. pour compléter {count} habitudes',
+    urgencyLastChance: 'Dernière chance aujourd\'hui!',
+    urgencyLastChanceDesc: 'Il reste {count} habitudes. Ne perds pas le rythme!',
+    urgencyStreakAtRisk: 'Série de {streak} jours en danger!',
+    urgencyStreakAtRiskDesc: 'Complète au moins une habitude pour garder ta série',
+    urgencyPerfectDay: 'Journée parfaite à portée!',
+    urgencyPerfectDayDesc: 'Plus qu\'1 habitude: {habit}',
+
     statistics: 'Statistiques',
     monthlyOverview: 'Aperçu mensuel',
     statsRange: 'Période',
@@ -12010,6 +12080,16 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     setGoalHint: '進捗を追跡するために目標を設定',
     completedGoals: '達成済み',
     claimReward: '報酬を受け取る',
+
+    // Urgency Alerts
+    urgencyHabitsPending: '習慣が待っています',
+    urgencyHabitsPendingDesc: 'あと{hours}時間で{count}個の習慣を完了',
+    urgencyLastChance: '今日最後のチャンス！',
+    urgencyLastChanceDesc: '残り{count}個の習慣。勢いを失わないで！',
+    urgencyStreakAtRisk: '{streak}日連続記録が危険！',
+    urgencyStreakAtRiskDesc: '連続記録を守るために少なくとも1つの習慣を完了しよう',
+    urgencyPerfectDay: 'パーフェクトデーまであと少し！',
+    urgencyPerfectDayDesc: '残り1つの習慣: {habit}',
 
     statistics: '統計',
     monthlyOverview: '月間概要',
@@ -13674,6 +13754,16 @@ const arabicOverrides: Partial<Translations> = {
   setGoalHint: 'حدد هدفاً لتتبع تقدمك',
   completedGoals: 'مكتمل',
   claimReward: 'المطالبة بالمكافأة',
+
+  // Urgency Alerts
+  urgencyHabitsPending: 'عادات بانتظارك',
+  urgencyHabitsPendingDesc: 'متبقي {hours} ساعات لإكمال {count} عادات',
+  urgencyLastChance: 'فرصة أخيرة اليوم!',
+  urgencyLastChanceDesc: 'متبقي {count} عادات. لا تفقد الزخم!',
+  urgencyStreakAtRisk: 'سلسلة {streak} يوم في خطر!',
+  urgencyStreakAtRiskDesc: 'أكمل عادة واحدة على الأقل للحفاظ على سلسلتك',
+  urgencyPerfectDay: 'يوم مثالي في المتناول!',
+  urgencyPerfectDayDesc: 'متبقي عادة واحدة فقط: {habit}',
 
   // Stats Page
   statistics: 'الإحصائيات',

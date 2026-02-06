@@ -93,6 +93,7 @@ import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
 import { InsightsPanel } from '@/components/InsightsPanel';
 import { GoalsPanel } from '@/components/GoalsPanel';
+import { UrgencyAlert } from '@/components/UrgencyAlert';
 import { RestModeCard } from '@/components/RestModeCard';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
 import { ChallengeModal } from '@/components/ChallengeModal';
@@ -2074,6 +2075,16 @@ export function Index() {
                 }}
               />
 
+              {/* Urgency Alert - Smart reminders for pending habits */}
+              <UrgencyAlert
+                habits={safeHabits}
+                currentStreak={innerWorld.currentActiveStreak}
+                onHabitClick={() => {
+                  // Scroll to habit tracker
+                  habitsRef.current?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              />
+
               {/* Personal Insights */}
               <InsightsPanel
                 moods={safeMoods}
@@ -2089,7 +2100,7 @@ export function Index() {
                 habits={safeHabits}
                 moods={safeMoods}
                 focusSessions={safeFocusSessions}
-                currentStreak={currentStreak}
+                currentStreak={innerWorld.currentActiveStreak}
                 onAddGoal={(goal) => setGoals(prev => [...prev, goal])}
                 onUpdateGoal={(goal) => setGoals(prev => prev.map(g => g.id === goal.id ? goal : g))}
                 onDeleteGoal={(goalId) => setGoals(prev => prev.filter(g => g.id !== goalId))}
