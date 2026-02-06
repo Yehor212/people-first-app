@@ -5,13 +5,20 @@ import reactRefresh from "eslint-plugin-react-refresh";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["dist", "android", "coverage", "scripts"] },
+  { ignores: ["dist", "android", "coverage", "scripts", "*.js", "*.mjs"] },
   {
-    extends: [js.configs.recommended, ...tseslint.configs.recommended],
+    extends: [
+      js.configs.recommended,
+      ...tseslint.configs.recommendedTypeChecked,
+    ],
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.browser,
+      parserOptions: {
+        project: "./tsconfig.eslint.json",
+        tsconfigRootDir: import.meta.dirname,
+      },
     },
     plugins: {
       "react-hooks": reactHooks,
@@ -26,11 +33,24 @@ export default tseslint.config(
         varsIgnorePattern: "^_",
         caughtErrorsIgnorePattern: "^_",
       }],
-      // Note: no-floating-promises requires typed linting (parserOptions.project)
-      // which needs tsconfig to include all linted files. Disabled for now.
-      // "@typescript-eslint/no-floating-promises": "warn",
+      // Catch unhandled promises (common source of silent failures)
+      "@typescript-eslint/no-floating-promises": "warn",
       // Ensure React hooks dependencies are correct
       "react-hooks/exhaustive-deps": "warn",
+      // Relax some strict type-checked rules for existing codebase
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-misused-promises": ["warn", {
+        checksVoidReturn: false,
+      }],
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/restrict-template-expressions": "off",
+      "@typescript-eslint/no-redundant-type-constituents": "off",
+      "@typescript-eslint/unbound-method": "off",
     },
   },
 );
