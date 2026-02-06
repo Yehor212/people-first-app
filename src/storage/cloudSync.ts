@@ -3,7 +3,8 @@ import { supabase } from "@/lib/supabaseClient";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
 import logger from "@/lib/logger";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
-import { generateSecureRandom } from "@/lib/validation";
+import { generateSecureRandom, isAbortError } from "@/lib/validation";
+import { addCategorizedBreadcrumb } from "@/lib/sentry";
 
 const BACKUP_TABLE = "user_backups";
 const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
@@ -38,13 +39,22 @@ let visibilityChangeHandler: (() => void) | null = null;
 let beforeUnloadHandler: (() => void) | null = null;
 
 export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promise<{ status: string }> => {
+  addCategorizedBreadcrumb('sync', 'syncWithCloud called', { mode });
+
   // P1-11 Fix: If sync is already in progress, wait for it and return the same result
   // This prevents "skipped" status and ensures all callers get consistent data
   if (currentSyncPromise) {
     logger.sync('Sync already in progress, waiting for completion...');
+    addCategorizedBreadcrumb('sync', 'Waiting for existing sync');
     try {
       return await currentSyncPromise;
     } catch (error) {
+      // P0 Fix: Handle AbortError gracefully - don't re-throw aborts
+      if (isAbortError(error)) {
+        addCategorizedBreadcrumb('sync', 'Sync wait aborted', {}, 'warning');
+        logger.warn('[Sync] Sync wait aborted');
+        return { status: 'aborted' };
+      }
       // Re-throw so caller knows sync failed
       throw error;
     }
@@ -244,12 +254,20 @@ export const silentSync = async () => {
     try {
       await syncWithCloud('merge');
       logger.sync('Auto-sync completed');
+      addCategorizedBreadcrumb('sync', 'Auto-sync completed');
       // P1 Fix: Reset failure counter and emit success on successful sync
       if (consecutiveSyncFailures > 0) {
         consecutiveSyncFailures = 0;
         emitSyncSuccessEvent();
       }
     } catch (error) {
+      // P0 Fix: Don't count aborts as failures - they're intentional
+      if (isAbortError(error)) {
+        addCategorizedBreadcrumb('sync', 'Auto-sync aborted (intentional)', {}, 'info');
+        logger.debug('[Sync] Auto-sync aborted (intentional)');
+        return; // Don't throw, don't count as failure
+      }
+      addCategorizedBreadcrumb('sync', 'Auto-sync failed', { error: (error as Error).message }, 'error');
       logger.warn('[Sync] Auto-sync failed:', error);
       // P1 Fix: Track failures and emit event for UI notification
       consecutiveSyncFailures++;

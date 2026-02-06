@@ -12,6 +12,7 @@
  */
 
 import { logger } from './logger';
+import { isAbortError } from './validation';
 import * as Sentry from '@sentry/react';
 
 // ============================================
@@ -545,9 +546,9 @@ export class AmbientSoundGenerator {
 
       logger.log(`[AmbientSounds] Playing: ${sound.nameEn}`);
     } catch (error) {
-      // Distinguish abort errors from real errors
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        logger.log('[AmbientSounds] Playback cancelled');
+      // P0 Fix: Use isAbortError helper to catch all abort variants (including iOS code 20)
+      if (isAbortError(error)) {
+        logger.debug('[AmbientSounds] Playback cancelled (abort)');
         this.setStatus({ state: 'idle', soundId: null });
       } else if (myPlaybackId === this.playbackId) {
         logger.error(`[AmbientSounds] Failed to play:`, error);
@@ -678,8 +679,8 @@ export class AmbientSoundGenerator {
       } catch (error) {
         loadError = error instanceof Error ? error : new Error(String(error));
 
-        // If it's an abort error, don't try fallback
-        if (error instanceof DOMException && error.name === 'AbortError') {
+        // P0 Fix: If it's an abort error (including iOS code 20), don't try fallback
+        if (isAbortError(error)) {
           throw error;
         }
 
@@ -877,6 +878,13 @@ export class AmbientSoundGenerator {
         this.setStatus({ state: 'playing', error: undefined });
       }
     } catch (err) {
+      // P0 Fix: Don't log abort errors as failures
+      if (isAbortError(err)) {
+        logger.debug('[AmbientSounds] Resume cancelled (abort)');
+        this.setStatus({ state: 'paused' });
+        return;
+      }
+
       logger.error('[AmbientSounds] Failed to resume audio:', err);
       // P0 Fix: Update status on error
       this.setStatus({
@@ -969,6 +977,15 @@ export async function checkSoundFilesAccessibility(): Promise<Array<{
           error: response.ok ? undefined : `HTTP ${response.status}`,
         };
       } catch (e) {
+        // P0 Fix: Handle abort errors gracefully
+        if (isAbortError(e)) {
+          return {
+            id: sound.id,
+            file: sound.file,
+            accessible: false,
+            error: 'Request aborted',
+          };
+        }
         return {
           id: sound.id,
           file: sound.file,

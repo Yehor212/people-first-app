@@ -1593,6 +1593,10 @@ export interface Translations {
   databaseRecoveryDesc: string;
   databaseRecoveryRestore: string;
   databaseRecoveryStartFresh: string;
+  // Update required (P0 chunk load error)
+  updateRequiredTitle: string;
+  updateRequiredDesc: string;
+  updateRequiredRefresh: string;
   imageGenerateFailed: string;
   imageSavedDownloads: string;
   shareFailedDownload: string;
@@ -3158,6 +3162,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     databaseRecoveryDesc: 'Локальное хранилище было очищено (возможно, вы очистили данные браузера). Мы попробуем восстановить данные из облака.',
     databaseRecoveryRestore: 'Восстановить из облака',
     databaseRecoveryStartFresh: 'Начать заново',
+    // Update required
+    updateRequiredTitle: 'Доступно обновление',
+    updateRequiredDesc: 'Доступна новая версия приложения. Обновите для получения новых функций и исправлений.',
+    updateRequiredRefresh: 'Обновить приложение',
     imageGenerateFailed: 'Не удалось создать изображение. Попробуйте снова.',
     imageSavedDownloads: 'Изображение сохранено в загрузки!',
     shareFailedDownload: 'Не удалось поделиться. Попробуйте скачать.',
@@ -4731,6 +4739,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     databaseRecoveryDesc: 'Your local storage was cleared (possibly from clearing browser data). We will try to restore your data from the cloud.',
     databaseRecoveryRestore: 'Restore from cloud',
     databaseRecoveryStartFresh: 'Start fresh',
+    // Update required
+    updateRequiredTitle: 'Update Available',
+    updateRequiredDesc: 'A new version of the app is available. Please refresh to get the latest features and fixes.',
+    updateRequiredRefresh: 'Refresh App',
     imageGenerateFailed: 'Failed to generate image. Try again.',
     imageSavedDownloads: 'Image saved to downloads!',
     shareFailedDownload: 'Could not share. Try downloading instead.',
@@ -6304,6 +6316,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     databaseRecoveryDesc: 'Локальне сховище було очищено. Ми спробуємо відновити дані з хмари.',
     databaseRecoveryRestore: 'Відновити з хмари',
     databaseRecoveryStartFresh: 'Почати заново',
+    // Update required
+    updateRequiredTitle: 'Доступне оновлення',
+    updateRequiredDesc: 'Доступна нова версія додатку. Оновіть для отримання нових функцій та виправлень.',
+    updateRequiredRefresh: 'Оновити додаток',
     imageGenerateFailed: 'Не вдалося створити зображення. Спробуйте знову.',
     imageSavedDownloads: 'Зображення збережено в завантаження!',
     shareFailedDownload: 'Не вдалося поділитися. Спробуйте завантажити.',
@@ -7878,6 +7894,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     databaseRecoveryDesc: 'Tu almacenamiento local fue borrado. Intentaremos restaurar tus datos desde la nube.',
     databaseRecoveryRestore: 'Restaurar desde la nube',
     databaseRecoveryStartFresh: 'Empezar de nuevo',
+    // Update required
+    updateRequiredTitle: 'Actualización disponible',
+    updateRequiredDesc: 'Hay una nueva versión de la app disponible. Actualiza para obtener las últimas funciones y correcciones.',
+    updateRequiredRefresh: 'Actualizar app',
     imageGenerateFailed: 'Error al generar imagen. Inténtalo de nuevo.',
     imageSavedDownloads: '¡Imagen guardada en descargas!',
     shareFailedDownload: 'No se pudo compartir. Intenta descargar.',
@@ -9452,6 +9472,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     databaseRecoveryDesc: 'Ihr lokaler Speicher wurde gelöscht. Wir versuchen, Ihre Daten aus der Cloud wiederherzustellen.',
     databaseRecoveryRestore: 'Aus Cloud wiederherstellen',
     databaseRecoveryStartFresh: 'Neu beginnen',
+    // Update required
+    updateRequiredTitle: 'Update verfügbar',
+    updateRequiredDesc: 'Eine neue Version der App ist verfügbar. Aktualisieren Sie für die neuesten Funktionen und Korrekturen.',
+    updateRequiredRefresh: 'App aktualisieren',
     imageGenerateFailed: 'Bild konnte nicht erstellt werden. Versuchen Sie es erneut.',
     imageSavedDownloads: 'Bild in Downloads gespeichert!',
     shareFailedDownload: 'Teilen fehlgeschlagen. Versuchen Sie den Download.',
@@ -11026,6 +11050,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     databaseRecoveryDesc: 'Votre stockage local a été effacé. Nous allons essayer de restaurer vos données depuis le cloud.',
     databaseRecoveryRestore: 'Restaurer depuis le cloud',
     databaseRecoveryStartFresh: 'Recommencer à zéro',
+    // Update required
+    updateRequiredTitle: 'Mise à jour disponible',
+    updateRequiredDesc: 'Une nouvelle version de l\'application est disponible. Actualisez pour obtenir les dernières fonctionnalités et corrections.',
+    updateRequiredRefresh: 'Actualiser l\'app',
     imageGenerateFailed: 'Échec de la génération d\'image. Réessayez.',
     imageSavedDownloads: 'Image enregistrée dans les téléchargements !',
     shareFailedDownload: 'Impossible de partager. Essayez de télécharger.',
@@ -12599,6 +12627,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     databaseRecoveryDesc: 'ローカルストレージがクリアされました。クラウドからデータの復元を試みます。',
     databaseRecoveryRestore: 'クラウドから復元',
     databaseRecoveryStartFresh: '最初から始める',
+    // Update required
+    updateRequiredTitle: 'アップデートがあります',
+    updateRequiredDesc: '新しいバージョンのアプリが利用可能です。最新の機能と修正を入手するには更新してください。',
+    updateRequiredRefresh: 'アプリを更新',
     imageGenerateFailed: '画像の生成に失敗しました。もう一度お試しください。',
     imageSavedDownloads: '画像がダウンロードに保存されました！',
     shareFailedDownload: '共有できませんでした。ダウンロードをお試しください。',
@@ -14132,6 +14164,10 @@ const arabicOverrides: Partial<Translations> = {
   databaseRecoveryDesc: 'تم مسح التخزين المحلي. سنحاول استعادة بياناتك من السحابة.',
   databaseRecoveryRestore: 'استعادة من السحابة',
   databaseRecoveryStartFresh: 'البدء من جديد',
+  // Update required
+  updateRequiredTitle: 'يتوفر تحديث',
+  updateRequiredDesc: 'يتوفر إصدار جديد من التطبيق. قم بالتحديث للحصول على أحدث الميزات والإصلاحات.',
+  updateRequiredRefresh: 'تحديث التطبيق',
   imageGenerateFailed: 'فشل إنشاء الصورة. حاول مرة أخرى.',
   imageSavedDownloads: 'تم حفظ الصورة في التنزيلات!',
   shareFailedDownload: 'تعذرت المشاركة. جرب التنزيل بدلاً من ذلك.',

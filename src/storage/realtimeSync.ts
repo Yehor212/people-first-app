@@ -7,6 +7,7 @@
 
 import { logger } from '@/lib/logger';
 import { addCategorizedBreadcrumb } from '@/lib/sentry';
+import { isAbortError } from '@/lib/validation';
 import { supabase, getCurrentUserId } from '@/lib/supabaseClient';
 import { db } from '@/storage/db';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
@@ -25,20 +26,6 @@ type UserSettingsRow = Database['public']['Tables']['user_settings']['Row'];
 
 // Track active subscriptions
 let realtimeChannel: RealtimeChannel | null = null;
-
-/**
- * P0 Fix: Check if error is an intentional abort (timeout or user navigation)
- * AbortError should NOT be treated as a network error - it's intentional cancellation
- */
-const isAbortError = (error: unknown): boolean => {
-  if (error instanceof DOMException && error.name === 'AbortError') {
-    return true;
-  }
-  if (error instanceof Error && error.name === 'AbortError') {
-    return true;
-  }
-  return false;
-};
 
 /**
  * P0 Fix: Robust network error detection
@@ -758,6 +745,12 @@ export const pullFromCloud = async (): Promise<boolean> => {
 
     return true;
   } catch (error) {
+    // P0 Fix: Handle AbortError gracefully
+    if (isAbortError(error)) {
+      addCategorizedBreadcrumb('sync', 'pullFromCloud aborted', {}, 'warning');
+      logger.warn('[Sync] pullFromCloud aborted (timeout or navigation)');
+      return false;
+    }
     addCategorizedBreadcrumb('sync', 'pullFromCloud failed', { error: (error as Error).message }, 'error');
     logger.error('[Sync] Failed to pull from cloud:', error);
     return false;
@@ -810,6 +803,12 @@ export const pushToCloud = async (): Promise<boolean> => {
 
     return true;
   } catch (error) {
+    // P0 Fix: Handle AbortError gracefully
+    if (isAbortError(error)) {
+      addCategorizedBreadcrumb('sync', 'pushToCloud aborted', {}, 'warning');
+      logger.warn('[Sync] pushToCloud aborted (timeout or navigation)');
+      return false;
+    }
     addCategorizedBreadcrumb('sync', 'pushToCloud failed', { error: (error as Error).message }, 'error');
     logger.error('[Sync] Failed to push to cloud:', error);
     return false;

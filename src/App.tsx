@@ -14,6 +14,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { PWAUpdateNotifier } from "@/components/PWAUpdateNotifier";
 import { SyncStatusListener } from "@/components/SyncStatusListener";
 import { DatabaseRecoveryDialog } from "@/components/DatabaseRecoveryDialog";
+import { UpdateRequiredDialog } from "@/components/UpdateRequiredDialog";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import { preloadShareCardAssets } from "@/lib/shareCards";
@@ -74,6 +75,7 @@ const App = () => (
                     <PWAUpdateNotifier />
                     <SyncStatusListener />
                     <DatabaseRecoveryDialog />
+                    <UpdateRequiredDialog />
                     <BrowserRouter basename={getBasename()}>
                       <Routes>
                         <Route path="/" element={<Index />} />

@@ -22,9 +22,14 @@ import {
   clearNavigationCache,
 } from "./lib/versionCheck";
 import { pauseAllAudio, resumeAllAudio } from "./lib/audioLifecycle";
+import { setupChunkErrorHandler } from "./components/UpdateRequiredDialog";
 
 // Initialize Sentry FIRST for error monitoring (before any other code runs)
 initSentry();
+
+// Setup chunk error handler EARLY to catch lazy loading failures
+// This must be before React renders to catch initial chunk load errors
+setupChunkErrorHandler();
 
 // P1 Fix: Initialize accessibility features (aria-live regions for screen readers)
 initA11y();

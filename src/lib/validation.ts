@@ -154,6 +154,27 @@ export const safeAverage = (values: number[]): number => {
   return values.reduce((a, b) => a + b, 0) / values.length;
 };
 
+/**
+ * Check if an error is an AbortError (DOMException with name 'AbortError' or code 20).
+ * Useful for handling intentional operation cancellations without logging them as errors.
+ * Common in fetch with AbortController, audio operations, and other async APIs.
+ *
+ * @param error - The error to check
+ * @returns true if error is an AbortError, false otherwise
+ */
+export const isAbortError = (error: unknown): boolean => {
+  if (error instanceof DOMException) {
+    return error.name === 'AbortError' || error.code === 20;
+  }
+  // Some environments may throw a generic Error with 'abort' in the message
+  if (error instanceof Error) {
+    return error.name === 'AbortError' ||
+           error.message.toLowerCase().includes('aborted') ||
+           error.message.toLowerCase().includes('abort');
+  }
+  return false;
+};
+
 // Prototype pollution prevention - recursive
 export const sanitizeObject = <T extends Record<string, unknown>>(obj: T): T => {
   if (obj === null || typeof obj !== 'object') {
