@@ -1255,19 +1255,63 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 </div>
               )}
 
-              {/* Habits completed */}
-              {selectedDayData.habits.length > 0 && (
+              {/* Habits Details - Shows completed and missed habits with icons */}
+              {habits.length > 0 && (
                 <motion.div
                   className="mx-4 mb-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mb-3">
                     <Target className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{t.habitsCompleted}</span>
+                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                      {t.habitsCompleted} ({selectedDayData.habits.length}/{habits.length})
+                    </span>
                   </div>
-                  <p className="text-sm text-foreground/80">{selectedDayData.habits.join(' • ')}</p>
+
+                  {/* Completed habits */}
+                  {selectedDayData.habits.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2">
+                      {selectedDayData.habits.map((habitName, idx) => {
+                        const habit = habits.find(h => h.name === habitName);
+                        return (
+                          <motion.div
+                            key={habitName}
+                            className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/20 rounded-full"
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: idx * 0.05 }}
+                          >
+                            <span className="text-sm">{habit?.icon || '✓'}</span>
+                            <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{habitName}</span>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Missed habits */}
+                  {(() => {
+                    const missedHabits = habits.filter(h => !selectedDayData.habits.includes(h.name));
+                    if (missedHabits.length === 0) return null;
+                    return (
+                      <div className="flex flex-wrap gap-2 pt-2 border-t border-emerald-500/20">
+                        {missedHabits.map((habit, idx) => (
+                          <motion.div
+                            key={habit.id}
+                            className="flex items-center gap-1.5 px-2.5 py-1 bg-red-500/10 rounded-full"
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ delay: idx * 0.05 }}
+                          >
+                            <span className="text-sm opacity-50">{habit.icon}</span>
+                            <span className="text-xs font-medium text-red-700 dark:text-red-300">{habit.name}</span>
+                          </motion.div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </motion.div>
               )}
 
