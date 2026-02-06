@@ -427,6 +427,12 @@ export interface Translations {
   totalFocus: string;
   allTime: string;
   habitsCompleted: string;
+  habitCalendar: string;
+  completions: string;
+  perfectDays: string;
+  avgCompletion: string;
+  noHabitsCompleted: string;
+  missedHabits: string;
   totalTimes: string;
   moodDistribution: string;
   moodTrend: string;
@@ -853,8 +859,7 @@ export interface Translations {
   audioError: string;
 
   // Leaderboard (P1 Fix)
-  weekly: string;
-  monthly: string;
+  // Note: weekly/monthly defined above in Personal Goals section
   leaderboard: string;
   leaderboardType: string;
   leaderboardTimeout: string;
@@ -1747,6 +1752,30 @@ export interface Translations {
   monthShortOct: string;
   monthShortNov: string;
   monthShortDec: string;
+
+  // Weekly Review (Premium Stats)
+  weeklyReview: string;
+  thisWeekSummary: string;
+  weeklyRecommendationHabits: string;
+  weeklyRecommendationFocus: string;
+  weeklyRecommendationMood: string;
+  weeklyRecommendationGreat: string;
+  bestDayWas: string;
+  bestDayDesc: string;
+  perfectDaysDesc: string;
+  forNextWeek: string;
+  viewDetails: string;
+
+  // Comeback Challenge (Retention)
+  // Note: welcomeBack defined above in Inner World Garden section
+  missedYouLong: string;
+  missedYouWeek: string;
+  letsGetBackOnTrack: string;
+  comebackChallenge: string;
+  comebackChallengeDesc: string;
+  acceptChallenge: string;
+  youEarned: string;
+  awesome: string;
 }
 
 // Base translations (RTL languages added dynamically below)
@@ -2162,6 +2191,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     totalFocus: 'Всего фокуса',
     allTime: 'За все время',
     habitsCompleted: 'Привычки выполнены',
+    habitCalendar: 'Календарь привычек',
+    completions: 'Выполнений',
+    perfectDays: 'Идеальных дней',
+    avgCompletion: 'Средний %',
+    noHabitsCompleted: 'Нет выполненных привычек',
+    missedHabits: 'Пропущено',
     totalTimes: 'Всего раз',
     moodDistribution: 'Распределение настроения',
     moodTrend: 'Тренд настроения',
@@ -2579,8 +2614,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioError: 'Ошибка аудио',
 
     // Leaderboard (P1 Fix)
-    weekly: 'Неделя',
-    monthly: 'Месяц',
     leaderboard: 'Лидерборд',
     leaderboardType: 'Тип рейтинга',
     leaderboardTimeout: 'Загрузка слишком долгая. Попробуйте снова.',
@@ -3427,6 +3460,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     active: 'Активно',
     empty: 'Пусто',
     perfect: 'Идеально',
+
+    // Weekly Review
+    weeklyReview: 'Обзор недели',
+    thisWeekSummary: 'Ваша неделя в деталях',
+    weeklyRecommendationHabits: 'Сосредоточьтесь на одной привычке. Стабильность важнее совершенства.',
+    weeklyRecommendationFocus: 'Попробуйте добавить одну 25-минутную сессию фокуса в день.',
+    weeklyRecommendationMood: 'Попробуйте вести дневник благодарности для улучшения настроения.',
+    weeklyRecommendationGreat: 'Потрясающая неделя! Сохраните этот импульс на следующую неделю.',
+    bestDayWas: 'Лучший день:',
+    bestDayDesc: 'В этот день у вас было больше всего достижений',
+    perfectDaysDesc: 'Все привычки + 30 мин фокус',
+    forNextWeek: 'На следующую неделю',
+    viewDetails: 'Подробнее',
+
+    // Comeback Challenge (new keys)
+    missedYouLong: 'Мы скучали! Вот специальный челлендж для вас.',
+    missedYouWeek: 'Прошла неделя! Давайте вернёмся в строй.',
+    letsGetBackOnTrack: 'Давайте вернёмся в ритм вместе!',
+    comebackChallenge: 'Челлендж возвращения',
+    comebackChallengeDesc: 'Выполняйте {habits}+ привычек {days} дней подряд',
+    acceptChallenge: 'Принять челлендж',
+    youEarned: 'Вы заработали',
+    awesome: 'Отлично!',
   },
 
   en: {
@@ -3840,6 +3896,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     totalFocus: 'Total focus',
     allTime: 'All time',
     habitsCompleted: 'Habits completed',
+    habitCalendar: 'Habit Calendar',
+    completions: 'Completions',
+    perfectDays: 'Perfect Days',
+    avgCompletion: 'Avg Rate',
+    noHabitsCompleted: 'No habits completed',
+    missedHabits: 'Missed',
     totalTimes: 'Total times',
     moodDistribution: 'Mood distribution',
     moodTrend: 'Mood Trend',
@@ -4257,8 +4319,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioError: 'Audio error',
 
     // Leaderboard (P1 Fix)
-    weekly: 'Weekly',
-    monthly: 'Monthly',
     leaderboard: 'Leaderboard',
     leaderboardType: 'Leaderboard type',
     leaderboardTimeout: 'Loading took too long. Please try again.',
@@ -5105,6 +5165,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     active: 'Active',
     empty: 'Empty',
     perfect: 'Perfect',
+
+    // Weekly Review
+    weeklyReview: 'Weekly Review',
+    thisWeekSummary: 'Your week at a glance',
+    weeklyRecommendationHabits: 'Focus on building one habit at a time. Consistency beats perfection.',
+    weeklyRecommendationFocus: 'Try adding one 25-minute focus session per day to boost productivity.',
+    weeklyRecommendationMood: 'Consider adding gratitude journaling to improve your daily mood.',
+    weeklyRecommendationGreat: 'Outstanding week! Keep this momentum going into next week.',
+    bestDayWas: 'Best day was',
+    bestDayDesc: 'You achieved the most on this day',
+    perfectDaysDesc: 'All habits + 30min focus',
+    forNextWeek: 'For next week',
+    viewDetails: 'View details',
+
+    // Comeback Challenge (new keys)
+    missedYouLong: "We've missed you! Here's a special challenge.",
+    missedYouWeek: "It's been a week! Let's get back on track.",
+    letsGetBackOnTrack: "Let's get back on track together!",
+    comebackChallenge: 'Comeback Challenge',
+    comebackChallengeDesc: 'Complete {habits}+ habits for {days} days',
+    acceptChallenge: 'Accept Challenge',
+    youEarned: 'You earned',
+    awesome: 'Awesome!',
   },
 
   uk: {
@@ -5518,6 +5601,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     totalFocus: 'Всього фокусу',
     allTime: 'За весь час',
     habitsCompleted: 'Звички виконані',
+    habitCalendar: 'Календар звичок',
+    completions: 'Виконань',
+    perfectDays: 'Ідеальних днів',
+    avgCompletion: 'Середній %',
+    noHabitsCompleted: 'Немає виконаних звичок',
+    missedHabits: 'Пропущено',
     totalTimes: 'Всього разів',
     moodDistribution: 'Розподіл настрою',
     moodTrend: 'Тренд настрою',
@@ -5935,8 +6024,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioError: 'Помилка аудіо',
 
     // Leaderboard (P1 Fix)
-    weekly: 'Тиждень',
-    monthly: 'Місяць',
     leaderboard: 'Лідерборд',
     leaderboardType: 'Тип рейтингу',
     leaderboardTimeout: 'Завантаження тривало занадто довго. Спробуйте ще раз.',
@@ -6783,6 +6870,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     active: 'Активно',
     empty: 'Порожньо',
     perfect: 'Ідеально',
+
+    // Weekly Review
+    weeklyReview: 'Огляд тижня',
+    thisWeekSummary: 'Ваш тиждень у деталях',
+    weeklyRecommendationHabits: 'Зосередьтеся на одній звичці. Стабільність важливіша за досконалість.',
+    weeklyRecommendationFocus: 'Спробуйте додати одну 25-хвилинну сесію фокусу на день.',
+    weeklyRecommendationMood: 'Спробуйте вести щоденник вдячності для покращення настрою.',
+    weeklyRecommendationGreat: 'Чудовий тиждень! Збережіть цей імпульс на наступний тиждень.',
+    bestDayWas: 'Найкращий день:',
+    bestDayDesc: 'У цей день ви мали найбільше досягнень',
+    perfectDaysDesc: 'Усі звички + 30 хв фокус',
+    forNextWeek: 'На наступний тиждень',
+    viewDetails: 'Детальніше',
+
+    // Comeback Challenge (new keys)
+    missedYouLong: 'Ми сумували! Ось спеціальний челендж для вас.',
+    missedYouWeek: 'Минув тиждень! Давайте повернемось у ритм.',
+    letsGetBackOnTrack: 'Повернімось у ритм разом!',
+    comebackChallenge: 'Челендж повернення',
+    comebackChallengeDesc: 'Виконуйте {habits}+ звичок {days} днів поспіль',
+    acceptChallenge: 'Прийняти челендж',
+    youEarned: 'Ви заробили',
+    awesome: 'Чудово!',
   },
 
   es: {
@@ -7197,6 +7307,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     totalFocus: 'Enfoque total',
     allTime: 'Todo el tiempo',
     habitsCompleted: 'Hábitos completados',
+    habitCalendar: 'Calendario de hábitos',
+    completions: 'Completados',
+    perfectDays: 'Días perfectos',
+    avgCompletion: 'Promedio',
+    noHabitsCompleted: 'Sin hábitos completados',
+    missedHabits: 'Perdidos',
     totalTimes: 'Veces totales',
     moodDistribution: 'Distribución del ánimo',
     moodTrend: 'Tendencia del ánimo',
@@ -7614,8 +7730,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioError: 'Error de audio',
 
     // Leaderboard (P1 Fix)
-    weekly: 'Semanal',
-    monthly: 'Mensual',
     leaderboard: 'Clasificación',
     leaderboardType: 'Tipo de clasificación',
     leaderboardTimeout: 'La carga tardó demasiado. Inténtalo de nuevo.',
@@ -8462,6 +8576,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     active: 'Activo',
     empty: 'Vacío',
     perfect: 'Perfecto',
+
+    // Weekly Review
+    weeklyReview: 'Resumen semanal',
+    thisWeekSummary: 'Tu semana de un vistazo',
+    weeklyRecommendationHabits: 'Concéntrate en un hábito a la vez. La constancia supera a la perfección.',
+    weeklyRecommendationFocus: 'Intenta agregar una sesión de enfoque de 25 minutos por día.',
+    weeklyRecommendationMood: 'Considera llevar un diario de gratitud para mejorar tu estado de ánimo.',
+    weeklyRecommendationGreat: '¡Semana increíble! Mantén este impulso para la próxima semana.',
+    bestDayWas: 'Mejor día:',
+    bestDayDesc: 'Lograste más en este día',
+    perfectDaysDesc: 'Todos los hábitos + 30min enfoque',
+    forNextWeek: 'Para la próxima semana',
+    viewDetails: 'Ver detalles',
+
+    // Comeback Challenge (new keys)
+    missedYouLong: '¡Te extrañamos! Aquí tienes un desafío especial.',
+    missedYouWeek: '¡Ha pasado una semana! Volvamos al ritmo.',
+    letsGetBackOnTrack: '¡Volvamos juntos al ritmo!',
+    comebackChallenge: 'Desafío de regreso',
+    comebackChallengeDesc: 'Completa {habits}+ hábitos durante {days} días',
+    acceptChallenge: 'Aceptar desafío',
+    youEarned: 'Ganaste',
+    awesome: '¡Genial!',
   },
 
   de: {
@@ -8876,6 +9013,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     totalFocus: 'Gesamtfokus',
     allTime: 'Alle Zeit',
     habitsCompleted: 'Gewohnheiten abgeschlossen',
+    habitCalendar: 'Gewohnheitskalender',
+    completions: 'Abschlüsse',
+    perfectDays: 'Perfekte Tage',
+    avgCompletion: 'Durchschnitt',
+    noHabitsCompleted: 'Keine Gewohnheiten abgeschlossen',
+    missedHabits: 'Verpasst',
     totalTimes: 'Insgesamt Mal',
     moodDistribution: 'Stimmungsverteilung',
     moodTrend: 'Stimmungstrend',
@@ -9293,8 +9436,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioError: 'Audiofehler',
 
     // Leaderboard (P1 Fix)
-    weekly: 'Wöchentlich',
-    monthly: 'Monatlich',
     leaderboard: 'Bestenliste',
     leaderboardType: 'Listentyp',
     leaderboardTimeout: 'Laden dauerte zu lange. Bitte erneut versuchen.',
@@ -10141,6 +10282,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     active: 'Aktiv',
     empty: 'Leer',
     perfect: 'Perfekt',
+
+    // Weekly Review
+    weeklyReview: 'Wochenrückblick',
+    thisWeekSummary: 'Ihre Woche auf einen Blick',
+    weeklyRecommendationHabits: 'Konzentrieren Sie sich auf eine Gewohnheit nach der anderen. Beständigkeit schlägt Perfektion.',
+    weeklyRecommendationFocus: 'Versuchen Sie, eine 25-minütige Fokus-Sitzung pro Tag hinzuzufügen.',
+    weeklyRecommendationMood: 'Erwägen Sie ein Dankbarkeitstagebuch, um Ihre Stimmung zu verbessern.',
+    weeklyRecommendationGreat: 'Hervorragende Woche! Behalten Sie diesen Schwung bei.',
+    bestDayWas: 'Bester Tag war',
+    bestDayDesc: 'An diesem Tag haben Sie am meisten erreicht',
+    perfectDaysDesc: 'Alle Gewohnheiten + 30 Min Fokus',
+    forNextWeek: 'Für nächste Woche',
+    viewDetails: 'Details anzeigen',
+
+    // Comeback Challenge (new keys)
+    missedYouLong: 'Wir haben dich vermisst! Hier ist eine besondere Herausforderung.',
+    missedYouWeek: 'Eine Woche ist vergangen! Lass uns wieder in Schwung kommen.',
+    letsGetBackOnTrack: 'Lass uns gemeinsam wieder in Schwung kommen!',
+    comebackChallenge: 'Comeback-Challenge',
+    comebackChallengeDesc: 'Erfülle {habits}+ Gewohnheiten an {days} Tagen',
+    acceptChallenge: 'Challenge annehmen',
+    youEarned: 'Du hast verdient',
+    awesome: 'Toll!',
   },
 
   fr: {
@@ -10555,6 +10719,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     totalFocus: 'Focus total',
     allTime: 'Tout le temps',
     habitsCompleted: 'Habitudes complétées',
+    habitCalendar: 'Calendrier des habitudes',
+    completions: 'Complétions',
+    perfectDays: 'Jours parfaits',
+    avgCompletion: 'Moyenne',
+    noHabitsCompleted: 'Aucune habitude complétée',
+    missedHabits: 'Manquées',
     totalTimes: 'Fois au total',
     moodDistribution: 'Distribution de l\'humeur',
     moodTrend: 'Tendance de l\'humeur',
@@ -10972,8 +11142,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioError: 'Erreur audio',
 
     // Leaderboard (P1 Fix)
-    weekly: 'Hebdomadaire',
-    monthly: 'Mensuel',
     leaderboard: 'Classement',
     leaderboardType: 'Type de classement',
     leaderboardTimeout: 'Le chargement a pris trop de temps. Veuillez réessayer.',
@@ -11820,6 +11988,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     active: 'Actif',
     empty: 'Vide',
     perfect: 'Parfait',
+
+    // Weekly Review
+    weeklyReview: 'Bilan hebdomadaire',
+    thisWeekSummary: 'Votre semaine en un coup d\'œil',
+    weeklyRecommendationHabits: 'Concentrez-vous sur une habitude à la fois. La constance bat la perfection.',
+    weeklyRecommendationFocus: 'Essayez d\'ajouter une session de focus de 25 minutes par jour.',
+    weeklyRecommendationMood: 'Pensez à tenir un journal de gratitude pour améliorer votre humeur.',
+    weeklyRecommendationGreat: 'Semaine exceptionnelle ! Gardez cet élan pour la semaine prochaine.',
+    bestDayWas: 'Meilleur jour :',
+    bestDayDesc: 'Vous avez accompli le plus ce jour-là',
+    perfectDaysDesc: 'Toutes les habitudes + 30min focus',
+    forNextWeek: 'Pour la semaine prochaine',
+    viewDetails: 'Voir les détails',
+
+    // Comeback Challenge (new keys)
+    missedYouLong: 'Tu nous as manqué ! Voici un défi spécial.',
+    missedYouWeek: 'Une semaine s\'est écoulée ! Reprenons le rythme.',
+    letsGetBackOnTrack: 'Reprenons le rythme ensemble !',
+    comebackChallenge: 'Défi de retour',
+    comebackChallengeDesc: 'Complète {habits}+ habitudes pendant {days} jours',
+    acceptChallenge: 'Accepter le défi',
+    youEarned: 'Tu as gagné',
+    awesome: 'Génial !',
   },
 
   ja: {
@@ -12233,6 +12424,12 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     totalFocus: '総集中時間',
     allTime: '全期間',
     habitsCompleted: '完了した習慣',
+    habitCalendar: '習慣カレンダー',
+    completions: '完了数',
+    perfectDays: 'パーフェクトデイ',
+    avgCompletion: '平均達成率',
+    noHabitsCompleted: '完了した習慣なし',
+    missedHabits: '未完了',
     totalTimes: '合計回数',
     moodDistribution: '気分の分布',
     moodTrend: '気分の傾向',
@@ -12650,8 +12847,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioError: 'オーディオエラー',
 
     // Leaderboard (P1 Fix)
-    weekly: '週間',
-    monthly: '月間',
     leaderboard: 'リーダーボード',
     leaderboardType: 'ランキングタイプ',
     leaderboardTimeout: '読み込みに時間がかかりすぎました。もう一度お試しください。',
@@ -13498,6 +13693,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     active: 'アクティブ',
     empty: '空',
     perfect: 'パーフェクト',
+
+    // Weekly Review
+    weeklyReview: '週間レビュー',
+    thisWeekSummary: '今週のまとめ',
+    weeklyRecommendationHabits: '一度に一つの習慣に集中しましょう。継続は完璧に勝ります。',
+    weeklyRecommendationFocus: '1日25分のフォーカスセッションを追加してみましょう。',
+    weeklyRecommendationMood: '感謝日記を書いて気分を改善しましょう。',
+    weeklyRecommendationGreat: '素晴らしい週でした！来週もこの調子で頑張りましょう。',
+    bestDayWas: 'ベストデー:',
+    bestDayDesc: 'この日が最も達成感がありました',
+    perfectDaysDesc: '全習慣 + 30分フォーカス',
+    forNextWeek: '来週に向けて',
+    viewDetails: '詳細を見る',
+
+    // Comeback Challenge (new keys)
+    missedYouLong: 'お待ちしていました！特別チャレンジをご用意しました。',
+    missedYouWeek: '1週間ぶりですね！また始めましょう。',
+    letsGetBackOnTrack: '一緒にリズムを取り戻しましょう！',
+    comebackChallenge: 'カムバックチャレンジ',
+    comebackChallengeDesc: '{days}日間で{habits}+の習慣を達成',
+    acceptChallenge: 'チャレンジを受ける',
+    youEarned: '獲得',
+    awesome: 'すごい！',
   },
 };
 
@@ -13920,6 +14138,12 @@ const arabicOverrides: Partial<Translations> = {
   totalFocus: 'إجمالي التركيز',
   allTime: 'كل الوقت',
   habitsCompleted: 'العادات المكتملة',
+  habitCalendar: 'تقويم العادات',
+  completions: 'الإنجازات',
+  perfectDays: 'أيام مثالية',
+  avgCompletion: 'المتوسط',
+  noHabitsCompleted: 'لا توجد عادات مكتملة',
+  missedHabits: 'فائتة',
   totalTimes: 'إجمالي المرات',
   moodDistribution: 'توزيع المزاج',
   moodTrend: 'اتجاه المزاج',
@@ -14225,8 +14449,6 @@ const arabicOverrides: Partial<Translations> = {
   audioError: 'خطأ في الصوت',
 
   // Leaderboard (P1 Fix)
-  weekly: 'أسبوعي',
-  monthly: 'شهري',
   leaderboard: 'لوحة المتصدرين',
   leaderboardType: 'نوع التصنيف',
   leaderboardTimeout: 'استغرق التحميل وقتاً طويلاً. يرجى المحاولة مرة أخرى.',
@@ -15246,6 +15468,29 @@ const arabicOverrides: Partial<Translations> = {
   onboardingHabitRead: 'قراءة',
   onboardingHabitNoScreens: 'بدون شاشات',
   onboardingHabitDailyReview: 'مراجعة يومية',
+
+  // Weekly Review
+  weeklyReview: 'مراجعة الأسبوع',
+  thisWeekSummary: 'أسبوعك في لمحة',
+  weeklyRecommendationHabits: 'ركز على عادة واحدة في كل مرة. الاستمرارية تتفوق على الكمال.',
+  weeklyRecommendationFocus: 'حاول إضافة جلسة تركيز 25 دقيقة يومياً.',
+  weeklyRecommendationMood: 'جرب كتابة يوميات الامتنان لتحسين مزاجك.',
+  weeklyRecommendationGreat: 'أسبوع رائع! حافظ على هذا الزخم للأسبوع القادم.',
+  bestDayWas: 'أفضل يوم:',
+  bestDayDesc: 'حققت الأكثر في هذا اليوم',
+  perfectDaysDesc: 'كل العادات + 30 دقيقة تركيز',
+  forNextWeek: 'للأسبوع القادم',
+  viewDetails: 'عرض التفاصيل',
+
+  // Comeback Challenge (new keys)
+  missedYouLong: 'افتقدناك! إليك تحدي خاص.',
+  missedYouWeek: 'مر أسبوع! لنعد إلى المسار.',
+  letsGetBackOnTrack: 'لنعد إلى المسار معاً!',
+  comebackChallenge: 'تحدي العودة',
+  comebackChallengeDesc: 'أكمل {habits}+ عادات لمدة {days} أيام',
+  acceptChallenge: 'قبول التحدي',
+  youEarned: 'ربحت',
+  awesome: 'رائع!',
 };
 
 // Hebrew RTL overrides (merged with English)
@@ -15624,6 +15869,12 @@ const hebrewOverrides: Partial<Translations> = {
   totalFocus: 'סה"כ מיקוד',
   allTime: 'כל הזמן',
   habitsCompleted: 'הרגלים הושלמו',
+  habitCalendar: 'לוח שנה להרגלים',
+  completions: 'השלמות',
+  perfectDays: 'ימים מושלמים',
+  avgCompletion: 'ממוצע',
+  noHabitsCompleted: 'אין הרגלים שהושלמו',
+  missedHabits: 'הוחמצו',
   totalTimes: 'סה"כ פעמים',
   moodDistribution: 'התפלגות מצב רוח',
   moodTrend: 'מגמת מצב רוח',
@@ -15939,8 +16190,6 @@ const hebrewOverrides: Partial<Translations> = {
   errorBoundaryReload: 'טען מחדש',
 
   // Leaderboard (P1 Fix)
-  weekly: 'שבועי',
-  monthly: 'חודשי',
   leaderboard: 'טבלת מובילים',
   leaderboardType: 'סוג דירוג',
   leaderboardTimeout: 'הטעינה ארכה זמן רב מדי. נא לנסות שוב.',
@@ -15955,6 +16204,29 @@ const hebrewOverrides: Partial<Translations> = {
   beFirst: 'היה הראשון להצטרף!',
   best: 'הכי טוב',
   nameUpdated: 'שם התצוגה עודכן!',
+
+  // Weekly Review
+  weeklyReview: 'סיכום שבועי',
+  thisWeekSummary: 'השבוע שלך במבט אחד',
+  weeklyRecommendationHabits: 'התמקד בהרגל אחד בכל פעם. עקביות מנצחת שלמות.',
+  weeklyRecommendationFocus: 'נסה להוסיף מפגש ריכוז של 25 דקות ביום.',
+  weeklyRecommendationMood: 'שקול לכתוב יומן הכרת תודה לשיפור מצב הרוח.',
+  weeklyRecommendationGreat: 'שבוע מדהים! שמור על המומנטום הזה לשבוע הבא.',
+  bestDayWas: 'היום הטוב ביותר:',
+  bestDayDesc: 'השגת הכי הרבה ביום הזה',
+  perfectDaysDesc: 'כל ההרגלים + 30 דקות ריכוז',
+  forNextWeek: 'לשבוע הבא',
+  viewDetails: 'צפה בפרטים',
+
+  // Comeback Challenge (new keys)
+  missedYouLong: 'התגעגענו! הנה אתגר מיוחד.',
+  missedYouWeek: 'עבר שבוע! בוא נחזור לקצב.',
+  letsGetBackOnTrack: 'בוא נחזור לקצב יחד!',
+  comebackChallenge: 'אתגר חזרה',
+  comebackChallengeDesc: 'השלם {habits}+ הרגלים במשך {days} ימים',
+  acceptChallenge: 'קבל את האתגר',
+  youEarned: 'הרווחת',
+  awesome: 'מדהים!',
 };
 
 // Add RTL languages with English fallback

@@ -12,6 +12,8 @@ export { RingDetailSheet } from './RingDetailSheet';
 export type { RingType } from './RingDetailSheet';
 export { MoodWeather } from './MoodWeather';
 export { WeekCrystal } from './WeekCrystal';
+export { HabitCalendar } from './HabitCalendar';
+export { WeeklyReview } from './WeeklyReview';
 
 // Phase 13 Components - "Візуальні Світи"
 export { TrophyHall } from './TrophyHall';

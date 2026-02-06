@@ -34,6 +34,8 @@ import {
   EmotionGalaxy,
   CrystalCalendar,
   RingDetailSheet,
+  HabitCalendar,
+  WeeklyReview,
 } from '@/components/stats';
 import type { RingType } from '@/components/stats';
 
@@ -695,6 +697,19 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         focusMinutes={stats.allTimeFocusMinutes}
         habitsCompleted={stats.totalHabitCompletions}
       />
+
+      {/* Weekly Review - Premium Weekly Summary */}
+      <WeeklyReview
+        habits={habits}
+        moods={moods}
+        focusSessions={focusSessions}
+        currentStreak={stats.currentStreak}
+      />
+
+      {/* Habit Calendar - GitHub-style contribution graph */}
+      {habits.length > 0 && (
+        <HabitCalendar habits={habits} />
+      )}
 
       {/* v1.4.0: Weekly Calendar - moved from My World tab */}
       <WeeklyCalendar moods={moods} habits={habits} />
