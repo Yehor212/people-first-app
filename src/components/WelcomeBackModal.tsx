@@ -7,13 +7,56 @@
  * - Streak status (protected or lost)
  * - Habit suggestions based on past success rate
  * - Quick mood check-in option
+ * - Comeback Challenge for bonus XP (Stage 5 retention)
  */
 
 import { useState } from 'react';
-import { Heart, TrendingUp, Calendar, Sparkles, X } from 'lucide-react';
+import { Heart, TrendingUp, Calendar, Sparkles, X, Zap, Target } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { MoodEntry, Habit } from '@/types';
+
+// Comeback Challenge storage key
+const COMEBACK_CHALLENGE_KEY = 'zenflow_comeback_challenge';
+
+interface ComebackChallenge {
+  startDate: string;
+  targetDays: number;
+  targetHabits: number;
+  bonusXp: number;
+  completedDays: number;
+  status: 'active' | 'completed' | 'expired';
+}
+
+/**
+ * Get or create comeback challenge
+ */
+function getComebackChallenge(): ComebackChallenge | null {
+  const stored = localStorage.getItem(COMEBACK_CHALLENGE_KEY);
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored) as ComebackChallenge;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Start a new comeback challenge
+ */
+function startComebackChallenge(): ComebackChallenge {
+  const challenge: ComebackChallenge = {
+    startDate: new Date().toISOString().split('T')[0],
+    targetDays: 3,
+    targetHabits: 3,
+    bonusXp: 100,
+    completedDays: 0,
+    status: 'active',
+  };
+  localStorage.setItem(COMEBACK_CHALLENGE_KEY, JSON.stringify(challenge));
+  return challenge;
+}
 
 interface WelcomeBackModalProps {
   daysAway: number;
@@ -22,6 +65,7 @@ interface WelcomeBackModalProps {
   topHabits: Array<{ habit: Habit; successRate: number }>;
   onClose: () => void;
   onQuickMoodLog?: (mood: MoodEntry['mood']) => void;
+  onStartComebackChallenge?: () => void;
 }
 
 export function WelcomeBackModal({
@@ -147,6 +191,63 @@ export function WelcomeBackModal({
               </div>
             </div>
           )}
+
+          {/* Comeback Challenge Offer */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="p-4 rounded-xl bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/30"
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 bg-violet-500/20 rounded-lg">
+                <Target className="w-5 h-5 text-violet-600 dark:text-violet-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-foreground flex items-center gap-2">
+                  {t.comebackChallengeTitle || 'Comeback Challenge'}
+                  <Zap className="w-4 h-4 text-amber-500" />
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {t.comebackChallengeSubtitle || 'Special bonus for returning!'}
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  {t.comebackChallengeGoal || 'Complete 3 habits for 3 days'}
+                </span>
+                <span className="font-bold text-amber-600 dark:text-amber-400">
+                  +100 XP
+                </span>
+              </div>
+              <div className="h-2 bg-violet-500/10 rounded-full overflow-hidden">
+                <motion.div
+                  className="h-full bg-gradient-to-r from-violet-500 to-purple-500"
+                  initial={{ width: 0 }}
+                  animate={{ width: '0%' }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                {t.comebackChallengeTime || '3 days to complete'}
+              </p>
+            </div>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => {
+                startComebackChallenge();
+                onClose();
+              }}
+              className="w-full py-2.5 px-4 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-xl font-medium hover:from-violet-600 hover:to-purple-600 transition-all zen-shadow-sm flex items-center justify-center gap-2"
+            >
+              <Target className="w-4 h-4" />
+              {t.comebackChallengeAccept || 'Accept Challenge'}
+            </motion.button>
+          </motion.div>
 
           {/* Quick Mood Check-in */}
           {onQuickMoodLog && (

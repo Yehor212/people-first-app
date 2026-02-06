@@ -1420,6 +1420,13 @@ export interface Translations {
   reengageMoodLogged: string;
   reengageContinue: string;
 
+  // Comeback Challenge (Stage 5 Retention)
+  comebackChallengeTitle: string;
+  comebackChallengeSubtitle: string;
+  comebackChallengeGoal: string;
+  comebackChallengeTime: string;
+  comebackChallengeAccept: string;
+
   // Trends View (Long-term Analytics)
   trendsTitle: string;
   trendsAvgMood: string;
@@ -3070,6 +3077,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     reengageMoodLogged: 'Настроение записано!',
     reengageContinue: 'Продолжить!',
 
+    // Comeback Challenge (Stage 5 Retention)
+    comebackChallengeTitle: 'Челлендж возвращения',
+    comebackChallengeSubtitle: 'Особый бонус за возвращение!',
+    comebackChallengeGoal: 'Выполните 3 привычки 3 дня подряд',
+    comebackChallengeTime: '3 дня на выполнение',
+    comebackChallengeAccept: 'Принять челлендж',
+
     // Trends View (Long-term Analytics)
     trendsTitle: 'Ваши Тренды',
     trendsAvgMood: 'Средн. Настр.',
@@ -4697,6 +4711,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     reengageMoodLogged: 'Mood logged!',
     reengageContinue: "Let's continue!",
 
+    // Comeback Challenge (Stage 5 Retention)
+    comebackChallengeTitle: 'Comeback Challenge',
+    comebackChallengeSubtitle: 'Special bonus for returning!',
+    comebackChallengeGoal: 'Complete 3 habits for 3 days',
+    comebackChallengeTime: '3 days to complete',
+    comebackChallengeAccept: 'Accept Challenge',
+
     // Trends View (Long-term Analytics)
     trendsTitle: 'Your Trends',
     trendsAvgMood: 'Avg Mood',
@@ -6323,6 +6344,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     reengageQuickMood: 'Як ви себе почуваєте?',
     reengageMoodLogged: 'Настрій записано!',
     reengageContinue: 'Продовжити!',
+
+    // Comeback Challenge (Stage 5 Retention)
+    comebackChallengeTitle: 'Челендж повернення',
+    comebackChallengeSubtitle: 'Особливий бонус за повернення!',
+    comebackChallengeGoal: 'Виконайте 3 звички 3 дні поспіль',
+    comebackChallengeTime: '3 дні на виконання',
+    comebackChallengeAccept: 'Прийняти челендж',
 
     // Trends View (Long-term Analytics)
     trendsTitle: 'Ваші Тенденції',
@@ -7952,6 +7980,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     reengageMoodLogged: '¡Estado de ánimo registrado!',
     reengageContinue: '¡Continuar!',
 
+    // Comeback Challenge (Stage 5 Retention)
+    comebackChallengeTitle: 'Desafío de regreso',
+    comebackChallengeSubtitle: '¡Bono especial por volver!',
+    comebackChallengeGoal: 'Completa 3 hábitos durante 3 días',
+    comebackChallengeTime: '3 días para completar',
+    comebackChallengeAccept: 'Aceptar desafío',
+
     // Trends View (Long-term Analytics)
     trendsTitle: 'Tus Tendencias',
     trendsAvgMood: 'Ánimo Prom.',
@@ -9579,6 +9614,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     reengageQuickMood: 'Wie fühlst du dich?',
     reengageMoodLogged: 'Stimmung aufgezeichnet!',
     reengageContinue: 'Weiter geht\'s!',
+
+    // Comeback Challenge (Stage 5 Retention)
+    comebackChallengeTitle: 'Comeback-Challenge',
+    comebackChallengeSubtitle: 'Besonderer Bonus für die Rückkehr!',
+    comebackChallengeGoal: 'Erfülle 3 Gewohnheiten an 3 Tagen',
+    comebackChallengeTime: '3 Tage zum Abschließen',
+    comebackChallengeAccept: 'Challenge annehmen',
 
     // Trends View (Long-term Analytics)
     trendsTitle: 'Deine Trends',
@@ -11208,6 +11250,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     reengageMoodLogged: 'Humeur enregistrée!',
     reengageContinue: 'Continuer!',
 
+    // Comeback Challenge (Stage 5 Retention)
+    comebackChallengeTitle: 'Défi de retour',
+    comebackChallengeSubtitle: 'Bonus spécial pour ton retour!',
+    comebackChallengeGoal: 'Complète 3 habitudes pendant 3 jours',
+    comebackChallengeTime: '3 jours pour compléter',
+    comebackChallengeAccept: 'Accepter le défi',
+
     // Trends View (Long-term Analytics)
     trendsTitle: 'Tes Tendances',
     trendsAvgMood: 'Humeur Moy.',
@@ -12835,6 +12884,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     reengageMoodLogged: '気分を記録しました！',
     reengageContinue: '続けよう！',
 
+    // Comeback Challenge (Stage 5 Retention)
+    comebackChallengeTitle: 'カムバックチャレンジ',
+    comebackChallengeSubtitle: '復帰特別ボーナス！',
+    comebackChallengeGoal: '3日間で3つの習慣を達成',
+    comebackChallengeTime: '達成期限：3日',
+    comebackChallengeAccept: 'チャレンジを受ける',
+
     // Trends View (Long-term Analytics)
     trendsTitle: 'あなたの傾向',
     trendsAvgMood: '平均気分',
@@ -14372,6 +14428,13 @@ const arabicOverrides: Partial<Translations> = {
   reengageQuickMood: 'سجل مزاجك سريعاً',
   reengageMoodLogged: 'تم تسجيل المزاج',
   reengageContinue: 'متابعة',
+
+  // Comeback Challenge (Stage 5 Retention)
+  comebackChallengeTitle: 'تحدي العودة',
+  comebackChallengeSubtitle: 'مكافأة خاصة للعودة!',
+  comebackChallengeGoal: 'أكمل 3 عادات لمدة 3 أيام',
+  comebackChallengeTime: '3 أيام للإكمال',
+  comebackChallengeAccept: 'قبول التحدي',
 
   // Trends
   trendsTitle: 'الاتجاهات',
