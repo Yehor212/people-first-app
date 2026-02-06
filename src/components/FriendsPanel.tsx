@@ -1,0 +1,503 @@
+/**
+ * FriendsPanel - Social friends feature
+ * Stage 3.2 of Premium Upgrade Plan
+ *
+ * Features:
+ * - Add friend by code
+ * - View friends list with streaks
+ * - Share your friend code
+ * - Friend activity feed
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Users,
+  UserPlus,
+  Share2,
+  Copy,
+  Check,
+  X,
+  Flame,
+  Trophy,
+  Clock,
+  ChevronRight,
+  RefreshCw,
+  Trash2,
+  Settings,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Switch } from '@/components/ui/switch';
+import { useLanguage } from '@/contexts/LanguageContext';
+import { hapticTap, hapticSuccess, hapticError } from '@/lib/haptics';
+import { announce } from '@/lib/a11y';
+import {
+  loadFriends,
+  loadMyProfile,
+  initializeMyProfile,
+  updateMyProfile,
+  addFriendByCode,
+  removeFriend,
+  getFriendsSortedByActivity,
+  refreshFriendsData,
+  shareFriendCode,
+  getRecentActivities,
+  type Friend,
+  type MyProfile,
+  type FriendActivity,
+} from '@/storage/friendsSync';
+
+interface FriendsPanelProps {
+  open: boolean;
+  onClose: () => void;
+  userName?: string;
+  currentStreak?: number;
+  level?: number;
+}
+
+export function FriendsPanel({
+  open,
+  onClose,
+  userName = 'Zen User',
+  currentStreak = 0,
+  level = 1,
+}: FriendsPanelProps) {
+  const { t } = useLanguage();
+
+  const [myProfile, setMyProfile] = useState<MyProfile | null>(null);
+  const [friends, setFriends] = useState<Friend[]>([]);
+  const [activities, setActivities] = useState<FriendActivity[]>([]);
+
+  const [showAddFriend, setShowAddFriend] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [friendCode, setFriendCode] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Initialize profile and load data
+  useEffect(() => {
+    if (open) {
+      let profile = loadMyProfile();
+      if (!profile) {
+        profile = initializeMyProfile(userName);
+      }
+
+      // Update streak and level in profile
+      if (profile.currentStreak !== currentStreak || profile.level !== level) {
+        profile = updateMyProfile({ currentStreak, level });
+      }
+
+      setMyProfile(profile);
+      setFriends(getFriendsSortedByActivity());
+      setActivities(getRecentActivities(5));
+    }
+  }, [open, userName, currentStreak, level]);
+
+  // Refresh friends data from cloud
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    hapticTap();
+
+    try {
+      await refreshFriendsData();
+      setFriends(getFriendsSortedByActivity());
+      announce(t.friendsRefreshed || 'Friends list refreshed');
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [t]);
+
+  // Copy friend code
+  const handleCopyCode = useCallback(async () => {
+    if (!myProfile) return;
+
+    try {
+      await navigator.clipboard.writeText(myProfile.friendCode);
+      setCopied(true);
+      hapticSuccess();
+      announce(t.codeCopied || 'Code copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      hapticError();
+    }
+  }, [myProfile, t]);
+
+  // Share friend code
+  const handleShare = useCallback(async () => {
+    if (!myProfile) return;
+
+    hapticTap();
+    const success = await shareFriendCode(myProfile, t);
+    if (success) {
+      hapticSuccess();
+    }
+  }, [myProfile, t]);
+
+  // Add friend
+  const handleAddFriend = useCallback(async () => {
+    if (!friendCode.trim()) return;
+
+    setIsAdding(true);
+    setAddError(null);
+    hapticTap();
+
+    try {
+      const result = await addFriendByCode(friendCode.trim());
+
+      if (result.success) {
+        hapticSuccess();
+        announce(t.friendAdded || 'Friend added successfully');
+        setFriendCode('');
+        setShowAddFriend(false);
+        setFriends(getFriendsSortedByActivity());
+      } else {
+        hapticError();
+        setAddError(result.error || t.addFriendError || 'Could not add friend');
+      }
+    } finally {
+      setIsAdding(false);
+    }
+  }, [friendCode, t]);
+
+  // Remove friend
+  const handleRemoveFriend = useCallback((friend: Friend) => {
+    hapticTap();
+
+    if (removeFriend(friend.id)) {
+      setFriends(getFriendsSortedByActivity());
+      announce(t.friendRemoved || 'Friend removed');
+    }
+  }, [t]);
+
+  // Update privacy settings
+  const handlePrivacyChange = useCallback((key: keyof MyProfile, value: boolean) => {
+    if (!myProfile) return;
+
+    const updated = updateMyProfile({ [key]: value });
+    setMyProfile(updated);
+    hapticTap();
+  }, [myProfile]);
+
+  // Format relative time
+  const formatLastActive = (dateStr: string): string => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffHours < 1) return t.justNow || 'Just now';
+    if (diffHours < 24) return `${diffHours}${t.hoursAgo || 'h ago'}`;
+    if (diffDays === 1) return t.yesterday || 'Yesterday';
+    if (diffDays < 7) return `${diffDays}${t.daysAgo || 'd ago'}`;
+    return date.toLocaleDateString();
+  };
+
+  if (!open) return null;
+
+  return (
+    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <SheetContent side="right" className="w-full sm:max-w-md p-0 overflow-hidden">
+        <div className="flex flex-col h-full">
+          {/* Header */}
+          <SheetHeader className="p-4 border-b">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" />
+                {t.friends || 'Friends'}
+              </SheetTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleRefresh}
+                  disabled={isRefreshing}
+                  className="h-8 w-8"
+                >
+                  <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowSettings(!showSettings)}
+                  className="h-8 w-8"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </SheetHeader>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto">
+            {/* My Profile Card */}
+            {myProfile && (
+              <div className="p-4 border-b bg-card/50">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center text-2xl">
+                    {myProfile.avatarEmoji}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-foreground truncate">
+                      {myProfile.displayName}
+                    </p>
+                    <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Flame className="w-4 h-4 text-orange-500" />
+                        {myProfile.currentStreak}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Trophy className="w-4 h-4 text-yellow-500" />
+                        {t.level || 'Lvl'} {myProfile.level}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Friend Code */}
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-background rounded-xl px-3 py-2 font-mono text-sm text-center">
+                    {myProfile.friendCode}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleCopyCode}
+                    className="h-10 w-10 shrink-0"
+                  >
+                    {copied ? (
+                      <Check className="w-4 h-4 text-green-500" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="gradient"
+                    size="icon"
+                    onClick={handleShare}
+                    className="h-10 w-10 shrink-0"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Privacy Settings (collapsible) */}
+            <AnimatePresence>
+              {showSettings && myProfile && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="border-b overflow-hidden"
+                >
+                  <div className="p-4 space-y-4">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      {t.privacySettings || 'Privacy Settings'}
+                    </p>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">{t.shareStreak || 'Share streak'}</span>
+                        <Switch
+                          checked={myProfile.shareStreak}
+                          onCheckedChange={(v) => handlePrivacyChange('shareStreak', v)}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">{t.shareLevel || 'Share level'}</span>
+                        <Switch
+                          checked={myProfile.shareLevel}
+                          onCheckedChange={(v) => handlePrivacyChange('shareLevel', v)}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">{t.shareActivity || 'Share activity'}</span>
+                        <Switch
+                          checked={myProfile.shareActivity}
+                          onCheckedChange={(v) => handlePrivacyChange('shareActivity', v)}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Add Friend Section */}
+            <div className="p-4 border-b">
+              <AnimatePresence mode="wait">
+                {showAddFriend ? (
+                  <motion.div
+                    key="add-form"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="space-y-3"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={friendCode}
+                        onChange={(e) => {
+                          setFriendCode(e.target.value.toUpperCase());
+                          setAddError(null);
+                        }}
+                        placeholder="ZF-XXXXXXXX"
+                        className="font-mono text-center"
+                        maxLength={11}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setShowAddFriend(false);
+                          setFriendCode('');
+                          setAddError(null);
+                        }}
+                        className="shrink-0"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    {addError && (
+                      <p className="text-sm text-destructive">{addError}</p>
+                    )}
+                    <Button
+                      variant="gradient"
+                      className="w-full"
+                      onClick={handleAddFriend}
+                      disabled={!friendCode.trim() || isAdding}
+                    >
+                      {isAdding ? (
+                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                      ) : (
+                        <UserPlus className="w-4 h-4 mr-2" />
+                      )}
+                      {t.addFriend || 'Add Friend'}
+                    </Button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="add-button"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                  >
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => setShowAddFriend(true)}
+                    >
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      {t.addFriendByCode || 'Add Friend by Code'}
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* Friends List */}
+            <div className="p-4">
+              <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                {t.yourFriends || 'Your Friends'} ({friends.length})
+              </h3>
+
+              {friends.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
+                    <Users className="w-8 h-8 text-primary" />
+                  </div>
+                  <p className="text-muted-foreground text-sm mb-2">
+                    {t.noFriendsYet || 'No friends yet'}
+                  </p>
+                  <p className="text-muted-foreground/70 text-xs">
+                    {t.addFriendsHint || 'Share your code or add friends by their code'}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {friends.map((friend) => (
+                    <motion.div
+                      key={friend.id}
+                      layout
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-card border"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">
+                        {friend.avatarEmoji}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-foreground truncate">
+                          {friend.displayName}
+                        </p>
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Flame className="w-3 h-3 text-orange-500" />
+                            {friend.currentStreak}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Trophy className="w-3 h-3 text-yellow-500" />
+                            {friend.level}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {formatLastActive(friend.lastActive)}
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveFriend(friend)}
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Recent Activity */}
+            {activities.length > 0 && (
+              <div className="p-4 border-t">
+                <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                  {t.recentActivity || 'Recent Activity'}
+                </h3>
+                <div className="space-y-2">
+                  {activities.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
+                    >
+                      <span className="text-lg">{activity.icon}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-foreground truncate">
+                          <span className="font-medium">{activity.friendName}</span>{' '}
+                          {activity.description}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatLastActive(activity.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
+export default FriendsPanel;

@@ -824,6 +824,30 @@ export interface Translations {
   daysCompleted: string;
   daysRemaining: string;
 
+  // Friends Panel
+  friends: string;
+  yourFriends: string;
+  addFriend: string;
+  addFriendByCode: string;
+  addFriendError: string;
+  friendAdded: string;
+  friendRemoved: string;
+  friendCode: string;
+  codeCopied: string;
+  noFriendsYet: string;
+  addFriendsHint: string;
+  privacySettings: string;
+  shareLevel: string;
+  shareActivity: string;
+  recentActivity: string;
+  friendsRefreshed: string;
+  addMeOnZenFlow: string;
+  friendCodeJoinPrompt: string;
+  justNow: string;
+  hoursAgo: string;
+  daysAgo: string;
+  yesterday: string;
+
   // Hyperfocus Mode
   hyperfocusMode: string;
   hyperfocusStart: string;
@@ -2582,6 +2606,30 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     daysCompleted: 'Выполнено',
     daysRemaining: 'Осталось',
 
+    // Friends Panel
+    friends: 'Друзья',
+    yourFriends: 'Ваши друзья',
+    addFriend: 'Добавить друга',
+    addFriendByCode: 'Добавить по коду',
+    addFriendError: 'Не удалось добавить друга',
+    friendAdded: 'Друг добавлен',
+    friendRemoved: 'Друг удалён',
+    friendCode: 'Код друга',
+    codeCopied: 'Код скопирован',
+    noFriendsYet: 'Пока нет друзей',
+    addFriendsHint: 'Поделитесь своим кодом или добавьте друзей по их коду',
+    privacySettings: 'Настройки приватности',
+    shareLevel: 'Показывать уровень',
+    shareActivity: 'Показывать активность',
+    recentActivity: 'Недавняя активность',
+    friendsRefreshed: 'Список друзей обновлён',
+    addMeOnZenFlow: 'Добавь меня в ZenFlow!',
+    friendCodeJoinPrompt: 'Отслеживайте привычки вместе!',
+    justNow: 'Только что',
+    hoursAgo: 'ч назад',
+    daysAgo: 'д назад',
+    yesterday: 'Вчера',
+
     hyperfocusMode: 'Режим гиперфокуса',
     hyperfocusStart: 'Начать',
     hyperfocusPause: 'Пауза',
@@ -4289,6 +4337,30 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     daysCompleted: 'Completed',
     daysRemaining: 'Remaining',
 
+    // Friends Panel
+    friends: 'Friends',
+    yourFriends: 'Your Friends',
+    addFriend: 'Add Friend',
+    addFriendByCode: 'Add Friend by Code',
+    addFriendError: 'Could not add friend',
+    friendAdded: 'Friend added',
+    friendRemoved: 'Friend removed',
+    friendCode: 'Friend Code',
+    codeCopied: 'Code copied',
+    noFriendsYet: 'No friends yet',
+    addFriendsHint: 'Share your code or add friends by their code',
+    privacySettings: 'Privacy Settings',
+    shareLevel: 'Share level',
+    shareActivity: 'Share activity',
+    recentActivity: 'Recent Activity',
+    friendsRefreshed: 'Friends list refreshed',
+    addMeOnZenFlow: 'Add me on ZenFlow!',
+    friendCodeJoinPrompt: 'Track habits together!',
+    justNow: 'Just now',
+    hoursAgo: 'h ago',
+    daysAgo: 'd ago',
+    yesterday: 'Yesterday',
+
     hyperfocusMode: 'Hyperfocus Mode',
     hyperfocusStart: 'Start',
     hyperfocusPause: 'Pause',
@@ -5995,6 +6067,30 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     daysPassed: 'Днів пройшло',
     daysCompleted: 'Виконано',
     daysRemaining: 'Залишилось',
+
+    // Friends Panel
+    friends: 'Друзі',
+    yourFriends: 'Ваші друзі',
+    addFriend: 'Додати друга',
+    addFriendByCode: 'Додати за кодом',
+    addFriendError: 'Не вдалося додати друга',
+    friendAdded: 'Друга додано',
+    friendRemoved: 'Друга видалено',
+    friendCode: 'Код друга',
+    codeCopied: 'Код скопійовано',
+    noFriendsYet: 'Поки немає друзів',
+    addFriendsHint: 'Поділіться своїм кодом або додайте друзів за їх кодом',
+    privacySettings: 'Налаштування приватності',
+    shareLevel: 'Показувати рівень',
+    shareActivity: 'Показувати активність',
+    recentActivity: 'Нещодавня активність',
+    friendsRefreshed: 'Список друзів оновлено',
+    addMeOnZenFlow: 'Додай мене в ZenFlow!',
+    friendCodeJoinPrompt: 'Відстежуйте звички разом!',
+    justNow: 'Щойно',
+    hoursAgo: 'год тому',
+    daysAgo: 'дн тому',
+    yesterday: 'Вчора',
 
     hyperfocusMode: 'Режим гіперфокусу',
     hyperfocusStart: 'Почати',
@@ -7704,6 +7800,30 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     daysCompleted: 'Completados',
     daysRemaining: 'Restantes',
 
+    // Friends Panel
+    friends: 'Amigos',
+    yourFriends: 'Tus amigos',
+    addFriend: 'Añadir amigo',
+    addFriendByCode: 'Añadir por código',
+    addFriendError: 'No se pudo añadir amigo',
+    friendAdded: 'Amigo añadido',
+    friendRemoved: 'Amigo eliminado',
+    friendCode: 'Código de amigo',
+    codeCopied: 'Código copiado',
+    noFriendsYet: 'Aún no hay amigos',
+    addFriendsHint: 'Comparte tu código o añade amigos por su código',
+    privacySettings: 'Configuración de privacidad',
+    shareLevel: 'Compartir nivel',
+    shareActivity: 'Compartir actividad',
+    recentActivity: 'Actividad reciente',
+    friendsRefreshed: 'Lista de amigos actualizada',
+    addMeOnZenFlow: '¡Añádeme en ZenFlow!',
+    friendCodeJoinPrompt: '¡Sigue hábitos juntos!',
+    justNow: 'Ahora mismo',
+    hoursAgo: 'h',
+    daysAgo: 'd',
+    yesterday: 'Ayer',
+
     hyperfocusMode: 'Modo Hiperenfoque',
     hyperfocusStart: 'Comenzar',
     hyperfocusPause: 'Pausa',
@@ -9411,6 +9531,30 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     daysPassed: 'Tage vergangen',
     daysCompleted: 'Abgeschlossen',
     daysRemaining: 'Verbleibend',
+
+    // Friends Panel
+    friends: 'Freunde',
+    yourFriends: 'Deine Freunde',
+    addFriend: 'Freund hinzufügen',
+    addFriendByCode: 'Per Code hinzufügen',
+    addFriendError: 'Freund konnte nicht hinzugefügt werden',
+    friendAdded: 'Freund hinzugefügt',
+    friendRemoved: 'Freund entfernt',
+    friendCode: 'Freundes-Code',
+    codeCopied: 'Code kopiert',
+    noFriendsYet: 'Noch keine Freunde',
+    addFriendsHint: 'Teile deinen Code oder füge Freunde per Code hinzu',
+    privacySettings: 'Datenschutzeinstellungen',
+    shareLevel: 'Level teilen',
+    shareActivity: 'Aktivität teilen',
+    recentActivity: 'Letzte Aktivität',
+    friendsRefreshed: 'Freundesliste aktualisiert',
+    addMeOnZenFlow: 'Füge mich auf ZenFlow hinzu!',
+    friendCodeJoinPrompt: 'Verfolgt Gewohnheiten zusammen!',
+    justNow: 'Gerade eben',
+    hoursAgo: 'h',
+    daysAgo: 'T',
+    yesterday: 'Gestern',
 
     hyperfocusMode: 'Hyperfokus-Modus',
     hyperfocusStart: 'Starten',
@@ -11120,6 +11264,30 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     daysCompleted: 'Complétés',
     daysRemaining: 'Restants',
 
+    // Friends Panel
+    friends: 'Amis',
+    yourFriends: 'Vos amis',
+    addFriend: 'Ajouter un ami',
+    addFriendByCode: 'Ajouter par code',
+    addFriendError: 'Impossible d\'ajouter l\'ami',
+    friendAdded: 'Ami ajouté',
+    friendRemoved: 'Ami supprimé',
+    friendCode: 'Code ami',
+    codeCopied: 'Code copié',
+    noFriendsYet: 'Pas encore d\'amis',
+    addFriendsHint: 'Partagez votre code ou ajoutez des amis avec leur code',
+    privacySettings: 'Paramètres de confidentialité',
+    shareLevel: 'Partager le niveau',
+    shareActivity: 'Partager l\'activité',
+    recentActivity: 'Activité récente',
+    friendsRefreshed: 'Liste d\'amis actualisée',
+    addMeOnZenFlow: 'Ajoutez-moi sur ZenFlow!',
+    friendCodeJoinPrompt: 'Suivez vos habitudes ensemble!',
+    justNow: 'À l\'instant',
+    hoursAgo: 'h',
+    daysAgo: 'j',
+    yesterday: 'Hier',
+
     hyperfocusMode: 'Mode Hyperfocus',
     hyperfocusStart: 'Commencer',
     hyperfocusPause: 'Pause',
@@ -12827,6 +12995,30 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     daysCompleted: '完了',
     daysRemaining: '残り',
 
+    // Friends Panel
+    friends: 'フレンド',
+    yourFriends: 'あなたのフレンド',
+    addFriend: 'フレンドを追加',
+    addFriendByCode: 'コードで追加',
+    addFriendError: 'フレンドを追加できませんでした',
+    friendAdded: 'フレンドを追加しました',
+    friendRemoved: 'フレンドを削除しました',
+    friendCode: 'フレンドコード',
+    codeCopied: 'コードをコピーしました',
+    noFriendsYet: 'まだフレンドがいません',
+    addFriendsHint: 'コードを共有するか、コードでフレンドを追加してください',
+    privacySettings: 'プライバシー設定',
+    shareLevel: 'レベルを共有',
+    shareActivity: 'アクティビティを共有',
+    recentActivity: '最近のアクティビティ',
+    friendsRefreshed: 'フレンドリストを更新しました',
+    addMeOnZenFlow: 'ZenFlowで追加してね！',
+    friendCodeJoinPrompt: '一緒に習慣を追跡しよう！',
+    justNow: 'たった今',
+    hoursAgo: '時間前',
+    daysAgo: '日前',
+    yesterday: '昨日',
+
     hyperfocusMode: 'ハイパーフォーカスモード',
     hyperfocusStart: '開始',
     hyperfocusPause: '一時停止',
@@ -14429,6 +14621,30 @@ const arabicOverrides: Partial<Translations> = {
   daysPassed: 'أيام مضت',
   daysCompleted: 'أيام مكتملة',
   daysRemaining: 'أيام متبقية',
+
+  // Friends Panel
+  friends: 'الأصدقاء',
+  yourFriends: 'أصدقاؤك',
+  addFriend: 'إضافة صديق',
+  addFriendByCode: 'إضافة بالرمز',
+  addFriendError: 'تعذر إضافة الصديق',
+  friendAdded: 'تمت إضافة الصديق',
+  friendRemoved: 'تمت إزالة الصديق',
+  friendCode: 'رمز الصديق',
+  codeCopied: 'تم نسخ الرمز',
+  noFriendsYet: 'لا أصدقاء بعد',
+  addFriendsHint: 'شارك رمزك أو أضف أصدقاء برمزهم',
+  privacySettings: 'إعدادات الخصوصية',
+  shareLevel: 'مشاركة المستوى',
+  shareActivity: 'مشاركة النشاط',
+  recentActivity: 'النشاط الأخير',
+  friendsRefreshed: 'تم تحديث قائمة الأصدقاء',
+  addMeOnZenFlow: 'أضفني في ZenFlow!',
+  friendCodeJoinPrompt: 'تتبعوا العادات معًا!',
+  justNow: 'الآن',
+  hoursAgo: 'س',
+  daysAgo: 'ي',
+  yesterday: 'أمس',
 
   // Hyperfocus Mode
   hyperfocusMode: 'وضع التركيز الفائق',
@@ -16247,6 +16463,30 @@ const hebrewOverrides: Partial<Translations> = {
   acceptChallenge: 'קבל את האתגר',
   youEarned: 'הרווחת',
   awesome: 'מדהים!',
+
+  // Friends Panel
+  friends: 'חברים',
+  yourFriends: 'החברים שלך',
+  addFriend: 'הוסף חבר',
+  addFriendByCode: 'הוסף לפי קוד',
+  addFriendError: 'לא ניתן להוסיף חבר',
+  friendAdded: 'חבר נוסף',
+  friendRemoved: 'חבר הוסר',
+  friendCode: 'קוד חבר',
+  codeCopied: 'הקוד הועתק',
+  noFriendsYet: 'אין עדיין חברים',
+  addFriendsHint: 'שתף את הקוד שלך או הוסף חברים לפי הקוד שלהם',
+  privacySettings: 'הגדרות פרטיות',
+  shareLevel: 'שתף רמה',
+  shareActivity: 'שתף פעילות',
+  recentActivity: 'פעילות אחרונה',
+  friendsRefreshed: 'רשימת החברים עודכנה',
+  addMeOnZenFlow: 'הוסף אותי ב-ZenFlow!',
+  friendCodeJoinPrompt: 'עקבו אחר הרגלים יחד!',
+  justNow: 'עכשיו',
+  hoursAgo: 'ש',
+  daysAgo: 'י',
+  yesterday: 'אתמול',
 };
 
 // Add RTL languages with English fallback
