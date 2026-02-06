@@ -142,20 +142,36 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
     return data;
   }, [focusSessions, timeRange, locale]);
 
+  // Filter out any potentially corrupted data points (defensive against undefined/NaN)
+  const safeMoodData = useMemo(() =>
+    moodTrendData.filter(d => d && typeof d.value === 'number' && !isNaN(d.value)),
+    [moodTrendData]
+  );
+
+  const safeHabitData = useMemo(() =>
+    habitCompletionData.filter(d => d && typeof d.rate === 'number' && !isNaN(d.rate)),
+    [habitCompletionData]
+  );
+
+  const safeFocusData = useMemo(() =>
+    focusTimeData.filter(d => d && typeof d.minutes === 'number' && !isNaN(d.minutes)),
+    [focusTimeData]
+  );
+
   // Calculate summary statistics
   const stats = useMemo(() => {
-    const moodsInRange = moodTrendData.filter(d => d.value > 0);
+    const moodsInRange = safeMoodData.filter(d => d.value > 0);
     const avgMood = safeAverage(moodsInRange.map(d => d.value));
 
     // Only count days with actual habit activity for rate
-    const daysWithHabits = habitCompletionData.filter(d => d.rate > 0);
+    const daysWithHabits = safeHabitData.filter(d => d.rate > 0);
     const avgHabitRate = daysWithHabits.length > 0
       ? safeAverage(daysWithHabits.map(d => d.rate))
       : 0;
 
-    const totalFocusMinutes = focusTimeData.reduce((sum, d) => sum + d.minutes, 0);
+    const totalFocusMinutes = safeFocusData.reduce((sum, d) => sum + d.minutes, 0);
     // Only count days with actual focus activity for average
-    const daysWithFocus = focusTimeData.filter(d => d.minutes > 0);
+    const daysWithFocus = safeFocusData.filter(d => d.minutes > 0);
     const avgFocusMinutes = daysWithFocus.length > 0
       ? safeAverage(daysWithFocus.map(d => d.minutes))
       : 0;
@@ -166,7 +182,7 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
       totalFocusMinutes,
       avgFocusMinutes: Math.round(avgFocusMinutes)
     };
-  }, [moodTrendData, habitCompletionData, focusTimeData]);
+  }, [safeMoodData, safeHabitData, safeFocusData]);
 
   return (
     <motion.div
@@ -253,7 +269,7 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
           </div>
           <div role="img" aria-label={t.trendsMoodChart || 'Mood Over Time'}>
             <ResponsiveContainer width="100%" height={200}>
-              <LineChart data={moodTrendData}>
+              <LineChart data={safeMoodData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" opacity={0.3} />
                 <XAxis
                   dataKey="label"
@@ -305,7 +321,7 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
           </div>
           <div role="img" aria-label={t.trendsHabitChart || 'Habit Completion'}>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={habitCompletionData}>
+              <BarChart data={safeHabitData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" opacity={0.3} />
                 <XAxis
                   dataKey="label"
@@ -350,7 +366,7 @@ export function TrendsView({ moods, habits, focusSessions }: TrendsViewProps) {
           </div>
           <div role="img" aria-label={t.trendsFocusChart || 'Focus Time'}>
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={focusTimeData}>
+              <BarChart data={safeFocusData}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-border" opacity={0.3} />
                 <XAxis
                   dataKey="label"

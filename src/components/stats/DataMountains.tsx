@@ -139,7 +139,18 @@ export function DataMountains({
 }: DataMountainsProps) {
   const { t } = useLanguage();
 
-  const maxValue = providedMax || Math.max(...data.map(d => d.value), 1);
+  // Defensive guard: return null if data is missing or invalid
+  if (!data || !Array.isArray(data) || data.length < 2) {
+    return null;
+  }
+
+  // Filter out invalid data points that could cause NaN in path calculations
+  const safeData = data.filter(d => d && typeof d.value === 'number' && !isNaN(d.value));
+  if (safeData.length < 2) {
+    return null;
+  }
+
+  const maxValue = providedMax || Math.max(...safeData.map(d => d.value), 1);
 
   // Colors based on type - LIGHTER mountains for contrast against dark sky
   const colorConfig = {
@@ -162,14 +173,14 @@ export function DataMountains({
 
   // Generate mountain path from data
   const mountainPath = useMemo(() => {
-    if (data.length < 2) return '';
+    if (safeData.length < 2) return '';
 
     const width = 100;
     const height = 60;
     const points: string[] = [];
 
-    data.forEach((point, i) => {
-      const x = (i / (data.length - 1)) * width;
+    safeData.forEach((point, i) => {
+      const x = (i / (safeData.length - 1)) * width;
       const y = height - (point.value / maxValue) * (height - 10);
 
       if (i === 0) {
@@ -179,19 +190,19 @@ export function DataMountains({
 
       // Create smooth peaks
       if (i > 0) {
-        const prevX = ((i - 1) / (data.length - 1)) * width;
+        const prevX = ((i - 1) / (safeData.length - 1)) * width;
         const cpX = (prevX + x) / 2;
         points.push(`Q${cpX} ${y - 5} ${x} ${y}`);
       }
 
-      if (i === data.length - 1) {
+      if (i === safeData.length - 1) {
         points.push(`L${width} ${height}`);
         points.push('Z');
       }
     });
 
     return points.join(' ');
-  }, [data, maxValue]);
+  }, [safeData, maxValue]);
 
   // Background mountains (parallax effect)
   const bgMountainPath = useMemo(() => {
@@ -291,8 +302,8 @@ export function DataMountains({
         )}
 
         {/* Weather icons above peaks */}
-        {data.length >= 2 && data.map((point, i) => {
-          const x = (i / (data.length - 1)) * 100;
+        {safeData.length >= 2 && safeData.map((point, i) => {
+          const x = (i / (safeData.length - 1)) * 100;
           const y = 60 - (point.value / maxValue) * 50 - 15;
           return (
             <g key={i} transform={`translate(${x}, ${y})`}>
@@ -317,10 +328,10 @@ export function DataMountains({
 
       {/* Data labels */}
       <div className="absolute bottom-2 left-0 right-0 flex justify-between px-4">
-        {data.length > 0 && (
+        {safeData.length > 0 && (
           <>
-            <span className="text-xs text-slate-600 dark:text-white/50">{data[0].label}</span>
-            <span className="text-xs text-slate-600 dark:text-white/50">{data[data.length - 1].label}</span>
+            <span className="text-xs text-slate-600 dark:text-white/50">{safeData[0].label}</span>
+            <span className="text-xs text-slate-600 dark:text-white/50">{safeData[safeData.length - 1].label}</span>
           </>
         )}
       </div>

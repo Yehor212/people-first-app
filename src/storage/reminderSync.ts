@@ -61,8 +61,18 @@ export const syncReminderSettings = async (
         logger.warn('[ReminderSync] Table does not exist, skipping sync');
         return;
       }
-      // For other errors (like 400 Bad Request), log but don't retry endlessly
-      logger.error('[ReminderSync] Failed to push settings:', error.message);
+
+      // Handle 400 Bad Request errors (schema mismatch, missing columns, etc.)
+      // These are common when migrations haven't been applied yet
+      if (error.code === 'PGRST204' || error.message.includes('violates') ||
+          error.code?.startsWith('PGRST') || error.message.includes('Bad Request')) {
+        // Log once at warn level, not error - this is expected during migration transitions
+        logger.warn('[ReminderSync] Schema mismatch or validation error, skipping sync');
+        return;
+      }
+
+      // For other unexpected errors, log with details for debugging
+      logger.error('[ReminderSync] Unexpected error:', error.code, error.message);
       // Don't throw - reminder sync is not critical
     }
   }, { priority: 7, maxRetries: 0 }); // No retries - settings sync failures shouldn't loop
