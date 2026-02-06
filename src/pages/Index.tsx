@@ -1062,6 +1062,11 @@ export function Index() {
     triggerSync(); // Auto-sync to cloud
   };
 
+  const handleUpdateHabit = (updatedHabit: Habit) => {
+    setHabits(prev => prev.map(h => h.id === updatedHabit.id ? updatedHabit : h));
+    triggerSync(); // Auto-sync to cloud
+  };
+
   const handleDeleteHabit = (habitId: string) => {
     setHabits(prev => prev.filter(h => h.id !== habitId));
     triggerSync(); // Auto-sync to cloud
@@ -2125,6 +2130,7 @@ export function Index() {
                             onToggleHabit={handleToggleHabit}
                             onAdjustHabit={handleAdjustHabit}
                             onAddHabit={handleAddHabit}
+                            onUpdateHabit={handleUpdateHabit}
                             onDeleteHabit={handleDeleteHabit}
                             isPrimaryCTA={true}
                             onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
@@ -2140,6 +2146,7 @@ export function Index() {
                               onToggleHabit={handleToggleHabit}
                               onAdjustHabit={handleAdjustHabit}
                               onAddHabit={handleAddHabit}
+                              onUpdateHabit={handleUpdateHabit}
                               onDeleteHabit={handleDeleteHabit}
                               onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
                             />
@@ -2150,6 +2157,7 @@ export function Index() {
                             onToggleHabit={handleToggleHabit}
                             onAdjustHabit={handleAdjustHabit}
                             onAddHabit={handleAddHabit}
+                            onUpdateHabit={handleUpdateHabit}
                             onDeleteHabit={handleDeleteHabit}
                             onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
                           />

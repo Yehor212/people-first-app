@@ -14,6 +14,7 @@ import { hapticTap } from '@/lib/haptics';
 import { getActiveChallenges } from '@/lib/friendChallenge';
 import { toast } from '@/hooks/use-toast';
 import { ToastAction } from '@/components/ui/toast';
+import { announceSuccess } from '@/lib/a11y';
 
 const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿', '🚭', '🍷', '🇬🇧', '💪', '🧠'];
 const habitColors = [
@@ -29,15 +30,17 @@ interface HabitTrackerProps {
   onToggleHabit: (habitId: string, date: string) => void;
   onAdjustHabit?: (habitId: string, date: string, delta: number) => void;
   onAddHabit: (habit: Habit) => void;
+  onUpdateHabit?: (habit: Habit) => void;
   onDeleteHabit: (habitId: string) => void;
   isPrimaryCTA?: boolean;
   onOpenChallenge?: (habit?: Habit) => void;
 }
 
-export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit, onDeleteHabit, isPrimaryCTA = false, onOpenChallenge }: HabitTrackerProps) {
+export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, onAdjustHabit, onAddHabit, onUpdateHabit, onDeleteHabit, isPrimaryCTA = false, onOpenChallenge }: HabitTrackerProps) {
   const { t, language } = useLanguage();
   const [isAdding, setIsAdding] = useState(false);
   const [showCustomForm, setShowCustomForm] = useState(false);
+  const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [newHabitName, setNewHabitName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState(habitIcons[0]);
   const [selectedColor, setSelectedColor] = useState(habitColors[0]);
@@ -215,32 +218,11 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     setReminders(updated);
   };
 
-  const handleAddHabit = () => {
-    if (!newHabitName.trim()) return;
-
-    const habit: Habit = {
-      id: generateId(),
-      name: newHabitName.trim(),
-      icon: selectedIcon,
-      color: selectedColor,
-      completedDates: [],
-      createdAt: Date.now(),
-      type: selectedType,
-      reminders: reminders,
-      frequency: frequency,
-      ...(frequency === 'custom' && { customDays }),
-      ...(requiresDuration && {
-        requiresDuration: true,
-        targetDuration,
-        durationByDate: {}
-      }),
-      ...(selectedType === 'multiple' && { dailyTarget, completionsByDate: {} }),
-      ...(selectedType === 'continuous' && { startDate: today, failedDates: [] }),
-      ...(selectedType === 'reduce' && { progressByDate: {}, targetCount: dailyTarget }),
-    };
-
-    onAddHabit(habit);
+  // Reset form to default values
+  const resetForm = useCallback(() => {
     setNewHabitName('');
+    setSelectedIcon(habitIcons[0]);
+    setSelectedColor(habitColors[0]);
     setSelectedType('daily');
     setDailyTarget(1);
     setReminders([]);
@@ -248,8 +230,80 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     setCustomDays([1, 2, 3, 4, 5]);
     setRequiresDuration(false);
     setTargetDuration(15);
+    setEditingHabit(null);
     setIsAdding(false);
     setShowCustomForm(false);
+  }, []);
+
+  // Start editing a habit
+  const handleEditHabit = useCallback((habit: Habit) => {
+    setEditingHabit(habit);
+    setNewHabitName(habit.name);
+    setSelectedIcon(habit.icon);
+    setSelectedColor(habit.color);
+    setSelectedType(habit.type || 'daily');
+    setDailyTarget(habit.dailyTarget ?? habit.targetCount ?? 1);
+    setReminders(habit.reminders || []);
+    setFrequency(habit.frequency || 'daily');
+    setCustomDays(habit.customDays || [1, 2, 3, 4, 5]);
+    setRequiresDuration(habit.requiresDuration || false);
+    setTargetDuration(habit.targetDuration || 15);
+    setIsAdding(true);
+    setShowCustomForm(true);
+  }, []);
+
+  const handleAddHabit = () => {
+    if (!newHabitName.trim()) return;
+
+    if (editingHabit && onUpdateHabit) {
+      // Update existing habit
+      const updatedHabit: Habit = {
+        ...editingHabit,
+        name: newHabitName.trim(),
+        icon: selectedIcon,
+        color: selectedColor,
+        type: selectedType,
+        reminders: reminders,
+        frequency: frequency,
+        ...(frequency === 'custom' && { customDays }),
+        ...(requiresDuration && {
+          requiresDuration: true,
+          targetDuration,
+        }),
+        ...(selectedType === 'multiple' && { dailyTarget }),
+        ...(selectedType === 'reduce' && { targetCount: dailyTarget }),
+      };
+      onUpdateHabit(updatedHabit);
+      toast({
+        description: `${selectedIcon} ${t.habitUpdated || 'Habit updated'}`,
+        duration: 3000,
+      });
+    } else {
+      // Create new habit
+      const habit: Habit = {
+        id: generateId(),
+        name: newHabitName.trim(),
+        icon: selectedIcon,
+        color: selectedColor,
+        completedDates: [],
+        createdAt: Date.now(),
+        type: selectedType,
+        reminders: reminders,
+        frequency: frequency,
+        ...(frequency === 'custom' && { customDays }),
+        ...(requiresDuration && {
+          requiresDuration: true,
+          targetDuration,
+          durationByDate: {}
+        }),
+        ...(selectedType === 'multiple' && { dailyTarget, completionsByDate: {} }),
+        ...(selectedType === 'continuous' && { startDate: today, failedDates: [] }),
+        ...(selectedType === 'reduce' && { progressByDate: {}, targetCount: dailyTarget }),
+      };
+      onAddHabit(habit);
+    }
+
+    resetForm();
   };
 
   // Get progress using memoized map for performance
@@ -302,6 +356,9 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     if (!wasCompleted) {
       // Calculate streak for this habit
       const streak = getHabitStreak(habit);
+
+      // Announce to screen readers
+      announceSuccess(`${habit.icon} ${habit.name} ${t.habitCompleted || 'completed'}`);
 
       // Show Duolingo-style celebration
       setCelebrationData({
@@ -596,9 +653,15 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             />
           )}
 
-          {/* Back button */}
+          {/* Back/Cancel button */}
           <motion.button
-            onClick={() => setShowCustomForm(false)}
+            onClick={() => {
+              if (editingHabit) {
+                resetForm();
+              } else {
+                setShowCustomForm(false);
+              }
+            }}
             className={cn(
               "relative text-sm mb-3 flex items-center gap-1 transition-colors",
               isPrimaryCTA
@@ -607,8 +670,23 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             )}
             whileHover={{ x: -2 }}
           >
-            ← {t.back || 'Back'}
+            ← {editingHabit ? (t.cancel || 'Cancel') : (t.back || 'Back')}
           </motion.button>
+
+          {/* Edit mode header */}
+          {editingHabit && (
+            <div className={cn(
+              "mb-3 pb-2 border-b",
+              isPrimaryCTA ? "border-white/20" : "border-border"
+            )}>
+              <p className={cn(
+                "text-sm font-medium",
+                isPrimaryCTA ? "text-slate-700 dark:text-white/80" : "text-foreground"
+              )}>
+                {t.editHabit || 'Edit Habit'}
+              </p>
+            </div>
+          )}
 
           {/* Live Preview Card - Premium */}
           <motion.div
@@ -973,11 +1051,15 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               className={cn(
                 "relative w-full py-3.5 rounded-xl font-semibold text-white transition-all overflow-hidden",
                 newHabitName.trim()
-                  ? "bg-gradient-to-r from-emerald-500 to-teal-500"
+                  ? editingHabit
+                    ? "bg-gradient-to-r from-blue-500 to-indigo-500"
+                    : "bg-gradient-to-r from-emerald-500 to-teal-500"
                   : "bg-white/10 text-white/40 cursor-not-allowed"
               )}
               style={newHabitName.trim() ? {
-                boxShadow: '0 0 20px rgba(16, 185, 129, 0.4)'
+                boxShadow: editingHabit
+                  ? '0 0 20px rgba(99, 102, 241, 0.4)'
+                  : '0 0 20px rgba(16, 185, 129, 0.4)'
               } : undefined}
               whileHover={newHabitName.trim() ? { scale: 1.02 } : {}}
               whileTap={newHabitName.trim() ? { scale: 0.98 } : {}}
@@ -985,16 +1067,21 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               {/* Pulse ring when enabled */}
               {newHabitName.trim() && (
                 <motion.div
-                  className="absolute inset-0 rounded-xl border-2 border-emerald-400/30"
+                  className={cn(
+                    "absolute inset-0 rounded-xl border-2",
+                    editingHabit ? "border-indigo-400/30" : "border-emerald-400/30"
+                  )}
                   animate={{ scale: [1, 1.05], opacity: [0.5, 0] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 />
               )}
-              <span className="relative z-10">{t.addHabit}</span>
+              <span className="relative z-10">
+                {editingHabit ? (t.saveChanges || 'Save Changes') : t.addHabit}
+              </span>
             </motion.button>
           ) : (
             <Button
-              variant="gradient"
+              variant={editingHabit ? "default" : "gradient"}
               size="lg"
               onClick={(e) => {
                 e.preventDefault();
@@ -1003,7 +1090,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               disabled={!newHabitName.trim()}
               className="w-full"
             >
-              {t.addHabit}
+              {editingHabit ? (t.saveChanges || 'Save Changes') : t.addHabit}
             </Button>
           )}
         </motion.div>
@@ -1043,6 +1130,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               onToggle={() => handleHabitToggle(habit)}
               onAdjust={onAdjustHabit}
               onDelete={onDeleteHabit}
+              onEdit={onUpdateHabit ? handleEditHabit : undefined}
               onChallenge={onOpenChallenge ? (h) => onOpenChallenge(h) : undefined}
               streak={habitStreaks.get(habit.id) || 0}
             />

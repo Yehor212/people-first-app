@@ -6,7 +6,7 @@
 
 import { Habit } from '@/types';
 import { cn, getToday } from '@/lib/utils';
-import { Check, Minus, Plus, Trash2, Users, Star, Crown, Zap } from 'lucide-react';
+import { Check, Minus, Plus, Trash2, Users, Star, Crown, Zap, Pencil } from 'lucide-react';
 import { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProgressRing, ProgressRingCompact } from './ui/progress-ring';
@@ -148,6 +148,7 @@ interface CompactHabitCardProps {
   onToggle: (habitId: string, date: string) => void;
   onAdjust?: (habitId: string, date: string, delta: number) => void;
   onDelete: (habitId: string) => void;
+  onEdit?: (habit: Habit) => void;
   onChallenge?: (habit: Habit) => void;
   streak?: number;
   className?: string;
@@ -158,6 +159,7 @@ export function CompactHabitCard({
   onToggle,
   onAdjust,
   onDelete,
+  onEdit,
   onChallenge,
   streak = 0,
   className,
@@ -248,9 +250,23 @@ export function CompactHabitCard({
       <div
         className={cn(
           'absolute right-0 top-0 bottom-0 flex items-center transition-all duration-200',
-          isSwiped ? 'w-28' : 'w-0'
+          isSwiped ? (onChallenge ? 'w-42' : 'w-28') : 'w-0'
         )}
       >
+        {/* Edit button */}
+        {onEdit && (
+          <button
+            onClick={() => {
+              hapticTap();
+              onEdit(habit);
+              setIsSwiped(false);
+            }}
+            className="flex-1 h-full flex items-center justify-center bg-blue-500 text-white active:opacity-80 transition-opacity"
+            aria-label={t.edit || 'Edit'}
+          >
+            <Pencil className="w-5 h-5" />
+          </button>
+        )}
         {/* Challenge button */}
         {onChallenge && (
           <button
@@ -320,7 +336,7 @@ export function CompactHabitCard({
           'relative flex items-center justify-between p-4',
           'bg-card/80 backdrop-blur-sm rounded-2xl',
           'border border-border/50 transition-all duration-300',
-          isSwiped && (onChallenge ? '-translate-x-28' : '-translate-x-14'),
+          isSwiped && (onChallenge ? '-translate-x-42' : '-translate-x-28'),
           completed && 'bg-[hsl(var(--mood-good))]/5 border-[hsl(var(--mood-good))]/20'
         )}
       >

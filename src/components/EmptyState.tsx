@@ -1,16 +1,26 @@
 /**
  * EmptyState - Unified empty state component
  * Provides consistent styling for empty state messages across the app
+ * Enhanced with hints and quick actions for better UX guidance
  */
 
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { Lightbulb } from 'lucide-react';
 
 interface EmptyStateProps {
   icon: React.ReactNode;
   title: string;
   message?: string;
+  /** Contextual hint explaining what to do next */
+  hint?: string;
   action?: {
+    label: string;
+    onClick: () => void;
+    icon?: React.ReactNode;
+  };
+  /** Quick secondary action (e.g., "Learn more") */
+  secondaryAction?: {
     label: string;
     onClick: () => void;
   };
@@ -47,7 +57,9 @@ export function EmptyState({
   icon,
   title,
   message,
+  hint,
   action,
+  secondaryAction,
   highlight = false,
   size = 'default',
   className,
@@ -79,14 +91,43 @@ export function EmptyState({
         </p>
       )}
 
+      {/* Contextual hint with lightbulb icon */}
+      {hint && (
+        <div className={cn(
+          "inline-flex items-center gap-2 px-3 py-2 rounded-xl mb-4 max-w-sm mx-auto",
+          "bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20"
+        )}>
+          <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <p className={cn("text-amber-700 dark:text-amber-300 text-left", sizes.message)}>
+            {hint}
+          </p>
+        </div>
+      )}
+
+      {/* Primary action button */}
       {action && (
         <Button
           variant="gradient"
           size={size === 'compact' ? 'default' : 'lg'}
           onClick={action.onClick}
+          className="gap-2"
         >
+          {action.icon}
           {action.label}
         </Button>
+      )}
+
+      {/* Secondary action link */}
+      {secondaryAction && (
+        <button
+          onClick={secondaryAction.onClick}
+          className={cn(
+            "block mx-auto mt-3 text-muted-foreground hover:text-foreground transition-colors",
+            sizes.message
+          )}
+        >
+          {secondaryAction.label}
+        </button>
       )}
     </div>
   );

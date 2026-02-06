@@ -313,6 +313,10 @@ export interface Translations {
   save: string;
   cancel: string;
   undo: string;
+  edit: string;
+  editHabit: string;
+  habitUpdated: string;
+  saveChanges: string;
   habitCompleted: string;
   habitUnchecked: string;
   recentEntries: string;
@@ -1997,6 +2001,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     save: 'Сохранить',
     cancel: 'Отмена',
     undo: 'Отменить',
+    edit: 'Редактировать',
+    editHabit: 'Редактировать привычку',
+    habitUpdated: 'Привычка обновлена',
+    saveChanges: 'Сохранить изменения',
     habitCompleted: 'Привычка выполнена',
     habitUnchecked: 'Привычка отменена',
     recentEntries: 'Недавние записи',
@@ -3620,6 +3628,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     save: 'Save',
     cancel: 'Cancel',
     undo: 'Undo',
+    edit: 'Edit',
+    editHabit: 'Edit Habit',
+    habitUpdated: 'Habit updated',
+    saveChanges: 'Save Changes',
     habitCompleted: 'Habit completed',
     habitUnchecked: 'Habit unchecked',
     recentEntries: 'Recent entries',
@@ -5243,6 +5255,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     save: 'Зберегти',
     cancel: 'Скасувати',
     undo: 'Скасувати',
+    edit: 'Редагувати',
+    editHabit: 'Редагувати звичку',
+    habitUpdated: 'Звичку оновлено',
+    saveChanges: 'Зберегти зміни',
     habitCompleted: 'Звичку виконано',
     habitUnchecked: 'Звичку скасовано',
     recentEntries: 'Останні записи',
@@ -6867,6 +6883,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     save: 'Guardar',
     cancel: 'Cancelar',
     undo: 'Deshacer',
+    edit: 'Editar',
+    editHabit: 'Editar hábito',
+    habitUpdated: 'Hábito actualizado',
+    saveChanges: 'Guardar cambios',
     habitCompleted: 'Hábito completado',
     habitUnchecked: 'Hábito desmarcado',
     recentEntries: 'Entradas recientes',
@@ -8491,6 +8511,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     save: 'Speichern',
     cancel: 'Abbrechen',
     undo: 'Rückgängig',
+    edit: 'Bearbeiten',
+    editHabit: 'Gewohnheit bearbeiten',
+    habitUpdated: 'Gewohnheit aktualisiert',
+    saveChanges: 'Änderungen speichern',
     habitCompleted: 'Gewohnheit erledigt',
     habitUnchecked: 'Gewohnheit deaktiviert',
     recentEntries: 'Letzte Einträge',
@@ -10115,6 +10139,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     save: 'Sauvegarder',
     cancel: 'Annuler',
     undo: 'Annuler',
+    edit: 'Modifier',
+    editHabit: 'Modifier l\'habitude',
+    habitUpdated: 'Habitude mise à jour',
+    saveChanges: 'Enregistrer les modifications',
     habitCompleted: 'Habitude complétée',
     habitUnchecked: 'Habitude décochée',
     recentEntries: 'Entrées récentes',
@@ -11738,6 +11766,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     save: '保存',
     cancel: 'キャンセル',
     undo: '元に戻す',
+    edit: '編集',
+    editHabit: '習慣を編集',
+    habitUpdated: '習慣を更新しました',
+    saveChanges: '変更を保存',
     habitCompleted: '習慣達成',
     habitUnchecked: '習慣解除',
     recentEntries: '最近の記録',

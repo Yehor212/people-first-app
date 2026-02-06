@@ -1,4 +1,4 @@
-﻿import { useMemo, useState, useEffect, useRef, memo } from 'react';
+import { useMemo, useState, useEffect, useRef, memo } from 'react';
 import { motion } from 'framer-motion';
 import { logger } from '@/lib/logger';
 import { FocusSession } from '@/types';
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { HyperfocusMode } from './HyperfocusMode';
 import { haptics } from '@/lib/haptics';
+import { announceSuccess } from '@/lib/a11y';
 
 // Star particle for cosmic background
 function CosmicStar({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
@@ -313,6 +314,9 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
           };
           setPendingSession(session);
           setShowReflection(true);
+
+          // Announce to screen readers
+          announceSuccess(t.focusCompletedShort || 'Focus session complete');
 
           // Switch to break mode
           focusStartRef.current = null;

@@ -24,6 +24,7 @@ import {
 import { Trophy, Star, Lock, TrendingUp } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Language } from '@/i18n/translations';
+import { announceSuccess } from '@/lib/a11y';
 
 interface AchievementsPanelProps {
   stats: UserStats;
@@ -50,12 +51,17 @@ export const AchievementsPanel = memo(function AchievementsPanel({ stats, unlock
     setAchievementProgress(updatedProgress);
 
     // Notify about new achievements
-    if (newAchievements.length > 0 && onAchievementUnlock) {
+    if (newAchievements.length > 0) {
       newAchievements.forEach((achievement) => {
-        onAchievementUnlock(achievement);
+        // Announce to screen readers
+        announceSuccess(`${t.achievementUnlocked || 'Achievement unlocked!'} ${achievement.name}`);
+
+        if (onAchievementUnlock) {
+          onAchievementUnlock(achievement);
+        }
       });
     }
-  }, [stats, unlockedAchievements]);
+  }, [stats, unlockedAchievements, t.achievementUnlocked, onAchievementUnlock]);
 
   const allAchievements = Object.values(ACHIEVEMENTS);
   const unlockedCount = unlockedAchievements.length;
