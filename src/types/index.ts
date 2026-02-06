@@ -136,6 +136,25 @@ export interface UserStats {
   zenMasterDays: number;       // Days with mood + habits + focus + gratitude
 }
 
+/**
+ * Personal Goal for tracking progress
+ * Users can set weekly/monthly targets for habits, focus, mood, or streaks
+ */
+export type GoalType = 'habit' | 'focus' | 'mood' | 'streak';
+export type GoalPeriod = 'week' | 'month';
+
+export interface Goal {
+  id: string;
+  type: GoalType;
+  target: number;        // e.g., 6 days, 120 minutes, average mood 4+
+  period: GoalPeriod;
+  habitId?: string;      // For habit-specific goals
+  title: string;         // User-visible title
+  createdAt: string;     // ISO date
+  completedAt?: string;  // ISO date when goal was achieved
+  status: 'active' | 'completed' | 'failed';
+}
+
 export interface ReminderSettings {
   enabled: boolean;
   // Mood reminders - 3 times per day

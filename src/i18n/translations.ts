@@ -328,7 +328,29 @@ export interface Translations {
   
   // Weekly calendar
   thisWeek: string;
-  
+  thisMonth: string;
+
+  // Personal Goals (Stage 4)
+  personalGoals: string;
+  goalType: string;
+  goalHabit: string;
+  goalFocus: string;
+  goalMood: string;
+  goalStreak: string;
+  goalCompleteHabits: string;
+  goalFocusTime: string;
+  goalMoodAverage: string;
+  goalMaintainStreak: string;
+  selectHabit: string;
+  allHabits: string;
+  weekly: string;
+  monthly: string;
+  addGoal: string;
+  noGoalsYet: string;
+  setGoalHint: string;
+  completedGoals: string;
+  claimReward: string;
+
   // Stats page
   statistics: string;
   monthlyOverview: string;
@@ -2021,6 +2043,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     gratitudeLimit: 'До 3 пунктов в день',
     gratitudeMemoryJar: 'Памятная запись',
     thisWeek: 'Эта неделя',
+    thisMonth: 'Этот месяц',
+
+    // Personal Goals
+    personalGoals: 'Личные цели',
+    goalType: 'Тип цели',
+    goalHabit: 'Привычка',
+    goalFocus: 'Фокус',
+    goalMood: 'Настроение',
+    goalStreak: 'Серия',
+    goalCompleteHabits: 'Выполнить привычки',
+    goalFocusTime: 'Время фокуса',
+    goalMoodAverage: 'Среднее настроение',
+    goalMaintainStreak: 'Сохранить серию',
+    selectHabit: 'Выберите привычку',
+    allHabits: 'Все привычки',
+    weekly: 'Еженедельно',
+    monthly: 'Ежемесячно',
+    addGoal: 'Добавить цель',
+    noGoalsYet: 'Целей пока нет',
+    setGoalHint: 'Установите цель для отслеживания прогресса',
+    completedGoals: 'Выполнено',
+    claimReward: 'Получить награду',
+
     statistics: 'Статистика',
     monthlyOverview: 'Обзор месяца',
     statsRange: 'Период',
@@ -3655,6 +3700,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     gratitudeLimit: 'Up to 3 items per day',
     gratitudeMemoryJar: 'Memory jar',
     thisWeek: 'This week',
+    thisMonth: 'This month',
+
+    // Personal Goals
+    personalGoals: 'Personal Goals',
+    goalType: 'Goal Type',
+    goalHabit: 'Habit',
+    goalFocus: 'Focus',
+    goalMood: 'Mood',
+    goalStreak: 'Streak',
+    goalCompleteHabits: 'Complete habits',
+    goalFocusTime: 'Focus time',
+    goalMoodAverage: 'Mood average',
+    goalMaintainStreak: 'Maintain streak',
+    selectHabit: 'Select Habit',
+    allHabits: 'All habits',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+    addGoal: 'Add Goal',
+    noGoalsYet: 'No goals yet',
+    setGoalHint: 'Set a goal to track your progress',
+    completedGoals: 'Completed',
+    claimReward: 'Claim Reward',
+
     statistics: 'Statistics',
     monthlyOverview: 'Monthly overview',
     statsRange: 'Range',
@@ -5289,6 +5357,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     gratitudeLimit: 'До 3 пунктів на день',
     gratitudeMemoryJar: 'Скринька спогадів',
     thisWeek: 'Цей тиждень',
+    thisMonth: 'Цей місяць',
+
+    // Personal Goals
+    personalGoals: 'Особисті цілі',
+    goalType: 'Тип цілі',
+    goalHabit: 'Звичка',
+    goalFocus: 'Фокус',
+    goalMood: 'Настрій',
+    goalStreak: 'Серія',
+    goalCompleteHabits: 'Виконати звички',
+    goalFocusTime: 'Час фокусування',
+    goalMoodAverage: 'Середній настрій',
+    goalMaintainStreak: 'Зберегти серію',
+    selectHabit: 'Оберіть звичку',
+    allHabits: 'Усі звички',
+    weekly: 'Щотижня',
+    monthly: 'Щомісяця',
+    addGoal: 'Додати ціль',
+    noGoalsYet: 'Цілей поки немає',
+    setGoalHint: 'Встановіть ціль для відстеження прогресу',
+    completedGoals: 'Виконано',
+    claimReward: 'Отримати нагороду',
+
     statistics: 'Статистика',
     monthlyOverview: 'Огляд місяця',
     statsRange: 'Період',
@@ -6924,6 +7015,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     gratitudeLimit: 'Hasta 3 puntos por día',
     gratitudeMemoryJar: 'Frasco de recuerdos',
     thisWeek: 'Esta semana',
+    thisMonth: 'Este mes',
+
+    // Personal Goals
+    personalGoals: 'Metas personales',
+    goalType: 'Tipo de meta',
+    goalHabit: 'Hábito',
+    goalFocus: 'Enfoque',
+    goalMood: 'Ánimo',
+    goalStreak: 'Racha',
+    goalCompleteHabits: 'Completar hábitos',
+    goalFocusTime: 'Tiempo de enfoque',
+    goalMoodAverage: 'Promedio de ánimo',
+    goalMaintainStreak: 'Mantener racha',
+    selectHabit: 'Seleccionar hábito',
+    allHabits: 'Todos los hábitos',
+    weekly: 'Semanal',
+    monthly: 'Mensual',
+    addGoal: 'Añadir meta',
+    noGoalsYet: 'Sin metas aún',
+    setGoalHint: 'Establece una meta para seguir tu progreso',
+    completedGoals: 'Completadas',
+    claimReward: 'Reclamar recompensa',
+
     statistics: 'Estadísticas',
     monthlyOverview: 'Resumen mensual',
     statsRange: 'Período',
@@ -8559,6 +8673,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     gratitudeLimit: 'Bis zu 3 Punkte pro Tag',
     gratitudeMemoryJar: 'Erinnerungsglas',
     thisWeek: 'Diese Woche',
+    thisMonth: 'Dieser Monat',
+
+    // Personal Goals
+    personalGoals: 'Persönliche Ziele',
+    goalType: 'Zieltyp',
+    goalHabit: 'Gewohnheit',
+    goalFocus: 'Fokus',
+    goalMood: 'Stimmung',
+    goalStreak: 'Streak',
+    goalCompleteHabits: 'Gewohnheiten erledigen',
+    goalFocusTime: 'Fokuszeit',
+    goalMoodAverage: 'Durchschnittsstimmung',
+    goalMaintainStreak: 'Streak halten',
+    selectHabit: 'Gewohnheit wählen',
+    allHabits: 'Alle Gewohnheiten',
+    weekly: 'Wöchentlich',
+    monthly: 'Monatlich',
+    addGoal: 'Ziel hinzufügen',
+    noGoalsYet: 'Noch keine Ziele',
+    setGoalHint: 'Setze ein Ziel, um deinen Fortschritt zu verfolgen',
+    completedGoals: 'Abgeschlossen',
+    claimReward: 'Belohnung einfordern',
+
     statistics: 'Statistiken',
     monthlyOverview: 'Monatsübersicht',
     statsRange: 'Zeitraum',
@@ -10194,6 +10331,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     gratitudeLimit: 'Jusqu\'à 3 points par jour',
     gratitudeMemoryJar: 'Bocal à souvenirs',
     thisWeek: 'Cette semaine',
+    thisMonth: 'Ce mois',
+
+    // Personal Goals
+    personalGoals: 'Objectifs personnels',
+    goalType: 'Type d\'objectif',
+    goalHabit: 'Habitude',
+    goalFocus: 'Focus',
+    goalMood: 'Humeur',
+    goalStreak: 'Série',
+    goalCompleteHabits: 'Compléter les habitudes',
+    goalFocusTime: 'Temps de focus',
+    goalMoodAverage: 'Humeur moyenne',
+    goalMaintainStreak: 'Maintenir la série',
+    selectHabit: 'Sélectionner habitude',
+    allHabits: 'Toutes les habitudes',
+    weekly: 'Hebdomadaire',
+    monthly: 'Mensuel',
+    addGoal: 'Ajouter objectif',
+    noGoalsYet: 'Pas encore d\'objectifs',
+    setGoalHint: 'Définissez un objectif pour suivre vos progrès',
+    completedGoals: 'Complétés',
+    claimReward: 'Réclamer récompense',
+
     statistics: 'Statistiques',
     monthlyOverview: 'Aperçu mensuel',
     statsRange: 'Période',
@@ -11828,6 +11988,29 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     gratitudeLimit: '1日3つまで',
     gratitudeMemoryJar: 'メモリージャー',
     thisWeek: '今週',
+    thisMonth: '今月',
+
+    // Personal Goals
+    personalGoals: '個人目標',
+    goalType: '目標タイプ',
+    goalHabit: '習慣',
+    goalFocus: '集中',
+    goalMood: '気分',
+    goalStreak: '連続記録',
+    goalCompleteHabits: '習慣を達成',
+    goalFocusTime: '集中時間',
+    goalMoodAverage: '平均気分',
+    goalMaintainStreak: '連続を維持',
+    selectHabit: '習慣を選択',
+    allHabits: 'すべての習慣',
+    weekly: '週間',
+    monthly: '月間',
+    addGoal: '目標を追加',
+    noGoalsYet: '目標がありません',
+    setGoalHint: '進捗を追跡するために目標を設定',
+    completedGoals: '達成済み',
+    claimReward: '報酬を受け取る',
+
     statistics: '統計',
     monthlyOverview: '月間概要',
     statsRange: '期間',
@@ -13469,6 +13652,28 @@ const arabicOverrides: Partial<Translations> = {
 
   // Weekly Calendar
   thisWeek: 'هذا الأسبوع',
+  thisMonth: 'هذا الشهر',
+
+  // Personal Goals
+  personalGoals: 'الأهداف الشخصية',
+  goalType: 'نوع الهدف',
+  goalHabit: 'عادة',
+  goalFocus: 'تركيز',
+  goalMood: 'مزاج',
+  goalStreak: 'سلسلة',
+  goalCompleteHabits: 'إكمال العادات',
+  goalFocusTime: 'وقت التركيز',
+  goalMoodAverage: 'متوسط المزاج',
+  goalMaintainStreak: 'الحفاظ على السلسلة',
+  selectHabit: 'اختر عادة',
+  allHabits: 'كل العادات',
+  weekly: 'أسبوعي',
+  monthly: 'شهري',
+  addGoal: 'إضافة هدف',
+  noGoalsYet: 'لا أهداف بعد',
+  setGoalHint: 'حدد هدفاً لتتبع تقدمك',
+  completedGoals: 'مكتمل',
+  claimReward: 'المطالبة بالمكافأة',
 
   // Stats Page
   statistics: 'الإحصائيات',
