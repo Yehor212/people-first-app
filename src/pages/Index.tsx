@@ -24,6 +24,7 @@ import { generateHabitScheduleEvents, mergeScheduleEvents } from '@/lib/habitSch
 import { migrateExistingUser } from '@/lib/cloudSyncSettings';
 import { useHealthConnect } from '@/hooks/useHealthConnect';
 import { useQuickActions, QuickActionType } from '@/hooks/useQuickActions';
+import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { App } from '@capacitor/app';
 import {
   handleAuthCallback,
@@ -151,6 +152,16 @@ export function Index() {
   const [activeTab, setActiveTab] = useState<TabType>('home');
   // const [showAIOnboarding, setShowAIOnboarding] = useState(false); // Hidden until AI ready
   const lastSyncedUserIdRef = useRef<string | null>(null);
+
+  // Swipe navigation for mobile tab switching
+  const SWIPE_TABS: TabType[] = ['home', 'garden', 'stats', 'settings'];
+  const { containerProps: swipeProps, containerRef: swipeContainerRef } = useSwipeNavigation({
+    activeTab,
+    onTabChange: setActiveTab,
+    tabs: SWIPE_TABS,
+    threshold: 50,
+    velocityThreshold: 0.3,
+  });
 
   // App initialization state (must be first)
   const [initializationState, setInitializationState] = useState<{
@@ -2016,12 +2027,18 @@ export function Index() {
       {/* P1 Fix: Storage error banner - shows when localStorage/IndexedDB fails */}
       <StorageErrorBanner />
 
-      <main
-        id="main-content"
-        role="main"
-        className="max-w-lg mx-auto px-4 py-6"
-        style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom))' }}
+      {/* Swipe container for tab navigation on mobile */}
+      <div
+        ref={swipeContainerRef}
+        {...swipeProps}
+        className="min-h-screen"
       >
+        <main
+          id="main-content"
+          role="main"
+          className="max-w-lg mx-auto px-4 py-6"
+          style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom))' }}
+        >
         {/* Global Schedule Bar - visible on all tabs when events exist */}
         {/* v1.4.0: Use todayAllEvents to include both manual and habit-generated events */}
         {todayAllEvents.length > 0 && activeTab !== 'settings' && (
@@ -2403,7 +2420,8 @@ export function Index() {
             </LazyErrorBoundary>
           </>
         )}
-      </main>
+        </main>
+      </div>
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
