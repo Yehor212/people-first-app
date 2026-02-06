@@ -361,6 +361,17 @@ export interface Translations {
   urgencyPerfectDay: string;
   urgencyPerfectDayDesc: string;
 
+  // Habit Categories (6.3)
+  habitCategory: string;
+  categoryHealth: string;
+  categoryMindfulness: string;
+  categoryProductivity: string;
+  categorySocial: string;
+  categoryCreativity: string;
+  categoryFinance: string;
+  categorySelfCare: string;
+  categoryOther: string;
+
   // Stats page
   statistics: string;
   monthlyOverview: string;
@@ -2086,6 +2097,17 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyPerfectDay: 'Идеальный день на расстоянии руки!',
     urgencyPerfectDayDesc: 'Осталась 1 привычка: {habit}',
 
+    // Habit Categories
+    habitCategory: 'Категория',
+    categoryHealth: 'Здоровье',
+    categoryMindfulness: 'Осознанность',
+    categoryProductivity: 'Продуктивность',
+    categorySocial: 'Социальное',
+    categoryCreativity: 'Творчество',
+    categoryFinance: 'Финансы',
+    categorySelfCare: 'Забота о себе',
+    categoryOther: 'Другое',
+
     statistics: 'Статистика',
     monthlyOverview: 'Обзор месяца',
     statsRange: 'Период',
@@ -3753,6 +3775,17 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyPerfectDay: 'Perfect day within reach!',
     urgencyPerfectDayDesc: 'Just 1 habit left: {habit}',
 
+    // Habit Categories
+    habitCategory: 'Category',
+    categoryHealth: 'Health',
+    categoryMindfulness: 'Mindfulness',
+    categoryProductivity: 'Productivity',
+    categorySocial: 'Social',
+    categoryCreativity: 'Creativity',
+    categoryFinance: 'Finance',
+    categorySelfCare: 'Self-care',
+    categoryOther: 'Other',
+
     statistics: 'Statistics',
     monthlyOverview: 'Monthly overview',
     statsRange: 'Range',
@@ -5419,6 +5452,17 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyStreakAtRiskDesc: 'Виконай хоча б одну звичку, щоб зберегти серію',
     urgencyPerfectDay: 'Ідеальний день на відстані руки!',
     urgencyPerfectDayDesc: 'Залишилась 1 звичка: {habit}',
+
+    // Habit Categories
+    habitCategory: 'Категорія',
+    categoryHealth: 'Здоров\'я',
+    categoryMindfulness: 'Усвідомленість',
+    categoryProductivity: 'Продуктивність',
+    categorySocial: 'Соціальне',
+    categoryCreativity: 'Творчість',
+    categoryFinance: 'Фінанси',
+    categorySelfCare: 'Турбота про себе',
+    categoryOther: 'Інше',
 
     statistics: 'Статистика',
     monthlyOverview: 'Огляд місяця',
@@ -7088,6 +7132,17 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyPerfectDay: '¡Día perfecto al alcance!',
     urgencyPerfectDayDesc: 'Solo queda 1 hábito: {habit}',
 
+    // Habit Categories
+    habitCategory: 'Categoría',
+    categoryHealth: 'Salud',
+    categoryMindfulness: 'Mindfulness',
+    categoryProductivity: 'Productividad',
+    categorySocial: 'Social',
+    categoryCreativity: 'Creatividad',
+    categoryFinance: 'Finanzas',
+    categorySelfCare: 'Autocuidado',
+    categoryOther: 'Otro',
+
     statistics: 'Estadísticas',
     monthlyOverview: 'Resumen mensual',
     statsRange: 'Período',
@@ -8755,6 +8810,17 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyStreakAtRiskDesc: 'Schließe mindestens eine Gewohnheit ab, um deine Serie zu halten',
     urgencyPerfectDay: 'Perfekter Tag in Reichweite!',
     urgencyPerfectDayDesc: 'Nur noch 1 Gewohnheit: {habit}',
+
+    // Habit Categories
+    habitCategory: 'Kategorie',
+    categoryHealth: 'Gesundheit',
+    categoryMindfulness: 'Achtsamkeit',
+    categoryProductivity: 'Produktivität',
+    categorySocial: 'Soziales',
+    categoryCreativity: 'Kreativität',
+    categoryFinance: 'Finanzen',
+    categorySelfCare: 'Selbstfürsorge',
+    categoryOther: 'Sonstiges',
 
     statistics: 'Statistiken',
     monthlyOverview: 'Monatsübersicht',
@@ -10424,6 +10490,17 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyPerfectDay: 'Journée parfaite à portée!',
     urgencyPerfectDayDesc: 'Plus qu\'1 habitude: {habit}',
 
+    // Habit Categories
+    habitCategory: 'Catégorie',
+    categoryHealth: 'Santé',
+    categoryMindfulness: 'Pleine conscience',
+    categoryProductivity: 'Productivité',
+    categorySocial: 'Social',
+    categoryCreativity: 'Créativité',
+    categoryFinance: 'Finances',
+    categorySelfCare: 'Soin personnel',
+    categoryOther: 'Autre',
+
     statistics: 'Statistiques',
     monthlyOverview: 'Aperçu mensuel',
     statsRange: 'Période',
@@ -12090,6 +12167,17 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyStreakAtRiskDesc: '連続記録を守るために少なくとも1つの習慣を完了しよう',
     urgencyPerfectDay: 'パーフェクトデーまであと少し！',
     urgencyPerfectDayDesc: '残り1つの習慣: {habit}',
+
+    // Habit Categories
+    habitCategory: 'カテゴリー',
+    categoryHealth: '健康',
+    categoryMindfulness: 'マインドフルネス',
+    categoryProductivity: '生産性',
+    categorySocial: '社会',
+    categoryCreativity: '創造性',
+    categoryFinance: '財務',
+    categorySelfCare: 'セルフケア',
+    categoryOther: 'その他',
 
     statistics: '統計',
     monthlyOverview: '月間概要',
@@ -13764,6 +13852,17 @@ const arabicOverrides: Partial<Translations> = {
   urgencyStreakAtRiskDesc: 'أكمل عادة واحدة على الأقل للحفاظ على سلسلتك',
   urgencyPerfectDay: 'يوم مثالي في المتناول!',
   urgencyPerfectDayDesc: 'متبقي عادة واحدة فقط: {habit}',
+
+  // Habit Categories
+  habitCategory: 'الفئة',
+  categoryHealth: 'الصحة',
+  categoryMindfulness: 'اليقظة',
+  categoryProductivity: 'الإنتاجية',
+  categorySocial: 'اجتماعي',
+  categoryCreativity: 'الإبداع',
+  categoryFinance: 'المالية',
+  categorySelfCare: 'العناية الذاتية',
+  categoryOther: 'أخرى',
 
   // Stats Page
   statistics: 'الإحصائيات',

@@ -55,6 +55,17 @@ export interface EmotionData {
   intensity: EmotionIntensity;
 }
 
+// Habit categories for grouping
+export type HabitCategory =
+  | 'health'       // Здоровье (упражнения, питание, сон)
+  | 'mindfulness'  // Осознанность (медитация, дневник, благодарность)
+  | 'productivity' // Продуктивность (работа, учеба, навыки)
+  | 'social'       // Социальное (семья, друзья, общение)
+  | 'creativity'   // Творчество (музыка, искусство, письмо)
+  | 'finance'      // Финансы (бюджет, сбережения)
+  | 'self-care'    // Забота о себе (гигиена, отдых)
+  | 'other';       // Другое
+
 export type HabitType =
   | 'continuous'   // Бросить курить/пить - отслеживает дни без срыва
   | 'daily'        // Зарядка, медитация - 1 раз в день
@@ -78,6 +89,9 @@ export interface Habit {
   completedDates: string[];
   createdAt: number;
   templateId?: string;
+
+  // Category for grouping habits
+  category?: HabitCategory;
 
   // New fields for enhanced habit system
   type: HabitType;

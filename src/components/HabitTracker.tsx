@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, memo, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Habit, HabitType, HabitReminder, HabitFrequency } from '@/types';
+import { Habit, HabitType, HabitReminder, HabitFrequency, HabitCategory } from '@/types';
 import { getToday, generateId, formatDate, cn, parseLocalDate } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
 import { Plus, X, ChevronRight, Settings2, Zap, Users, Sparkles, Leaf, Undo2 } from 'lucide-react';
@@ -25,6 +25,18 @@ const habitColors = [
   'bg-mood-great',
 ];
 
+// Category definitions with icons
+const habitCategories: { id: HabitCategory; icon: string; color: string }[] = [
+  { id: 'health', icon: '💪', color: 'from-emerald-500 to-teal-500' },
+  { id: 'mindfulness', icon: '🧘', color: 'from-violet-500 to-purple-500' },
+  { id: 'productivity', icon: '🚀', color: 'from-blue-500 to-cyan-500' },
+  { id: 'social', icon: '👥', color: 'from-pink-500 to-rose-500' },
+  { id: 'creativity', icon: '🎨', color: 'from-amber-500 to-orange-500' },
+  { id: 'finance', icon: '💰', color: 'from-green-500 to-emerald-500' },
+  { id: 'self-care', icon: '🌸', color: 'from-fuchsia-500 to-pink-500' },
+  { id: 'other', icon: '✨', color: 'from-slate-500 to-gray-500' },
+];
+
 interface HabitTrackerProps {
   habits: Habit[];
   onToggleHabit: (habitId: string, date: string) => void;
@@ -45,8 +57,10 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   const [selectedIcon, setSelectedIcon] = useState(habitIcons[0]);
   const [selectedColor, setSelectedColor] = useState(habitColors[0]);
   const [selectedType, setSelectedType] = useState<HabitType>('daily');
+  const [selectedCategory, setSelectedCategory] = useState<HabitCategory>('health');
   const [dailyTarget, setDailyTarget] = useState(1);
   const [reminders, setReminders] = useState<HabitReminder[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState<HabitCategory | 'all'>('all');
 
   // New state for frequency and duration
   const [frequency, setFrequency] = useState<HabitFrequency>('daily');
@@ -124,6 +138,12 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     });
     return map;
   }, [habits, today]);
+
+  // Filtered habits by category
+  const filteredHabits = useMemo(() => {
+    if (categoryFilter === 'all') return habits;
+    return habits.filter(h => (h.category || 'health') === categoryFilter);
+  }, [habits, categoryFilter]);
 
   // Calculate habit streak (consecutive days)
   const getHabitStreak = (habit: Habit): number => {
@@ -224,6 +244,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     setSelectedIcon(habitIcons[0]);
     setSelectedColor(habitColors[0]);
     setSelectedType('daily');
+    setSelectedCategory('health');
     setDailyTarget(1);
     setReminders([]);
     setFrequency('daily');
@@ -242,6 +263,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     setSelectedIcon(habit.icon);
     setSelectedColor(habit.color);
     setSelectedType(habit.type || 'daily');
+    setSelectedCategory(habit.category || 'health');
     setDailyTarget(habit.dailyTarget ?? habit.targetCount ?? 1);
     setReminders(habit.reminders || []);
     setFrequency(habit.frequency || 'daily');
@@ -263,6 +285,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         icon: selectedIcon,
         color: selectedColor,
         type: selectedType,
+        category: selectedCategory,
         reminders: reminders,
         frequency: frequency,
         ...(frequency === 'custom' && { customDays }),
@@ -285,6 +308,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         name: newHabitName.trim(),
         icon: selectedIcon,
         color: selectedColor,
+        category: selectedCategory,
         completedDates: [],
         createdAt: Date.now(),
         type: selectedType,
@@ -896,6 +920,53 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             </div>
           </div>
 
+          {/* Category selector */}
+          <div className="relative mb-4">
+            <label className={cn(
+              "text-sm mb-2 block",
+              isPrimaryCTA ? "text-slate-500 dark:text-white/60" : "text-muted-foreground"
+            )}>{t.habitCategory || 'Category'}:</label>
+            <div className="grid grid-cols-4 gap-2">
+              {habitCategories.map(({ id, icon, color }) => {
+                const categoryLabels: Record<HabitCategory, string> = {
+                  health: t.categoryHealth || 'Health',
+                  mindfulness: t.categoryMindfulness || 'Mindfulness',
+                  productivity: t.categoryProductivity || 'Productivity',
+                  social: t.categorySocial || 'Social',
+                  creativity: t.categoryCreativity || 'Creativity',
+                  finance: t.categoryFinance || 'Finance',
+                  'self-care': t.categorySelfCare || 'Self-care',
+                  other: t.categoryOther || 'Other',
+                };
+                return (
+                  <motion.button
+                    key={id}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setSelectedCategory(id);
+                    }}
+                    className={cn(
+                      "p-2 rounded-xl text-xs font-medium transition-all flex flex-col items-center gap-1",
+                      selectedCategory === id
+                        ? isPrimaryCTA
+                          ? `bg-gradient-to-br ${color} text-white shadow-lg`
+                          : "bg-primary text-primary-foreground shadow-md"
+                        : isPrimaryCTA
+                          ? "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
+                          : "bg-background hover:bg-muted border border-border/50"
+                    )}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <span className="text-lg">{icon}</span>
+                    <span className="truncate w-full text-center">{categoryLabels[id]}</span>
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+
           {(selectedType === 'multiple' || selectedType === 'reduce') && (
             <div className="relative mb-4">
               <label className={cn(
@@ -1118,12 +1189,52 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           </Button>
         </div>
       ) : (
-        <div
-          role="list"
-          aria-label={t.habits || 'Habits'}
-          className="space-y-2"
-        >
-          {habits.map((habit) => (
+        <>
+          {/* Category filter tabs */}
+          {habits.length >= 3 && (
+            <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1 scrollbar-hide">
+              <motion.button
+                onClick={() => setCategoryFilter('all')}
+                className={cn(
+                  "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all",
+                  categoryFilter === 'all'
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "bg-secondary text-muted-foreground hover:bg-muted"
+                )}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {t.all || 'All'} ({habits.length})
+              </motion.button>
+              {habitCategories.map(({ id, icon }) => {
+                const count = habits.filter(h => (h.category || 'health') === id).length;
+                if (count === 0) return null;
+                return (
+                  <motion.button
+                    key={id}
+                    onClick={() => setCategoryFilter(id)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1",
+                      categoryFilter === id
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "bg-secondary text-muted-foreground hover:bg-muted"
+                    )}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    {icon} {count}
+                  </motion.button>
+                );
+              })}
+            </div>
+          )}
+
+          <div
+            role="list"
+            aria-label={t.habits || 'Habits'}
+            className="space-y-2"
+          >
+            {filteredHabits.map((habit) => (
             <CompactHabitCard
               key={habit.id}
               habit={habit}
@@ -1135,7 +1246,8 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               streak={habitStreaks.get(habit.id) || 0}
             />
           ))}
-        </div>
+          </div>
+        </>
       )}
 
       {/* Duolingo-style Completion Celebration */}
