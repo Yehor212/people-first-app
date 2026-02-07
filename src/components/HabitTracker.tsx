@@ -671,6 +671,9 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
+          onTouchStart={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
+          onTouchEnd={(e) => e.stopPropagation()}
         >
           {/* Premium cosmic background */}
           {isPrimaryCTA && (

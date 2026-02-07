@@ -6,6 +6,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Interpolate template variables in translation strings.
+ * Replaces {key} with corresponding values from the values object.
+ * Example: interpolate("Hello {name}!", { name: "World" }) → "Hello World!"
+ */
+export function interpolate(template: string, values: Record<string, string | number>): string {
+  return template.replace(/\{(\w+)\}/g, (_, key) => String(values[key] ?? `{${key}}`));
+}
+
 export function formatDate(date: Date): string {
   // Use local time, not UTC (toISOString uses UTC which can shift dates near midnight)
   const year = date.getFullYear();

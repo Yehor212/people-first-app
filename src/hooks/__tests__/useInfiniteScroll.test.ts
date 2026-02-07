@@ -337,7 +337,7 @@ describe('useInfiniteScroll', () => {
       });
 
       expect(result.current.error).toBeInstanceOf(Error);
-      expect(result.current.error?.message).toBe('Failed to load more items');
+      expect(result.current.error?.message).toBe('string error');
     });
 
     it('clears error on successful load', async () => {

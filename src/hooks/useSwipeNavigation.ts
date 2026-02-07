@@ -118,8 +118,14 @@ export function useSwipeNavigation<T extends string>({
     (e: React.TouchEvent) => {
       if (!enabled) return;
 
-      // Don't interfere with horizontal scrollable elements
+      // Don't intercept swipes starting on form elements
       const target = e.target as HTMLElement;
+      const tagName = target.tagName.toLowerCase();
+      if (['input', 'textarea', 'select'].includes(tagName) || target.isContentEditable) {
+        return;
+      }
+
+      // Don't interfere with horizontal scrollable elements
       if (hasHorizontalScroll(target)) {
         swipeState.current.isTracking = false;
         return;

@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from 'react';
+import { interpolate } from '@/lib/utils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -221,10 +222,12 @@ export const AchievementsPanel = memo(function AchievementsPanel({ stats, unlock
 
               {selectedAchievement?.unlockedAt && (
                 <p className="text-xs text-muted-foreground pt-4">
-                  {t.unlockedOn || 'Unlocked on'} {new Date(selectedAchievement.unlockedAt).toLocaleDateString(localeMap[language], {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric',
+                  {interpolate(t.unlockedOn || 'Unlocked on {date}', {
+                    date: new Date(selectedAchievement.unlockedAt).toLocaleDateString(localeMap[language], {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    }),
                   })}
                 </p>
               )}

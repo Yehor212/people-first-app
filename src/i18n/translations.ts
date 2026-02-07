@@ -360,6 +360,11 @@ export interface Translations {
   urgencyStreakAtRiskDesc: string;
   urgencyPerfectDay: string;
   urgencyPerfectDayDesc: string;
+  urgencyTimeLeft: string;
+  urgencyPendingCount: string;
+  urgencyProtectStreak: string;
+  urgencyPerfectDayAwaits: string;
+  urgencyCompleteNow: string;
 
   // Habit Categories (6.3)
   habitCategory: string;
@@ -2156,6 +2161,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyStreakAtRiskDesc: 'Выполни хотя бы одну привычку, чтобы сохранить серию',
     urgencyPerfectDay: 'Идеальный день на расстоянии руки!',
     urgencyPerfectDayDesc: 'Осталась 1 привычка: {habit}',
+    urgencyTimeLeft: '{hours}ч осталось',
+    urgencyPendingCount: '{count} ожидают',
+    urgencyProtectStreak: 'Защити свою серию!',
+    urgencyPerfectDayAwaits: 'Идеальный день ждёт!',
+    urgencyCompleteNow: 'Выполнить сейчас',
 
     // Habit Categories
     habitCategory: 'Категория',
@@ -3892,6 +3902,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyStreakAtRiskDesc: 'Complete at least one habit to keep your streak alive',
     urgencyPerfectDay: 'Perfect day within reach!',
     urgencyPerfectDayDesc: 'Just 1 habit left: {habit}',
+    urgencyTimeLeft: '{hours}h left',
+    urgencyPendingCount: '{count} pending',
+    urgencyProtectStreak: 'Protect your streak!',
+    urgencyPerfectDayAwaits: 'Perfect day awaits!',
+    urgencyCompleteNow: 'Complete now',
 
     // Habit Categories
     habitCategory: 'Category',
@@ -5628,6 +5643,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyStreakAtRiskDesc: 'Виконай хоча б одну звичку, щоб зберегти серію',
     urgencyPerfectDay: 'Ідеальний день на відстані руки!',
     urgencyPerfectDayDesc: 'Залишилась 1 звичка: {habit}',
+    urgencyTimeLeft: '{hours}год залишилось',
+    urgencyPendingCount: '{count} очікують',
+    urgencyProtectStreak: 'Захисти свою серію!',
+    urgencyPerfectDayAwaits: 'Ідеальний день чекає!',
+    urgencyCompleteNow: 'Виконати зараз',
 
     // Habit Categories
     habitCategory: 'Категорія',
@@ -7365,6 +7385,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyStreakAtRiskDesc: 'Completa al menos un hábito para mantener tu racha',
     urgencyPerfectDay: '¡Día perfecto al alcance!',
     urgencyPerfectDayDesc: 'Solo queda 1 hábito: {habit}',
+    urgencyTimeLeft: 'Quedan {hours}h',
+    urgencyPendingCount: '{count} pendientes',
+    urgencyProtectStreak: '¡Protege tu racha!',
+    urgencyPerfectDayAwaits: '¡Un día perfecto te espera!',
+    urgencyCompleteNow: 'Completar ahora',
 
     // Habit Categories
     habitCategory: 'Categoría',
@@ -9102,6 +9127,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyStreakAtRiskDesc: 'Schließe mindestens eine Gewohnheit ab, um deine Serie zu halten',
     urgencyPerfectDay: 'Perfekter Tag in Reichweite!',
     urgencyPerfectDayDesc: 'Nur noch 1 Gewohnheit: {habit}',
+    urgencyTimeLeft: 'Noch {hours}h übrig',
+    urgencyPendingCount: '{count} ausstehend',
+    urgencyProtectStreak: 'Schütze deine Serie!',
+    urgencyPerfectDayAwaits: 'Ein perfekter Tag wartet!',
+    urgencyCompleteNow: 'Jetzt erledigen',
 
     // Habit Categories
     habitCategory: 'Kategorie',
@@ -10839,6 +10869,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyStreakAtRiskDesc: 'Complète au moins une habitude pour garder ta série',
     urgencyPerfectDay: 'Journée parfaite à portée!',
     urgencyPerfectDayDesc: 'Plus qu\'1 habitude: {habit}',
+    urgencyTimeLeft: '{hours}h restantes',
+    urgencyPendingCount: '{count} en attente',
+    urgencyProtectStreak: 'Protège ta série !',
+    urgencyPerfectDayAwaits: 'Journée parfaite en vue !',
+    urgencyCompleteNow: 'Compléter maintenant',
 
     // Habit Categories
     habitCategory: 'Catégorie',
@@ -12575,6 +12610,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     urgencyStreakAtRiskDesc: '連続記録を守るために少なくとも1つの習慣を完了しよう',
     urgencyPerfectDay: 'パーフェクトデーまであと少し！',
     urgencyPerfectDayDesc: '残り1つの習慣: {habit}',
+    urgencyTimeLeft: '残り{hours}時間',
+    urgencyPendingCount: '{count}件未完了',
+    urgencyProtectStreak: '連続記録を守ろう！',
+    urgencyPerfectDayAwaits: 'パーフェクトデーまであと少し！',
+    urgencyCompleteNow: '今すぐ完了',
 
     // Habit Categories
     habitCategory: 'カテゴリー',
@@ -14318,6 +14358,11 @@ const arabicOverrides: Partial<Translations> = {
   urgencyStreakAtRiskDesc: 'أكمل عادة واحدة على الأقل للحفاظ على سلسلتك',
   urgencyPerfectDay: 'يوم مثالي في المتناول!',
   urgencyPerfectDayDesc: 'متبقي عادة واحدة فقط: {habit}',
+  urgencyTimeLeft: 'بقي {hours} ساعة',
+  urgencyPendingCount: '{count} معلقة',
+  urgencyProtectStreak: 'احمِ سلسلتك!',
+  urgencyPerfectDayAwaits: 'يوم مثالي بانتظارك!',
+  urgencyCompleteNow: 'أكمل الآن',
 
   // Habit Categories
   habitCategory: 'الفئة',
@@ -15882,6 +15927,21 @@ const hebrewOverrides: Partial<Translations> = {
   moodGood: 'טוב',
   moodOkay: 'בסדר',
   moodNotGreat: 'לא כל כך טוב',
+
+  // Urgency Alerts
+  urgencyHabitsPending: 'הרגלים ממתינים לך',
+  urgencyHabitsPendingDesc: 'נותרו {hours} שעות להשלמת {count} הרגלים',
+  urgencyLastChance: 'הזדמנות אחרונה היום!',
+  urgencyLastChanceDesc: 'נותרו {count} הרגלים. אל תאבד את המומנטום!',
+  urgencyStreakAtRisk: 'רצף של {streak} ימים בסכנה!',
+  urgencyStreakAtRiskDesc: 'השלם לפחות הרגל אחד כדי לשמור על הרצף',
+  urgencyPerfectDay: 'יום מושלם בהישג יד!',
+  urgencyPerfectDayDesc: 'נותר רק הרגל 1: {habit}',
+  urgencyTimeLeft: 'נותרו {hours} שעות',
+  urgencyPendingCount: '{count} ממתינים',
+  urgencyProtectStreak: 'הגן על הרצף שלך!',
+  urgencyPerfectDayAwaits: 'יום מושלם מחכה!',
+  urgencyCompleteNow: 'השלם עכשיו',
 
   // Time Awareness
   timeUntilEndOfDay: 'עד סוף היום',

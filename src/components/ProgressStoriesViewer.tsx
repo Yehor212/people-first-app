@@ -17,7 +17,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { X, Share2, Pause, Play } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, interpolate } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -226,7 +226,11 @@ export function ProgressStoriesViewer({
       const shared = await shareImage(
         blob,
         t.myProgress || 'My Weekly Progress',
-        t.shareText || 'Check out my progress!'
+        interpolate(t.shareText || '{streak} day streak! {habits} habits completed, {focus} minutes of focus.', {
+          streak,
+          habits: totalCompletions,
+          focus: focusData?.totalMinutes || 0,
+        })
       );
 
       if (shared) {

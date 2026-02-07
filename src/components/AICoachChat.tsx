@@ -8,7 +8,7 @@ import { Send, X, Sparkles, Bot, User, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAICoach, ChatMessage } from '@/contexts/AICoachContext';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
 
@@ -67,6 +67,7 @@ export function AICoachChat() {
         side="bottom"
         className="h-[85vh] rounded-t-3xl flex flex-col p-0"
       >
+        <SheetTitle className="sr-only">{t.aiCoachTitle || 'AI Coach'}</SheetTitle>
         {/* Header - Premium */}
         <div className="flex items-center justify-between p-4 border-b border-white/10 relative">
           {/* Subtle glow */}

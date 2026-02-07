@@ -132,7 +132,16 @@ async function unlockWithAudioElement(): Promise<void> {
  * Uses multiple methods for maximum iOS compatibility.
  */
 export async function unlockAudio(): Promise<void> {
-  if (audioUnlocked) return;
+  if (audioUnlocked) {
+    // Even if previously unlocked, ensure AudioContext is running (iOS re-suspends)
+    try {
+      const ctx = getAudioContext();
+      if (ctx && ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+    } catch { /* ignore */ }
+    return;
+  }
   if (unlockPromise) return unlockPromise;
 
   unlockPromise = (async () => {
@@ -160,8 +169,7 @@ export async function unlockAudio(): Promise<void> {
       });
     } catch (e) {
       logger.warn('[AmbientSounds] Audio unlock had issues:', e);
-      // Still mark as unlocked to avoid infinite retries
-      audioUnlocked = true;
+      // Don't mark as unlocked on failure — allow retry on next user gesture
 
       // P0 Fix: Sentry breadcrumb for unlock issues
       Sentry.addBreadcrumb({
@@ -234,8 +242,8 @@ export function setupAudioUnlock(): void {
   document.addEventListener('click', audioUnlockHandler, { capture: true, passive: true });
   document.addEventListener('keydown', audioUnlockHandler, { capture: true, passive: true });
 
-  // Fallback cleanup after 30 seconds (safety net)
-  audioUnlockTimeoutId = setTimeout(audioUnlockCleanup, 30000);
+  // Note: No safety timeout — listeners are cleaned up on successful unlock (line above).
+  // A 30-second timeout would remove listeners before the user interacts on iOS PWA.
 
   logger.log('[AmbientSounds] Audio unlock listeners set up');
 }
@@ -796,6 +804,17 @@ export class AmbientSoundGenerator {
         this.audioElement.src = '';
       }
       throw new DOMException('Superseded before play', 'AbortError');
+    }
+
+    // iOS: Resume AudioContext right before play (it can re-suspend between earlier resume and now)
+    try {
+      const ctx = getAudioContext();
+      if (ctx && ctx.state === 'suspended') {
+        await ctx.resume();
+        logger.log('[AmbientSounds] AudioContext re-resumed before play');
+      }
+    } catch (e) {
+      logger.warn('[AmbientSounds] AudioContext resume before play failed:', e);
     }
 
     // Play the audio with retry for iOS

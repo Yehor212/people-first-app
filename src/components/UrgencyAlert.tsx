@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Flame, AlertTriangle, Sparkles, ChevronRight, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Habit } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, interpolate } from '@/lib/utils';
 
 interface UrgencyAlertProps {
   habits: Habit[];
@@ -103,11 +103,13 @@ function AlertCard({
   onDismiss,
   hoursLeft,
   pendingCount,
+  t,
 }: {
   alert: Alert;
   onDismiss: () => void;
   hoursLeft: number;
   pendingCount?: number;
+  t: Record<string, string>;
 }) {
   const Icon = alert.icon;
 
@@ -183,14 +185,14 @@ function AlertCard({
                 >
                   <Clock className="w-4 h-4 text-white" />
                   <span className="text-sm font-semibold text-white">
-                    {hoursLeft}h left
+                    {interpolate(t.urgencyTimeLeft || '{hours}h left', { hours: hoursLeft })}
                   </span>
                 </motion.div>
 
                 {pendingCount && pendingCount > 0 && (
                   <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-sm">
                     <span className="text-sm font-semibold text-white">
-                      {pendingCount} pending
+                      {interpolate(t.urgencyPendingCount || '{count} pending', { count: pendingCount || 0 })}
                     </span>
                   </div>
                 )}
@@ -207,7 +209,7 @@ function AlertCard({
               >
                 <Flame className="w-4 h-4 text-white" />
                 <span className="text-sm font-semibold text-white">
-                  Protect your streak!
+                  {t.urgencyProtectStreak || 'Protect your streak!'}
                 </span>
               </motion.div>
             )}
@@ -220,7 +222,7 @@ function AlertCard({
               >
                 <Sparkles className="w-4 h-4 text-white" />
                 <span className="text-sm font-semibold text-white">
-                  Perfect day awaits!
+                  {t.urgencyPerfectDayAwaits || 'Perfect day awaits!'}
                 </span>
               </motion.div>
             )}
@@ -235,7 +237,7 @@ function AlertCard({
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <span className="text-sm font-semibold text-white">Complete now</span>
+            <span className="text-sm font-semibold text-white">{t.urgencyCompleteNow || 'Complete now'}</span>
             <ChevronRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
           </motion.button>
         )}
@@ -302,8 +304,8 @@ export function UrgencyAlert({
           ? (t.urgencyLastChance || 'Last chance today!')
           : (t.urgencyHabitsPending || 'Habits waiting for you'),
         subtitle: isVeryLateNow
-          ? (t.urgencyLastChanceDesc || `${pendingHabits.length} habits left. Don't break your momentum!`)
-          : (t.urgencyHabitsPendingDesc || `${hoursLeft} hours left to complete ${pendingHabits.length} habits`),
+          ? interpolate(t.urgencyLastChanceDesc || "{count} habits left. Don't break your momentum!", { count: pendingHabits.length })
+          : interpolate(t.urgencyHabitsPendingDesc || '{hours} hours left to complete {count} habits', { hours: hoursLeft, count: pendingHabits.length }),
         icon: isVeryLateNow ? AlertTriangle : Clock,
         gradient: isVeryLateNow
           ? 'linear-gradient(135deg, #ef4444 0%, #f97316 50%, #f59e0b 100%)'
@@ -319,7 +321,7 @@ export function UrgencyAlert({
         id: 'streak_at_risk',
         type: 'streak_at_risk',
         priority: 15,
-        title: t.urgencyStreakAtRisk || `${currentStreak}-day streak at risk!`,
+        title: interpolate(t.urgencyStreakAtRisk || '{streak}-day streak at risk!', { streak: currentStreak }),
         subtitle: t.urgencyStreakAtRiskDesc || "Complete at least one habit to keep your streak alive",
         icon: Flame,
         gradient: 'linear-gradient(135deg, #f97316 0%, #ef4444 50%, #dc2626 100%)',
@@ -335,7 +337,7 @@ export function UrgencyAlert({
         type: 'perfect_day_possible',
         priority: 3,
         title: t.urgencyPerfectDay || 'Perfect day within reach!',
-        subtitle: t.urgencyPerfectDayDesc || `Just 1 habit left: ${pendingHabits[0]?.name}`,
+        subtitle: interpolate(t.urgencyPerfectDayDesc || 'Just 1 habit left: {habit}', { habit: pendingHabits[0]?.name || '' }),
         icon: Sparkles,
         gradient: 'linear-gradient(135deg, #10b981 0%, #14b8a6 50%, #06b6d4 100%)',
         glowColor: 'rgba(16, 185, 129, 0.4)',
@@ -367,6 +369,7 @@ export function UrgencyAlert({
           onDismiss={() => handleDismiss(topAlert.id)}
           hoursLeft={hoursLeft}
           pendingCount={pendingHabits.length}
+          t={t}
         />
       </AnimatePresence>
     </div>

@@ -9,7 +9,7 @@ import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { cn, interpolate } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 import { hapticSuccess, hapticTap } from '@/lib/haptics';
@@ -228,10 +228,22 @@ export function ShareModal(props: ShareModalProps) {
         const streak = (props).streak;
         return `${streak} ${t.shareStreak || 'day streak'} 🔥`;
       }
-      case 'weekly':
-        return t.shareText || 'Check out my weekly wellness progress!';
-      default:
-        return t.shareText || 'Track your wellness journey with ZenFlow';
+      case 'weekly': {
+        const weeklyData = props.data;
+        return interpolate(t.shareText || '{streak} day streak! {habits} habits completed, {focus} minutes of focus.', {
+          streak: weeklyData.streak,
+          habits: weeklyData.habitsCompleted,
+          focus: weeklyData.focusMinutes,
+        });
+      }
+      default: {
+        const progressData = (props as ProgressShareProps).data;
+        return interpolate(t.shareText || '{streak} day streak! {habits} habits completed, {focus} minutes of focus.', {
+          streak: progressData.stats?.find(s => s.label.toLowerCase().includes('streak'))?.value || 0,
+          habits: progressData.stats?.find(s => s.label.toLowerCase().includes('habit'))?.value || 0,
+          focus: progressData.stats?.find(s => s.label.toLowerCase().includes('focus'))?.value || 0,
+        });
+      }
     }
   };
 

@@ -10,9 +10,9 @@
  */
 
 import { useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, Heart, Target, Brain, TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight } from 'lucide-react';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { motion } from 'framer-motion';
+import { Heart, Target, Brain, TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight } from 'lucide-react';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -310,6 +310,8 @@ export function RingDetailSheet({
         side="bottom"
         className="rounded-t-[2rem] border-0 p-0 max-h-[90vh] overflow-hidden"
       >
+        <SheetTitle className="sr-only">{t[ringType] || theme.label}</SheetTitle>
+
         {/* Premium Header with Gradient */}
         <div className={cn(
           'relative h-36 overflow-hidden',
@@ -333,14 +335,6 @@ export function RingDetailSheet({
 
           {/* Handle bar */}
           <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-white/30" />
-
-          {/* Close button */}
-          <button
-            onClick={() => onOpenChange(false)}
-            className="absolute top-4 right-4 p-2.5 rounded-full bg-white/10 backdrop-blur-md hover:bg-white/20 transition-colors"
-          >
-            <X className="w-5 h-5 text-white" />
-          </button>
 
           {/* Header content */}
           <div className="absolute bottom-5 left-6 right-6 flex items-end justify-between">
