@@ -5,6 +5,7 @@ import { calculateStreak, getDaysInMonth, getToday, cn, parseLocalDate, formatDa
 import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
 import { useStatsCalculations } from '@/hooks/useStatsCalculations';
 import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2, PlayCircle, Sparkles, Brain, Target, BarChart2 } from 'lucide-react';
+import { Card } from '@/components/ui/card';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { SectionHeader } from '@/components/ui/section-header';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -730,7 +731,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       <WeeklyCalendar moods={moods} habits={habits} />
 
       {/* Monthly Overview */}
-      <div className="bg-card rounded-2xl p-4 sm:p-6 shadow-zen-md border">
+      <Card elevation="elevated" className="p-4 sm:p-6">
         <SectionHeader
           icon={Calendar}
           title={stats.monthName}
@@ -763,7 +764,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             <p className="text-xs text-muted-foreground truncate">{t.gratitudes}</p>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Phase 13.3: TrendsView - Clean Recharts-based trend visualization */}
       <TrendsView
@@ -805,7 +806,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       {/* Emotion Distribution - v1.6.0: Always show 8-emotion Plutchik wheel */}
       {/* Legacy moods are mapped to emotions for backward compatibility */}
       <AnimatedEmotionDistribution
-        emotionCounts={stats.emotionCounts as Record<PrimaryEmotion, number>}
+        emotionCounts={stats.emotionCounts}
         totalEmotions={filteredMoods.length}
         title={t.moodDistribution}
         language={language}
@@ -1406,7 +1407,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       </div>
 
       {/* Mood Patterns */}
-      <div className="bg-card rounded-2xl p-3 sm:p-6 zen-shadow-card">
+      <Card elevation="raised" className="p-3 sm:p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 zen-gradient rounded-xl">
             <TrendingUp className="w-5 h-5 text-primary-foreground" />
@@ -1464,11 +1465,11 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             </div>
           </div>
         )}
-      </div>
+      </Card>
 
       {/* Top Habit */}
       {topHabit && (
-        <div className="bg-card rounded-2xl p-3 sm:p-6 zen-shadow-card">
+        <Card elevation="raised" className="p-3 sm:p-6">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 zen-gradient-warm rounded-xl">
               <TrendingUp className="w-5 h-5 text-primary-foreground" />
@@ -1487,7 +1488,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
               </p>
             </div>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* Share Progress Dialog */}

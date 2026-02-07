@@ -7,6 +7,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { getLocale } from '@/lib/timeUtils';
 import { moodNoteSchema, sanitizeString } from '@/lib/validation';
+import { Card } from '@/components/ui/card';
 import { Sparkles, Sun, Cloud, Moon, Plus, ChevronDown, Edit3 } from 'lucide-react';
 import { MoodChangedToast, ConfirmDialog } from './Celebrations';
 import { AnimatedMoodEmoji } from './AnimatedMoodEmoji';
@@ -329,7 +330,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     const LatestTimeIcon = timeIcons[latestTimeOfDay];
 
     return (
-      <div className="bg-card rounded-2xl p-5 zen-shadow-card animate-fade-in">
+      <Card elevation="raised" className="p-5 animate-fade-in">
         {/* Header with expand toggle */}
         <div
           role="button"
@@ -560,7 +561,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
             message={t.moodChanged || 'Mood updated!'}
           />
         )}
-      </div>
+      </Card>
     );
   }
 

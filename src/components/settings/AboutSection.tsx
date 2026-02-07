@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Sparkles, History, RefreshCw, CheckCircle, ExternalLink, MessageSquare, ChevronRight } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -9,6 +9,7 @@ import { checkForAppUpdate, openGooglePlayStore, UpdateState } from '@/lib/appUp
 import { APP_VERSION } from '@/lib/appVersion';
 import { FeedbackForm } from '@/components/FeedbackForm';
 import { ChangelogPanel } from '@/components/ChangelogPanel';
+import { useDemoMode } from '@/hooks/useDemoMode';
 
 export function AboutSection() {
   const { t } = useLanguage();
@@ -17,6 +18,29 @@ export function AboutSection() {
   const [showChangelog, setShowChangelog] = useState(false);
   const [updateCheckStatus, setUpdateCheckStatus] = useState<'idle' | 'checking' | 'available' | 'latest' | 'error'>('idle');
   const [updateState, setUpdateState] = useState<UpdateState | null>(null);
+
+  const { isDemoMode, toggleDemoMode } = useDemoMode();
+  const versionTapCount = useRef(0);
+  const versionTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleVersionTap = () => {
+    versionTapCount.current += 1;
+
+    if (versionTapTimer.current) {
+      clearTimeout(versionTapTimer.current);
+    }
+
+    if (versionTapCount.current >= 5) {
+      versionTapCount.current = 0;
+      toggleDemoMode();
+      toast(isDemoMode ? 'Demo mode disabled' : 'Demo mode enabled');
+      return;
+    }
+
+    versionTapTimer.current = setTimeout(() => {
+      versionTapCount.current = 0;
+    }, 2000);
+  };
 
   const handleCheckForUpdates = async () => {
     setUpdateCheckStatus('checking');
@@ -59,7 +83,12 @@ export function AboutSection() {
           <div className="space-y-4">
             {/* Version Info */}
             <div className="text-center text-muted-foreground py-2">
-              <p className="text-sm font-medium text-foreground">{t.appName} v{APP_VERSION}</p>
+              <p
+                className="text-sm font-medium text-foreground select-none cursor-default"
+                onClick={handleVersionTap}
+              >
+                {t.appName} v{APP_VERSION}
+              </p>
               <p className="text-xs mt-1">{t.tagline}</p>
             </div>
 

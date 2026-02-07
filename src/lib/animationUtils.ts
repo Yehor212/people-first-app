@@ -1,7 +1,39 @@
 // Animation utilities - global dopamine settings checker
 // Used by non-React code (audioManager, haptics) to check user preferences
+// Also provides standard Framer Motion presets for consistent animations
 
 import { safeJsonParse } from './safeJson';
+
+/**
+ * Standard Framer Motion animation presets
+ * Use these for consistent animations across the app.
+ *
+ * Usage with framer-motion:
+ *   <motion.div {...motionPresets.fadeIn}>...</motion.div>
+ *   <motion.div {...motionPresets.slideUp}>...</motion.div>
+ */
+export const motionPresets = {
+  fadeIn: {
+    initial: { opacity: 0 },
+    animate: { opacity: 1 },
+    transition: { duration: 0.2 },
+  },
+  slideUp: {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.3, ease: 'easeOut' },
+  },
+  scaleIn: {
+    initial: { opacity: 0, scale: 0.95 },
+    animate: { opacity: 1, scale: 1 },
+    transition: { duration: 0.2, ease: 'easeOut' },
+  },
+  modalEnter: {
+    initial: { opacity: 0, scale: 0.95, y: 10 },
+    animate: { opacity: 1, scale: 1, y: 0 },
+    transition: { type: 'spring', damping: 25, stiffness: 300 },
+  },
+} as const;
 
 const DOPAMINE_STORAGE_KEY = 'zenflow_dopamine_settings';
 
