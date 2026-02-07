@@ -112,7 +112,7 @@ export function ShareModal(props: ShareModalProps) {
       switch (mode) {
         case 'achievement':
           blob = await generateAchievementCard(
-            (props as AchievementShareProps).badge,
+            (props).badge,
             language,
             username
           );
@@ -120,15 +120,15 @@ export function ShareModal(props: ShareModalProps) {
 
         case 'streak':
           blob = await generateStreakCard(
-            (props as StreakShareProps).streak,
-            (props as StreakShareProps).habitName,
+            (props).streak,
+            (props).habitName,
             username
           );
           break;
 
         case 'weekly':
           blob = await generateWeeklyCard(
-            (props as WeeklyShareProps).data,
+            (props).data,
             username,
             language
           );
@@ -137,7 +137,7 @@ export function ShareModal(props: ShareModalProps) {
         case 'progress':
         case 'custom':
         default:
-          blob = await generateShareCard((props as ProgressShareProps | CustomShareProps).data);
+          blob = await generateShareCard((props).data);
           break;
       }
 
@@ -210,7 +210,7 @@ export function ShareModal(props: ShareModalProps) {
       case 'achievement':
         return t.shareTitle || 'Achievement Unlocked!';
       case 'streak':
-        return `${(props as StreakShareProps).streak} ${t.shareStreak || 'Day Streak'}`;
+        return `${(props).streak} ${t.shareStreak || 'Day Streak'}`;
       case 'weekly':
         return t.myProgress || 'My Weekly Progress';
       default:
@@ -220,12 +220,14 @@ export function ShareModal(props: ShareModalProps) {
 
   const getShareText = (): string => {
     switch (mode) {
-      case 'achievement':
-        const badge = (props as AchievementShareProps).badge;
+      case 'achievement': {
+        const badge = (props).badge;
         return `${badge.title[language] || badge.title['en']} - ZenFlow`;
-      case 'streak':
-        const streak = (props as StreakShareProps).streak;
+      }
+      case 'streak': {
+        const streak = (props).streak;
         return `${streak} ${t.shareStreak || 'day streak'} 🔥`;
+      }
       case 'weekly':
         return t.shareText || 'Check out my weekly wellness progress!';
       default:
@@ -289,7 +291,7 @@ export function ShareModal(props: ShareModalProps) {
             ) : imageUrl ? (
               <img
                 src={imageUrl}
-                alt="Share preview"
+                alt={t.sharePreview}
                 className="w-full h-full object-cover"
               />
             ) : (

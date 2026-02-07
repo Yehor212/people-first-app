@@ -21,7 +21,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
           <button
             onClick={onBack}
             className="p-4 hover:bg-accent rounded-xl transition-colors active:scale-95 touch-manipulation"
-            aria-label="Go back"
+            aria-label={t.back}
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
