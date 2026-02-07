@@ -55,6 +55,21 @@ let unlockPromise: Promise<void> | null = null;
 let globalAudioContext: AudioContext | null = null;
 let audioUnlockSetup = false;
 
+// iOS "blessed" Audio element — created once during user gesture, reused for all playback.
+// iOS Safari requires audio.play() on an element that was first played during a user gesture.
+// Creating new Audio() each time loses the gesture blessing. Reusing the same element preserves it.
+let blessedAudioElement: HTMLAudioElement | null = null;
+
+function getOrCreateBlessedElement(): HTMLAudioElement {
+  if (!blessedAudioElement) {
+    blessedAudioElement = new Audio();
+    blessedAudioElement.playsInline = true;
+    blessedAudioElement.setAttribute('playsinline', '');
+    blessedAudioElement.setAttribute('webkit-playsinline', '');
+  }
+  return blessedAudioElement;
+}
+
 /**
  * Check if AudioContext needs resume.
  * iOS has a unique 'interrupted' state (phone lock, background, notifications)
@@ -114,23 +129,22 @@ async function unlockWithOscillator(): Promise<void> {
  */
 async function unlockWithAudioElement(): Promise<void> {
   try {
-    const audio = new Audio();
+    // Use the blessed element — keeps it alive for reuse in actual playback.
+    // iOS keeps the "user-initiated play" blessing on this element.
+    const audio = getOrCreateBlessedElement();
     audio.src = SILENT_MP3;
     audio.volume = 0.01;
     // NOTE: Do NOT set muted=true — iOS Safari doesn't count muted playback
     // as "user-initiated", so the unlock trick fails silently.
-    audio.playsInline = true;
-    audio.setAttribute('playsinline', '');
-    audio.setAttribute('webkit-playsinline', '');
 
     const playPromise = audio.play();
     if (playPromise !== undefined) {
       await playPromise;
     }
     audio.pause();
-    audio.src = '';
+    // DON'T clear src or destroy — keep element blessed for future playback
 
-    logger.log('[AmbientSounds] Audio element unlock completed');
+    logger.log('[AmbientSounds] Audio element unlock completed (blessed element)');
   } catch (e) {
     logger.warn('[AmbientSounds] Audio element unlock failed:', e);
   }
@@ -630,12 +644,12 @@ export class AmbientSoundGenerator {
         this.audioElement.onloadedmetadata = null;
         this.audioElement.onpause = null;
         this.audioElement.onplay = null;
-        this.audioElement.src = '';
-        this.audioElement.load(); // Force release
+        // DON'T destroy the blessed element — iOS needs it alive for future playback.
+        // Don't clear src or call load() — just pause and clear handlers.
       } catch (e) {
         logger.warn('[AmbientSounds] Error during stopImmediate:', e);
       }
-      this.audioElement = null;
+      this.audioElement = null; // Clear reference only; blessed element lives on globally
     }
     this.isPlaying = false;
     this.currentSoundId = null;
@@ -723,18 +737,16 @@ export class AmbientSoundGenerator {
    * P0 Fix: Extracted URL loading logic for reuse with fallback
    */
   private async loadAndPlayUrl(url: string, playbackId: number, signal: AbortSignal): Promise<void> {
-    // Create audio element with iOS-friendly settings
-    this.audioElement = new Audio();
+    // Reuse the blessed element (created during unlock gesture) for iOS compatibility.
+    // iOS keeps the "user-initiated play" blessing on the element even when src changes.
+    this.audioElement = getOrCreateBlessedElement();
     this.audioElement.loop = true;
     this.audioElement.volume = this.volume;
     this.audioElement.preload = 'auto';
-    this.audioElement.playsInline = true; // Required for iOS
-    this.audioElement.setAttribute('playsinline', ''); // Fallback attribute
-    this.audioElement.setAttribute('webkit-playsinline', ''); // Older Safari
     this.audioElement.webkitPreservesPitch = true; // Safari
     this.audioElement.src = url;
 
-    logger.log('[AmbientSounds] Audio element created, volume:', this.volume, 'url:', url);
+    logger.log('[AmbientSounds] Reusing blessed audio element, volume:', this.volume, 'url:', url);
 
     // P0 Fix: Determine timeout based on file type (WAV files are larger, need more time)
     const isWavFile = url.toLowerCase().endsWith('.wav');

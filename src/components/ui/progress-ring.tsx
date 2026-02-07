@@ -10,7 +10,7 @@ interface ProgressRingProps {
 }
 
 const SIZES = {
-  sm: { size: 36, stroke: 3, fontSize: 'text-xs' },  // Increased from 32px to fit readable text
+  sm: { size: 44, stroke: 4, fontSize: 'text-xs' },  // 44px = WCAG minimum touch target
   md: { size: 44, stroke: 4, fontSize: 'text-xs' },
   lg: { size: 56, stroke: 5, fontSize: 'text-sm' },
 } as const;
@@ -94,10 +94,10 @@ export function ProgressRingCompact({
   if (completed) {
     return (
       <div className={cn(
-        'w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center',
+        'w-11 h-11 rounded-full bg-primary/30 border border-primary/40 flex items-center justify-center',
         className
       )}>
-        <svg className="w-4 h-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+        <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       </div>

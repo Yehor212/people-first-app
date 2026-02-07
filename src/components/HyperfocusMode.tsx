@@ -226,23 +226,21 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     connectSpotify();
   };
 
-  // Play sound helper
-  const playSound = useCallback(async (soundId: string) => {
+  // Play sound helper — fully non-blocking to preserve iOS gesture context.
+  // On iOS Safari, any `await` between user tap and audio.play() breaks the gesture.
+  const playSound = useCallback((soundId: string) => {
     const generator = soundGeneratorRef.current;
     if (!generator || !soundId) return;
 
-    try {
-      // Unlock audio (required for mobile)
-      await unlockAudio();
-
-      // Play directly - cancellation handled by AmbientSoundGenerator
-      await generator.play(soundId);
+    // Fire-and-forget: don't await anything to keep gesture context alive
+    unlockAudio().catch(() => {});
+    generator.play(soundId).then(() => {
       setIsSoundPlaying(true);
       logger.log('[HyperfocusMode] Sound playing:', soundId);
-    } catch (err) {
+    }).catch(err => {
       logger.error('[HyperfocusMode] Failed to play sound:', err);
       setIsSoundPlaying(false);
-    }
+    });
   }, []); // Empty deps - stable function
 
   // Ambient sound player - react to state changes
