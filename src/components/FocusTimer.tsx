@@ -9,9 +9,14 @@ import { safeParseInt } from '@/lib/validation';
 import { Play, Pause, RotateCcw, Coffee, Zap, X, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { HyperfocusMode } from './HyperfocusMode';
 import { haptics } from '@/lib/haptics';
 import { announceSuccess } from '@/lib/a11y';
+import { LocalNotifications } from '@capacitor/local-notifications';
+import { Capacitor } from '@capacitor/core';
+import { getCurrentChannelId } from '@/lib/notificationSounds';
 
 // Star particle for cosmic background
 function CosmicStar({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
@@ -318,6 +323,18 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
           // Announce to screen readers
           announceSuccess(t.focusCompletedShort || 'Focus session complete');
 
+          // Schedule local notification (for when app is backgrounded)
+          if (Capacitor.isNativePlatform()) {
+            LocalNotifications.schedule({
+              notifications: [{
+                title: 'ZenFlow',
+                body: t.focusCompletedShort || 'Focus session complete',
+                id: Date.now(),
+                channelId: getCurrentChannelId(),
+              }],
+            }).catch(() => {});
+          }
+
           // Switch to break mode
           focusStartRef.current = null;
           focusAccumulatedRef.current = 0;
@@ -413,6 +430,9 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     saveTimerState();
   };
 
+  const throttledToggle = useThrottledCallback(toggleTimer, 800);
+  const throttledReset = useThrottledCallback(resetTimer, 800);
+
   const handlePresetSelect = (key: '25' | '50' | 'custom') => {
     // Save current custom values before switching away from custom
     if (preset === 'custom' && key !== 'custom') {
@@ -449,7 +469,10 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     setReflectionValue(null);
   };
 
-  const progress = isBreak 
+  useBackHandler(showReflection, () => handleSaveReflection(null));
+  useBackHandler(showHyperfocus, () => setShowHyperfocus(false));
+
+  const progress = isBreak
     ? ((breakDuration - timeLeft) / breakDuration) * 100
     : ((focusDuration - timeLeft) / focusDuration) * 100;
 
@@ -756,7 +779,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
           <>
             {/* Premium Play/Pause Button */}
             <motion.button
-              onClick={toggleTimer}
+              onClick={throttledToggle}
               aria-label={isRunning ? (t.pause || 'Pause timer') : (t.start || 'Start timer')}
               className={cn(
                 "relative w-16 h-16 rounded-full flex items-center justify-center",
@@ -790,7 +813,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
 
             {/* Premium Reset Button */}
             <motion.button
-              onClick={resetTimer}
+              onClick={throttledReset}
               aria-label={t.resetTimer}
               className="w-14 h-14 rounded-full flex items-center justify-center bg-slate-200/50 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/20 text-slate-600 dark:text-white/70 hover:text-slate-800 dark:hover:text-white hover:bg-slate-300/50 dark:hover:bg-white/20 transition-colors"
               whileHover={{ scale: 1.1, rotate: -90 }}
@@ -804,7 +827,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             <Button
               variant="gradient"
               size="icon-lg"
-              onClick={toggleTimer}
+              onClick={throttledToggle}
               aria-label={isRunning ? (t.pause || 'Pause timer') : (t.start || 'Start timer')}
               className={cn(
                 isBreak && "zen-gradient-warm"
@@ -815,7 +838,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             <Button
               variant="secondary"
               size="icon-lg"
-              onClick={resetTimer}
+              onClick={throttledReset}
               aria-label={t.resetTimer}
             >
               <RotateCcw className="w-6 h-6" aria-hidden="true" />

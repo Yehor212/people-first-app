@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast } from 'sonner';
 import { Plus, Zap, Clock, Star, Calendar, Trash2, CheckCircle2, Circle, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { SkeletonSection, SkeletonList } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { cn } from '@/lib/utils';
@@ -31,6 +32,10 @@ interface TasksPanelProps {
 
 export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps) {
   const { t } = useLanguage();
+
+  // Android back button: close panel or dismiss add form
+  useBackHandler(!!onClose, onClose ?? (() => {}));
+
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskMinutes, setNewTaskMinutes] = useState(15);
@@ -42,6 +47,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   const [newTaskInterestInput, setNewTaskInterestInput] = useState('5');
   const [consecutiveCompletions, setConsecutiveCompletions] = useState(0);
   const [showAddForm, setShowAddForm] = useState(false);
+  useBackHandler(showAddForm, () => setShowAddForm(false));
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load tasks from localStorage on mount

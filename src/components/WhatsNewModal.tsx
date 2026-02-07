@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import { Sparkles, Shield, Zap, Download, Moon, X, RefreshCw, MessageSquare, ToggleRight, Bug } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { APP_VERSION, wasAppUpdated } from '@/lib/appVersion';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
@@ -206,6 +207,14 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
       }
     }
   }, []);
+
+  // Android back button: dismiss modal
+  useBackHandler(isVisible, () => {
+    localStorage.setItem(LAST_SEEN_VERSION_KEY, APP_VERSION);
+    setIsVisible(false);
+    onClose?.();
+    logger.log('[WhatsNew] Modal dismissed via back button');
+  });
 
   const handleDismiss = () => {
     localStorage.setItem(LAST_SEEN_VERSION_KEY, APP_VERSION);

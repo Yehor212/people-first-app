@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Bug, Lightbulb, HelpCircle, Send, Loader2, X } from 'lucide-react';
@@ -154,6 +155,8 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
     }
   };
 
+  const throttledSubmit = useThrottledCallback(handleSubmit, 2000);
+
   const categories: { value: FeedbackCategory; icon: React.ReactNode; label: string }[] = [
     { value: 'bug', icon: <Bug className="w-4 h-4" />, label: t.feedbackCategoryBug },
     { value: 'feature', icon: <Lightbulb className="w-4 h-4" />, label: t.feedbackCategoryFeature },
@@ -243,7 +246,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
 
           {/* Submit Button */}
           <Button
-            onClick={handleSubmit}
+            onClick={throttledSubmit}
             disabled={!message.trim() || status === 'sending'}
             className="w-full py-6 rounded-xl text-base font-semibold"
           >

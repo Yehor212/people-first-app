@@ -50,9 +50,9 @@ export default defineConfig(({ mode }) => {
 
       // Production-ready manifest
       manifest: {
-        name: "ZenFlow — Ежедневное благополучие",
+        name: "ZenFlow — Daily Wellness",
         short_name: "ZenFlow",
-        description: "Трекер привычек, настроения и продуктивности. Работает оффлайн.",
+        description: "Habit, mood and productivity tracker. Works offline.",
 
       start_url: base,
       scope: base,
@@ -63,7 +63,7 @@ export default defineConfig(({ mode }) => {
         theme_color: "#4a9d7c",
         background_color: "#ffffff",
 
-        lang: "ru",
+        lang: "en",
         dir: "ltr",
 
         categories: ["health", "lifestyle", "productivity"],
@@ -86,16 +86,16 @@ export default defineConfig(({ mode }) => {
         // Quick actions shortcuts
         shortcuts: [
           {
-            name: "Записать настроение",
-            short_name: "Настроение",
-            description: "Быстро отметить настроение",
+            name: "Log Mood",
+            short_name: "Mood",
+            description: "Quickly log your mood",
             url: "/?tab=home",
             icons: [{ src: "pwa-192.png", sizes: "192x192" }],
           },
           {
-            name: "Отметить привычку",
-            short_name: "Привычка",
-            description: "Отметить выполнение привычки",
+            name: "Track Habit",
+            short_name: "Habit",
+            description: "Mark a habit as completed",
             url: "/?tab=home",
             icons: [{ src: "pwa-192.png", sizes: "192x192" }],
           },

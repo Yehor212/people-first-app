@@ -21,6 +21,7 @@ import {
   TREE_STAGE_XP,
   Season,
 } from '@/lib/seasonHelper';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 interface TreePanelProps {
   treeStage: TreeStage;
@@ -110,6 +111,9 @@ export function TreePanel({
   onCalmModeChange,
 }: TreePanelProps) {
   const { t, language } = useLanguage();
+
+  useBackHandler(isOpen, onClose);
+
   const [message, setMessage] = useState('');
   const [showReaction, setShowReaction] = useState<string | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);

@@ -6,7 +6,8 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Clock, X, Check, Home, Sparkles } from 'lucide-react';
+import { Plus, Clock, X, Check, Home, Sparkles, Calendar } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn, getToday, formatDate, parseLocalDate } from '@/lib/utils';
 import { ScheduleEvent } from '@/types';
@@ -14,6 +15,7 @@ import { safeParseInt } from '@/lib/validation';
 import { Task } from '@/lib/taskMomentum';
 import { safeJsonParse } from '@/lib/safeJson';
 import { ParticleBackground } from '@/components/stats';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 const TASKS_STORAGE_KEY = 'zenflow_tasks';
 
@@ -422,6 +424,9 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ScheduleEvent | null>(null);
   const [selectedDate, setSelectedDate] = useState(getToday());
+
+  useBackHandler(showAddModal, () => setShowAddModal(false));
+  useBackHandler(selectedEvent !== null, () => setSelectedEvent(null));
   const [tasks, setTasks] = useState<Task[]>([]);
   const timelineRef = useRef<HTMLDivElement>(null);
   const daySelectorRef = useRef<HTMLDivElement>(null);
@@ -895,17 +900,21 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
 
         {/* Empty state */}
         {filteredEvents.length === 0 && (
-          <motion.div
-            className="mt-3 text-center py-4 bg-slate-100/60 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-slate-200/60 dark:border-white/10"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <p className="text-sm text-slate-500 dark:text-white/60">
-              {isToday
-                ? (t.scheduleEmpty || 'No events planned. Tap + to add your schedule!')
+          <div className="mt-3">
+            <EmptyState
+              icon={<Calendar className="w-5 h-5 text-primary" />}
+              title={isToday
+                ? (t.scheduleEmpty || 'No events planned')
                 : (t.scheduleEmptyDay || 'No events for this day')}
-            </p>
-          </motion.div>
+              message={isToday ? (t.scheduleAddEvent || 'Tap + to add your first event') : undefined}
+              size="compact"
+              action={isToday && onAddEvent ? {
+                label: t.scheduleAdd || 'Add Event',
+                onClick: () => setShowAddModal(true),
+                icon: <Plus className="w-4 h-4" />,
+              } : undefined}
+            />
+          </div>
         )}
 
         {/* Task Focus Panel */}

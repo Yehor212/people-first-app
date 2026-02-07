@@ -4,6 +4,7 @@ import { Challenge, Badge } from '@/types';
 import { getChallenges, saveChallenges, getBadges, saveBadges } from '@/lib/challengeStorage';
 import { syncOrchestrator } from '@/lib/syncOrchestrator';
 import { triggerDataRefresh } from '@/hooks/useIndexedDB';
+import { toast } from 'sonner';
 
 // Supabase types
 interface SupabaseChallenge {
@@ -220,6 +221,10 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
     }
   }, { priority: 6, maxRetries: 3 });
 
+  if (result.error) {
+    toast.error('Sync failed. Changes saved locally.');
+  }
+
   return result;
 }
 
@@ -407,6 +412,10 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
       throw error;
     }
   }, { priority: 6, maxRetries: 3 });
+
+  if (result.error) {
+    toast.error('Sync failed. Changes saved locally.');
+  }
 
   return result;
 }

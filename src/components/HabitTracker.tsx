@@ -3,11 +3,13 @@ import { motion } from 'framer-motion';
 import { Habit, HabitType, HabitReminder, HabitFrequency, HabitCategory } from '@/types';
 import { getToday, generateId, formatDate, cn, parseLocalDate } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
-import { Plus, X, ChevronRight, Settings2, Zap, Users, Sparkles, Leaf, Undo2 } from 'lucide-react';
+import { Plus, X, ChevronRight, Settings2, Zap, Users, Sparkles, Leaf, Undo2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { habitTemplates } from '@/lib/habitTemplates';
 import { AllHabitsComplete } from './Celebrations';
+import { EmptyState } from './EmptyState';
 import { HabitCompletionCelebration, DailyProgressBar } from './HabitCompletionCelebration';
 import { CompactHabitCard } from './CompactHabitCard';
 import { hapticTap } from '@/lib/haptics';
@@ -61,6 +63,10 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   const [dailyTarget, setDailyTarget] = useState(1);
   const [reminders, setReminders] = useState<HabitReminder[]>([]);
   const [categoryFilter, setCategoryFilter] = useState<HabitCategory | 'all'>('all');
+
+  // Back handler for inline panels
+  useBackHandler(showCustomForm, () => setShowCustomForm(false));
+  useBackHandler(isAdding && !showCustomForm, () => setIsAdding(false));
 
   // New state for frequency and duration
   const [frequency, setFrequency] = useState<HabitFrequency>('daily');
@@ -1168,26 +1174,17 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
       )}
 
       {habits.length === 0 ? (
-        <div className="text-center py-8">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/15 rounded-full border border-primary/30 animate-glow-pulse mb-4">
-            <span className="text-2xl">🎯</span>
-            <span className="text-sm font-bold text-primary">{t.startHere || 'Start here'}</span>
-          </div>
-          <p className="text-muted-foreground mb-4">
-            {t.addFirstHabit}
-          </p>
-          <Button
-            variant="gradient"
-            size="lg"
-            onClick={(e) => {
-              e.preventDefault();
-              setIsAdding(true);
-            }}
-          >
-            <Plus className="w-5 h-5" />
-            {t.addHabit}
-          </Button>
-        </div>
+        <EmptyState
+          icon={<CheckCircle className="w-6 h-6 text-primary" />}
+          title={t.habits || 'No habits yet'}
+          message={t.addFirstHabit}
+          highlight
+          action={{
+            label: t.addHabit || 'Add your first habit',
+            onClick: () => setIsAdding(true),
+            icon: <Plus className="w-5 h-5" />,
+          }}
+        />
       ) : (
         <>
           {/* Category filter tabs */}

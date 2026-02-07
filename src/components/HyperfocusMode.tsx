@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { logger } from '@/lib/logger';
 import { X, Play, Pause, Volume2, VolumeX, Music, ExternalLink, Sparkles, Loader2, AlertCircle, RotateCcw, Bug, Copy, Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { getAmbientSoundGenerator, SOUNDS, unlockAudio, AmbientSoundGenerator, AudioStatus } from '@/lib/ambientSounds';
 import { cn } from '@/lib/utils';
 import {
@@ -50,6 +51,10 @@ interface HyperfocusModeProps {
 
 export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeProps) {
   const { t, language } = useLanguage();
+
+  // Android back button: close fullscreen overlay
+  useBackHandler(true, onExit);
+
   const [timeLeft, setTimeLeft] = useState(duration * 60); // секунды
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -68,6 +73,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
   // P1 Fix: Debug panel state (activated by 5 taps on header)
   const [showDebugPanel, setShowDebugPanel] = useState(false);
+  useBackHandler(showDebugPanel, () => setShowDebugPanel(false));
   const [debugTapCount, setDebugTapCount] = useState(0);
   const debugTapTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [copiedDebug, setCopiedDebug] = useState(false);

@@ -2,8 +2,10 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { safeJsonParse } from '@/lib/safeJson';
-import { Sparkles, Trophy, Clock, Zap, Target, X } from 'lucide-react';
+import { Sparkles, Trophy, Clock, Zap, Target, X, Star } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { cn } from '@/lib/utils';
 import {
   Quest,
@@ -25,6 +27,10 @@ interface QuestsPanelProps {
 
 export function QuestsPanel({ onClose }: QuestsPanelProps) {
   const { t } = useLanguage();
+
+  // Android back button: close panel
+  useBackHandler(!!onClose, onClose ?? (() => {}));
+
   const [dailyQuest, setDailyQuest] = useState<Quest | null>(null);
   const [weeklyQuest, setWeeklyQuest] = useState<Quest | null>(null);
   const [bonusQuest, setBonusQuest] = useState<Quest | null>(null);
@@ -121,9 +127,11 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
   const renderQuestCard = (quest: Quest | null) => {
     if (!quest) {
       return (
-        <div className="p-6 bg-muted/50 rounded-xl border-2 border-dashed border-border text-center">
-          <p className="text-muted-foreground">{t.noQuestAvailable}</p>
-        </div>
+        <EmptyState
+          icon={<Star className="w-5 h-5 text-primary" />}
+          title={t.noQuestAvailable || 'No quest available'}
+          size="compact"
+        />
       );
     }
 

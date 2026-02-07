@@ -5,6 +5,7 @@ import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeatureToggleItem } from '@/components/FeatureToggleItem';
 import { isFeatureUnlocked } from '@/lib/onboardingFlow';
@@ -98,6 +99,10 @@ export function SettingsPanel({
     const dismissed = localStorage.getItem('zenflow_whats_new_v1_3_0_dismissed');
     return dismissed !== 'true';
   });
+
+  useBackHandler(showResetConfirm, () => setShowResetConfirm(false));
+  useBackHandler(showDeleteConfirm, () => setShowDeleteConfirm(false));
+  useBackHandler(showDopamineSettings, () => setShowDopamineSettings(false));
 
   // Quick Actions for lock screen (Android only)
   const { isEnabled: quickActionsEnabled, isAndroid, toggle: toggleQuickActions } = useQuickActions();

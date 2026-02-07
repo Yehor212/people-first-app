@@ -99,7 +99,7 @@ import { RestModeCard } from '@/components/RestModeCard';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
 import { ChallengeModal } from '@/components/ChallengeModal';
 import { decodeInviteData, ChallengeInvite } from '@/lib/friendChallenge';
-import { initializeOfflineQueueHandlers } from '@/lib/offlineQueueHandlers';
+import { initializeOfflineQueueHandlers, queueFocusSessionSync } from '@/lib/offlineQueueHandlers';
 import { CompletedSection } from '@/components/CompletedSection';
 import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
 import { ConsentBanner } from '@/components/ConsentBanner';
@@ -113,6 +113,7 @@ import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { OnboardingOverlay, DayProgressIndicator } from '@/components/OnboardingOverlay';
 import { FeatureUnlock } from '@/components/FeatureUnlock';
 import { QuickStatsRow } from '@/components/ui/stat-card';
+import { SkeletonCard, SkeletonStats, SkeletonList, SkeletonSection } from '@/components/ui/skeleton';
 import { MindfulMoment } from '@/components/MindfulMoment';
 import { DailyPromptCard } from '@/components/DailyPromptCard';
 import {
@@ -1118,6 +1119,8 @@ export function Index() {
     const treatResult = earnTreats('focus', focusTreats, `Focus ${session.duration}min`);
     triggerXpPopup(treatResult.earned, 'focus'); // Show treats earned
 
+    // Queue for offline sync (uses offline queue with retry logic)
+    queueFocusSessionSync(session).catch(() => {});
     triggerSync(); // Auto-sync to cloud
     haptics.focusCompleted();
 
@@ -2141,7 +2144,7 @@ export function Index() {
                   {/* Mood Tracker - Primary or Collapsed */}
                   <div ref={moodRef}>
                     <ModalErrorBoundary fallbackTitle="Mood Tracker Error" fallbackBody="Unable to load mood tracker. Try refreshing.">
-                      <Suspense fallback={<div className="h-48 bg-card rounded-3xl animate-pulse" />}>
+                      <Suspense fallback={<SkeletonCard />}>
                         {currentPrimaryCTA === 'mood' ? (
                           <EmotionWheel
                             entries={safeMoods}
@@ -2172,7 +2175,7 @@ export function Index() {
                   {/* Breathing Exercise - Compact mindfulness card */}
                   {isFeatureVisible('breathingExercise') && (
                     <LazyErrorBoundary componentName="Breathing Exercise">
-                      <Suspense fallback={<div className="h-24 bg-card rounded-3xl animate-pulse" />}>
+                      <Suspense fallback={<SkeletonCard lines={1} />}>
                         <BreathingExercise
                           compact
                           onComplete={(pattern) => {
@@ -2188,7 +2191,7 @@ export function Index() {
                   {/* Habit Tracker - Primary or Collapsed */}
                   <div ref={habitsRef}>
                     <ModalErrorBoundary fallbackTitle="Habit Tracker Error" fallbackBody="Unable to load habit tracker. Try refreshing.">
-                      <Suspense fallback={<div className="h-48 bg-card rounded-3xl animate-pulse" />}>
+                      <Suspense fallback={<SkeletonList />}>
                         {currentPrimaryCTA === 'habits' ? (
                           <HabitTracker
                             habits={safeHabits}
@@ -2235,7 +2238,7 @@ export function Index() {
                   {isFeatureVisible('focusTimer') && (
                     <div ref={focusRef}>
                       <ModalErrorBoundary fallbackTitle="Focus Timer Error" fallbackBody="Unable to load focus timer. Try refreshing.">
-                        <Suspense fallback={<div className="h-48 bg-card rounded-3xl animate-pulse" />}>
+                        <Suspense fallback={<SkeletonCard />}>
                           {currentPrimaryCTA === 'focus' ? (
                             <FocusTimer
                               sessions={safeFocusSessions}
@@ -2280,7 +2283,7 @@ export function Index() {
                   {isFeatureVisible('gratitudeJournal') && (
                     <div ref={gratitudeRef}>
                       <LazyErrorBoundary componentName="Gratitude Journal">
-                        <Suspense fallback={<div className="h-32 bg-card rounded-3xl animate-pulse" />}>
+                        <Suspense fallback={<SkeletonCard />}>
                           {currentPrimaryCTA === 'gratitude' ? (
                             <GratitudeJournal
                               entries={safeGratitudeEntries}
@@ -2331,7 +2334,7 @@ export function Index() {
 
             {/* v1.4.0: Schedule Timeline - ADHD-friendly day planner with habits auto-synced */}
             <LazyErrorBoundary componentName="Schedule Timeline">
-              <Suspense fallback={<div className="h-32 bg-card rounded-3xl animate-pulse" />}>
+              <Suspense fallback={<SkeletonList />}>
                 <ScheduleTimeline
                   events={todayAllEvents}
                   onAddEvent={handleAddScheduleEvent}
@@ -2356,11 +2359,7 @@ export function Index() {
           <>
             <Header userName={userName} />
             <LazyErrorBoundary componentName="Stats">
-              <Suspense fallback={
-                <div className="flex items-center justify-center min-h-[50vh]">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                </div>
-              }>
+              <Suspense fallback={<SkeletonStats count={4} className="px-4 pt-8" />}>
                 <StatsPage
                   moods={safeMoods}
                   habits={safeHabits}
@@ -2384,7 +2383,7 @@ export function Index() {
             </LazyErrorBoundary>
             {/* Leaderboard - Social Feature from v1.3.0 "Harmony" */}
             <LazyErrorBoundary componentName="Leaderboard">
-              <Suspense fallback={null}>
+              <Suspense fallback={<SkeletonList count={3} />}>
                 <div className="mt-6">
                   <Leaderboard />
                 </div>
@@ -2397,11 +2396,7 @@ export function Index() {
           <>
             <Header userName={userName} />
             <LazyErrorBoundary componentName="Settings">
-              <Suspense fallback={
-                <div className="flex items-center justify-center min-h-[50vh]">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                </div>
-              }>
+              <Suspense fallback={<SkeletonSection />}>
                 <SettingsPanel
                   userName={userName}
                   onNameChange={handleNameChange}
@@ -2450,7 +2445,7 @@ export function Index() {
       {/* Challenges Panel Modal (Progressive: Day 4) */}
       {showChallenges && isFeatureVisible('challenges') && (
         <LazyErrorBoundary componentName="Challenges">
-          <Suspense fallback={null}>
+          <Suspense fallback={<SkeletonSection />}>
             <ChallengesPanel
               activeChallenges={challenges}
               badges={safeBadges}
@@ -2473,7 +2468,7 @@ export function Index() {
       {/* Tasks Panel Modal (Progressive: Day 4) */}
       {showTasksPanel && isFeatureVisible('tasks') && (
         <LazyErrorBoundary componentName="Tasks">
-          <Suspense fallback={null}>
+          <Suspense fallback={<SkeletonList />}>
             <TasksPanel
               onClose={() => setShowTasksPanel(false)}
               onAwardXp={(_source, amount) => {
@@ -2495,7 +2490,7 @@ export function Index() {
       {/* Quests Panel Modal (Progressive: Day 3) */}
       {showQuestsPanel && isFeatureVisible('quests') && (
         <LazyErrorBoundary componentName="Quests">
-          <Suspense fallback={null}>
+          <Suspense fallback={<SkeletonList />}>
             <QuestsPanel
               onClose={() => setShowQuestsPanel(false)}
             />
@@ -2505,7 +2500,7 @@ export function Index() {
 
       {/* Companion Panel Modal (Progressive: Day 3, legacy - kept for reference) */}
       {isFeatureUnlocked('companion') && isFeatureVisible('innerWorld') && (
-        <Suspense fallback={null}>
+        <Suspense fallback={<SkeletonSection />}>
           <CompanionPanel
             companion={innerWorld.companion}
             isOpen={showCompanionPanel}

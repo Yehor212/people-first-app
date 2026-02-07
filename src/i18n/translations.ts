@@ -580,6 +580,11 @@ export interface Translations {
   errorBoundaryBody: string;
   errorBoundaryExport: string;
   errorBoundaryReload: string;
+  modalErrorTitle: string;
+  modalErrorBody: string;
+  tryAgain: string;
+  failedToLoad: string;
+  failedToLoadBody: string;
   pushTitle: string;
   pushEnable: string;
   pushDisable: string;
@@ -2495,6 +2500,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     errorBoundaryBody: 'Попробуйте перезагрузить приложение или отправить отчёт.',
     errorBoundaryExport: 'Экспортировать отчёт',
     errorBoundaryReload: 'Перезагрузить приложение',
+    modalErrorTitle: 'Что-то пошло не так',
+    modalErrorBody: 'Эта функция столкнулась с ошибкой. Попробуйте закрыть и открыть снова.',
+    tryAgain: 'Попробовать снова',
+    failedToLoad: 'Не удалось загрузить',
+    failedToLoadBody: 'Компонент не удалось загрузить. Попробуйте обновить страницу.',
     pushTitle: 'Push-уведомления',
     pushEnable: 'Включить push',
     pushDisable: 'Выключить push',
@@ -4226,6 +4236,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     errorBoundaryBody: 'Try reloading the app or export a debug report.',
     errorBoundaryExport: 'Export debug report',
     errorBoundaryReload: 'Reload app',
+    modalErrorTitle: 'Something went wrong',
+    modalErrorBody: 'This feature encountered an error. Try closing and reopening.',
+    tryAgain: 'Try Again',
+    failedToLoad: 'Failed to load',
+    failedToLoadBody: 'The component could not be loaded. Please try refreshing the page.',
     pushTitle: 'Push notifications',
     pushEnable: 'Enable push',
     pushDisable: 'Disable push',
@@ -5957,6 +5972,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     errorBoundaryBody: 'Спробуйте перезавантажити додаток або експортувати звіт про помилку.',
     errorBoundaryExport: 'Експортувати звіт',
     errorBoundaryReload: 'Перезавантажити',
+    modalErrorTitle: 'Щось пішло не так',
+    modalErrorBody: 'Ця функція зіткнулася з помилкою. Спробуйте закрити та відкрити знову.',
+    tryAgain: 'Спробувати знову',
+    failedToLoad: 'Не вдалося завантажити',
+    failedToLoadBody: 'Компонент не вдалося завантажити. Спробуйте оновити сторінку.',
     pushTitle: 'Push-сповіщення',
     pushEnable: 'Увімкнути push',
     pushDisable: 'Вимкнути push',
@@ -7689,6 +7709,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     errorBoundaryBody: 'Intenta recargar la aplicación o exportar un informe de error.',
     errorBoundaryExport: 'Exportar informe de error',
     errorBoundaryReload: 'Recargar aplicación',
+    modalErrorTitle: 'Algo salió mal',
+    modalErrorBody: 'Esta función encontró un error. Intenta cerrar y volver a abrir.',
+    tryAgain: 'Intentar de nuevo',
+    failedToLoad: 'Error al cargar',
+    failedToLoadBody: 'No se pudo cargar el componente. Intenta actualizar la página.',
     pushTitle: 'Notificaciones push',
     pushEnable: 'Activar push',
     pushDisable: 'Desactivar push',
@@ -9421,6 +9446,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     errorBoundaryBody: 'Versuchen Sie die App neu zu laden oder exportieren Sie einen Debug-Bericht.',
     errorBoundaryExport: 'Debug-Bericht exportieren',
     errorBoundaryReload: 'App neu laden',
+    modalErrorTitle: 'Etwas ist schief gelaufen',
+    modalErrorBody: 'Diese Funktion hat einen Fehler verursacht. Versuchen Sie, sie zu schließen und erneut zu öffnen.',
+    tryAgain: 'Erneut versuchen',
+    failedToLoad: 'Laden fehlgeschlagen',
+    failedToLoadBody: 'Die Komponente konnte nicht geladen werden. Bitte aktualisieren Sie die Seite.',
     pushTitle: 'Push-Benachrichtigungen',
     pushEnable: 'Push aktivieren',
     pushDisable: 'Push deaktivieren',
@@ -11153,6 +11183,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     errorBoundaryBody: 'Essayez de recharger l\'application ou d\'exporter un rapport de débogage.',
     errorBoundaryExport: 'Exporter le rapport de débogage',
     errorBoundaryReload: 'Recharger l\'application',
+    modalErrorTitle: 'Quelque chose s\'est mal passé',
+    modalErrorBody: 'Cette fonctionnalité a rencontré une erreur. Essayez de fermer et de rouvrir.',
+    tryAgain: 'Réessayer',
+    failedToLoad: 'Échec du chargement',
+    failedToLoadBody: 'Le composant n\'a pas pu être chargé. Veuillez actualiser la page.',
     pushTitle: 'Notifications push',
     pushEnable: 'Activer les notifications',
     pushDisable: 'Désactiver les notifications',
@@ -12884,6 +12919,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     errorBoundaryBody: 'アプリを再読み込みするか、デバッグレポートをエクスポートしてください。',
     errorBoundaryExport: 'デバッグレポートをエクスポート',
     errorBoundaryReload: 'アプリを再読み込み',
+    modalErrorTitle: '問題が発生しました',
+    modalErrorBody: 'この機能でエラーが発生しました。閉じてから再度開いてみてください。',
+    tryAgain: 'もう一度試す',
+    failedToLoad: '読み込みに失敗しました',
+    failedToLoadBody: 'コンポーネントを読み込めませんでした。ページを更新してみてください。',
     pushTitle: 'プッシュ通知',
     pushEnable: 'プッシュを有効化',
     pushDisable: 'プッシュを無効化',
@@ -15600,6 +15640,11 @@ const arabicOverrides: Partial<Translations> = {
   errorBoundaryBody: 'حدث خطأ غير متوقع',
   errorBoundaryExport: 'تصدير البيانات',
   errorBoundaryReload: 'إعادة تحميل',
+  modalErrorTitle: 'حدث خطأ',
+  modalErrorBody: 'واجهت هذه الميزة خطأ. حاول إغلاقها وإعادة فتحها.',
+  tryAgain: 'حاول مرة أخرى',
+  failedToLoad: 'فشل التحميل',
+  failedToLoadBody: 'تعذر تحميل المكون. يرجى تحديث الصفحة.',
 
   // Push Notifications
   pushTitle: 'الإشعارات الفورية',
@@ -16424,6 +16469,11 @@ const hebrewOverrides: Partial<Translations> = {
   errorBoundaryBody: 'אירעה שגיאה בלתי צפויה',
   errorBoundaryExport: 'יצוא נתונים',
   errorBoundaryReload: 'טען מחדש',
+  modalErrorTitle: 'אירעה שגיאה',
+  modalErrorBody: 'תכונה זו נתקלה בשגיאה. נסה לסגור ולפתוח מחדש.',
+  tryAgain: 'נסה שוב',
+  failedToLoad: 'הטעינה נכשלה',
+  failedToLoadBody: 'לא ניתן לטעון את הרכיב. אנא רענן את הדף.',
 
   // Leaderboard (P1 Fix)
   leaderboard: 'טבלת מובילים',

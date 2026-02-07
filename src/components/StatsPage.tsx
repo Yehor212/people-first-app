@@ -4,7 +4,7 @@ import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType, PrimaryEmotio
 import { calculateStreak, getDaysInMonth, getToday, cn, parseLocalDate, formatDate } from '@/lib/utils';
 import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
 import { useStatsCalculations } from '@/hooks/useStatsCalculations';
-import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2, PlayCircle, Sparkles, Brain, Target } from 'lucide-react';
+import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2, PlayCircle, Sparkles, Brain, Target, BarChart2 } from 'lucide-react';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { SectionHeader } from '@/components/ui/section-header';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -14,11 +14,13 @@ import { AnimatedMoodDistribution, AnimatedEmotionDistribution, AnimatedCalendar
 // Phase 13.3: TrendsView restored (DataMountains removed)
 import { TrendsView } from '@/components/TrendsView';
 import { ActivityHeatMap, calculateActivityLevel } from '@/components/ui/activity-heatmap';
+import { EmptyState } from '@/components/EmptyState';
 import { ProgressStoriesViewer } from '@/components/ProgressStoriesViewer';
 import { generateWeeklyStory, hasEnoughDataForStory, getCurrentWeekRange } from '@/lib/progressStories';
 import { WeeklyInsightsCard } from '@/components/WeeklyInsightsCard';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { hapticTap } from '@/lib/haptics';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
 import { getEmotionScore, getEmotionLabels, EMOTION_ORDER, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
 import { getLocale } from '@/lib/timeUtils';
@@ -65,6 +67,9 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showStoryViewer, setShowStoryViewer] = useState(false);
+
+  useBackHandler(showShareDialog, () => setShowShareDialog(false));
+  useBackHandler(showStoryViewer, () => setShowStoryViewer(false));
   const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
   const [selectedRing, setSelectedRing] = useState<RingType | null>(null);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
@@ -637,6 +642,16 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           </button>
         )}
       </div>
+
+      {/* Empty state when no data exists */}
+      {moods.length === 0 && habits.length === 0 && focusSessions.length === 0 && (
+        <EmptyState
+          icon={<BarChart2 className="w-6 h-6 text-primary" />}
+          title={t.statistics || 'Statistics'}
+          message={t.moodNoData || 'Start tracking to see your statistics.'}
+          hint={t.moodNoData || 'Log your mood, complete habits, or start a focus session to see data here.'}
+        />
+      )}
 
       {/* Phase 10: Premium Stats Components */}
       <ZenScoreHub

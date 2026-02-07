@@ -165,6 +165,8 @@ interface ModalErrorBoundaryProps {
   onClose?: () => void;
   fallbackTitle?: string;
   fallbackBody?: string;
+  tryAgainLabel?: string;
+  closeLabel?: string;
 }
 
 interface ModalErrorBoundaryState {
@@ -295,14 +297,14 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
             onClick={this.handleRetry}
             className="px-4 py-2 bg-secondary text-secondary-foreground rounded-xl text-sm font-medium hover:bg-muted transition-colors"
           >
-            Try Again
+            {this.props.tryAgainLabel || 'Try Again'}
           </button>
           {this.props.onClose && (
             <button
               onClick={this.handleClose}
               className="px-4 py-2 zen-gradient text-primary-foreground rounded-xl text-sm font-medium hover:opacity-90 transition-opacity"
             >
-              Close
+              {this.props.closeLabel || 'Close'}
             </button>
           )}
         </div>
@@ -312,7 +314,16 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
 }
 
 export const ModalErrorBoundary: React.FC<ModalErrorBoundaryProps> = (props) => {
-  return <ModalErrorBoundaryClass {...props} />;
+  const { t } = useLanguage();
+  return (
+    <ModalErrorBoundaryClass
+      {...props}
+      fallbackTitle={props.fallbackTitle || t.modalErrorTitle}
+      fallbackBody={props.fallbackBody || t.modalErrorBody}
+      tryAgainLabel={props.tryAgainLabel || t.tryAgain}
+      closeLabel={props.closeLabel || t.close}
+    />
+  );
 };
 
 /**
@@ -323,10 +334,13 @@ export const LazyErrorBoundary: React.FC<{ children: React.ReactNode; componentN
   children,
   componentName = 'component'
 }) => {
+  const { t } = useLanguage();
   return (
     <ModalErrorBoundaryClass
-      fallbackTitle={`Failed to load ${componentName}`}
-      fallbackBody="The component could not be loaded. Please try refreshing the page."
+      fallbackTitle={`${t.failedToLoad} ${componentName}`}
+      fallbackBody={t.failedToLoadBody}
+      tryAgainLabel={t.tryAgain}
+      closeLabel={t.close}
     >
       {children}
     </ModalErrorBoundaryClass>

@@ -11,7 +11,9 @@
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Target, Plus, Check, X, Flame, Brain, Heart, Calendar, Trophy, ChevronDown, ChevronUp } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { Goal, GoalType, GoalPeriod, Habit, MoodEntry, FocusSession } from '@/types';
 import { generateId, getToday } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
@@ -410,6 +412,8 @@ export function GoalsPanel({
   const [showAddForm, setShowAddForm] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
 
+  useBackHandler(showAddForm, () => setShowAddForm(false));
+
   // Calculate progress for all goals
   const goalsWithProgress = useMemo(() => {
     return goals.map((goal) => ({
@@ -498,15 +502,17 @@ export function GoalsPanel({
 
             {/* Empty State */}
             {activeGoals.length === 0 && !showAddForm && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-8 text-muted-foreground"
-              >
-                <Target className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                <p className="text-sm">{t.noGoalsYet || 'No goals yet'}</p>
-                <p className="text-xs mt-1">{t.setGoalHint || 'Set a goal to track your progress'}</p>
-              </motion.div>
+              <EmptyState
+                icon={<Target className="w-6 h-6 text-primary" />}
+                title={t.noGoalsYet || 'No goals yet'}
+                message={t.setGoalHint || 'Set a goal to track your progress'}
+                size="compact"
+                action={{
+                  label: t.addGoal || 'Add Goal',
+                  onClick: () => setShowAddForm(true),
+                  icon: <Plus className="w-4 h-4" />,
+                }}
+              />
             )}
 
             {/* Completed Goals (collapsed by default) */}

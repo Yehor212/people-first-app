@@ -10,6 +10,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Users,
@@ -29,11 +30,13 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { EmptyState } from '@/components/EmptyState';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticTap, hapticSuccess, hapticError } from '@/lib/haptics';
 import { announce } from '@/lib/a11y';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import {
   loadFriends,
   loadMyProfile,
@@ -66,6 +69,8 @@ export function FriendsPanel({
   level = 1,
 }: FriendsPanelProps) {
   const { t } = useLanguage();
+
+  useBackHandler(open, onClose);
 
   const [myProfile, setMyProfile] = useState<MyProfile | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -163,6 +168,8 @@ export function FriendsPanel({
       setIsAdding(false);
     }
   }, [friendCode, t]);
+
+  const throttledAddFriend = useThrottledCallback(handleAddFriend, 1000);
 
   // Remove friend
   const handleRemoveFriend = useCallback((friend: Friend) => {
@@ -370,7 +377,7 @@ export function FriendsPanel({
                     <Button
                       variant="gradient"
                       className="w-full"
-                      onClick={handleAddFriend}
+                      onClick={throttledAddFriend}
                       disabled={!friendCode.trim() || isAdding}
                     >
                       {isAdding ? (
@@ -408,17 +415,17 @@ export function FriendsPanel({
               </h3>
 
               {friends.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <Users className="w-8 h-8 text-primary" />
-                  </div>
-                  <p className="text-muted-foreground text-sm mb-2">
-                    {t.noFriendsYet || 'No friends yet'}
-                  </p>
-                  <p className="text-muted-foreground/70 text-xs">
-                    {t.addFriendsHint || 'Share your code or add friends by their code'}
-                  </p>
-                </div>
+                <EmptyState
+                  icon={<Users className="w-6 h-6 text-primary" />}
+                  title={t.noFriendsYet || 'No friends yet'}
+                  message={t.addFriendsHint || 'Share your code or add friends by their code'}
+                  size="compact"
+                  action={{
+                    label: t.addFriendByCode || 'Add Friend by Code',
+                    onClick: () => setShowAddFriend(true),
+                    icon: <UserPlus className="w-4 h-4" />,
+                  }}
+                />
               ) : (
                 <div className="space-y-2">
                   {friends.map((friend) => (

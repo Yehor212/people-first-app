@@ -12,6 +12,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Companion, CompanionType } from '@/types';
 import { COMPANION_EMOJIS } from '@/lib/innerWorldConstants';
 import { COMPANION_LEVELING } from '@/lib/treatConstants';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 interface CompanionPanelProps {
   companion: Companion;
@@ -117,6 +118,9 @@ export function CompanionPanel({
   hasGratitudeToday,
 }: CompanionPanelProps) {
   const { t } = useLanguage();
+
+  useBackHandler(isOpen, onClose);
+
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(companion.name);
   const [message, setMessage] = useState('');

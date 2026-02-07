@@ -4,6 +4,7 @@ import { getToday, generateId } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { getLocale } from '@/lib/timeUtils';
 import { moodNoteSchema, sanitizeString } from '@/lib/validation';
 import { Sparkles, Sun, Cloud, Moon, Plus, ChevronDown, Edit3 } from 'lucide-react';
@@ -232,6 +233,8 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     setNote('');
     setShowAddNew(false);
   };
+
+  const throttledSubmit = useThrottledCallback(handleSubmit, 1000);
 
   // Handle starting edit mode for an entry
   const handleStartEdit = useCallback((entry: MoodEntry) => {
@@ -667,7 +670,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
             rows={2}
           />
           <button
-            onClick={handleSubmit}
+            onClick={throttledSubmit}
             className={cn(
               "btn-press mt-4 w-full py-4 zen-gradient text-primary-foreground font-bold rounded-xl transition-all",
               "hover:opacity-90 hover:scale-[1.02] active:scale-[0.98]",

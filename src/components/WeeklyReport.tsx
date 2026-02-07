@@ -3,6 +3,7 @@ import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { safeAverage } from '@/lib/validation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { TrendingUp, TrendingDown, Minus, Flame, Brain, Heart, Target, Calendar, Award, Sparkles, CalendarDays, X } from 'lucide-react';
 import { EmojiOrIcon } from '@/components/icons';
 import { cn, formatDate, parseLocalDate } from '@/lib/utils';
@@ -77,6 +78,8 @@ function getWeekBeforeLastDates() {
 
 export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, onClose }: WeeklyReportProps) {
   const { t, language } = useLanguage();
+
+  useBackHandler(true, onClose);
 
   // P2 Accessibility: Keyboard navigation for modal
   const { modalRef, handleKeyDown } = useModalKeyboard({

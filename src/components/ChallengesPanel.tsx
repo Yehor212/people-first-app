@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { Trophy, Target, Lock, CheckCircle2, Plus, X, Share2, Download, Loader2 } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocale } from '@/lib/timeUtils';
 import { Challenge, Badge } from '@/types';
@@ -13,6 +14,7 @@ import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { logger } from '@/lib/logger';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 // Lazy load html2canvas
 const getHtml2Canvas = async () => {
@@ -36,6 +38,8 @@ export function ChallengesPanel({
   const { t, language } = useLanguage();
   const [selectedTab, setSelectedTab] = useState<'active' | 'available' | 'badges'>('active');
   const [showShareDialog, setShowShareDialog] = useState(false);
+
+  useBackHandler(showShareDialog, () => setShowShareDialog(false));
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
@@ -265,15 +269,15 @@ export function ChallengesPanel({
           {selectedTab === 'active' && (
             <>
               {activeChallenges.length === 0 ? (
-                <div className="text-center py-12">
-                  <div className="text-6xl mb-4">🎯</div>
-                  <p className="text-lg font-semibold text-foreground mb-2">
-                    {t.noChallengesActive || 'No Active Challenges'}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {t.noChallengesActiveHint || 'Start a challenge to track your progress'}
-                  </p>
-                </div>
+                <EmptyState
+                  icon={<Trophy className="w-6 h-6 text-primary" />}
+                  title={t.noChallengesActive || 'No Active Challenges'}
+                  message={t.noChallengesActiveHint || 'Start a challenge to track your progress'}
+                  action={{
+                    label: t.availableChallenges || 'Browse Challenges',
+                    onClick: () => setSelectedTab('available'),
+                  }}
+                />
               ) : (
                 activeChallenges.map((challenge) => {
                   const progressPercent = getProgressPercent(challenge);

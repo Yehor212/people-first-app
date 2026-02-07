@@ -10,6 +10,7 @@
  */
 
 import { useState, useRef, useCallback, ReactNode } from 'react';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { cn } from '@/lib/utils';
 import { Check, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -134,6 +135,8 @@ export function SwipeableHabit({
     }, 500);
   }, [disabled, completed, onComplete]);
 
+  const throttledClick = useThrottledCallback(handleClick, 500);
+
   return (
     <div
       ref={containerRef}
@@ -145,7 +148,7 @@ export function SwipeableHabit({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      onClick={handleClick}
+      onClick={throttledClick}
     >
       {/* Swipe progress background */}
       <AnimatePresence>

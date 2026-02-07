@@ -4,6 +4,7 @@ import { Volume2, VolumeX, Sparkles, Zap, Award, Music } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 export interface DopamineSettings {
   intensity: 'minimal' | 'normal' | 'adhd';
@@ -33,6 +34,9 @@ interface DopamineSettingsProps {
 
 export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
   const { t } = useLanguage();
+
+  useBackHandler(true, onClose);
+
   const [settings, setSettings] = useState<DopamineSettings>(DEFAULT_SETTINGS);
 
   // Load settings from localStorage

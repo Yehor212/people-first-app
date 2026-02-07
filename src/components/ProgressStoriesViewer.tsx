@@ -20,6 +20,7 @@ import { X, Share2, Pause, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { StorySlide, MoodTrendData, HabitStatsData, FocusStatsData } from '@/lib/progressStories';
 import { generateWeeklyCard, WeeklyProgressData, shareImage } from '@/lib/shareCards';
 import { Badge } from '@/types';
@@ -100,6 +101,9 @@ export function ProgressStoriesViewer({
   newBadges = [],
 }: ProgressStoriesViewerProps) {
   const { t, language } = useLanguage();
+
+  useBackHandler(true, onClose);
+
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);

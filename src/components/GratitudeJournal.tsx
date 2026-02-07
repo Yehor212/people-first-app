@@ -2,12 +2,14 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GratitudeEntry } from '@/types';
 import { getToday, generateId, cn } from '@/lib/utils';
-import { Plus, Zap, AlertCircle } from 'lucide-react';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
+import { Plus, Zap, AlertCircle, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { gratitudeTextSchema, sanitizeString } from '@/lib/validation';
 import { logger } from '@/lib/logger';
 import { JournalPrompt } from '@/components/JournalPrompt';
+import { EmptyState } from '@/components/EmptyState';
 
 interface GratitudeJournalProps {
   entries: GratitudeEntry[];
@@ -96,6 +98,8 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
     setText('');
     setIsExpanded(false);
   };
+
+  const throttledSubmit = useThrottledCallback(handleSubmit, 1000);
 
   return (
     <motion.div
@@ -315,7 +319,7 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
 
                 {/* Premium save button with shimmer effect */}
                 <motion.button
-                  onClick={handleSubmit}
+                  onClick={throttledSubmit}
                   disabled={!text.trim()}
                   className={cn(
                     'flex-1 py-2.5 rounded-xl font-medium relative overflow-hidden',
@@ -351,6 +355,18 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
           )}
         </AnimatePresence>
       </div>
+
+      {/* Empty state when no entries at all */}
+      {todayEntries.length === 0 && recentEntries.length === 0 && !isExpanded && (
+        <div className="px-4 pb-4">
+          <EmptyState
+            icon={<Heart className="w-6 h-6 text-pink-500" />}
+            title={t.gratitude || 'Gratitude'}
+            message={t.whatAreYouGratefulFor || 'Take a moment to appreciate the good things in your life.'}
+            size="compact"
+          />
+        </div>
+      )}
 
       {/* Recent entries with premium styling */}
       {recentEntries.length > 0 && (

@@ -14,6 +14,7 @@ import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { Database } from '@/types/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { offlineQueue } from '@/lib/offlineQueue';
+import { toast } from 'sonner';
 
 // Type aliases for Supabase table rows (LOW priority fix: replace `as any[]`)
 type MoodRow = Database['public']['Tables']['moods']['Row'];
@@ -753,6 +754,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
     }
     addCategorizedBreadcrumb('sync', 'pullFromCloud failed', { error: (error as Error).message }, 'error');
     logger.error('[Sync] Failed to pull from cloud:', error);
+    toast.error('Sync failed. Changes saved locally.');
     return false;
   }
 };
@@ -811,6 +813,7 @@ export const pushToCloud = async (): Promise<boolean> => {
     }
     addCategorizedBreadcrumb('sync', 'pushToCloud failed', { error: (error as Error).message }, 'error');
     logger.error('[Sync] Failed to push to cloud:', error);
+    toast.error('Sync failed. Changes saved locally.');
     return false;
   }
 };

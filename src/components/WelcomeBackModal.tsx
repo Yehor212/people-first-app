@@ -15,6 +15,7 @@ import { Heart, TrendingUp, Calendar, Sparkles, X, Zap, Target } from 'lucide-re
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { MoodEntry, Habit } from '@/types';
 import { startComebackChallenge } from '@/lib/comebackChallenge';
 
@@ -38,6 +39,8 @@ export function WelcomeBackModal({
 }: WelcomeBackModalProps) {
   const { t } = useLanguage();
   const [selectedMood, setSelectedMood] = useState<MoodEntry['mood'] | null>(null);
+
+  useBackHandler(true, onClose);
 
   // P1 Fix: Add keyboard accessibility (escape, focus trap, focus restore)
   const { modalProps } = useModalKeyboard({
