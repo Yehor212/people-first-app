@@ -77,9 +77,16 @@ ios/App/Pods/
 ios/App/App/GoogleService-Info.plist
 
 # ============================================
-# Test coverage reports
+# Test coverage reports & artifacts
 # ============================================
 coverage/
+test-results/
+playwright-report/
+
+# ============================================
+# Vite PWA dev artifacts
+# ============================================
+dev-dist/
 
 # ============================================
 # Temp files
