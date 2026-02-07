@@ -250,7 +250,7 @@ export function CompactHabitCard({
       <div
         className={cn(
           'absolute right-0 top-0 bottom-0 flex items-center transition-all duration-200',
-          isSwiped ? (onChallenge ? 'w-42' : 'w-28') : 'w-0'
+          isSwiped ? (onChallenge ? 'w-[10.5rem]' : 'w-28') : 'w-0'
         )}
       >
         {/* Edit button */}
@@ -336,7 +336,7 @@ export function CompactHabitCard({
           'relative flex items-center justify-between p-4',
           'bg-card/80 backdrop-blur-sm rounded-2xl',
           'border border-border/50 transition-all duration-300',
-          isSwiped && (onChallenge ? '-translate-x-42' : '-translate-x-28'),
+          isSwiped && (onChallenge ? '-translate-x-[10.5rem]' : '-translate-x-28'),
           completed && 'bg-[hsl(var(--mood-good))]/5 border-[hsl(var(--mood-good))]/20'
         )}
       >
@@ -473,16 +473,40 @@ export function CompactHabitCard({
               </motion.button>
             </div>
           ) : habitType === 'multiple' ? (
-            // Multiple type: progress ring with count
-            <div className="flex items-center gap-2">
-              <ProgressRing
-                progress={progressPercent}
-                size="sm"
-                color={completed ? 'success' : 'primary'}
-              />
-              <span className="text-sm font-medium text-muted-foreground">
-                {progress}/{target}
-              </span>
+            // Multiple type: progress ring with +/- buttons
+            <div className="flex items-center gap-1.5">
+              <motion.button
+                onClick={() => onAdjust?.(habit.id, today, -1)}
+                aria-label={t.decrease || 'Decrease'}
+                className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Minus className="w-5 h-5" />
+              </motion.button>
+              <div className="flex flex-col items-center w-12 justify-center">
+                <ProgressRing
+                  progress={progressPercent}
+                  size="sm"
+                  color={completed ? 'success' : 'primary'}
+                />
+                <span className="text-[10px] font-medium text-muted-foreground mt-0.5">
+                  {progress}/{target}
+                </span>
+              </div>
+              <motion.button
+                onClick={() => onAdjust?.(habit.id, today, 1)}
+                aria-label={t.increase || 'Increase'}
+                className={cn(
+                  "w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
+                  "bg-gradient-to-br from-primary/20 to-primary/10 text-primary hover:from-primary/30 hover:to-primary/20"
+                )}
+                style={{ boxShadow: '0 0 8px hsl(var(--primary) / 0.15)' }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <Plus className="w-5 h-5" />
+              </motion.button>
             </div>
           ) : habitType === 'continuous' ? (
             // Continuous: days count - Premium styling

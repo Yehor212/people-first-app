@@ -1080,17 +1080,33 @@ export function Index() {
   const handleAdjustHabit = (habitId: string, date: string, delta: number) => {
     setHabits(prev => prev.map(habit => {
       if (habit.id !== habitId) return habit;
-      if ((habit.type || 'daily') !== 'reduce') return habit;
+      const habitType = habit.type || 'daily';
 
-      const progressByDate = { ...(habit.progressByDate || {}) };
-      const current = typeof progressByDate[date] === 'number' ? progressByDate[date] : 0;
-      const next = Math.max(0, current + delta);
-      progressByDate[date] = next;
+      if (habitType === 'reduce') {
+        const progressByDate = { ...(habit.progressByDate || {}) };
+        const current = typeof progressByDate[date] === 'number' ? progressByDate[date] : 0;
+        progressByDate[date] = Math.max(0, current + delta);
+        return { ...habit, progressByDate };
+      }
 
-      return {
-        ...habit,
-        progressByDate,
-      };
+      if (habitType === 'multiple') {
+        const completionsByDate = { ...(habit.completionsByDate || {}) };
+        const current = completionsByDate[date] ?? 0;
+        const target = habit.dailyTarget ?? 1;
+        const next = Math.max(0, Math.min(target, current + delta));
+        completionsByDate[date] = next;
+        const existingDates = habit.completedDates || [];
+        return {
+          ...habit,
+          completionsByDate,
+          completedDates: next >= target
+            ? [...new Set([...existingDates, date])]
+            : existingDates.filter(d => d !== date),
+          updatedAt: new Date().toISOString(),
+        };
+      }
+
+      return habit;
     }));
     triggerSync(); // Auto-sync to cloud
   };

@@ -41,7 +41,17 @@ Manual chunks: i18n, react-vendor, ui-vendor, supabase, dexie, framer-motion, da
 Custom Service Worker via injectManifest. Workbox strategies: NetworkFirst for navigation (3s timeout, 1h TTL), CacheFirst for fonts/storage. Auto-skipWaiting on install + clients.claim on activate. Auto-reload on controllerchange.
 
 ### Audio System
-Web Audio API + HTML Audio elements. iOS unlock via silent MP3 + oscillator trick. `needsResume()` helper handles both `'suspended'` and `'interrupted'` states. Audio lifecycle manager for app pause/resume.
+Web Audio API + HTML Audio elements. **Two playback APIs:**
+
+- **`playDirect(soundId)`** — iOS-compatible synchronous play. Calls `audio.play()` with zero awaits directly in user gesture context. Used by all UI gesture handlers (HyperfocusMode). Sets `audioUnlocked = true` internally. Does NOT call `audio.load()` (which resets iOS blessing). Tracks status via `onplaying`/`onerror` events.
+
+- **`play(soundId)`** — Async play with full status tracking, canplaythrough wait, fallback URLs, abort controllers. Used for non-gesture contexts (e.g., audioLifecycle resume). Has 11 async hops — NOT suitable for iOS gesture context.
+
+- **`resumeDirect()`** — iOS-compatible synchronous resume from pause. Calls `audio.play()` on existing element.
+
+**iOS unlock**: "Blessed" Audio element pattern — one persistent `HTMLAudioElement` created once, reused for all playback. iOS keeps user-gesture blessing on the element across `src` changes (as long as `audio.load()` is NOT called). Silent MP3 + oscillator trick for initial unlock. `needsResume()` helper handles both `'suspended'` and `'interrupted'` states. Audio lifecycle manager for app pause/resume via `forceUnlockAudio()`.
+
+**Sound files**: 4 WAV (underwater, thunderstorm, ocean, river — 5-10MB each) + 2 MP3 (cafe, fireplace — smaller). WAV files are large; `playDirect()` streams them without waiting for full download.
 
 ---
 
@@ -70,10 +80,15 @@ Web Audio API + HTML Audio elements. iOS unlock via silent MP3 + oscillator tric
 ### Audio
 | File | Purpose |
 |------|---------|
-| `src/lib/ambientSounds.ts` | Sound library, unlock, playback (~1050 lines) |
-| `src/lib/audioManager.ts` | Web Audio API wrapper |
-| `src/lib/audioLifecycle.ts` | Pause/resume on app background |
+| `src/lib/ambientSounds.ts` | Sound library, unlock, playback (~1210 lines). Blessed element, `playDirect()`, `resumeDirect()`, `play()`, status tracking |
+| `src/lib/audioManager.ts` | Web Audio API wrapper, `ensureContextResumed()` |
+| `src/lib/audioLifecycle.ts` | Pause/resume on app background, `forceUnlockAudio()` |
 | `src/lib/notificationSounds.ts` | Notification audio |
+
+### Hyperfocus Mode
+| File | Purpose |
+|------|---------|
+| `src/components/HyperfocusMode.tsx` | Fullscreen focus timer + ambient sound selector + Spotify. All gesture handlers use `playDirect()`/`resumeDirect()` for iOS. Debug panel via 3-tap on "Ambient sound" label |
 
 ### Config & Deploy
 | File | Purpose |
@@ -92,6 +107,8 @@ Web Audio API + HTML Audio elements. iOS unlock via silent MP3 + oscillator tric
 | `src/lib/utils.ts` | General utilities |
 | `src/lib/lazyWithRetry.ts` | Lazy load with chunk retry |
 | `src/lib/androidBackHandler.ts` | Android back button |
+| `src/components/ui/progress-ring.tsx` | ProgressRing (44px sm/md, 56px lg) + ProgressRingCompact (44px checkmark) |
+| `src/components/CompactHabitCard.tsx` | Habit cards with 48px min-size +/- buttons |
 
 ---
 
@@ -166,9 +183,46 @@ ADD COLUMN IF NOT EXISTS mood_time_evening text;
 5. **Swipe navigation**: Excludes 20px edge zones for Android system back gesture.
 6. **ErrorBoundary**: Class components can't use hooks. Thread translations via functional wrapper props.
 7. **Notification channels**: Android channels immutable after creation.
-8. **Audio on iOS**: Must handle `'interrupted'` state (not just `'suspended'`). Use `needsResume()` helper.
-9. **Audio unlock listeners**: Removed after success; `forceUnlockAudio()` re-registers them on app resume.
-10. **SW auto-skipWaiting**: New SW immediately activates. Auto-reload via controllerchange listener.
+8. **Audio on iOS — gesture context**: `audio.play()` MUST be called synchronously in user gesture handler. Any `await` between tap and play breaks iOS gesture context. Use `playDirect()` for gesture-initiated playback, NOT `play()`.
+9. **Audio on iOS — `audio.load()` resets blessing**: NEVER call `audio.load()` on the blessed element. Setting `audio.src = url` auto-triggers loading. Calling `load()` explicitly resets iOS's "user-initiated" flag.
+10. **Audio on iOS — `needsResume()`**: Must handle `'interrupted'` state (not just `'suspended'`). Use `needsResume()` helper.
+11. **Audio unlock listeners**: Removed after success; `forceUnlockAudio()` re-registers them on app resume.
+12. **SW auto-skipWaiting**: New SW immediately activates. Auto-reload via controllerchange listener.
+13. **WCAG touch targets**: All interactive elements must be minimum 44px (buttons, checkboxes). Habit +/- buttons are 48px.
+
+---
+
+## iOS Audio Architecture (Important)
+
+The audio system has two parallel playback paths:
+
+### `playDirect()` — For gesture handlers (iOS-safe)
+```
+User tap → handleSoundSelect/handleStart/handlePause/toggleSound
+  → generator.playDirect(soundId)
+    → stopImmediate() [sync]
+    → audioElement = getOrCreateBlessedElement() [sync]
+    → audioElement.src = url [sync, auto-loads]
+    → audioUnlocked = true [sync]
+    → audioElement.play() [sync call, returns promise]
+    → track via onplaying/onerror events [async, non-blocking]
+```
+**Zero awaits. Gesture context preserved. iOS works.**
+
+### `play()` — For non-gesture contexts (async)
+```
+generator.play(soundId)
+  → await transition mutex
+  → check audioUnlocked → 'blocked' if false
+  → await unlockAudio()
+  → await playAudioFile() → await loadAndPlayUrl()
+    → audio.load() + await canplaythrough
+    → await audio.play()
+```
+**11 awaits. Gesture context lost. NOT for iOS gesture handlers.**
+
+### Blessed Audio Element
+Module-level singleton `blessedAudioElement` — created once, never destroyed. All playback reuses this element. `stopImmediate()` pauses and clears handlers but does NOT null the element or call `load()`.
 
 ---
 
@@ -176,6 +230,9 @@ ADD COLUMN IF NOT EXISTS mood_time_evening text;
 
 | Commit | Fix |
 |--------|-----|
+| `8565017` | **iOS audio: synchronous `playDirect()` — zero awaits, no `load()`, gesture context preserved** |
+| `9d7ec7d` | Blessed audio element pattern + habit button sizes (44-48px WCAG) |
+| `48e8357` | Hyperfocus timer non-blocking + remove `muted:true` from unlock |
 | `e4a9d1d` | SVG path errors, ring tap, iOS audio interrupted state |
 | `2544386` | MP3 404, stale cache auto-reload, version check cache-bust |
 | `bf26fc1` | TDZ blocker, responsive, caching, cross-browser |
