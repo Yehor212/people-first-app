@@ -23,7 +23,7 @@ interface VersionManifest {
 const VERSION_CHECK_FLAG = 'zenflow_check_version';
 const RELOAD_TIMESTAMP_KEY = 'zenflow_hard_reload_ts';
 const LAST_VERSION_CHECK_KEY = 'zenflow_last_version_check';
-const VERSION_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
+const VERSION_CHECK_INTERVAL = 1 * 60 * 1000; // 1 minute — aggressive for GitHub Pages (no custom cache headers)
 
 /**
  * Check if the app version matches the server version.
@@ -36,7 +36,8 @@ export async function checkAppVersion(): Promise<boolean> {
     const basePath = import.meta.env.BASE_URL || '/';
 
     // Fetch with no-store to bypass all caches
-    const response = await fetch(`${basePath}version.json`, {
+    // Cache-bust URL with timestamp to bypass GitHub Pages CDN cache
+    const response = await fetch(`${basePath}version.json?_t=${Date.now()}`, {
       cache: 'no-store',
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',

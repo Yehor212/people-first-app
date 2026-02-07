@@ -295,8 +295,8 @@ const BASE_PATH = import.meta.env.BASE_URL || '/people-first-app/';
  * All available sounds - LOCAL ONLY
  * Names honestly describe what's in each file
  *
- * MP3 primary, WAV fallback for better mobile compatibility.
- * MP3 files are much smaller (1-3MB vs 8-31MB WAV), critical for mobile.
+ * WAV primary (files exist on disk), no MP3 fallback (MP3 files not yet created).
+ * TODO: Convert WAV→MP3 with ffmpeg for smaller file sizes on mobile.
  */
 export const SOUNDS: SoundInfo[] = [
   {
@@ -304,8 +304,7 @@ export const SOUNDS: SoundInfo[] = [
     type: 'underwater',
     nameRu: 'Подводный гул',
     nameEn: 'Underwater Hum',
-    file: `${BASE_PATH}sounds/underwater.mp3`,
-    fallbackFile: `${BASE_PATH}sounds/mixkit-underwater-transmitter-hum-2135.wav`,
+    file: `${BASE_PATH}sounds/mixkit-underwater-transmitter-hum-2135.wav`,
     description: 'Deep underwater ambient sound'
   },
   {
@@ -313,8 +312,7 @@ export const SOUNDS: SoundInfo[] = [
     type: 'thunderstorm',
     nameRu: 'Гроза в джунглях',
     nameEn: 'Jungle Thunderstorm',
-    file: `${BASE_PATH}sounds/thunderstorm.mp3`,
-    fallbackFile: `${BASE_PATH}sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.wav`,
+    file: `${BASE_PATH}sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.wav`,
     description: 'Thunder and rain in tropical jungle'
   },
   {
@@ -322,8 +320,7 @@ export const SOUNDS: SoundInfo[] = [
     type: 'ocean',
     nameRu: 'Волны у скал',
     nameEn: 'Waves on Rocks',
-    file: `${BASE_PATH}sounds/ocean.mp3`,
-    fallbackFile: `${BASE_PATH}sounds/mixkit-small-waves-harbor-rocks-1208.wav`,
+    file: `${BASE_PATH}sounds/mixkit-small-waves-harbor-rocks-1208.wav`,
     description: 'Small waves hitting harbor rocks'
   },
   {
@@ -331,8 +328,7 @@ export const SOUNDS: SoundInfo[] = [
     type: 'river',
     nameRu: 'Природа у реки',
     nameEn: 'River Wildlife',
-    file: `${BASE_PATH}sounds/river.mp3`,
-    fallbackFile: `${BASE_PATH}sounds/mixkit-wildlife-environment-in-a-river-2456.wav`,
+    file: `${BASE_PATH}sounds/mixkit-wildlife-environment-in-a-river-2456.wav`,
     description: 'River sounds with wildlife'
   },
   {

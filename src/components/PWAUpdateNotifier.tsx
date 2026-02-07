@@ -113,9 +113,18 @@ export function PWAUpdateNotifier() {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Listen for SW controller change (happens after skipWaiting)
+    // Auto-reload when new SW takes control (after skipWaiting)
     const handleControllerChange = () => {
-      logger.log('[PWA] New service worker activated');
+      logger.log('[PWA] New service worker activated — auto-reloading');
+      if (!hasShownToast.current) {
+        hasShownToast.current = true;
+        toast({
+          title: t.pwaUpdateAvailable || 'Update available',
+          description: t.pwaUpdateDescription || 'A new version is ready. Refreshing...',
+          duration: 3000,
+        });
+      }
+      setTimeout(() => window.location.reload(), 2000);
     };
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
 
