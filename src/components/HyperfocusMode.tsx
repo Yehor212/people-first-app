@@ -361,8 +361,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   }, [progress]);
 
   return (
-    <div className="fixed inset-0 bg-slate-100 dark:bg-black z-[100] flex items-center justify-center overflow-hidden touch-none">
-      {/* Deep space background - Theme-aware */}
+    <div className="fixed inset-0 bg-slate-100 dark:bg-black z-[100]">
+      {/* Deep space background - Theme-aware (fixed layer) */}
       <div className="absolute inset-0 bg-gradient-to-b from-slate-100 via-indigo-50 to-violet-100 dark:bg-none" />
       <div
         className="absolute inset-0 hidden dark:block"
@@ -416,11 +416,13 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         <X className="w-6 h-6" />
       </button>
 
-      {/* Main Content */}
-      <div className="relative z-20 text-center px-6">
+      {/* Scrollable content layer */}
+      <div className="absolute inset-0 z-20 overflow-y-auto">
+      {/* Main Content — centered when fits, scrollable when overflows */}
+      <div className="min-h-full flex flex-col items-center justify-center text-center px-6 py-8">
         {/* Premium Timer Display */}
-        <div className="mb-12">
-          <div className="relative w-72 h-72 mx-auto mb-8">
+        <div className="mb-6 sm:mb-12">
+          <div className="relative w-52 h-52 sm:w-64 sm:h-64 md:w-72 md:h-72 mx-auto mb-6 sm:mb-8">
             {/* Multi-layer Circular Progress */}
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 280 280">
               {/* Layer 1: Outer orbit path (dashed) - dark mode only */}
@@ -515,7 +517,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <motion.div
-                  className="text-6xl font-bold text-violet-700 dark:text-white mb-2"
+                  className="text-4xl sm:text-5xl md:text-6xl font-bold text-violet-700 dark:text-white mb-2"
                   style={{
                     textShadow: `0 0 30px ${progressColor.from}60`
                   }}
@@ -603,7 +605,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         </div>
 
         {/* Premium Ambient Sound Selector */}
-        <div className="max-w-md mx-auto bg-slate-200/80 dark:bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-slate-300 dark:border-white/10">
+        <div className="w-full max-w-sm sm:max-w-md mx-auto bg-slate-200/80 dark:bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-slate-300 dark:border-white/10">
           <div className="flex items-center justify-between mb-4">
             {/* P1 Fix: 5-tap to activate debug panel */}
             <button
@@ -925,6 +927,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             </div>
           </motion.div>
         )}
+      </div>
       </div>
 
       {/* Breathing Animation CSS */}

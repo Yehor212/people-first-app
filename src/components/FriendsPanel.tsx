@@ -26,6 +26,7 @@ import {
   RefreshCw,
   Trash2,
   Settings,
+  Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -83,6 +84,7 @@ export function FriendsPanel({
   const [addError, setAddError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   // Initialize profile and load data
   useEffect(() => {
@@ -136,10 +138,15 @@ export function FriendsPanel({
   const handleShare = useCallback(async () => {
     if (!myProfile) return;
 
+    setIsSharing(true);
     hapticTap();
-    const success = await shareFriendCode(myProfile, t);
-    if (success) {
-      hapticSuccess();
+    try {
+      const success = await shareFriendCode(myProfile, t);
+      if (success) {
+        hapticSuccess();
+      }
+    } finally {
+      setIsSharing(false);
     }
   }, [myProfile, t]);
 
@@ -287,9 +294,10 @@ export function FriendsPanel({
                     variant="gradient"
                     size="icon"
                     onClick={handleShare}
+                    disabled={isSharing}
                     className="h-10 w-10 shrink-0"
                   >
-                    <Share2 className="w-4 h-4" />
+                    {isSharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
                   </Button>
                 </div>
               </div>

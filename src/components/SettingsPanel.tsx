@@ -80,6 +80,12 @@ export function SettingsPanel({
   // P1 Fix: Loading states for export/import operations
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isExportingCSV, setIsExportingCSV] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [authEmail, setAuthEmail] = useState('');
   const [authStatus, setAuthStatus] = useState<string | null>(null);
@@ -256,16 +262,21 @@ export function SettingsPanel({
       return;
     }
     if (!authEmail.trim()) return;
+    setIsSigningIn(true);
     setAuthStatus(null);
-    const { error } = await supabase.auth.signInWithOtp({
-      email: authEmail.trim(),
-      options: { emailRedirectTo: getAuthRedirectUrl() }
-    });
-    if (error) {
-      setAuthStatus(t.authError);
-      return;
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: authEmail.trim(),
+        options: { emailRedirectTo: getAuthRedirectUrl() }
+      });
+      if (error) {
+        setAuthStatus(t.authError);
+        return;
+      }
+      setAuthStatus(t.authEmailSent);
+    } finally {
+      setIsSigningIn(false);
     }
-    setAuthStatus(t.authEmailSent);
   };
 
   const handleGoogle = async () => {
@@ -274,51 +285,61 @@ export function SettingsPanel({
       return;
     }
 
+    setIsSigningIn(true);
     const redirectUrl = getAuthRedirectUrl();
     logger.log('[Settings] Starting Google sign-in with redirect:', redirectUrl);
 
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: redirectUrl,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
-      },
-    });
+      });
 
-    if (error) {
-      logger.error('[Settings] Google sign-in error:', error);
-      setAuthStatus(t.authError);
+      if (error) {
+        logger.error('[Settings] Google sign-in error:', error);
+        setAuthStatus(t.authError);
+      }
+    } finally {
+      setIsSigningIn(false);
     }
   };
 
   const handleSignOut = async () => {
     if (!supabase) return;
 
-    // P0 Fix: Flush offline queue before signing out to prevent data loss
-    if (offlineQueue.hasPendingActions()) {
-      logger.log('[Settings] Flushing offline queue before sign-out...');
-      try {
-        // Process queue with 10s timeout to prevent hanging
-        await Promise.race([
-          offlineQueue.processQueue(),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Queue flush timeout')), 10000)
-          )
-        ]);
-        logger.log('[Settings] Offline queue flushed successfully');
-      } catch (flushError) {
-        logger.warn('[Settings] Could not flush offline queue:', flushError);
-        // Continue with sign-out even if flush fails
+    setIsSigningOut(true);
+    try {
+      // P0 Fix: Flush offline queue before signing out to prevent data loss
+      if (offlineQueue.hasPendingActions()) {
+        logger.log('[Settings] Flushing offline queue before sign-out...');
+        try {
+          // Process queue with 10s timeout to prevent hanging
+          await Promise.race([
+            offlineQueue.processQueue(),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Queue flush timeout')), 10000)
+            )
+          ]);
+          logger.log('[Settings] Offline queue flushed successfully');
+        } catch (flushError) {
+          logger.warn('[Settings] Could not flush offline queue:', flushError);
+          // Continue with sign-out even if flush fails
+        }
       }
-    }
 
-    // Remove FCM push token before signing out
-    await removePushToken();
-    await supabase.auth.signOut();
-    setAuthStatus(t.authSignedOut);
+      // Remove FCM push token before signing out
+      await removePushToken();
+      await supabase.auth.signOut();
+      setAuthStatus(t.authSignedOut);
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -326,6 +347,7 @@ export function SettingsPanel({
       setDeleteStatus(t.deleteAccountError);
       return;
     }
+    setIsDeletingAccount(true);
     setDeleteStatus(null);
     try {
       const { error } = await supabase.functions.invoke("delete-account");
@@ -339,24 +361,28 @@ export function SettingsPanel({
     } catch (error) {
       logger.error("Delete account failed:", error);
       setDeleteStatus(t.deleteAccountError);
+    } finally {
+      setIsDeletingAccount(false);
     }
   };
 
   const handleSync = async () => {
+    if (!supabase) {
+      setAuthStatus(t.cloudSyncDisabled);
+      return;
+    }
+    setIsSyncing(true);
+    setAuthStatus(null);
     try {
-      if (!supabase) {
-        setAuthStatus(t.cloudSyncDisabled);
-        return;
-      }
-      setAuthStatus(null);
       const result = await syncWithCloud('merge');
       setAuthStatus(result.status === "pulled" ? t.syncPulled : t.syncPushed);
     } catch (error) {
       const errorMessage = formatError(error);
       logger.error("Sync failed:", errorMessage);
       setAuthStatus(`${t.syncError} ${errorMessage}`);
-      // P1 Fix: Also show toast for better visibility
       toast.error(t.syncError || 'Sync failed');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -953,17 +979,19 @@ export function SettingsPanel({
           {/* Export CSV and PDF buttons */}
           <div className="flex gap-2">
             <button
-              onClick={() => exportAllToCSV({ moods, habits, focusSessions, gratitudeEntries })}
-              className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2"
+              onClick={() => { setIsExportingCSV(true); try { exportAllToCSV({ moods, habits, focusSessions, gratitudeEntries }); } finally { setIsExportingCSV(false); } }}
+              disabled={isExportingCSV}
+              className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FileSpreadsheet className="w-4 h-4" />
+              {isExportingCSV ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
               <span>{t.exportCSV || 'CSV'}</span>
             </button>
             <button
-              onClick={() => exportProgressReportPDF({ moods, habits, focusSessions, gratitudeEntries, userName })}
-              className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2"
+              onClick={() => { setIsExportingPDF(true); try { exportProgressReportPDF({ moods, habits, focusSessions, gratitudeEntries, userName }); } finally { setIsExportingPDF(false); } }}
+              disabled={isExportingPDF}
+              className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FileText className="w-4 h-4" />
+              {isExportingPDF ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
               <span>{t.exportPDF || 'PDF Report'}</span>
             </button>
           </div>
@@ -1154,16 +1182,19 @@ export function SettingsPanel({
 
             <button
               onClick={handleSync}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors btn-press"
-              disabled={!cloudSyncEnabled}
+              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors btn-press flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={!cloudSyncEnabled || isSyncing}
             >
-              {t.syncNow}
+              {isSyncing && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isSyncing ? (t.syncing || 'Syncing...') : t.syncNow}
             </button>
             <button
               onClick={handleSignOut}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors btn-press"
+              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors btn-press flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSigningOut}
             >
-              {t.signOut}
+              {isSigningOut && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isSigningOut ? (t.signingOut || 'Signing out...') : t.signOut}
             </button>
             {!showDeleteConfirm ? (
               <button
@@ -1209,10 +1240,11 @@ export function SettingsPanel({
                   </button>
                   <button
                     onClick={handleDeleteAccount}
-                    disabled={deleteConfirmInput !== 'DELETE'}
-                    className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={deleteConfirmInput !== 'DELETE' || isDeletingAccount}
+                    className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                   >
-                    {t.delete}
+                    {isDeletingAccount && <Loader2 className="w-4 h-4 animate-spin" />}
+                    {isDeletingAccount ? (t.deleting || 'Deleting...') : t.delete}
                   </button>
                 </div>
               </div>
@@ -1238,14 +1270,18 @@ export function SettingsPanel({
             />
             <button
               onClick={handleSignIn}
-              className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
+              disabled={isSigningIn}
+              className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
+              {isSigningIn && <Loader2 className="w-4 h-4 animate-spin" />}
               {t.sendMagicLink}
             </button>
             <button
               onClick={handleGoogle}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors"
+              disabled={isSigningIn}
+              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
+              {isSigningIn && <Loader2 className="w-4 h-4 animate-spin" />}
               {t.continueWithGoogle}
             </button>
           </div>
