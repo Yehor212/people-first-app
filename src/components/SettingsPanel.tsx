@@ -55,8 +55,6 @@ interface SettingsPanelProps {
   onOpenWidgetSettings?: () => void;
 }
 
-const languages: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr', 'ja'];
-
 export function SettingsPanel({
   userName,
   onNameChange,
@@ -979,7 +977,7 @@ export function SettingsPanel({
           {/* Export CSV and PDF buttons */}
           <div className="flex gap-2">
             <button
-              onClick={() => { setIsExportingCSV(true); try { exportAllToCSV({ moods, habits, focusSessions, gratitudeEntries }); } finally { setIsExportingCSV(false); } }}
+              onClick={() => { setIsExportingCSV(true); try { exportAllToCSV({ moods, habits, focusSessions, gratitudeEntries }); } catch (e) { toast.error(t.exportError || 'Export failed'); logger.error('[Settings] CSV export error:', e); } finally { setIsExportingCSV(false); } }}
               disabled={isExportingCSV}
               className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -987,7 +985,7 @@ export function SettingsPanel({
               <span>{t.exportCSV || 'CSV'}</span>
             </button>
             <button
-              onClick={() => { setIsExportingPDF(true); try { exportProgressReportPDF({ moods, habits, focusSessions, gratitudeEntries, userName }); } finally { setIsExportingPDF(false); } }}
+              onClick={() => { setIsExportingPDF(true); try { exportProgressReportPDF({ moods, habits, focusSessions, gratitudeEntries, userName }); } catch (e) { toast.error(t.exportError || 'Export failed'); logger.error('[Settings] PDF export error:', e); } finally { setIsExportingPDF(false); } }}
               disabled={isExportingPDF}
               className="flex-1 py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
