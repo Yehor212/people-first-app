@@ -84,6 +84,7 @@ const TasksPanel = lazyWithRetry(() => import('@/components/TasksPanel').then(m 
 const QuestsPanel = lazyWithRetry(() => import('@/components/QuestsPanel').then(m => ({ default: m.QuestsPanel })), 'QuestsPanel');
 const WidgetSettings = lazyWithRetry(() => import('@/pages/WidgetSettings').then(m => ({ default: m.WidgetSettings })), 'WidgetSettings');
 const Leaderboard = lazyWithRetry(() => import('@/components/Leaderboard').then(m => ({ default: m.Leaderboard })), 'Leaderboard');
+const FriendsPanel = lazyWithRetry(() => import('@/components/FriendsPanel').then(m => ({ default: m.FriendsPanel })), 'FriendsPanel');
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';
@@ -324,6 +325,7 @@ export function Index() {
   const [showTimeHelper, setShowTimeHelper] = useState(false);
   const [showTasksPanel, setShowTasksPanel] = useState(false);
   const [showQuestsPanel, setShowQuestsPanel] = useState(false);
+  const [showFriendsPanel, setShowFriendsPanel] = useState(false);
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
 
@@ -544,6 +546,7 @@ export function Index() {
   useEffect(() => {
     const unregister = registerModalCloseCallback(() => {
       // Close panels in priority order (most recently opened first)
+      if (showFriendsPanel) { setShowFriendsPanel(false); return true; }
       if (showTasksPanel) { setShowTasksPanel(false); return true; }
       if (showQuestsPanel) { setShowQuestsPanel(false); return true; }
       if (showChallenges) { setShowChallenges(false); return true; }
@@ -558,7 +561,7 @@ export function Index() {
       return false;
     });
     return unregister;
-  }, [showTasksPanel, showQuestsPanel, showChallenges, showChallengeModal,
+  }, [showFriendsPanel, showTasksPanel, showQuestsPanel, showChallenges, showChallengeModal,
       showWidgetSettings, showCompanionPanel, showWeeklyReport, showTimeHelper,
       showMindfulMoment, showWelcomeBack, showWelcomeOverlay]);
 
@@ -2367,6 +2370,7 @@ export function Index() {
               onOpenChallenges={isFeatureVisible('challenges') ? () => setShowChallenges(true) : undefined}
               onOpenTasks={isFeatureVisible('tasks') ? () => setShowTasksPanel(true) : undefined}
               onOpenQuests={isFeatureVisible('quests') ? () => setShowQuestsPanel(true) : undefined}
+              onOpenFriends={() => setShowFriendsPanel(true)}
             />
 
             {/* v1.4.0: Schedule Timeline - ADHD-friendly day planner with habits auto-synced */}
@@ -2530,6 +2534,21 @@ export function Index() {
           <Suspense fallback={<SkeletonList />}>
             <QuestsPanel
               onClose={() => setShowQuestsPanel(false)}
+            />
+          </Suspense>
+        </LazyErrorBoundary>
+      )}
+
+      {/* Friends Panel */}
+      {showFriendsPanel && (
+        <LazyErrorBoundary componentName="Friends">
+          <Suspense fallback={<SkeletonList />}>
+            <FriendsPanel
+              open={showFriendsPanel}
+              onClose={() => setShowFriendsPanel(false)}
+              userName={userName}
+              currentStreak={innerWorld.currentActiveStreak}
+              level={userLevel.level}
             />
           </Suspense>
         </LazyErrorBoundary>
