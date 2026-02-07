@@ -15,6 +15,9 @@ import {
   SpotifyTrack
 } from '@/lib/spotifyIntegration';
 
+// Temporarily disabled features
+const SHOW_SPOTIFY = false;
+
 // P0 Fix: Declare app version global
 declare const __APP_VERSION__: string;
 
@@ -419,10 +422,10 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       {/* Scrollable content layer */}
       <div className="absolute inset-0 z-20 overflow-y-auto">
       {/* Main Content — centered when fits, scrollable when overflows */}
-      <div className="min-h-full flex flex-col items-center justify-center text-center px-6 py-8">
+      <div className="min-h-full flex flex-col items-center justify-center text-center px-6 py-8 lg:px-12">
         {/* Premium Timer Display */}
-        <div className="mb-6 sm:mb-12">
-          <div className="relative w-52 h-52 sm:w-64 sm:h-64 md:w-72 md:h-72 mx-auto mb-6 sm:mb-8">
+        <div className="mb-6 sm:mb-12 lg:mb-16">
+          <div className="relative w-52 h-52 sm:w-64 sm:h-64 md:w-72 md:h-72 lg:w-80 lg:h-80 xl:w-96 xl:h-96 mx-auto mb-6 sm:mb-8">
             {/* Multi-layer Circular Progress */}
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 280 280">
               {/* Layer 1: Outer orbit path (dashed) - dark mode only */}
@@ -517,7 +520,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
                 <motion.div
-                  className="text-4xl sm:text-5xl md:text-6xl font-bold text-violet-700 dark:text-white mb-2"
+                  className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-violet-700 dark:text-white mb-2"
                   style={{
                     textShadow: `0 0 30px ${progressColor.from}60`
                   }}
@@ -552,7 +555,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         </div>
 
         {/* Premium Controls */}
-        <div className="flex items-center justify-center gap-4 mb-8">
+        <div className="flex items-center justify-center gap-4 lg:gap-6 mb-8 lg:mb-12">
           {!isRunning ? (
             <motion.button
               onClick={handleStart}
@@ -605,7 +608,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         </div>
 
         {/* Premium Ambient Sound Selector */}
-        <div className="w-full max-w-sm sm:max-w-md mx-auto bg-slate-200/80 dark:bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-slate-300 dark:border-white/10">
+        <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-slate-200/80 dark:bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-slate-300 dark:border-white/10">
           <div className="flex items-center justify-between mb-4">
             {/* P1 Fix: 5-tap to activate debug panel */}
             <button
@@ -743,8 +746,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             })}
           </div>
 
-          {/* Premium Spotify Section */}
-          <div className="mt-4 pt-4 border-t border-slate-300 dark:border-white/10">
+          {/* Premium Spotify Section — temporarily hidden */}
+          {SHOW_SPOTIFY && <div className="mt-4 pt-4 border-t border-slate-300 dark:border-white/10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Music className="w-4 h-4 text-[hsl(var(--brand-spotify))]" />
@@ -820,7 +823,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 {t.spotifyNoTrack}
               </p>
             )}
-          </div>
+          </div>}
 
           {/* P1 Fix: Audio Debug Panel */}
           <AnimatePresence>
@@ -909,7 +912,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         {/* Premium Tips */}
         {!isRunning && (
           <motion.div
-            className="mt-8 max-w-sm mx-auto"
+            className="mt-8 max-w-sm sm:max-w-md lg:max-w-lg mx-auto"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}

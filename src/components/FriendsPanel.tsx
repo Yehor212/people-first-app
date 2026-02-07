@@ -212,8 +212,6 @@ export function FriendsPanel({
     return date.toLocaleDateString();
   };
 
-  if (!open) return null;
-
   return (
     <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <SheetContent side="right" className="w-full sm:max-w-md p-0 overflow-hidden">

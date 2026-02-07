@@ -7,6 +7,10 @@ import { App } from '@capacitor/app';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 
+// Temporarily disabled auth providers (not production-ready)
+const SHOW_APPLE_AUTH = false;
+const SHOW_FACEBOOK_AUTH = false;
+
 interface AuthScreenProps {
   onComplete: (userData: { name: string; email: string }) => void;
   onSkip: () => void;
@@ -418,7 +422,8 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
             )}
           </button>
 
-          {/* Apple Sign In Button */}
+          {/* Apple Sign In Button — temporarily hidden */}
+          {SHOW_APPLE_AUTH && (
           <button
             onClick={handleAppleSignIn}
             disabled={isLoading || !supabase}
@@ -437,8 +442,10 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
               </>
             )}
           </button>
+          )}
 
-          {/* Facebook Sign In Button */}
+          {/* Facebook Sign In Button — temporarily hidden */}
+          {SHOW_FACEBOOK_AUTH && (
           <button
             onClick={handleFacebookSignIn}
             disabled={isLoading || !supabase}
@@ -457,6 +464,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
               </>
             )}
           </button>
+          )}
 
           {!supabase && (
             <div role="alert" className="p-3 bg-destructive/10 rounded-xl flex items-start gap-2">
