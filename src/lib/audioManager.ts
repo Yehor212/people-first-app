@@ -53,12 +53,12 @@ export function getAudioContext(): AudioContext | null {
   }
 }
 
-// Resume context if suspended (required for iOS)
+// Resume context if suspended or interrupted (required for iOS)
 async function ensureContextResumed(): Promise<boolean> {
   const ctx = getAudioContext();
   if (!ctx) return false;
 
-  if (ctx.state === 'suspended') {
+  if (ctx.state === 'suspended' || (ctx.state as string) === 'interrupted') {
     try {
       await ctx.resume();
     } catch (e) {

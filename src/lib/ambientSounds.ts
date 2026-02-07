@@ -55,6 +55,15 @@ let unlockPromise: Promise<void> | null = null;
 let globalAudioContext: AudioContext | null = null;
 let audioUnlockSetup = false;
 
+/**
+ * Check if AudioContext needs resume.
+ * iOS has a unique 'interrupted' state (phone lock, background, notifications)
+ * that also requires resume() — not just 'suspended'.
+ */
+function needsResume(ctx: AudioContext): boolean {
+  return ctx.state === 'suspended' || (ctx.state as string) === 'interrupted';
+}
+
 // Silent MP3 - more iOS compatible than WAV (0.5 second silence)
 const SILENT_MP3 = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
@@ -81,7 +90,7 @@ async function unlockWithOscillator(): Promise<void> {
     if (!ctx) return;
 
     // Resume context first
-    if (ctx.state === 'suspended') {
+    if (needsResume(ctx)) {
       await ctx.resume();
     }
 
@@ -136,7 +145,7 @@ export async function unlockAudio(): Promise<void> {
     // Even if previously unlocked, ensure AudioContext is running (iOS re-suspends)
     try {
       const ctx = getAudioContext();
-      if (ctx && ctx.state === 'suspended') {
+      if (ctx && needsResume(ctx)) {
         await ctx.resume();
       }
     } catch { /* ignore */ }
@@ -154,7 +163,7 @@ export async function unlockAudio(): Promise<void> {
 
       // Also ensure AudioContext is running
       const ctx = getAudioContext();
-      if (ctx && ctx.state === 'suspended') {
+      if (ctx && needsResume(ctx)) {
         await ctx.resume();
       }
 
@@ -266,7 +275,6 @@ export function isAudioUnlocked(): boolean {
  * Force re-unlock audio (useful after app resume on iOS)
  */
 export async function forceUnlockAudio(): Promise<void> {
-  // P0 Fix: Sentry breadcrumb for force unlock
   Sentry.addBreadcrumb({
     category: 'audio',
     message: 'Force re-unlocking audio (app resume)',
@@ -275,7 +283,10 @@ export async function forceUnlockAudio(): Promise<void> {
 
   audioUnlocked = false;
   unlockPromise = null;
+  audioUnlockSetup = false; // Allow re-registration of listeners
+  unlockAttempts = 0; // Reset retry counter
   await unlockAudio();
+  setupAudioUnlock(); // Re-register listeners for next user interaction
 }
 
 export interface SoundInfo {
@@ -652,7 +663,7 @@ export class AmbientSoundGenerator {
     // Ensure global AudioContext is running (helps iOS)
     try {
       const ctx = getAudioContext();
-      if (ctx && ctx.state === 'suspended') {
+      if (ctx && needsResume(ctx)) {
         await ctx.resume();
         logger.log('[AmbientSounds] AudioContext resumed');
       }
@@ -766,10 +777,10 @@ export class AmbientSoundGenerator {
         handleReject(new DOMException('Aborted during load', 'AbortError'));
       }, { once: true });
 
-      // P0 Fix: Longer timeout for large files
+      // Timeout: reject so fallback mechanism can try next URL
       timeoutId = window.setTimeout(() => {
-        logger.warn(`[AmbientSounds] Audio load timeout (${loadTimeout}ms) - attempting play anyway`);
-        handleResolve();
+        logger.warn(`[AmbientSounds] Audio load timeout (${loadTimeout}ms)`);
+        handleReject(new Error(`Audio load timeout after ${loadTimeout}ms: ${url}`));
       }, loadTimeout);
 
       // Ready listeners
@@ -808,7 +819,7 @@ export class AmbientSoundGenerator {
     // iOS: Resume AudioContext right before play (it can re-suspend between earlier resume and now)
     try {
       const ctx = getAudioContext();
-      if (ctx && ctx.state === 'suspended') {
+      if (ctx && needsResume(ctx)) {
         await ctx.resume();
         logger.log('[AmbientSounds] AudioContext re-resumed before play');
       }
@@ -897,7 +908,7 @@ export class AmbientSoundGenerator {
 
       // Ensure AudioContext is running
       const ctx = getAudioContext();
-      if (ctx && ctx.state === 'suspended') {
+      if (ctx && needsResume(ctx)) {
         await ctx.resume();
         logger.log('[AmbientSounds] AudioContext resumed for playback');
       }

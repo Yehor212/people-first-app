@@ -118,7 +118,23 @@ export function RadialDashboard({
               const { circumference, strokeDashoffset } = getCircleProps(radius, ring.value);
 
               return (
-                <g key={ring.id}>
+                <g
+                  key={ring.id}
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setActiveRing(ring.id);
+                    onRingClick?.(ring.id as RingId);
+                  }}
+                >
+                  {/* Invisible hit area for easier tapping */}
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r={radius}
+                    fill="none"
+                    strokeWidth={strokeWidth + 12}
+                    stroke="transparent"
+                  />
                   {/* Track */}
                   <circle
                     cx="100"
