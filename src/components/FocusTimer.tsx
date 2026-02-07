@@ -1,4 +1,5 @@
 import { useMemo, useState, useEffect, useRef, memo } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { logger } from '@/lib/logger';
 import { FocusSession } from '@/types';
@@ -1021,8 +1022,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
         </motion.div>
       )}
 
-      {/* Hyperfocus Mode Modal */}
-      {showHyperfocus && (
+      {/* Hyperfocus Mode Modal — Portal to escape PullToRefresh transform stacking context */}
+      {showHyperfocus && createPortal(
         <HyperfocusMode
           duration={focusMinutes}
           onComplete={() => {
@@ -1039,7 +1040,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             onCompleteSession(session);
           }}
           onExit={() => setShowHyperfocus(false)}
-        />
+        />,
+        document.body
       )}
     </div>
   );
