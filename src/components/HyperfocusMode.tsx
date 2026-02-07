@@ -666,6 +666,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
               {selectedSoundId && audioStatus.state !== 'loading' && (
                 <motion.button
                   onClick={toggleSound}
+                  aria-label={isSoundPlaying ? 'Mute sound' : 'Unmute sound'}
                   className={cn(
                     "p-2.5 min-w-[44px] min-h-[44px] rounded-xl transition-all flex items-center justify-center",
                     isSoundPlaying

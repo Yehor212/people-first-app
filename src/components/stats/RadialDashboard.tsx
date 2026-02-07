@@ -102,7 +102,7 @@ export function RadialDashboard({
       className={cn(
         'relative rounded-2xl p-4',
         'bg-card border border-border/50',
-        'shadow-md',
+        'zen-shadow-md',
         className
       )}
     >

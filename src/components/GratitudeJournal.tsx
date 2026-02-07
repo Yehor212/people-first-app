@@ -107,7 +107,7 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
         'relative overflow-hidden rounded-2xl',
         isPrimaryCTA
           ? 'bg-gradient-to-br from-pink-500/15 via-card to-rose-500/15 border border-pink-500/30'
-          : 'bg-card border border-border'
+          : 'bg-card border border-border zen-shadow-card'
       )}
       style={isPrimaryCTA ? {
         boxShadow: '0 0 25px rgba(236, 72, 153, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1)',
@@ -293,6 +293,7 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
                 } : {}}
                 rows={3}
                 autoFocus
+                onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
               />
 
               {/* Validation error message */}

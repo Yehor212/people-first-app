@@ -26,6 +26,8 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticSuccess, hapticTap, hapticWarning } from '@/lib/haptics';
+import { useBackHandler } from '@/hooks/useBackHandler';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { Habit } from '@/types';
 import {
   Challenge,
@@ -418,6 +420,8 @@ function CreateChallengeView({
     onCreated(challenge);
   };
 
+  const throttledCreate = useThrottledCallback(handleCreate, 1000);
+
   return (
     <div className="space-y-6 pb-8">
       {/* Habit preview - Premium */}
@@ -489,7 +493,7 @@ function CreateChallengeView({
 
       {/* Create button - Premium */}
       <motion.button
-        onClick={handleCreate}
+        onClick={throttledCreate}
         disabled={isCreating}
         className={cn(
           "relative w-full h-14 rounded-xl font-semibold text-lg text-white overflow-hidden",
@@ -548,6 +552,28 @@ function ChallengeDetailsView({
   const [copied, setCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
 
+  const throttledCopyCode = useThrottledCallback(async () => {
+    hapticTap();
+    try {
+      await navigator.clipboard.writeText(challenge.code);
+      setCopied(true);
+      hapticSuccess();
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      hapticWarning();
+    }
+  }, 1000);
+
+  const throttledShare = useThrottledCallback(async () => {
+    hapticTap();
+    setIsSharing(true);
+    const success = await shareChallenge(challenge, t);
+    if (success) {
+      hapticSuccess();
+    }
+    setIsSharing(false);
+  }, 1000);
+
   const progress = getChallengeProgress(challenge);
   const daysLeft = getDaysRemaining(challenge);
 
@@ -579,31 +605,7 @@ function ChallengeDetailsView({
     return t.keepGoing || '👍 Keep going! You\'re doing great!';
   };
 
-  const handleShare = async () => {
-    hapticTap();
-    setIsSharing(true);
-
-    const success = await shareChallenge(challenge, t);
-
-    if (success) {
-      hapticSuccess();
-    }
-
-    setIsSharing(false);
-  };
-
-  const handleCopyCode = async () => {
-    hapticTap();
-
-    try {
-      await navigator.clipboard.writeText(challenge.code);
-      setCopied(true);
-      hapticSuccess();
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      hapticWarning();
-    }
-  };
+  // handleShare and handleCopyCode are throttled above (throttledShare, throttledCopyCode)
 
   const handleDelete = () => {
     hapticWarning();
@@ -753,7 +755,8 @@ function ChallengeDetailsView({
             {challenge.code}
           </div>
           <motion.button
-            onClick={handleCopyCode}
+            onClick={throttledCopyCode}
+            aria-label={copied ? (t.copied || 'Copied') : (t.copyCode || 'Copy code')}
             className={cn(
               "h-14 w-14 rounded-xl flex items-center justify-center transition-all",
               copied
@@ -785,7 +788,7 @@ function ChallengeDetailsView({
         </Button>
 
         <Button
-          onClick={handleShare}
+          onClick={throttledShare}
           disabled={isSharing}
           className="h-12"
         >
@@ -1040,6 +1043,7 @@ function JoinChallengeView({
           autoComplete="off"
           autoCorrect="off"
           disabled={!!initialInvite?.habitName}
+          onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
         />
         {error && (
           <p className="text-sm text-destructive mt-2 text-center">{error}</p>
@@ -1097,6 +1101,15 @@ export const ChallengeModal = memo(function ChallengeModal({
   const [selectedChallenge, setSelectedChallenge] = useState<Challenge | null>(null);
   const [newlyCreatedChallenge, setNewlyCreatedChallenge] = useState<Challenge | null>(null);
   const [pendingInvite, setPendingInvite] = useState<ChallengeInvite | undefined>(undefined);
+
+  // Android back button: navigate sub-views before closing entire modal
+  useBackHandler(open && (mode === 'details' || mode === 'join' || mode === 'create'), () => {
+    hapticTap();
+    setSelectedChallenge(null);
+    setNewlyCreatedChallenge(null);
+    setPendingInvite(undefined);
+    setMode('list');
+  });
 
   // Reset state when modal opens/closes
   useEffect(() => {
@@ -1181,6 +1194,7 @@ export const ChallengeModal = memo(function ChallengeModal({
             {(mode === 'details' || mode === 'join') && (
               <motion.button
                 onClick={handleBack}
+                aria-label={t.back || 'Go back'}
                 className="p-2 rounded-xl bg-slate-100/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

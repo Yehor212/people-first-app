@@ -425,6 +425,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
                           }}
                           className="p-2 hover:bg-primary/10 rounded-lg transition-colors group"
                           title={t.editMood || 'Edit mood'}
+                          aria-label={t.editMood || 'Edit mood'}
                         >
                           <Edit3 className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
                         </button>
@@ -454,6 +455,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
                           <button
                             key={mood.type}
                             onClick={() => handleEditMoodSelect(entry, mood.type)}
+                            aria-label={mood.label}
                             className={cn(
                               "flex-1 p-2 rounded-lg transition-all",
                               editingMood === mood.type

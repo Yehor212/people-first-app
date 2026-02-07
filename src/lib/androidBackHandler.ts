@@ -250,6 +250,9 @@ function getExitMessage(): string {
       es: 'Presiona de nuevo para salir',
       de: 'Erneut drücken zum Beenden',
       fr: 'Appuyez à nouveau pour quitter',
+      ja: 'もう一度押すと終了します',
+      ar: 'اضغط مرة أخرى للخروج',
+      he: 'לחץ שוב כדי לצאת',
     };
     return messages[lang] || messages.en;
   } catch {

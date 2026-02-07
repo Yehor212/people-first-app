@@ -51,6 +51,7 @@ import { Navigation } from '@/components/Navigation';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { StorageErrorBanner } from '@/components/StorageErrorBanner';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
+import { PullToRefresh } from '@/components/PullToRefresh';
 
 // Lazy-loaded components with retry logic for chunk loading failures
 const StatsPage = lazyWithRetry(() => import('@/components/StatsPage').then(m => ({ default: m.StatsPage })), 'StatsPage');
@@ -1221,6 +1222,26 @@ export function Index() {
     setJournalPromptText(undefined);
   }, []);
 
+  // Pull-to-refresh handler: sync with cloud and reload data
+  const handlePullToRefresh = useCallback(async () => {
+    try {
+      await syncWithCloud('merge');
+      // Reload data from IndexedDB after sync
+      const [m, h, f, g] = await Promise.all([
+        db.moods.toArray(),
+        db.habits.toArray(),
+        db.focusSessions.toArray(),
+        db.gratitudeEntries.toArray(),
+      ]);
+      setMoods(m);
+      setHabits(h.map(normalizeHabit));
+      setFocusSessions(f);
+      setGratitudeEntries(g);
+    } catch {
+      // Silently fail — offline banner will show if no connection
+    }
+  }, []);
+
   // Open challenge modal from HabitTracker
   const handleOpenChallenge = useCallback((habit?: Habit) => {
     setChallengeHabit(habit);
@@ -2070,7 +2091,7 @@ export function Index() {
         )}
 
         {activeTab === 'home' && (
-          <>
+          <PullToRefresh onRefresh={handlePullToRefresh}>
             <InstallBanner />
             <Header
               userName={userName}
@@ -2336,7 +2357,7 @@ export function Index() {
                 </>
               )}
             </div>
-          </>
+          </PullToRefresh>
         )}
 
         {activeTab === 'garden' && (
@@ -2562,6 +2583,7 @@ export function Index() {
           isOpen={showMindfulMoment}
           onClose={() => setShowMindfulMoment(false)}
           onComplete={handleMindfulMomentComplete}
+          onViewProgress={() => setActiveTab('stats')}
           trigger="focus"
         />
       )}

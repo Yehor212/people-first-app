@@ -1154,14 +1154,14 @@ export function SettingsPanel({
 
             <button
               onClick={handleSync}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors"
+              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors btn-press"
               disabled={!cloudSyncEnabled}
             >
               {t.syncNow}
             </button>
             <button
               onClick={handleSignOut}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors"
+              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors btn-press"
             >
               {t.signOut}
             </button>
@@ -1171,7 +1171,7 @@ export function SettingsPanel({
                   setShowDeleteConfirm(true);
                   setDeleteConfirmInput(''); // P1 Fix: Reset input on open
                 }}
-                className="w-full py-3 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 transition-colors"
+                className="w-full py-3 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 transition-colors btn-press"
               >
                 {t.deleteAccount}
               </button>
@@ -1319,7 +1319,7 @@ export function SettingsPanel({
           <p className="text-xs text-muted-foreground mb-3">{t.installAppDescription}</p>
           <button
             onClick={() => promptInstall()}
-            className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
+            className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity btn-press"
           >
             {t.installNow}
           </button>

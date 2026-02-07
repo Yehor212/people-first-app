@@ -794,6 +794,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)'
             } : undefined}
             autoFocus
+            onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
           />
 
           <div className="relative mb-4">
@@ -1104,6 +1105,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                         e.preventDefault();
                         handleRemoveReminder(index);
                       }}
+                      aria-label={t.removeReminder || 'Remove reminder'}
                       className={cn(
                         "p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors",
                         isPrimaryCTA

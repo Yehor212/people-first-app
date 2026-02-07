@@ -20,6 +20,7 @@ interface MindfulMomentProps {
   isOpen: boolean;
   onClose: () => void;
   onComplete?: () => void;
+  onViewProgress?: () => void;
   trigger?: 'focus' | 'manual' | 'random';
   prompt?: MindfulPrompt; // Optional specific prompt
 }
@@ -35,6 +36,7 @@ export function MindfulMoment({
   isOpen,
   onClose,
   onComplete,
+  onViewProgress,
   trigger = 'manual',
   prompt: providedPrompt,
 }: MindfulMomentProps) {
@@ -184,6 +186,16 @@ export function MindfulMoment({
               >
                 <Heart className="w-5 h-5" />
                 {t.done || 'Done'}
+              </button>
+            )}
+
+            {/* View Progress link — shown after focus sessions */}
+            {onViewProgress && trigger === 'focus' && (
+              <button
+                onClick={() => { onComplete?.(); onClose(); onViewProgress(); }}
+                className="w-full py-2 text-sm text-primary hover:text-primary/80 font-medium transition-colors"
+              >
+                {t.viewProgress || 'View Progress →'}
               </button>
             )}
           </div>

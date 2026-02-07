@@ -108,8 +108,28 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
   // Bug fix: Use string state for inputs to allow free typing, validate on blur
   const [focusInputValue, setFocusInputValue] = useState(String(focusMinutes));
   const [breakInputValue, setBreakInputValue] = useState(String(breakMinutes));
+  // Session recovery: detect if a focus session expired while app was closed
+  const expiredSessionRef = useRef<FocusSession | null>(
+    savedState?.endTime && savedState.isRunning && !savedState.isBreak &&
+    Math.ceil((savedState.endTime - Date.now()) / 1000) <= 0
+      ? {
+          id: generateId(),
+          duration: savedState.focusMinutes,
+          completedAt: savedState.endTime,
+          date: new Date(savedState.endTime).toISOString().split('T')[0],
+          label: savedState.label?.trim() || undefined,
+          status: 'completed' as const,
+        }
+      : null
+  );
+
   // Bug fix: Initialize timeLeft based on saved or current focusMinutes, not hardcoded default
   const [timeLeft, setTimeLeft] = useState(() => {
+    // If session expired while closed, reset to default
+    if (expiredSessionRef.current) {
+      localStorage.removeItem(TIMER_STORAGE_KEY);
+      return (savedState?.focusMinutes || DEFAULT_FOCUS_MINUTES) * 60;
+    }
     if (savedState?.endTime && savedState.isRunning) {
       const remaining = Math.ceil((savedState.endTime - Date.now()) / 1000);
       if (remaining > 0) return remaining;
@@ -147,6 +167,20 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     return () => {
       isMountedRef.current = false;
     };
+  }, []);
+
+  // Session recovery: if a focus session expired while app was closed, auto-complete it
+  useEffect(() => {
+    const expired = expiredSessionRef.current;
+    if (expired) {
+      expiredSessionRef.current = null; // Only fire once
+      setPendingSession(expired);
+      setShowReflection(true);
+      setIsRunning(false);
+      setIsBreak(false);
+      logger.log('[FocusTimer] Recovered expired session:', expired.duration, 'min');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fix: Synchronous save on unmount to prevent state loss when switching tabs

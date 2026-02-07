@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { Database, CloudDownload, RefreshCw } from 'lucide-react';
 import { pullFromCloud } from '@/storage/realtimeSync';
 import { getCurrentUserId } from '@/lib/supabaseClient';
@@ -26,6 +27,9 @@ export function DatabaseRecoveryDialog() {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
+
+  // Android back button: dismiss dialog (start fresh)
+  useBackHandler(isOpen && !isRestoring, () => setIsOpen(false));
 
   useEffect(() => {
     const handleRecoveryNeeded = (e: Event) => {

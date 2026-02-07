@@ -236,7 +236,7 @@ export function CompactHabitCard({
       aria-checked={completed}
       className={cn(
         'relative overflow-hidden rounded-2xl',
-        'shadow-[0_4px_12px_-2px_hsl(var(--foreground)/0.05)]',
+        'zen-shadow-card',
         completed && 'ring-2 ring-emerald-500/40',
         className
       )}

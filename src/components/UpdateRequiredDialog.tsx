@@ -17,6 +17,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { RefreshCw, Download } from 'lucide-react';
 import * as Sentry from '@sentry/react';
 
@@ -27,6 +28,9 @@ export function UpdateRequiredDialog() {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [failedChunk, setFailedChunk] = useState<string | null>(null);
+
+  // Android back button: dismiss dialog
+  useBackHandler(isOpen, () => setIsOpen(false));
 
   const handleChunkError = useCallback((e: Event) => {
     const detail = (e as CustomEvent).detail;

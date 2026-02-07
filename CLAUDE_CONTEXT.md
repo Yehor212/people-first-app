@@ -230,6 +230,7 @@ Module-level singleton `blessedAudioElement` — created once, never destroyed. 
 
 | Commit | Fix |
 |--------|-----|
+| *(pending)* | **Pre-release audit (8 sections): back handler + throttle + a11y + btn-press + i18n across 7 files** |
 | `8565017` | **iOS audio: synchronous `playDirect()` — zero awaits, no `load()`, gesture context preserved** |
 | `9d7ec7d` | Blessed audio element pattern + habit button sizes (44-48px WCAG) |
 | `48e8357` | Hyperfocus timer non-blocking + remove `muted:true` from unlock |
@@ -252,6 +253,46 @@ npm run test:e2e     # Playwright E2E
 npx cap sync         # Capacitor sync
 npm run build:android # Android build
 ```
+
+---
+
+## Pre-Release Audit (Feb 2026)
+
+### Audit Scope
+Full UX/UI/a11y/security audit before Android release. 8 areas checked: UX gestures & navigation, UI states (empty/loading/error/offline), edge cases, audio/timers, design consistency, automation, stubs, component connectivity.
+
+### Findings: Already Well-Implemented
+- **Android back button**: 20+ components registered via `useBackHandler` hook
+- **Timer**: Date.now() offset-based, persists to localStorage, handles background/foreground
+- **Offline queue**: IndexedDB + localStorage fallback, Background Sync API, exponential backoff, Zod validation, 1000-item limit
+- **Error handling**: ErrorBoundary + Sentry + custom events + try-catch on all API calls, AbortError silenced
+- **PWA/SW**: Version check every 5min, stale cache auto-reload, CLEAR_CACHES, 1hr navigation TTL
+- **Cloud sync**: Full backup + granular, 60s debounce, Promise lock, AbortController timeouts
+- **Database recovery**: Auto-recreation on IndexedDB deletion, recovery dialog
+- **Security**: CSP in sync (index.html + vercel.json), RLS enforced, only anon key exposed, DOMPurify
+- **Themes**: 3 themes (light/dark/OLED) via CSS variables, surface elevation system
+- **Cards**: Consistent Card component with elevation variants, zen-shadow-* system
+- **Audio**: iOS blessed element, silent MP3 trick, playDirect/resumeDirect, status tracking
+- **Animations**: Framer Motion + CSS (shimmer, modal-enter, btn-press, card-hover)
+- **Loading**: Skeleton components (SkeletonCard, SkeletonStats, SkeletonList), Suspense boundaries
+- **Empty states**: Implemented in major components (challenges, leaderboard, stats)
+
+### Fixed in This Session (All 8 Sections)
+1. **useBackHandler** added to: ChallengeModal (sub-view navigation), ShareModal, DatabaseRecoveryDialog, UpdateRequiredDialog
+2. **useThrottledCallback** added to: ChallengeModal (Create/Copy/Share), ShareModal (Download/Copy/Share), WelcomeBackModal (Continue/Accept)
+3. **aria-label** added to: ChallengeModal back button + copy code button, ShareModal download/copy/share buttons
+4. **btn-press** added to: SettingsPanel (Sync Now, Sign Out, Delete Account, Install App buttons)
+5. **Exit toast i18n**: Added missing ja/ar/he translations in `androidBackHandler.ts` — all 9 languages now covered
+
+### Dead Code Noted
+- `PullToRefresh` component exists (`src/components/PullToRefresh.tsx`) but is not imported anywhere — candidate for removal
+
+### Remaining (Manual Testing)
+- Ручное тестирование на реальных Android-устройствах
+- Визуальная проверка всех экранов в 3 темах
+- Lighthouse PWA + a11y аудит
+- Переключение на все 9 языков — проверка отсутствия голых ключей
+- Конвертация WAV → MP3 (4 ambient-звука — ~5-10MB каждый)
 
 ---
 

@@ -13,6 +13,8 @@ import { cn, interpolate } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 import { hapticSuccess, hapticTap } from '@/lib/haptics';
+import { useBackHandler } from '@/hooks/useBackHandler';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import {
   ShareCardData,
   WeeklyProgressData,
@@ -78,6 +80,9 @@ export type ShareModalProps =
 export function ShareModal(props: ShareModalProps) {
   const { open, onOpenChange, username, mode } = props;
   const { t, language } = useLanguage();
+
+  // Android back button: close the share sheet
+  useBackHandler(open, () => onOpenChange(false));
 
   const [imageBlob, setImageBlob] = useState<Blob | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -151,15 +156,15 @@ export function ShareModal(props: ShareModalProps) {
     }
   };
 
-  const handleDownload = () => {
+  const handleDownload = useThrottledCallback(() => {
     if (!imageBlob) return;
     hapticTap();
 
     const filename = `zenflow-${mode}-${Date.now()}.png`;
     downloadImage(imageBlob, filename);
-  };
+  }, 1000);
 
-  const handleShare = async () => {
+  const handleShare = useThrottledCallback(async () => {
     if (!imageBlob) return;
     hapticTap();
 
@@ -183,9 +188,9 @@ export function ShareModal(props: ShareModalProps) {
       logger.error('Share failed:', error);
       toast.error(t.shareError || 'Could not share. Try downloading instead.');
     }
-  };
+  }, 1000);
 
-  const handleCopy = async () => {
+  const handleCopy = useThrottledCallback(async () => {
     if (!imageBlob) return;
     hapticTap();
 
@@ -203,7 +208,7 @@ export function ShareModal(props: ShareModalProps) {
       logger.error('Copy failed:', error);
       toast.error(t.copyError || 'Could not copy to clipboard.');
     }
-  };
+  }, 1000);
 
   const getShareTitle = (): string => {
     switch (mode) {
@@ -320,6 +325,7 @@ export function ShareModal(props: ShareModalProps) {
           <motion.button
             onClick={handleDownload}
             disabled={!imageBlob || isGenerating}
+            aria-label={t.shareDownload || 'Download'}
             className={cn(
               "flex flex-col items-center justify-center gap-2 h-20 rounded-xl transition-all",
               "bg-slate-100 dark:bg-white/5 backdrop-blur-sm border border-slate-200 dark:border-white/10",
@@ -344,6 +350,7 @@ export function ShareModal(props: ShareModalProps) {
           <motion.button
             onClick={handleCopy}
             disabled={!imageBlob || isGenerating}
+            aria-label={copied ? (t.shareCopied || 'Copied') : (t.shareCopyLink || 'Copy')}
             className={cn(
               "flex flex-col items-center justify-center gap-2 h-20 rounded-xl transition-all",
               copied
@@ -381,6 +388,7 @@ export function ShareModal(props: ShareModalProps) {
           <motion.button
             onClick={handleShare}
             disabled={!imageBlob || isGenerating}
+            aria-label={shared ? (t.shareCopied || 'Shared') : (t.shareButton || 'Share')}
             className={cn(
               "flex flex-col items-center justify-center gap-2 h-20 rounded-xl transition-all",
               shared

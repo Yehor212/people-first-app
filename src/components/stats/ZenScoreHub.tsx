@@ -211,10 +211,10 @@ export function ZenScoreHub({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       className={cn(
-        'relative overflow-hidden rounded-3xl',
+        'relative overflow-hidden rounded-2xl',
         'bg-gradient-to-br from-card via-card to-card/80',
         'border border-border/50',
-        'shadow-lg',
+        'zen-shadow-lg',
         className
       )}
     >

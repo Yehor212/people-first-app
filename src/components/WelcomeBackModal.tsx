@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { MoodEntry, Habit } from '@/types';
 import { startComebackChallenge } from '@/lib/comebackChallenge';
 
@@ -66,9 +67,14 @@ export function WelcomeBackModal({
     }
   };
 
-  const handleContinue = () => {
+  const handleContinue = useThrottledCallback(() => {
     onClose();
-  };
+  }, 1000);
+
+  const handleAcceptChallenge = useThrottledCallback(() => {
+    startComebackChallenge();
+    onClose();
+  }, 1000);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
@@ -201,10 +207,7 @@ export function WelcomeBackModal({
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => {
-                startComebackChallenge();
-                onClose();
-              }}
+              onClick={handleAcceptChallenge}
               className="w-full py-2.5 px-4 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-xl font-medium hover:from-violet-600 hover:to-purple-600 transition-all zen-shadow-sm flex items-center justify-center gap-2"
             >
               <Target className="w-4 h-4" />
