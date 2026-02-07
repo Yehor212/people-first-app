@@ -655,7 +655,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
         </div>
       </div>
 
-      <div className="relative w-52 h-52 mx-auto mb-6">
+      <div className="relative w-44 h-44 sm:w-52 sm:h-52 mx-auto mb-6">
         {/* Premium multi-layer timer */}
         <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
           {/* Layer 1: Orbit path (dashed) */}
@@ -897,7 +897,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
           }}
         >
           <motion.div
-            className="w-full max-w-sm relative overflow-hidden rounded-2xl"
+            className="w-full max-w-xs sm:max-w-sm relative overflow-hidden rounded-2xl"
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', damping: 20 }}

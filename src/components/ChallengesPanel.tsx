@@ -190,7 +190,7 @@ export function ChallengesPanel({
 
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="challenges-title" className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
-      <div className="w-full max-w-2xl max-h-[90vh] flex flex-col bg-card rounded-3xl zen-shadow-card overflow-hidden">
+      <div className="w-full max-w-2xl max-h-[90dvh] flex flex-col bg-card rounded-3xl zen-shadow-card overflow-hidden">
         {/* Header */}
         <div className="zen-gradient p-6 flex items-center justify-between">
           <div>

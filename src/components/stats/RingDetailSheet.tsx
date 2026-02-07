@@ -308,7 +308,7 @@ export function RingDetailSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="rounded-t-[2rem] border-0 p-0 max-h-[90vh] overflow-hidden"
+        className="rounded-t-[2rem] border-0 p-0 max-h-[90dvh] overflow-hidden"
       >
         <SheetTitle className="sr-only">{t[ringType] || theme.label}</SheetTitle>
 

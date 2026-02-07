@@ -637,14 +637,16 @@
     /* Safe area padding for Android/iOS notches and navigation bars */
     padding-top: var(--safe-top);
     padding-bottom: var(--safe-bottom);
-    /* Fill available viewport space */
+    /* Fill available viewport space (dvh fixes iOS Safari address bar) */
     min-height: 100vh;
+    min-height: 100dvh;
     min-height: -webkit-fill-available;
   }
 
   /* Ensure root element fills viewport */
   #root {
     min-height: 100vh;
+    min-height: 100dvh;
     min-height: -webkit-fill-available;
   }
 
@@ -755,6 +757,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.6);
+    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
     z-index: var(--z-overlay);
   }

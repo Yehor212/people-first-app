@@ -153,10 +153,9 @@ export default defineConfig(({ mode }) => {
             return 'ui-vendor';
           }
 
-          // Charts library (only loaded when viewing stats)
-          if (id.includes('recharts') || id.includes('d3-')) {
-            return 'charts';
-          }
+          // Note: recharts NOT manually chunked — its CJS interop helpers
+          // get shared across chunks, creating circular deps + TDZ errors.
+          // Vite auto-splits it into the StatsPage lazy chunk instead.
 
           // Supabase client
           if (id.includes('@supabase')) {

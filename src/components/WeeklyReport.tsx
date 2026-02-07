@@ -193,7 +193,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.9, opacity: 0, y: 20 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className="relative max-w-2xl w-full bg-card rounded-3xl shadow-2xl border border-border/50 max-h-[90vh] overflow-hidden"
+        className="relative max-w-2xl w-full bg-card rounded-3xl shadow-2xl border border-border/50 max-h-[90dvh] overflow-hidden"
       >
         {/* Close button */}
         <button
@@ -205,7 +205,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
         </button>
 
         {/* Scrollable content */}
-        <div className="max-h-[90vh] overflow-y-auto">
+        <div className="max-h-[90dvh] overflow-y-auto">
           {/* Premium Header with gradient background */}
           <div className="relative overflow-hidden">
             {/* Gradient background layers */}

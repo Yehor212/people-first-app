@@ -59,13 +59,12 @@ export function PWAUpdateNotifier() {
           }
         }
 
-        // P0 Fix: Store interval in ref for cleanup instead of returning cleanup function
-        // Periodically check for updates (every 60 minutes)
+        // Periodically check for updates (every 15 minutes)
         updateIntervalRef.current = setInterval(() => {
           registration.update().catch(() => {
             // Ignore update check errors
           });
-        }, 60 * 60 * 1000);
+        }, 15 * 60 * 1000);
       } catch (error) {
         logger.warn('[PWA] Failed to check for updates:', error);
       }
@@ -81,14 +80,18 @@ export function PWAUpdateNotifier() {
         action: (
           <button
             onClick={() => {
+              // Wait for new SW to take control, THEN reload
+              navigator.serviceWorker.addEventListener('controllerchange', () => {
+                window.location.reload();
+              }, { once: true });
               // Tell SW to skip waiting and activate immediately
               navigator.serviceWorker.ready.then((registration) => {
                 if (registration.waiting) {
                   registration.waiting.postMessage({ type: 'SKIP_WAITING' });
                 }
               });
-              // Reload the page to get new version
-              window.location.reload();
+              // Safety fallback: reload after 2s if controllerchange doesn't fire
+              setTimeout(() => window.location.reload(), 2000);
             }}
             className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
           >
@@ -100,19 +103,28 @@ export function PWAUpdateNotifier() {
 
     void checkForUpdates();
 
+    // Check for updates when tab regains focus
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        navigator.serviceWorker.ready.then((reg) => {
+          reg.update().catch(() => {});
+        });
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // Listen for SW controller change (happens after skipWaiting)
     const handleControllerChange = () => {
-      // New SW has taken control
       logger.log('[PWA] New service worker activated');
     };
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
 
-    // P0 Fix: Proper cleanup to prevent memory leak from accumulating intervals
     return () => {
       if (updateIntervalRef.current) {
         clearInterval(updateIntervalRef.current);
         updateIntervalRef.current = null;
       }
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
     };
   }, [toast, t]);

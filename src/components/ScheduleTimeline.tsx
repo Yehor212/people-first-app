@@ -1034,7 +1034,7 @@ function AddEventModal({
 
       {/* Modal content */}
       <motion.div
-        className="relative w-full max-w-sm rounded-3xl overflow-hidden max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-sm rounded-3xl overflow-hidden max-h-[90dvh] overflow-y-auto"
         style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom))' }}
         initial={{ opacity: 0, scale: 0.9, y: 50 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}

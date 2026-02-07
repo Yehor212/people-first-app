@@ -290,13 +290,21 @@ export async function shareGeneric(content: ShareContent): Promise<ShareResult> 
     const shareText = [content.title, content.text, content.url]
       .filter(Boolean)
       .join('\n');
-    await navigator.clipboard.writeText(shareText);
-
-    return {
-      success: true,
-      platform: 'generic',
-      error: 'Copied to clipboard (sharing not supported)',
-    };
+    try {
+      await navigator.clipboard.writeText(shareText);
+      return {
+        success: true,
+        platform: 'generic',
+        error: 'Copied to clipboard (sharing not supported)',
+      };
+    } catch (clipboardError) {
+      logger.warn('[SocialShare] Clipboard fallback failed:', clipboardError);
+      return {
+        success: false,
+        platform: 'generic',
+        error: 'Sharing not supported on this browser',
+      };
+    }
   } catch (error) {
     if ((error as Error).name === 'AbortError') {
       // User cancelled - not an error

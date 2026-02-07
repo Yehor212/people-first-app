@@ -190,6 +190,8 @@ export async function unlockAudio(): Promise<void> {
 let audioUnlockHandler: (() => Promise<void>) | null = null;
 let audioUnlockCleanup: (() => void) | null = null;
 let audioUnlockTimeoutId: ReturnType<typeof setTimeout> | null = null;
+const MAX_UNLOCK_ATTEMPTS = 10;
+let unlockAttempts = 0;
 
 /**
  * Setup global audio unlock listeners.
@@ -205,13 +207,18 @@ export function setupAudioUnlock(): void {
   // Define handler first so it's available for cleanup
   audioUnlockHandler = async () => {
     try {
+      unlockAttempts++;
       await unlockAudio();
       // Immediately remove listeners after successful unlock
       if (audioUnlocked && audioUnlockCleanup) {
         audioUnlockCleanup();
       }
     } catch {
-      // Keep listeners for retry on error
+      // Give up after MAX_UNLOCK_ATTEMPTS to avoid performance overhead
+      if (unlockAttempts >= MAX_UNLOCK_ATTEMPTS && audioUnlockCleanup) {
+        logger.warn(`[AmbientSounds] Audio unlock failed after ${MAX_UNLOCK_ATTEMPTS} attempts, removing listeners`);
+        audioUnlockCleanup();
+      }
     }
   };
 
@@ -288,12 +295,8 @@ const BASE_PATH = import.meta.env.BASE_URL || '/people-first-app/';
  * All available sounds - LOCAL ONLY
  * Names honestly describe what's in each file
  *
- * P0 Fix: WAV files have MP3 fallbacks for better cross-device compatibility.
- * Currently using WAV as primary (files exist), with MP3 as future optimization.
- * When MP3 files are created, swap file/fallbackFile order.
- *
- * To create MP3 files (P2 optimization):
- * ffmpeg -i input.wav -codec:a libmp3lame -qscale:a 4 output.mp3
+ * MP3 primary, WAV fallback for better mobile compatibility.
+ * MP3 files are much smaller (1-3MB vs 8-31MB WAV), critical for mobile.
  */
 export const SOUNDS: SoundInfo[] = [
   {
@@ -301,8 +304,8 @@ export const SOUNDS: SoundInfo[] = [
     type: 'underwater',
     nameRu: 'Подводный гул',
     nameEn: 'Underwater Hum',
-    file: `${BASE_PATH}sounds/mixkit-underwater-transmitter-hum-2135.wav`,
-    fallbackFile: `${BASE_PATH}sounds/underwater.mp3`, // P2: Add MP3 for smaller size
+    file: `${BASE_PATH}sounds/underwater.mp3`,
+    fallbackFile: `${BASE_PATH}sounds/mixkit-underwater-transmitter-hum-2135.wav`,
     description: 'Deep underwater ambient sound'
   },
   {
@@ -310,8 +313,8 @@ export const SOUNDS: SoundInfo[] = [
     type: 'thunderstorm',
     nameRu: 'Гроза в джунглях',
     nameEn: 'Jungle Thunderstorm',
-    file: `${BASE_PATH}sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.wav`,
-    fallbackFile: `${BASE_PATH}sounds/thunderstorm.mp3`, // P2: Add MP3 for smaller size
+    file: `${BASE_PATH}sounds/thunderstorm.mp3`,
+    fallbackFile: `${BASE_PATH}sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.wav`,
     description: 'Thunder and rain in tropical jungle'
   },
   {
@@ -319,8 +322,8 @@ export const SOUNDS: SoundInfo[] = [
     type: 'ocean',
     nameRu: 'Волны у скал',
     nameEn: 'Waves on Rocks',
-    file: `${BASE_PATH}sounds/mixkit-small-waves-harbor-rocks-1208.wav`,
-    fallbackFile: `${BASE_PATH}sounds/ocean.mp3`, // P2: Add MP3 for smaller size
+    file: `${BASE_PATH}sounds/ocean.mp3`,
+    fallbackFile: `${BASE_PATH}sounds/mixkit-small-waves-harbor-rocks-1208.wav`,
     description: 'Small waves hitting harbor rocks'
   },
   {
@@ -328,8 +331,8 @@ export const SOUNDS: SoundInfo[] = [
     type: 'river',
     nameRu: 'Природа у реки',
     nameEn: 'River Wildlife',
-    file: `${BASE_PATH}sounds/mixkit-wildlife-environment-in-a-river-2456.wav`,
-    fallbackFile: `${BASE_PATH}sounds/river.mp3`, // P2: Add MP3 for smaller size
+    file: `${BASE_PATH}sounds/river.mp3`,
+    fallbackFile: `${BASE_PATH}sounds/mixkit-wildlife-environment-in-a-river-2456.wav`,
     description: 'River sounds with wildlife'
   },
   {
