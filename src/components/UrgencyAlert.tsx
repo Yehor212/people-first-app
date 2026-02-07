@@ -146,7 +146,7 @@ function AlertCard({
             onDismiss();
           }}
           className="absolute top-3 right-3 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
-          aria-label="Dismiss"
+          aria-label={t.close || 'Dismiss'}
         >
           <X className="w-4 h-4 text-white/80" />
         </button>

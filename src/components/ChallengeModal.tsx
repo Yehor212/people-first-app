@@ -284,7 +284,7 @@ function ParticipantsLeaderboard({
         }}
       >
         <p className="text-sm text-destructive">{error}</p>
-        <Button onClick={loadLeaderboard} variant="ghost" size="sm" className="mt-2">
+        <Button onClick={() => void loadLeaderboard()} variant="ghost" size="sm" className="mt-2">
           {t.retry || 'Retry'}
         </Button>
       </motion.div>
