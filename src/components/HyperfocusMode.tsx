@@ -246,6 +246,9 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   }, []); // Empty deps - stable function
 
   // Ambient sound player - react to state changes
+  // Note: gesture handlers (handleStart, handleSoundSelect, handlePause) already
+  // initiate playSound within user gesture context for iOS. This effect handles
+  // pause/resume synchronization and cleanup only.
   useEffect(() => {
     const generator = soundGeneratorRef.current;
     if (!generator) return;
@@ -256,14 +259,13 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       return;
     }
 
-    // Always play sound when selected (loads and initializes audio)
-    playSound(selectedSoundId);
-
-    // Pause immediately if timer not running or paused
     if (!isRunning || isPaused) {
+      // Pause sound when timer stops or pauses
       generator.pause();
     }
-  }, [selectedSoundId, isRunning, isPaused]); // Removed audioReady and playSound
+    // Note: actual playSound() is called from gesture handlers, not here,
+    // to preserve iOS user gesture context for audio playback.
+  }, [selectedSoundId, isRunning, isPaused]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -273,18 +275,23 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
   const progress = ((duration * 60 - timeLeft) / (duration * 60)) * 100;
 
-  const handleStart = async () => {
-    // Unlock audio on user gesture (required for mobile browsers)
-    try {
-      await unlockAudio();
-    } catch (e) {
-      logger.warn('[HyperfocusMode] Audio unlock failed:', e);
-    }
+  const handleStart = () => {
+    // Start timer immediately — never block on audio
     setIsRunning(true);
     setIsPaused(false);
+
+    // Unlock audio within user gesture context (fire-and-forget)
+    unlockAudio().catch(e => {
+      logger.warn('[HyperfocusMode] Audio unlock failed:', e);
+    });
+
+    // Play sound within user gesture context (critical for iOS)
+    if (selectedSoundId) {
+      playSound(selectedSoundId);
+    }
   };
 
-  const handlePause = async () => {
+  const handlePause = () => {
     const newPausedState = !isPaused;
     setIsPaused(newPausedState);
 
@@ -294,13 +301,14 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         // Pausing
         generator.pause();
       } else {
-        // Resuming - need to replay on mobile
-        await playSound(selectedSoundId);
+        // Resuming — unlock + play within gesture context (critical for iOS)
+        unlockAudio().catch(() => {});
+        playSound(selectedSoundId);
       }
     }
   };
 
-  const toggleSound = async () => {
+  const toggleSound = () => {
     const generator = soundGeneratorRef.current;
     if (!generator) return;
 
@@ -308,24 +316,23 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       generator.pause();
       setIsSoundPlaying(false);
     } else if (selectedSoundId) {
-      // Need to re-play on mobile instead of just resume
-      await playSound(selectedSoundId);
+      // Unlock + re-play within gesture context (critical for iOS)
+      unlockAudio().catch(() => {});
+      playSound(selectedSoundId);
     }
   };
 
-  const handleSoundSelect = async (soundId: string | null) => {
-    // Always unlock on user interaction
-    try {
-      await unlockAudio();
-    } catch (e) {
+  const handleSoundSelect = (soundId: string | null) => {
+    // Unlock audio within gesture context (fire-and-forget, critical for iOS)
+    unlockAudio().catch(e => {
       logger.warn('[HyperfocusMode] Audio unlock failed:', e);
-    }
+    });
 
     setSelectedSoundId(soundId);
 
-    // If running and not paused, play immediately
+    // Play immediately within gesture context
     if (soundId && isRunning && !isPaused) {
-      await playSound(soundId);
+      playSound(soundId);
     } else if (!soundId) {
       soundGeneratorRef.current?.stop();
       setIsSoundPlaying(false);

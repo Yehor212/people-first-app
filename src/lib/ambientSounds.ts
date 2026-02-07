@@ -117,7 +117,8 @@ async function unlockWithAudioElement(): Promise<void> {
     const audio = new Audio();
     audio.src = SILENT_MP3;
     audio.volume = 0.01;
-    audio.muted = true;
+    // NOTE: Do NOT set muted=true — iOS Safari doesn't count muted playback
+    // as "user-initiated", so the unlock trick fails silently.
     audio.playsInline = true;
     audio.setAttribute('playsinline', '');
     audio.setAttribute('webkit-playsinline', '');

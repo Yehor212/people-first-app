@@ -65,7 +65,18 @@ export function pauseAllAudio(): void {
  * Call this from Capacitor 'resume' event or visibilitychange='visible'.
  */
 export async function resumeAllAudio(): Promise<void> {
+  // iOS re-suspends/interrupts AudioContext on ANY background event.
+  // Always force re-unlock to reset state and re-register listeners,
+  // so next user tap can re-unlock even if audio wasn't playing.
+  try {
+    await forceUnlockAudio();
+  } catch (e) {
+    logger.warn('[AudioLifecycle] Failed to re-unlock audio on resume:', e);
+  }
+
   if (!lifecycleState.wasPlaying || !lifecycleState.soundId) {
+    // Reset state
+    lifecycleState = { wasPlaying: false, soundId: null, pausedAt: null };
     return;
   }
 
@@ -76,11 +87,7 @@ export async function resumeAllAudio(): Promise<void> {
   logger.log('[AudioLifecycle] Attempting to resume audio after', pauseDuration, 'ms');
 
   try {
-    // Force re-unlock audio (critical for iOS)
-    // iOS requires re-unlock after app was in background
-    await forceUnlockAudio();
-
-    // Also ensure audioManager's context is ready
+    // forceUnlockAudio already called above — just ensure audioManager's context is ready
     await resumeOnInteraction();
 
     // Resume ambient sounds
