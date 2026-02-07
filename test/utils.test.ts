@@ -379,7 +379,9 @@ describe("cn", () => {
   });
 
   it("handles conditional classes", () => {
-    const result = cn("base", true && "active", false && "disabled");
+    const isActive = true;
+    const isDisabled = false;
+    const result = cn("base", isActive && "active", isDisabled && "disabled");
     expect(result).toContain("base");
     expect(result).toContain("active");
     expect(result).not.toContain("disabled");

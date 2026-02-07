@@ -224,7 +224,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
               </h4>
               {isTopThree && !task.completed && (
                 <span className="flex-shrink-0 px-2 py-1 text-xs font-bold zen-gradient text-white rounded-full">
-                  Top {index! + 1}
+                  Top {index + 1}
                 </span>
               )}
             </div>

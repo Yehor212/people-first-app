@@ -139,16 +139,10 @@ export function DataMountains({
 }: DataMountainsProps) {
   const { t } = useLanguage();
 
-  // Defensive guard: return null if data is missing or invalid
-  if (!data || !Array.isArray(data) || data.length < 2) {
-    return null;
-  }
-
   // Filter out invalid data points that could cause NaN in path calculations
-  const safeData = data.filter(d => d && typeof d.value === 'number' && !isNaN(d.value));
-  if (safeData.length < 2) {
-    return null;
-  }
+  const safeData = (data && Array.isArray(data))
+    ? data.filter(d => d && typeof d.value === 'number' && !isNaN(d.value))
+    : [];
 
   const maxValue = providedMax || Math.max(...safeData.map(d => d.value), 1);
 
@@ -208,6 +202,11 @@ export function DataMountains({
   const bgMountainPath = useMemo(() => {
     return 'M0 70 L0 45 Q15 35 30 42 Q50 30 70 38 Q85 28 100 40 L100 70 Z';
   }, []);
+
+  // Defensive guard: return null if data is missing or invalid
+  if (safeData.length < 2) {
+    return null;
+  }
 
   return (
     <div className={cn(

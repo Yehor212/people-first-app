@@ -211,8 +211,8 @@ export function generateDailyQuest(): Quest {
   const template = categoryTemplate.templates[Math.floor(Math.random() * categoryTemplate.templates.length)];
 
   // Get translated title and description
-  const title = t[template.titleKey] as string;
-  const description = t[template.descriptionKey] as string;
+  const title = t[template.titleKey];
+  const description = t[template.descriptionKey];
 
   // Determine count based on condition type
   let count = 3;
@@ -272,8 +272,8 @@ export function generateWeeklyQuest(): Quest {
   const template = categoryTemplate.templates[Math.floor(Math.random() * categoryTemplate.templates.length)];
 
   // Get translated title and description
-  const title = t[template.titleKey] as string;
-  const description = t[template.descriptionKey] as string;
+  const title = t[template.titleKey];
+  const description = t[template.descriptionKey];
 
   // Determine count based on condition type
   let count = 7;
@@ -334,11 +334,11 @@ export function generateBonusQuest(): Quest {
   const template = hardTemplates[Math.floor(Math.random() * hardTemplates.length)];
   const categoryTemplate = QUEST_TEMPLATES.find(cat =>
     cat.templates.some(t => t.titleKey === template.titleKey)
-  )!;
+  );
 
   // Get translated title and description
-  const title = t[template.titleKey] as string;
-  const description = t[template.descriptionKey] as string;
+  const title = t[template.titleKey];
+  const description = t[template.descriptionKey];
 
   let count = 10;
   let total = 10;

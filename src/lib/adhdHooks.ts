@@ -419,7 +419,7 @@ export function getComebackNotification(daysSinceLastLogin: number): ADHDNotific
   };
 
   const key = daysSinceLastLogin >= 7 ? 7 : daysSinceLastLogin >= 3 ? 3 : 1;
-  const msg = messages[key as keyof typeof messages];
+  const msg = messages[key];
 
   return {
     id: `comeback_${Date.now()}`,

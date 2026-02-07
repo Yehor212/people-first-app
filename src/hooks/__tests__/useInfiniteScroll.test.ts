@@ -199,7 +199,7 @@ describe('useInfiniteScroll', () => {
 
       // Resolve fetch
       await act(async () => {
-        resolvePromise!([]);
+        resolvePromise([]);
         await loadPromise;
       });
 
@@ -323,7 +323,7 @@ describe('useInfiniteScroll', () => {
     });
 
     it('wraps non-Error rejects in Error', async () => {
-      const fetchFn = vi.fn(() => Promise.reject('string error'));
+      const fetchFn = vi.fn(() => Promise.reject(new Error('string error')));
 
       const { result } = renderHook(() =>
         useInfiniteScroll({

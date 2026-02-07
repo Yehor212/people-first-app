@@ -245,7 +245,11 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
       // Convert to blob
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((b) => {
-          b ? resolve(b) : reject(new Error('Failed to create blob'));
+          if (b) {
+            resolve(b);
+          } else {
+            reject(new Error('Failed to create blob'));
+          }
         }, 'image/png', 1.0);
       });
 

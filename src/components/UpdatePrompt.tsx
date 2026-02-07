@@ -100,8 +100,8 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
               <p className="text-xs opacity-70 mt-1 line-clamp-2">
                 {typeof updateState.releaseNotes === 'string'
                   ? updateState.releaseNotes
-                  : (updateState.releaseNotes as Record<string, string>)[language]
-                    || (updateState.releaseNotes as Record<string, string>).en
+                  : (updateState.releaseNotes)[language]
+                    || (updateState.releaseNotes).en
                     || ''}
               </p>
             )}

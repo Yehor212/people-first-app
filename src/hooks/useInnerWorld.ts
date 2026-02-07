@@ -566,7 +566,7 @@ export function useInnerWorld() {
       return {
         ...prev,
         treats: {
-          ...prev.treats!,
+          ...prev.treats,
           balance: currentBalance - amount,
           lifetimeSpent: (prev.treats?.lifetimeSpent || 0) + amount,
           transactions,
@@ -704,7 +704,7 @@ export function useInnerWorld() {
       return {
         ...prev,
         treats: {
-          ...prev.treats!,
+          ...prev.treats,
           balance: currentBalance - treatCost,
           lifetimeSpent: (prev.treats?.lifetimeSpent || 0) + treatCost,
           transactions,
@@ -815,7 +815,7 @@ export function useInnerWorld() {
       return {
         ...prev,
         treats: {
-          ...prev.treats!,
+          ...prev.treats,
           balance: currentBalance - treatCost,
           lifetimeSpent: (prev.treats?.lifetimeSpent || 0) + treatCost,
           transactions,
@@ -914,8 +914,8 @@ export function useInnerWorld() {
   ) => {
     const now = Date.now();
     let happinessChange = 5;
-    let hungerIncrease = 3; // Activities make companion hungry
-    let personalityChanges = { energy: 0, wisdom: 0, warmth: 0 };
+    const hungerIncrease = 3; // Activities make companion hungry
+    const personalityChanges = { energy: 0, wisdom: 0, warmth: 0 };
 
     switch (activityType) {
       case 'mood':

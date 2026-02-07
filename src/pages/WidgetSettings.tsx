@@ -26,9 +26,9 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div>
-            <h1 className="text-2xl font-bold">{t.widgetSettings || 'Настройки виджетов'}</h1>
+            <h1 className="text-2xl font-bold">{t.widgetSettings}</h1>
             <p className="text-sm text-muted-foreground">
-              {t.widgetSettingsDesc || 'Настройте виджеты для домашнего экрана'}
+              {t.widgetSettingsDesc}
             </p>
           </div>
         </div>
@@ -44,7 +44,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
             }`}
           >
             <Monitor className="w-4 h-4 inline-block mr-2" />
-            {t.widgetPreview || 'Превью'}
+            {t.widgetPreview}
           </button>
           <button
             onClick={() => setActiveTab('setup')}
@@ -55,7 +55,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
             }`}
           >
             <Smartphone className="w-4 h-4 inline-block mr-2" />
-            {t.widgetSetup || 'Установка'}
+            {t.widgetSetup}
           </button>
         </div>
       </div>
@@ -70,11 +70,10 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                 <Info className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
                 <div className="space-y-1">
                   <p className="text-sm font-medium">
-                    {t.widgetInfo || 'Виджеты обновляются автоматически'}
+                    {t.widgetInfo}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t.widgetInfoDesc ||
-                      'Данные в виджетах синхронизируются каждый раз, когда вы обновляете привычки, завершаете фокус-сессию или получаете новый бейдж.'}
+                    {t.widgetInfoDesc}
                   </p>
                 </div>
               </div>
@@ -86,22 +85,22 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
             {/* Status */}
             <div className="bg-muted rounded-2xl p-4">
               <h3 className="text-sm font-semibold mb-3">
-                {t.widgetStatus || 'Статус виджетов'}
+                {t.widgetStatus}
               </h3>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    {t.widgetPlatform || 'Платформа'}:
+                    {t.widgetPlatform}:
                   </span>
                   <span className="text-sm font-medium">
                     {isNativePlatform
                       ? Capacitor.getPlatform()
-                      : t.widgetWeb || 'Web (виджеты недоступны)'}
+                      : t.widgetWeb}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    {t.widgetSupport || 'Поддержка виджетов'}:
+                    {t.widgetSupport}:
                   </span>
                   <span
                     className={`text-sm font-medium ${
@@ -109,8 +108,8 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                     }`}
                   >
                     {isNativePlatform
-                      ? t.widgetAvailable || 'Доступны'
-                      : t.widgetComingSoon || 'Скоро'}
+                      ? t.widgetAvailable
+                      : t.widgetComingSoon}
                   </span>
                 </div>
               </div>
@@ -126,7 +125,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                 {Capacitor.getPlatform() === 'ios' && (
                   <div className="space-y-4">
                     <h2 className="text-lg font-bold">
-                      {t.widgetSetupiOS || 'Установка виджета на iOS'}
+                      {t.widgetSetupiOS}
                     </h2>
                     <div className="bg-muted rounded-2xl p-6 space-y-4">
                       <div className="space-y-2">
@@ -135,8 +134,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                             1
                           </div>
                           <p className="text-sm">
-                            {t.widgetStep1iOS ||
-                              'Долгое нажатие на домашнем экране, пока иконки не начнут трястись'}
+                            {t.widgetStep1iOS}
                           </p>
                         </div>
                       </div>
@@ -147,7 +145,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                             2
                           </div>
                           <p className="text-sm">
-                            {t.widgetStep2iOS || 'Нажмите "+" в левом верхнем углу'}
+                            {t.widgetStep2iOS}
                           </p>
                         </div>
                       </div>
@@ -158,7 +156,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                             3
                           </div>
                           <p className="text-sm">
-                            {t.widgetStep3iOS || 'Найдите "ZenFlow" в списке приложений'}
+                            {t.widgetStep3iOS}
                           </p>
                         </div>
                       </div>
@@ -169,8 +167,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                             4
                           </div>
                           <p className="text-sm">
-                            {t.widgetStep4iOS ||
-                              'Выберите размер виджета (маленький, средний или большой)'}
+                            {t.widgetStep4iOS}
                           </p>
                         </div>
                       </div>
@@ -181,7 +178,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                             5
                           </div>
                           <p className="text-sm">
-                            {t.widgetStep5iOS || 'Нажмите "Добавить виджет"'}
+                            {t.widgetStep5iOS}
                           </p>
                         </div>
                       </div>
@@ -192,7 +189,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                 {Capacitor.getPlatform() === 'android' && (
                   <div className="space-y-4">
                     <h2 className="text-lg font-bold">
-                      {t.widgetSetupAndroid || 'Установка виджета на Android'}
+                      {t.widgetSetupAndroid}
                     </h2>
                     <div className="bg-muted rounded-2xl p-6 space-y-4">
                       <div className="space-y-2">
@@ -201,8 +198,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                             1
                           </div>
                           <p className="text-sm">
-                            {t.widgetStep1Android ||
-                              'Долгое нажатие на пустом месте домашнего экрана'}
+                            {t.widgetStep1Android}
                           </p>
                         </div>
                       </div>
@@ -213,7 +209,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                             2
                           </div>
                           <p className="text-sm">
-                            {t.widgetStep2Android || 'Нажмите "Виджеты" в появившемся меню'}
+                            {t.widgetStep2Android}
                           </p>
                         </div>
                       </div>
@@ -224,7 +220,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                             3
                           </div>
                           <p className="text-sm">
-                            {t.widgetStep3Android || 'Найдите "ZenFlow" в списке приложений'}
+                            {t.widgetStep3Android}
                           </p>
                         </div>
                       </div>
@@ -235,8 +231,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                             4
                           </div>
                           <p className="text-sm">
-                            {t.widgetStep4Android ||
-                              'Перетащите виджет нужного размера на домашний экран'}
+                            {t.widgetStep4Android}
                           </p>
                         </div>
                       </div>
@@ -247,16 +242,14 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
             ) : (
               <div className="bg-orange-500/10 border-2 border-orange-500/20 rounded-2xl p-6">
                 <h3 className="text-lg font-bold mb-3">
-                  {t.widgetWebWarning || 'Виджеты недоступны в веб-версии'}
+                  {t.widgetWebWarning}
                 </h3>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {t.widgetWebWarningDesc ||
-                    'Виджеты работают только на мобильных устройствах (iOS и Android). Установите мобильное приложение, чтобы использовать виджеты.'}
+                  {t.widgetWebWarningDesc}
                 </p>
                 <div className="bg-muted rounded-xl p-4">
                   <p className="text-xs text-muted-foreground">
-                    💡 {t.widgetWebTip ||
-                      'Веб-версия отображает превью виджетов, чтобы вы могли видеть, как они будут выглядеть на мобильном устройстве.'}
+                    💡 {t.widgetWebTip}
                   </p>
                 </div>
               </div>
@@ -265,37 +258,37 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
             {/* Features */}
             <div className="space-y-4">
               <h3 className="text-sm font-semibold">
-                {t.widgetFeatures || 'Возможности виджетов'}:
+                {t.widgetFeatures}:
               </h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-3 bg-muted rounded-xl p-3">
                   <div className="w-2 h-2 rounded-full bg-green-500 mt-2" />
                   <p className="text-sm">
-                    {t.widgetFeature1 || 'Отображение текущего стрика дней подряд'}
+                    {t.widgetFeature1}
                   </p>
                 </div>
                 <div className="flex items-start gap-3 bg-muted rounded-xl p-3">
                   <div className="w-2 h-2 rounded-full bg-green-500 mt-2" />
                   <p className="text-sm">
-                    {t.widgetFeature2 || 'Прогресс выполнения привычек за сегодня'}
+                    {t.widgetFeature2}
                   </p>
                 </div>
                 <div className="flex items-start gap-3 bg-muted rounded-xl p-3">
                   <div className="w-2 h-2 rounded-full bg-green-500 mt-2" />
                   <p className="text-sm">
-                    {t.widgetFeature3 || 'Количество минут фокус-сессий'}
+                    {t.widgetFeature3}
                   </p>
                 </div>
                 <div className="flex items-start gap-3 bg-muted rounded-xl p-3">
                   <div className="w-2 h-2 rounded-full bg-green-500 mt-2" />
                   <p className="text-sm">
-                    {t.widgetFeature4 || 'Последний полученный бейдж'}
+                    {t.widgetFeature4}
                   </p>
                 </div>
                 <div className="flex items-start gap-3 bg-muted rounded-xl p-3">
                   <div className="w-2 h-2 rounded-full bg-green-500 mt-2" />
                   <p className="text-sm">
-                    {t.widgetFeature5 || 'Список привычек с отметками выполнения'}
+                    {t.widgetFeature5}
                   </p>
                 </div>
               </div>

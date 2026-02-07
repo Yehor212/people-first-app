@@ -423,7 +423,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
 
                         <div className="flex-1 relative z-10">
                           <p className="font-medium text-foreground">
-                            {(t[pattern.nameKey as keyof typeof t] as string) || pattern.name}
+                            {(t[pattern.nameKey as keyof typeof t]) || pattern.name}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {formatDuration(getTotalDuration(pattern))} • {pattern.cycles} {t.cycles || 'cycles'}

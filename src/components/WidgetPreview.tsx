@@ -141,7 +141,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
     return (
       <div className="bg-card rounded-2xl p-6 text-center border border-border">
         <p className="text-sm text-muted-foreground">
-          {t.widgetNoData || 'Нет данных для виджета'}
+          {t.widgetNoData}
         </p>
       </div>
     );
@@ -153,7 +153,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
       <div className="bg-card rounded-3xl p-4 border border-border shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            {t.widgetSmall || 'Маленький'}
+            {t.widgetSmall}
           </h3>
           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">2×2</span>
         </div>
@@ -163,7 +163,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
           <StatCard
             icon={<span className="text-lg">🔥</span>}
             value={data.streak}
-            label={t.days || 'дней'}
+            label={t.days}
             colorClass="text-orange-500"
             bgClass="bg-orange-500/10 border-orange-500/20"
           />
@@ -172,7 +172,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
           <StatCard
             icon={<span className="text-lg font-bold text-emerald-500">✓</span>}
             value={`${data.habitsToday}/${data.habitsTotalToday}`}
-            label={t.habits || 'привычки'}
+            label={t.habits}
             colorClass="text-emerald-500"
             bgClass="bg-emerald-500/10 border-emerald-500/20"
           />
@@ -190,7 +190,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
       <div className="bg-card rounded-3xl p-4 border border-border shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            {t.widgetMedium || 'Средний'}
+            {t.widgetMedium}
           </h3>
           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">4×2</span>
         </div>
@@ -200,7 +200,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
           <StatCard
             icon={<span className="text-base">🔥</span>}
             value={data.streak}
-            label={t.streak || 'стрик'}
+            label={t.streak}
             colorClass="text-orange-500"
             bgClass="bg-orange-500/10 border-orange-500/20"
           />
@@ -209,7 +209,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
           <StatCard
             icon={<span className="text-base font-bold text-emerald-500">✓</span>}
             value={`${data.habitsToday}/${data.habitsTotalToday}`}
-            label={t.habits || 'привычки'}
+            label={t.habits}
             colorClass="text-emerald-500"
             bgClass="bg-emerald-500/10 border-emerald-500/20"
           />
@@ -218,7 +218,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
           <StatCard
             icon={<span className="text-base">⏱</span>}
             value={data.focusMinutes}
-            label={t.minutes || 'мин'}
+            label={t.minutes}
             colorClass="text-violet-500"
             bgClass="bg-violet-500/10 border-violet-500/20"
           />
@@ -236,7 +236,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
       <div className="bg-card rounded-3xl p-4 border border-border shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            {t.widgetLarge || 'Большой'}
+            {t.widgetLarge}
           </h3>
           <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">4×4</span>
         </div>
@@ -246,7 +246,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
           <StatCard
             icon={<span className="text-base">🔥</span>}
             value={data.streak}
-            label={t.streak || 'стрик'}
+            label={t.streak}
             colorClass="text-orange-500"
             bgClass="bg-orange-500/10 border-orange-500/20"
           />
@@ -254,7 +254,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
           <StatCard
             icon={<span className="text-base font-bold text-emerald-500">✓</span>}
             value={`${data.habitsToday}/${data.habitsTotalToday}`}
-            label={t.habits || 'привычки'}
+            label={t.habits}
             colorClass="text-emerald-500"
             bgClass="bg-emerald-500/10 border-emerald-500/20"
           />
@@ -262,7 +262,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
           <StatCard
             icon={<span className="text-base">⏱</span>}
             value={data.focusMinutes}
-            label={t.minutes || 'мин'}
+            label={t.minutes}
             colorClass="text-violet-500"
             bgClass="bg-violet-500/10 border-violet-500/20"
           />
@@ -292,7 +292,7 @@ export function WidgetPreview({ data: providedData }: WidgetPreviewProps) {
           ))}
           {(!data.habits || data.habits.length === 0) && (
             <p className="text-xs text-muted-foreground text-center py-2">
-              {t.noHabitsYet || 'Нет привычек'}
+              {t.noHabitsYet}
             </p>
           )}
         </div>

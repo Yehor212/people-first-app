@@ -639,7 +639,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       if (!completionsByHabit.has(c.habit_id)) {
         completionsByHabit.set(c.habit_id, { dates: [], byDate: {}, durationByDate: {} });
       }
-      const habitCompletions = completionsByHabit.get(c.habit_id)!;
+      const habitCompletions = completionsByHabit.get(c.habit_id);
       habitCompletions.dates.push(c.date);
       habitCompletions.byDate[c.date] = c.count;
       if (c.duration) {
@@ -652,7 +652,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
       if (!remindersByHabit.has(r.habit_id)) {
         remindersByHabit.set(r.habit_id, []);
       }
-      remindersByHabit.get(r.habit_id)!.push({
+      remindersByHabit.get(r.habit_id).push({
         enabled: r.enabled,
         time: r.time,
         days: r.days,

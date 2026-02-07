@@ -69,7 +69,7 @@ function getAudioContext(): AudioContext {
       globalAudioContext = new AudioContextClass();
     }
   }
-  return globalAudioContext!;
+  return globalAudioContext;
 }
 
 /**
@@ -751,7 +751,7 @@ export class AmbientSoundGenerator {
         if (resolved) return;
         resolved = true;
         cleanup();
-        reject(error);
+        reject(error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Unknown audio error'));
       };
 
       // Abort listener

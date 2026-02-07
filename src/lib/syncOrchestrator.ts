@@ -198,7 +198,7 @@ class SyncOrchestrator {
         await this.executeWithTimeout(operation.executor, operation.type);
 
         operation.completedAt = Date.now();
-        const duration = operation.completedAt - operation.startedAt!;
+        const duration = operation.completedAt - operation.startedAt;
 
         addCategorizedBreadcrumb('sync', `Completed ${operation.type} sync`, { duration, operationId: operation.id });
         logger.sync(`Completed ${operation.type} sync in ${duration}ms`);
@@ -399,11 +399,11 @@ class SyncOrchestrator {
             resolve();
           }
         })
-        .catch((error) => {
+        .catch((error: unknown) => {
           if (!settled) {
             settled = true;
             if (timeoutId) clearTimeout(timeoutId);
-            reject(error);
+            reject(error instanceof Error ? error : new Error(typeof error === 'string' ? error : 'Sync error'));
           }
         });
     });

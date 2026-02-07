@@ -130,7 +130,7 @@ function BadgePedestal({
         animate={{ opacity: 1 }}
         transition={{ delay: delay + 0.4 }}
       >
-        {badge.title[language as keyof typeof badge.title] || badge.title['en']}
+        {badge.title[language] || badge.title['en']}
       </motion.p>
     </motion.div>
   );

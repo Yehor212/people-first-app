@@ -715,7 +715,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                 >
                   <Sparkles className="w-5 h-5 text-purple-400" />
                 </motion.span>
-                {t.myWorld || 'Мій Світ'}
+                {t.myWorld}
               </motion.h3>
 
               {/* Current event badge */}
@@ -997,7 +997,7 @@ function AddEventModal({
   };
 
   const handleAdd = () => {
-    const title = customTitle || (t[selectedPreset.labelKey as keyof typeof t] as string) || selectedPreset.id;
+    const title = customTitle || (t[selectedPreset.labelKey as keyof typeof t]) || selectedPreset.id;
     onAdd({
       title,
       startHour,
@@ -1089,7 +1089,7 @@ function AddEventModal({
           {/* Event type presets - 3D cards */}
           <div className="grid grid-cols-3 gap-2 mb-4" role="group" aria-label={t.scheduleEventType || 'Event type'}>
             {EVENT_PRESETS.map((preset) => {
-              const label = (t[preset.labelKey as keyof typeof t] as string) || preset.id;
+              const label = (t[preset.labelKey as keyof typeof t]) || preset.id;
               const isSelected = selectedPreset.id === preset.id;
               const gradient = getEventGradient(preset.colorVar);
 
@@ -1202,7 +1202,7 @@ function AddEventModal({
             className="w-full py-4 bg-gradient-to-r from-primary to-accent text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/30"
           >
             <Check className="w-5 h-5" />
-            {t.addToMyWorld || 'Додати в Мій Світ'}
+            {t.addToMyWorld}
           </motion.button>
         </div>
       </motion.div>
@@ -1258,7 +1258,7 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
 
       blocks.push({
         id: `break-${task.id}`,
-        title: t.breakTime || 'Отдых',
+        title: t.breakTime || 'Break',
         emoji: '☕',
         startTime: breakStart,
         endTime: breakEnd,

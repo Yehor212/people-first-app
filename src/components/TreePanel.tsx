@@ -176,7 +176,7 @@ export function TreePanel({
       setShowReaction(null);
       setIsAnimating(false);
       if (result.stageUp) {
-        const newStageName = getTreeStageName(result.newStage!, language);
+        const newStageName = getTreeStageName(result.newStage, language);
         setMessage((t.treeStageUp || '🎉 Evolved to {stage}!').replace('{stage}', newStageName));
       } else {
         setMessage(getContextualMessage(
@@ -223,7 +223,7 @@ export function TreePanel({
       setIsAnimating(false);
       setIsWatering(false);
       if (result.stageUp) {
-        const newStageName = getTreeStageName(result.newStage!, language);
+        const newStageName = getTreeStageName(result.newStage, language);
         setMessage((t.treeStageUp || '🎉 Evolved to {stage}!').replace('{stage}', newStageName));
       } else {
         setMessage(getContextualMessage(

@@ -204,7 +204,7 @@ describe('WelcomeBackModal', () => {
     // Click on great mood (😊)
     const greatButton = screen.getByText('😊').closest('button');
     expect(greatButton).toBeTruthy();
-    fireEvent.click(greatButton!);
+    fireEvent.click(greatButton);
     expect(onQuickMoodLog).toHaveBeenCalledWith('great');
   });
 
@@ -226,7 +226,7 @@ describe('WelcomeBackModal', () => {
     // Click on good mood (🙂)
     const goodButton = screen.getByText('🙂').closest('button');
     expect(goodButton).toBeTruthy();
-    fireEvent.click(goodButton!);
+    fireEvent.click(goodButton);
 
     // Should show confirmation
     expect(screen.getByText(/Mood logged|logged/i)).toBeInTheDocument();

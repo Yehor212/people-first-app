@@ -64,7 +64,7 @@ class AuthStateManager {
         return {
           completed: true,
           source,
-          timestamp: this.completionTimestamp!,
+          timestamp: this.completionTimestamp,
         };
       } catch (error) {
         logger.error(`[AuthStateManager] Auth completion failed from ${source}:`, error);

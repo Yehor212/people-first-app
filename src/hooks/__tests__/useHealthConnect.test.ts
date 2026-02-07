@@ -281,7 +281,7 @@ describe('useHealthConnect', () => {
           title: 'Deep Work',
         })
       );
-      expect(success!).toBe(true);
+      expect(success).toBe(true);
     });
 
     it('returns false without mindfulness permission', async () => {
@@ -354,7 +354,7 @@ describe('useHealthConnect', () => {
       });
 
       expect(mockReadSleepSessions).toHaveBeenCalled();
-      expect(data!).toHaveLength(2);
+      expect(data).toHaveLength(2);
     });
   });
 

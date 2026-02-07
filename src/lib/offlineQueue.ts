@@ -183,7 +183,7 @@ class OfflineQueue {
       await this.doEnqueue(type, entityId, payload, options);
     } finally {
       // Release the lock so next caller can proceed
-      releaseLock!();
+      releaseLock();
       this.enqueueLock = null;
     }
   }

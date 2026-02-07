@@ -16541,12 +16541,12 @@ const hebrewOverrides: Partial<Translations> = {
 
 // Add RTL languages with English fallback
 baseTranslations.ar = {
-  ...baseTranslations.en!,
+  ...baseTranslations.en,
   ...arabicOverrides,
 } as Translations;
 
 baseTranslations.he = {
-  ...baseTranslations.en!,
+  ...baseTranslations.en,
   ...hebrewOverrides,
 } as Translations;
 

@@ -95,7 +95,7 @@ function parseChangelog(content: string): ChangelogVersion[] {
     const itemMatch = line.match(/^-\s+(.+)$/);
     if (itemMatch && currentSection) {
       // Clean up markdown formatting for display
-      let item = itemMatch[1]
+      const item = itemMatch[1]
         .replace(/\*\*([^*]+)\*\*/g, '$1') // Remove bold
         .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // Remove links, keep text
         .trim();

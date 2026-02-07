@@ -217,7 +217,7 @@ function closeTopModal(): boolean {
   ];
 
   for (const selector of closeButtonSelectors) {
-    const button = document.querySelector(selector) as HTMLButtonElement;
+    const button = document.querySelector(selector);
     if (button && button.offsetParent !== null) {
       button.click();
       return true;

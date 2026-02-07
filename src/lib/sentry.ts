@@ -107,10 +107,10 @@ export function initSentry(): void {
 
       // P1 Security Fix: Scrub tokens from breadcrumbs and request data
       const sensitivePatterns = [
-        /Bearer\s+[A-Za-z0-9\-_\.]+/gi,
-        /access_token[=:]\s*["']?[A-Za-z0-9\-_\.]+["']?/gi,
-        /refresh_token[=:]\s*["']?[A-Za-z0-9\-_\.]+["']?/gi,
-        /token[=:]\s*["']?[A-Za-z0-9\-_\.]{20,}["']?/gi,
+        /Bearer\s+[A-Za-z0-9\-_.]+/gi,
+        /access_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
+        /refresh_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
+        /token[=:]\s*["']?[A-Za-z0-9\-_.]{20,}["']?/gi,
       ];
 
       const scrubString = (str: string): string => {

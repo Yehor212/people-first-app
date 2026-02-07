@@ -130,7 +130,7 @@ const releaseInitLock = (): void => {
 };
 
 interface UseIndexedDBOptions<T> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   table: Table<any, string>;
   localStorageKey: string;
   initialValue: T;

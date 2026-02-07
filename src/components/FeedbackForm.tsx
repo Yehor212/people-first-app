@@ -25,26 +25,6 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
 
-  if (!open) return null;
-
-  const handleClose = () => {
-    onOpenChange(false);
-  };
-
-  const handleOverlayMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Only close when clicking directly on the overlay (not children)
-    if (e.target === e.currentTarget) {
-      handleClose();
-    }
-  };
-
-  const handleOverlayTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    // Only close when touching directly on the overlay (not children)
-    if (e.target === e.currentTarget) {
-      handleClose();
-    }
-  };
-
   const handleSubmit = async () => {
     if (!message.trim()) return;
 
@@ -156,6 +136,26 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   };
 
   const throttledSubmit = useThrottledCallback(handleSubmit, 2000);
+
+  if (!open) return null;
+
+  const handleClose = () => {
+    onOpenChange(false);
+  };
+
+  const handleOverlayMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only close when clicking directly on the overlay (not children)
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  };
+
+  const handleOverlayTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    // Only close when touching directly on the overlay (not children)
+    if (e.target === e.currentTarget) {
+      handleClose();
+    }
+  };
 
   const categories: { value: FeedbackCategory; icon: React.ReactNode; label: string }[] = [
     { value: 'bug', icon: <Bug className="w-4 h-4" />, label: t.feedbackCategoryBug },

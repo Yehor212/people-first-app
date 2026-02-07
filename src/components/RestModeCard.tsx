@@ -69,12 +69,12 @@ export const RestModeCard = memo(function RestModeCard({ streak, onCancel }: Res
 
       {/* Title */}
       <h2 className="text-2xl font-bold text-foreground mb-2">
-        {t.restDayTitle || 'День отдыха'}
+        {t.restDayTitle}
       </h2>
 
       {/* Message */}
       <p className="text-muted-foreground mb-6">
-        {t.restDayMessage || 'Отдыхай, твой стрик в безопасности'}
+        {t.restDayMessage}
       </p>
 
       {/* Streak preserved badge */}
@@ -85,12 +85,12 @@ export const RestModeCard = memo(function RestModeCard({ streak, onCancel }: Res
       >
         <span className="text-xl">🔥</span>
         <span className="font-bold text-orange-500 text-lg">{streak}</span>
-        <span className="text-sm text-orange-600 dark:text-orange-400">{t.daysSaved || 'дней сохранено'}</span>
+        <span className="text-sm text-orange-600 dark:text-orange-400">{t.daysSaved}</span>
       </motion.div>
 
       {/* Supportive message */}
       <p className="text-sm text-muted-foreground mb-6">
-        {t.restDaySupportive || 'Завтра продолжим вместе 💚'}
+        {t.restDaySupportive}
       </p>
 
       {/* Cancel button */}
@@ -98,7 +98,7 @@ export const RestModeCard = memo(function RestModeCard({ streak, onCancel }: Res
         onClick={onCancel}
         className="w-full py-3 text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-xl transition-colors"
       >
-        {t.restDayCancel || 'Всё-таки хочу записать'}
+        {t.restDayCancel}
       </button>
     </motion.div>
   );

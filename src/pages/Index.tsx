@@ -1286,7 +1286,7 @@ export function Index() {
     const habitNameMap = new Map(safeHabits.map((habit) => [habit.id, habit.name]));
     const habitNames = reminders.habitIds
       .map((id) => habitNameMap.get(id))
-      .filter(Boolean) as string[];
+      .filter(Boolean);
     const habitBody =
       habitNames.length === 0
         ? t.reminderHabitBody

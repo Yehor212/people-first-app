@@ -338,7 +338,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
             >
               <Medal className="w-4 h-4 text-violet-400" />
               <span className="text-white/70">
-                {t.yourRank || 'Your rank'}: <strong className="text-violet-700 dark:text-violet-300">{formatRank(getCurrentRank()!)}</strong>
+                {t.yourRank || 'Your rank'}: <strong className="text-violet-700 dark:text-violet-300">{formatRank(getCurrentRank())}</strong>
                 {userRanks && <span className="text-white/40"> / {userRanks.totalParticipants}</span>}
               </span>
             </motion.div>

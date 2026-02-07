@@ -39,7 +39,10 @@ const arrayToCSV = <T extends Record<string, unknown>>(
         if (Array.isArray(value)) {
           return `"${value.join('; ')}"`;
         }
-        return `"${String(value)}"`;
+        if (typeof value === 'object') {
+          return `"${JSON.stringify(value)}"`;
+        }
+        return `"${String(value as string | number | boolean)}"`;
       })
       .join(',')
   );
@@ -54,6 +57,7 @@ const sanitizeFilename = (filename: string): string => {
   // Remove/replace characters that are unsafe in filenames across platforms
   return filename
     .replace(/[<>:"/\\|?*]/g, '_') // Windows-unsafe chars
+    // eslint-disable-next-line no-control-regex -- intentional: strip control characters from filenames
     .replace(/[\x00-\x1f]/g, '') // Control characters
     .replace(/^\.+/, '') // Leading dots
     .slice(0, 200); // Limit length

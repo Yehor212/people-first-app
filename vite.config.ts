@@ -128,31 +128,95 @@ export default defineConfig(({ mode }) => {
     rollupOptions: {
       output: {
         // Enable code splitting for better performance
-        manualChunks: {
-          // Core React libraries
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+        manualChunks(id) {
+          // Translations are huge (~16K lines) — separate chunk
+          if (id.includes('translations')) {
+            return 'i18n';
+          }
 
-          // UI library (heavy Radix components)
-          'ui-vendor': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-popover',
-            '@radix-ui/react-toast',
-          ],
+          // Only split node_modules below this point
+          if (!id.includes('node_modules')) {
+            return undefined;
+          }
+
+          // Core React libraries
+          if (id.includes('react-dom') || id.includes('react-router') || id.includes('scheduler')) {
+            return 'react-vendor';
+          }
+          // React core (match 'react/' but not 'react-*' packages)
+          if (/[\\/]node_modules[\\/]react[\\/]/.test(id)) {
+            return 'react-vendor';
+          }
+
+          // UI library (Radix components)
+          if (id.includes('@radix-ui')) {
+            return 'ui-vendor';
+          }
 
           // Charts library (only loaded when viewing stats)
-          'charts': ['recharts'],
+          if (id.includes('recharts') || id.includes('d3-')) {
+            return 'charts';
+          }
 
-          // Backend libraries
-          'backend': ['@supabase/supabase-js', 'dexie'],
+          // Supabase client
+          if (id.includes('@supabase')) {
+            return 'supabase';
+          }
 
-          // Animation library
-          'animations': ['framer-motion'],
+          // Dexie (IndexedDB)
+          if (id.includes('dexie')) {
+            return 'dexie';
+          }
 
-          // Date utilities
-          'date-utils': ['date-fns'],
+          // Framer Motion
+          if (id.includes('framer-motion')) {
+            return 'framer-motion';
+          }
+
+          // date-fns
+          if (id.includes('date-fns')) {
+            return 'date-fns';
+          }
+
+          // TanStack Query + Virtual
+          if (id.includes('@tanstack')) {
+            return 'tanstack';
+          }
+
+          // Lucide icons
+          if (id.includes('lucide-react')) {
+            return 'lucide-icons';
+          }
+
+          // Capacitor native bridge
+          if (id.includes('@capacitor')) {
+            return 'capacitor';
+          }
+
+          // Lottie animations (lottie-react + lottie-web)
+          if (id.includes('lottie-react') || id.includes('lottie-web')) {
+            return 'lottie';
+          }
+
+          // Sentry error tracking
+          if (id.includes('@sentry')) {
+            return 'sentry';
+          }
+
+          // Form utilities (zod, react-hook-form, resolvers)
+          if (id.includes('zod') || id.includes('react-hook-form') || id.includes('@hookform')) {
+            return 'forms';
+          }
+
+          // Remaining small UI libs (sonner, vaul, cmdk, embla, etc.)
+          if (id.includes('sonner') || id.includes('vaul') || id.includes('cmdk') || id.includes('embla-carousel') || id.includes('input-otp') || id.includes('react-day-picker') || id.includes('react-resizable-panels') || id.includes('next-themes')) {
+            return 'ui-extras';
+          }
+
+          // Utility libs (clsx, class-variance-authority, tailwind-merge, nanoid, dompurify)
+          if (id.includes('class-variance-authority') || id.includes('clsx') || id.includes('tailwind-merge') || id.includes('nanoid') || id.includes('dompurify')) {
+            return 'utils-vendor';
+          }
         },
 
         // Hashed filenames for cache busting

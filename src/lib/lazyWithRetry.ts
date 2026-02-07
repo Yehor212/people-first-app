@@ -66,6 +66,6 @@ export function lazyWithRetry<T extends ComponentType<any>>(
     }
 
     // If we already reloaded recently, throw the error instead of infinite loop
-    throw lastError!;
+    throw lastError;
   });
 }

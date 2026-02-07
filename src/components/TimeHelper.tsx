@@ -38,7 +38,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
     intervalRef.current = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
-          clearInterval(intervalRef.current!);
+          clearInterval(intervalRef.current);
           playCompletionSound();
           return 0;
         }

@@ -270,6 +270,6 @@ async function initializeApp(): Promise<boolean> {
 // Initialize app with version check, then render
 initializeApp().then((shouldRender) => {
   if (shouldRender) {
-    createRoot(document.getElementById("root")!).render(<App />);
+    createRoot(document.getElementById("root")).render(<App />);
   }
 });

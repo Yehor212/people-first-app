@@ -625,9 +625,9 @@ export function AnimatedCalendar({
               )}
             >
               {hasEmotion ? (
-                <AnimatedEmotionEmoji emotion={moodEntry!.emotion!.primary} size="sm" />
+                <AnimatedEmotionEmoji emotion={moodEntry.emotion.primary} size="sm" />
               ) : hasLegacyMood ? (
-                <AnimatedMoodEmoji mood={moodEntry!.mood} size="sm" />
+                <AnimatedMoodEmoji mood={moodEntry.mood} size="sm" />
               ) : (
                 cell.day
               )}

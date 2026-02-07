@@ -15,7 +15,7 @@ function EmotionParticles() {
   const { currentEmotion } = useEmotionTheme();
 
   // Don't show particles for negative/neutral emotions
-  if (currentEmotion === 'neutral' || NEGATIVE_EMOTIONS.includes(currentEmotion as PrimaryEmotion)) {
+  if (currentEmotion === 'neutral' || NEGATIVE_EMOTIONS.includes(currentEmotion)) {
     return null;
   }
 

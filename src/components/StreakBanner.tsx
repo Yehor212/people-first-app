@@ -122,7 +122,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
       });
 
       const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => resolve(blob!), 'image/png');
+        canvas.toBlob((blob) => resolve(blob), 'image/png');
       });
 
       if (Capacitor.isNativePlatform()) {
@@ -190,7 +190,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
         const html2canvas = await getHtml2Canvas();
         const canvas = await html2canvas(shareCardRef.current, { backgroundColor: null, scale: 2 });
         blob = await new Promise<Blob>((resolve) => {
-          canvas.toBlob((blob) => resolve(blob!), 'image/png');
+          canvas.toBlob((blob) => resolve(blob), 'image/png');
         });
       }
       const url = URL.createObjectURL(blob);

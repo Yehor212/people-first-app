@@ -87,7 +87,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
     };
 
     checkSession();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []); // P1 Fix: Removed onComplete from deps - uses onCompleteRef instead
 
   // Listen for auth state changes (handles OAuth callback)
@@ -113,7 +113,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
     return () => {
       subscription?.subscription?.unsubscribe?.();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, []); // P1 Fix: Removed onComplete from deps - uses onCompleteRef instead
 
   // LEVEL 1: Check session when app resumes from OAuth browser
@@ -186,7 +186,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
       isMounted = false;
       window.removeEventListener('focus', handleFocus);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [loadingProvider]); // P1 Fix: Removed onComplete from deps - uses onCompleteRef instead
 
   // LEVEL 2: Listen for auth completion from Index.tsx

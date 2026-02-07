@@ -67,7 +67,7 @@ export const BACKUP_SCHEMA_VERSION = 2;
 const getOrCreateDeviceId = async () => {
   const existing = await db.settings.get("zenflow-device-id");
   if (existing?.value) {
-    return String(existing.value);
+    return typeof existing.value === 'string' ? existing.value : String(existing.value as string | number | boolean);
   }
   const deviceId = `device_${generateId()}`;
   await db.settings.put({ key: "zenflow-device-id", value: deviceId });
@@ -210,11 +210,11 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
     db.settings.toCollection().primaryKeys()
   ]);
 
-  const moodKeySet = new Set(moodKeys as string[]);
-  const habitKeySet = new Set(habitKeys as string[]);
-  const focusKeySet = new Set(focusKeys as string[]);
-  const gratitudeKeySet = new Set(gratitudeKeys as string[]);
-  const settingsKeySet = new Set(settingsKeys as string[]);
+  const moodKeySet = new Set(moodKeys);
+  const habitKeySet = new Set(habitKeys);
+  const focusKeySet = new Set(focusKeys);
+  const gratitudeKeySet = new Set(gratitudeKeys);
+  const settingsKeySet = new Set(settingsKeys);
 
   const moodAdds = validMoods.valid.filter((item) => !moodKeySet.has(item.id)).length;
   const habitAdds = validHabits.valid.filter((item) => !habitKeySet.has(item.id)).length;

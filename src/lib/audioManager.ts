@@ -45,7 +45,7 @@ export function getAudioContext(): AudioContext | null {
   if (state.context) return state.context;
 
   try {
-    state.context = new (window.AudioContext || window.webkitAudioContext!)();
+    state.context = new (window.AudioContext || window.webkitAudioContext)();
     return state.context;
   } catch (e) {
     logger.warn('[AudioManager] AudioContext not available:', e);

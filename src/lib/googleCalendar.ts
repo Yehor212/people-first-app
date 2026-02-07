@@ -217,9 +217,9 @@ export async function fetchCalendarEvents(
         id: item.id,
         title: item.summary || 'Untitled Event',
         description: item.description,
-        startTime: new Date(item.start!.dateTime || item.start!.date!),
-        endTime: new Date(item.end!.dateTime || item.end!.date!),
-        isAllDay: !item.start!.dateTime,
+        startTime: new Date(item.start.dateTime || item.start.date),
+        endTime: new Date(item.end.dateTime || item.end.date),
+        isAllDay: !item.start.dateTime,
         location: item.location,
         color: item.colorId ? getColorForId(item.colorId) : undefined,
       }));

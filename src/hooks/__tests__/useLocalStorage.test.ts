@@ -161,7 +161,7 @@ describe('useLocalStorage', () => {
         vi.advanceTimersByTime(DEBOUNCE_MS);
       });
 
-      expect(JSON.parse(localStorage.getItem('user')!)).toEqual({
+      expect(JSON.parse(localStorage.getItem('user'))).toEqual({
         name: 'Jane',
         age: 25,
       });

@@ -247,7 +247,7 @@ interface AchievementCardProps {
 
 function AchievementCard({ achievement, isUnlocked, progress, onClick, hiddenText, hiddenTitle }: AchievementCardProps) {
   const hasProgress = progress !== undefined && achievement.total;
-  const progressPercentage = hasProgress ? (progress / achievement.total!) * 100 : 0;
+  const progressPercentage = hasProgress ? (progress / achievement.total) * 100 : 0;
 
   return (
     <Card

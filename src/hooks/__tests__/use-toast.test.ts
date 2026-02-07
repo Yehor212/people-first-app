@@ -47,9 +47,9 @@ describe('useToast', () => {
         toastResult = result.current.toast({ title: 'Test' });
       });
 
-      expect(toastResult!.id).toBeDefined();
-      expect(typeof toastResult!.dismiss).toBe('function');
-      expect(typeof toastResult!.update).toBe('function');
+      expect(toastResult.id).toBeDefined();
+      expect(typeof toastResult.dismiss).toBe('function');
+      expect(typeof toastResult.update).toBe('function');
     });
 
     it('generates unique IDs', () => {
@@ -63,7 +63,7 @@ describe('useToast', () => {
         toast2 = result.current.toast({ title: 'Toast 2' });
       });
 
-      expect(toast1!.id).not.toBe(toast2!.id);
+      expect(toast1.id).not.toBe(toast2.id);
     });
 
     it('limits toasts to TOAST_LIMIT', () => {
@@ -93,7 +93,7 @@ describe('useToast', () => {
       expect(result.current.toasts[0].open).toBe(true);
 
       act(() => {
-        result.current.dismiss(toastResult!.id);
+        result.current.dismiss(toastResult.id);
       });
 
       expect(result.current.toasts[0].open).toBe(false);
@@ -128,7 +128,7 @@ describe('useToast', () => {
       expect(result.current.toasts[0].title).toBe('Original');
 
       act(() => {
-        toastResult!.update({ title: 'Updated', id: toastResult!.id });
+        toastResult.update({ title: 'Updated', id: toastResult.id });
       });
 
       expect(result.current.toasts[0].title).toBe('Updated');
@@ -314,8 +314,8 @@ describe('toast standalone function', () => {
       toastResult = toast({ title: 'Standalone Toast' });
     });
 
-    expect(toastResult!.id).toBeDefined();
-    expect(typeof toastResult!.dismiss).toBe('function');
+    expect(toastResult.id).toBeDefined();
+    expect(typeof toastResult.dismiss).toBe('function');
   });
 
   it('accepts description', () => {

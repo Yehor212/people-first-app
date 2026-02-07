@@ -411,10 +411,10 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           <div className="breathing-circle zen-gradient rounded-full opacity-40" />
           <div className="absolute text-center">
             <p className="text-4xl font-bold text-slate-800 dark:text-white mb-4">
-              {t.hyperfocusBreathe || 'Дышите...'}
+              {t.hyperfocusBreathe}
             </p>
             <p className="text-xl text-white/70">
-              {t.hyperfocusBreathDesc || 'Вдох 4 сек • Выдох 4 сек'}
+              {t.hyperfocusBreathDesc}
             </p>
           </div>
         </div>
@@ -541,7 +541,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   {formatTime(timeLeft)}
                 </motion.div>
                 <div className="text-sm text-slate-600 dark:text-white/60">
-                  {t.hyperfocusTimeLeft || 'осталось'}
+                  {t.hyperfocusTimeLeft}
                 </div>
               </div>
             </div>
@@ -550,15 +550,15 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           {/* Status Text */}
           <p className="text-xl text-slate-700 dark:text-white/80 mb-2">
             {isPaused
-              ? t.hyperfocusPaused || 'Приостановлено'
+              ? t.hyperfocusPaused
               : !isRunning
-              ? t.hyperfocusReady || 'Готовы к гиперфокусу?'
-              : t.hyperfocusFocusing || 'В зоне фокуса...'}
+              ? t.hyperfocusReady
+              : t.hyperfocusFocusing}
           </p>
 
           {isPaused && (
             <p className="text-sm text-slate-600 dark:text-white/60">
-              {t.hyperfocusPauseMsg || 'Нажмите Play, чтобы продолжить'}
+              {t.hyperfocusPauseMsg}
             </p>
           )}
         </div>
@@ -583,7 +583,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 transition={{ duration: 1.5, repeat: Infinity }}
               />
               <Sparkles className="w-5 h-5" />
-              {t.hyperfocusStart || 'Начать'}
+              {t.hyperfocusStart}
             </motion.button>
           ) : (
             <motion.button
@@ -595,12 +595,12 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
               {isPaused ? (
                 <>
                   <Play className="w-6 h-6" />
-                  {t.hyperfocusResume || 'Продолжить'}
+                  {t.hyperfocusResume}
                 </>
               ) : (
                 <>
                   <Pause className="w-6 h-6" />
-                  {t.hyperfocusPause || 'Пауза'}
+                  {t.hyperfocusPause}
                 </>
               )}
             </motion.button>
@@ -612,7 +612,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            {t.hyperfocusExit || 'Выход'}
+            {t.hyperfocusExit}
           </motion.button>
         </div>
 
@@ -625,7 +625,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
               className="text-sm text-slate-600 dark:text-white/70 font-medium select-none"
               aria-label={t.hyperfocusAmbientSound || 'Ambient sound'}
             >
-              {t.hyperfocusAmbientSound || 'Фоновый звук'}
+              {t.hyperfocusAmbientSound}
             </button>
 
             <div className="flex items-center gap-2">
@@ -716,7 +716,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
               whileTap={{ scale: 0.97 }}
             >
               <span className="text-lg">🔇</span>
-              <span>{t.hyperfocusSoundNone || 'Без звуку'}</span>
+              <span>{t.hyperfocusSoundNone}</span>
             </motion.button>
 
             {/* All available sounds */}
@@ -786,7 +786,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 whileTap={{ scale: 0.98 }}
               >
                 <ExternalLink className="w-4 h-4" />
-                {t.spotifyConnect || 'Подключить Spotify'}
+                {t.spotifyConnect}
               </motion.button>
             ) : */}
             {spotifyTrack ? (
@@ -828,7 +828,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
               </div>
             ) : (
               <p className="text-xs text-slate-500 dark:text-white/40 text-center py-2">
-                {t.spotifyNoTrack || 'Откройте Spotify и включите музыку'}
+                {t.spotifyNoTrack}
               </p>
             )}
           </div>
@@ -929,11 +929,11 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">💡</span>
                 <p className="text-xs text-slate-600 dark:text-white/60 font-medium">
-                  {t.hyperfocusTip || 'Совет'}
+                  {t.hyperfocusTip}
                 </p>
               </div>
               <p className="text-sm text-slate-700 dark:text-white/80">
-                {t.hyperfocusTipText || 'Каждые 25 минут будет короткая дыхательная пауза. Это помогает избежать выгорания!'}
+                {t.hyperfocusTipText}
               </p>
             </div>
           </motion.div>

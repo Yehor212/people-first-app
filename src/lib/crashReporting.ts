@@ -111,7 +111,7 @@ export const recordError = (error: unknown, context?: Record<string, string>) =>
   if (error instanceof Error) {
     crashReporting.recordError(error, context);
   } else {
-    crashReporting.recordError(new Error(String(error)), context);
+    crashReporting.recordError(new Error(typeof error === 'string' ? error : JSON.stringify(error)), context);
   }
 };
 

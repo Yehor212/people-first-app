@@ -154,10 +154,10 @@ export function SettingsPanel({
       try {
         return JSON.stringify(error);
       } catch {
-        return String(error);
+        return '[Unserializable error object]';
       }
     }
-    return String(error);
+    return typeof error === 'string' ? error : typeof error === 'number' || typeof error === 'boolean' ? String(error) : 'Unknown error';
   };
 
   const handleReset = () => {

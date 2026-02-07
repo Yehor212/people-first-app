@@ -77,11 +77,6 @@ export function HealthConnectCard({
     }
   });
 
-  // Don't render on non-Android platforms
-  if (!isAndroid) {
-    return null;
-  }
-
   // Load health data preview when permissions granted
   useEffect(() => {
     const loadHealthData = async () => {
@@ -113,6 +108,11 @@ export function HealthConnectCard({
 
     loadHealthData();
   }, [state.isAvailable, state.permissions, getSleepData, getStepsData]);
+
+  // Don't render on non-Android platforms
+  if (!isAndroid) {
+    return null;
+  }
 
   const handleSyncToggle = () => {
     const newValue = !localSyncEnabled;

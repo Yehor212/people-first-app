@@ -44,7 +44,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
       });
 
       const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => resolve(blob!), 'image/png');
+        canvas.toBlob((blob) => resolve(blob), 'image/png');
       });
 
       if (Capacitor.isNativePlatform()) {
@@ -126,7 +126,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
           scale: scale,
         });
         blob = await new Promise<Blob>((resolve) => {
-          canvas.toBlob((blob) => resolve(blob!), 'image/png');
+          canvas.toBlob((blob) => resolve(blob), 'image/png');
         });
       }
 

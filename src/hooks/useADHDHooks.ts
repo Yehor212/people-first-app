@@ -213,7 +213,7 @@ export function useADHDHooks(currentStreak: number) {
     if (!challenge) return null;
 
     setState(prev => {
-      const newChallenges = [...prev.activeChallenges, challenge!];
+      const newChallenges = [...prev.activeChallenges, challenge];
       localStorage.setItem(ADHD_STORAGE_KEYS.TIME_CHALLENGES, JSON.stringify(newChallenges));
       return { ...prev, activeChallenges: newChallenges };
     });

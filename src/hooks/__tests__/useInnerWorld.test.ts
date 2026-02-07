@@ -600,7 +600,7 @@ describe('useInnerWorld', () => {
         success = result.current.spendTreats(20, 'Buy decoration');
       });
 
-      expect(success!).toBe(true);
+      expect(success).toBe(true);
       expect(mockWorldState.treats.balance).toBe(30); // 50 - 20
       expect(mockWorldState.treats.lifetimeSpent).toBe(20);
     });
@@ -614,7 +614,7 @@ describe('useInnerWorld', () => {
         success = result.current.spendTreats(100, 'Too expensive');
       });
 
-      expect(success!).toBe(false);
+      expect(success).toBe(false);
       expect(mockWorldState.treats.balance).toBe(50); // unchanged
     });
   });
