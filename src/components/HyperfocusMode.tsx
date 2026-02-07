@@ -4,7 +4,7 @@ import { logger } from '@/lib/logger';
 import { X, Play, Pause, Volume2, VolumeX, Music, ExternalLink, Sparkles, Loader2, AlertCircle, RotateCcw, Bug, Copy, Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
-import { getAmbientSoundGenerator, SOUNDS, unlockAudio, AmbientSoundGenerator, AudioStatus } from '@/lib/ambientSounds';
+import { getAmbientSoundGenerator, SOUNDS, AmbientSoundGenerator, AudioStatus } from '@/lib/ambientSounds';
 import { cn } from '@/lib/utils';
 import {
   isSpotifyConnected,
@@ -226,22 +226,14 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     connectSpotify();
   };
 
-  // Play sound helper — fully non-blocking to preserve iOS gesture context.
-  // On iOS Safari, any `await` between user tap and audio.play() breaks the gesture.
+  // Play sound helper — uses playDirect() for iOS gesture context compatibility.
+  // playDirect() calls audio.play() synchronously (zero awaits) to preserve
+  // iOS Safari's user gesture context. Status tracked via event listeners.
   const playSound = useCallback((soundId: string) => {
     const generator = soundGeneratorRef.current;
     if (!generator || !soundId) return;
-
-    // Fire-and-forget: don't await anything to keep gesture context alive
-    unlockAudio().catch(() => {});
-    generator.play(soundId).then(() => {
-      setIsSoundPlaying(true);
-      logger.log('[HyperfocusMode] Sound playing:', soundId);
-    }).catch(err => {
-      logger.error('[HyperfocusMode] Failed to play sound:', err);
-      setIsSoundPlaying(false);
-    });
-  }, []); // Empty deps - stable function
+    generator.playDirect(soundId);
+  }, []);
 
   // Ambient sound player - react to state changes
   // Note: gesture handlers (handleStart, handleSoundSelect, handlePause) already
@@ -278,12 +270,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     setIsRunning(true);
     setIsPaused(false);
 
-    // Unlock audio within user gesture context (fire-and-forget)
-    unlockAudio().catch(e => {
-      logger.warn('[HyperfocusMode] Audio unlock failed:', e);
-    });
-
     // Play sound within user gesture context (critical for iOS)
+    // playDirect() sets audioUnlocked=true internally, no separate unlock needed
     if (selectedSoundId) {
       playSound(selectedSoundId);
     }
@@ -296,12 +284,10 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     const generator = soundGeneratorRef.current;
     if (generator && selectedSoundId) {
       if (newPausedState) {
-        // Pausing
         generator.pause();
       } else {
-        // Resuming — unlock + play within gesture context (critical for iOS)
-        unlockAudio().catch(() => {});
-        playSound(selectedSoundId);
+        // Resume in gesture context — resumeDirect() for iOS compatibility
+        generator.resumeDirect();
       }
     }
   };
@@ -314,21 +300,16 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       generator.pause();
       setIsSoundPlaying(false);
     } else if (selectedSoundId) {
-      // Unlock + re-play within gesture context (critical for iOS)
-      unlockAudio().catch(() => {});
-      playSound(selectedSoundId);
+      // Resume in gesture context — resumeDirect() for iOS compatibility
+      generator.resumeDirect();
     }
   };
 
   const handleSoundSelect = (soundId: string | null) => {
-    // Unlock audio within gesture context (fire-and-forget, critical for iOS)
-    unlockAudio().catch(e => {
-      logger.warn('[HyperfocusMode] Audio unlock failed:', e);
-    });
-
     setSelectedSoundId(soundId);
 
     // Play immediately within gesture context
+    // playDirect() handles unlock internally, no separate call needed
     if (soundId && isRunning && !isPaused) {
       playSound(soundId);
     } else if (!soundId) {
@@ -657,7 +638,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.8 }}
                     className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/20 border border-amber-500/30 rounded-lg cursor-pointer"
-                    onClick={() => unlockAudio()}
+                    onClick={() => selectedSoundId && playSound(selectedSoundId)}
                   >
                     <AlertCircle className="w-4 h-4 text-amber-500" />
                     <span className="text-xs text-amber-600 dark:text-amber-400">

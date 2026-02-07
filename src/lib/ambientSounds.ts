@@ -628,6 +628,139 @@ export class AmbientSoundGenerator {
   }
 
   /**
+   * iOS-compatible synchronous play. Calls audio.play() directly in gesture context.
+   * Unlike play(), this does NOT wait for canplaythrough or use transition locks.
+   * MUST be called from a user gesture handler (click/touchend).
+   *
+   * Key differences from play():
+   * - Zero awaits before audio.play() (preserves iOS gesture context)
+   * - No explicit audio.load() call (which resets iOS blessing)
+   * - No canplaythrough wait (browser handles buffering/streaming)
+   * - Sets audioUnlocked directly (no race condition)
+   */
+  playDirect(soundId: string): void {
+    if (soundId === 'none') {
+      this.stop();
+      return;
+    }
+
+    const sound = getSoundById(soundId);
+    if (!sound) {
+      logger.error(`[AmbientSounds] Sound not found: ${soundId}`);
+      this.setStatus({
+        state: 'error',
+        soundId: null,
+        error: { code: 'SOUND_NOT_FOUND', message: `Sound "${soundId}" not found`, recoverable: false },
+      });
+      return;
+    }
+
+    // Skip if already playing this exact sound
+    if (this.currentSoundId === soundId && this.isPlaying && this.audioElement) {
+      logger.log(`[AmbientSounds] Already playing ${soundId}, skipping`);
+      return;
+    }
+
+    // Cancel any pending async playback
+    if (this.pendingPlayback) {
+      this.pendingPlayback.abortController.abort();
+      this.pendingPlayback = null;
+    }
+    this.playbackId++;
+    const myPlaybackId = this.playbackId;
+
+    // Synchronous cleanup
+    this.stopImmediate();
+
+    // Get blessed element, set properties
+    this.audioElement = getOrCreateBlessedElement();
+    this.audioElement.loop = true;
+    this.audioElement.volume = this.volume;
+    this.audioElement.preload = 'auto';
+    // Set src — browser auto-loads. Do NOT call .load() (resets iOS blessing)
+    this.audioElement.src = sound.file;
+
+    // Mark as unlocked — we're in gesture context
+    audioUnlocked = true;
+
+    // SYNCHRONOUS play() — preserves iOS gesture context
+    const playPromise = this.audioElement.play();
+
+    // Optimistic state
+    this.currentSoundId = soundId;
+    this.isPlaying = true;
+    this.isTransitioning = false;
+    this.setStatus({ state: 'loading', soundId, isUnlocked: true, error: undefined });
+
+    logger.log(`[AmbientSounds] playDirect: ${sound.nameEn} (gesture-context play)`);
+
+    // Track actual playback start via event listener (reliable for streaming)
+    this.audioElement.onplaying = () => {
+      if (myPlaybackId !== this.playbackId) return;
+      this.setStatus({ state: 'playing', soundId, isUnlocked: true, error: undefined });
+      logger.log(`[AmbientSounds] playDirect: now playing ${soundId}`);
+    };
+
+    this.audioElement.onerror = () => {
+      if (myPlaybackId !== this.playbackId) return;
+      const errCode = this.audioElement?.error?.code;
+      const errMsg = this.audioElement?.error?.message || 'Load error';
+      logger.error(`[AmbientSounds] playDirect error:`, { errCode, errMsg, soundId });
+      this.isPlaying = false;
+      this.currentSoundId = null;
+      this.setStatus({
+        state: 'error',
+        soundId,
+        error: { code: `MEDIA_ERROR_${errCode}`, message: errMsg, recoverable: true },
+      });
+    };
+
+    // Promise catch for NotAllowedError (play blocked by browser policy)
+    if (playPromise) {
+      playPromise.catch(err => {
+        if (myPlaybackId !== this.playbackId) return;
+        if (isAbortError(err)) return;
+        logger.warn('[AmbientSounds] playDirect promise rejected:', err);
+        this.isPlaying = false;
+        this.currentSoundId = null;
+        this.setStatus({
+          state: 'error',
+          soundId,
+          error: { code: 'PLAY_BLOCKED', message: err.message, recoverable: true },
+        });
+      });
+    }
+  }
+
+  /**
+   * iOS-compatible synchronous resume. Call from gesture handler.
+   * Reuses the existing audio element (already has src loaded).
+   */
+  resumeDirect(): void {
+    if (!this.audioElement || !this.currentSoundId) return;
+
+    const soundId = this.currentSoundId;
+    const playPromise = this.audioElement.play();
+    this.setStatus({ state: 'loading' });
+
+    logger.log(`[AmbientSounds] resumeDirect: ${soundId}`);
+
+    if (playPromise) {
+      playPromise.then(() => {
+        this.setStatus({ state: 'playing', error: undefined });
+        logger.log(`[AmbientSounds] resumeDirect: now playing ${soundId}`);
+      }).catch(err => {
+        if (isAbortError(err)) return;
+        logger.warn('[AmbientSounds] resumeDirect failed:', err);
+        this.setStatus({
+          state: 'error',
+          error: { code: 'RESUME_ERROR', message: err.message, recoverable: true },
+        });
+      });
+    }
+  }
+
+  /**
    * Immediate synchronous stop - clears all handlers and resources
    */
   private stopImmediate(): void {
@@ -644,6 +777,7 @@ export class AmbientSoundGenerator {
         this.audioElement.onloadedmetadata = null;
         this.audioElement.onpause = null;
         this.audioElement.onplay = null;
+        this.audioElement.onplaying = null;
         // DON'T destroy the blessed element — iOS needs it alive for future playback.
         // Don't clear src or call load() — just pause and clear handlers.
       } catch (e) {
