@@ -264,13 +264,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
         redirectTo: redirectUrl,
       };
 
-      if (provider === 'google') {
-        options.scopes = 'https://www.googleapis.com/auth/calendar.readonly';
-        options.queryParams = {
-          access_type: 'offline',
-          prompt: 'consent',
-        };
-      } else if (provider === 'apple') {
+      if (provider === 'apple') {
         options.scopes = 'name email';
       } else if (provider === 'facebook') {
         options.scopes = 'email,public_profile';

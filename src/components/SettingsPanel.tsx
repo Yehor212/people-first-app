@@ -321,11 +321,6 @@ export function SettingsPanel({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
-          scopes: 'https://www.googleapis.com/auth/calendar.readonly',
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
         },
       });
 
@@ -1210,41 +1205,7 @@ export function SettingsPanel({
               )}
             </div>
 
-            {/* Google Calendar Toggle */}
-            {calendarConnected && (
-              <div className="p-4 bg-secondary/30 rounded-xl border border-border">
-                <div className="flex items-center justify-between gap-4 mb-2">
-                  <div className="flex items-center gap-2">
-                    <Calendar className={cn(
-                      "w-5 h-5 shrink-0",
-                      calendarEnabled ? "text-blue-500" : "text-muted-foreground"
-                    )} />
-                    <span className="font-medium text-foreground">
-                      {t.googleCalendar || 'Google Calendar'}
-                    </span>
-                  </div>
-                  <Switch
-                    checked={calendarEnabled}
-                    onCheckedChange={(checked) => {
-                      setCalendarEnabled(checked);
-                      setCalendarEnabledState(checked);
-                      if (!checked) clearCalendarCache();
-                    }}
-                    aria-label={t.googleCalendar || 'Google Calendar'}
-                    className="shrink-0"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {t.googleCalendarDescription || 'Show your Google Calendar events in the timeline'}
-                </p>
-                {calendarEnabled && (
-                  <div className="mt-2 flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
-                    <CheckCircle className="w-3 h-3" />
-                    <span>{t.googleCalendarEnabled || 'Calendar events visible in timeline'}</span>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Google Calendar Toggle — hidden until Google OAuth verification is complete */}
 
             <button
               onClick={handleSync}
