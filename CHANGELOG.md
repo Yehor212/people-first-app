@@ -2,6 +2,43 @@
 
 All notable changes to ZenFlow will be documented in this file.
 
+## [Unreleased]
+
+### Added — Google Calendar Integration
+- **ScheduleTimeline**: Google Calendar events shown with blue "G" badge in My World tab
+- **SettingsPanel**: Calendar toggle for Google-signed users (enable/disable)
+- **AuthScreen**: Added `calendar.readonly` OAuth scope for Google sign-in
+- **Per-date caching**: In-memory Map cache with 15-min TTL prevents API abuse on date switching
+- **Loading indicator**: Pulsing blue dot while Google Calendar events are syncing
+- **Deletion guard**: Google events are read-only, cannot be deleted by user
+- **CSP**: `https://www.googleapis.com` added to `connect-src` in both `index.html` and `vercel.json`
+- **i18n**: `googleCalendar`, `googleCalendarDescription`, `googleCalendarEnabled` keys for all 9 languages
+- **CSS**: `--event-google` color variable for all 3 themes (light, dark, OLED)
+
+### Added — Health Connect (Full Kotlin Implementation)
+- **HealthConnectPlugin.kt**: Rewrote from Java placeholder to full Kotlin with coroutines
+- **isAvailable()**: Uses `HealthConnectClient.getSdkStatus()` (proper SDK check)
+- **checkPermissions()**: Real permission check via `getGrantedPermissions()` coroutine
+- **requestPermissions()**: Launches Health Connect permission dialog via `@ActivityCallback`, re-queries SDK on return
+- **writeMindfulnessSession()**: Writes `MindfulnessSessionRecord` (meditation type), returns inserted ID
+- **readSleepSessions()**: Reads real sleep data from Health Connect with time range filter
+- **readSteps()**: Reads real step data, sums totals across records
+- **openHealthConnect()**: Settings → App → Play Store fallback chain
+- **AndroidManifest**: Added `ViewPermissionUsageActivity` alias for permission usage view
+- **build.gradle**: Added `kotlinx-coroutines-android:1.8.1` dependency
+- All methods resolve with safe defaults on error (never crash)
+
+### Added — Scroll Lock
+- **useScrollLock hook**: Locks body scroll when modals are open (fixes iOS/Android scroll bleed)
+- Applied to 10+ modal/panel components: BreathingExercise, FocusTimer, GoalsPanel, HyperfocusMode, Leaderboard, NotificationPermission, StatsPage, StreakBanner, AboutSection
+
+### Fixed — UI/UX
+- **RadialDashboard**: Switched from touch events to pointer events for cross-platform swipe
+- **Garden tab**: Reordered content (FocusTimer before ScheduleTimeline)
+- **HyperfocusMode**: Portal rendering to escape PullToRefresh stacking context
+
+---
+
 ## [Unreleased] — Pre-Release Audit (8 Sections)
 
 ### Fixed — [1/8] Android UX (Back Handler)

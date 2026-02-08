@@ -1,7 +1,7 @@
 # ZenFlow — Project Context for Claude
 
 > **Complete project reference for continuing work in new chat sessions.**
-> **Updated:** 2026-02-07 | **Version:** 1.6.0
+> **Updated:** 2026-02-08 | **Version:** 1.6.0
 
 ---
 
@@ -90,6 +90,16 @@ Web Audio API + HTML Audio elements. **Two playback APIs:**
 |------|---------|
 | `src/components/HyperfocusMode.tsx` | Fullscreen focus timer + ambient sound selector + Spotify. All gesture handlers use `playDirect()`/`resumeDirect()` for iOS. Debug panel via 3-tap on "Ambient sound" label |
 
+### Integrations
+| File | Purpose |
+|------|---------|
+| `src/lib/googleCalendar.ts` | Google Calendar API: fetch events, per-date caching (15-min TTL), rate limiting |
+| `src/plugins/HealthConnectPlugin.ts` | Health Connect TypeScript interface (7 methods) |
+| `src/plugins/HealthConnectWeb.ts` | Health Connect web fallback (returns "not available") |
+| `src/hooks/useHealthConnect.ts` | Health Connect React hook (availability, permissions, sync, read data) |
+| `src/components/HealthConnectCard.tsx` | Health Connect Settings UI (Android only, age verification, permissions, data preview) |
+| `android/.../HealthConnectPlugin.kt` | Health Connect Kotlin native plugin (coroutines, full SDK integration) |
+
 ### Config & Deploy
 | File | Purpose |
 |------|---------|
@@ -142,7 +152,7 @@ Web Audio API + HTML Audio elements. **Two playback APIs:**
 
 ## Custom Hooks (23+)
 
-Key hooks: `useIndexedDB`, `useGamification`, `useOfflineQueue`, `useChallenges`, `useStatsCalculations`, `useInsights`, `useSwipeNavigation`, `useBackHandler`, `useThrottledCallback`, `useInnerWorld`, `useADHDHooks`, `useDemoMode`, `usePwaInstall`, `useHealthConnect`.
+Key hooks: `useIndexedDB`, `useGamification`, `useOfflineQueue`, `useChallenges`, `useStatsCalculations`, `useInsights`, `useSwipeNavigation`, `useBackHandler`, `useThrottledCallback`, `useScrollLock`, `useInnerWorld`, `useADHDHooks`, `useDemoMode`, `usePwaInstall`, `useHealthConnect`.
 
 ---
 
@@ -174,6 +184,28 @@ ADD COLUMN IF NOT EXISTS mood_time_evening text;
 
 ---
 
+## Development Rules
+
+### Feature Quality Standard
+**Every feature added MUST be:**
+1. **Visible to the user** — if a feature exists, the user must be able to see it, interact with it, and understand it. No hidden functionality, no dead code, no placeholder stubs.
+2. **100% thought through** — every possible scenario must be handled:
+   - What happens when there's no data? (empty state)
+   - What happens when loading? (loading indicator)
+   - What happens on error? (graceful fallback, no crashes)
+   - What happens offline? (offline-first behavior)
+   - What happens on first use? (onboarding/guidance)
+   - What happens on different platforms? (web, Android, iOS)
+   - What happens with different screen sizes? (responsive)
+   - What happens with different languages? (i18n for all 9 languages)
+   - What happens when the user doesn't have permissions? (permission flow)
+   - What happens when the API is rate-limited? (caching, throttling)
+   - What happens when the user goes back? (Android back button)
+   - What happens when the user taps rapidly? (throttle/debounce)
+3. **Not half-done** — if a feature can't be completed fully, it should be behind a feature flag or removed entirely. No broken UI, no non-functional buttons, no "coming soon" placeholders without explicit feature flags.
+
+---
+
 ## Critical Gotchas
 
 1. **CSP headers**: Both `index.html` meta tag AND `vercel.json` header exist. Server header overrides meta. Keep them in sync.
@@ -189,6 +221,9 @@ ADD COLUMN IF NOT EXISTS mood_time_evening text;
 11. **Audio unlock listeners**: Removed after success; `forceUnlockAudio()` re-registers them on app resume.
 12. **SW auto-skipWaiting**: New SW immediately activates. Auto-reload via controllerchange listener.
 13. **WCAG touch targets**: All interactive elements must be minimum 44px (buttons, checkboxes). Habit +/- buttons are 48px.
+14. **Google Calendar**: Per-date in-memory cache (15-min TTL). Google events have `source: 'google'`, are non-editable, non-deletable. Toggle in Settings visible only for Google-signed users.
+15. **Health Connect**: Android only — `HealthConnectCard` returns `null` on web/iOS. Kotlin plugin uses coroutines (`CoroutineScope + SupervisorJob`), cancelled in `handleOnDestroy()`. All methods resolve with safe defaults (never reject/crash).
+16. **ALL modals use custom div modals, NOT Radix Sheet**: Radix Sheet is broken (shows only blur overlay). Use `<div role="dialog" className="fixed ... z-[60] ...">` pattern with `useScrollLock` + `useBackHandler`.
 
 ---
 
@@ -226,11 +261,15 @@ Module-level singleton `blessedAudioElement` — created once, never destroyed. 
 
 ---
 
-## Recent Fixes (Feb 2026)
+## Recent Changes (Feb 2026)
 
-| Commit | Fix |
-|--------|-----|
-| *(pending)* | **Pre-release audit (8 sections): back handler + throttle + a11y + btn-press + i18n across 7 files** |
+| Commit | Change |
+|--------|--------|
+| `8f37a37` | **Google Calendar integration + Health Connect Kotlin rewrite + useScrollLock** |
+| `4e0dcbd` | Pointer events for cross-platform swipe + reorder Garden tab |
+| `e108601` | Touch-friendly stats UX — swipe rings, tappable expandable cards |
+| `dc62e26` | Complete UI redesign — 3 tabs, Mood FAB, streamlined Home |
+| `77e1018` | Replace all Radix Sheet with custom bottom-sheet modals |
 | `8565017` | **iOS audio: synchronous `playDirect()` — zero awaits, no `load()`, gesture context preserved** |
 | `9d7ec7d` | Blessed audio element pattern + habit button sizes (44-48px WCAG) |
 | `48e8357` | Hyperfocus timer non-blocking + remove `muted:true` from unlock |
