@@ -385,6 +385,9 @@ export interface Translations {
   statsRangeMonth: string;
   statsRangeAll: string;
   statsRangeApply: string;
+  statsOverview: string;
+  statsTrends: string;
+  statsCalendar: string;
   calendarTitle: string;
   calendarYear: string;
   calendarSelectDay: string;
@@ -2299,6 +2302,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     statsRangeMonth: 'Месяц',
     statsRangeAll: 'Всё время',
     statsRangeApply: 'Применить',
+    statsOverview: 'Обзор',
+    statsTrends: 'Тренды',
+    statsCalendar: 'Календарь',
     calendarTitle: 'Календарь',
     calendarYear: 'Год',
     calendarSelectDay: 'Выберите день',
@@ -4154,6 +4160,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     statsRangeMonth: 'Month',
     statsRangeAll: 'All time',
     statsRangeApply: 'Apply',
+    statsOverview: 'Overview',
+    statsTrends: 'Trends',
+    statsCalendar: 'Calendar',
     calendarTitle: 'Calendar',
     calendarYear: 'Year',
     calendarSelectDay: 'Select a day',
@@ -6009,6 +6018,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     statsRangeMonth: 'Місяць',
     statsRangeAll: 'Увесь час',
     statsRangeApply: 'Застосувати',
+    statsOverview: 'Огляд',
+    statsTrends: 'Тренди',
+    statsCalendar: 'Календар',
     calendarTitle: 'Календар',
     calendarYear: 'Рік',
     calendarSelectDay: 'Оберіть день',
@@ -7865,6 +7877,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     statsRangeMonth: 'Mes',
     statsRangeAll: 'Todo el tiempo',
     statsRangeApply: 'Aplicar',
+    statsOverview: 'Resumen',
+    statsTrends: 'Tendencias',
+    statsCalendar: 'Calendario',
     calendarTitle: 'Calendario',
     calendarYear: 'Año',
     calendarSelectDay: 'Selecciona un día',
@@ -9721,6 +9736,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     statsRangeMonth: 'Monat',
     statsRangeAll: 'Alle Zeit',
     statsRangeApply: 'Anwenden',
+    statsOverview: 'Überblick',
+    statsTrends: 'Trends',
+    statsCalendar: 'Kalender',
     calendarTitle: 'Kalender',
     calendarYear: 'Jahr',
     calendarSelectDay: 'Tag auswählen',
@@ -11577,6 +11595,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     statsRangeMonth: 'Mois',
     statsRangeAll: 'Tout le temps',
     statsRangeApply: 'Appliquer',
+    statsOverview: 'Aperçu',
+    statsTrends: 'Tendances',
+    statsCalendar: 'Calendrier',
     calendarTitle: 'Calendrier',
     calendarYear: 'Année',
     calendarSelectDay: 'Choisir un jour',
@@ -13432,6 +13453,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     statsRangeMonth: '月',
     statsRangeAll: '全期間',
     statsRangeApply: '適用',
+    statsOverview: '概要',
+    statsTrends: 'トレンド',
+    statsCalendar: 'カレンダー',
     calendarTitle: 'カレンダー',
     calendarYear: '年',
     calendarSelectDay: '日を選択',

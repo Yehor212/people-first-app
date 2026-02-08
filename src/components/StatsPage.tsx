@@ -1,21 +1,20 @@
-import { useMemo, useState, memo, lazy, Suspense } from 'react';
+import { useMemo, useState, useRef, useCallback, memo, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType, PrimaryEmotion } from '@/types';
-import { calculateStreak, getDaysInMonth, getToday, cn, parseLocalDate, formatDate } from '@/lib/utils';
-import { getHabitCompletedDates, getHabitCompletionTotal, isHabitCompletedOnDate } from '@/lib/habits';
+import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
+import { getDaysInMonth, getToday, cn, formatDate } from '@/lib/utils';
+import { getHabitCompletedDates, isHabitCompletedOnDate } from '@/lib/habits';
 import { useStatsCalculations } from '@/hooks/useStatsCalculations';
-import { TrendingUp, Calendar, Zap, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Share2, PlayCircle, Sparkles, Brain, Target, BarChart2 } from 'lucide-react';
+import { Calendar, Heart, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, PlayCircle, Sparkles, Brain, Target, BarChart2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { SectionHeader } from '@/components/ui/section-header';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ShareProgress } from '@/components/ShareProgress';
-import { AnimatedAchievementsSection } from '@/components/AnimatedAchievementCard';
-import { AnimatedMoodDistribution, AnimatedEmotionDistribution, AnimatedCalendar } from '@/components/AnimatedStatsComponents';
+import { AnimatedEmotionDistribution } from '@/components/AnimatedStatsComponents';
 // Phase 13.3: TrendsView lazy-loaded to isolate Recharts CJS into its own chunk
 // (prevents TDZ errors from Recharts CJS interop in the merged StatsPage chunk)
 const TrendsView = lazy(() => import('@/components/TrendsView').then(m => ({ default: m.TrendsView })));
-import { ActivityHeatMap, calculateActivityLevel } from '@/components/ui/activity-heatmap';
+import { calculateActivityLevel } from '@/components/ui/activity-heatmap';
 import { EmptyState } from '@/components/EmptyState';
 // Lazy-load ProgressStoriesViewer to isolate DOMPurify CJS into its own chunk
 // (prevents TDZ errors from DOMPurify CJS interop in the merged StatsPage chunk)
@@ -25,12 +24,11 @@ const ProgressStoriesViewer = lazy(() =>
 import { generateWeeklyStory, hasEnoughDataForStory, getCurrentWeekRange } from '@/lib/progressStories';
 import { WeeklyInsightsCard } from '@/components/WeeklyInsightsCard';
 import { InsightsPanel } from '@/components/InsightsPanel';
-import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { hapticTap } from '@/lib/haptics';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
-import { getEmotionScore, getEmotionLabels, EMOTION_ORDER, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
+import { getEmotionScore, getEmotionLabels, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
 import { getLocale } from '@/lib/timeUtils';
 import { safeParseInt } from '@/lib/validation';
 // Phase 10 & 13: Premium Stats Components
@@ -42,9 +40,7 @@ import {
   TrophyHall,
   EnergyField,
   EmotionGalaxy,
-  CrystalCalendar,
   RingDetailSheet,
-  WeeklyReview,
 } from '@/components/stats';
 import type { RingType } from '@/components/stats';
 
@@ -55,17 +51,10 @@ interface StatsPageProps {
   gratitudeEntries: GratitudeEntry[];
   restDays?: string[];
   currentFocusMinutes?: number;
+  onQuickAction?: (action: 'logMood' | 'startFocus') => void;
 }
 
-const moodEmojis: Record<string, string> = {
-  great: '😄',
-  good: '🙂',
-  okay: '😐',
-  bad: '😔',
-  terrible: '😢',
-};
-
-export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions, gratitudeEntries, restDays = [], currentFocusMinutes }: StatsPageProps) {
+export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions, gratitudeEntries, restDays = [], currentFocusMinutes, onQuickAction }: StatsPageProps) {
   const { t, language } = useLanguage();
   const [selectedTag, setSelectedTag] = useState<string>('all');
   const [range, setRange] = useState<'week' | 'month' | 'all'>('month');
@@ -74,6 +63,8 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showStoryViewer, setShowStoryViewer] = useState(false);
+  const [statsTab, setStatsTab] = useState<'overview' | 'trends' | 'calendar'>('overview');
+  const statsContainerRef = useRef<HTMLDivElement>(null);
 
   useBackHandler(showShareDialog, () => setShowShareDialog(false));
   useBackHandler(showStoryViewer, () => setShowStoryViewer(false));
@@ -110,31 +101,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
   // Short month names for compact displays (heatmap)
   const shortMonthNames = monthNames.map(name => name?.slice(0, 3) || name);
   
-  const moodLabels: Record<string, string> = {
-    great: t.great,
-    good: t.good,
-    okay: t.okay,
-    bad: t.bad,
-    terrible: t.terrible,
-  };
-
-  // Score function that supports both legacy moods and new emotions
-  const getMoodEntryScore = (entry: MoodEntry): number => {
-    // Prefer emotion data if available
-    if (entry.emotion?.primary) {
-      return getEmotionScore(entry.emotion.primary, entry.emotion.intensity);
-    }
-    // Fallback to legacy mood
-    switch (entry.mood) {
-      case 'great': return 5;
-      case 'good': return 4;
-      case 'okay': return 3;
-      case 'bad': return 2;
-      case 'terrible': return 1;
-      default: return 0;
-    }
-  };
-
   // Legacy moodScore for backward compat with components
   const moodScore = (mood: MoodEntry['mood']) => {
     switch (mood) {
@@ -155,92 +121,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     moods.forEach((entry) => (entry.tags || []).forEach((tag) => set.add(tag)));
     return Array.from(set).sort();
   }, [moods]);
-
-  // filteredMoods is now provided by useStatsCalculations hook
-
-  // stats is now provided by useStatsCalculations hook
-
-  const moodInsights = useMemo(() => {
-    if (filteredMoods.length === 0) {
-      return {
-        bestDay: null as null | { day: string; avg: number },
-        focusAvg: null as null | { withFocus: number; withoutFocus: number },
-        habitDiffs: [] as Array<{ id: string; name: string; diff: number }>
-      };
-    }
-
-    const moodByDay: Record<number, { total: number; count: number }> = {};
-    filteredMoods.forEach((entry) => {
-      const day = parseLocalDate(entry.date).getDay();
-      const score = getMoodEntryScore(entry);
-      const current = moodByDay[day] || { total: 0, count: 0 };
-      current.total += score;
-      current.count += 1;
-      moodByDay[day] = current;
-    });
-
-    const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
-    let bestDay: null | { day: string; avg: number } = null;
-    Object.entries(moodByDay).forEach(([dayIndex, data]) => {
-      if (!data.count) return;
-      const avg = data.total / data.count;
-      if (!bestDay || avg > bestDay.avg) {
-        bestDay = { day: dayNames[safeParseInt(dayIndex, 0, 0, 6)] || '', avg };
-      }
-    });
-
-    const moodByDate = new Map(filteredMoods.map((entry) => [entry.date, getMoodEntryScore(entry)]));
-    const focusDates = new Set(completedFocusSessions.map((session) => session.date));
-    let withFocusTotal = 0;
-    let withFocusCount = 0;
-    let withoutFocusTotal = 0;
-    let withoutFocusCount = 0;
-    moodByDate.forEach((score, date) => {
-      if (focusDates.has(date)) {
-        withFocusTotal += score;
-        withFocusCount += 1;
-      } else {
-        withoutFocusTotal += score;
-        withoutFocusCount += 1;
-      }
-    });
-
-    const focusAvg = withFocusCount + withoutFocusCount > 0
-      ? {
-          withFocus: withFocusCount ? withFocusTotal / withFocusCount : 0,
-          withoutFocus: withoutFocusCount ? withoutFocusTotal / withoutFocusCount : 0
-        }
-      : null;
-
-    const habitDiffs = habits.map((habit) => {
-      let completedTotal = 0;
-      let completedCount = 0;
-      let missedTotal = 0;
-      let missedCount = 0;
-      moodByDate.forEach((score, date) => {
-        if (isHabitCompletedOnDate(habit, date)) {
-          completedTotal += score;
-          completedCount += 1;
-        } else {
-          missedTotal += score;
-          missedCount += 1;
-        }
-      });
-
-      const completedAvg = completedCount ? completedTotal / completedCount : 0;
-      const missedAvg = missedCount ? missedTotal / missedCount : 0;
-      return {
-        id: habit.id,
-        name: habit.name,
-        diff: completedAvg - missedAvg
-      };
-    })
-      .filter((item) => item.diff > 0)
-      .sort((a, b) => b.diff - a.diff)
-      .slice(0, 3);
-
-    return { bestDay, focusAvg, habitDiffs };
-  }, [filteredMoods, habits, completedFocusSessions, t]);
 
   // Store ALL mood entries per date (not just one)
   const moodsByDate = useMemo(() => {
@@ -382,27 +262,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     if (hour < 18) return '☀️';
     return '🌙';
   };
-
-  // premiumStats is now provided by useStatsCalculations hook
-
-  const heatmapDays = useMemo(() => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const daysInMonth = getDaysInMonth(year, month);
-    const monthKey = `${year}-${String(month + 1).padStart(2, '0')}`;
-    const moodByDate = new Map(filteredMoods.map((entry) => [entry.date, entry.mood]));
-
-    return Array.from({ length: daysInMonth }, (_, index) => {
-      const day = index + 1;
-      const dateKey = `${monthKey}-${String(day).padStart(2, '0')}`;
-      return {
-        dateKey,
-        day,
-        mood: moodByDate.get(dateKey)
-      };
-    });
-  }, [filteredMoods]);
 
   // Activity Heat Map data (GitHub-style contribution graph)
   const activityHeatmapData = useMemo(() => {
@@ -562,10 +421,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     return data;
   }, [moodByDate, habitCompletionMap, focusMinutesByDate, habits.length]);
 
-  const topHabit = habits.length > 0
-    ? habits.reduce((a, b) => getHabitCompletionTotal(a) > getHabitCompletionTotal(b) ? a : b)
-    : null;
-
   // Weekly data for ring detail sheet
   const ringWeeklyData = useMemo(() => {
     const today = new Date();
@@ -633,8 +488,13 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
 
   const weekRange = useMemo(() => getCurrentWeekRange().range, []);
 
+  const handleStatsTabChange = useCallback((tab: 'overview' | 'trends' | 'calendar') => {
+    setStatsTab(tab);
+    statsContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, []);
+
   return (
-    <div className="space-y-4 animate-fade-in content-with-nav px-4">
+    <div className="space-y-4 animate-fade-in content-with-nav px-4" ref={statsContainerRef}>
       {/* Header with Weekly Story button */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl sm:text-2xl font-bold text-foreground">{t.statistics}</h2>
@@ -663,174 +523,208 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         />
       )}
 
-      {/* Phase 10: Premium Stats Components */}
-      <ZenScoreHub
-        moodScore={premiumStats.moodScore}
-        habitRate={premiumStats.habitRate}
-        focusScore={premiumStats.focusScore}
-        streakDays={stats.currentStreak}
-        weeklyChange={premiumStats.weeklyChange}
-        weeklyData={{
-          mood: ringWeeklyData.mood,
-          habits: ringWeeklyData.habits,
-          focus: ringWeeklyData.focus,
-          streak: ringWeeklyData.mood.map((d, i) => ({
-            date: d.date,
-            value: Math.min(i + 1, stats.currentStreak) // Approximate streak growth
-          })),
-        }}
+      {/* Stats Inner Tabs */}
+      <SegmentedControl
+        options={[
+          { value: 'overview' as const, label: t.statsOverview },
+          { value: 'trends' as const, label: t.statsTrends },
+          { value: 'calendar' as const, label: t.statsCalendar },
+        ]}
+        value={statsTab}
+        onChange={handleStatsTabChange}
+        fullWidth
+        aria-label={t.statistics}
       />
 
-      {/* Mood Weather + Week Crystal side by side */}
-      <div className="grid grid-cols-2 gap-3">
-        <MoodWeather
-          mood={premiumStats.currentMood}
-          weatherHistory={ringWeeklyData.mood.map(d => {
-            // Convert percentage back to mood type
-            const pct = d.value;
-            const moodType: 'great' | 'good' | 'okay' | 'bad' | 'terrible' =
-              pct >= 80 ? 'great' : pct >= 60 ? 'good' : pct >= 40 ? 'okay' : pct >= 20 ? 'bad' : 'terrible';
-            return { date: d.date, mood: moodType };
-          })}
-          moodFactors={[
-            ...(premiumStats.habitRate >= 70 ? [{ name: t.habits || 'Habits', impact: 'positive' as const }] : []),
-            ...(premiumStats.focusScore >= 60 ? [{ name: t.focus || 'Focus', impact: 'positive' as const }] : []),
-            ...(stats.currentStreak >= 3 ? [{ name: t.streak || 'Streak', impact: 'positive' as const }] : []),
-          ]}
-        />
-        <WeekCrystal
-          score={premiumStats.weekScore}
-          dailyScores={ringWeeklyData.mood.map(d => ({
-            date: d.date,
-            score: Math.round((d.value + (ringWeeklyData.habits.find(h => h.date === d.date)?.value || 0) + (ringWeeklyData.focus.find(f => f.date === d.date)?.value || 0)) / 3)
-          }))}
-          lastWeekScore={premiumStats.weekScore > 0 ? Math.max(0, premiumStats.weekScore - (premiumStats.weeklyChange || 0)) : undefined}
-        />
-      </div>
+      {/* === OVERVIEW TAB === */}
+      {statsTab === 'overview' && (
+        <>
+          <ZenScoreHub
+            moodScore={premiumStats.moodScore}
+            habitRate={premiumStats.habitRate}
+            focusScore={premiumStats.focusScore}
+            streakDays={stats.currentStreak}
+            weeklyChange={premiumStats.weeklyChange}
+            weeklyData={{
+              mood: ringWeeklyData.mood,
+              habits: ringWeeklyData.habits,
+              focus: ringWeeklyData.focus,
+              streak: ringWeeklyData.mood.map((d, i) => ({
+                date: d.date,
+                value: Math.min(i + 1, stats.currentStreak)
+              })),
+            }}
+          />
 
-      {/* Radial Dashboard */}
-      <RadialDashboard
-        moodPercent={Math.round(((premiumStats.moodScore - 1) / 4) * 100)}
-        habitsPercent={premiumStats.habitRate}
-        focusPercent={premiumStats.focusScore}
-        onRingClick={(ringId) => setSelectedRing(ringId)}
-      />
-
-      {/* Phase 13: Trophy Hall - Premium Achievements */}
-      <TrophyHall
-        streak={stats.currentStreak}
-        focusMinutes={stats.allTimeFocusMinutes}
-        habitsCompleted={stats.totalHabitCompletions}
-      />
-
-      {/* Weekly Review - Premium Weekly Summary */}
-      <WeeklyReview
-        habits={habits}
-        moods={moods}
-        focusSessions={focusSessions}
-        currentStreak={stats.currentStreak}
-      />
-
-
-      {/* v1.4.0: Weekly Calendar - moved from My World tab */}
-      <WeeklyCalendar moods={moods} habits={habits} />
-
-      {/* Monthly Overview */}
-      <Card elevation="elevated" className="p-4 sm:p-6">
-        <SectionHeader
-          icon={Calendar}
-          title={stats.monthName}
-          iconGradient="primary"
-        />
-
-        <SegmentedControl
-          options={[
-            { value: 'week', label: t.statsRangeWeek },
-            { value: 'month', label: t.statsRangeMonth },
-            { value: 'all', label: t.statsRangeAll },
-          ]}
-          value={range}
-          onChange={setRange}
-          aria-label={t.statsRange || 'Statistics range'}
-          className="mb-4"
-        />
-
-        <div className="grid grid-cols-2 xs:grid-cols-3 gap-2 sm:gap-4">
-          <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl">
-            <p className="text-xl sm:text-2xl font-bold text-primary">{stats.thisMonthMoods}</p>
-            <p className="text-xs text-muted-foreground truncate">{t.moodEntries}</p>
+          {/* Quick Actions */}
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => { hapticTap(); onQuickAction?.('logMood'); }}
+              className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl transition-colors"
+            >
+              <Heart className="w-5 h-5 text-pink-500" />
+              <span className="text-xs font-medium text-foreground truncate w-full text-center">{t.quickActionLogMood}</span>
+            </button>
+            <button
+              onClick={() => { hapticTap(); onQuickAction?.('startFocus'); }}
+              className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl transition-colors"
+            >
+              <Target className="w-5 h-5 text-blue-500" />
+              <span className="text-xs font-medium text-foreground truncate w-full text-center">{t.quickActionStartFocus}</span>
+            </button>
+            {canShowStory && (
+              <button
+                onClick={() => { hapticTap(); setShowStoryViewer(true); }}
+                className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl transition-colors"
+              >
+                <PlayCircle className="w-5 h-5 text-primary" />
+                <span className="text-xs font-medium text-foreground truncate w-full text-center">{t.weeklyStory || 'Weekly Story'}</span>
+              </button>
+            )}
           </div>
-          <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl">
-            <p className="text-xl sm:text-2xl font-bold text-accent">{stats.thisMonthFocusMinutes}</p>
-            <p className="text-xs text-muted-foreground truncate">{t.focusMinutes}</p>
-          </div>
-          <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl col-span-2 xs:col-span-1">
-            <p className="text-xl sm:text-2xl font-bold text-mood-good">{stats.thisMonthGratitude}</p>
-            <p className="text-xs text-muted-foreground truncate">{t.gratitudes}</p>
-          </div>
-        </div>
-      </Card>
 
-      {/* Phase 13.3: TrendsView - Clean Recharts-based trend visualization */}
-      <Suspense fallback={<Card className="p-6 mb-4 animate-pulse"><div className="h-64 bg-secondary rounded-xl" /></Card>}>
-        <TrendsView
-          moods={moods}
-          habits={habits}
-          focusSessions={focusSessions}
-        />
-      </Suspense>
+          {/* Weekly Insights */}
+          <WeeklyInsightsCard
+            moods={moods}
+            habits={habits}
+            focusSessions={completedFocusSessions}
+            gratitudeEntries={gratitudeEntries}
+            onRecommendationAction={(actionId) => {
+              hapticTap();
+            }}
+          />
 
-      {/* Phase 13: Energy Field - Fire-based Activity Heatmap */}
-      <EnergyField
-        data={activityHeatmapData}
-        className="mb-4"
-      />
+          {/* Personal Insights */}
+          <InsightsPanel
+            moods={moods}
+            habits={habits}
+            focusSessions={completedFocusSessions}
+          />
 
-      {/* Weekly Insights - AI-powered recommendations */}
-      <WeeklyInsightsCard
-        moods={moods}
-        habits={habits}
-        focusSessions={completedFocusSessions}
-        gratitudeEntries={gratitudeEntries}
-        onRecommendationAction={(actionId) => {
-          hapticTap();
-          // Recommendations are actionable - clicking provides haptic feedback
-          // Future: could navigate to relevant section based on actionId
-          // e.g., 'low-focus' -> scroll to Focus Timer, 'more-gratitude' -> open Gratitude Journal
-        }}
-      />
+          {/* Emotion Galaxy - Today's snapshot */}
+          {emotionGalaxyData.length > 0 && (
+            <EmotionGalaxy
+              emotions={emotionGalaxyData}
+              totalEntries={todayMoods.length}
+              className="mb-4"
+            />
+          )}
 
-      {/* Personal Insights — data-driven pattern analysis */}
-      <InsightsPanel
-        moods={moods}
-        habits={habits}
-        focusSessions={completedFocusSessions}
-      />
-
-      {/* Phase 13: Emotion Galaxy - TODAY'S emotions only */}
-      {/* Galaxy resets each calendar day, showing only current day's moods */}
-      {emotionGalaxyData.length > 0 && (
-        <EmotionGalaxy
-          emotions={emotionGalaxyData}
-          totalEntries={todayMoods.length}
-          className="mb-4"
-        />
+          {/* Radial Dashboard */}
+          <RadialDashboard
+            moodPercent={Math.round(((premiumStats.moodScore - 1) / 4) * 100)}
+            habitsPercent={premiumStats.habitRate}
+            focusPercent={premiumStats.focusScore}
+            onRingClick={(ringId) => setSelectedRing(ringId)}
+          />
+        </>
       )}
 
-      {/* Emotion Distribution - v1.6.0: Always show 8-emotion Plutchik wheel */}
-      {/* Legacy moods are mapped to emotions for backward compatibility */}
-      <AnimatedEmotionDistribution
-        emotionCounts={stats.emotionCounts}
-        totalEmotions={filteredMoods.length}
-        title={t.moodDistribution}
-        language={language}
-        allTags={allTags}
-        selectedTag={selectedTag}
-        onTagChange={setSelectedTag}
-        tagFilterLabel={t.moodTagFilter}
-        allTagsLabel={t.allTags}
-      />
+      {/* === TRENDS TAB === */}
+      {statsTab === 'trends' && (
+        <>
+          {/* Monthly Overview */}
+          <Card elevation="elevated" className="p-4 sm:p-6">
+            <SectionHeader
+              icon={Calendar}
+              title={stats.monthName}
+              iconGradient="primary"
+            />
 
+            <SegmentedControl
+              options={[
+                { value: 'week', label: t.statsRangeWeek },
+                { value: 'month', label: t.statsRangeMonth },
+                { value: 'all', label: t.statsRangeAll },
+              ]}
+              value={range}
+              onChange={setRange}
+              aria-label={t.statsRange || 'Statistics range'}
+              className="mb-4"
+            />
+
+            <div className="grid grid-cols-2 xs:grid-cols-3 gap-2 sm:gap-4">
+              <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl">
+                <p className="text-xl sm:text-2xl font-bold text-primary">{stats.thisMonthMoods}</p>
+                <p className="text-xs text-muted-foreground truncate">{t.moodEntries}</p>
+              </div>
+              <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl">
+                <p className="text-xl sm:text-2xl font-bold text-accent">{stats.thisMonthFocusMinutes}</p>
+                <p className="text-xs text-muted-foreground truncate">{t.focusMinutes}</p>
+              </div>
+              <div className="text-center p-3 sm:p-4 bg-secondary/60 rounded-xl col-span-2 xs:col-span-1">
+                <p className="text-xl sm:text-2xl font-bold text-mood-good">{stats.thisMonthGratitude}</p>
+                <p className="text-xs text-muted-foreground truncate">{t.gratitudes}</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* TrendsView */}
+          <Suspense fallback={<Card className="p-6 mb-4 animate-pulse"><div className="h-64 bg-secondary rounded-xl" /></Card>}>
+            <TrendsView
+              moods={moods}
+              habits={habits}
+              focusSessions={focusSessions}
+            />
+          </Suspense>
+
+          {/* Emotion Distribution */}
+          <AnimatedEmotionDistribution
+            emotionCounts={stats.emotionCounts}
+            totalEmotions={filteredMoods.length}
+            title={t.moodDistribution}
+            language={language}
+            allTags={allTags}
+            selectedTag={selectedTag}
+            onTagChange={setSelectedTag}
+            tagFilterLabel={t.moodTagFilter}
+            allTagsLabel={t.allTags}
+          />
+
+          {/* Energy Field */}
+          <EnergyField
+            data={activityHeatmapData}
+            className="mb-4"
+          />
+
+          {/* Mood Weather + Week Crystal */}
+          <div className="grid grid-cols-2 gap-3">
+            <MoodWeather
+              mood={premiumStats.currentMood}
+              weatherHistory={ringWeeklyData.mood.map(d => {
+                const pct = d.value;
+                const moodType: 'great' | 'good' | 'okay' | 'bad' | 'terrible' =
+                  pct >= 80 ? 'great' : pct >= 60 ? 'good' : pct >= 40 ? 'okay' : pct >= 20 ? 'bad' : 'terrible';
+                return { date: d.date, mood: moodType };
+              })}
+              moodFactors={[
+                ...(premiumStats.habitRate >= 70 ? [{ name: t.habits || 'Habits', impact: 'positive' as const }] : []),
+                ...(premiumStats.focusScore >= 60 ? [{ name: t.focus || 'Focus', impact: 'positive' as const }] : []),
+                ...(stats.currentStreak >= 3 ? [{ name: t.streak || 'Streak', impact: 'positive' as const }] : []),
+              ]}
+            />
+            <WeekCrystal
+              score={premiumStats.weekScore}
+              dailyScores={ringWeeklyData.mood.map(d => ({
+                date: d.date,
+                score: Math.round((d.value + (ringWeeklyData.habits.find(h => h.date === d.date)?.value || 0) + (ringWeeklyData.focus.find(f => f.date === d.date)?.value || 0)) / 3)
+              }))}
+              lastWeekScore={premiumStats.weekScore > 0 ? Math.max(0, premiumStats.weekScore - (premiumStats.weeklyChange || 0)) : undefined}
+            />
+          </div>
+
+          {/* Trophy Hall */}
+          <TrophyHall
+            streak={stats.currentStreak}
+            focusMinutes={stats.allTimeFocusMinutes}
+            habitsCompleted={stats.totalHabitCompletions}
+          />
+        </>
+      )}
+
+      {/* === CALENDAR TAB === */}
+      {statsTab === 'calendar' && (
+        <>
       {/* Year Calendar - Crystal Premium Design */}
       <div className="relative overflow-hidden rounded-2xl p-3 sm:p-6 shadow-lg shadow-black/10 dark:shadow-none ring-1 ring-black/5 dark:ring-0">
         {/* Theme-aware crystal cave background */}
@@ -1419,90 +1313,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         </motion.div>
         </div>{/* End content wrapper */}
       </div>
-
-      {/* Mood Patterns */}
-      <Card elevation="raised" className="p-3 sm:p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="p-2 zen-gradient rounded-xl">
-            <TrendingUp className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold text-foreground">{t.moodPatternsTitle}</h3>
-        </div>
-
-        {filteredMoods.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t.moodNoData}</p>
-        ) : (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between p-4 bg-secondary rounded-xl">
-              <div>
-                <p className="font-medium text-foreground">{t.moodBestDay}</p>
-                <p className="text-sm text-muted-foreground">{moodInsights.bestDay?.day || t.moodNoData}</p>
-              </div>
-              <div className="text-xl font-semibold text-foreground">
-                {moodInsights.bestDay ? moodInsights.bestDay.avg.toFixed(1) : '--'}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between p-4 bg-secondary rounded-xl">
-              <div>
-                <p className="font-medium text-foreground">{t.moodFocusComparison}</p>
-                <p className="text-sm text-muted-foreground">{t.moodFocusWith}</p>
-              </div>
-              <div className="text-xl font-semibold text-foreground">
-                {moodInsights.focusAvg ? moodInsights.focusAvg.withFocus.toFixed(1) : '--'}
-              </div>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-secondary rounded-xl">
-              <div>
-                <p className="font-medium text-foreground">{t.moodFocusComparison}</p>
-                <p className="text-sm text-muted-foreground">{t.moodFocusWithout}</p>
-              </div>
-              <div className="text-xl font-semibold text-foreground">
-                {moodInsights.focusAvg ? moodInsights.focusAvg.withoutFocus.toFixed(1) : '--'}
-              </div>
-            </div>
-
-            <div className="p-4 bg-secondary rounded-xl">
-              <p className="font-medium text-foreground mb-2">{t.moodHabitCorrelations}</p>
-              {moodInsights.habitDiffs.length === 0 ? (
-                <p className="text-sm text-muted-foreground">{t.moodNoData}</p>
-              ) : (
-                <div className="space-y-2">
-                  {moodInsights.habitDiffs.map((habit) => (
-                    <div key={habit.id} className="flex items-center justify-between text-sm text-foreground">
-                      <span>{habit.name}</span>
-                      <span>+{habit.diff.toFixed(1)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </Card>
-
-      {/* Top Habit */}
-      {topHabit && (
-        <Card elevation="raised" className="p-3 sm:p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 zen-gradient-warm rounded-xl">
-              <TrendingUp className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <h3 className="text-lg font-semibold text-foreground">{t.topHabit}</h3>
-          </div>
-
-          <div className="flex items-center gap-4 p-4 bg-secondary rounded-xl">
-            <div className={`w-14 h-14 ${topHabit.color} rounded-xl flex items-center justify-center text-2xl`}>
-              {topHabit.icon}
-            </div>
-            <div>
-              <p className="font-semibold text-foreground">{topHabit.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {t.completedTimes} {getHabitCompletionTotal(topHabit)} {t.completedTimes2}
-              </p>
-            </div>
-          </div>
-        </Card>
+        </>
       )}
 
       {/* Share Progress Dialog */}

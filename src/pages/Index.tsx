@@ -52,7 +52,6 @@ import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { StorageErrorBanner } from '@/components/StorageErrorBanner';
-import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { PullToRefresh } from '@/components/PullToRefresh';
 
 // Lazy-loaded components with retry logic for chunk loading failures
@@ -2289,6 +2288,13 @@ export function Index() {
                   gratitudeEntries={safeGratitudeEntries}
                   restDays={innerWorld.restDays}
                   currentFocusMinutes={currentFocusMinutes}
+                  onQuickAction={(action) => {
+                    setActiveTab('home');
+                    setTimeout(() => {
+                      if (action === 'logMood') moodRef.current?.scrollIntoView({ behavior: 'smooth' });
+                      if (action === 'startFocus') focusRef.current?.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }}
                 />
               </Suspense>
             </LazyErrorBoundary>
