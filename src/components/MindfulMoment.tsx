@@ -90,7 +90,7 @@ export function MindfulMoment({
   const typeLabel = MINDFUL_TYPE_LABELS[currentPrompt.type][language] || MINDFUL_TYPE_LABELS[currentPrompt.type].en;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-fade-in">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[70] p-4 animate-fade-in" role="dialog" aria-modal="true">
       <div className="bg-card rounded-3xl p-6 w-full max-w-sm animate-scale-in shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -108,6 +108,7 @@ export function MindfulMoment({
           <button
             onClick={handleSkip}
             className="p-2 hover:bg-secondary rounded-full transition-colors"
+            aria-label={t.close || 'Close'}
           >
             <X className="w-5 h-5" />
           </button>

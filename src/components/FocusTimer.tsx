@@ -924,6 +924,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
       {showReflection && (
         <motion.div
           className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4 z-[60]"
+          role="dialog"
+          aria-modal="true"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           onClick={(e) => {

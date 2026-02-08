@@ -1,4 +1,4 @@
-import { useMemo, useState, memo } from 'react';
+import { useMemo, useState, memo, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType, PrimaryEmotion } from '@/types';
 import { calculateStreak, getDaysInMonth, getToday, cn, parseLocalDate, formatDate } from '@/lib/utils';
@@ -12,8 +12,9 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { ShareProgress } from '@/components/ShareProgress';
 import { AnimatedAchievementsSection } from '@/components/AnimatedAchievementCard';
 import { AnimatedMoodDistribution, AnimatedEmotionDistribution, AnimatedCalendar } from '@/components/AnimatedStatsComponents';
-// Phase 13.3: TrendsView restored (DataMountains removed)
-import { TrendsView } from '@/components/TrendsView';
+// Phase 13.3: TrendsView lazy-loaded to isolate Recharts CJS into its own chunk
+// (prevents TDZ errors from Recharts CJS interop in the merged StatsPage chunk)
+const TrendsView = lazy(() => import('@/components/TrendsView').then(m => ({ default: m.TrendsView })));
 import { ActivityHeatMap, calculateActivityLevel } from '@/components/ui/activity-heatmap';
 import { EmptyState } from '@/components/EmptyState';
 import { ProgressStoriesViewer } from '@/components/ProgressStoriesViewer';
@@ -764,11 +765,13 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       </Card>
 
       {/* Phase 13.3: TrendsView - Clean Recharts-based trend visualization */}
-      <TrendsView
-        moods={moods}
-        habits={habits}
-        focusSessions={focusSessions}
-      />
+      <Suspense fallback={<Card className="p-6 mb-4 animate-pulse"><div className="h-64 bg-secondary rounded-xl" /></Card>}>
+        <TrendsView
+          moods={moods}
+          habits={habits}
+          focusSessions={focusSessions}
+        />
+      </Suspense>
 
       {/* Phase 13: Energy Field - Fire-based Activity Heatmap */}
       <EnergyField

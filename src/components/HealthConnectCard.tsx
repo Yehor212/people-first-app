@@ -153,7 +153,7 @@ export function HealthConnectCard({
   // Loading state
   if (state.isLoading) {
     return (
-      <div className={cn('p-4 rounded-xl bg-muted/50 border border-border', className)}>
+      <div className={cn('p-4 rounded-2xl bg-muted/50 border border-border', className)}>
         <div className="flex items-center gap-3">
           <Loader className="w-5 h-5 animate-spin text-primary" />
           <span className="text-sm text-muted-foreground">
@@ -167,7 +167,7 @@ export function HealthConnectCard({
   // Not available state
   if (!state.isAvailable) {
     return (
-      <div className={cn('p-4 rounded-xl bg-muted/50 border border-border', className)}>
+      <div className={cn('p-4 rounded-2xl bg-muted/50 border border-border', className)}>
         <div className="flex items-center gap-3">
           <Heart className="w-5 h-5 text-muted-foreground" />
           <div className="flex-1">
@@ -195,7 +195,7 @@ export function HealthConnectCard({
 
   // Available - show full card
   return (
-    <div className={cn('p-4 rounded-xl bg-card border border-border', className)}>
+    <div className={cn('p-4 rounded-2xl bg-card border border-border', className)}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">

@@ -78,12 +78,13 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
   }
 
   return (
-    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
+    <div className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true">
       <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 zen-shadow-card animate-scale-in">
         {/* Close button */}
         <button
           onClick={handleDeny}
           className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground transition-colors"
+          aria-label={t.close || 'Close'}
         >
           <X className="w-5 h-5" />
         </button>

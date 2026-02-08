@@ -120,7 +120,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
   const bonusXp = getLoginStreakBonus(loginStreak);
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
       {/* Confetti Effect */}
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -147,6 +147,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
+            aria-label={t.close}
           >
             <X className="w-5 h-5" />
           </button>

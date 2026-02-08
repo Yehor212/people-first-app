@@ -422,11 +422,12 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
 
       {/* Inline Share Dialog */}
       {showShareDialog && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-fade-in">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true">
           {/* Close button */}
           <button
             onClick={() => setShowShareDialog(false)}
             className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+            aria-label={t.close || 'Close'}
           >
             <X className="w-6 h-6 text-white" />
           </button>
