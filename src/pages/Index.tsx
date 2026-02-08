@@ -95,7 +95,6 @@ import { syncTasks, syncQuests, subscribeToTaskUpdates, subscribeToQuestUpdates 
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
-import { InsightsPanel } from '@/components/InsightsPanel';
 import { UrgencyAlert } from '@/components/UrgencyAlert';
 import { RestModeCard } from '@/components/RestModeCard';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
@@ -2141,14 +2140,6 @@ export function Index() {
                 }}
               />
 
-              {/* Personal Insights */}
-              <InsightsPanel
-                moods={safeMoods}
-                habits={safeHabits}
-                focusSessions={safeFocusSessions}
-                compact={true}
-                collapsible={true}
-              />
 
 
               {/* v1.4.0: ScheduleTimeline moved to "My World" tab */}

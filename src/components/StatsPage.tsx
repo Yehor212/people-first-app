@@ -24,6 +24,7 @@ const ProgressStoriesViewer = lazy(() =>
 );
 import { generateWeeklyStory, hasEnoughDataForStory, getCurrentWeekRange } from '@/lib/progressStories';
 import { WeeklyInsightsCard } from '@/components/WeeklyInsightsCard';
+import { InsightsPanel } from '@/components/InsightsPanel';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { hapticTap } from '@/lib/haptics';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -797,6 +798,13 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           // Future: could navigate to relevant section based on actionId
           // e.g., 'low-focus' -> scroll to Focus Timer, 'more-gratitude' -> open Gratitude Journal
         }}
+      />
+
+      {/* Personal Insights — data-driven pattern analysis */}
+      <InsightsPanel
+        moods={moods}
+        habits={habits}
+        focusSessions={completedFocusSessions}
       />
 
       {/* Phase 13: Emotion Galaxy - TODAY'S emotions only */}
