@@ -2226,6 +2226,17 @@ export function Index() {
               onOpenFriends={() => setShowFriendsPanel(true)}
             />
 
+            {/* Schedule Timeline - ADHD-friendly day planner with habits auto-synced */}
+            <LazyErrorBoundary componentName="Schedule Timeline">
+              <Suspense fallback={<SkeletonList />}>
+                <ScheduleTimeline
+                  events={todayAllEvents}
+                  onAddEvent={handleAddScheduleEvent}
+                  onDeleteEvent={handleDeleteScheduleEvent}
+                />
+              </Suspense>
+            </LazyErrorBoundary>
+
             {/* Breathing Exercise - Compact mindfulness card */}
             {isFeatureVisible('breathingExercise') && (
               <LazyErrorBoundary componentName="Breathing Exercise">
@@ -2255,17 +2266,6 @@ export function Index() {
                 </Suspense>
               </ModalErrorBoundary>
             )}
-
-            {/* Schedule Timeline - ADHD-friendly day planner with habits auto-synced */}
-            <LazyErrorBoundary componentName="Schedule Timeline">
-              <Suspense fallback={<SkeletonList />}>
-                <ScheduleTimeline
-                  events={todayAllEvents}
-                  onAddEvent={handleAddScheduleEvent}
-                  onDeleteEvent={handleDeleteScheduleEvent}
-                />
-              </Suspense>
-            </LazyErrorBoundary>
 
             {/* Insights */}
             <LazyErrorBoundary componentName="Insights">

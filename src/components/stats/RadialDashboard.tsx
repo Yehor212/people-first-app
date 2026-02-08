@@ -122,16 +122,16 @@ export function RadialDashboard({
     });
   }, []);
 
-  // Touch handlers for swipe
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
+  // Pointer handlers for swipe (works for both mouse and touch)
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    touchStartX.current = e.clientX;
+    touchStartY.current = e.clientY;
     isSwiping.current = false;
   }, []);
 
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    const deltaX = e.clientX - touchStartX.current;
+    const deltaY = e.clientY - touchStartY.current;
 
     // Only trigger swipe if horizontal movement is dominant and exceeds threshold
     if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
@@ -167,8 +167,8 @@ export function RadialDashboard({
         'touch-pan-y', // Allow vertical scroll, capture horizontal
         className
       )}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
     >
       {/* SVG Rings */}
       <div className="flex justify-center">
