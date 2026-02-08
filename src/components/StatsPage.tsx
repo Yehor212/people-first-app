@@ -63,7 +63,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth());
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showStoryViewer, setShowStoryViewer] = useState(false);
-  const [statsTab, setStatsTab] = useState<'overview' | 'trends' | 'calendar'>('overview');
+  const [statsTab, setStatsTab] = useState<'overview' | 'trends' | 'calendar'>('calendar');
   const statsContainerRef = useRef<HTMLDivElement>(null);
 
   useBackHandler(showShareDialog, () => setShowShareDialog(false));
