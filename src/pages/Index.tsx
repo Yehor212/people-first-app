@@ -12,6 +12,7 @@ import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { triggerXpPopup } from '@/components/XpPopup';
 import { ConfettiBurst } from '@/components/ConfettiBurst';
+import { SessionExpiredBanner } from '@/components/SessionExpiredBanner';
 import { DayClock } from '@/components/DayClock';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
@@ -2129,6 +2130,11 @@ export function Index() {
               onOpenTasks={isFeatureVisible('tasks') ? () => setShowTasksPanel(true) : undefined}
               onOpenQuests={isFeatureVisible('quests') ? () => setShowQuestsPanel(true) : undefined}
             />
+
+            {/* Session expired banner - shows when user was authenticated but session is lost */}
+            {hasValidSession === false && googleAuthChecked && userName !== 'Friend' && (
+              <SessionExpiredBanner onSignIn={() => setActiveTab('settings')} />
+            )}
 
             <div className="space-y-3">
               {/* Progressive Onboarding - Day progress indicator */}

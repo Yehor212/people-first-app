@@ -334,6 +334,8 @@ export function SettingsPanel({
       // Remove FCM push token before signing out
       await removePushToken();
       await supabase.auth.signOut();
+      // Reset userName to prevent "ghost user" greeting on next app open
+      onNameChange('Friend');
       setAuthStatus(t.authSignedOut);
     } finally {
       setIsSigningOut(false);
@@ -1258,6 +1260,17 @@ export function SettingsPanel({
           </div>
         ) : (
           <div className="space-y-3">
+            {/* Session expired warning - show when user was previously signed in */}
+            {(cloudSyncEnabled || userName !== 'Friend') && (
+              <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                <p className="text-sm font-medium text-amber-700 dark:text-amber-400">
+                  {t.sessionExpiredSettings || 'Your session has expired'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t.localDataSafe || 'Your local data is safe. Sign in again to resume syncing.'}
+                </p>
+              </div>
+            )}
             <input
               type="email"
               value={authEmail}

@@ -563,6 +563,10 @@ export interface Translations {
   signOut: string;
   syncNow: string;
   cloudSyncDisabled: string;
+  sessionExpired: string;
+  sessionExpiredMessage: string;
+  sessionExpiredSettings: string;
+  localDataSafe: string;
   deleteAccount: string;
   deleteAccountConfirm: string;
   deleteAccountTypeConfirm: string;
@@ -2593,6 +2597,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     signOut: 'Выйти',
     syncNow: 'Синхронизировать',
     cloudSyncDisabled: 'Облачная синхронизация отключена.',
+    sessionExpired: 'Синхронизация приостановлена',
+    sessionExpiredMessage: 'Войдите, чтобы синхронизировать данные',
+    sessionExpiredSettings: 'Сессия истекла',
+    localDataSafe: 'Ваши локальные данные в безопасности. Войдите снова для возобновления синхронизации.',
     deleteAccount: 'Удалить аккаунт',
     deleteAccountConfirm: 'Удалить аккаунт?',
     deleteAccountTypeConfirm: 'Введите DELETE для подтверждения:',
@@ -4439,6 +4447,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     signOut: 'Sign out',
     syncNow: 'Sync now',
     cloudSyncDisabled: 'Cloud sync disabled.',
+    sessionExpired: 'Cloud sync paused',
+    sessionExpiredMessage: 'Sign in to sync your data',
+    sessionExpiredSettings: 'Your session has expired',
+    localDataSafe: 'Your local data is safe. Sign in again to resume syncing.',
     deleteAccount: 'Delete account',
     deleteAccountConfirm: 'Delete your account?',
     deleteAccountTypeConfirm: 'Type DELETE to confirm:',
@@ -6285,6 +6297,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     signOut: 'Вийти',
     syncNow: 'Синхронізувати зараз',
     cloudSyncDisabled: 'Синхронізація з хмарою вимкнена.',
+    sessionExpired: 'Синхронізацію призупинено',
+    sessionExpiredMessage: 'Увійдіть, щоб синхронізувати дані',
+    sessionExpiredSettings: 'Сесія закінчилася',
+    localDataSafe: 'Ваші локальні дані в безпеці. Увійдіть знову для відновлення синхронізації.',
     deleteAccount: 'Видалити акаунт',
     deleteAccountConfirm: 'Видалити акаунт?',
     deleteAccountTypeConfirm: 'Введіть DELETE для підтвердження:',
@@ -8132,6 +8148,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     signOut: 'Cerrar sesión',
     syncNow: 'Sincronizar ahora',
     cloudSyncDisabled: 'Sincronización en la nube desactivada.',
+    sessionExpired: 'Sincronización en pausa',
+    sessionExpiredMessage: 'Inicia sesión para sincronizar tus datos',
+    sessionExpiredSettings: 'Tu sesión ha expirado',
+    localDataSafe: 'Tus datos locales están seguros. Inicia sesión de nuevo para reanudar la sincronización.',
     deleteAccount: 'Eliminar cuenta',
     deleteAccountConfirm: '¿Eliminar tu cuenta?',
     deleteAccountTypeConfirm: 'Escribe DELETE para confirmar:',
@@ -9979,6 +9999,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     signOut: 'Abmelden',
     syncNow: 'Jetzt synchronisieren',
     cloudSyncDisabled: 'Cloud-Synchronisierung deaktiviert.',
+    sessionExpired: 'Cloud-Sync pausiert',
+    sessionExpiredMessage: 'Melden Sie sich an, um Ihre Daten zu synchronisieren',
+    sessionExpiredSettings: 'Ihre Sitzung ist abgelaufen',
+    localDataSafe: 'Ihre lokalen Daten sind sicher. Melden Sie sich erneut an, um die Synchronisierung fortzusetzen.',
     deleteAccount: 'Konto löschen',
     deleteAccountConfirm: 'Konto löschen?',
     deleteAccountTypeConfirm: 'Geben Sie DELETE zur Bestätigung ein:',
@@ -11826,6 +11850,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     signOut: 'Se déconnecter',
     syncNow: 'Synchroniser maintenant',
     cloudSyncDisabled: 'Synchronisation cloud désactivée.',
+    sessionExpired: 'Synchronisation en pause',
+    sessionExpiredMessage: 'Connectez-vous pour synchroniser vos données',
+    sessionExpiredSettings: 'Votre session a expiré',
+    localDataSafe: 'Vos données locales sont en sécurité. Reconnectez-vous pour reprendre la synchronisation.',
     deleteAccount: 'Supprimer le compte',
     deleteAccountConfirm: 'Supprimer votre compte ?',
     deleteAccountTypeConfirm: 'Tapez DELETE pour confirmer :',
@@ -13672,6 +13700,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     signOut: 'サインアウト',
     syncNow: '今すぐ同期',
     cloudSyncDisabled: 'クラウド同期が無効です。',
+    sessionExpired: 'クラウド同期が一時停止中',
+    sessionExpiredMessage: 'サインインしてデータを同期してください',
+    sessionExpiredSettings: 'セッションの有効期限が切れました',
+    localDataSafe: 'ローカルデータは安全です。同期を再開するには再度サインインしてください。',
     deleteAccount: 'アカウントを削除',
     deleteAccountConfirm: 'アカウントを削除しますか？',
     deleteAccountTypeConfirm: '確認のため「DELETE」と入力：',
@@ -16503,6 +16535,10 @@ const arabicOverrides: Partial<Translations> = {
   signOut: 'تسجيل الخروج',
   syncNow: 'مزامنة الآن',
   cloudSyncDisabled: 'المزامنة السحابية معطلة',
+  sessionExpired: 'المزامنة السحابية متوقفة',
+  sessionExpiredMessage: 'سجّل الدخول لمزامنة بياناتك',
+  sessionExpiredSettings: 'انتهت صلاحية جلستك',
+  localDataSafe: 'بياناتك المحلية آمنة. سجّل الدخول مرة أخرى لاستئناف المزامنة.',
   deleteAccount: 'حذف الحساب',
   deleteAccountConfirm: 'هل أنت متأكد من حذف حسابك؟',
   deleteAccountTypeConfirm: 'اكتب "حذف" للتأكيد',
@@ -17363,6 +17399,11 @@ const hebrewOverrides: Partial<Translations> = {
   syncNow: 'סנכרן עכשיו',
   syncSuccess: 'הסנכרון הצליח!',
   syncError: 'שגיאת סנכרון',
+  cloudSyncDisabled: 'סנכרון ענן מושבת.',
+  sessionExpired: 'סנכרון ענן מושהה',
+  sessionExpiredMessage: 'התחבר כדי לסנכרן את הנתונים שלך',
+  sessionExpiredSettings: 'פג תוקף ההפעלה שלך',
+  localDataSafe: 'הנתונים המקומיים שלך בטוחים. התחבר שוב כדי לחדש את הסנכרון.',
 
   // Errors
   errorBoundaryTitle: 'אירעה שגיאה',
