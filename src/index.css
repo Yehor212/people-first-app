@@ -176,6 +176,7 @@
     --event-meeting: 330 81% 60%;     /* Pink - social, connection */
     --event-break: 189 94% 43%;       /* Cyan - same as study (rest) */
     --event-urgent: 0 72% 51%;        /* Red - attention needed */
+    --event-google: 217 89% 55%;      /* Google blue #4285f4 */
 
     /* ===== INSIGHT TYPE COLORS ===== */
     /* Semantic colors for MoodInsights component */
@@ -372,6 +373,7 @@
     --event-meeting: 330 81% 65%;
     --event-break: 189 94% 48%;
     --event-urgent: 0 72% 55%;
+    --event-google: 217 89% 60%;
 
     /* Insight colors - dark mode variants */
     --insight-mood: 217 91% 65%;
@@ -526,6 +528,7 @@
     --event-meeting: 330 85% 62%;
     --event-break: 189 98% 45%;
     --event-urgent: 0 75% 52%;
+    --event-google: 217 92% 58%;
 
     /* Insight colors - OLED optimized */
     --insight-mood: 217 95% 60%;

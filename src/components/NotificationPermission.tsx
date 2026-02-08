@@ -4,6 +4,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Capacitor } from '@capacitor/core';
 import { logger } from '@/lib/logger';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 interface NotificationPermissionProps {
   onComplete: () => void;
@@ -12,6 +13,7 @@ interface NotificationPermissionProps {
 export function NotificationPermission({ onComplete }: NotificationPermissionProps) {
   const { t } = useLanguage();
   const [showPrompt, setShowPrompt] = useState(false);
+  useScrollLock(showPrompt);
 
   useEffect(() => {
     checkPermission();

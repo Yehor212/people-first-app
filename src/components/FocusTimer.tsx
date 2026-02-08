@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { HyperfocusMode } from './HyperfocusMode';
 import { haptics } from '@/lib/haptics';
 import { announceSuccess } from '@/lib/a11y';
@@ -505,6 +506,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
   };
 
   useBackHandler(showReflection, () => handleSaveReflection(null));
+  useScrollLock(showReflection);
   useBackHandler(showHyperfocus, () => setShowHyperfocus(false));
 
   const progress = isBreak

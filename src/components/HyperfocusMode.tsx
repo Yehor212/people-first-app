@@ -4,6 +4,7 @@ import { logger } from '@/lib/logger';
 import { X, Play, Pause, Volume2, VolumeX, Music, ExternalLink, Sparkles, Loader2, AlertCircle, RotateCcw, Bug, Copy, Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { getAmbientSoundGenerator, SOUNDS, AmbientSoundGenerator, AudioStatus } from '@/lib/ambientSounds';
 import { cn } from '@/lib/utils';
 import {
@@ -321,29 +322,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     }
   };
 
-  // Lock body scroll when component mounts (preserves scroll position)
-  useEffect(() => {
-    const scrollY = window.scrollY;
-    const originalStyles = {
-      overflow: document.body.style.overflow,
-      position: document.body.style.position,
-      width: document.body.style.width,
-      top: document.body.style.top,
-    };
-
-    document.body.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.top = `-${scrollY}px`;
-
-    return () => {
-      document.body.style.overflow = originalStyles.overflow;
-      document.body.style.position = originalStyles.position;
-      document.body.style.width = originalStyles.width;
-      document.body.style.top = originalStyles.top;
-      window.scrollTo(0, scrollY);
-    };
-  }, []);
+  // Lock body scroll when component mounts
+  useScrollLock(true);
 
   // Generate stars for cosmic background
   const cosmicStars = useMemo(() =>

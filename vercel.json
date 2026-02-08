@@ -59,7 +59,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self' capacitor: https:; script-src 'self' 'unsafe-inline' capacitor: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https: capacitor:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.pixabay.com https://*.sentry.io https://*.ingest.sentry.io capacitor:; media-src 'self' https://cdn.pixabay.com blob: data: capacitor:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
+          "value": "default-src 'self' capacitor: https:; script-src 'self' 'unsafe-inline' capacitor: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https: capacitor:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.pixabay.com https://*.sentry.io https://*.ingest.sentry.io https://www.googleapis.com capacitor:; media-src 'self' https://cdn.pixabay.com blob: data: capacitor:; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests"
         }
       ]
     },

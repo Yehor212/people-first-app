@@ -20,6 +20,7 @@ import {
 import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { Goal, GoalType, GoalPeriod, Habit, MoodEntry, FocusSession } from '@/types';
 import { generateId, getToday, cn } from '@/lib/utils';
 import { hapticTap } from '@/lib/haptics';
@@ -686,6 +687,7 @@ export function GoalsPanel({
 }: GoalsPanelProps) {
   const { t } = useLanguage();
   const [showAddSheet, setShowAddSheet] = useState(false);
+  useScrollLock(showAddSheet);
 
   // Calculate progress for all goals
   const goalsWithProgress = useMemo(() => {

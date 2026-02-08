@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 // Sheet replaced with custom bottom-sheet modal
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
@@ -65,6 +66,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   useBackHandler(isOpen, () => setIsOpen(false));
+  useScrollLock(isOpen);
   const [activeTab, setActiveTab] = useState<LeaderboardType>('weekly');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [userEntry, setUserEntry] = useState<LeaderboardEntry | null>(null);

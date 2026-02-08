@@ -368,10 +368,39 @@ function getColorForId(colorId: string): string {
 }
 
 /**
+ * Per-date in-memory cache for calendar events.
+ * Avoids hitting the API on every date switch in ScheduleTimeline.
+ */
+const dateCache = new Map<string, { events: CalendarEvent[]; fetchedAt: number }>();
+
+/**
+ * Fetch calendar events with per-date caching (15-minute TTL).
+ * Use this instead of fetchCalendarEvents for repeated calls.
+ */
+export async function fetchCalendarEventsWithCache(
+  date: Date
+): Promise<CalendarEvent[]> {
+  if (!isCalendarEnabled()) return [];
+
+  const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  const cached = dateCache.get(key);
+
+  if (cached && (Date.now() - cached.fetchedAt) < CACHE_DURATION_MS) {
+    logger.log('[Calendar] Using per-date cache for', key);
+    return cached.events;
+  }
+
+  const events = await fetchCalendarEvents(date);
+  dateCache.set(key, { events, fetchedAt: Date.now() });
+  return events;
+}
+
+/**
  * Clear calendar cache
  */
 export function clearCalendarCache(): void {
   localStorage.removeItem(STORAGE_KEY);
+  dateCache.clear();
   logger.log('[Calendar] Cache cleared');
 }
 
@@ -380,6 +409,7 @@ export default {
   setCalendarEnabled,
   isCalendarConnected,
   fetchCalendarEvents,
+  fetchCalendarEventsWithCache,
   syncCalendarEvents,
   getTodaysEvents,
   getEventsInRange,

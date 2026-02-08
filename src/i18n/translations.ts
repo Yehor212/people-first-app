@@ -681,6 +681,11 @@ export interface Translations {
   weeklyDigestDescription: string;
   weeklyDigestEnabled: string;
 
+  // Google Calendar
+  googleCalendar: string;
+  googleCalendarDescription: string;
+  googleCalendarEnabled: string;
+
   // Changelog (v1.3.0)
   changelogTitle: string;
   changelogExpandAll: string;
@@ -2451,6 +2456,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     weeklyDigestTitle: 'Еженедельный отчёт',
     weeklyDigestDescription: 'Получайте сводку привычек, фокуса и настроения каждое воскресенье.',
     weeklyDigestEnabled: 'Отчёты приходят на вашу почту',
+
+    // Google Calendar
+    googleCalendar: 'Google Календарь',
+    googleCalendarDescription: 'Показывать события Google Календаря на временной шкале',
+    googleCalendarEnabled: 'События календаря отображаются',
 
     // Changelog
     changelogTitle: 'История обновлений',
@@ -4302,6 +4312,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     weeklyDigestDescription: 'Receive a weekly summary of your habits, focus time, and mood trends every Sunday.',
     weeklyDigestEnabled: 'You\'ll receive reports at your email',
 
+    // Google Calendar
+    googleCalendar: 'Google Calendar',
+    googleCalendarDescription: 'Show your Google Calendar events in the timeline',
+    googleCalendarEnabled: 'Calendar events visible in timeline',
+
     // Changelog
     changelogTitle: 'Version History',
     changelogExpandAll: 'Expand All',
@@ -6151,6 +6166,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     weeklyDigestTitle: 'Щотижневий звіт',
     weeklyDigestDescription: 'Отримуйте підсумок звичок, фокусу та настрою щонеділі.',
     weeklyDigestEnabled: 'Звіти надходять на вашу пошту',
+
+    // Google Calendar
+    googleCalendar: 'Google Календар',
+    googleCalendarDescription: 'Показувати події Google Календаря на часовій шкалі',
+    googleCalendarEnabled: 'Події календаря відображаються',
 
     // Changelog
     changelogTitle: 'Історія оновлень',
@@ -8003,6 +8023,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     weeklyDigestDescription: 'Recibe un resumen semanal de tus hábitos, tiempo de enfoque y tendencias de ánimo cada domingo.',
     weeklyDigestEnabled: 'Recibirás informes en tu correo',
 
+    // Google Calendar
+    googleCalendar: 'Google Calendar',
+    googleCalendarDescription: 'Mostrar eventos de Google Calendar en la línea de tiempo',
+    googleCalendarEnabled: 'Eventos del calendario visibles',
+
     // Changelog
     changelogTitle: 'Historial de versiones',
     changelogExpandAll: 'Expandir todo',
@@ -9853,6 +9878,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     weeklyDigestTitle: 'Wöchentlicher Fortschrittsbericht',
     weeklyDigestDescription: 'Erhalte jeden Sonntag eine Zusammenfassung deiner Gewohnheiten, Fokuszeit und Stimmungstrends.',
     weeklyDigestEnabled: 'Du erhältst Berichte per E-Mail',
+
+    // Google Calendar
+    googleCalendar: 'Google Kalender',
+    googleCalendarDescription: 'Google Kalender-Ereignisse in der Zeitleiste anzeigen',
+    googleCalendarEnabled: 'Kalenderereignisse sichtbar',
 
     // Changelog
     changelogTitle: 'Versionshistorie',
@@ -11705,6 +11735,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     weeklyDigestDescription: 'Recevez un résumé hebdomadaire de vos habitudes, temps de concentration et tendances d\'humeur chaque dimanche.',
     weeklyDigestEnabled: 'Vous recevrez les rapports par email',
 
+    // Google Calendar
+    googleCalendar: 'Google Agenda',
+    googleCalendarDescription: 'Afficher les événements Google Agenda dans la chronologie',
+    googleCalendarEnabled: 'Événements du calendrier visibles',
+
     // Changelog
     changelogTitle: 'Historique des versions',
     changelogExpandAll: 'Tout développer',
@@ -13554,6 +13589,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     weeklyDigestTitle: 'ウィークリー進捗レポート',
     weeklyDigestDescription: '毎週日曜日に習慣、集中時間、気分の傾向のサマリーを受け取ります。',
     weeklyDigestEnabled: 'レポートがメールに届きます',
+
+    // Google Calendar
+    googleCalendar: 'Googleカレンダー',
+    googleCalendarDescription: 'Googleカレンダーのイベントをタイムラインに表示',
+    googleCalendarEnabled: 'カレンダーイベント表示中',
 
     // Changelog
     changelogTitle: 'バージョン履歴',
@@ -15422,6 +15462,11 @@ const arabicOverrides: Partial<Translations> = {
   weeklyDigestDescription: 'احصل على تقرير تقدمك كل أسبوع',
   weeklyDigestEnabled: 'الملخص الأسبوعي مفعل',
 
+  // Google Calendar
+  googleCalendar: 'تقويم جوجل',
+  googleCalendarDescription: 'عرض أحداث تقويم جوجل في الجدول الزمني',
+  googleCalendarEnabled: 'أحداث التقويم مرئية',
+
   // Changelog
   changelogTitle: 'سجل التغييرات',
   changelogExpandAll: 'توسيع الكل',
@@ -17202,6 +17247,11 @@ const hebrewOverrides: Partial<Translations> = {
   weeklyDigestTitle: 'סיכום שבועי',
   weeklyDigestDescription: 'קבל דוח התקדמות כל שבוע',
   weeklyDigestEnabled: 'סיכום שבועי פעיל',
+
+  // Google Calendar
+  googleCalendar: 'יומן גוגל',
+  googleCalendarDescription: 'הצג אירועי יומן גוגל בציר הזמן',
+  googleCalendarEnabled: 'אירועי היומן מוצגים',
 
   // Changelog
   changelogTitle: 'יומן שינויים',

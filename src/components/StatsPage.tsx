@@ -22,6 +22,7 @@ import { WeeklyInsightsCard } from '@/components/WeeklyInsightsCard';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
 import { hapticTap } from '@/lib/haptics';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
 import { getEmotionScore, getEmotionLabels, EMOTION_ORDER, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
 import { getLocale } from '@/lib/timeUtils';
@@ -70,6 +71,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
 
   useBackHandler(showShareDialog, () => setShowShareDialog(false));
   useBackHandler(showStoryViewer, () => setShowStoryViewer(false));
+  useScrollLock(showShareDialog || showStoryViewer || selectedRing !== null || showMonthSelector);
   const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
   const [selectedRing, setSelectedRing] = useState<RingType | null>(null);
   const [showMonthSelector, setShowMonthSelector] = useState(false);

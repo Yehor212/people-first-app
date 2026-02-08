@@ -19,6 +19,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { logger } from '@/lib/logger';
 import { useDopamineSettings } from './DopamineSettings';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 // Lazy load html2canvas
 const getHtml2Canvas = async () => {
@@ -45,6 +46,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
   const [showShareDialog, setShowShareDialog] = useState(false);
 
   useBackHandler(showShareDialog, () => setShowShareDialog(false));
+  useScrollLock(showShareDialog);
   const [isSharing, setIsSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
   const shareCardRef = useRef<HTMLDivElement>(null);

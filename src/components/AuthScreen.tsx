@@ -265,6 +265,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
       };
 
       if (provider === 'google') {
+        options.scopes = 'https://www.googleapis.com/auth/calendar.readonly';
         options.queryParams = {
           access_type: 'offline',
           prompt: 'consent',

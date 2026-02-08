@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Lottie from 'lottie-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import {
   BREATHING_PATTERNS,
   BreathingPattern,
@@ -58,6 +59,7 @@ interface BreathingExerciseProps {
 export function BreathingExercise({ onComplete, compact = true }: BreathingExerciseProps) {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+  useScrollLock(isOpen);
   const [selectedPattern, setSelectedPattern] = useState<BreathingPattern>(BREATHING_PATTERNS[0]);
   const [isActive, setIsActive] = useState(false);
   const [isPaused, setIsPaused] = useState(false);

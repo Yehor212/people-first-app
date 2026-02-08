@@ -6,6 +6,7 @@ import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeatureToggleItem } from '@/components/FeatureToggleItem';
 import { isFeatureUnlocked } from '@/lib/onboardingFlow';
@@ -21,7 +22,7 @@ import { SmartRemindersCard } from '@/components/SmartRemindersCard';
 import { HealthConnectCard } from '@/components/HealthConnectCard';
 import { exportBackup, importBackup, ImportMode } from '@/storage/backup';
 import { exportAllToCSV, exportProgressReportPDF } from '@/lib/exportService';
-import { FileText, FileSpreadsheet, Zap, Volume2, Loader2 } from 'lucide-react';
+import { FileText, FileSpreadsheet, Zap, Volume2, Loader2, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { syncWithCloud } from '@/storage/cloudSync';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
@@ -30,6 +31,7 @@ import { sendTestNotification, checkNotificationStatus } from '@/lib/localNotifi
 import { isCloudSyncEnabled, setCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { removePushToken } from '@/lib/pushNotifications';
 import { offlineQueue } from '@/lib/offlineQueue';
+import { isCalendarEnabled, setCalendarEnabled, isCalendarConnected, clearCalendarCache } from '@/lib/googleCalendar';
 import { APP_VERSION } from '@/lib/appVersion';
 import { useQuickActions } from '@/hooks/useQuickActions';
 import {
@@ -114,6 +116,8 @@ export function SettingsPanel({
   const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(false);
   const [weeklyDigestLoading, setWeeklyDigestLoading] = useState(false);
   const weeklyDigestTouchedRef = useRef(false);
+  const [calendarEnabled, setCalendarEnabledState] = useState(isCalendarEnabled());
+  const [calendarConnected, setCalendarConnected] = useState(false);
   // P1 Fix: Debounce for cloud sync toggle to prevent race conditions
   const cloudSyncDebounceRef = useRef(false);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
@@ -125,6 +129,7 @@ export function SettingsPanel({
   useBackHandler(showResetConfirm, () => setShowResetConfirm(false));
   useBackHandler(showDeleteConfirm, () => setShowDeleteConfirm(false));
   useBackHandler(showDopamineSettings, () => setShowDopamineSettings(false));
+  useScrollLock(showResetConfirm || showDeleteConfirm || showDopamineSettings || showWhatsNew);
 
   // Quick Actions for lock screen (Android only)
   const { isEnabled: quickActionsEnabled, isAndroid, toggle: toggleQuickActions } = useQuickActions();
@@ -199,6 +204,12 @@ export function SettingsPanel({
       subscription?.subscription?.unsubscribe?.();
     };
   }, []);
+
+  // Check Google Calendar connection when session is available
+  useEffect(() => {
+    if (!sessionEmail) return;
+    isCalendarConnected().then(setCalendarConnected);
+  }, [sessionEmail]);
 
   // Load weekly digest setting when logged in
   useEffect(() => {
@@ -310,6 +321,7 @@ export function SettingsPanel({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
+          scopes: 'https://www.googleapis.com/auth/calendar.readonly',
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
@@ -1197,6 +1209,42 @@ export function SettingsPanel({
                 </div>
               )}
             </div>
+
+            {/* Google Calendar Toggle */}
+            {calendarConnected && (
+              <div className="p-4 bg-secondary/30 rounded-xl border border-border">
+                <div className="flex items-center justify-between gap-4 mb-2">
+                  <div className="flex items-center gap-2">
+                    <Calendar className={cn(
+                      "w-5 h-5 shrink-0",
+                      calendarEnabled ? "text-blue-500" : "text-muted-foreground"
+                    )} />
+                    <span className="font-medium text-foreground">
+                      {t.googleCalendar || 'Google Calendar'}
+                    </span>
+                  </div>
+                  <Switch
+                    checked={calendarEnabled}
+                    onCheckedChange={(checked) => {
+                      setCalendarEnabled(checked);
+                      setCalendarEnabledState(checked);
+                      if (!checked) clearCalendarCache();
+                    }}
+                    aria-label={t.googleCalendar || 'Google Calendar'}
+                    className="shrink-0"
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {t.googleCalendarDescription || 'Show your Google Calendar events in the timeline'}
+                </p>
+                {calendarEnabled && (
+                  <div className="mt-2 flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                    <CheckCircle className="w-3 h-3" />
+                    <span>{t.googleCalendarEnabled || 'Calendar events visible in timeline'}</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             <button
               onClick={handleSync}

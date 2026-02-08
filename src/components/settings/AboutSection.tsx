@@ -10,12 +10,14 @@ import { APP_VERSION } from '@/lib/appVersion';
 import { FeedbackForm } from '@/components/FeedbackForm';
 import { ChangelogPanel } from '@/components/ChangelogPanel';
 import { useDemoMode } from '@/hooks/useDemoMode';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 export function AboutSection() {
   const { t } = useLanguage();
 
   const [showFeedback, setShowFeedback] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
+  useScrollLock(showFeedback || showChangelog);
   const [updateCheckStatus, setUpdateCheckStatus] = useState<'idle' | 'checking' | 'available' | 'latest' | 'error'>('idle');
   const [updateState, setUpdateState] = useState<UpdateState | null>(null);
 

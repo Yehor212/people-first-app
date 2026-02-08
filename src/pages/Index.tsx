@@ -109,6 +109,7 @@ import { haptics } from '@/lib/haptics';
 import { preloadShareCardAssets } from '@/lib/shareCards';
 import { initializePushNotifications } from '@/lib/pushNotifications';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
+import { useScrollLock } from '@/hooks/useScrollLock';
 // import { AICoachChat } from '@/components/AICoachChat'; // Hidden until AI ready
 // import { useAICoach } from '@/contexts/AICoachContext'; // Hidden until AI ready
 import { OnboardingOverlay, DayProgressIndicator } from '@/components/OnboardingOverlay';
@@ -343,6 +344,12 @@ export function Index() {
 
   // MindfulMoment - shows after focus session completion
   const [showMindfulMoment, setShowMindfulMoment] = useState(false);
+
+  // Lock background scroll when any modal/panel is open
+  const anyModalOpen = showWeeklyReport || showWidgetSettings || showChallenges
+    || showChallengeModal || showTimeHelper || showTasksPanel || showQuestsPanel
+    || showFriendsPanel || showWelcomeOverlay || showWelcomeBack || showMindfulMoment;
+  useScrollLock(anyModalOpen);
 
   // Journal prompt text - from DailyPromptCard to GratitudeJournal
   const [journalPromptText, setJournalPromptText] = useState<string | undefined>(undefined);
@@ -596,8 +603,8 @@ export function Index() {
   const handleDeleteScheduleEvent = (id: string) => {
     // v1.4.0: Only allow deleting manual events (habit events are managed through habits)
     const eventToDelete = allScheduleEvents.find(e => e.id === id);
-    if (eventToDelete?.source === 'habit') {
-      logger.warn('[Schedule] Cannot delete habit-generated event directly');
+    if (eventToDelete?.source === 'habit' || eventToDelete?.source === 'google') {
+      logger.warn('[Schedule] Cannot delete habit/google-generated event directly');
       return;
     }
     setScheduleEvents(scheduleEvents.filter(e => e.id !== id));
