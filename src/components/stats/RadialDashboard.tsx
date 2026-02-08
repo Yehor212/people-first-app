@@ -1,12 +1,13 @@
 /**
- * RadialDashboard - Concentric progress rings
+ * RadialDashboard - Concentric progress rings with swipe-to-switch
  * Part of Phase 10 Premium Stats Redesign
  *
  * Three animated rings showing Mood (outer), Habits (middle), Focus (inner)
+ * Swipe or tap rings to switch. Tap center to open detail view.
  */
 
-import { useMemo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Heart, Target, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -33,7 +34,7 @@ interface RadialDashboardProps {
   focusPercent: number;
   /** Optional class name */
   className?: string;
-  /** Callback when a ring is clicked (for opening detail sheet) */
+  /** Callback when center is tapped (for opening detail sheet) */
   onRingClick?: (ringId: RingId) => void;
 }
 
@@ -44,6 +45,8 @@ const RING_CONFIG = {
   inner: { radius: 45, strokeWidth: 12 },
 };
 
+const RING_ORDER: RingId[] = ['mood', 'habits', 'focus'];
+
 export function RadialDashboard({
   moodPercent,
   habitsPercent,
@@ -52,7 +55,12 @@ export function RadialDashboard({
   onRingClick,
 }: RadialDashboardProps) {
   const { t } = useLanguage();
-  const [activeRing, setActiveRing] = useState<string | null>(null);
+  const [activeRing, setActiveRing] = useState<RingId>('habits');
+
+  // Swipe tracking
+  const touchStartX = useRef(0);
+  const touchStartY = useRef(0);
+  const isSwiping = useRef(false);
 
   const rings: RingData[] = useMemo(() => [
     {
@@ -84,6 +92,11 @@ export function RadialDashboard({
     },
   ], [t, moodPercent, habitsPercent, focusPercent]);
 
+  const activeRingData = useMemo(
+    () => rings.find(r => r.id === activeRing) || rings[1],
+    [rings, activeRing]
+  );
+
   // Calculate circumference and offsets
   const getCircleProps = (radius: number, percent: number) => {
     const circumference = 2 * Math.PI * radius;
@@ -97,14 +110,65 @@ export function RadialDashboard({
     { ...RING_CONFIG.inner, ring: rings[2], delay: 0.4 },
   ];
 
+  // Cycle to next/previous ring
+  const cycleRing = useCallback((direction: 'next' | 'prev') => {
+    setActiveRing(current => {
+      const idx = RING_ORDER.indexOf(current);
+      if (direction === 'next') {
+        return RING_ORDER[(idx + 1) % RING_ORDER.length];
+      } else {
+        return RING_ORDER[(idx - 1 + RING_ORDER.length) % RING_ORDER.length];
+      }
+    });
+  }, []);
+
+  // Touch handlers for swipe
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    isSwiping.current = false;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+
+    // Only trigger swipe if horizontal movement is dominant and exceeds threshold
+    if (Math.abs(deltaX) > 40 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      isSwiping.current = true;
+      if (deltaX < 0) {
+        cycleRing('next'); // Swipe left → next
+      } else {
+        cycleRing('prev'); // Swipe right → previous
+      }
+    }
+  }, [cycleRing]);
+
+  // Handle center tap (open detail sheet)
+  const handleCenterTap = useCallback(() => {
+    if (!isSwiping.current) {
+      onRingClick?.(activeRing);
+    }
+  }, [activeRing, onRingClick]);
+
+  // Handle ring tap (select ring, don't open sheet)
+  const handleRingTap = useCallback((ringId: RingId) => {
+    if (!isSwiping.current) {
+      setActiveRing(ringId);
+    }
+  }, []);
+
   return (
     <div
       className={cn(
         'relative rounded-2xl p-4',
         'bg-card border border-border/50',
         'zen-shadow-md',
+        'touch-pan-y', // Allow vertical scroll, capture horizontal
         className
       )}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       {/* SVG Rings */}
       <div className="flex justify-center">
@@ -116,15 +180,13 @@ export function RadialDashboard({
             {/* Render rings */}
             {ringConfigs.map(({ radius, strokeWidth, ring, delay }) => {
               const { circumference, strokeDashoffset } = getCircleProps(radius, ring.value);
+              const isActive = activeRing === ring.id;
 
               return (
                 <g
                   key={ring.id}
                   className="cursor-pointer"
-                  onClick={() => {
-                    setActiveRing(ring.id);
-                    onRingClick?.(ring.id as RingId);
-                  }}
+                  onClick={() => handleRingTap(ring.id as RingId)}
                 >
                   {/* Invisible hit area for easier tapping */}
                   <circle
@@ -132,7 +194,7 @@ export function RadialDashboard({
                     cy="100"
                     r={radius}
                     fill="none"
-                    strokeWidth={strokeWidth + 12}
+                    strokeWidth={strokeWidth + 14}
                     stroke="transparent"
                   />
                   {/* Track */}
@@ -142,7 +204,10 @@ export function RadialDashboard({
                     r={radius}
                     fill="none"
                     strokeWidth={strokeWidth}
-                    className="stroke-muted/20"
+                    className={cn(
+                      'transition-opacity duration-300',
+                      isActive ? 'stroke-muted/30' : 'stroke-muted/15'
+                    )}
                   />
 
                   {/* Progress arc */}
@@ -151,98 +216,77 @@ export function RadialDashboard({
                     cy="100"
                     r={radius}
                     fill="none"
-                    strokeWidth={strokeWidth}
+                    strokeWidth={isActive ? strokeWidth + 2 : strokeWidth}
                     strokeLinecap="round"
                     stroke={ring.color}
                     strokeDasharray={circumference}
                     initial={{ strokeDashoffset: circumference }}
-                    animate={{ strokeDashoffset }}
-                    transition={{
-                      duration: 1,
-                      delay,
-                      ease: 'easeOut'
+                    animate={{
+                      strokeDashoffset,
+                      opacity: isActive ? 1 : 0.5,
                     }}
-                    className={cn(
-                      'transition-all duration-300',
-                      activeRing === ring.id && 'radial-ring-glow'
-                    )}
+                    transition={{
+                      strokeDashoffset: { duration: 1, delay, ease: 'easeOut' },
+                      opacity: { duration: 0.3 },
+                    }}
                     style={{
-                      filter: activeRing === ring.id
-                        ? `drop-shadow(0 0 10px ${ring.color})`
+                      filter: isActive
+                        ? `drop-shadow(0 0 12px ${ring.color})`
                         : undefined
                     }}
-                    onMouseEnter={() => setActiveRing(ring.id)}
-                    onMouseLeave={() => setActiveRing(null)}
                   />
                 </g>
               );
             })}
           </svg>
 
-          {/* Center content */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            {activeRing ? (
+          {/* Center content — tap to open detail */}
+          <div
+            className="absolute inset-0 flex flex-col items-center justify-center cursor-pointer"
+            onClick={handleCenterTap}
+          >
+            <AnimatePresence mode="wait">
               <motion.div
+                key={activeRing}
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ duration: 0.2 }}
                 className="text-center"
               >
                 <div className="flex justify-center mb-1">
                   <EmojiOrIcon
-                    emoji={rings.find(r => r.id === activeRing)?.emoji || ''}
-                    iconName={rings.find(r => r.id === activeRing)?.iconName}
+                    emoji={activeRingData.emoji}
+                    iconName={activeRingData.iconName}
                     size="lg"
                   />
                 </div>
                 <p className="text-2xl font-bold text-foreground">
-                  {Math.round(rings.find(r => r.id === activeRing)?.value || 0)}%
+                  {Math.round(activeRingData.value)}%
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {rings.find(r => r.id === activeRing)?.label}
+                  {activeRingData.label}
                 </p>
               </motion.div>
-            ) : (
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="text-center"
-              >
-                <p className="text-xs text-muted-foreground">
-                  {t.tapToSee || 'Tap a ring'}
-                </p>
-              </motion.div>
-            )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
 
-      {/* Legend */}
-      <div className="flex justify-center gap-4 mt-4">
+      {/* Dot indicators */}
+      <div className="flex justify-center gap-2 mt-3">
         {rings.map((ring) => (
-          <button
+          <motion.div
             key={ring.id}
-            onClick={() => {
-              setActiveRing(activeRing === ring.id ? null : ring.id);
-              if (onRingClick) {
-                onRingClick(ring.id as RingId);
-              }
-            }}
             className={cn(
-              'flex items-center gap-1.5 px-2 py-1 rounded-lg',
-              'text-xs font-medium transition-all',
-              activeRing === ring.id
-                ? 'bg-muted scale-105'
-                : 'hover:bg-muted/50'
+              'h-2 rounded-full transition-all duration-300 cursor-pointer',
+              activeRing === ring.id ? 'w-5' : 'w-2 bg-muted/40'
             )}
-            aria-pressed={activeRing === ring.id}
-          >
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ backgroundColor: ring.color }}
-            />
-            <span className="text-muted-foreground">{ring.label}</span>
-            <span className="font-bold text-foreground">{Math.round(ring.value)}%</span>
-          </button>
+            style={activeRing === ring.id ? { backgroundColor: ring.color } : undefined}
+            onClick={() => setActiveRing(ring.id as RingId)}
+            animate={activeRing === ring.id ? { scale: [1, 1.1, 1] } : {}}
+            transition={{ duration: 0.3 }}
+          />
         ))}
       </div>
     </div>

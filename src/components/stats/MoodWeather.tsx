@@ -277,12 +277,14 @@ export function MoodWeather({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
+      onClick={() => (weatherHistory?.length || moodFactors?.length) && setIsExpanded(!isExpanded)}
       className={cn(
         'relative overflow-hidden rounded-2xl p-4',
         'bg-gradient-to-br',
         weatherInfo.gradient,
         'border border-border/30',
         'backdrop-blur-sm',
+        (weatherHistory?.length || moodFactors?.length) && 'cursor-pointer',
         className
       )}
     >
@@ -306,17 +308,13 @@ export function MoodWeather({
         {message || defaultMessage}
       </p>
 
-      {/* Expand button - only show if history or factors available */}
+      {/* Expandable content */}
       {(weatherHistory?.length || moodFactors?.length) && (
         <>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="mt-2 flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full py-1"
-            aria-expanded={isExpanded}
-          >
-            <span>{isExpanded ? (t.showLess || 'Less') : (t.weatherForecast || 'Forecast')}</span>
+          {/* Expand indicator */}
+          <div className="flex items-center justify-center mt-2 text-muted-foreground">
             {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-          </button>
+          </div>
 
           <AnimatePresence>
             {isExpanded && (

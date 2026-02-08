@@ -97,11 +97,13 @@ export function WeekCrystal({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
+      onClick={() => dailyScores && dailyScores.length > 0 && setIsExpanded(!isExpanded)}
       className={cn(
         'relative flex flex-col items-center p-4',
         'rounded-2xl',
         'bg-gradient-to-b from-card to-card/80',
         'border border-border/50',
+        dailyScores && dailyScores.length > 0 && 'cursor-pointer',
         className
       )}
     >
@@ -250,17 +252,13 @@ export function WeekCrystal({
         </div>
       </div>
 
-      {/* Expand button - only show if dailyScores available */}
+      {/* Expandable content */}
       {dailyScores && dailyScores.length > 0 && (
         <>
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="mt-3 flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors w-full py-1"
-            aria-expanded={isExpanded}
-          >
-            <span>{isExpanded ? (t.showLess || 'Less') : (t.weekCrystalExpand || 'Details')}</span>
+          {/* Expand indicator */}
+          <div className="flex items-center justify-center mt-3 text-muted-foreground">
             {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-          </button>
+          </div>
 
           <AnimatePresence>
             {isExpanded && (

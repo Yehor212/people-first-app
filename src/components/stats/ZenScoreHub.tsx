@@ -7,7 +7,7 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp } from 'lucide-react';
+import { Sparkles, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ParticleBackground } from './ParticleBackground';
@@ -75,11 +75,6 @@ function MiniSparkline({ data, color }: { data: number[]; color: string }) {
   const pathD = points
     .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
     .join(' ');
-
-  // Determine trend
-  const lastValue = data[data.length - 1];
-  const prevValue = data[data.length - 2] || lastValue;
-  const trend = lastValue > prevValue ? 'up' : lastValue < prevValue ? 'down' : 'flat';
 
   return (
     <svg width={width} height={height} className="opacity-60 hover:opacity-100 transition-opacity">
@@ -232,8 +227,8 @@ export function ZenScoreHub({
         }}
       />
 
-      {/* Main content */}
-      <div className="relative p-6">
+      {/* Main content — entire card is tappable */}
+      <div className="relative p-6 cursor-pointer" onClick={() => setIsExpanded(!isExpanded)}>
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -318,24 +313,14 @@ export function ZenScoreHub({
           </div>
         </div>
 
-        {/* Expand button */}
-        <button
-          onClick={() => setIsExpanded(!isExpanded)}
-          className={cn(
-            'w-full flex items-center justify-center gap-2 py-2',
-            'text-sm text-muted-foreground hover:text-foreground',
-            'transition-colors'
-          )}
-          aria-expanded={isExpanded}
-          aria-label={isExpanded ? (t.showLess || 'Show less') : (t.zenScoreTapToExpand || 'Tap to see breakdown')}
-        >
-          <span>{isExpanded ? (t.showLess || 'Show less') : (t.seeBreakdown || 'See breakdown')}</span>
+        {/* Expand indicator */}
+        <div className="flex items-center justify-center py-2 text-muted-foreground">
           {isExpanded ? (
             <ChevronUp className="w-4 h-4" />
           ) : (
             <ChevronDown className="w-4 h-4" />
           )}
-        </button>
+        </div>
 
         {/* Breakdown section */}
         <AnimatePresence>
