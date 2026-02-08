@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import DOMPurify from 'dompurify';
 
 /**
  * Generate a cryptographically secure random string.
@@ -85,29 +84,8 @@ export const emailSchema = z
   .optional()
   .or(z.literal('')); // Allow empty string
 
-// Sanitization functions using DOMPurify for robust XSS protection
-export const sanitizeString = (input: string): string => {
-  // First pass: DOMPurify strips all HTML
-  let sanitized = DOMPurify.sanitize(input, {
-    ALLOWED_TAGS: [],
-    ALLOWED_ATTR: [],
-  });
-
-  // Second pass: Remove any remaining dangerous patterns
-  for (const pattern of DANGEROUS_PATTERNS) {
-    sanitized = sanitized.replace(pattern, '');
-  }
-
-  // Remove angle brackets and curly braces
-  return sanitized
-    .replace(/[<>{}\\]/g, '')
-    .trim()
-    .slice(0, 1000);
-};
-
-export const sanitizeUserName = (name: string): string => {
-  return sanitizeString(name).slice(0, 100);
-};
+// sanitizeString and sanitizeUserName moved to @/lib/sanitize.ts
+// to isolate DOMPurify (CJS) from this module's pure validation functions
 
 /**
  * Safely parse a string to integer with bounds checking.

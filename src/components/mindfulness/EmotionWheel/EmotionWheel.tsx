@@ -8,7 +8,8 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { MoodEntry, PrimaryEmotion, EmotionIntensity, MoodType } from '@/types';
 import { generateId, getToday, cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { moodNoteSchema, sanitizeString } from '@/lib/validation';
+import { moodNoteSchema } from '@/lib/validation';
+import { sanitizeString } from '@/lib/sanitize';
 import { logger } from '@/lib/logger';
 import {
   EMOTION_ORDER,

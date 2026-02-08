@@ -7,7 +7,8 @@ import { logger } from '@/lib/logger';
 import { Switch } from '@/components/ui/switch';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { supabase } from '@/lib/supabaseClient';
-import { sanitizeUserName, userNameSchema } from '@/lib/validation';
+import { userNameSchema } from '@/lib/validation';
+import { sanitizeUserName } from '@/lib/sanitize';
 import { useTheme, ThemeOption } from '@/components/ThemeToggle';
 
 interface ProfileSectionProps {

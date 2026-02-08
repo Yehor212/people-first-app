@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { safeJsonParse } from '@/lib/safeJson';
 import { playSuccess, playStreakMilestone } from '@/lib/audioManager';
-import { taskNameSchema, sanitizeString, safeParseInt } from '@/lib/validation';
+import { taskNameSchema, safeParseInt } from '@/lib/validation';
+import { sanitizeString } from '@/lib/sanitize';
 import {
   Task,
   PrioritizedTask,
