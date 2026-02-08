@@ -76,10 +76,12 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
 
   useBackHandler(showShareDialog, () => setShowShareDialog(false));
   useBackHandler(showStoryViewer, () => setShowStoryViewer(false));
-  useScrollLock(showShareDialog || showStoryViewer || selectedRing !== null || showMonthSelector);
+
   const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
   const [selectedRing, setSelectedRing] = useState<RingType | null>(null);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
+
+  useScrollLock(showShareDialog || showStoryViewer || selectedRing !== null || showMonthSelector);
   const monthNames = [
     t.january, t.february, t.march, t.april, t.may, t.june,
     t.july, t.august, t.september, t.october, t.november, t.december

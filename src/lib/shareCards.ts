@@ -5,7 +5,16 @@
  * Uses html2canvas to convert styled DOM elements to images
  */
 
-import DOMPurify from 'dompurify';
+// Lazy-load DOMPurify (CJS) to avoid TDZ issues in shared chunks
+let _DOMPurify: typeof import('dompurify').default | null = null;
+
+async function getDOMPurify() {
+  if (!_DOMPurify) {
+    const mod = await import('dompurify');
+    _DOMPurify = mod.default;
+  }
+  return _DOMPurify;
+}
 
 // Lazy load html2canvas (~480KB) only when needed
 let html2canvasModule: typeof import('html2canvas').default | null = null;
@@ -24,8 +33,8 @@ async function getHtml2Canvas() {
  */
 export async function preloadShareCardAssets(): Promise<void> {
   try {
-    await getHtml2Canvas();
-    logger.log('[ShareCards] html2canvas preloaded successfully');
+    await Promise.all([getHtml2Canvas(), getDOMPurify()]);
+    logger.log('[ShareCards] html2canvas + DOMPurify preloaded successfully');
   } catch (error) {
     logger.warn('[ShareCards] Failed to preload html2canvas:', error);
     // Will retry when actually needed
@@ -120,7 +129,8 @@ export async function cleanupShareCache(): Promise<void> {
  */
 function sanitizeText(text: string | undefined | null): string {
   if (!text) return '';
-  return DOMPurify.sanitize(text, { ALLOWED_TAGS: [] }); // Strip all HTML
+  if (!_DOMPurify) return text;
+  return _DOMPurify.sanitize(text, { ALLOWED_TAGS: [] }); // Strip all HTML
 }
 
 /**
@@ -628,6 +638,7 @@ function formatMinutes(minutes: number): string {
  * Generate a share card image as a Blob
  */
 export async function generateShareCard(data: ShareCardData): Promise<Blob> {
+  await getDOMPurify();
   const cardElement = createCardElement(data);
 
   // Temporarily add to DOM (required for html2canvas)
@@ -669,6 +680,7 @@ export async function generateStreakCard(
   habitName?: string,
   username?: string
 ): Promise<Blob> {
+  await getDOMPurify();
   const cardElement = createStreakCard(streak, habitName, username);
 
   cardElement.style.position = 'fixed';
@@ -709,6 +721,7 @@ export async function generateWeeklyCard(
   username?: string,
   lang: string = 'en'
 ): Promise<Blob> {
+  await getDOMPurify();
   const cardElement = createWeeklyCard(data, username, lang);
 
   cardElement.style.position = 'fixed';
