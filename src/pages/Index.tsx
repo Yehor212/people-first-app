@@ -156,6 +156,11 @@ export function Index() {
   useSessionTimeout(!!supabase);
 
   const [activeTab, setActiveTab] = useState<TabType>('home');
+  const [settingsOpenSection, setSettingsOpenSection] = useState<string | undefined>();
+  // Clear settings section override when leaving settings tab
+  useEffect(() => {
+    if (activeTab !== 'settings') setSettingsOpenSection(undefined);
+  }, [activeTab]);
   // const [showAIOnboarding, setShowAIOnboarding] = useState(false); // Hidden until AI ready
   const lastSyncedUserIdRef = useRef<string | null>(null);
 
@@ -2133,7 +2138,7 @@ export function Index() {
 
             {/* Session expired banner - shows when user was authenticated but session is lost */}
             {hasValidSession === false && googleAuthChecked && userName !== 'Friend' && (
-              <SessionExpiredBanner onSignIn={() => setActiveTab('settings')} />
+              <SessionExpiredBanner onSignIn={() => { setSettingsOpenSection('account'); setActiveTab('settings'); }} />
             )}
 
             <div className="space-y-3">
@@ -2484,6 +2489,7 @@ export function Index() {
                   privacy={privacy}
                   onPrivacyChange={setPrivacy}
                   onOpenWidgetSettings={() => setShowWidgetSettings(true)}
+                  initialOpenSection={settingsOpenSection}
                 />
               </Suspense>
             </LazyErrorBoundary>

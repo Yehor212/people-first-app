@@ -53,6 +53,7 @@ interface SettingsPanelProps {
   privacy: PrivacySettings;
   onPrivacyChange: (value: PrivacySettings | ((prev: PrivacySettings) => PrivacySettings)) => void;
   onOpenWidgetSettings?: () => void;
+  initialOpenSection?: string;
 }
 
 export function SettingsPanel({
@@ -67,7 +68,8 @@ export function SettingsPanel({
   gratitudeEntries = [],
   privacy,
   onPrivacyChange,
-  onOpenWidgetSettings
+  onOpenWidgetSettings,
+  initialOpenSection
 }: SettingsPanelProps) {
   const { t } = useLanguage();
   const { setFlag, isFeatureEnabled } = useFeatureFlags();
@@ -85,6 +87,22 @@ export function SettingsPanel({
   const [isExportingCSV, setIsExportingCSV] = useState(false);
   const [isExportingPDF, setIsExportingPDF] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const accountSectionRef = useRef<HTMLDivElement | null>(null);
+  const [openSections, setOpenSections] = useState<string[]>(
+    initialOpenSection ? [initialOpenSection] : ['profile']
+  );
+
+  // Auto-open and scroll to section when initialOpenSection changes
+  useEffect(() => {
+    if (initialOpenSection && !openSections.includes(initialOpenSection)) {
+      setOpenSections(prev => [...prev, initialOpenSection]);
+    }
+    if (initialOpenSection === 'account') {
+      setTimeout(() => {
+        accountSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 150);
+    }
+  }, [initialOpenSection]);
   const [authEmail, setAuthEmail] = useState('');
   const [authStatus, setAuthStatus] = useState<string | null>(null);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
@@ -598,7 +616,7 @@ export function SettingsPanel({
       )}
 
       {/* Settings Accordion */}
-      <Accordion type="multiple" defaultValue={["profile"]} className="space-y-3">
+      <Accordion type="multiple" value={openSections} onValueChange={setOpenSections} className="space-y-3">
 
         {/* Group 1: Profile & Appearance */}
         <ProfileSection userName={userName} onNameChange={onNameChange} />
@@ -1095,7 +1113,7 @@ export function SettingsPanel({
         </AccordionItem>
 
         {/* Group 4: Account */}
-        <AccordionItem value="account" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
+        <AccordionItem ref={accountSectionRef} value="account" className="bg-card rounded-2xl shadow-zen-sm border overflow-hidden">
           <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-muted/30 data-[state=open]:bg-primary/5">
             <div className="flex items-center gap-3">
               <div className="p-2 zen-gradient rounded-xl shadow-zen-soft">
