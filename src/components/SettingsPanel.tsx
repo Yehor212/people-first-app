@@ -129,7 +129,7 @@ export function SettingsPanel({
   useBackHandler(showResetConfirm, () => setShowResetConfirm(false));
   useBackHandler(showDeleteConfirm, () => setShowDeleteConfirm(false));
   useBackHandler(showDopamineSettings, () => setShowDopamineSettings(false));
-  useScrollLock(showResetConfirm || showDeleteConfirm || showDopamineSettings || showWhatsNew);
+  useScrollLock(showResetConfirm || showDeleteConfirm || showDopamineSettings);
 
   // Quick Actions for lock screen (Android only)
   const { isEnabled: quickActionsEnabled, isAndroid, toggle: toggleQuickActions } = useQuickActions();

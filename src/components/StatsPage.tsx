@@ -17,7 +17,11 @@ import { AnimatedMoodDistribution, AnimatedEmotionDistribution, AnimatedCalendar
 const TrendsView = lazy(() => import('@/components/TrendsView').then(m => ({ default: m.TrendsView })));
 import { ActivityHeatMap, calculateActivityLevel } from '@/components/ui/activity-heatmap';
 import { EmptyState } from '@/components/EmptyState';
-import { ProgressStoriesViewer } from '@/components/ProgressStoriesViewer';
+// Lazy-load ProgressStoriesViewer to isolate DOMPurify CJS into its own chunk
+// (prevents TDZ errors from DOMPurify CJS interop in the merged StatsPage chunk)
+const ProgressStoriesViewer = lazy(() =>
+  import('@/components/ProgressStoriesViewer').then(m => ({ default: m.ProgressStoriesViewer }))
+);
 import { generateWeeklyStory, hasEnoughDataForStory, getCurrentWeekRange } from '@/lib/progressStories';
 import { WeeklyInsightsCard } from '@/components/WeeklyInsightsCard';
 import { WeeklyCalendar } from '@/components/WeeklyCalendar';
@@ -1507,12 +1511,14 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
 
       {/* Weekly Progress Stories Viewer */}
       {showStoryViewer && storySlides.length > 0 && (
-        <ProgressStoriesViewer
-          slides={storySlides}
-          onClose={() => setShowStoryViewer(false)}
-          weekRange={weekRange}
-          streak={stats.currentStreak}
-        />
+        <Suspense fallback={null}>
+          <ProgressStoriesViewer
+            slides={storySlides}
+            onClose={() => setShowStoryViewer(false)}
+            weekRange={weekRange}
+            streak={stats.currentStreak}
+          />
+        </Suspense>
       )}
 
       {/* Ring Detail Sheet */}
