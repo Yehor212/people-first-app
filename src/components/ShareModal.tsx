@@ -7,7 +7,7 @@ import { useState, useEffect } from 'react';
 import { X, Download, Share2, Copy, Check, Loader2, Image } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+// Sheet replaced with custom bottom-sheet modal
 import { Button } from '@/components/ui/button';
 import { cn, interpolate } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -265,15 +265,20 @@ export function ShareModal(props: ShareModalProps) {
     }
   };
 
+  if (!open) return null;
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="h-[85vh] rounded-t-3xl pb-safe">
-        <SheetHeader className="pb-4">
-          <SheetTitle className="text-center">{getModalTitle()}</SheetTitle>
-          <SheetDescription className="text-center text-sm">
+    <>
+      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => onOpenChange(false)} />
+      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background h-[85vh] overflow-hidden animate-slide-up pb-safe">
+        <div className="pb-4 px-6 pt-6 text-center">
+          <h2 className="text-lg font-semibold">{getModalTitle()}</h2>
+          <p className="text-center text-sm text-muted-foreground">
             {t.sharePrivacyNote || 'Share your progress with friends'}
-          </SheetDescription>
-        </SheetHeader>
+          </p>
+        </div>
+
+        <div className="px-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 80px)' }}>
 
         {/* Premium Preview Card */}
         <div className="flex-1 flex items-center justify-center py-4">
@@ -431,8 +436,9 @@ export function ShareModal(props: ShareModalProps) {
         <p className="text-xs text-center text-muted-foreground pb-4">
           {t.shareFooter || 'Share your progress on social media to inspire others!'}
         </p>
-      </SheetContent>
-    </Sheet>
+        </div>
+      </div>
+    </>
   );
 }
 

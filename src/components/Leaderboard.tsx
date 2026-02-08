@@ -42,7 +42,7 @@ import {
   Medal,
   Sparkles,
 } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+// Sheet replaced with custom bottom-sheet modal
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -230,8 +230,9 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
   };
 
   return (
-    <Sheet open={isOpen} onOpenChange={setIsOpen}>
-      <SheetTrigger asChild>
+    <>
+      {/* Trigger */}
+      <div onClick={() => setIsOpen(true)}>
         {trigger || (
           <button
             className="flex items-center gap-2 px-4 py-2 bg-secondary rounded-lg hover:bg-secondary/80 transition-colors"
@@ -241,19 +242,22 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
             <span className="font-medium">{t.leaderboard || 'Leaderboard'}</span>
           </button>
         )}
-      </SheetTrigger>
+      </div>
 
-      <SheetContent
-        side="bottom"
-        className="h-[85vh] rounded-t-3xl"
-        aria-label={t.leaderboard || 'Leaderboard'}
-      >
-        <SheetHeader className="pb-4">
-          <SheetTitle className="flex items-center gap-2 text-xl">
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsOpen(false)} />
+          <div role="dialog" aria-modal="true" aria-label={t.leaderboard || 'Leaderboard'} className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background h-[85vh] overflow-hidden animate-slide-up">
+
+        <div className="pb-4 px-6 pt-6">
+          <h2 className="flex items-center gap-2 text-xl font-semibold">
             <Trophy className="w-6 h-6 text-primary" />
             {t.leaderboard || 'Leaderboard'}
-          </SheetTitle>
-        </SheetHeader>
+          </h2>
+        </div>
+
+        {/* Inner content */}
+        <div className="px-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 72px)' }}>
 
         {/* Tabs - Premium */}
         <div
@@ -482,19 +486,23 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
           )}
         </div>
 
+        </div>
+
         {/* Refresh button - Premium */}
         <motion.button
           onClick={() => loadData(0)}
           disabled={isLoading}
-          className="absolute top-4 right-12 p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+          className="absolute top-4 right-4 p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
           aria-label={t.refresh || 'Refresh'}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
           <RefreshCw className={cn("w-5 h-5 text-white/60", isLoading && "animate-spin")} />
         </motion.button>
-      </SheetContent>
-    </Sheet>
+          </div>
+        </>
+      )}
+    </>
   );
 }
 

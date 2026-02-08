@@ -8,7 +8,7 @@ import { Send, X, Sparkles, Bot, User, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAICoach, ChatMessage } from '@/contexts/AICoachContext';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+// Sheet replaced with custom bottom-sheet modal
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -63,14 +63,14 @@ export function AICoachChat() {
     clearHistory();
   };
 
+  if (!isOpen) return null;
+
   return (
-    // P1 Fix: Prevent closing while message is being sent
-    <Sheet open={isOpen} onOpenChange={(open) => !open && !isLoading && closeCoach()}>
-      <SheetContent
-        side="bottom"
-        className="h-[85vh] rounded-t-3xl flex flex-col p-0"
-      >
-        <SheetTitle className="sr-only">{t.aiCoachTitle || 'AI Coach'}</SheetTitle>
+    <>
+      {/* P1 Fix: Prevent closing while message is being sent */}
+      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => { if (!isLoading) closeCoach(); }} />
+      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background h-[85vh] overflow-hidden animate-slide-up flex flex-col">
+        <h2 className="sr-only">{t.aiCoachTitle || 'AI Coach'}</h2>
         {/* Header - Premium */}
         <div className="flex items-center justify-between p-4 border-b border-white/10 relative">
           {/* Subtle glow */}
@@ -216,8 +216,8 @@ export function AICoachChat() {
             </motion.button>
           </div>
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </>
   );
 }
 

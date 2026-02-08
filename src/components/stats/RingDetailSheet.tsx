@@ -12,7 +12,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Target, Brain, TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight } from 'lucide-react';
-import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+// Sheet replaced with custom bottom-sheet modal
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { cn } from '@/lib/utils';
@@ -307,13 +307,13 @@ export function RingDetailSheet({
 
   const Icon = theme.icon;
 
+  if (!open) return null;
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="bottom"
-        className="rounded-t-[2rem] border-0 p-0 max-h-[90dvh] overflow-hidden"
-      >
-        <SheetTitle className="sr-only">{t[ringType] || theme.label}</SheetTitle>
+    <>
+      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => onOpenChange(false)} />
+      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden animate-slide-up">
+        <h2 className="sr-only">{t[ringType] || theme.label}</h2>
 
         {/* Premium Header with Gradient */}
         <div className={cn(
@@ -541,8 +541,8 @@ export function RingDetailSheet({
             <ChevronRight className="w-5 h-5" />
           </motion.button>
         </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </>
   );
 }
 

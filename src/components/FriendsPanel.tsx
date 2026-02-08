@@ -139,7 +139,7 @@ export function FriendsPanel({
     setIsSharing(true);
     hapticTap();
     try {
-      const success = await shareFriendCode(myProfile, t);
+      const success = await shareFriendCode(myProfile, t as unknown as Record<string, string>);
       if (success) {
         hapticSuccess();
       }
