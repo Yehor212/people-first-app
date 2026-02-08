@@ -28,8 +28,7 @@
 import { LocalNotifications, ActionPerformed, Channel } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { logger } from './logger';
-import { ReminderSettings, Habit, CompanionType, MoodType } from '@/types';
-import { COMPANION_EMOJIS } from '@/lib/innerWorldConstants';
+import { ReminderSettings, Habit, MoodType } from '@/types';
 import { getCurrentChannelId, initializeNotificationChannels } from './notificationSounds';
 import { parseTime } from './timeUtils';
 
@@ -163,14 +162,6 @@ interface ReminderCopy {
   focus: { title: string; body: string };
 }
 
-interface CompanionNotificationCopy {
-  companionMissesYou: string;
-  companionWantsToPlay: string;
-  companionWaiting: string;
-  companionProud: string;
-  companionCheersYou: string;
-}
-
 // Mood action IDs for one-tap logging
 export const MOOD_ACTION_TYPE_ID = 'MOOD_QUICK_LOG';
 export const MOOD_ACTIONS = {
@@ -186,25 +177,6 @@ export type MoodActionCallback = (mood: MoodType) => void;
 
 // Store callback for notification action handling
 let moodActionCallback: MoodActionCallback | null = null;
-
-/**
- * Generate soft, companion-based notification messages
- * Instead of "You forgot!", we say "Your 🦊 misses you!"
- */
-export function getCompanionNotificationMessage(
-  companionType: CompanionType,
-  companionName: string,
-  messageType: keyof CompanionNotificationCopy,
-  translations: CompanionNotificationCopy
-): { title: string; body: string } {
-  const emoji = COMPANION_EMOJIS[companionType];
-  const message = translations[messageType];
-
-  return {
-    title: `${emoji} ${companionName}`,
-    body: message,
-  };
-}
 
 export async function scheduleLocalReminders(
   reminders: ReminderSettings,
@@ -382,88 +354,6 @@ export async function scheduleHabitReminders(
 }
 
 /**
- * Schedule companion-based soft reminders
- * These are gentle, non-judgmental notifications from the companion mascot
- */
-export async function scheduleCompanionReminders(
-  reminders: ReminderSettings,
-  companion: { type: CompanionType; name: string },
-  translations: CompanionNotificationCopy
-): Promise<void> {
-  try {
-    const permission = await LocalNotifications.checkPermissions();
-    if (permission.display !== 'granted') {
-      return;
-    }
-
-    // Cancel existing companion reminders (IDs 100-199)
-    const pending = await LocalNotifications.getPending();
-    const companionNotifications = pending.notifications.filter(n => n.id >= 100 && n.id < 200);
-    if (companionNotifications.length > 0) {
-      await LocalNotifications.cancel({ notifications: companionNotifications });
-    }
-
-    if (!reminders.enabled) {
-      return;
-    }
-
-    const emoji = COMPANION_EMOJIS[companion.type];
-    const notifications: Array<{
-      id: number;
-      title: string;
-      body: string;
-      channelId: string;
-      schedule: { on: { hour: number; minute: number }; every: 'day'; allowWhileIdle: boolean };
-    }> = [];
-
-    // Morning - companion misses you
-    const moodTimeMorning = parseTime(reminders.moodTimeMorning, 9, 0);
-    notifications.push({
-      id: 100,
-      title: `${emoji} ${companion.name}`,
-      body: translations.companionMissesYou,
-      channelId: getActiveChannelId(),
-      schedule: { on: moodTimeMorning, every: 'day', allowWhileIdle: true }
-    });
-
-    // Afternoon - companion wants to play
-    const moodTimeAfternoon = parseTime(reminders.moodTimeAfternoon, 14, 0);
-    notifications.push({
-      id: 101,
-      title: `${emoji} ${companion.name}`,
-      body: translations.companionWantsToPlay,
-      channelId: getActiveChannelId(),
-      schedule: { on: moodTimeAfternoon, every: 'day', allowWhileIdle: true }
-    });
-
-    // Evening - companion waiting (habit time)
-    const habitTime = parseTime(reminders.habitTime, 21, 0);
-    notifications.push({
-      id: 102,
-      title: `${emoji} ${companion.name}`,
-      body: translations.companionWaiting,
-      channelId: getActiveChannelId(),
-      schedule: { on: habitTime, every: 'day', allowWhileIdle: true }
-    });
-
-    // Focus reminder - companion cheers you
-    const focusTime = parseTime(reminders.focusTime, 10, 0);
-    notifications.push({
-      id: 103,
-      title: `${emoji} ${companion.name}`,
-      body: translations.companionCheersYou,
-      channelId: getActiveChannelId(),
-      schedule: { on: focusTime, every: 'day', allowWhileIdle: true }
-    });
-
-    await LocalNotifications.schedule({ notifications });
-    logger.log('Companion reminders scheduled successfully');
-  } catch (error) {
-    logger.error('Failed to schedule companion reminders:', error);
-  }
-}
-
-/**
  * Register notification action types for one-tap mood logging
  * This creates action buttons that appear on mood notifications
  */
@@ -526,11 +416,9 @@ export function setMoodActionCallback(callback: MoodActionCallback): void {
 
 /**
  * Schedule mood notification with quick-log action buttons
- * Uses companion for soft, friendly messaging
  */
 export async function scheduleMoodQuickLogNotification(
   time: { hour: number; minute: number },
-  companion: { type: CompanionType; name: string },
   message: string
 ): Promise<void> {
   try {
@@ -538,8 +426,6 @@ export async function scheduleMoodQuickLogNotification(
     if (permission.display !== 'granted') {
       return;
     }
-
-    const emoji = COMPANION_EMOJIS[companion.type];
 
     // Cancel existing quick-log notification (ID 150)
     const pending = await LocalNotifications.getPending();
@@ -552,7 +438,7 @@ export async function scheduleMoodQuickLogNotification(
       notifications: [
         {
           id: 150,
-          title: `${emoji} ${companion.name}`,
+          title: '💜 ZenFlow',
           body: message,
           channelId: getActiveChannelId(),
           schedule: { on: time, every: 'day', allowWhileIdle: true },

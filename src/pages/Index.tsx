@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 import { addFriendActivity, loadMyProfile } from '@/storage/friendsSync';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
 import { initializeApp } from '@/lib/appInitializer';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent, Goal } from '@/types';
+import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
@@ -41,7 +41,6 @@ import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 import {
   scheduleLocalReminders,
   scheduleHabitReminders,
-  scheduleCompanionReminders,
   registerMoodNotificationActions,
   setupNotificationActionListener,
   setMoodActionCallback,
@@ -67,10 +66,9 @@ const ScheduleTimeline = lazyWithRetry(() => import('@/components/ScheduleTimeli
 const HabitTracker = lazyWithRetry(() => import('@/components/HabitTracker').then(m => ({ default: m.HabitTracker })), 'HabitTracker');
 const FocusTimer = lazyWithRetry(() => import('@/components/FocusTimer').then(m => ({ default: m.FocusTimer })), 'FocusTimer');
 const EmotionWheel = lazyWithRetry(() => import('@/components/mindfulness/EmotionWheel').then(m => ({ default: m.EmotionWheel })), 'EmotionWheel');
-const CompanionPanel = lazyWithRetry(() => import('@/components/CompanionPanel').then(m => ({ default: m.CompanionPanel })), 'CompanionPanel');
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { InstallBanner } from '@/components/InstallBanner';
-import { RemindersPanel } from '@/components/RemindersPanel';
+// RemindersPanel only used in Settings, imported there directly
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { WelcomeTutorial } from '@/components/WelcomeTutorial';
 // import { AICoachOnboarding } from '@/components/AICoachOnboarding'; // Hidden until AI ready
@@ -98,14 +96,12 @@ import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
 import { InsightsPanel } from '@/components/InsightsPanel';
-import { GoalsPanel } from '@/components/GoalsPanel';
 import { UrgencyAlert } from '@/components/UrgencyAlert';
 import { RestModeCard } from '@/components/RestModeCard';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
 import { ChallengeModal } from '@/components/ChallengeModal';
 import { decodeInviteData, ChallengeInvite } from '@/lib/friendChallenge';
 import { initializeOfflineQueueHandlers, queueFocusSessionSync } from '@/lib/offlineQueueHandlers';
-import { CompletedSection } from '@/components/CompletedSection';
 import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
 import { ConsentBanner } from '@/components/ConsentBanner';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
@@ -289,16 +285,10 @@ export function Index() {
     waterPlants,
     attractCreature,
     feedCreatures,
-    setCompanionType,
-    renameCompanion,
     clearWelcomeBack,
-    petCompanion,
-    feedCompanion,
     gardenStats,
     // Treats system
     earnTreats,
-    treatsBalance,
-    FEED_COST,
     // Rest mode
     isRestMode,
     activateRestMode,
@@ -306,9 +296,6 @@ export function Index() {
     canActivateRestMode,
     daysUntilRestAvailable,
   } = useInnerWorld();
-
-  // Companion panel state
-  const [showCompanionPanel, setShowCompanionPanel] = useState(false);
 
   // Guard against double habit toggles (prevents duplicate rewards)
   const processingHabitsRef = useRef<Set<string>>(new Set());
@@ -417,20 +404,6 @@ export function Index() {
     initialValue: []
   });
 
-  // Goals (localStorage for now - small data, no cloud sync needed)
-  const [goals, setGoals] = useState<Goal[]>(() => {
-    try {
-      const stored = localStorage.getItem('zenflow-goals');
-      return stored ? JSON.parse(stored) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  // Persist goals to localStorage
-  useEffect(() => {
-    localStorage.setItem('zenflow-goals', JSON.stringify(goals));
-  }, [goals]);
 
   const [reminders, setReminders, isLoadingReminders] = useIndexedDB<ReminderSettings>({
     table: db.settings,
@@ -561,7 +534,6 @@ export function Index() {
       if (showChallenges) { setShowChallenges(false); return true; }
       if (showChallengeModal) { setShowChallengeModal(false); return true; }
       if (showWidgetSettings) { setShowWidgetSettings(false); return true; }
-      if (showCompanionPanel) { setShowCompanionPanel(false); return true; }
       if (showWeeklyReport) { setShowWeeklyReport(false); return true; }
       if (showTimeHelper) { setShowTimeHelper(false); return true; }
       if (showMindfulMoment) { setShowMindfulMoment(false); return true; }
@@ -571,7 +543,7 @@ export function Index() {
     });
     return unregister;
   }, [showFriendsPanel, showTasksPanel, showQuestsPanel, showChallenges, showChallengeModal,
-      showWidgetSettings, showCompanionPanel, showWeeklyReport, showTimeHelper,
+      showWidgetSettings, showWeeklyReport, showTimeHelper,
       showMindfulMoment, showWelcomeBack, showWelcomeOverlay]);
 
 
@@ -833,7 +805,7 @@ export function Index() {
     const stats = { habitsCompleted, focusSessionsCompleted, moodEntriesCount };
 
     // Check each feature for unlock conditions
-    const featuresToCheck: FeatureId[] = ['focusTimer', 'xp', 'quests', 'companion', 'tasks', 'challenges'];
+    const featuresToCheck: FeatureId[] = ['focusTimer', 'xp', 'quests', 'tasks', 'challenges'];
 
     for (const feature of featuresToCheck) {
       const { shouldUnlock } = checkFeatureUnlock({ feature, stats });
@@ -1428,24 +1400,6 @@ export function Index() {
     });
   }, [habits, t.reminderHabitTitle, t.reminderHabitBody]);
 
-  // Schedule companion-based soft reminders (gentle, non-judgmental)
-  useEffect(() => {
-    if (!isNativePlatform() || isLoadingInnerWorld) return;
-    scheduleCompanionReminders(
-      reminders,
-      { type: innerWorld.companion.type, name: innerWorld.companion.name },
-      {
-        companionMissesYou: t.companionMissesYou || 'misses you! 💕',
-        companionWantsToPlay: t.companionWantsToPlay || 'wants to spend time with you!',
-        companionWaiting: t.companionWaiting || 'is waiting in the garden 🌱',
-        companionProud: t.companionProud || 'is proud of you! ⭐',
-        companionCheersYou: t.companionCheersYou || 'is cheering for you! 💪',
-      }
-    ).catch((error) => {
-      logger.error("Failed to schedule companion reminders:", error);
-    });
-  }, [reminders, innerWorld.companion, isLoadingInnerWorld, t]);
-
   // Initialize notification channel (Android 8+ requirement)
   useEffect(() => {
     if (!isNativePlatform()) return;
@@ -1500,12 +1454,11 @@ export function Index() {
     // Use morning time for the quick-log notification
     scheduleMoodQuickLogNotification(
       parseTime(reminders.moodTimeMorning),
-      { type: innerWorld.companion.type, name: innerWorld.companion.name },
-      t.companionQuickMood || 'How are you feeling? Tap! 😊'
+      t.howAreYouNow || 'How are you feeling? Tap! 😊'
     ).catch((error) => {
       logger.error('Failed to schedule mood quick-log notification:', error);
     });
-  }, [reminders.enabled, reminders.moodTimeMorning, innerWorld.companion, isLoadingInnerWorld, t.companionQuickMood]);
+  }, [reminders.enabled, reminders.moodTimeMorning, t.howAreYouNow]);
 
   // Lock screen quick actions handler
   useEffect(() => {
@@ -2145,8 +2098,6 @@ export function Index() {
               {/* Progressive Onboarding - Day progress indicator */}
               <DayProgressIndicator />
 
-              <RemindersPanel reminders={reminders} onUpdateReminders={setReminders} habits={safeHabits} />
-
               {/* Streak Banner - Prominent streak display with Rest Mode button */}
               <StreakBanner
                 moods={safeMoods}
@@ -2192,17 +2143,6 @@ export function Index() {
                 collapsible={true}
               />
 
-              {/* Personal Goals */}
-              <GoalsPanel
-                goals={goals}
-                habits={safeHabits}
-                moods={safeMoods}
-                focusSessions={safeFocusSessions}
-                currentStreak={innerWorld.currentActiveStreak}
-                onAddGoal={(goal) => setGoals(prev => [...prev, goal])}
-                onUpdateGoal={(goal) => setGoals(prev => prev.map(g => g.id === goal.id ? goal : g))}
-                onDeleteGoal={(goalId) => setGoals(prev => prev.filter(g => g.id !== goalId))}
-              />
 
               {/* v1.4.0: ScheduleTimeline moved to "My World" tab */}
 
@@ -2219,136 +2159,34 @@ export function Index() {
                 <>
                   {/* Smart Primary CTA System - Sequential focus with collapsible completed sections */}
 
-                  {/* Mood Tracker - Primary or Collapsed */}
+                  {/* Mood Tracker */}
                   <div ref={moodRef}>
                     <ModalErrorBoundary fallbackTitle="Mood Tracker Error" fallbackBody="Unable to load mood tracker. Try refreshing.">
                       <Suspense fallback={<SkeletonCard />}>
-                        {currentPrimaryCTA === 'mood' ? (
-                          <EmotionWheel
-                            entries={safeMoods}
-                            onAddEntry={handleAddMood}
-                            isPrimaryCTA={true}
-                          />
-                        ) : hasMoodToday ? (
-                          <CompletedSection
-                            title={t.moodRecordedShort || t.moodToday}
-                            icon="💜"
-                            accentColor="primary"
-                          >
-                            <EmotionWheel
-                              entries={safeMoods}
-                              onAddEntry={handleAddMood}
-                            />
-                          </CompletedSection>
-                        ) : (
-                          <EmotionWheel
-                            entries={safeMoods}
-                            onAddEntry={handleAddMood}
-                          />
-                        )}
+                        <EmotionWheel
+                          entries={safeMoods}
+                          onAddEntry={handleAddMood}
+                        />
                       </Suspense>
                     </ModalErrorBoundary>
                   </div>
 
-                  {/* Breathing Exercise - Compact mindfulness card */}
-                  {isFeatureVisible('breathingExercise') && (
-                    <LazyErrorBoundary componentName="Breathing Exercise">
-                      <Suspense fallback={<SkeletonCard lines={1} />}>
-                        <BreathingExercise
-                          compact
-                          onComplete={(pattern) => {
-                            const treatResult = earnTreats('breathing', 5, `Breathing: ${pattern.name}`);
-                            triggerXpPopup(treatResult.earned, 'breathing');
-                            triggerSync(); // Sync inner world treats
-                          }}
-                        />
-                      </Suspense>
-                    </LazyErrorBoundary>
-                  )}
-
-                  {/* Habit Tracker - Primary or Collapsed */}
+                  {/* Habit Tracker */}
                   <div ref={habitsRef}>
                     <ModalErrorBoundary fallbackTitle="Habit Tracker Error" fallbackBody="Unable to load habit tracker. Try refreshing.">
                       <Suspense fallback={<SkeletonList />}>
-                        {currentPrimaryCTA === 'habits' ? (
-                          <HabitTracker
-                            habits={safeHabits}
-                            onToggleHabit={handleToggleHabit}
-                            onAdjustHabit={handleAdjustHabit}
-                            onAddHabit={handleAddHabit}
-                            onUpdateHabit={handleUpdateHabit}
-                            onDeleteHabit={handleDeleteHabit}
-                            isPrimaryCTA={true}
-                            onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
-                          />
-                        ) : !hasUncompletedHabits && safeHabits.length > 0 ? (
-                          <CompletedSection
-                            title={t.habitsCompletedShort || t.habits}
-                            icon="✅"
-                            accentColor="emerald"
-                          >
-                            <HabitTracker
-                              habits={safeHabits}
-                              onToggleHabit={handleToggleHabit}
-                              onAdjustHabit={handleAdjustHabit}
-                              onAddHabit={handleAddHabit}
-                              onUpdateHabit={handleUpdateHabit}
-                              onDeleteHabit={handleDeleteHabit}
-                              onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
-                            />
-                          </CompletedSection>
-                        ) : (
-                          <HabitTracker
-                            habits={safeHabits}
-                            onToggleHabit={handleToggleHabit}
-                            onAdjustHabit={handleAdjustHabit}
-                            onAddHabit={handleAddHabit}
-                            onUpdateHabit={handleUpdateHabit}
-                            onDeleteHabit={handleDeleteHabit}
-                            onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
-                          />
-                        )}
+                        <HabitTracker
+                          habits={safeHabits}
+                          onToggleHabit={handleToggleHabit}
+                          onAdjustHabit={handleAdjustHabit}
+                          onAddHabit={handleAddHabit}
+                          onUpdateHabit={handleUpdateHabit}
+                          onDeleteHabit={handleDeleteHabit}
+                          onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
+                        />
                       </Suspense>
                     </ModalErrorBoundary>
                   </div>
-
-                  {/* Focus Timer - Primary or Collapsed (Progressive: Day 2) */}
-                  {isFeatureVisible('focusTimer') && (
-                    <div ref={focusRef}>
-                      <ModalErrorBoundary fallbackTitle="Focus Timer Error" fallbackBody="Unable to load focus timer. Try refreshing.">
-                        <Suspense fallback={<SkeletonCard />}>
-                          {currentPrimaryCTA === 'focus' ? (
-                            <FocusTimer
-                              sessions={safeFocusSessions}
-                              onCompleteSession={handleCompleteFocusSession}
-                              onMinuteUpdate={setCurrentFocusMinutes}
-                              isPrimaryCTA={true}
-                            />
-                          ) : hasFocusToday ? (
-                            <CompletedSection
-                              title={t.focusCompletedShort || t.focus}
-                              icon="🎯"
-                              accentColor="violet"
-                            >
-                              <FocusTimer
-                                sessions={safeFocusSessions}
-                                onCompleteSession={handleCompleteFocusSession}
-                                onMinuteUpdate={setCurrentFocusMinutes}
-                                isPrimaryCTA={true}
-                              />
-                            </CompletedSection>
-                          ) : (
-                            <FocusTimer
-                              sessions={safeFocusSessions}
-                              onCompleteSession={handleCompleteFocusSession}
-                              onMinuteUpdate={setCurrentFocusMinutes}
-                              isPrimaryCTA={true}
-                            />
-                          )}
-                        </Suspense>
-                      </ModalErrorBoundary>
-                    </div>
-                  )}
 
                   {/* Daily Prompt Card - HIDDEN: prompt is now built into GratitudeJournal via JournalPrompt */}
                   {/* {isFeatureVisible('gratitudeJournal') && (
@@ -2357,40 +2195,17 @@ export function Index() {
                     />
                   )} */}
 
-                  {/* Gratitude Journal - Primary or Collapsed */}
+                  {/* Gratitude Journal */}
                   {isFeatureVisible('gratitudeJournal') && (
                     <div ref={gratitudeRef}>
                       <LazyErrorBoundary componentName="Gratitude Journal">
                         <Suspense fallback={<SkeletonCard />}>
-                          {currentPrimaryCTA === 'gratitude' ? (
-                            <GratitudeJournal
-                              entries={safeGratitudeEntries}
-                              onAddEntry={handleAddGratitude}
-                              isPrimaryCTA={true}
-                              initialText={journalPromptText}
-                              onInitialTextUsed={handleJournalPromptUsed}
-                            />
-                          ) : hasGratitudeToday ? (
-                            <CompletedSection
-                              title={t.gratitudeAddedShort || t.gratitude}
-                              icon="🙏"
-                              accentColor="pink"
-                            >
-                              <GratitudeJournal
-                                entries={safeGratitudeEntries}
-                                onAddEntry={handleAddGratitude}
-                                initialText={journalPromptText}
-                                onInitialTextUsed={handleJournalPromptUsed}
-                              />
-                            </CompletedSection>
-                          ) : (
-                            <GratitudeJournal
-                              entries={safeGratitudeEntries}
-                              onAddEntry={handleAddGratitude}
-                              initialText={journalPromptText}
-                              onInitialTextUsed={handleJournalPromptUsed}
-                            />
-                          )}
+                          <GratitudeJournal
+                            entries={safeGratitudeEntries}
+                            onAddEntry={handleAddGratitude}
+                            initialText={journalPromptText}
+                            onInitialTextUsed={handleJournalPromptUsed}
+                          />
                         </Suspense>
                       </LazyErrorBoundary>
                     </div>
@@ -2411,7 +2226,36 @@ export function Index() {
               onOpenFriends={() => setShowFriendsPanel(true)}
             />
 
-            {/* v1.4.0: Schedule Timeline - ADHD-friendly day planner with habits auto-synced */}
+            {/* Breathing Exercise - Compact mindfulness card */}
+            {isFeatureVisible('breathingExercise') && (
+              <LazyErrorBoundary componentName="Breathing Exercise">
+                <Suspense fallback={<SkeletonCard lines={1} />}>
+                  <BreathingExercise
+                    compact
+                    onComplete={(pattern) => {
+                      const treatResult = earnTreats('breathing', 5, `Breathing: ${pattern.name}`);
+                      triggerXpPopup(treatResult.earned, 'breathing');
+                      triggerSync();
+                    }}
+                  />
+                </Suspense>
+              </LazyErrorBoundary>
+            )}
+
+            {/* Focus Timer */}
+            {isFeatureVisible('focusTimer') && (
+              <ModalErrorBoundary fallbackTitle="Focus Timer Error" fallbackBody="Unable to load focus timer. Try refreshing.">
+                <Suspense fallback={<SkeletonCard />}>
+                  <FocusTimer
+                    sessions={safeFocusSessions}
+                    onCompleteSession={handleCompleteFocusSession}
+                    onMinuteUpdate={setCurrentFocusMinutes}
+                  />
+                </Suspense>
+              </ModalErrorBoundary>
+            )}
+
+            {/* Schedule Timeline - ADHD-friendly day planner with habits auto-synced */}
             <LazyErrorBoundary componentName="Schedule Timeline">
               <Suspense fallback={<SkeletonList />}>
                 <ScheduleTimeline
@@ -2590,28 +2434,6 @@ export function Index() {
             />
           </Suspense>
         </LazyErrorBoundary>
-      )}
-
-      {/* Companion Panel Modal (Progressive: Day 3, legacy - kept for reference) */}
-      {isFeatureUnlocked('companion') && isFeatureVisible('innerWorld') && (
-        <Suspense fallback={<SkeletonSection />}>
-          <CompanionPanel
-            companion={innerWorld.companion}
-            isOpen={showCompanionPanel}
-            onClose={() => setShowCompanionPanel(false)}
-            onRename={renameCompanion}
-            onChangeType={setCompanionType}
-            onPet={petCompanion}
-            onFeed={feedCompanion}
-            treatsBalance={treatsBalance}
-            feedCost={FEED_COST}
-            streak={innerWorld.currentActiveStreak}
-            hasMoodToday={hasMoodToday}
-            hasHabitsToday={safeHabits.length > 0 && safeHabits.every(h => h.completedDates?.includes(currentDate))}
-            hasFocusToday={hasFocusToday}
-            hasGratitudeToday={hasGratitudeToday}
-          />
-        </Suspense>
       )}
 
       {/* Challenge Modal - for deep link invites and habit challenges */}
