@@ -2250,6 +2250,7 @@ export function Index() {
                     sessions={safeFocusSessions}
                     onCompleteSession={handleCompleteFocusSession}
                     onMinuteUpdate={setCurrentFocusMinutes}
+                    isPrimaryCTA={true}
                   />
                 </Suspense>
               </ModalErrorBoundary>
