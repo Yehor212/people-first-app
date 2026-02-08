@@ -43,6 +43,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
@@ -62,6 +63,8 @@ interface LeaderboardProps {
 export function Leaderboard({ trigger }: LeaderboardProps) {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+
+  useBackHandler(isOpen, () => setIsOpen(false));
   const [activeTab, setActiveTab] = useState<LeaderboardType>('weekly');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [userEntry, setUserEntry] = useState<LeaderboardEntry | null>(null);

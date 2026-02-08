@@ -11,6 +11,7 @@ import { useAICoach, ChatMessage } from '@/contexts/AICoachContext';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 export function AICoachChat() {
   const { t } = useLanguage();
@@ -22,6 +23,8 @@ export function AICoachChat() {
     sendMessage,
     clearHistory,
   } = useAICoach();
+
+  useBackHandler(isOpen, () => { if (!isLoading) closeCoach(); });
 
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);

@@ -16,7 +16,19 @@ export function RemindersPanel({ reminders, onUpdateReminders, habits }: Reminde
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!reminders.enabled) {
-    return null;
+    return (
+      <button
+        onClick={() => onUpdateReminders(prev => ({ ...prev, enabled: true }))}
+        className="w-full flex items-center gap-3 p-3 bg-card/60 rounded-2xl border border-dashed border-border/50 hover:bg-card/80 transition-colors"
+      >
+        <div className="p-1.5 bg-muted rounded-lg">
+          <Bell className="w-3.5 h-3.5 text-muted-foreground" />
+        </div>
+        <span className="text-xs text-muted-foreground">
+          {t.enableReminders || 'Enable reminders to stay on track'}
+        </span>
+      </button>
+    );
   }
 
   return (

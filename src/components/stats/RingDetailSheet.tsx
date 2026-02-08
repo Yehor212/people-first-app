@@ -14,6 +14,7 @@ import { motion } from 'framer-motion';
 import { Heart, Target, Brain, TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { cn } from '@/lib/utils';
 
 export type RingType = 'mood' | 'habits' | 'focus';
@@ -259,6 +260,8 @@ export function RingDetailSheet({
   average,
 }: RingDetailSheetProps) {
   const { t } = useLanguage();
+
+  useBackHandler(open, () => onOpenChange(false));
 
   const theme = ringType ? ringThemes[ringType] : null;
 

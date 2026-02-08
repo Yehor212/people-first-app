@@ -95,19 +95,25 @@ export function InsightsPanel({
             <p className="text-sm text-muted-foreground">
               {t.insightsNotEnoughData || 'Keep tracking your mood, habits, and focus for a week to unlock personalized insights about your patterns.'}
             </p>
-            <div className="mt-3 flex gap-2 text-xs text-muted-foreground">
-              <div className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full ${moods.length >= 7 ? 'bg-green-500' : 'bg-gray-300'}`} />
-                <span>{moods.length}/7 {t.insightsMoodEntries || 'mood entries'}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full ${habits.length >= 1 ? 'bg-green-500' : 'bg-gray-300'}`} />
-                <span>{habits.length}/1 {t.insightsHabitCount || 'habit'}</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className={`w-2 h-2 rounded-full ${focusSessions.length >= 3 ? 'bg-green-500' : 'bg-gray-300'}`} />
-                <span>{focusSessions.length}/3 {t.insightsFocusSessions || 'focus sessions'}</span>
-              </div>
+            <div className="mt-4 space-y-2.5">
+              {[
+                { current: moods.length, target: 7, label: t.insightsMoodEntries || 'mood entries' },
+                { current: habits.length, target: 1, label: t.insightsHabitCount || 'habit' },
+                { current: focusSessions.length, target: 3, label: t.insightsFocusSessions || 'focus sessions' },
+              ].map(({ current, target, label }) => (
+                <div key={label}>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
+                    <span>{label}</span>
+                    <span className={current >= target ? 'text-green-500 font-medium' : ''}>{Math.min(current, target)}/{target}</span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all duration-500 ${current >= target ? 'bg-green-500' : 'bg-primary/60'}`}
+                      style={{ width: `${Math.min((current / target) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>

@@ -11,6 +11,7 @@ import {
   getXpForAction,
 } from '@/lib/gamification';
 import { toast } from 'sonner';
+import { addFriendActivity, loadMyProfile } from '@/storage/friendsSync';
 
 interface GamificationState {
   totalXp: number;
@@ -136,11 +137,24 @@ export function useGamification() {
       // 2. This is a real data change (user did something)
       // 3. The achievement toast hasn't been shown before
       if (!initialLoadRef.current && isRealChange && achievementsToShow.length > 0) {
+        const profile = loadMyProfile();
         achievementsToShow.forEach((achievement) => {
           toast.success(`🎉 ${achievement.name}`, {
             description: `${achievement.description} (+${achievement.points} XP)`,
             duration: 5000,
           });
+
+          // Track for friends activity feed
+          if (profile) {
+            const isStreak = achievement.id.startsWith('streak_');
+            addFriendActivity({
+              friendId: profile.friendCode,
+              friendName: profile.displayName,
+              activityType: isStreak ? 'streak_milestone' : 'achievement_unlocked',
+              description: achievement.name,
+              icon: achievement.icon || '🏆',
+            });
+          }
         });
       }
     } else {
@@ -173,6 +187,24 @@ export function useGamification() {
   );
 
   const userLevel = calculateLevel(gamificationState.totalXp);
+
+  // Track level-up for friends activity feed
+  const prevLevelRef = useRef(userLevel.level);
+  useEffect(() => {
+    if (prevLevelRef.current > 0 && userLevel.level > prevLevelRef.current) {
+      const profile = loadMyProfile();
+      if (profile) {
+        addFriendActivity({
+          friendId: profile.friendCode,
+          friendName: profile.displayName,
+          activityType: 'level_up',
+          description: `${userLevel.title} (${userLevel.level})`,
+          icon: '⭐',
+        });
+      }
+    }
+    prevLevelRef.current = userLevel.level;
+  }, [userLevel.level]);
 
   return {
     stats,

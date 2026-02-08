@@ -34,6 +34,12 @@ export interface Friend {
   friendsSince: string;
   /** Optional status message */
   status?: string;
+  /** Privacy: friend has hidden their streak */
+  streakHidden?: boolean;
+  /** Privacy: friend has hidden their level */
+  levelHidden?: boolean;
+  /** Privacy: friend has hidden their activity */
+  activityHidden?: boolean;
 }
 
 export interface FriendActivity {
@@ -408,12 +414,12 @@ export async function refreshFriendsData(): Promise<void> {
 
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('friend_code, display_name, avatar_emoji, current_streak, level, updated_at, status')
+      .select('friend_code, display_name, avatar_emoji, current_streak, level, updated_at, status, share_activity')
       .in('friend_code', friendCodes);
 
     if (error || !data) return;
 
-    // Update local friends with cloud data
+    // Update local friends with cloud data, respecting privacy flags
     const updatedFriends = friends.map(friend => {
       const cloudData = data.find(d => d.friend_code === friend.friendCode);
       if (cloudData) {
@@ -421,10 +427,13 @@ export async function refreshFriendsData(): Promise<void> {
           ...friend,
           displayName: cloudData.display_name || friend.displayName,
           avatarEmoji: cloudData.avatar_emoji || friend.avatarEmoji,
-          currentStreak: cloudData.current_streak ?? friend.currentStreak,
-          level: cloudData.level ?? friend.level,
+          currentStreak: cloudData.current_streak ?? 0,
+          level: cloudData.level ?? 1,
           lastActive: cloudData.updated_at || friend.lastActive,
           status: cloudData.status || friend.status,
+          streakHidden: cloudData.current_streak === null,
+          levelHidden: cloudData.level === null,
+          activityHidden: cloudData.share_activity === false,
         };
       }
       return friend;

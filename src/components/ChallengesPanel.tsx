@@ -39,6 +39,7 @@ export function ChallengesPanel({
   const [selectedTab, setSelectedTab] = useState<'active' | 'available' | 'badges'>('active');
   const [showShareDialog, setShowShareDialog] = useState(false);
 
+  useBackHandler(!showShareDialog, onClose);
   useBackHandler(showShareDialog, () => setShowShareDialog(false));
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [isSharing, setIsSharing] = useState(false);

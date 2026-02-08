@@ -137,7 +137,7 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
     <div className={cn(
       "rounded-2xl p-5 animate-fade-in transition-all relative overflow-hidden",
       isPrimaryCTA
-        ? "bg-gradient-to-br from-primary/15 via-card to-accent/15 ring-2 ring-primary/40 shadow-lg shadow-primary/20"
+        ? "bg-gradient-to-br from-primary/15 via-card to-accent/15 ring-2 ring-primary/40 shadow-lg shadow-primary/20 backdrop-blur-sm"
         : "bg-card zen-shadow-card"
     )}>
       {/* Primary CTA badge */}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'rea
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { logger } from '@/lib/logger';
+import { addFriendActivity, loadMyProfile } from '@/storage/friendsSync';
 import { useIndexedDB } from '@/hooks/useIndexedDB';
 import { initializeApp } from '@/lib/appInitializer';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent, Goal } from '@/types';
@@ -10,6 +11,7 @@ import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { triggerXpPopup } from '@/components/XpPopup';
+import { ConfettiBurst } from '@/components/ConfettiBurst';
 import { DayClock } from '@/components/DayClock';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
@@ -326,6 +328,7 @@ export function Index() {
   const [showTasksPanel, setShowTasksPanel] = useState(false);
   const [showQuestsPanel, setShowQuestsPanel] = useState(false);
   const [showFriendsPanel, setShowFriendsPanel] = useState(false);
+  const [confettiBurst, setConfettiBurst] = useState<{ x: number; y: number } | null>(null);
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
 
@@ -1044,10 +1047,24 @@ export function Index() {
         const treatResult = earnTreats('habit', 10, 'Completed habit');
         triggerXpPopup(treatResult.earned, 'habit'); // Show treats earned
         haptics.habitCompleted();
+        // Confetti burst at center of screen
+        setConfettiBurst({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
         trackTimeOfDayCompletion(); // Track for Early Bird/Night Owl badges
         // Inner World: Plant a tree when completing habit
         plantSeed('habit');
         waterPlants('habit');
+
+        // Track for friends activity feed
+        const friendProfile = loadMyProfile();
+        if (friendProfile) {
+          addFriendActivity({
+            friendId: friendProfile.friendCode,
+            friendName: friendProfile.displayName,
+            activityType: 'habit_completed',
+            description: habit.name,
+            icon: habit.icon || '✅',
+          });
+        }
 
         // Track comeback challenge progress
         const challengeResult = recordHabitForChallenge(date);
@@ -2012,6 +2029,15 @@ export function Index() {
       {/* Dynamic mood-based background overlay */}
       <MoodBackgroundOverlay />
 
+      {/* Confetti burst on habit completion */}
+      {confettiBurst && (
+        <ConfettiBurst
+          x={confettiBurst.x}
+          y={confettiBurst.y}
+          onComplete={() => setConfettiBurst(null)}
+        />
+      )}
+
       {/* GDPR Consent Banner - shows once after onboarding */}
       {!privacy.consentShown && onboardingComplete && (
         <ConsentBanner onConsent={handleConsentResponse} />
@@ -2104,7 +2130,7 @@ export function Index() {
               onOpenQuests={isFeatureVisible('quests') ? () => setShowQuestsPanel(true) : undefined}
             />
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {/* Progressive Onboarding - Day progress indicator */}
               <DayProgressIndicator />
 

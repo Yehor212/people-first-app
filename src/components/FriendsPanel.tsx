@@ -18,11 +18,11 @@ import {
   Share2,
   Copy,
   Check,
+  ChevronLeft,
   X,
   Flame,
   Trophy,
   Clock,
-  ChevronRight,
   RefreshCw,
   Trash2,
   Settings,
@@ -38,7 +38,6 @@ import { hapticTap, hapticSuccess, hapticError } from '@/lib/haptics';
 import { announce } from '@/lib/a11y';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import {
-  loadFriends,
   loadMyProfile,
   initializeMyProfile,
   updateMyProfile,
@@ -68,8 +67,6 @@ export function FriendsPanel({
 }: FriendsPanelProps) {
   const { t } = useLanguage();
 
-  useBackHandler(true, onClose);
-
   const [myProfile, setMyProfile] = useState<MyProfile | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
   const [activities, setActivities] = useState<FriendActivity[]>([]);
@@ -82,6 +79,12 @@ export function FriendsPanel({
   const [copied, setCopied] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [confirmRemoveFriend, setConfirmRemoveFriend] = useState<Friend | null>(null);
+  const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+
+  // Dual back handler: detail view closes first, then panel
+  useBackHandler(!selectedFriend, onClose);
+  useBackHandler(!!selectedFriend, () => setSelectedFriend(null));
 
   // Initialize profile and load data on mount
   useEffect(() => {
@@ -416,79 +419,223 @@ export function FriendsPanel({
               </AnimatePresence>
             </div>
 
-            {/* Friends List */}
+            {/* Friends List / Friend Detail */}
             <div className="p-4">
-              <h3 className="text-sm font-medium text-muted-foreground mb-3">
-                {t.yourFriends || 'Your Friends'} ({friends.length})
-              </h3>
-
-              {friends.length === 0 ? (
-                <EmptyState
-                  icon={<Users className="w-6 h-6 text-primary" />}
-                  title={t.noFriendsYet || 'No friends yet'}
-                  message={t.addFriendsHint || 'Share your code or add friends by their code'}
-                  size="compact"
-                  action={{
-                    label: t.addFriendByCode || 'Add Friend by Code',
-                    onClick: () => setShowAddFriend(true),
-                    icon: <UserPlus className="w-4 h-4" />,
-                  }}
-                />
-              ) : (
-                <div className="space-y-2">
-                  {friends.map((friend) => (
-                    <motion.div
-                      key={friend.id}
-                      layout
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-card border"
+              <AnimatePresence mode="wait">
+                {selectedFriend ? (
+                  <motion.div
+                    key="friend-detail"
+                    initial={{ opacity: 0, x: 40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: 40 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {/* Back button */}
+                    <button
+                      onClick={() => setSelectedFriend(null)}
+                      aria-label={t.back || 'Back'}
+                      className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4"
                     >
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">
-                        {friend.avatarEmoji}
+                      <ChevronLeft className="w-4 h-4" />
+                      {t.yourFriends || 'Your Friends'}
+                    </button>
+
+                    {/* Profile card */}
+                    <div className="flex flex-col items-center text-center mb-6">
+                      <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-4xl mb-3">
+                        {selectedFriend.avatarEmoji}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-foreground truncate">
-                          {friend.displayName}
+                      <h3 className="text-xl font-bold text-foreground">
+                        {selectedFriend.displayName}
+                      </h3>
+                      {selectedFriend.status && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {selectedFriend.status}
                         </p>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Flame className="w-3 h-3 text-orange-500" />
-                            {friend.currentStreak}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Trophy className="w-3 h-3 text-yellow-500" />
-                            {friend.level}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            {formatLastActive(friend.lastActive)}
-                          </span>
-                        </div>
+                      )}
+                    </div>
+
+                    {/* Stats grid */}
+                    <div className="grid grid-cols-3 gap-3 mb-6">
+                      <div className="flex flex-col items-center p-3 rounded-xl bg-orange-500/10">
+                        <Flame className="w-5 h-5 text-orange-500 mb-1" />
+                        <span className="text-lg font-bold text-foreground">{selectedFriend.streakHidden ? '—' : selectedFriend.currentStreak}</span>
+                        <span className="text-xs text-muted-foreground">{t.streak || 'Streak'}</span>
                       </div>
+                      <div className="flex flex-col items-center p-3 rounded-xl bg-yellow-500/10">
+                        <Trophy className="w-5 h-5 text-yellow-500 mb-1" />
+                        <span className="text-lg font-bold text-foreground">{selectedFriend.levelHidden ? '—' : selectedFriend.level}</span>
+                        <span className="text-xs text-muted-foreground">{t.level || 'Level'}</span>
+                      </div>
+                      <div className="flex flex-col items-center p-3 rounded-xl bg-blue-500/10">
+                        <Clock className="w-5 h-5 text-blue-500 mb-1" />
+                        <span className="text-lg font-bold text-foreground">{formatLastActive(selectedFriend.lastActive)}</span>
+                        <span className="text-xs text-muted-foreground">{'Active'}</span>
+                      </div>
+                    </div>
+
+                    {/* Friend since */}
+                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-6">
+                      <Users className="w-4 h-4" />
+                      <span>
+                        {'Friends since'}{' '}
+                        {new Date(selectedFriend.friendsSince).toLocaleDateString(undefined, {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+
+                    {/* Friend's recent activity */}
+                    {(() => {
+                      if (selectedFriend.activityHidden) return null;
+                      const friendActivities = activities.filter(a => a.friendId === selectedFriend.id);
+                      if (friendActivities.length === 0) return null;
+                      return (
+                        <div className="mb-6">
+                          <h4 className="text-sm font-medium text-muted-foreground mb-2">
+                            {t.recentActivity || 'Recent Activity'}
+                          </h4>
+                          <div className="space-y-2">
+                            {friendActivities.map((activity) => (
+                              <div
+                                key={activity.id}
+                                className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
+                              >
+                                <span className="text-lg">{activity.icon}</span>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm text-foreground truncate">
+                                    {activity.description}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {formatLastActive(activity.timestamp)}
+                                  </p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
+                    {/* Remove friend */}
+                    {confirmRemoveFriend?.id === selectedFriend.id ? (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="destructive"
+                          className="flex-1"
+                          onClick={() => {
+                            handleRemoveFriend(selectedFriend);
+                            setConfirmRemoveFriend(null);
+                            setSelectedFriend(null);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          {t.delete}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => setConfirmRemoveFriend(null)}
+                        >
+                          {t.cancel}
+                        </Button>
+                      </div>
+                    ) : (
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleRemoveFriend(friend)}
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                        variant="outline"
+                        className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => setConfirmRemoveFriend(selectedFriend)}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        {'Remove Friend'}
                       </Button>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+                    )}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="friends-list"
+                    initial={{ opacity: 0, x: -40 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -40 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">
+                      {t.yourFriends || 'Your Friends'} ({friends.length})
+                    </h3>
+
+                    {friends.length === 0 ? (
+                      <EmptyState
+                        icon={<Users className="w-6 h-6 text-primary" />}
+                        title={t.noFriendsYet || 'No friends yet'}
+                        message={t.addFriendsHint || 'Share your code or add friends by their code'}
+                        size="compact"
+                        action={{
+                          label: t.addFriendByCode || 'Add Friend by Code',
+                          onClick: () => setShowAddFriend(true),
+                          icon: <UserPlus className="w-4 h-4" />,
+                        }}
+                      />
+                    ) : (
+                      <div className="space-y-2">
+                        {friends.map((friend) => (
+                          <motion.div
+                            key={friend.id}
+                            layout
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            className="flex items-center gap-3 p-3 rounded-xl bg-card border cursor-pointer hover:bg-accent/5 transition-colors"
+                            onClick={() => setSelectedFriend(friend)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedFriend(friend); } }}
+                          >
+                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">
+                              {friend.avatarEmoji}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground truncate">
+                                {friend.displayName}
+                              </p>
+                              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <Flame className="w-3 h-3 text-orange-500" />
+                                  {friend.streakHidden ? '—' : friend.currentStreak}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Trophy className="w-3 h-3 text-yellow-500" />
+                                  {friend.levelHidden ? '—' : friend.level}
+                                </span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  {formatLastActive(friend.lastActive)}
+                                </span>
+                              </div>
+                            </div>
+                            <ChevronLeft className="w-4 h-4 text-muted-foreground rotate-180 shrink-0" />
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Recent Activity */}
-            {activities.length > 0 && (
+            {(() => {
+              const hiddenFriendIds = new Set(friends.filter(f => f.activityHidden).map(f => f.id));
+              const visibleActivities = activities.filter(a => !hiddenFriendIds.has(a.friendId));
+              if (visibleActivities.length === 0) return null;
+              return (
               <div className="p-4 border-t">
                 <h3 className="text-sm font-medium text-muted-foreground mb-3">
                   {t.recentActivity || 'Recent Activity'}
                 </h3>
                 <div className="space-y-2">
-                  {activities.map((activity) => (
+                  {visibleActivities.map((activity) => (
                     <div
                       key={activity.id}
                       className="flex items-center gap-3 p-2 rounded-lg bg-muted/50"
@@ -507,7 +654,8 @@ export function FriendsPanel({
                   ))}
                 </div>
               </div>
-            )}
+              );
+            })()}
           </div>
       </div>
     </div>
