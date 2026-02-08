@@ -76,7 +76,7 @@ dependencies {
     implementation 'com.google.android.play:app-update-ktx:2.1.0'
 
     // Health Connect SDK
-    implementation 'androidx.health.connect:connect-client:1.1.0-alpha10'
+    implementation 'androidx.health.connect:connect-client:1.1.0'
 
     // Coroutines for Health Connect suspend functions
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
