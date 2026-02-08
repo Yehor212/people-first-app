@@ -32,7 +32,6 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { EmptyState } from '@/components/EmptyState';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticTap, hapticSuccess, hapticError } from '@/lib/haptics';
@@ -55,7 +54,6 @@ import {
 } from '@/storage/friendsSync';
 
 interface FriendsPanelProps {
-  open: boolean;
   onClose: () => void;
   userName?: string;
   currentStreak?: number;
@@ -63,7 +61,6 @@ interface FriendsPanelProps {
 }
 
 export function FriendsPanel({
-  open,
   onClose,
   userName = 'Zen User',
   currentStreak = 0,
@@ -71,7 +68,7 @@ export function FriendsPanel({
 }: FriendsPanelProps) {
   const { t } = useLanguage();
 
-  useBackHandler(open, onClose);
+  useBackHandler(true, onClose);
 
   const [myProfile, setMyProfile] = useState<MyProfile | null>(null);
   const [friends, setFriends] = useState<Friend[]>([]);
@@ -86,24 +83,22 @@ export function FriendsPanel({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
 
-  // Initialize profile and load data
+  // Initialize profile and load data on mount
   useEffect(() => {
-    if (open) {
-      let profile = loadMyProfile();
-      if (!profile) {
-        profile = initializeMyProfile(userName);
-      }
-
-      // Update streak and level in profile
-      if (profile.currentStreak !== currentStreak || profile.level !== level) {
-        profile = updateMyProfile({ currentStreak, level });
-      }
-
-      setMyProfile(profile);
-      setFriends(getFriendsSortedByActivity());
-      setActivities(getRecentActivities(5));
+    let profile = loadMyProfile();
+    if (!profile) {
+      profile = initializeMyProfile(userName);
     }
-  }, [open, userName, currentStreak, level]);
+
+    // Update streak and level in profile
+    if (profile.currentStreak !== currentStreak || profile.level !== level) {
+      profile = updateMyProfile({ currentStreak, level });
+    }
+
+    setMyProfile(profile);
+    setFriends(getFriendsSortedByActivity());
+    setActivities(getRecentActivities(5));
+  }, [userName, currentStreak, level]);
 
   // Refresh friends data from cloud
   const handleRefresh = useCallback(async () => {
@@ -213,40 +208,47 @@ export function FriendsPanel({
   };
 
   return (
-    <Sheet open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-md p-0 overflow-hidden">
-        <div className="flex flex-col h-full">
-          {/* Header */}
-          <SheetHeader className="p-4 border-b">
-            <div className="flex items-center justify-between">
-              <SheetTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-primary" />
-                {t.friends || 'Friends'}
-              </SheetTitle>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="h-8 w-8"
-                >
-                  <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowSettings(!showSettings)}
-                  className="h-8 w-8"
-                >
-                  <Settings className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </SheetHeader>
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="friends-panel-title"
+      className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto animate-fade-in"
+    >
+      <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 id="friends-panel-title" className="text-2xl font-bold zen-text-gradient flex items-center gap-2">
+              <Users className="w-6 h-6" />
+              {t.friends || 'Friends'}
+            </h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+            >
+              <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+            </button>
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <button
+              onClick={onClose}
+              aria-label={t.close || 'Close'}
+              className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto">
+        {/* Content */}
+        <div>
             {/* My Profile Card */}
             {myProfile && (
               <div className="p-4 border-b bg-card/50">
@@ -507,9 +509,8 @@ export function FriendsPanel({
               </div>
             )}
           </div>
-        </div>
-      </SheetContent>
-    </Sheet>
+      </div>
+    </div>
   );
 }
 

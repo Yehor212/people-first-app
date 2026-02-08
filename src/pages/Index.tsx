@@ -326,7 +326,6 @@ export function Index() {
   const [showTasksPanel, setShowTasksPanel] = useState(false);
   const [showQuestsPanel, setShowQuestsPanel] = useState(false);
   const [showFriendsPanel, setShowFriendsPanel] = useState(false);
-  const [friendsPanelMounted, setFriendsPanelMounted] = useState(false);
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
 
@@ -566,10 +565,6 @@ export function Index() {
       showWidgetSettings, showCompanionPanel, showWeeklyReport, showTimeHelper,
       showMindfulMoment, showWelcomeBack, showWelcomeOverlay]);
 
-  // Keep FriendsPanel mounted after first open (for Sheet close animation)
-  useEffect(() => {
-    if (showFriendsPanel) setFriendsPanelMounted(true);
-  }, [showFriendsPanel]);
 
   // Migrate old reminder settings to new 3-time mood format
   useEffect(() => {
@@ -2545,12 +2540,11 @@ export function Index() {
         </LazyErrorBoundary>
       )}
 
-      {/* Friends Panel — stays mounted after first open for Sheet close animation */}
-      {friendsPanelMounted && (
+      {/* Friends Panel */}
+      {showFriendsPanel && (
         <LazyErrorBoundary componentName="Friends">
           <Suspense fallback={<SkeletonList />}>
             <FriendsPanel
-              open={showFriendsPanel}
               onClose={() => setShowFriendsPanel(false)}
               userName={userName}
               currentStreak={innerWorld.currentActiveStreak}
