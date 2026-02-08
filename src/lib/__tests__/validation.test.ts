@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { sanitizeString, sanitizeUserName } from '../sanitize';
 import {
   generateSecureRandom,
   generateSecureId,
-  sanitizeString,
-  sanitizeUserName,
   sanitizeObject,
   safeParseInt,
   safeParseFloat,

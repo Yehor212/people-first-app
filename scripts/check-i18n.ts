@@ -11,7 +11,7 @@
 
 import { translations, Language, Translations } from '../src/i18n/translations';
 
-const MAIN_LANGUAGES: Language[] = ['ru', 'en', 'uk', 'es', 'de', 'fr', 'ja'];
+const MAIN_LANGUAGES: Language[] = ['ru', 'en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
 const REFERENCE_LANG: Language = 'en';
 
 interface ValidationResult {

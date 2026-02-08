@@ -91,7 +91,7 @@ registerRoute(
     plugins: [
       new ExpirationPlugin({
         maxEntries: 10,
-        maxAgeSeconds: 60 * 60, // P0 Fix: 1 hour instead of 24 hours
+        maxAgeSeconds: 5 * 60, // 5 minutes — fast updates for GitHub Pages (no custom cache headers)
       }),
     ],
   })

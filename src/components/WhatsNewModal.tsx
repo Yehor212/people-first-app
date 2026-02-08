@@ -27,6 +27,29 @@ interface ChangelogItem {
 
 // Changelog entries by version
 const CHANGELOG: Record<string, ChangelogItem[]> = {
+  '1.6.0': [
+    {
+      icon: <Sparkles className="w-5 h-5 text-purple-500" />,
+      titleKey: 'whatsNew.redesign.title',
+      descriptionKey: 'whatsNew.redesign.description',
+      title: 'New Design',
+      description: 'Streamlined 3-tab layout with quick mood logging.',
+    },
+    {
+      icon: <Zap className="w-5 h-5 text-yellow-500" />,
+      titleKey: 'whatsNew.performance160.title',
+      descriptionKey: 'whatsNew.performance160.description',
+      title: 'Faster & Smoother',
+      description: 'Fixed crashes, improved loading speed and stability.',
+    },
+    {
+      icon: <Shield className="w-5 h-5 text-green-500" />,
+      titleKey: 'whatsNew.accessibility.title',
+      descriptionKey: 'whatsNew.accessibility.description',
+      title: 'Accessibility',
+      description: 'Better screen reader support and keyboard navigation.',
+    },
+  ],
   '1.5.7': [
     {
       icon: <ToggleRight className="w-5 h-5 text-purple-500" />,
