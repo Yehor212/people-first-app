@@ -31,7 +31,8 @@ interface RingDetailSheetProps {
   ringType: RingType | null;
   currentValue: number;
   weeklyData: DayData[];
-  average?: number;
+  previousAverage?: number;
+  onAction?: () => void;
 }
 
 // Ring theme configurations with premium styling
@@ -74,7 +75,7 @@ const ringThemes: Record<RingType, {
 };
 
 // Premium animated chart with glow effects
-function PremiumChart({ data, color, glowColor }: { data: DayData[]; color: string; glowColor: string }) {
+function PremiumChart({ data, color, glowColor, dayNames }: { data: DayData[]; color: string; glowColor: string; dayNames: string[] }) {
   if (data.length < 2) return null;
 
   const values = data.map(d => d.value);
@@ -95,8 +96,8 @@ function PremiumChart({ data, color, glowColor }: { data: DayData[]; color: stri
   const areaD = `${pathD} L ${points[points.length - 1].x} ${height - padding.bottom} L ${points[0].x} ${height - padding.bottom} Z`;
 
   const dayLabels = data.map(d => {
-    const date = new Date(d.date);
-    return date.toLocaleDateString('en', { weekday: 'short' }).slice(0, 1);
+    const dayOfWeek = new Date(d.date).getDay();
+    return dayNames[dayOfWeek]?.slice(0, 1) || '';
   });
 
   return (
@@ -257,7 +258,8 @@ export function RingDetailSheet({
   ringType,
   currentValue,
   weeklyData,
-  average,
+  previousAverage,
+  onAction,
 }: RingDetailSheetProps) {
   const { t } = useLanguage();
 
@@ -265,14 +267,15 @@ export function RingDetailSheet({
 
   const theme = ringType ? ringThemes[ringType] : null;
 
-  // Calculate stats
+  // Calculate stats with week-over-week trend
   const stats = useMemo(() => {
     if (weeklyData.length === 0) return { trend: 0, weekHigh: 0, weekLow: 0, avg: 0 };
 
     const values = weeklyData.map(d => d.value);
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
-    const trend = weeklyData.length >= 2
-      ? weeklyData[weeklyData.length - 1].value - weeklyData[weeklyData.length - 2].value
+    // Week-over-week trend: current week avg vs previous week avg
+    const trend = previousAverage != null
+      ? Math.round(avg - previousAverage)
       : 0;
 
     return {
@@ -281,7 +284,7 @@ export function RingDetailSheet({
       weekLow: Math.min(...values),
       avg: Math.round(avg),
     };
-  }, [weeklyData]);
+  }, [weeklyData, previousAverage]);
 
   // Personalized recommendation
   const getRecommendation = () => {
@@ -410,6 +413,7 @@ export function RingDetailSheet({
                 data={weeklyData.slice(-7)}
                 color={theme.chartColor}
                 glowColor={theme.glowColor}
+                dayNames={dayNames}
               />
             </div>
           </motion.div>
@@ -530,7 +534,7 @@ export function RingDetailSheet({
             transition={{ delay: 0.5 }}
             whileHover={{ scale: 1.02, boxShadow: `0 12px 40px ${theme.glowColor}` }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => onOpenChange(false)}
+            onClick={() => onAction ? onAction() : onOpenChange(false)}
           >
             <Sparkles className="w-5 h-5" />
             <span>

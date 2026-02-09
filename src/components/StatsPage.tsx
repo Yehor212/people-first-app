@@ -421,7 +421,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     return data;
   }, [moodByDate, habitCompletionMap, focusMinutesByDate, habits.length]);
 
-  // Weekly data for ring detail sheet
+  // Weekly data for ring detail sheet + previous week averages for trend
   const ringWeeklyData = useMemo(() => {
     const today = new Date();
     const weekDays: string[] = [];
@@ -429,6 +429,14 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       weekDays.push(formatDate(d));
+    }
+
+    // Previous week days (7-13 days ago) for trend comparison
+    const prevWeekDays: string[] = [];
+    for (let i = 13; i >= 7; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      prevWeekDays.push(formatDate(d));
     }
 
     // Mood data per day (average score 0-100)
@@ -457,7 +465,40 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       return { date, value: Math.min(Math.round((mins / 60) * 100), 100) };
     });
 
-    return { mood: moodData, habits: habitsData, focus: focusData };
+    // Previous week averages for week-over-week trend
+    const prevMoodValues = prevWeekDays.map(date => {
+      const dayMoods = moods.filter(m => m.date === date);
+      if (dayMoods.length === 0) return 0;
+      const avgScore = dayMoods.reduce((sum, m) => {
+        const score = m.emotion?.primary
+          ? getEmotionScore(m.emotion.primary, m.emotion.intensity)
+          : moodScore(m.mood);
+        return sum + score;
+      }, 0) / dayMoods.length;
+      return Math.round((avgScore / 5) * 100);
+    });
+
+    const prevHabitsValues = prevWeekDays.map(date => {
+      if (habits.length === 0) return 0;
+      const completed = habits.filter(h => isHabitCompletedOnDate(h, date)).length;
+      return Math.round((completed / habits.length) * 100);
+    });
+
+    const prevFocusValues = prevWeekDays.map(date => {
+      const mins = focusMinutesByDate.get(date) || 0;
+      return Math.min(Math.round((mins / 60) * 100), 100);
+    });
+
+    const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+
+    return {
+      mood: moodData,
+      habits: habitsData,
+      focus: focusData,
+      prevMoodAvg: Math.round(avg(prevMoodValues)),
+      prevHabitsAvg: Math.round(avg(prevHabitsValues)),
+      prevFocusAvg: Math.round(avg(prevFocusValues)),
+    };
   }, [moods, habits, focusMinutesByDate]);
 
   const handleMonthShift = (delta: number) => {
@@ -610,11 +651,11 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             />
           )}
 
-          {/* Radial Dashboard */}
+          {/* Radial Dashboard — weekly averages matching RingDetailSheet */}
           <RadialDashboard
-            moodPercent={Math.round(((premiumStats.moodScore - 1) / 4) * 100)}
-            habitsPercent={premiumStats.habitRate}
-            focusPercent={premiumStats.focusScore}
+            moodPercent={Math.round(ringWeeklyData.mood.reduce((a, b) => a + b.value, 0) / 7)}
+            habitsPercent={Math.round(ringWeeklyData.habits.reduce((a, b) => a + b.value, 0) / 7)}
+            focusPercent={Math.round(ringWeeklyData.focus.reduce((a, b) => a + b.value, 0) / 7)}
             onRingClick={(ringId) => setSelectedRing(ringId)}
           />
         </>
@@ -1348,20 +1389,27 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         onOpenChange={(open) => !open && setSelectedRing(null)}
         ringType={selectedRing}
         currentValue={
-          selectedRing === 'mood' ? Math.round(((premiumStats.moodScore - 1) / 4) * 100) :
-          selectedRing === 'habits' ? premiumStats.habitRate :
-          selectedRing === 'focus' ? premiumStats.focusScore : 0
+          selectedRing === 'mood' ? Math.round(ringWeeklyData.mood.reduce((a, b) => a + b.value, 0) / 7) :
+          selectedRing === 'habits' ? Math.round(ringWeeklyData.habits.reduce((a, b) => a + b.value, 0) / 7) :
+          selectedRing === 'focus' ? Math.round(ringWeeklyData.focus.reduce((a, b) => a + b.value, 0) / 7) : 0
         }
         weeklyData={
           selectedRing === 'mood' ? ringWeeklyData.mood :
           selectedRing === 'habits' ? ringWeeklyData.habits :
           selectedRing === 'focus' ? ringWeeklyData.focus : []
         }
-        average={
-          selectedRing === 'mood' ? ringWeeklyData.mood.reduce((a, b) => a + b.value, 0) / 7 :
-          selectedRing === 'habits' ? ringWeeklyData.habits.reduce((a, b) => a + b.value, 0) / 7 :
-          selectedRing === 'focus' ? ringWeeklyData.focus.reduce((a, b) => a + b.value, 0) / 7 : 0
+        previousAverage={
+          selectedRing === 'mood' ? ringWeeklyData.prevMoodAvg :
+          selectedRing === 'habits' ? ringWeeklyData.prevHabitsAvg :
+          selectedRing === 'focus' ? ringWeeklyData.prevFocusAvg : 0
         }
+        onAction={() => {
+          const ring = selectedRing;
+          setSelectedRing(null);
+          if (ring === 'mood') onQuickAction?.('logMood');
+          else if (ring === 'focus') onQuickAction?.('startFocus');
+          else if (ring === 'habits') onQuickAction?.('logMood');
+        }}
       />
     </div>
   );
