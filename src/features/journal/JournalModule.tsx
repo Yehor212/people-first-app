@@ -14,6 +14,7 @@ import { JournalEntryEditor } from './JournalEntryEditor';
 import { JournalEntryViewer } from './JournalEntryViewer';
 import { JournalCalendar } from './JournalCalendar';
 import { getEntryCount } from './journalStorage';
+import { useJournalReminder, getDaysSinceLastEntry } from './useJournalReminder';
 
 type ModuleState = 'card' | 'open';
 
@@ -27,6 +28,10 @@ export function JournalModule() {
 
   const journal = useJournal();
   const security = useJournalSecurity();
+  const reminder = useJournalReminder({
+    reminderTitle: ts.journalReminderNotifTitle || 'Time to Journal',
+    reminderBody: ts.journalReminderNotifBody || 'Take a moment to capture your thoughts and feelings.',
+  });
 
   // Undo delete ref
   const deletedEntryRef = useRef<{ id: string; data: typeof journal.entries[0] } | null>(null);
@@ -48,6 +53,8 @@ export function JournalModule() {
     }
     return count;
   }, [journal.entryDates]);
+
+  const daysSinceLastEntry = useMemo(() => getDaysSinceLastEntry(journal.entryDates), [journal.entryDates]);
 
   // Scroll lock when journal is open
   useScrollLock(moduleState === 'open');
@@ -276,7 +283,7 @@ export function JournalModule() {
       )}
 
       {/* Main content (unlocked or no password) */}
-      {!security.isLocked && !security.loading && !(showPasswordSettings && security.hasPassword === false) && (
+      {!security.isLocked && !security.loading && !(showPasswordSettings && security.hasPassword === false && journal.totalCount === 0) && (
         <>
           {/* Editor overlays on top with its own fixed positioning */}
           {journal.view === 'editing' && (
@@ -356,6 +363,7 @@ export function JournalModule() {
                     onNewEntry={handleNewEntry}
                     totalCount={journal.totalCount}
                     loading={journal.loading}
+                    daysSinceLastEntry={daysSinceLastEntry}
                   />
                 </div>
 
@@ -399,9 +407,51 @@ export function JournalModule() {
                             />
                           </div>
                         )}
+                        {/* Reminder toggle */}
+                        <div className="mt-4 pt-4 border-t border-border/20">
+                          <div className="flex items-center justify-between min-h-[44px]">
+                            <div>
+                              <p className="text-sm font-medium text-foreground">
+                                {ts.journalReminderEnabled || 'Daily reminder'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {ts.journalReminderSubtitle || 'Get reminded to write'}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => reminder.setEnabled(!reminder.enabled)}
+                              className={cn(
+                                'relative w-11 h-6 rounded-full transition-colors',
+                                reminder.enabled ? 'bg-primary' : 'bg-muted-foreground/20',
+                              )}
+                            >
+                              <div className={cn(
+                                'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform',
+                                reminder.enabled ? 'translate-x-[22px]' : 'translate-x-0.5',
+                              )} />
+                            </button>
+                          </div>
+                          {reminder.enabled && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <span className="text-xs text-muted-foreground">
+                                {ts.journalReminderTime || 'Time'}:
+                              </span>
+                              <input
+                                type="time"
+                                value={`${String(reminder.hour).padStart(2, '0')}:${String(reminder.minute).padStart(2, '0')}`}
+                                onChange={e => {
+                                  const [h, m] = e.target.value.split(':').map(Number);
+                                  if (!isNaN(h) && !isNaN(m)) reminder.setTime(h, m);
+                                }}
+                                className="px-2 py-1 rounded-lg bg-muted/50 border border-border/30 text-sm text-foreground min-h-[36px]"
+                              />
+                            </div>
+                          )}
+                        </div>
+
                         <button
                           onClick={() => setShowPasswordSettings(false)}
-                          className="w-full mt-3 py-2.5 text-sm text-muted-foreground min-h-[44px]"
+                          className="w-full mt-4 py-2.5 text-sm text-muted-foreground min-h-[44px]"
                         >
                           {ts.cancel || 'Cancel'}
                         </button>

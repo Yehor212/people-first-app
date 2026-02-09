@@ -45,6 +45,20 @@ registerRoute(
   })
 );
 
+// Cache Fluent Emoji 3D sticker images (immutable CDN assets)
+registerRoute(
+  ({ url }) => url.hostname === 'cdn.jsdelivr.net' && url.pathname.includes('fluent-emoji'),
+  new CacheFirst({
+    cacheName: 'fluent-emoji-stickers',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 200,
+        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+      }),
+    ],
+  })
+);
+
 // Cache Google Fonts stylesheets
 registerRoute(
   ({ url }) => url.hostname === 'fonts.googleapis.com',

@@ -3,6 +3,7 @@ import { Trash2, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { JournalEntry } from './types';
+import { StickerRenderer } from './StickerRenderer';
 
 const MOOD_EMOJI: Record<string, string> = {
   great: '\u{1F604}',
@@ -78,9 +79,9 @@ export const JournalEntryCard = memo(function JournalEntryCard({
               {/* Stickers + photo count + tags */}
               <div className="flex items-center gap-2 mt-1.5">
                 {entry.stickers.length > 0 && (
-                  <div className="flex -space-x-0.5">
+                  <div className="flex gap-0.5 items-center">
                     {entry.stickers.slice(0, 5).map((s, i) => (
-                      <span key={i} className="text-xs">{s}</span>
+                      <StickerRenderer key={i} emoji={s} size="xs" />
                     ))}
                   </div>
                 )}

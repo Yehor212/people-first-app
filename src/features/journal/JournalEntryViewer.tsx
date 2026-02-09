@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import type { JournalEntry } from './types';
 import type { MoodType } from '@/types';
 import { JournalPhotoGallery } from './JournalPhotoGallery';
+import { StickerRenderer } from './StickerRenderer';
 
 const MOOD_DISPLAY: Record<MoodType, string> = {
   great: '\u{1F604}',
@@ -99,9 +100,9 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
 
         {/* Stickers */}
         {entry.stickers.length > 0 && (
-          <div className="flex gap-1.5">
+          <div className="flex gap-2 items-center">
             {entry.stickers.map((s, i) => (
-              <span key={i} className="text-xl">{s}</span>
+              <StickerRenderer key={i} emoji={s} size="md" />
             ))}
           </div>
         )}

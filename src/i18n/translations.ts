@@ -2019,6 +2019,19 @@ export interface Translations {
   journalDayStreak: string;
   journalCalendarToday: string;
   journalClearFilters: string;
+  journalStickerEmotions: string;
+  journalStickerNature: string;
+  journalStickerActivities: string;
+  journalStickerFood: string;
+  journalStickerSymbols: string;
+  journalStickerRecent: string;
+  journalReminderTitle: string;
+  journalReminderSubtitle: string;
+  journalReminderEnabled: string;
+  journalReminderTime: string;
+  journalReminderNotifTitle: string;
+  journalReminderNotifBody: string;
+  journalInactiveBanner: string;
 }
 
 // Base translations (RTL languages added dynamically below)
@@ -3967,6 +3980,19 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalDayStreak: 'дней подряд',
     journalCalendarToday: 'Сегодня',
     journalClearFilters: 'Сбросить фильтры',
+    journalStickerEmotions: 'Эмоции',
+    journalStickerNature: 'Природа',
+    journalStickerActivities: 'Активности',
+    journalStickerFood: 'Еда и напитки',
+    journalStickerSymbols: 'Символы',
+    journalStickerRecent: 'Недавние',
+    journalReminderTitle: 'Напоминание о журнале',
+    journalReminderSubtitle: 'Напоминание писать',
+    journalReminderEnabled: 'Ежедневное напоминание',
+    journalReminderTime: 'Время',
+    journalReminderNotifTitle: 'Время для журнала \u270D\uFE0F',
+    journalReminderNotifBody: 'Найдите минутку, чтобы записать свои мысли и чувства.',
+    journalInactiveBanner: 'Вы не писали уже {days} дн. Как насчёт записи?',
   },
 
   en: {
@@ -5913,6 +5939,19 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalDayStreak: 'day streak',
     journalCalendarToday: 'Today',
     journalClearFilters: 'Clear filters',
+    journalStickerEmotions: 'Emotions',
+    journalStickerNature: 'Nature',
+    journalStickerActivities: 'Activities',
+    journalStickerFood: 'Food & Drink',
+    journalStickerSymbols: 'Symbols',
+    journalStickerRecent: 'Recent',
+    journalReminderTitle: 'Journal Reminder',
+    journalReminderSubtitle: 'Get reminded to write',
+    journalReminderEnabled: 'Daily reminder',
+    journalReminderTime: 'Time',
+    journalReminderNotifTitle: 'Time to Journal \u270D\uFE0F',
+    journalReminderNotifBody: 'Take a moment to capture your thoughts and feelings.',
+    journalInactiveBanner: "You haven't written in {days} days. How about a quick entry?",
   },
 
   uk: {
@@ -7859,6 +7898,19 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalDayStreak: 'днів поспіль',
     journalCalendarToday: 'Сьогодні',
     journalClearFilters: 'Скинути фільтри',
+    journalStickerEmotions: 'Емоції',
+    journalStickerNature: 'Природа',
+    journalStickerActivities: 'Активності',
+    journalStickerFood: 'Їжа та напої',
+    journalStickerSymbols: 'Символи',
+    journalStickerRecent: 'Нещодавні',
+    journalReminderTitle: 'Нагадування про журнал',
+    journalReminderSubtitle: 'Нагадування писати',
+    journalReminderEnabled: 'Щоденне нагадування',
+    journalReminderTime: 'Час',
+    journalReminderNotifTitle: 'Час для журналу \u270D\uFE0F',
+    journalReminderNotifBody: 'Знайдіть хвилинку, щоб записати свої думки та почуття.',
+    journalInactiveBanner: 'Ви не писали вже {days} дн. Як щодо запису?',
   },
 
   es: {
@@ -9806,6 +9858,19 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalDayStreak: 'días seguidos',
     journalCalendarToday: 'Hoy',
     journalClearFilters: 'Borrar filtros',
+    journalStickerEmotions: 'Emociones',
+    journalStickerNature: 'Naturaleza',
+    journalStickerActivities: 'Actividades',
+    journalStickerFood: 'Comida y bebida',
+    journalStickerSymbols: 'Símbolos',
+    journalStickerRecent: 'Recientes',
+    journalReminderTitle: 'Recordatorio del diario',
+    journalReminderSubtitle: 'Recordatorio para escribir',
+    journalReminderEnabled: 'Recordatorio diario',
+    journalReminderTime: 'Hora',
+    journalReminderNotifTitle: 'Hora de escribir en tu diario ✍️',
+    journalReminderNotifBody: 'Tómate un momento para capturar tus pensamientos y sentimientos.',
+    journalInactiveBanner: 'No has escrito en {days} días. ¿Qué tal una entrada rápida?',
   },
 
   de: {
@@ -11753,6 +11818,19 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalDayStreak: 'Tage in Folge',
     journalCalendarToday: 'Heute',
     journalClearFilters: 'Filter zurücksetzen',
+    journalStickerEmotions: 'Emotionen',
+    journalStickerNature: 'Natur',
+    journalStickerActivities: 'Aktivitäten',
+    journalStickerFood: 'Essen & Trinken',
+    journalStickerSymbols: 'Symbole',
+    journalStickerRecent: 'Kürzlich',
+    journalReminderTitle: 'Tagebuch-Erinnerung',
+    journalReminderSubtitle: 'Erinnerung zum Schreiben',
+    journalReminderEnabled: 'Tägliche Erinnerung',
+    journalReminderTime: 'Zeit',
+    journalReminderNotifTitle: 'Zeit für dein Tagebuch ✍️',
+    journalReminderNotifBody: 'Nimm dir einen Moment, um deine Gedanken und Gefühle festzuhalten.',
+    journalInactiveBanner: 'Du hast seit {days} Tagen nicht geschrieben. Wie wäre es mit einem kurzen Eintrag?',
   },
 
   fr: {
@@ -13700,6 +13778,19 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalDayStreak: 'jours consécutifs',
     journalCalendarToday: 'Aujourd\'hui',
     journalClearFilters: 'Effacer les filtres',
+    journalStickerEmotions: 'Émotions',
+    journalStickerNature: 'Nature',
+    journalStickerActivities: 'Activités',
+    journalStickerFood: 'Nourriture et boissons',
+    journalStickerSymbols: 'Symboles',
+    journalStickerRecent: 'Récents',
+    journalReminderTitle: 'Rappel du journal',
+    journalReminderSubtitle: 'Rappel pour écrire',
+    journalReminderEnabled: 'Rappel quotidien',
+    journalReminderTime: 'Heure',
+    journalReminderNotifTitle: "C'est l'heure d'écrire ✍️",
+    journalReminderNotifBody: 'Prenez un moment pour capturer vos pensées et sentiments.',
+    journalInactiveBanner: "Vous n'avez pas écrit depuis {days} jours. Et si vous faisiez une courte entrée ?",
   },
 
   ja: {
@@ -15646,6 +15737,19 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalDayStreak: '日連続',
     journalCalendarToday: '今日',
     journalClearFilters: 'フィルターをクリア',
+    journalStickerEmotions: '感情',
+    journalStickerNature: '自然',
+    journalStickerActivities: 'アクティビティ',
+    journalStickerFood: '食べ物と飲み物',
+    journalStickerSymbols: 'シンボル',
+    journalStickerRecent: '最近',
+    journalReminderTitle: '日記リマインダー',
+    journalReminderSubtitle: '書くことを思い出させる',
+    journalReminderEnabled: '毎日のリマインダー',
+    journalReminderTime: '時間',
+    journalReminderNotifTitle: '日記を書く時間です ✍️',
+    journalReminderNotifBody: '思いや気持ちを記録する時間を取りましょう。',
+    journalInactiveBanner: '{days}日間書いていません。短い記録はいかがですか？',
   },
 };
 
@@ -17554,6 +17658,19 @@ const arabicOverrides: Partial<Translations> = {
   journalDayStreak: 'أيام متتالية',
   journalCalendarToday: 'اليوم',
   journalClearFilters: 'مسح الفلاتر',
+  journalStickerEmotions: 'مشاعر',
+  journalStickerNature: 'طبيعة',
+  journalStickerActivities: 'أنشطة',
+  journalStickerFood: 'طعام وشراب',
+  journalStickerSymbols: 'رموز',
+  journalStickerRecent: 'الأخيرة',
+  journalReminderTitle: 'تذكير اليومية',
+  journalReminderSubtitle: 'تذكير بالكتابة',
+  journalReminderEnabled: 'تذكير يومي',
+  journalReminderTime: 'الوقت',
+  journalReminderNotifTitle: 'حان وقت الكتابة ✍️',
+  journalReminderNotifBody: 'خذ لحظة لتسجيل أفكارك ومشاعرك.',
+  journalInactiveBanner: 'لم تكتب منذ {days} أيام. ما رأيك بتدوينة قصيرة؟',
 };
 
 // Hebrew RTL overrides (merged with English)
@@ -19531,6 +19648,19 @@ const hebrewOverrides: Partial<Translations> = {
   journalDayStreak: 'ימים רצופים',
   journalCalendarToday: 'היום',
   journalClearFilters: 'נקה מסננים',
+  journalStickerEmotions: 'רגשות',
+  journalStickerNature: 'טבע',
+  journalStickerActivities: 'פעילויות',
+  journalStickerFood: 'אוכל ושתייה',
+  journalStickerSymbols: 'סמלים',
+  journalStickerRecent: 'אחרונים',
+  journalReminderTitle: 'תזכורת יומן',
+  journalReminderSubtitle: 'תזכורת לכתוב',
+  journalReminderEnabled: 'תזכורת יומית',
+  journalReminderTime: 'שעה',
+  journalReminderNotifTitle: 'הגיע הזמן לכתוב ✍️',
+  journalReminderNotifBody: 'קח רגע לתעד את המחשבות והרגשות שלך.',
+  journalInactiveBanner: 'לא כתבת כבר {days} ימים. מה דעתך על רשומה קצרה?',
 };
 
 // Add RTL languages with English fallback

@@ -32,6 +32,7 @@ interface JournalEntryListProps {
   onNewEntry: () => void;
   totalCount: number;
   loading?: boolean;
+  daysSinceLastEntry?: number | null;
 }
 
 export function JournalEntryList({
@@ -41,10 +42,12 @@ export function JournalEntryList({
   onNewEntry,
   totalCount,
   loading = false,
+  daysSinceLastEntry,
 }: JournalEntryListProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [searchQuery, setSearchQuery] = useState('');
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
@@ -153,6 +156,24 @@ export function JournalEntryList({
 
   return (
     <div className="space-y-3 pb-24">
+      {/* Inactivity banner */}
+      {daysSinceLastEntry != null && daysSinceLastEntry >= 2 && !bannerDismissed && (
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/15">
+          <span className="text-xl flex-shrink-0">{'\u{1F4AD}'}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-foreground">
+              {(ts.journalInactiveBanner || "You haven't written in {days} days. How about a quick entry?").replace('{days}', String(daysSinceLastEntry))}
+            </p>
+          </div>
+          <button
+            onClick={() => setBannerDismissed(true)}
+            className="p-1 rounded text-muted-foreground hover:bg-muted/50 flex-shrink-0"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Search bar */}
       <div className="relative">
         <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />

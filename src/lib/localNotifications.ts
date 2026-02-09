@@ -417,6 +417,51 @@ export function setMoodActionCallback(callback: MoodActionCallback): void {
 /**
  * Schedule mood notification with quick-log action buttons
  */
+// ====== Journal Reminder ======
+const JOURNAL_REMINDER_ID = 10;
+
+export async function scheduleJournalReminder(
+  time: { hour: number; minute: number },
+  copy: { title: string; body: string }
+): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+
+  try {
+    const permission = await LocalNotifications.checkPermissions();
+    if (permission.display !== 'granted') return;
+
+    // Cancel existing journal reminder
+    await cancelJournalReminder();
+
+    await LocalNotifications.schedule({
+      notifications: [{
+        id: JOURNAL_REMINDER_ID,
+        title: copy.title,
+        body: copy.body,
+        channelId: getActiveChannelId(),
+        schedule: { on: time, every: 'day', allowWhileIdle: true },
+      }],
+    });
+
+    logger.log('[Notifications] Journal reminder scheduled for', `${time.hour}:${time.minute}`);
+  } catch (error) {
+    logger.error('[Notifications] Failed to schedule journal reminder:', error);
+  }
+}
+
+export async function cancelJournalReminder(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+  try {
+    const pending = await LocalNotifications.getPending();
+    const journalNotifs = pending.notifications.filter(n => n.id === JOURNAL_REMINDER_ID);
+    if (journalNotifs.length > 0) {
+      await LocalNotifications.cancel({ notifications: journalNotifs });
+    }
+  } catch (error) {
+    logger.error('[Notifications] Failed to cancel journal reminder:', error);
+  }
+}
+
 export async function scheduleMoodQuickLogNotification(
   time: { hour: number; minute: number },
   message: string

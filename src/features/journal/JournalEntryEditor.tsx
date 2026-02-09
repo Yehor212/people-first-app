@@ -11,6 +11,7 @@ import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY } from './types';
 import { JournalStickerPicker } from './JournalStickerPicker';
 import { JournalPhotoPicker } from './JournalPhotoPicker';
 import { JournalPhotoGallery } from './JournalPhotoGallery';
+import { StickerRenderer } from './StickerRenderer';
 
 const MOOD_OPTIONS: { mood: MoodType; emoji: string }[] = [
   { mood: 'great', emoji: '\u{1F604}' },
@@ -433,14 +434,14 @@ export function JournalEntryEditor({
 
         {/* Stickers */}
         {stickers.length > 0 && (
-          <div className="flex gap-1 flex-wrap">
+          <div className="flex gap-1.5 flex-wrap">
             {stickers.map((s, i) => (
               <button
                 key={i}
                 onClick={() => handleRemoveSticker(i)}
-                className="text-lg px-1.5 py-0.5 rounded hover:bg-muted/50 active:scale-90 transition-transform min-w-[36px] min-h-[36px] flex items-center justify-center"
+                className="px-1.5 py-0.5 rounded-lg hover:bg-muted/50 active:scale-90 transition-transform min-w-[36px] min-h-[36px] flex items-center justify-center"
               >
-                {s}
+                <StickerRenderer emoji={s} size="md" />
               </button>
             ))}
           </div>
