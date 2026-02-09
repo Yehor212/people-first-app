@@ -33,6 +33,7 @@ import { removePushToken } from '@/lib/pushNotifications';
 import { offlineQueue } from '@/lib/offlineQueue';
 import { isCalendarEnabled, setCalendarEnabled, isCalendarConnected, clearCalendarCache } from '@/lib/googleCalendar';
 import { APP_VERSION } from '@/lib/appVersion';
+import { CHANGELOG } from '@/components/WhatsNewModal';
 import { useQuickActions } from '@/hooks/useQuickActions';
 import {
   NOTIFICATION_SOUNDS,
@@ -121,9 +122,10 @@ export function SettingsPanel({
   // P1 Fix: Debounce for cloud sync toggle to prevent race conditions
   const cloudSyncDebounceRef = useRef(false);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
+  const whatsNewKey = `zenflow_whats_new_v${APP_VERSION}_dismissed`;
   const [showWhatsNew, setShowWhatsNew] = useState(() => {
-    const dismissed = localStorage.getItem('zenflow_whats_new_v1_3_0_dismissed');
-    return dismissed !== 'true';
+    const dismissed = localStorage.getItem(whatsNewKey);
+    return dismissed !== 'true' && (CHANGELOG[APP_VERSION]?.length ?? 0) > 0;
   });
 
   useBackHandler(showResetConfirm, () => setShowResetConfirm(false));
@@ -143,7 +145,7 @@ export function SettingsPanel({
   };
 
   const handleDismissWhatsNew = () => {
-    localStorage.setItem('zenflow_whats_new_v1_3_0_dismissed', 'true');
+    localStorage.setItem(whatsNewKey, 'true');
     setShowWhatsNew(false);
   };
 
@@ -568,7 +570,7 @@ export function SettingsPanel({
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <Sparkles className="w-6 h-6 text-primary" />
-              <h3 className="text-lg font-semibold text-foreground">{t.settingsWhatsNewTitle || `What's New in v${APP_VERSION}`}</h3>
+              <h3 className="text-lg font-semibold text-foreground">{`${t.whatsNewTitle || "What's New"} v${APP_VERSION}`}</h3>
             </div>
             <button
               onClick={handleDismissWhatsNew}
@@ -579,45 +581,15 @@ export function SettingsPanel({
           </div>
 
           <div className="space-y-3">
-            <div className="flex items-start gap-3">
-              <div className="mt-1">🏆</div>
-              <div>
-                <p className="text-sm font-medium text-foreground">{t.settingsWhatsNewLeaderboards || 'Leaderboards'}</p>
-                <p className="text-xs text-muted-foreground">{t.settingsWhatsNewLeaderboardsDesc || 'Compete anonymously with others'}</p>
+            {(CHANGELOG[APP_VERSION] || []).map((item, idx) => (
+              <div key={idx} className="flex items-start gap-3">
+                <div className="mt-0.5 shrink-0">{item.icon}</div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{(t as Record<string, string>)[item.titleKey] || item.title}</p>
+                  <p className="text-xs text-muted-foreground">{(t as Record<string, string>)[item.descriptionKey] || item.description}</p>
+                </div>
               </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="mt-1">🎵</div>
-              <div>
-                <p className="text-sm font-medium text-foreground">{t.settingsWhatsNewSpotify || 'Spotify Integration'}</p>
-                <p className="text-xs text-muted-foreground">{t.settingsWhatsNewSpotifyDesc || 'Auto-play music during focus sessions'}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="mt-1">🤝</div>
-              <div>
-                <p className="text-sm font-medium text-foreground">{t.settingsWhatsNewChallenges || 'Friend Challenges'}</p>
-                <p className="text-xs text-muted-foreground">{t.settingsWhatsNewChallengesDesc || 'Challenge friends to build habits together'}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="mt-1">📧</div>
-              <div>
-                <p className="text-sm font-medium text-foreground">{t.settingsWhatsNewDigest || 'Weekly Digest'}</p>
-                <p className="text-xs text-muted-foreground">{t.settingsWhatsNewDigestDesc || 'Get progress reports in your inbox'}</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3">
-              <div className="mt-1">🔒</div>
-              <div>
-                <p className="text-sm font-medium text-foreground">{t.settingsWhatsNewSecurity || 'Enhanced Security'}</p>
-                <p className="text-xs text-muted-foreground">{t.settingsWhatsNewSecurityDesc || 'Better data protection & privacy'}</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       )}

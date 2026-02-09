@@ -657,17 +657,6 @@ export interface Translations {
   fileTooLarge: string;
   importConfirm: string;
   invalidBackupFormat: string;
-  settingsWhatsNewTitle: string;
-  settingsWhatsNewLeaderboards: string;
-  settingsWhatsNewLeaderboardsDesc: string;
-  settingsWhatsNewSpotify: string;
-  settingsWhatsNewSpotifyDesc: string;
-  settingsWhatsNewChallenges: string;
-  settingsWhatsNewChallengesDesc: string;
-  settingsWhatsNewDigest: string;
-  settingsWhatsNewDigestDesc: string;
-  settingsWhatsNewSecurity: string;
-  settingsWhatsNewSecurityDesc: string;
   settingsWhatsNewGotIt: string;
   // v1.5.9 What's New
   settingsWhatsNewFeatureToggles: string;
@@ -2436,17 +2425,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     fileTooLarge: 'Файл слишком большой (макс. 10 МБ)',
     importConfirm: 'Подтвердить импорт',
     invalidBackupFormat: 'Неверный формат резервной копии',
-    settingsWhatsNewTitle: 'Что нового в v1.5.9',
-    settingsWhatsNewLeaderboards: 'Таблицы лидеров',
-    settingsWhatsNewLeaderboardsDesc: 'Соревнуйтесь анонимно с другими',
-    settingsWhatsNewSpotify: 'Интеграция Spotify',
-    settingsWhatsNewSpotifyDesc: 'Автовоспроизведение музыки во время фокусировки',
-    settingsWhatsNewChallenges: 'Челленджи с друзьями',
-    settingsWhatsNewChallengesDesc: 'Приглашайте друзей вырабатывать привычки вместе',
-    settingsWhatsNewDigest: 'Еженедельный дайджест',
-    settingsWhatsNewDigestDesc: 'Получайте отчёты о прогрессе на email',
-    settingsWhatsNewSecurity: 'Улучшенная безопасность',
-    settingsWhatsNewSecurityDesc: 'Лучшая защита данных и приватности',
     settingsWhatsNewGotIt: 'Понятно!',
     // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: 'Переключатели модулей',
@@ -4294,17 +4272,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     fileTooLarge: 'File too large (max 10 MB)',
     importConfirm: 'Confirm import',
     invalidBackupFormat: 'Invalid backup format',
-    settingsWhatsNewTitle: 'What\'s New in v1.5.9',
-    settingsWhatsNewLeaderboards: 'Leaderboards',
-    settingsWhatsNewLeaderboardsDesc: 'Compete anonymously with others',
-    settingsWhatsNewSpotify: 'Spotify Integration',
-    settingsWhatsNewSpotifyDesc: 'Auto-play music during focus sessions',
-    settingsWhatsNewChallenges: 'Friend Challenges',
-    settingsWhatsNewChallengesDesc: 'Challenge friends to build habits together',
-    settingsWhatsNewDigest: 'Weekly Digest',
-    settingsWhatsNewDigestDesc: 'Get progress reports in your inbox',
-    settingsWhatsNewSecurity: 'Enhanced Security',
-    settingsWhatsNewSecurityDesc: 'Better data protection & privacy',
     settingsWhatsNewGotIt: 'Got it!',
     // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: 'Feature Toggles',
@@ -6152,17 +6119,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     fileTooLarge: 'Файл завеликий (макс. 10 МБ)',
     importConfirm: 'Підтвердити імпорт',
     invalidBackupFormat: 'Невірний формат резервної копії',
-    settingsWhatsNewTitle: 'Що нового в v1.5.9',
-    settingsWhatsNewLeaderboards: 'Таблиці лідерів',
-    settingsWhatsNewLeaderboardsDesc: 'Змагайтеся анонімно з іншими',
-    settingsWhatsNewSpotify: 'Інтеграція Spotify',
-    settingsWhatsNewSpotifyDesc: 'Автовідтворення музики під час фокусування',
-    settingsWhatsNewChallenges: 'Виклики з друзями',
-    settingsWhatsNewChallengesDesc: 'Запрошуйте друзів виробляти звички разом',
-    settingsWhatsNewDigest: 'Щотижневий дайджест',
-    settingsWhatsNewDigestDesc: 'Отримуйте звіти про прогрес на email',
-    settingsWhatsNewSecurity: 'Покращена безпека',
-    settingsWhatsNewSecurityDesc: 'Кращий захист даних та приватності',
     settingsWhatsNewGotIt: 'Зрозуміло!',
     // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: 'Перемикачі модулів',
@@ -8011,17 +7967,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     fileTooLarge: 'Archivo demasiado grande (máx. 10 MB)',
     importConfirm: 'Confirmar importación',
     invalidBackupFormat: 'Formato de copia de seguridad inválido',
-    settingsWhatsNewTitle: 'Novedades en v1.5.9',
-    settingsWhatsNewLeaderboards: 'Tablas de clasificación',
-    settingsWhatsNewLeaderboardsDesc: 'Compite anónimamente con otros',
-    settingsWhatsNewSpotify: 'Integración Spotify',
-    settingsWhatsNewSpotifyDesc: 'Reproducción automática durante sesiones de enfoque',
-    settingsWhatsNewChallenges: 'Desafíos con amigos',
-    settingsWhatsNewChallengesDesc: 'Desafía a amigos a crear hábitos juntos',
-    settingsWhatsNewDigest: 'Resumen semanal',
-    settingsWhatsNewDigestDesc: 'Recibe informes de progreso por email',
-    settingsWhatsNewSecurity: 'Seguridad mejorada',
-    settingsWhatsNewSecurityDesc: 'Mejor protección de datos y privacidad',
     settingsWhatsNewGotIt: '¡Entendido!',
     // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: 'Interruptores de funciones',
@@ -9870,17 +9815,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     fileTooLarge: 'Datei zu groß (max. 10 MB)',
     importConfirm: 'Import bestätigen',
     invalidBackupFormat: 'Ungültiges Backup-Format',
-    settingsWhatsNewTitle: 'Was ist neu in v1.5.9',
-    settingsWhatsNewLeaderboards: 'Bestenlisten',
-    settingsWhatsNewLeaderboardsDesc: 'Anonym mit anderen konkurrieren',
-    settingsWhatsNewSpotify: 'Spotify-Integration',
-    settingsWhatsNewSpotifyDesc: 'Automatische Musikwiedergabe bei Fokus-Sessions',
-    settingsWhatsNewChallenges: 'Freunde-Challenges',
-    settingsWhatsNewChallengesDesc: 'Fordere Freunde heraus, gemeinsam Gewohnheiten aufzubauen',
-    settingsWhatsNewDigest: 'Wöchentlicher Digest',
-    settingsWhatsNewDigestDesc: 'Erhalte Fortschrittsberichte per E-Mail',
-    settingsWhatsNewSecurity: 'Verbesserte Sicherheit',
-    settingsWhatsNewSecurityDesc: 'Besserer Datenschutz & Privatsphäre',
     settingsWhatsNewGotIt: 'Verstanden!',
     // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: 'Funktions-Schalter',
@@ -11729,17 +11663,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     fileTooLarge: 'Fichier trop volumineux (max 10 Mo)',
     importConfirm: 'Confirmer l\'importation',
     invalidBackupFormat: 'Format de sauvegarde invalide',
-    settingsWhatsNewTitle: 'Nouveautés dans v1.5.9',
-    settingsWhatsNewLeaderboards: 'Classements',
-    settingsWhatsNewLeaderboardsDesc: 'Rivalisez anonymement avec les autres',
-    settingsWhatsNewSpotify: 'Intégration Spotify',
-    settingsWhatsNewSpotifyDesc: 'Lecture automatique pendant les sessions de focus',
-    settingsWhatsNewChallenges: 'Défis entre amis',
-    settingsWhatsNewChallengesDesc: 'Défiez vos amis à créer des habitudes ensemble',
-    settingsWhatsNewDigest: 'Digest hebdomadaire',
-    settingsWhatsNewDigestDesc: 'Recevez des rapports de progrès par email',
-    settingsWhatsNewSecurity: 'Sécurité améliorée',
-    settingsWhatsNewSecurityDesc: 'Meilleure protection des données et confidentialité',
     settingsWhatsNewGotIt: 'Compris !',
     // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: 'Interrupteurs de fonctionnalités',
@@ -13587,17 +13510,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     fileTooLarge: 'ファイルが大きすぎます（最大10 MB）',
     importConfirm: 'インポートを確認',
     invalidBackupFormat: '無効なバックアップ形式',
-    settingsWhatsNewTitle: 'v1.5.9の新機能',
-    settingsWhatsNewLeaderboards: 'リーダーボード',
-    settingsWhatsNewLeaderboardsDesc: '匿名で他のユーザーと競争',
-    settingsWhatsNewSpotify: 'Spotify連携',
-    settingsWhatsNewSpotifyDesc: '集中セッション中に自動で音楽を再生',
-    settingsWhatsNewChallenges: 'フレンドチャレンジ',
-    settingsWhatsNewChallengesDesc: '友達と一緒に習慣を作ろう',
-    settingsWhatsNewDigest: 'ウィークリーダイジェスト',
-    settingsWhatsNewDigestDesc: '進捗レポートをメールで受信',
-    settingsWhatsNewSecurity: 'セキュリティ強化',
-    settingsWhatsNewSecurityDesc: 'データ保護とプライバシーを改善',
     settingsWhatsNewGotIt: '了解！',
     // v1.5.9 What's New
     settingsWhatsNewFeatureToggles: '機能トグル',
@@ -15458,17 +15370,6 @@ const arabicOverrides: Partial<Translations> = {
   invalidBackupFormat: 'صيغة نسخة احتياطية غير صالحة',
 
   // Settings What's New
-  settingsWhatsNewTitle: 'ما الجديد في هذا الإصدار',
-  settingsWhatsNewLeaderboards: 'لوحات الصدارة',
-  settingsWhatsNewLeaderboardsDesc: 'تنافس مع المستخدمين الآخرين',
-  settingsWhatsNewSpotify: 'تكامل Spotify',
-  settingsWhatsNewSpotifyDesc: 'قريباً: موسيقى لجلسات التركيز',
-  settingsWhatsNewChallenges: 'التحديات',
-  settingsWhatsNewChallengesDesc: 'تحديات أسبوعية للتحفيز',
-  settingsWhatsNewDigest: 'ملخص أسبوعي',
-  settingsWhatsNewDigestDesc: 'احصل على تقرير تقدمك الأسبوعي',
-  settingsWhatsNewSecurity: 'الأمان',
-  settingsWhatsNewSecurityDesc: 'تحسينات أمنية',
   settingsWhatsNewGotIt: 'فهمت',
 
   // Feature Toggles
@@ -17244,17 +17145,6 @@ const hebrewOverrides: Partial<Translations> = {
   invalidBackupFormat: 'פורמט גיבוי לא חוקי',
 
   // Settings What's New
-  settingsWhatsNewTitle: 'מה חדש בגרסה זו',
-  settingsWhatsNewLeaderboards: 'לוחות תוצאות',
-  settingsWhatsNewLeaderboardsDesc: 'התחרה עם משתמשים אחרים',
-  settingsWhatsNewSpotify: 'אינטגרציית Spotify',
-  settingsWhatsNewSpotifyDesc: 'בקרוב: מוזיקה לסשני מיקוד',
-  settingsWhatsNewChallenges: 'אתגרים',
-  settingsWhatsNewChallengesDesc: 'אתגרים שבועיים למוטיבציה',
-  settingsWhatsNewDigest: 'סיכום שבועי',
-  settingsWhatsNewDigestDesc: 'קבל דוח התקדמות שבועי',
-  settingsWhatsNewSecurity: 'אבטחה',
-  settingsWhatsNewSecurityDesc: 'שיפורי אבטחה',
   settingsWhatsNewGotIt: 'הבנתי',
 
   // Feature Toggles

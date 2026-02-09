@@ -25,8 +25,8 @@ interface ChangelogItem {
   description: string;
 }
 
-// Changelog entries by version
-const CHANGELOG: Record<string, ChangelogItem[]> = {
+// Changelog entries by version — exported for SettingsPanel banner
+export const CHANGELOG: Record<string, ChangelogItem[]> = {
   '1.6.0': [
     {
       icon: <Sparkles className="w-5 h-5 text-purple-500" />,
