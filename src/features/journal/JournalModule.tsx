@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { BookOpen, Lock, ChevronRight, X, Settings } from 'lucide-react';
+import { BookOpen, Lock, ChevronRight, X, Settings, Loader2, CheckCircle2, Mail } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
+import { Switch } from '@/components/ui/switch';
+import { supabase } from '@/lib/supabaseClient';
 import { useJournal } from './useJournal';
 import { useJournalSecurity } from './useJournalSecurity';
 import { JournalLockScreen } from './JournalLockScreen';
@@ -24,7 +26,13 @@ export function JournalModule() {
   const [moduleState, setModuleState] = useState<ModuleState>('card');
   const [entryCount, setEntryCount] = useState(0);
   const [showPasswordSettings, setShowPasswordSettings] = useState(false);
-  const [showForgotDialog, setShowForgotDialog] = useState(false);
+
+  // Secure password reset via email verification
+  type ResetStep = 'idle' | 'checking' | 'no-account' | 'confirm' | 'sending' | 'sent' | 'verifying' | 'success';
+  const [resetStep, setResetStep] = useState<ResetStep>('idle');
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [resetError, setResetError] = useState('');
 
   const journal = useJournal();
   const security = useJournalSecurity();
@@ -67,7 +75,7 @@ export function JournalModule() {
   // Android back button handling
   useEffect(() => {
     if (moduleState !== 'open') return;
-    if (showForgotDialog) return registerModalCloseCallback(() => { setShowForgotDialog(false); return true; });
+    if (resetStep !== 'idle') return registerModalCloseCallback(() => { closeResetDialog(); return true; });
     if (showPasswordSettings) return registerModalCloseCallback(() => { setShowPasswordSettings(false); return true; });
     if (journal.view !== 'list') {
       return registerModalCloseCallback(() => { journal.goBack(); return true; });
@@ -77,7 +85,7 @@ export function JournalModule() {
       security.lock();
       return true;
     });
-  }, [moduleState, journal.view, journal.goBack, showForgotDialog, showPasswordSettings, security]);
+  }, [moduleState, journal.view, journal.goBack, resetStep, showPasswordSettings, security]);
 
   // Security touch on interaction
   useEffect(() => {
@@ -140,14 +148,108 @@ export function JournalModule() {
     });
   }, [journal, ts]);
 
-  const handleForgotPassword = () => {
-    setShowForgotDialog(true);
+  const maskEmail = (email: string) => {
+    const [local, domain] = email.split('@');
+    if (!domain) return email;
+    return `${local[0]}${'*'.repeat(Math.min(local.length - 1, 5))}@${domain}`;
   };
 
-  const handleResetPassword = async () => {
-    await security.removePassword();
-    setShowForgotDialog(false);
+  const handleForgotPassword = async () => {
+    setResetStep('checking');
+    setResetError('');
+    setResetCode('');
+    if (!supabase) {
+      setResetStep('no-account');
+      return;
+    }
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user?.email) {
+        setResetStep('no-account');
+        return;
+      }
+      setResetEmail(session.user.email);
+      setResetStep('confirm');
+    } catch {
+      setResetStep('no-account');
+    }
   };
+
+  const handleSendResetCode = async () => {
+    if (!supabase || !resetEmail) return;
+    setResetStep('sending');
+    setResetError('');
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: resetEmail,
+        options: { shouldCreateUser: false },
+      });
+      if (error) {
+        setResetError(error.message);
+        setResetStep('confirm');
+        return;
+      }
+      localStorage.setItem('journal_password_reset_pending', String(Date.now()));
+      setResetStep('sent');
+    } catch {
+      setResetError(ts.journalResetSendFailed || 'Failed to send code. Check your connection.');
+      setResetStep('confirm');
+    }
+  };
+
+  const handleVerifyResetCode = async () => {
+    if (!supabase || !resetCode.trim()) return;
+    setResetStep('verifying');
+    setResetError('');
+    try {
+      const { error } = await supabase.auth.verifyOtp({
+        email: resetEmail,
+        token: resetCode.trim(),
+        type: 'email',
+      });
+      if (error) {
+        setResetError(ts.journalResetCodeWrong || 'Invalid code. Try again.');
+        setResetStep('sent');
+        return;
+      }
+      await security.removePassword();
+      localStorage.removeItem('journal_password_reset_pending');
+      setResetStep('success');
+    } catch {
+      setResetError(ts.journalResetCodeWrong || 'Invalid code. Try again.');
+      setResetStep('sent');
+    }
+  };
+
+  const closeResetDialog = () => {
+    setResetStep('idle');
+    setResetEmail('');
+    setResetCode('');
+    setResetError('');
+  };
+
+  // Auto-close success after 2s
+  useEffect(() => {
+    if (resetStep !== 'success') return;
+    const timer = setTimeout(closeResetDialog, 2000);
+    return () => clearTimeout(timer);
+  }, [resetStep]);
+
+  // Magic link fallback: listen for auth state change when waiting for code
+  useEffect(() => {
+    if (resetStep !== 'sent' || !supabase) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        const pending = localStorage.getItem('journal_password_reset_pending');
+        if (pending && Date.now() - Number(pending) < 600_000) {
+          await security.removePassword();
+          localStorage.removeItem('journal_password_reset_pending');
+          setResetStep('success');
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [resetStep, security]);
 
   // ── Card View (collapsed in garden tab) ──
   if (moduleState === 'card') {
@@ -226,35 +328,162 @@ export function JournalModule() {
             onForgotPassword={handleForgotPassword}
           />
 
-          {/* Forgot password dialog */}
-          {showForgotDialog && (
-            <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center animate-fade-in" onClick={() => setShowForgotDialog(false)}>
+          {/* Secure password reset dialog (email verification) */}
+          {resetStep !== 'idle' && (
+            <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center animate-fade-in" onClick={closeResetDialog}>
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-card rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl"
+                className="bg-card rounded-2xl p-5 max-w-[320px] w-full mx-4 shadow-xl"
                 onClick={e => e.stopPropagation()}
               >
-                <h3 className="text-base font-semibold text-foreground mb-2">
-                  {ts.journalPasswordForgot || 'Forgot Password?'}
-                </h3>
-                <p className="text-sm text-muted-foreground mb-4">
-                  {ts.journalPasswordForgotInfo || 'Your entries will remain, but the journal lock will be removed.'}
-                </p>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setShowForgotDialog(false)}
-                    className="flex-1 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
-                  >
-                    {ts.cancel || 'Cancel'}
-                  </button>
-                  <button
-                    onClick={handleResetPassword}
-                    className="flex-1 py-2.5 rounded-xl bg-destructive text-white text-sm font-medium min-h-[44px]"
-                  >
-                    {ts.journalPasswordRemove || 'Remove Lock'}
-                  </button>
-                </div>
+                {/* Checking session */}
+                {resetStep === 'checking' && (
+                  <div className="flex items-center justify-center py-6">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                )}
+
+                {/* No account */}
+                {resetStep === 'no-account' && (
+                  <>
+                    <div className="flex justify-center mb-3">
+                      <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
+                        <Mail className="w-6 h-6 text-muted-foreground" />
+                      </div>
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground text-center mb-2">
+                      {ts.journalPasswordForgot || 'Forgot Password?'}
+                    </h3>
+                    <p className="text-sm text-muted-foreground text-center mb-4">
+                      {ts.journalResetNoAccount || 'Sign in to your account in Settings to enable password recovery'}
+                    </p>
+                    <button
+                      onClick={closeResetDialog}
+                      className="w-full py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
+                    >
+                      {ts.journalClose || 'Close'}
+                    </button>
+                  </>
+                )}
+
+                {/* Confirm send */}
+                {(resetStep === 'confirm' || resetStep === 'sending') && (
+                  <>
+                    <div className="flex justify-center mb-3">
+                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Mail className="w-6 h-6 text-primary" />
+                      </div>
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground text-center mb-1">
+                      {ts.journalResetViaEmail || 'Reset via email'}
+                    </h3>
+                    <p className="text-sm text-muted-foreground text-center mb-1">
+                      {ts.journalResetConfirm || "We'll send a verification code to"}
+                    </p>
+                    <p className="text-sm font-medium text-foreground text-center mb-4">
+                      {maskEmail(resetEmail)}
+                    </p>
+                    {resetError && (
+                      <p className="text-xs text-destructive text-center mb-3">{resetError}</p>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={closeResetDialog}
+                        disabled={resetStep === 'sending'}
+                        className="flex-1 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px] disabled:opacity-50"
+                      >
+                        {ts.cancel || 'Cancel'}
+                      </button>
+                      <button
+                        onClick={handleSendResetCode}
+                        disabled={resetStep === 'sending'}
+                        className={cn(
+                          'flex-1 py-2.5 rounded-xl text-sm font-medium min-h-[44px]',
+                          'bg-primary text-primary-foreground',
+                          'disabled:opacity-50 flex items-center justify-center gap-2',
+                        )}
+                      >
+                        {resetStep === 'sending' && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {ts.journalResetSendCode || 'Send Code'}
+                      </button>
+                    </div>
+                  </>
+                )}
+
+                {/* Code sent — enter OTP */}
+                {(resetStep === 'sent' || resetStep === 'verifying') && (
+                  <>
+                    <div className="flex justify-center mb-3">
+                      <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                        <Mail className="w-6 h-6 text-green-600 dark:text-green-400" />
+                      </div>
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground text-center mb-1">
+                      {ts.journalResetCodeSent || 'Check your email'}
+                    </h3>
+                    <p className="text-xs text-muted-foreground text-center mb-4">
+                      {ts.journalResetCodeSentHint || 'Enter the code from your email or click the link.'}
+                    </p>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={6}
+                      value={resetCode}
+                      onChange={e => { setResetCode(e.target.value.replace(/\D/g, '')); setResetError(''); }}
+                      placeholder={ts.journalResetEnterCode || 'Verification code'}
+                      className={cn(
+                        'w-full px-4 py-3 rounded-xl text-center text-lg font-mono tracking-[0.3em]',
+                        'bg-background/80 border border-border/50',
+                        'focus:outline-none focus:ring-2 focus:ring-primary/40',
+                        'placeholder:text-muted-foreground/40 placeholder:text-sm placeholder:tracking-normal placeholder:font-sans',
+                      )}
+                      disabled={resetStep === 'verifying'}
+                      autoFocus
+                    />
+                    {resetError && (
+                      <p className="text-xs text-destructive text-center mt-2">{resetError}</p>
+                    )}
+                    <button
+                      onClick={handleVerifyResetCode}
+                      disabled={resetStep === 'verifying' || resetCode.length < 6}
+                      className={cn(
+                        'w-full mt-3 py-2.5 rounded-xl text-sm font-medium min-h-[44px]',
+                        'bg-primary text-primary-foreground',
+                        'disabled:opacity-40 flex items-center justify-center gap-2',
+                      )}
+                    >
+                      {resetStep === 'verifying' && <Loader2 className="w-4 h-4 animate-spin" />}
+                      {ts.journalResetVerify || 'Verify'}
+                    </button>
+                    <button
+                      onClick={handleSendResetCode}
+                      disabled={resetStep === 'verifying'}
+                      className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                    >
+                      {ts.journalResetResend || 'Resend Code'}
+                    </button>
+                  </>
+                )}
+
+                {/* Success */}
+                {resetStep === 'success' && (
+                  <div className="py-4">
+                    <div className="flex justify-center mb-3">
+                      <motion.div
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                        className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center"
+                      >
+                        <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
+                      </motion.div>
+                    </div>
+                    <p className="text-sm font-medium text-foreground text-center">
+                      {ts.journalResetSuccess || 'Journal password removed'}
+                    </p>
+                  </div>
+                )}
               </motion.div>
             </div>
           )}
@@ -418,18 +647,12 @@ export function JournalModule() {
                                 {ts.journalReminderSubtitle || 'Get reminded to write'}
                               </p>
                             </div>
-                            <button
-                              onClick={() => reminder.setEnabled(!reminder.enabled)}
-                              className={cn(
-                                'relative w-11 h-6 rounded-full transition-colors',
-                                reminder.enabled ? 'bg-primary' : 'bg-muted-foreground/20',
-                              )}
-                            >
-                              <div className={cn(
-                                'absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform',
-                                reminder.enabled ? 'translate-x-[22px]' : 'translate-x-0.5',
-                              )} />
-                            </button>
+                            <Switch
+                              checked={reminder.enabled}
+                              onCheckedChange={reminder.setEnabled}
+                              aria-label={ts.journalReminderEnabled || 'Daily reminder'}
+                              className="mt-0.5 shrink-0"
+                            />
                           </div>
                           {reminder.enabled && (
                             <div className="flex items-center gap-2 mt-2">

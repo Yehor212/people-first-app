@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, Sparkles, X } from 'lucide-react';
+import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, Sparkles, X, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn, getToday } from '@/lib/utils';
@@ -101,10 +101,12 @@ export function JournalEntryEditor({
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const dateInputRef = useRef<HTMLInputElement>(null);
   const draftTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const draftKey = getDraftKey(entry?.id || null);
 
   const [title, setTitle] = useState(entry?.title || '');
+  const [date, setDate] = useState(entry?.date || getToday());
   const [content, setContent] = useState(entry?.content || '');
   const [stickers, setStickers] = useState<string[]>(entry?.stickers || []);
   const [photoIds, setPhotoIds] = useState<string[]>(entry?.photoIds || []);
@@ -121,6 +123,7 @@ export function JournalEntryEditor({
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
   const [draftAvailable, setDraftAvailable] = useState<DraftData | null>(null);
   const [promptsHidden, setPromptsHidden] = useState(false);
+  const [draftSavedAt, setDraftSavedAt] = useState(0);
 
   const entryId = entry?.id || '__draft__';
 
@@ -170,10 +173,18 @@ export function JournalEntryEditor({
     draftTimerRef.current = setTimeout(() => {
       if (title || content || stickers.length > 0 || mood || tags.length > 0) {
         saveDraft(draftKey, { title, content, stickers, photoIds, mood, tags, savedAt: Date.now() });
+        setDraftSavedAt(Date.now());
       }
     }, 3000);
     return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
   }, [title, content, stickers, photoIds, mood, tags, draftKey]);
+
+  // Clear draft saved indicator after 2s
+  useEffect(() => {
+    if (!draftSavedAt) return;
+    const timer = setTimeout(() => setDraftSavedAt(0), 2000);
+    return () => clearTimeout(timer);
+  }, [draftSavedAt]);
 
   // Auto-grow textarea
   useEffect(() => {
@@ -220,7 +231,7 @@ export function JournalEntryEditor({
         photoIds,
         mood,
         tags,
-        date: entry?.date || getToday(),
+        date,
       });
       clearDraft(draftKey);
       toast.success(title.trim() ? `"${title.trim().slice(0, 30)}"` : (ts.journalEntrySaved || 'Entry saved'));
@@ -228,7 +239,7 @@ export function JournalEntryEditor({
     } finally {
       setSaving(false);
     }
-  }, [title, content, stickers, photoIds, mood, tags, entry, onSave, onBack, draftKey, hasContent, ts]);
+  }, [title, content, stickers, photoIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts]);
 
   const handleSaveAndClose = useCallback(async () => {
     setShowUnsavedDialog(false);
@@ -313,9 +324,24 @@ export function JournalEntryEditor({
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
 
-        <span className="text-xs text-muted-foreground">
-          {entry?.date || getToday()}
-        </span>
+        <div className="relative">
+          <button
+            onClick={() => dateInputRef.current?.showPicker?.()}
+            className="text-xs text-muted-foreground flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted/50 transition-colors"
+          >
+            <Calendar className="w-3 h-3" />
+            {new Date(date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+          </button>
+          <input
+            ref={dateInputRef}
+            type="date"
+            value={date}
+            max={getToday()}
+            onChange={e => { if (e.target.value) setDate(e.target.value); }}
+            className="sr-only"
+            tabIndex={-1}
+          />
+        </div>
 
         <div className="flex items-center gap-2">
           {entry && onDelete && (
@@ -485,56 +511,74 @@ export function JournalEntryEditor({
           )}
         />
 
-        {/* Word count */}
-        {wordCount > 0 && (
-          <p className="text-[10px] text-muted-foreground/40">
-            {wordCount} {ts.journalWords || 'words'}
-          </p>
-        )}
+        {/* Word count + auto-save indicator */}
+        <div className="flex items-center gap-2">
+          {wordCount > 0 && (
+            <p className="text-[10px] text-muted-foreground/40">
+              {wordCount} {ts.journalWords || 'words'}
+            </p>
+          )}
+          <AnimatePresence>
+            {draftSavedAt > 0 && (
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-[10px] text-green-500/60 flex items-center gap-0.5"
+              >
+                <Check className="w-2.5 h-2.5" /> {ts.journalDraftSaved || 'Saved'}
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
       {/* Bottom toolbar */}
       <div className={cn(
-        'border-t border-border/30 bg-background/95 backdrop-blur-sm px-4 py-2',
+        'border-t border-border/30 bg-background/95 backdrop-blur-sm px-4 py-1.5',
         'flex items-center gap-1',
-        'pb-[max(0.5rem,env(safe-area-inset-bottom))]',
+        'pb-[max(0.375rem,env(safe-area-inset-bottom))]',
       )}>
         <button
           onClick={() => { closeAllPickers(); setShowStickers(true); }}
           disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
           className={cn(
-            'p-2.5 rounded-lg hover:bg-muted/50 transition-colors',
+            'flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors',
             'disabled:opacity-40',
-            'min-w-[44px] min-h-[44px] flex items-center justify-center',
+            'min-h-[44px] flex flex-col items-center justify-center gap-0.5',
           )}
         >
           <Smile className="w-5 h-5 text-muted-foreground" />
+          <span className="text-[9px] text-muted-foreground/60">{ts.journalToolbarSticker || 'Sticker'}</span>
         </button>
 
         <button
           onClick={() => { closeAllPickers(); setShowPhotos(true); }}
           disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
           className={cn(
-            'p-2.5 rounded-lg hover:bg-muted/50 transition-colors',
+            'flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors',
             'disabled:opacity-40',
-            'min-w-[44px] min-h-[44px] flex items-center justify-center',
+            'min-h-[44px] flex flex-col items-center justify-center gap-0.5',
           )}
         >
           <Camera className="w-5 h-5 text-muted-foreground" />
+          <span className="text-[9px] text-muted-foreground/60">{ts.journalToolbarPhoto || 'Photo'}</span>
         </button>
 
         <button
           onClick={() => { closeAllPickers(); setShowMood(!showMood); }}
-          className="p-2.5 rounded-lg hover:bg-muted/50 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors min-h-[44px] flex flex-col items-center justify-center gap-0.5"
         >
-          <span className="text-base">{mood ? MOOD_OPTIONS.find(m => m.mood === mood)?.emoji : '\u{1F3AD}'}</span>
+          <span className="text-base leading-none">{mood ? MOOD_OPTIONS.find(m => m.mood === mood)?.emoji : '\u{1F3AD}'}</span>
+          <span className="text-[9px] text-muted-foreground/60">{ts.journalToolbarMood || 'Mood'}</span>
         </button>
 
         <button
           onClick={() => { closeAllPickers(); setShowTags(!showTags); }}
-          className="p-2.5 rounded-lg hover:bg-muted/50 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+          className="flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors min-h-[44px] flex flex-col items-center justify-center gap-0.5"
         >
           <Hash className="w-5 h-5 text-muted-foreground" />
+          <span className="text-[9px] text-muted-foreground/60">{ts.journalToolbarTags || 'Tags'}</span>
         </button>
       </div>
 

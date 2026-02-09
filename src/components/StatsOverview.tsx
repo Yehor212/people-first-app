@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { StreakCelebration } from './StreakCelebration';
 import { shouldShowStreakMessage } from '@/lib/motivationalMessages';
 import { safeParseInt } from '@/lib/validation';
+import { getEntryCount } from '@/features/journal/journalStorage';
 
 interface StatsOverviewProps {
   moods: MoodEntry[];
@@ -23,6 +24,9 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
     const saved = localStorage.getItem('zenflow-last-shown-streak');
     return saved ? safeParseInt(saved, 0, 0) : 0;
   });
+
+  const [journalCount, setJournalCount] = useState(0);
+  useEffect(() => { getEntryCount().then(setJournalCount).catch(() => {}); }, []);
 
   const todayHabitsCompleted = habits.filter(h => h.completedDates.includes(today)).length;
   const totalHabits = habits.length;
@@ -89,6 +93,15 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
       gradient: 'from-pink-500/20 to-rose-500/20',
       borderColor: 'border-pink-500/30',
       valueColor: 'text-pink-400',
+    },
+    {
+      emoji: '📓',
+      label: (t as unknown as Record<string, string>).journalStatsEntries || 'Journal',
+      value: journalCount,
+      suffix: '',
+      gradient: 'from-indigo-500/20 to-blue-500/20',
+      borderColor: 'border-indigo-500/30',
+      valueColor: 'text-indigo-400',
     },
   ];
 

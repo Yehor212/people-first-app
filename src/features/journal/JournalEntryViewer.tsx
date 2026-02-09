@@ -1,4 +1,5 @@
-import { ArrowLeft, Pencil, Trash2 } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash2, Share2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -35,6 +36,21 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
   });
   const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+  const handleShare = async () => {
+    const text = [entry.title, entry.content].filter(Boolean).join('\n\n');
+    if (!text) return;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: entry.title || 'Journal Entry', text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast.success(ts.journalShareCopied || 'Copied to clipboard');
+      }
+    } catch {
+      // User cancelled share
+    }
+  };
+
   return (
     <>
       {/* Header */}
@@ -51,6 +67,12 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
         </span>
 
         <div className="flex items-center gap-1">
+          <button
+            onClick={handleShare}
+            className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
           <button
             onClick={onDelete}
             className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"

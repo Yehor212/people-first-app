@@ -99,7 +99,6 @@ export interface Translations {
 
   // Mindfulness v1.5.0
   needInspiration: string;
-  journalPrompt: string;
   dailyPrompt: string;
   usePrompt: string;
   shufflePrompt: string;
@@ -1987,8 +1986,20 @@ export interface Translations {
   journalPasswordWrong: string;
   journalPasswordCooldown: string;
   journalPasswordForgot: string;
-  journalPasswordForgotInfo: string;
   journalPasswordRemove: string;
+  journalResetViaEmail: string;
+  journalResetConfirm: string;
+  journalResetSendCode: string;
+  journalResetCodeSent: string;
+  journalResetCodeSentHint: string;
+  journalResetEnterCode: string;
+  journalResetVerify: string;
+  journalResetSuccess: string;
+  journalResetNoAccount: string;
+  journalResetCodeWrong: string;
+  journalResetSendFailed: string;
+  journalResetResend: string;
+  journalClose: string;
   journalSearch: string;
   journalNoResults: string;
   journalEdit: string;
@@ -2025,13 +2036,20 @@ export interface Translations {
   journalStickerFood: string;
   journalStickerSymbols: string;
   journalStickerRecent: string;
-  journalReminderTitle: string;
   journalReminderSubtitle: string;
   journalReminderEnabled: string;
   journalReminderTime: string;
   journalReminderNotifTitle: string;
   journalReminderNotifBody: string;
   journalInactiveBanner: string;
+  journalToolbarSticker: string;
+  journalToolbarPhoto: string;
+  journalToolbarMood: string;
+  journalToolbarTags: string;
+  journalShare: string;
+  journalShareCopied: string;
+  journalDraftSaved: string;
+  journalStatsEntries: string;
 }
 
 // Base translations (RTL languages added dynamically below)
@@ -2126,7 +2144,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
 
     // Mindfulness v1.5.0
     needInspiration: 'Нужно вдохновение?',
-    journalPrompt: 'Промпт',
     dailyPrompt: 'Промпт дня',
     usePrompt: 'Использовать этот промпт',
     shufflePrompt: 'Другой промпт',
@@ -3948,8 +3965,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalPasswordWrong: 'Неверный пароль',
     journalPasswordCooldown: 'Слишком много попыток. Подождите',
     journalPasswordForgot: 'Забыли пароль?',
-    journalPasswordForgotInfo: 'Записи останутся, но блокировка дневника будет снята.',
     journalPasswordRemove: 'Убрать блокировку',
+    journalResetViaEmail: 'Сбросить через email',
+    journalResetConfirm: 'Мы отправим код подтверждения на',
+    journalResetSendCode: 'Отправить код',
+    journalResetCodeSent: 'Проверьте почту',
+    journalResetCodeSentHint: 'Введите код из письма или перейдите по ссылке.',
+    journalResetEnterCode: 'Код подтверждения',
+    journalResetVerify: 'Подтвердить',
+    journalResetSuccess: 'Пароль журнала удалён',
+    journalResetNoAccount: 'Войдите в аккаунт в Настройках для восстановления пароля',
+    journalResetCodeWrong: 'Неверный код. Попробуйте снова.',
+    journalResetSendFailed: 'Не удалось отправить код. Проверьте подключение.',
+    journalResetResend: 'Отправить повторно',
+    journalClose: 'Закрыть',
     journalSearch: 'Поиск записей...',
     journalNoResults: 'Записи не найдены',
     journalEdit: 'Редактировать',
@@ -3986,13 +4015,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalStickerFood: 'Еда и напитки',
     journalStickerSymbols: 'Символы',
     journalStickerRecent: 'Недавние',
-    journalReminderTitle: 'Напоминание о журнале',
     journalReminderSubtitle: 'Напоминание писать',
     journalReminderEnabled: 'Ежедневное напоминание',
     journalReminderTime: 'Время',
     journalReminderNotifTitle: 'Время для журнала \u270D\uFE0F',
     journalReminderNotifBody: 'Найдите минутку, чтобы записать свои мысли и чувства.',
     journalInactiveBanner: 'Вы не писали уже {days} дн. Как насчёт записи?',
+    journalToolbarSticker: 'Стикер',
+    journalToolbarPhoto: 'Фото',
+    journalToolbarMood: 'Настроение',
+    journalToolbarTags: 'Теги',
+    journalShare: 'Поделиться',
+    journalShareCopied: 'Скопировано в буфер обмена',
+    journalDraftSaved: 'Сохранено',
+    journalStatsEntries: 'Дневник',
   },
 
   en: {
@@ -4085,7 +4121,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
 
     // Mindfulness v1.5.0
     needInspiration: 'Need inspiration?',
-    journalPrompt: 'Prompt',
     dailyPrompt: 'Daily Prompt',
     usePrompt: 'Use this prompt',
     shufflePrompt: 'Get another prompt',
@@ -5907,8 +5942,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalPasswordWrong: 'Wrong password',
     journalPasswordCooldown: 'Too many attempts. Wait',
     journalPasswordForgot: 'Forgot password?',
-    journalPasswordForgotInfo: 'Your entries will remain, but the journal lock will be removed.',
     journalPasswordRemove: 'Remove Password Lock',
+    journalResetViaEmail: 'Reset via email',
+    journalResetConfirm: 'We\'ll send a verification code to',
+    journalResetSendCode: 'Send Code',
+    journalResetCodeSent: 'Check your email',
+    journalResetCodeSentHint: 'Enter the code from your email or click the link.',
+    journalResetEnterCode: 'Verification code',
+    journalResetVerify: 'Verify',
+    journalResetSuccess: 'Journal password removed',
+    journalResetNoAccount: 'Sign in to your account in Settings to enable password recovery',
+    journalResetCodeWrong: 'Invalid code. Try again.',
+    journalResetSendFailed: 'Failed to send code. Check your connection.',
+    journalResetResend: 'Resend Code',
+    journalClose: 'Close',
     journalSearch: 'Search entries...',
     journalNoResults: 'No entries found',
     journalEdit: 'Edit',
@@ -5945,13 +5992,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalStickerFood: 'Food & Drink',
     journalStickerSymbols: 'Symbols',
     journalStickerRecent: 'Recent',
-    journalReminderTitle: 'Journal Reminder',
     journalReminderSubtitle: 'Get reminded to write',
     journalReminderEnabled: 'Daily reminder',
     journalReminderTime: 'Time',
     journalReminderNotifTitle: 'Time to Journal \u270D\uFE0F',
     journalReminderNotifBody: 'Take a moment to capture your thoughts and feelings.',
     journalInactiveBanner: "You haven't written in {days} days. How about a quick entry?",
+    journalToolbarSticker: 'Sticker',
+    journalToolbarPhoto: 'Photo',
+    journalToolbarMood: 'Mood',
+    journalToolbarTags: 'Tags',
+    journalShare: 'Share',
+    journalShareCopied: 'Copied to clipboard',
+    journalDraftSaved: 'Saved',
+    journalStatsEntries: 'Journal',
   },
 
   uk: {
@@ -6044,7 +6098,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
 
     // Mindfulness v1.5.0
     needInspiration: 'Потрібне натхнення?',
-    journalPrompt: 'Промпт',
     dailyPrompt: 'Промпт дня',
     usePrompt: 'Використати цей промпт',
     shufflePrompt: 'Інший промпт',
@@ -7866,8 +7919,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalPasswordWrong: 'Невірний пароль',
     journalPasswordCooldown: 'Забагато спроб. Зачекайте',
     journalPasswordForgot: 'Забули пароль?',
-    journalPasswordForgotInfo: 'Записи залишаються, але блокування щоденника буде знято.',
     journalPasswordRemove: 'Прибрати блокування',
+    journalResetViaEmail: 'Скинути через email',
+    journalResetConfirm: 'Ми надішлемо код підтвердження на',
+    journalResetSendCode: 'Надіслати код',
+    journalResetCodeSent: 'Перевірте пошту',
+    journalResetCodeSentHint: 'Введіть код з листа або перейдіть за посиланням.',
+    journalResetEnterCode: 'Код підтвердження',
+    journalResetVerify: 'Підтвердити',
+    journalResetSuccess: 'Пароль журналу видалено',
+    journalResetNoAccount: 'Увійдіть в акаунт у Налаштуваннях для відновлення пароля',
+    journalResetCodeWrong: 'Невірний код. Спробуйте знову.',
+    journalResetSendFailed: 'Не вдалося надіслати код. Перевірте з\'єднання.',
+    journalResetResend: 'Надіслати повторно',
+    journalClose: 'Закрити',
     journalSearch: 'Пошук записів...',
     journalNoResults: 'Записів не знайдено',
     journalEdit: 'Редагувати',
@@ -7904,13 +7969,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalStickerFood: 'Їжа та напої',
     journalStickerSymbols: 'Символи',
     journalStickerRecent: 'Нещодавні',
-    journalReminderTitle: 'Нагадування про журнал',
     journalReminderSubtitle: 'Нагадування писати',
     journalReminderEnabled: 'Щоденне нагадування',
     journalReminderTime: 'Час',
     journalReminderNotifTitle: 'Час для журналу \u270D\uFE0F',
     journalReminderNotifBody: 'Знайдіть хвилинку, щоб записати свої думки та почуття.',
     journalInactiveBanner: 'Ви не писали вже {days} дн. Як щодо запису?',
+    journalToolbarSticker: 'Стікер',
+    journalToolbarPhoto: 'Фото',
+    journalToolbarMood: 'Настрій',
+    journalToolbarTags: 'Теги',
+    journalShare: 'Поділитися',
+    journalShareCopied: 'Скопійовано до буферу обміну',
+    journalDraftSaved: 'Збережено',
+    journalStatsEntries: 'Щоденник',
   },
 
   es: {
@@ -8003,7 +8075,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
 
     // Mindfulness v1.5.0
     needInspiration: '¿Necesitas inspiración?',
-    journalPrompt: 'Pregunta',
     dailyPrompt: 'Pregunta del Día',
     usePrompt: 'Usar esta pregunta',
     shufflePrompt: 'Otra pregunta',
@@ -9826,8 +9897,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalPasswordWrong: 'Contraseña incorrecta',
     journalPasswordCooldown: 'Demasiados intentos. Espera',
     journalPasswordForgot: '¿Olvidaste tu contraseña?',
-    journalPasswordForgotInfo: 'Tus entradas permanecerán, pero se eliminará el bloqueo del diario.',
     journalPasswordRemove: 'Quitar bloqueo',
+    journalResetViaEmail: 'Restablecer por email',
+    journalResetConfirm: 'Enviaremos un código de verificación a',
+    journalResetSendCode: 'Enviar código',
+    journalResetCodeSent: 'Revisa tu correo',
+    journalResetCodeSentHint: 'Ingresa el código del correo o haz clic en el enlace.',
+    journalResetEnterCode: 'Código de verificación',
+    journalResetVerify: 'Verificar',
+    journalResetSuccess: 'Contraseña del diario eliminada',
+    journalResetNoAccount: 'Inicia sesión en Ajustes para habilitar la recuperación de contraseña',
+    journalResetCodeWrong: 'Código inválido. Inténtalo de nuevo.',
+    journalResetSendFailed: 'Error al enviar código. Verifica tu conexión.',
+    journalResetResend: 'Reenviar código',
+    journalClose: 'Cerrar',
     journalSearch: 'Buscar entradas...',
     journalNoResults: 'No se encontraron entradas',
     journalEdit: 'Editar',
@@ -9864,13 +9947,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalStickerFood: 'Comida y bebida',
     journalStickerSymbols: 'Símbolos',
     journalStickerRecent: 'Recientes',
-    journalReminderTitle: 'Recordatorio del diario',
     journalReminderSubtitle: 'Recordatorio para escribir',
     journalReminderEnabled: 'Recordatorio diario',
     journalReminderTime: 'Hora',
     journalReminderNotifTitle: 'Hora de escribir en tu diario ✍️',
     journalReminderNotifBody: 'Tómate un momento para capturar tus pensamientos y sentimientos.',
     journalInactiveBanner: 'No has escrito en {days} días. ¿Qué tal una entrada rápida?',
+    journalToolbarSticker: 'Sticker',
+    journalToolbarPhoto: 'Foto',
+    journalToolbarMood: 'Ánimo',
+    journalToolbarTags: 'Etiquetas',
+    journalShare: 'Compartir',
+    journalShareCopied: 'Copiado al portapapeles',
+    journalDraftSaved: 'Guardado',
+    journalStatsEntries: 'Diario',
   },
 
   de: {
@@ -9963,7 +10053,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
 
     // Mindfulness v1.5.0
     needInspiration: 'Brauchst du Inspiration?',
-    journalPrompt: 'Frage',
     dailyPrompt: 'Tagesfrage',
     usePrompt: 'Diese Frage verwenden',
     shufflePrompt: 'Andere Frage',
@@ -11786,8 +11875,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalPasswordWrong: 'Falsches Passwort',
     journalPasswordCooldown: 'Zu viele Versuche. Warte',
     journalPasswordForgot: 'Passwort vergessen?',
-    journalPasswordForgotInfo: 'Deine Einträge bleiben erhalten, aber die Sperre wird entfernt.',
     journalPasswordRemove: 'Sperre entfernen',
+    journalResetViaEmail: 'Per E-Mail zurücksetzen',
+    journalResetConfirm: 'Wir senden einen Bestätigungscode an',
+    journalResetSendCode: 'Code senden',
+    journalResetCodeSent: 'Überprüfe deine E-Mail',
+    journalResetCodeSentHint: 'Gib den Code aus der E-Mail ein oder klicke auf den Link.',
+    journalResetEnterCode: 'Bestätigungscode',
+    journalResetVerify: 'Bestätigen',
+    journalResetSuccess: 'Tagebuch-Passwort entfernt',
+    journalResetNoAccount: 'Melde dich in den Einstellungen an, um die Passwortwiederherstellung zu aktivieren',
+    journalResetCodeWrong: 'Ungültiger Code. Versuche es erneut.',
+    journalResetSendFailed: 'Code konnte nicht gesendet werden. Prüfe deine Verbindung.',
+    journalResetResend: 'Code erneut senden',
+    journalClose: 'Schließen',
     journalSearch: 'Einträge suchen...',
     journalNoResults: 'Keine Einträge gefunden',
     journalEdit: 'Bearbeiten',
@@ -11824,13 +11925,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalStickerFood: 'Essen & Trinken',
     journalStickerSymbols: 'Symbole',
     journalStickerRecent: 'Kürzlich',
-    journalReminderTitle: 'Tagebuch-Erinnerung',
     journalReminderSubtitle: 'Erinnerung zum Schreiben',
     journalReminderEnabled: 'Tägliche Erinnerung',
     journalReminderTime: 'Zeit',
     journalReminderNotifTitle: 'Zeit für dein Tagebuch ✍️',
     journalReminderNotifBody: 'Nimm dir einen Moment, um deine Gedanken und Gefühle festzuhalten.',
     journalInactiveBanner: 'Du hast seit {days} Tagen nicht geschrieben. Wie wäre es mit einem kurzen Eintrag?',
+    journalToolbarSticker: 'Sticker',
+    journalToolbarPhoto: 'Foto',
+    journalToolbarMood: 'Stimmung',
+    journalToolbarTags: 'Tags',
+    journalShare: 'Teilen',
+    journalShareCopied: 'In die Zwischenablage kopiert',
+    journalDraftSaved: 'Gespeichert',
+    journalStatsEntries: 'Tagebuch',
   },
 
   fr: {
@@ -11923,7 +12031,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
 
     // Mindfulness v1.5.0
     needInspiration: 'Besoin d\'inspiration?',
-    journalPrompt: 'Question',
     dailyPrompt: 'Question du Jour',
     usePrompt: 'Utiliser cette question',
     shufflePrompt: 'Autre question',
@@ -13746,8 +13853,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalPasswordWrong: 'Mot de passe incorrect',
     journalPasswordCooldown: 'Trop de tentatives. Attendez',
     journalPasswordForgot: 'Mot de passe oublié ?',
-    journalPasswordForgotInfo: 'Vos entrées resteront, mais le verrouillage du journal sera supprimé.',
     journalPasswordRemove: 'Supprimer le verrouillage',
+    journalResetViaEmail: 'Réinitialiser par email',
+    journalResetConfirm: 'Nous enverrons un code de vérification à',
+    journalResetSendCode: 'Envoyer le code',
+    journalResetCodeSent: 'Vérifiez votre email',
+    journalResetCodeSentHint: 'Entrez le code reçu par email ou cliquez sur le lien.',
+    journalResetEnterCode: 'Code de vérification',
+    journalResetVerify: 'Vérifier',
+    journalResetSuccess: 'Mot de passe du journal supprimé',
+    journalResetNoAccount: 'Connectez-vous dans les Paramètres pour activer la récupération du mot de passe',
+    journalResetCodeWrong: 'Code invalide. Réessayez.',
+    journalResetSendFailed: 'Échec d\'envoi du code. Vérifiez votre connexion.',
+    journalResetResend: 'Renvoyer le code',
+    journalClose: 'Fermer',
     journalSearch: 'Rechercher des entrées...',
     journalNoResults: 'Aucune entrée trouvée',
     journalEdit: 'Modifier',
@@ -13784,13 +13903,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalStickerFood: 'Nourriture et boissons',
     journalStickerSymbols: 'Symboles',
     journalStickerRecent: 'Récents',
-    journalReminderTitle: 'Rappel du journal',
     journalReminderSubtitle: 'Rappel pour écrire',
     journalReminderEnabled: 'Rappel quotidien',
     journalReminderTime: 'Heure',
     journalReminderNotifTitle: "C'est l'heure d'écrire ✍️",
     journalReminderNotifBody: 'Prenez un moment pour capturer vos pensées et sentiments.',
     journalInactiveBanner: "Vous n'avez pas écrit depuis {days} jours. Et si vous faisiez une courte entrée ?",
+    journalToolbarSticker: 'Sticker',
+    journalToolbarPhoto: 'Photo',
+    journalToolbarMood: 'Humeur',
+    journalToolbarTags: 'Tags',
+    journalShare: 'Partager',
+    journalShareCopied: 'Copié dans le presse-papiers',
+    journalDraftSaved: 'Enregistré',
+    journalStatsEntries: 'Journal',
   },
 
   ja: {
@@ -13883,7 +14009,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
 
     // Mindfulness v1.5.0
     needInspiration: 'インスピレーションが必要？',
-    journalPrompt: 'プロンプト',
     dailyPrompt: '今日のプロンプト',
     usePrompt: 'このプロンプトを使う',
     shufflePrompt: '別のプロンプト',
@@ -15705,8 +15830,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalPasswordWrong: 'パスワードが間違っています',
     journalPasswordCooldown: '試行回数が多すぎます。お待ちください',
     journalPasswordForgot: 'パスワードを忘れた？',
-    journalPasswordForgotInfo: 'エントリーは残りますが、日記のロックは解除されます。',
     journalPasswordRemove: 'ロックを解除',
+    journalResetViaEmail: 'メールでリセット',
+    journalResetConfirm: '確認コードを送信します',
+    journalResetSendCode: 'コードを送信',
+    journalResetCodeSent: 'メールを確認してください',
+    journalResetCodeSentHint: 'メールのコードを入力するか、リンクをクリックしてください。',
+    journalResetEnterCode: '確認コード',
+    journalResetVerify: '確認',
+    journalResetSuccess: '日記のパスワードが削除されました',
+    journalResetNoAccount: '設定でアカウントにサインインしてパスワード回復を有効にしてください',
+    journalResetCodeWrong: '無効なコードです。もう一度お試しください。',
+    journalResetSendFailed: 'コードの送信に失敗しました。接続を確認してください。',
+    journalResetResend: 'コードを再送信',
+    journalClose: '閉じる',
     journalSearch: 'エントリーを検索...',
     journalNoResults: 'エントリーが見つかりません',
     journalEdit: '編集',
@@ -15743,13 +15880,20 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalStickerFood: '食べ物と飲み物',
     journalStickerSymbols: 'シンボル',
     journalStickerRecent: '最近',
-    journalReminderTitle: '日記リマインダー',
     journalReminderSubtitle: '書くことを思い出させる',
     journalReminderEnabled: '毎日のリマインダー',
     journalReminderTime: '時間',
     journalReminderNotifTitle: '日記を書く時間です ✍️',
     journalReminderNotifBody: '思いや気持ちを記録する時間を取りましょう。',
     journalInactiveBanner: '{days}日間書いていません。短い記録はいかがですか？',
+    journalToolbarSticker: 'スタンプ',
+    journalToolbarPhoto: '写真',
+    journalToolbarMood: '気分',
+    journalToolbarTags: 'タグ',
+    journalShare: '共有',
+    journalShareCopied: 'クリップボードにコピーしました',
+    journalDraftSaved: '保存済み',
+    journalStatsEntries: '日記',
   },
 };
 
@@ -15850,7 +15994,6 @@ const arabicOverrides: Partial<Translations> = {
 
   // Mindfulness v1.5.0
   needInspiration: 'بحاجة لإلهام؟',
-  journalPrompt: 'موضوع',
   dailyPrompt: 'موضوع اليوم',
   usePrompt: 'استخدم هذا الموضوع',
   shufflePrompt: 'موضوع آخر',
@@ -17626,8 +17769,20 @@ const arabicOverrides: Partial<Translations> = {
   journalPasswordWrong: 'كلمة مرور خاطئة',
   journalPasswordCooldown: 'محاولات كثيرة. انتظر',
   journalPasswordForgot: 'نسيت كلمة المرور؟',
-  journalPasswordForgotInfo: 'ستبقى مدخلاتك، لكن سيتم إزالة قفل المذكرة.',
   journalPasswordRemove: 'إزالة القفل',
+  journalResetViaEmail: 'إعادة التعيين عبر البريد',
+  journalResetConfirm: 'سنرسل رمز التحقق إلى',
+  journalResetSendCode: 'إرسال الرمز',
+  journalResetCodeSent: 'تحقق من بريدك',
+  journalResetCodeSentHint: 'أدخل الرمز من البريد أو انقر على الرابط.',
+  journalResetEnterCode: 'رمز التحقق',
+  journalResetVerify: 'تحقق',
+  journalResetSuccess: 'تم إزالة كلمة مرور المذكرة',
+  journalResetNoAccount: 'سجل الدخول في الإعدادات لتفعيل استعادة كلمة المرور',
+  journalResetCodeWrong: 'رمز غير صالح. حاول مرة أخرى.',
+  journalResetSendFailed: 'فشل إرسال الرمز. تحقق من اتصالك.',
+  journalResetResend: 'إعادة إرسال الرمز',
+  journalClose: 'إغلاق',
   journalSearch: 'البحث في المدخلات...',
   journalNoResults: 'لم يتم العثور على مدخلات',
   journalEdit: 'تعديل',
@@ -17664,13 +17819,20 @@ const arabicOverrides: Partial<Translations> = {
   journalStickerFood: 'طعام وشراب',
   journalStickerSymbols: 'رموز',
   journalStickerRecent: 'الأخيرة',
-  journalReminderTitle: 'تذكير اليومية',
   journalReminderSubtitle: 'تذكير بالكتابة',
   journalReminderEnabled: 'تذكير يومي',
   journalReminderTime: 'الوقت',
   journalReminderNotifTitle: 'حان وقت الكتابة ✍️',
   journalReminderNotifBody: 'خذ لحظة لتسجيل أفكارك ومشاعرك.',
   journalInactiveBanner: 'لم تكتب منذ {days} أيام. ما رأيك بتدوينة قصيرة؟',
+  journalToolbarSticker: 'ملصق',
+  journalToolbarPhoto: 'صورة',
+  journalToolbarMood: 'المزاج',
+  journalToolbarTags: 'وسوم',
+  journalShare: 'مشاركة',
+  journalShareCopied: 'تم النسخ إلى الحافظة',
+  journalDraftSaved: 'تم الحفظ',
+  journalStatsEntries: 'اليومية',
 };
 
 // Hebrew RTL overrides (merged with English)
@@ -17770,7 +17932,6 @@ const hebrewOverrides: Partial<Translations> = {
 
   // Mindfulness
   needInspiration: 'צריך השראה?',
-  journalPrompt: 'נושא',
   dailyPrompt: 'נושא היום',
   usePrompt: 'השתמש בנושא זה',
   shufflePrompt: 'נושא אחר',
@@ -19616,8 +19777,20 @@ const hebrewOverrides: Partial<Translations> = {
   journalPasswordWrong: 'סיסמה שגויה',
   journalPasswordCooldown: 'יותר מדי ניסיונות. המתן',
   journalPasswordForgot: 'שכחת סיסמה?',
-  journalPasswordForgotInfo: 'הרשומות שלך יישארו, אבל נעילת היומן תוסר.',
   journalPasswordRemove: 'הסר נעילה',
+  journalResetViaEmail: 'איפוס באמצעות אימייל',
+  journalResetConfirm: 'נשלח קוד אימות אל',
+  journalResetSendCode: 'שלח קוד',
+  journalResetCodeSent: 'בדוק את האימייל שלך',
+  journalResetCodeSentHint: 'הזן את הקוד מהאימייל או לחץ על הקישור.',
+  journalResetEnterCode: 'קוד אימות',
+  journalResetVerify: 'אמת',
+  journalResetSuccess: 'סיסמת היומן הוסרה',
+  journalResetNoAccount: 'היכנס לחשבון שלך בהגדרות כדי לאפשר שחזור סיסמה',
+  journalResetCodeWrong: 'קוד לא תקף. נסה שוב.',
+  journalResetSendFailed: 'שליחת הקוד נכשלה. בדוק את החיבור.',
+  journalResetResend: 'שלח קוד מחדש',
+  journalClose: 'סגור',
   journalSearch: 'חיפוש רשומות...',
   journalNoResults: 'לא נמצאו רשומות',
   journalEdit: 'עריכה',
@@ -19654,13 +19827,20 @@ const hebrewOverrides: Partial<Translations> = {
   journalStickerFood: 'אוכל ושתייה',
   journalStickerSymbols: 'סמלים',
   journalStickerRecent: 'אחרונים',
-  journalReminderTitle: 'תזכורת יומן',
   journalReminderSubtitle: 'תזכורת לכתוב',
   journalReminderEnabled: 'תזכורת יומית',
   journalReminderTime: 'שעה',
   journalReminderNotifTitle: 'הגיע הזמן לכתוב ✍️',
   journalReminderNotifBody: 'קח רגע לתעד את המחשבות והרגשות שלך.',
   journalInactiveBanner: 'לא כתבת כבר {days} ימים. מה דעתך על רשומה קצרה?',
+  journalToolbarSticker: 'מדבקה',
+  journalToolbarPhoto: 'תמונה',
+  journalToolbarMood: 'מצב רוח',
+  journalToolbarTags: 'תגיות',
+  journalShare: 'שיתוף',
+  journalShareCopied: 'הועתק ללוח',
+  journalDraftSaved: 'נשמר',
+  journalStatsEntries: 'יומן',
 };
 
 // Add RTL languages with English fallback

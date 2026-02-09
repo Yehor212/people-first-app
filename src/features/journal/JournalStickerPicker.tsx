@@ -60,18 +60,23 @@ export function JournalStickerPicker({ onSelect, onClose }: JournalStickerPicker
         </div>
 
         {/* Category tabs */}
-        <div className="flex gap-1 px-3 py-2 border-b border-border/10">
+        <div className="flex gap-0.5 px-2 py-1.5 border-b border-border/10">
           {STICKER_CATEGORIES.map((cat, i) => (
             <button
               key={cat.key}
               onClick={() => setActiveCategory(i)}
               className={cn(
-                'px-3 py-1.5 rounded-full text-sm transition-colors min-h-[36px] flex items-center justify-center',
-                activeCategory === i ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:bg-muted/50',
+                'flex-1 py-1 rounded-lg text-sm transition-colors min-h-[40px] flex flex-col items-center justify-center gap-0.5',
+                activeCategory === i ? 'bg-primary/15' : 'hover:bg-muted/50',
               )}
-              title={ts[cat.labelKey] || cat.key}
             >
               <StickerRenderer emoji={cat.icon} size="sm" />
+              <span className={cn(
+                'text-[8px] truncate max-w-[52px]',
+                activeCategory === i ? 'text-primary/80' : 'text-muted-foreground/50',
+              )}>
+                {ts[cat.labelKey] || cat.key}
+              </span>
             </button>
           ))}
         </div>

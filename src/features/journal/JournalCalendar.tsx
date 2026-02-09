@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { MoodType } from '@/types';
@@ -13,7 +13,22 @@ const MOOD_COLORS: Record<string, string> = {
   terrible: 'bg-red-400',
 };
 
-const DAY_NAMES = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const MOOD_LEGEND: { mood: MoodType; color: string; key: string }[] = [
+  { mood: 'great', color: 'bg-green-400', key: 'moodGreat' },
+  { mood: 'good', color: 'bg-emerald-400', key: 'moodGood' },
+  { mood: 'okay', color: 'bg-amber-400', key: 'moodOkay' },
+  { mood: 'bad', color: 'bg-orange-400', key: 'moodBad' },
+  { mood: 'terrible', color: 'bg-red-400', key: 'moodTerrible' },
+];
+
+/** Get localized single-letter day names (Sun–Sat) using Intl API */
+function getLocalizedDayNames(locale: string): string[] {
+  const formatter = new Intl.DateTimeFormat(locale, { weekday: 'narrow' });
+  // Jan 5 2025 = Sunday, Jan 6 = Monday, ... Jan 11 = Saturday
+  return Array.from({ length: 7 }, (_, i) =>
+    formatter.format(new Date(2025, 0, 5 + i))
+  );
+}
 
 interface JournalCalendarProps {
   entryDates: Map<string, MoodType | undefined>;
@@ -24,9 +39,14 @@ interface JournalCalendarProps {
 export function JournalCalendar({ entryDates, selectedDate, onSelectDate }: JournalCalendarProps) {
   const today = getToday();
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { t, isRTL } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [startOffset, setStartOffset] = useState(0);
+  const [showLegend, setShowLegend] = useState(() => {
+    return !localStorage.getItem('journal-legend-seen');
+  });
+
+  const dayNames = useMemo(() => getLocalizedDayNames(language), [language]);
 
   // Generate 28 days based on offset
   const days = useMemo(() => {
@@ -88,6 +108,16 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate }: Jour
               {ts.journalCalendarToday || 'Today'}
             </button>
           )}
+          <button
+            onClick={() => {
+              setShowLegend(v => !v);
+              localStorage.setItem('journal-legend-seen', '1');
+            }}
+            className="p-1 rounded-md hover:bg-muted/50"
+            aria-label="Mood legend"
+          >
+            <Info className="w-3 h-3 text-muted-foreground/50" />
+          </button>
         </div>
 
         <button
@@ -126,7 +156,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate }: Jour
               )}
             >
               <span className="text-[9px] text-muted-foreground leading-none">
-                {DAY_NAMES[d.dayOfWeek]}
+                {dayNames[d.dayOfWeek]}
               </span>
               <span className={cn(
                 'text-xs font-semibold leading-none',
@@ -151,6 +181,27 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate }: Jour
           );
         })}
       </div>
+
+      {/* Mood legend */}
+      <AnimatePresence>
+        {showLegend && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="flex items-center justify-center gap-3 pt-1.5 pb-0.5 flex-wrap">
+              {MOOD_LEGEND.map(({ mood, color, key }) => (
+                <span key={mood} className="flex items-center gap-1 text-[9px] text-muted-foreground/70">
+                  <span className={cn('w-1.5 h-1.5 rounded-full', color)} />
+                  {ts[key] || mood}
+                </span>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
