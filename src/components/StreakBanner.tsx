@@ -4,10 +4,13 @@
  * Includes Rest Mode button for low-energy days
  */
 
-import { memo, useMemo, useState, useRef } from 'react';
+import { memo, useMemo, useState, useRef, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { Flame, Zap, Trophy, Moon, Share2, Check, Heart, Target, Brain, Sparkles, X, Download, Loader2 } from 'lucide-react';
-import { FireAnimation } from './FireAnimation';
+
+// Lazy-load FireAnimation to isolate lottie-react (CJS) into its own chunk.
+// Eager import causes TDZ errors in production due to Rollup CJS interop.
+const FireAnimation = lazy(() => import('./FireAnimation'));
 import { hapticTap } from '@/lib/haptics';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -231,7 +234,9 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
         {/* Icon / Fire Animation */}
         {streak >= 3 && showStreakFire ? (
           <div className="w-11 h-11 flex items-center justify-center flex-shrink-0 -ml-1">
-            <FireAnimation size="md" />
+            <Suspense fallback={<div className="w-12 h-16" />}>
+              <FireAnimation size="md" />
+            </Suspense>
           </div>
         ) : (
           <div className={cn(

@@ -148,7 +148,7 @@ export function Index() {
   const { setEmotionFromEntries } = useEmotionTheme();
   const { isFeatureVisible } = useFeatureFlags();
   const { syncFocusSession } = useHealthConnect();
-  // const { triggerLowMoodCheck, openCoach, setUserData, onboardingData, saveOnboardingAnswer } = useAICoach(); // Hidden until AI ready
+  // const { openCoach, setUserData, onboardingData, saveOnboardingAnswer } = useAICoach(); // Hidden until AI ready
 
   // Security: Auto-logout after 15 minutes of inactivity (when supabase is configured)
   useSessionTimeout(!!supabase);
@@ -908,15 +908,7 @@ export function Index() {
     // Update challenge progress
     updateChallengeProgress();
 
-    // AI Coach: Check for low mood and offer support
-    // DISABLED: AI Coach hidden until ready (triggerLowMoodCheck not imported)
-    // if (entry.mood === 'bad' || entry.mood === 'terrible') {
-    //   if (!isLoading && !isLoadingInnerWorld) {
-    //     setTimeout(() => {
-    //       triggerLowMoodCheck(entry);
-    //     }, 1500);
-    //   }
-    // }
+    // AI Coach: Low mood check removed — will re-add when AI Coach is ready
   };
 
   // Quick mood handler for one-tap notification actions

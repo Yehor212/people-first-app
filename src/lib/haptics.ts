@@ -147,6 +147,9 @@ export const haptics = {
   achievementUnlocked: hapticHeavy,
   levelUp: hapticHeavy,
 
+  // Generic intensity aliases
+  light: hapticTap,
+
   // Navigation & UI
   buttonPress: hapticTap,
   buttonTap: hapticTap,  // Alias for AI Coach compatibility

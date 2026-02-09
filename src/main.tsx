@@ -38,10 +38,19 @@ initA11y();
 // Global error handlers for unhandled exceptions and promise rejections
 // These catch errors that escape React's error boundary
 window.addEventListener('unhandledrejection', (event) => {
-  logger.error('[Global] Unhandled promise rejection:', event.reason);
+  const reason = event.reason;
+
+  // Suppress generic browser/Capacitor permission rejections (e.g. notification denied)
+  if (reason === 'Rejected' || (reason instanceof Error && reason.message === 'Rejected')) {
+    event.preventDefault();
+    logger.warn('[Global] Suppressed generic rejection:', reason);
+    return;
+  }
+
+  logger.error('[Global] Unhandled promise rejection:', reason);
   // Send to Sentry
-  if (event.reason instanceof Error) {
-    captureError(event.reason, { type: 'unhandledrejection' });
+  if (reason instanceof Error) {
+    captureError(reason, { type: 'unhandledrejection' });
   }
 });
 
