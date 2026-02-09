@@ -11,7 +11,6 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ShareProgress } from '@/components/ShareProgress';
 import { AnimatedEmotionDistribution } from '@/components/AnimatedStatsComponents';
-import { calculateActivityLevel } from '@/components/ui/activity-heatmap';
 import { EmptyState } from '@/components/EmptyState';
 // Lazy-load ProgressStoriesViewer to isolate DOMPurify CJS into its own chunk
 // (prevents TDZ errors from DOMPurify CJS interop in the merged StatsPage chunk)
@@ -34,7 +33,6 @@ import {
   MoodWeather,
   WeekCrystal,
   TrophyHall,
-  EnergyField,
   EmotionGalaxy,
   RingDetailSheet,
 } from '@/components/stats';
@@ -258,50 +256,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     if (hour < 18) return '☀️';
     return '🌙';
   };
-
-  // Activity Heat Map data (GitHub-style contribution graph)
-  const activityHeatmapData = useMemo(() => {
-    const moodDates = new Set(moods.map(m => m.date));
-    const focusDates = new Set(completedFocusSessions.map(f => f.date));
-    const gratitudeDates = new Set(gratitudeEntries.map(g => g.date));
-
-    // Get all unique dates from last 3 months
-    const allDates = new Set<string>();
-    const today = new Date();
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-    // Add dates from all data sources
-    [...moodDates, ...focusDates, ...gratitudeDates].forEach(date => {
-      const d = new Date(date);
-      if (d >= threeMonthsAgo && d <= today) {
-        allDates.add(date);
-      }
-    });
-
-    // Also ensure we cover all dates in range (even empty ones get checked)
-    const current = new Date(threeMonthsAgo);
-    while (current <= today) {
-      allDates.add(formatDate(current));
-      current.setDate(current.getDate() + 1);
-    }
-
-    return Array.from(allDates).map(date => {
-      const habitsOnDate = habits.filter(h =>
-        getHabitCompletedDates(h).includes(date)
-      ).length;
-
-      const level = calculateActivityLevel(date, {
-        hasMood: moodDates.has(date),
-        habitsCompleted: habitsOnDate,
-        habitsTotal: habits.length,
-        hasFocus: focusDates.has(date),
-        hasGratitude: gratitudeDates.has(date),
-      });
-
-      return { date, level };
-    }).sort((a, b) => a.date.localeCompare(b.date));
-  }, [moods, habits, completedFocusSessions, gratitudeEntries]);
 
   // Phase 13: EmotionGalaxy data - ONLY TODAY'S emotions
   // Galaxy resets each calendar day, showing only current day's moods
@@ -854,9 +808,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           </div>
         </div>
 
-        {/* Activity Heatmap */}
-        <EnergyField data={activityHeatmapData} className="mb-4" />
-
         {/* Day Names */}
         <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-xs sm:text-xs text-muted-foreground mb-2">
           {[t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat].map((day) => (
@@ -886,13 +837,13 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             // Perfect day = great mood + habits + focus
             const isPerfect = mood === 'great' && habitCount >= 1 && focusMinutes >= 30;
 
-            // Crystal glow styles based on activity - theme-aware
+            // Fire glow styles based on activity — streak days burn, inactive days dim
             const crystalStyles = {
               0: { glow: 'none', bg: 'from-slate-200/60 to-slate-100/40 dark:from-zinc-800/30 dark:to-zinc-700/20', border: 'border-slate-300/50 dark:border-zinc-700/30' },
-              1: { glow: '0 0 8px rgba(20, 184, 166, 0.3)', bg: 'from-teal-200/60 to-teal-100/40 dark:from-teal-900/40 dark:to-teal-800/30', border: 'border-teal-400/50 dark:border-teal-700/40' },
-              2: { glow: '0 0 12px rgba(16, 185, 129, 0.4)', bg: 'from-teal-300/60 to-emerald-200/50 dark:from-teal-700/50 dark:to-emerald-600/40', border: 'border-emerald-500/60 dark:border-emerald-600/50' },
-              3: { glow: '0 0 16px rgba(34, 197, 94, 0.5)', bg: 'from-emerald-300/70 to-green-200/60 dark:from-emerald-600/60 dark:to-green-500/50', border: 'border-green-500/70 dark:border-green-500/60' },
-              4: { glow: '0 0 20px rgba(52, 211, 153, 0.6)', bg: 'from-green-300/80 to-emerald-200/70 dark:from-green-500/70 dark:to-emerald-400/60', border: 'border-emerald-400/80 dark:border-emerald-400/70' },
+              1: { glow: '0 0 8px rgba(251, 146, 60, 0.3)', bg: 'from-orange-200/60 to-amber-100/40 dark:from-orange-900/40 dark:to-amber-800/30', border: 'border-orange-400/50 dark:border-orange-700/40' },
+              2: { glow: '0 0 12px rgba(245, 158, 11, 0.4)', bg: 'from-orange-300/60 to-amber-200/50 dark:from-orange-700/50 dark:to-amber-600/40', border: 'border-amber-500/60 dark:border-amber-600/50' },
+              3: { glow: '0 0 16px rgba(234, 179, 8, 0.5)', bg: 'from-amber-300/70 to-yellow-200/60 dark:from-amber-600/60 dark:to-yellow-500/50', border: 'border-yellow-500/70 dark:border-yellow-500/60' },
+              4: { glow: '0 0 20px rgba(234, 179, 8, 0.6)', bg: 'from-yellow-300/80 to-amber-200/70 dark:from-yellow-500/70 dark:to-amber-400/60', border: 'border-yellow-400/80 dark:border-yellow-400/70' },
             }[activityLevel] || { glow: 'none', bg: 'from-slate-200/60 to-slate-100/40 dark:from-zinc-800/30 dark:to-zinc-700/20', border: 'border-slate-300/50 dark:border-zinc-700/30' };
 
             const isToday = cell.dateKey === todayKey;
@@ -938,7 +889,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 {/* Today pulse ring */}
                 {isToday && (
                   <motion.div
-                    className="absolute inset-0 rotate-45 rounded-sm border-2 border-white/60"
+                    className="absolute inset-0 rotate-45 rounded-sm border-2 border-amber-400/70 dark:border-amber-300/60"
                     animate={{
                       scale: [1, 1.05, 1],
                       opacity: [0.6, 1, 0.6]
@@ -950,7 +901,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 {/* Day number (counter-rotated to stay upright) */}
                 <span className={cn(
                   "relative z-10 text-xs font-medium",
-                  isToday ? "text-teal-700 dark:text-white font-bold" : hasData ? "text-slate-700 dark:text-white/90" : "text-slate-500 dark:text-white/50"
+                  isToday ? "text-amber-600 dark:text-white font-bold" : hasData ? "text-orange-700 dark:text-amber-200" : "text-slate-500 dark:text-white/50"
                 )}>
                   {cell.day}
                 </span>
@@ -959,7 +910,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 {isPerfect && (
                   <>
                     <motion.div
-                      className="absolute top-0 right-1 w-1 h-1 rounded-full bg-white"
+                      className="absolute top-0 right-1 w-1 h-1 rounded-full bg-amber-400"
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{
                         scale: [0, 1.5, 0],
@@ -973,7 +924,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                       }}
                     />
                     <motion.div
-                      className="absolute bottom-0 left-1 w-1 h-1 rounded-full bg-white"
+                      className="absolute bottom-0 left-1 w-1 h-1 rounded-full bg-amber-400"
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{
                         scale: [0, 1.5, 0],
@@ -987,7 +938,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                       }}
                     />
                     <motion.div
-                      className="absolute top-1 left-0 w-1 h-1 rounded-full bg-white"
+                      className="absolute top-1 left-0 w-1 h-1 rounded-full bg-amber-400"
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{
                         scale: [0, 1.5, 0],

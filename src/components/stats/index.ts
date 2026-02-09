@@ -15,6 +15,5 @@ export { WeeklyReview } from './WeeklyReview';
 // Phase 13 Components - "Візуальні Світи"
 export { TrophyHall } from './TrophyHall';
 export { DataMountains } from './DataMountains';
-export { EnergyField } from './EnergyField';
 export { EmotionGalaxy } from './EmotionGalaxy';
 export { CrystalCalendar } from './CrystalCalendar';
