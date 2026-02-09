@@ -31,11 +31,13 @@ import { safeParseInt } from '@/lib/validation';
 import {
   ZenScoreHub,
   MoodWeather,
+  MoodWeatherCalendar,
   WeekCrystal,
   TrophyHall,
   EmotionGalaxy,
   RingDetailSheet,
 } from '@/components/stats';
+import { deriveWeatherMood } from '@/lib/weatherMoodConfig';
 import type { RingType } from '@/components/stats';
 
 interface StatsPageProps {
@@ -66,8 +68,9 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
   const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
   const [selectedRing, setSelectedRing] = useState<RingType | null>(null);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
+  const [moodCalendarOpen, setMoodCalendarOpen] = useState(false);
 
-  useScrollLock(showShareDialog || showStoryViewer || selectedRing !== null || showMonthSelector);
+  useScrollLock(showShareDialog || showStoryViewer || selectedRing !== null || showMonthSelector || moodCalendarOpen);
   const monthNames = [
     t.january, t.february, t.march, t.april, t.may, t.june,
     t.july, t.august, t.september, t.october, t.november, t.december
@@ -661,17 +664,8 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           <div className="grid grid-cols-2 gap-3">
             <MoodWeather
               mood={premiumStats.currentMood}
-              weatherHistory={ringWeeklyData.mood.map(d => {
-                const pct = d.value;
-                const moodType: 'great' | 'good' | 'okay' | 'bad' | 'terrible' =
-                  pct >= 80 ? 'great' : pct >= 60 ? 'good' : pct >= 40 ? 'okay' : pct >= 20 ? 'bad' : 'terrible';
-                return { date: d.date, mood: moodType };
-              })}
-              moodFactors={[
-                ...(premiumStats.habitRate >= 70 ? [{ name: t.habits || 'Habits', impact: 'positive' as const }] : []),
-                ...(premiumStats.focusScore >= 60 ? [{ name: t.focus || 'Focus', impact: 'positive' as const }] : []),
-                ...(stats.currentStreak >= 3 ? [{ name: t.streak || 'Streak', impact: 'positive' as const }] : []),
-              ]}
+              emotion={moods.length > 0 ? moods[moods.length - 1]?.emotion : undefined}
+              onOpenCalendar={() => setMoodCalendarOpen(true)}
             />
             <WeekCrystal
               score={premiumStats.weekScore}
@@ -1339,6 +1333,17 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           else if (ring === 'focus') onQuickAction?.('startFocus');
           else if (ring === 'habits') onQuickAction?.('logMood');
         }}
+      />
+
+      {/* Mood Weather Calendar */}
+      <MoodWeatherCalendar
+        open={moodCalendarOpen}
+        onOpenChange={setMoodCalendarOpen}
+        moods={moods}
+        currentWeatherMood={deriveWeatherMood(
+          premiumStats.currentMood,
+          moods.length > 0 ? moods[moods.length - 1]?.emotion : undefined,
+        )}
       />
     </div>
   );

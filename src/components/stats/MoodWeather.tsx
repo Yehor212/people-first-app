@@ -1,398 +1,418 @@
 /**
- * MoodWeather - Animated weather based on mood
- * Part of Phase 10 Premium Stats Redesign
+ * MoodWeather - Premium animated weather card based on mood + emotion
+ * 12 weather moods with 4-layer animation system:
+ *   Layer 1: Background gradient (inline styles from palette)
+ *   Layer 2: Weather effect (sun/clouds/rain/storm/fog/aurora/wind/clear)
+ *   Layer 3: Particles (dots/sparkle/rain/fog)
+ *   Layer 4: Content overlay (emoji + label + message)
  *
- * Shows current emotional state as animated weather visualization
- * Expandable to show weather history and mood factors
+ * Tap opens MoodWeatherCalendar bottom sheet.
  */
 
-import { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/components/ThemeToggle';
+import { shouldAnimate } from '@/lib/animationUtils';
+import { MoodType, EmotionData } from '@/types';
+import {
+  deriveWeatherMood,
+  getWeatherMoodConfig,
+  WeatherEffectType,
+  ParticleLayerConfig,
+  WeatherMoodPalette,
+} from '@/lib/weatherMoodConfig';
 
-type WeatherType = 'sunny' | 'partly-cloudy' | 'cloudy' | 'rainy' | 'stormy';
-
-interface WeatherHistoryDay {
-  date: string;
-  mood: 'great' | 'good' | 'okay' | 'bad' | 'terrible';
-}
-
-interface MoodFactor {
-  name: string;
-  impact: 'positive' | 'negative' | 'neutral';
-}
+// ============================================
+// TYPES
+// ============================================
 
 interface MoodWeatherProps {
-  /** Current mood (great, good, okay, bad, terrible) */
-  mood: 'great' | 'good' | 'okay' | 'bad' | 'terrible';
-  /** Optional message to display */
-  message?: string;
-  /** Optional class name */
+  mood: MoodType;
+  emotion?: EmotionData | null;
+  onOpenCalendar?: () => void;
   className?: string;
-  /** Weather history for past days */
-  weatherHistory?: WeatherHistoryDay[];
-  /** Factors influencing mood */
-  moodFactors?: MoodFactor[];
 }
 
-const MOOD_TO_WEATHER: Record<string, WeatherType> = {
-  great: 'sunny',
-  good: 'partly-cloudy',
-  okay: 'cloudy',
-  bad: 'rainy',
-  terrible: 'stormy',
+// ============================================
+// PARTICLE COLOR MAP (name → rgb)
+// ============================================
+
+const PARTICLE_RGB: Record<string, string> = {
+  teal: '45, 212, 191',
+  amber: '251, 191, 36',
+  violet: '139, 92, 246',
+  slate: '148, 163, 184',
+  blue: '59, 130, 246',
+  red: '239, 68, 68',
+  yellow: '234, 179, 8',
+  indigo: '99, 102, 241',
 };
 
-const WEATHER_LABELS = {
-  sunny: { en: 'Sunny', emoji: '☀️', gradient: 'from-amber-400/20 to-orange-500/10' },
-  'partly-cloudy': { en: 'Partly Cloudy', emoji: '🌤️', gradient: 'from-blue-400/15 to-amber-400/10' },
-  cloudy: { en: 'Cloudy', emoji: '☁️', gradient: 'from-slate-400/20 to-slate-500/10' },
-  rainy: { en: 'Rainy', emoji: '🌧️', gradient: 'from-blue-500/20 to-indigo-500/15' },
-  stormy: { en: 'Stormy', emoji: '⛈️', gradient: 'from-slate-600/25 to-purple-600/15' },
-};
+// ============================================
+// LAYER 2: WEATHER EFFECTS
+// ============================================
 
-// SVG Weather Components
-
-function SunnyWeather() {
+function SunEffect({ intensity }: { intensity: string }) {
+  const rayCount = intensity === 'heavy' ? 10 : intensity === 'medium' ? 8 : 6;
   return (
-    <div className="relative w-24 h-24 flex items-center justify-center">
-      {/* Sun rays */}
-      <motion.div
-        className="absolute w-full h-full animate-sun-rays"
-        style={{ transformOrigin: 'center' }}
-      >
-        {[...Array(8)].map((_, i) => (
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <div className="animate-sun-rays" style={{ transformOrigin: 'center' }}>
+        {Array.from({ length: rayCount }, (_, i) => (
           <div
             key={i}
-            className="absolute top-1/2 left-1/2 w-1 h-6 bg-gradient-to-t from-amber-400 to-transparent rounded-full"
+            className="absolute top-1/2 left-1/2 w-0.5 rounded-full bg-gradient-to-t from-amber-400/30 to-transparent"
             style={{
-              transform: `translate(-50%, -50%) rotate(${i * 45}deg) translateY(-18px)`,
-              opacity: 0.7,
+              height: intensity === 'heavy' ? 18 : 14,
+              transform: `translate(-50%, -50%) rotate(${i * (360 / rayCount)}deg) translateY(-${intensity === 'heavy' ? 18 : 14}px)`,
             }}
           />
         ))}
-      </motion.div>
-
-      {/* Sun body */}
-      <motion.div
-        className="relative w-14 h-14 rounded-full bg-gradient-to-br from-amber-300 via-yellow-400 to-orange-400 animate-sun-pulse"
+      </div>
+      <div
+        className="w-10 h-10 rounded-full animate-sun-pulse"
         style={{
-          boxShadow: '0 0 40px rgba(251, 191, 36, 0.6), 0 0 80px rgba(251, 191, 36, 0.3)'
+          background: 'radial-gradient(circle, rgba(251,191,36,0.35) 0%, rgba(251,191,36,0.08) 70%, transparent 100%)',
         }}
-      >
-        {/* Face */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-2xl">😊</span>
-        </div>
-      </motion.div>
-    </div>
-  );
-}
-
-function PartlyCloudyWeather() {
-  return (
-    <div className="relative w-24 h-24 flex items-center justify-center">
-      {/* Sun (behind) */}
-      <motion.div
-        className="absolute top-2 right-2 w-10 h-10 rounded-full bg-gradient-to-br from-amber-300 to-yellow-400"
-        style={{
-          boxShadow: '0 0 20px rgba(251, 191, 36, 0.4)'
-        }}
-        animate={{
-          scale: [1, 1.05, 1],
-        }}
-        transition={{ duration: 3, repeat: Infinity }}
       />
-
-      {/* Cloud - light theme: darker, dark theme: lighter */}
-      <motion.div
-        className="relative animate-cloud-drift"
-      >
-        <div className="flex items-end">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 dark:from-white dark:to-slate-200" />
-          <div className="w-12 h-12 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 dark:from-white dark:to-slate-200 -ml-4" />
-          <div className="w-8 h-8 rounded-full bg-gradient-to-b from-slate-300 to-slate-400 dark:from-white dark:to-slate-200 -ml-4" />
-        </div>
-      </motion.div>
     </div>
   );
 }
 
-function CloudyWeather() {
+function CloudsEffect({ intensity }: { intensity: string }) {
   return (
-    <div className="relative w-24 h-24 flex items-center justify-center">
-      {/* Background cloud */}
-      <motion.div
-        className="absolute top-2 animate-cloud-drift-slow opacity-50"
-      >
-        <div className="flex items-end">
-          <div className="w-6 h-6 rounded-full bg-slate-300 dark:bg-slate-500" />
-          <div className="w-8 h-8 rounded-full bg-slate-300 dark:bg-slate-500 -ml-3" />
-          <div className="w-5 h-5 rounded-full bg-slate-300 dark:bg-slate-500 -ml-2" />
-        </div>
-      </motion.div>
-
-      {/* Main cloud - light theme: darker, dark theme: lighter */}
-      <motion.div
-        className="relative animate-cloud-drift"
-      >
-        <div className="flex items-end">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-b from-slate-400 to-slate-500 dark:from-slate-300 dark:to-slate-400" />
-          <div className="w-14 h-14 rounded-full bg-gradient-to-b from-slate-400 to-slate-500 dark:from-slate-300 dark:to-slate-400 -ml-4" />
-          <div className="w-10 h-10 rounded-full bg-gradient-to-b from-slate-400 to-slate-500 dark:from-slate-300 dark:to-slate-400 -ml-5" />
-        </div>
-        {/* Face */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg mt-2 ml-2">😐</span>
-        </div>
-      </motion.div>
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div
+        className={cn(
+          'absolute rounded-full bg-foreground/[0.06]',
+          intensity === 'light' ? 'animate-cloud-drift-slow' : 'animate-cloud-drift',
+        )}
+        style={{ width: 48, height: 20, top: '20%', left: '10%', borderRadius: 20 }}
+      />
+      <div
+        className="absolute rounded-full bg-foreground/[0.08] animate-cloud-drift"
+        style={{ width: 56, height: 22, top: '35%', left: '30%', borderRadius: 20, animationDelay: '-2s' }}
+      />
+      {intensity !== 'light' && (
+        <div
+          className="absolute rounded-full bg-foreground/[0.05] animate-cloud-drift-slow"
+          style={{ width: 40, height: 16, top: '55%', left: '50%', borderRadius: 16 }}
+        />
+      )}
     </div>
   );
 }
 
-function RainyWeather() {
+function RainEffect({ intensity }: { intensity: string }) {
+  const dropCount = intensity === 'heavy' ? 8 : intensity === 'medium' ? 5 : 3;
   return (
-    <div className="relative w-24 h-24 flex items-center justify-center">
-      {/* Cloud */}
-      <motion.div className="relative">
-        <div className="flex items-end">
-          <div className="w-7 h-7 rounded-full bg-gradient-to-b from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-600" />
-          <div className="w-12 h-12 rounded-full bg-gradient-to-b from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-600 -ml-3" />
-          <div className="w-8 h-8 rounded-full bg-gradient-to-b from-slate-400 to-slate-500 dark:from-slate-500 dark:to-slate-600 -ml-4" />
-        </div>
-        {/* Face */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-base mt-1">😔</span>
-        </div>
-      </motion.div>
-
-      {/* Rain drops */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-2">
-        {[0, 1, 2, 3, 4].map((i) => (
-          <motion.div
-            key={i}
-            className={cn(
-              'w-0.5 h-3 rounded-full bg-blue-400',
-              `animate-rain-drop-${i + 1}`
-            )}
-            style={{
-              animationDelay: `${i * 0.15}s`
-            }}
-          />
-        ))}
-      </div>
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {Array.from({ length: dropCount }, (_, i) => (
+        <div
+          key={i}
+          className="absolute w-[1.5px] rounded-full bg-blue-400/50 animate-rain-drop"
+          style={{
+            height: intensity === 'heavy' ? 12 : 8,
+            left: `${12 + i * (76 / dropCount)}%`,
+            top: -12,
+            animationDelay: `${i * 0.15}s`,
+            animationDuration: intensity === 'heavy' ? '0.8s' : '1s',
+          }}
+        />
+      ))}
     </div>
   );
 }
 
-function StormyWeather() {
+function StormEffect() {
   return (
-    <div className="relative w-24 h-24 flex items-center justify-center">
-      {/* Dark cloud */}
-      <motion.div
-        className="relative"
-        animate={{ x: [-1, 1, -1] }}
-        transition={{ duration: 0.3, repeat: Infinity, repeatType: 'reverse' }}
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {/* Dark cloud shapes */}
+      <div
+        className="absolute rounded-full bg-foreground/[0.1] animate-cloud-drift"
+        style={{ width: 56, height: 22, top: '15%', left: '15%', borderRadius: 20 }}
+      />
+      <div
+        className="absolute rounded-full bg-foreground/[0.12] animate-cloud-drift"
+        style={{ width: 48, height: 18, top: '25%', left: '40%', borderRadius: 18, animationDelay: '-3s' }}
+      />
+      {/* Lightning bolt */}
+      <svg
+        className="absolute animate-lightning"
+        style={{ top: '45%', left: '48%', transform: 'translateX(-50%)' }}
+        width="14"
+        height="18"
+        viewBox="0 0 20 24"
+        fill="none"
       >
-        <div className="flex items-end">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-b from-slate-500 to-slate-700 dark:from-slate-600 dark:to-slate-800" />
-          <div className="w-14 h-14 rounded-full bg-gradient-to-b from-slate-500 to-slate-700 dark:from-slate-600 dark:to-slate-800 -ml-4" />
-          <div className="w-10 h-10 rounded-full bg-gradient-to-b from-slate-500 to-slate-700 dark:from-slate-600 dark:to-slate-800 -ml-5" />
-        </div>
-        {/* Face */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-lg mt-2 ml-2">😢</span>
-        </div>
-      </motion.div>
-
-      {/* Lightning */}
-      <motion.div
-        className="absolute bottom-2 left-1/2 -translate-x-1/2 animate-lightning"
-      >
-        <svg width="20" height="24" viewBox="0 0 20 24" fill="none">
-          <path
-            d="M11 1L3 14H10L9 23L17 10H10L11 1Z"
-            fill="#fbbf24"
-            stroke="#f59e0b"
-            strokeWidth="1"
-          />
-        </svg>
-      </motion.div>
-
+        <path d="M11 1L3 14H10L9 23L17 10H10L11 1Z" fill="#fbbf24" stroke="#f59e0b" strokeWidth="1" />
+      </svg>
       {/* Rain */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex gap-2 opacity-70">
-        {[0, 1, 2].map((i) => (
-          <motion.div
-            key={i}
-            className={cn(
-              'w-0.5 h-2 rounded-full bg-blue-500',
-              `animate-rain-drop-${i + 1}`
-            )}
-          />
-        ))}
-      </div>
+      {Array.from({ length: 5 }, (_, i) => (
+        <div
+          key={i}
+          className="absolute w-[1.5px] h-2 rounded-full bg-blue-400/40 animate-rain-drop"
+          style={{
+            left: `${15 + i * 15}%`,
+            top: -8,
+            animationDelay: `${i * 0.12}s`,
+            animationDuration: '0.7s',
+          }}
+        />
+      ))}
     </div>
   );
 }
 
-const WEATHER_COMPONENTS: Record<WeatherType, React.FC> = {
-  sunny: SunnyWeather,
-  'partly-cloudy': PartlyCloudyWeather,
-  cloudy: CloudyWeather,
-  rainy: RainyWeather,
-  stormy: StormyWeather,
-};
+function FogEffect({ intensity }: { intensity: string }) {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div
+        className="absolute rounded-full animate-fog-drift"
+        style={{
+          width: '70%',
+          height: 16,
+          top: '30%',
+          left: '10%',
+          background: 'linear-gradient(90deg, transparent, rgba(148,163,184,0.15), transparent)',
+          filter: 'blur(8px)',
+        }}
+      />
+      <div
+        className="absolute rounded-full animate-fog-drift-slow"
+        style={{
+          width: '60%',
+          height: 14,
+          top: '55%',
+          left: '20%',
+          background: 'linear-gradient(90deg, transparent, rgba(148,163,184,0.12), transparent)',
+          filter: 'blur(10px)',
+        }}
+      />
+      {intensity !== 'light' && (
+        <div
+          className="absolute rounded-full animate-fog-drift"
+          style={{
+            width: '50%',
+            height: 12,
+            top: '75%',
+            left: '5%',
+            background: 'linear-gradient(90deg, transparent, rgba(148,163,184,0.1), transparent)',
+            filter: 'blur(12px)',
+            animationDelay: '-3s',
+          }}
+        />
+      )}
+    </div>
+  );
+}
 
-export function MoodWeather({
-  mood,
-  message,
-  className,
-  weatherHistory,
-  moodFactors,
-}: MoodWeatherProps) {
+function AuroraEffect({ intensity, palette }: { intensity: string; palette: WeatherMoodPalette }) {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div
+        className={cn(intensity === 'heavy' ? 'animate-aurora-fast' : 'animate-aurora')}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: `linear-gradient(135deg, hsl(${palette.accent} / 0.12) 0%, transparent 40%, hsl(${palette.accent} / 0.08) 60%, transparent 100%)`,
+          backgroundSize: '200% 200%',
+        }}
+      />
+    </div>
+  );
+}
+
+function WindEffect() {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {Array.from({ length: 3 }, (_, i) => (
+        <div
+          key={i}
+          className="absolute animate-wind-sway"
+          style={{
+            top: `${25 + i * 22}%`,
+            left: `${10 + i * 15}%`,
+            width: `${40 - i * 8}%`,
+            height: 1.5,
+            background: 'linear-gradient(90deg, transparent, rgba(239,68,68,0.15), transparent)',
+            borderRadius: 2,
+            animationDelay: `${i * 0.4}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+function ClearEffect() {
+  return (
+    <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div
+        className="animate-aurora"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'linear-gradient(135deg, rgba(45,212,191,0.06) 0%, transparent 50%, rgba(45,212,191,0.04) 100%)',
+          backgroundSize: '200% 200%',
+        }}
+      />
+    </div>
+  );
+}
+
+function WeatherEffectLayer({
+  type,
+  intensity,
+  palette,
+}: {
+  type: WeatherEffectType;
+  intensity: 'light' | 'medium' | 'heavy';
+  palette: WeatherMoodPalette;
+}) {
+  switch (type) {
+    case 'sun': return <SunEffect intensity={intensity} />;
+    case 'clouds': return <CloudsEffect intensity={intensity} />;
+    case 'rain': return <RainEffect intensity={intensity} />;
+    case 'storm': return <StormEffect />;
+    case 'fog': return <FogEffect intensity={intensity} />;
+    case 'aurora': return <AuroraEffect intensity={intensity} palette={palette} />;
+    case 'wind': return <WindEffect />;
+    case 'clear': return <ClearEffect />;
+    case 'none': return null;
+  }
+}
+
+// ============================================
+// LAYER 3: PARTICLES
+// ============================================
+
+function MoodParticles({ config, budget }: { config: ParticleLayerConfig; budget: number }) {
+  const count = Math.min(config.count, budget);
+  const rgb = PARTICLE_RGB[config.color] || '148, 163, 184';
+
+  const { type, sizeRange, speedRange, opacity } = config;
+
+  const particles = useMemo(
+    () =>
+      Array.from({ length: count }, (_, i) => ({
+        id: i,
+        left: Math.random() * 90 + 5,
+        top: type === 'rain' ? -(Math.random() * 20) : Math.random() * 85 + 5,
+        size: sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0]),
+        delay: Math.random() * speedRange[1],
+        duration: speedRange[0] + Math.random() * (speedRange[1] - speedRange[0]),
+        op: opacity[0] + Math.random() * (opacity[1] - opacity[0]),
+      })),
+    [count, type, sizeRange, speedRange, opacity],
+  );
+
+  const animClass =
+    config.type === 'sparkle'
+      ? 'animate-sparkle-twinkle'
+      : config.type === 'rain'
+        ? 'animate-rain-drop'
+        : config.type === 'fog'
+          ? 'animate-fog-drift'
+          : 'animate-sparkle-twinkle'; // dots use twinkle too
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className={cn('absolute rounded-full', animClass)}
+          style={{
+            left: `${p.left}%`,
+            top: type === 'rain' ? p.top : `${p.top}%`,
+            width: p.size,
+            height: type === 'rain' ? p.size * 3 : p.size,
+            backgroundColor: `rgba(${rgb}, ${p.op})`,
+            animationDelay: `${p.delay}s`,
+            animationDuration: `${p.duration}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+// ============================================
+// MAIN COMPONENT
+// ============================================
+
+export function MoodWeather({ mood, emotion, onOpenCalendar, className }: MoodWeatherProps) {
   const { t } = useLanguage();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { effectiveTheme } = useTheme();
+  const animate = shouldAnimate();
 
-  const weather = MOOD_TO_WEATHER[mood];
-  const weatherInfo = WEATHER_LABELS[weather];
-  const WeatherComponent = WEATHER_COMPONENTS[weather];
+  const weatherMoodId = useMemo(() => deriveWeatherMood(mood, emotion), [mood, emotion]);
+  const config = getWeatherMoodConfig(weatherMoodId);
+  const isDark = effectiveTheme === 'dark' || effectiveTheme === 'oled';
+  const palette = isDark ? config.palette.dark : config.palette.light;
 
-  // Day names
-  const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
-
-  const defaultMessage = useMemo(() => {
-    switch (mood) {
-      case 'great': return t.weatherMessageGreat || 'Your mood is radiant today!';
-      case 'good': return t.weatherMessageGood || 'Looking bright with some clouds';
-      case 'okay': return t.weatherMessageOkay || 'A balanced, neutral day';
-      case 'bad': return t.weatherMessageBad || 'Some rain, but it will pass';
-      case 'terrible': return t.weatherMessageTerrible || 'Storms clear with time';
-      default: return '';
-    }
-  }, [mood, t]);
+  const label = (t as Record<string, string>)[config.labelKey] || config.labelKey;
+  const message = (t as Record<string, string>)[config.messageKey] || '';
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      onClick={() => (weatherHistory?.length || moodFactors?.length) && setIsExpanded(!isExpanded)}
+      whileTap={onOpenCalendar ? { scale: 0.97 } : undefined}
+      onClick={onOpenCalendar}
       className={cn(
-        'relative overflow-hidden rounded-2xl p-4',
-        'bg-gradient-to-br',
-        weatherInfo.gradient,
-        'border border-border/30',
-        'backdrop-blur-sm',
-        (weatherHistory?.length || moodFactors?.length) && 'cursor-pointer',
-        className
+        'relative overflow-hidden rounded-2xl p-4 min-h-[140px]',
+        'border border-border/30 backdrop-blur-sm',
+        onOpenCalendar && 'cursor-pointer active:brightness-95',
+        className,
       )}
+      style={{
+        background: `linear-gradient(135deg, hsl(${palette.surface}), hsl(${palette.accent} / 0.18))`,
+        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.08), 0 2px 12px ${palette.glow}`,
+      }}
     >
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-lg" role="img" aria-hidden="true">
-          {weatherInfo.emoji}
-        </span>
-        <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-          {t[`weather${weather.charAt(0).toUpperCase() + weather.slice(1).replace('-', '')}`] || weatherInfo.en}
-        </h3>
-      </div>
-
-      {/* Weather visualization */}
-      <div className="flex justify-center py-2">
-        <WeatherComponent />
-      </div>
-
-      {/* Message */}
-      <p className="text-xs text-muted-foreground text-center mt-2">
-        {message || defaultMessage}
-      </p>
-
-      {/* Expandable content */}
-      {(weatherHistory?.length || moodFactors?.length) && (
-        <>
-          {/* Expand indicator */}
-          <div className="flex items-center justify-center mt-2 text-muted-foreground">
-            {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-          </div>
-
-          <AnimatePresence>
-            {isExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                {/* Weather history */}
-                {weatherHistory && weatherHistory.length > 0 && (
-                  <div className="mt-3 pt-2 border-t border-border/30">
-                    <p className="text-[10px] text-muted-foreground mb-2 text-center">
-                      {t.weatherHistory || 'This Week'}
-                    </p>
-                    <div className="flex justify-center gap-1">
-                      {weatherHistory.slice(-7).map((day, idx) => {
-                        const dayOfWeek = new Date(day.date).getDay();
-                        const dayWeather = MOOD_TO_WEATHER[day.mood];
-                        const dayWeatherInfo = WEATHER_LABELS[dayWeather];
-                        const isToday = day.date === new Date().toISOString().split('T')[0];
-
-                        return (
-                          <motion.div
-                            key={day.date}
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            transition={{ delay: idx * 0.05 }}
-                            className={cn(
-                              'flex flex-col items-center py-1 px-1.5 rounded-lg',
-                              isToday && 'bg-primary/10 ring-1 ring-primary/30'
-                            )}
-                          >
-                            <span className="text-[8px] text-muted-foreground">
-                              {dayNames[dayOfWeek]?.slice(0, 1)}
-                            </span>
-                            <span className="text-sm" role="img" aria-label={dayWeatherInfo.en}>
-                              {dayWeatherInfo.emoji}
-                            </span>
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Mood factors */}
-                {moodFactors && moodFactors.length > 0 && (
-                  <div className="mt-3 pt-2 border-t border-border/30">
-                    <p className="text-[10px] text-muted-foreground mb-2 text-center">
-                      {t.weatherFactors || 'Influencing Factors'}
-                    </p>
-                    <div className="flex flex-wrap justify-center gap-1">
-                      {moodFactors.slice(0, 3).map((factor, idx) => (
-                        <motion.span
-                          key={factor.name}
-                          initial={{ scale: 0.8, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ delay: idx * 0.1 }}
-                          className={cn(
-                            'text-[9px] px-1.5 py-0.5 rounded-full',
-                            factor.impact === 'positive' && 'bg-green-500/10 text-green-600 dark:text-green-400',
-                            factor.impact === 'negative' && 'bg-red-500/10 text-red-600 dark:text-red-400',
-                            factor.impact === 'neutral' && 'bg-muted text-muted-foreground'
-                          )}
-                        >
-                          {factor.impact === 'positive' ? '↑' : factor.impact === 'negative' ? '↓' : '•'} {factor.name}
-                        </motion.span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </>
+      {/* Layer 2: Weather Effect */}
+      {animate && (
+        <WeatherEffectLayer
+          type={config.layers.weatherEffect.type}
+          intensity={config.layers.weatherEffect.intensity}
+          palette={palette}
+        />
       )}
+
+      {/* Layer 3: Particles */}
+      {animate && config.layers.particles.type !== 'none' && (
+        <MoodParticles
+          config={config.layers.particles}
+          budget={config.performanceBudget.maxParticles}
+        />
+      )}
+
+      {/* Layer 4: Content */}
+      <div className="relative z-10 flex flex-col items-center justify-center h-full">
+        {/* Emoji */}
+        <motion.span
+          className="text-3xl mb-1 block"
+          initial={animate ? { scale: 0, opacity: 0 } : false}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 300, damping: 20, delay: 0.1 }}
+        >
+          {config.emoji}
+        </motion.span>
+
+        {/* Label */}
+        <h3 className="text-[11px] font-bold text-foreground text-center uppercase tracking-wider leading-tight">
+          {label}
+        </h3>
+
+        {/* Message */}
+        <p className="text-[9px] text-muted-foreground text-center mt-1 leading-tight line-clamp-2 px-1">
+          {message}
+        </p>
+      </div>
+
+      {/* Reduced motion fallback: just static gradient + emoji is already shown via inline styles */}
     </motion.div>
   );
 }

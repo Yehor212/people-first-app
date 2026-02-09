@@ -25,6 +25,7 @@ import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
 import { Smile, Zap, ChevronRight, HelpCircle } from 'lucide-react';
 import { EmotionGuide } from './EmotionGuide';
 import { getEmotionGuide } from '@/lib/emotionConstants';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 interface EmotionWheelProps {
   entries: MoodEntry[];
@@ -140,6 +141,9 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
 
   const guideData = getEmotionGuide(language);
 
+  // Android hardware back button: any sub-view → back
+  useBackHandler(viewState !== 'wheel', handleBack);
+
   return (
     <div className={cn(
       "rounded-2xl p-5 animate-fade-in transition-all relative overflow-hidden",
@@ -182,9 +186,9 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
             <button
               onClick={() => setViewState('guide')}
               aria-label={guideData.title}
-              className="p-1.5 hover:bg-secondary rounded-lg transition-colors"
+              className="p-2.5 -mr-1 hover:bg-secondary rounded-xl transition-colors"
             >
-              <HelpCircle className="w-4.5 h-4.5 text-muted-foreground" />
+              <HelpCircle className="w-5 h-5 text-muted-foreground" />
             </button>
           )}
           <span className="text-sm text-muted-foreground">
