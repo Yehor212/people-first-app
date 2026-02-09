@@ -1,0 +1,170 @@
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { db } from '@/storage/db';
+import type { JournalPassword } from './types';
+import { JOURNAL_PASSWORD_KEY } from './types';
+
+const PBKDF2_ITERATIONS = 100_000;
+const AUTO_LOCK_MS = 5 * 60 * 1000; // 5 minutes
+const COOLDOWN_STEPS = [
+  { after: 3, seconds: 30 },
+  { after: 5, seconds: 300 },
+];
+
+function arrayBufferToBase64(buf: ArrayBuffer): string {
+  const bytes = new Uint8Array(buf);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function base64ToArrayBuffer(b64: string): ArrayBuffer {
+  const binary = atob(b64);
+  const buf = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) buf[i] = binary.charCodeAt(i);
+  return buf.buffer;
+}
+
+async function deriveKey(password: string, salt: ArrayBuffer): Promise<string> {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), 'PBKDF2', false, ['deriveBits'],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+    keyMaterial,
+    256,
+  );
+  return arrayBufferToBase64(bits);
+}
+
+export function useJournalSecurity() {
+  const [hasPassword, setHasPassword] = useState<boolean | null>(null); // null = loading
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const unlockedAtRef = useRef(0);
+  const autoLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load password state
+  useEffect(() => {
+    db.settings.get(JOURNAL_PASSWORD_KEY).then(entry => {
+      setHasPassword(!!entry?.value);
+    }).catch(() => setHasPassword(false));
+  }, []);
+
+  // Auto-lock timer
+  const resetAutoLock = useCallback(() => {
+    if (autoLockTimerRef.current) clearTimeout(autoLockTimerRef.current);
+    if (!isUnlocked) return;
+    autoLockTimerRef.current = setTimeout(() => {
+      setIsUnlocked(false);
+      unlockedAtRef.current = 0;
+    }, AUTO_LOCK_MS);
+  }, [isUnlocked]);
+
+  useEffect(() => {
+    resetAutoLock();
+    return () => { if (autoLockTimerRef.current) clearTimeout(autoLockTimerRef.current); };
+  }, [resetAutoLock]);
+
+  // Lock on visibility change (app background)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden && isUnlocked) {
+        setIsUnlocked(false);
+        unlockedAtRef.current = 0;
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [isUnlocked]);
+
+  // Set password
+  const setPassword = useCallback(async (password: string) => {
+    const salt = crypto.getRandomValues(new Uint8Array(16));
+    const hash = await deriveKey(password, salt.buffer);
+    const data: JournalPassword = {
+      hash,
+      salt: arrayBufferToBase64(salt.buffer),
+      iterations: PBKDF2_ITERATIONS,
+      createdAt: Date.now(),
+    };
+    await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: data });
+    setHasPassword(true);
+    setIsUnlocked(true);
+    unlockedAtRef.current = Date.now();
+    resetAutoLock();
+  }, [resetAutoLock]);
+
+  // Unlock with password
+  const unlock = useCallback(async (password: string): Promise<boolean> => {
+    // Cooldown check
+    if (Date.now() < cooldownUntil) return false;
+
+    const entry = await db.settings.get(JOURNAL_PASSWORD_KEY);
+    if (!entry?.value) return false;
+    const stored = entry.value as JournalPassword;
+    const salt = base64ToArrayBuffer(stored.salt);
+    const hash = await deriveKey(password, salt);
+
+    if (hash === stored.hash) {
+      setIsUnlocked(true);
+      setFailedAttempts(0);
+      setCooldownUntil(0);
+      unlockedAtRef.current = Date.now();
+      resetAutoLock();
+      return true;
+    }
+
+    // Wrong password
+    const newAttempts = failedAttempts + 1;
+    setFailedAttempts(newAttempts);
+
+    // Check cooldown thresholds
+    for (const step of COOLDOWN_STEPS) {
+      if (newAttempts >= step.after) {
+        setCooldownUntil(Date.now() + step.seconds * 1000);
+      }
+    }
+    return false;
+  }, [failedAttempts, cooldownUntil, resetAutoLock]);
+
+  // Remove password (entries stay, lock removed)
+  const removePassword = useCallback(async () => {
+    await db.settings.delete(JOURNAL_PASSWORD_KEY);
+    setHasPassword(false);
+    setIsUnlocked(false);
+    setFailedAttempts(0);
+    setCooldownUntil(0);
+  }, []);
+
+  // Manual lock
+  const lock = useCallback(() => {
+    setIsUnlocked(false);
+    unlockedAtRef.current = 0;
+  }, []);
+
+  // Touch to reset auto-lock timer
+  const touch = useCallback(() => {
+    if (isUnlocked) resetAutoLock();
+  }, [isUnlocked, resetAutoLock]);
+
+  // Cooldown remaining in seconds
+  const cooldownRemaining = cooldownUntil > Date.now()
+    ? Math.ceil((cooldownUntil - Date.now()) / 1000)
+    : 0;
+
+  return {
+    hasPassword,
+    isUnlocked,
+    isLocked: hasPassword === true && !isUnlocked,
+    loading: hasPassword === null,
+    failedAttempts,
+    cooldownRemaining,
+    setPassword,
+    unlock,
+    removePassword,
+    lock,
+    touch,
+  };
+}

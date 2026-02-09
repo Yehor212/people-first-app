@@ -1865,6 +1865,15 @@
   background: hsl(var(--primary) / 0.5);
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* ============================================
    DUOLINGO-STYLE HABIT ANIMATIONS
    ============================================ */
@@ -3250,6 +3259,15 @@ input::-moz-focus-inner {
 
 .animate-sun-rays {
   animation: sun-rays-rotate 20s linear infinite;
+}
+
+/* Shake animation (journal lock wrong password) */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
 }
 
 /* Sun pulse */

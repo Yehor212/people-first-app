@@ -1,5 +1,6 @@
 import Dexie, { Table } from 'dexie';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
+import type { JournalEntry, JournalPhoto } from '@/features/journal/types';
 import { logger } from '@/lib/logger';
 
 /**
@@ -25,6 +26,8 @@ export class ZenFlowDB extends Dexie {
   gratitudeEntries!: Table<GratitudeEntry, string>;
   settings!: Table<{ key: string; value: unknown }, string>;
   offlineQueue!: Table<OfflineQueueItem, string>;
+  journalEntries!: Table<JournalEntry, string>;
+  journalPhotos!: Table<JournalPhoto, string>;
 
   constructor() {
     super('ZenFlowDB');
@@ -58,6 +61,18 @@ export class ZenFlowDB extends Dexie {
       settings: 'key',
       offlineQueue: 'id, type, entityId, timestamp',
     });
+
+    // Version 4: Add journal/diary tables
+    this.version(4).stores({
+      moods: 'id, timestamp, date',
+      habits: 'id, createdAt, type',
+      focusSessions: 'id, startTime, date',
+      gratitudeEntries: 'id, timestamp, date',
+      settings: 'key',
+      offlineQueue: 'id, type, entityId, timestamp',
+      journalEntries: 'id, date, createdAt, updatedAt',
+      journalPhotos: 'id, entryId, createdAt',
+    });
   }
 }
 
@@ -68,6 +83,8 @@ export const habitsRepo = db.habits;
 export const focusRepo = db.focusSessions;
 export const gratitudeRepo = db.gratitudeEntries;
 export const settingsRepo = db.settings;
+export const journalEntriesRepo = db.journalEntries;
+export const journalPhotosRepo = db.journalPhotos;
 
 // Helper to check database health with timeout
 export const checkDatabaseHealth = async (): Promise<boolean> => {

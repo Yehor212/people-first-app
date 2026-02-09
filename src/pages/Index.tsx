@@ -60,6 +60,9 @@ const SettingsPanel = lazyWithRetry(() => import('@/components/SettingsPanel').t
 const GratitudeJournal = lazyWithRetry(() => import('@/components/GratitudeJournal').then(m => ({ default: m.GratitudeJournal })), 'GratitudeJournal');
 const BreathingExercise = lazyWithRetry(() => import('@/components/BreathingExercise').then(m => ({ default: m.BreathingExercise })), 'BreathingExercise');
 
+// Journal module (lazy-loaded feature)
+const JournalModule = lazyWithRetry(() => import('@/features/journal').then(m => ({ default: m.JournalModule })), 'JournalModule');
+
 // Heavy components lazy-loaded for better initial load performance
 const ScheduleTimeline = lazyWithRetry(() => import('@/components/ScheduleTimeline').then(m => ({ default: m.ScheduleTimeline })), 'ScheduleTimeline');
 const HabitTracker = lazyWithRetry(() => import('@/components/HabitTracker').then(m => ({ default: m.HabitTracker })), 'HabitTracker');
@@ -2272,6 +2275,13 @@ export function Index() {
                 focusSessions={safeFocusSessions}
                 gratitudeEntries={safeGratitudeEntries}
               />
+            </LazyErrorBoundary>
+
+            {/* Personal Journal */}
+            <LazyErrorBoundary componentName="Journal">
+              <Suspense fallback={<SkeletonCard />}>
+                <JournalModule />
+              </Suspense>
             </LazyErrorBoundary>
           </div>
         )}
