@@ -9,7 +9,6 @@ export { ZenScoreHub } from './ZenScoreHub';
 export { RingDetailSheet } from './RingDetailSheet';
 export type { RingType } from './RingDetailSheet';
 export { MoodWeather } from './MoodWeather';
-export { MoodWeatherCalendar } from './MoodWeatherCalendar';
 export { WeekCrystal } from './WeekCrystal';
 export { WeeklyReview } from './WeeklyReview';
 

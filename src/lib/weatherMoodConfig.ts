@@ -3,7 +3,8 @@
  * 12 weather moods with visual theme, animation layers, and performance budgets
  */
 
-import { MoodType, EmotionData } from '@/types';
+import { MoodType, MoodEntry, EmotionData } from '@/types';
+import { getToday, formatDate } from '@/lib/utils';
 
 // ============================================
 // TYPES
@@ -518,3 +519,71 @@ export const MOOD_SCORE: Record<MoodType, number> = {
   bad: 2,
   terrible: 1,
 };
+
+// ============================================
+// DERIVE CURRENT WEATHER FROM MOOD HISTORY
+// ============================================
+
+/**
+ * Smart weather derivation from mood history.
+ * Priority cascade:
+ *   1. Today's latest mood entry (most recent = current state)
+ *   2. Yesterday's latest mood entry
+ *   3. Weighted average of last 7 days → MoodType
+ *   4. Default: 'okay' with no emotion (neutral weather)
+ */
+export function deriveCurrentWeather(
+  moods: MoodEntry[],
+): { mood: MoodType; emotion?: EmotionData | null } {
+  if (moods.length === 0) {
+    return { mood: 'okay', emotion: null };
+  }
+
+  const today = getToday();
+  const yesterday = formatDate(new Date(Date.now() - 86400000));
+
+  // 1. Today's latest entry
+  const todayEntries = moods.filter((m) => m.date === today);
+  if (todayEntries.length > 0) {
+    const latest = todayEntries.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
+    return { mood: latest.mood, emotion: latest.emotion ?? null };
+  }
+
+  // 2. Yesterday's latest entry
+  const yesterdayEntries = moods.filter((m) => m.date === yesterday);
+  if (yesterdayEntries.length > 0) {
+    const latest = yesterdayEntries.reduce((a, b) => (a.timestamp > b.timestamp ? a : b));
+    return { mood: latest.mood, emotion: latest.emotion ?? null };
+  }
+
+  // 3. Weighted average of last 7 days
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000);
+  const sevenDaysAgoStr = formatDate(sevenDaysAgo);
+  const recentEntries = moods.filter((m) => m.date >= sevenDaysAgoStr);
+
+  if (recentEntries.length > 0) {
+    // Weight by recency: days_ago 0→7, weight 7→1
+    let weightedSum = 0;
+    let totalWeight = 0;
+    for (const entry of recentEntries) {
+      const entryDate = new Date(entry.date + 'T12:00:00');
+      const daysAgo = Math.max(0, Math.floor((Date.now() - entryDate.getTime()) / 86400000));
+      const weight = Math.max(1, 7 - daysAgo);
+      weightedSum += MOOD_SCORE[entry.mood] * weight;
+      totalWeight += weight;
+    }
+    const avg = weightedSum / totalWeight;
+
+    let avgMood: MoodType;
+    if (avg >= 4.5) avgMood = 'great';
+    else if (avg >= 3.5) avgMood = 'good';
+    else if (avg >= 2.5) avgMood = 'okay';
+    else if (avg >= 1.5) avgMood = 'bad';
+    else avgMood = 'terrible';
+
+    return { mood: avgMood, emotion: null };
+  }
+
+  // 4. Default — neutral
+  return { mood: 'okay', emotion: null };
+}

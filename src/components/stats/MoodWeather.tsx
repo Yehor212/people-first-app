@@ -31,7 +31,6 @@ import {
 interface MoodWeatherProps {
   mood: MoodType;
   emotion?: EmotionData | null;
-  onOpenCalendar?: () => void;
   className?: string;
 }
 
@@ -342,7 +341,7 @@ function MoodParticles({ config, budget }: { config: ParticleLayerConfig; budget
 // MAIN COMPONENT
 // ============================================
 
-export function MoodWeather({ mood, emotion, onOpenCalendar, className }: MoodWeatherProps) {
+export function MoodWeather({ mood, emotion, className }: MoodWeatherProps) {
   const { t } = useLanguage();
   const { effectiveTheme } = useTheme();
   const animate = shouldAnimate();
@@ -359,12 +358,9 @@ export function MoodWeather({ mood, emotion, onOpenCalendar, className }: MoodWe
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      whileTap={onOpenCalendar ? { scale: 0.97 } : undefined}
-      onClick={onOpenCalendar}
       className={cn(
         'relative overflow-hidden rounded-2xl p-4 min-h-[140px]',
         'border border-border/30 backdrop-blur-sm',
-        onOpenCalendar && 'cursor-pointer active:brightness-95',
         className,
       )}
       style={{

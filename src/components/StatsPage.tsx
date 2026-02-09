@@ -31,13 +31,12 @@ import { safeParseInt } from '@/lib/validation';
 import {
   ZenScoreHub,
   MoodWeather,
-  MoodWeatherCalendar,
   WeekCrystal,
   TrophyHall,
   EmotionGalaxy,
   RingDetailSheet,
 } from '@/components/stats';
-import { deriveWeatherMood } from '@/lib/weatherMoodConfig';
+import { deriveCurrentWeather } from '@/lib/weatherMoodConfig';
 import type { RingType } from '@/components/stats';
 
 interface StatsPageProps {
@@ -68,9 +67,8 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
   const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
   const [selectedRing, setSelectedRing] = useState<RingType | null>(null);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
-  const [moodCalendarOpen, setMoodCalendarOpen] = useState(false);
 
-  useScrollLock(showShareDialog || showStoryViewer || selectedRing !== null || showMonthSelector || moodCalendarOpen);
+  useScrollLock(showShareDialog || showStoryViewer || selectedRing !== null || showMonthSelector);
   const monthNames = [
     t.january, t.february, t.march, t.april, t.may, t.june,
     t.july, t.august, t.september, t.october, t.november, t.december
@@ -94,6 +92,9 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
     selectedTag,
     monthNames,
   });
+
+  // Smart weather: today → yesterday → 7-day weighted average → neutral
+  const currentWeatherInput = useMemo(() => deriveCurrentWeather(moods), [moods]);
 
   // Short month names for compact displays (heatmap)
   const shortMonthNames = monthNames.map(name => name?.slice(0, 3) || name);
@@ -663,9 +664,8 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           {/* Mood Weather + Week Crystal */}
           <div className="grid grid-cols-2 gap-3">
             <MoodWeather
-              mood={premiumStats.currentMood}
-              emotion={moods.length > 0 ? moods[moods.length - 1]?.emotion : undefined}
-              onOpenCalendar={() => setMoodCalendarOpen(true)}
+              mood={currentWeatherInput.mood}
+              emotion={currentWeatherInput.emotion}
             />
             <WeekCrystal
               score={premiumStats.weekScore}
@@ -1335,16 +1335,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         }}
       />
 
-      {/* Mood Weather Calendar */}
-      <MoodWeatherCalendar
-        open={moodCalendarOpen}
-        onOpenChange={setMoodCalendarOpen}
-        moods={moods}
-        currentWeatherMood={deriveWeatherMood(
-          premiumStats.currentMood,
-          moods.length > 0 ? moods[moods.length - 1]?.emotion : undefined,
-        )}
-      />
     </div>
   );
 });
