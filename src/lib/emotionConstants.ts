@@ -391,3 +391,398 @@ export function getEmotionLabels(lang: string): Record<PrimaryEmotion, string> {
     anticipation: t.anticipation,
   };
 }
+
+// ============================================
+// EMOTION GUIDE (Help users choose)
+// ============================================
+
+export interface EmotionGuideEntry {
+  description: string;
+  feelings: string[];
+}
+
+export interface EmotionGuideData {
+  title: string;
+  subtitle: string;
+  chooseWhen: string;
+  tapToSelect: string;
+  intensity: string;
+  emotions: Record<PrimaryEmotion, EmotionGuideEntry>;
+}
+
+const EMOTION_GUIDE: Record<string, EmotionGuideData> = {
+  en: {
+    title: 'Emotion Guide',
+    subtitle: 'Not sure what to choose? Find your feeling below',
+    chooseWhen: 'Choose when you feel:',
+    tapToSelect: 'Tap to select',
+    intensity: 'Intensity levels',
+    emotions: {
+      joy: {
+        description: 'Positive energy, happiness, and delight',
+        feelings: ['Happy', 'Grateful', 'Proud', 'Inspired', 'Content', 'Loving', 'Playful'],
+      },
+      trust: {
+        description: 'Safety, confidence, and inner peace',
+        feelings: ['Calm', 'Safe', 'Confident', 'Connected', 'Peaceful', 'Supported'],
+      },
+      fear: {
+        description: 'Worry, anxiety, and feeling unsafe',
+        feelings: ['Anxious', 'Worried', 'Nervous', 'Stressed', 'Insecure', 'Tense'],
+      },
+      surprise: {
+        description: 'Unexpected events, shock, or amazement',
+        feelings: ['Shocked', 'Confused', 'Amazed', 'Bewildered', 'Astonished'],
+      },
+      sadness: {
+        description: 'Low energy, heaviness, and loss',
+        feelings: ['Lonely', 'Tired', 'Apathetic', 'Empty', 'Nostalgic', 'Disappointed'],
+      },
+      disgust: {
+        description: 'Rejection, displeasure, and aversion',
+        feelings: ['Bored', 'Uncomfortable', 'Dissatisfied', 'Repulsed', 'Fed up'],
+      },
+      anger: {
+        description: 'Frustration, injustice, and resistance',
+        feelings: ['Frustrated', 'Irritated', 'Jealous', 'Impatient', 'Resentful'],
+      },
+      anticipation: {
+        description: 'Excitement, hope, and looking forward',
+        feelings: ['Excited', 'Curious', 'Hopeful', 'Motivated', 'Restless'],
+      },
+    },
+  },
+  ru: {
+    title: 'Гид по эмоциям',
+    subtitle: 'Не знаешь что выбрать? Найди своё состояние ниже',
+    chooseWhen: 'Выбери, когда чувствуешь:',
+    tapToSelect: 'Нажми для выбора',
+    intensity: 'Уровни интенсивности',
+    emotions: {
+      joy: {
+        description: 'Позитивная энергия, счастье и восторг',
+        feelings: ['Счастье', 'Благодарность', 'Гордость', 'Вдохновение', 'Удовлетворение', 'Любовь', 'Игривость'],
+      },
+      trust: {
+        description: 'Безопасность, уверенность и внутренний покой',
+        feelings: ['Спокойствие', 'Безопасность', 'Уверенность', 'Связь', 'Умиротворение', 'Поддержка'],
+      },
+      fear: {
+        description: 'Беспокойство, тревога и чувство опасности',
+        feelings: ['Тревога', 'Беспокойство', 'Нервозность', 'Стресс', 'Неуверенность', 'Напряжение'],
+      },
+      surprise: {
+        description: 'Неожиданные события, шок или изумление',
+        feelings: ['Шок', 'Замешательство', 'Восхищение', 'Растерянность', 'Потрясение'],
+      },
+      sadness: {
+        description: 'Упадок сил, тяжесть и потеря',
+        feelings: ['Одиночество', 'Усталость', 'Апатия', 'Пустота', 'Ностальгия', 'Разочарование'],
+      },
+      disgust: {
+        description: 'Отторжение, неприязнь и отвращение',
+        feelings: ['Скука', 'Дискомфорт', 'Недовольство', 'Отвращение', 'Пресыщение'],
+      },
+      anger: {
+        description: 'Фрустрация, несправедливость и сопротивление',
+        feelings: ['Фрустрация', 'Раздражение', 'Ревность', 'Нетерпение', 'Обида'],
+      },
+      anticipation: {
+        description: 'Волнение, надежда и предвкушение',
+        feelings: ['Волнение', 'Любопытство', 'Надежда', 'Мотивация', 'Нетерпеливость'],
+      },
+    },
+  },
+  uk: {
+    title: 'Гід по емоціях',
+    subtitle: 'Не знаєш що обрати? Знайди свій стан нижче',
+    chooseWhen: 'Обери, коли відчуваєш:',
+    tapToSelect: 'Натисни для вибору',
+    intensity: 'Рівні інтенсивності',
+    emotions: {
+      joy: {
+        description: 'Позитивна енергія, щастя та захват',
+        feelings: ['Щастя', 'Вдячність', 'Гордість', 'Натхнення', 'Задоволення', 'Любов', 'Грайливість'],
+      },
+      trust: {
+        description: 'Безпека, впевненість та внутрішній спокій',
+        feelings: ['Спокій', 'Безпека', 'Впевненість', "Зв'язок", 'Умиротворення', 'Підтримка'],
+      },
+      fear: {
+        description: 'Занепокоєння, тривога та відчуття небезпеки',
+        feelings: ['Тривога', 'Занепокоєння', 'Нервозність', 'Стрес', 'Невпевненість', 'Напруга'],
+      },
+      surprise: {
+        description: 'Несподівані події, шок або здивування',
+        feelings: ['Шок', 'Розгубленість', 'Захоплення', 'Збентеження', 'Потрясіння'],
+      },
+      sadness: {
+        description: 'Занепад сил, важкість та втрата',
+        feelings: ['Самотність', 'Втома', 'Апатія', 'Порожнеча', 'Ностальгія', 'Розчарування'],
+      },
+      disgust: {
+        description: 'Відторгнення, неприязнь та огида',
+        feelings: ['Нудьга', 'Дискомфорт', 'Невдоволення', 'Огида', 'Пересичення'],
+      },
+      anger: {
+        description: 'Фрустрація, несправедливість та опір',
+        feelings: ['Фрустрація', 'Роздратування', 'Ревнощі', 'Нетерплячість', 'Образа'],
+      },
+      anticipation: {
+        description: 'Хвилювання, надія та передчуття',
+        feelings: ['Хвилювання', 'Цікавість', 'Надія', 'Мотивація', 'Нетерплячість'],
+      },
+    },
+  },
+  de: {
+    title: 'Emotions-Guide',
+    subtitle: 'Unsicher was du wählen sollst? Finde dein Gefühl unten',
+    chooseWhen: 'Wähle wenn du dich fühlst:',
+    tapToSelect: 'Tippe zum Auswählen',
+    intensity: 'Intensitätsstufen',
+    emotions: {
+      joy: {
+        description: 'Positive Energie, Glück und Begeisterung',
+        feelings: ['Glücklich', 'Dankbar', 'Stolz', 'Inspiriert', 'Zufrieden', 'Liebevoll', 'Verspielt'],
+      },
+      trust: {
+        description: 'Sicherheit, Selbstvertrauen und innerer Frieden',
+        feelings: ['Ruhig', 'Sicher', 'Selbstbewusst', 'Verbunden', 'Friedlich', 'Unterstützt'],
+      },
+      fear: {
+        description: 'Sorgen, Angst und Unsicherheit',
+        feelings: ['Ängstlich', 'Besorgt', 'Nervös', 'Gestresst', 'Unsicher', 'Angespannt'],
+      },
+      surprise: {
+        description: 'Unerwartete Ereignisse, Schock oder Staunen',
+        feelings: ['Geschockt', 'Verwirrt', 'Erstaunt', 'Verblüfft', 'Fassungslos'],
+      },
+      sadness: {
+        description: 'Energielosigkeit, Schwere und Verlust',
+        feelings: ['Einsam', 'Müde', 'Apathisch', 'Leer', 'Nostalgisch', 'Enttäuscht'],
+      },
+      disgust: {
+        description: 'Ablehnung, Unmut und Abneigung',
+        feelings: ['Gelangweilt', 'Unwohl', 'Unzufrieden', 'Angewidert', 'Überdrüssig'],
+      },
+      anger: {
+        description: 'Frustration, Ungerechtigkeit und Widerstand',
+        feelings: ['Frustriert', 'Gereizt', 'Eifersüchtig', 'Ungeduldig', 'Nachtragend'],
+      },
+      anticipation: {
+        description: 'Aufregung, Hoffnung und Vorfreude',
+        feelings: ['Aufgeregt', 'Neugierig', 'Hoffnungsvoll', 'Motiviert', 'Rastlos'],
+      },
+    },
+  },
+  es: {
+    title: 'Guía de emociones',
+    subtitle: '¿No sabes qué elegir? Encuentra tu estado abajo',
+    chooseWhen: 'Elige cuando sientas:',
+    tapToSelect: 'Toca para seleccionar',
+    intensity: 'Niveles de intensidad',
+    emotions: {
+      joy: {
+        description: 'Energía positiva, felicidad y deleite',
+        feelings: ['Feliz', 'Agradecido', 'Orgulloso', 'Inspirado', 'Contento', 'Amoroso', 'Juguetón'],
+      },
+      trust: {
+        description: 'Seguridad, confianza y paz interior',
+        feelings: ['Tranquilo', 'Seguro', 'Confiado', 'Conectado', 'Pacífico', 'Apoyado'],
+      },
+      fear: {
+        description: 'Preocupación, ansiedad e inseguridad',
+        feelings: ['Ansioso', 'Preocupado', 'Nervioso', 'Estresado', 'Inseguro', 'Tenso'],
+      },
+      surprise: {
+        description: 'Eventos inesperados, shock o asombro',
+        feelings: ['Impactado', 'Confundido', 'Asombrado', 'Desconcertado', 'Atónito'],
+      },
+      sadness: {
+        description: 'Baja energía, pesadez y pérdida',
+        feelings: ['Solo', 'Cansado', 'Apático', 'Vacío', 'Nostálgico', 'Decepcionado'],
+      },
+      disgust: {
+        description: 'Rechazo, disgusto y aversión',
+        feelings: ['Aburrido', 'Incómodo', 'Insatisfecho', 'Asqueado', 'Harto'],
+      },
+      anger: {
+        description: 'Frustración, injusticia y resistencia',
+        feelings: ['Frustrado', 'Irritado', 'Celoso', 'Impaciente', 'Resentido'],
+      },
+      anticipation: {
+        description: 'Emoción, esperanza y expectativa',
+        feelings: ['Emocionado', 'Curioso', 'Esperanzado', 'Motivado', 'Inquieto'],
+      },
+    },
+  },
+  fr: {
+    title: 'Guide des émotions',
+    subtitle: 'Pas sûr de quoi choisir ? Trouve ton état ci-dessous',
+    chooseWhen: 'Choisis quand tu ressens :',
+    tapToSelect: 'Appuie pour sélectionner',
+    intensity: "Niveaux d'intensité",
+    emotions: {
+      joy: {
+        description: 'Énergie positive, bonheur et plaisir',
+        feelings: ['Heureux', 'Reconnaissant', 'Fier', 'Inspiré', 'Content', 'Aimant', 'Joueur'],
+      },
+      trust: {
+        description: 'Sécurité, confiance et paix intérieure',
+        feelings: ['Calme', 'En sécurité', 'Confiant', 'Connecté', 'Paisible', 'Soutenu'],
+      },
+      fear: {
+        description: "Inquiétude, anxiété et sentiment d'insécurité",
+        feelings: ['Anxieux', 'Inquiet', 'Nerveux', 'Stressé', 'Insécure', 'Tendu'],
+      },
+      surprise: {
+        description: 'Événements inattendus, choc ou émerveillement',
+        feelings: ['Choqué', 'Confus', 'Émerveillé', 'Déconcerté', 'Stupéfait'],
+      },
+      sadness: {
+        description: "Manque d'énergie, lourdeur et perte",
+        feelings: ['Seul', 'Fatigué', 'Apathique', 'Vide', 'Nostalgique', 'Déçu'],
+      },
+      disgust: {
+        description: 'Rejet, déplaisir et aversion',
+        feelings: ['Ennuyé', 'Mal à l\'aise', 'Insatisfait', 'Dégoûté', 'Exaspéré'],
+      },
+      anger: {
+        description: 'Frustration, injustice et résistance',
+        feelings: ['Frustré', 'Irrité', 'Jaloux', 'Impatient', 'Rancunier'],
+      },
+      anticipation: {
+        description: 'Excitation, espoir et attente',
+        feelings: ['Excité', 'Curieux', 'Plein d\'espoir', 'Motivé', 'Agité'],
+      },
+    },
+  },
+  ja: {
+    title: '感情ガイド',
+    subtitle: '何を選べばいいかわからない？下から探してみて',
+    chooseWhen: 'こう感じた時に選んで：',
+    tapToSelect: 'タップで選択',
+    intensity: '強度レベル',
+    emotions: {
+      joy: {
+        description: 'ポジティブなエネルギー、幸福感、喜び',
+        feelings: ['幸せ', '感謝', '誇り', 'インスピレーション', '満足', '愛情', '遊び心'],
+      },
+      trust: {
+        description: '安心感、自信、内なる平和',
+        feelings: ['穏やか', '安全', '自信', 'つながり', '平和', '支え'],
+      },
+      fear: {
+        description: '心配、不安、危険を感じること',
+        feelings: ['不安', '心配', '緊張', 'ストレス', '自信がない', '張り詰め'],
+      },
+      surprise: {
+        description: '予想外の出来事、ショック、驚き',
+        feelings: ['ショック', '混乱', '感嘆', '困惑', '仰天'],
+      },
+      sadness: {
+        description: 'エネルギー不足、重さ、喪失感',
+        feelings: ['孤独', '疲れ', '無気力', '空虚', '郷愁', '失望'],
+      },
+      disgust: {
+        description: '拒絶、不快感、嫌悪',
+        feelings: ['退屈', '不快', '不満', '嫌悪', 'うんざり'],
+      },
+      anger: {
+        description: 'フラストレーション、不公平、抵抗',
+        feelings: ['イライラ', '苛立ち', '嫉妬', '焦り', '恨み'],
+      },
+      anticipation: {
+        description: 'ワクワク、希望、期待感',
+        feelings: ['興奮', '好奇心', '希望', 'やる気', 'そわそわ'],
+      },
+    },
+  },
+  ar: {
+    title: 'دليل المشاعر',
+    subtitle: 'لست متأكدًا ماذا تختار؟ ابحث عن حالتك أدناه',
+    chooseWhen: 'اختر عندما تشعر بـ:',
+    tapToSelect: 'انقر للاختيار',
+    intensity: 'مستويات الشدة',
+    emotions: {
+      joy: {
+        description: 'طاقة إيجابية وسعادة وبهجة',
+        feelings: ['سعيد', 'ممتن', 'فخور', 'ملهم', 'راضٍ', 'محب', 'مرح'],
+      },
+      trust: {
+        description: 'أمان وثقة وسلام داخلي',
+        feelings: ['هادئ', 'آمن', 'واثق', 'متصل', 'مطمئن', 'مدعوم'],
+      },
+      fear: {
+        description: 'قلق وتوتر وشعور بعدم الأمان',
+        feelings: ['قلق', 'مهموم', 'متوتر', 'مضغوط', 'غير آمن', 'مشدود'],
+      },
+      surprise: {
+        description: 'أحداث غير متوقعة أو صدمة أو دهشة',
+        feelings: ['مصدوم', 'مرتبك', 'مندهش', 'حائر', 'مذهول'],
+      },
+      sadness: {
+        description: 'طاقة منخفضة وثقل وفقدان',
+        feelings: ['وحيد', 'متعب', 'لا مبالي', 'فارغ', 'حنين', 'محبط'],
+      },
+      disgust: {
+        description: 'رفض واستياء ونفور',
+        feelings: ['ملل', 'عدم ارتياح', 'عدم رضا', 'اشمئزاز', 'سأم'],
+      },
+      anger: {
+        description: 'إحباط وظلم ومقاومة',
+        feelings: ['محبط', 'منزعج', 'غيور', 'نافد الصبر', 'حاقد'],
+      },
+      anticipation: {
+        description: 'حماس وأمل وتطلع',
+        feelings: ['متحمس', 'فضولي', 'متفائل', 'محفّز', 'قلق بتشوّق'],
+      },
+    },
+  },
+  he: {
+    title: 'מדריך רגשות',
+    subtitle: 'לא בטוח מה לבחור? מצא את ההרגשה שלך למטה',
+    chooseWhen: 'בחר כשאתה מרגיש:',
+    tapToSelect: 'לחץ לבחירה',
+    intensity: 'רמות עוצמה',
+    emotions: {
+      joy: {
+        description: 'אנרגיה חיובית, אושר והנאה',
+        feelings: ['שמח', 'אסיר תודה', 'גאה', 'מלא השראה', 'מרוצה', 'אוהב', 'שובב'],
+      },
+      trust: {
+        description: 'ביטחון, ביטחון עצמי ושלווה פנימית',
+        feelings: ['רגוע', 'בטוח', 'בטוח בעצמו', 'מחובר', 'שלו', 'נתמך'],
+      },
+      fear: {
+        description: 'דאגה, חרדה ותחושת חוסר ביטחון',
+        feelings: ['חרד', 'מודאג', 'עצבני', 'לחוץ', 'חסר ביטחון', 'מתוח'],
+      },
+      surprise: {
+        description: 'אירועים בלתי צפויים, הלם או תדהמה',
+        feelings: ['המום', 'מבולבל', 'נדהם', 'נבוך', 'המום'],
+      },
+      sadness: {
+        description: 'אנרגיה נמוכה, כובד ואובדן',
+        feelings: ['בודד', 'עייף', 'אדיש', 'ריק', 'נוסטלגי', 'מאוכזב'],
+      },
+      disgust: {
+        description: 'דחייה, אי-נוחות וסלידה',
+        feelings: ['משועמם', 'לא בנוח', 'לא מרוצה', 'נגעל', 'נמאס'],
+      },
+      anger: {
+        description: 'תסכול, עוול והתנגדות',
+        feelings: ['מתוסכל', 'מרוגז', 'קנאי', 'חסר סבלנות', 'טינה'],
+      },
+      anticipation: {
+        description: 'התרגשות, תקווה וציפייה',
+        feelings: ['נרגש', 'סקרן', 'מלא תקווה', 'מוטיבציה', 'חסר מנוחה'],
+      },
+    },
+  },
+};
+
+/** Get emotion guide data for a language */
+export function getEmotionGuide(lang: string): EmotionGuideData {
+  return EMOTION_GUIDE[lang] || EMOTION_GUIDE.en;
+}

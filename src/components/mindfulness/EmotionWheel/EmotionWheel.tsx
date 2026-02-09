@@ -22,7 +22,9 @@ import {
   EMOTION_WHEEL_POSITIONS,
 } from '@/lib/emotionConstants';
 import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
-import { Smile, Zap, ChevronRight } from 'lucide-react';
+import { Smile, Zap, ChevronRight, HelpCircle } from 'lucide-react';
+import { EmotionGuide } from './EmotionGuide';
+import { getEmotionGuide } from '@/lib/emotionConstants';
 
 interface EmotionWheelProps {
   entries: MoodEntry[];
@@ -31,7 +33,7 @@ interface EmotionWheelProps {
   isPrimaryCTA?: boolean;
 }
 
-type ViewState = 'wheel' | 'intensity' | 'note';
+type ViewState = 'wheel' | 'intensity' | 'note' | 'guide';
 
 export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: EmotionWheelProps) {
   const { language, t } = useLanguage();
@@ -131,8 +133,12 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
     } else if (viewState === 'intensity') {
       setViewState('wheel');
       setSelectedEmotion(null);
+    } else if (viewState === 'guide') {
+      setViewState('wheel');
     }
   }, [viewState]);
+
+  const guideData = getEmotionGuide(language);
 
   return (
     <div className={cn(
@@ -168,11 +174,23 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
             {viewState === 'wheel' && translations.whatDoYouFeel}
             {viewState === 'intensity' && translations.selectIntensity}
             {viewState === 'note' && (t.addNote || 'Add note')}
+            {viewState === 'guide' && guideData.title}
           </h3>
         </div>
-        <span className="text-sm text-muted-foreground">
-          {todayCount} {t.today}
-        </span>
+        <div className="flex items-center gap-2">
+          {viewState === 'wheel' && (
+            <button
+              onClick={() => setViewState('guide')}
+              aria-label={guideData.title}
+              className="p-1.5 hover:bg-secondary rounded-lg transition-colors"
+            >
+              <HelpCircle className="w-4.5 h-4.5 text-muted-foreground" />
+            </button>
+          )}
+          <span className="text-sm text-muted-foreground">
+            {todayCount} {t.today}
+          </span>
+        </div>
       </div>
 
       {/* Wheel View - CIRCULAR layout with 8 emotions */}
@@ -208,6 +226,17 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
             );
           })}
         </div>
+      )}
+
+      {/* Guide View */}
+      {viewState === 'guide' && (
+        <EmotionGuide
+          onSelectEmotion={(emotion) => {
+            setSelectedEmotion(emotion);
+            setViewState('intensity');
+          }}
+          onBack={() => setViewState('wheel')}
+        />
       )}
 
       {/* Intensity View */}

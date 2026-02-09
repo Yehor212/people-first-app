@@ -837,14 +837,14 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             // Perfect day = great mood + habits + focus
             const isPerfect = mood === 'great' && habitCount >= 1 && focusMinutes >= 30;
 
-            // Fire glow styles based on activity — streak days burn, inactive days dim
+            // Teal glow styles based on activity — active days glow, inactive days dim
             const crystalStyles = {
-              0: { glow: 'none', bg: 'from-slate-200/60 to-slate-100/40 dark:from-zinc-800/30 dark:to-zinc-700/20', border: 'border-slate-300/50 dark:border-zinc-700/30' },
-              1: { glow: '0 0 8px rgba(251, 146, 60, 0.3)', bg: 'from-orange-200/60 to-amber-100/40 dark:from-orange-900/40 dark:to-amber-800/30', border: 'border-orange-400/50 dark:border-orange-700/40' },
-              2: { glow: '0 0 12px rgba(245, 158, 11, 0.4)', bg: 'from-orange-300/60 to-amber-200/50 dark:from-orange-700/50 dark:to-amber-600/40', border: 'border-amber-500/60 dark:border-amber-600/50' },
-              3: { glow: '0 0 16px rgba(234, 179, 8, 0.5)', bg: 'from-amber-300/70 to-yellow-200/60 dark:from-amber-600/60 dark:to-yellow-500/50', border: 'border-yellow-500/70 dark:border-yellow-500/60' },
-              4: { glow: '0 0 20px rgba(234, 179, 8, 0.6)', bg: 'from-yellow-300/80 to-amber-200/70 dark:from-yellow-500/70 dark:to-amber-400/60', border: 'border-yellow-400/80 dark:border-yellow-400/70' },
-            }[activityLevel] || { glow: 'none', bg: 'from-slate-200/60 to-slate-100/40 dark:from-zinc-800/30 dark:to-zinc-700/20', border: 'border-slate-300/50 dark:border-zinc-700/30' };
+              0: { glow: 'none', bg: 'from-slate-200/60 to-slate-100/40 dark:from-zinc-800/30 dark:to-zinc-700/20', border: 'border-border/30' },
+              1: { glow: '0 0 6px hsl(158 40% 70% / 0.3)', bg: 'from-teal-100/50 to-emerald-50/40 dark:from-teal-900/25 dark:to-emerald-900/20', border: 'border-teal-300/40 dark:border-teal-700/30' },
+              2: { glow: '0 0 10px hsl(158 50% 55% / 0.35)', bg: 'from-teal-200/55 to-emerald-100/45 dark:from-teal-800/35 dark:to-emerald-800/25', border: 'border-teal-400/50 dark:border-teal-600/40' },
+              3: { glow: '0 0 14px hsl(158 65% 42% / 0.4)', bg: 'from-emerald-200/60 to-teal-100/50 dark:from-emerald-800/45 dark:to-teal-700/35', border: 'border-emerald-400/55 dark:border-emerald-600/45' },
+              4: { glow: '0 0 18px hsl(158 75% 32% / 0.5)', bg: 'from-emerald-300/65 to-teal-200/55 dark:from-emerald-700/55 dark:to-teal-600/45', border: 'border-emerald-500/60 dark:border-emerald-500/55' },
+            }[activityLevel] || { glow: 'none', bg: 'from-slate-200/60 to-slate-100/40 dark:from-zinc-800/30 dark:to-zinc-700/20', border: 'border-border/30' };
 
             const isToday = cell.dateKey === todayKey;
             const isSelected = cell.dateKey === selectedDate;
@@ -889,7 +889,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 {/* Today pulse ring */}
                 {isToday && (
                   <motion.div
-                    className="absolute inset-0 rotate-45 rounded-sm border-2 border-amber-400/70 dark:border-amber-300/60"
+                    className="absolute inset-0 rotate-45 rounded-sm border-2 border-primary/60"
                     animate={{
                       scale: [1, 1.05, 1],
                       opacity: [0.6, 1, 0.6]
@@ -901,7 +901,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 {/* Day number (counter-rotated to stay upright) */}
                 <span className={cn(
                   "relative z-10 text-xs font-medium",
-                  isToday ? "text-amber-600 dark:text-white font-bold" : hasData ? "text-orange-700 dark:text-amber-200" : "text-slate-500 dark:text-white/50"
+                  isToday ? "text-primary font-bold" : hasData ? "text-foreground" : "text-muted-foreground/60"
                 )}>
                   {cell.day}
                 </span>
@@ -910,7 +910,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 {isPerfect && (
                   <>
                     <motion.div
-                      className="absolute top-0 right-1 w-1 h-1 rounded-full bg-amber-400"
+                      className="absolute top-0 right-1 w-1 h-1 rounded-full bg-primary/80"
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{
                         scale: [0, 1.5, 0],
@@ -924,7 +924,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                       }}
                     />
                     <motion.div
-                      className="absolute bottom-0 left-1 w-1 h-1 rounded-full bg-amber-400"
+                      className="absolute bottom-0 left-1 w-1 h-1 rounded-full bg-primary/80"
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{
                         scale: [0, 1.5, 0],
@@ -938,7 +938,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                       }}
                     />
                     <motion.div
-                      className="absolute top-1 left-0 w-1 h-1 rounded-full bg-amber-400"
+                      className="absolute top-1 left-0 w-1 h-1 rounded-full bg-primary/80"
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{
                         scale: [0, 1.5, 0],
