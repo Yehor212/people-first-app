@@ -36,6 +36,8 @@ interface ZenScoreHubProps {
     focus: WeeklyDataPoint[];
     streak: WeeklyDataPoint[];
   };
+  /** Callback when a ring breakdown item is tapped */
+  onRingClick?: (ringId: 'mood' | 'habits' | 'focus') => void;
   /** Optional class name */
   className?: string;
 }
@@ -105,6 +107,7 @@ export function ZenScoreHub({
   streakDays,
   weeklyChange = 0,
   weeklyData,
+  onRingClick,
   className,
 }: ZenScoreHubProps) {
   const { t } = useLanguage();
@@ -169,6 +172,7 @@ export function ZenScoreHub({
       color: 'text-[hsl(var(--chart-mood))]',
       sparkColor: 'hsl(var(--chart-mood))',
       sparkData: weeklyData?.mood.map(d => d.value) || [],
+      ringId: 'mood' as const,
     },
     {
       label: t.habits || 'Habits',
@@ -178,6 +182,7 @@ export function ZenScoreHub({
       color: 'text-[hsl(var(--chart-habit))]',
       sparkColor: 'hsl(var(--chart-habit))',
       sparkData: weeklyData?.habits.map(d => d.value) || [],
+      ringId: 'habits' as const,
     },
     {
       label: t.focus || 'Focus',
@@ -187,6 +192,7 @@ export function ZenScoreHub({
       color: 'text-[hsl(var(--chart-focus))]',
       sparkColor: 'hsl(var(--chart-focus))',
       sparkData: weeklyData?.focus.map(d => d.value) || [],
+      ringId: 'focus' as const,
     },
     {
       label: t.streak || 'Streak',
@@ -196,7 +202,8 @@ export function ZenScoreHub({
       color: 'text-orange-500',
       sparkColor: '#f97316',
       sparkData: weeklyData?.streak.map(d => d.value) || [],
-      suffix: 'd'
+      suffix: 'd',
+      ringId: undefined as undefined,
     },
   ];
 
@@ -339,7 +346,13 @@ export function ZenScoreHub({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className="text-center"
+                    className={cn('text-center', item.ringId && 'cursor-pointer active:scale-95 transition-transform')}
+                    onClick={(e) => {
+                      if (item.ringId) {
+                        e.stopPropagation();
+                        onRingClick?.(item.ringId);
+                      }
+                    }}
                   >
                     <div className="flex justify-center mb-1">
                       <EmojiOrIcon

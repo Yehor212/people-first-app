@@ -11,9 +11,6 @@ import { SectionHeader } from '@/components/ui/section-header';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ShareProgress } from '@/components/ShareProgress';
 import { AnimatedEmotionDistribution } from '@/components/AnimatedStatsComponents';
-// Phase 13.3: TrendsView lazy-loaded to isolate Recharts CJS into its own chunk
-// (prevents TDZ errors from Recharts CJS interop in the merged StatsPage chunk)
-const TrendsView = lazy(() => import('@/components/TrendsView').then(m => ({ default: m.TrendsView })));
 import { calculateActivityLevel } from '@/components/ui/activity-heatmap';
 import { EmptyState } from '@/components/EmptyState';
 // Lazy-load ProgressStoriesViewer to isolate DOMPurify CJS into its own chunk
@@ -34,7 +31,6 @@ import { safeParseInt } from '@/lib/validation';
 // Phase 10 & 13: Premium Stats Components
 import {
   ZenScoreHub,
-  RadialDashboard,
   MoodWeather,
   WeekCrystal,
   TrophyHall,
@@ -595,6 +591,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 value: Math.min(i + 1, stats.currentStreak)
               })),
             }}
+            onRingClick={(ringId) => setSelectedRing(ringId)}
           />
 
           {/* Quick Actions */}
@@ -651,13 +648,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             />
           )}
 
-          {/* Radial Dashboard — weekly averages matching RingDetailSheet */}
-          <RadialDashboard
-            moodPercent={Math.round(ringWeeklyData.mood.reduce((a, b) => a + b.value, 0) / 7)}
-            habitsPercent={Math.round(ringWeeklyData.habits.reduce((a, b) => a + b.value, 0) / 7)}
-            focusPercent={Math.round(ringWeeklyData.focus.reduce((a, b) => a + b.value, 0) / 7)}
-            onRingClick={(ringId) => setSelectedRing(ringId)}
-          />
         </>
       )}
 
@@ -700,15 +690,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             </div>
           </Card>
 
-          {/* TrendsView */}
-          <Suspense fallback={<Card className="p-6 mb-4 animate-pulse"><div className="h-64 bg-secondary rounded-xl" /></Card>}>
-            <TrendsView
-              moods={moods}
-              habits={habits}
-              focusSessions={focusSessions}
-            />
-          </Suspense>
-
           {/* Emotion Distribution */}
           <AnimatedEmotionDistribution
             emotionCounts={stats.emotionCounts}
@@ -720,12 +701,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             onTagChange={setSelectedTag}
             tagFilterLabel={t.moodTagFilter}
             allTagsLabel={t.allTags}
-          />
-
-          {/* Energy Field */}
-          <EnergyField
-            data={activityHeatmapData}
-            className="mb-4"
           />
 
           {/* Mood Weather + Week Crystal */}
@@ -878,6 +853,9 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             <p className="text-xs text-muted-foreground mt-1">{t.gratitudes}</p>
           </div>
         </div>
+
+        {/* Activity Heatmap */}
+        <EnergyField data={activityHeatmapData} className="mb-4" />
 
         {/* Day Names */}
         <div className="grid grid-cols-7 gap-0.5 sm:gap-1 text-xs sm:text-xs text-muted-foreground mb-2">
