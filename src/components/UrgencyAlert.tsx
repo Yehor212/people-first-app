@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Flame, AlertTriangle, Sparkles, ChevronRight, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Habit } from '@/types';
-import { cn, interpolate } from '@/lib/utils';
+import { cn, interpolate, getToday } from '@/lib/utils';
 
 interface UrgencyAlertProps {
   habits: Habit[];
@@ -277,7 +277,7 @@ export function UrgencyAlert({
     }));
   }, [dismissedAlerts]);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getToday();
   const hoursLeft = getHoursUntilMidnight();
   const isLate = isLateInDay();
   const isVeryLateNow = isVeryLate();
