@@ -292,7 +292,7 @@ export function JournalModule() {
               {ts.journalTitle || 'Personal Journal'}
             </h3>
             {streak > 0 && (
-              <span className="text-[10px] font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+              <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
                 {streak} {'\u{1F525}'}
               </span>
             )}
@@ -328,9 +328,10 @@ export function JournalModule() {
   // ── Full-screen overlay ──
   return (
     <div
-      className="fixed inset-0 z-[60] bg-background flex flex-col animate-slide-up"
+      className="fixed inset-0 z-[60] bg-background md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
+      <div className="w-full h-full flex flex-col md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden">
       {/* Security gate */}
       {security.isLocked && !security.loading && (
         <>
@@ -593,10 +594,17 @@ export function JournalModule() {
                 className="flex flex-col flex-1 min-h-0"
               >
                 {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/80 backdrop-blur-xl">
-                  <h2 className="text-base font-bold text-foreground">
-                    {ts.journalTitle || 'Personal Journal'}
-                  </h2>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-gradient-to-r from-primary/[0.03] via-background/80 to-primary/[0.02] backdrop-blur-xl">
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-foreground">
+                      {ts.journalTitle || 'Personal Journal'}
+                    </h2>
+                    {streak > 0 && (
+                      <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                        {streak} {'\u{1F525}'}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => journal.openStats()}
@@ -619,7 +627,7 @@ export function JournalModule() {
                 </div>
 
                 {/* Calendar */}
-                <div className="px-4 py-2 border-b border-border/10">
+                <div className="px-4 py-2 border-b border-border/10 bg-gradient-to-b from-transparent to-muted/5">
                   {calendarMode === 'full' ? (
                     <JournalCalendarFull
                       entryDates={journal.entryDates}
@@ -949,6 +957,7 @@ export function JournalModule() {
           </AnimatePresence>
         </>
       )}
+      </div>
     </div>
   );
 }

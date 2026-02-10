@@ -15,7 +15,7 @@ import {
   EMOTION_ORDER,
   EMOTION_EMOJIS,
   INTENSITY_EMOJIS,
-  getEmotionColor,
+  getEmotionColorWithAlpha,
   getEmotionTranslations,
   emotionToMoodType,
   EMOTION_XP,
@@ -219,7 +219,7 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
                 className="absolute top-1/2 left-1/2 flex flex-col items-center gap-0.5 p-1.5 rounded-xl transition-all hover:scale-110 active:scale-95 hover:z-10"
                 style={{
                   transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px))`,
-                  backgroundColor: getEmotionColor(emotion, 'mild') + '25',
+                  backgroundColor: getEmotionColorWithAlpha(emotion, 'mild', 0.15),
                 }}
               >
                 <AnimatedEmotionEmoji emotion={emotion} size="md" />
@@ -249,7 +249,7 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
           {/* Selected emotion preview with AnimatedEmotionEmoji */}
           <div
             className="flex items-center justify-center gap-3 p-4 rounded-xl"
-            style={{ backgroundColor: getEmotionColor(selectedEmotion, selectedIntensity) + '40' }}
+            style={{ backgroundColor: getEmotionColorWithAlpha(selectedEmotion, selectedIntensity, 0.25) }}
           >
             <AnimatedEmotionEmoji
               emotion={selectedEmotion}
@@ -312,7 +312,7 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
           {/* Selected emotion preview (smaller) with AnimatedEmotionEmoji */}
           <div
             className="flex items-center gap-2 p-2 rounded-lg"
-            style={{ backgroundColor: getEmotionColor(selectedEmotion, selectedIntensity) + '30' }}
+            style={{ backgroundColor: getEmotionColorWithAlpha(selectedEmotion, selectedIntensity, 0.19) }}
           >
             <AnimatedEmotionEmoji emotion={selectedEmotion} size="sm" intensity={selectedIntensity} />
             <span className="text-sm font-medium text-foreground">
@@ -350,7 +350,7 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
               className="w-8 h-8 rounded-full flex items-center justify-center"
               style={{
                 backgroundColor: mood.emotion
-                  ? getEmotionColor(mood.emotion.primary, mood.emotion.intensity) + '40'
+                  ? getEmotionColorWithAlpha(mood.emotion.primary, mood.emotion.intensity, 0.25)
                   : 'hsl(var(--muted))'
               }}
             >

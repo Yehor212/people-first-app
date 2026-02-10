@@ -22,8 +22,8 @@ const containerVariants = {
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 25 } },
+  hidden: { opacity: 0, y: 12, scale: 0.97 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 300, damping: 25 } },
 };
 
 interface JournalEntryListProps {
@@ -63,6 +63,17 @@ export function JournalEntryList({
     const tags = new Set<string>();
     groupedEntries.forEach(g => g.entries.forEach(e => e.tags.forEach(t2 => tags.add(t2))));
     return Array.from(tags).sort();
+  }, [groupedEntries]);
+
+  // Writing stats for mini-bar
+  const thisWeekCount = useMemo(() => {
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 86400000);
+    let count = 0;
+    groupedEntries.forEach(g => g.entries.forEach(e => {
+      if (e.createdAt >= weekAgo.getTime()) count++;
+    }));
+    return count;
   }, [groupedEntries]);
 
   // Filter entries by search + mood + tag
@@ -178,6 +189,19 @@ export function JournalEntryList({
         </div>
       )}
 
+      {/* Writing stats mini-bar */}
+      {totalCount > 0 && (
+        <div className="flex items-center gap-3 px-1">
+          <span className="text-[10px] text-muted-foreground/50">
+            {totalCount} {ts.journalEntries || 'entries'}
+          </span>
+          <div className="w-px h-3 bg-border/20" />
+          <span className="text-[10px] text-muted-foreground/50">
+            {thisWeekCount} {ts.journalThisWeek || 'this week'}
+          </span>
+        </div>
+      )}
+
       {/* Search bar */}
       <div className="relative">
         <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
@@ -243,14 +267,18 @@ export function JournalEntryList({
       {/* Grouped entries with stagger animation */}
       {filteredGroups.map(group => (
         <div key={group.key}>
-          <h3 className="text-[10px] font-bold text-muted-foreground/70 uppercase tracking-widest px-1 mb-2">
-            {ts[group.label] || group.label}
-          </h3>
+          <div className="flex items-center gap-2 px-1 mb-2.5">
+            <h3 className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+              {ts[group.label] || group.label}
+            </h3>
+            <div className="flex-1 h-px bg-gradient-to-r from-border/30 to-transparent" />
+            <span className="text-[10px] text-muted-foreground/30">{group.entries.length}</span>
+          </div>
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="space-y-2"
+            className="space-y-2 md:grid md:grid-cols-2 md:gap-3 md:space-y-0"
           >
             {group.entries.map(entry => (
               <motion.div key={entry.id} variants={itemVariants}>

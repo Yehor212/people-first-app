@@ -31,6 +31,19 @@ export function getEmotionColor(emotion: PrimaryEmotion, intensity: EmotionInten
   return `hsl(${base.h}, ${base.s}%, ${lightness}%)`;
 }
 
+/** Get CSS color string with alpha for an emotion (cross-browser safe hsla) */
+export function getEmotionColorWithAlpha(
+  emotion: PrimaryEmotion,
+  intensity: EmotionIntensity = 'moderate',
+  alpha: number = 1
+): string {
+  const base = EMOTION_COLORS[emotion];
+  const lightness = intensity === 'mild' ? base.l + 15
+                  : intensity === 'intense' ? base.l - 10
+                  : base.l;
+  return `hsla(${base.h}, ${base.s}%, ${lightness}%, ${alpha})`;
+}
+
 /** Get CSS class for emotion background */
 export function getEmotionBgClass(emotion: PrimaryEmotion): string {
   return `bg-emotion-${emotion}`;

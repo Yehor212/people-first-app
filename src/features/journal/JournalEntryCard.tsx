@@ -1,5 +1,5 @@
-import { memo, useState, useEffect } from 'react';
-import { Trash2, Clock, Image as ImageIcon, Mic } from 'lucide-react';
+import { memo, useState, useEffect, useMemo } from 'react';
+import { Trash2, Clock, Image as ImageIcon, Mic, Bookmark } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { JournalEntry } from './types';
@@ -30,6 +30,23 @@ const MOOD_BG: Record<string, string> = {
   terrible: 'from-red-500/5 to-transparent',
 };
 
+const DEFAULT_BG = 'from-primary/3 to-transparent';
+const DEFAULT_ACCENT = 'from-primary/20 to-primary/10';
+
+function getRelativeTime(timestamp: number): string {
+  const diff = Date.now() - timestamp;
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `${weeks}w ago`;
+  return new Date(timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 interface JournalEntryCardProps {
   entry: JournalEntry;
   onTap: () => void;
@@ -43,6 +60,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 }: JournalEntryCardProps) {
   const preview = entry.content.slice(0, 140) + (entry.content.length > 140 ? '...' : '');
   const time = new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const relativeTime = useMemo(() => getRelativeTime(entry.createdAt), [entry.createdAt]);
   const wordCount = entry.content.trim() ? entry.content.trim().split(/\s+/).filter(Boolean).length : 0;
 
   // Load first photo thumbnail
@@ -71,22 +89,18 @@ export const JournalEntryCard = memo(function JournalEntryCard({
         'transition-shadow duration-300',
       )}
     >
-      {/* Mood gradient overlay */}
-      {entry.mood && (
-        <div className={cn(
-          'absolute inset-0 bg-gradient-to-r opacity-100 pointer-events-none',
-          MOOD_BG[entry.mood],
-        )} />
-      )}
+      {/* Gradient overlay (always shown — mood or default) */}
+      <div className={cn(
+        'absolute inset-0 bg-gradient-to-r opacity-100 pointer-events-none',
+        entry.mood ? MOOD_BG[entry.mood] : DEFAULT_BG,
+      )} />
 
       <div className="flex">
-        {/* Mood accent bar */}
-        {entry.mood && (
-          <div className={cn(
-            'w-1 flex-shrink-0 bg-gradient-to-b rounded-l-2xl',
-            MOOD_GRADIENT[entry.mood] || 'from-primary/60 to-primary/30',
-          )} />
-        )}
+        {/* Accent bar (always shown — mood or default) */}
+        <div className={cn(
+          'w-1 flex-shrink-0 bg-gradient-to-b rounded-l-2xl',
+          entry.mood ? (MOOD_GRADIENT[entry.mood] || 'from-primary/60 to-primary/30') : DEFAULT_ACCENT,
+        )} />
 
         <div className="flex-1 p-3.5 relative z-[1]">
           <div className="flex items-start gap-3">
@@ -108,14 +122,17 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
             {/* Main content */}
             <div className="flex-1 min-w-0">
-              {/* Title row with mood */}
+              {/* Title row with mood + relative time */}
               <div className="flex items-center gap-2 mb-0.5">
-                {entry.mood && (
+                {entry.mood ? (
                   <StickerRenderer emoji={MOOD_STICKER[entry.mood]} size="xs" />
+                ) : !entry.title && (
+                  <Bookmark className="w-3.5 h-3.5 text-muted-foreground/40 flex-shrink-0" />
                 )}
                 <h4 className="text-sm font-semibold text-foreground truncate">
                   {entry.title || time}
                 </h4>
+                <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">{relativeTime}</span>
               </div>
 
               {/* Content preview */}

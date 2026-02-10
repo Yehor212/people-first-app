@@ -11,6 +11,7 @@ import {
   SECONDARY_EMOTIONS,
   INTENSITY_EMOJIS,
   getEmotionColor,
+  getEmotionColorWithAlpha,
   getEmotionTranslations,
   getEmotionGuide,
 } from '@/lib/emotionConstants';
@@ -81,7 +82,7 @@ export function EmotionGuide({ onSelectEmotion }: EmotionGuideProps) {
                       key={feeling}
                       className="px-2.5 py-1 rounded-full text-xs font-medium"
                       style={{
-                        backgroundColor: color + '18',
+                        backgroundColor: getEmotionColorWithAlpha(emotion, 'moderate', 0.09),
                         color: color,
                       }}
                     >

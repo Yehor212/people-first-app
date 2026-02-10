@@ -438,7 +438,8 @@ export function JournalEntryEditor({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background flex flex-col animate-slide-up">
+    <div className="fixed inset-0 z-[60] bg-background md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up">
+      <div className="w-full h-full flex flex-col md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden">
       {/* Header — frosted glass */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/80 backdrop-blur-xl">
         <button
@@ -1021,6 +1022,7 @@ export function JournalEntryEditor({
           </motion.div>
         </div>
       )}
+      </div>
     </div>
   );
 }
