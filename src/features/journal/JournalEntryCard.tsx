@@ -112,7 +112,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
       <div className="flex">
         {/* Accent bar (always shown — mood or default) */}
         <div className={cn(
-          'w-1.5 flex-shrink-0 bg-gradient-to-b rounded-l-2xl',
+          'w-1.5 flex-shrink-0 bg-gradient-to-b rounded-s-2xl',
           entry.mood ? (MOOD_GRADIENT[entry.mood] || 'from-primary/60 to-primary/30') : DEFAULT_ACCENT,
         )} />
 

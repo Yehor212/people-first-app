@@ -22,15 +22,9 @@ const MOOD_COLORS: Record<MoodType, string> = {
   terrible: '#f87171',
 };
 
-const MOOD_LABELS: Record<MoodType, string> = {
-  great: 'Great', good: 'Good', okay: 'Okay', bad: 'Bad', terrible: 'Terrible',
-};
-
 const MOOD_SCORE: Record<MoodType, number> = {
   terrible: 1, bad: 2, okay: 3, good: 4, great: 5,
 };
-
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 interface JournalStatsProps {
   entries: JournalEntry[];
@@ -38,8 +32,23 @@ interface JournalStatsProps {
 }
 
 export function JournalStats({ entries, onBack }: JournalStatsProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+
+  const moodLabels: Record<MoodType, string> = {
+    great: ts.moodGreat || 'Great',
+    good: ts.moodGood || 'Good',
+    okay: ts.moodOkay || 'Okay',
+    bad: ts.moodBad || 'Bad',
+    terrible: ts.moodTerrible || 'Terrible',
+  };
+
+  const dayNames = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat(language, { weekday: 'short' });
+    return Array.from({ length: 7 }, (_, i) =>
+      formatter.format(new Date(2025, 0, 5 + i))
+    );
+  }, [language]);
 
   // Mood distribution
   const moodDist = useMemo(() => {
@@ -48,7 +57,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
       if (e.mood) counts[e.mood] = (counts[e.mood] || 0) + 1;
     }
     return Object.entries(counts).map(([mood, count]) => ({
-      name: MOOD_LABELS[mood as MoodType] || mood,
+      name: moodLabels[mood as MoodType] || mood,
       value: count,
       color: MOOD_COLORS[mood as MoodType] || '#888',
     }));
@@ -71,7 +80,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     }
 
     return [...weeks.entries()].slice(-12).map(([week, scores]) => ({
-      week: new Date(week + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+      week: new Date(week + 'T00:00:00').toLocaleDateString(language, { month: 'short', day: 'numeric' }),
       avg: Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10,
     }));
   }, [entries]);
@@ -85,7 +94,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
       const weekStart = now - (i + 1) * 7 * 86400000;
       const weekEnd = now - i * 7 * 86400000;
       const count = entries.filter(e => e.createdAt >= weekStart && e.createdAt < weekEnd).length;
-      const label = new Date(weekStart).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      const label = new Date(weekStart).toLocaleDateString(language, { month: 'short', day: 'numeric' });
       weeks.push({ week: label, count });
     }
 
@@ -167,8 +176,8 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
       const day = new Date(e.date + 'T00:00:00').getDay();
       counts[day]++;
     }
-    return DAY_NAMES.map((name, i) => ({ day: name, count: counts[i] }));
-  }, [entries]);
+    return dayNames.map((name, i) => ({ day: name, count: counts[i] }));
+  }, [entries, dayNames]);
 
   const totalWords = useMemo(() => {
     return entries.reduce((sum, e) => {

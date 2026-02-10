@@ -120,7 +120,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
           {onToggleMode && (
             <button
               onClick={onToggleMode}
-              className="p-1 rounded-md hover:bg-muted/50"
+              className="p-1 rounded-md hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label="Switch to month view"
             >
               <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60" />
@@ -131,7 +131,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
               setShowLegend(v => !v);
               localStorage.setItem('journal-legend-seen', '1');
             }}
-            className="p-1 rounded-md hover:bg-muted/50"
+            className="p-1 rounded-md hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label="Mood legend"
           >
             <Info className="w-3 h-3 text-muted-foreground/50" />

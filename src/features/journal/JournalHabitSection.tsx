@@ -110,7 +110,7 @@ export function JournalHabitSection({ date, snapshot, onSnapshotChange }: Journa
                   )}
                   <span className="text-sm flex-shrink-0">{item.habitIcon}</span>
                   <span className={cn(
-                    'text-xs text-left flex-1',
+                    'text-xs text-start flex-1',
                     item.completed ? 'text-foreground line-through opacity-60' : 'text-foreground',
                   )}>
                     {item.habitName}

@@ -44,21 +44,11 @@ function getExtendedDates(): string[] {
 function formatDayShort(dateStr: string, language: string): { day: string; weekday: string; isToday: boolean } {
   const date = parseLocalDate(dateStr);
   const isToday = dateStr === getToday();
-
-  const weekdayNames: Record<string, string[]> = {
-    ru: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
-    en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-    uk: ['Нд', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
-    es: ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'],
-    de: ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'],
-    fr: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
-  };
-
-  const names = weekdayNames[language] || weekdayNames.en;
+  const formatter = new Intl.DateTimeFormat(language, { weekday: 'short' });
 
   return {
     day: date.getDate().toString(),
-    weekday: names[date.getDay()],
+    weekday: formatter.format(date),
     isToday,
   };
 }
@@ -278,7 +268,7 @@ function PremiumDayPill({
       {hasEvents && (
         <motion.div
           className={cn(
-            "absolute -top-1 -right-1 w-3 h-3 rounded-full",
+            "absolute -top-1 -end-1 w-3 h-3 rounded-full",
             isSelected ? "bg-white" : "bg-accent"
           )}
           animate={{ scale: [1, 1.2, 1] }}
@@ -351,17 +341,17 @@ function EventCard3D({
 
       {/* Source badges */}
       {isHabitEvent && (
-        <span className="absolute -top-1 -left-1 text-xs bg-white/30 rounded-full w-4 h-4 flex items-center justify-center backdrop-blur-sm">
+        <span className="absolute -top-1 -start-1 text-xs bg-white/30 rounded-full w-4 h-4 flex items-center justify-center backdrop-blur-sm">
           🎯
         </span>
       )}
       {isTaskEvent && (
-        <span className="absolute -top-1 -left-1 text-xs bg-white/30 rounded-full w-4 h-4 flex items-center justify-center backdrop-blur-sm">
+        <span className="absolute -top-1 -start-1 text-xs bg-white/30 rounded-full w-4 h-4 flex items-center justify-center backdrop-blur-sm">
           📋
         </span>
       )}
       {isGoogleEvent && (
-        <span className="absolute -top-1 -left-1 text-xs bg-white/30 rounded-full w-4 h-4 flex items-center justify-center backdrop-blur-sm">
+        <span className="absolute -top-1 -start-1 text-xs bg-white/30 rounded-full w-4 h-4 flex items-center justify-center backdrop-blur-sm">
           G
         </span>
       )}
@@ -713,13 +703,13 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
 
   const eventsByDate = useMemo(() => {
     const map = new Map<string, ScheduleEvent[]>();
-    events.forEach(event => {
+    safeEvents.forEach(event => {
       const existing = map.get(event.date) || [];
       existing.push(event);
       map.set(event.date, existing);
     });
     return map;
-  }, [events]);
+  }, [safeEvents]);
 
   return (
     <div className="relative overflow-hidden rounded-3xl animate-fade-in">
@@ -1072,18 +1062,25 @@ function AddEventModal({
     if (dateStr === today) return t.today || 'Today';
     if (dateStr === tomorrow) return t.tomorrow || 'Tomorrow';
 
-    const locale = language === 'ru' ? 'ru-RU' : language === 'uk' ? 'uk-UA' : language === 'es' ? 'es-ES' : language === 'de' ? 'de-DE' : language === 'fr' ? 'fr-FR' : language === 'ja' ? 'ja-JP' : 'en-US';
-    return date.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short' });
+    return date.toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short' });
   };
 
   const handleAdd = () => {
     const title = customTitle || (t[selectedPreset.labelKey as keyof typeof t]) || selectedPreset.id;
+    let finalEndHour = endHour;
+    let finalEndMinute = endMinute;
+    const startTotal = startHour * 60 + startMinute;
+    const endTotal = endHour * 60 + endMinute;
+    if (endTotal <= startTotal) {
+      finalEndHour = Math.min(startHour + 1, 23);
+      finalEndMinute = startHour >= 23 ? 59 : startMinute;
+    }
     onAdd({
       title,
       startHour,
       startMinute,
-      endHour,
-      endMinute,
+      endHour: finalEndHour,
+      endMinute: finalEndMinute,
       colorVar: selectedPreset.colorVar,
       color: getEventColor(selectedPreset.colorVar),
       emoji: selectedPreset.emoji,
@@ -1408,7 +1405,7 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
               <span className="relative z-10 truncate">{block.title}</span>
 
               {isActive && progress > 0 && (
-                <span className="absolute bottom-1 right-1 text-xs bg-black/40 px-1.5 py-0.5 rounded z-10">
+                <span className="absolute bottom-1 end-1 text-xs bg-black/40 px-1.5 py-0.5 rounded z-10">
                   {remainingMinutes} {t.min || 'min'}
                 </span>
               )}
@@ -1525,12 +1522,12 @@ function EventDetailsModal({
               </motion.span>
 
               {isHabitEvent && (
-                <span className="absolute -top-1 -right-1 text-sm bg-primary rounded-full w-6 h-6 flex items-center justify-center">
+                <span className="absolute -top-1 -end-1 text-sm bg-primary rounded-full w-6 h-6 flex items-center justify-center">
                   🎯
                 </span>
               )}
               {isTaskEvent && (
-                <span className="absolute -top-1 -right-1 text-sm bg-primary rounded-full w-6 h-6 flex items-center justify-center">
+                <span className="absolute -top-1 -end-1 text-sm bg-primary rounded-full w-6 h-6 flex items-center justify-center">
                   📋
                 </span>
               )}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { STICKER_CATEGORIES } from './stickerUtils';
 import { StickerRenderer } from './StickerRenderer';
 
@@ -13,6 +14,7 @@ interface JournalStickerPickerProps {
 export function JournalStickerPicker({ onSelect, onClose }: JournalStickerPickerProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  useBackHandler(true, onClose);
   const [activeCategory, setActiveCategory] = useState(0);
 
   const [recents] = useState<string[]>(() => {

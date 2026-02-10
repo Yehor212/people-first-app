@@ -11,6 +11,7 @@ import Lottie from 'lottie-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import {
   BREATHING_PATTERNS,
   BreathingPattern,
@@ -208,6 +209,8 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
     setIsOpen(false);
   };
 
+  useBackHandler(isOpen, closeModal);
+
   // ============================================
   // PHASE 1: Premium Compact Card
   // ============================================
@@ -216,7 +219,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
       <motion.button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "w-full rounded-2xl p-4 text-left transition-all relative overflow-hidden",
+          "w-full rounded-2xl p-4 text-start transition-all relative overflow-hidden",
           "bg-gradient-to-br from-cyan-500/10 via-teal-500/5 to-transparent",
           "border border-cyan-500/20",
           "hover:border-cyan-500/40"
@@ -386,7 +389,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
                         key={pattern.id}
                         onClick={() => setSelectedPattern(pattern)}
                         className={cn(
-                          "w-full p-4 rounded-xl flex items-center gap-3 text-left relative overflow-hidden",
+                          "w-full p-4 rounded-xl flex items-center gap-3 text-start relative overflow-hidden",
                           "transition-all duration-300",
                           selectedPattern.id === pattern.id
                             ? "bg-white/10 border border-cyan-500/40"

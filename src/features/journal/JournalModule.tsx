@@ -269,7 +269,7 @@ export function JournalModule() {
           'bg-gradient-to-br from-card/80 to-card/60',
           'backdrop-blur-md border border-white/[0.08] dark:border-white/[0.05]',
           'shadow-[0_2px_20px_rgba(var(--primary-rgb,99,102,241),0.08),inset_0_1px_0_rgba(255,255,255,0.06)]',
-          'flex items-center gap-3 text-left',
+          'flex items-center gap-3 text-start',
           'transition-all duration-300',
           'hover:shadow-[0_4px_25px_rgba(var(--primary-rgb,99,102,241),0.15),inset_0_1px_0_rgba(255,255,255,0.08)]',
         )}
@@ -940,7 +940,7 @@ export function JournalModule() {
                                 }
                               }}
                               className={cn(
-                                'p-3 rounded-xl text-left transition-all min-h-[44px]',
+                                'p-3 rounded-xl text-start transition-all min-h-[44px]',
                                 'bg-muted/30 border border-border/15',
                                 'hover:bg-muted/50 active:scale-[0.98]',
                                 'disabled:opacity-50',

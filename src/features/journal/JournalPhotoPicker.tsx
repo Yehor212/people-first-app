@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { Camera, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 interface JournalPhotoPickerProps {
   onSelectFile: (file: File) => Promise<void>;
@@ -18,6 +19,7 @@ export function JournalPhotoPicker({
 }: JournalPhotoPickerProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  useBackHandler(true, onClose);
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);

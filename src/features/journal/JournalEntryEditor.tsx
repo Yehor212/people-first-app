@@ -511,13 +511,13 @@ export function JournalEntryEditor({
               </span>
               <button
                 onClick={handleRestoreDraft}
-                className="text-xs font-medium text-primary px-2 py-1 rounded-lg hover:bg-primary/10 min-h-[32px]"
+                className="text-xs font-medium text-primary px-2 py-1 rounded-lg hover:bg-primary/10 min-h-[44px]"
               >
                 {ts.journalRestore || 'Restore'}
               </button>
               <button
                 onClick={handleDismissDraft}
-                className="p-1 rounded hover:bg-muted/50 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                className="p-1 rounded hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
               >
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
@@ -552,14 +552,14 @@ export function JournalEntryEditor({
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setPromptSeed(s => s + 1)}
-                  className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                  className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
                   aria-label="Shuffle prompts"
                 >
                   <Shuffle className="w-3 h-3 text-muted-foreground/50" />
                 </button>
                 <button
                   onClick={() => setPromptsHidden(true)}
-                  className="p-1 rounded hover:bg-muted/50"
+                  className="p-1 rounded hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
                 >
                   <X className="w-3 h-3 text-muted-foreground/50" />
                 </button>
@@ -574,7 +574,7 @@ export function JournalEntryEditor({
                   transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 25 }}
                   onClick={() => handlePromptTap(prompt)}
                   className={cn(
-                    'block w-full text-left text-xs px-3.5 py-2.5 rounded-xl min-h-[40px]',
+                    'block w-full text-start text-xs px-3.5 py-2.5 rounded-xl min-h-[40px]',
                     'bg-card/60 backdrop-blur-sm',
                     'border border-border/15',
                     'text-muted-foreground/80 hover:text-foreground',

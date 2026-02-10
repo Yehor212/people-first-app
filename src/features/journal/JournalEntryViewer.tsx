@@ -250,7 +250,7 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
 
           {/* Content */}
           {entry.content && (
-            <div className="text-sm text-foreground/90 leading-8 whitespace-pre-wrap border-l-2 border-primary/10 pl-4">
+            <div className="text-sm text-foreground/90 leading-8 whitespace-pre-wrap border-s-2 border-primary/10 ps-4">
               {renderContent(entry.content)}
             </div>
           )}

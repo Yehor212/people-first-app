@@ -844,7 +844,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
               {isRunning ? (
                 <Pause className="w-7 h-7 text-white" aria-hidden="true" />
               ) : (
-                <Play className="w-7 h-7 text-white ml-1" aria-hidden="true" />
+                <Play className="w-7 h-7 text-white ms-1" aria-hidden="true" />
               )}
             </motion.button>
 
@@ -959,7 +959,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
               {/* Close button */}
               <button
                 onClick={() => handleSaveReflection(null)}
-                className="absolute top-3 right-3 p-2 rounded-lg bg-slate-200/50 dark:bg-white/10 hover:bg-slate-300/50 dark:hover:bg-white/20 text-slate-600 dark:text-white/60 hover:text-slate-800 dark:hover:text-white transition-colors"
+                className="absolute top-3 end-3 p-2 rounded-lg bg-slate-200/50 dark:bg-white/10 hover:bg-slate-300/50 dark:hover:bg-white/20 text-slate-600 dark:text-white/60 hover:text-slate-800 dark:hover:text-white transition-colors"
                 aria-label={t.close}
               >
                 <X className="w-4 h-4" />
@@ -967,7 +967,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
 
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="w-5 h-5 text-violet-600 dark:text-violet-400" />
-                <h4 className="text-lg font-semibold text-slate-800 dark:text-white pr-10">{t.focusReflectionTitle}</h4>
+                <h4 className="text-lg font-semibold text-slate-800 dark:text-white pe-10">{t.focusReflectionTitle}</h4>
               </div>
               <p className="text-sm text-slate-600 dark:text-white/60 mt-1">{t.focusReflectionQuestion}</p>
 
