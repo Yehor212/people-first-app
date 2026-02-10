@@ -466,6 +466,7 @@ export interface Translations {
   profile: string;
   yourName: string;
   nameSaved: string;
+  invalidNameFormat: string;
   notifications: string;
   notificationsComingSoon: string;
   data: string;
@@ -1688,6 +1689,15 @@ export interface Translations {
   soundSilentDesc: string;
   testNotification: string;
   testNotificationHint: string;
+  notificationTestSending: string;
+  notificationTestNoPermission: string;
+  notificationTestSuccess: string;
+  notificationTestFailed: string;
+  notificationTestError: string;
+
+  // Demo mode
+  demoModeEnabled: string;
+  demoModeDisabled: string;
 
   // Insight Card Details (v1.3.0)
   insightConfidence: string;
@@ -2602,6 +2612,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     profile: 'Профиль',
     yourName: 'Ваше имя',
     nameSaved: 'Имя сохранено',
+    invalidNameFormat: 'Неверный формат имени',
     notifications: 'Уведомления',
     notificationsComingSoon: 'Уведомления будут доступны в следующих обновлениях.',
     data: 'Данные',
@@ -3758,6 +3769,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     soundSilentDesc: 'Без звука и вибрации',
     testNotification: 'Тестовое уведомление',
     testNotificationHint: 'Отправляет тестовое уведомление через 5 секунд для проверки работы.',
+    notificationTestSending: 'Отправка...',
+    notificationTestNoPermission: 'Нет разрешения. Включите уведомления в настройках Android.',
+    notificationTestSuccess: 'Тестовое уведомление отправлено! Проверьте через 5 секунд.',
+    notificationTestFailed: 'Не удалось отправить. Проверьте настройки уведомлений Android.',
+    notificationTestError: 'Ошибка',
+    demoModeEnabled: 'Демо-режим включён',
+    demoModeDisabled: 'Демо-режим выключен',
 
     // Insight Card Details
     insightConfidence: 'Уверенность',
@@ -4679,6 +4697,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     profile: 'Profile',
     yourName: 'Your name',
     nameSaved: 'Name saved',
+    invalidNameFormat: 'Invalid name format',
     notifications: 'Notifications',
     notificationsComingSoon: 'Notifications will be available in future updates.',
     data: 'Data',
@@ -5835,6 +5854,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     soundSilentDesc: 'No sound or vibration',
     testNotification: 'Test Notification',
     testNotificationHint: 'Sends a test notification in 5 seconds to verify notifications work.',
+    notificationTestSending: 'Sending...',
+    notificationTestNoPermission: 'No permission. Enable notifications in Android Settings.',
+    notificationTestSuccess: 'Test notification sent! Check in 5 seconds.',
+    notificationTestFailed: 'Failed to send. Check Android notification settings.',
+    notificationTestError: 'Error',
+    demoModeEnabled: 'Demo mode enabled',
+    demoModeDisabled: 'Demo mode disabled',
 
     // Insight Card Details
     insightConfidence: 'Confidence',
@@ -6756,6 +6782,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     profile: 'Профіль',
     yourName: 'Ваше ім\'я',
     nameSaved: 'Імʼя збережено',
+    invalidNameFormat: 'Невірний формат імені',
     notifications: 'Сповіщення',
     notificationsComingSoon: 'Сповіщення будуть доступні в наступних оновленнях.',
     data: 'Дані',
@@ -7912,6 +7939,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     soundSilentDesc: 'Без звуку та вібрації',
     testNotification: 'Тестове сповіщення',
     testNotificationHint: 'Надсилає тестове сповіщення через 5 секунд для перевірки роботи.',
+    notificationTestSending: 'Надсилання...',
+    notificationTestNoPermission: 'Немає дозволу. Увімкніть сповіщення в налаштуваннях Android.',
+    notificationTestSuccess: 'Тестове сповіщення надіслано! Перевірте через 5 секунд.',
+    notificationTestFailed: 'Не вдалося надіслати. Перевірте налаштування сповіщень Android.',
+    notificationTestError: 'Помилка',
+    demoModeEnabled: 'Демо-режим увімкнено',
+    demoModeDisabled: 'Демо-режим вимкнено',
 
     // Insight Card Details
     insightConfidence: 'Впевненість',
@@ -8834,6 +8868,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     profile: 'Perfil',
     yourName: 'Tu nombre',
     nameSaved: 'Nombre guardado',
+    invalidNameFormat: 'Formato de nombre no válido',
     notifications: 'Notificaciones',
     notificationsComingSoon: 'Las notificaciones estarán disponibles en futuras actualizaciones.',
     data: 'Datos',
@@ -9990,6 +10025,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     soundSilentDesc: 'Sin sonido ni vibración',
     testNotification: 'Notificación de prueba',
     testNotificationHint: 'Envía una notificación de prueba en 5 segundos para verificar que funcionan.',
+    notificationTestSending: 'Enviando...',
+    notificationTestNoPermission: 'Sin permiso. Habilita las notificaciones en los ajustes de Android.',
+    notificationTestSuccess: '¡Notificación de prueba enviada! Comprueba en 5 segundos.',
+    notificationTestFailed: 'Error al enviar. Comprueba los ajustes de notificaciones de Android.',
+    notificationTestError: 'Error',
+    demoModeEnabled: 'Modo demo activado',
+    demoModeDisabled: 'Modo demo desactivado',
 
     // Insight Card Details
     insightConfidence: 'Confianza',
@@ -10912,6 +10954,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     profile: 'Profil',
     yourName: 'Dein Name',
     nameSaved: 'Name gespeichert',
+    invalidNameFormat: 'Ungültiges Namensformat',
     notifications: 'Benachrichtigungen',
     notificationsComingSoon: 'Benachrichtigungen werden in zukünftigen Updates verfügbar sein.',
     data: 'Daten',
@@ -12068,6 +12111,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     soundSilentDesc: 'Kein Ton oder Vibration',
     testNotification: 'Testbenachrichtigung',
     testNotificationHint: 'Sendet in 5 Sekunden eine Testbenachrichtigung zur Überprüfung.',
+    notificationTestSending: 'Wird gesendet...',
+    notificationTestNoPermission: 'Keine Berechtigung. Aktiviere Benachrichtigungen in den Android-Einstellungen.',
+    notificationTestSuccess: 'Testbenachrichtigung gesendet! Überprüfe in 5 Sekunden.',
+    notificationTestFailed: 'Senden fehlgeschlagen. Überprüfe die Android-Benachrichtigungseinstellungen.',
+    notificationTestError: 'Fehler',
+    demoModeEnabled: 'Demo-Modus aktiviert',
+    demoModeDisabled: 'Demo-Modus deaktiviert',
 
     // Insight Card Details
     insightConfidence: 'Vertrauen',
@@ -12990,6 +13040,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     profile: 'Profil',
     yourName: 'Votre nom',
     nameSaved: 'Nom enregistré',
+    invalidNameFormat: 'Format de nom invalide',
     notifications: 'Notifications',
     notificationsComingSoon: 'Les notifications seront disponibles dans les prochaines mises à jour.',
     data: 'Données',
@@ -14146,6 +14197,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     soundSilentDesc: 'Pas de son ni de vibration',
     testNotification: 'Notification de test',
     testNotificationHint: 'Envoie une notification de test dans 5 secondes pour vérifier le fonctionnement.',
+    notificationTestSending: 'Envoi en cours...',
+    notificationTestNoPermission: 'Pas de permission. Activez les notifications dans les paramètres Android.',
+    notificationTestSuccess: 'Notification de test envoyée ! Vérifiez dans 5 secondes.',
+    notificationTestFailed: 'Échec de l\'envoi. Vérifiez les paramètres de notification Android.',
+    notificationTestError: 'Erreur',
+    demoModeEnabled: 'Mode démo activé',
+    demoModeDisabled: 'Mode démo désactivé',
 
     // Insight Card Details
     insightConfidence: 'Confiance',
@@ -15067,6 +15125,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     profile: 'プロフィール',
     yourName: 'あなたの名前',
     nameSaved: '名前を保存しました',
+    invalidNameFormat: '無効な名前の形式',
     notifications: '通知',
     notificationsComingSoon: '通知機能は今後のアップデートで利用可能になります。',
     data: 'データ',
@@ -16223,6 +16282,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     soundSilentDesc: '音も振動もなし',
     testNotification: '通知をテスト',
     testNotificationHint: '5秒後にテスト通知を送信して通知が機能することを確認します。',
+    notificationTestSending: '送信中...',
+    notificationTestNoPermission: '権限がありません。Androidの設定で通知を有効にしてください。',
+    notificationTestSuccess: 'テスト通知を送信しました！5秒後に確認してください。',
+    notificationTestFailed: '送信に失敗しました。Androidの通知設定を確認してください。',
+    notificationTestError: 'エラー',
+    demoModeEnabled: 'デモモードが有効になりました',
+    demoModeDisabled: 'デモモードが無効になりました',
 
     // Insight Card Details
     insightConfidence: '信頼度',
@@ -17152,6 +17218,7 @@ const arabicOverrides: Partial<Translations> = {
   profile: 'الملف الشخصي',
   yourName: 'اسمك',
   nameSaved: 'تم حفظ الاسم',
+  invalidNameFormat: 'صيغة الاسم غير صالحة',
   notifications: 'الإشعارات',
   notificationsComingSoon: 'الإشعارات متاحة في التحديثات القادمة.',
   data: 'البيانات',
@@ -18230,6 +18297,13 @@ const arabicOverrides: Partial<Translations> = {
   soundSilentDesc: 'بدون صوت',
   testNotification: 'اختبار الإشعار',
   testNotificationHint: 'اختبر الصوت المختار',
+  notificationTestSending: 'جارٍ الإرسال...',
+  notificationTestNoPermission: 'لا يوجد إذن. فعّل الإشعارات في إعدادات Android.',
+  notificationTestSuccess: 'تم إرسال إشعار تجريبي! تحقق خلال 5 ثوانٍ.',
+  notificationTestFailed: 'فشل الإرسال. تحقق من إعدادات إشعارات Android.',
+  notificationTestError: 'خطأ',
+  demoModeEnabled: 'تم تفعيل الوضع التجريبي',
+  demoModeDisabled: 'تم تعطيل الوضع التجريبي',
 
   // Insight Details
   insightConfidence: 'الثقة',
@@ -19157,6 +19231,7 @@ const hebrewOverrides: Partial<Translations> = {
   profile: 'פרופיל',
   yourName: 'השם שלך',
   nameSaved: 'השם נשמר',
+  invalidNameFormat: 'פורמט שם לא חוקי',
   notifications: 'התראות',
   notificationsComingSoon: 'התראות יהיו זמינות בעדכונים הבאים.',
   data: 'נתונים',
@@ -20405,6 +20480,13 @@ const hebrewOverrides: Partial<Translations> = {
   soundSilentDesc: 'ללא צליל או רטט',
   testNotification: 'בדוק התראה',
   testNotificationHint: 'שולח התראת בדיקה בעוד 5 שניות כדי לוודא שההתראות עובדות.',
+  notificationTestSending: 'שולח...',
+  notificationTestNoPermission: 'אין הרשאה. הפעל התראות בהגדרות Android.',
+  notificationTestSuccess: 'התראת ניסיון נשלחה! בדוק תוך 5 שניות.',
+  notificationTestFailed: 'השליחה נכשלה. בדוק את הגדרות ההתראות של Android.',
+  notificationTestError: 'שגיאה',
+  demoModeEnabled: 'מצב הדגמה הופעל',
+  demoModeDisabled: 'מצב הדגמה הושבת',
 
   // Insight Details
   insightConfidence: 'ביטחון',

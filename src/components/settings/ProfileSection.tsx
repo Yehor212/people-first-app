@@ -55,7 +55,7 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
     try {
       userNameSchema.parse(sanitized);
     } catch {
-      setNameStatus('Invalid name format');
+      setNameStatus(t.invalidNameFormat || 'Invalid name format');
       return;
     }
 

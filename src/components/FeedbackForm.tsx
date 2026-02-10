@@ -6,6 +6,7 @@ import { MessageSquare, Bug, Lightbulb, HelpCircle, Send, Loader2, X } from 'luc
 import { APP_VERSION } from '@/lib/appVersion';
 import { Capacitor } from '@capacitor/core';
 import { logger } from '@/lib/logger';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { safeLocalStorageGet } from '@/lib/safeJson';
 import { supabase } from '@/lib/supabaseClient';
 import { emailSchema } from '@/lib/validation';
@@ -19,6 +20,7 @@ type FeedbackCategory = 'bug' | 'feature' | 'other';
 
 export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   const { t } = useLanguage();
+  useBackHandler(open, () => onOpenChange(false));
   const [category, setCategory] = useState<FeedbackCategory>('bug');
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');
@@ -190,7 +192,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
           <button
             onClick={handleClose}
             aria-label={t.close || 'Close'}
-            className="p-2 rounded-lg hover:bg-muted transition-colors"
+            className="p-2 rounded-lg hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <X className="w-5 h-5" />
           </button>
@@ -252,7 +254,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
           >
             {status === 'sending' ? (
               <>
-                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                <Loader2 className="w-5 h-5 me-2 animate-spin" />
                 {t.feedbackSending}
               </>
             ) : status === 'success' ? (
@@ -261,7 +263,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
               t.feedbackError
             ) : (
               <>
-                <Send className="w-5 h-5 mr-2" />
+                <Send className="w-5 h-5 me-2" />
                 {t.feedbackSubmit}
               </>
             )}

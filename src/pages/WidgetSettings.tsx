@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ArrowLeft, Smartphone, Monitor, Info } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { WidgetPreview } from '@/components/WidgetPreview';
 import { Capacitor } from '@capacitor/core';
 
@@ -10,6 +11,7 @@ interface WidgetSettingsProps {
 
 export function WidgetSettings({ onBack }: WidgetSettingsProps) {
   const { t } = useLanguage();
+  useBackHandler(true, onBack);
   const [activeTab, setActiveTab] = useState<'preview' | 'setup'>('preview');
   const isNativePlatform = Capacitor.isNativePlatform();
 
@@ -43,7 +45,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
-            <Monitor className="w-4 h-4 inline-block mr-2" />
+            <Monitor className="w-4 h-4 inline-block me-2" />
             {t.widgetPreview}
           </button>
           <button
@@ -54,7 +56,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
             }`}
           >
-            <Smartphone className="w-4 h-4 inline-block mr-2" />
+            <Smartphone className="w-4 h-4 inline-block me-2" />
             {t.widgetSetup}
           </button>
         </div>

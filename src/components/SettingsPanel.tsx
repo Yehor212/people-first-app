@@ -22,7 +22,7 @@ import { SmartRemindersCard } from '@/components/SmartRemindersCard';
 import { HealthConnectCard } from '@/components/HealthConnectCard';
 import { exportBackup, importBackup, ImportMode } from '@/storage/backup';
 import { exportAllToCSV, exportProgressReportPDF } from '@/lib/exportService';
-import { FileText, FileSpreadsheet, Zap, Volume2, Loader2, Calendar } from 'lucide-react';
+import { FileText, FileSpreadsheet, Zap, Volume2, Loader2 } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { syncWithCloud } from '@/storage/cloudSync';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
@@ -31,7 +31,7 @@ import { sendTestNotification, checkNotificationStatus } from '@/lib/localNotifi
 import { isCloudSyncEnabled, setCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { removePushToken } from '@/lib/pushNotifications';
 import { offlineQueue } from '@/lib/offlineQueue';
-import { isCalendarEnabled, setCalendarEnabled, isCalendarConnected, clearCalendarCache } from '@/lib/googleCalendar';
+import { isCalendarEnabled, isCalendarConnected } from '@/lib/googleCalendar';
 import { APP_VERSION } from '@/lib/appVersion';
 import { CHANGELOG } from '@/components/WhatsNewModal';
 import { useQuickActions } from '@/hooks/useQuickActions';
@@ -150,21 +150,21 @@ export function SettingsPanel({
   };
 
   const handleTestNotification = async () => {
-    setNotificationTestStatus('Sending...');
+    setNotificationTestStatus(t.notificationTestSending || 'Sending...');
     try {
       const status = await checkNotificationStatus();
       if (!status.hasPermission) {
-        setNotificationTestStatus('❌ No permission. Enable notifications in Android Settings.');
+        setNotificationTestStatus(`❌ ${t.notificationTestNoPermission || 'No permission. Enable notifications in Android Settings.'}`);
         return;
       }
       const success = await sendTestNotification();
       if (success) {
-        setNotificationTestStatus('✅ Test notification sent! Check in 5 seconds.');
+        setNotificationTestStatus(`✅ ${t.notificationTestSuccess || 'Test notification sent! Check in 5 seconds.'}`);
       } else {
-        setNotificationTestStatus('❌ Failed to send. Check Android notification settings.');
+        setNotificationTestStatus(`❌ ${t.notificationTestFailed || 'Failed to send. Check Android notification settings.'}`);
       }
     } catch (error) {
-      setNotificationTestStatus(`❌ Error: ${error}`);
+      setNotificationTestStatus(`❌ ${t.notificationTestError || 'Error'}: ${error}`);
     }
   };
 
@@ -574,7 +574,7 @@ export function SettingsPanel({
             </div>
             <button
               onClick={handleDismissWhatsNew}
-              className="text-xs text-primary hover:text-primary/80 transition-colors"
+              className="text-xs text-primary hover:text-primary/80 transition-colors p-2 min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               {t.settingsWhatsNewGotIt || 'Got it!'}
             </button>
@@ -739,7 +739,7 @@ export function SettingsPanel({
                 label={t.morning || 'Morning'}
                 value={reminders.moodTimeMorning || '09:00'}
                 onChange={(value) => onRemindersChange(prev => ({ ...prev, moodTimeMorning: value }))}
-                className="ml-4"
+                className="ms-4"
               />
 
               {/* Afternoon */}
@@ -748,7 +748,7 @@ export function SettingsPanel({
                 label={t.afternoon || 'Afternoon'}
                 value={reminders.moodTimeAfternoon || '14:00'}
                 onChange={(value) => onRemindersChange(prev => ({ ...prev, moodTimeAfternoon: value }))}
-                className="ml-4"
+                className="ms-4"
               />
 
               {/* Evening */}
@@ -757,7 +757,7 @@ export function SettingsPanel({
                 label={t.evening || 'Evening'}
                 value={reminders.moodTimeEvening || '20:00'}
                 onChange={(value) => onRemindersChange(prev => ({ ...prev, moodTimeEvening: value }))}
-                className="ml-4"
+                className="ms-4"
               />
             </div>
 
@@ -885,7 +885,7 @@ export function SettingsPanel({
                     aria-pressed={selectedSound === sound.id}
                     aria-label={soundLabel}
                     className={cn(
-                      'p-3 rounded-xl text-left transition-all',
+                      'p-3 rounded-xl text-start transition-all',
                       selectedSound === sound.id
                         ? 'bg-primary/10 ring-2 ring-primary'
                         : 'bg-card hover:bg-muted'
@@ -1314,7 +1314,7 @@ export function SettingsPanel({
       {onOpenWidgetSettings && (
         <button
           onClick={onOpenWidgetSettings}
-          className="w-full bg-card rounded-2xl p-5 zen-shadow-card hover:bg-accent/5 transition-colors text-left"
+          className="w-full bg-card rounded-2xl p-5 zen-shadow-card hover:bg-accent/5 transition-colors text-start"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">

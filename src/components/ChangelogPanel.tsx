@@ -10,6 +10,7 @@
 import { useState } from 'react';
 import { X, ChevronDown, ChevronUp, Sparkles, Bug, Zap, Trash2, History } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { cn } from '@/lib/utils';
 import changelog from 'virtual:changelog';
 import type { ChangelogVersion, ChangelogSection } from '@/types/changelog';
@@ -113,7 +114,7 @@ function VersionCard({
                   {translateSectionTitle(section.title, t)}
                 </h4>
               </div>
-              <ul className="space-y-1.5 pl-6">
+              <ul className="space-y-1.5 ps-6">
                 {section.items.map((item, itemIndex) => (
                   <li
                     key={itemIndex}
@@ -133,6 +134,7 @@ function VersionCard({
 
 export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
   const { t } = useLanguage();
+  useBackHandler(true, onClose);
   const [expandedVersions, setExpandedVersions] = useState<Set<string>>(() => {
     // Expand the first (latest) version by default
     if (changelog.length > 0) {
@@ -174,7 +176,7 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
         <button
           onClick={onClose}
           aria-label={t.close || 'Close'}
-          className="p-2 hover:bg-muted rounded-full transition-colors"
+          className="p-2 hover:bg-muted rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <X className="w-6 h-6" />
         </button>
@@ -184,13 +186,13 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
       <div className="flex gap-2 p-4 border-b border-border">
         <button
           onClick={expandAll}
-          className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted transition-colors"
+          className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted transition-colors min-h-[44px] flex items-center justify-center"
         >
           {t.changelogExpandAll || 'Expand All'}
         </button>
         <button
           onClick={collapseAll}
-          className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted transition-colors"
+          className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded-lg hover:bg-muted transition-colors min-h-[44px] flex items-center justify-center"
         >
           {t.changelogCollapseAll || 'Collapse All'}
         </button>

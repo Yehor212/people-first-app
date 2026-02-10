@@ -35,7 +35,7 @@ export function AboutSection() {
     if (versionTapCount.current >= 5) {
       versionTapCount.current = 0;
       toggleDemoMode();
-      toast(isDemoMode ? 'Demo mode disabled' : 'Demo mode enabled');
+      toast(isDemoMode ? (t.demoModeDisabled || 'Demo mode disabled') : (t.demoModeEnabled || 'Demo mode enabled'));
       return;
     }
 
@@ -131,7 +131,7 @@ export function AboutSection() {
                     <p className="text-sm font-medium text-foreground text-center mb-2">
                       {t.updateAvailable || 'Update Available'}
                       {updateState.latestVersion && (
-                        <span className="text-primary ml-1">v{updateState.latestVersion}</span>
+                        <span className="text-primary ms-1">v{updateState.latestVersion}</span>
                       )}
                     </p>
                     {updateState.releaseNotes && (

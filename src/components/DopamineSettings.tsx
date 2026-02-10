@@ -116,7 +116,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
             <button
               onClick={onClose}
               aria-label={t.close || 'Close'}
-              className="p-2 hover:bg-muted rounded-lg transition-colors"
+              className="p-2 hover:bg-muted rounded-lg transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               ×
             </button>
