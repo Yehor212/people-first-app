@@ -59,7 +59,7 @@ export const RestModeCard = memo(function RestModeCard({ streak, onCancel }: Res
           <Moon className="w-10 h-10 text-indigo-400" />
         </div>
         <motion.div
-          className="absolute -right-1 -top-1"
+          className="absolute -end-1 -top-1"
           animate={{ scale: [1, 1.2, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
         >

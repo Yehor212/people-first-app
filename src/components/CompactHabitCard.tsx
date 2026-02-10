@@ -269,6 +269,8 @@ export function CompactHabitCard({
           <button
             onClick={() => {
               hapticTap();
+              if (deleteTimerRef.current) { clearTimeout(deleteTimerRef.current); deleteTimerRef.current = null; }
+              setShowDeleteConfirm(false);
               onEdit(habit);
               setIsSwiped(false);
             }}
@@ -283,6 +285,8 @@ export function CompactHabitCard({
           <button
             onClick={() => {
               hapticTap();
+              if (deleteTimerRef.current) { clearTimeout(deleteTimerRef.current); deleteTimerRef.current = null; }
+              setShowDeleteConfirm(false);
               onChallenge(habit);
               setIsSwiped(false);
             }}

@@ -26,6 +26,7 @@ import { Smile, Zap, ChevronRight, HelpCircle } from 'lucide-react';
 import { EmotionGuide } from './EmotionGuide';
 import { getEmotionGuide } from '@/lib/emotionConstants';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 
 interface EmotionWheelProps {
   entries: MoodEntry[];
@@ -116,11 +117,14 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
     setViewState('wheel');
   }, [selectedEmotion, selectedIntensity, note, today, onAddEntry]);
 
+  // Throttled save to prevent duplicate entries from rapid taps
+  const throttledSave = useThrottledCallback(handleSave, 1000);
+
   // Skip note and save directly
   const handleSkipNote = useCallback(() => {
     setNote('');
-    handleSave();
-  }, [handleSave]);
+    throttledSave();
+  }, [throttledSave]);
 
   // Go to note step
   const handleGoToNote = useCallback(() => {
@@ -333,7 +337,7 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
 
           {/* Save button */}
           <button
-            onClick={handleSave}
+            onClick={throttledSave}
             className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-semibold"
           >
             {translations.save} (+{EMOTION_XP.withNote} XP)

@@ -145,7 +145,7 @@ function AlertCard({
             e.stopPropagation();
             onDismiss();
           }}
-          className="absolute top-3 right-3 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          className="absolute top-3 end-3 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
           aria-label={t.close || 'Dismiss'}
         >
           <X className="w-4 h-4 text-white/80" />
@@ -282,11 +282,22 @@ export function UrgencyAlert({
   const isLate = isLateInDay();
   const isVeryLateNow = isVeryLate();
 
-  // Calculate pending habits
+  // Calculate pending habits (handles all habit types correctly)
   const pendingHabits = useMemo(() => {
     return habits.filter(h => {
-      const completedDates = h.completedDates || [];
-      return !completedDates.includes(today);
+      const habitType = h.type || 'daily';
+      if (habitType === 'reduce') {
+        const progress = h.progressByDate?.[today];
+        return progress === undefined || progress > (h.targetCount ?? 0);
+      }
+      if (habitType === 'multiple') {
+        const completions = h.completionsByDate?.[today] ?? 0;
+        return completions < (h.dailyTarget ?? 1);
+      }
+      if (habitType === 'continuous') {
+        return h.failedDates?.includes(today) ?? false;
+      }
+      return !(h.completedDates || []).includes(today);
     });
   }, [habits, today]);
 

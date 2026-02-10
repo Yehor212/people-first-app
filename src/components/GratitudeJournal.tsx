@@ -252,7 +252,7 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
                 whileHover={{ scale: 1.01 }}
                 whileTap={{ scale: 0.99 }}
               >
-                <Plus className="w-5 h-5 inline mr-2" />
+                <Plus className="w-5 h-5 inline me-2" />
                 {t.whatAreYouGratefulFor}
               </motion.button>
             </motion.div>
@@ -380,7 +380,7 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
               className={cn(
                 'p-3 rounded-xl text-sm relative overflow-hidden cursor-default',
                 'bg-gradient-to-r from-pink-500/12 via-pink-500/5 to-transparent',
-                'border-l-2 border-pink-500/50'
+                'border-s-2 border-pink-500/50'
               )}
               initial={{ opacity: 0, x: -15, scale: 0.95 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
@@ -397,7 +397,7 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
               }}
             >
               <motion.span
-                className="text-pink-400 mr-2"
+                className="text-pink-400 me-2"
                 animate={{ scale: [1, 1.15, 1], rotate: [0, 8, -8, 0] }}
                 transition={{
                   duration: 2.5,
@@ -408,7 +408,7 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
               >
                 ✨
               </motion.span>
-              <span className="text-foreground/80">{entry.text}</span>
+              <span className="text-foreground/80 line-clamp-2">{entry.text}</span>
             </motion.div>
           ))}
         </div>

@@ -406,7 +406,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             hapticTap();
           }}
         >
-          <Undo2 className="w-3.5 h-3.5 mr-1" />
+          <Undo2 className="w-3.5 h-3.5 me-1" />
           {undoLabel}
         </ToastAction>
       ),
@@ -556,7 +556,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               >
                 <Users className="w-5 h-5" />
                 {activeChallengesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -end-1 w-4 h-4 bg-emerald-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                     {activeChallengesCount}
                   </span>
                 )}
@@ -574,7 +574,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               >
                 <Users className="w-5 h-5" />
                 {activeChallengesCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -end-1 w-4 h-4 bg-primary text-primary-foreground text-xs font-bold rounded-full flex items-center justify-center">
                     {activeChallengesCount}
                   </span>
                 )}
@@ -1295,7 +1295,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                           hapticTap();
                         }}
                       >
-                        <Undo2 className="w-3.5 h-3.5 mr-1" />
+                        <Undo2 className="w-3.5 h-3.5 me-1" />
                         {ts.undo || 'Undo'}
                       </ToastAction>
                     ),

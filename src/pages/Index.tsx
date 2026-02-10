@@ -646,13 +646,32 @@ export function Index() {
     return safeGratitudeEntries.some(g => g.date === currentDate);
   }, [safeGratitudeEntries, currentDate]);
 
-  // Check if user has uncompleted habits today
+  // Filter habits that are actually due today (excludes weekly/custom off-days)
+  const habitsDueToday = useMemo(() => {
+    const todayDow = new Date().getDay();
+    return safeHabits.filter(habit => {
+      if (habit.frequency === 'custom' && habit.customDays) {
+        return habit.customDays.includes(todayDow);
+      }
+      if (habit.frequency === 'weekly') {
+        return todayDow === new Date(habit.createdAt).getDay();
+      }
+      return true; // daily or unset
+    });
+  }, [safeHabits]);
+
+  // Check if user has uncompleted habits today (due-today only)
   const hasUncompletedHabits = useMemo(() => {
-    if (safeHabits.length === 0) return false;
-    return safeHabits.some(h => {
+    if (habitsDueToday.length === 0) return false;
+    return habitsDueToday.some(h => {
       const habitType = h.type || 'daily';
-      // Continuous habits don't count for completion
-      if (habitType === 'continuous') return false;
+      // Continuous habits: uncompleted if failed today
+      if (habitType === 'continuous') return h.failedDates?.includes(currentDate) ?? false;
+      // Reduce habits: uncompleted if not yet logged or above target
+      if (habitType === 'reduce') {
+        const progress = h.progressByDate?.[currentDate];
+        return progress === undefined || progress > (h.targetCount ?? 0);
+      }
       // Multiple times per day habits
       if (habitType === 'multiple') {
         const completions = h.completionsByDate?.[currentDate] ?? 0;
@@ -661,14 +680,15 @@ export function Index() {
       // Daily and scheduled habits
       return !h.completedDates?.includes(currentDate);
     });
-  }, [safeHabits, currentDate]);
+  }, [habitsDueToday, currentDate]);
 
-  // Count completed habits today (for QuickStatsRow)
+  // Count completed habits today (due-today only, for QuickStatsRow)
   const completedTodayCount = useMemo(() => {
-    return safeHabits.filter(h => {
+    return habitsDueToday.filter(h => {
       const habitType = h.type || 'daily';
       if (habitType === 'reduce') {
-        return (h.progressByDate?.[currentDate] ?? 0) === 0;
+        const progress = h.progressByDate?.[currentDate];
+        return progress !== undefined && progress <= (h.targetCount ?? 0);
       }
       if (habitType === 'multiple') {
         const completions = h.completionsByDate?.[currentDate] ?? 0;
@@ -679,7 +699,7 @@ export function Index() {
       }
       return h.completedDates?.includes(currentDate);
     }).length;
-  }, [safeHabits, currentDate]);
+  }, [habitsDueToday, currentDate]);
 
   // Determine current primary CTA (Smart Focus System)
   // Priority: mood → habits → focus → gratitude → complete
@@ -2114,7 +2134,7 @@ export function Index() {
               {/* Quick Stats Row - At-a-glance progress overview */}
               <QuickStatsRow
                 habitsCompleted={completedTodayCount}
-                habitsTotal={safeHabits.length}
+                habitsTotal={habitsDueToday.length}
                 focusMinutes={isFeatureVisible('focusTimer') ? todayFocusMinutes : undefined}
                 level={userLevel.level}
                 labels={{
@@ -2126,7 +2146,7 @@ export function Index() {
 
               {/* Urgency Alert - Smart reminders for pending habits */}
               <UrgencyAlert
-                habits={safeHabits}
+                habits={habitsDueToday}
                 currentStreak={innerWorld.currentActiveStreak}
                 onHabitClick={() => {
                   // Scroll to habit tracker

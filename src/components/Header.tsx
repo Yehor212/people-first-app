@@ -30,6 +30,8 @@ export const Header = memo(function Header({ userName = 'Friend', onOpenChalleng
       de: 'de-DE',
       fr: 'fr-FR',
       ja: 'ja-JP',
+      ar: 'ar-SA',
+      he: 'he-IL',
     };
     const locale = localeMap[language] || 'en-US';
     return new Date().toLocaleDateString(locale, {

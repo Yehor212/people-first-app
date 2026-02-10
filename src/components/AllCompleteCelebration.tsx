@@ -72,7 +72,7 @@ export const AllCompleteCelebration = memo(function AllCompleteCelebration({ str
           <EmojiOrIcon emoji={message.emoji} iconName={message.iconName} size="xl" />
         </div>
         <motion.div
-          className="absolute -right-2 -top-2"
+          className="absolute -end-2 -top-2"
           animate={{ rotate: [0, 15, 0, -15, 0], scale: [1, 1.1, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
         >

@@ -233,7 +233,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
       <div className="relative flex items-center gap-3">
         {/* Icon / Fire Animation */}
         {streak >= 3 && showStreakFire ? (
-          <div className="w-11 h-11 flex items-center justify-center flex-shrink-0 -ml-1">
+          <div className="w-11 h-11 flex items-center justify-center flex-shrink-0 -ms-1">
             <Suspense fallback={<div className="w-12 h-16" />}>
               <FireAnimation size="md" />
             </Suspense>
@@ -431,7 +431,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
           {/* Close button */}
           <button
             onClick={() => setShowShareDialog(false)}
-            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+            className="absolute top-4 end-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
             aria-label={t.close || 'Close'}
           >
             <X className="w-6 h-6 text-white" />
