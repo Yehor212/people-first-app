@@ -318,7 +318,7 @@ export function RingDetailSheet({
   return (
     <>
       <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => onOpenChange(false)} />
-      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden animate-slide-up">
+      <div role="dialog" aria-modal="true" className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden animate-slide-up">
         <h2 className="sr-only">{t[ringType] || theme.label}</h2>
 
         {/* Premium Header with Gradient */}
@@ -346,7 +346,7 @@ export function RingDetailSheet({
           <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-white/30" />
 
           {/* Header content */}
-          <div className="absolute bottom-5 left-6 right-6 flex items-end justify-between">
+          <div className="absolute bottom-5 inset-x-6 flex items-end justify-between">
             <div className="flex items-center gap-4">
               <motion.div
                 className="p-3.5 rounded-2xl bg-white/20 backdrop-blur-sm"

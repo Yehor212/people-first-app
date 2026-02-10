@@ -203,22 +203,20 @@ export function useStatsCalculations({
 
   // Premium stats for dashboard widgets
   const premiumStats = useMemo((): PremiumStats => {
-    const moodScores = filteredMoods.map((m) => {
+    // Unified scoring: uses emotion system when available, falls back to legacy mood
+    const getScore = (m: MoodEntry): number => {
+      if (m.emotion?.primary) return getEmotionScore(m.emotion.primary, m.emotion.intensity);
       switch (m.mood) {
-        case 'great':
-          return 5;
-        case 'good':
-          return 4;
-        case 'okay':
-          return 3;
-        case 'bad':
-          return 2;
-        case 'terrible':
-          return 1;
-        default:
-          return 3;
+        case 'great': return 5;
+        case 'good': return 4;
+        case 'okay': return 3;
+        case 'bad': return 2;
+        case 'terrible': return 1;
+        default: return 3;
       }
-    });
+    };
+
+    const moodScores = filteredMoods.map(getScore);
     const avgMoodScore =
       moodScores.length > 0 ? moodScores.reduce((a, b) => a + b, 0) / moodScores.length : 3;
 
@@ -255,27 +253,10 @@ export function useStatsCalculations({
     });
 
     if (thisWeekMoods.length > 0 && lastWeekMoods.length > 0) {
-      const getMoodScore = (mood: string) => {
-        switch (mood) {
-          case 'great':
-            return 5;
-          case 'good':
-            return 4;
-          case 'okay':
-            return 3;
-          case 'bad':
-            return 2;
-          case 'terrible':
-            return 1;
-          default:
-            return 3;
-        }
-      };
-
       const thisWeekAvg =
-        thisWeekMoods.reduce((sum, m) => sum + getMoodScore(m.mood), 0) / thisWeekMoods.length;
+        thisWeekMoods.reduce((sum, m) => sum + getScore(m), 0) / thisWeekMoods.length;
       const lastWeekAvg =
-        lastWeekMoods.reduce((sum, m) => sum + getMoodScore(m.mood), 0) / lastWeekMoods.length;
+        lastWeekMoods.reduce((sum, m) => sum + getScore(m), 0) / lastWeekMoods.length;
 
       weeklyChange = Math.round(((thisWeekAvg - lastWeekAvg) / lastWeekAvg) * 100);
     }

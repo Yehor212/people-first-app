@@ -166,7 +166,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
       <button
         onClick={onClose}
         aria-label={t.close || 'Close'}
-        className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+        className="absolute top-4 end-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10 min-w-[44px] min-h-[44px] flex items-center justify-center"
       >
         <X className="w-6 h-6 text-white" />
       </button>

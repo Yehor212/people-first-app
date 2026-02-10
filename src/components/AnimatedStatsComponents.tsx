@@ -454,6 +454,7 @@ export function AnimatedCalendar({
   prevMonthLabel,
   nextMonthLabel,
 }: AnimatedCalendarProps) {
+  const { t: calT } = useLanguage();
   const [showMonthSelector, setShowMonthSelector] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
@@ -659,7 +660,7 @@ export function AnimatedCalendar({
                 <span className="font-medium">
                   {selectedDayData.mood
                     ? (selectedDayData.mood.emotion?.primary
-                        ? getEmotionLabels('en')[selectedDayData.mood.emotion.primary]
+                        ? getEmotionLabels(calT.locale || 'en')[selectedDayData.mood.emotion.primary]
                         : moodConfig[selectedDayData.mood.mood].emoji)
                     : '—'}
                 </span>

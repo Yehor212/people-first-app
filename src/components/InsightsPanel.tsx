@@ -244,7 +244,7 @@ export function InsightsPanel({
                 {/* Dismiss button - P1 Fix: Added touch-friendly visibility */}
                 <button
                   onClick={() => dismissInsight(insight.id)}
-                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100"
+                  className="absolute top-2 end-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
                   aria-label={t.insightsDismiss || 'Dismiss'}
                 >
                   <X className="w-4 h-4" />
@@ -283,7 +283,7 @@ export function InsightsPanel({
                     {/* P1 Fix: Added touch-friendly visibility */}
                     <button
                       onClick={() => dismissInsight(insight.id)}
-                      className="absolute top-2 right-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100"
+                      className="absolute top-2 end-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
                       aria-label={t.insightsDismiss || 'Dismiss'}
                     >
                       <X className="w-4 h-4" />

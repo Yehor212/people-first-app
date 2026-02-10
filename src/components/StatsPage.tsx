@@ -315,66 +315,6 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       }));
   }, [todayMoods]);
 
-  // Phase 13: CrystalCalendar data
-  const crystalCalendarData = useMemo(() => {
-    const data: Record<string, {
-      date: string;
-      mood?: number;
-      habitsCompleted?: number;
-      totalHabits?: number;
-      focusMinutes?: number;
-      isPerfect?: boolean;
-    }> = {};
-
-    // Build data for last 3 months
-    const today = new Date();
-    const threeMonthsAgo = new Date();
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-    const current = new Date(threeMonthsAgo);
-    while (current <= today) {
-      const dateStr = formatDate(current);
-
-      // Get mood score
-      const dayMood = moodByDate.get(dateStr);
-      let moodScore = undefined;
-      if (dayMood) {
-        switch (dayMood) {
-          case 'great': moodScore = 5; break;
-          case 'good': moodScore = 4; break;
-          case 'okay': moodScore = 3; break;
-          case 'bad': moodScore = 2; break;
-          case 'terrible': moodScore = 1; break;
-        }
-      }
-
-      // Get habits data
-      const dayHabits = habitCompletionMap.get(dateStr) || [];
-      const habitsCompleted = dayHabits.length;
-
-      // Get focus minutes
-      const focusMins = focusMinutesByDate.get(dateStr) || 0;
-
-      // Is perfect day?
-      const isPerfect = moodScore === 5 && habitsCompleted >= habits.length && focusMins >= 30;
-
-      if (moodScore || habitsCompleted > 0 || focusMins > 0) {
-        data[dateStr] = {
-          date: dateStr,
-          mood: moodScore,
-          habitsCompleted,
-          totalHabits: habits.length,
-          focusMinutes: focusMins,
-          isPerfect,
-        };
-      }
-
-      current.setDate(current.getDate() + 1);
-    }
-
-    return data;
-  }, [moodByDate, habitCompletionMap, focusMinutesByDate, habits.length]);
-
   // Weekly data for ring detail sheet + previous week averages for trend
   const ringWeeklyData = useMemo(() => {
     const today = new Date();
@@ -712,7 +652,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg shadow-primary/20">
               <Calendar className="w-5 h-5 text-white" />
             </div>
-            <div className="absolute -top-1 -right-1 w-2 h-2 bg-primary/80 rounded-full animate-pulse" />
+            <div className="absolute -top-1 -end-1 w-2 h-2 bg-primary/80 rounded-full animate-pulse" />
           </div>
           <h3 className="text-lg font-bold text-foreground">{t.calendarTitle}</h3>
         </div>
@@ -729,11 +669,11 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
               <option key={year} value={year}>{year}</option>
             ))}
           </select>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ms-auto flex items-center gap-2">
             <button
               onClick={() => handleMonthShift(-1)}
               aria-label={t.calendarPrevMonth}
-              className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors"
+              className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -749,7 +689,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             <button
               onClick={() => handleMonthShift(1)}
               aria-label={t.calendarNextMonth}
-              className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors"
+              className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -904,7 +844,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 {isPerfect && (
                   <>
                     <motion.div
-                      className="absolute top-0 right-1 w-1 h-1 rounded-full bg-primary/80"
+                      className="absolute top-0 end-1 w-1 h-1 rounded-full bg-primary/80"
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{
                         scale: [0, 1.5, 0],
@@ -918,7 +858,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                       }}
                     />
                     <motion.div
-                      className="absolute bottom-0 left-1 w-1 h-1 rounded-full bg-primary/80"
+                      className="absolute bottom-0 start-1 w-1 h-1 rounded-full bg-primary/80"
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{
                         scale: [0, 1.5, 0],
@@ -932,7 +872,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                       }}
                     />
                     <motion.div
-                      className="absolute top-1 left-0 w-1 h-1 rounded-full bg-primary/80"
+                      className="absolute top-1 start-0 w-1 h-1 rounded-full bg-primary/80"
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{
                         scale: [0, 1.5, 0],
@@ -951,7 +891,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                 {/* Gratitude indicator */}
                 {hasGratitude && !isPerfect && (
                   <motion.span
-                    className="absolute -top-0.5 -right-0.5 text-[6px]"
+                    className="absolute -top-0.5 -end-0.5 text-[6px]"
                     animate={{ scale: [1, 1.2, 1] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
@@ -1009,9 +949,9 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                     <Calendar className="w-5 h-5 text-violet-600 dark:text-violet-300" />
                   </motion.div>
                   <div>
-                    <p className="font-bold text-lg text-foreground">{selectedDate}</p>
+                    <p className="font-bold text-lg text-foreground">{new Date(selectedDate + 'T00:00:00').toLocaleDateString(getLocale(language), { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                     <p className="text-xs text-muted-foreground">
-                      {new Date(selectedDate).toLocaleDateString(getLocale(language), { weekday: 'long' })}
+                      {new Date(selectedDate + 'T00:00:00').toLocaleDateString(getLocale(language), { weekday: 'long' })}
                     </p>
                   </div>
                 </div>
@@ -1099,18 +1039,18 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                       return (
                         <motion.div
                           key={entry.id || `mood-${idx}`}
-                          className="relative pl-6"
+                          className="relative ps-6"
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: idx * 0.1 }}
                         >
                           {/* Timeline line */}
                           {idx < selectedDayData.moods.length - 1 && (
-                            <div className="absolute left-[9px] top-6 bottom-0 w-px bg-gradient-to-b from-violet-500/50 to-cyan-500/30" />
+                            <div className="absolute start-[9px] top-6 bottom-0 w-px bg-gradient-to-b from-violet-500/50 to-cyan-500/30" />
                           )}
                           {/* Timeline dot */}
                           <motion.div
-                            className="absolute left-0 top-3 w-5 h-5 rounded-full border-2"
+                            className="absolute start-0 top-3 w-5 h-5 rounded-full border-2"
                             style={{
                               borderColor: emotionColor,
                               background: `radial-gradient(circle, ${emotionColor}40, transparent)`,
@@ -1120,7 +1060,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                             transition={{ duration: 2, repeat: Infinity, delay: idx * 0.2 }}
                           />
                           {/* Entry card - light/dark theme compatible */}
-                          <div className="ml-4 p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
+                          <div className="ms-4 p-3 rounded-xl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
                             <div className="flex items-center gap-2">
                               {/* Always use AnimatedEmotionEmoji - convert legacy moods */}
                               <AnimatedEmotionEmoji
@@ -1130,15 +1070,15 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
                               <span className="font-medium text-foreground">
                                 {emotionLabels[mappedEmotion]}
                               </span>
-                              <span className="ml-auto text-xs text-muted-foreground flex items-center gap-1">
+                              <span className="ms-auto text-xs text-muted-foreground flex items-center gap-1">
                                 {getTimeOfDayEmoji(entry.timestamp)} {getTimeOfDay(entry.timestamp)}
                               </span>
                             </div>
                             {entry.note && (
-                              <p className="mt-2 text-sm text-foreground/70 italic pl-6">"{entry.note}"</p>
+                              <p className="mt-2 text-sm text-foreground/70 italic ps-6">"{entry.note}"</p>
                             )}
                             {entry.tags && entry.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2 pl-6">
+                              <div className="flex flex-wrap gap-1 mt-2 ps-6">
                                 {entry.tags.map((tag) => (
                                   <span
                                     key={tag}
