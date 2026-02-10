@@ -5,7 +5,7 @@
  */
 
 import { Habit } from '@/types';
-import { cn, getToday } from '@/lib/utils';
+import { cn, getToday, parseLocalDate } from '@/lib/utils';
 import { Check, Minus, Plus, Trash2, Users, Star, Crown, Zap, Pencil } from 'lucide-react';
 import { useState, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -151,6 +151,7 @@ interface CompactHabitCardProps {
   onEdit?: (habit: Habit) => void;
   onChallenge?: (habit: Habit) => void;
   streak?: number;
+  isDueToday?: boolean;
   className?: string;
 }
 
@@ -162,11 +163,14 @@ export function CompactHabitCard({
   onEdit,
   onChallenge,
   streak = 0,
+  isDueToday = true,
   className,
 }: CompactHabitCardProps) {
   const { t } = useLanguage();
   const today = getToday();
   const [isSwiped, setIsSwiped] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartX = useRef(0);
 
   const habitType = habit.type || 'daily';
@@ -174,8 +178,9 @@ export function CompactHabitCard({
   // Calculate completion status and progress
   const getProgress = (): { completed: boolean; progress: number; target: number } => {
     if (habitType === 'reduce') {
-      const current = habit.progressByDate?.[today] ?? 0;
-      return { completed: current === 0, progress: current, target: 0 };
+      const current = habit.progressByDate?.[today];
+      const target = habit.targetCount ?? 0;
+      return { completed: current !== undefined && current <= target, progress: current ?? 0, target };
     }
 
     if (habitType === 'multiple') {
@@ -186,7 +191,12 @@ export function CompactHabitCard({
 
     if (habitType === 'continuous') {
       const failedToday = habit.failedDates?.includes(today);
-      return { completed: !failedToday, progress: habit.completedDates?.length ?? 0, target: 0 };
+      let days = 0;
+      if (habit.startDate) {
+        const start = parseLocalDate(habit.startDate);
+        days = Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000) - (habit.failedDates?.length ?? 0));
+      }
+      return { completed: !failedToday, progress: days, target: 0 };
     }
 
     // Daily/Scheduled
@@ -235,9 +245,10 @@ export function CompactHabitCard({
       aria-label={`${habit.icon} ${habit.name}${completed ? `, ${t.completed || 'completed'}` : ''}`}
       aria-checked={completed}
       className={cn(
-        'relative overflow-hidden rounded-2xl',
+        'relative overflow-hidden rounded-2xl group',
         'zen-shadow-card',
         completed && 'ring-2 ring-emerald-500/40',
+        !isDueToday && 'opacity-50',
         className
       )}
       style={completed ? {
@@ -281,16 +292,31 @@ export function CompactHabitCard({
             <Users className="w-5 h-5" />
           </button>
         )}
-        {/* Delete button */}
+        {/* Delete button — two-tap confirmation */}
         <button
           onClick={() => {
-            onDelete(habit.id);
-            setIsSwiped(false);
+            if (showDeleteConfirm) {
+              onDelete(habit.id);
+              setIsSwiped(false);
+              setShowDeleteConfirm(false);
+              if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+            } else {
+              hapticTap();
+              setShowDeleteConfirm(true);
+              deleteTimerRef.current = setTimeout(() => setShowDeleteConfirm(false), 3000);
+            }
           }}
-          className="flex-1 h-full flex items-center justify-center bg-destructive text-white active:opacity-80 transition-opacity"
+          className={cn(
+            "flex-1 h-full flex items-center justify-center text-white active:opacity-80 transition-all",
+            showDeleteConfirm ? "bg-red-600 animate-pulse" : "bg-destructive"
+          )}
           aria-label={t.delete}
         >
-          <Trash2 className="w-5 h-5" />
+          {showDeleteConfirm ? (
+            <span className="text-xs font-bold">{(t as unknown as Record<string, string>).confirmDelete || 'Delete?'}</span>
+          ) : (
+            <Trash2 className="w-5 h-5" />
+          )}
         </button>
       </div>
 
@@ -395,12 +421,20 @@ export function CompactHabitCard({
 
           {/* Name + Streak - Premium styling */}
           <div className="flex flex-col min-w-0">
-            <p className={cn(
-              'font-semibold text-base truncate transition-colors duration-300',
-              completed ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
-            )}>
+            <p
+              className={cn(
+                'font-semibold text-base truncate transition-colors duration-300',
+                completed ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
+              )}
+              title={habit.name}
+            >
               {habit.name}
             </p>
+            {!isDueToday && (
+              <span className="text-[9px] text-muted-foreground/40 italic">
+                {(t as unknown as Record<string, string>).habitRestDay || 'Rest day'}
+              </span>
+            )}
             {streak > 1 && (
               <motion.div
                 initial={{ opacity: 0, x: -10 }}
@@ -528,6 +562,41 @@ export function CompactHabitCard({
               completed={completed}
             />
           )}
+        </div>
+
+        {/* Desktop hover actions (hidden on touch) */}
+        <div className="hidden md:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity absolute end-16 top-1/2 -translate-y-1/2 z-[2]">
+          {onEdit && (
+            <button
+              onClick={() => onEdit(habit)}
+              className="p-2 rounded-lg hover:bg-muted/80 text-muted-foreground min-w-[36px] min-h-[36px] flex items-center justify-center"
+              aria-label={t.edit || 'Edit'}
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button
+            onClick={() => {
+              if (showDeleteConfirm) {
+                onDelete(habit.id);
+                setShowDeleteConfirm(false);
+                if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+              } else {
+                hapticTap();
+                setShowDeleteConfirm(true);
+                deleteTimerRef.current = setTimeout(() => setShowDeleteConfirm(false), 3000);
+              }
+            }}
+            className={cn(
+              "p-2 rounded-lg min-w-[36px] min-h-[36px] flex items-center justify-center transition-colors",
+              showDeleteConfirm
+                ? "bg-destructive/15 text-destructive"
+                : "hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+            )}
+            aria-label={t.delete || 'Delete'}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
     </motion.div>

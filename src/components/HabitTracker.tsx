@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, memo, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Habit, HabitType, HabitReminder, HabitFrequency, HabitCategory } from '@/types';
-import { getToday, generateId, formatDate, cn, parseLocalDate } from '@/lib/utils';
+import { getToday, generateId, formatDate, cn, parseLocalDate, calculateStreak } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
 import { Plus, X, ChevronRight, Settings2, Zap, Users, Sparkles, Leaf, Undo2, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -74,6 +74,10 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   const [requiresDuration, setRequiresDuration] = useState(false);
   const [targetDuration, setTargetDuration] = useState(15);
 
+  // Swipe hint for first-time users
+  const [swipeHintSeen] = useState(() => !!localStorage.getItem('habit-swipe-hint-seen'));
+  const swipeHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Celebration states
   const [showAllComplete, setShowAllComplete] = useState(false);
   const [celebrationData, setCelebrationData] = useState<{
@@ -127,7 +131,8 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
 
       if (habitType === 'reduce') {
         const progress = habit.progressByDate?.[today];
-        isCompleted = progress === 0;
+        const target = habit.targetCount ?? 0;
+        isCompleted = progress !== undefined && progress <= target;
       } else if (habitType === 'multiple') {
         const count = habit.completionsByDate?.[today] ?? 0;
         const target = habit.dailyTarget ?? 1;
@@ -151,30 +156,34 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     return habits.filter(h => (h.category || 'health') === categoryFilter);
   }, [habits, categoryFilter]);
 
-  // Calculate habit streak (consecutive days)
+  // Calculate habit streak (consecutive days, custom-day aware)
   const getHabitStreak = (habit: Habit): number => {
-    if (!habit.completedDates || habit.completedDates.length === 0) return 1; // Starting new streak
+    if (!habit.completedDates || habit.completedDates.length === 0) return 0;
 
-    const sortedDates = [...habit.completedDates].sort().reverse();
-    let streak = 0;
-    const todayDate = new Date(today);
-
-    for (let i = 0; i < sortedDates.length; i++) {
-      const checkDate = new Date(todayDate);
-      checkDate.setDate(checkDate.getDate() - i);
-      const checkDateStr = formatDate(checkDate);
-
-      if (sortedDates.includes(checkDateStr) || (i === 0 && !sortedDates.includes(today))) {
-        // Count if we're completing today (i=0) or already have the date
-        if (i === 0 || sortedDates.includes(checkDateStr)) {
-          streak++;
-        }
-      } else {
-        break;
-      }
+    // For daily habits or habits without custom schedule, use proven utility
+    if (!habit.customDays || habit.frequency !== 'custom') {
+      return calculateStreak(habit.completedDates);
     }
 
-    return Math.max(1, streak); // At least 1 for today's completion
+    // For custom-schedule habits, skip non-scheduled days
+    const completedSet = new Set(habit.completedDates);
+    let streak = 0;
+    const checkDate = new Date();
+    for (let daysBack = 0; daysBack < 365; daysBack++) {
+      const dateStr = formatDate(checkDate);
+      const dow = checkDate.getDay();
+      if (habit.customDays.includes(dow)) {
+        if (completedSet.has(dateStr)) {
+          streak++;
+        } else if (daysBack === 0) {
+          // Today is scheduled but not yet done — grace period, don't break
+        } else {
+          break;
+        }
+      }
+      checkDate.setDate(checkDate.getDate() - 1);
+    }
+    return streak;
   };
 
   // Check if habit is completed today (uses memoized map for performance)
@@ -182,14 +191,30 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     return completionStatusMap.get(habit.id) ?? false;
   }, [completionStatusMap]);
 
-  // Get count of completed habits today (derived from memoized map)
+  // Filter habits that are due today (skip weekly/custom not scheduled)
+  const habitsDueToday = useMemo(() => {
+    const todayDow = new Date().getDay();
+    return habits.filter(habit => {
+      if (habit.frequency === 'custom' && habit.customDays) {
+        return habit.customDays.includes(todayDow);
+      }
+      if (habit.frequency === 'weekly') {
+        return todayDow === new Date(habit.createdAt).getDay();
+      }
+      return true; // daily or unset
+    });
+  }, [habits]);
+
+  const dueIds = useMemo(() => new Set(habitsDueToday.map(h => h.id)), [habitsDueToday]);
+
+  // Get count of completed habits today (only habits due today)
   const completedTodayCount = useMemo(() => {
     let count = 0;
-    completionStatusMap.forEach(isCompleted => {
-      if (isCompleted) count++;
+    completionStatusMap.forEach((isCompleted, id) => {
+      if (isCompleted && dueIds.has(id)) count++;
     });
     return count;
-  }, [completionStatusMap]);
+  }, [completionStatusMap, dueIds]);
 
   // Quick add from template - now shows customization form first
   const handleQuickAdd = (templateId: string) => {
@@ -281,7 +306,10 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   }, []);
 
   const handleAddHabit = () => {
-    if (!newHabitName.trim()) return;
+    if (!newHabitName.trim()) {
+      toast({ description: t.habitNameRequired || 'Enter a habit name', duration: 2000 });
+      return;
+    }
 
     if (editingHabit && onUpdateHabit) {
       // Update existing habit
@@ -331,6 +359,8 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         ...(selectedType === 'reduce' && { progressByDate: {}, targetCount: dailyTarget }),
       };
       onAddHabit(habit);
+      toast({ description: `${selectedIcon} ${t.habitCreated || 'Habit created!'}`, duration: 3000 });
+      hapticTap();
     }
 
     resetForm();
@@ -445,10 +475,10 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
       )}
 
       {/* Premium Daily Progress - Crystal Segments */}
-      {habits.length > 0 && isPrimaryCTA ? (
+      {habitsDueToday.length > 0 && isPrimaryCTA ? (
         <div className="relative mb-5">
           <div className="flex gap-1.5">
-            {habits.map((habit, index) => {
+            {habitsDueToday.map((habit, index) => {
               const isComplete = completionStatusMap.get(habit.id) ?? false;
               return (
                 <motion.div
@@ -470,8 +500,8 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             })}
           </div>
           <div className="flex justify-between mt-2">
-            <span className="text-xs text-emerald-700/70 dark:text-emerald-300/70">{completedTodayCount} / {habits.length}</span>
-            {completedTodayCount === habits.length && habits.length > 0 && (
+            <span className="text-xs text-emerald-700/70 dark:text-emerald-300/70">{completedTodayCount} / {habitsDueToday.length}</span>
+            {completedTodayCount === habitsDueToday.length && habitsDueToday.length > 0 && (
               <motion.span
                 className="text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-1"
                 initial={{ opacity: 0, x: -10 }}
@@ -483,10 +513,10 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             )}
           </div>
         </div>
-      ) : habits.length > 0 && (
+      ) : habitsDueToday.length > 0 && (
         <DailyProgressBar
           completedCount={completedTodayCount}
-          totalCount={habits.length}
+          totalCount={habitsDueToday.length}
           className="mb-5 relative"
         />
       )}
@@ -895,11 +925,11 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             )}>{t.habitType}:</p>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { type: 'daily' as HabitType, icon: '✓', label: t.habitTypeDaily },
-                { type: 'multiple' as HabitType, icon: '🔄', label: t.habitTypeMultiple },
-                { type: 'continuous' as HabitType, icon: '📈', label: t.habitTypeContinuous },
-                { type: 'reduce' as HabitType, icon: '📉', label: t.habitTypeReduce || 'Reduce' },
-              ].map(({ type, icon, label }) => (
+                { type: 'daily' as HabitType, icon: '✓', label: t.habitTypeDaily, desc: (t as unknown as Record<string, string>).habitTypeDailyDesc || 'Check off once a day' },
+                { type: 'multiple' as HabitType, icon: '🔄', label: t.habitTypeMultiple, desc: (t as unknown as Record<string, string>).habitTypeMultipleDesc || 'Track count per day' },
+                { type: 'continuous' as HabitType, icon: '📈', label: t.habitTypeContinuous, desc: (t as unknown as Record<string, string>).habitTypeContinuousDesc || "Don't break the chain" },
+                { type: 'reduce' as HabitType, icon: '📉', label: t.habitTypeReduce || 'Reduce', desc: (t as unknown as Record<string, string>).habitTypeReduceDesc || 'Decrease over time' },
+              ].map(({ type, icon, label, desc }) => (
                 <motion.button
                   key={type}
                   type="button"
@@ -924,7 +954,13 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {icon} {label}
+                  <span>{icon} {label}</span>
+                  <span className={cn(
+                    "text-[10px] block mt-0.5",
+                    isPrimaryCTA
+                      ? selectedType === type ? "text-white/50" : "text-white/30"
+                      : selectedType === type ? "text-primary-foreground/60" : "text-muted-foreground/60"
+                  )}>{desc}</span>
                 </motion.button>
               ))}
             </div>
@@ -1242,13 +1278,56 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               habit={habit}
               onToggle={() => handleHabitToggle(habit)}
               onAdjust={onAdjustHabit}
-              onDelete={onDeleteHabit}
+              onDelete={(id: string) => {
+                const deletedHabit = habits.find(h => h.id === id);
+                onDeleteHabit(id);
+                hapticTap();
+                if (deletedHabit) {
+                  const ts = t as unknown as Record<string, string>;
+                  toast({
+                    description: `${deletedHabit.icon || '🗑️'} ${ts.habitDeleted || 'Habit deleted'}`,
+                    duration: 5000,
+                    action: (
+                      <ToastAction
+                        altText={ts.undo || 'Undo'}
+                        onClick={() => {
+                          onAddHabit(deletedHabit);
+                          hapticTap();
+                        }}
+                      >
+                        <Undo2 className="w-3.5 h-3.5 mr-1" />
+                        {ts.undo || 'Undo'}
+                      </ToastAction>
+                    ),
+                  });
+                }
+              }}
               onEdit={onUpdateHabit ? handleEditHabit : undefined}
               onChallenge={onOpenChallenge ? (h) => onOpenChallenge(h) : undefined}
               streak={habitStreaks.get(habit.id) || 0}
+              isDueToday={dueIds.has(habit.id)}
             />
           ))}
           </div>
+
+          {/* Swipe hint for first-time users */}
+          {habits.length > 0 && !swipeHintSeen && (
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1 }}
+              className="text-center text-[10px] text-muted-foreground/40 py-2"
+              ref={(el) => {
+                if (el && !swipeHintTimerRef.current) {
+                  swipeHintTimerRef.current = setTimeout(() => {
+                    localStorage.setItem('habit-swipe-hint-seen', '1');
+                  }, 8000);
+                }
+              }}
+            >
+              ← {(t as unknown as Record<string, string>).habitSwipeHint || 'Swipe left for more options'}
+            </motion.p>
+          )}
         </>
       )}
 

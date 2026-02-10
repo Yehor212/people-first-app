@@ -2229,6 +2229,13 @@ export function Index() {
               </Suspense>
             </LazyErrorBoundary>
 
+            {/* Personal Journal */}
+            <LazyErrorBoundary componentName="Journal">
+              <Suspense fallback={<SkeletonCard />}>
+                <JournalModule />
+              </Suspense>
+            </LazyErrorBoundary>
+
             {/* Breathing Exercise - Compact mindfulness card */}
             {isFeatureVisible('breathingExercise') && (
               <LazyErrorBoundary componentName="Breathing Exercise">
@@ -2269,12 +2276,6 @@ export function Index() {
               />
             </LazyErrorBoundary>
 
-            {/* Personal Journal */}
-            <LazyErrorBoundary componentName="Journal">
-              <Suspense fallback={<SkeletonCard />}>
-                <JournalModule />
-              </Suspense>
-            </LazyErrorBoundary>
           </div>
         )}
 
