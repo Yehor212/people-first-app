@@ -11,7 +11,7 @@ import { logger } from './logger';
 let lastBackPress = 0;
 const DOUBLE_TAP_DELAY = 2000; // 2 seconds
 
-// P1 Fix: Store listener handle for targeted removal (instead of removeAllListeners)
+// Store listener handle for targeted removal (instead of removeAllListeners)
 let backButtonListenerHandle: PluginListenerHandle | null = null;
 
 // Track if we're showing exit toast
@@ -161,7 +161,7 @@ function isElementVisible(element: Element): boolean {
  * P1 Fix: Improved selectors and visibility checks
  */
 function isModalOpen(): boolean {
-  // P1 Fix: More specific modal selectors
+  // More specific modal selectors
   // - [data-state="open"] is now scoped to specific Radix components
   // - Added specific Radix dialog/sheet selectors
   const modalSelectors = [
@@ -182,7 +182,7 @@ function isModalOpen(): boolean {
   for (const selector of modalSelectors) {
     const elements = document.querySelectorAll(selector);
     for (const element of Array.from(elements)) {
-      // P1 Fix: Use comprehensive visibility check
+      // Use comprehensive visibility check
       if (isElementVisible(element)) {
         return true;
       }
@@ -269,7 +269,7 @@ export async function initAndroidBackHandler(): Promise<void> {
     return;
   }
 
-  // P1 Fix: Prevent double registration
+  // Prevent double registration
   if (backButtonListenerHandle) {
     logger.log('[AndroidBackHandler] Already initialized, skipping');
     return;
@@ -277,7 +277,7 @@ export async function initAndroidBackHandler(): Promise<void> {
 
   logger.log('[AndroidBackHandler] Initializing...');
 
-  // P1 Fix: Store handle for targeted removal later
+  // Store handle for targeted removal later
   backButtonListenerHandle = await App.addListener('backButton', ({ canGoBack }) => {
     logger.log('[AndroidBackHandler] Back button pressed, canGoBack:', canGoBack);
 

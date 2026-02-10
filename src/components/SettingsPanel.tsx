@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
-import { Bell, Trash2, Download, Upload, CheckCircle, Sparkles, Smartphone, ChevronRight, TestTube, Cloud, Mail, LayoutGrid, Timer, Wind, Heart, Target, ListTodo, Trophy, Flower2 } from 'lucide-react';
+import { Bell, Trash2, Download, Upload, CheckCircle, Sparkles, Smartphone, ChevronRight, Cloud, Mail, LayoutGrid, Timer, Wind, Heart, Target, ListTodo, Trophy, Flower2 } from 'lucide-react';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
@@ -27,7 +27,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { syncWithCloud } from '@/storage/cloudSync';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { DopamineSettingsComponent } from '@/components/DopamineSettings';
-import { sendTestNotification, checkNotificationStatus } from '@/lib/localNotifications';
 import { isCloudSyncEnabled, setCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { removePushToken } from '@/lib/pushNotifications';
 import { offlineQueue } from '@/lib/offlineQueue';
@@ -80,7 +79,7 @@ export function SettingsPanel({
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [importMode, setImportMode] = useState<ImportMode>('merge');
   const [dataStatus, setDataStatus] = useState<string | null>(null);
-  // P1 Fix: Loading states for export/import operations
+  // Loading states for export/import operations
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -112,14 +111,13 @@ export function SettingsPanel({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteStatus, setDeleteStatus] = useState<string | null>(null);
   const [showDopamineSettings, setShowDopamineSettings] = useState(false);
-  const [notificationTestStatus, setNotificationTestStatus] = useState<string | null>(null);
   const [cloudSyncEnabled, setCloudSyncEnabledState] = useState(isCloudSyncEnabled());
   const [weeklyDigestEnabled, setWeeklyDigestEnabled] = useState(false);
   const [weeklyDigestLoading, setWeeklyDigestLoading] = useState(false);
   const weeklyDigestTouchedRef = useRef(false);
   const [calendarEnabled, setCalendarEnabledState] = useState(isCalendarEnabled());
   const [calendarConnected, setCalendarConnected] = useState(false);
-  // P1 Fix: Debounce for cloud sync toggle to prevent race conditions
+  // Debounce for cloud sync toggle to prevent race conditions
   const cloudSyncDebounceRef = useRef(false);
   const [deleteConfirmInput, setDeleteConfirmInput] = useState('');
   const whatsNewKey = `zenflow_whats_new_v${APP_VERSION}_dismissed`;
@@ -149,24 +147,6 @@ export function SettingsPanel({
     setShowWhatsNew(false);
   };
 
-  const handleTestNotification = async () => {
-    setNotificationTestStatus(t.notificationTestSending || 'Sending...');
-    try {
-      const status = await checkNotificationStatus();
-      if (!status.hasPermission) {
-        setNotificationTestStatus(`❌ ${t.notificationTestNoPermission || 'No permission. Enable notifications in Android Settings.'}`);
-        return;
-      }
-      const success = await sendTestNotification();
-      if (success) {
-        setNotificationTestStatus(`✅ ${t.notificationTestSuccess || 'Test notification sent! Check in 5 seconds.'}`);
-      } else {
-        setNotificationTestStatus(`❌ ${t.notificationTestFailed || 'Failed to send. Check Android notification settings.'}`);
-      }
-    } catch (error) {
-      setNotificationTestStatus(`❌ ${t.notificationTestError || 'Error'}: ${error}`);
-    }
-  };
 
   const formatError = (error: unknown) => {
     if (error && typeof error === "object") {
@@ -271,14 +251,14 @@ export function SettingsPanel({
       if (error) {
         setWeeklyDigestEnabled(!enabled); // Revert on error
         logger.error('[Settings] Failed to update weekly digest:', error);
-        // P1 Fix: Show toast for user feedback
+        // Show toast for user feedback
         toast.error(t.settingsSaveFailed || 'Failed to save setting');
       }
       // Note: Don't set enabled on success - already set optimistically
     } catch (error) {
       setWeeklyDigestEnabled(!enabled); // Revert on error
       logger.error('[Settings] Weekly digest toggle error:', error);
-      // P1 Fix: Show toast for user feedback
+      // Show toast for user feedback
       toast.error(t.settingsSaveFailed || 'Failed to save setting');
     } finally {
       setWeeklyDigestLoading(false);
@@ -340,7 +320,7 @@ export function SettingsPanel({
 
     setIsSigningOut(true);
     try {
-      // P0 Fix: Flush offline queue before signing out to prevent data loss
+      // Flush offline queue before signing out to prevent data loss
       if (offlineQueue.hasPendingActions()) {
         logger.log('[Settings] Flushing offline queue before sign-out...');
         try {
@@ -414,7 +394,7 @@ export function SettingsPanel({
   };
 
   const handleCloudSyncToggle = (enabled: boolean) => {
-    // P1 Fix: Debounce to prevent rapid toggle race conditions
+    // Debounce to prevent rapid toggle race conditions
     if (cloudSyncDebounceRef.current) return;
     cloudSyncDebounceRef.current = true;
     setTimeout(() => { cloudSyncDebounceRef.current = false; }, 500);
@@ -432,7 +412,7 @@ export function SettingsPanel({
   };
 
   const handleExport = async () => {
-    // P1 Fix: Add loading state for better UX
+    // Add loading state for better UX
     setIsExporting(true);
     setDataStatus(null);
     try {
@@ -508,7 +488,7 @@ export function SettingsPanel({
       return;
     }
 
-    // P1 Fix: Add loading state for better UX
+    // Add loading state for better UX
     setIsImporting(true);
     setDataStatus(null);
 
@@ -846,24 +826,6 @@ export function SettingsPanel({
           </div>
         </div>
 
-        {/* Test Notification Button - Only on native */}
-        {Capacitor.isNativePlatform() && (
-          <div className="space-y-2 mt-4">
-            <button
-              onClick={handleTestNotification}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2"
-            >
-              <TestTube className="w-4 h-4" />
-              {t.testNotification || 'Test Notification'}
-            </button>
-            {notificationTestStatus && (
-              <p className="text-sm text-center text-muted-foreground">{notificationTestStatus}</p>
-            )}
-            <p className="text-xs text-muted-foreground text-center">
-              {t.testNotificationHint || 'Sends a test notification in 5 seconds to verify notifications work.'}
-            </p>
-          </div>
-        )}
 
         {/* Notification Sound Selection - Only on native */}
         {Capacitor.isNativePlatform() && (
@@ -1199,7 +1161,7 @@ export function SettingsPanel({
               <button
                 onClick={() => {
                   setShowDeleteConfirm(true);
-                  setDeleteConfirmInput(''); // P1 Fix: Reset input on open
+                  setDeleteConfirmInput(''); // Reset input on open
                 }}
                 className="w-full py-3 bg-destructive/10 text-destructive rounded-xl font-medium hover:bg-destructive/20 transition-colors btn-press"
               >

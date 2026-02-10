@@ -149,9 +149,9 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const saveDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const intervalTickRef = useRef<number>(0);
-  // P1 Fix: Track mounted state to prevent state updates after unmount
+  // Track mounted state to prevent state updates after unmount
   const isMountedRef = useRef(true);
-  // P0 Fix: Flag to prevent interval saves while debounced save is pending
+  // Flag to prevent interval saves while debounced save is pending
   const savePendingRef = useRef(false);
   const endTimeRef = useRef<number | null>(savedState?.endTime || null);
   const focusStartRef = useRef<number | null>(savedState?.focusStartTime || null);
@@ -163,7 +163,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
   const stateRef = useRef({ isRunning, isBreak, focusMinutes, breakMinutes, label, preset });
   stateRef.current = { isRunning, isBreak, focusMinutes, breakMinutes, label, preset };
 
-  // P1 Fix: Manage mounted state for cleanup
+  // Manage mounted state for cleanup
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -277,7 +277,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     if (saveDebounceRef.current) {
       clearTimeout(saveDebounceRef.current);
     }
-    // P0 Fix: Mark save as pending to prevent interval save conflicts
+    // Mark save as pending to prevent interval save conflicts
     savePendingRef.current = true;
     // Debounce save by 300ms (increased from 100ms) to avoid conflicts with interval saves
     saveDebounceRef.current = setTimeout(() => {
@@ -317,7 +317,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     }
 
     intervalRef.current = setInterval(() => {
-      // P1 Fix: Skip if component unmounted
+      // Skip if component unmounted
       if (!isMountedRef.current || !endTimeRef.current) return;
       const now = Date.now();
       const remaining = Math.max(0, Math.ceil((endTimeRef.current - now) / 1000));
@@ -394,7 +394,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
       }
 
       // Save state every 10 ticks (5 seconds) to reduce localStorage writes
-      // P0 Fix: Skip if a debounced save is pending to prevent race conditions
+      // Skip if a debounced save is pending to prevent race conditions
       intervalTickRef.current++;
       if (intervalTickRef.current >= 10) {
         intervalTickRef.current = 0;

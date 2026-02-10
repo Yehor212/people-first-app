@@ -104,7 +104,7 @@ export function ChallengesPanel({
         } catch (error) {
           logger.error('[ChallengesPanel] Native share failed:', error);
           setShareError(t.shareFailed || 'Share failed');
-          // P1 Fix: Show toast for better visibility
+          // Show toast for better visibility
           toast.error(t.shareFailed || 'Share failed');
           return;
         }
@@ -124,7 +124,7 @@ export function ChallengesPanel({
     } catch (error) {
       logger.error('[ChallengesPanel] Share failed:', error);
       setShareError(t.shareFailed || 'Share failed');
-      // P1 Fix: Show toast for better visibility
+      // Show toast for better visibility
       toast.error(t.shareFailed || 'Share failed');
     } finally {
       setIsSharing(false);

@@ -113,11 +113,11 @@ export function DayClock({
   const [showCelebration, setShowCelebration] = useState(false);
   const [lastEnergy, setLastEnergy] = useState(0);
 
-  // P1 Fix: Track mounted state to prevent state updates after unmount
+  // Track mounted state to prevent state updates after unmount
   const isMountedRef = useRef(true);
 
   // Update time every minute
-  // P1 Fix: Check mounted state before calling setState to prevent React warnings
+  // Check mounted state before calling setState to prevent React warnings
   useEffect(() => {
     isMountedRef.current = true;
 
@@ -168,7 +168,7 @@ export function DayClock({
   }, [todayActivities]);
 
   // Trigger celebration when energy increases
-  // P1 Fix: Use ref to store timeout for cleanup and check mounted state
+  // Use ref to store timeout for cleanup and check mounted state
   const celebrationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {

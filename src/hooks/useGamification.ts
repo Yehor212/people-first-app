@@ -41,7 +41,7 @@ export function useGamification() {
   const [focusSessions, setFocusSessions] = useState<FocusSession[]>([]);
   const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeEntry[]>([]);
 
-  // P1 Fix: Track mounted state to prevent setState after unmount
+  // Track mounted state to prevent setState after unmount
   const isMountedRef = useRef(true);
 
   // Load all data for stats
@@ -56,7 +56,7 @@ export function useGamification() {
         db.gratitudeEntries.toArray(),
       ]);
 
-      // P1 Fix: Check if component is still mounted before updating state
+      // Check if component is still mounted before updating state
       if (!isMountedRef.current) return;
 
       setMoods(moodsData);

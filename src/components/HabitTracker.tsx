@@ -91,7 +91,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   // Get active challenges count
   const activeChallengesCount = useMemo(() => getActiveChallenges().length, []);
 
-  // P1 Fix: Debounce ref to prevent rapid toggle causing multiple celebrations
+  // Debounce ref to prevent rapid toggle causing multiple celebrations
   const toggleDebounceRef = useRef<Set<string>>(new Set());
 
   const today = getToday();
@@ -372,10 +372,10 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   }, [progressMap]);
 
   // Handle habit toggle with celebrations
-  // P1 Fix: Added debounce to prevent rapid toggles causing multiple celebrations
-  // P1 Fix #7: Added undo toast for accidental toggles
+  // Added debounce to prevent rapid toggles causing multiple celebrations
+  // Added undo toast for accidental toggles
   const handleHabitToggle = useCallback((habit: Habit) => {
-    // P1 Fix: Prevent rapid double-toggle
+    // Prevent rapid double-toggle
     if (toggleDebounceRef.current.has(habit.id)) {
       return;
     }
@@ -387,7 +387,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     // Trigger the toggle
     onToggleHabit(habit.id, today);
 
-    // P1 Fix #7: Show undo toast for accidental toggles (for accessibility)
+    // Show undo toast for accidental toggles (for accessibility)
     // This helps users with motor impairments who might accidentally tap
     const undoLabel = t.undo || 'Undo';
     const actionLabel = wasCompleted

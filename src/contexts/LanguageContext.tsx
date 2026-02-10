@@ -83,7 +83,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const t = translations[language];
 
-  // P1 Fix: Memoize provider value to prevent unnecessary re-renders
+  // Memoize provider value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     language,
     setLanguage,

@@ -197,7 +197,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
 
-  // P1 Fix: Add keyboard accessibility (escape, focus trap, focus restore)
+  // Add keyboard accessibility (escape, focus trap, focus restore)
   const { modalProps } = useModalKeyboard({
     isOpen: isVisible,
     onClose: () => {

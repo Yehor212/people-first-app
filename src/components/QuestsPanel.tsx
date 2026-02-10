@@ -85,7 +85,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
     }
   }, [isLoaded]);
 
-  // P1 Fix: Debounce refs to prevent rapid refresh spam
+  // Debounce refs to prevent rapid refresh spam
   const refreshDebounceRef = useRef<{ daily: boolean; weekly: boolean; bonus: boolean }>({
     daily: false,
     weekly: false,

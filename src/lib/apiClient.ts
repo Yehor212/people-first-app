@@ -22,14 +22,14 @@ export const AUTH_SESSION_EXPIRED_EVENT = 'auth:session-expired';
 let refreshInProgress = false;
 let refreshPromise: Promise<boolean> | null = null;
 
-// P0 Fix [WEB]: BroadcastChannel for multi-tab coordination
+// BroadcastChannel for multi-tab coordination
 // Only used on web platform (not native)
 const REFRESH_CHANNEL_NAME = 'zenflow-auth-refresh';
 let refreshChannel: BroadcastChannel | null = null;
 let waitingForRefresh = false;
 let refreshResolvers: Array<(success: boolean) => void> = [];
 
-// P1 Fix: Limit resolver queue size to prevent unbounded memory growth
+// Limit resolver queue size to prevent unbounded memory growth
 const MAX_REFRESH_RESOLVERS = 100;
 
 // Initialize BroadcastChannel for web only
@@ -83,7 +83,7 @@ const broadcastRefreshStatus = (type: 'REFRESH_START' | 'REFRESH_COMPLETE', succ
  */
 const waitForOtherTabRefresh = (): Promise<boolean> => {
   return new Promise((resolve) => {
-    // P1 Fix: Reject oldest resolver if queue is at max size
+    // Reject oldest resolver if queue is at max size
     if (refreshResolvers.length >= MAX_REFRESH_RESOLVERS) {
       const oldest = refreshResolvers.shift();
       oldest?.(false); // Resolve oldest with failure
@@ -160,7 +160,7 @@ const tryRefreshSession = async (): Promise<boolean> => {
     return false;
   }
 
-  // P0 Fix: If another tab is refreshing, wait for it instead of doing our own refresh
+  // If another tab is refreshing, wait for it instead of doing our own refresh
   if (waitingForRefresh) {
     logger.log('[API] Another tab is refreshing, waiting...');
     return waitForOtherTabRefresh();
@@ -173,7 +173,7 @@ const tryRefreshSession = async (): Promise<boolean> => {
   }
 
   refreshInProgress = true;
-  // P0 Fix: Notify other tabs that we're starting refresh
+  // Notify other tabs that we're starting refresh
   broadcastRefreshStatus('REFRESH_START');
 
   refreshPromise = (async () => {
@@ -183,14 +183,14 @@ const tryRefreshSession = async (): Promise<boolean> => {
 
       if (error) {
         logger.error('[API] Token refresh failed:', error.message);
-        // P0 Fix: Notify other tabs of failure
+        // Notify other tabs of failure
         broadcastRefreshStatus('REFRESH_COMPLETE', false);
         return false;
       }
 
       if (data.session) {
         logger.log('[API] Token refresh successful');
-        // P0 Fix: Notify other tabs of success
+        // Notify other tabs of success
         broadcastRefreshStatus('REFRESH_COMPLETE', true);
         return true;
       }
@@ -218,7 +218,7 @@ const tryRefreshSession = async (): Promise<boolean> => {
 const notifySessionExpired = async (): Promise<void> => {
   logger.warn('[API] Checking session before notifying expired...');
 
-  // P0 Fix: Double-check session state before triggering logout
+  // Double-check session state before triggering logout
   try {
     const { data } = await supabase.auth.getSession();
     if (data.session) {

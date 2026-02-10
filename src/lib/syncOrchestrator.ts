@@ -69,7 +69,7 @@ class SyncOrchestrator {
     isOnline: navigator.onLine,
   };
 
-  // P0 Fix: Prevent multiple AUTH_SESSION_EXPIRED_EVENT dispatches
+  // Prevent multiple AUTH_SESSION_EXPIRED_EVENT dispatches
   private sessionExpiredEmitted = false;
 
   // Retry configuration
@@ -148,7 +148,7 @@ class SyncOrchestrator {
     if (this.processingPromise) {
       await this.processingPromise;
       // After waiting, recursively check if we need to process more
-      // P0 Fix: Both isProcessing and processingPromise are now cleared atomically in processQueue()
+      // Both isProcessing and processingPromise are now cleared atomically in processQueue()
       if (this.queue.length > 0 && !this.isProcessing) {
         void this.startProcessing();
       }
@@ -158,7 +158,7 @@ class SyncOrchestrator {
     // Acquire the lock by creating the promise
     this.processingPromise = this.processQueue();
     await this.processingPromise;
-    // P0 Fix: Lock release moved inside processQueue() to ensure atomic release with isProcessing
+    // Lock release moved inside processQueue() to ensure atomic release with isProcessing
   }
 
   /**
@@ -229,14 +229,14 @@ class SyncOrchestrator {
         if (is401Error(error)) {
           logger.warn(`[SyncOrchestrator] 401 error on ${operation.type} - checking if session truly expired`);
 
-          // P0 Fix: If we already emitted session expired, just clear and stop
+          // If we already emitted session expired, just clear and stop
           if (this.sessionExpiredEmitted) {
             logger.log(`[SyncOrchestrator] Session already expired, clearing remaining queue`);
             this.clearQueue();
             break;
           }
 
-          // P0 Fix: Verify session before notifying UI
+          // Verify session before notifying UI
           // 401 might be a transient error, check actual session state
           let sessionValid = false;
           try {
@@ -265,7 +265,7 @@ class SyncOrchestrator {
           addCategorizedBreadcrumb('sync', 'Session expired - clearing queue', { operation: operation.type }, 'warning');
           logger.warn(`[SyncOrchestrator] Session confirmed expired for ${operation.type}`);
 
-          // P0 Fix: Set flag BEFORE dispatching to prevent race condition
+          // Set flag BEFORE dispatching to prevent race condition
           this.sessionExpiredEmitted = true;
 
           // Clear entire queue - no point retrying with expired session
@@ -337,7 +337,7 @@ class SyncOrchestrator {
       });
     }
     } finally {
-      // P0 Fix: Release both flags atomically to prevent race condition
+      // Release both flags atomically to prevent race condition
       // where another caller sees processingPromise = null but isProcessing = true
       this.isProcessing = false;
       this.processingPromise = null;

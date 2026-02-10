@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 
-// P1 Fix: Constants for timeout and retry
+// Constants for timeout and retry
 const FETCH_TIMEOUT = 10000; // 10 seconds
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 3000, 5000]; // Exponential backoff
@@ -77,7 +77,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
   const [isOptedIn, setIsOptedIn] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
-  // P1 Fix: Track mounted state to prevent state updates after unmount
+  // Track mounted state to prevent state updates after unmount
   const isMountedRef = useRef(true);
 
   useEffect(() => {
@@ -94,7 +94,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
     { type: 'streak', label: t.streak || 'Streak', icon: <Flame className="w-4 h-4" /> },
   ];
 
-  // P1 Fix: Helper to add timeout to a promise
+  // Helper to add timeout to a promise
   const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
     return Promise.race([
       promise,
@@ -113,7 +113,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
     setRetryCount(retry);
 
     try {
-      // P1 Fix: Add timeout to prevent indefinite loading
+      // Add timeout to prevent indefinite loading
       const [leaderboardData, userData, ranksData] = await withTimeout(
         Promise.all([
           getLeaderboard(activeTab, 10),
@@ -139,7 +139,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
       const isTimeout = err instanceof Error && err.message === 'Request timeout';
       logger.error('Failed to load leaderboard:', isTimeout ? 'Timeout' : err);
 
-      // P1 Fix: Retry with exponential backoff
+      // Retry with exponential backoff
       if (retry < MAX_RETRIES) {
         const delay = RETRY_DELAYS[retry] || 5000;
         logger.log(`[Leaderboard] Retrying in ${delay}ms (attempt ${retry + 1}/${MAX_RETRIES})`);

@@ -70,7 +70,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     timeOfDay: 'morning' | 'afternoon' | 'evening';
   } | null>(null);
 
-  // P0 Fix: Track mounted state to prevent memory leaks
+  // Track mounted state to prevent memory leaks
   const mountedRef = useRef(true);
   const toastTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -296,7 +296,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     const newMoodData = moods.find(m => m.type === newMood);
     setChangedMoodEmoji(newMoodData?.emoji || '');
     setShowMoodChangedToast(true);
-    // P0 Fix: Clear previous timeout before setting new one to prevent memory leak
+    // Clear previous timeout before setting new one to prevent memory leak
     if (toastTimeoutRef.current) {
       clearTimeout(toastTimeoutRef.current);
     }

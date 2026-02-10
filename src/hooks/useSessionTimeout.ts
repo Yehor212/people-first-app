@@ -32,7 +32,7 @@ export function useSessionTimeout(enabled: boolean = true) {
         logger.log('[SessionTimeout] Idle timeout reached, signing out');
 
         try {
-          // P0 Fix: Flush offline queue before signing out to prevent data loss
+          // Flush offline queue before signing out to prevent data loss
           if (offlineQueue.hasPendingActions()) {
             logger.log('[SessionTimeout] Flushing offline queue before logout...');
             try {

@@ -43,7 +43,7 @@ export function WelcomeBackModal({
 
   useBackHandler(true, onClose);
 
-  // P1 Fix: Add keyboard accessibility (escape, focus trap, focus restore)
+  // Add keyboard accessibility (escape, focus trap, focus restore)
   const { modalProps } = useModalKeyboard({
     isOpen: true, // Component only renders when open
     onClose,

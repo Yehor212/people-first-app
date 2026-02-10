@@ -24,8 +24,8 @@ let autoSyncStarted = false;
 let currentSyncPromise: Promise<{ status: string }> | null = null;
 let syncLockTimeout: ReturnType<typeof setTimeout> | null = null;
 let syncLockStartTime: number | null = null; // Track when lock was acquired
-let syncAbortController: AbortController | null = null; // P0 Fix: AbortController for timeout cancellation
-const SYNC_LOCK_TIMEOUT = 60000; // P0 Fix: Reduced from 120s to 60s - most sync ops should complete in <30s
+let syncAbortController: AbortController | null = null; // AbortController for timeout cancellation
+const SYNC_LOCK_TIMEOUT = 60000; // Reduced from 120s to 60s - most sync ops should complete in <30s
 
 /**
  * Generate a unique operation ID for lock ownership tracking.
@@ -50,7 +50,7 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
     try {
       return await currentSyncPromise;
     } catch (error) {
-      // P0 Fix: Handle AbortError gracefully - don't re-throw aborts
+      // Handle AbortError gracefully - don't re-throw aborts
       if (isAbortError(error)) {
         addCategorizedBreadcrumb('sync', 'Sync wait aborted', {}, 'warning');
         logger.warn('[Sync] Sync wait aborted');
@@ -68,7 +68,7 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
   // Create the sync promise
   const operationId = generateOperationId();
   syncLockStartTime = Date.now();
-  // P0 Fix: Create AbortController for timeout cancellation
+  // Create AbortController for timeout cancellation
   syncAbortController = new AbortController();
   const abortSignal = syncAbortController.signal;
   logger.sync(`Sync started (operation: ${operationId})`);
@@ -106,7 +106,7 @@ const doSyncWithCloud = async (
   }, SYNC_LOCK_TIMEOUT);
 
   try {
-    // P0 Fix: Check if operation was aborted before starting
+    // Check if operation was aborted before starting
     if (abortSignal.aborted) {
       throw new Error("Sync operation aborted due to timeout");
     }
@@ -118,14 +118,14 @@ const doSyncWithCloud = async (
       throw new Error("Not authenticated.");
     }
 
-    // P0 Fix: Check abort status before heavy operations
+    // Check abort status before heavy operations
     if (abortSignal.aborted) {
       throw new Error("Sync operation aborted due to timeout");
     }
 
     const localBackup = await exportBackup();
 
-    // P0 Fix: Check abort status before network call
+    // Check abort status before network call
     if (abortSignal.aborted) {
       throw new Error("Sync operation aborted due to timeout");
     }
@@ -140,7 +140,7 @@ const doSyncWithCloud = async (
       throw fetchError;
     }
 
-    // P0 Fix: Check abort status after network call
+    // Check abort status after network call
     if (abortSignal.aborted) {
       throw new Error("Sync operation aborted due to timeout");
     }
@@ -181,14 +181,14 @@ const doSyncWithCloud = async (
       logger.sync('No remote data found, will push local data');
     }
 
-    // P0 Fix: Check abort status before final operations
+    // Check abort status before final operations
     if (abortSignal.aborted) {
       throw new Error("Sync operation aborted due to timeout");
     }
 
     const mergedBackup = await exportBackup();
 
-    // P0 Fix: Final abort check before upsert
+    // Final abort check before upsert
     if (abortSignal.aborted) {
       throw new Error("Sync operation aborted due to timeout");
     }
@@ -224,11 +224,11 @@ const doSyncWithCloud = async (
   }
 };
 
-// P1 Fix: Track consecutive sync failures for UI notification
+// Track consecutive sync failures for UI notification
 let consecutiveSyncFailures = 0;
 const MAX_FAILURES_BEFORE_NOTIFY = 3; // Notify user after 3 consecutive failures
 
-// P1 Fix: Emit sync failure event for UI notification
+// Emit sync failure event for UI notification
 const emitSyncFailureEvent = (error: unknown, failureCount: number) => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('zenflow:sync-failure', {
@@ -241,7 +241,7 @@ const emitSyncFailureEvent = (error: unknown, failureCount: number) => {
   }
 };
 
-// P1 Fix: Emit sync success event to clear UI notification
+// Emit sync success event to clear UI notification
 const emitSyncSuccessEvent = () => {
   if (typeof window !== 'undefined' && consecutiveSyncFailures > 0) {
     window.dispatchEvent(new CustomEvent('zenflow:sync-success'));
@@ -256,13 +256,13 @@ export const silentSync = async () => {
       await syncWithCloud('merge');
       logger.sync('Auto-sync completed');
       addCategorizedBreadcrumb('sync', 'Auto-sync completed');
-      // P1 Fix: Reset failure counter and emit success on successful sync
+      // Reset failure counter and emit success on successful sync
       if (consecutiveSyncFailures > 0) {
         consecutiveSyncFailures = 0;
         emitSyncSuccessEvent();
       }
     } catch (error) {
-      // P0 Fix: Don't count aborts as failures - they're intentional
+      // Don't count aborts as failures - they're intentional
       if (isAbortError(error)) {
         addCategorizedBreadcrumb('sync', 'Auto-sync aborted (intentional)', {}, 'info');
         logger.debug('[Sync] Auto-sync aborted (intentional)');
@@ -270,7 +270,7 @@ export const silentSync = async () => {
       }
       addCategorizedBreadcrumb('sync', 'Auto-sync failed', { error: (error as Error).message }, 'error');
       logger.warn('[Sync] Auto-sync failed:', error);
-      // P1 Fix: Track failures and emit event for UI notification
+      // Track failures and emit event for UI notification
       consecutiveSyncFailures++;
       emitSyncFailureEvent(error, consecutiveSyncFailures);
       // Show toast only after multiple consecutive failures to avoid spamming on transient errors

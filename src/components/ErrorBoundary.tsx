@@ -177,7 +177,7 @@ interface ModalErrorBoundaryState {
 class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, ModalErrorBoundaryState> {
   state: ModalErrorBoundaryState = { hasError: false, error: null };
 
-  // P1 Fix: Refs for focus trap and container
+  // Refs for focus trap and container
   private containerRef = React.createRef<HTMLDivElement>();
   private deactivateFocusTrap: (() => void) | null = null;
 
@@ -209,13 +209,13 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
       context: 'ModalErrorBoundary'
     });
 
-    // P1 Fix: Announce error to screen readers
+    // Announce error to screen readers
     const title = this.props.fallbackTitle || "Something went wrong";
     announceError(title);
   }
 
   componentDidUpdate(_prevProps: ModalErrorBoundaryProps, prevState: ModalErrorBoundaryState) {
-    // P1 Fix: Activate focus trap when error appears
+    // Activate focus trap when error appears
     if (this.state.hasError && !prevState.hasError && this.containerRef.current) {
       this.deactivateFocusTrap = createFocusTrap(this.containerRef.current, {
         autoFocus: true,
@@ -224,7 +224,7 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
   }
 
   componentWillUnmount() {
-    // P1 Fix: Cleanup focus trap
+    // Cleanup focus trap
     this.deactivateFocusTrap?.();
   }
 
@@ -244,21 +244,21 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
       return;
     }
 
-    // P1 Fix: Deactivate focus trap before resetting state
+    // Deactivate focus trap before resetting state
     this.deactivateFocusTrap?.();
     this.deactivateFocusTrap = null;
     this.setState({ hasError: false, error: null });
   };
 
   handleClose = () => {
-    // P1 Fix: Deactivate focus trap before closing
+    // Deactivate focus trap before closing
     this.deactivateFocusTrap?.();
     this.deactivateFocusTrap = null;
     this.setState({ hasError: false, error: null });
     this.props.onClose?.();
   };
 
-  // P1 Fix: Handle Escape key to close error dialog
+  // Handle Escape key to close error dialog
   handleKeyDown = (event: React.KeyboardEvent) => {
     if (event.key === 'Escape' && this.props.onClose) {
       event.preventDefault();
@@ -275,7 +275,7 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
     const body = this.props.fallbackBody || "This feature encountered an error. Try closing and reopening.";
 
     return (
-      // P1 Fix: Add ref, role, aria-modal, and keyboard handler for a11y
+      // Add ref, role, aria-modal, and keyboard handler for a11y
       <div
         ref={this.containerRef}
         role="alertdialog"

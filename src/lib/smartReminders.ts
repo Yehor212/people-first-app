@@ -222,7 +222,7 @@ export function analyzeFocusPatterns(sessions: FocusSession[]): PatternAnalysis 
 
   completedSessions.forEach(session => {
     // Use completedAt time for analysis
-    // P0 Fix: Use parseLocalDate to avoid UTC parsing bug
+    // Use parseLocalDate to avoid UTC parsing bug
     const date = parseLocalDate(session.date);
     // Use completedAt timestamp or estimate from date
     const hour = session.completedAt

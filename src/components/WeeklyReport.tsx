@@ -81,7 +81,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
 
   useBackHandler(true, onClose);
 
-  // P2 Accessibility: Keyboard navigation for modal
+  // Keyboard navigation for modal
   const { modalRef, handleKeyDown } = useModalKeyboard({
     isOpen: true,
     onClose,

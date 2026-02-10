@@ -88,7 +88,7 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
       throw new Error('Session exchange succeeded but no session returned');
     }
 
-    // P1 Fix: Don't log email (PII) - log user ID instead
+    // Don't log email (PII) - log user ID instead
     logger.log('[Auth] PKCE session exchange successful, user ID:', data.session.user.id);
     return;
   }
@@ -114,7 +114,7 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
       throw new Error('Session setup succeeded but no session returned');
     }
 
-    // P1 Fix: Don't log email (PII) - log user ID instead
+    // Don't log email (PII) - log user ID instead
     logger.log('[Auth] Implicit flow session set, user ID:', data.session.user.id);
     return;
   }

@@ -449,11 +449,11 @@ export function Index() {
     idField: 'key'
   });
 
-  // P0 Fix: Track actual Supabase session state to prevent login loop
+  // Track actual Supabase session state to prevent login loop
   // null = unknown (checking), true = has session, false = no session
   const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
 
-  // P0 Fix: Check Supabase session on mount - restore auth state if session exists
+  // Check Supabase session on mount - restore auth state if session exists
   useEffect(() => {
     let active = true;
 
@@ -1299,7 +1299,7 @@ export function Index() {
 
   // Google Auth handlers (shown once after language selection)
   const handleGoogleAuthComplete = (userData: { name: string; email: string }) => {
-    // P1 Fix: Don't log email (PII)
+    // Don't log email (PII)
     logger.log('[Index] Google auth completed');
 
     // CRITICAL: Set synchronous bypass flag FIRST (immediate UI update)
@@ -1532,7 +1532,7 @@ export function Index() {
           const metadata = data.session.user.user_metadata;
           const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
 
-          // P1 Fix: Don't log email (PII)
+          // Don't log email (PII)
           logger.log('[Auth] OAuth callback successful');
           setAuthBypassFlag(true);
           notifyAuthComplete();
@@ -1632,7 +1632,7 @@ export function Index() {
             const metadata = data.session.user.user_metadata;
             const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
 
-            // P1 Fix: Don't log email (PII)
+            // Don't log email (PII)
             logger.log('[Auth] Pending auth processed successfully');
             setAuthBypassFlag(true);
             notifyAuthComplete();
@@ -1676,7 +1676,7 @@ export function Index() {
       syncIfNeeded(data.session?.user?.id ?? null);
     });
 
-    // P1 Fix: Correct destructuring pattern for auth subscription
+    // Correct destructuring pattern for auth subscription
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       // v1.1.1 Migration: Auto-enable cloud sync when user signs in
       if (session) {
@@ -1708,7 +1708,7 @@ export function Index() {
 
     syncName();
 
-    // P1 Fix: Correct destructuring pattern for auth subscription
+    // Correct destructuring pattern for auth subscription
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
       syncName();
     });
@@ -1719,14 +1719,14 @@ export function Index() {
     };
   }, [userNameCustom, userName, setUserName]);
 
-  // P0 Fix: Throttle session expired events (not more than once per 5 seconds)
+  // Throttle session expired events (not more than once per 5 seconds)
   const lastSessionExpiredRef = useRef<number>(0);
 
   // Session expired handler - listens for 401 errors from API/sync
-  // P0 Fix: Verify actual session state before resetting auth
+  // Verify actual session state before resetting auth
   useEffect(() => {
     const handleSessionExpired = async () => {
-      // P0 Fix: Throttle - ignore if we just handled one
+      // Throttle - ignore if we just handled one
       const now = Date.now();
       if (now - lastSessionExpiredRef.current < 5000) {
         logger.log('[Index] Session expired event throttled');
@@ -1736,7 +1736,7 @@ export function Index() {
 
       logger.warn('[Index] Session expired event received, verifying session...');
 
-      // P0 Fix: Check if session is actually expired before resetting
+      // Check if session is actually expired before resetting
       try {
         const { data } = await supabase.auth.getSession();
         if (data.session) {
@@ -1750,7 +1750,7 @@ export function Index() {
 
       // Session truly expired - reset auth state
       logger.warn('[Index] Session confirmed expired, resetting auth state');
-      setHasValidSession(false);  // P0 Fix: Must set this for AuthScreen to show
+      setHasValidSession(false);  // Must set this for AuthScreen to show
       setAuthBypassFlag(false);
       setGoogleAuthChecked(false);
     };
@@ -1944,7 +1944,7 @@ export function Index() {
   // Shown after language selection, before tutorial
   // Check both googleAuthChecked (IndexedDB) and authBypassFlag (synchronous)
   // authBypassFlag provides immediate skip while IndexedDB writes are pending
-  // P0 Fix: Also check hasValidSession - if session exists, skip to app
+  // Also check hasValidSession - if session exists, skip to app
   // hasValidSession: null = checking, true = has session, false = no session
   if (!googleAuthChecked && !authBypassFlag && hasValidSession === false) {
     return (

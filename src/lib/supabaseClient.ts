@@ -59,7 +59,7 @@ export function getSupabaseConfigStatus(): SupabaseConfigStatus {
   };
 }
 
-// P1 Fix: Emit event if Supabase is not configured so UI can show notification
+// Emit event if Supabase is not configured so UI can show notification
 const configStatus = getSupabaseConfigStatus();
 if (!configStatus.isConfigured && typeof window !== 'undefined') {
   // Log warning in development
@@ -111,12 +111,12 @@ export const supabase: SupabaseClient<Database> | null =
     : null;
 
 // Helper to check if user is authenticated
-// P1 Fix #8: Validates user object shape before returning
+// Validates user object shape before returning
 export const getCurrentUser = async () => {
   if (!supabase) return null;
   const { data: { user }, error } = await supabase.auth.getUser();
 
-  // P1 Fix #8: Log errors for debugging
+  // Log errors for debugging
   if (error) {
     if (import.meta.env.DEV) {
       console.warn('[Supabase] getUser error:', error.message);
@@ -124,7 +124,7 @@ export const getCurrentUser = async () => {
     return null;
   }
 
-  // P1 Fix #8: Validate user object shape
+  // Validate user object shape
   return validateSupabaseUser(user);
 };
 

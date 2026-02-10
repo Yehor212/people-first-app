@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
 
 /** Theme options: light, dark, or follow system preference */
 export type ThemeOption = 'light' | 'dark' | 'system';
@@ -27,10 +29,16 @@ export const getStoredTheme = (): ThemeOption => {
   return 'system'; // Default to system
 };
 
-/** Apply theme to document */
+/** Apply theme to document and update native status bar */
 export const applyTheme = (effectiveTheme: EffectiveTheme) => {
   const root = document.documentElement;
   root.classList.toggle('dark', effectiveTheme === 'dark');
+
+  if (Capacitor.isNativePlatform()) {
+    const isDark = effectiveTheme === 'dark';
+    StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});
+    StatusBar.setBackgroundColor({ color: isDark ? '#0a0a0a' : '#f5f0e8' }).catch(() => {});
+  }
 };
 
 /** Save theme preference */

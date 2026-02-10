@@ -46,7 +46,7 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (value: T 
         window.localStorage.setItem(key, JSON.stringify(storedValue));
       } catch (error) {
         logger.error(`Error setting localStorage key "${key}":`, error);
-        // P1 Fix: Emit storage error event for user notification
+        // Emit storage error event for user notification
         window.dispatchEvent(new CustomEvent('zenflow:storage-error', {
           detail: {
             type: 'localStorage_write_failed',

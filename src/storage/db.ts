@@ -129,7 +129,7 @@ export const checkDatabaseHealth = async (): Promise<boolean> => {
         // If opening fails, try to delete and recreate
         logger.warn('[DB] Database open failed, attempting recovery:', openError);
 
-        // P0 Fix: Emit event to notify UI about database recovery
+        // Emit event to notify UI about database recovery
         if (typeof window !== 'undefined') {
           window.dispatchEvent(new CustomEvent('zenflow:database-recovery-needed', {
             detail: {

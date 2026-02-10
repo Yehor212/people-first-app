@@ -85,14 +85,14 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
   const startXRef = useRef(0);
   const isSwipingRef = useRef(false);
 
-  // P0 Fix: Refs for timeout cleanup and race condition prevention
+  // Refs for timeout cleanup and race condition prevention
   const animationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const transitionLockRef = useRef(false);
 
   // Get slides array inside component to avoid TDZ issues
   const slides = getSlides();
 
-  // P0 Fix: Cleanup timeout on unmount to prevent memory leak
+  // Cleanup timeout on unmount to prevent memory leak
   useEffect(() => {
     return () => {
       if (animationTimeoutRef.current) {
@@ -168,7 +168,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
   };
 
   const handleNext = () => {
-    // P0 Fix: Double protection with both state and ref to prevent race conditions
+    // Double protection with both state and ref to prevent race conditions
     if (isAnimating || transitionLockRef.current) return;
     if (currentSlide === slides.length - 1) {
       onComplete();
@@ -178,7 +178,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
     setDirection('next');
     setIsAnimating(true);
 
-    // P0 Fix: Clear previous timeout before setting new one
+    // Clear previous timeout before setting new one
     if (animationTimeoutRef.current) {
       clearTimeout(animationTimeoutRef.current);
     }
@@ -190,7 +190,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
   };
 
   const handlePrev = () => {
-    // P0 Fix: Double protection with both state and ref
+    // Double protection with both state and ref
     if (isAnimating || transitionLockRef.current || currentSlide === 0) return;
     transitionLockRef.current = true;
     setDirection('prev');
@@ -207,7 +207,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
   };
 
   const handleDotClick = (index: number) => {
-    // P0 Fix: Double protection with both state and ref
+    // Double protection with both state and ref
     if (isAnimating || transitionLockRef.current || index === currentSlide) return;
     transitionLockRef.current = true;
     setDirection(index > currentSlide ? 'next' : 'prev');

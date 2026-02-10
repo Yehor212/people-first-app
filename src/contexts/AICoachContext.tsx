@@ -93,14 +93,14 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     innerWorld: null,
   });
 
-  // P0 Fix: Prevent concurrent API calls
+  // Prevent concurrent API calls
   const sendingRef = useRef(false);
 
-  // P1 Fix: Track AbortController and timeout for cleanup on unmount
+  // Track AbortController and timeout for cleanup on unmount
   const abortControllerRef = useRef<AbortController | null>(null);
   const timeoutIdRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // P0 Fix: Store setters in refs to avoid re-subscriptions on every render
+  // Store setters in refs to avoid re-subscriptions on every render
   const setMessagesRef = useRef(setMessages);
   const setOnboardingDataRef = useRef(setOnboardingData);
 
@@ -110,7 +110,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     setOnboardingDataRef.current = setOnboardingData;
   });
 
-  // P1 Fix: Cleanup pending requests on unmount
+  // Cleanup pending requests on unmount
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
@@ -124,7 +124,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     };
   }, []);
 
-  // P1 Fix: Clear user data on logout - use refs to avoid re-subscription
+  // Clear user data on logout - use refs to avoid re-subscription
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
@@ -171,7 +171,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
 
   // Send message to API
   const sendMessage = useCallback(async (message: string) => {
-    // P0 Fix: Prevent empty messages and concurrent requests
+    // Prevent empty messages and concurrent requests
     if (!message.trim() || sendingRef.current) return;
     sendingRef.current = true;
 
@@ -185,7 +185,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
-    // P1 Fix: AbortController for timeout - stored in refs for cleanup on unmount
+    // AbortController for timeout - stored in refs for cleanup on unmount
     abortControllerRef.current = new AbortController();
     timeoutIdRef.current = setTimeout(() => abortControllerRef.current?.abort(), API_TIMEOUT);
 
@@ -221,7 +221,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
         }
       );
 
-      // P1 Fix: Clear timeout and controller refs on success
+      // Clear timeout and controller refs on success
       if (timeoutIdRef.current) {
         clearTimeout(timeoutIdRef.current);
         timeoutIdRef.current = null;
@@ -244,7 +244,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
 
       setMessages(prev => [...prev, coachMessage]);
     } catch (error) {
-      // P1 Fix: Clear timeout and controller refs on error
+      // Clear timeout and controller refs on error
       if (timeoutIdRef.current) {
         clearTimeout(timeoutIdRef.current);
         timeoutIdRef.current = null;
@@ -256,7 +256,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
       const isAuthError = error instanceof Error && error.message === 'Not authenticated';
       logger.error('[AICoach] Send message error:', isTimeout ? 'Request timeout' : isAuthError ? 'Not authenticated' : error);
 
-      // P0 Fix: Better fallback messages for different error types
+      // Better fallback messages for different error types
       const getFallbackMessage = (): string => {
         if (isAuthError) {
           const authMessages: Record<string, string> = {
@@ -300,7 +300,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
       setMessages(prev => [...prev, fallbackMessage]);
     } finally {
       setIsLoading(false);
-      sendingRef.current = false; // P0 Fix: Reset sending flag
+      sendingRef.current = false; // Reset sending flag
     }
   }, [buildUserContext, language, currentTrigger, messages, setMessages]);
 
@@ -309,7 +309,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     setCurrentTrigger(trigger);
     setIsOpen(true);
 
-    // P0 Fix: Add initial message as COACH message, not user message
+    // Add initial message as COACH message, not user message
     // The greeting should appear from the coach, not from the user
     if (initialMessage) {
       const greetingMessage: ChatMessage = {

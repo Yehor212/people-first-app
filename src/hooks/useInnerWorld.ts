@@ -74,7 +74,7 @@ const createDefaultCompanion = (): Companion => ({
   treeStage: 1 as TreeStage,    // Start as seed
   waterLevel: 70,               // Start with some water
   lastWateredAt: Date.now(),    // Just watered
-  lastTouchTime: undefined,     // P1 Fix: Separate cooldown for tree touch
+  lastTouchTime: undefined,     // Separate cooldown for tree touch
   treeXP: 0,                    // No XP yet
 });
 
@@ -204,7 +204,7 @@ export function useInnerWorld() {
   });
 
   // Update season if needed
-  // P1 Fix: Use functional update to prevent stale closure
+  // Use functional update to prevent stale closure
   useEffect(() => {
     const currentSeason = getCurrentSeason();
     if (world.season !== currentSeason) {
@@ -213,7 +213,7 @@ export function useInnerWorld() {
   }, [world.season, setWorld]);
 
   // Check for welcome back state
-  // P1 Fix: Use functional update to prevent stale closure
+  // Use functional update to prevent stale closure
   useEffect(() => {
     if (isLoading) return;
 
@@ -241,7 +241,7 @@ export function useInnerWorld() {
   }, [isLoading, world.lastActiveDate, setWorld]);
 
   // Water decay effect - reduces water level over time
-  // P1 Fix: Use functional update to prevent stale closure
+  // Use functional update to prevent stale closure
   useEffect(() => {
     if (isLoading) return;
 
@@ -300,7 +300,7 @@ export function useInnerWorld() {
   }, [isLoading, world]);
 
   // Plant a new plant from an activity
-  // P0 Fix: Use functional update to prevent race conditions with stale world state
+  // Use functional update to prevent race conditions with stale world state
   const plantSeed = useCallback((
     sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude',
     mood?: MoodType
@@ -377,7 +377,7 @@ export function useInnerWorld() {
   }, [setWorld]);
 
   // Water plants (called when doing activities)
-  // P0 Fix: Use functional update to prevent race conditions
+  // Use functional update to prevent race conditions
   const waterPlants = useCallback((sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude') => {
     const now = Date.now();
     setWorld(prev => ({
@@ -398,7 +398,7 @@ export function useInnerWorld() {
   }, [setWorld]);
 
   // Attract a creature (from gratitude)
-  // P0 Fix: Use functional update to prevent race conditions
+  // Use functional update to prevent race conditions
   const attractCreature = useCallback(() => {
     const creatureTypes: CreatureType[] = ['butterfly', 'bird', 'firefly', 'spirit'];
     const type = creatureTypes[Math.floor(Math.random() * creatureTypes.length)];
@@ -437,7 +437,7 @@ export function useInnerWorld() {
   }, [setWorld]);
 
   // Feed creatures (increases happiness)
-  // P0 Fix: Use functional update to prevent race conditions
+  // Use functional update to prevent race conditions
   const feedCreatures = useCallback(() => {
     setWorld(prev => ({
       ...prev,
@@ -453,7 +453,7 @@ export function useInnerWorld() {
   }, [setWorld]);
 
   // Change companion
-  // P0 Fix: Use functional update to prevent race conditions
+  // Use functional update to prevent race conditions
   const setCompanionType = useCallback((type: CompanionType) => {
     setWorld(prev => ({
       ...prev,
@@ -465,7 +465,7 @@ export function useInnerWorld() {
   }, [setWorld]);
 
   // Rename companion
-  // P0 Fix: Use functional update to prevent race conditions
+  // Use functional update to prevent race conditions
   const renameCompanion = useCallback((name: string) => {
     setWorld(prev => ({
       ...prev,
@@ -477,7 +477,7 @@ export function useInnerWorld() {
   }, [setWorld]);
 
   // Clear welcome back state
-  // P0 Fix: Use functional update to prevent race conditions
+  // Use functional update to prevent race conditions
   const clearWelcomeBack = useCallback(() => {
     setWorld(prev => ({
       ...prev,
@@ -494,7 +494,7 @@ export function useInnerWorld() {
   // ============================================
 
   // Earn treats from activities
-  // P0 Fix: Use functional update to prevent race conditions
+  // Use functional update to prevent race conditions
   const earnTreats = useCallback((
     source: TreatSource,
     baseAmount: number,
@@ -538,8 +538,8 @@ export function useInnerWorld() {
   }, [setWorld]);
 
   // Spend treats (e.g., to feed companion)
-  // P0 Fix: Use functional update to prevent race conditions
-  // P1 Fix: Removed world.treats?.balance from deps - functional update handles this
+  // Use functional update to prevent race conditions
+  // Removed world.treats?.balance from deps - functional update handles this
   const spendTreats = useCallback((amount: number, purpose: string): boolean => {
     let success = false;
     const transactionId = generateId();
@@ -582,7 +582,7 @@ export function useInnerWorld() {
   // ============================================
 
   // Pet the companion - FREE action, small XP gain, shows love
-  // P1 Fix: Use functional update to prevent stale closure race conditions
+  // Use functional update to prevent stale closure race conditions
   const petCompanion = useCallback(() => {
     const now = Date.now();
     let result = { xpGain: 0, canPetAgain: false, leveledUp: false, newLevel: 0 };
@@ -630,7 +630,7 @@ export function useInnerWorld() {
   }, [setWorld]);
 
   // Feed the companion - COSTS TREATS, increases fullness and XP
-  // P1 Fix: Use functional update to prevent stale closure race conditions
+  // Use functional update to prevent stale closure race conditions
   const feedCompanion = useCallback(() => {
     const now = Date.now();
     const treatCost = COMPANION_COSTS.feed.treatCost;
@@ -745,7 +745,7 @@ export function useInnerWorld() {
   };
 
   // Water the tree - COSTS TREATS, increases water level and XP
-  // P1 Fix: Use functional update to prevent stale closure race conditions
+  // Use functional update to prevent stale closure race conditions
   const waterTree = useCallback(() => {
     const now = Date.now();
     const treatCost = TREE_COSTS.water.treatCost;
@@ -836,7 +836,7 @@ export function useInnerWorld() {
   }, [setWorld]);
 
   // Touch the tree - FREE action, small XP gain
-  // P1 Fix: Use functional update to prevent stale closure race conditions
+  // Use functional update to prevent stale closure race conditions
   const touchTree = useCallback(() => {
     const now = Date.now();
     let result = { xpGain: 0, canTouchAgain: false, stageUp: false, newStage: 1, newTreeXP: 0 };
@@ -879,7 +879,7 @@ export function useInnerWorld() {
   }, [setWorld]);
 
   // Talk to companion - get advice and increase wisdom
-  // P1 Fix: Use functional update to prevent stale closure race conditions
+  // Use functional update to prevent stale closure race conditions
   const talkToCompanion = useCallback(() => {
     const now = Date.now();
     const wisdomGain = 2;
@@ -907,7 +907,7 @@ export function useInnerWorld() {
   }, [setWorld]);
 
   // Update companion stats based on user activity (call this from Index.tsx)
-  // P1 Fix: Use functional update to prevent stale closure race conditions
+  // Use functional update to prevent stale closure race conditions
   const updateCompanionFromActivity = useCallback((
     activityType: 'mood' | 'habit' | 'focus' | 'gratitude',
     moodValue?: MoodType

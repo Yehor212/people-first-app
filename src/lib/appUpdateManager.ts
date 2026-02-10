@@ -213,7 +213,7 @@ export async function checkForAppUpdate(): Promise<UpdateState> {
     };
   }
 
-  // P1 Fix: Check network before attempting
+  // Check network before attempting
   if (!navigator.onLine) {
     logger.warn('[AppUpdate] Device is offline, skipping update check');
     return {
@@ -266,7 +266,7 @@ export async function checkForAppUpdate(): Promise<UpdateState> {
 async function checkForAppUpdateFallback(): Promise<UpdateState> {
   let remoteConfig: RemoteVersionConfig | null = null;
 
-  // P1 Fix: Retry fallback check with 2 attempts (less aggressive than primary)
+  // Retry fallback check with 2 attempts (less aggressive than primary)
   try {
     remoteConfig = await withRetry(
       () => checkVersionFromRemote().then(config => {

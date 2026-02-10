@@ -205,7 +205,7 @@ export function setupPushListeners(): void {
   if (!isPushAvailable()) return;
 
   // Token received
-  // P1 Security Fix: Don't log token values, even partially
+  // Don't log token values, even partially
   PushNotifications.addListener('registration', async (token: Token) => {
     logger.log('[Push] Token received (length:', token.value.length, ')');
     await savePushToken(token.value);

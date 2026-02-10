@@ -30,7 +30,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
   const [claiming, setClaiming] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  // P0 Fix: Track mounted state and timeout to prevent memory leaks
+  // Track mounted state and timeout to prevent memory leaks
   const mountedRef = useRef(true);
   const claimTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -107,7 +107,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
     }));
     localStorage.setItem(ADHD_STORAGE_KEYS.LAST_LOGIN, new Date().toDateString());
 
-    // P0 Fix: Store timeout ref and check mounted before state update
+    // Store timeout ref and check mounted before state update
     claimTimeoutRef.current = setTimeout(() => {
       if (!mountedRef.current) return;
       onClaimReward(reward.reward, bonusXp);

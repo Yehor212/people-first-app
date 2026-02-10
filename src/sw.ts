@@ -95,13 +95,13 @@ registerRoute(
 // Error was: "Failed to execute 'clone' on 'Request': Request body is already used"
 
 // Handle navigation requests
-// P0 Fix: Reduced TTL from 24h to 1h to prevent stale index.html issues
+// Reduced TTL from 24h to 1h to prevent stale index.html issues
 // Added networkTimeoutSeconds for faster fallback to cache
 registerRoute(
   ({ request }) => request.mode === 'navigate',
   new NetworkFirst({
     cacheName: 'pages',
-    networkTimeoutSeconds: 3, // P0 Fix: Fast fallback to cache
+    networkTimeoutSeconds: 3, // Fast fallback to cache
     plugins: [
       new ExpirationPlugin({
         maxEntries: 10,
@@ -157,7 +157,7 @@ self.addEventListener('message', (event) => {
   }
 
   if (event.data?.type === 'CHECK_VERSION') {
-    // P0 Fix: Clear navigation cache when app requests version check
+    // Clear navigation cache when app requests version check
     // This ensures fresh index.html is fetched
     console.log('[SW] Version check requested - clearing navigation cache');
     event.waitUntil(

@@ -12,6 +12,7 @@ import { cleanupShareCache } from "./lib/shareCards";
 import { initA11y } from "./lib/a11y";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
+import { SplashScreen } from "@capacitor/splash-screen";
 import {
   checkAppVersion,
   forceHardReload,
@@ -32,7 +33,7 @@ initSentry();
 // This must be before React renders to catch initial chunk load errors
 setupChunkErrorHandler();
 
-// P1 Fix: Initialize accessibility features (aria-live regions for screen readers)
+// Initialize accessibility features (aria-live regions for screen readers)
 initA11y();
 
 // Global error handlers for unhandled exceptions and promise rejections
@@ -133,7 +134,7 @@ async function handleAppResume(): Promise<void> {
     logger.log('[Main] Processing pending offline queue on resume');
     void offlineQueue.processQueue();
   }
-  // P1 Fix #12: Clean up stale share cache files (24+ hours old)
+  // Clean up stale share cache files (24+ hours old)
   void cleanupShareCache();
 
   // Reset flag after short delay to allow next resume event
@@ -181,6 +182,11 @@ preloadAmbientSounds();
 // Initialize Android back button handler (double-tap to exit + modal handling)
 void initAndroidBackHandler();
 
+// Hide splash screen after app initialization (native only)
+if (Capacitor.isNativePlatform()) {
+  SplashScreen.hide().catch(() => {});
+}
+
 // Initialize deep link handler for challenge invites and other app URLs
 setupDeepLinks();
 
@@ -195,7 +201,7 @@ if (isCapacitor) {
       navigator.serviceWorker.getRegistrations().then((registrations) => {
         registrations.forEach((registration) => registration.unregister());
       }).catch((err) => {
-        // LOW priority fix: Log SW unregister errors in dev mode
+        // Log SW unregister errors in dev mode
         if (import.meta.env.DEV) {
           console.warn('[main] SW unregister failed:', err);
         }
@@ -210,7 +216,7 @@ if (isCapacitor) {
           }
         });
       }).catch((err) => {
-        // LOW priority fix: Log cache clear errors in dev mode
+        // Log cache clear errors in dev mode
         if (import.meta.env.DEV) {
           console.warn('[main] Cache clear failed:', err);
         }
@@ -231,7 +237,7 @@ if (isCapacitor) {
  * Priority checks (no throttle): OAuth returns, chunk error reloads.
  */
 async function initializeApp(): Promise<boolean> {
-  // P0 Fix: Check database health early to detect IndexedDB issues
+  // Check database health early to detect IndexedDB issues
   // This runs on every app start to catch database corruption/deletion
   try {
     logger.log('[Main] Checking database health...');

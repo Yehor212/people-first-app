@@ -185,7 +185,7 @@ export async function unlockAudio(): Promise<void> {
       audioUnlocked = true;
       logger.log('[AmbientSounds] Audio fully unlocked for mobile browser');
 
-      // P0 Fix: Sentry breadcrumb for unlock success
+      // Sentry breadcrumb for unlock success
       Sentry.addBreadcrumb({
         category: 'audio',
         message: 'Audio unlocked successfully',
@@ -195,7 +195,7 @@ export async function unlockAudio(): Promise<void> {
       logger.warn('[AmbientSounds] Audio unlock had issues:', e);
       // Don't mark as unlocked on failure — allow retry on next user gesture
 
-      // P0 Fix: Sentry breadcrumb for unlock issues
+      // Sentry breadcrumb for unlock issues
       Sentry.addBreadcrumb({
         category: 'audio',
         message: 'Audio unlock had issues',
@@ -310,7 +310,7 @@ export interface SoundInfo {
   nameRu: string;
   nameEn: string;
   file: string;
-  fallbackFile?: string; // P0 Fix: MP3 fallback for WAV files
+  fallbackFile?: string; // MP3 fallback for WAV files
   description: string;
 }
 
@@ -404,7 +404,7 @@ export class AmbientSoundGenerator {
     abortController: AbortController;
   } | null = null;
 
-  // P0 Fix: Status tracking
+  // Status tracking
   private status: AudioStatus = {
     state: 'idle',
     soundId: null,
@@ -413,7 +413,7 @@ export class AmbientSoundGenerator {
   private statusListeners: Set<AudioStatusListener> = new Set();
   private usedFallback = false; // Track if fallback was used (for diagnostics)
 
-  // P0 Fix: Max retry attempts for resume to prevent infinite loops
+  // Max retry attempts for resume to prevent infinite loops
   private resumeRetryCount = 0;
   private static readonly MAX_RESUME_RETRIES = 3;
 
@@ -442,7 +442,7 @@ export class AmbientSoundGenerator {
     });
     logger.log('[AmbientSounds] Status updated:', this.status.state, this.status.soundId);
 
-    // P0 Fix: Sentry breadcrumb for state changes
+    // Sentry breadcrumb for state changes
     if (this.status.state !== prevState) {
       Sentry.addBreadcrumb({
         category: 'audio',
@@ -516,7 +516,7 @@ export class AmbientSoundGenerator {
       this.pendingPlayback = null;
     }
 
-    // P0 Fix: Set loading status
+    // Set loading status
     this.setStatus({ state: 'loading', soundId, error: undefined });
 
     // Wait if another transition is in progress (mutex)
@@ -545,7 +545,7 @@ export class AmbientSoundGenerator {
         return;
       }
 
-      // P0 Fix: Check if audio is blocked by browser policy
+      // Check if audio is blocked by browser policy
       if (!audioUnlocked) {
         this.setStatus({
           state: 'blocked',
@@ -578,12 +578,12 @@ export class AmbientSoundGenerator {
       this.currentSoundId = soundId;
       this.isPlaying = true;
 
-      // P0 Fix: Set playing status
+      // Set playing status
       this.setStatus({ state: 'playing', soundId, isUnlocked: true, error: undefined });
 
       logger.log(`[AmbientSounds] Playing: ${sound.nameEn}`);
     } catch (error) {
-      // P0 Fix: Use isAbortError helper to catch all abort variants (including iOS code 20)
+      // Use isAbortError helper to catch all abort variants (including iOS code 20)
       if (isAbortError(error)) {
         logger.debug('[AmbientSounds] Playback cancelled (abort)');
         this.setStatus({ state: 'idle', soundId: null });
@@ -592,7 +592,7 @@ export class AmbientSoundGenerator {
         this.isPlaying = false;
         this.currentSoundId = null;
 
-        // P0 Fix: Set error status with helpful message
+        // Set error status with helpful message
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         const isNetworkError = errorMessage.includes('load') || errorMessage.includes('network');
         this.setStatus({
@@ -824,7 +824,7 @@ export class AmbientSoundGenerator {
     if (signal.aborted) throw new DOMException('Aborted', 'AbortError');
     if (playbackId !== this.playbackId) throw new DOMException('Superseded', 'AbortError');
 
-    // P0 Fix: Try primary URL, then fallback if it fails
+    // Try primary URL, then fallback if it fails
     let loadError: Error | null = null;
     const urlsToTry = [url];
     if (fallbackUrl) {
@@ -850,7 +850,7 @@ export class AmbientSoundGenerator {
       } catch (error) {
         loadError = error instanceof Error ? error : new Error(String(error));
 
-        // P0 Fix: If it's an abort error (including iOS code 20), don't try fallback
+        // If it's an abort error (including iOS code 20), don't try fallback
         if (isAbortError(error)) {
           throw error;
         }
@@ -882,7 +882,7 @@ export class AmbientSoundGenerator {
 
     logger.log('[AmbientSounds] Reusing blessed audio element, volume:', this.volume, 'url:', url);
 
-    // P0 Fix: Determine timeout based on file type (WAV files are larger, need more time)
+    // Determine timeout based on file type (WAV files are larger, need more time)
     const isWavFile = url.toLowerCase().endsWith('.wav');
     const loadTimeout = isWavFile ? 30000 : 15000; // 30s for WAV, 15s for MP3
 
@@ -1004,7 +1004,7 @@ export class AmbientSoundGenerator {
     this.playbackId++;
     this.stopImmediate();
 
-    // P0 Fix: Update status
+    // Update status
     this.setStatus({ state: 'idle', soundId: null, error: undefined });
   }
 
@@ -1022,7 +1022,7 @@ export class AmbientSoundGenerator {
   pause(): void {
     if (this.audioElement) {
       this.audioElement.pause();
-      // P0 Fix: Update status
+      // Update status
       this.setStatus({ state: 'paused' });
     }
   }
@@ -1030,7 +1030,7 @@ export class AmbientSoundGenerator {
   async resume(): Promise<void> {
     if (!this.audioElement || !this.isPlaying) return;
 
-    // P0 Fix: Check retry limit before attempting
+    // Check retry limit before attempting
     if (this.resumeRetryCount >= AmbientSoundGenerator.MAX_RESUME_RETRIES) {
       logger.warn('[AmbientSounds] Max resume retries reached, giving up');
       this.setStatus({
@@ -1045,7 +1045,7 @@ export class AmbientSoundGenerator {
       return;
     }
 
-    // P0 Fix: Set loading while resuming
+    // Set loading while resuming
     this.setStatus({ state: 'loading' });
 
     try {
@@ -1063,7 +1063,7 @@ export class AmbientSoundGenerator {
       // Try to play with retry for iOS
       try {
         await this.audioElement.play();
-        // P0 Fix: Update status on success and reset retry counter
+        // Update status on success and reset retry counter
         this.setStatus({ state: 'playing', error: undefined });
         this.resumeRetryCount = 0;
       } catch (firstError) {
@@ -1074,13 +1074,13 @@ export class AmbientSoundGenerator {
         // Check again after delay
         if (this.audioElement) {
           await this.audioElement.play();
-          // P0 Fix: Update status on success and reset retry counter
+          // Update status on success and reset retry counter
           this.setStatus({ state: 'playing', error: undefined });
           this.resumeRetryCount = 0;
         }
       }
     } catch (err) {
-      // P0 Fix: Don't log abort errors as failures
+      // Don't log abort errors as failures
       if (isAbortError(err)) {
         logger.debug('[AmbientSounds] Resume cancelled (abort)');
         this.setStatus({ state: 'paused' });
@@ -1091,7 +1091,7 @@ export class AmbientSoundGenerator {
       this.resumeRetryCount++;
       logger.error(`[AmbientSounds] Failed to resume audio (attempt ${this.resumeRetryCount}):`, err);
 
-      // P0 Fix: Update status on error
+      // Update status on error
       this.setStatus({
         state: 'error',
         error: {
@@ -1182,7 +1182,7 @@ export async function checkSoundFilesAccessibility(): Promise<Array<{
           error: response.ok ? undefined : `HTTP ${response.status}`,
         };
       } catch (e) {
-        // P0 Fix: Handle abort errors gracefully
+        // Handle abort errors gracefully
         if (isAbortError(e)) {
           return {
             id: sound.id,

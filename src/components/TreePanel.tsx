@@ -119,7 +119,7 @@ export function TreePanel({
   const [isAnimating, setIsAnimating] = useState(false);
   const [isWatering, setIsWatering] = useState(false);
 
-  // P1 Fix: Track mounted state and timeouts to prevent memory leaks
+  // Track mounted state and timeouts to prevent memory leaks
   const mountedRef = useRef(true);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -163,7 +163,7 @@ export function TreePanel({
     const reaction = reactions[Math.floor(Math.random() * reactions.length)];
     setShowReaction(reaction + ` +${result.xpGain} XP`);
 
-    // P1 Fix: Store timeout ref and check mounted before updating state
+    // Store timeout ref and check mounted before updating state
     // Capture current values to avoid stale closure
     const capturedWaterLevel = waterLevel;
     const capturedTreeStage = treeStage;
@@ -209,7 +209,7 @@ export function TreePanel({
       setShowReaction(reaction + ` +${result.xpGain} XP`);
     }
 
-    // P1 Fix: Store timeout ref and check mounted before updating state
+    // Store timeout ref and check mounted before updating state
     // Capture current values to avoid stale closure
     const capturedWaterLevel = waterLevel;
     const capturedTreeStage = treeStage;

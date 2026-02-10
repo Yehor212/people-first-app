@@ -55,11 +55,9 @@ interface SpotifyApiPlaylistItem {
 const STORAGE_KEY = 'zenflow_spotify_tokens';
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || '';
 
-// P0 Security Fix: Whitelist allowed redirect URIs to prevent OAuth hijacking
+// Whitelist allowed redirect URIs to prevent OAuth hijacking
 const ALLOWED_ORIGINS = [
   'https://yehor212.github.io',
-  'http://localhost:5173',
-  'http://localhost:4173',
   'capacitor://localhost',
 ] as const;
 
@@ -75,7 +73,7 @@ function getSecureRedirectUri(): string {
     return `${currentOrigin}/spotify-callback`;
   }
 
-  // P1 Security Fix: Fallback to production URL without logging the invalid origin
+  // Fallback to production URL without logging the invalid origin
   // (logging could reveal the whitelist to attackers)
   return 'https://yehor212.github.io/people-first-app/spotify-callback';
 }

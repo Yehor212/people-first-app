@@ -217,7 +217,7 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [moodDrivenUIEnabled, setMoodDrivenUIEnabled] = useState(() => shouldShowMoodEffects());
 
-  // P1 Fix: Store timeout refs for cleanup
+  // Store timeout refs for cleanup
   const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const endTransitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -238,7 +238,7 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Smooth transition between emotions
-  // P1 Fix: Use refs and cleanup previous timeouts to prevent race conditions
+  // Use refs and cleanup previous timeouts to prevent race conditions
   // IMPORTANT: This must be defined BEFORE setEmotionFromEntries and setEmotionDirectly
   const transitionToEmotion = useCallback((newEmotion: PrimaryEmotion | 'neutral') => {
     // Clear any pending timeouts
@@ -264,7 +264,7 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Update emotion from mood entries (looks at today's latest entry)
-  // P1 Fix: Wrap in useCallback for stable reference
+  // Wrap in useCallback for stable reference
   const setEmotionFromEntries = useCallback((entries: MoodEntry[]) => {
     const today = getToday();
     const todayEntries = entries.filter(e => e.date === today);
@@ -283,12 +283,12 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
   }, [transitionToEmotion]);
 
   // Set emotion directly (for previews, testing)
-  // P1 Fix: Wrap in useCallback for stable reference
+  // Wrap in useCallback for stable reference
   const setEmotionDirectly = useCallback((emotion: PrimaryEmotion | 'neutral') => {
     transitionToEmotion(emotion);
   }, [transitionToEmotion]);
 
-  // P1 Fix: Cleanup timeouts on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (transitionTimeoutRef.current) {
@@ -301,7 +301,7 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Get support message for current emotion
-  // P1 Fix: Wrap in useCallback for stable reference
+  // Wrap in useCallback for stable reference
   const getSupportMessage = useCallback((lang: string): string | null => {
     if (!currentTheme.supportMessage) return null;
     const messages = emotionSupportMessages[currentTheme.supportMessage];
@@ -361,7 +361,7 @@ export function EmotionThemeProvider({ children }: { children: ReactNode }) {
 
   }, [currentTheme, currentEmotion, moodDrivenUIEnabled]);
 
-  // P1 Fix: Memoize provider value to prevent unnecessary re-renders
+  // Memoize provider value to prevent unnecessary re-renders
   const value = useMemo(() => ({
     currentTheme,
     currentEmotion,

@@ -46,7 +46,7 @@ import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Capacitor } from '@capacitor/core';
 import { logger } from '@/lib/logger';
 
-// P1 Fix: Cache cleanup constants
+// Cache cleanup constants
 const CACHE_FILE_PREFIX = 'zenflow-share-';
 const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 const DELETE_RETRY_DELAYS = [100, 500, 1000]; // Retry delays in ms
@@ -831,7 +831,7 @@ export async function shareImage(
         dialogTitle: title,
       });
 
-      // P1 Fix: Clean up cached file after sharing with retry
+      // Clean up cached file after sharing with retry
       await deleteFileWithRetry(fileName);
 
       return true;

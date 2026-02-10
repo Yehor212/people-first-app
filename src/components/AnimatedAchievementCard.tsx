@@ -24,7 +24,7 @@ export function AnimatedAchievementCard({
   const [hasEntered, setHasEntered] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  // P1 Fix: Track animation end timeout for proper cleanup
+  // Track animation end timeout for proper cleanup
   const animationEndTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -49,14 +49,14 @@ export function AnimatedAchievementCard({
           if (currentStep >= steps) {
             if (intervalRef.current) clearInterval(intervalRef.current);
             setDisplayValue(value);
-            // P1 Fix: Store timeout ref for cleanup on unmount
+            // Store timeout ref for cleanup on unmount
             animationEndTimeoutRef.current = setTimeout(() => setIsAnimating(false), 500);
           }
         }, stepDuration);
       }
     }, delay);
 
-    // P1 Fix: Cleanup all timers on unmount or deps change
+    // Cleanup all timers on unmount or deps change
     return () => {
       clearTimeout(timer);
       if (intervalRef.current) clearInterval(intervalRef.current);

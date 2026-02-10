@@ -71,10 +71,10 @@ function SupportBanner() {
 
   // Color based on emotion
   const emotionColors: Record<string, { bg: string; icon: string }> = {
-    sadness: { bg: 'bg-indigo-100 dark:bg-indigo-900/30', icon: 'text-indigo-500' },
-    anger: { bg: 'bg-blue-100 dark:bg-blue-900/30', icon: 'text-blue-500' }, // Calming blue for anger
-    fear: { bg: 'bg-teal-100 dark:bg-teal-900/30', icon: 'text-teal-500' },
-    disgust: { bg: 'bg-purple-100 dark:bg-purple-900/30', icon: 'text-purple-500' },
+    sadness: { bg: 'bg-indigo-100 dark:bg-indigo-900/30', icon: 'text-indigo-600 dark:text-indigo-400' },
+    anger: { bg: 'bg-blue-100 dark:bg-blue-900/30', icon: 'text-blue-600 dark:text-blue-400' },
+    fear: { bg: 'bg-teal-100 dark:bg-teal-900/30', icon: 'text-teal-600 dark:text-teal-400' },
+    disgust: { bg: 'bg-purple-100 dark:bg-purple-900/30', icon: 'text-purple-600 dark:text-purple-400' },
   };
 
   const colors = emotionColors[currentEmotion] || emotionColors.sadness;
@@ -125,8 +125,8 @@ function BreathingSuggestion() {
   if (!showSuggestion) return null;
 
   const bgColor = currentEmotion === 'anger'
-    ? 'bg-blue-200/20 dark:bg-blue-800/10'  // Calming blue for anger
-    : 'bg-indigo-200/20 dark:bg-indigo-800/10';
+    ? 'bg-blue-300/30 dark:bg-blue-800/10'
+    : 'bg-indigo-300/30 dark:bg-indigo-800/10';
 
   return (
     <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">

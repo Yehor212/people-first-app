@@ -49,7 +49,7 @@ export function StorageErrorBanner() {
   const [isDismissed, setIsDismissed] = useState(false);
   const hasCheckedPrivateMode = useRef(false);
 
-  // P1 Fix #10: Check for Safari Private Mode on mount
+  // Check for Safari Private Mode on mount
   useEffect(() => {
     if (hasCheckedPrivateMode.current || isDismissed) return;
     hasCheckedPrivateMode.current = true;
@@ -71,7 +71,7 @@ export function StorageErrorBanner() {
       setIsVisible(true);
     };
 
-    // P0 Fix: Also listen for offline queue full events
+    // Also listen for offline queue full events
     const handleQueueFull = (event: CustomEvent<QueueFullEvent>) => {
       if (isDismissed) return;
 

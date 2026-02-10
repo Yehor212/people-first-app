@@ -20,7 +20,7 @@ import {
   safeValidate,
 } from './validation';
 
-// P1 Fix: Use Zod schemas for robust payload validation
+// Use Zod schemas for robust payload validation
 // This validates field types, value constraints, and prevents corrupted data from syncing
 
 function isValidMoodEntry(payload: unknown): payload is MoodEntry {
@@ -55,7 +55,7 @@ export function initializeOfflineQueueHandlers(): void {
   logger.log('[OfflineQueue] Initializing handlers...');
 
   // Mood handlers
-  // P1 Fix: Validate payload before processing
+  // Validate payload before processing
   offlineQueue.registerHandler('CREATE_MOOD', async (action: OfflineAction) => {
     if (!isValidMoodEntry(action.payload)) {
       logger.warn('[OfflineQueue] Invalid mood payload, skipping:', action.entityId);
@@ -77,7 +77,7 @@ export function initializeOfflineQueueHandlers(): void {
   });
 
   // Habit handlers
-  // P1 Fix: Validate payload before processing
+  // Validate payload before processing
   offlineQueue.registerHandler('CREATE_HABIT', async (action: OfflineAction) => {
     if (!isValidHabit(action.payload)) {
       logger.warn('[OfflineQueue] Invalid habit payload, skipping:', action.entityId);
@@ -107,7 +107,7 @@ export function initializeOfflineQueueHandlers(): void {
   });
 
   // Focus session handler
-  // P1 Fix: Validate payload before processing
+  // Validate payload before processing
   offlineQueue.registerHandler('CREATE_FOCUS_SESSION', async (action: OfflineAction) => {
     if (!isValidFocusSession(action.payload)) {
       logger.warn('[OfflineQueue] Invalid focus session payload, skipping:', action.entityId);
@@ -117,7 +117,7 @@ export function initializeOfflineQueueHandlers(): void {
   });
 
   // Gratitude handlers
-  // P1 Fix: Validate payload before processing
+  // Validate payload before processing
   offlineQueue.registerHandler('CREATE_GRATITUDE', async (action: OfflineAction) => {
     if (!isValidGratitudeEntry(action.payload)) {
       logger.warn('[OfflineQueue] Invalid gratitude payload, skipping:', action.entityId);

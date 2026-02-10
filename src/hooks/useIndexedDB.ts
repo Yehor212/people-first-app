@@ -11,7 +11,7 @@ export const triggerDataRefresh = () => {
   refreshListeners.forEach(listener => listener());
 };
 
-// P0 Fix: Timeout for IndexedDB operations (10 seconds, increased from 5s for slow devices)
+// Timeout for IndexedDB operations (10 seconds, increased from 5s for slow devices)
 const INDEXEDDB_TIMEOUT_MS = 10000;
 
 // Helper to add timeout to promises
@@ -39,16 +39,16 @@ let globalInitLock = false;
 const initQueue: Array<() => void> = [];
 let lockTimeout: ReturnType<typeof setTimeout> | null = null;
 
-// P0 Fix: Reduced timeout and added queue overflow protection
+// Reduced timeout and added queue overflow protection
 const LOCK_TIMEOUT_MS = 15000; // Reduced from 30s to 15s
 const MAX_QUEUE_SIZE = 50; // Prevent unbounded queue growth
 
-// P1 Fix: Track if we're in the middle of a flush to prevent re-entry
+// Track if we're in the middle of a flush to prevent re-entry
 let isFlushingQueue = false;
 
 const acquireInitLock = async (): Promise<void> => {
   return new Promise((resolve) => {
-    // P1 Fix: Prevent queue overflow with atomic check
+    // Prevent queue overflow with atomic check
     // Emit event so UI can warn user about potential delays
     if (initQueue.length >= MAX_QUEUE_SIZE && !isFlushingQueue) {
       isFlushingQueue = true;
@@ -67,7 +67,7 @@ const acquireInitLock = async (): Promise<void> => {
         lockTimeout = null;
       }
 
-      // P0 Fix: Resolve all waiting callbacks sequentially with error handling
+      // Resolve all waiting callbacks sequentially with error handling
       // This prevents all callbacks from racing simultaneously
       const flushQueue = async () => {
         try {
@@ -91,7 +91,7 @@ const acquireInitLock = async (): Promise<void> => {
           isFlushingQueue = false;
         }
       };
-      // P0 Fix: Track flush promise with proper error handling (no fire-and-forget)
+      // Track flush promise with proper error handling (no fire-and-forget)
       flushQueue().catch(err => {
         logger.error('[useIndexedDB] Unhandled flush error:', err);
       });
@@ -99,7 +99,7 @@ const acquireInitLock = async (): Promise<void> => {
 
     if (!globalInitLock) {
       globalInitLock = true;
-      // P0 Fix: Auto-release lock after 15 seconds to prevent deadlock
+      // Auto-release lock after 15 seconds to prevent deadlock
       lockTimeout = setTimeout(() => {
         logger.warn(`[useIndexedDB] Lock timeout (${LOCK_TIMEOUT_MS}ms) - force releasing`);
         releaseInitLock();
@@ -149,7 +149,7 @@ export function useIndexedDB<T>({
   const initializedRef = useRef(false);
   // Store initialValue in ref to avoid dependency issues (it's only used on first load)
   const initialValueRef = useRef(initialValue);
-  // P0 Fix: Track mounted state to prevent memory leaks
+  // Track mounted state to prevent memory leaks
   const isMountedRef = useRef(true);
 
   // Load data function (used both on init and refresh)
@@ -196,7 +196,7 @@ export function useIndexedDB<T>({
                   // Don't merge primitives or arrays - just use the value directly
                   setData(parsed as T);
                   table.put({ key: localStorageKey, value: parsed }).catch((err) => {
-                    // LOW priority fix: Log migration errors
+                    // Log migration errors
                     logger.warn('[useIndexedDB] Migration put failed:', err);
                   });
                 } else {
@@ -205,7 +205,7 @@ export function useIndexedDB<T>({
                   setData(merged as T);
                   // Migrate to IndexedDB (don't wait, fire and forget)
                   table.put({ key: localStorageKey, value: merged }).catch((err) => {
-                    // LOW priority fix: Log migration errors
+                    // Log migration errors
                     logger.warn('[useIndexedDB] Migration merge put failed:', err);
                   });
                 }
@@ -238,7 +238,7 @@ export function useIndexedDB<T>({
                   setData(parsed as T);
                   // Migrate to IndexedDB (don't wait, fire and forget)
                   table.bulkPut(parsed).catch((err) => {
-                    // LOW priority fix: Log migration errors
+                    // Log migration errors
                     logger.warn('[useIndexedDB] Migration bulkPut failed:', err);
                   });
                 }
@@ -293,7 +293,7 @@ export function useIndexedDB<T>({
     loadData(true);
   }, [loadData]);
 
-  // P0 Fix: Track mounted state to prevent memory leaks and state updates after unmount
+  // Track mounted state to prevent memory leaks and state updates after unmount
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
@@ -304,7 +304,7 @@ export function useIndexedDB<T>({
   // Subscribe to refresh events
   useEffect(() => {
     const handleRefresh = () => {
-      // P0 Fix: Only update state if component is still mounted
+      // Only update state if component is still mounted
       if (isMountedRef.current) {
         setRefreshCounter(c => c + 1);
       }
@@ -354,7 +354,7 @@ export function useIndexedDB<T>({
           } catch (storageError) {
             // localStorage also not available - data only in React state
             logger.warn('localStorage fallback also failed:', storageError);
-            // P1 Fix: Emit storage error event for user notification
+            // Emit storage error event for user notification
             window.dispatchEvent(new CustomEvent('zenflow:storage-error', {
               detail: {
                 type: 'write_failed',

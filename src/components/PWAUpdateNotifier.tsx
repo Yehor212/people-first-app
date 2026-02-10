@@ -15,7 +15,7 @@ export function PWAUpdateNotifier() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const hasShownToast = useRef(false);
-  // P0 Fix: Store interval ID in ref for proper cleanup
+  // Store interval ID in ref for proper cleanup
   const updateIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {

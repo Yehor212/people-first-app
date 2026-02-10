@@ -14,7 +14,7 @@
  * - P1 Fix: Background Sync API support for sync after browser close
  */
 
-// P1 Fix: Type declarations for Background Sync API
+// Type declarations for Background Sync API
 declare global {
   interface SyncManager {
     register(tag: string): Promise<void>;
@@ -84,7 +84,7 @@ class OfflineQueue {
   private syncHandlers: Map<OfflineActionType, (action: OfflineAction) => Promise<void>> = new Map();
   private processingPromise: Promise<void> | null = null;
 
-  // P0 Fix: Promise to track initialization - operations must await this before modifying queue
+  // Promise to track initialization - operations must await this before modifying queue
   private initPromise: Promise<void> | null = null;
 
   // P0-2 Fix: Mutex for serializing enqueue operations to prevent race conditions
@@ -106,7 +106,7 @@ class OfflineQueue {
       window.addEventListener('online', this.boundHandleOnline);
       window.addEventListener('offline', this.boundHandleOffline);
 
-      // P1 Fix: Listen for Background Sync messages from Service Worker
+      // Listen for Background Sync messages from Service Worker
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener('message', this.boundHandleSWMessage);
       }
@@ -132,7 +132,7 @@ class OfflineQueue {
       window.removeEventListener('online', this.boundHandleOnline);
       window.removeEventListener('offline', this.boundHandleOffline);
 
-      // P1 Fix: Remove SW message listener to prevent memory leak
+      // Remove SW message listener to prevent memory leak
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.removeEventListener('message', this.boundHandleSWMessage);
       }
@@ -160,7 +160,7 @@ class OfflineQueue {
     payload: unknown,
     options: { maxRetries?: number; deduplicate?: boolean } = {}
   ): Promise<void> {
-    // P0 Fix: Wait for initialization to complete before modifying queue
+    // Wait for initialization to complete before modifying queue
     if (this.initPromise) {
       await this.initPromise;
     }
@@ -199,7 +199,7 @@ class OfflineQueue {
   ): Promise<void> {
     const { maxRetries = DEFAULT_MAX_RETRIES, deduplicate = true } = options;
 
-    // P0 Fix: Check queue size limit - BLOCK instead of silently dropping
+    // Check queue size limit - BLOCK instead of silently dropping
     // This prevents critical data loss without user awareness
     const QUEUE_WARNING_THRESHOLD = MAX_QUEUE_SIZE - 10; // Warn at 90%
 
@@ -223,7 +223,7 @@ class OfflineQueue {
       throw new Error(`Offline queue full (${MAX_QUEUE_SIZE} items). Connect to sync.`);
     }
 
-    // P0 Fix: Emit warning when approaching limit (90%)
+    // Emit warning when approaching limit (90%)
     if (this.state.actions.length >= QUEUE_WARNING_THRESHOLD) {
       logger.warn(`[OfflineQueue] Queue at ${this.state.actions.length}/${MAX_QUEUE_SIZE} - approaching limit`);
       if (typeof window !== 'undefined') {
@@ -284,7 +284,7 @@ class OfflineQueue {
     if (navigator.onLine) {
       void this.processQueue();
     } else {
-      // P1 Fix: Register for Background Sync when offline
+      // Register for Background Sync when offline
       this.requestBackgroundSync();
     }
   }
@@ -343,7 +343,7 @@ class OfflineQueue {
    * P0 Fix: Now awaits initialization before processing
    */
   async processQueue(): Promise<void> {
-    // P0 Fix: Wait for initialization to complete before processing
+    // Wait for initialization to complete before processing
     if (this.initPromise) {
       await this.initPromise;
     }
@@ -470,7 +470,7 @@ class OfflineQueue {
    * P0 Fix: Now async to await initialization
    */
   async clearQueue(): Promise<void> {
-    // P0 Fix: Wait for initialization before clearing
+    // Wait for initialization before clearing
     if (this.initPromise) {
       await this.initPromise;
     }
@@ -535,7 +535,7 @@ class OfflineQueue {
     } catch (error) {
       logger.error('[OfflineQueue] Failed to load from localStorage:', error);
 
-      // P0 Fix: Emit storage error event if localStorage is unavailable
+      // Emit storage error event if localStorage is unavailable
       // This typically happens in Safari Private Mode or when storage is full
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('zenflow:storage-error', {
@@ -565,7 +565,7 @@ class OfflineQueue {
     this.loadFromLocalStorage();
     // Then async load from IndexedDB (will override if has data)
     await this.loadFromStorageAsync();
-    // P0 Fix: Keep initPromise as resolved promise instead of nulling it
+    // Keep initPromise as resolved promise instead of nulling it
     // This ensures all callers properly await, even if it resolves immediately
     logger.log('[OfflineQueue] Initialization complete');
   }
@@ -642,7 +642,7 @@ class OfflineQueue {
     } catch (error) {
       logger.error('[OfflineQueue] Failed to persist to localStorage:', error);
 
-      // P0 Fix: CRITICAL - Both IndexedDB AND localStorage failed!
+      // CRITICAL - Both IndexedDB AND localStorage failed!
       // Emit storage error event so UI can warn user about potential data loss
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('zenflow:storage-error', {

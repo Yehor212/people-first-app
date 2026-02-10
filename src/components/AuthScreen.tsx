@@ -30,7 +30,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
   // Ref for OAuth timeout
   const oauthTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // P1 Fix: Use ref for onComplete to avoid dependency array issues
+  // Use ref for onComplete to avoid dependency array issues
   // This ensures callbacks don't cause effect re-runs if parent re-renders
   const onCompleteRef = useRef(onComplete);
   useEffect(() => {
@@ -39,7 +39,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
 
   // Safe completion helper - ensures onComplete is called exactly once
   // This function atomically checks and sets the flag to prevent race conditions
-  // P1 Fix: Uses onCompleteRef.current to avoid closure issues
+  // Uses onCompleteRef.current to avoid closure issues
   const tryComplete = (userData: { name: string; email: string }, source: string): boolean => {
     if (hasCompletedRef.current) {
       logger.log(`[Auth] Completion already done, ignoring from ${source}`);
@@ -56,7 +56,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
     // Clear loading state
     setLoadingProvider(null);
 
-    // P1 Fix: Don't log email (PII)
+    // Don't log email (PII)
     logger.log(`[Auth] Completing auth from ${source}`);
     onCompleteRef.current(userData);
     return true;
@@ -92,7 +92,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
 
     checkSession();
    
-  }, []); // P1 Fix: Removed onComplete from deps - uses onCompleteRef instead
+  }, []); // Removed onComplete from deps - uses onCompleteRef instead
 
   // Listen for auth state changes (handles OAuth callback)
   useEffect(() => {
@@ -118,7 +118,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
       subscription?.subscription?.unsubscribe?.();
     };
    
-  }, []); // P1 Fix: Removed onComplete from deps - uses onCompleteRef instead
+  }, []); // Removed onComplete from deps - uses onCompleteRef instead
 
   // LEVEL 1: Check session when app resumes from OAuth browser
   useEffect(() => {
@@ -191,7 +191,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
       window.removeEventListener('focus', handleFocus);
     };
    
-  }, [loadingProvider]); // P1 Fix: Removed onComplete from deps - uses onCompleteRef instead
+  }, [loadingProvider]); // Removed onComplete from deps - uses onCompleteRef instead
 
   // LEVEL 2: Listen for auth completion from Index.tsx
   useEffect(() => {

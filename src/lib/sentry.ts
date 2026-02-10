@@ -71,7 +71,7 @@ export function initSentry(): void {
     beforeSend(event, hint) {
       const error = hint?.originalException;
 
-      // P0 Fix: Filter out AbortErrors - these are expected and handled
+      // Filter out AbortErrors - these are expected and handled
       // AbortError occurs during normal operation (user navigation, request cancellation)
       if (error instanceof Error) {
         const isAbortError =
@@ -85,7 +85,7 @@ export function initSentry(): void {
           return null;
         }
 
-        // P0 Fix: Filter out handled chunk load errors
+        // Filter out handled chunk load errors
         // These are shown to user via UpdateRequiredDialog
         const isChunkError =
           error.message?.includes('Failed to fetch dynamically imported module') ||
@@ -105,7 +105,7 @@ export function initSentry(): void {
         delete event.user.username;
       }
 
-      // P1 Security Fix: Scrub tokens from breadcrumbs and request data
+      // Scrub tokens from breadcrumbs and request data
       const sensitivePatterns = [
         /Bearer\s+[A-Za-z0-9\-_.]+/gi,
         /access_token[=:]\s*["']?[A-Za-z0-9\-_.]+["']?/gi,
@@ -160,7 +160,7 @@ export function initSentry(): void {
     },
   });
 
-  // P2 Fix: Only log in development
+  // Only log in development
   if (import.meta.env.DEV) {
     console.log('[Sentry] Initialized successfully');
   }

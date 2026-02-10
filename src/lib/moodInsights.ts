@@ -190,7 +190,7 @@ function analyzeHabitMoodCorrelation(
 
   habits.forEach(habit => {
     const datesWithHabit = habit.completedDates;
-    // P2 Fix: Use Set for O(1) lookup instead of O(n) includes()
+    // Use Set for O(1) lookup instead of O(n) includes()
     const habitDatesSet = new Set(datesWithHabit);
     const datesWithoutHabit = Object.keys(moodByDate).filter(d => !habitDatesSet.has(d));
 
@@ -254,7 +254,7 @@ function analyzeFocusMoodCorrelation(
 
   // Compare mood on focus days vs non-focus days
   const focusDays = Object.keys(focusByDate);
-  // P2 Fix: Use Set for O(1) lookup instead of O(n) includes()
+  // Use Set for O(1) lookup instead of O(n) includes()
   const focusDaysSet = new Set(focusDays);
   const nonFocusDays = Object.keys(moodByDate).filter(d => !focusDaysSet.has(d));
 
@@ -312,7 +312,7 @@ function analyzeGratitudeMoodCorrelation(
 
   // Compare mood on gratitude days vs non-gratitude days
   const gratitudeDays = Object.keys(gratitudeByDate);
-  // P2 Fix: Use Set for O(1) lookup instead of O(n) includes()
+  // Use Set for O(1) lookup instead of O(n) includes()
   const gratitudeDaysSet = new Set(gratitudeDays);
   const nonGratitudeDays = Object.keys(moodByDate).filter(d => !gratitudeDaysSet.has(d));
 
@@ -368,7 +368,7 @@ function analyzeMoodTrend(moods: MoodEntry[]): MoodInsight | null {
     prev7Days.push(formatDate(d));
   }
 
-  // P2 Fix: Use Sets for O(1) lookup
+  // Use Sets for O(1) lookup
   const last7DaysSet = new Set(last7Days);
   const prev7DaysSet = new Set(prev7Days);
 
@@ -431,7 +431,7 @@ function analyzeConsistency(moods: MoodEntry[], habits: Habit[]): MoodInsight | 
     last14Days.push(formatDate(d));
   }
 
-  // P2 Fix: Use Set for O(1) lookup
+  // Use Set for O(1) lookup
   const last14DaysSet = new Set(last14Days);
   const daysWithMood = new Set(moods.filter(m => last14DaysSet.has(m.date)).map(m => m.date));
   const consistency = daysWithMood.size / 14;

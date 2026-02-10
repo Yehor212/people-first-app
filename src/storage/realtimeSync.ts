@@ -120,7 +120,7 @@ async function processBatched<T>(
 
 export const syncMood = async (mood: MoodEntry): Promise<void> => {
   const userId = await getCurrentUserId();
-  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
     logger.warn('[Sync] Cannot sync mood: User not authenticated');
@@ -153,14 +153,14 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     addCategorizedBreadcrumb('sync', 'Mood synced successfully', { moodId: mood.id });
     logger.log('[Sync] Mood synced:', mood.id);
   } catch (error) {
-    // P0 Fix: Handle AbortError separately - it's intentional, don't retry/queue
+    // Handle AbortError separately - it's intentional, don't retry/queue
     if (isAbortError(error)) {
       addCategorizedBreadcrumb('sync', 'Mood sync aborted', { moodId: mood.id }, 'warning');
       logger.warn('[Sync] Mood sync aborted (timeout or navigation):', mood.id);
       return; // Don't retry, don't queue - this was intentional
     }
 
-    // P0 Fix: More robust network error detection
+    // More robust network error detection
     // Check multiple signals instead of relying on fragile string matching
     const isNetworkError = detectNetworkError(error);
 
@@ -200,7 +200,7 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
     if (error) throw error;
     logger.log('[Sync] Mood deleted:', moodId);
   } catch (error) {
-    // P0 Fix: Handle AbortError separately
+    // Handle AbortError separately
     if (isAbortError(error)) {
       logger.warn('[Sync] Mood delete aborted (timeout or navigation):', moodId);
       return;
@@ -217,7 +217,7 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
 
 export const syncHabit = async (habit: Habit): Promise<void> => {
   const userId = await getCurrentUserId();
-  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
     logger.warn('[Sync] Cannot sync habit: User not authenticated');
@@ -317,7 +317,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
 
     logger.log('[Sync] Habit synced:', habit.id);
   } catch (error) {
-    // P0 Fix: Handle AbortError separately
+    // Handle AbortError separately
     if (isAbortError(error)) {
       logger.warn('[Sync] Habit sync aborted (timeout or navigation):', habit.id);
       return;
@@ -349,7 +349,7 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
     if (error) throw error;
     logger.log('[Sync] Habit deleted:', habitId);
   } catch (error) {
-    // P0 Fix: Handle AbortError separately
+    // Handle AbortError separately
     if (isAbortError(error)) {
       logger.warn('[Sync] Habit delete aborted (timeout or navigation):', habitId);
       return;
@@ -403,7 +403,7 @@ export const syncHabitCompletion = async (habitId: string, date: string, complet
     }
     logger.log('[Sync] Habit completion synced:', habitId, date, completed);
   } catch (error) {
-    // P0 Fix: Handle AbortError separately
+    // Handle AbortError separately
     if (isAbortError(error)) {
       logger.warn('[Sync] Habit completion sync aborted:', habitId, date);
       return;
@@ -420,7 +420,7 @@ export const syncHabitCompletion = async (habitId: string, date: string, complet
 
 export const syncFocusSession = async (session: FocusSession): Promise<void> => {
   const userId = await getCurrentUserId();
-  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
     logger.warn('[Sync] Cannot sync focus session: User not authenticated');
@@ -449,7 +449,7 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
     if (error) throw error;
     logger.log('[Sync] Focus session synced:', session.id);
   } catch (error) {
-    // P0 Fix: Handle AbortError separately
+    // Handle AbortError separately
     if (isAbortError(error)) {
       logger.warn('[Sync] Focus session sync aborted:', session.id);
       return;
@@ -466,7 +466,7 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
 
 export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
   const userId = await getCurrentUserId();
-  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
     logger.warn('[Sync] Cannot sync gratitude: User not authenticated');
@@ -492,7 +492,7 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
     if (error) throw error;
     logger.log('[Sync] Gratitude synced:', entry.id);
   } catch (error) {
-    // P0 Fix: Handle AbortError separately
+    // Handle AbortError separately
     if (isAbortError(error)) {
       logger.warn('[Sync] Gratitude sync aborted:', entry.id);
       return;
@@ -524,7 +524,7 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
     if (error) throw error;
     logger.log('[Sync] Gratitude deleted:', entryId);
   } catch (error) {
-    // P0 Fix: Handle AbortError separately
+    // Handle AbortError separately
     if (isAbortError(error)) {
       logger.warn('[Sync] Gratitude delete aborted:', entryId);
       return;
@@ -541,7 +541,7 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
 
 export const syncSetting = async (key: string, value: unknown): Promise<void> => {
   const userId = await getCurrentUserId();
-  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return;
   if (!userId) {
     logger.warn('[Sync] Cannot sync setting: User not authenticated');
@@ -558,7 +558,7 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
     if (error) throw error;
     logger.log('[Sync] Setting synced:', key);
   } catch (error) {
-    // P0 Fix: Handle AbortError separately
+    // Handle AbortError separately
     if (isAbortError(error)) {
       logger.warn('[Sync] Setting sync aborted:', key);
       return;
@@ -575,7 +575,7 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
 
 export const pullFromCloud = async (): Promise<boolean> => {
   const userId = await getCurrentUserId();
-  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return false;
   if (!userId) {
     logger.warn('[Sync] Cannot pull from cloud: User not authenticated');
@@ -746,7 +746,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
 
     return true;
   } catch (error) {
-    // P0 Fix: Handle AbortError gracefully
+    // Handle AbortError gracefully
     if (isAbortError(error)) {
       addCategorizedBreadcrumb('sync', 'pullFromCloud aborted', {}, 'warning');
       logger.warn('[Sync] pullFromCloud aborted (timeout or navigation)');
@@ -765,7 +765,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
 
 export const pushToCloud = async (): Promise<boolean> => {
   const userId = await getCurrentUserId();
-  // P0 Fix: Explicit validation to prevent RLS violations with undefined user_id
+  // Explicit validation to prevent RLS violations with undefined user_id
   if (!supabase) return false;
   if (!userId) {
     logger.warn('[Sync] Cannot push to cloud: User not authenticated');
@@ -805,7 +805,7 @@ export const pushToCloud = async (): Promise<boolean> => {
 
     return true;
   } catch (error) {
-    // P0 Fix: Handle AbortError gracefully
+    // Handle AbortError gracefully
     if (isAbortError(error)) {
       addCategorizedBreadcrumb('sync', 'pushToCloud aborted', {}, 'warning');
       logger.warn('[Sync] pushToCloud aborted (timeout or navigation)');
