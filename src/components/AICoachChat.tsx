@@ -67,7 +67,7 @@ export function AICoachChat() {
 
   return (
     <>
-      {/* P1 Fix: Prevent closing while message is being sent */}
+      {/* Prevent closing while message is being sent */}
       <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => { if (!isLoading) closeCoach(); }} />
       <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background h-[85vh] overflow-hidden animate-slide-up flex flex-col">
         <h2 className="sr-only">{t.aiCoachTitle || 'AI Coach'}</h2>

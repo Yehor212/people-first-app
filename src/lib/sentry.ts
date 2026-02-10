@@ -181,7 +181,7 @@ export function captureError(error: Error, context?: Record<string, unknown>): v
 }
 
 /**
- * P0 Fix: Capture error with category tag for filtering
+ * Capture error with category tag for filtering
  * Use this for categorized errors (audio, cache, version issues)
  */
 export function captureErrorWithCategory(
@@ -213,7 +213,7 @@ export function captureErrorWithCategory(
 }
 
 /**
- * P0 Fix: Add breadcrumb with category
+ * Add breadcrumb with category
  */
 export function addCategorizedBreadcrumb(
   category: ErrorCategory,

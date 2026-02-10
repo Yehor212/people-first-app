@@ -95,7 +95,7 @@ const FOCUS_PLAYLIST_QUERY = 'focus study concentration lo-fi';
 // ============================================
 
 /**
- * P0 Security Fix: Rate-limited fetch for Spotify API
+ * Rate-limited fetch for Spotify API
  * Prevents hitting Spotify's rate limits and getting blocked
  */
 async function spotifyFetch(url: string, options?: RequestInit): Promise<Response> {
@@ -146,7 +146,7 @@ export function isSpotifyConnected(): boolean {
 
 /**
  * Get stored tokens
- * P1 Security Fix: Use sessionStorage instead of localStorage for tokens
+ * Use sessionStorage instead of localStorage for tokens
  */
 function getStoredTokens(): SpotifyTokens | null {
   return safeSessionStorageGet<SpotifyTokens | null>(STORAGE_KEY, null);
@@ -154,7 +154,7 @@ function getStoredTokens(): SpotifyTokens | null {
 
 /**
  * Store tokens
- * P1 Security Fix: Use sessionStorage instead of localStorage for tokens
+ * Use sessionStorage instead of localStorage for tokens
  */
 function storeTokens(tokens: SpotifyTokens): void {
   safeSessionStorageSet(STORAGE_KEY, tokens);
@@ -162,7 +162,7 @@ function storeTokens(tokens: SpotifyTokens): void {
 
 /**
  * Clear tokens (disconnect)
- * P1 Security Fix: Use sessionStorage for token storage
+ * Use sessionStorage for token storage
  */
 export function disconnectSpotify(): void {
   sessionStorage.removeItem(STORAGE_KEY);

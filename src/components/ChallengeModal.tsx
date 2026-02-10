@@ -332,7 +332,7 @@ function ParticipantsLeaderboard({
       </div>
 
       <div className="p-2 space-y-1 max-h-[200px] overflow-y-auto">
-        {/* P1 Fix: Add empty state check before map */}
+        {/* Add empty state check before map */}
         {(!leaderboard.members || leaderboard.members.length === 0) ? (
           <div className="text-center py-4 text-slate-500 dark:text-slate-400 text-sm">
             {t.noParticipantsYet || 'No participants yet'}

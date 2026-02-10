@@ -1,5 +1,5 @@
 /**
- * useModalKeyboard - P2 Accessibility Fix
+ * useModalKeyboard
  *
  * Hook to handle keyboard navigation for custom modals:
  * - Escape key to close

@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger';
 
 /**
  * Offline queue action stored in IndexedDB
- * P0 Fix: Move from localStorage to IndexedDB for better quota handling
+ * Move from localStorage to IndexedDB for better quota handling
  */
 export interface OfflineQueueItem {
   id: string;

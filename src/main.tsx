@@ -64,7 +64,7 @@ window.addEventListener('error', (event) => {
 });
 
 /**
- * P0 Fix [ANDROID/WEB]: Handle app close/background to prevent data loss
+ * Handle app close/background to prevent data loss
  *
  * beforeunload: Web - when tab is closed or refreshed
  * visibilitychange: Both - when app goes to background
@@ -93,7 +93,7 @@ window.addEventListener('beforeunload', () => {
 });
 
 /**
- * P1 Fix: Lifecycle event deduplication
+ * Lifecycle event deduplication
  * On native platforms, both visibilitychange AND Capacitor pause/resume fire for the same event.
  * This prevents double-calling pauseAllAudio()/resumeAllAudio() which can cause race conditions.
  */
@@ -151,7 +151,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 /**
- * P2 Fix [ANDROID]: Capacitor App lifecycle listeners
+ * Capacitor App lifecycle listeners
  * Handles pause/resume events for better state preservation on native platforms
  * Note: Uses deduplicated handlers to prevent race with visibilitychange
  */
@@ -228,7 +228,7 @@ if (isCapacitor) {
 }
 
 /**
- * P0 Fix: Check app version and database health before rendering.
+ * Check app version and database health before rendering.
  *
  * This prevents chunk load errors after deployment by detecting
  * version mismatch BEFORE lazy loading tries to load non-existent chunks.

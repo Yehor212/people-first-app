@@ -899,13 +899,13 @@ export interface Translations {
   hyperfocusTipText: string;
   hyperfocusPauseMsg: string;
 
-  // Audio Status (P0 Fix)
+  // Audio Status
   audioLoading: string;
   audioTapToEnable: string;
   audioRetry: string;
   audioError: string;
 
-  // Leaderboard (P1 Fix)
+  // Leaderboard
   // Note: weekly/monthly defined above in Personal Goals section
   leaderboard: string;
   leaderboardType: string;
@@ -3040,13 +3040,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTipText: 'Каждые 25 минут будет короткая дыхательная пауза. Это помогает избежать выгорания!',
     hyperfocusPauseMsg: 'Нажмите Play, чтобы продолжить',
 
-    // Audio Status (P0 Fix)
+    // Audio Status
     audioLoading: 'Загрузка...',
     audioTapToEnable: 'Нажмите для включения звука',
     audioRetry: 'Повторить',
     audioError: 'Ошибка аудио',
 
-    // Leaderboard (P1 Fix)
+    // Leaderboard
     leaderboard: 'Лидерборд',
     leaderboardType: 'Тип рейтинга',
     leaderboardTimeout: 'Загрузка слишком долгая. Попробуйте снова.',
@@ -5127,13 +5127,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTipText: 'Every 25 minutes there will be a short breathing pause. This helps prevent burnout!',
     hyperfocusPauseMsg: 'Press Play to continue',
 
-    // Audio Status (P0 Fix)
+    // Audio Status
     audioLoading: 'Loading...',
     audioTapToEnable: 'Tap to enable sound',
     audioRetry: 'Retry',
     audioError: 'Audio error',
 
-    // Leaderboard (P1 Fix)
+    // Leaderboard
     leaderboard: 'Leaderboard',
     leaderboardType: 'Leaderboard type',
     leaderboardTimeout: 'Loading took too long. Please try again.',
@@ -7214,13 +7214,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTipText: 'Кожні 25 хвилин буде коротка дихальна пауза. Це допомагає уникнути вигорання!',
     hyperfocusPauseMsg: 'Натисніть Play, щоб продовжити',
 
-    // Audio Status (P0 Fix)
+    // Audio Status
     audioLoading: 'Завантаження...',
     audioTapToEnable: 'Натисніть для увімкнення звуку',
     audioRetry: 'Повторити',
     audioError: 'Помилка аудіо',
 
-    // Leaderboard (P1 Fix)
+    // Leaderboard
     leaderboard: 'Лідерборд',
     leaderboardType: 'Тип рейтингу',
     leaderboardTimeout: 'Завантаження тривало занадто довго. Спробуйте ще раз.',
@@ -9302,13 +9302,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTipText: 'Cada 25 minutos habrá una breve pausa de respiración. ¡Esto ayuda a prevenir el agotamiento!',
     hyperfocusPauseMsg: 'Presiona Play para continuar',
 
-    // Audio Status (P0 Fix)
+    // Audio Status
     audioLoading: 'Cargando...',
     audioTapToEnable: 'Toca para habilitar sonido',
     audioRetry: 'Reintentar',
     audioError: 'Error de audio',
 
-    // Leaderboard (P1 Fix)
+    // Leaderboard
     leaderboard: 'Clasificación',
     leaderboardType: 'Tipo de clasificación',
     leaderboardTimeout: 'La carga tardó demasiado. Inténtalo de nuevo.',
@@ -11390,13 +11390,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTipText: 'Alle 25 Minuten gibt es eine kurze Atempause. Das hilft, Burnout zu vermeiden!',
     hyperfocusPauseMsg: 'Drücke Play zum Fortfahren',
 
-    // Audio Status (P0 Fix)
+    // Audio Status
     audioLoading: 'Wird geladen...',
     audioTapToEnable: 'Tippen zum Aktivieren',
     audioRetry: 'Erneut versuchen',
     audioError: 'Audiofehler',
 
-    // Leaderboard (P1 Fix)
+    // Leaderboard
     leaderboard: 'Bestenliste',
     leaderboardType: 'Listentyp',
     leaderboardTimeout: 'Laden dauerte zu lange. Bitte erneut versuchen.',
@@ -13478,13 +13478,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTipText: 'Toutes les 25 minutes, il y aura une courte pause respiratoire. Cela aide à prévenir l\'épuisement!',
     hyperfocusPauseMsg: 'Appuyez sur Play pour continuer',
 
-    // Audio Status (P0 Fix)
+    // Audio Status
     audioLoading: 'Chargement...',
     audioTapToEnable: 'Appuyez pour activer le son',
     audioRetry: 'Réessayer',
     audioError: 'Erreur audio',
 
-    // Leaderboard (P1 Fix)
+    // Leaderboard
     leaderboard: 'Classement',
     leaderboardType: 'Type de classement',
     leaderboardTimeout: 'Le chargement a pris trop de temps. Veuillez réessayer.',
@@ -15565,13 +15565,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTipText: '25分ごとに短い呼吸休憩があります。燃え尽き症候群を防ぎます！',
     hyperfocusPauseMsg: '再生を押して続行',
 
-    // Audio Status (P0 Fix)
+    // Audio Status
     audioLoading: '読み込み中...',
     audioTapToEnable: 'タップして音声を有効化',
     audioRetry: '再試行',
     audioError: 'オーディオエラー',
 
-    // Leaderboard (P1 Fix)
+    // Leaderboard
     leaderboard: 'リーダーボード',
     leaderboardType: 'ランキングタイプ',
     leaderboardTimeout: '読み込みに時間がかかりすぎました。もう一度お試しください。',
@@ -17537,13 +17537,13 @@ const arabicOverrides: Partial<Translations> = {
   hyperfocusTipText: 'أغلق كل المشتتات للتركيز الأقصى',
   hyperfocusPauseMsg: 'خذ استراحة قصيرة',
 
-  // Audio Status (P0 Fix)
+  // Audio Status
   audioLoading: 'جاري التحميل...',
   audioTapToEnable: 'اضغط لتفعيل الصوت',
   audioRetry: 'إعادة المحاولة',
   audioError: 'خطأ في الصوت',
 
-  // Leaderboard (P1 Fix)
+  // Leaderboard
   leaderboard: 'لوحة المتصدرين',
   leaderboardType: 'نوع التصنيف',
   leaderboardTimeout: 'استغرق التحميل وقتاً طويلاً. يرجى المحاولة مرة أخرى.',
@@ -19554,7 +19554,7 @@ const hebrewOverrides: Partial<Translations> = {
   failedToLoad: 'הטעינה נכשלה',
   failedToLoadBody: 'לא ניתן לטעון את הרכיב. אנא רענן את הדף.',
 
-  // Leaderboard (P1 Fix)
+  // Leaderboard
   leaderboard: 'טבלת מובילים',
   leaderboardType: 'סוג דירוג',
   leaderboardTimeout: 'הטעינה ארכה זמן רב מדי. נא לנסות שוב.',

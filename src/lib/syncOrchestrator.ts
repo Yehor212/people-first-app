@@ -141,7 +141,7 @@ class SyncOrchestrator {
 
   /**
    * Start processing with mutex protection
-   * P0 Fix: Lock release is now inside processQueue() to prevent race condition
+   * Lock release is now inside processQueue() to prevent race condition
    */
   private async startProcessing(): Promise<void> {
     // If already processing, wait for it to complete
@@ -163,7 +163,7 @@ class SyncOrchestrator {
 
   /**
    * Process the sync queue sequentially
-   * P0 Fix: Uses try/finally to ensure atomic release of both isProcessing and processingPromise
+   * Uses try/finally to ensure atomic release of both isProcessing and processingPromise
    */
   private async processQueue(): Promise<void> {
     if (this.isProcessing || this.queue.length === 0) {

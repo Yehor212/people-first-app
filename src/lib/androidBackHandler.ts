@@ -126,7 +126,7 @@ function isOnRootRoute(): boolean {
 }
 
 /**
- * P1 Fix: Check if an element is truly visible (not just has dimensions)
+ * Check if an element is truly visible (not just has dimensions)
  * Checks computed styles for opacity, display, visibility
  */
 function isElementVisible(element: Element): boolean {
@@ -158,7 +158,7 @@ function isElementVisible(element: Element): boolean {
 
 /**
  * Check if any modal/dialog is open
- * P1 Fix: Improved selectors and visibility checks
+ * Improved selectors and visibility checks
  */
 function isModalOpen(): boolean {
   // More specific modal selectors
@@ -318,7 +318,7 @@ export async function initAndroidBackHandler(): Promise<void> {
 
 /**
  * Remove back button listener (cleanup)
- * P1 Fix: Only removes backButton listener, not ALL Capacitor App listeners
+ * Only removes backButton listener, not ALL Capacitor App listeners
  * This preserves pause/resume listeners registered in main.tsx
  */
 export async function removeAndroidBackHandler(): Promise<void> {

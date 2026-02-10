@@ -95,7 +95,7 @@ const getOrCreateDeviceId = async () => {
 
 /**
  * Export backup atomically using Dexie transaction.
- * P0 Fix: Ensures data doesn't change mid-export by using a read transaction.
+ * Ensures data doesn't change mid-export by using a read transaction.
  * This prevents race conditions where user edits data during sync.
  */
 export const exportBackup = async (): Promise<BackupPayloadV3> => {

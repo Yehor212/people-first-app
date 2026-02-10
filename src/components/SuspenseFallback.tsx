@@ -1,6 +1,6 @@
 /**
  * Unified Suspense Fallback Components
- * P2 Fix #15: Consistent loading states across lazy-loaded components
+ * Consistent loading states across lazy-loaded components
  *
  * Provides standardized loading skeletons to replace ad-hoc
  * animate-pulse divs, spinners, and null fallbacks.

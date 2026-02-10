@@ -4,7 +4,7 @@ import { Database } from '@/types/supabase';
 import { z } from 'zod';
 
 /**
- * P1 Fix #8: Zod schema for validating Supabase user object
+ * Zod schema for validating Supabase user object
  * Ensures the user object has the expected shape before using it
  */
 const supabaseUserSchema = z.object({
@@ -16,7 +16,7 @@ const supabaseUserSchema = z.object({
 });
 
 /**
- * P1 Fix #8: Validate user object from Supabase auth response
+ * Validate user object from Supabase auth response
  * Returns the validated user or null if validation fails
  */
 export function validateSupabaseUser(user: unknown): User | null {
@@ -39,7 +39,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 /**
- * P1 Security Fix: Validate Supabase environment variables
+ * Validate Supabase environment variables
  * Returns validation status for use in UI notifications
  */
 export interface SupabaseConfigStatus {

@@ -1,5 +1,5 @@
 /**
- * OfflineBanner - P2 UX Fix
+ * OfflineBanner
  * Shows a prominent banner when user is offline
  *
  * Features:

@@ -2070,10 +2070,10 @@ export function Index() {
         />
       )}
 
-      {/* P2 UX: Offline banner - shows when user loses connection */}
+      {/* Offline banner - shows when user loses connection */}
       <OfflineBanner />
 
-      {/* P1 Fix: Storage error banner - shows when localStorage/IndexedDB fails */}
+      {/* Storage error banner - shows when localStorage/IndexedDB fails */}
       <StorageErrorBanner />
 
       {/* Swipe container for tab navigation on mobile */}

@@ -62,7 +62,7 @@ const CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
 
 /**
- * P0 Security Fix: Rate-limited fetch for Google Calendar API
+ * Rate-limited fetch for Google Calendar API
  * Prevents hitting Google's rate limits
  */
 async function calendarFetch(url: string, options?: RequestInit): Promise<Response> {

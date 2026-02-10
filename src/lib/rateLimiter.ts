@@ -1,6 +1,6 @@
 /**
  * Rate Limiter Utility
- * P0 Security Fix: Prevent abuse of external APIs (Spotify, Google Calendar)
+ * Prevent abuse of external APIs (Spotify, Google Calendar)
  *
  * Uses token bucket algorithm with configurable rates per service.
  */

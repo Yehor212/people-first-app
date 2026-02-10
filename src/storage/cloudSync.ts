@@ -370,7 +370,7 @@ export const triggerSync = () => {
 };
 
 /**
- * P1 Fix: Complete cleanup of all cloudSync resources
+ * Complete cleanup of all cloudSync resources
  * Call this when destroying the app or during hot reload to prevent memory leaks.
  * This cleans up ALL intervals, timeouts, listeners, and abort controllers.
  */

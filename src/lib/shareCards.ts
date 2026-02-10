@@ -52,7 +52,7 @@ const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
 const DELETE_RETRY_DELAYS = [100, 500, 1000]; // Retry delays in ms
 
 /**
- * P1 Fix: Delete file with retry logic
+ * Delete file with retry logic
  */
 async function deleteFileWithRetry(fileName: string): Promise<void> {
   let lastError: Error | null = null;
@@ -78,7 +78,7 @@ async function deleteFileWithRetry(fileName: string): Promise<void> {
 }
 
 /**
- * P1 Fix: Clean up stale cache files on app resume
+ * Clean up stale cache files on app resume
  * Should be called when app becomes active
  */
 export async function cleanupShareCache(): Promise<void> {

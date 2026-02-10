@@ -1175,7 +1175,7 @@ export function SettingsPanel({
                 <p className="text-xs text-muted-foreground">
                   {t.deleteAccountWarning}
                 </p>
-                {/* P1 Fix: Require typing DELETE to confirm */}
+                {/* Require typing DELETE to confirm */}
                 <div>
                   <label className="text-xs text-destructive font-medium block mb-1">
                     {t.deleteAccountTypeConfirm || 'Type DELETE to confirm:'}

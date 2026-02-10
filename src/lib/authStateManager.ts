@@ -1,7 +1,7 @@
 /**
  * Auth State Manager
  *
- * P0 Fix: Centralized auth completion state to prevent race conditions.
+ * Centralized auth completion state to prevent race conditions.
  *
  * Problem: Multiple auth completion pathways (GoogleAuthScreen + Index.tsx)
  * could fire simultaneously, causing duplicate auth completion events

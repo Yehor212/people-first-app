@@ -691,7 +691,7 @@
 @layer utilities {
   /* ===== ACCESSIBILITY UTILITIES ===== */
 
-  /* P1 Fix: Touch target minimum size (WCAG 2.5.5 - Target Size)
+  /* Touch target minimum size (WCAG 2.5.5 - Target Size)
    * Ensures interactive elements are at least 48x48px for touch accessibility
    * Use on icon buttons, small interactive elements */
   .touch-target {

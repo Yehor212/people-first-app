@@ -6,7 +6,7 @@
  *
  * Default timeout: 15 minutes of inactivity
  *
- * P0 Fix: Now flushes offline queue before reload to prevent data loss.
+ * Now flushes offline queue before reload to prevent data loss.
  */
 
 import { useEffect, useRef } from 'react';

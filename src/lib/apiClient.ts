@@ -7,7 +7,7 @@
  * 3. Retry the operation
  * 4. Notify UI if session expired
  *
- * P0 Fix [WEB]: BroadcastChannel coordination for multi-tab token refresh
+ * BroadcastChannel coordination for multi-tab token refresh
  * Prevents cascading 401s when one tab refreshes the token.
  */
 
@@ -79,7 +79,7 @@ const broadcastRefreshStatus = (type: 'REFRESH_START' | 'REFRESH_COMPLETE', succ
 
 /**
  * Wait for another tab's refresh to complete
- * P1 Fix: Added queue size limit to prevent unbounded memory growth
+ * Added queue size limit to prevent unbounded memory growth
  */
 const waitForOtherTabRefresh = (): Promise<boolean> => {
   return new Promise((resolve) => {
@@ -151,7 +151,7 @@ export const is401Error = (error: unknown): boolean => {
  * Attempt to refresh the session
  * Returns true if successful, false otherwise
  *
- * P0 Fix [WEB]: Coordinates with other browser tabs via BroadcastChannel
+ * Coordinates with other browser tabs via BroadcastChannel
  * to prevent cascading 401 errors when one tab refreshes.
  */
 const tryRefreshSession = async (): Promise<boolean> => {
@@ -213,7 +213,7 @@ const tryRefreshSession = async (): Promise<boolean> => {
 
 /**
  * Dispatch session expired event for UI to handle
- * P0 Fix: Verify session is truly expired before notifying
+ * Verify session is truly expired before notifying
  */
 const notifySessionExpired = async (): Promise<void> => {
   logger.warn('[API] Checking session before notifying expired...');

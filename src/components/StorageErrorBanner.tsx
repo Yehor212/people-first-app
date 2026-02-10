@@ -1,6 +1,6 @@
 /**
  * Storage Error Banner
- * P1 Fix: Shows user-facing notification when storage fails
+ * Shows user-facing notification when storage fails
  * (Safari Private Mode, quota exceeded, etc.)
  */
 
@@ -28,7 +28,7 @@ interface QueueFullEvent {
 }
 
 /**
- * P1 Fix #10: Detect Safari Private Mode
+ * Detect Safari Private Mode
  * In Private Mode, localStorage quota is 0 and writes throw
  */
 function detectPrivateMode(): boolean {

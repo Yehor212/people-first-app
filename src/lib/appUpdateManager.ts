@@ -47,18 +47,18 @@ interface RemoteVersionConfig {
 /** Google Play Store package URL */
 const GOOGLE_PLAY_URL = 'https://play.google.com/store/apps/details?id=com.zenflow.app';
 
-/** P1 Fix: Retry configuration */
+/** Retry configuration */
 const MAX_RETRIES = 3;
 const RETRY_DELAYS = [1000, 3000, 5000]; // Exponential backoff: 1s, 3s, 5s
 const CHECK_TIMEOUT = 10000; // 10 second timeout
 
 /**
- * P1 Fix: Sleep helper for retry delays
+ * Sleep helper for retry delays
  */
 const sleep = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
- * P1 Fix: Wrap promise with timeout
+ * Wrap promise with timeout
  */
 async function withTimeout<T>(promise: Promise<T>, ms: number, operation: string): Promise<T> {
   return Promise.race([
@@ -70,7 +70,7 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, operation: string
 }
 
 /**
- * P1 Fix: Retry wrapper with exponential backoff
+ * Retry wrapper with exponential backoff
  */
 async function withRetry<T>(
   fn: () => Promise<T>,
@@ -200,7 +200,7 @@ const getPriorityLevel = (priority: number, stalenessDays: number): UpdatePriori
  * Check for app updates on Google Play.
  * Falls back to Supabase version check if Google Play In-App Updates is unavailable.
  * Only works on Android native platform.
- * P1 Fix: Now includes retry logic with exponential backoff.
+ * Now includes retry logic with exponential backoff.
  */
 export async function checkForAppUpdate(): Promise<UpdateState> {
   // Skip on non-native platforms
@@ -261,7 +261,7 @@ export async function checkForAppUpdate(): Promise<UpdateState> {
  * Fallback update check using Supabase app_config table.
  * Used when Google Play In-App Updates is unavailable
  * (e.g., app not installed from Google Play, or on emulator).
- * P1 Fix: Now includes retry logic with exponential backoff.
+ * Now includes retry logic with exponential backoff.
  */
 async function checkForAppUpdateFallback(): Promise<UpdateState> {
   let remoteConfig: RemoteVersionConfig | null = null;

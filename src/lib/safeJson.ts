@@ -101,7 +101,7 @@ export const safeLocalStorageSet = (key: string, value: unknown): boolean => {
 };
 
 /**
- * P1 Security Fix: Safely get and parse a value from sessionStorage.
+ * Safely get and parse a value from sessionStorage.
  * sessionStorage is more secure for tokens as it's cleared when the tab closes.
  *
  * @param key - The sessionStorage key
@@ -123,7 +123,7 @@ export const safeSessionStorageGet = <T>(key: string, fallback: T): T => {
 };
 
 /**
- * P1 Security Fix: Safely stringify and set a value in sessionStorage.
+ * Safely stringify and set a value in sessionStorage.
  *
  * @param key - The sessionStorage key
  * @param value - The value to store

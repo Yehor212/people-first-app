@@ -1,6 +1,6 @@
 /**
  * PWA Update Notifier
- * P2 Fix #17: Shows toast notification when new version is available
+ * Shows toast notification when new version is available
  *
  * Only runs on web (not Capacitor/native apps)
  */

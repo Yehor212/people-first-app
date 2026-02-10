@@ -241,7 +241,7 @@ export function InsightsPanel({
               <div key={insight.id} className="relative group">
                 <InsightCard insight={insight} />
 
-                {/* Dismiss button - P1 Fix: Added touch-friendly visibility */}
+                {/* Dismiss button — touch-friendly visibility */}
                 <button
                   onClick={() => dismissInsight(insight.id)}
                   className="absolute top-2 end-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -280,7 +280,7 @@ export function InsightsPanel({
                 {insights.slice(3).map(insight => (
                   <div key={insight.id} className="relative group">
                     <InsightCard insight={insight} />
-                    {/* P1 Fix: Added touch-friendly visibility */}
+                    {/* Added touch-friendly visibility */}
                     <button
                       onClick={() => dismissInsight(insight.id)}
                       className="absolute top-2 end-2 p-1.5 rounded-lg bg-card/80 hover:bg-card text-muted-foreground hover:text-foreground transition-colors zen-shadow-sm opacity-60 sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 active:opacity-100 min-w-[44px] min-h-[44px] flex items-center justify-center"

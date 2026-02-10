@@ -11,7 +11,7 @@
  * - Retry logic with exponential backoff
  * - Action deduplication
  * - Conflict resolution (last-write-wins)
- * - P1 Fix: Background Sync API support for sync after browser close
+ * - Background Sync API support for sync after browser close
  */
 
 // Type declarations for Background Sync API
@@ -92,7 +92,7 @@ class OfflineQueue {
   // both decide to add (missing deduplication), and create duplicates
   private enqueueLock: Promise<void> | null = null;
 
-  // Bound event handlers for proper cleanup (P1 Fix: all handlers must be bound for removal)
+  // Bound event handlers for proper cleanup (all handlers must be bound for removal)
   private boundHandleOnline = () => this.handleOnline();
   private boundHandleOffline = () => this.handleOffline();
   private boundHandleSWMessage = (event: MessageEvent) => this.handleSWMessage(event);
@@ -125,7 +125,7 @@ class OfflineQueue {
 
   /**
    * Cleanup event listeners - call when destroying the queue
-   * P1 Fix: Now properly removes ALL listeners including SW message handler
+   * Now properly removes ALL listeners including SW message handler
    */
   destroy(): void {
     if (typeof window !== 'undefined') {
@@ -151,7 +151,7 @@ class OfflineQueue {
 
   /**
    * Add an action to the queue
-   * P0 Fix: Now awaits initialization before modifying queue
+   * Now awaits initialization before modifying queue
    * P0-2 Fix: Uses mutex to prevent race conditions in concurrent calls
    */
   async enqueue(
@@ -340,7 +340,7 @@ class OfflineQueue {
 
   /**
    * Process all queued actions
-   * P0 Fix: Now awaits initialization before processing
+   * Now awaits initialization before processing
    */
   async processQueue(): Promise<void> {
     // Wait for initialization to complete before processing
@@ -467,7 +467,7 @@ class OfflineQueue {
 
   /**
    * Clear all pending actions (use with caution)
-   * P0 Fix: Now async to await initialization
+   * Now async to await initialization
    */
   async clearQueue(): Promise<void> {
     // Wait for initialization before clearing
@@ -493,7 +493,7 @@ class OfflineQueue {
 
   /**
    * Load queue from IndexedDB, with localStorage fallback
-   * P0 Fix: Primary storage is now IndexedDB for better quota handling
+   * Primary storage is now IndexedDB for better quota handling
    */
   private async loadFromStorageAsync(): Promise<void> {
     try {
@@ -551,11 +551,11 @@ class OfflineQueue {
   }
 
   /**
-   * P0 Fix: Initialize storage with proper async/await
+   * Initialize storage with proper async/await
    * Loads from localStorage first (sync), then IndexedDB (async)
    * Operations that modify the queue must await initPromise
    *
-   * P0 Fix #2: Do NOT set initPromise = null after completion.
+   * Do NOT set initPromise = null after completion.
    * Keeping the resolved promise ensures future awaits immediately resolve,
    * preventing race conditions where one enqueue() is still modifying state
    * while another skips the await entirely.
@@ -600,7 +600,7 @@ class OfflineQueue {
 
   /**
    * Persist queue to IndexedDB with localStorage fallback
-   * P0 Fix: Uses IndexedDB for better quota handling
+   * Uses IndexedDB for better quota handling
    */
   private persistToStorage(): void {
     // Persist asynchronously to IndexedDB

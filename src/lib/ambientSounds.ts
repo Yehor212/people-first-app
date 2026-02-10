@@ -16,7 +16,7 @@ import { isAbortError } from './validation';
 import * as Sentry from '@sentry/react';
 
 // ============================================
-// AUDIO STATUS TRACKING (P0 Fix)
+// AUDIO STATUS TRACKING
 // ============================================
 
 export type AudioState = 'idle' | 'loading' | 'playing' | 'paused' | 'blocked' | 'error';
@@ -418,7 +418,7 @@ export class AmbientSoundGenerator {
   private static readonly MAX_RESUME_RETRIES = 3;
 
   /**
-   * P0 Fix: Subscribe to status changes
+   * Subscribe to status changes
    */
   addStatusListener(listener: AudioStatusListener): () => void {
     this.statusListeners.add(listener);
@@ -428,7 +428,7 @@ export class AmbientSoundGenerator {
   }
 
   /**
-   * P0 Fix: Update and emit status
+   * Update and emit status
    */
   private setStatus(updates: Partial<AudioStatus>): void {
     const prevState = this.status.state;
@@ -458,14 +458,14 @@ export class AmbientSoundGenerator {
   }
 
   /**
-   * P0 Fix: Get current status (for debugging)
+   * Get current status (for debugging)
    */
   getStatus(): AudioStatus {
     return { ...this.status };
   }
 
   /**
-   * P0 Fix: Get debug info for diagnostics
+   * Get debug info for diagnostics
    */
   getDebugInfo(): Record<string, unknown> {
     const ctx = globalAudioContext;
@@ -868,7 +868,7 @@ export class AmbientSoundGenerator {
   }
 
   /**
-   * P0 Fix: Extracted URL loading logic for reuse with fallback
+   * Extracted URL loading logic for reuse with fallback
    */
   private async loadAndPlayUrl(url: string, playbackId: number, signal: AbortSignal): Promise<void> {
     // Reuse the blessed element (created during unlock gesture) for iOS compatibility.

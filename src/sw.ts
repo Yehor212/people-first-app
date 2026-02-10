@@ -2,7 +2,7 @@
 /**
  * Custom Service Worker with Background Sync support
  *
- * P1 Fix [WEB]: Enables sync even after browser is closed
+ * Enables sync even after browser is closed
  * Uses Workbox BackgroundSyncQueue for reliable offline sync
  */
 
@@ -87,7 +87,7 @@ registerRoute(
   })
 );
 
-// REMOVED: Supabase POST caching (P1 Fix)
+// REMOVED: Supabase POST caching
 // POST requests should NOT be cached/synced at Service Worker level because:
 // 1. POST request bodies can only be read once - clone() fails after consumption
 // 2. POST requests have side effects and shouldn't be replayed automatically

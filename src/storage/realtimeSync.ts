@@ -29,7 +29,7 @@ type UserSettingsRow = Database['public']['Tables']['user_settings']['Row'];
 let realtimeChannel: RealtimeChannel | null = null;
 
 /**
- * P0 Fix: Robust network error detection
+ * Robust network error detection
  * Uses multiple signals instead of fragile string matching:
  * 1. navigator.onLine - browser's network status
  * 2. error.name - DOMException names like 'NetworkError'

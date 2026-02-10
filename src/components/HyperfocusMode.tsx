@@ -547,7 +547,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             </span>
 
             <div className="flex items-center gap-2">
-              {/* P0 Fix: Audio status indicator */}
+              {/* Audio status indicator */}
               <AnimatePresence mode="wait">
                 {audioStatus.state === 'loading' && selectedSoundId && (
                   <motion.div
