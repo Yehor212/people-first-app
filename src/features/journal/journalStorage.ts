@@ -1,7 +1,7 @@
 import { db } from '@/storage/db';
 import { generateId } from '@/lib/utils';
-import type { JournalEntry, JournalPhoto } from './types';
-import { MAX_PHOTOS_PER_ENTRY } from './types';
+import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
+import { MAX_PHOTOS_PER_ENTRY, MAX_AUDIO_PER_ENTRY } from './types';
 
 // ============================================
 // JOURNAL ENTRIES CRUD
@@ -137,6 +137,55 @@ export async function deletePhoto(id: string, entryId: string): Promise<void> {
     if (entry) {
       await db.journalEntries.update(entryId, {
         photoIds: entry.photoIds.filter(pid => pid !== id),
+        updatedAt: Date.now(),
+      });
+    }
+  });
+}
+
+// ============================================
+// AUDIO RECORDINGS
+// ============================================
+
+export async function storeAudio(
+  entryId: string,
+  data: string,
+  duration: number,
+  mimeType: string,
+): Promise<JournalAudio> {
+  const existing = await db.journalAudio.where('entryId').equals(entryId).count();
+  if (existing >= MAX_AUDIO_PER_ENTRY) {
+    throw new Error(`Maximum ${MAX_AUDIO_PER_ENTRY} audio recordings per entry`);
+  }
+
+  const audio: JournalAudio = {
+    id: generateId(),
+    entryId,
+    data,
+    duration,
+    mimeType,
+    createdAt: Date.now(),
+  };
+
+  await db.journalAudio.add(audio);
+  return audio;
+}
+
+export async function getAudioForEntry(entryId: string): Promise<JournalAudio[]> {
+  return db.journalAudio.where('entryId').equals(entryId).toArray();
+}
+
+export async function getAudioById(id: string): Promise<JournalAudio | undefined> {
+  return db.journalAudio.get(id);
+}
+
+export async function deleteAudio(id: string, entryId: string): Promise<void> {
+  await db.transaction('rw', [db.journalEntries, db.journalAudio], async () => {
+    await db.journalAudio.delete(id);
+    const entry = await db.journalEntries.get(entryId);
+    if (entry && entry.audioIds) {
+      await db.journalEntries.update(entryId, {
+        audioIds: entry.audioIds.filter(aid => aid !== id),
         updatedAt: Date.now(),
       });
     }

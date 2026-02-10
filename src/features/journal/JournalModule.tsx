@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { BookOpen, Lock, ChevronRight, X, Settings, Loader2, CheckCircle2, Mail } from 'lucide-react';
+import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
+import { BookOpen, Lock, ChevronRight, X, Settings, Loader2, CheckCircle2, Mail, PenLine, Download, Upload, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn, getToday } from '@/lib/utils';
@@ -15,8 +15,16 @@ import { JournalEntryList } from './JournalEntryList';
 import { JournalEntryEditor } from './JournalEntryEditor';
 import { JournalEntryViewer } from './JournalEntryViewer';
 import { JournalCalendar } from './JournalCalendar';
+import { JournalCalendarFull } from './JournalCalendarFull';
 import { getEntryCount } from './journalStorage';
+import { StickerRenderer } from './StickerRenderer';
 import { useJournalReminder, getDaysSinceLastEntry } from './useJournalReminder';
+import { useScreenSecurity } from './useScreenSecurity';
+
+// Lazy-load JournalStats to avoid CJS TDZ (Recharts)
+const LazyJournalStats = lazy(() =>
+  import('./JournalStats').then(m => ({ default: m.JournalStats }))
+);
 
 type ModuleState = 'card' | 'open';
 
@@ -26,12 +34,20 @@ export function JournalModule() {
   const [moduleState, setModuleState] = useState<ModuleState>('card');
   const [entryCount, setEntryCount] = useState(0);
   const [showPasswordSettings, setShowPasswordSettings] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [calendarMode, setCalendarMode] = useState<'strip' | 'full'>(() => {
+    return (localStorage.getItem('journal-calendar-mode') as 'strip' | 'full') || 'strip';
+  });
+
+  const [showExportPicker, setShowExportPicker] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Secure password reset via email verification
-  type ResetStep = 'idle' | 'checking' | 'no-account' | 'confirm' | 'sending' | 'sent' | 'verifying' | 'success';
+  type ResetStep = 'idle' | 'checking' | 'no-account' | 'confirm' | 'sending' | 'sent' | 'success';
   const [resetStep, setResetStep] = useState<ResetStep>('idle');
   const [resetEmail, setResetEmail] = useState('');
-  const [resetCode, setResetCode] = useState('');
   const [resetError, setResetError] = useState('');
 
   const journal = useJournal();
@@ -40,6 +56,7 @@ export function JournalModule() {
     reminderTitle: ts.journalReminderNotifTitle || 'Time to Journal',
     reminderBody: ts.journalReminderNotifBody || 'Take a moment to capture your thoughts and feelings.',
   });
+  const screenSecurity = useScreenSecurity(moduleState === 'open');
 
   // Undo delete ref
   const deletedEntryRef = useRef<{ id: string; data: typeof journal.entries[0] } | null>(null);
@@ -64,6 +81,20 @@ export function JournalModule() {
 
   const daysSinceLastEntry = useMemo(() => getDaysSinceLastEntry(journal.entryDates), [journal.entryDates]);
 
+  const todayMood = useMemo(() => {
+    const today = getToday();
+    return journal.entryDates.get(today);
+  }, [journal.entryDates]);
+
+  const hasTodayEntry = useMemo(() => {
+    const today = getToday();
+    return journal.entryDates.has(today);
+  }, [journal.entryDates]);
+
+  const MOOD_EMOJI: Record<string, string> = {
+    great: '\u{1F604}', good: '\u{1F642}', okay: '\u{1F610}', bad: '\u{1F614}', terrible: '\u{1F622}',
+  };
+
   // Scroll lock when journal is open
   useScrollLock(moduleState === 'open');
 
@@ -76,7 +107,7 @@ export function JournalModule() {
   useEffect(() => {
     if (moduleState !== 'open') return;
     if (resetStep !== 'idle') return registerModalCloseCallback(() => { closeResetDialog(); return true; });
-    if (showPasswordSettings) return registerModalCloseCallback(() => { setShowPasswordSettings(false); return true; });
+    if (showPasswordSettings) return registerModalCloseCallback(() => { setShowPasswordSettings(false); setShowChangePassword(false); return true; });
     if (journal.view !== 'list') {
       return registerModalCloseCallback(() => { journal.goBack(); return true; });
     }
@@ -157,7 +188,6 @@ export function JournalModule() {
   const handleForgotPassword = async () => {
     setResetStep('checking');
     setResetError('');
-    setResetCode('');
     if (!supabase) {
       setResetStep('no-account');
       return;
@@ -175,7 +205,7 @@ export function JournalModule() {
     }
   };
 
-  const handleSendResetCode = async () => {
+  const handleSendResetLink = async () => {
     if (!supabase || !resetEmail) return;
     setResetStep('sending');
     setResetError('');
@@ -192,39 +222,14 @@ export function JournalModule() {
       localStorage.setItem('journal_password_reset_pending', String(Date.now()));
       setResetStep('sent');
     } catch {
-      setResetError(ts.journalResetSendFailed || 'Failed to send code. Check your connection.');
+      setResetError(ts.journalResetSendFailed || 'Failed to send link. Check your connection.');
       setResetStep('confirm');
-    }
-  };
-
-  const handleVerifyResetCode = async () => {
-    if (!supabase || !resetCode.trim()) return;
-    setResetStep('verifying');
-    setResetError('');
-    try {
-      const { error } = await supabase.auth.verifyOtp({
-        email: resetEmail,
-        token: resetCode.trim(),
-        type: 'email',
-      });
-      if (error) {
-        setResetError(ts.journalResetCodeWrong || 'Invalid code. Try again.');
-        setResetStep('sent');
-        return;
-      }
-      await security.removePassword();
-      localStorage.removeItem('journal_password_reset_pending');
-      setResetStep('success');
-    } catch {
-      setResetError(ts.journalResetCodeWrong || 'Invalid code. Try again.');
-      setResetStep('sent');
     }
   };
 
   const closeResetDialog = () => {
     setResetStep('idle');
     setResetEmail('');
-    setResetCode('');
     setResetError('');
   };
 
@@ -273,22 +278,41 @@ export function JournalModule() {
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-primary/15 to-primary/5"
         >
-          {security.hasPassword ? (
+          {todayMood ? (
+            <StickerRenderer emoji={MOOD_EMOJI[todayMood]} size="xs" />
+          ) : security.hasPassword ? (
             <Lock className="w-5 h-5 text-primary" />
           ) : (
             <BookOpen className="w-5 h-5 text-primary" />
           )}
         </motion.div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-foreground">
-            {ts.journalTitle || 'Personal Journal'}
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            {entryCount > 0
-              ? streak > 0
-                ? `${entryCount} ${ts.journalEntries || 'entries'} \u00B7 ${streak} ${ts.journalDayStreak || 'day streak'} \u{1F525}`
-                : `${entryCount} ${ts.journalEntries || 'entries'}`
-              : (ts.journalSubtitle || 'Start writing your thoughts')}
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-foreground">
+              {ts.journalTitle || 'Personal Journal'}
+            </h3>
+            {streak > 0 && (
+              <span className="text-[10px] font-bold text-orange-500 bg-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                {streak} {'\u{1F525}'}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            {entryCount > 0 ? (
+              <>
+                <span>{entryCount} {ts.journalEntries || 'entries'}</span>
+                {hasTodayEntry ? (
+                  <span className="flex items-center gap-0.5 text-primary/80">
+                    <PenLine className="w-2.5 h-2.5" />
+                    {ts.journalContinueWriting || 'Continue writing'}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground/60">{ts.journalStartToday || "Start today's entry"}</span>
+                )}
+              </>
+            ) : (
+              <span>{ts.journalSubtitle || 'Start writing your thoughts'}</span>
+            )}
           </p>
         </div>
         {entryCount > 0 && (
@@ -326,6 +350,8 @@ export function JournalModule() {
             onUnlock={security.unlock}
             onSetPassword={security.setPassword}
             onForgotPassword={handleForgotPassword}
+            onBiometricUnlock={security.biometricEnabled ? security.unlockWithBiometric : undefined}
+            biometricAvailable={security.biometricAvailable && security.biometricEnabled}
           />
 
           {/* Secure password reset dialog (email verification) */}
@@ -379,7 +405,7 @@ export function JournalModule() {
                       {ts.journalResetViaEmail || 'Reset via email'}
                     </h3>
                     <p className="text-sm text-muted-foreground text-center mb-1">
-                      {ts.journalResetConfirm || "We'll send a verification code to"}
+                      {ts.journalResetConfirm || "We'll send a verification link to"}
                     </p>
                     <p className="text-sm font-medium text-foreground text-center mb-4">
                       {maskEmail(resetEmail)}
@@ -396,7 +422,7 @@ export function JournalModule() {
                         {ts.cancel || 'Cancel'}
                       </button>
                       <button
-                        onClick={handleSendResetCode}
+                        onClick={handleSendResetLink}
                         disabled={resetStep === 'sending'}
                         className={cn(
                           'flex-1 py-2.5 rounded-xl text-sm font-medium min-h-[44px]',
@@ -405,14 +431,14 @@ export function JournalModule() {
                         )}
                       >
                         {resetStep === 'sending' && <Loader2 className="w-4 h-4 animate-spin" />}
-                        {ts.journalResetSendCode || 'Send Code'}
+                        {ts.journalResetSendLink || 'Send Link'}
                       </button>
                     </div>
                   </>
                 )}
 
-                {/* Code sent — enter OTP */}
-                {(resetStep === 'sent' || resetStep === 'verifying') && (
+                {/* Link sent — waiting for magic link click */}
+                {resetStep === 'sent' && (
                   <>
                     <div className="flex justify-center mb-3">
                       <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -420,48 +446,35 @@ export function JournalModule() {
                       </div>
                     </div>
                     <h3 className="text-base font-semibold text-foreground text-center mb-1">
-                      {ts.journalResetCodeSent || 'Check your email'}
+                      {ts.journalResetLinkSent || 'Check your email'}
                     </h3>
-                    <p className="text-xs text-muted-foreground text-center mb-4">
-                      {ts.journalResetCodeSentHint || 'Enter the code from your email or click the link.'}
+                    <p className="text-xs text-muted-foreground text-center mb-2">
+                      {ts.journalResetLinkHint || 'We sent a verification link to'}
                     </p>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      maxLength={6}
-                      value={resetCode}
-                      onChange={e => { setResetCode(e.target.value.replace(/\D/g, '')); setResetError(''); }}
-                      placeholder={ts.journalResetEnterCode || 'Verification code'}
-                      className={cn(
-                        'w-full px-4 py-3 rounded-xl text-center text-lg font-mono tracking-[0.3em]',
-                        'bg-background/80 border border-border/50',
-                        'focus:outline-none focus:ring-2 focus:ring-primary/40',
-                        'placeholder:text-muted-foreground/40 placeholder:text-sm placeholder:tracking-normal placeholder:font-sans',
-                      )}
-                      disabled={resetStep === 'verifying'}
-                      autoFocus
-                    />
+                    <p className="text-sm font-medium text-foreground text-center mb-4">
+                      {maskEmail(resetEmail)}
+                    </p>
+                    <p className="text-xs text-muted-foreground text-center mb-4">
+                      {ts.journalResetCheckEmail || 'Click the link in your email to remove the journal password. This page will update automatically.'}
+                    </p>
                     {resetError && (
-                      <p className="text-xs text-destructive text-center mt-2">{resetError}</p>
+                      <p className="text-xs text-destructive text-center mb-3">{resetError}</p>
                     )}
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      <span className="text-xs text-muted-foreground">{ts.journalResetWaiting || 'Waiting for verification...'}</span>
+                    </div>
                     <button
-                      onClick={handleVerifyResetCode}
-                      disabled={resetStep === 'verifying' || resetCode.length < 6}
-                      className={cn(
-                        'w-full mt-3 py-2.5 rounded-xl text-sm font-medium min-h-[44px]',
-                        'bg-primary text-primary-foreground',
-                        'disabled:opacity-40 flex items-center justify-center gap-2',
-                      )}
+                      onClick={handleSendResetLink}
+                      className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
                     >
-                      {resetStep === 'verifying' && <Loader2 className="w-4 h-4 animate-spin" />}
-                      {ts.journalResetVerify || 'Verify'}
+                      {ts.journalResetResend || 'Resend link'}
                     </button>
                     <button
-                      onClick={handleSendResetCode}
-                      disabled={resetStep === 'verifying'}
-                      className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                      onClick={closeResetDialog}
+                      className="w-full py-2 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
                     >
-                      {ts.journalResetResend || 'Resend Code'}
+                      {ts.cancel || 'Cancel'}
                     </button>
                   </>
                 )}
@@ -521,13 +534,37 @@ export function JournalModule() {
               onSave={handleSaveEntry}
               onAddPhoto={journal.addPhoto}
               onRemovePhoto={journal.removePhoto}
+              onAddAudio={journal.addAudio}
+              onRemoveAudio={journal.removeAudio}
               onDelete={journal.activeEntryId ? () => handleDeleteEntry(journal.activeEntryId) : undefined}
               onBack={journal.goBack}
             />
           )}
 
-          {/* List / Viewer crossfade (opacity only — no transform to avoid breaking fixed children) */}
+          {/* List / Viewer / Stats crossfade */}
           <AnimatePresence mode="wait">
+            {journal.view === 'stats' && (
+              <motion.div
+                key="stats"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="flex flex-col flex-1 min-h-0"
+              >
+                <Suspense fallback={
+                  <div className="flex-1 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                  </div>
+                }>
+                  <LazyJournalStats
+                    entries={journal.allEntries}
+                    onBack={journal.goBack}
+                  />
+                </Suspense>
+              </motion.div>
+            )}
+
             {journal.view === 'viewing' && journal.activeEntry && (
               <motion.div
                 key="viewing"
@@ -562,6 +599,13 @@ export function JournalModule() {
                   </h2>
                   <div className="flex items-center gap-1">
                     <button
+                      onClick={() => journal.openStats()}
+                      className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      title={ts.journalStatsTitle || 'Statistics'}
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                    </button>
+                    <button
                       onClick={() => setShowPasswordSettings(true)}
                       className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
                       title={ts.journalSettings || 'Journal settings'}
@@ -574,13 +618,29 @@ export function JournalModule() {
                   </div>
                 </div>
 
-                {/* Calendar strip */}
+                {/* Calendar */}
                 <div className="px-4 py-2 border-b border-border/10">
-                  <JournalCalendar
-                    entryDates={journal.entryDates}
-                    selectedDate={journal.selectedDate}
-                    onSelectDate={journal.setSelectedDate}
-                  />
+                  {calendarMode === 'full' ? (
+                    <JournalCalendarFull
+                      entryDates={journal.entryDates}
+                      selectedDate={journal.selectedDate}
+                      onSelectDate={journal.setSelectedDate}
+                      onToggleMode={() => {
+                        setCalendarMode('strip');
+                        localStorage.setItem('journal-calendar-mode', 'strip');
+                      }}
+                    />
+                  ) : (
+                    <JournalCalendar
+                      entryDates={journal.entryDates}
+                      selectedDate={journal.selectedDate}
+                      onSelectDate={journal.setSelectedDate}
+                      onToggleMode={() => {
+                        setCalendarMode('full');
+                        localStorage.setItem('journal-calendar-mode', 'full');
+                      }}
+                    />
+                  )}
                 </div>
 
                 {/* Entry list */}
@@ -599,7 +659,7 @@ export function JournalModule() {
                 {/* Password settings bottom sheet */}
                 {showPasswordSettings && (
                   <>
-                    <div className="fixed inset-0 z-[64] bg-black/30 animate-fade-in" onClick={() => setShowPasswordSettings(false)} />
+                    <div className="fixed inset-0 z-[64] bg-black/30 animate-fade-in" onClick={() => { setShowPasswordSettings(false); setShowChangePassword(false); }} />
                     <div
                       className="fixed bottom-0 left-0 right-0 z-[65] animate-slide-up"
                       onClick={e => e.stopPropagation()}
@@ -613,12 +673,52 @@ export function JournalModule() {
                           {ts.journalSettings || 'Journal Settings'}
                         </h3>
                         {security.hasPassword ? (
-                          <button
-                            onClick={async () => { await security.removePassword(); setShowPasswordSettings(false); }}
-                            className="w-full py-3 rounded-xl bg-destructive/10 text-destructive text-sm font-medium min-h-[44px]"
-                          >
-                            {ts.journalPasswordRemove || 'Remove Password Lock'}
-                          </button>
+                          showChangePassword ? (
+                            <div>
+                              <JournalLockScreen
+                                mode="change"
+                                cooldownRemaining={0}
+                                failedAttempts={0}
+                                onUnlock={async () => false}
+                                onSetPassword={async () => {}}
+                                onChangePassword={async (oldPw, newPw) => {
+                                  const ok = await security.changePassword(oldPw, newPw);
+                                  if (ok) {
+                                    toast.success(ts.journalPasswordChangeSuccess || 'Password changed successfully');
+                                    setShowChangePassword(false);
+                                    setShowPasswordSettings(false);
+                                  }
+                                  return ok;
+                                }}
+                              />
+                              <button
+                                onClick={() => setShowChangePassword(false)}
+                                className="w-full mt-2 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors min-h-[44px]"
+                              >
+                                {ts.cancel || 'Cancel'}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <button
+                                onClick={() => setShowChangePassword(true)}
+                                className="w-full py-3 rounded-xl bg-primary/10 text-primary text-sm font-medium min-h-[44px]"
+                              >
+                                {ts.journalPasswordChange || 'Change Password'}
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  if (window.confirm(ts.journalPasswordRemoveConfirm || 'Are you sure? Your journal will be accessible without a password.')) {
+                                    await security.removePassword();
+                                    setShowPasswordSettings(false);
+                                  }
+                                }}
+                                className="w-full py-3 rounded-xl bg-destructive/10 text-destructive text-sm font-medium min-h-[44px]"
+                              >
+                                {ts.journalPasswordRemove || 'Remove Password Lock'}
+                              </button>
+                            </div>
+                          )
                         ) : (
                           <div>
                             <p className="text-sm text-muted-foreground mb-3">
@@ -636,6 +736,50 @@ export function JournalModule() {
                             />
                           </div>
                         )}
+                        {/* Biometric toggle (only if password set + biometric available) */}
+                        {security.hasPassword && security.biometricAvailable && (
+                          <div className="mt-4 pt-4 border-t border-border/20">
+                            <div className="flex items-center justify-between min-h-[44px]">
+                              <div>
+                                <p className="text-sm font-medium text-foreground">
+                                  {ts.journalBiometricEnable || 'Biometric Unlock'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {ts.journalBiometricSubtitle || 'Use fingerprint or face to unlock'}
+                                </p>
+                              </div>
+                              <Switch
+                                checked={security.biometricEnabled}
+                                onCheckedChange={security.setBiometricEnabled}
+                                aria-label={ts.journalBiometricEnable || 'Biometric Unlock'}
+                                className="mt-0.5 shrink-0"
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Screenshot blocking (native only) */}
+                        {screenSecurity.isNative && (
+                          <div className="mt-4 pt-4 border-t border-border/20">
+                            <div className="flex items-center justify-between min-h-[44px]">
+                              <div>
+                                <p className="text-sm font-medium text-foreground">
+                                  {ts.journalScreenshotBlock || 'Block Screenshots'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {ts.journalScreenshotBlockSubtitle || 'Prevent screen capture while journal is open'}
+                                </p>
+                              </div>
+                              <Switch
+                                checked={screenSecurity.enabled}
+                                onCheckedChange={screenSecurity.setEnabled}
+                                aria-label={ts.journalScreenshotBlock || 'Block Screenshots'}
+                                className="mt-0.5 shrink-0"
+                              />
+                            </div>
+                          </div>
+                        )}
+
                         {/* Reminder toggle */}
                         <div className="mt-4 pt-4 border-t border-border/20">
                           <div className="flex items-center justify-between min-h-[44px]">
@@ -672,9 +816,127 @@ export function JournalModule() {
                           )}
                         </div>
 
+                        {/* Export / Import */}
+                        <div className="mt-4 pt-4 border-t border-border/20">
+                          <p className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-2">
+                            {ts.journalDataSection || 'Data'}
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => setShowExportPicker(true)}
+                              disabled={exporting}
+                              className="flex-1 py-2.5 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] flex items-center justify-center gap-1.5 disabled:opacity-50"
+                            >
+                              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                              {ts.journalExport || 'Export'}
+                            </button>
+                            <button
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={importing}
+                              className="flex-1 py-2.5 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] flex items-center justify-center gap-1.5 disabled:opacity-50"
+                            >
+                              {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                              {ts.journalImport || 'Import'}
+                            </button>
+                          </div>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".json"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              e.target.value = '';
+                              setImporting(true);
+                              try {
+                                const { importJournalBackup } = await import('./journalImport');
+                                const result = await importJournalBackup(file);
+                                if (result.errors.length > 0) {
+                                  toast.error(result.errors[0]);
+                                } else {
+                                  toast.success(
+                                    `${ts.journalImportSuccess || 'Imported'}: ${result.imported} entries, ${result.photosImported} photos` +
+                                    (result.skipped > 0 ? ` (${result.skipped} ${ts.journalImportDuplicate || 'duplicates skipped'})` : '')
+                                  );
+                                  journal.refresh();
+                                }
+                              } catch {
+                                toast.error(ts.journalImportFailed || 'Import failed');
+                              } finally {
+                                setImporting(false);
+                              }
+                            }}
+                          />
+                        </div>
+
                         <button
-                          onClick={() => setShowPasswordSettings(false)}
+                          onClick={() => { setShowPasswordSettings(false); setShowChangePassword(false); setShowExportPicker(false); }}
                           className="w-full mt-4 py-2.5 text-sm text-muted-foreground min-h-[44px]"
+                        >
+                          {ts.cancel || 'Cancel'}
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Export format picker */}
+                {showExportPicker && (
+                  <>
+                    <div className="fixed inset-0 z-[66] bg-black/30 animate-fade-in" onClick={() => setShowExportPicker(false)} />
+                    <div
+                      className="fixed bottom-0 left-0 right-0 z-[67] animate-slide-up"
+                      onClick={e => e.stopPropagation()}
+                    >
+                      <div className="flex justify-center pt-2 pb-1 bg-card rounded-t-2xl">
+                        <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
+                      </div>
+                      <div className="bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+                        <h3 className="text-base font-semibold text-foreground mb-3">
+                          {ts.journalExportFormat || 'Export Format'}
+                        </h3>
+                        <div className="grid grid-cols-2 gap-2">
+                          {([
+                            { key: 'json', label: ts.journalExportJSON || 'JSON Backup', desc: ts.journalExportJSONDesc || 'Full backup with photos & audio' },
+                            { key: 'csv', label: ts.journalExportCSV || 'CSV', desc: ts.journalExportCSVDesc || 'Spreadsheet format' },
+                            { key: 'pdf', label: ts.journalExportPDF || 'PDF', desc: ts.journalExportPDFDesc || 'Printable document' },
+                            { key: 'md', label: ts.journalExportText || 'Markdown', desc: ts.journalExportTextDesc || 'Plain text format' },
+                          ] as const).map(fmt => (
+                            <button
+                              key={fmt.key}
+                              disabled={exporting}
+                              onClick={async () => {
+                                setExporting(true);
+                                try {
+                                  const exp = await import('./journalExport');
+                                  if (fmt.key === 'json') await exp.exportJSON();
+                                  else if (fmt.key === 'csv') await exp.exportCSV();
+                                  else if (fmt.key === 'pdf') await exp.exportPDF();
+                                  else if (fmt.key === 'md') await exp.exportMarkdown();
+                                  toast.success(ts.journalExportSuccess || 'Export complete');
+                                  setShowExportPicker(false);
+                                } catch {
+                                  toast.error(ts.journalExportFailed || 'Export failed');
+                                } finally {
+                                  setExporting(false);
+                                }
+                              }}
+                              className={cn(
+                                'p-3 rounded-xl text-left transition-all min-h-[44px]',
+                                'bg-muted/30 border border-border/15',
+                                'hover:bg-muted/50 active:scale-[0.98]',
+                                'disabled:opacity-50',
+                              )}
+                            >
+                              <p className="text-sm font-medium text-foreground">{fmt.label}</p>
+                              <p className="text-[10px] text-muted-foreground/60 mt-0.5">{fmt.desc}</p>
+                            </button>
+                          ))}
+                        </div>
+                        <button
+                          onClick={() => setShowExportPicker(false)}
+                          className="w-full mt-3 py-2.5 text-sm text-muted-foreground min-h-[44px]"
                         >
                           {ts.cancel || 'Cancel'}
                         </button>

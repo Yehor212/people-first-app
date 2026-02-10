@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import type { JournalEntry, JournalPhoto } from './types';
+import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
 import type { MoodType } from '@/types';
 import { getToday } from '@/lib/utils';
 import * as storage from './journalStorage';
 
-export type JournalView = 'list' | 'editing' | 'viewing';
+export type JournalView = 'list' | 'editing' | 'viewing' | 'stats';
 
 export function useJournal() {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -75,6 +75,7 @@ export function useJournal() {
     content: string;
     stickers: string[];
     photoIds: string[];
+    audioIds?: string[];
     mood?: MoodType;
     tags: string[];
     date?: string;
@@ -121,6 +122,19 @@ export function useJournal() {
     return storage.getPhotosForEntry(entryId);
   }, []);
 
+  // Audio operations
+  const addAudio = useCallback(async (data: string, duration: number, mimeType: string, entryId: string): Promise<JournalAudio> => {
+    return storage.storeAudio(entryId, data, duration, mimeType);
+  }, []);
+
+  const removeAudio = useCallback(async (audioId: string, entryId: string) => {
+    await storage.deleteAudio(audioId, entryId);
+  }, []);
+
+  const getAudio = useCallback(async (entryId: string): Promise<JournalAudio[]> => {
+    return storage.getAudioForEntry(entryId);
+  }, []);
+
   // Navigation
   const openEntry = useCallback((id: string) => {
     setActiveEntryId(id);
@@ -132,8 +146,12 @@ export function useJournal() {
     setView('editing');
   }, []);
 
+  const openStats = useCallback(() => {
+    setView('stats');
+  }, []);
+
   const goBack = useCallback(() => {
-    if (view === 'editing' || view === 'viewing') {
+    if (view === 'editing' || view === 'viewing' || view === 'stats') {
       setActiveEntryId(null);
       setView('list');
     }
@@ -146,6 +164,7 @@ export function useJournal() {
 
   return {
     entries: filteredEntries,
+    allEntries: entries,
     groupedEntries,
     entryDates,
     loading,
@@ -160,8 +179,12 @@ export function useJournal() {
     addPhoto,
     removePhoto,
     getPhotos,
+    addAudio,
+    removeAudio,
+    getAudio,
     openEntry,
     editEntry,
+    openStats,
     goBack,
     refresh,
     totalCount: entries.length,

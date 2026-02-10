@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, CalendarRange } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -34,9 +34,10 @@ interface JournalCalendarProps {
   entryDates: Map<string, MoodType | undefined>;
   selectedDate: string | null;
   onSelectDate: (date: string | null) => void;
+  onToggleMode?: () => void;
 }
 
-export function JournalCalendar({ entryDates, selectedDate, onSelectDate }: JournalCalendarProps) {
+export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onToggleMode }: JournalCalendarProps) {
   const today = getToday();
   const scrollRef = useRef<HTMLDivElement>(null);
   const { t, language, isRTL } = useLanguage();
@@ -106,6 +107,15 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate }: Jour
               className="text-[10px] font-medium text-primary px-2 py-0.5 rounded-full bg-primary/10"
             >
               {ts.journalCalendarToday || 'Today'}
+            </button>
+          )}
+          {onToggleMode && (
+            <button
+              onClick={onToggleMode}
+              className="p-1 rounded-md hover:bg-muted/50"
+              aria-label="Switch to month view"
+            >
+              <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60" />
             </button>
           )}
           <button

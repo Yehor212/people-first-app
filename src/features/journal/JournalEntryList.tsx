@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
-import { BookOpen, Plus, Search, X } from 'lucide-react';
+import { Plus, Search, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { JournalEntry } from './types';
 import type { MoodType } from '@/types';
 import { JournalEntryCard } from './JournalEntryCard';
+import { StickerRenderer } from './StickerRenderer';
 
 const MOOD_EMOJIS: Record<string, string> = {
   great: '\u{1F604}',
@@ -109,19 +110,20 @@ export function JournalEntryList({
   if (totalCount === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 px-6">
-        <div className="relative w-20 h-20 mb-4">
+        <div className="relative w-24 h-24 mb-5">
           <motion.div
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/15 to-primary/5 flex items-center justify-center"
+            className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/15 via-primary/8 to-transparent flex items-center justify-center"
           >
-            <BookOpen className="w-10 h-10 text-primary/70" />
+            <StickerRenderer emoji={'\u{1F4D3}'} size="lg" />
           </motion.div>
           {/* Sparkle dots */}
           {[
-            { x: -6, y: -4, delay: 0 },
-            { x: 18, y: -8, delay: 0.7 },
-            { x: 20, y: 16, delay: 1.4 },
+            { x: -10, y: -6, delay: 0 },
+            { x: 22, y: -10, delay: 0.7 },
+            { x: 24, y: 20, delay: 1.4 },
+            { x: -8, y: 22, delay: 2.1 },
           ].map((sparkle, i) => (
             <motion.div
               key={i}
@@ -142,13 +144,15 @@ export function JournalEntryList({
           whileTap={{ scale: 0.95 }}
           onClick={onNewEntry}
           className={cn(
-            'flex items-center gap-2 px-5 py-2.5 rounded-xl',
+            'flex items-center gap-2 px-6 py-3 rounded-2xl',
             'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground text-sm font-semibold',
-            'shadow-[0_2px_15px_rgba(var(--primary-rgb,99,102,241),0.25)]',
+            'shadow-[0_4px_20px_rgba(var(--primary-rgb,99,102,241),0.3)]',
+            'hover:shadow-[0_6px_28px_rgba(var(--primary-rgb,99,102,241),0.4)]',
+            'transition-shadow duration-300',
           )}
         >
           <Plus className="w-4 h-4" />
-          {ts.journalNewEntry || 'Write first entry'}
+          {ts.journalStartYourStory || 'Start your story'}
         </motion.button>
       </div>
     );

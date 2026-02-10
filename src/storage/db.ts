@@ -1,6 +1,6 @@
 import Dexie, { Table } from 'dexie';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
-import type { JournalEntry, JournalPhoto } from '@/features/journal/types';
+import type { JournalEntry, JournalPhoto, JournalAudio } from '@/features/journal/types';
 import { logger } from '@/lib/logger';
 
 /**
@@ -28,6 +28,7 @@ export class ZenFlowDB extends Dexie {
   offlineQueue!: Table<OfflineQueueItem, string>;
   journalEntries!: Table<JournalEntry, string>;
   journalPhotos!: Table<JournalPhoto, string>;
+  journalAudio!: Table<JournalAudio, string>;
 
   constructor() {
     super('ZenFlowDB');
@@ -72,6 +73,19 @@ export class ZenFlowDB extends Dexie {
       offlineQueue: 'id, type, entityId, timestamp',
       journalEntries: 'id, date, createdAt, updatedAt',
       journalPhotos: 'id, entryId, createdAt',
+    });
+
+    // Version 5: Add journal audio recordings table
+    this.version(5).stores({
+      moods: 'id, timestamp, date',
+      habits: 'id, createdAt, type',
+      focusSessions: 'id, startTime, date',
+      gratitudeEntries: 'id, timestamp, date',
+      settings: 'key',
+      offlineQueue: 'id, type, entityId, timestamp',
+      journalEntries: 'id, date, createdAt, updatedAt',
+      journalPhotos: 'id, entryId, createdAt',
+      journalAudio: 'id, entryId, createdAt',
     });
   }
 }

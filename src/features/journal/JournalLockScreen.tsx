@@ -1,34 +1,41 @@
 import { useState, useEffect, useRef } from 'react';
-import { Lock, Eye, EyeOff, AlertTriangle } from 'lucide-react';
+import { Lock, Eye, EyeOff, AlertTriangle, Fingerprint } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface JournalLockScreenProps {
-  mode: 'setup' | 'unlock';
+  mode: 'setup' | 'unlock' | 'change';
   cooldownRemaining: number;
   failedAttempts: number;
   onUnlock: (password: string) => Promise<boolean>;
   onSetPassword: (password: string) => Promise<void>;
+  onChangePassword?: (oldPw: string, newPw: string) => Promise<boolean>;
   onForgotPassword?: () => void;
+  onBiometricUnlock?: () => Promise<boolean>;
+  biometricAvailable?: boolean;
 }
 
 export function JournalLockScreen({
   mode,
   cooldownRemaining,
-  failedAttempts,
+  failedAttempts: _failedAttempts,
   onUnlock,
   onSetPassword,
+  onChangePassword,
   onForgotPassword,
+  onBiometricUnlock,
+  biometricAvailable,
 }: JournalLockScreenProps) {
   const { t } = useLanguage();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [shake, setShake] = useState(false);
   const [wrongGlow, setWrongGlow] = useState(false);
-  const [step, setStep] = useState<'enter' | 'confirm'>('enter');
+  const [step, setStep] = useState<'current' | 'enter' | 'confirm'>(mode === 'change' ? 'current' : 'enter');
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Cooldown timer display
@@ -53,10 +60,16 @@ export function JournalLockScreen({
     e.preventDefault();
     if (countdown > 0) return;
 
-    if (mode === 'setup') {
+    if (mode === 'change') {
+      if (step === 'current') {
+        if (!currentPassword) return;
+        setStep('enter');
+        setError('');
+        return;
+      }
       if (step === 'enter') {
         if (password.length < 4) {
-          setError((t as unknown as Record<string, string>).journalPasswordTooShort || 'Minimum 4 characters');
+          setError(ts.journalPasswordTooShort || 'Minimum 4 characters');
           triggerShake();
           return;
         }
@@ -65,7 +78,36 @@ export function JournalLockScreen({
         return;
       }
       if (password !== confirm) {
-        setError((t as unknown as Record<string, string>).journalPasswordMismatch || 'Passwords do not match');
+        setError(ts.journalPasswordMismatch || 'Passwords do not match');
+        setConfirm('');
+        triggerShake();
+        return;
+      }
+      const ok = await onChangePassword?.(currentPassword, password);
+      if (!ok) {
+        setError(ts.journalPasswordOldWrong || 'Current password is incorrect');
+        setStep('current');
+        setCurrentPassword('');
+        setPassword('');
+        setConfirm('');
+        triggerShake();
+      }
+      return;
+    }
+
+    if (mode === 'setup') {
+      if (step === 'enter') {
+        if (password.length < 4) {
+          setError(ts.journalPasswordTooShort || 'Minimum 4 characters');
+          triggerShake();
+          return;
+        }
+        setStep('confirm');
+        setError('');
+        return;
+      }
+      if (password !== confirm) {
+        setError(ts.journalPasswordMismatch || 'Passwords do not match');
         setConfirm('');
         triggerShake();
         return;
@@ -74,7 +116,7 @@ export function JournalLockScreen({
     } else {
       const ok = await onUnlock(password);
       if (!ok) {
-        setError((t as unknown as Record<string, string>).journalPasswordWrong || 'Wrong password');
+        setError(ts.journalPasswordWrong || 'Wrong password');
         setPassword('');
         triggerShake();
       }
@@ -112,10 +154,30 @@ export function JournalLockScreen({
         </div>
 
         <h2 className="text-lg font-bold text-center text-foreground mb-1">
-          {mode === 'setup'
-            ? (ts.journalPasswordSetup || 'Set Journal Password')
-            : (ts.journalLocked || 'Journal Locked')}
+          {mode === 'change'
+            ? (ts.journalPasswordChange || 'Change Password')
+            : mode === 'setup'
+              ? (ts.journalPasswordSetup || 'Set Journal Password')
+              : (ts.journalLocked || 'Journal Locked')}
         </h2>
+
+        {mode === 'change' && step === 'current' && (
+          <p className="text-xs text-muted-foreground text-center mb-4 px-2">
+            {ts.journalPasswordOldEnter || 'Enter your current password'}
+          </p>
+        )}
+
+        {mode === 'change' && step === 'enter' && (
+          <p className="text-xs text-muted-foreground text-center mb-4 px-2">
+            {ts.journalPasswordNewEnter || 'Enter your new password'}
+          </p>
+        )}
+
+        {mode === 'change' && step === 'confirm' && (
+          <p className="text-xs text-muted-foreground text-center mb-4">
+            {ts.journalPasswordConfirm || 'Confirm your new password'}
+          </p>
+        )}
 
         {mode === 'setup' && step === 'enter' && (
           <p className="text-xs text-muted-foreground text-center mb-4 px-2">
@@ -134,11 +196,15 @@ export function JournalLockScreen({
             <input
               ref={inputRef}
               type={showPassword ? 'text' : 'password'}
-              value={step === 'confirm' ? confirm : password}
-              onChange={e => step === 'confirm' ? setConfirm(e.target.value) : setPassword(e.target.value)}
-              placeholder={mode === 'setup' && step === 'confirm'
-                ? (ts.journalPasswordConfirm || 'Confirm password')
-                : (ts.journalPasswordEnter || 'Enter password')}
+              value={step === 'current' ? currentPassword : step === 'confirm' ? confirm : password}
+              onChange={e => step === 'current' ? setCurrentPassword(e.target.value) : step === 'confirm' ? setConfirm(e.target.value) : setPassword(e.target.value)}
+              placeholder={step === 'current'
+                ? (ts.journalPasswordOldEnter || 'Current password')
+                : step === 'confirm'
+                  ? (ts.journalPasswordConfirm || 'Confirm password')
+                  : mode === 'change'
+                    ? (ts.journalPasswordNewEnter || 'New password')
+                    : (ts.journalPasswordEnter || 'Enter password')}
               className={cn(
                 'w-full px-4 py-3 pe-14 rounded-xl text-sm',
                 'bg-background/80 border border-border/50',
@@ -179,7 +245,7 @@ export function JournalLockScreen({
 
           <button
             type="submit"
-            disabled={countdown > 0 || (step === 'confirm' ? !confirm : !password)}
+            disabled={countdown > 0 || (step === 'current' ? !currentPassword : step === 'confirm' ? !confirm : !password)}
             className={cn(
               'w-full py-3 rounded-xl text-sm font-semibold',
               'bg-gradient-to-r from-primary to-primary/90',
@@ -189,11 +255,24 @@ export function JournalLockScreen({
               'active:scale-[0.98] transition-all duration-150',
             )}
           >
-            {mode === 'setup'
-              ? (step === 'enter' ? (ts.journalNext || 'Next') : (ts.journalSave || 'Save'))
-              : (ts.journalUnlock || 'Unlock')}
+            {mode === 'change'
+              ? (step === 'current' ? (ts.journalNext || 'Next') : step === 'enter' ? (ts.journalNext || 'Next') : (ts.journalPasswordChangeConfirm || 'Change Password'))
+              : mode === 'setup'
+                ? (step === 'enter' ? (ts.journalNext || 'Next') : (ts.journalSave || 'Save'))
+                : (ts.journalUnlock || 'Unlock')}
           </button>
         </form>
+
+        {/* Biometric unlock button */}
+        {mode === 'unlock' && biometricAvailable && onBiometricUnlock && (
+          <button
+            onClick={onBiometricUnlock}
+            className="w-full mt-3 py-2.5 flex items-center justify-center gap-2 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] hover:bg-muted/70 transition-colors"
+          >
+            <Fingerprint className="w-5 h-5 text-primary" />
+            {ts.journalBiometricUnlock || 'Unlock with biometrics'}
+          </button>
+        )}
 
         {mode === 'unlock' && onForgotPassword && (
           <button
@@ -204,9 +283,18 @@ export function JournalLockScreen({
           </button>
         )}
 
-        {mode === 'setup' && step === 'confirm' && (
+        {((mode === 'setup' && step === 'confirm') || (mode === 'change' && step !== 'current')) && (
           <button
-            onClick={() => { setStep('enter'); setConfirm(''); setError(''); }}
+            onClick={() => {
+              if (step === 'confirm') {
+                setStep('enter');
+                setConfirm('');
+              } else if (mode === 'change' && step === 'enter') {
+                setStep('current');
+                setPassword('');
+              }
+              setError('');
+            }}
             className="w-full mt-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors text-center min-h-[44px]"
           >
             {ts.journalBack || 'Back'}

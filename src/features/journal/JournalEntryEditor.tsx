@@ -1,17 +1,22 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, Sparkles, X, Calendar } from 'lucide-react';
+import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, Sparkles, X, Calendar, Shuffle, Mic, MicOff, Circle, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
-import type { JournalEntry, JournalPhoto } from './types';
+import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
 import type { MoodType } from '@/types';
-import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY } from './types';
+import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY } from './types';
 import { JournalStickerPicker } from './JournalStickerPicker';
 import { JournalPhotoPicker } from './JournalPhotoPicker';
 import { JournalPhotoGallery } from './JournalPhotoGallery';
+import { JournalAudioPlayer } from './JournalAudioPlayer';
 import { StickerRenderer } from './StickerRenderer';
+import { JournalTemplatePicker } from './JournalTemplatePicker';
+import { useJournalVoice } from './useJournalVoice';
+import { useAudioRecorder } from './useAudioRecorder';
+import { JournalHabitSection } from './JournalHabitSection';
 
 const MOOD_OPTIONS: { mood: MoodType; emoji: string }[] = [
   { mood: 'great', emoji: '\u{1F604}' },
@@ -46,9 +51,16 @@ interface DraftData {
   content: string;
   stickers: string[];
   photoIds: string[];
+  audioIds?: string[];
   mood?: MoodType;
   tags: string[];
   savedAt: number;
+}
+
+function formatRecordingTime(sec: number): string {
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
 }
 
 function getDraftKey(entryId: string | null): string {
@@ -80,12 +92,16 @@ interface JournalEntryEditorProps {
     content: string;
     stickers: string[];
     photoIds: string[];
+    audioIds?: string[];
     mood?: MoodType;
     tags: string[];
     date?: string;
+    habitSnapshot?: { habitId: string; habitName: string; habitIcon: string; completed: boolean }[];
   }) => Promise<void>;
   onAddPhoto: (file: File, entryId: string) => Promise<JournalPhoto>;
   onRemovePhoto: (photoId: string, entryId: string) => Promise<void>;
+  onAddAudio: (data: string, duration: number, mimeType: string, entryId: string) => Promise<JournalAudio>;
+  onRemoveAudio: (audioId: string, entryId: string) => Promise<void>;
   onDelete?: () => void;
   onBack: () => void;
 }
@@ -95,10 +111,12 @@ export function JournalEntryEditor({
   onSave,
   onAddPhoto,
   onRemovePhoto,
+  onAddAudio,
+  onRemoveAudio,
   onDelete,
   onBack,
 }: JournalEntryEditorProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -110,8 +128,11 @@ export function JournalEntryEditor({
   const [content, setContent] = useState(entry?.content || '');
   const [stickers, setStickers] = useState<string[]>(entry?.stickers || []);
   const [photoIds, setPhotoIds] = useState<string[]>(entry?.photoIds || []);
+  const [audioIds, setAudioIds] = useState<string[]>(entry?.audioIds || []);
+  const [audioRecordings, setAudioRecordings] = useState<JournalAudio[]>([]);
   const [mood, setMood] = useState<MoodType | undefined>(entry?.mood);
   const [tags, setTags] = useState<string[]>(entry?.tags || []);
+  const [habitSnapshot, setHabitSnapshot] = useState<{ habitId: string; habitName: string; habitIcon: string; completed: boolean }[]>(entry?.habitSnapshot || []);
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -121,11 +142,18 @@ export function JournalEntryEditor({
   const [showTags, setShowTags] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(!entry);
+  const [showRecordingOverlay, setShowRecordingOverlay] = useState(false);
   const [draftAvailable, setDraftAvailable] = useState<DraftData | null>(null);
   const [promptsHidden, setPromptsHidden] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState(0);
 
   const entryId = entry?.id || '__draft__';
+
+  // Voice dictation + audio recording hooks
+  const voice = useJournalVoice(language);
+  const recorder = useAudioRecorder();
+  const wasListeningRef = useRef(false);
 
   // Initial values for isDirty check
   const initialRef = useRef({
@@ -133,6 +161,7 @@ export function JournalEntryEditor({
     content: entry?.content || '',
     stickers: JSON.stringify(entry?.stickers || []),
     photoIds: JSON.stringify(entry?.photoIds || []),
+    audioIds: JSON.stringify(entry?.audioIds || []),
     mood: entry?.mood,
     tags: JSON.stringify(entry?.tags || []),
   });
@@ -142,28 +171,35 @@ export function JournalEntryEditor({
     return title !== init.title || content !== init.content ||
       JSON.stringify(stickers) !== init.stickers ||
       JSON.stringify(photoIds) !== init.photoIds ||
+      JSON.stringify(audioIds) !== init.audioIds ||
       mood !== init.mood ||
       JSON.stringify(tags) !== init.tags;
-  }, [title, content, stickers, photoIds, mood, tags]);
+  }, [title, content, stickers, photoIds, audioIds, mood, tags]);
 
   const wordCount = useMemo(() => {
     if (!content.trim()) return 0;
     return content.trim().split(/\s+/).filter(Boolean).length;
   }, [content]);
 
+  const [promptSeed, setPromptSeed] = useState(0);
   const randomPrompts = useMemo(() => {
     const prompts = PROMPT_KEYS.map((key, i) => ts[key] || DEFAULT_PROMPTS[i]);
+    // Use seed to force re-shuffle
+    void promptSeed;
     const shuffled = [...prompts].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 3);
+    return shuffled.slice(0, 5);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [promptSeed]);
 
-  const hasContent = content.trim() || title.trim() || stickers.length > 0 || photoIds.length > 0 || mood;
+  const hasContent = content.trim() || title.trim() || stickers.length > 0 || photoIds.length > 0 || audioIds.length > 0 || mood;
 
   // ── Load draft on mount ──
   useEffect(() => {
     const draft = loadDraft(draftKey);
-    if (draft) setDraftAvailable(draft);
+    if (draft) {
+      setDraftAvailable(draft);
+      setShowTemplatePicker(false); // Don't show templates if draft exists
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -171,13 +207,13 @@ export function JournalEntryEditor({
   useEffect(() => {
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
-      if (title || content || stickers.length > 0 || mood || tags.length > 0) {
-        saveDraft(draftKey, { title, content, stickers, photoIds, mood, tags, savedAt: Date.now() });
+      if (title || content || stickers.length > 0 || mood || tags.length > 0 || audioIds.length > 0) {
+        saveDraft(draftKey, { title, content, stickers, photoIds, audioIds, mood, tags, savedAt: Date.now() });
         setDraftSavedAt(Date.now());
       }
     }, 3000);
     return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
-  }, [title, content, stickers, photoIds, mood, tags, draftKey]);
+  }, [title, content, stickers, photoIds, audioIds, mood, tags, draftKey]);
 
   // Clear draft saved indicator after 2s
   useEffect(() => {
@@ -199,15 +235,60 @@ export function JournalEntryEditor({
     if (!entry) setTimeout(() => textareaRef.current?.focus(), 100);
   }, [entry]);
 
+  // Load existing audio recordings for editing
+  useEffect(() => {
+    if (entry?.audioIds && entry.audioIds.length > 0) {
+      import('./journalStorage').then(({ getAudioForEntry }) => {
+        getAudioForEntry(entry.id).then(setAudioRecordings);
+      });
+    }
+  }, [entry]);
+
+  // Append voice transcript to content when dictation stops
+  useEffect(() => {
+    if (wasListeningRef.current && !voice.isListening && voice.transcript) {
+      setContent(prev => {
+        const separator = prev && !prev.endsWith('\n') && !prev.endsWith(' ') ? ' ' : '';
+        return prev + separator + voice.transcript;
+      });
+    }
+    wasListeningRef.current = voice.isListening;
+  }, [voice.isListening, voice.transcript]);
+
+  // Handle completed audio recording — store and add to audioIds
+  useEffect(() => {
+    if (recorder.audioData && !recorder.isRecording) {
+      const storeRecording = async () => {
+        try {
+          const data = recorder.audioData;
+          if (!data) return;
+          const audio = await onAddAudio(data, recorder.duration, recorder.mimeType, entryId);
+          setAudioIds(prev => [...prev, audio.id]);
+          setAudioRecordings(prev => [...prev, audio]);
+          recorder.reset();
+          setShowRecordingOverlay(false);
+          toast.success(ts.journalAudioSaved || 'Audio saved');
+        } catch {
+          toast.error(ts.journalAudioError || 'Failed to save audio');
+          recorder.reset();
+        }
+      };
+      storeRecording();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recorder.audioData, recorder.isRecording]);
+
   // Android back button (priority order)
   useEffect(() => {
     if (showUnsavedDialog) return registerModalCloseCallback(() => { setShowUnsavedDialog(false); return true; });
     if (showDeleteConfirm) return registerModalCloseCallback(() => { setShowDeleteConfirm(false); return true; });
+    if (showRecordingOverlay) return registerModalCloseCallback(() => { recorder.stop(); setShowRecordingOverlay(false); return true; });
+    if (showTemplatePicker) return registerModalCloseCallback(() => { setShowTemplatePicker(false); return true; });
     if (showStickers) return registerModalCloseCallback(() => { setShowStickers(false); return true; });
     if (showPhotos) return registerModalCloseCallback(() => { setShowPhotos(false); return true; });
     if (showMood) return registerModalCloseCallback(() => { setShowMood(false); return true; });
     if (showTags) return registerModalCloseCallback(() => { setShowTags(false); return true; });
-  }, [showUnsavedDialog, showDeleteConfirm, showStickers, showPhotos, showMood, showTags]);
+  }, [showUnsavedDialog, showDeleteConfirm, showRecordingOverlay, showTemplatePicker, showStickers, showPhotos, showMood, showTags, recorder]);
 
   // ── Handlers ──
 
@@ -222,6 +303,9 @@ export function JournalEntryEditor({
 
   const handleSave = useCallback(async () => {
     if (!hasContent) return;
+    // Stop any active voice/recording before saving
+    if (voice.isListening) voice.stop();
+    if (recorder.isRecording) recorder.stop();
     setSaving(true);
     try {
       await onSave({
@@ -229,9 +313,11 @@ export function JournalEntryEditor({
         content: content.trim(),
         stickers,
         photoIds,
+        audioIds: audioIds.length > 0 ? audioIds : undefined,
         mood,
         tags,
         date,
+        habitSnapshot: habitSnapshot.length > 0 ? habitSnapshot : undefined,
       });
       clearDraft(draftKey);
       toast.success(title.trim() ? `"${title.trim().slice(0, 30)}"` : (ts.journalEntrySaved || 'Entry saved'));
@@ -239,7 +325,7 @@ export function JournalEntryEditor({
     } finally {
       setSaving(false);
     }
-  }, [title, content, stickers, photoIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts]);
+  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot]);
 
   const handleSaveAndClose = useCallback(async () => {
     setShowUnsavedDialog(false);
@@ -258,6 +344,7 @@ export function JournalEntryEditor({
     setContent(draftAvailable.content);
     setStickers(draftAvailable.stickers);
     setPhotoIds(draftAvailable.photoIds);
+    if (draftAvailable.audioIds) setAudioIds(draftAvailable.audioIds);
     setMood(draftAvailable.mood);
     setTags(draftAvailable.tags);
     setDraftAvailable(null);
@@ -299,6 +386,43 @@ export function JournalEntryEditor({
     }
     setTagInput('');
     setShowTags(false);
+  };
+
+  const handleRemoveAudio = async (audioId: string) => {
+    await onRemoveAudio(audioId, entryId);
+    setAudioIds(prev => prev.filter(id => id !== audioId));
+    setAudioRecordings(prev => prev.filter(a => a.id !== audioId));
+  };
+
+  const handleToggleDictation = () => {
+    if (voice.isListening) {
+      voice.stop();
+    } else {
+      if (!voice.isSupported) {
+        toast.error(ts.journalVoiceNotSupported || 'Speech recognition not supported in this browser');
+        return;
+      }
+      voice.start();
+    }
+  };
+
+  const handleStartRecording = async () => {
+    if (!recorder.isSupported) {
+      toast.error(ts.journalVoiceNotSupported || 'Audio recording not supported');
+      return;
+    }
+    if (audioIds.length >= MAX_AUDIO_PER_ENTRY) {
+      toast.error(ts.journalAudioMaxReached || `Maximum ${MAX_AUDIO_PER_ENTRY} recordings`);
+      return;
+    }
+    closeAllPickers();
+    setShowRecordingOverlay(true);
+    await recorder.start();
+  };
+
+  const handleStopRecording = () => {
+    recorder.stop();
+    // audioData effect will handle storing
   };
 
   const closeAllPickers = () => {
@@ -418,27 +542,43 @@ export function JournalEntryEditor({
 
         {/* Writing prompts (new entries only) */}
         {!entry && !content && !title && !promptsHidden && !draftAvailable && (
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
                 {ts.journalWritingPrompts || 'Writing prompts'}
               </span>
-              <button
-                onClick={() => setPromptsHidden(true)}
-                className="p-1 rounded hover:bg-muted/50"
-              >
-                <X className="w-3 h-3 text-muted-foreground/50" />
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPromptSeed(s => s + 1)}
+                  className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                  aria-label="Shuffle prompts"
+                >
+                  <Shuffle className="w-3 h-3 text-muted-foreground/50" />
+                </button>
+                <button
+                  onClick={() => setPromptsHidden(true)}
+                  className="p-1 rounded hover:bg-muted/50"
+                >
+                  <X className="w-3 h-3 text-muted-foreground/50" />
+                </button>
+              </div>
             </div>
             <div className="space-y-1.5">
               {randomPrompts.map((prompt, i) => (
                 <motion.button
-                  key={i}
-                  initial={{ opacity: 0, x: -8 }}
+                  key={`${promptSeed}-${i}`}
+                  initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
+                  transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 25 }}
                   onClick={() => handlePromptTap(prompt)}
-                  className="block w-full text-left text-xs text-muted-foreground/70 px-3 py-2.5 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors min-h-[36px]"
+                  className={cn(
+                    'block w-full text-left text-xs px-3.5 py-2.5 rounded-xl min-h-[40px]',
+                    'bg-card/60 backdrop-blur-sm',
+                    'border border-border/15',
+                    'text-muted-foreground/80 hover:text-foreground',
+                    'hover:bg-card/80 hover:border-primary/20',
+                    'transition-all duration-200',
+                  )}
                 >
                   {prompt}
                 </motion.button>
@@ -482,6 +622,53 @@ export function JournalEntryEditor({
             editable
           />
         )}
+
+        {/* Audio recordings */}
+        {audioRecordings.length > 0 && (
+          <div className="space-y-1.5">
+            {audioRecordings.map(audio => (
+              <div key={audio.id} className="flex items-center gap-1.5">
+                <div className="flex-1">
+                  <JournalAudioPlayer src={audio.data} duration={audio.duration} />
+                </div>
+                <button
+                  onClick={() => handleRemoveAudio(audio.id)}
+                  className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground/50 hover:text-destructive transition-colors min-w-[32px] min-h-[32px] flex items-center justify-center"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Voice dictation indicator */}
+        <AnimatePresence>
+          {voice.isListening && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20"
+            >
+              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <span className="text-xs text-red-600 dark:text-red-400 font-medium">
+                {ts.journalDictating || 'Listening...'}
+              </span>
+              {voice.transcript && (
+                <span className="text-xs text-muted-foreground/60 truncate flex-1">
+                  {voice.transcript.slice(-60)}
+                </span>
+              )}
+              <button
+                onClick={() => voice.stop()}
+                className="p-1 rounded-md hover:bg-red-500/20 min-w-[28px] min-h-[28px] flex items-center justify-center"
+              >
+                <Square className="w-3 h-3 text-red-500" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Tags */}
         {tags.length > 0 && (
@@ -531,6 +718,13 @@ export function JournalEntryEditor({
             )}
           </AnimatePresence>
         </div>
+
+        {/* Habit tracker section */}
+        <JournalHabitSection
+          date={date}
+          snapshot={habitSnapshot}
+          onSnapshotChange={setHabitSnapshot}
+        />
       </div>
 
       {/* Bottom toolbar */}
@@ -563,6 +757,41 @@ export function JournalEntryEditor({
         >
           <Camera className="w-5 h-5 text-muted-foreground" />
           <span className="text-[9px] text-muted-foreground/60">{ts.journalToolbarPhoto || 'Photo'}</span>
+        </button>
+
+        {/* Dictation button */}
+        <button
+          onClick={handleToggleDictation}
+          className={cn(
+            'flex-1 py-1 rounded-lg transition-colors',
+            'min-h-[44px] flex flex-col items-center justify-center gap-0.5',
+            voice.isListening
+              ? 'bg-red-500/10'
+              : 'hover:bg-muted/50',
+          )}
+        >
+          {voice.isListening ? (
+            <MicOff className="w-5 h-5 text-red-500" />
+          ) : (
+            <Mic className="w-5 h-5 text-muted-foreground" />
+          )}
+          <span className={cn('text-[9px]', voice.isListening ? 'text-red-500' : 'text-muted-foreground/60')}>
+            {voice.isListening ? (ts.journalDictateStop || 'Stop') : (ts.journalToolbarVoice || 'Voice')}
+          </span>
+        </button>
+
+        {/* Audio recording button */}
+        <button
+          onClick={handleStartRecording}
+          disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
+          className={cn(
+            'flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors',
+            'disabled:opacity-40',
+            'min-h-[44px] flex flex-col items-center justify-center gap-0.5',
+          )}
+        >
+          <Circle className="w-5 h-5 text-muted-foreground" />
+          <span className="text-[9px] text-muted-foreground/60">{ts.journalToolbarRecord || 'Record'}</span>
         </button>
 
         <button
@@ -642,6 +871,79 @@ export function JournalEntryEditor({
           maxCount={MAX_PHOTOS_PER_ENTRY}
         />
       )}
+
+      {/* Template picker for new entries */}
+      {showTemplatePicker && !entry && !draftAvailable && (
+        <JournalTemplatePicker
+          onSelect={(templateContent, _templateId) => {
+            if (templateContent) {
+              setContent(templateContent);
+              setPromptsHidden(true);
+            }
+            setShowTemplatePicker(false);
+            setTimeout(() => textareaRef.current?.focus(), 100);
+          }}
+          onClose={() => {
+            setShowTemplatePicker(false);
+            setTimeout(() => textareaRef.current?.focus(), 100);
+          }}
+        />
+      )}
+
+      {/* Recording overlay */}
+      <AnimatePresence>
+        {showRecordingOverlay && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] bg-black/60 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-card rounded-2xl p-6 max-w-[280px] mx-4 shadow-xl text-center"
+            >
+              {/* Pulsing circle */}
+              <div className="flex justify-center mb-4">
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                  className="w-16 h-16 rounded-full bg-red-500/15 flex items-center justify-center"
+                >
+                  <div className="w-10 h-10 rounded-full bg-red-500/25 flex items-center justify-center">
+                    <div className="w-4 h-4 rounded-full bg-red-500" />
+                  </div>
+                </motion.div>
+              </div>
+
+              <p className="text-sm font-semibold text-foreground mb-1">
+                {ts.journalRecording || 'Recording'}
+              </p>
+              <p className="text-2xl font-mono font-bold text-foreground tabular-nums mb-4">
+                {formatRecordingTime(recorder.duration)}
+              </p>
+              <p className="text-[10px] text-muted-foreground/60 mb-4">
+                {ts.journalAudioMaxDuration || 'Max 5 minutes'}
+              </p>
+
+              <button
+                onClick={handleStopRecording}
+                className={cn(
+                  'w-full py-3 rounded-xl text-sm font-semibold',
+                  'bg-red-500 text-white',
+                  'flex items-center justify-center gap-2',
+                  'active:scale-[0.98] transition-transform min-h-[44px]',
+                )}
+              >
+                <Square className="w-4 h-4" />
+                {ts.journalRecordingStop || 'Stop Recording'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Delete confirmation */}
       {showDeleteConfirm && (

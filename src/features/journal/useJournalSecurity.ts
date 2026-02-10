@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { db } from '@/storage/db';
 import type { JournalPassword } from './types';
 import { JOURNAL_PASSWORD_KEY } from './types';
+
+const BIOMETRIC_SETTINGS_KEY = 'journal_biometric';
 
 const PBKDF2_ITERATIONS = 100_000;
 const AUTO_LOCK_MS = 5 * 60 * 1000; // 5 minutes
@@ -42,14 +45,30 @@ export function useJournalSecurity() {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEnabled, setBiometricEnabledState] = useState(false);
   const unlockedAtRef = useRef(0);
   const autoLockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load password state
+  // Load password state + biometric
   useEffect(() => {
     db.settings.get(JOURNAL_PASSWORD_KEY).then(entry => {
       setHasPassword(!!entry?.value);
     }).catch(() => setHasPassword(false));
+
+    // Check biometric availability
+    if (Capacitor.isNativePlatform()) {
+      import('@/plugins/BiometricPlugin').then(({ default: BiometricAuth }) => {
+        BiometricAuth.isAvailable().then(result => {
+          setBiometricAvailable(result.available);
+        });
+      });
+    }
+
+    // Load biometric setting
+    db.settings.get(BIOMETRIC_SETTINGS_KEY).then(entry => {
+      if (entry?.value) setBiometricEnabledState(true);
+    });
   }, []);
 
   // Auto-lock timer
@@ -129,6 +148,29 @@ export function useJournalSecurity() {
     return false;
   }, [failedAttempts, cooldownUntil, resetAutoLock]);
 
+  // Change password atomically (verify old, then write new in single put)
+  const changePassword = useCallback(async (oldPw: string, newPw: string): Promise<boolean> => {
+    const entry = await db.settings.get(JOURNAL_PASSWORD_KEY);
+    if (!entry?.value) return false;
+    const stored = entry.value as JournalPassword;
+    const oldSalt = base64ToArrayBuffer(stored.salt);
+    const oldHash = await deriveKey(oldPw, oldSalt);
+    if (oldHash !== stored.hash) return false;
+
+    // Old password verified — atomic write with fresh salt
+    const newSalt = crypto.getRandomValues(new Uint8Array(16));
+    const newHash = await deriveKey(newPw, newSalt.buffer);
+    const newData: JournalPassword = {
+      hash: newHash,
+      salt: arrayBufferToBase64(newSalt.buffer),
+      iterations: PBKDF2_ITERATIONS,
+      createdAt: Date.now(),
+    };
+    await db.settings.put({ key: JOURNAL_PASSWORD_KEY, value: newData });
+    resetAutoLock();
+    return true;
+  }, [resetAutoLock]);
+
   // Remove password (entries stay, lock removed)
   const removePassword = useCallback(async () => {
     await db.settings.delete(JOURNAL_PASSWORD_KEY);
@@ -149,6 +191,31 @@ export function useJournalSecurity() {
     if (isUnlocked) resetAutoLock();
   }, [isUnlocked, resetAutoLock]);
 
+  // Biometric unlock
+  const unlockWithBiometric = useCallback(async (): Promise<boolean> => {
+    if (!biometricAvailable || !biometricEnabled) return false;
+    try {
+      const { default: BiometricAuth } = await import('@/plugins/BiometricPlugin');
+      const result = await BiometricAuth.authenticate({ reason: 'Unlock your journal' });
+      if (result.success) {
+        setIsUnlocked(true);
+        setFailedAttempts(0);
+        setCooldownUntil(0);
+        unlockedAtRef.current = Date.now();
+        resetAutoLock();
+        return true;
+      }
+    } catch {
+      // Biometric failed — fall back to password
+    }
+    return false;
+  }, [biometricAvailable, biometricEnabled, resetAutoLock]);
+
+  const setBiometricEnabled = useCallback(async (value: boolean) => {
+    setBiometricEnabledState(value);
+    await db.settings.put({ key: BIOMETRIC_SETTINGS_KEY, value });
+  }, []);
+
   // Cooldown remaining in seconds
   const cooldownRemaining = cooldownUntil > Date.now()
     ? Math.ceil((cooldownUntil - Date.now()) / 1000)
@@ -161,8 +228,13 @@ export function useJournalSecurity() {
     loading: hasPassword === null,
     failedAttempts,
     cooldownRemaining,
+    biometricAvailable,
+    biometricEnabled,
     setPassword,
+    changePassword,
     unlock,
+    unlockWithBiometric,
+    setBiometricEnabled,
     removePassword,
     lock,
     touch,
