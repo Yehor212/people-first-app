@@ -37,6 +37,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticTap, hapticSuccess, hapticError } from '@/lib/haptics';
 import { announce } from '@/lib/a11y';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import {
   loadMyProfile,
   initializeMyProfile,
@@ -85,6 +86,7 @@ export function FriendsPanel({
   // Dual back handler: detail view closes first, then panel
   useBackHandler(!selectedFriend, onClose);
   useBackHandler(!!selectedFriend, () => setSelectedFriend(null));
+  useScrollLock(true);
 
   // Initialize profile and load data on mount
   useEffect(() => {
@@ -392,9 +394,9 @@ export function FriendsPanel({
                       disabled={!friendCode.trim() || isAdding}
                     >
                       {isAdding ? (
-                        <RefreshCw className="w-4 h-4 animate-spin mr-2" />
+                        <RefreshCw className="w-4 h-4 animate-spin me-2" />
                       ) : (
-                        <UserPlus className="w-4 h-4 mr-2" />
+                        <UserPlus className="w-4 h-4 me-2" />
                       )}
                       {t.addFriend || 'Add Friend'}
                     </Button>
@@ -411,7 +413,7 @@ export function FriendsPanel({
                       className="w-full"
                       onClick={() => setShowAddFriend(true)}
                     >
-                      <UserPlus className="w-4 h-4 mr-2" />
+                      <UserPlus className="w-4 h-4 me-2" />
                       {t.addFriendByCode || 'Add Friend by Code'}
                     </Button>
                   </motion.div>
@@ -470,7 +472,7 @@ export function FriendsPanel({
                       <div className="flex flex-col items-center p-3 rounded-xl bg-blue-500/10">
                         <Clock className="w-5 h-5 text-blue-500 mb-1" />
                         <span className="text-lg font-bold text-foreground">{formatLastActive(selectedFriend.lastActive)}</span>
-                        <span className="text-xs text-muted-foreground">{'Active'}</span>
+                        <span className="text-xs text-muted-foreground">{t.active || 'Active'}</span>
                       </div>
                     </div>
 
@@ -478,7 +480,7 @@ export function FriendsPanel({
                     <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-6">
                       <Users className="w-4 h-4" />
                       <span>
-                        {'Friends since'}{' '}
+                        {t.friendsSince || 'Friends since'}{' '}
                         {new Date(selectedFriend.friendsSince).toLocaleDateString(undefined, {
                           day: 'numeric',
                           month: 'long',
@@ -531,7 +533,7 @@ export function FriendsPanel({
                             setSelectedFriend(null);
                           }}
                         >
-                          <Trash2 className="w-4 h-4 mr-2" />
+                          <Trash2 className="w-4 h-4 me-2" />
                           {t.delete}
                         </Button>
                         <Button
@@ -548,8 +550,8 @@ export function FriendsPanel({
                         className="w-full text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={() => setConfirmRemoveFriend(selectedFriend)}
                       >
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        {'Remove Friend'}
+                        <Trash2 className="w-4 h-4 me-2" />
+                        {t.removeFriend || 'Remove Friend'}
                       </Button>
                     )}
                   </motion.div>

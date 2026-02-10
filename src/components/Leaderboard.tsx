@@ -456,7 +456,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                           {entry.displayName}
                         </span>
                         {entry.isCurrentUser && (
-                          <span className="text-xs px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-700 dark:text-violet-300">(you)</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-700 dark:text-violet-300">({t.you || 'you'})</span>
                         )}
                         {entry.rank === 1 && (
                           <Crown className="w-4 h-4 text-amber-400" />
@@ -470,14 +470,14 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                     </div>
 
                     {/* Score - Premium */}
-                    <div className="text-right">
+                    <div className="text-end">
                       <span className={cn(
                         "font-bold text-lg",
                         rankConfig?.textColor || (entry.isCurrentUser ? "text-violet-700 dark:text-violet-300" : "text-gray-900 dark:text-white")
                       )}>
                         {getValue(entry).toLocaleString()}
                       </span>
-                      <span className="text-xs text-white/40 ml-1">
+                      <span className="text-xs text-white/40 ms-1">
                         {getUnit()}
                       </span>
                     </div>

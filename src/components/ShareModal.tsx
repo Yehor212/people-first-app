@@ -14,6 +14,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 import { hapticSuccess, hapticTap } from '@/lib/haptics';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import {
   ShareCardData,
@@ -83,6 +84,7 @@ export function ShareModal(props: ShareModalProps) {
 
   // Android back button: close the share sheet
   useBackHandler(open, () => onOpenChange(false));
+  useScrollLock(open);
 
   const [imageBlob, setImageBlob] = useState<Blob | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);

@@ -15,6 +15,7 @@ import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { logger } from '@/lib/logger';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 // Lazy load html2canvas
 const getHtml2Canvas = async () => {
@@ -41,6 +42,7 @@ export function ChallengesPanel({
 
   useBackHandler(!showShareDialog, onClose);
   useBackHandler(showShareDialog, () => setShowShareDialog(false));
+  useScrollLock(true);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
   const [isSharing, setIsSharing] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);
@@ -205,7 +207,7 @@ export function ChallengesPanel({
           <button
             onClick={onClose}
             aria-label={t.close || 'Close'}
-            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors"
+            className="p-2 rounded-xl bg-white/10 hover:bg-white/20 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <X className="w-6 h-6 text-primary-foreground" />
           </button>
@@ -457,7 +459,7 @@ export function ChallengesPanel({
                       {badge.unlocked && (
                         <button
                           onClick={() => handleShareBadge(badge)}
-                          className="absolute top-2 right-2 p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                          className="absolute top-2 end-2 p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
                           aria-label={t.shareButton || 'Share'}
                         >
                           <Share2 className="w-3.5 h-3.5" />
@@ -504,7 +506,7 @@ export function ChallengesPanel({
                       {badge.unlocked && (
                         <button
                           onClick={() => handleShareBadge(badge)}
-                          className="absolute top-2 right-2 p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                          className="absolute top-2 end-2 p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
                           aria-label={t.shareButton || 'Share'}
                         >
                           <Share2 className="w-3.5 h-3.5" />
@@ -550,7 +552,7 @@ export function ChallengesPanel({
           {/* Close button */}
           <button
             onClick={() => setShowShareDialog(false)}
-            className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10"
+            className="absolute top-4 end-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10 min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label={t.close}
           >
             <X className="w-6 h-6 text-white" />

@@ -441,7 +441,7 @@ function GoalSuggestions({
           className={cn(
             'w-full flex items-center gap-3 p-3 rounded-xl',
             'border border-dashed border-border/60 hover:border-primary/40',
-            'hover:bg-muted/30 transition-all text-left group',
+            'hover:bg-muted/30 transition-all text-start group',
           )}
         >
           <span className="text-lg">{s.emoji}</span>
@@ -537,7 +537,7 @@ function AddGoalSheet({
         {/* Header */}
         <div className="relative h-20 overflow-hidden bg-gradient-to-br from-primary/20 via-accent/10 to-transparent">
           <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-muted-foreground/30" />
-          <div className="absolute bottom-4 left-6 flex items-center gap-3">
+          <div className="absolute bottom-4 start-6 flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-primary/20 backdrop-blur-sm">
               <Target className="w-5 h-5 text-primary" />
             </div>

@@ -853,6 +853,8 @@ export interface Translations {
   addFriendError: string;
   friendAdded: string;
   friendRemoved: string;
+  removeFriend: string;
+  friendsSince: string;
   friendCode: string;
   codeCopied: string;
   noFriendsYet: string;
@@ -2993,6 +2995,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     addFriendError: 'Не удалось добавить друга',
     friendAdded: 'Друг добавлен',
     friendRemoved: 'Друг удалён',
+    removeFriend: 'Удалить друга',
+    friendsSince: 'Друзья с',
     friendCode: 'Код друга',
     codeCopied: 'Код скопирован',
     noFriendsYet: 'Пока нет друзей',
@@ -5078,6 +5082,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     addFriendError: 'Could not add friend',
     friendAdded: 'Friend added',
     friendRemoved: 'Friend removed',
+    removeFriend: 'Remove Friend',
+    friendsSince: 'Friends since',
     friendCode: 'Friend Code',
     codeCopied: 'Code copied',
     noFriendsYet: 'No friends yet',
@@ -7163,6 +7169,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     addFriendError: 'Не вдалося додати друга',
     friendAdded: 'Друга додано',
     friendRemoved: 'Друга видалено',
+    removeFriend: 'Видалити друга',
+    friendsSince: 'Друзі з',
     friendCode: 'Код друга',
     codeCopied: 'Код скопійовано',
     noFriendsYet: 'Поки немає друзів',
@@ -9249,6 +9257,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     addFriendError: 'No se pudo añadir amigo',
     friendAdded: 'Amigo añadido',
     friendRemoved: 'Amigo eliminado',
+    removeFriend: 'Eliminar amigo',
+    friendsSince: 'Amigos desde',
     friendCode: 'Código de amigo',
     codeCopied: 'Código copiado',
     noFriendsYet: 'Aún no hay amigos',
@@ -11335,6 +11345,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     addFriendError: 'Freund konnte nicht hinzugefügt werden',
     friendAdded: 'Freund hinzugefügt',
     friendRemoved: 'Freund entfernt',
+    removeFriend: 'Freund entfernen',
+    friendsSince: 'Freunde seit',
     friendCode: 'Freundes-Code',
     codeCopied: 'Code kopiert',
     noFriendsYet: 'Noch keine Freunde',
@@ -13421,6 +13433,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     addFriendError: 'Impossible d\'ajouter l\'ami',
     friendAdded: 'Ami ajouté',
     friendRemoved: 'Ami supprimé',
+    removeFriend: 'Supprimer l\'ami',
+    friendsSince: 'Amis depuis',
     friendCode: 'Code ami',
     codeCopied: 'Code copié',
     noFriendsYet: 'Pas encore d\'amis',
@@ -15506,6 +15520,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     addFriendError: 'フレンドを追加できませんでした',
     friendAdded: 'フレンドを追加しました',
     friendRemoved: 'フレンドを削除しました',
+    removeFriend: '友達を削除',
+    friendsSince: '友達になった日',
     friendCode: 'フレンドコード',
     codeCopied: 'コードをコピーしました',
     noFriendsYet: 'まだフレンドがいません',
@@ -17475,6 +17491,8 @@ const arabicOverrides: Partial<Translations> = {
   addFriendError: 'تعذر إضافة الصديق',
   friendAdded: 'تمت إضافة الصديق',
   friendRemoved: 'تمت إزالة الصديق',
+  removeFriend: 'إزالة صديق',
+  friendsSince: 'أصدقاء منذ',
   friendCode: 'رمز الصديق',
   codeCopied: 'تم نسخ الرمز',
   noFriendsYet: 'لا أصدقاء بعد',
@@ -19583,6 +19601,8 @@ const hebrewOverrides: Partial<Translations> = {
   addFriendError: 'לא ניתן להוסיף חבר',
   friendAdded: 'חבר נוסף',
   friendRemoved: 'חבר הוסר',
+  removeFriend: 'הסר חבר',
+  friendsSince: 'חברים מאז',
   friendCode: 'קוד חבר',
   codeCopied: 'הקוד הועתק',
   noFriendsYet: 'אין עדיין חברים',

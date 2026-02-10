@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Plus, Zap, Clock, Star, Calendar, Trash2, CheckCircle2, Circle, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { SkeletonSection, SkeletonList } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
 
   // Android back button: close panel or dismiss add form
   useBackHandler(!!onClose, onClose ?? (() => {}));
+  useScrollLock(!!onClose);
 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTaskName, setNewTaskName] = useState('');

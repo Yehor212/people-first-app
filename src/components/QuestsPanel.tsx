@@ -6,6 +6,7 @@ import { Sparkles, Trophy, Clock, Zap, Target, X, Star } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { cn } from '@/lib/utils';
 import {
   Quest,
@@ -30,6 +31,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
 
   // Android back button: close panel
   useBackHandler(!!onClose, onClose ?? (() => {}));
+  useScrollLock(!!onClose);
 
   const [dailyQuest, setDailyQuest] = useState<Quest | null>(null);
   const [weeklyQuest, setWeeklyQuest] = useState<Quest | null>(null);
