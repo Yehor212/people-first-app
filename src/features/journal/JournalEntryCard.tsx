@@ -30,6 +30,14 @@ const MOOD_BG: Record<string, string> = {
   terrible: 'from-red-500/5 to-transparent',
 };
 
+const MOOD_GLOW: Record<string, string> = {
+  great: '0 0 20px rgba(74,222,128,0.08)',
+  good: '0 0 20px rgba(52,211,153,0.08)',
+  okay: '0 0 20px rgba(251,191,36,0.08)',
+  bad: '0 0 20px rgba(251,146,60,0.08)',
+  terrible: '0 0 20px rgba(248,113,113,0.08)',
+};
+
 const DEFAULT_BG = 'from-primary/3 to-transparent';
 const DEFAULT_ACCENT = 'from-primary/20 to-primary/10';
 
@@ -58,7 +66,9 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   onTap,
   onDelete,
 }: JournalEntryCardProps) {
-  const preview = entry.content.slice(0, 140) + (entry.content.length > 140 ? '...' : '');
+  // Strip markdown ** for cleaner preview
+  const rawPreview = entry.content.replace(/\*\*/g, '').slice(0, 140);
+  const preview = rawPreview + (entry.content.length > 140 ? '...' : '');
   const time = new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const relativeTime = useMemo(() => getRelativeTime(entry.createdAt), [entry.createdAt]);
   const wordCount = entry.content.trim() ? entry.content.trim().split(/\s+/).filter(Boolean).length : 0;
@@ -74,20 +84,24 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     return () => { cancelled = true; };
   }, [entry.photoIds]);
 
+  // Combine base shadow with mood glow
+  const cardShadow = entry.mood && MOOD_GLOW[entry.mood]
+    ? `0 2px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.06), ${MOOD_GLOW[entry.mood]}`
+    : '0 2px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.06)';
+
   return (
     <motion.div
       onClick={onTap}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ scale: 0.97 }}
       whileHover={{ y: -2 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
       className={cn(
         'relative rounded-2xl overflow-hidden cursor-pointer group',
-        'bg-card/70 backdrop-blur-sm',
-        'border border-border/20',
-        'shadow-[0_2px_12px_rgba(0,0,0,0.04)]',
-        'hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]',
-        'transition-shadow duration-300',
+        'bg-card/60 backdrop-blur-md',
+        'border border-white/[0.08] dark:border-white/[0.05]',
+        'transition-all duration-300',
       )}
+      style={{ boxShadow: cardShadow }}
     >
       {/* Gradient overlay (always shown — mood or default) */}
       <div className={cn(
@@ -98,7 +112,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
       <div className="flex">
         {/* Accent bar (always shown — mood or default) */}
         <div className={cn(
-          'w-1 flex-shrink-0 bg-gradient-to-b rounded-l-2xl',
+          'w-1.5 flex-shrink-0 bg-gradient-to-b rounded-l-2xl',
           entry.mood ? (MOOD_GRADIENT[entry.mood] || 'from-primary/60 to-primary/30') : DEFAULT_ACCENT,
         )} />
 

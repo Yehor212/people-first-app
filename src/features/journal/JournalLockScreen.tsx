@@ -130,24 +130,42 @@ export function JournalLockScreen({
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-primary/3 pointer-events-none" />
 
+      {/* Floating ambient particles */}
+      {[
+        { x: '12%', y: '18%', size: 7, idx: 0 },
+        { x: '78%', y: '25%', size: 9, idx: 1 },
+        { x: '85%', y: '60%', size: 6, idx: 2 },
+        { x: '20%', y: '72%', size: 8, idx: 3 },
+        { x: '55%', y: '85%', size: 5, idx: 4 },
+      ].map(p => (
+        <div
+          key={p.idx}
+          className={cn(
+            'absolute rounded-full bg-primary/20 blur-[1px]',
+            `animate-particle-float-${(p.idx % 5) + 1}`,
+          )}
+          style={{ left: p.x, top: p.y, width: p.size, height: p.size }}
+        />
+      ))}
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         className={cn(
           'w-full max-w-[340px] rounded-2xl p-6 relative z-10',
-          'bg-card/60 backdrop-blur-2xl',
+          'bg-card/60 backdrop-blur-3xl',
           'border border-white/10 dark:border-white/5',
-          'shadow-[0_8px_40px_rgba(0,0,0,0.08)]',
+          'shadow-[0_8px_40px_rgba(0,0,0,0.08),inset_0_1px_0_rgba(255,255,255,0.06)]',
           shake && 'animate-[shake_0.5s_ease-in-out]',
         )}
       >
-        {/* Lock icon with sway animation */}
+        {/* Lock icon with sway + glow animation */}
         <div className="flex justify-center mb-4">
           <motion.div
             animate={{ rotate: [0, -3, 3, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5"
+            className="w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 animate-glow-pulse"
           >
             <Lock className="w-8 h-8 text-primary" />
           </motion.div>

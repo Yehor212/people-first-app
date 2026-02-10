@@ -13,6 +13,14 @@ const MOOD_COLORS: Record<string, string> = {
   terrible: 'bg-red-400',
 };
 
+const MOOD_RING: Record<string, string> = {
+  great: 'ring-green-400/20',
+  good: 'ring-emerald-400/20',
+  okay: 'ring-amber-400/20',
+  bad: 'ring-orange-400/20',
+  terrible: 'ring-red-400/20',
+};
+
 /** RTL locales where week starts on Saturday */
 const RTL_WEEK_START_SATURDAY = new Set(['ar', 'he']);
 
@@ -217,8 +225,10 @@ export function JournalCalendarFull({
                 {hasEntry && (
                   <div className="flex items-center gap-px">
                     <div className={cn(
-                      'w-1.5 h-1.5 rounded-full',
+                      'w-2 h-2 rounded-full ring-1',
                       mood ? MOOD_COLORS[mood] : 'bg-primary/60',
+                      mood ? MOOD_RING[mood] : 'ring-primary/20',
+                      cell.isToday && 'animate-pulse-subtle',
                     )} />
                     {count > 1 && (
                       <span className="text-[7px] text-muted-foreground/60 font-medium leading-none">

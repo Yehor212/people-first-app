@@ -545,7 +545,8 @@ export function JournalEntryEditor({
         {!entry && !content && !title && !promptsHidden && !draftAvailable && (
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+              <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest flex items-center gap-1.5">
+                <span className="text-xs">{'\u{270F}\uFE0F'}</span>
                 {ts.journalWritingPrompts || 'Writing prompts'}
               </span>
               <div className="flex items-center gap-1">
@@ -577,7 +578,7 @@ export function JournalEntryEditor({
                     'bg-card/60 backdrop-blur-sm',
                     'border border-border/15',
                     'text-muted-foreground/80 hover:text-foreground',
-                    'hover:bg-card/80 hover:border-primary/20',
+                    'hover:bg-card/80 hover:border-primary/20 hover:shadow-sm',
                     'transition-all duration-200',
                   )}
                 >
@@ -728,9 +729,12 @@ export function JournalEntryEditor({
         />
       </div>
 
+      {/* Gradient fade above toolbar */}
+      <div className="h-6 bg-gradient-to-t from-background via-background/80 to-transparent -mt-6 relative z-[2] pointer-events-none" />
+
       {/* Bottom toolbar */}
       <div className={cn(
-        'border-t border-border/30 bg-background/95 backdrop-blur-sm px-4 py-1.5',
+        'border-t border-border/30 bg-background/95 backdrop-blur-xl px-4 py-1.5',
         'flex items-center gap-1',
         'pb-[max(0.375rem,env(safe-area-inset-bottom))]',
       )}>
@@ -814,20 +818,20 @@ export function JournalEntryEditor({
 
       {/* Inline mood picker */}
       {showMood && (
-        <div className="border-t border-border/20 bg-background px-4 py-2 flex items-center justify-center gap-2 pb-[env(safe-area-inset-bottom)]">
+        <div className="border-t border-border/20 bg-background/95 backdrop-blur-xl px-4 py-3 flex items-center justify-center gap-3 pb-[env(safe-area-inset-bottom)]">
           {MOOD_OPTIONS.map(opt => (
             <motion.button
               key={opt.mood}
-              whileTap={{ scale: 0.9 }}
+              whileTap={{ scale: 0.85 }}
               onClick={() => { setMood(mood === opt.mood ? undefined : opt.mood); setShowMood(false); }}
               className={cn(
-                'text-2xl p-2 rounded-xl transition-all min-w-[48px] min-h-[48px] flex items-center justify-center',
+                'p-2.5 rounded-xl transition-all min-w-[52px] min-h-[52px] flex items-center justify-center',
                 mood === opt.mood
-                  ? 'bg-primary/15 shadow-sm'
-                  : 'hover:bg-muted/50',
+                  ? 'bg-primary/15 ring-2 ring-primary/30 shadow-lg animate-scale-bounce'
+                  : 'hover:bg-muted/50 hover:shadow-sm',
               )}
             >
-              {opt.emoji}
+              <StickerRenderer emoji={opt.emoji} size="sm" />
             </motion.button>
           ))}
         </div>

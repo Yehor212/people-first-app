@@ -78,7 +78,7 @@ const ringThemes: Record<RingType, {
 function PremiumChart({ data, color, glowColor, dayNames }: { data: DayData[]; color: string; glowColor: string; dayNames: string[] }) {
   if (data.length < 2) return null;
 
-  const values = data.map(d => d.value);
+  const values = data.map(d => d.value).map(v => (Number.isFinite(v) ? v : 0));
   const max = Math.max(...values, 100);
   const height = 100;
   const width = 300;
@@ -94,6 +94,9 @@ function PremiumChart({ data, color, glowColor, dayNames }: { data: DayData[]; c
 
   const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
   const areaD = `${pathD} L ${points[points.length - 1].x} ${height - padding.bottom} L ${points[0].x} ${height - padding.bottom} Z`;
+
+  // Guard: if path contains NaN (bad data), don't render SVG
+  if (pathD.includes('NaN')) return null;
 
   const dayLabels = data.map(d => {
     const dayOfWeek = new Date(d.date).getDay();

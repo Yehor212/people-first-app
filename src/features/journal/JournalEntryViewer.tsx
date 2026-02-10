@@ -1,14 +1,14 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { ArrowLeft, Pencil, Trash2, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { JournalEntry, JournalAudio } from './types';
-import type { MoodType } from '@/types';
+import type { MoodType, PrimaryEmotion } from '@/types';
 import { JournalPhotoGallery } from './JournalPhotoGallery';
 import { JournalAudioPlayer } from './JournalAudioPlayer';
-import { StickerRenderer } from './StickerRenderer';
+import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
 
 const MOOD_DISPLAY: Record<MoodType, string> = {
   great: '\u{1F604}',
@@ -19,12 +19,41 @@ const MOOD_DISPLAY: Record<MoodType, string> = {
 };
 
 const MOOD_HERO_GRADIENT: Record<string, string> = {
-  great: 'from-green-500/15 via-emerald-500/8 to-transparent',
-  good: 'from-emerald-500/15 via-teal-500/8 to-transparent',
-  okay: 'from-amber-500/15 via-yellow-500/8 to-transparent',
-  bad: 'from-orange-500/15 via-red-400/8 to-transparent',
-  terrible: 'from-red-500/15 via-rose-500/8 to-transparent',
+  great: 'from-green-500/20 via-emerald-500/10 to-transparent',
+  good: 'from-emerald-500/20 via-teal-500/10 to-transparent',
+  okay: 'from-amber-500/20 via-yellow-500/10 to-transparent',
+  bad: 'from-orange-500/20 via-red-400/10 to-transparent',
+  terrible: 'from-red-500/20 via-rose-500/10 to-transparent',
 };
+
+const MOOD_TO_EMOTION: Record<MoodType, PrimaryEmotion> = {
+  great: 'joy',
+  good: 'trust',
+  okay: 'surprise',
+  bad: 'sadness',
+  terrible: 'anger',
+};
+
+/** Lightweight markdown renderer for **bold** and *italic* */
+function renderContent(text: string): React.ReactNode[] {
+  // Split by **bold** first, then *italic*
+  const parts: React.ReactNode[] = [];
+  const boldRegex = /\*\*(.+?)\*\*/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = boldRegex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    parts.push(<strong key={match.index} className="font-semibold text-foreground">{match[1]}</strong>);
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts;
+}
 
 function getRelativeTime(timestamp: number, t: Record<string, string>): string {
   const now = Date.now();
@@ -146,13 +175,32 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
         {/* Hero mood header */}
         {entry.mood && (
           <div className={cn(
-            'relative px-5 pt-6 pb-4 bg-gradient-to-b',
+            'relative px-5 pt-8 pb-5 bg-gradient-to-b overflow-hidden',
             MOOD_HERO_GRADIENT[entry.mood] || 'from-primary/10 to-transparent',
           )}>
-            <div className="flex items-center gap-3">
-              <StickerRenderer emoji={MOOD_DISPLAY[entry.mood]} size="lg" />
+            {/* Floating particles */}
+            {[
+              { x: '15%', y: '20%', size: 6, delay: 1 },
+              { x: '75%', y: '30%', size: 8, delay: 2 },
+              { x: '85%', y: '65%', size: 5, delay: 3 },
+              { x: '25%', y: '70%', size: 7, delay: 4 },
+            ].map((p, i) => (
+              <div
+                key={i}
+                className={cn(
+                  'absolute rounded-full bg-primary/15 blur-[1px]',
+                  `animate-particle-float-${(i % 5) + 1}`,
+                )}
+                style={{ left: p.x, top: p.y, width: p.size, height: p.size }}
+              />
+            ))}
+            <div className="relative flex items-center gap-3.5">
+              <AnimatedEmotionEmoji
+                emotion={MOOD_TO_EMOTION[entry.mood]}
+                size="xl"
+              />
               <div>
-                <span className="text-sm font-medium text-foreground capitalize">{entry.mood}</span>
+                <span className="text-base font-semibold text-foreground capitalize">{entry.mood}</span>
                 <p className="text-[10px] text-muted-foreground/60">{formattedTime}</p>
               </div>
             </div>
@@ -202,8 +250,8 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
 
           {/* Content */}
           {entry.content && (
-            <div className="text-sm text-foreground leading-7 whitespace-pre-wrap">
-              {entry.content}
+            <div className="text-sm text-foreground/90 leading-8 whitespace-pre-wrap border-l-2 border-primary/10 pl-4">
+              {renderContent(entry.content)}
             </div>
           )}
 
@@ -214,10 +262,9 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
                 <span
                   key={tag}
                   className={cn(
-                    'text-xs px-2.5 py-1 rounded-full',
-                    entry.mood
-                      ? 'bg-primary/8 text-primary/80'
-                      : 'bg-primary/10 text-primary',
+                    'text-xs px-3 py-1.5 rounded-full',
+                    'bg-gradient-to-r from-primary/10 to-primary/5',
+                    'text-primary/80 border border-primary/10',
                   )}
                 >
                   #{tag}

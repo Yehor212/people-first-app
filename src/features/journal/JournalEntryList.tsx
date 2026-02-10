@@ -120,12 +120,29 @@ export function JournalEntryList({
   // Empty state
   if (totalCount === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 px-6">
+      <div className="flex flex-col items-center justify-center py-16 px-6 relative">
+        {/* Ambient floating particles */}
+        {[
+          { x: '15%', y: '10%', size: 7, idx: 0 },
+          { x: '80%', y: '20%', size: 9, idx: 1 },
+          { x: '70%', y: '70%', size: 6, idx: 2 },
+          { x: '25%', y: '80%', size: 8, idx: 3 },
+        ].map(p => (
+          <div
+            key={p.idx}
+            className={cn(
+              'absolute rounded-full bg-primary/15 blur-[1px]',
+              `animate-particle-float-${(p.idx % 5) + 1}`,
+            )}
+            style={{ left: p.x, top: p.y, width: p.size, height: p.size }}
+          />
+        ))}
+
         <div className="relative w-24 h-24 mb-5">
           <motion.div
             animate={{ y: [0, -8, 0] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/15 via-primary/8 to-transparent flex items-center justify-center"
+            className="w-24 h-24 rounded-full bg-gradient-to-br from-primary/15 via-primary/8 to-transparent flex items-center justify-center animate-float"
           >
             <StickerRenderer emoji={'\u{1F4D3}'} size="lg" />
           </motion.div>
@@ -140,7 +157,7 @@ export function JournalEntryList({
               key={i}
               animate={{ opacity: [0, 1, 0], scale: [0.5, 1, 0.5] }}
               transition={{ duration: 2, repeat: Infinity, delay: sparkle.delay, ease: 'easeInOut' }}
-              className="absolute w-1.5 h-1.5 rounded-full bg-primary/50"
+              className="absolute w-2 h-2 rounded-full bg-primary/40"
               style={{ left: `calc(50% + ${sparkle.x}px)`, top: `calc(50% + ${sparkle.y}px)` }}
             />
           ))}
@@ -148,8 +165,11 @@ export function JournalEntryList({
         <h3 className="text-base font-semibold text-foreground mb-1">
           {ts.journalEmpty || 'Your journal is empty'}
         </h3>
-        <p className="text-sm text-muted-foreground text-center mb-6 max-w-[260px]">
+        <p className="text-sm text-muted-foreground text-center mb-2 max-w-[260px]">
           {ts.journalEmptyHint || 'Start writing to capture your thoughts, feelings, and memories.'}
+        </p>
+        <p className="text-[10px] text-muted-foreground/40 text-center mb-6 italic">
+          {ts.journalEmptyQuote || 'Your thoughts are worth preserving'}
         </p>
         <motion.button
           whileTap={{ scale: 0.95 }}
@@ -159,6 +179,7 @@ export function JournalEntryList({
             'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground text-sm font-semibold',
             'shadow-[0_4px_20px_rgba(var(--primary-rgb,99,102,241),0.3)]',
             'hover:shadow-[0_6px_28px_rgba(var(--primary-rgb,99,102,241),0.4)]',
+            'animate-glow-pulse',
             'transition-shadow duration-300',
           )}
         >

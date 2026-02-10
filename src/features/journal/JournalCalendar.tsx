@@ -13,6 +13,14 @@ const MOOD_COLORS: Record<string, string> = {
   terrible: 'bg-red-400',
 };
 
+const MOOD_RING: Record<string, string> = {
+  great: 'ring-green-400/20',
+  good: 'ring-emerald-400/20',
+  okay: 'ring-amber-400/20',
+  bad: 'ring-orange-400/20',
+  terrible: 'ring-red-400/20',
+};
+
 const MOOD_LEGEND: { mood: MoodType; color: string; key: string }[] = [
   { mood: 'great', color: 'bg-green-400', key: 'moodGreat' },
   { mood: 'good', color: 'bg-emerald-400', key: 'moodGood' },
@@ -180,12 +188,14 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
                   animate={{ scale: 1 }}
                   transition={{ type: 'spring', stiffness: 500, damping: 20 }}
                   className={cn(
-                    'w-1.5 h-1.5 rounded-full',
+                    'w-2 h-2 rounded-full ring-2',
                     mood ? MOOD_COLORS[mood] : 'bg-primary/60',
+                    mood ? MOOD_RING[mood] : 'ring-primary/20',
+                    isToday && 'animate-pulse-subtle',
                   )}
                 />
               ) : (
-                <div className="w-1.5 h-1.5" />
+                <div className="w-2 h-2" />
               )}
             </motion.button>
           );

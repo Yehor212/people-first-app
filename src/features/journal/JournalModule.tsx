@@ -20,6 +20,7 @@ import { getEntryCount } from './journalStorage';
 import { StickerRenderer } from './StickerRenderer';
 import { useJournalReminder, getDaysSinceLastEntry } from './useJournalReminder';
 import { useScreenSecurity } from './useScreenSecurity';
+import { ParticleBackground } from '@/components/stats/ParticleBackground';
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
 const LazyJournalStats = lazy(() =>
@@ -264,19 +265,24 @@ export function JournalModule() {
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         onClick={handleOpen}
         className={cn(
-          'w-full rounded-2xl p-4',
+          'w-full rounded-2xl p-4 relative overflow-hidden',
           'bg-gradient-to-br from-card/80 to-card/60',
-          'backdrop-blur-sm border border-border/30',
-          'shadow-[0_2px_20px_rgba(var(--primary-rgb,99,102,241),0.08)]',
+          'backdrop-blur-md border border-white/[0.08] dark:border-white/[0.05]',
+          'shadow-[0_2px_20px_rgba(var(--primary-rgb,99,102,241),0.08),inset_0_1px_0_rgba(255,255,255,0.06)]',
           'flex items-center gap-3 text-left',
-          'transition-shadow duration-300',
-          'hover:shadow-[0_4px_25px_rgba(var(--primary-rgb,99,102,241),0.12)]',
+          'transition-all duration-300',
+          'hover:shadow-[0_4px_25px_rgba(var(--primary-rgb,99,102,241),0.15),inset_0_1px_0_rgba(255,255,255,0.08)]',
         )}
       >
+        {/* Shine sweep on mount */}
+        <div className="absolute inset-0 animate-[shine-sweep_2s_ease-in-out_0.5s_1] pointer-events-none" style={{ background: 'linear-gradient(25deg, transparent 30%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 55%, transparent 70%)', backgroundSize: '200% 200%' }} />
         <motion.div
           animate={{ scale: [1, 1.05, 1] }}
           transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-primary/15 to-primary/5"
+          className={cn(
+            'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-primary/15 to-primary/5',
+            streak > 0 && 'animate-glow-pulse',
+          )}
         >
           {todayMood ? (
             <StickerRenderer emoji={MOOD_EMOJI[todayMood]} size="xs" />
@@ -600,7 +606,7 @@ export function JournalModule() {
                       {ts.journalTitle || 'Personal Journal'}
                     </h2>
                     {streak > 0 && (
-                      <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
+                      <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0 animate-streak-fire-glow">
                         {streak} {'\u{1F525}'}
                       </span>
                     )}
@@ -652,16 +658,19 @@ export function JournalModule() {
                 </div>
 
                 {/* Entry list */}
-                <div className="flex-1 overflow-y-auto px-4 py-3">
-                  <JournalEntryList
-                    groupedEntries={journal.groupedEntries}
-                    onOpenEntry={journal.openEntry}
-                    onDeleteEntry={handleDeleteEntry}
-                    onNewEntry={handleNewEntry}
-                    totalCount={journal.totalCount}
-                    loading={journal.loading}
-                    daysSinceLastEntry={daysSinceLastEntry}
-                  />
+                <div className="relative flex-1 overflow-y-auto px-4 py-3">
+                  <ParticleBackground count={6} color="primary" />
+                  <div className="relative z-[1]">
+                    <JournalEntryList
+                      groupedEntries={journal.groupedEntries}
+                      onOpenEntry={journal.openEntry}
+                      onDeleteEntry={handleDeleteEntry}
+                      onNewEntry={handleNewEntry}
+                      totalCount={journal.totalCount}
+                      loading={journal.loading}
+                      daysSinceLastEntry={daysSinceLastEntry}
+                    />
+                  </div>
                 </div>
 
                 {/* Password settings bottom sheet */}
