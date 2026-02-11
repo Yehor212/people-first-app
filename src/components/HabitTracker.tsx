@@ -487,7 +487,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                     "flex-1 h-3 rounded-full transition-all",
                     isComplete
                       ? "bg-gradient-to-r from-emerald-400 to-teal-500"
-                      : "bg-white/10"
+                      : "bg-foreground/10"
                   )}
                   style={isComplete ? {
                     boxShadow: '0 0 8px rgba(16, 185, 129, 0.5)'
@@ -550,7 +550,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                   onOpenChallenge();
                 }}
                 aria-label={t.friendChallenges}
-                className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm border border-slate-200/60 dark:border-white/20 text-slate-600 dark:text-white/70 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200/60 dark:hover:bg-white/20 transition-colors"
+                className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100/60 dark:bg-foreground/10 backdrop-blur-sm border border-slate-200/60 dark:border-foreground/20 text-slate-600 dark:text-foreground/70 hover:text-slate-800 dark:hover:text-foreground hover:bg-slate-200/60 dark:hover:bg-foreground/20 transition-colors"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -623,7 +623,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           className={cn(
             "mb-4 p-4 rounded-2xl",
             isPrimaryCTA
-              ? "bg-white/5 backdrop-blur-sm border border-white/10"
+              ? "bg-foreground/5 backdrop-blur-sm border border-foreground/10"
               : "bg-secondary"
           )}
           initial={{ opacity: 0, scale: 0.95 }}
@@ -633,7 +633,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           {/* Quick-add templates */}
           <p className={cn(
             "text-sm font-medium mb-3",
-            isPrimaryCTA ? "text-slate-700 dark:text-white/80" : "text-foreground"
+            isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground"
           )}>{t.quickAdd || 'Quick Add'}</p>
           <div className="grid grid-cols-2 gap-2 mb-4">
             {habitTemplates
@@ -644,7 +644,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                   <motion.button
                     key={template.id}
                     onClick={() => handleQuickAdd(template.id)}
-                    className="flex items-center gap-2 px-3 py-3 min-h-[52px] rounded-xl bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 hover:text-white transition-all text-left"
+                    className="flex items-center gap-2 px-3 py-3 min-h-[52px] rounded-xl bg-foreground/5 border border-foreground/10 text-foreground/80 hover:bg-foreground/10 hover:text-foreground transition-all text-left"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
@@ -695,7 +695,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           className={cn(
             "mb-4 p-4 rounded-2xl relative overflow-hidden",
             isPrimaryCTA
-              ? "bg-white/5 backdrop-blur-sm border border-white/10"
+              ? "bg-foreground/5 backdrop-blur-sm border border-foreground/10"
               : "bg-secondary"
           )}
           initial={{ opacity: 0, y: 20 }}
@@ -728,7 +728,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             className={cn(
               "relative text-sm mb-3 flex items-center gap-1 transition-colors",
               isPrimaryCTA
-                ? "text-slate-500 dark:text-white/60 hover:text-slate-800 dark:hover:text-white"
+                ? "text-slate-500 dark:text-foreground/60 hover:text-slate-800 dark:hover:text-foreground"
                 : "text-muted-foreground hover:text-foreground"
             )}
             whileHover={{ x: -2 }}
@@ -740,11 +740,11 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           {editingHabit && (
             <div className={cn(
               "mb-3 pb-2 border-b",
-              isPrimaryCTA ? "border-white/20" : "border-border"
+              isPrimaryCTA ? "border-foreground/20" : "border-border"
             )}>
               <p className={cn(
                 "text-sm font-medium",
-                isPrimaryCTA ? "text-slate-700 dark:text-white/80" : "text-foreground"
+                isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground"
               )}>
                 {t.editHabit || 'Edit Habit'}
               </p>
@@ -756,7 +756,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             className={cn(
               "relative mb-4 p-4 rounded-2xl overflow-hidden",
               isPrimaryCTA
-                ? "bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/20"
+                ? "bg-gradient-to-br from-foreground/10 to-foreground/5 backdrop-blur-sm border border-foreground/20"
                 : "bg-gradient-to-br from-card/90 to-card/70 backdrop-blur-sm border border-border/50"
             )}
             style={isPrimaryCTA ? {
@@ -778,7 +778,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             )}
             <p className={cn(
               "text-xs mb-2",
-              isPrimaryCTA ? "text-slate-500 dark:text-white/60" : "text-muted-foreground"
+              isPrimaryCTA ? "text-slate-500 dark:text-foreground/60" : "text-muted-foreground"
             )}>{t.preview || 'Preview'}</p>
             <div className="flex items-center gap-3">
               <div className={cn(
@@ -796,7 +796,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                 </p>
                 <p className={cn(
                   "text-xs",
-                  isPrimaryCTA ? "text-slate-500 dark:text-white/60" : "text-muted-foreground"
+                  isPrimaryCTA ? "text-slate-500 dark:text-foreground/60" : "text-muted-foreground"
                 )}>
                   {selectedType === 'daily' && (t.habitTypeDaily || 'Daily')}
                   {selectedType === 'multiple' && `${dailyTarget}× ${t.perDay || 'per day'}`}
@@ -817,7 +817,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               "relative w-full p-3 rounded-xl mb-3 transition-all",
               "focus:outline-none focus:ring-2",
               isPrimaryCTA
-                ? "bg-white/10 backdrop-blur-sm border border-white/20 text-white placeholder:text-white/40 focus:ring-violet-500/50 focus:border-violet-500/30"
+                ? "bg-foreground/10 backdrop-blur-sm border border-foreground/20 text-white placeholder:text-foreground/40 focus:ring-violet-500/50 focus:border-violet-500/30"
                 : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
             )}
             style={isPrimaryCTA ? {
@@ -830,7 +830,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           <div className="relative mb-4">
             <p className={cn(
               "text-sm font-medium mb-2",
-              isPrimaryCTA ? "text-slate-700 dark:text-white/80" : "text-foreground"
+              isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground"
             )} id="icon-selector-label">{t.icon}:</p>
             <div className="flex gap-2 flex-wrap" role="radiogroup" aria-labelledby="icon-selector-label">
               {habitIcons.map((icon) => (
@@ -850,7 +850,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                     isPrimaryCTA
                       ? selectedIcon === icon
                         ? "bg-gradient-to-br from-violet-500/30 to-purple-600/20 border border-violet-500/40"
-                        : "bg-white/5 border border-white/10 hover:bg-white/10"
+                        : "bg-foreground/5 border border-foreground/10 hover:bg-foreground/10"
                       : selectedIcon === icon
                         ? "bg-primary/20 ring-2 ring-primary scale-105 shadow-sm"
                         : "bg-background hover:bg-muted hover:scale-105"
@@ -870,7 +870,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           <div className="relative mb-4">
             <p className={cn(
               "text-sm font-medium mb-2",
-              isPrimaryCTA ? "text-slate-700 dark:text-white/80" : "text-foreground"
+              isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground"
             )} id="color-selector-label">{t.color}:</p>
             <div className="flex gap-3" role="radiogroup" aria-labelledby="color-selector-label">
               {habitColors.map((color) => {
@@ -901,7 +901,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                       color,
                       selectedColor === color
                         ? isPrimaryCTA
-                          ? "ring-2 ring-offset-2 ring-white/50 scale-110"
+                          ? "ring-2 ring-offset-2 ring-foreground/50 scale-110"
                           : "ring-2 ring-offset-2 ring-foreground scale-110"
                         : "hover:scale-105"
                     )}
@@ -921,7 +921,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           <div className="relative mb-4">
             <p className={cn(
               "text-sm font-medium mb-2",
-              isPrimaryCTA ? "text-slate-700 dark:text-white/80" : "text-foreground"
+              isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground"
             )}>{t.habitType}:</p>
             <div className="grid grid-cols-2 gap-2">
               {[
@@ -943,7 +943,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                     isPrimaryCTA
                       ? selectedType === type
                         ? "bg-gradient-to-br from-emerald-500/30 to-teal-600/20 border border-emerald-500/40 text-white"
-                        : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                        : "bg-foreground/5 border border-foreground/10 text-foreground/70 hover:bg-foreground/10 hover:text-foreground"
                       : selectedType === type
                         ? "bg-primary text-primary-foreground shadow-md"
                         : "bg-background hover:bg-muted border border-border/50"
@@ -958,7 +958,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                   <span className={cn(
                     "text-[10px] block mt-0.5",
                     isPrimaryCTA
-                      ? selectedType === type ? "text-white/50" : "text-white/30"
+                      ? selectedType === type ? "text-foreground/50" : "text-foreground/30"
                       : selectedType === type ? "text-primary-foreground/60" : "text-muted-foreground/60"
                   )}>{desc}</span>
                 </motion.button>
@@ -970,7 +970,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           <div className="relative mb-4">
             <label className={cn(
               "text-sm mb-2 block",
-              isPrimaryCTA ? "text-slate-500 dark:text-white/60" : "text-muted-foreground"
+              isPrimaryCTA ? "text-slate-500 dark:text-foreground/60" : "text-muted-foreground"
             )}>{t.habitCategory || 'Category'}:</label>
             <div className="grid grid-cols-4 gap-2">
               {habitCategories.map(({ id, icon, color }) => {
@@ -999,7 +999,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                           ? `bg-gradient-to-br ${color} text-white shadow-lg`
                           : "bg-primary text-primary-foreground shadow-md"
                         : isPrimaryCTA
-                          ? "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
+                          ? "bg-foreground/5 border border-foreground/10 text-foreground/70 hover:bg-foreground/10"
                           : "bg-background hover:bg-muted border border-border/50"
                     )}
                     whileHover={{ scale: 1.02 }}
@@ -1017,7 +1017,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             <div className="relative mb-4">
               <label className={cn(
                 "text-sm mb-2 block",
-                isPrimaryCTA ? "text-slate-500 dark:text-white/60" : "text-muted-foreground"
+                isPrimaryCTA ? "text-slate-500 dark:text-foreground/60" : "text-muted-foreground"
               )}>{t.habitDailyTarget}:</label>
               <input
                 type="number"
@@ -1029,7 +1029,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                   "w-full p-2 rounded-lg transition-all",
                   "focus:outline-none focus:ring-2",
                   isPrimaryCTA
-                    ? "bg-white/10 backdrop-blur-sm border border-white/20 text-white focus:ring-violet-500/50"
+                    ? "bg-foreground/10 backdrop-blur-sm border border-foreground/20 text-white focus:ring-violet-500/50"
                     : "bg-background text-foreground focus:ring-primary/30"
                 )}
               />
@@ -1040,13 +1040,13 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           <div className={cn(
             "relative mb-4 p-4 rounded-xl",
             isPrimaryCTA
-              ? "bg-white/5 backdrop-blur-sm border border-white/10"
+              ? "bg-foreground/5 backdrop-blur-sm border border-foreground/10"
               : "bg-secondary/50"
           )}>
             <div className="flex items-center justify-between mb-2">
               <label className={cn(
                 "text-sm",
-                isPrimaryCTA ? "text-slate-600 dark:text-white/70" : "text-muted-foreground"
+                isPrimaryCTA ? "text-slate-600 dark:text-foreground/70" : "text-muted-foreground"
               )}>{t.reminders || 'Reminders'}</label>
               <motion.button
                 type="button"
@@ -1070,7 +1070,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             {reminders.length === 0 ? (
               <p className={cn(
                 "text-xs italic",
-                isPrimaryCTA ? "text-slate-400 dark:text-white/40" : "text-muted-foreground"
+                isPrimaryCTA ? "text-slate-400 dark:text-foreground/40" : "text-muted-foreground"
               )}>{t.noReminders || 'No reminders set'}</p>
             ) : (
               <div className="space-y-2">
@@ -1080,7 +1080,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                     className={cn(
                       "flex items-center gap-2 p-2 rounded-lg",
                       isPrimaryCTA
-                        ? "bg-white/5 border border-white/10"
+                        ? "bg-foreground/5 border border-foreground/10"
                         : "bg-background"
                     )}
                   >
@@ -1091,7 +1091,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                       className={cn(
                         "flex-1 p-1 rounded text-sm focus:outline-none focus:ring-1",
                         isPrimaryCTA
-                          ? "bg-white/10 border border-white/20 text-white focus:ring-violet-500/50"
+                          ? "bg-foreground/10 border border-foreground/20 text-white focus:ring-violet-500/50"
                           : "bg-secondary text-foreground focus:ring-primary/30"
                       )}
                     />
@@ -1121,7 +1121,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                             isPrimaryCTA
                               ? reminder.days.includes(day)
                                 ? "bg-gradient-to-br from-violet-500/60 to-purple-600/60 text-white"
-                                : "bg-white/5 text-white/50 hover:bg-white/10"
+                                : "bg-foreground/5 text-foreground/50 hover:bg-foreground/10"
                               : reminder.days.includes(day)
                                 ? "bg-primary text-primary-foreground"
                                 : "bg-secondary text-muted-foreground hover:bg-muted"
@@ -1172,7 +1172,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                   ? editingHabit
                     ? "bg-gradient-to-r from-blue-500 to-indigo-500"
                     : "bg-gradient-to-r from-emerald-500 to-teal-500"
-                  : "bg-white/10 text-white/40 cursor-not-allowed"
+                  : "bg-foreground/10 text-foreground/40 cursor-not-allowed"
               )}
               style={newHabitName.trim() ? {
                 boxShadow: editingHabit

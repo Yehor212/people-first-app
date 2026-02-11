@@ -1,8 +1,8 @@
 # ZenFlow — Project Context for Claude
 
 > **Complete project reference for continuing work in new chat sessions.**
-> **Updated:** 2026-02-08 | **Version:** 1.6.0
-
+> **Updated:** 2026-02-10 | **Version:** 1.7.0
+Design this feature as a complete end-to-end user journey. Output strictly in this order: Goal → Actors/Permissions → Entry Points → State Machine (states + transitions) → Verification/Authorization → Error States → Edge Cases → Copy (exact button labels/messages) → Abuse/Security/Privacy → Then propose UI screens/components → Then API contract → Then code plan. If any detail is missing, create an Assumptions Ledger with options and pick a safe default. Finally run Contradiction & Absurdity Check and fix all issues before showing UI/code.
 ---
 
 ## About
@@ -17,7 +17,7 @@
 - Radix UI (28 packages) + Lucide Icons + Framer Motion 12.26
 - Recharts 2.15.4 + Lottie + html2canvas + jsPDF
 - Sentry 10.38 (error tracking) + Vitest 2.1.9 (662 tests)
-- i18n: Custom Context-based, 9 languages, ~14,728 translation keys
+- i18n: Custom Context-based, 8 languages, ~14,728 translation keys
 
 **Deployments:**
 - GitHub Pages: `yehor212.github.io/people-first-app/`
@@ -94,11 +94,6 @@ Web Audio API + HTML Audio elements. **Two playback APIs:**
 | File | Purpose |
 |------|---------|
 | `src/lib/googleCalendar.ts` | Google Calendar API: fetch events, per-date caching (15-min TTL), rate limiting |
-| `src/plugins/HealthConnectPlugin.ts` | Health Connect TypeScript interface (7 methods) |
-| `src/plugins/HealthConnectWeb.ts` | Health Connect web fallback (returns "not available") |
-| `src/hooks/useHealthConnect.ts` | Health Connect React hook (availability, permissions, sync, read data) |
-| `src/components/HealthConnectCard.tsx` | Health Connect Settings UI (Android only, age verification, permissions, data preview) |
-| `android/.../HealthConnectPlugin.kt` | Health Connect Kotlin native plugin (coroutines, full SDK integration) |
 
 ### Config & Deploy
 | File | Purpose |
@@ -152,7 +147,7 @@ Web Audio API + HTML Audio elements. **Two playback APIs:**
 
 ## Custom Hooks (23+)
 
-Key hooks: `useIndexedDB`, `useGamification`, `useOfflineQueue`, `useChallenges`, `useStatsCalculations`, `useInsights`, `useSwipeNavigation`, `useBackHandler`, `useThrottledCallback`, `useScrollLock`, `useInnerWorld`, `useADHDHooks`, `useDemoMode`, `usePwaInstall`, `useHealthConnect`.
+Key hooks: `useIndexedDB`, `useGamification`, `useOfflineQueue`, `useChallenges`, `useStatsCalculations`, `useInsights`, `useSwipeNavigation`, `useBackHandler`, `useThrottledCallback`, `useScrollLock`, `useInnerWorld`, `useADHDHooks`, `useDemoMode`, `usePwaInstall`.
 
 ---
 
@@ -197,7 +192,7 @@ ADD COLUMN IF NOT EXISTS mood_time_evening text;
    - What happens on first use? (onboarding/guidance)
    - What happens on different platforms? (web, Android, iOS)
    - What happens with different screen sizes? (responsive)
-   - What happens with different languages? (i18n for all 9 languages)
+   - What happens with different languages? (i18n for all 8 languages)
    - What happens when the user doesn't have permissions? (permission flow)
    - What happens when the API is rate-limited? (caching, throttling)
    - What happens when the user goes back? (Android back button)
@@ -222,7 +217,7 @@ ADD COLUMN IF NOT EXISTS mood_time_evening text;
 12. **SW auto-skipWaiting**: New SW immediately activates. Auto-reload via controllerchange listener.
 13. **WCAG touch targets**: All interactive elements must be minimum 44px (buttons, checkboxes). Habit +/- buttons are 48px.
 14. **Google Calendar**: Per-date in-memory cache (15-min TTL). Google events have `source: 'google'`, are non-editable, non-deletable. Toggle in Settings visible only for Google-signed users.
-15. **Health Connect**: Android only — `HealthConnectCard` returns `null` on web/iOS. Kotlin plugin uses coroutines (`CoroutineScope + SupervisorJob`), cancelled in `handleOnDestroy()`. All methods resolve with safe defaults (never reject/crash).
+15. **Health Connect**: Removed in v1.7.0 (SDK incompatible with AGP 8.2 — needs AGP 8.9+). Can re-add later when upgrading Android build tools.
 16. **ALL modals use custom div modals, NOT Radix Sheet**: Radix Sheet is broken (shows only blur overlay). Use `<div role="dialog" className="fixed ... z-[60] ...">` pattern with `useScrollLock` + `useBackHandler`.
 
 ---
@@ -285,13 +280,29 @@ Module-level singleton `blessedAudioElement` — created once, never destroyed. 
 
 ```bash
 npm run dev          # Dev server (port 8080)
-npm run build        # Production build
+npm run build        # Production build (base="/people-first-app/" for GitHub Pages)
 npm run preview      # Preview build
 npm test             # Run 662 tests
 npm run test:e2e     # Playwright E2E
-npx cap sync         # Capacitor sync
-npm run build:android # Android build
 ```
+
+### Deploy to GitHub Pages (web)
+```bash
+npm run build        # base="/people-first-app/" — absolute paths for web hosting
+# Then push to GitHub, CI deploys from docs/ or dist/
+```
+
+### Deploy to Android Studio (Capacitor)
+```bash
+npm run cap:sync:android   # = npm run build:android && npx cap sync android
+```
+**CRITICAL:** Always use `cap:sync:android` (or `build:android`) for Android. NEVER use `npm run build` + `npx cap sync android` — that copies web-deploy paths (`/people-first-app/assets/...`) into Android assets, which causes a **white screen** because Capacitor uses `file://` and absolute paths resolve to nothing.
+
+| Command | `base` in vite | Use for |
+|---------|---------------|---------|
+| `npm run build` | `/people-first-app/` | GitHub Pages, Vercel |
+| `npm run build:android` | `./` (relative) | Android Studio via Capacitor |
+| `npm run cap:sync:android` | `./` (relative) | Build + sync to Android in one step |
 
 ---
 
@@ -321,7 +332,7 @@ Full UX/UI/a11y/security audit before Android release. 8 areas checked: UX gestu
 2. **useThrottledCallback** added to: ChallengeModal (Create/Copy/Share), ShareModal (Download/Copy/Share), WelcomeBackModal (Continue/Accept)
 3. **aria-label** added to: ChallengeModal back button + copy code button, ShareModal download/copy/share buttons
 4. **btn-press** added to: SettingsPanel (Sync Now, Sign Out, Delete Account, Install App buttons)
-5. **Exit toast i18n**: Added missing ja/ar/he translations in `androidBackHandler.ts` — all 9 languages now covered
+5. **Exit toast i18n**: Added missing ja/ar/he translations in `androidBackHandler.ts` — all 8 languages now covered
 
 ### Dead Code Noted
 - `PullToRefresh` component exists (`src/components/PullToRefresh.tsx`) but is not imported anywhere — candidate for removal

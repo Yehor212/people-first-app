@@ -208,7 +208,7 @@ export async function showRewardedAd(): Promise<RewardedAdResult> {
 
     return {
       success: true,
-      rewarded: result?.type === 'earned' || result?.type === 'rewarded' || true,
+      rewarded: true,
     };
   } catch (err) {
     state.lastDismissTime = Date.now();

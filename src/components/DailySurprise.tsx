@@ -361,8 +361,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
           </div>
           <div className="flex-1 text-left">
             <p className="font-semibold text-foreground">
-              {language === 'ru' ? 'Сюрприз дня' :
-               language === 'uk' ? 'Сюрприз дня' :
+              {language === 'uk' ? 'Сюрприз дня' :
                language === 'es' ? 'Sorpresa del día' :
                language === 'de' ? 'Tagesüberraschung' :
                language === 'fr' ? 'Surprise du jour' :
@@ -370,8 +369,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
                'Daily Surprise'}
             </p>
             <p className="text-sm text-muted-foreground">
-              {language === 'ru' ? 'Нажми, чтобы открыть!' :
-               language === 'uk' ? 'Натисни, щоб відкрити!' :
+              {language === 'uk' ? 'Натисни, щоб відкрити!' :
                language === 'es' ? '¡Toca para abrir!' :
                language === 'de' ? 'Tippe zum Öffnen!' :
                language === 'fr' ? 'Appuie pour ouvrir!' :

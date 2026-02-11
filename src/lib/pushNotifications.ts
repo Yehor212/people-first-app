@@ -29,10 +29,14 @@ async function getDeviceId(): Promise<string> {
     deviceId = `${info.id}-${info.build}`;
   } catch {
     // Fallback to random ID stored in localStorage
-    deviceId = localStorage.getItem('zenflow_device_id');
-    if (!deviceId) {
+    try {
+      deviceId = localStorage.getItem('zenflow_device_id');
+      if (!deviceId) {
+        deviceId = `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        localStorage.setItem('zenflow_device_id', deviceId);
+      }
+    } catch {
       deviceId = `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      localStorage.setItem('zenflow_device_id', deviceId);
     }
   }
 

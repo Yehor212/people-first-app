@@ -16,7 +16,7 @@ interface ProfileSectionProps {
   onNameChange: (name: string) => void;
 }
 
-const languages: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
+const languages: Language[] = ['en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
 
 export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) {
   const { t, language, setLanguage } = useLanguage();

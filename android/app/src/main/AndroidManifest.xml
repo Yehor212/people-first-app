@@ -92,10 +92,18 @@
                 android:resource="@xml/appwidget_info_large" />
         </receiver>
 
+        <!-- AdMob App ID -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-9501460293702808~3258317488"/>
+
     </application>
 
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- AdMob advertising ID (Android 13+) -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
 
     <!-- Notifications -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

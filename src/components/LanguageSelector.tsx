@@ -7,7 +7,7 @@ interface LanguageSelectorProps {
   onComplete: () => void;
 }
 
-const languages: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
+const languages: Language[] = ['en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
 
 export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
   const { language, setLanguage, t } = useLanguage();

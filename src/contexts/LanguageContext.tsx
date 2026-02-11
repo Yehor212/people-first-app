@@ -18,7 +18,7 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const SUPPORTED_LANGUAGES: Language[] = ['en', 'ru', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
+const SUPPORTED_LANGUAGES: Language[] = ['en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
 
 // RTL languages
 const RTL_LANGUAGES: Language[] = ['ar', 'he'];
@@ -50,20 +50,35 @@ function detectBrowserLanguage(): Language {
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const detectedLang = detectBrowserLanguage();
-  const [language, setLanguage] = useLocalStorage<Language>('zenflow-language', detectedLang);
+  const [language, setLanguageRaw] = useLocalStorage<Language>('zenflow-language', detectedLang);
+
+  // Guard: if stored language was removed (e.g. 'ru' after v1.7.0), fall back to English
+  const validLanguage = SUPPORTED_LANGUAGES.includes(language) ? language : 'en';
+
+  // Wrap setLanguage to also persist the validated value if it was corrected
+  const setLanguage = useMemo(() => (lang: Language) => {
+    setLanguageRaw(lang);
+  }, [setLanguageRaw]);
 
   // Ref to ensure auto-detection only runs once
   const hasAutoDetectedRef = useRef(false);
 
+  // If stored language is unsupported, overwrite it immediately
+  useEffect(() => {
+    if (language !== validLanguage) {
+      setLanguageRaw(validLanguage);
+    }
+  }, [language, validLanguage, setLanguageRaw]);
+
   // Check if current language is RTL
-  const isRTL = RTL_LANGUAGES.includes(language);
+  const isRTL = RTL_LANGUAGES.includes(validLanguage);
 
   // Apply RTL direction to document
   useEffect(() => {
     const dir = isRTL ? 'rtl' : 'ltr';
     document.documentElement.setAttribute('dir', dir);
-    document.documentElement.setAttribute('lang', language);
-  }, [language, isRTL]);
+    document.documentElement.setAttribute('lang', validLanguage);
+  }, [validLanguage, isRTL]);
 
   // Auto-detect language on first load
   useEffect(() => {
@@ -75,21 +90,21 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (!hasSelectedLanguage) {
       // User hasn't manually selected a language yet, use detected language
       const detected = detectBrowserLanguage();
-      if (detected !== language) {
-        setLanguage(detected);
+      if (detected !== validLanguage) {
+        setLanguageRaw(detected);
       }
     }
-  }, [language, setLanguage]);
+  }, [validLanguage, setLanguageRaw]);
 
-  const t = translations[language];
+  const t = translations[validLanguage];
 
   // Memoize provider value to prevent unnecessary re-renders
   const value = useMemo(() => ({
-    language,
+    language: validLanguage,
     setLanguage,
     t,
     isRTL,
-  }), [language, setLanguage, t, isRTL]);
+  }), [validLanguage, setLanguage, t, isRTL]);
 
   return (
     <LanguageContext.Provider value={value}>

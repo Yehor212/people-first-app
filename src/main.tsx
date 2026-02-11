@@ -27,7 +27,12 @@ import { setupChunkErrorHandler } from "./components/UpdateRequiredDialog";
 import { checkDatabaseHealth } from "./storage/db";
 
 // Initialize Sentry FIRST for error monitoring (before any other code runs)
-initSentry();
+// Wrapped in try/catch — Sentry must never crash the app
+try {
+  initSentry();
+} catch (e) {
+  console.warn('[Main] Sentry init failed:', e);
+}
 
 // Setup chunk error handler EARLY to catch lazy loading failures
 // This must be before React renders to catch initial chunk load errors

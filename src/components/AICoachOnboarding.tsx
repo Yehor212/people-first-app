@@ -288,8 +288,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
                 </div>
               </div>
               <p className="text-sm text-muted-foreground">
-                {language === 'ru' ? 'Отвечу на вопросы, помогу с мотивацией и поддержу в трудные моменты' :
-                 language === 'uk' ? 'Відповім на питання, допоможу з мотивацією і підтримаю в важкі моменти' :
+                {language === 'uk' ? 'Відповім на питання, допоможу з мотивацією і підтримаю в важкі моменти' :
                  language === 'ja' ? '質問に答え、モチベーションを高め、困難な時にサポートします' :
                  'I\'ll answer questions, help with motivation and support you in difficult moments'}
               </p>

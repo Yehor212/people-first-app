@@ -143,7 +143,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
             />
             {progress > 0 && progress < 100 && (
               <div
-                className="absolute top-0 h-full w-2 bg-white/50 animate-pulse"
+                className="absolute top-0 h-full w-2 bg-foreground/50 animate-pulse"
                 style={{ left: `${progress}%`, transform: 'translateX(-50%)' }}
               />
             )}

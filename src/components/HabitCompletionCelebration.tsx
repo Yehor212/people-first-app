@@ -128,7 +128,7 @@ export function HabitCompletionCelebration({
         {/* Animated checkmark */}
         <div className="relative">
           <div className={cn(
-            "w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center",
+            "w-10 h-10 rounded-xl bg-foreground/20 flex items-center justify-center",
             phase === 'check' && "animate-check-circle-fill"
           )}>
             <Check className={cn(
@@ -149,7 +149,7 @@ export function HabitCompletionCelebration({
         {/* Habit name */}
         <div className="flex flex-col">
           <span className="text-white font-bold text-base">{habitName}</span>
-          <span className="text-white/70 text-xs">{t.completed || 'Completed!'}</span>
+          <span className="text-foreground/70 text-xs">{t.completed || 'Completed!'}</span>
         </div>
 
         {/* XP Popup - Premium with glow */}
@@ -354,7 +354,7 @@ export function DailyProgressBar({ completedCount, totalCount, className }: Dail
               className={cn(
                 "w-1.5 h-1.5 rounded-full transition-all duration-300",
                 i < completedCount
-                  ? "bg-white/50 scale-100"
+                  ? "bg-foreground/50 scale-100"
                   : "bg-foreground/20 scale-75"
               )}
               style={{ transitionDelay: `${i * 50}ms` }}

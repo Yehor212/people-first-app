@@ -267,7 +267,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
           aria-label={t.leaderboardType || 'Leaderboard type'}
           className="flex gap-1.5 p-1.5 mb-4 rounded-xl"
           style={{
-            background: 'rgba(255, 255, 255, 0.05)',
+            background: 'hsl(var(--foreground) / 0.05)',
           }}
         >
           {tabs.map((tab) => (
@@ -281,7 +281,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                 "flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg font-medium transition-all",
                 activeTab === tab.type
                   ? "bg-gradient-to-r from-violet-500/80 to-purple-600/80 text-white"
-                  : "text-white/60 hover:text-white hover:bg-white/5"
+                  : "text-foreground/60 hover:text-foreground hover:bg-foreground/5"
               )}
               style={activeTab === tab.type ? {
                 boxShadow: '0 0 12px rgba(139, 92, 246, 0.3)'
@@ -299,8 +299,8 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
         <div
           className="rounded-xl p-4 mb-4"
           style={{
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%)',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            background: 'linear-gradient(135deg, hsl(var(--foreground) / 0.05) 0%, hsl(var(--foreground) / 0.02) 100%)',
+            border: '1px solid hsl(var(--foreground) / 0.1)',
           }}
         >
           <div className="flex items-center justify-between mb-3">
@@ -308,9 +308,9 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
               {isOptedIn ? (
                 <Eye className="w-4 h-4 text-violet-400" />
               ) : (
-                <EyeOff className="w-4 h-4 text-white/40" />
+                <EyeOff className="w-4 h-4 text-foreground/40" />
               )}
-              <span className="font-medium text-sm text-white/80">
+              <span className="font-medium text-sm text-foreground/80">
                 {t.showOnLeaderboard || 'Show on leaderboard'}
               </span>
             </div>
@@ -328,7 +328,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                 onChange={(e) => setDisplayName(e.target.value)}
                 placeholder={t.displayName || 'Display name'}
                 maxLength={20}
-                className="flex-1 bg-white/10 border-white/10 text-white placeholder:text-white/40"
+                className="flex-1 bg-foreground/10 border-foreground/10 text-foreground placeholder:text-foreground/40"
                 onBlur={handleNameUpdate}
                 onKeyDown={(e) => e.key === 'Enter' && handleNameUpdate()}
               />
@@ -346,9 +346,9 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
               }}
             >
               <Medal className="w-4 h-4 text-violet-400" />
-              <span className="text-white/70">
+              <span className="text-foreground/70">
                 {t.yourRank || 'Your rank'}: <strong className="text-violet-700 dark:text-violet-300">{formatRank(getCurrentRank())}</strong>
-                {userRanks && <span className="text-white/40"> / {userRanks.totalParticipants}</span>}
+                {userRanks && <span className="text-foreground/40"> / {userRanks.totalParticipants}</span>}
               </span>
             </motion.div>
           )}
@@ -427,8 +427,8 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                     } : {
                       background: entry.isCurrentUser
                         ? 'rgba(139, 92, 246, 0.1)'
-                        : 'rgba(255, 255, 255, 0.05)',
-                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                        : 'hsl(var(--foreground) / 0.05)',
+                      border: '1px solid hsl(var(--foreground) / 0.1)',
                     }}
                   >
                     {/* Rank - Premium */}
@@ -438,10 +438,10 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                         background: rankConfig.rankBg,
                         boxShadow: '0 2px 8px rgba(0, 0, 0, 0.2)',
                       } : {
-                        background: 'rgba(255, 255, 255, 0.1)',
+                        background: 'hsl(var(--foreground) / 0.1)',
                       }}
                     >
-                      <span className={rankConfig ? 'text-white' : 'text-white/60'}>
+                      <span className={rankConfig ? 'text-white' : 'text-foreground/60'}>
                         {getRankMedal(entry.rank ?? 0) || entry.rank}
                       </span>
                     </div>
@@ -463,7 +463,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                         )}
                       </div>
                       {activeTab === 'streak' && entry.longestStreak > entry.currentStreak && (
-                        <span className="text-xs text-white/40">
+                        <span className="text-xs text-foreground/40">
                           {t.best || 'Best'}: {entry.longestStreak} {t.days || 'days'}
                         </span>
                       )}
@@ -477,7 +477,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                       )}>
                         {getValue(entry).toLocaleString()}
                       </span>
-                      <span className="text-xs text-white/40 ms-1">
+                      <span className="text-xs text-foreground/40 ms-1">
                         {getUnit()}
                       </span>
                     </div>
@@ -494,12 +494,12 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
         <motion.button
           onClick={() => loadData(0)}
           disabled={isLoading}
-          className="absolute top-4 right-4 p-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+          className="absolute top-4 right-4 p-2.5 rounded-xl bg-foreground/5 border border-foreground/10 hover:bg-foreground/10 transition-colors"
           aria-label={t.refresh || 'Refresh'}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          <RefreshCw className={cn("w-5 h-5 text-white/60", isLoading && "animate-spin")} />
+          <RefreshCw className={cn("w-5 h-5 text-foreground/60", isLoading && "animate-spin")} />
         </motion.button>
           </div>
         </>

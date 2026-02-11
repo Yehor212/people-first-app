@@ -284,7 +284,7 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
                 className={cn(
                   'w-full p-4 rounded-xl resize-none transition-all',
                   isPrimaryCTA
-                    ? 'bg-white/5 backdrop-blur-sm border border-white/20 text-foreground placeholder:text-white/40'
+                    ? 'bg-foreground/5 backdrop-blur-sm border border-foreground/20 text-foreground placeholder:text-foreground/40'
                     : 'bg-secondary border border-border text-foreground placeholder:text-muted-foreground',
                   'focus:outline-none focus:ring-2 focus:ring-pink-500/50 focus:border-pink-500/30',
                   validationError && 'ring-2 ring-destructive/50'

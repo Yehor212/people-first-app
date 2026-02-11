@@ -51,7 +51,7 @@ interface HyperfocusModeProps {
 }
 
 export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeProps) {
-  const { t, language } = useLanguage();
+  const { t } = useLanguage();
 
   // Android back button: close fullscreen overlay
   useBackHandler(true, onExit);
@@ -667,7 +667,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   whileTap={{ scale: 0.97 }}
                 >
                   <span className="text-lg">{emoji}</span>
-                  <span>{language === 'ru' || language === 'uk' ? sound.nameRu : sound.nameEn}</span>
+                  <span>{sound.nameEn}</span>
                 </motion.button>
               );
             })}

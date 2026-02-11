@@ -807,7 +807,7 @@ export async function shareImage(
         reader.onloadend = () => {
           const result = reader.result as string;
           // Remove data:image/png;base64, prefix
-          const base64 = result.split(',')[1];
+          const base64 = result.split(',')[1] || '';
           resolve(base64);
         };
         reader.onerror = reject;

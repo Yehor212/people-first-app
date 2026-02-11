@@ -40,9 +40,7 @@ export function MoodSelectionCelebration({
 
   const TimeIcon = timeIcons[timeOfDay];
   const today = new Date();
-  const dayNames = language === 'ru'
-    ? ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
-    : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   useEffect(() => {
     // Phase 1: Emoji jumps up

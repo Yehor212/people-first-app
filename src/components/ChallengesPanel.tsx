@@ -78,7 +78,7 @@ export function ChallengesPanel({
             reader.readAsDataURL(blob);
             reader.onloadend = () => {
               const result = reader.result as string;
-              resolve(result.split(',')[1]);
+              resolve(result.split(',')[1] || '');
             };
           });
 

@@ -115,7 +115,7 @@ export function StorageErrorBanner() {
         <button
           onClick={handleDismiss}
           aria-label={t.close || 'Close'}
-          className="p-1 hover:bg-white/20 rounded-lg transition-colors flex-shrink-0"
+          className="p-1 hover:bg-foreground/20 rounded-lg transition-colors flex-shrink-0"
         >
           <X className="w-4 h-4" />
         </button>

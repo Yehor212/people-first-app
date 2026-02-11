@@ -293,7 +293,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
                     {/* Check mark */}
                     {isSelected && (
-                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-white/30 flex items-center justify-center">
+                      <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-foreground/30 flex items-center justify-center">
                         <Check className="w-3 h-3 text-white" />
                       </div>
                     )}

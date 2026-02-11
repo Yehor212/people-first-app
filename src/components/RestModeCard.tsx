@@ -96,7 +96,7 @@ export const RestModeCard = memo(function RestModeCard({ streak, onCancel }: Res
       {/* Cancel button */}
       <button
         onClick={onCancel}
-        className="w-full py-3 text-muted-foreground hover:text-foreground hover:bg-white/5 rounded-xl transition-colors"
+        className="w-full py-3 text-muted-foreground hover:text-foreground hover:bg-foreground/5 rounded-xl transition-colors"
       >
         {t.restDayCancel}
       </button>

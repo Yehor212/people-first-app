@@ -36,7 +36,7 @@ export function parseDeepLink(url: string): DeepLinkData | null {
       // zenflow://challenge/{id}
       if (host === 'challenge' || path.startsWith('challenge')) {
         const id = path.replace('challenge/', '').replace('challenge', '') || parsed.searchParams.get('id');
-        if (id) {
+        if (id && /^[A-Za-z0-9]{4,12}$/.test(id)) {
           return { type: 'challenge', id };
         }
       }
@@ -46,7 +46,7 @@ export function parseDeepLink(url: string): DeepLinkData | null {
     if (parsed.host === 'zenflow.app' || parsed.host === 'www.zenflow.app') {
       const pathParts = parsed.pathname.split('/').filter(Boolean);
 
-      if (pathParts[0] === 'challenge' && pathParts[1]) {
+      if (pathParts[0] === 'challenge' && pathParts[1] && /^[A-Za-z0-9]{4,12}$/.test(pathParts[1])) {
         return { type: 'challenge', id: pathParts[1] };
       }
     }

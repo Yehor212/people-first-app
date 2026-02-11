@@ -210,12 +210,6 @@ export function getDemoCompanionState(): Companion {
     lastFeedTime: Date.now() - 1000 * 60 * 90,
     interactionCount: 342,
 
-    treeStage: 4,
-    waterLevel: 85,
-    lastWateredAt: Date.now() - 1000 * 60 * 60 * 2,
-    lastTouchTime: Date.now() - 1000 * 60 * 45,
-    treeXP: 780,
-
     fullness: 80,
 
     happiness: 90,

@@ -26,13 +26,40 @@ export function initSentry(): void {
     return;
   }
 
+  const isNative = Capacitor.isNativePlatform();
+
+  // Build integrations list — replay only on web (rrweb crashes Android WebView)
+  const integrations: Sentry.Integration[] = [
+    Sentry.browserTracingIntegration({
+      shouldCreateSpanForRequest: (url) => {
+        if (url.includes('/health')) return false;
+        if (url.includes('sentry.io')) return false;
+        if (url.includes('google-analytics')) return false;
+        if (url.includes('googletagmanager')) return false;
+        return true;
+      },
+    }),
+  ];
+
+  // Session replay only on web — rrweb uses Shadow DOM / MutationObserver
+  // features that can crash in Android WebView
+  if (!isNative) {
+    integrations.push(
+      Sentry.replayIntegration({
+        maskAllText: true,
+        maskAllInputs: true,
+        blockAllMedia: true,
+      }),
+    );
+  }
+
   Sentry.init({
     dsn,
     environment: import.meta.env.MODE,
     release: `zenflow@${__APP_VERSION__}`,
 
     // Performance monitoring - sample 10% of transactions
-    tracesSampleRate: 0.1,
+    tracesSampleRate: isNative ? 0.05 : 0.1,
 
     // Distributed tracing targets - MUST be at root level for SDK v8+
     tracePropagationTargets: [
@@ -40,31 +67,11 @@ export function initSentry(): void {
       /^https:\/\/.*\.supabase\.co/,
     ],
 
-    // Session replay - capture 10% of sessions, 100% on error
+    // Session replay rates — only effective on web (integration not added on native)
     replaysSessionSampleRate: 0.1,
     replaysOnErrorSampleRate: 1.0,
 
-    // Integrations
-    integrations: [
-      // Browser tracing for performance
-      Sentry.browserTracingIntegration({
-        // Filter out noisy requests from tracing
-        shouldCreateSpanForRequest: (url) => {
-          // Skip health checks, analytics, and internal Sentry calls
-          if (url.includes('/health')) return false;
-          if (url.includes('sentry.io')) return false;
-          if (url.includes('google-analytics')) return false;
-          if (url.includes('googletagmanager')) return false;
-          return true;
-        },
-      }),
-      // Session replay for debugging (masked for privacy)
-      Sentry.replayIntegration({
-        maskAllText: true,
-        maskAllInputs: true,
-        blockAllMedia: true,
-      }),
-    ],
+    integrations,
 
     // Privacy: Strip PII and tokens before sending
     // Also filter out expected/handled errors

@@ -75,49 +75,6 @@ export async function initializeNotificationChannel(): Promise<void> {
 }
 
 /**
- * Send a test notification immediately (for debugging)
- */
-export async function sendTestNotification(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
-    logger.log('[Notifications] Test skipped - not native platform');
-    return false;
-  }
-
-  try {
-    const permission = await LocalNotifications.checkPermissions();
-    if (permission.display !== 'granted') {
-      const request = await LocalNotifications.requestPermissions();
-      if (request.display !== 'granted') {
-        logger.error('[Notifications] Permission denied');
-        return false;
-      }
-    }
-
-    // Schedule notification for 5 seconds from now
-    const now = new Date();
-    now.setSeconds(now.getSeconds() + 5);
-
-    await LocalNotifications.schedule({
-      notifications: [
-        {
-          id: 9999,
-          title: '🧪 Test Notification',
-          body: 'If you see this, notifications work! 🎉',
-          channelId: getActiveChannelId(),
-          schedule: { at: now, allowWhileIdle: true },
-        },
-      ],
-    });
-
-    logger.log('[Notifications] Test notification scheduled for:', now.toLocaleTimeString());
-    return true;
-  } catch (error) {
-    logger.error('[Notifications] Test notification failed:', error);
-    return false;
-  }
-}
-
-/**
  * Check if notifications are properly configured
  */
 export async function checkNotificationStatus(): Promise<{

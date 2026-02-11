@@ -167,8 +167,8 @@ export function ThemeToggle() {
       {/* Stars for dark mode */}
       {effectiveTheme === 'dark' && (
         <>
-          <div className="absolute top-[6px] left-[6px] w-1 h-1 bg-white/60 rounded-full" />
-          <div className="absolute top-[14px] left-[12px] w-0.5 h-0.5 bg-white/40 rounded-full" />
+          <div className="absolute top-[6px] left-[6px] w-1 h-1 bg-foreground/60 rounded-full" />
+          <div className="absolute top-[14px] left-[12px] w-0.5 h-0.5 bg-foreground/40 rounded-full" />
         </>
       )}
     </button>

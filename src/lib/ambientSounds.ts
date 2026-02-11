@@ -307,7 +307,6 @@ export async function forceUnlockAudio(): Promise<void> {
 export interface SoundInfo {
   id: string;
   type: AmbientSoundType;
-  nameRu: string;
   nameEn: string;
   file: string;
   fallbackFile?: string; // MP3 fallback for WAV files
@@ -328,7 +327,7 @@ export const SOUNDS: SoundInfo[] = [
   {
     id: 'underwater',
     type: 'underwater',
-    nameRu: 'Подводный гул',
+
     nameEn: 'Underwater Hum',
     file: `${BASE_PATH}sounds/mixkit-underwater-transmitter-hum-2135.wav`,
     description: 'Deep underwater ambient sound'
@@ -336,7 +335,7 @@ export const SOUNDS: SoundInfo[] = [
   {
     id: 'thunderstorm',
     type: 'thunderstorm',
-    nameRu: 'Гроза в джунглях',
+
     nameEn: 'Jungle Thunderstorm',
     file: `${BASE_PATH}sounds/mixkit-calm-thunderstorm-in-the-jungle-2415.wav`,
     description: 'Thunder and rain in tropical jungle'
@@ -344,7 +343,7 @@ export const SOUNDS: SoundInfo[] = [
   {
     id: 'ocean',
     type: 'ocean',
-    nameRu: 'Волны у скал',
+
     nameEn: 'Waves on Rocks',
     file: `${BASE_PATH}sounds/mixkit-small-waves-harbor-rocks-1208.wav`,
     description: 'Small waves hitting harbor rocks'
@@ -352,7 +351,7 @@ export const SOUNDS: SoundInfo[] = [
   {
     id: 'river',
     type: 'river',
-    nameRu: 'Природа у реки',
+
     nameEn: 'River Wildlife',
     file: `${BASE_PATH}sounds/mixkit-wildlife-environment-in-a-river-2456.wav`,
     description: 'River sounds with wildlife'
@@ -360,7 +359,7 @@ export const SOUNDS: SoundInfo[] = [
   {
     id: 'cafe',
     type: 'cafe',
-    nameRu: 'Шум кафе',
+
     nameEn: 'Cafe Ambience',
     file: `${BASE_PATH}sounds/cafe-noise-32940.mp3`,
     description: 'Coffee shop background noise'
@@ -368,7 +367,7 @@ export const SOUNDS: SoundInfo[] = [
   {
     id: 'fireplace',
     type: 'fireplace',
-    nameRu: 'Треск камина',
+
     nameEn: 'Fireplace Crackling',
     file: `${BASE_PATH}sounds/fireplace-fx-56636.mp3`,
     description: 'Cozy fireplace crackling'

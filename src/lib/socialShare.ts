@@ -353,7 +353,7 @@ async function blobToBase64(blob: Blob): Promise<string> {
     reader.onloadend = () => {
       const result = reader.result as string;
       // Remove data URL prefix
-      const base64 = result.split(',')[1];
+      const base64 = result.split(',')[1] || '';
       resolve(base64);
     };
     reader.onerror = reject;

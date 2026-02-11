@@ -83,7 +83,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
         <div className="relative p-6 text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
+            className="absolute top-4 right-4 p-2 hover:bg-foreground/20 rounded-full transition-colors"
             aria-label={t.close || 'Close'}
           >
             <X className="w-5 h-5" />
@@ -91,7 +91,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
 
           <Sparkles className="w-10 h-10 mx-auto mb-2" />
           <h2 className="text-2xl font-bold">{t.spinWheel || 'Spin the Wheel!'}</h2>
-          <p className="text-white/80 text-sm mt-1">
+          <p className="text-foreground/80 text-sm mt-1">
             {t.spinsAvailable || 'Spins Available'}: {spinsAvailable} 🎰
           </p>
         </div>

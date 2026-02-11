@@ -935,7 +935,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           {selectedDate && selectedDayData ? (
             <div className="relative">
               {/* Premium Header */}
-              <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <div className="flex items-center justify-between p-4 border-b border-foreground/10">
                 <div className="flex items-center gap-3">
                   <motion.div
                     className="w-10 h-10 rounded-xl flex items-center justify-center"

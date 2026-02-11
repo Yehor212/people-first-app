@@ -323,7 +323,7 @@ function ParticipantsLeaderboard({
         boxShadow: '0 0 20px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255,255,255,0.05)'
       }}
     >
-      <div className="px-5 py-3 border-b border-white/10 flex items-center gap-2">
+      <div className="px-5 py-3 border-b border-foreground/10 flex items-center gap-2">
         <Users className="w-4 h-4 text-violet-400" />
         <span className="text-sm font-medium text-slate-800 dark:text-white">
           {t.participants || 'Participants'} ({leaderboard.members.length})
@@ -347,7 +347,7 @@ function ParticipantsLeaderboard({
               "flex items-center gap-3 p-3 rounded-xl",
               member.isCurrentUser
                 ? "bg-violet-500/20 border border-violet-500/30"
-                : "bg-white/5"
+                : "bg-foreground/5"
             )}
           >
             {/* Rank */}
@@ -761,7 +761,7 @@ function ChallengeDetailsView({
               "h-14 w-14 rounded-xl flex items-center justify-center transition-all",
               copied
                 ? "bg-emerald-500/20 border border-emerald-500/40"
-                : "bg-white/5 border border-white/10 hover:bg-white/10"
+                : "bg-foreground/5 border border-foreground/10 hover:bg-foreground/10"
             )}
             style={copied ? { boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)' } : undefined}
             whileHover={{ scale: 1.05 }}

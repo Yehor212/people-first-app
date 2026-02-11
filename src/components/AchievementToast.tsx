@@ -24,8 +24,8 @@ export function AchievementToast({ achievement }: AchievementToastProps) {
             <span className="font-bold text-sm uppercase tracking-wide">{t.achievementUnlocked || 'Achievement Unlocked!'}</span>
           </div>
           <h3 className="font-bold text-lg mb-1">{achievement.name}</h3>
-          <p className="text-sm text-white/80">{achievement.description}</p>
-          <Badge className="mt-2 bg-white/20 text-white border-white/30">
+          <p className="text-sm text-foreground/80">{achievement.description}</p>
+          <Badge className="mt-2 bg-foreground/20 text-white border-foreground/30">
             +{achievement.points} XP
           </Badge>
         </div>

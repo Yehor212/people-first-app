@@ -8,6 +8,7 @@ import { initializeApp } from '@/lib/appInitializer';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
+import { AdProvider } from '@/contexts/AdContext';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { triggerXpPopup } from '@/components/XpPopup';
@@ -62,9 +63,6 @@ const BreathingExercise = lazyWithRetry(() => import('@/components/BreathingExer
 // Journal module (lazy-loaded feature)
 const JournalModule = lazyWithRetry(() => import('@/features/journal').then(m => ({ default: m.JournalModule })), 'JournalModule');
 
-// Tree interaction panel (lazy-loaded)
-const TreePanel = lazyWithRetry(() => import('@/components/TreePanel').then(m => ({ default: m.TreePanel })), 'TreePanel');
-
 // Heavy components lazy-loaded for better initial load performance
 const ScheduleTimeline = lazyWithRetry(() => import('@/components/ScheduleTimeline').then(m => ({ default: m.ScheduleTimeline })), 'ScheduleTimeline');
 const HabitTracker = lazyWithRetry(() => import('@/components/HabitTracker').then(m => ({ default: m.HabitTracker })), 'HabitTracker');
@@ -72,7 +70,6 @@ const FocusTimer = lazyWithRetry(() => import('@/components/FocusTimer').then(m 
 const EmotionWheel = lazyWithRetry(() => import('@/components/mindfulness/EmotionWheel').then(m => ({ default: m.EmotionWheel })), 'EmotionWheel');
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { InstallBanner } from '@/components/InstallBanner';
-import { InnerWorldCard } from '@/components/InnerWorldCard';
 // RemindersPanel only used in Settings, imported there directly
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { WelcomeTutorial } from '@/components/WelcomeTutorial';
@@ -294,14 +291,6 @@ export function Index() {
     // Treats system
     earnTreats,
     treatsBalance,
-    // Tree interactions
-    waterTree,
-    touchTree,
-    treeStage,
-    treeWaterLevel,
-    treeXP,
-    WATER_COST,
-    renameCompanion,
     // Rest mode
     isRestMode,
     activateRestMode,
@@ -334,7 +323,6 @@ export function Index() {
   const [showTasksPanel, setShowTasksPanel] = useState(false);
   const [showQuestsPanel, setShowQuestsPanel] = useState(false);
   const [showFriendsPanel, setShowFriendsPanel] = useState(false);
-  const [showTreePanel, setShowTreePanel] = useState(false);
   const [calmMode, setCalmMode] = useState(false);
   const [confettiBurst, setConfettiBurst] = useState<{ x: number; y: number } | null>(null);
   const [challenges, setChallenges] = useState(() => getChallenges());
@@ -362,7 +350,7 @@ export function Index() {
   // Lock background scroll when any modal/panel is open
   const anyModalOpen = showWeeklyReport || showWidgetSettings || showChallenges
     || showChallengeModal || showTimeHelper || showTasksPanel || showQuestsPanel
-    || showFriendsPanel || showTreePanel || showWelcomeOverlay || showWelcomeBack || showMindfulMoment;
+    || showFriendsPanel || showWelcomeOverlay || showWelcomeBack || showMindfulMoment;
   useScrollLock(anyModalOpen);
 
   // Journal prompt text - from DailyPromptCard to GratitudeJournal
@@ -549,7 +537,6 @@ export function Index() {
   useEffect(() => {
     const unregister = registerModalCloseCallback(() => {
       // Close panels in priority order (most recently opened first)
-      if (showTreePanel) { setShowTreePanel(false); return true; }
       if (showFriendsPanel) { setShowFriendsPanel(false); return true; }
       if (showTasksPanel) { setShowTasksPanel(false); return true; }
       if (showQuestsPanel) { setShowQuestsPanel(false); return true; }
@@ -564,7 +551,7 @@ export function Index() {
       return false;
     });
     return unregister;
-  }, [showTreePanel, showFriendsPanel, showTasksPanel, showQuestsPanel, showChallenges, showChallengeModal,
+  }, [showFriendsPanel, showTasksPanel, showQuestsPanel, showChallenges, showChallengeModal,
       showWidgetSettings, showWeeklyReport, showTimeHelper,
       showMindfulMoment, showWelcomeBack, showWelcomeOverlay]);
 
@@ -2004,6 +1991,12 @@ export function Index() {
   }
 
   return (
+    <AdProvider
+      onEarnTreats={(amount) => earnTreats('ad', amount, 'Ad reward')}
+      onEarnXp={() => awardXp('habit')}
+      adConsent={true}
+      isPremium={false}
+    >
     <div className="min-h-screen zen-gradient-hero">
       {/* Skip to main content link for accessibility */}
       <a
@@ -2257,17 +2250,6 @@ export function Index() {
               </Suspense>
             </LazyErrorBoundary>
 
-            {/* Inner World — tree + treats balance */}
-            <LazyErrorBoundary componentName="InnerWorld">
-              <InnerWorldCard
-                treeStage={treeStage}
-                waterLevel={treeWaterLevel}
-                treatsBalance={treatsBalance}
-                streak={innerWorld.currentActiveStreak}
-                onOpen={() => setShowTreePanel(true)}
-              />
-            </LazyErrorBoundary>
-
             {/* Personal Journal */}
             <LazyErrorBoundary componentName="Journal">
               <Suspense fallback={<SkeletonCard />}>
@@ -2518,31 +2500,8 @@ export function Index() {
       {isFeatureVisible('aiCoach') && <AICoachChat />}
       */}
 
-      {/* Tree Panel — Inner World interaction */}
-      {showTreePanel && (
-        <LazyErrorBoundary componentName="Tree Panel">
-          <Suspense fallback={null}>
-            <TreePanel
-              treeStage={treeStage}
-              waterLevel={treeWaterLevel}
-              treeXP={treeXP}
-              treeName={innerWorld.companion.name}
-              isOpen={showTreePanel}
-              onClose={() => setShowTreePanel(false)}
-              onRename={renameCompanion}
-              onTouch={touchTree}
-              onWater={waterTree}
-              treatsBalance={treatsBalance}
-              waterCost={WATER_COST}
-              streak={innerWorld.currentActiveStreak}
-              calmMode={calmMode}
-              onCalmModeChange={setCalmMode}
-            />
-          </Suspense>
-        </LazyErrorBoundary>
-      )}
-
     </div>
+    </AdProvider>
   );
 };
 

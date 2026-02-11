@@ -138,7 +138,7 @@ function AchievementBadge({
       initial={{ scale: 0.8, opacity: 0, y: 20 }}
       animate={{ scale: 1, opacity: 1, y: 0 }}
       transition={{ delay, type: 'spring', stiffness: 200 }}
-      className="relative flex flex-col items-center p-3 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm border border-white/10"
+      className="relative flex flex-col items-center p-3 rounded-2xl bg-gradient-to-br from-foreground/10 to-foreground/5 backdrop-blur-sm border border-foreground/10"
       style={{ boxShadow: `0 0 20px ${color}30` }}
     >
       <motion.div

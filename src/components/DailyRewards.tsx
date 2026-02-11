@@ -147,26 +147,26 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
         <div className="zen-gradient p-6 text-white relative overflow-hidden">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition-colors"
+            className="absolute top-4 right-4 p-2 hover:bg-foreground/20 rounded-full transition-colors"
             aria-label={t.close}
           >
             <X className="w-5 h-5" />
           </button>
 
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-white/20 rounded-2xl">
+            <div className="p-3 bg-foreground/20 rounded-2xl">
               <Gift className="w-8 h-8" />
             </div>
             <div>
               <h2 className="text-2xl font-bold">{t.dailyRewards || 'Daily Rewards'}</h2>
-              <p className="text-white/80 text-sm">
+              <p className="text-foreground/80 text-sm">
                 {t.loginStreak || 'Login Streak'}: {loginStreak} {t.days || 'days'} 🔥
               </p>
             </div>
           </div>
 
           {/* Decorative sparkles */}
-          <Sparkles className="absolute -right-4 -bottom-4 w-24 h-24 text-white/10" />
+          <Sparkles className="absolute -right-4 -bottom-4 w-24 h-24 text-foreground/10" />
         </div>
 
         {/* Rewards Grid */}

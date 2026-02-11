@@ -5,7 +5,6 @@ const config: CapacitorConfig = {
   appName: 'ZenFlow',
   webDir: 'dist',
   android: {
-    // Set to false for production release
     webContentsDebuggingEnabled: false,
     allowMixedContent: false,
   },

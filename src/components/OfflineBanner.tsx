@@ -118,7 +118,7 @@ export function OfflineBanner() {
             {!isOnline && (
               <button
                 onClick={handleRetry}
-                className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+                className="p-1.5 rounded-lg bg-foreground/20 hover:bg-foreground/30 transition-colors"
                 aria-label={t.offlineBannerRetry || 'Retry connection'}
               >
                 <RefreshCw className="w-4 h-4" />
@@ -127,7 +127,7 @@ export function OfflineBanner() {
 
             <button
               onClick={handleDismiss}
-              className="p-1.5 rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
+              className="p-1.5 rounded-lg bg-foreground/20 hover:bg-foreground/30 transition-colors"
               aria-label={t.offlineBannerDismiss || 'Dismiss'}
             >
               <X className="w-4 h-4" />

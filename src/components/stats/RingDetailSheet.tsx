@@ -343,13 +343,13 @@ export function RingDetailSheet({
           />
 
           {/* Handle bar */}
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-white/30" />
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-foreground/30" />
 
           {/* Header content */}
           <div className="absolute bottom-5 inset-x-6 flex items-end justify-between">
             <div className="flex items-center gap-4">
               <motion.div
-                className="p-3.5 rounded-2xl bg-white/20 backdrop-blur-sm"
+                className="p-3.5 rounded-2xl bg-foreground/20 backdrop-blur-sm"
                 style={{ boxShadow: `0 0 40px ${theme.glowColor}` }}
                 animate={{
                   boxShadow: [

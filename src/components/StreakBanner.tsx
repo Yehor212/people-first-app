@@ -137,7 +137,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
             reader.readAsDataURL(blob);
             reader.onloadend = () => {
               const result = reader.result as string;
-              resolve(result.split(',')[1]);
+              resolve(result.split(',')[1] || '');
             };
           });
 
@@ -310,7 +310,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                     "border transition-all",
                     activity.done
                       ? `bg-gradient-to-br ${activity.gradient} border-white/30`
-                      : "bg-white/5 dark:bg-white/5 border-white/10"
+                      : "bg-foreground/5 dark:bg-foreground/5 border-foreground/10"
                   )}
                   style={activity.done ? {
                     boxShadow: `0 0 12px ${activity.glowColor}`
@@ -324,7 +324,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                   {activity.done ? (
                     <Check className="w-3.5 h-3.5 text-white" />
                   ) : (
-                    <activity.Icon className="w-3.5 h-3.5 text-white/40" />
+                    <activity.Icon className="w-3.5 h-3.5 text-foreground/40" />
                   )}
 
                   {/* Pulse ring animation when done */}
@@ -350,7 +350,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                     "border",
                     activity.done
                       ? `bg-gradient-to-br ${activity.gradient} border-white/30`
-                      : "bg-white/5 dark:bg-white/5 border-white/10"
+                      : "bg-foreground/5 dark:bg-foreground/5 border-foreground/10"
                   )}
                   style={activity.done ? {
                     boxShadow: `0 0 12px ${activity.glowColor}`
@@ -361,7 +361,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                   {activity.done ? (
                     <Check className="w-3.5 h-3.5 text-white" />
                   ) : (
-                    <activity.Icon className="w-3.5 h-3.5 text-white/40" />
+                    <activity.Icon className="w-3.5 h-3.5 text-foreground/40" />
                   )}
                 </div>
               )

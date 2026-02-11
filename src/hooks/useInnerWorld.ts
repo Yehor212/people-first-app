@@ -28,9 +28,7 @@ import {
   TreatsWallet,
   TreatSource,
   TreatTransaction,
-  TreeStage,
 } from '@/types';
-import { getTreeStageFromXP, TREE_STAGE_XP } from '@/lib/seasonHelper';
 import {
   GROWTH_THRESHOLDS,
   CREATURE_THRESHOLDS,
@@ -71,12 +69,6 @@ const createDefaultCompanion = (): Companion => ({
     wisdom: 50,
     warmth: 70,
   },
-  // NEW: Seasonal Tree System
-  treeStage: 1 as TreeStage,    // Start as seed
-  waterLevel: 70,               // Start with some water
-  lastWateredAt: Date.now(),    // Just watered
-  lastTouchTime: undefined,     // Separate cooldown for tree touch
-  treeXP: 0,                    // No XP yet
 });
 
 const createDefaultTreatsWallet = (): TreatsWallet => ({
@@ -240,44 +232,6 @@ export function useInnerWorld() {
       }
     }
   }, [isLoading, world.lastActiveDate, setWorld]);
-
-  // Water decay effect - reduces water level over time
-  // Use functional update to prevent stale closure
-  useEffect(() => {
-    if (isLoading) return;
-
-    const DECAY_INTERVAL_MS = 60 * 60 * 1000; // Check every hour
-    const DECAY_RATE = 2; // -2% per hour
-
-    const checkWaterDecay = () => {
-      setWorld(prev => {
-        const lastWateredAt = prev.companion.lastWateredAt || Date.now();
-        const hoursSinceWatered = (Date.now() - lastWateredAt) / (1000 * 60 * 60);
-        const expectedDecay = Math.floor(hoursSinceWatered) * DECAY_RATE;
-        const expectedWaterLevel = Math.max(0, 100 - expectedDecay);
-
-        // Only update if water level needs adjustment
-        if (prev.companion.waterLevel > expectedWaterLevel) {
-          return {
-            ...prev,
-            companion: {
-              ...prev.companion,
-              waterLevel: expectedWaterLevel,
-            },
-          };
-        }
-        return prev; // No change needed
-      });
-    };
-
-    // Check immediately on load
-    checkWaterDecay();
-
-    // Set up interval for periodic checks
-    const interval = setInterval(checkWaterDecay, DECAY_INTERVAL_MS);
-
-    return () => clearInterval(interval);
-  }, [isLoading, setWorld]);
 
   // Sync streak to friends profile when it changes
   useEffect(() => {
@@ -734,157 +688,6 @@ export function useInnerWorld() {
     return result;
   }, [setWorld]);
 
-  // ============================================
-  // SEASONAL TREE INTERACTIONS
-  // ============================================
-
-  // Tree costs
-  const TREE_COSTS = {
-    water: {
-      treatCost: 10,      // 10 treats to water
-      waterGain: 30,      // +30 water level
-      xpGain: 50,         // +50 XP towards tree growth
-    },
-    touch: {
-      xpGain: 10,         // Free +10 XP
-      cooldownMs: 60000,  // 1 minute cooldown for full effect
-    },
-  };
-
-  // Water the tree - COSTS TREATS, increases water level and XP
-  // Use functional update to prevent stale closure race conditions
-  const waterTree = useCallback(() => {
-    const now = Date.now();
-    const treatCost = TREE_COSTS.water.treatCost;
-    let result: {
-      success: boolean;
-      reason?: string;
-      needed?: number;
-      have?: number;
-      waterGain: number;
-      xpGain: number;
-      treatCost?: number;
-      newBalance?: number;
-      newWaterLevel?: number;
-      newTreeXP?: number;
-      stageUp?: boolean;
-      newStage?: number;
-    } = { success: false, waterGain: 0, xpGain: 0 };
-
-    setWorld(prev => {
-      const currentBalance = prev.treats?.balance || 0;
-
-      // Check if enough treats
-      if (currentBalance < treatCost) {
-        result = {
-          success: false,
-          reason: 'not_enough_treats',
-          needed: treatCost,
-          have: currentBalance,
-          waterGain: 0,
-          xpGain: 0,
-        };
-        return prev; // No state change
-      }
-
-      const waterGain = TREE_COSTS.water.waterGain;
-      const xpGain = TREE_COSTS.water.xpGain;
-
-      // Update water level and XP
-      const newWaterLevel = Math.min(100, (prev.companion.waterLevel || 0) + waterGain);
-      const newTreeXP = (prev.companion.treeXP || 0) + xpGain;
-      const newTreeStage = getTreeStageFromXP(newTreeXP);
-
-      // Deduct treats
-      const transaction: TreatTransaction = {
-        id: generateId(),
-        amount: -treatCost,
-        source: 'mood',
-        timestamp: now,
-        description: 'Water tree',
-      };
-      const transactions = [transaction, ...(prev.treats?.transactions || [])].slice(0, 50);
-
-      const stageUp = newTreeStage > (prev.companion.treeStage || 1);
-
-      result = {
-        success: true,
-        waterGain,
-        xpGain,
-        treatCost,
-        newBalance: currentBalance - treatCost,
-        newWaterLevel,
-        newTreeXP,
-        stageUp,
-        newStage: newTreeStage,
-      };
-
-      return {
-        ...prev,
-        treats: {
-          ...prev.treats,
-          balance: currentBalance - treatCost,
-          lifetimeSpent: (prev.treats?.lifetimeSpent || 0) + treatCost,
-          transactions,
-        },
-        companion: {
-          ...prev.companion,
-          waterLevel: newWaterLevel,
-          treeXP: newTreeXP,
-          treeStage: newTreeStage,
-          lastWateredAt: now,
-          lastInteraction: now,
-          interactionCount: (prev.companion.interactionCount || 0) + 1,
-        },
-      };
-    });
-
-    return result;
-  }, [setWorld]);
-
-  // Touch the tree - FREE action, small XP gain
-  // Use functional update to prevent stale closure race conditions
-  const touchTree = useCallback(() => {
-    const now = Date.now();
-    let result = { xpGain: 0, canTouchAgain: false, stageUp: false, newStage: 1, newTreeXP: 0 };
-
-    setWorld(prev => {
-      const timeSinceLastTouch = prev.companion.lastTouchTime
-        ? now - prev.companion.lastTouchTime
-        : Infinity;
-
-      // Cooldown for full effect (1 minute)
-      const canTouchAgain = timeSinceLastTouch > TREE_COSTS.touch.cooldownMs;
-      const xpGain = canTouchAgain ? TREE_COSTS.touch.xpGain : 2;
-
-      const newTreeXP = (prev.companion.treeXP || 0) + xpGain;
-      const newTreeStage = getTreeStageFromXP(newTreeXP);
-      const stageUp = newTreeStage > (prev.companion.treeStage || 1);
-
-      result = {
-        xpGain,
-        canTouchAgain,
-        stageUp,
-        newStage: newTreeStage,
-        newTreeXP,
-      };
-
-      return {
-        ...prev,
-        companion: {
-          ...prev.companion,
-          treeXP: newTreeXP,
-          treeStage: newTreeStage,
-          lastTouchTime: now,
-          lastInteraction: now,
-          interactionCount: (prev.companion.interactionCount || 0) + 1,
-        },
-      };
-    });
-
-    return result;
-  }, [setWorld]);
-
   // Talk to companion - get advice and increase wisdom
   // Use functional update to prevent stale closure race conditions
   const talkToCompanion = useCallback(() => {
@@ -1076,10 +879,6 @@ export function useInnerWorld() {
     talkToCompanion,
     updateCompanionFromActivity,
 
-    // Seasonal Tree interactions
-    waterTree,
-    touchTree,
-
     // Stats
     gardenStats,
 
@@ -1090,12 +889,6 @@ export function useInnerWorld() {
 
     // Constants for UI
     FEED_COST: COMPANION_COSTS.feed.treatCost,
-    WATER_COST: 10, // Cost to water tree
-
-    // Tree data helpers
-    treeStage: world.companion.treeStage || 1,
-    treeWaterLevel: world.companion.waterLevel || 0,
-    treeXP: world.companion.treeXP || 0,
 
     // Rest mode
     isRestMode,
