@@ -83,15 +83,21 @@ const getLocalParts = (timezone: string) => {
   return { dateKey, minutes: hour * 60 + minute, day: dayMap[weekday] ?? 0 };
 };
 
+const NOTIFICATION_STRINGS: Record<string, Record<ReminderType, string>> = {
+  en: { mood: "How are you feeling today?", habit: "Time to check your habits.", focus: "Ready for a focus session?" },
+  ru: { mood: "Как настроение сегодня?", habit: "Время отметить привычки.", focus: "Готовы к фокус-сессии?" },
+  uk: { mood: "Як настрій сьогодні?", habit: "Час перевірити звички.", focus: "Готові до фокус-сесії?" },
+  es: { mood: "¿Cómo te sientes hoy?", habit: "Hora de revisar tus hábitos.", focus: "¿Listo para una sesión de enfoque?" },
+  de: { mood: "Wie fühlst du dich heute?", habit: "Zeit, deine Gewohnheiten zu prüfen.", focus: "Bereit für eine Fokus-Sitzung?" },
+  fr: { mood: "Comment vous sentez-vous aujourd'hui ?", habit: "C'est l'heure de vérifier vos habitudes.", focus: "Prêt pour une session de concentration ?" },
+  ja: { mood: "今日の気分はいかがですか？", habit: "習慣をチェックする時間です。", focus: "集中セッションの準備はできましたか？" },
+  ar: { mood: "كيف حالك اليوم؟", habit: "حان وقت مراجعة عاداتك.", focus: "هل أنت مستعد لجلسة تركيز؟" },
+  he: { mood: "איך אתה מרגיש היום?", habit: "הגיע הזמן לבדוק את ההרגלים.", focus: "מוכן לסשן מיקוד?" },
+};
+
 const getTitleBody = (type: ReminderType, language: string) => {
-  if (language === "ru") {
-    if (type === "mood") return { title: "ZenFlow", body: "Как настроение сегодня?" };
-    if (type === "habit") return { title: "ZenFlow", body: "Время отметить привычки." };
-    return { title: "ZenFlow", body: "Готовы к фокус-сессии?" };
-  }
-  if (type === "mood") return { title: "ZenFlow", body: "How are you feeling today?" };
-  if (type === "habit") return { title: "ZenFlow", body: "Time to check your habits." };
-  return { title: "ZenFlow", body: "Ready for a focus session?" };
+  const strings = NOTIFICATION_STRINGS[language] || NOTIFICATION_STRINGS.en;
+  return { title: "ZenFlow", body: strings[type] };
 };
 
 const pemToArrayBuffer = (pem: string) => {

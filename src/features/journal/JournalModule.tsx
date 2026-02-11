@@ -265,68 +265,69 @@ export function JournalModule() {
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
         onClick={handleOpen}
         className={cn(
-          'w-full rounded-2xl p-4 relative overflow-hidden',
-          'bg-gradient-to-br from-card/80 to-card/60',
-          'backdrop-blur-md border border-white/[0.08] dark:border-white/[0.05]',
-          'shadow-[0_2px_20px_rgba(var(--primary-rgb,99,102,241),0.08),inset_0_1px_0_rgba(255,255,255,0.06)]',
-          'flex items-center gap-3 text-start',
+          'w-full rounded-2xl p-4 relative overflow-hidden text-start',
+          'bg-gradient-to-br from-purple-500/10 via-violet-500/5 to-card/80',
+          'backdrop-blur-md border border-purple-500/15 dark:border-purple-500/10',
+          'shadow-[0_2px_20px_rgba(139,92,246,0.08)]',
           'transition-all duration-300',
-          'hover:shadow-[0_4px_25px_rgba(var(--primary-rgb,99,102,241),0.15),inset_0_1px_0_rgba(255,255,255,0.08)]',
+          'hover:shadow-[0_4px_25px_rgba(139,92,246,0.15)]',
         )}
       >
-        {/* Shine sweep on mount */}
-        <div className="absolute inset-0 animate-[shine-sweep_2s_ease-in-out_0.5s_1] pointer-events-none" style={{ background: 'linear-gradient(25deg, transparent 30%, rgba(255,255,255,0.03) 45%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.03) 55%, transparent 70%)', backgroundSize: '200% 200%' }} />
-        <motion.div
-          animate={{ scale: [1, 1.05, 1] }}
-          transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          className={cn(
-            'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-br from-primary/15 to-primary/5',
-            streak > 0 && 'animate-glow-pulse',
-          )}
-        >
-          {todayMood ? (
-            <StickerRenderer emoji={MOOD_EMOJI[todayMood]} size="xs" />
-          ) : security.hasPassword ? (
-            <Lock className="w-5 h-5 text-primary" />
-          ) : (
-            <BookOpen className="w-5 h-5 text-primary" />
-          )}
-        </motion.div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold text-foreground">
-              {ts.journalTitle || 'Personal Journal'}
-            </h3>
-            {streak > 0 && (
-              <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                {streak} {'\u{1F525}'}
-              </span>
-            )}
+        {/* Row 1: Title + status badge */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2.5">
+            <div className={cn(
+              'w-10 h-10 rounded-xl flex items-center justify-center shrink-0',
+              'bg-gradient-to-br from-purple-500/20 to-violet-500/10',
+            )}>
+              {todayMood ? (
+                <StickerRenderer emoji={MOOD_EMOJI[todayMood]} size="xs" />
+              ) : (
+                <BookOpen className="w-5 h-5 text-purple-500" />
+              )}
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">
+                {ts.journalTitle || 'Personal Journal'}
+              </h3>
+              {security.hasPassword && (
+                <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
+                  <Lock className="w-2.5 h-2.5" />
+                  {ts.journalProtected || 'Protected'}
+                </span>
+              )}
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            {entryCount > 0 ? (
-              <>
-                <span>{entryCount} {ts.journalEntries || 'entries'}</span>
-                {hasTodayEntry ? (
-                  <span className="flex items-center gap-0.5 text-primary/80">
-                    <PenLine className="w-2.5 h-2.5" />
-                    {ts.journalContinueWriting || 'Continue writing'}
-                  </span>
-                ) : (
-                  <span className="text-muted-foreground/60">{ts.journalStartToday || "Start today's entry"}</span>
-                )}
-              </>
-            ) : (
-              <span>{ts.journalSubtitle || 'Start writing your thoughts'}</span>
-            )}
-          </p>
+
+          {/* Today status badge */}
+          {hasTodayEntry ? (
+            <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-2 py-1 rounded-full shrink-0">
+              <CheckCircle2 className="w-3 h-3" />
+              {ts.journalTodayComplete || 'Done today'}
+            </span>
+          ) : (
+            <span className="flex items-center gap-1 text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 border border-purple-500/15 px-2 py-1 rounded-full shrink-0">
+              <PenLine className="w-3 h-3" />
+              {ts.journalWriteToday || 'Write today'}
+            </span>
+          )}
         </div>
-        {entryCount > 0 && (
-          <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-full flex-shrink-0">
-            {entryCount}
-          </span>
-        )}
-        <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+
+        {/* Row 2: Stats bar */}
+        <div className="flex items-center gap-3">
+          {entryCount > 0 && (
+            <span className="text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">{entryCount}</span> {ts.journalEntries || 'entries'}
+            </span>
+          )}
+          {streak > 0 && (
+            <span className="text-xs font-semibold text-orange-500">
+              {'\u{1F525}'} {streak} {ts.journalStreak || 'streak'}
+            </span>
+          )}
+          <span className="flex-1" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+        </div>
       </motion.button>
     );
   }

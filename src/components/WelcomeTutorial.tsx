@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, ChevronLeft, Sparkles, Brain, Target, Heart, Timer, Zap, CheckCircle2, Clock, Palette } from 'lucide-react';
+import { ChevronRight, ChevronLeft, Sparkles, Brain, Target, Heart, Timer, Zap, CheckCircle2, Clock, Palette, BookOpen } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -57,6 +57,13 @@ function getSlides() {
       gradient: 'from-red-500/20 to-orange-500/20',
       iconColor: 'text-red-500',
       animation: 'heartbeat',
+    },
+    {
+      id: 'journal',
+      icon: BookOpen,
+      gradient: 'from-purple-500/20 to-violet-500/20',
+      iconColor: 'text-purple-500',
+      animation: 'float',
     },
     {
       id: 'focus',
@@ -152,6 +159,17 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
         title: t.tutorialMoodTitle || 'Understand yourself',
         subtitle: t.tutorialMoodSubtitle || 'Track moods to find patterns',
         description: t.tutorialMoodDesc || 'Quick daily check-ins help you notice what affects your energy and focus. Over time, you\'ll understand yourself better.',
+      },
+      journal: {
+        title: t.tutorialJournalTitle || 'Personal Journal',
+        subtitle: t.tutorialJournalSubtitle || 'Your private space to reflect',
+        description: t.tutorialJournalDesc || 'Write about your day, capture thoughts, and track your journey. Your journal is always private and secure.',
+        features: [
+          t.tutorialJournalFeature1 || '✍️ Text, photos, and audio entries',
+          t.tutorialJournalFeature2 || '🔒 Lock with PIN for privacy',
+          t.tutorialJournalFeature3 || '📊 Writing streaks and stats',
+          t.tutorialJournalFeature4 || '🎨 Templates to get you started',
+        ],
       },
       focus: {
         title: t.tutorialFocusTitle || 'Deep focus mode',

@@ -54,7 +54,7 @@ import {
 
 const createDefaultCompanion = (): Companion => ({
   type: 'fox',
-  name: 'Луна',
+  name: 'Luna',
   mood: 'calm',
   level: 1,
   experience: 0,

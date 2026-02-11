@@ -1003,6 +1003,8 @@ export interface Translations {
   adWatch: string;
   adRemaining: string;
   treats: string;
+  innerWorld: string;
+  tapToInteract: string;
   spinWheel: string;
   spinsAvailable: string;
   spin: string;
@@ -1246,6 +1248,13 @@ export interface Translations {
   tutorialReadySubtitle: string;
   tutorialReadyDesc: string;
   tutorialStart: string;
+  tutorialJournalTitle: string;
+  tutorialJournalSubtitle: string;
+  tutorialJournalDesc: string;
+  tutorialJournalFeature1: string;
+  tutorialJournalFeature2: string;
+  tutorialJournalFeature3: string;
+  tutorialJournalFeature4: string;
 
   // Weekly Report
   weeklyReport: string;
@@ -2132,6 +2141,10 @@ export interface Translations {
   journalTemplateWeekAhead: string;
   journalContinueWriting: string;
   journalStartToday: string;
+  journalTodayComplete: string;
+  journalWriteToday: string;
+  journalProtected: string;
+  journalStreak: string;
   journalStartYourStory: string;
   journalResetLinkSent: string;
   journalResetLinkHint: string;
@@ -3144,6 +3157,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     adWatch: 'Смотреть',
     adRemaining: 'осталось сегодня',
     treats: 'угощений',
+    innerWorld: 'Внутренний мир',
+    tapToInteract: 'Нажмите для взаимодействия',
     spinWheel: 'Крути колесо!',
     spinsAvailable: 'Вращений доступно',
     spin: 'КРУТИТЬ',
@@ -3310,6 +3325,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     tutorialReadySubtitle: 'Ваш путь начинается сейчас',
     tutorialReadyDesc: 'Начните с малого — просто отметьте, как вы себя чувствуете сегодня. Каждый шаг важен!',
     tutorialStart: 'Поехали!',
+    tutorialJournalTitle: 'Личный дневник',
+    tutorialJournalSubtitle: 'Ваше личное пространство для размышлений',
+    tutorialJournalDesc: 'Пишите о своём дне, фиксируйте мысли и отслеживайте свой путь. Дневник всегда приватный и защищённый.',
+    tutorialJournalFeature1: '✍️ Текст, фото и аудиозаписи',
+    tutorialJournalFeature2: '🔒 Защита PIN-кодом',
+    tutorialJournalFeature3: '📊 Серии и статистика записей',
+    tutorialJournalFeature4: '🎨 Шаблоны для быстрого старта',
 
     // Weekly Report
     weeklyReport: 'Недельный отчет',
@@ -4225,6 +4247,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalTemplateWeekAhead: 'На чём сфокусироваться на следующей неделе?',
     journalContinueWriting: 'Продолжить запись',
     journalStartToday: 'Начать запись на сегодня',
+    journalTodayComplete: 'Записано сегодня',
+    journalWriteToday: 'Написать сегодня',
+    journalProtected: 'Защищён',
+    journalStreak: 'дней подряд',
     journalStartYourStory: 'Начни свою историю',
     journalResetLinkSent: 'Проверьте почту',
     journalResetLinkHint: 'Мы отправили ссылку для подтверждения на',
@@ -5235,6 +5261,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     adWatch: 'Watch',
     adRemaining: 'left today',
     treats: 'treats',
+    innerWorld: 'Inner World',
+    tapToInteract: 'Tap to interact',
     spinWheel: 'Spin the Wheel!',
     spinsAvailable: 'Spins Available',
     spin: 'SPIN',
@@ -5401,6 +5429,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     tutorialReadySubtitle: 'Your journey begins now',
     tutorialReadyDesc: 'Start small – just check in with how you\'re feeling today. Every step counts!',
     tutorialStart: 'Let\'s Go!',
+    tutorialJournalTitle: 'Personal Journal',
+    tutorialJournalSubtitle: 'Your private space to reflect',
+    tutorialJournalDesc: 'Write about your day, capture thoughts, and track your journey. Your journal is always private and secure.',
+    tutorialJournalFeature1: '✍️ Text, photos, and audio entries',
+    tutorialJournalFeature2: '🔒 Lock with PIN for privacy',
+    tutorialJournalFeature3: '📊 Writing streaks and stats',
+    tutorialJournalFeature4: '🎨 Templates to get you started',
 
     // Weekly Report
     weeklyReport: 'Weekly Report',
@@ -6316,6 +6351,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalTemplateWeekAhead: 'What\'s my focus for next week?',
     journalContinueWriting: 'Continue writing',
     journalStartToday: 'Start today\'s entry',
+    journalTodayComplete: 'Done today',
+    journalWriteToday: 'Write today',
+    journalProtected: 'Protected',
+    journalStreak: 'streak',
     journalStartYourStory: 'Start your story',
     journalResetLinkSent: 'Check your email',
     journalResetLinkHint: 'We sent a verification link to',
@@ -7326,6 +7365,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     adWatch: 'Дивитись',
     adRemaining: 'залишилось сьогодні',
     treats: 'ласощів',
+    innerWorld: 'Внутрішній світ',
+    tapToInteract: 'Натисніть для взаємодії',
     spinWheel: 'Крути колесо!',
     spinsAvailable: 'Обертань доступно',
     spin: 'КРУТИТИ',
@@ -7492,6 +7533,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     tutorialReadySubtitle: 'Ваш шлях починається зараз',
     tutorialReadyDesc: 'Почніть з малого — просто відмітьте, як ви себе почуваєте сьогодні. Кожен крок важливий!',
     tutorialStart: 'Поїхали!',
+    tutorialJournalTitle: 'Особистий щоденник',
+    tutorialJournalSubtitle: 'Ваш приватний простір для роздумів',
+    tutorialJournalDesc: 'Пишіть про свій день, фіксуйте думки та відстежуйте свій шлях. Щоденник завжди приватний і захищений.',
+    tutorialJournalFeature1: '✍️ Текст, фото та аудіозаписи',
+    tutorialJournalFeature2: '🔒 Захист PIN-кодом',
+    tutorialJournalFeature3: '📊 Серії та статистика записів',
+    tutorialJournalFeature4: '🎨 Шаблони для швидкого старту',
 
     // Weekly Report
     weeklyReport: 'Тижневий звіт',
@@ -8407,6 +8455,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalTemplateWeekAhead: 'На чому зосередитися наступного тижня?',
     journalContinueWriting: 'Продовжити запис',
     journalStartToday: 'Почати запис на сьогодні',
+    journalTodayComplete: 'Записано сьогодні',
+    journalWriteToday: 'Написати сьогодні',
+    journalProtected: 'Захищений',
+    journalStreak: 'днів поспіль',
     journalStartYourStory: 'Почни свою історію',
     journalResetLinkSent: 'Перевірте пошту',
     journalResetLinkHint: 'Ми надіслали посилання для підтвердження на',
@@ -9418,6 +9470,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     adWatch: 'Ver',
     adRemaining: 'restantes hoy',
     treats: 'golosinas',
+    innerWorld: 'Mundo Interior',
+    tapToInteract: 'Toca para interactuar',
     spinWheel: '¡Gira la Ruleta!',
     spinsAvailable: 'Giros Disponibles',
     spin: 'GIRAR',
@@ -9584,6 +9638,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     tutorialReadySubtitle: 'Tu viaje comienza ahora',
     tutorialReadyDesc: 'Empieza pequeño – solo registra cómo te sientes hoy. ¡Cada paso cuenta!',
     tutorialStart: '¡Vamos!',
+    tutorialJournalTitle: 'Diario Personal',
+    tutorialJournalSubtitle: 'Tu espacio privado para reflexionar',
+    tutorialJournalDesc: 'Escribe sobre tu día, captura pensamientos y sigue tu progreso. Tu diario siempre es privado y seguro.',
+    tutorialJournalFeature1: '✍️ Texto, fotos y audio',
+    tutorialJournalFeature2: '🔒 Bloqueo con PIN',
+    tutorialJournalFeature3: '📊 Rachas y estadísticas',
+    tutorialJournalFeature4: '🎨 Plantillas para empezar',
 
     // Weekly Report
     weeklyReport: 'Informe semanal',
@@ -10499,6 +10560,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalTemplateWeekAhead: '¿En qué me enfocaré la próxima semana?',
     journalContinueWriting: 'Continuar escribiendo',
     journalStartToday: 'Empezar entrada de hoy',
+    journalTodayComplete: 'Escrito hoy',
+    journalWriteToday: 'Escribir hoy',
+    journalProtected: 'Protegido',
+    journalStreak: 'racha',
     journalStartYourStory: 'Empieza tu historia',
     journalResetLinkSent: 'Revisa tu correo',
     journalResetLinkHint: 'Enviamos un enlace de verificación a',
@@ -11510,6 +11575,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     adWatch: 'Ansehen',
     adRemaining: 'heute übrig',
     treats: 'Leckerlis',
+    innerWorld: 'Innere Welt',
+    tapToInteract: 'Tippen zum Interagieren',
     spinWheel: 'Dreh das Rad!',
     spinsAvailable: 'Drehungen verfügbar',
     spin: 'DREHEN',
@@ -11676,6 +11743,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     tutorialReadySubtitle: 'Deine Reise beginnt jetzt',
     tutorialReadyDesc: 'Fang klein an – notiere einfach, wie du dich heute fühlst. Jeder Schritt zählt!',
     tutorialStart: 'Los geht\'s!',
+    tutorialJournalTitle: 'Persönliches Tagebuch',
+    tutorialJournalSubtitle: 'Dein privater Raum zum Nachdenken',
+    tutorialJournalDesc: 'Schreibe über deinen Tag, halte Gedanken fest und verfolge deine Reise. Dein Tagebuch ist immer privat und sicher.',
+    tutorialJournalFeature1: '✍️ Text, Fotos und Audio',
+    tutorialJournalFeature2: '🔒 PIN-Sperre für Privatsphäre',
+    tutorialJournalFeature3: '📊 Schreibserien und Statistiken',
+    tutorialJournalFeature4: '🎨 Vorlagen zum Starten',
 
     // Weekly Report
     weeklyReport: 'Wochenbericht',
@@ -12591,6 +12665,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalTemplateWeekAhead: 'Worauf konzentriere ich mich nächste Woche?',
     journalContinueWriting: 'Weiterschreiben',
     journalStartToday: 'Heutigen Eintrag starten',
+    journalTodayComplete: 'Heute geschrieben',
+    journalWriteToday: 'Heute schreiben',
+    journalProtected: 'Geschützt',
+    journalStreak: 'Serie',
     journalStartYourStory: 'Starte deine Geschichte',
     journalResetLinkSent: 'E-Mail prüfen',
     journalResetLinkHint: 'Wir haben einen Bestätigungslink gesendet an',
@@ -13602,6 +13680,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     adWatch: 'Regarder',
     adRemaining: 'restantes aujourd\'hui',
     treats: 'friandises',
+    innerWorld: 'Monde Intérieur',
+    tapToInteract: 'Appuyez pour interagir',
     spinWheel: 'Tournez la Roue!',
     spinsAvailable: 'Tours Disponibles',
     spin: 'TOURNER',
@@ -13768,6 +13848,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     tutorialReadySubtitle: 'Votre voyage commence maintenant',
     tutorialReadyDesc: 'Commencez petit – notez simplement comment vous vous sentez aujourd\'hui. Chaque pas compte!',
     tutorialStart: 'C\'est parti!',
+    tutorialJournalTitle: 'Journal Personnel',
+    tutorialJournalSubtitle: 'Votre espace privé de réflexion',
+    tutorialJournalDesc: 'Écrivez sur votre journée, capturez vos pensées et suivez votre parcours. Votre journal est toujours privé et sécurisé.',
+    tutorialJournalFeature1: '✍️ Texte, photos et audio',
+    tutorialJournalFeature2: '🔒 Verrouillage par code PIN',
+    tutorialJournalFeature3: '📊 Séries d\'écriture et statistiques',
+    tutorialJournalFeature4: '🎨 Modèles pour démarrer',
 
     // Weekly Report
     weeklyReport: 'Rapport hebdomadaire',
@@ -14683,6 +14770,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalTemplateWeekAhead: 'Sur quoi me concentrer la semaine prochaine ?',
     journalContinueWriting: 'Continuer à écrire',
     journalStartToday: 'Commencer l\'entrée du jour',
+    journalTodayComplete: 'Écrit aujourd\'hui',
+    journalWriteToday: 'Écrire aujourd\'hui',
+    journalProtected: 'Protégé',
+    journalStreak: 'série',
     journalStartYourStory: 'Commence ton histoire',
     journalResetLinkSent: 'Vérifiez votre email',
     journalResetLinkHint: 'Nous avons envoyé un lien de vérification à',
@@ -15693,6 +15784,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     adWatch: '見る',
     adRemaining: '今日の残り',
     treats: 'おやつ',
+    innerWorld: '内なる世界',
+    tapToInteract: 'タップして操作',
     spinWheel: 'ホイールを回そう！',
     spinsAvailable: '利用可能な回転',
     spin: 'スピン',
@@ -15859,6 +15952,13 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     tutorialReadySubtitle: '旅が今始まります',
     tutorialReadyDesc: '小さく始めよう – まず今日の気分をチェックインするだけ。すべてのステップが大切です！',
     tutorialStart: 'レッツゴー！',
+    tutorialJournalTitle: '個人ジャーナル',
+    tutorialJournalSubtitle: '振り返りのためのプライベートスペース',
+    tutorialJournalDesc: '一日のことを書いて、思考を記録し、旅を追跡しましょう。ジャーナルは常にプライベートで安全です。',
+    tutorialJournalFeature1: '✍️ テキスト、写真、音声記録',
+    tutorialJournalFeature2: '🔒 PINロックでプライバシー保護',
+    tutorialJournalFeature3: '📊 連続記録と統計',
+    tutorialJournalFeature4: '🎨 テンプレートですぐに開始',
 
     // Weekly Report
     weeklyReport: 'ウィークリーレポート',
@@ -16774,6 +16874,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalTemplateWeekAhead: '来週の焦点は？',
     journalContinueWriting: '書き続ける',
     journalStartToday: '今日のエントリーを始める',
+    journalTodayComplete: '今日記入済み',
+    journalWriteToday: '今日書く',
+    journalProtected: '保護中',
+    journalStreak: '連続',
     journalStartYourStory: 'あなたの物語を始めよう',
     journalResetLinkSent: 'メールを確認してください',
     journalResetLinkHint: '確認リンクを送信しました',
@@ -17672,6 +17776,8 @@ const arabicOverrides: Partial<Translations> = {
   adWatch: 'مشاهدة',
   adRemaining: 'متبقي اليوم',
   treats: 'مكافآت',
+  innerWorld: 'العالم الداخلي',
+  tapToInteract: 'انقر للتفاعل',
   spinWheel: 'عجلة الحظ',
   spinsAvailable: 'لفات متاحة',
   spin: 'لف',
@@ -17902,6 +18008,13 @@ const arabicOverrides: Partial<Translations> = {
   tutorialReadySubtitle: 'لنبدأ!',
   tutorialReadyDesc: 'أنت مستعد لبدء رحلتك',
   tutorialStart: 'ابدأ الرحلة',
+  tutorialJournalTitle: 'المفكرة الشخصية',
+  tutorialJournalSubtitle: 'مساحتك الخاصة للتأمل',
+  tutorialJournalDesc: 'اكتب عن يومك، سجل أفكارك وتابع رحلتك. مفكرتك دائماً خاصة وآمنة.',
+  tutorialJournalFeature1: '✍️ نصوص وصور وتسجيلات صوتية',
+  tutorialJournalFeature2: '🔒 قفل برمز PIN للخصوصية',
+  tutorialJournalFeature3: '📊 سلاسل الكتابة والإحصائيات',
+  tutorialJournalFeature4: '🎨 قوالب للبدء بسرعة',
 
   // Weekly Report
   weeklyReport: 'التقرير الأسبوعي',
@@ -18827,6 +18940,10 @@ const arabicOverrides: Partial<Translations> = {
   journalTemplateWeekAhead: 'ما تركيزي للأسبوع القادم؟',
   journalContinueWriting: 'متابعة الكتابة',
   journalStartToday: 'بدء مدخل اليوم',
+  journalTodayComplete: 'تم الكتابة اليوم',
+  journalWriteToday: 'اكتب اليوم',
+  journalProtected: 'محمي',
+  journalStreak: 'تتابع',
   journalStartYourStory: 'ابدأ قصتك',
   journalResetLinkSent: 'تحقق من بريدك',
   journalResetLinkHint: 'أرسلنا رابط تحقق إلى',
@@ -19514,6 +19631,8 @@ const hebrewOverrides: Partial<Translations> = {
   adWatch: 'צפייה',
   adRemaining: 'נותרו היום',
   treats: 'פינוקים',
+  innerWorld: 'העולם הפנימי',
+  tapToInteract: 'הקש לאינטראקציה',
 
   // Garden
   plants: 'צמחים',
@@ -20155,6 +20274,13 @@ const hebrewOverrides: Partial<Translations> = {
   tutorialReadySubtitle: 'המסע שלך מתחיל עכשיו',
   tutorialReadyDesc: 'התחל/י בקטן – פשוט בדוק/י איך מרגישים היום. כל צעד חשוב!',
   tutorialStart: 'בוא נתחיל!',
+  tutorialJournalTitle: 'יומן אישי',
+  tutorialJournalSubtitle: 'המרחב הפרטי שלך להתבוננות',
+  tutorialJournalDesc: 'כתוב על היום שלך, תעד מחשבות ועקוב אחרי המסע שלך. היומן שלך תמיד פרטי ומאובטח.',
+  tutorialJournalFeature1: '✍️ טקסט, תמונות והקלטות',
+  tutorialJournalFeature2: '🔒 נעילה עם PIN לפרטיות',
+  tutorialJournalFeature3: '📊 רצפי כתיבה וסטטיסטיקות',
+  tutorialJournalFeature4: '🎨 תבניות להתחלה מהירה',
 
   // Weekly Report & Stories
   weeklyReport: 'דו"ח שבועי',
@@ -20949,6 +21075,10 @@ const hebrewOverrides: Partial<Translations> = {
   journalTemplateWeekAhead: 'על מה להתמקד בשבוע הבא?',
   journalContinueWriting: 'להמשיך לכתוב',
   journalStartToday: 'להתחיל רשומה להיום',
+  journalTodayComplete: 'נכתב היום',
+  journalWriteToday: 'לכתוב היום',
+  journalProtected: 'מוגן',
+  journalStreak: 'רצף',
   journalStartYourStory: 'התחל את הסיפור שלך',
   journalResetLinkSent: 'בדוק את האימייל שלך',
   journalResetLinkHint: 'שלחנו קישור אימות אל',

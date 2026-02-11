@@ -31,8 +31,8 @@ interface TreePanelProps {
   isOpen: boolean;
   onClose: () => void;
   onRename: (name: string) => void;
-  onTouch: () => { xpGain: number; canTouchAgain: boolean; stageUp?: boolean; newStage?: TreeStage; newTreeXP?: number };
-  onWater: () => { success: boolean; reason?: string; needed?: number; have?: number; waterGain: number; xpGain: number; treatCost?: number; newBalance?: number; stageUp?: boolean; newStage?: TreeStage };
+  onTouch: () => { xpGain: number; canTouchAgain: boolean; stageUp?: boolean; newStage?: number; newTreeXP?: number };
+  onWater: () => { success: boolean; reason?: string; needed?: number; have?: number; waterGain: number; xpGain: number; treatCost?: number; newBalance?: number; stageUp?: boolean; newStage?: number };
   treatsBalance: number;
   waterCost: number;
   streak: number;
