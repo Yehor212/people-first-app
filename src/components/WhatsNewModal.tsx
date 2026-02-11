@@ -27,6 +27,36 @@ interface ChangelogItem {
 
 // Changelog entries by version — exported for SettingsPanel banner
 export const CHANGELOG: Record<string, ChangelogItem[]> = {
+  '1.7.0': [
+    {
+      icon: <Sparkles className="w-5 h-5 text-purple-500" />,
+      titleKey: 'whatsNew.animatedTree.title',
+      descriptionKey: 'whatsNew.animatedTree.description',
+      title: 'Animated Tree',
+      description: 'Your garden tree now has beautiful seasonal animations with falling petals, leaves, and snowflakes.',
+    },
+    {
+      icon: <Zap className="w-5 h-5 text-yellow-500" />,
+      titleKey: 'whatsNew.treatsSystem.title',
+      descriptionKey: 'whatsNew.treatsSystem.description',
+      title: 'Treats System',
+      description: 'Earn treats from habits, journaling, and focus sessions. Use them to water and grow your tree!',
+    },
+    {
+      icon: <MessageSquare className="w-5 h-5 text-blue-500" />,
+      titleKey: 'whatsNew.personalJournal.title',
+      descriptionKey: 'whatsNew.personalJournal.description',
+      title: 'Personal Journal',
+      description: 'Voice journaling, premium templates, export, and biometric lock for your private entries.',
+    },
+    {
+      icon: <Bug className="w-5 h-5 text-orange-500" />,
+      titleKey: 'whatsNew.auditFixes.title',
+      descriptionKey: 'whatsNew.auditFixes.description',
+      title: 'Stability & Polish',
+      description: '200+ bug fixes across all tabs for a smoother, more reliable experience.',
+    },
+  ],
   '1.6.0': [
     {
       icon: <Sparkles className="w-5 h-5 text-purple-500" />,

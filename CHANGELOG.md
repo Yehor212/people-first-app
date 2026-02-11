@@ -2,6 +2,46 @@
 
 All notable changes to ZenFlow will be documented in this file.
 
+## [1.7.0] — 2026-02-10
+
+### Added — Premium Animated Tree
+- **SVG animated tree**: Replaced canvas with Framer Motion + native SVG animations
+- **5 growth stages × 4 seasons**: 20 unique tree visuals with smooth transitions
+- **Falling particles**: Petals (spring), leaves (summer/autumn), snowflakes (winter) via zero-JS SVG animate
+- **Stage 5 crown glow**: Sparkle shimmer effect for max-level trees
+- **Seasonal decorations**: Cherry blossoms, sun dapple, fruits, snow caps
+
+### Added — Treats Economy
+- **Earn treats**: Habits (10), journal (8), mood tracking (5), breathing (5), focus (0.5/min)
+- **Streak multiplier**: +10% per day, max 2x at 10-day streak
+- **Spend treats**: Water tree (10 treats, +30% water, +50 XP), touch tree (free, +10 XP)
+- **Tree XP system**: Stage progression from seed to sprout to sapling to tree to majestic tree
+
+### Added — Non-Intrusive Ad System
+- **Rewarded-only ads**: Fully opt-in, mood-aware, never during focus sessions
+- **Watch ads to earn bonus treats**: Extra rewards for choosing to watch
+
+### Added — Personal Journal
+- **Voice journaling**: Record audio entries with transcription
+- **Export & statistics**: Export journal data, view writing analytics
+- **Biometric lock**: Secure private entries with fingerprint/face
+- **Premium templates**: Guided prompts for gratitude, reflection, goals
+- **Habit integration**: Link journal entries to tracked habits
+- **Journal tutorial**: Interactive onboarding for new users
+
+### Fixed — Comprehensive Audit (200+ Issues)
+- **Home page**: 4 data bugs + UrgencyAlert rewrite + RTL/i18n fixes
+- **Garden tab**: 39 fixes across 14 files (data, i18n, RTL, a11y)
+- **Stats tab**: 28 fixes across 6 files (data, i18n, RTL, a11y)
+- **Settings tab**: 27 fixes across 8 files (back handlers, touch, RTL, i18n)
+- **Garden sub-panels**: 23 fixes across 8 files (RTL, i18n, touch, scroll lock)
+- **Stale closure fix**: Rest mode data loss prevention (functional state updates)
+- **ErrorBoundary**: Crash isolation for InnerWorldCard
+- **Friends streak sync**: Fixed sync timing and audio permissions
+- **Sentry errors**: Resolved all 10 production errors (TDZ, haptics, stale cache)
+
+---
+
 ## [Unreleased]
 
 ### Added — Google Calendar Integration
