@@ -19,7 +19,6 @@ import { Switch } from '@/components/ui/switch';
 import { TimeInputInline } from '@/components/ui/time-input';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { SmartRemindersCard } from '@/components/SmartRemindersCard';
-import { HealthConnectCard } from '@/components/HealthConnectCard';
 import { exportBackup, importBackup, ImportMode } from '@/storage/backup';
 import { exportAllToCSV, exportProgressReportPDF } from '@/lib/exportService';
 import { FileText, FileSpreadsheet, Zap, Volume2, Loader2 } from 'lucide-react';
@@ -865,15 +864,6 @@ export function SettingsPanel({
             </div>
           </div>
         )}
-
-        {/* Health Connect Integration */}
-        <HealthConnectCard
-          className="mt-4"
-          syncEnabled={localStorage.getItem('zenflow_health_connect_sync') === 'true'}
-          onSyncSettingChange={(enabled) => {
-            localStorage.setItem('zenflow_health_connect_sync', String(enabled));
-          }}
-        />
 
         {/* Quick Actions for Lock Screen (Android only) */}
         {isAndroid && (

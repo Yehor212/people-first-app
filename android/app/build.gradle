@@ -75,12 +75,6 @@ dependencies {
     implementation 'com.google.android.play:app-update:2.1.0'
     implementation 'com.google.android.play:app-update-ktx:2.1.0'
 
-    // Health Connect SDK
-    implementation 'androidx.health.connect:connect-client:1.0.0-alpha11'
-
-    // Coroutines for Health Connect suspend functions
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1'
-
     // Required for Firebase Sessions (need 1.1.x for Firebase BOM 33.x)
     implementation 'androidx.datastore:datastore-preferences:1.1.1'
 }

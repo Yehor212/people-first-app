@@ -1190,7 +1190,6 @@ export interface Translations {
   onboardingAgeDesc: string;
   onboardingAgeConfirm: string;
   onboardingAgeNote: string;
-  healthConnectAgeDesc: string;
   onboardingMoodTitle: string;
   onboardingMoodDescription: string;
   onboardingHabitsTitle: string;
@@ -1581,12 +1580,6 @@ export interface Translations {
   trendsInsightHint: string;
   trendsInsightHintDesc: string;
 
-  // Health Connect (v1.2.0)
-  healthConnect: string;
-  healthConnectDescription: string;
-  healthConnectLoading: string;
-  healthConnectNotAvailable: string;
-  healthConnectUpdateRequired: string;
   mindfulness: string;
   sleep: string;
   steps: string;
@@ -1595,7 +1588,6 @@ export interface Translations {
   todayHealth: string;
   syncFocusSessions: string;
   syncFocusSessionsHint: string;
-  openHealthConnect: string;
   refresh: string;
   permissions: string;
 
@@ -3267,7 +3259,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     onboardingAgeDesc: 'Это приложение предназначено для пользователей от 13 лет и старше',
     onboardingAgeConfirm: 'Мне есть 13 лет',
     onboardingAgeNote: 'Продолжая, вы подтверждаете, что вам есть 13 лет',
-    healthConnectAgeDesc: 'Функции Health Connect требуют подтверждения возраста 13+ для ответственного использования данных о здоровье.',
     onboardingMoodTitle: 'Как вы себя чувствуете?',
     onboardingMoodDescription: 'Отслеживайте своё настроение ежедневно',
     onboardingHabitsTitle: 'Создайте свои первые привычки',
@@ -3711,12 +3702,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     trendsInsightHint: 'Хотите персональные инсайты?',
     trendsInsightHintDesc: 'Проверьте панель Инсайтов на главной для обнаружения паттернов в ваших данных.',
 
-    // Health Connect (v1.2.0)
-    healthConnect: 'Health Connect',
-    healthConnectDescription: 'Синхронизация с Google Health Connect',
-    healthConnectLoading: 'Проверка Health Connect...',
-    healthConnectNotAvailable: 'Недоступно на этом устройстве',
-    healthConnectUpdateRequired: 'Обновите приложение Health Connect',
     mindfulness: 'Осознанность',
     sleep: 'Сон',
     steps: 'Шаги',
@@ -3725,7 +3710,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     todayHealth: 'Здоровье сегодня',
     syncFocusSessions: 'Синхронизировать фокус-сессии',
     syncFocusSessionsHint: 'Сохранять фокус-сессии как осознанность в Health Connect',
-    openHealthConnect: 'Открыть Health Connect',
     refresh: 'Обновить',
     permissions: 'Разрешения',
 
@@ -5371,7 +5355,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     onboardingAgeDesc: 'This app is designed for users aged 13 and older',
     onboardingAgeConfirm: 'I am 13 years or older',
     onboardingAgeNote: 'By continuing, you confirm that you are 13 years of age or older',
-    healthConnectAgeDesc: 'Health Connect features require you to be 13 years or older to use health data responsibly.',
     onboardingMoodTitle: 'How are you feeling?',
     onboardingMoodDescription: 'Track your mood daily',
     onboardingHabitsTitle: 'Create your first habits',
@@ -5815,12 +5798,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     trendsInsightHint: 'Want personalized insights?',
     trendsInsightHintDesc: 'Check the Insights panel on the home tab to discover patterns in your data.',
 
-    // Health Connect (v1.2.0)
-    healthConnect: 'Health Connect',
-    healthConnectDescription: 'Sync with Google Health Connect',
-    healthConnectLoading: 'Checking Health Connect...',
-    healthConnectNotAvailable: 'Not available on this device',
-    healthConnectUpdateRequired: 'Please update Health Connect app',
     mindfulness: 'Mindfulness',
     sleep: 'Sleep',
     steps: 'Steps',
@@ -5829,7 +5806,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     todayHealth: "Today's Health",
     syncFocusSessions: 'Sync Focus Sessions',
     syncFocusSessionsHint: 'Save focus sessions as mindfulness in Health Connect',
-    openHealthConnect: 'Open Health Connect',
     refresh: 'Refresh',
     permissions: 'Permissions',
 
@@ -7475,7 +7451,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     onboardingAgeDesc: 'Цей додаток призначений для користувачів від 13 років і старше',
     onboardingAgeConfirm: 'Мені є 13 років',
     onboardingAgeNote: 'Продовжуючи, ви підтверджуєте, що вам є 13 років',
-    healthConnectAgeDesc: 'Функції Health Connect вимагають підтвердження віку 13+ для відповідального використання даних про здоров\'я.',
     onboardingMoodTitle: 'Як ви себе почуваєте?',
     onboardingMoodDescription: 'Відстежуйте свій настрій щодня',
     onboardingHabitsTitle: 'Створіть свої перші звички',
@@ -7919,12 +7894,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     trendsInsightHint: 'Хочете персональні інсайти?',
     trendsInsightHintDesc: 'Перевірте панель Інсайтів на головній для виявлення патернів у ваших даних.',
 
-    // Health Connect (v1.2.0)
-    healthConnect: 'Health Connect',
-    healthConnectDescription: 'Синхронізація з Google Health Connect',
-    healthConnectLoading: 'Перевірка Health Connect...',
-    healthConnectNotAvailable: 'Недоступно на цьому пристрої',
-    healthConnectUpdateRequired: 'Оновіть додаток Health Connect',
     mindfulness: 'Усвідомленість',
     sleep: 'Сон',
     steps: 'Кроки',
@@ -7933,7 +7902,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     todayHealth: 'Здоров\'я сьогодні',
     syncFocusSessions: 'Синхронізувати фокус-сесії',
     syncFocusSessionsHint: 'Зберігати фокус-сесії як усвідомленість у Health Connect',
-    openHealthConnect: 'Відкрити Health Connect',
     refresh: 'Оновити',
     permissions: 'Дозволи',
 
@@ -9580,7 +9548,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     onboardingAgeDesc: 'Esta aplicación está diseñada para usuarios de 13 años o más',
     onboardingAgeConfirm: 'Tengo 13 años o más',
     onboardingAgeNote: 'Al continuar, confirmas que tienes 13 años o más',
-    healthConnectAgeDesc: 'Las funciones de Health Connect requieren que tengas 13 años o más para usar los datos de salud de manera responsable.',
     onboardingMoodTitle: '¿Cómo te sientes?',
     onboardingMoodDescription: 'Rastrea tu estado de ánimo diariamente',
     onboardingHabitsTitle: 'Crea tus primeros hábitos',
@@ -10024,12 +9991,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     trendsInsightHint: '¿Quieres insights personalizados?',
     trendsInsightHintDesc: 'Consulta el panel de Insights en la pestaña principal para descubrir patrones en tus datos.',
 
-    // Health Connect (v1.2.0)
-    healthConnect: 'Health Connect',
-    healthConnectDescription: 'Sincronizar con Google Health Connect',
-    healthConnectLoading: 'Comprobando Health Connect...',
-    healthConnectNotAvailable: 'No disponible en este dispositivo',
-    healthConnectUpdateRequired: 'Por favor actualiza la app Health Connect',
     mindfulness: 'Atención plena',
     sleep: 'Sueño',
     steps: 'Pasos',
@@ -10038,7 +9999,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     todayHealth: 'Salud de hoy',
     syncFocusSessions: 'Sincronizar sesiones de enfoque',
     syncFocusSessionsHint: 'Guardar sesiones de enfoque como atención plena en Health Connect',
-    openHealthConnect: 'Abrir Health Connect',
     refresh: 'Actualizar',
     permissions: 'Permisos',
 
@@ -11685,7 +11645,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     onboardingAgeDesc: 'Diese App ist für Benutzer ab 13 Jahren gedacht',
     onboardingAgeConfirm: 'Ich bin 13 Jahre oder älter',
     onboardingAgeNote: 'Mit dem Fortfahren bestätigst du, dass du 13 Jahre oder älter bist',
-    healthConnectAgeDesc: 'Health Connect-Funktionen erfordern ein Alter von 13 Jahren oder älter für einen verantwortungsvollen Umgang mit Gesundheitsdaten.',
     onboardingMoodTitle: 'Wie fühlst du dich?',
     onboardingMoodDescription: 'Verfolge deine Stimmung täglich',
     onboardingHabitsTitle: 'Erstelle deine ersten Gewohnheiten',
@@ -12129,12 +12088,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     trendsInsightHint: 'Möchtest du personalisierte Insights?',
     trendsInsightHintDesc: 'Schaue dir das Insights-Panel auf der Startseite an, um Muster in deinen Daten zu entdecken.',
 
-    // Health Connect (v1.2.0)
-    healthConnect: 'Health Connect',
-    healthConnectDescription: 'Mit Google Health Connect synchronisieren',
-    healthConnectLoading: 'Health Connect wird überprüft...',
-    healthConnectNotAvailable: 'Auf diesem Gerät nicht verfügbar',
-    healthConnectUpdateRequired: 'Bitte aktualisiere die Health Connect App',
     mindfulness: 'Achtsamkeit',
     sleep: 'Schlaf',
     steps: 'Schritte',
@@ -12143,7 +12096,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     todayHealth: 'Gesundheit heute',
     syncFocusSessions: 'Fokus-Sitzungen synchronisieren',
     syncFocusSessionsHint: 'Fokus-Sitzungen als Achtsamkeit in Health Connect speichern',
-    openHealthConnect: 'Health Connect öffnen',
     refresh: 'Aktualisieren',
     permissions: 'Berechtigungen',
 
@@ -13790,7 +13742,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     onboardingAgeDesc: 'Cette application est conçue pour les utilisateurs de 13 ans et plus',
     onboardingAgeConfirm: 'J\'ai 13 ans ou plus',
     onboardingAgeNote: 'En continuant, vous confirmez que vous avez 13 ans ou plus',
-    healthConnectAgeDesc: 'Les fonctionnalités Health Connect nécessitent d\'avoir 13 ans ou plus pour utiliser les données de santé de manière responsable.',
     onboardingMoodTitle: 'Comment vous sentez-vous?',
     onboardingMoodDescription: 'Suivez votre humeur quotidiennement',
     onboardingHabitsTitle: 'Créez vos premières habitudes',
@@ -14234,12 +14185,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     trendsInsightHint: 'Tu veux des insights personnalisés?',
     trendsInsightHintDesc: 'Consulte le panneau Insights sur l\'onglet principal pour découvrir des motifs dans tes données.',
 
-    // Health Connect (v1.2.0)
-    healthConnect: 'Health Connect',
-    healthConnectDescription: 'Synchroniser avec Google Health Connect',
-    healthConnectLoading: 'Vérification de Health Connect...',
-    healthConnectNotAvailable: 'Non disponible sur cet appareil',
-    healthConnectUpdateRequired: 'Veuillez mettre à jour l\'app Health Connect',
     mindfulness: 'Pleine conscience',
     sleep: 'Sommeil',
     steps: 'Pas',
@@ -14248,7 +14193,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     todayHealth: 'Santé aujourd\'hui',
     syncFocusSessions: 'Synchroniser les sessions focus',
     syncFocusSessionsHint: 'Enregistrer les sessions focus comme pleine conscience dans Health Connect',
-    openHealthConnect: 'Ouvrir Health Connect',
     refresh: 'Actualiser',
     permissions: 'Permissions',
 
@@ -15894,7 +15838,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     onboardingAgeDesc: 'このアプリは13歳以上のユーザー向けです',
     onboardingAgeConfirm: '13歳以上です',
     onboardingAgeNote: '続行すると、13歳以上であることを確認します',
-    healthConnectAgeDesc: 'Health Connect機能は健康データを責任を持って使用するために13歳以上である必要があります。',
     onboardingMoodTitle: '今の気分は？',
     onboardingMoodDescription: '毎日の気分を追跡',
     onboardingHabitsTitle: '最初の習慣を作ろう',
@@ -16338,12 +16281,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     trendsInsightHint: 'パーソナルインサイトが欲しい？',
     trendsInsightHintDesc: 'ホームタブのインサイトパネルをチェックして、データのパターンを発見しよう。',
 
-    // Health Connect (v1.2.0)
-    healthConnect: 'ヘルスコネクト',
-    healthConnectDescription: 'Googleヘルスコネクトと同期',
-    healthConnectLoading: 'ヘルスコネクトを確認中...',
-    healthConnectNotAvailable: 'このデバイスでは利用できません',
-    healthConnectUpdateRequired: 'ヘルスコネクトアプリを更新してください',
     mindfulness: 'マインドフルネス',
     sleep: '睡眠',
     steps: '歩数',
@@ -16352,7 +16289,6 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     todayHealth: '今日の健康',
     syncFocusSessions: '集中セッションを同期',
     syncFocusSessionsHint: '集中セッションをヘルスコネクトにマインドフルネスとして保存',
-    openHealthConnect: 'ヘルスコネクトを開く',
     refresh: '更新',
     permissions: '許可',
 

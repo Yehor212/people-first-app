@@ -19,7 +19,6 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(WidgetPlugin.class);
         registerPlugin(ReviewPlugin.class);
         registerPlugin(AppUpdatePlugin.class);
-        registerPlugin(HealthConnectPlugin.class);
         registerPlugin(DndPlugin.class);
 
         // P0 Fix #6: Process any pending deep link intent after bridge is ready

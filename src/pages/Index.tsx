@@ -25,7 +25,6 @@ import { syncReminderSettings } from '@/storage/reminderSync';
 import { syncWithCloud, startAutoSync, stopAutoSync, triggerSync } from '@/storage/cloudSync';
 import { generateHabitScheduleEvents, mergeScheduleEvents } from '@/lib/habitScheduleSync';
 import { migrateExistingUser } from '@/lib/cloudSyncSettings';
-import { useHealthConnect } from '@/hooks/useHealthConnect';
 import { useQuickActions, QuickActionType } from '@/hooks/useQuickActions';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { App } from '@capacitor/app';
@@ -151,7 +150,6 @@ export function Index() {
   const { t, language } = useLanguage();
   const { setEmotionFromEntries } = useEmotionTheme();
   const { isFeatureVisible } = useFeatureFlags();
-  const { syncFocusSession } = useHealthConnect();
   // const { openCoach, setUserData, onboardingData, saveOnboardingAnswer } = useAICoach(); // Hidden until AI ready
 
   // Security: Auto-logout after 15 minutes of inactivity (when supabase is configured)
@@ -1179,12 +1177,6 @@ export function Index() {
     // Show MindfulMoment after focus session (only for sessions > 5 min)
     if (session.duration >= 5) {
       setTimeout(() => setShowMindfulMoment(true), 500);
-    }
-
-    // Sync to Health Connect if enabled (only completed sessions, not aborted)
-    if (session.status === 'completed' && localStorage.getItem('zenflow_health_connect_sync') === 'true') {
-      const startTime = session.completedAt - (session.duration * 60 * 1000);
-      syncFocusSession(session.id, startTime, session.duration, session.label);
     }
 
     // Inner World: Plant a crystal when completing focus session
