@@ -11,7 +11,7 @@ import {
   getXpForAction,
 } from '@/lib/gamification';
 import { toast } from 'sonner';
-import { addFriendActivity, loadMyProfile } from '@/storage/friendsSync';
+import { addFriendActivity, loadMyProfile, updateMyLevel } from '@/storage/friendsSync';
 
 interface GamificationState {
   totalXp: number;
@@ -188,9 +188,12 @@ export function useGamification() {
 
   const userLevel = calculateLevel(gamificationState.totalXp);
 
-  // Track level-up for friends activity feed
+  // Track level-up for friends activity feed + sync level to profile
   const prevLevelRef = useRef(userLevel.level);
   useEffect(() => {
+    // Always sync current level to friends profile
+    updateMyLevel(userLevel.level);
+
     if (prevLevelRef.current > 0 && userLevel.level > prevLevelRef.current) {
       const profile = loadMyProfile();
       if (profile) {

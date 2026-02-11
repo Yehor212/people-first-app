@@ -191,6 +191,7 @@ export interface PrivacySettings {
   noTracking: boolean;
   analytics: boolean;
   consentShown?: boolean; // GDPR: track if user has been asked for consent
+  adConsent?: boolean;    // GDPR: ad personalization consent
 }
 
 export type ChallengeType =

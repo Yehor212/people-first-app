@@ -121,6 +121,10 @@
     <!-- Keep notifications working when app is in background -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- Microphone for journal voice recording -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+
     <!-- Health Connect Permissions -->
     <uses-permission android:name="android.permission.health.READ_SLEEP" />
     <uses-permission android:name="android.permission.health.READ_STEPS" />

@@ -9,6 +9,7 @@ import { useIndexedDB } from './useIndexedDB';
 import { db } from '@/storage/db';
 import { generateId, getToday } from '@/lib/utils';
 import { pushInnerWorldToCloud } from '@/storage/innerWorldCloudSync';
+import { updateMyStreak } from '@/storage/friendsSync';
 import {
   InnerWorld,
   GardenPlant,
@@ -277,6 +278,12 @@ export function useInnerWorld() {
 
     return () => clearInterval(interval);
   }, [isLoading, setWorld]);
+
+  // Sync streak to friends profile when it changes
+  useEffect(() => {
+    if (isLoading || !world.currentActiveStreak) return;
+    updateMyStreak(world.currentActiveStreak);
+  }, [isLoading, world.currentActiveStreak]);
 
   // Cloud sync - push to Supabase when world changes (debounced)
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
