@@ -425,7 +425,7 @@ export function SettingsPanel({
         const file = await Filesystem.writeFile({
           path: filename,
           data: json,
-          directory: Directory.Documents,
+          directory: Directory.Cache,
           encoding: Encoding.UTF8
         });
         await Share.share({

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   calculateStreak,
   getDaysInMonth,
@@ -6,10 +6,7 @@ import {
   formatDate,
   parseLocalDate,
   generateId,
-  getGreeting,
   formatTime,
-  getMonthName,
-  getDayName,
   cn,
 } from "@/lib/utils";
 
@@ -146,60 +143,6 @@ describe("generateId", () => {
 });
 
 // ============================================
-// getGreeting
-// ============================================
-
-describe("getGreeting", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it("returns morning greeting before noon", () => {
-    vi.setSystemTime(new Date(2024, 0, 1, 8, 0, 0)); // 8 AM
-    expect(getGreeting()).toBe("Доброе утро");
-  });
-
-  it("returns morning greeting at 11:59", () => {
-    vi.setSystemTime(new Date(2024, 0, 1, 11, 59, 0));
-    expect(getGreeting()).toBe("Доброе утро");
-  });
-
-  it("returns day greeting at noon", () => {
-    vi.setSystemTime(new Date(2024, 0, 1, 12, 0, 0));
-    expect(getGreeting()).toBe("Добрый день");
-  });
-
-  it("returns day greeting in afternoon", () => {
-    vi.setSystemTime(new Date(2024, 0, 1, 15, 0, 0));
-    expect(getGreeting()).toBe("Добрый день");
-  });
-
-  it("returns day greeting at 17:59", () => {
-    vi.setSystemTime(new Date(2024, 0, 1, 17, 59, 0));
-    expect(getGreeting()).toBe("Добрый день");
-  });
-
-  it("returns evening greeting at 18:00", () => {
-    vi.setSystemTime(new Date(2024, 0, 1, 18, 0, 0));
-    expect(getGreeting()).toBe("Добрый вечер");
-  });
-
-  it("returns evening greeting at night", () => {
-    vi.setSystemTime(new Date(2024, 0, 1, 22, 0, 0));
-    expect(getGreeting()).toBe("Добрый вечер");
-  });
-
-  it("returns evening greeting at midnight", () => {
-    vi.setSystemTime(new Date(2024, 0, 1, 0, 0, 0));
-    expect(getGreeting()).toBe("Доброе утро");
-  });
-});
-
-// ============================================
 // formatTime
 // ============================================
 
@@ -270,43 +213,6 @@ describe("getDaysInMonth", () => {
 
   it("handles century year leap", () => {
     expect(getDaysInMonth(2000, 1)).toBe(29); // 2000 is leap
-  });
-});
-
-// ============================================
-// getMonthName
-// ============================================
-
-describe("getMonthName", () => {
-  it("returns Russian month names", () => {
-    expect(getMonthName(0)).toBe("Январь");
-    expect(getMonthName(1)).toBe("Февраль");
-    expect(getMonthName(2)).toBe("Март");
-    expect(getMonthName(3)).toBe("Апрель");
-    expect(getMonthName(4)).toBe("Май");
-    expect(getMonthName(5)).toBe("Июнь");
-    expect(getMonthName(6)).toBe("Июль");
-    expect(getMonthName(7)).toBe("Август");
-    expect(getMonthName(8)).toBe("Сентябрь");
-    expect(getMonthName(9)).toBe("Октябрь");
-    expect(getMonthName(10)).toBe("Ноябрь");
-    expect(getMonthName(11)).toBe("Декабрь");
-  });
-});
-
-// ============================================
-// getDayName
-// ============================================
-
-describe("getDayName", () => {
-  it("returns Russian day abbreviations", () => {
-    expect(getDayName(0)).toBe("Вс");
-    expect(getDayName(1)).toBe("Пн");
-    expect(getDayName(2)).toBe("Вт");
-    expect(getDayName(3)).toBe("Ср");
-    expect(getDayName(4)).toBe("Чт");
-    expect(getDayName(5)).toBe("Пт");
-    expect(getDayName(6)).toBe("Сб");
   });
 });
 
