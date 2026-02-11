@@ -7,6 +7,7 @@ import { initAndroidBackHandler } from "./lib/androidBackHandler";
 import { logger } from "./lib/logger";
 import { setupDeepLinks } from "./lib/deepLinks";
 import { offlineQueue } from "./lib/offlineQueue";
+import { flushSync } from "./storage/cloudSync";
 import { initSentry, captureError } from "./lib/sentry";
 import { cleanupShareCache } from "./lib/shareCards";
 import { initA11y } from "./lib/a11y";
@@ -111,6 +112,10 @@ function handleAppPause(): void {
 
   pauseAllAudio();
 
+  // Flush pending cloud sync immediately (bypasses 60s debounce)
+  // Prevents data loss when user closes app right after recording mood/habit
+  flushSync();
+
   try {
     const queueState = offlineQueue.getState();
     if (queueState.actions.length > 0) {
@@ -187,10 +192,8 @@ preloadAmbientSounds();
 // Initialize Android back button handler (double-tap to exit + modal handling)
 void initAndroidBackHandler();
 
-// Hide splash screen after app initialization (native only)
-if (Capacitor.isNativePlatform()) {
-  SplashScreen.hide().catch(() => {});
-}
+// Splash screen is hidden in Index.tsx after initialization completes
+// This prevents white flash on slow devices during DB health check + migrations
 
 // Initialize deep link handler for challenge invites and other app URLs
 setupDeepLinks();

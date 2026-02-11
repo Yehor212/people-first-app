@@ -134,7 +134,8 @@ export function useSwipeNavigation<T extends string>({
       const touch = e.touches[0];
 
       // Ignore swipes starting from screen edges (Android system back gesture zones)
-      const EDGE_ZONE = 20;
+      // 35px matches Android's gesture navigation exclusion zone
+      const EDGE_ZONE = 35;
       if (touch.clientX < EDGE_ZONE || touch.clientX > window.innerWidth - EDGE_ZONE) {
         swipeState.current.isTracking = false;
         return;

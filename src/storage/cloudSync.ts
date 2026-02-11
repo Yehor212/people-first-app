@@ -369,6 +369,20 @@ export const triggerSync = () => {
   syncTimeout = setTimeout(silentSync, SYNC_DEBOUNCE);
 };
 
+// Flush sync immediately (bypasses debounce). Use on app pause to prevent data loss.
+export const flushSync = () => {
+  if (!supabase) return;
+
+  // Cancel pending debounced sync
+  if (syncTimeout) {
+    clearTimeout(syncTimeout);
+    syncTimeout = null;
+  }
+
+  // Trigger immediate sync
+  void silentSync();
+};
+
 /**
  * Complete cleanup of all cloudSync resources
  * Call this when destroying the app or during hot reload to prevent memory leaks.

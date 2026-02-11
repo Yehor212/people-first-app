@@ -24,6 +24,8 @@ import { normalizeHabit } from '@/lib/habits';
 import { supabase } from '@/lib/supabaseClient';
 import { syncReminderSettings } from '@/storage/reminderSync';
 import { syncWithCloud, startAutoSync, stopAutoSync, triggerSync } from '@/storage/cloudSync';
+import { SplashScreen } from '@capacitor/splash-screen';
+import { Capacitor } from '@capacitor/core';
 import { generateHabitScheduleEvents, mergeScheduleEvents } from '@/lib/habitScheduleSync';
 import { migrateExistingUser } from '@/lib/cloudSyncSettings';
 import { useQuickActions, QuickActionType } from '@/hooks/useQuickActions';
@@ -196,6 +198,11 @@ export function Index() {
       }
 
       const result = await initializeApp();
+
+      // Hide splash screen now that init is done (success or error)
+      if (Capacitor.isNativePlatform()) {
+        SplashScreen.hide().catch(() => {});
+      }
 
       if (!result.success) {
         setInitializationState({
