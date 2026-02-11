@@ -193,8 +193,8 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
             onClick={handleShuffle}
             className={cn(
               'p-3 rounded-xl relative overflow-hidden',
-              'bg-white/5 border border-white/10',
-              'hover:bg-white/10 transition-colors'
+              'bg-muted border border-border',
+              'hover:bg-secondary transition-colors'
             )}
             aria-label={t.shufflePrompt || 'Get another prompt'}
             whileHover={{ scale: 1.05 }}

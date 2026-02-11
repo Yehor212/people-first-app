@@ -1,5 +1,6 @@
-import { useState, useEffect, memo } from 'react';
+import { useState, useEffect, memo, useCallback } from 'react';
 import { interpolate } from '@/lib/utils';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -43,6 +44,8 @@ export const AchievementsPanel = memo(function AchievementsPanel({ stats, unlock
   const { t, language } = useLanguage();
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
   const [achievementProgress, setAchievementProgress] = useState<Record<AchievementId, number>>({});
+  const clearSelectedAchievement = useCallback(() => setSelectedAchievement(null), []);
+  useBackHandler(!!selectedAchievement, clearSelectedAchievement);
   const userLevel = calculateLevel(stats.totalXp);
 
   useEffect(() => {

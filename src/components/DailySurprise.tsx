@@ -356,7 +356,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
         )}
       >
         <div className="flex items-center gap-3">
-          <div className="p-2 bg-white/10 rounded-xl">
+          <div className="p-2 bg-secondary rounded-xl">
             <Gift className="w-6 h-6 text-primary" />
           </div>
           <div className="flex-1 text-left">
@@ -422,7 +422,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
 
       {/* Header */}
       <div className="flex items-center gap-3 mb-3">
-        <div className="p-2 bg-white/10 rounded-xl">
+        <div className="p-2 bg-secondary rounded-xl">
           <Icon className="w-5 h-5 text-primary" />
         </div>
         <div>

@@ -72,7 +72,7 @@ export function AICoachChat() {
       <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background h-[85vh] overflow-hidden animate-slide-up flex flex-col">
         <h2 className="sr-only">{t.aiCoachTitle || 'AI Coach'}</h2>
         {/* Header - Premium */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10 relative">
+        <div className="flex items-center justify-between p-4 border-b border-border relative">
           {/* Subtle glow */}
           <div
             className="absolute inset-0 pointer-events-none"
@@ -93,10 +93,10 @@ export function AICoachChat() {
               <Sparkles className="w-6 h-6 text-white" />
             </motion.div>
             <div>
-              <h2 className="font-semibold text-white">
+              <h2 className="font-semibold text-foreground">
                 {t.aiCoachTitle || 'AI Coach'}
               </h2>
-              <p className="text-xs text-white/60">
+              <p className="text-xs text-muted-foreground">
                 {t.aiCoachSubtitle || 'Your personal wellness guide'}
               </p>
             </div>
@@ -105,7 +105,7 @@ export function AICoachChat() {
             {messages.length > 0 && (
               <motion.button
                 onClick={handleClear}
-                className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white transition-colors"
+                className="p-2.5 rounded-xl bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                 aria-label={t.clearHistory || 'Clear history'}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -138,7 +138,7 @@ export function AICoachChat() {
               >
                 <Bot className="w-10 h-10 text-violet-400" />
               </div>
-              <p className="text-white/60 text-sm mb-1">
+              <p className="text-muted-foreground text-sm mb-1">
                 {t.aiCoachWelcome || 'Hi! How can I help you today?'}
               </p>
               <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -173,7 +173,7 @@ export function AICoachChat() {
         </div>
 
         {/* Input - Premium */}
-        <div className="p-4 border-t border-white/10 pb-safe relative">
+        <div className="p-4 border-t border-border pb-safe relative">
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -190,8 +190,8 @@ export function AICoachChat() {
               placeholder={t.aiCoachPlaceholder || 'Type a message...'}
               className={cn(
                 "flex-1 px-4 py-3.5 rounded-xl transition-all",
-                "bg-white/10 backdrop-blur-sm border border-white/10",
-                "text-white placeholder:text-white/40",
+                "bg-secondary backdrop-blur-sm border border-border",
+                "text-foreground placeholder:text-muted-foreground",
                 "focus:outline-none focus:ring-2 focus:ring-violet-500/50 focus:border-violet-500/30"
               )}
               disabled={isLoading}
@@ -203,7 +203,7 @@ export function AICoachChat() {
                 "p-3.5 rounded-xl min-w-[52px] min-h-[52px] flex items-center justify-center transition-all",
                 input.trim() && !isLoading
                   ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white"
-                  : "bg-white/10 text-white/40"
+                  : "bg-secondary text-muted-foreground"
               )}
               style={input.trim() && !isLoading ? {
                 boxShadow: '0 0 16px rgba(139, 92, 246, 0.4)'
@@ -249,15 +249,15 @@ function ChatBubble({ message, index }: { message: ChatMessage; index: number })
           isCoach ? "rounded-tl-sm" : "rounded-tr-sm"
         )}
         style={isCoach ? {
-          background: 'rgba(255, 255, 255, 0.08)',
+          background: 'hsl(var(--secondary))',
           backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid hsl(var(--border))',
         } : {
           background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.8) 0%, rgba(168, 85, 247, 0.7) 100%)',
           boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
         }}
       >
-        <p className={cn("text-sm whitespace-pre-wrap", isCoach ? "text-white/90" : "text-white")}>
+        <p className={cn("text-sm whitespace-pre-wrap", isCoach ? "text-foreground" : "text-white")}>
           {message.content}
         </p>
       </div>
@@ -295,9 +295,9 @@ function TypingIndicator() {
       <div
         className="px-5 py-4 rounded-2xl rounded-tl-sm"
         style={{
-          background: 'rgba(255, 255, 255, 0.08)',
+          background: 'hsl(var(--secondary))',
           backdropFilter: 'blur(8px)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          border: '1px solid hsl(var(--border))',
         }}
       >
         <div className="flex gap-1.5">
@@ -331,8 +331,8 @@ function QuickAction({ label, onClick, disabled }: { label: string; onClick: () 
       className={cn(
         "px-4 py-2.5 rounded-full text-xs font-medium transition-all",
         disabled
-          ? "bg-white/5 text-white/30 cursor-not-allowed"
-          : "bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+          ? "bg-muted text-muted-foreground/50 cursor-not-allowed"
+          : "bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
       )}
       whileHover={!disabled ? { scale: 1.02 } : {}}
       whileTap={!disabled ? { scale: 0.98 } : {}}

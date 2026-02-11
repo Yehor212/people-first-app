@@ -232,7 +232,7 @@ function PremiumDayPill({
         "backdrop-blur-md border",
         isSelected
           ? "bg-gradient-to-br from-primary/40 to-accent/30 border-primary/50 shadow-lg shadow-primary/30"
-          : "bg-slate-100/60 dark:bg-white/5 border-slate-200/60 dark:border-white/10 hover:bg-slate-200/60 dark:hover:bg-white/10 hover:border-slate-300/60 dark:hover:border-white/20"
+          : "bg-secondary border-border hover:bg-secondary/80 hover:border-border"
       )}
       style={{ perspective: 500 }}
     >
@@ -773,7 +773,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
               {/* Current event badge */}
               {currentEvent && (
                 <motion.div
-                  className="mt-1 px-3 py-1 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-full inline-flex items-center gap-2"
+                  className="mt-1 px-3 py-1 bg-secondary backdrop-blur-sm rounded-full inline-flex items-center gap-2"
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                 >
@@ -809,7 +809,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                 onClick={goToToday}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                className="p-2.5 bg-slate-100/60 dark:bg-white/10 hover:bg-slate-200/60 dark:hover:bg-white/20 backdrop-blur-sm rounded-xl border border-slate-200/60 dark:border-white/10 transition-colors"
+                className="p-2.5 bg-secondary hover:bg-secondary/80 backdrop-blur-sm rounded-xl border border-border transition-colors"
                 aria-label={t.today || 'Today'}
               >
                 <Home className="w-5 h-5 text-slate-600 dark:text-white/80" />
@@ -902,8 +902,8 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                       "absolute left-0 right-0 top-8 h-16 rounded-2xl overflow-hidden",
                       "backdrop-blur-sm border",
                       isDaySelected
-                        ? "bg-slate-200/40 dark:bg-white/10 border-slate-300/50 dark:border-white/20"
-                        : "bg-slate-100/40 dark:bg-white/5 border-slate-200/50 dark:border-white/10"
+                        ? "bg-secondary border-border"
+                        : "bg-muted border-border"
                     )}>
                       {/* Gradient river background */}
                       <div
@@ -923,8 +923,8 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                               hour === 0
                                 ? "border-purple-500/40 border-r-2"
                                 : hour % 6 === 0
-                                  ? "border-white/20"
-                                  : "border-white/10"
+                                  ? "border-border"
+                                  : "border-border/50"
                             )}
                             style={{ width: `${HOUR_WIDTH_PX}px` }}
                           />
@@ -1142,7 +1142,7 @@ function AddEventModal({
               onClick={onClose}
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
-              className="p-2 hover:bg-white/10 rounded-xl transition-colors"
+              className="p-2 hover:bg-secondary rounded-xl transition-colors"
               aria-label={t.close || 'Close'}
             >
               <X className="w-5 h-5 text-slate-600 dark:text-white/80" />
@@ -1155,7 +1155,7 @@ function AddEventModal({
             <select
               value={eventDate}
               onChange={(e) => setEventDate(e.target.value)}
-              className="w-full p-3 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20 focus:border-primary/50 focus:outline-none"
+              className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none"
             >
               {allDates.map((date) => (
                 <option key={date} value={date} className="bg-white dark:bg-slate-900 text-foreground">{formatDateOption(date)}</option>
@@ -1183,7 +1183,7 @@ function AddEventModal({
                     "backdrop-blur-sm border",
                     isSelected
                       ? `bg-gradient-to-br ${gradient} border-white/30 shadow-lg`
-                      : "bg-slate-100/60 dark:bg-white/5 border-slate-200/60 dark:border-white/10 hover:bg-slate-200/60 dark:hover:bg-white/10"
+                      : "bg-muted border-border hover:bg-secondary"
                   )}
                 >
                   <motion.span
@@ -1206,7 +1206,7 @@ function AddEventModal({
             value={customTitle}
             onChange={(e) => setCustomTitle(e.target.value)}
             placeholder={t.scheduleCustomTitle || 'Custom title (optional)'}
-            className="w-full p-3 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20 focus:border-primary/50 focus:outline-none mb-4 placeholder:text-slate-400 dark:placeholder:text-white/40"
+            className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none mb-4 placeholder:text-slate-400 dark:placeholder:text-white/40"
           />
 
           {/* Time pickers */}
@@ -1217,7 +1217,7 @@ function AddEventModal({
                 <select
                   value={startHour}
                   onChange={(e) => setStartHour(safeParseInt(e.target.value, 9, 0, 23))}
-                  className="flex-1 p-2 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20"
+                  className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
                 >
                   {HOURS.map((h) => (
                     <option key={h} value={h} className="bg-white dark:bg-slate-900 text-foreground">{h.toString().padStart(2, '0')}</option>
@@ -1226,7 +1226,7 @@ function AddEventModal({
                 <select
                   value={startMinute}
                   onChange={(e) => setStartMinute(safeParseInt(e.target.value, 0, 0, 59))}
-                  className="flex-1 p-2 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20"
+                  className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
                 >
                   {[0, 15, 30, 45].map((m) => (
                     <option key={m} value={m} className="bg-white dark:bg-slate-900 text-foreground">{m.toString().padStart(2, '0')}</option>
@@ -1240,7 +1240,7 @@ function AddEventModal({
                 <select
                   value={endHour}
                   onChange={(e) => setEndHour(safeParseInt(e.target.value, 10, 0, 23))}
-                  className="flex-1 p-2 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20"
+                  className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
                 >
                   {HOURS.map((h) => (
                     <option key={h} value={h} className="bg-white dark:bg-slate-900 text-foreground">{h.toString().padStart(2, '0')}</option>
@@ -1249,7 +1249,7 @@ function AddEventModal({
                 <select
                   value={endMinute}
                   onChange={(e) => setEndMinute(safeParseInt(e.target.value, 0, 0, 59))}
-                  className="flex-1 p-2 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20"
+                  className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
                 >
                   {[0, 15, 30, 45].map((m) => (
                     <option key={m} value={m} className="bg-white dark:bg-slate-900 text-foreground">{m.toString().padStart(2, '0')}</option>
@@ -1266,7 +1266,7 @@ function AddEventModal({
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={t.scheduleNotePlaceholder || 'Add details or reminders...'}
-              className="w-full p-3 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-slate-300/60 dark:border-white/20 focus:border-primary/50 focus:outline-none resize-none placeholder:text-slate-400 dark:placeholder:text-white/40"
+              className="w-full p-3 bg-secondary backdrop-blur-sm rounded-xl text-sm text-slate-800 dark:text-white border border-border focus:border-primary/50 focus:outline-none resize-none placeholder:text-slate-400 dark:placeholder:text-white/40"
               rows={2}
             />
           </div>
@@ -1362,7 +1362,7 @@ function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string>
 
   return (
     <motion.div
-      className="mt-3 p-4 bg-slate-100/60 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-slate-200/60 dark:border-white/10"
+      className="mt-3 p-4 bg-secondary backdrop-blur-sm rounded-xl border border-border"
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
     >
@@ -1558,7 +1558,7 @@ function EventDetailsModal({
           </div>
 
           {event.note && (
-            <div className="mb-4 p-3 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-xl border border-slate-200/60 dark:border-white/20">
+            <div className="mb-4 p-3 bg-secondary backdrop-blur-sm rounded-xl border border-border">
               <p className="text-sm text-slate-600 dark:text-white/80">{event.note}</p>
             </div>
           )}
@@ -1584,7 +1584,7 @@ function EventDetailsModal({
               onClick={onClose}
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="flex-1 py-3 bg-slate-100/60 dark:bg-white/10 backdrop-blur-sm rounded-xl font-medium text-slate-800 dark:text-white border border-slate-200/60 dark:border-white/20"
+              className="flex-1 py-3 bg-secondary backdrop-blur-sm rounded-xl font-medium text-slate-800 dark:text-white border border-border"
             >
               {t.close || 'Close'}
             </motion.button>

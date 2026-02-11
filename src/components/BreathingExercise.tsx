@@ -335,7 +335,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
             className={cn(
               "relative w-full max-w-sm rounded-3xl overflow-hidden",
               "bg-background/95 backdrop-blur-xl",
-              "border border-white/10"
+              "border border-border"
             )}
             style={{
               boxShadow: '0 0 40px rgba(6, 182, 212, 0.2), 0 25px 50px -12px rgba(0, 0, 0, 0.5)',
@@ -368,8 +368,8 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
                   aria-label={t.close || 'Close'}
                   className={cn(
                     "p-2 rounded-xl transition-all",
-                    "bg-white/5 border border-white/10",
-                    "hover:bg-white/10"
+                    "bg-muted border border-border",
+                    "hover:bg-secondary"
                   )}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -392,8 +392,8 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
                           "w-full p-4 rounded-xl flex items-center gap-3 text-start relative overflow-hidden",
                           "transition-all duration-300",
                           selectedPattern.id === pattern.id
-                            ? "bg-white/10 border border-cyan-500/40"
-                            : "bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20"
+                            ? "bg-secondary border border-cyan-500/40"
+                            : "bg-muted border border-border hover:bg-secondary hover:border-border"
                         )}
                         style={selectedPattern.id === pattern.id ? {
                           boxShadow: '0 0 20px rgba(6, 182, 212, 0.3), inset 0 1px 0 rgba(255,255,255,0.1)',
@@ -767,7 +767,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
                               "w-3 h-3 rounded-full transition-all duration-300",
                               i < currentCycle
                                 ? "bg-gradient-to-br from-cyan-400 to-teal-500"
-                                : "bg-white/20"
+                                : "bg-secondary/80"
                             )}
                             style={i < currentCycle ? {
                               boxShadow: '0 0 8px rgba(6, 182, 212, 0.6)',
@@ -792,8 +792,8 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
                       onClick={() => setIsPaused(!isPaused)}
                       className={cn(
                         "flex-1 py-3.5 rounded-xl font-medium flex items-center justify-center gap-2",
-                        "bg-white/10 backdrop-blur-sm border border-white/20",
-                        "hover:bg-white/15 transition-all"
+                        "bg-secondary backdrop-blur-sm border border-border",
+                        "hover:bg-secondary/80 transition-all"
                       )}
                       style={{
                         boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)',
@@ -811,8 +811,8 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
                       aria-label={t.resetTimer || 'Reset'}
                       className={cn(
                         "py-3.5 px-4 rounded-xl",
-                        "bg-white/5 border border-white/10",
-                        "hover:bg-white/10 transition-all"
+                        "bg-muted border border-border",
+                        "hover:bg-secondary transition-all"
                       )}
                       whileHover={{ scale: 1.05, rotate: -180 }}
                       whileTap={{ scale: 0.95 }}

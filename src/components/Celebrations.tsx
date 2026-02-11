@@ -32,7 +32,7 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm",
+        "fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm",
         showAnimations && "transition-opacity duration-300",
         show ? "opacity-100" : "opacity-0"
       )}
@@ -282,7 +282,7 @@ export function ConfirmDialog({
   variant = 'default'
 }: ConfirmDialogProps) {
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
       <div className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl animate-scale-in">
         <h3 className="text-lg font-bold text-foreground mb-2">{title}</h3>
         <p className="text-muted-foreground mb-6">{message}</p>

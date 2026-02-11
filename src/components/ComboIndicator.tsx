@@ -78,7 +78,7 @@ export function ComboIndicator({ combo, className }: ComboIndicatorProps) {
           {/* Combo count */}
           <div className={cn(
             'flex items-center justify-center w-10 h-10 rounded-xl font-bold text-lg',
-            isMaxCombo ? 'bg-white/30' : 'bg-white/20'
+            isMaxCombo ? 'bg-primary/30' : 'bg-primary/20'
           )}>
             {combo.count}x
           </div>
@@ -104,7 +104,7 @@ export function ComboIndicator({ combo, className }: ComboIndicatorProps) {
               {timeLeft && (
                 <span className={cn(
                   'px-1.5 py-0.5 rounded',
-                  isExpiring ? 'bg-red-500/50 animate-pulse' : 'bg-white/20'
+                  isExpiring ? 'bg-red-500/50 animate-pulse' : 'bg-primary/20'
                 )}>
                   {timeLeft}
                 </span>
@@ -114,7 +114,7 @@ export function ComboIndicator({ combo, className }: ComboIndicatorProps) {
         </div>
 
         {/* Progress bar to next combo level */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20 rounded-b-2xl overflow-hidden">
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-primary/20 rounded-b-2xl overflow-hidden">
           <div
             className={cn(
               'h-full transition-all duration-300',

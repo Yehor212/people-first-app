@@ -344,7 +344,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       {/* Close Button - Fixed position with safe area for iOS */}
       <button
         onClick={onExit}
-        className="fixed top-4 right-4 z-[110] p-3 min-w-[48px] min-h-[48px] bg-slate-200/80 dark:bg-white/10 hover:bg-slate-300/80 dark:hover:bg-white/20 rounded-xl transition-all text-slate-600 dark:text-white flex items-center justify-center active:scale-95"
+        className="fixed top-4 right-4 z-[110] p-3 min-w-[48px] min-h-[48px] bg-secondary hover:bg-secondary/80 rounded-xl transition-all text-slate-600 dark:text-white flex items-center justify-center active:scale-95"
         style={{ top: 'max(1rem, env(safe-area-inset-top, 1rem))', right: 'max(1rem, env(safe-area-inset-right, 1rem))' }}
         aria-label={t.close}
       >
@@ -511,7 +511,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           ) : (
             <motion.button
               onClick={handlePause}
-              className="px-8 py-4 min-h-[56px] bg-slate-200/80 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/20 rounded-2xl text-slate-700 dark:text-white font-bold text-lg flex items-center gap-3 transition-all"
+              className="px-8 py-4 min-h-[56px] bg-secondary backdrop-blur-sm border border-border rounded-2xl text-slate-700 dark:text-white font-bold text-lg flex items-center gap-3 transition-all"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -540,7 +540,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         </div>
 
         {/* Premium Ambient Sound Selector */}
-        <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-slate-200/80 dark:bg-white/5 backdrop-blur-md rounded-2xl p-4 border border-slate-300 dark:border-white/10">
+        <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-secondary backdrop-blur-md rounded-2xl p-4 border border-border">
           <div className="flex items-center justify-between mb-4">
             <span className="text-sm text-slate-600 dark:text-white/70 font-medium">
               {t.hyperfocusAmbientSound}
@@ -603,7 +603,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                     "p-2.5 min-w-[44px] min-h-[44px] rounded-xl transition-all flex items-center justify-center",
                     isSoundPlaying
                       ? "bg-violet-500/30 border border-violet-500/50"
-                      : "bg-slate-300/50 dark:bg-white/10 border border-slate-400 dark:border-white/20"
+                      : "bg-secondary border border-border"
                   )}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -626,7 +626,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium transition-all flex flex-col items-center justify-center gap-1',
                 !selectedSoundId
                   ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-violet-700 dark:text-white'
-                  : 'bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200 dark:hover:bg-white/10'
+                  : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'
               )}
               style={!selectedSoundId ? {
                 boxShadow: '0 0 12px hsl(var(--focus-violet) / 0.3)'
@@ -658,7 +658,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                     'px-2 py-3 min-h-[52px] rounded-xl text-xs font-medium transition-all flex flex-col items-center justify-center gap-1',
                     isSelected
                       ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/40 border border-violet-500/50 text-violet-700 dark:text-white'
-                      : 'bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200 dark:hover:bg-white/10'
+                      : 'bg-secondary border border-border text-slate-600 dark:text-white/70 hover:bg-secondary/80'
                   )}
                   style={isSelected ? {
                     boxShadow: '0 0 12px hsl(var(--focus-violet) / 0.3)'
@@ -674,7 +674,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
           </div>
 
           {/* Premium Spotify Section — temporarily hidden */}
-          {SHOW_SPOTIFY && <div className="mt-4 pt-4 border-t border-slate-300 dark:border-white/10">
+          {SHOW_SPOTIFY && <div className="mt-4 pt-4 border-t border-border">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Music className="w-4 h-4 text-[hsl(var(--brand-spotify))]" />
@@ -687,7 +687,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                     'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
                     spotifyAutoPlay
                       ? 'bg-[hsl(var(--brand-spotify))]/30 border border-[hsl(var(--brand-spotify))]/50 text-[hsl(var(--brand-spotify))]'
-                      : 'bg-slate-300/50 dark:bg-white/10 border border-slate-400 dark:border-white/20 text-slate-500 dark:text-white/60'
+                      : 'bg-secondary border border-border text-slate-500 dark:text-white/60'
                   )}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -697,7 +697,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             </div>
 
             {spotifyTrack ? (
-              <div className="flex items-center gap-3 p-3 bg-slate-100 dark:bg-white/5 border border-slate-300 dark:border-white/10 rounded-xl">
+              <div className="flex items-center gap-3 p-3 bg-secondary border border-border rounded-xl">
                 {spotifyTrack.albumArt && (
                   <img
                     src={spotifyTrack.albumArt}
@@ -750,7 +750,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <div className="bg-slate-200/80 dark:bg-white/5 backdrop-blur-md border border-slate-300 dark:border-white/10 rounded-2xl p-4">
+            <div className="bg-secondary backdrop-blur-md border border-border rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">💡</span>
                 <p className="text-xs text-slate-600 dark:text-white/60 font-medium">

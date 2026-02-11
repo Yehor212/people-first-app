@@ -587,7 +587,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
           className={cn(
             "w-full p-3 rounded-xl focus:outline-none focus:ring-2 transition-colors",
             isPrimaryCTA
-              ? "bg-slate-200/50 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/20 text-slate-800 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/40 focus:ring-violet-500/50"
+              ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white placeholder:text-slate-500 dark:placeholder:text-white/40 focus:ring-violet-500/50"
               : "bg-secondary text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
           )}
         />
@@ -603,8 +603,8 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                   "px-4 py-2.5 rounded-xl text-xs font-semibold transition-all",
                   isPrimaryCTA
                     ? isSelected
-                      ? `bg-gradient-to-br ${colors.bg} backdrop-blur-sm border border-slate-300 dark:border-white/20 text-slate-800 dark:text-white`
-                      : "bg-slate-200/50 dark:bg-white/5 backdrop-blur-sm border border-slate-300 dark:border-white/10 text-slate-600 dark:text-white/60 hover:bg-slate-300/50 dark:hover:bg-white/10 hover:text-slate-800 dark:hover:text-white/80"
+                      ? `bg-gradient-to-br ${colors.bg} backdrop-blur-sm border border-border text-slate-800 dark:text-white`
+                      : "bg-muted backdrop-blur-sm border border-border text-slate-600 dark:text-white/60 hover:bg-secondary hover:text-slate-800 dark:hover:text-white/80"
                     : isSelected
                       ? "bg-primary/10 ring-2 ring-primary text-foreground"
                       : "bg-secondary text-muted-foreground hover:bg-muted"
@@ -642,7 +642,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                 className={cn(
                   "w-full p-2 rounded-lg focus:outline-none focus:ring-2",
                   isPrimaryCTA
-                    ? "bg-slate-200/50 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/20 text-slate-800 dark:text-white focus:ring-amber-500/50"
+                    ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white focus:ring-amber-500/50"
                     : "bg-secondary text-foreground focus:ring-primary/30"
                 )}
               />
@@ -667,7 +667,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                 className={cn(
                   "w-full p-2 rounded-lg focus:outline-none focus:ring-2",
                   isPrimaryCTA
-                    ? "bg-slate-200/50 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/20 text-slate-800 dark:text-white focus:ring-amber-500/50"
+                    ? "bg-secondary backdrop-blur-sm border border-border text-slate-800 dark:text-white focus:ring-amber-500/50"
                     : "bg-secondary text-foreground focus:ring-primary/30"
                 )}
               />
@@ -685,7 +685,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
         <div className={cn(
           "flex items-center gap-2 text-sm",
           isPrimaryCTA
-            ? "px-3 py-1.5 bg-slate-200/50 dark:bg-white/10 backdrop-blur-sm rounded-full text-slate-600 dark:text-white/70"
+            ? "px-3 py-1.5 bg-secondary backdrop-blur-sm rounded-full text-slate-600 dark:text-white/70"
             : "text-muted-foreground"
         )}>
           <Coffee className="w-4 h-4" />
@@ -853,7 +853,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             <motion.button
               onClick={throttledReset}
               aria-label={t.resetTimer}
-              className="w-14 h-14 rounded-full flex items-center justify-center bg-slate-200/50 dark:bg-white/10 backdrop-blur-sm border border-slate-300 dark:border-white/20 text-slate-600 dark:text-white/70 hover:text-slate-800 dark:hover:text-white hover:bg-slate-300/50 dark:hover:bg-white/20 transition-colors"
+              className="w-14 h-14 rounded-full flex items-center justify-center bg-secondary backdrop-blur-sm border border-border text-slate-600 dark:text-white/70 hover:text-slate-800 dark:hover:text-white hover:bg-secondary/80 transition-colors"
               whileHover={{ scale: 1.1, rotate: -90 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -894,7 +894,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
             "w-full py-3.5 rounded-xl flex items-center justify-center gap-2",
             "font-semibold transition-all relative z-10",
             isRunning
-              ? "bg-slate-200/50 dark:bg-white/10 text-slate-400 dark:text-white/40 cursor-not-allowed"
+              ? "bg-secondary text-slate-400 dark:text-white/40 cursor-not-allowed"
               : "bg-gradient-to-r from-cyan-500/80 to-violet-500/80 text-white hover:from-cyan-500 hover:to-violet-500"
           )}
           style={!isRunning ? {
@@ -960,7 +960,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
               {/* Close button */}
               <button
                 onClick={() => handleSaveReflection(null)}
-                className="absolute top-3 end-3 p-2 rounded-lg bg-slate-200/50 dark:bg-white/10 hover:bg-slate-300/50 dark:hover:bg-white/20 text-slate-600 dark:text-white/60 hover:text-slate-800 dark:hover:text-white transition-colors"
+                className="absolute top-3 end-3 p-2 rounded-lg bg-secondary hover:bg-secondary/80 text-slate-600 dark:text-white/60 hover:text-slate-800 dark:hover:text-white transition-colors"
                 aria-label={t.close}
               >
                 <X className="w-4 h-4" />
@@ -990,7 +990,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                         "w-11 h-11 rounded-full text-sm font-bold transition-all",
                         isSelected
                           ? `bg-gradient-to-br ${colors[value - 1]} text-white`
-                          : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white"
+                          : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                       )}
                       style={isSelected ? {
                         boxShadow: '0 0 16px hsl(var(--focus-violet) / 0.5)'
@@ -1007,7 +1007,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
               <div className="flex gap-2 mt-6">
                 <motion.button
                   onClick={() => handleSaveReflection(null)}
-                  className="flex-1 py-3 rounded-xl bg-white/10 text-white/70 font-medium hover:bg-white/20 hover:text-white transition-colors"
+                  className="flex-1 py-3 rounded-xl bg-secondary text-muted-foreground font-medium hover:bg-secondary/80 hover:text-foreground transition-colors"
                   whileTap={{ scale: 0.98 }}
                 >
                   {t.focusReflectionSkip}
