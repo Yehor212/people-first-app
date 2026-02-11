@@ -2101,6 +2101,7 @@ export function Index() {
         )}
 
         {activeTab === 'home' && (
+          <div className="animate-tab-enter">
           <PullToRefresh onRefresh={handlePullToRefresh}>
             <InstallBanner />
             <Header
@@ -2227,9 +2228,11 @@ export function Index() {
               )}
             </div>
           </PullToRefresh>
+          </div>
         )}
 
         {activeTab === 'garden' && (
+          <div className="animate-tab-enter">
           <div className="space-y-4">
             <Header
               userName={userName}
@@ -2298,10 +2301,11 @@ export function Index() {
             </LazyErrorBoundary>
 
           </div>
+          </div>
         )}
 
         {activeTab === 'stats' && (
-          <>
+          <div className="animate-tab-enter">
             <Header userName={userName} />
             <LazyErrorBoundary componentName="Stats">
               <Suspense fallback={<SkeletonStats count={4} className="px-4 pt-8" />}>
@@ -2322,10 +2326,11 @@ export function Index() {
                 />
               </Suspense>
             </LazyErrorBoundary>
-          </>
+          </div>
         )}
 
         {activeTab === 'achievements' && (
+          <div className="animate-tab-enter">
           <div className="content-with-nav px-4">
             <LazyErrorBoundary componentName="Achievements">
               <AchievementsPanel
@@ -2342,10 +2347,11 @@ export function Index() {
               </Suspense>
             </LazyErrorBoundary>
           </div>
+          </div>
         )}
 
         {activeTab === 'settings' && (
-          <>
+          <div className="animate-tab-enter">
             <Header userName={userName} />
             <LazyErrorBoundary componentName="Settings">
               <Suspense fallback={<SkeletonSection />}>
@@ -2366,7 +2372,7 @@ export function Index() {
                 />
               </Suspense>
             </LazyErrorBoundary>
-          </>
+          </div>
         )}
         </main>
       </div>

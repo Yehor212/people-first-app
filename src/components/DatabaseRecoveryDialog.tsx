@@ -87,7 +87,7 @@ export function DatabaseRecoveryDialog() {
   const handleStartFresh = () => {
     // Just close the dialog - app will continue with empty local DB
     setIsOpen(false);
-    toast.info(t.databaseRecoveryStartFresh || 'Starting fresh', {
+    toast(t.databaseRecoveryStartFresh || 'Starting fresh', {
       description: t.databaseRecoveryStartFreshDesc || 'Local data has been reset.',
     });
   };

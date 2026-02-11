@@ -149,6 +149,8 @@ export const haptics = {
 
   // Generic intensity aliases
   light: hapticTap,
+  medium: hapticMedium,
+  heavy: hapticHeavy,
 
   // Navigation & UI
   buttonPress: hapticTap,

@@ -36,7 +36,7 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
               aria-selected={activeTab === tab.id}
               aria-label={tab.label}
               className={cn(
-                "flex flex-col items-center gap-1 py-2 px-3 flex-1 rounded-xl transition-all min-w-0 min-h-[44px]",
+                "flex flex-col items-center gap-1 py-2 px-3 flex-1 rounded-xl transition-all duration-200 min-w-0 min-h-[44px]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 activeTab === tab.id
                   ? "text-primary"
@@ -44,7 +44,7 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
               )}
             >
               <div className={cn(
-                "p-2.5 rounded-xl transition-all",
+                "p-2.5 rounded-xl transition-all duration-200",
                 activeTab === tab.id && "zen-gradient text-primary-foreground zen-shadow-soft"
               )}>
                 <tab.icon className="w-6 h-6" aria-hidden="true" />

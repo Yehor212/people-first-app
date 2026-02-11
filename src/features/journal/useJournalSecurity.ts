@@ -61,8 +61,8 @@ export function useJournalSecurity() {
       import('@/plugins/BiometricPlugin').then(({ default: BiometricAuth }) => {
         BiometricAuth.isAvailable().then(result => {
           setBiometricAvailable(result.available);
-        });
-      });
+        }).catch(() => setBiometricAvailable(false));
+      }).catch(() => setBiometricAvailable(false));
     }
 
     // Load biometric setting

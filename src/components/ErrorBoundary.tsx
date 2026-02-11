@@ -144,10 +144,10 @@ export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ childre
   const { t } = useLanguage();
   return (
     <ErrorBoundaryBase
-      title={t.errorBoundaryTitle}
-      body={t.errorBoundaryBody}
-      exportLabel={t.errorBoundaryExport}
-      reloadLabel={t.errorBoundaryReload}
+      title={t?.errorBoundaryTitle ?? 'Something went wrong'}
+      body={t?.errorBoundaryBody ?? 'An unexpected error occurred. Please reload the app.'}
+      exportLabel={t?.errorBoundaryExport ?? 'Export Debug Report'}
+      reloadLabel={t?.errorBoundaryReload ?? 'Reload App'}
       onExport={(error) => exportDebugReport(error)}
       onReload={() => window.location.reload()}
     >
@@ -319,10 +319,10 @@ export const ModalErrorBoundary: React.FC<ModalErrorBoundaryProps> = (props) => 
   return (
     <ModalErrorBoundaryClass
       {...props}
-      fallbackTitle={props.fallbackTitle || t.modalErrorTitle}
-      fallbackBody={props.fallbackBody || t.modalErrorBody}
-      tryAgainLabel={props.tryAgainLabel || t.tryAgain}
-      closeLabel={props.closeLabel || t.close}
+      fallbackTitle={props.fallbackTitle || t?.modalErrorTitle || 'Something went wrong'}
+      fallbackBody={props.fallbackBody || t?.modalErrorBody || 'This feature encountered an error.'}
+      tryAgainLabel={props.tryAgainLabel || t?.tryAgain || 'Try Again'}
+      closeLabel={props.closeLabel || t?.close || 'Close'}
     />
   );
 };
@@ -338,10 +338,10 @@ export const LazyErrorBoundary: React.FC<{ children: React.ReactNode; componentN
   const { t } = useLanguage();
   return (
     <ModalErrorBoundaryClass
-      fallbackTitle={`${t.failedToLoad} ${componentName}`}
-      fallbackBody={t.failedToLoadBody}
-      tryAgainLabel={t.tryAgain}
-      closeLabel={t.close}
+      fallbackTitle={`${t?.failedToLoad || 'Failed to load'} ${componentName}`}
+      fallbackBody={t?.failedToLoadBody || 'Please try again or reload the app.'}
+      tryAgainLabel={t?.tryAgain || 'Try Again'}
+      closeLabel={t?.close || 'Close'}
     >
       {children}
     </ModalErrorBoundaryClass>
