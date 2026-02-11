@@ -1035,23 +1035,22 @@ export function useInnerWorld() {
     if (!restModeStatus.canActivate) return { success: false, reason: 'cooldown', daysUntilAvailable: restModeStatus.daysUntilAvailable };
 
     // Update lastActiveDate to today to prevent streak from breaking
-    setWorld({
-      ...world,
-      restDays: [...restDays, today],
+    setWorld(prev => ({
+      ...prev,
+      restDays: [...(prev.restDays || []), today],
       lastActiveDate: today, // Important: mark today as "active" to preserve streak
-    });
+    }));
 
     return { success: true };
-  }, [world, setWorld, today, restModeStatus]);
+  }, [setWorld, today, restModeStatus]);
 
   // Deactivate rest mode for today
   const deactivateRestMode = useCallback(() => {
-    const restDays = world.restDays || [];
-    setWorld({
-      ...world,
-      restDays: restDays.filter(d => d !== today),
-    });
-  }, [world, setWorld, today]);
+    setWorld(prev => ({
+      ...prev,
+      restDays: (prev.restDays || []).filter(d => d !== today),
+    }));
+  }, [setWorld, today]);
 
   return {
     world,

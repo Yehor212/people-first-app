@@ -2266,13 +2266,15 @@ export function Index() {
             </LazyErrorBoundary>
 
             {/* Inner World — tree + treats balance */}
-            <InnerWorldCard
-              treeStage={treeStage}
-              waterLevel={treeWaterLevel}
-              treatsBalance={treatsBalance}
-              streak={innerWorld.currentActiveStreak}
-              onOpen={() => setShowTreePanel(true)}
-            />
+            <LazyErrorBoundary componentName="InnerWorld">
+              <InnerWorldCard
+                treeStage={treeStage}
+                waterLevel={treeWaterLevel}
+                treatsBalance={treatsBalance}
+                streak={innerWorld.currentActiveStreak}
+                onOpen={() => setShowTreePanel(true)}
+              />
+            </LazyErrorBoundary>
 
             {/* Personal Journal */}
             <LazyErrorBoundary componentName="Journal">

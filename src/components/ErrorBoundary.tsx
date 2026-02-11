@@ -5,6 +5,7 @@ import { crashReporting } from "@/lib/crashReporting";
 import { safeLocalStorageGet } from "@/lib/safeJson";
 import { captureError } from "@/lib/sentry";
 import { createFocusTrap, announceError } from "@/lib/a11y";
+import { logger } from "@/lib/logger";
 
 const LOG_KEY = "zenflow-error-log";
 
@@ -239,7 +240,7 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
 
     if (isChunkError) {
       // Force reload to get fresh assets
-      console.log('[ErrorBoundary] Chunk error detected, reloading page...');
+      logger.log('[ErrorBoundary] Chunk error detected, reloading page...');
       window.location.reload();
       return;
     }
