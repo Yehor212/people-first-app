@@ -998,6 +998,11 @@ export interface Translations {
   claimed: string;
   streakBonus: string;
   dailyRewardsTip: string;
+  // Ad system
+  adWatchToEarn: string;
+  adWatch: string;
+  adRemaining: string;
+  treats: string;
   spinWheel: string;
   spinsAvailable: string;
   spin: string;
@@ -3135,6 +3140,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     claimed: 'Получено',
     streakBonus: 'Бонус за серию',
     dailyRewardsTip: 'Заходи каждый день за лучшими наградами!',
+    adWatchToEarn: 'Смотри и получай',
+    adWatch: 'Смотреть',
+    adRemaining: 'осталось сегодня',
+    treats: 'угощений',
     spinWheel: 'Крути колесо!',
     spinsAvailable: 'Вращений доступно',
     spin: 'КРУТИТЬ',
@@ -5222,6 +5231,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     claimed: 'Claimed',
     streakBonus: 'Streak Bonus',
     dailyRewardsTip: 'Come back every day for better rewards!',
+    adWatchToEarn: 'Watch to earn',
+    adWatch: 'Watch',
+    adRemaining: 'left today',
+    treats: 'treats',
     spinWheel: 'Spin the Wheel!',
     spinsAvailable: 'Spins Available',
     spin: 'SPIN',
@@ -7309,6 +7322,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     claimed: 'Отримано',
     streakBonus: 'Бонус за серію',
     dailyRewardsTip: 'Заходь кожен день за кращими нагородами!',
+    adWatchToEarn: 'Дивись і отримуй',
+    adWatch: 'Дивитись',
+    adRemaining: 'залишилось сьогодні',
+    treats: 'ласощів',
     spinWheel: 'Крути колесо!',
     spinsAvailable: 'Обертань доступно',
     spin: 'КРУТИТИ',
@@ -9397,6 +9414,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     claimed: 'Reclamado',
     streakBonus: 'Bono de Racha',
     dailyRewardsTip: '¡Vuelve cada día para mejores recompensas!',
+    adWatchToEarn: 'Mira y gana',
+    adWatch: 'Ver',
+    adRemaining: 'restantes hoy',
+    treats: 'golosinas',
     spinWheel: '¡Gira la Ruleta!',
     spinsAvailable: 'Giros Disponibles',
     spin: 'GIRAR',
@@ -11485,6 +11506,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     claimed: 'Abgeholt',
     streakBonus: 'Serien-Bonus',
     dailyRewardsTip: 'Komm jeden Tag für bessere Belohnungen!',
+    adWatchToEarn: 'Ansehen und verdienen',
+    adWatch: 'Ansehen',
+    adRemaining: 'heute übrig',
+    treats: 'Leckerlis',
     spinWheel: 'Dreh das Rad!',
     spinsAvailable: 'Drehungen verfügbar',
     spin: 'DREHEN',
@@ -13573,6 +13598,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     claimed: 'Réclamé',
     streakBonus: 'Bonus de Série',
     dailyRewardsTip: 'Revenez chaque jour pour de meilleures récompenses!',
+    adWatchToEarn: 'Regardez et gagnez',
+    adWatch: 'Regarder',
+    adRemaining: 'restantes aujourd\'hui',
+    treats: 'friandises',
     spinWheel: 'Tournez la Roue!',
     spinsAvailable: 'Tours Disponibles',
     spin: 'TOURNER',
@@ -15660,6 +15689,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     claimed: '受取済み',
     streakBonus: '連続ボーナス',
     dailyRewardsTip: '毎日来てより良い報酬を！',
+    adWatchToEarn: '見て稼ごう',
+    adWatch: '見る',
+    adRemaining: '今日の残り',
+    treats: 'おやつ',
     spinWheel: 'ホイールを回そう！',
     spinsAvailable: '利用可能な回転',
     spin: 'スピン',
@@ -17635,6 +17668,10 @@ const arabicOverrides: Partial<Translations> = {
   claimed: 'تم الاستلام',
   streakBonus: 'مكافأة السلسلة',
   dailyRewardsTip: 'ادخل يومياً للمكافآت',
+  adWatchToEarn: 'شاهد واربح',
+  adWatch: 'مشاهدة',
+  adRemaining: 'متبقي اليوم',
+  treats: 'مكافآت',
   spinWheel: 'عجلة الحظ',
   spinsAvailable: 'لفات متاحة',
   spin: 'لف',
@@ -19473,6 +19510,10 @@ const hebrewOverrides: Partial<Translations> = {
   claim: 'דרוש',
   streakBonus: 'בונוס רצף',
   dailyRewardsTip: 'התחבר יומית לתגמולים',
+  adWatchToEarn: 'צפה והרוויח',
+  adWatch: 'צפייה',
+  adRemaining: 'נותרו היום',
+  treats: 'פינוקים',
 
   // Garden
   plants: 'צמחים',

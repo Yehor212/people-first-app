@@ -14,6 +14,7 @@ import { useBackHandler } from '@/hooks/useBackHandler';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { HyperfocusMode } from './HyperfocusMode';
+import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
 import { haptics } from '@/lib/haptics';
 import { announceSuccess } from '@/lib/a11y';
 import { LocalNotifications } from '@capacitor/local-notifications';
@@ -1020,6 +1021,11 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                 >
                   {t.focusReflectionSave}
                 </motion.button>
+              </div>
+
+              {/* Opt-in rewarded ad — earn bonus treats after focus */}
+              <div className="mt-4">
+                <RewardedAdPrompt context="post_focus" compact />
               </div>
             </div>
           </motion.div>

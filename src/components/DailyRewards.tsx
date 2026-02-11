@@ -9,6 +9,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { safeJsonParse } from '@/lib/safeJson';
 import { safeParseInt } from '@/lib/validation';
+import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
 import {
   getDailyLoginRewards,
   getLoginStreakBonus,
@@ -240,6 +241,15 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
               )}
             </div>
           </div>
+
+          {/* Watch ad to earn bonus treats (only after claiming) */}
+          {!canClaim && (
+            <RewardedAdPrompt
+              context="daily_rewards"
+              compact
+              className="mb-4"
+            />
+          )}
 
           {/* Streak Bonus */}
           {bonusXp > 0 && (
