@@ -250,7 +250,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsOpen(false)} />
-          <div role="dialog" aria-modal="true" aria-label={t.leaderboard || 'Leaderboard'} className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background h-[85vh] overflow-hidden animate-slide-up">
+          <div role="dialog" aria-modal="true" aria-label={t.leaderboard || 'Leaderboard'} className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden animate-slide-up pb-safe">
 
         <div className="pb-4 px-6 pt-6 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-xl font-semibold">

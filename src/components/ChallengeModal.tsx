@@ -1176,7 +1176,7 @@ export const ChallengeModal = memo(function ChallengeModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] flex flex-col p-0 gap-0 rounded-2xl">
+      <DialogContent className="max-w-lg max-h-[85dvh] flex flex-col p-0 gap-0 rounded-2xl">
         {/* Visually hidden title for accessibility */}
         <DialogTitle className="sr-only">{getTitle()}</DialogTitle>
 

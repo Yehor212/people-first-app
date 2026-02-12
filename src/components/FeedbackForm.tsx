@@ -175,7 +175,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
       aria-labelledby="feedback-form-title"
     >
       <div
-        className="w-full max-w-lg bg-background rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
+        className="w-full max-w-lg bg-background rounded-t-3xl p-6 max-h-[85dvh] overflow-y-auto animate-in slide-in-from-bottom duration-300 pb-safe"
         onTouchEnd={(e) => e.stopPropagation()}
       >
         {/* Header */}

@@ -300,6 +300,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
                 rgba(0, 0, 0, 0.8) 50%,
                 rgba(0, 0, 0, 0.9) 100%)`,
               backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
             }}
             onClick={closeModal}
             initial={{ opacity: 0 }}

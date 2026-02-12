@@ -82,7 +82,7 @@ export function AICoachChat() {
     <>
       {/* Prevent closing while message is being sent */}
       <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => { if (!isLoading) closeCoach(); }} />
-      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background h-[85vh] overflow-hidden animate-slide-up flex flex-col">
+      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden animate-slide-up flex flex-col">
         <h2 className="sr-only">{t.aiCoachTitle || 'AI Coach'}</h2>
         {/* Header - Premium */}
         <div className="flex items-center justify-between p-4 border-b border-border relative">
@@ -271,6 +271,7 @@ function ChatBubble({ message, index }: { message: ChatMessage; index: number })
         style={isCoach ? {
           background: 'hsl(var(--secondary))',
           backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
           border: '1px solid hsl(var(--border))',
         } : {
           background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.8) 0%, rgba(168, 85, 247, 0.7) 100%)',
@@ -317,6 +318,7 @@ function TypingIndicator() {
         style={{
           background: 'hsl(var(--secondary))',
           backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
           border: '1px solid hsl(var(--border))',
         }}
       >

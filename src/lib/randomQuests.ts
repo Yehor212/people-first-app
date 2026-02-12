@@ -5,11 +5,6 @@ import { logger } from './logger';
 import { safeJsonParse } from './safeJson';
 import { translations } from '@/i18n/translations';
 
-// Quest translation key mapping
-interface QuestTranslationKeys {
-  titleKey: keyof typeof translations.en;
-  descriptionKey: keyof typeof translations.en;
-}
 
 // Helper to get current language from localStorage
 function getCurrentLanguage(): string {
@@ -35,6 +30,8 @@ export interface Quest {
   category: QuestCategory;
   title: string;
   description: string;
+  titleKey?: string;        // translation key — resolve at render time
+  descriptionKey?: string;  // translation key — resolve at render time
   condition: QuestCondition;
   reward: QuestReward;
   progress: number;
@@ -64,7 +61,7 @@ export interface QuestTemplate {
   templates: {
     titleKey: keyof typeof translations.en;
     descriptionKey: keyof typeof translations.en;
-    condition: Omit<QuestCondition, 'count'>;
+    condition: Omit<QuestCondition, 'count'> & { count?: number };
     baseReward: number;
     badgeReward?: string;
   }[];
@@ -94,7 +91,7 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
         descriptionKey: 'questSpeedDemonDesc',
         condition: { type: 'complete_habits', timeLimit: 30 },
         baseReward: 100,
-        badgeReward: 'Speed Demon',
+        badgeReward: 'questSpeedDemon',
       },
     ],
   },
@@ -106,22 +103,22 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
       {
         titleKey: 'questFocusFlow',
         descriptionKey: 'questFocusFlowDesc',
-        condition: { type: 'focus_minutes' },
+        condition: { type: 'focus_minutes', count: 30 },
         baseReward: 75,
       },
       {
         titleKey: 'questDeepWork',
         descriptionKey: 'questDeepWorkDesc',
-        condition: { type: 'focus_minutes' },
+        condition: { type: 'focus_minutes', count: 60 },
         baseReward: 150,
-        badgeReward: 'Deep Focus',
+        badgeReward: 'questBadgeDeepFocus',
       },
       {
         titleKey: 'questHyperfocusHero',
         descriptionKey: 'questHyperfocusHeroDesc',
-        condition: { type: 'focus_minutes' },
+        condition: { type: 'focus_minutes', count: 90 },
         baseReward: 250,
-        badgeReward: 'Hyperfocus Hero',
+        badgeReward: 'questHyperfocusHero',
       },
     ],
   },
@@ -133,16 +130,16 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
       {
         titleKey: 'questStreakKeeper',
         descriptionKey: 'questStreakKeeperDesc',
-        condition: { type: 'maintain_streak' },
+        condition: { type: 'maintain_streak', count: 7 },
         baseReward: 200,
-        badgeReward: 'Streak Keeper',
+        badgeReward: 'questStreakKeeper',
       },
       {
         titleKey: 'questConsistencyKing',
         descriptionKey: 'questConsistencyKingDesc',
-        condition: { type: 'maintain_streak' },
+        condition: { type: 'maintain_streak', count: 14 },
         baseReward: 500,
-        badgeReward: 'Consistency King',
+        badgeReward: 'questConsistencyKing',
       },
     ],
   },
@@ -154,15 +151,15 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
       {
         titleKey: 'questGratitudeSprint',
         descriptionKey: 'questGratitudeSprintDesc',
-        condition: { type: 'gratitude_count', timeLimit: 5 },
+        condition: { type: 'gratitude_count', count: 5, timeLimit: 5 },
         baseReward: 50,
       },
       {
         titleKey: 'questThankfulHeart',
         descriptionKey: 'questThankfulHeartDesc',
-        condition: { type: 'gratitude_count' },
+        condition: { type: 'gratitude_count', count: 10 },
         baseReward: 100,
-        badgeReward: 'Thankful Heart',
+        badgeReward: 'questThankfulHeart',
       },
     ],
   },
@@ -176,7 +173,7 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
         descriptionKey: 'questLightningRoundDesc',
         condition: { type: 'speed_challenge', timeLimit: 15 },
         baseReward: 125,
-        badgeReward: 'Lightning Fast',
+        badgeReward: 'questBadgeLightningFast',
       },
     ],
   },
@@ -190,7 +187,7 @@ const QUEST_TEMPLATES: QuestTemplate[] = [
         descriptionKey: 'questWeeklyWarriorDesc',
         condition: { type: 'consecutive_days' },
         baseReward: 300,
-        badgeReward: 'Weekly Warrior',
+        badgeReward: 'questWeeklyWarrior',
       },
     ],
   },
@@ -210,25 +207,16 @@ export function generateDailyQuest(): Quest {
   // Pick random template from category
   const template = categoryTemplate.templates[Math.floor(Math.random() * categoryTemplate.templates.length)];
 
-  // Get translated title and description
+  // Get translated title and description (for backward compat in stored quests)
   const title = t[template.titleKey];
   const description = t[template.descriptionKey];
 
-  // Determine count based on condition type
-  let count = 3;
-  let total = 3;
-
-  if (template.condition.type === 'complete_habits') {
+  // Determine count from template or fallback
+  let count = template.condition.count || 3;
+  if (!template.condition.count && template.condition.type === 'complete_habits') {
     count = template.condition.beforeTime ? 3 : 5;
-    total = count;
-  } else if (template.condition.type === 'focus_minutes') {
-    count = description.includes('30') ? 30 :
-            description.includes('60') ? 60 : 90;
-    total = count;
-  } else if (template.condition.type === 'gratitude_count') {
-    count = description.includes('5') ? 5 : 10;
-    total = count;
   }
+  const total = count;
 
   // Calculate expiry (end of day)
   const now = Date.now();
@@ -241,6 +229,8 @@ export function generateDailyQuest(): Quest {
     category: categoryTemplate.category,
     title,
     description,
+    titleKey: template.titleKey,
+    descriptionKey: template.descriptionKey,
     condition: {
       ...template.condition,
       count,
@@ -271,25 +261,20 @@ export function generateWeeklyQuest(): Quest {
   // Pick random template from category
   const template = categoryTemplate.templates[Math.floor(Math.random() * categoryTemplate.templates.length)];
 
-  // Get translated title and description
+  // Get translated title and description (for backward compat in stored quests)
   const title = t[template.titleKey];
   const description = t[template.descriptionKey];
 
-  // Determine count based on condition type
-  let count = 7;
-  let total = 7;
-
-  if (template.condition.type === 'maintain_streak') {
-    count = description.includes('14') ? 14 : 7;
-    total = count;
-  } else if (template.condition.type === 'consecutive_days') {
-    count = 7;
-    total = 7;
-  } else if (template.condition.type === 'focus_minutes') {
-    // Weekly focus quests are cumulative
-    count = 300; // 5 hours total
-    total = 300;
+  // Determine count from template or fallback
+  let count = template.condition.count || 7;
+  if (!template.condition.count) {
+    if (template.condition.type === 'focus_minutes') {
+      count = 300; // 5 hours total for weekly
+    } else if (template.condition.type === 'consecutive_days') {
+      count = 7;
+    }
   }
+  const total = count;
 
   // Calculate expiry (end of week)
   const now = Date.now();
@@ -301,8 +286,10 @@ export function generateWeeklyQuest(): Quest {
     id: `quest-weekly-${now}`,
     type: 'weekly',
     category: categoryTemplate.category,
-    title: `Weekly: ${title}`,
+    title, // No prefix — added at render time by QuestsPanel
     description,
+    titleKey: template.titleKey,
+    descriptionKey: template.descriptionKey,
     condition: {
       ...template.condition,
       count,
@@ -310,7 +297,7 @@ export function generateWeeklyQuest(): Quest {
     reward: {
       xp: template.baseReward * 3, // Triple XP for weekly quests
       badge: template.badgeReward,
-      message: `Weekly ${title} completed! +${template.baseReward * 3} XP`,
+      message: `${title} completed! +${template.baseReward * 3} XP`,
     },
     progress: 0,
     total,
@@ -336,7 +323,7 @@ export function generateBonusQuest(): Quest {
     cat.templates.some(t => t.titleKey === template.titleKey)
   );
 
-  // Get translated title and description
+  // Get translated title and description (for backward compat in stored quests)
   const title = t[template.titleKey];
   const description = t[template.descriptionKey];
 
@@ -358,9 +345,11 @@ export function generateBonusQuest(): Quest {
   return {
     id: `quest-bonus-${now}`,
     type: 'bonus',
-    category: categoryTemplate.category,
-    title: `🌟 BONUS: ${title}`,
-    description: `${description} (Limited Time!)`,
+    category: categoryTemplate?.category ?? 'habits',
+    title, // No prefix — added at render time by QuestsPanel
+    description, // No suffix — added at render time
+    titleKey: template.titleKey,
+    descriptionKey: template.descriptionKey,
     condition: {
       ...template.condition,
       count,
@@ -368,7 +357,7 @@ export function generateBonusQuest(): Quest {
     reward: {
       xp: template.baseReward * 5, // 5x XP for bonus quests!
       badge: template.badgeReward,
-      message: `BONUS ${title} completed! +${template.baseReward * 5} XP + Badge!`,
+      message: `${title} completed! +${template.baseReward * 5} XP`,
     },
     progress: 0,
     total,

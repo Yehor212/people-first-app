@@ -532,7 +532,7 @@ function AddGoalSheet({
   return (
     <>
       <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => onOpenChange(false)} />
-      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85vh] overflow-hidden animate-slide-up">
+      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden animate-slide-up pb-safe">
         <h2 className="sr-only">{t.addGoal || 'Add Goal'}</h2>
 
         {/* Header */}

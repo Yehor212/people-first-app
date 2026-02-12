@@ -137,6 +137,36 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
       );
     }
 
+    // Resolve title/description from translation key (new quests) or use stored string (old quests)
+    const tAny = t as unknown as Record<string, string>;
+    const resolvedTitle = quest.titleKey && tAny[quest.titleKey]
+      ? tAny[quest.titleKey]
+      : quest.title;
+    const resolvedDesc = quest.descriptionKey && tAny[quest.descriptionKey]
+      ? tAny[quest.descriptionKey]
+      : quest.description;
+
+    // Add localized prefix for weekly/bonus quests
+    const displayTitle = quest.type === 'weekly'
+      ? `${tAny.weeklyQuestPrefix || 'Weekly:'} ${resolvedTitle}`
+      : quest.type === 'bonus'
+      ? `🌟 ${tAny.bonusQuestPrefix || 'BONUS:'} ${resolvedTitle}`
+      : resolvedTitle;
+
+    const displayDesc = quest.type === 'bonus'
+      ? `${resolvedDesc} (${t.limitedTime})`
+      : resolvedDesc;
+
+    // Resolve badge name from translation key or use as-is
+    const badgeName = quest.reward.badge && tAny[quest.reward.badge]
+      ? tAny[quest.reward.badge]
+      : quest.reward.badge;
+
+    // Build completion message from translation if possible
+    const completionMessage = quest.titleKey
+      ? `${resolvedTitle} ${tAny.questCompletedSuffix || 'completed!'} +${quest.reward.xp} XP`
+      : quest.reward.message;
+
     const progressPercent = (quest.progress / quest.total) * 100;
     const isExpired = Date.now() > quest.expiresAt;
 
@@ -163,7 +193,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
                 getQuestDifficultyColor(quest.type),
                 quest.completed && 'line-through opacity-70'
               )}>
-                {quest.title}
+                {displayTitle}
               </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 {getQuestTypeLabel(quest.type)}
@@ -177,7 +207,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
 
         {/* Description */}
         <p className="text-sm text-muted-foreground mb-4">
-          {quest.description}
+          {displayDesc}
         </p>
 
         {/* Progress Bar */}
@@ -215,10 +245,10 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
               <Sparkles className="w-4 h-4" />
               +{quest.reward.xp} XP
             </span>
-            {quest.reward.badge && (
+            {badgeName && (
               <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 rounded-md font-medium">
                 <Trophy className="w-4 h-4" />
-                {quest.reward.badge}
+                {badgeName}
               </span>
             )}
           </div>
@@ -228,7 +258,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
         {quest.completed && (
           <div className="mt-4 p-3 bg-primary/5 border border-primary/20 rounded-lg">
             <p className="text-sm font-medium text-primary">
-              ✨ {quest.reward.message}
+              ✨ {completionMessage}
             </p>
           </div>
         )}

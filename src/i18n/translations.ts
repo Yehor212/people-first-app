@@ -1598,6 +1598,11 @@ export interface Translations {
   questLightningRoundDesc: string;
   questWeeklyWarrior: string;
   questWeeklyWarriorDesc: string;
+  weeklyQuestPrefix: string;
+  bonusQuestPrefix: string;
+  questCompletedSuffix: string;
+  questBadgeDeepFocus: string;
+  questBadgeLightningFast: string;
 
   onboardingGetStarted: string;
   onboardingWelcomeTitle: string;
@@ -3707,6 +3712,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     questLightningRoundDesc: 'Complete 5 quick tasks in 15 minutes',
     questWeeklyWarrior: 'Weekly Warrior',
     questWeeklyWarriorDesc: 'Complete habits 7 days in a row',
+    weeklyQuestPrefix: 'Weekly:',
+    bonusQuestPrefix: 'BONUS:',
+    questCompletedSuffix: 'completed!',
+    questBadgeDeepFocus: 'Deep Focus',
+    questBadgeLightningFast: 'Lightning Fast',
 
     // Feedback System
     feedbackTitle: 'Send Feedback',
@@ -5790,6 +5800,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     questLightningRoundDesc: 'Виконайте 5 швидких завдань за 15 хвилин',
     questWeeklyWarrior: 'Тижневий Воїн',
     questWeeklyWarriorDesc: 'Виконуйте звички 7 днів поспіль',
+    weeklyQuestPrefix: 'Тижневий:',
+    bonusQuestPrefix: 'БОНУС:',
+    questCompletedSuffix: 'виконано!',
+    questBadgeDeepFocus: 'Глибокий Фокус',
+    questBadgeLightningFast: 'Блискавична Швидкість',
 
     // Feedback System
     feedbackTitle: 'Зворотний зв\'язок',
@@ -7874,6 +7889,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     questLightningRoundDesc: 'Completa 5 tareas rápidas en 15 minutos',
     questWeeklyWarrior: 'Guerrero Semanal',
     questWeeklyWarriorDesc: 'Completa hábitos 7 días seguidos',
+    weeklyQuestPrefix: 'Semanal:',
+    bonusQuestPrefix: 'BONUS:',
+    questCompletedSuffix: '¡completado!',
+    questBadgeDeepFocus: 'Enfoque Profundo',
+    questBadgeLightningFast: 'Rayo Veloz',
 
     // Feedback System
     feedbackTitle: 'Enviar comentarios',
@@ -9958,6 +9978,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     questLightningRoundDesc: 'Erledige 5 schnelle Aufgaben in 15 Minuten',
     questWeeklyWarrior: 'Wöchentlicher Krieger',
     questWeeklyWarriorDesc: 'Erledige 7 Tage lang Gewohnheiten',
+    weeklyQuestPrefix: 'Wöchentlich:',
+    bonusQuestPrefix: 'BONUS:',
+    questCompletedSuffix: 'abgeschlossen!',
+    questBadgeDeepFocus: 'Tiefer Fokus',
+    questBadgeLightningFast: 'Blitzschnell',
 
     // Feedback System
     feedbackTitle: 'Feedback senden',
@@ -12042,6 +12067,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     questLightningRoundDesc: 'Complète 5 tâches rapides en 15 minutes',
     questWeeklyWarrior: 'Guerrier Hebdomadaire',
     questWeeklyWarriorDesc: 'Complète des habitudes 7 jours d\'affilée',
+    weeklyQuestPrefix: 'Hebdomadaire :',
+    bonusQuestPrefix: 'BONUS :',
+    questCompletedSuffix: 'terminé !',
+    questBadgeDeepFocus: 'Focus Profond',
+    questBadgeLightningFast: 'Éclair Rapide',
 
     // Feedback System
     feedbackTitle: 'Envoyer un commentaire',
@@ -14125,6 +14155,11 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     questLightningRoundDesc: '15分以内に5つのクイックタスクを完了',
     questWeeklyWarrior: 'ウィークリーウォリアー',
     questWeeklyWarriorDesc: '7日間連続で習慣を完了',
+    weeklyQuestPrefix: '週間:',
+    bonusQuestPrefix: 'ボーナス:',
+    questCompletedSuffix: '完了！',
+    questBadgeDeepFocus: 'ディープフォーカス',
+    questBadgeLightningFast: 'ライトニングファスト',
 
     // Feedback System
     feedbackTitle: 'フィードバックを送信',
@@ -16108,6 +16143,11 @@ const arabicOverrides: Partial<Translations> = {
   questLightningRoundDesc: 'سجل المزاج في 10 ثوان',
   questWeeklyWarrior: 'محارب الأسبوع',
   questWeeklyWarriorDesc: 'أكمل كل المهام الأسبوعية',
+  weeklyQuestPrefix: 'أسبوعي:',
+  bonusQuestPrefix: 'مكافأة:',
+  questCompletedSuffix: 'مكتمل!',
+  questBadgeDeepFocus: 'تركيز عميق',
+  questBadgeLightningFast: 'سرعة البرق',
 
   // Feature Unlocks
   onboardingGetStarted: 'ابدأ الآن',
@@ -18328,6 +18368,11 @@ const hebrewOverrides: Partial<Translations> = {
   questLightningRoundDesc: 'השלם 5 משימות מהירות ב-15 דקות',
   questWeeklyWarrior: 'לוחם שבועי',
   questWeeklyWarriorDesc: 'השלם הרגלים 7 ימים ברצף',
+  weeklyQuestPrefix: 'שבועי:',
+  bonusQuestPrefix: 'בונוס:',
+  questCompletedSuffix: 'הושלם!',
+  questBadgeDeepFocus: 'מיקוד עמוק',
+  questBadgeLightningFast: 'מהיר כברק',
 
   // Feedback
   feedbackTitle: 'שלח משוב',
