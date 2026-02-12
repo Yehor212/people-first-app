@@ -77,16 +77,24 @@ export function PWAUpdateNotifier() {
         duration: Infinity,
         action: {
           label: t.pwaUpdateButton || 'Refresh',
-          onClick: () => {
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-              window.location.reload();
-            }, { once: true });
-            navigator.serviceWorker.ready.then((registration) => {
-              if (registration.waiting) {
-                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          onClick: async () => {
+            try {
+              // Clear all caches
+              if ('caches' in window) {
+                const names = await caches.keys();
+                await Promise.all(names.map(n => caches.delete(n)));
               }
-            });
-            setTimeout(() => window.location.reload(), 2000);
+              // Unregister all SWs
+              const regs = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(regs.map(r => r.unregister()));
+            } catch (e) {
+              logger.warn('[PWA] Error clearing caches during update:', e);
+            }
+
+            // Hard reload with cache bust
+            const url = new URL(window.location.href);
+            url.searchParams.set('_v', String(Date.now()));
+            window.location.replace(url.toString());
           },
         },
       });
@@ -104,27 +112,12 @@ export function PWAUpdateNotifier() {
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
-    // Auto-reload when new SW takes control (after skipWaiting)
-    const handleControllerChange = () => {
-      logger.log('[PWA] New service worker activated — auto-reloading');
-      if (!hasShownToast.current) {
-        hasShownToast.current = true;
-        toast(t.pwaUpdateAvailable || 'Update available', {
-          description: t.pwaUpdateDescription || 'A new version is ready. Refreshing...',
-          duration: 3000,
-        });
-      }
-      setTimeout(() => window.location.reload(), 2000);
-    };
-    navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
-
     return () => {
       if (updateIntervalRef.current) {
         clearInterval(updateIntervalRef.current);
         updateIntervalRef.current = null;
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
     };
   }, [t]);
 

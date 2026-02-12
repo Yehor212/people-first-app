@@ -72,7 +72,8 @@ export async function checkAppVersion(): Promise<boolean> {
 
 /**
  * Perform a hard reload that bypasses all caches.
- * This ensures the browser fetches fresh index.html from the server.
+ * Clears all SW caches, unregisters all SWs, then reloads with cache bust.
+ * Must await all operations before reload to prevent stale content.
  */
 export async function forceHardReload(): Promise<void> {
   logger.log('[VersionCheck] Performing hard reload...');
@@ -89,29 +90,24 @@ export async function forceHardReload(): Promise<void> {
   sessionStorage.setItem(RELOAD_TIMESTAMP_KEY, now.toString());
 
   try {
-    // 1. Clear all Service Worker caches
+    // 1. Clear ALL caches (await completion)
     if ('caches' in window) {
-      const cacheNames = await caches.keys();
-      await Promise.all(cacheNames.map((name) => caches.delete(name)));
-      logger.log(`[VersionCheck] Cleared ${cacheNames.length} caches`);
+      const names = await caches.keys();
+      await Promise.all(names.map((n) => caches.delete(n)));
+      logger.log(`[VersionCheck] Cleared ${names.length} caches`);
     }
 
-    // 2. Tell Service Worker to skip waiting and activate immediately
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
-
-      // Also try via registration
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (registration?.waiting) {
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-      }
+    // 2. Unregister ALL service workers (await completion)
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+      logger.log(`[VersionCheck] Unregistered ${regs.length} service workers`);
     }
   } catch (error) {
     logger.warn('[VersionCheck] Error clearing caches:', error);
   }
 
   // 3. Reload with cache-busting query param
-  // Using location.replace to not add to history
   const url = new URL(window.location.href);
   url.searchParams.set('_v', now.toString());
   window.location.replace(url.toString());
@@ -177,17 +173,3 @@ export function markVersionChecked(): void {
   }
 }
 
-/**
- * Clear navigation cache in Service Worker.
- * This ensures fresh index.html is fetched on next navigation.
- */
-export async function clearNavigationCache(): Promise<void> {
-  try {
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-      navigator.serviceWorker.controller.postMessage({ type: 'CHECK_VERSION' });
-      logger.log('[VersionCheck] Sent CHECK_VERSION to Service Worker');
-    }
-  } catch (error) {
-    logger.warn('[VersionCheck] Failed to clear navigation cache:', error);
-  }
-}

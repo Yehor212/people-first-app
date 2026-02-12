@@ -8,7 +8,7 @@
 
 import { precacheAndRoute, cleanupOutdatedCaches } from 'workbox-precaching';
 import { registerRoute } from 'workbox-routing';
-import { CacheFirst, NetworkFirst } from 'workbox-strategies';
+import { CacheFirst, NetworkOnly } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 // REMOVED: BackgroundSyncPlugin - POST caching was causing "Request body already used" errors
 // import { BackgroundSyncPlugin } from 'workbox-background-sync';
@@ -94,21 +94,13 @@ registerRoute(
 // 3. The app has its own offline queue system (src/lib/offlineQueue.ts)
 // Error was: "Failed to execute 'clone' on 'Request': Request body is already used"
 
-// Handle navigation requests
-// Reduced TTL from 24h to 1h to prevent stale index.html issues
-// Added networkTimeoutSeconds for faster fallback to cache
+// Handle navigation requests — NEVER cache index.html
+// Using NetworkOnly ensures the browser always fetches fresh HTML from the server.
+// This eliminates stale-cache deadlocks where SW serves old index.html with old
+// version check scripts. The app requires network anyway (Supabase).
 registerRoute(
   ({ request }) => request.mode === 'navigate',
-  new NetworkFirst({
-    cacheName: 'pages',
-    networkTimeoutSeconds: 3, // Fast fallback to cache
-    plugins: [
-      new ExpirationPlugin({
-        maxEntries: 10,
-        maxAgeSeconds: 5 * 60, // 5 minutes — fast updates for GitHub Pages (no custom cache headers)
-      }),
-    ],
-  })
+  new NetworkOnly()
 );
 
 // Listen for sync events (triggered when coming back online)
@@ -156,23 +148,6 @@ self.addEventListener('message', (event) => {
     });
   }
 
-  if (event.data?.type === 'CHECK_VERSION') {
-    // Clear navigation cache when app requests version check
-    // This ensures fresh index.html is fetched
-    console.log('[SW] Version check requested - clearing navigation cache');
-    event.waitUntil(
-      caches.open('pages').then((cache) => {
-        return cache.keys().then((keys) => {
-          return Promise.all(
-            keys.map((key) => {
-              console.log('[SW] Deleting cached page:', key.url);
-              return cache.delete(key);
-            })
-          );
-        });
-      })
-    );
-  }
 });
 
 // Log service worker lifecycle

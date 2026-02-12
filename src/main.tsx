@@ -21,7 +21,6 @@ import {
   shouldCheckVersion,
   shouldAutoCheckVersion,
   markVersionChecked,
-  clearNavigationCache,
 } from "./lib/versionCheck";
 import { pauseAllAudio, resumeAllAudio } from "./lib/audioLifecycle";
 import { setupChunkErrorHandler } from "./components/UpdateRequiredDialog";
@@ -269,9 +268,6 @@ async function initializeApp(): Promise<boolean> {
 
   if (priorityCheck || autoCheck) {
     logger.log(`[Main] Checking app version... (priority=${priorityCheck}, auto=${autoCheck})`);
-
-    // Clear navigation cache first to ensure fresh version.json
-    await clearNavigationCache();
 
     const isUpToDate = await checkAppVersion();
 
