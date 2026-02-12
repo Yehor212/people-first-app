@@ -34,6 +34,7 @@ interface JournalEntryListProps {
   totalCount: number;
   loading?: boolean;
   daysSinceLastEntry?: number | null;
+  privateMode?: boolean;
 }
 
 export function JournalEntryList({
@@ -44,6 +45,7 @@ export function JournalEntryList({
   totalCount,
   loading = false,
   daysSinceLastEntry,
+  privateMode = false,
 }: JournalEntryListProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -307,6 +309,7 @@ export function JournalEntryList({
                   entry={entry}
                   onTap={() => onOpenEntry(entry.id)}
                   onDelete={() => onDeleteEntry(entry.id)}
+                  privateMode={privateMode}
                 />
               </motion.div>
             ))}

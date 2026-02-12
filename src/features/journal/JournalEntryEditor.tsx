@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, Sparkles, X, Calendar, Shuffle, Mic, MicOff, Circle, Square } from 'lucide-react';
+import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, Sparkles, X, Calendar, Shuffle, Mic, MicOff, Circle, Square, LayoutTemplate } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
+import { createFocusTrap, announceSuccess } from '@/lib/a11y';
+import { hapticSuccess } from '@/lib/haptics';
 import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
 import type { MoodType } from '@/types';
 import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY } from './types';
@@ -44,7 +46,7 @@ const PROMPT_KEYS = [
   'journalPrompt6', 'journalPrompt7', 'journalPrompt8', 'journalPrompt9', 'journalPrompt10',
 ];
 
-// ── Draft helpers ──
+// ── Draft helpers (IndexedDB primary, localStorage fallback) ──
 
 interface DraftData {
   title: string;
@@ -67,21 +69,55 @@ function getDraftKey(entryId: string | null): string {
   return `journal_draft_${entryId || 'new'}`;
 }
 
-function saveDraft(key: string, data: DraftData) {
-  try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* quota */ }
-}
-
-function loadDraft(key: string): DraftData | null {
+async function saveDraft(key: string, data: DraftData) {
   try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    const data = JSON.parse(raw) as DraftData;
-    if (Date.now() - data.savedAt > 7 * 86400000) { localStorage.removeItem(key); return null; }
-    return data;
-  } catch { return null; }
+    const { settingsRepo } = await import('@/storage/db');
+    await settingsRepo.put({ key, value: data });
+  } catch {
+    // Fallback to localStorage
+    try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* quota */ }
+  }
 }
 
-function clearDraft(key: string) { localStorage.removeItem(key); }
+async function loadDraft(key: string): Promise<DraftData | null> {
+  try {
+    const { settingsRepo } = await import('@/storage/db');
+    const record = await settingsRepo.get(key);
+    if (record?.value) {
+      const data = record.value as DraftData;
+      if (Date.now() - data.savedAt > 7 * 86400000) { await settingsRepo.delete(key); return null; }
+      return data;
+    }
+    // Migrate from localStorage if exists
+    const raw = localStorage.getItem(key);
+    if (raw) {
+      const data = JSON.parse(raw) as DraftData;
+      if (Date.now() - data.savedAt > 7 * 86400000) { localStorage.removeItem(key); return null; }
+      // Migrate to IndexedDB
+      await settingsRepo.put({ key, value: data });
+      localStorage.removeItem(key);
+      return data;
+    }
+    return null;
+  } catch {
+    // Fallback to localStorage
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) return null;
+      const data = JSON.parse(raw) as DraftData;
+      if (Date.now() - data.savedAt > 7 * 86400000) { localStorage.removeItem(key); return null; }
+      return data;
+    } catch { return null; }
+  }
+}
+
+async function clearDraft(key: string) {
+  try {
+    const { settingsRepo } = await import('@/storage/db');
+    await settingsRepo.delete(key);
+  } catch { /* non-critical */ }
+  localStorage.removeItem(key);
+}
 
 // ── Component ──
 
@@ -121,6 +157,7 @@ export function JournalEntryEditor({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const draftTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const editorOverlayRef = useRef<HTMLDivElement>(null);
   const draftKey = getDraftKey(entry?.id || null);
 
   const [title, setTitle] = useState(entry?.title || '');
@@ -135,6 +172,7 @@ export function JournalEntryEditor({
   const [habitSnapshot, setHabitSnapshot] = useState<{ habitId: string; habitName: string; habitIcon: string; completed: boolean }[]>(entry?.habitSnapshot || []);
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
   const [showStickers, setShowStickers] = useState(false);
   const [showPhotos, setShowPhotos] = useState(false);
@@ -142,7 +180,7 @@ export function JournalEntryEditor({
   const [showTags, setShowTags] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const [showTemplatePicker, setShowTemplatePicker] = useState(!entry);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showRecordingOverlay, setShowRecordingOverlay] = useState(false);
   const [draftAvailable, setDraftAvailable] = useState<DraftData | null>(null);
   const [promptsHidden, setPromptsHidden] = useState(false);
@@ -195,11 +233,12 @@ export function JournalEntryEditor({
 
   // ── Load draft on mount ──
   useEffect(() => {
-    const draft = loadDraft(draftKey);
-    if (draft) {
-      setDraftAvailable(draft);
-      setShowTemplatePicker(false); // Don't show templates if draft exists
-    }
+    void loadDraft(draftKey).then(draft => {
+      if (draft) {
+        setDraftAvailable(draft);
+        setShowTemplatePicker(false);
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -234,6 +273,35 @@ export function JournalEntryEditor({
   useEffect(() => {
     if (!entry) setTimeout(() => textareaRef.current?.focus(), 100);
   }, [entry]);
+
+  // Focus trap for editor overlay
+  useEffect(() => {
+    if (!editorOverlayRef.current) return;
+    return createFocusTrap(editorOverlayRef.current);
+  }, []);
+
+  // Keyboard shortcuts: Escape to close overlays/go back, Ctrl+Enter to save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showStickers) { setShowStickers(false); return; }
+        if (showPhotos) { setShowPhotos(false); return; }
+        if (showMood) { setShowMood(false); return; }
+        if (showTags) { setShowTags(false); return; }
+        if (showRecordingOverlay) { recorder.stop(); setShowRecordingOverlay(false); return; }
+        if (showTemplatePicker) { setShowTemplatePicker(false); return; }
+        if (showDeleteConfirm) { setShowDeleteConfirm(false); return; }
+        if (showUnsavedDialog) { setShowUnsavedDialog(false); return; }
+        handleBack();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && hasContent && !saving) {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showStickers, showPhotos, showMood, showTags, showRecordingOverlay, showTemplatePicker, showDeleteConfirm, showUnsavedDialog, handleBack, handleSave, hasContent, saving, recorder]);
 
   // Load existing audio recordings for editing
   useEffect(() => {
@@ -321,8 +389,15 @@ export function JournalEntryEditor({
       });
       clearDraft(draftKey);
       toast.success(title.trim() ? `"${title.trim().slice(0, 30)}"` : (ts.journalEntrySaved || 'Entry saved'));
-      onBack();
-    } finally {
+      announceSuccess(ts.journalEntrySaved || 'Entry saved');
+      setSaving(false);
+      setSaveSuccess(true);
+      // Celebration: sound + haptic
+      try { const { playSuccess } = await import('@/lib/audioManager'); playSuccess(); } catch { /* optional */ }
+      hapticSuccess();
+      // Navigate after brief celebration
+      setTimeout(() => onBack(), 600);
+    } catch {
       setSaving(false);
     }
   }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot]);
@@ -438,7 +513,7 @@ export function JournalEntryEditor({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-background md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up">
+    <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Journal Entry'} className="fixed inset-0 z-[60] bg-background md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up">
       <div className="w-full h-full flex flex-col md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden">
       {/* Header — frosted glass */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/80 backdrop-blur-xl">
@@ -478,19 +553,44 @@ export function JournalEntryEditor({
             </button>
           )}
           <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={handleSave}
-            disabled={saving || !hasContent}
+            whileTap={saveSuccess ? {} : { scale: 0.95 }}
+            onClick={saveSuccess ? undefined : handleSave}
+            disabled={!saveSuccess && (saving || !hasContent)}
             className={cn(
               'flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium min-h-[44px]',
-              'bg-gradient-to-r from-primary to-primary/90',
+              saveSuccess
+                ? 'bg-gradient-to-r from-emerald-500 to-emerald-500/90'
+                : 'bg-gradient-to-r from-primary to-primary/90',
               'text-primary-foreground',
-              'shadow-[0_2px_10px_rgba(var(--primary-rgb,99,102,241),0.2)]',
+              saveSuccess
+                ? 'shadow-[0_2px_14px_rgba(16,185,129,0.3)]'
+                : 'shadow-[0_2px_10px_rgba(var(--primary-rgb,99,102,241),0.2)]',
               'disabled:opacity-40 disabled:shadow-none transition-all',
             )}
           >
-            <Check className="w-4 h-4" />
-            {ts.journalSave || 'Save'}
+            <AnimatePresence mode="wait">
+              {saveSuccess ? (
+                <motion.span
+                  key="success"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [0, 1.2, 1] }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  className="flex items-center"
+                >
+                  <Check className="w-5 h-5" />
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="save"
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ duration: 0.1 }}
+                  className="flex items-center gap-1"
+                >
+                  <Check className="w-4 h-4" />
+                  {ts.journalSave || 'Save'}
+                </motion.span>
+              )}
+            </AnimatePresence>
           </motion.button>
         </div>
       </div>
@@ -607,7 +707,7 @@ export function JournalEntryEditor({
               <button
                 key={i}
                 onClick={() => handleRemoveSticker(i)}
-                className="px-1.5 py-0.5 rounded-lg hover:bg-muted/50 active:scale-90 transition-transform min-w-[36px] min-h-[36px] flex items-center justify-center"
+                className="px-1.5 py-0.5 rounded-lg hover:bg-muted/50 active:scale-90 transition-transform min-w-[44px] min-h-[44px] flex items-center justify-center"
               >
                 <StickerRenderer emoji={s} size="md" />
               </button>
@@ -814,6 +914,17 @@ export function JournalEntryEditor({
           <Hash className="w-5 h-5 text-muted-foreground" />
           <span className="text-[10px] text-muted-foreground/60">{ts.journalToolbarTags || 'Tags'}</span>
         </button>
+
+        {/* Templates button — only for new entries (progressive disclosure) */}
+        {!entry && (
+          <button
+            onClick={() => { closeAllPickers(); setShowTemplatePicker(true); }}
+            className="flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors min-h-[44px] flex flex-col items-center justify-center gap-0.5"
+          >
+            <LayoutTemplate className="w-5 h-5 text-muted-foreground" />
+            <span className="text-[10px] text-muted-foreground/60">{ts.journalTemplateButton || 'Template'}</span>
+          </button>
+        )}
       </div>
 
       {/* Inline mood picker */}
@@ -902,6 +1013,9 @@ export function JournalEntryEditor({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Recording"
             className="fixed inset-0 z-[70] bg-black/60 flex items-center justify-center"
           >
             <motion.div

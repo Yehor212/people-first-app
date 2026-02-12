@@ -38,6 +38,7 @@ interface UserContext {
   goals?: string[];
   stressManagement?: string;
   daysAway?: number;
+  journalEntries?: Array<{ date: string; mood?: string; snippet: string }>;
 }
 
 interface UserDataRef {
@@ -58,6 +59,7 @@ interface AICoachContextType {
   closeCoach: () => void;
   sendMessage: (message: string) => Promise<void>;
   clearHistory: () => void;
+  restoreHistory: (msgs: ChatMessage[]) => void;
   saveOnboardingAnswer: (key: keyof OnboardingData, value: string) => void;
   setUserData: (moods: MoodEntry[], habits: Habit[], innerWorld: InnerWorld) => void;
 
@@ -145,10 +147,25 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     userDataRef.current = { moods, habits, innerWorld };
   }, []);
 
-  // Build context for API
-  const buildUserContext = useCallback((): UserContext => {
+  // Build context for API (async to fetch journal entries from IndexedDB)
+  const buildUserContext = useCallback(async (): Promise<UserContext> => {
     const { moods, habits, innerWorld } = userDataRef.current;
     const today = new Date().toISOString().split('T')[0];
+
+    // Fetch recent journal entries for coach context
+    let journalEntries: UserContext['journalEntries'];
+    try {
+      const { getAllEntries } = await import('@/features/journal/journalStorage');
+      const entries = await getAllEntries();
+      const recent = entries.sort((a, b) => b.createdAt - a.createdAt).slice(0, 3);
+      if (recent.length > 0) {
+        journalEntries = recent.map(e => ({
+          date: e.date,
+          mood: e.mood,
+          snippet: e.content.slice(0, 100),
+        }));
+      }
+    } catch { /* journal data is optional */ }
 
     return {
       recentMoods: moods.slice(-7).map(m => ({
@@ -166,6 +183,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
       goals: onboardingData.mainGoal ? [onboardingData.mainGoal] : undefined,
       stressManagement: onboardingData.stressManagement,
       daysAway: daysAwayContext,
+      journalEntries,
     };
   }, [onboardingData, daysAwayContext]);
 
@@ -209,7 +227,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
           },
           body: JSON.stringify({
             message,
-            context: buildUserContext(),
+            context: await buildUserContext(),
             language,
             trigger: currentTrigger,
             conversationHistory: messages.slice(-10).map(m => ({
@@ -332,6 +350,11 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     setMessages([]);
   }, [setMessages]);
 
+  // Restore history (for undo)
+  const restoreHistory = useCallback((msgs: ChatMessage[]) => {
+    setMessages(msgs);
+  }, [setMessages]);
+
   // Save onboarding answer
   const saveOnboardingAnswer = useCallback((key: keyof OnboardingData, value: string) => {
     setOnboardingData(prev => ({ ...prev, [key]: value }));
@@ -391,6 +414,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     triggerLowMoodCheck,
     triggerStreakBroken,
     triggerHabitSkip,
+    restoreHistory,
   }), [
     isOpen,
     isLoading,
@@ -400,6 +424,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
     closeCoach,
     sendMessage,
     clearHistory,
+    restoreHistory,
     saveOnboardingAnswer,
     setUserData,
     triggerLowMoodCheck,

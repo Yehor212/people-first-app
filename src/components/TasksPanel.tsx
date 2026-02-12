@@ -184,9 +184,18 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   }, [onAwardXp, onEarnTreats]);
 
   const handleDeleteTask = useCallback((taskId: string) => {
-    if (!window.confirm(t.confirmDelete || 'Delete this task?')) return;
+    const deletedTask = tasks.find(task => task.id === taskId);
     setTasks(prev => prev.filter(task => task.id !== taskId));
-  }, [t]);
+    if (deletedTask) {
+      toast(`🗑️ ${t.confirmDelete || 'Task deleted'}`, {
+        duration: 5000,
+        action: {
+          label: t.undo || 'Undo',
+          onClick: () => setTasks(prev => [...prev, deletedTask]),
+        },
+      });
+    }
+  }, [tasks, t]);
 
   const renderTaskCard = (task: PrioritizedTask, index?: number) => {
     const isTopThree = index !== undefined && index < 3;

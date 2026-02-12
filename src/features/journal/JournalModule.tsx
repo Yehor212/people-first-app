@@ -6,6 +6,7 @@ import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
+import { createFocusTrap } from '@/lib/a11y';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabaseClient';
 import { useJournal } from './useJournal';
@@ -39,10 +40,14 @@ export function JournalModule() {
   const [calendarMode, setCalendarMode] = useState<'strip' | 'full'>(() => {
     return (localStorage.getItem('journal-calendar-mode') as 'strip' | 'full') || 'strip';
   });
+  const [privateMode, setPrivateMode] = useState(() => {
+    return localStorage.getItem('journal_private_mode') === 'true';
+  });
 
   const [showExportPicker, setShowExportPicker] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Secure password reset via email verification
@@ -99,10 +104,27 @@ export function JournalModule() {
   // Scroll lock when journal is open
   useScrollLock(moduleState === 'open');
 
+  // Focus trap for main overlay
+  const overlayRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (moduleState !== 'open' || !overlayRef.current) return;
+    return createFocusTrap(overlayRef.current);
+  }, [moduleState]);
+
   // Load entry count for card preview
   useEffect(() => {
     getEntryCount().then(setEntryCount);
   }, [journal.totalCount]);
+
+  // Check for unsaved draft (for card badge)
+  useEffect(() => {
+    if (moduleState !== 'card') return;
+    import('@/storage/db').then(({ settingsRepo }) => {
+      settingsRepo.get('journal_draft_new').then(record => {
+        setHasDraft(!!record?.value);
+      }).catch(() => setHasDraft(false));
+    }).catch(() => setHasDraft(false));
+  }, [moduleState, journal.totalCount]);
 
   // Android back button handling
   useEffect(() => {
@@ -139,12 +161,27 @@ export function JournalModule() {
   };
 
   const handleSaveEntry = useCallback(async (data: Parameters<typeof journal.createEntry>[0]) => {
+    const isNew = !journal.activeEntryId;
     if (journal.activeEntryId) {
       await journal.updateEntry(journal.activeEntryId, data);
     } else {
       await journal.createEntry(data);
     }
-  }, [journal]);
+    // Trigger cloud sync after save to reduce data loss risk
+    try { const { triggerSync } = await import('@/storage/cloudSync'); triggerSync(); } catch { /* non-critical */ }
+    // Streak milestone celebration (only for new entries on today's date)
+    if (isNew) {
+      const entryDate = data.date || getToday();
+      if (entryDate === getToday() && !hasTodayEntry) {
+        const newStreak = streak + 1;
+        const milestones = [7, 14, 30, 60, 100];
+        if (milestones.includes(newStreak)) {
+          try { const { playStreakMilestone } = await import('@/lib/audioManager'); playStreakMilestone(); } catch { /* optional */ }
+          toast(`\u{1F525} ${newStreak} ${ts.journalSavedStreak || 'day streak!'}`, { duration: 3000 });
+        }
+      }
+    }
+  }, [journal, streak, hasTodayEntry, ts]);
 
   const handleDeleteEntry = useCallback(async (id: string) => {
     // Find the entry before deleting for undo
@@ -299,18 +336,26 @@ export function JournalModule() {
             </div>
           </div>
 
-          {/* Today status badge */}
-          {hasTodayEntry ? (
-            <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-2 py-1 rounded-full shrink-0">
-              <CheckCircle2 className="w-3 h-3" />
-              {ts.journalTodayComplete || 'Done today'}
-            </span>
-          ) : (
-            <span className="flex items-center gap-1 text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 border border-purple-500/15 px-2 py-1 rounded-full shrink-0">
-              <PenLine className="w-3 h-3" />
-              {ts.journalWriteToday || 'Write today'}
-            </span>
-          )}
+          {/* Today status badge + draft badge */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {hasDraft && (
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 border border-amber-500/15 px-2 py-1 rounded-full">
+                <PenLine className="w-3 h-3" />
+                {ts.journalDraftBadge || 'Draft'}
+              </span>
+            )}
+            {hasTodayEntry ? (
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/15 px-2 py-1 rounded-full">
+                <CheckCircle2 className="w-3 h-3" />
+                {ts.journalTodayComplete || 'Done today'}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-purple-600 dark:text-purple-400 bg-purple-500/10 border border-purple-500/15 px-2 py-1 rounded-full">
+                <PenLine className="w-3 h-3" />
+                {ts.journalWriteToday || 'Write today'}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Row 2: Stats bar */}
@@ -335,6 +380,10 @@ export function JournalModule() {
   // ── Full-screen overlay ──
   return (
     <div
+      ref={overlayRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={ts.journalTitle || 'Personal Journal'}
       className="fixed inset-0 z-[60] bg-background md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
@@ -670,6 +719,7 @@ export function JournalModule() {
                       totalCount={journal.totalCount}
                       loading={journal.loading}
                       daysSinceLastEntry={daysSinceLastEntry}
+                      privateMode={privateMode}
                     />
                   </div>
                 </div>
@@ -679,6 +729,9 @@ export function JournalModule() {
                   <>
                     <div className="fixed inset-0 z-[64] bg-black/30 animate-fade-in" onClick={() => { setShowPasswordSettings(false); setShowChangePassword(false); }} />
                     <div
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label={ts.journalSettings || 'Journal Settings'}
                       className="fixed bottom-0 left-0 right-0 z-[65] animate-slide-up"
                       onClick={e => e.stopPropagation()}
                     >
@@ -798,6 +851,29 @@ export function JournalModule() {
                           </div>
                         )}
 
+                        {/* Private mode toggle */}
+                        <div className="mt-4 pt-4 border-t border-border/20">
+                          <div className="flex items-center justify-between min-h-[44px]">
+                            <div>
+                              <p className="text-sm font-medium text-foreground">
+                                {ts.journalPrivateMode || 'Hide previews'}
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                {ts.journalPrivateModeHint || 'Show only titles in entry list'}
+                              </p>
+                            </div>
+                            <Switch
+                              checked={privateMode}
+                              onCheckedChange={(checked) => {
+                                setPrivateMode(checked);
+                                localStorage.setItem('journal_private_mode', String(checked));
+                              }}
+                              aria-label={ts.journalPrivateMode || 'Hide previews'}
+                              className="mt-0.5 shrink-0"
+                            />
+                          </div>
+                        </div>
+
                         {/* Reminder toggle */}
                         <div className="mt-4 pt-4 border-t border-border/20">
                           <div className="flex items-center justify-between min-h-[44px]">
@@ -904,6 +980,9 @@ export function JournalModule() {
                   <>
                     <div className="fixed inset-0 z-[66] bg-black/30 animate-fade-in" onClick={() => setShowExportPicker(false)} />
                     <div
+                      role="dialog"
+                      aria-modal="true"
+                      aria-label={ts.journalExportFormat || 'Export Format'}
                       className="fixed bottom-0 left-0 right-0 z-[67] animate-slide-up"
                       onClick={e => e.stopPropagation()}
                     >

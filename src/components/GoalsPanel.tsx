@@ -12,6 +12,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   Target, Plus, Check, X, Flame, Brain, Heart, Calendar,
   Trophy, Sparkles, ChevronRight, Zap,
@@ -345,10 +346,7 @@ function PremiumGoalCard({
           </motion.button>
         ) : !isComplete ? (
           <button
-            onClick={() => {
-              if (!window.confirm(t.confirmDelete || 'Delete this goal?')) return;
-              hapticTap(); onDelete();
-            }}
+            onClick={() => onDelete()}
             className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-destructive/10 transition-colors"
             aria-label={t.delete || 'Delete'}
           >
@@ -748,7 +746,17 @@ export function GoalsPanel({
             goal={goal}
             progress={progress}
             onComplete={() => handleComplete(goal)}
-            onDelete={() => { hapticTap(); onDeleteGoal(goal.id); }}
+            onDelete={() => {
+              hapticTap();
+              onDeleteGoal(goal.id);
+              toast(`🗑️ ${(t as Record<string, string>).goalDeleted || 'Goal deleted'}`, {
+                duration: 5000,
+                action: {
+                  label: (t as Record<string, string>).undo || 'Undo',
+                  onClick: () => { onAddGoal(goal); hapticTap(); },
+                },
+              });
+            }}
             t={t}
           />
         ))}

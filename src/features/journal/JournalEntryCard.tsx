@@ -59,12 +59,14 @@ interface JournalEntryCardProps {
   entry: JournalEntry;
   onTap: () => void;
   onDelete: () => void;
+  privateMode?: boolean;
 }
 
 export const JournalEntryCard = memo(function JournalEntryCard({
   entry,
   onTap,
   onDelete,
+  privateMode = false,
 }: JournalEntryCardProps) {
   // Strip markdown ** for cleaner preview
   const rawPreview = entry.content.replace(/\*\*/g, '').slice(0, 140);
@@ -118,8 +120,8 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
         <div className="flex-1 p-3.5 relative z-[1]">
           <div className="flex items-start gap-3">
-            {/* Photo thumbnail */}
-            {thumbnail ? (
+            {/* Photo thumbnail (hidden in private mode) */}
+            {!privateMode && (thumbnail ? (
               <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-muted/30 ring-1 ring-border/10">
                 <img
                   src={thumbnail}
@@ -132,7 +134,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
               <div className="w-12 h-12 rounded-xl flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center">
                 <ImageIcon className="w-5 h-5 text-muted-foreground/40" />
               </div>
-            ) : null}
+            ) : null)}
 
             {/* Main content */}
             <div className="flex-1 min-w-0">
@@ -149,15 +151,15 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                 <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">{relativeTime}</span>
               </div>
 
-              {/* Content preview */}
-              {preview && (
+              {/* Content preview (hidden in private mode) */}
+              {!privateMode && preview && (
                 <p className="text-xs text-muted-foreground/80 line-clamp-2 leading-relaxed">
                   {preview}
                 </p>
               )}
 
-              {/* Meta row: stickers + photo count + tags + word count */}
-              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+              {/* Meta row: stickers + photo count + tags + word count (hidden in private mode) */}
+              {!privateMode && <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                 {entry.stickers.length > 0 && (
                   <div className="flex -space-x-0.5 items-center">
                     {entry.stickers.slice(0, 4).map((s, i) => (
@@ -191,7 +193,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                     {wordCount}w
                   </span>
                 )}
-              </div>
+              </div>}
             </div>
 
             {/* Time + delete */}

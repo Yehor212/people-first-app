@@ -7,12 +7,11 @@
 
 import { useEffect, useRef } from 'react';
 import { Capacitor } from '@capacitor/core';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 
 export function PWAUpdateNotifier() {
-  const { toast } = useToast();
   const { t } = useLanguage();
   const hasShownToast = useRef(false);
   // Store interval ID in ref for proper cleanup
@@ -73,31 +72,23 @@ export function PWAUpdateNotifier() {
     const showUpdateToast = () => {
       logger.log('[PWA] New version available, showing toast');
 
-      toast({
-        title: t.pwaUpdateAvailable || 'Update available',
+      toast(t.pwaUpdateAvailable || 'Update available', {
         description: t.pwaUpdateDescription || 'A new version is ready. Refresh to update.',
-        duration: 0, // Don't auto-dismiss
-        action: (
-          <button
-            onClick={() => {
-              // Wait for new SW to take control, THEN reload
-              navigator.serviceWorker.addEventListener('controllerchange', () => {
-                window.location.reload();
-              }, { once: true });
-              // Tell SW to skip waiting and activate immediately
-              navigator.serviceWorker.ready.then((registration) => {
-                if (registration.waiting) {
-                  registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-                }
-              });
-              // Safety fallback: reload after 2s if controllerchange doesn't fire
-              setTimeout(() => window.location.reload(), 2000);
-            }}
-            className="px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-          >
-            {t.pwaUpdateButton || 'Refresh'}
-          </button>
-        ),
+        duration: Infinity,
+        action: {
+          label: t.pwaUpdateButton || 'Refresh',
+          onClick: () => {
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+              window.location.reload();
+            }, { once: true });
+            navigator.serviceWorker.ready.then((registration) => {
+              if (registration.waiting) {
+                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+            setTimeout(() => window.location.reload(), 2000);
+          },
+        },
       });
     };
 
@@ -118,8 +109,7 @@ export function PWAUpdateNotifier() {
       logger.log('[PWA] New service worker activated — auto-reloading');
       if (!hasShownToast.current) {
         hasShownToast.current = true;
-        toast({
-          title: t.pwaUpdateAvailable || 'Update available',
+        toast(t.pwaUpdateAvailable || 'Update available', {
           description: t.pwaUpdateDescription || 'A new version is ready. Refreshing...',
           duration: 3000,
         });
@@ -136,7 +126,7 @@ export function PWAUpdateNotifier() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
     };
-  }, [toast, t]);
+  }, [t]);
 
   // This component doesn't render anything
   return null;

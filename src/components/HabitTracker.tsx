@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Habit, HabitType, HabitReminder, HabitFrequency, HabitCategory } from '@/types';
 import { getToday, generateId, formatDate, cn, parseLocalDate, calculateStreak } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
-import { Plus, X, ChevronRight, Settings2, Zap, Users, Sparkles, Leaf, Undo2, CheckCircle } from 'lucide-react';
+import { Plus, X, ChevronRight, Settings2, Zap, Users, Sparkles, Leaf, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -14,9 +14,9 @@ import { HabitCompletionCelebration, DailyProgressBar } from './HabitCompletionC
 import { CompactHabitCard } from './CompactHabitCard';
 import { hapticTap } from '@/lib/haptics';
 import { getActiveChallenges } from '@/lib/friendChallenge';
-import { toast } from '@/hooks/use-toast';
-import { ToastAction } from '@/components/ui/toast';
+import { toast } from 'sonner';
 import { announceSuccess } from '@/lib/a11y';
+import { playSuccess, playStreakMilestone, playLevelUp } from '@/lib/audioManager';
 
 const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿', '🚭', '🍷', '🇬🇧', '💪', '🧠'];
 const habitColors = [
@@ -394,28 +394,28 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
       ? (t.habitUnchecked || 'Habit unchecked')
       : (t.habitCompleted || 'Habit completed');
 
-    toast({
-      description: `${habit.icon} ${actionLabel}`,
+    toast(`${habit.icon} ${actionLabel}`, {
       duration: 4000,
-      action: (
-        <ToastAction
-          altText={undoLabel}
-          onClick={() => {
-            // Undo by toggling again
-            onToggleHabit(habit.id, today);
-            hapticTap();
-          }}
-        >
-          <Undo2 className="w-3.5 h-3.5 me-1" />
-          {undoLabel}
-        </ToastAction>
-      ),
+      action: {
+        label: undoLabel,
+        onClick: () => {
+          onToggleHabit(habit.id, today);
+          hapticTap();
+        },
+      },
     });
 
     // If the habit is being completed (not uncompleted)
     if (!wasCompleted) {
       // Calculate streak for this habit
       const streak = getHabitStreak(habit);
+
+      // Play completion sound (checks dopamine settings internally)
+      if ([7, 14, 21, 30, 60, 90, 100, 365].includes(streak)) {
+        playStreakMilestone();
+      } else {
+        playSuccess();
+      }
 
       // Announce to screen readers
       announceSuccess(`${habit.icon} ${habit.name} ${t.habitCompleted || 'completed'}`);
@@ -437,6 +437,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         // All habits will be complete after this one
         setTimeout(() => {
           setShowAllComplete(true);
+          playLevelUp();
           setTimeout(() => setShowAllComplete(false), 4000);
         }, 1800); // Delay after celebration ends
       }
@@ -1284,21 +1285,15 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                 hapticTap();
                 if (deletedHabit) {
                   const ts = t as unknown as Record<string, string>;
-                  toast({
-                    description: `${deletedHabit.icon || '🗑️'} ${ts.habitDeleted || 'Habit deleted'}`,
+                  toast(`${deletedHabit.icon || '🗑️'} ${ts.habitDeleted || 'Habit deleted'}`, {
                     duration: 5000,
-                    action: (
-                      <ToastAction
-                        altText={ts.undo || 'Undo'}
-                        onClick={() => {
-                          onAddHabit(deletedHabit);
-                          hapticTap();
-                        }}
-                      >
-                        <Undo2 className="w-3.5 h-3.5 me-1" />
-                        {ts.undo || 'Undo'}
-                      </ToastAction>
-                    ),
+                    action: {
+                      label: ts.undo || 'Undo',
+                      onClick: () => {
+                        onAddHabit(deletedHabit);
+                        hapticTap();
+                      },
+                    },
                   });
                 }
               }}
