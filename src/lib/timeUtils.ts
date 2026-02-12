@@ -83,13 +83,14 @@ import type { Language } from '@/i18n/translations';
  * Map language codes to locale strings for Intl APIs
  */
 export const localeMap: Record<Language, string> = {
-  ru: 'ru-RU',
   en: 'en-US',
   uk: 'uk-UA',
   es: 'es-ES',
   de: 'de-DE',
   fr: 'fr-FR',
-  ja: 'ja-JP'
+  ja: 'ja-JP',
+  ar: 'ar-SA',
+  he: 'he-IL',
 };
 
 /**

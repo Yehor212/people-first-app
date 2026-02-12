@@ -24,7 +24,6 @@ export const Header = memo(function Header({ userName = 'Friend', onOpenChalleng
 
   const formattedDate = useMemo(() => {
     const localeMap: Record<string, string> = {
-      ru: 'ru-RU',
       uk: 'uk-UA',
       es: 'es-ES',
       de: 'de-DE',

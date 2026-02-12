@@ -245,7 +245,6 @@ function getExitMessage(): string {
     const lang = localStorage.getItem('zenflow-language') || 'en';
     const messages: Record<string, string> = {
       en: 'Press again to exit',
-      ru: 'Нажмите ещё раз для выхода',
       uk: 'Натисніть ще раз для виходу',
       es: 'Presiona de nuevo para salir',
       de: 'Erneut drücken zum Beenden',

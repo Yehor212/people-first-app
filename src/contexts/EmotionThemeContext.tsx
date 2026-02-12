@@ -164,39 +164,47 @@ const emotionThemes: Record<PrimaryEmotion | 'neutral', EmotionTheme> = {
   },
 };
 
-// Support messages for different emotions in all 6 languages
+// Support messages for different emotions in all 8 languages
 export const emotionSupportMessages: Record<string, Record<string, string>> = {
   support_fear: {
-    ru: 'Страх - это нормально. Ты в безопасности здесь.',
     en: "Fear is normal. You're safe here.",
     uk: 'Страх - це нормально. Ти в безпеці тут.',
     es: 'El miedo es normal. Estás a salvo aquí.',
     de: 'Angst ist normal. Du bist hier sicher.',
     fr: "La peur est normale. Tu es en sécurité ici.",
+    ja: '恐れは自然なこと。ここは安全だよ。',
+    ar: 'الخوف أمر طبيعي. أنت بأمان هنا.',
+    he: 'פחד זה נורמלי. אתה בטוח כאן.',
   },
   support_sadness: {
-    ru: 'Грусть пройдёт. Позволь себе её прожить.',
     en: "Sadness will pass. Let yourself feel it.",
     uk: 'Смуток мине. Дозволь собі це пережити.',
     es: 'La tristeza pasará. Permítete sentirla.',
     de: 'Traurigkeit wird vergehen. Erlaube dir, sie zu fühlen.',
     fr: "La tristesse passera. Permets-toi de la ressentir.",
+    ja: '悲しみは過ぎ去る。自分の気持ちを感じていいんだよ。',
+    ar: 'الحزن سيمر. اسمح لنفسك أن تشعر به.',
+    he: 'העצב יחלוף. תרשה לעצמך להרגיש אותו.',
   },
   support_anger: {
-    ru: 'Глубокий вдох. Твои чувства важны.',
     en: "Deep breath. Your feelings matter.",
     uk: 'Глибокий вдих. Твої почуття важливі.',
     es: 'Respira profundo. Tus sentimientos importan.',
     de: 'Tief durchatmen. Deine Gefühle sind wichtig.',
     fr: "Respire profondément. Tes sentiments comptent.",
+    ja: '深呼吸して。あなたの気持ちは大切だよ。',
+    ar: 'خذ نفسًا عميقًا. مشاعرك مهمة.',
+    he: 'נשימה עמוקה. הרגשות שלך חשובים.',
   },
   support_disgust: {
-    ru: 'Неприятные эмоции тоже часть жизни.',
     en: "Unpleasant emotions are also part of life.",
     uk: 'Неприємні емоції теж частина життя.',
     es: 'Las emociones desagradables también son parte de la vida.',
     de: 'Unangenehme Gefühle gehören auch zum Leben.',
     fr: "Les émotions désagréables font aussi partie de la vie.",
+    ja: '不快な感情も人生の一部だよ。',
+    ar: 'المشاعر غير السارة هي أيضًا جزء من الحياة.',
+    he: 'רגשות לא נעימים הם גם חלק מהחיים.',
   },
 };
 

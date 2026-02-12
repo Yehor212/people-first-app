@@ -3,7 +3,6 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 /** BCP-47 locale map for Speech Recognition */
 const LOCALE_MAP: Record<string, string> = {
   en: 'en-US',
-  ru: 'ru-RU',
   uk: 'uk-UA',
   es: 'es-ES',
   de: 'de-DE',

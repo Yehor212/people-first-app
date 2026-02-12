@@ -116,20 +116,24 @@ const moodThemes: Record<MoodType | 'neutral', MoodTheme> = {
 // Support messages for different languages
 export const supportMessages: Record<string, Record<string, string>> = {
   support_bad: {
-    ru: 'Тяжёлые дни бывают у всех. Ты справишься.',
     en: "Tough days happen to everyone. You've got this.",
     uk: 'Важкі дні бувають у всіх. Ти впораєшся.',
     es: 'Los días difíciles le pasan a todos. Tú puedes.',
     de: 'Schwere Tage hat jeder. Du schaffst das.',
     fr: 'Les jours difficiles arrivent à tout le monde. Tu vas y arriver.',
+    ja: 'つらい日は誰にでもある。あなたなら大丈夫。',
+    ar: 'الأيام الصعبة تحدث للجميع. ستتمكن من تجاوزها.',
+    he: 'ימים קשים קורים לכולם. אתה תצליח.',
   },
   support_terrible: {
-    ru: 'Мы здесь для тебя. Не забывай, что просить о помощи — это сила.',
     en: "We're here for you. Remember, asking for help is strength.",
     uk: 'Ми тут для тебе. Не забувай, просити про допомогу — це сила.',
     es: 'Estamos aquí para ti. Recuerda, pedir ayuda es fortaleza.',
     de: 'Wir sind für dich da. Denk daran: Um Hilfe zu bitten ist Stärke.',
     fr: "Nous sommes là pour toi. N'oublie pas, demander de l'aide est une force.",
+    ja: 'あなたのそばにいるよ。助けを求めることは強さだということを忘れないで。',
+    ar: 'نحن هنا من أجلك. تذكر أن طلب المساعدة هو قوة.',
+    he: 'אנחנו כאן בשבילך. זכור, לבקש עזרה זו עוצמה.',
   },
 };
 

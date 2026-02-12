@@ -280,85 +280,7 @@ export function JournalEntryEditor({
     return createFocusTrap(editorOverlayRef.current);
   }, []);
 
-  // Keyboard shortcuts: Escape to close overlays/go back, Ctrl+Enter to save
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (showStickers) { setShowStickers(false); return; }
-        if (showPhotos) { setShowPhotos(false); return; }
-        if (showMood) { setShowMood(false); return; }
-        if (showTags) { setShowTags(false); return; }
-        if (showRecordingOverlay) { recorder.stop(); setShowRecordingOverlay(false); return; }
-        if (showTemplatePicker) { setShowTemplatePicker(false); return; }
-        if (showDeleteConfirm) { setShowDeleteConfirm(false); return; }
-        if (showUnsavedDialog) { setShowUnsavedDialog(false); return; }
-        handleBack();
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && hasContent && !saving) {
-        e.preventDefault();
-        handleSave();
-      }
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [showStickers, showPhotos, showMood, showTags, showRecordingOverlay, showTemplatePicker, showDeleteConfirm, showUnsavedDialog, handleBack, handleSave, hasContent, saving, recorder]);
-
-  // Load existing audio recordings for editing
-  useEffect(() => {
-    if (entry?.audioIds && entry.audioIds.length > 0) {
-      import('./journalStorage').then(({ getAudioForEntry }) => {
-        getAudioForEntry(entry.id).then(setAudioRecordings);
-      });
-    }
-  }, [entry]);
-
-  // Append voice transcript to content when dictation stops
-  useEffect(() => {
-    if (wasListeningRef.current && !voice.isListening && voice.transcript) {
-      setContent(prev => {
-        const separator = prev && !prev.endsWith('\n') && !prev.endsWith(' ') ? ' ' : '';
-        return prev + separator + voice.transcript;
-      });
-    }
-    wasListeningRef.current = voice.isListening;
-  }, [voice.isListening, voice.transcript]);
-
-  // Handle completed audio recording — store and add to audioIds
-  useEffect(() => {
-    if (recorder.audioData && !recorder.isRecording) {
-      const storeRecording = async () => {
-        try {
-          const data = recorder.audioData;
-          if (!data) return;
-          const audio = await onAddAudio(data, recorder.duration, recorder.mimeType, entryId);
-          setAudioIds(prev => [...prev, audio.id]);
-          setAudioRecordings(prev => [...prev, audio]);
-          recorder.reset();
-          setShowRecordingOverlay(false);
-          toast.success(ts.journalAudioSaved || 'Audio saved');
-        } catch {
-          toast.error(ts.journalAudioError || 'Failed to save audio');
-          recorder.reset();
-        }
-      };
-      storeRecording();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recorder.audioData, recorder.isRecording]);
-
-  // Android back button (priority order)
-  useEffect(() => {
-    if (showUnsavedDialog) return registerModalCloseCallback(() => { setShowUnsavedDialog(false); return true; });
-    if (showDeleteConfirm) return registerModalCloseCallback(() => { setShowDeleteConfirm(false); return true; });
-    if (showRecordingOverlay) return registerModalCloseCallback(() => { recorder.stop(); setShowRecordingOverlay(false); return true; });
-    if (showTemplatePicker) return registerModalCloseCallback(() => { setShowTemplatePicker(false); return true; });
-    if (showStickers) return registerModalCloseCallback(() => { setShowStickers(false); return true; });
-    if (showPhotos) return registerModalCloseCallback(() => { setShowPhotos(false); return true; });
-    if (showMood) return registerModalCloseCallback(() => { setShowMood(false); return true; });
-    if (showTags) return registerModalCloseCallback(() => { setShowTags(false); return true; });
-  }, [showUnsavedDialog, showDeleteConfirm, showRecordingOverlay, showTemplatePicker, showStickers, showPhotos, showMood, showTags, recorder]);
-
-  // ── Handlers ──
+  // ── Handlers (defined before useEffects that reference them to avoid TDZ) ──
 
   const handleBack = useCallback(() => {
     if (isDirty) {
@@ -412,6 +334,88 @@ export function JournalEntryEditor({
     setShowUnsavedDialog(false);
     onBack();
   }, [draftKey, onBack]);
+
+  // Keyboard shortcuts: Escape to close overlays/go back, Ctrl+Enter to save
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (showStickers) { setShowStickers(false); return; }
+        if (showPhotos) { setShowPhotos(false); return; }
+        if (showMood) { setShowMood(false); return; }
+        if (showTags) { setShowTags(false); return; }
+        if (showRecordingOverlay) { recorder.stop(); setShowRecordingOverlay(false); return; }
+        if (showTemplatePicker) { setShowTemplatePicker(false); return; }
+        if (showDeleteConfirm) { setShowDeleteConfirm(false); return; }
+        if (showUnsavedDialog) { setShowUnsavedDialog(false); return; }
+        handleBack();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && hasContent && !saving) {
+        e.preventDefault();
+        handleSave();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [showStickers, showPhotos, showMood, showTags, showRecordingOverlay, showTemplatePicker, showDeleteConfirm, showUnsavedDialog, handleBack, handleSave, hasContent, saving, recorder]);
+
+  // Load existing audio recordings for editing
+  useEffect(() => {
+    if (entry?.audioIds && entry.audioIds.length > 0) {
+      import('./journalStorage').then(({ getAudioForEntry }) => {
+        getAudioForEntry(entry.id).then(setAudioRecordings);
+      });
+    }
+  }, [entry]);
+
+  // Append voice transcript to content when dictation stops
+  useEffect(() => {
+    if (wasListeningRef.current && !voice.isListening && voice.transcript) {
+      setContent(prev => {
+        const separator = prev && !prev.endsWith('\n') && !prev.endsWith(' ') ? ' ' : '';
+        return prev + separator + voice.transcript;
+      });
+    }
+    wasListeningRef.current = voice.isListening;
+  }, [voice.isListening, voice.transcript]);
+
+  // Handle completed audio recording — store and add to audioIds
+  useEffect(() => {
+    if (recorder.audioData && !recorder.isRecording) {
+      let cancelled = false;
+      const storeRecording = async () => {
+        try {
+          const data = recorder.audioData;
+          if (!data) return;
+          const audio = await onAddAudio(data, recorder.duration, recorder.mimeType, entryId);
+          if (cancelled) return;
+          setAudioIds(prev => [...prev, audio.id]);
+          setAudioRecordings(prev => [...prev, audio]);
+          recorder.reset();
+          setShowRecordingOverlay(false);
+          toast.success(ts.journalAudioSaved || 'Audio saved');
+        } catch {
+          if (cancelled) return;
+          toast.error(ts.journalAudioError || 'Failed to save audio');
+          recorder.reset();
+        }
+      };
+      storeRecording();
+      return () => { cancelled = true; };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recorder.audioData, recorder.isRecording]);
+
+  // Android back button (priority order)
+  useEffect(() => {
+    if (showUnsavedDialog) return registerModalCloseCallback(() => { setShowUnsavedDialog(false); return true; });
+    if (showDeleteConfirm) return registerModalCloseCallback(() => { setShowDeleteConfirm(false); return true; });
+    if (showRecordingOverlay) return registerModalCloseCallback(() => { recorder.stop(); setShowRecordingOverlay(false); return true; });
+    if (showTemplatePicker) return registerModalCloseCallback(() => { setShowTemplatePicker(false); return true; });
+    if (showStickers) return registerModalCloseCallback(() => { setShowStickers(false); return true; });
+    if (showPhotos) return registerModalCloseCallback(() => { setShowPhotos(false); return true; });
+    if (showMood) return registerModalCloseCallback(() => { setShowMood(false); return true; });
+    if (showTags) return registerModalCloseCallback(() => { setShowTags(false); return true; });
+  }, [showUnsavedDialog, showDeleteConfirm, showRecordingOverlay, showTemplatePicker, showStickers, showPhotos, showMood, showTags, recorder]);
 
   const handleRestoreDraft = () => {
     if (!draftAvailable) return;

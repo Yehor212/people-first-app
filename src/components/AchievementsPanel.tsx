@@ -36,8 +36,9 @@ interface AchievementsPanelProps {
 
 // Locale mapping for date formatting
 const localeMap: Record<Language, string> = {
-  ru: 'ru-RU', en: 'en-US', uk: 'uk-UA',
-  es: 'es-ES', de: 'de-DE', fr: 'fr-FR', ja: 'ja-JP'
+  en: 'en-US', uk: 'uk-UA', es: 'es-ES',
+  de: 'de-DE', fr: 'fr-FR', ja: 'ja-JP',
+  ar: 'ar-SA', he: 'he-IL',
 };
 
 export const AchievementsPanel = memo(function AchievementsPanel({ stats, unlockedAchievements, onAchievementUnlock }: AchievementsPanelProps) {

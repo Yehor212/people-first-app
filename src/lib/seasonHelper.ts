@@ -43,36 +43,24 @@ export function getSeasonEmoji(season: Season): string {
 export function getSeasonName(season: Season, language: string): string {
   const names: Record<Season, Record<string, string>> = {
     spring: {
-      en: 'Spring',
-      ru: 'Весна',
-      uk: 'Весна',
-      es: 'Primavera',
-      de: 'Frühling',
-      fr: 'Printemps',
+      en: 'Spring', uk: 'Весна', es: 'Primavera',
+      de: 'Frühling', fr: 'Printemps',
+      ja: '春', ar: 'الربيع', he: 'אביב',
     },
     summer: {
-      en: 'Summer',
-      ru: 'Лето',
-      uk: 'Літо',
-      es: 'Verano',
-      de: 'Sommer',
-      fr: 'Été',
+      en: 'Summer', uk: 'Літо', es: 'Verano',
+      de: 'Sommer', fr: 'Été',
+      ja: '夏', ar: 'الصيف', he: 'קיץ',
     },
     autumn: {
-      en: 'Autumn',
-      ru: 'Осень',
-      uk: 'Осінь',
-      es: 'Otoño',
-      de: 'Herbst',
-      fr: 'Automne',
+      en: 'Autumn', uk: 'Осінь', es: 'Otoño',
+      de: 'Herbst', fr: 'Automne',
+      ja: '秋', ar: 'الخريف', he: 'סתיו',
     },
     winter: {
-      en: 'Winter',
-      ru: 'Зима',
-      uk: 'Зима',
-      es: 'Invierno',
-      de: 'Winter',
-      fr: 'Hiver',
+      en: 'Winter', uk: 'Зима', es: 'Invierno',
+      de: 'Winter', fr: 'Hiver',
+      ja: '冬', ar: 'الشتاء', he: 'חורף',
     },
   };
   return names[season][language] || names[season].en;

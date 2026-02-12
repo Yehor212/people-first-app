@@ -168,7 +168,7 @@ export const INTENSITY_EMOJIS: Record<EmotionIntensity, string> = {
 };
 
 // ============================================
-// TRANSLATIONS (6 languages)
+// TRANSLATIONS (8 languages)
 // ============================================
 
 export interface EmotionTranslations {
@@ -227,20 +227,6 @@ export const EMOTION_TRANSLATIONS: Record<string, EmotionTranslations> = {
     // UI
     whatDoYouFeel: 'How do you feel?', selectEmotion: 'Select emotion', selectIntensity: 'How strong?', save: 'Save',
   },
-  ru: {
-    // Primary
-    joy: 'Радость', trust: 'Доверие', fear: 'Страх', surprise: 'Удивление',
-    sadness: 'Грусть', disgust: 'Отвращение', anger: 'Гнев', anticipation: 'Ожидание',
-    // Intensity
-    mild: 'Слабо', moderate: 'Умеренно', intense: 'Сильно',
-    // Secondary
-    serenity: 'Спокойствие', ecstasy: 'Экстаз', acceptance: 'Принятие', admiration: 'Восхищение',
-    apprehension: 'Опасение', terror: 'Ужас', distraction: 'Рассеянность', amazement: 'Изумление',
-    pensiveness: 'Задумчивость', grief: 'Горе', boredom: 'Скука', loathing: 'Ненависть',
-    annoyance: 'Раздражение', rage: 'Ярость', interest: 'Интерес', vigilance: 'Бдительность',
-    // UI
-    whatDoYouFeel: 'Что ты чувствуешь?', selectEmotion: 'Выбери эмоцию', selectIntensity: 'Насколько сильно?', save: 'Сохранить',
-  },
   uk: {
     // Primary
     joy: 'Радість', trust: 'Довіра', fear: 'Страх', surprise: 'Здивування',
@@ -296,6 +282,48 @@ export const EMOTION_TRANSLATIONS: Record<string, EmotionTranslations> = {
     annoyance: 'Agacement', rage: 'Rage', interest: 'Intérêt', vigilance: 'Vigilance',
     // UI
     whatDoYouFeel: 'Comment te sens-tu?', selectEmotion: 'Choisis une émotion', selectIntensity: 'À quel point?', save: 'Enregistrer',
+  },
+  ja: {
+    // Primary
+    joy: '喜び', trust: '信頼', fear: '恐れ', surprise: '驚き',
+    sadness: '悲しみ', disgust: '嫌悪', anger: '怒り', anticipation: '期待',
+    // Intensity
+    mild: '軽い', moderate: '中程度', intense: '強い',
+    // Secondary
+    serenity: '穏やかさ', ecstasy: '恍惚', acceptance: '受容', admiration: '感嘆',
+    apprehension: '不安', terror: '恐怖', distraction: '注意散漫', amazement: '驚嘆',
+    pensiveness: '物思い', grief: '深い悲しみ', boredom: '退屈', loathing: '嫌悪感',
+    annoyance: '苛立ち', rage: '激怒', interest: '興味', vigilance: '警戒',
+    // UI
+    whatDoYouFeel: '今どんな気持ち？', selectEmotion: '感情を選んで', selectIntensity: 'どのくらい強い？', save: '保存',
+  },
+  ar: {
+    // Primary
+    joy: 'فرح', trust: 'ثقة', fear: 'خوف', surprise: 'مفاجأة',
+    sadness: 'حزن', disgust: 'اشمئزاز', anger: 'غضب', anticipation: 'ترقب',
+    // Intensity
+    mild: 'خفيف', moderate: 'معتدل', intense: 'شديد',
+    // Secondary
+    serenity: 'سكينة', ecstasy: 'نشوة', acceptance: 'قبول', admiration: 'إعجاب',
+    apprehension: 'قلق', terror: 'رعب', distraction: 'تشتت', amazement: 'ذهول',
+    pensiveness: 'تأمل', grief: 'حزن عميق', boredom: 'ملل', loathing: 'كراهية',
+    annoyance: 'انزعاج', rage: 'غيظ', interest: 'اهتمام', vigilance: 'يقظة',
+    // UI
+    whatDoYouFeel: 'كيف تشعر؟', selectEmotion: 'اختر مشاعرك', selectIntensity: 'ما مدى القوة؟', save: 'حفظ',
+  },
+  he: {
+    // Primary
+    joy: 'שמחה', trust: 'אמון', fear: 'פחד', surprise: 'הפתעה',
+    sadness: 'עצב', disgust: 'סלידה', anger: 'כעס', anticipation: 'ציפייה',
+    // Intensity
+    mild: 'קל', moderate: 'בינוני', intense: 'חזק',
+    // Secondary
+    serenity: 'שלווה', ecstasy: 'אקסטזה', acceptance: 'קבלה', admiration: 'הערצה',
+    apprehension: 'חשש', terror: 'אימה', distraction: 'הסחת דעת', amazement: 'תדהמה',
+    pensiveness: 'מהורהר', grief: 'אבל', boredom: 'שעמום', loathing: 'תיעוב',
+    annoyance: 'עצבנות', rage: 'זעם', interest: 'עניין', vigilance: 'ערנות',
+    // UI
+    whatDoYouFeel: 'מה אתה מרגיש?', selectEmotion: 'בחר רגש', selectIntensity: 'כמה חזק?', save: 'שמור',
   },
 };
 
@@ -462,47 +490,6 @@ const EMOTION_GUIDE: Record<string, EmotionGuideData> = {
       anticipation: {
         description: 'Excitement, hope, and looking forward',
         feelings: ['Excited', 'Curious', 'Hopeful', 'Motivated', 'Restless'],
-      },
-    },
-  },
-  ru: {
-    title: 'Гид по эмоциям',
-    subtitle: 'Не знаешь что выбрать? Найди своё состояние ниже',
-    chooseWhen: 'Выбери, когда чувствуешь:',
-    tapToSelect: 'Нажми для выбора',
-    intensity: 'Уровни интенсивности',
-    emotions: {
-      joy: {
-        description: 'Позитивная энергия, счастье и восторг',
-        feelings: ['Счастье', 'Благодарность', 'Гордость', 'Вдохновение', 'Удовлетворение', 'Любовь', 'Игривость'],
-      },
-      trust: {
-        description: 'Безопасность, уверенность и внутренний покой',
-        feelings: ['Спокойствие', 'Безопасность', 'Уверенность', 'Связь', 'Умиротворение', 'Поддержка'],
-      },
-      fear: {
-        description: 'Беспокойство, тревога и чувство опасности',
-        feelings: ['Тревога', 'Беспокойство', 'Нервозность', 'Стресс', 'Неуверенность', 'Напряжение'],
-      },
-      surprise: {
-        description: 'Неожиданные события, шок или изумление',
-        feelings: ['Шок', 'Замешательство', 'Восхищение', 'Растерянность', 'Потрясение'],
-      },
-      sadness: {
-        description: 'Упадок сил, тяжесть и потеря',
-        feelings: ['Одиночество', 'Усталость', 'Апатия', 'Пустота', 'Ностальгия', 'Разочарование'],
-      },
-      disgust: {
-        description: 'Отторжение, неприязнь и отвращение',
-        feelings: ['Скука', 'Дискомфорт', 'Недовольство', 'Отвращение', 'Пресыщение'],
-      },
-      anger: {
-        description: 'Фрустрация, несправедливость и сопротивление',
-        feelings: ['Фрустрация', 'Раздражение', 'Ревность', 'Нетерпение', 'Обида'],
-      },
-      anticipation: {
-        description: 'Волнение, надежда и предвкушение',
-        feelings: ['Волнение', 'Любопытство', 'Надежда', 'Мотивация', 'Нетерпеливость'],
       },
     },
   },

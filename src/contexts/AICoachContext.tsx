@@ -278,33 +278,39 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
       const getFallbackMessage = (): string => {
         if (isAuthError) {
           const authMessages: Record<string, string> = {
-            ru: 'Войди в аккаунт в настройках, чтобы использовать AI Coach.',
             en: 'Please sign in from Settings to use AI Coach.',
             uk: 'Увійди в акаунт в налаштуваннях, щоб використовувати AI Coach.',
             es: 'Por favor, inicia sesión en Configuración para usar AI Coach.',
             de: 'Bitte melde dich in den Einstellungen an, um AI Coach zu nutzen.',
             fr: 'Connecte-toi dans les Paramètres pour utiliser AI Coach.',
+            ja: '設定からサインインしてAI Coachを使用してください。',
+            ar: 'يرجى تسجيل الدخول من الإعدادات لاستخدام AI Coach.',
+            he: 'התחבר מההגדרות כדי להשתמש ב-AI Coach.',
           };
           return authMessages[language] || authMessages.en;
         }
         if (isTimeout) {
           const timeoutMessages: Record<string, string> = {
-            ru: 'Превышено время ожидания. Попробуй позже.',
             en: 'Request timed out. Try again later.',
             uk: 'Час очікування вичерпано. Спробуй пізніше.',
             es: 'Tiempo de espera agotado. Intenta más tarde.',
             de: 'Zeitüberschreitung. Versuche es später.',
             fr: 'Délai dépassé. Réessaie plus tard.',
+            ja: 'リクエストがタイムアウトしました。後でもう一度お試しください。',
+            ar: 'انتهت مهلة الطلب. حاول مرة أخرى لاحقًا.',
+            he: 'הזמן הקצוב לבקשה עבר. נסה שוב מאוחר יותר.',
           };
           return timeoutMessages[language] || timeoutMessages.en;
         }
         const genericMessages: Record<string, string> = {
-          ru: 'Извини, сейчас не могу ответить. Попробуй позже.',
           en: 'Sorry, I cannot respond right now. Try again later.',
           uk: 'Вибач, зараз не можу відповісти. Спробуй пізніше.',
           es: 'Lo siento, no puedo responder ahora. Intenta más tarde.',
           de: 'Entschuldige, ich kann gerade nicht antworten. Versuche es später.',
           fr: 'Désolé, je ne peux pas répondre maintenant. Réessaie plus tard.',
+          ja: 'ごめんなさい、今は応答できません。後でもう一度お試しください。',
+          ar: 'عذرًا، لا أستطيع الرد الآن. حاول مرة أخرى لاحقًا.',
+          he: 'סליחה, אני לא יכול להגיב כרגע. נסה שוב מאוחר יותר.',
         };
         return genericMessages[language] || genericMessages.en;
       };
@@ -364,12 +370,14 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
   const triggerLowMoodCheck = useCallback((mood: MoodEntry) => {
     if (mood.mood === 'bad' || mood.mood === 'terrible') {
       const greetings: Record<string, string> = {
-        ru: 'Заметил, что тебе сейчас непросто...',
         en: 'I noticed you are having a hard time...',
         uk: 'Помітив, що тобі зараз нелегко...',
         es: 'Noté que estás pasando por un momento difícil...',
         de: 'Ich habe bemerkt, dass du gerade eine schwere Zeit hast...',
         fr: 'J\'ai remarqué que tu traverses un moment difficile...',
+        ja: '今つらい時期を過ごしているみたいだね…',
+        ar: 'لاحظت أنك تمر بوقت صعب...',
+        he: 'שמתי לב שקשה לך עכשיו...',
       };
       openCoach('low_mood', greetings[language] || greetings.en);
     }
@@ -378,24 +386,28 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
   const triggerStreakBroken = useCallback((daysAway: number) => {
     setDaysAwayContext(daysAway);
     const greetings: Record<string, string> = {
-      ru: `С возвращением! Ты отсутствовал ${daysAway} дней.`,
       en: `Welcome back! You were away for ${daysAway} days.`,
       uk: `З поверненням! Ти був відсутній ${daysAway} днів.`,
       es: `¡Bienvenido de vuelta! Estuviste ausente ${daysAway} días.`,
       de: `Willkommen zurück! Du warst ${daysAway} Tage weg.`,
       fr: `Bienvenue! Tu étais absent ${daysAway} jours.`,
+      ja: `おかえりなさい！${daysAway}日間お休みでしたね。`,
+      ar: `مرحبًا بعودتك! كنت غائبًا لمدة ${daysAway} أيام.`,
+      he: `ברוך שובך! נעדרת ${daysAway} ימים.`,
     };
     openCoach('streak_broken', greetings[language] || greetings.en);
   }, [openCoach, language]);
 
   const triggerHabitSkip = useCallback((habitName: string) => {
     const messages: Record<string, string> = {
-      ru: `Я пропустил привычку "${habitName}"`,
       en: `I skipped the habit "${habitName}"`,
       uk: `Я пропустив звичку "${habitName}"`,
       es: `Me salté el hábito "${habitName}"`,
       de: `Ich habe die Gewohnheit "${habitName}" übersprungen`,
       fr: `J'ai sauté l'habitude "${habitName}"`,
+      ja: `「${habitName}」の習慣をスキップしました`,
+      ar: `تخطيت عادة "${habitName}"`,
+      he: `דילגתי על ההרגל "${habitName}"`,
     };
     openCoach('habit_skip', messages[language] || messages.en);
   }, [openCoach, language]);
