@@ -64,7 +64,7 @@ export async function initializeAds(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) {
     state.initialized = true;
     state.sdkAvailable = false;
-    logger.info('[Ads] PWA mode — ads disabled');
+    logger.log('[Ads] PWA mode — ads disabled');
     return false;
   }
 
@@ -81,7 +81,7 @@ export async function initializeAds(): Promise<boolean> {
 
     state.initialized = true;
     state.sdkAvailable = true;
-    logger.info('[Ads] AdMob initialized');
+    logger.log('[Ads] AdMob initialized');
 
     // Pre-load first rewarded ad
     prepareRewardedAd().catch(() => {});
@@ -90,7 +90,7 @@ export async function initializeAds(): Promise<boolean> {
   } catch {
     state.initialized = true;
     state.sdkAvailable = false;
-    logger.info('[Ads] AdMob SDK not available — ads disabled');
+    logger.log('[Ads] AdMob SDK not available — ads disabled');
     return false;
   }
 }
