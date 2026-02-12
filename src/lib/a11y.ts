@@ -10,6 +10,7 @@
  */
 
 import { nanoid } from 'nanoid';
+import { logger } from '@/lib/logger';
 
 // ============================================
 // TYPES
@@ -161,7 +162,7 @@ export function createFocusTrap(
 
   if (focusableElements.length === 0) {
     if (import.meta.env.DEV) {
-      console.warn('[A11y] Focus trap: No focusable elements found in container');
+      logger.warn('[A11y] Focus trap: No focusable elements found in container');
     }
     return () => {};
   }

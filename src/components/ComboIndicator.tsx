@@ -47,7 +47,7 @@ export function ComboIndicator({ combo, className }: ComboIndicatorProps) {
   return (
     <div
       className={cn(
-        'fixed top-4 right-4 z-40 animate-slide-up',
+        'fixed top-[calc(1rem+var(--safe-top))] right-4 z-40 animate-slide-up',
         className
       )}
     >

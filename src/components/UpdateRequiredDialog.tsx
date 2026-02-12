@@ -20,6 +20,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { RefreshCw, Download } from 'lucide-react';
 import * as Sentry from '@sentry/react';
+import { logger } from '@/lib/logger';
 
 // Event name for chunk load failures
 export const CHUNK_LOAD_ERROR_EVENT = 'zenflow:chunk-load-error';
@@ -34,7 +35,7 @@ export function UpdateRequiredDialog() {
 
   const handleChunkError = useCallback((e: Event) => {
     const detail = (e as CustomEvent).detail;
-    console.warn('[UpdateRequired] Chunk load error detected:', detail);
+    logger.warn('[UpdateRequired] Chunk load error detected:', detail);
 
     // Track in Sentry as handled (not an error anymore)
     Sentry.addBreadcrumb({
@@ -139,7 +140,7 @@ export function setupChunkErrorHandler(): void {
       );
 
       // Log as warning, not error (since we're handling it)
-      console.warn('[ChunkError] Handled chunk load failure:', chunk);
+      logger.warn('[ChunkError] Handled chunk load failure:', chunk);
 
       return true; // Prevent default error handling
     }
@@ -178,7 +179,7 @@ export function setupChunkErrorHandler(): void {
         })
       );
 
-      console.warn('[ChunkError] Handled chunk load rejection:', chunk);
+      logger.warn('[ChunkError] Handled chunk load rejection:', chunk);
     }
   });
 }

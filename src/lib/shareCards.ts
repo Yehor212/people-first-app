@@ -876,7 +876,7 @@ export async function copyImageToClipboard(blob: Blob): Promise<boolean> {
     ]);
     return true;
   } catch (err) {
-    console.error('Failed to copy image:', err);
+    logger.error('Failed to copy image:', err);
     return false;
   }
 }

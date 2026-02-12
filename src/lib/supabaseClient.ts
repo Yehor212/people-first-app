@@ -2,6 +2,7 @@ import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { Capacitor } from '@capacitor/core';
 import { Database } from '@/types/supabase';
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 
 /**
  * Zod schema for validating Supabase user object
@@ -26,7 +27,7 @@ export function validateSupabaseUser(user: unknown): User | null {
   if (!result.success) {
     // Log validation error in development
     if (import.meta.env.DEV) {
-      console.warn('[Supabase] User validation failed:', result.error.issues);
+      logger.warn('[Supabase] User validation failed:', result.error.issues);
     }
     return null;
   }
@@ -64,7 +65,7 @@ const configStatus = getSupabaseConfigStatus();
 if (!configStatus.isConfigured && typeof window !== 'undefined') {
   // Log warning in development
   if (import.meta.env.DEV) {
-    console.warn(
+    logger.warn(
       '[Supabase] Cloud sync disabled - environment variables not configured.',
       configStatus.missingUrl ? 'Missing VITE_SUPABASE_URL.' : '',
       configStatus.missingKey ? 'Missing VITE_SUPABASE_ANON_KEY.' : ''
@@ -119,7 +120,7 @@ export const getCurrentUser = async () => {
   // Log errors for debugging
   if (error) {
     if (import.meta.env.DEV) {
-      console.warn('[Supabase] getUser error:', error.message);
+      logger.warn('[Supabase] getUser error:', error.message);
     }
     return null;
   }

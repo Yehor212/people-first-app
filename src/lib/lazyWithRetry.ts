@@ -1,5 +1,6 @@
 import { lazy, ComponentType } from 'react';
 import { forceHardReload, markForVersionCheck } from './versionCheck';
+import { logger } from '@/lib/logger';
 
 type ImportFn<T> = () => Promise<{ default: T }>;
 
@@ -39,7 +40,7 @@ export function lazyWithRetry<T extends ComponentType<any>>(
           throw error; // Non-chunk errors should not retry
         }
 
-        console.warn(
+        logger.warn(
           `[LazyLoad] Chunk load failed for ${moduleName}, attempt ${attempt + 1}/${MAX_RETRIES + 1}`
         );
 
@@ -50,7 +51,7 @@ export function lazyWithRetry<T extends ComponentType<any>>(
     }
 
     // All retries failed - force hard reload to get new index.html
-    console.error(`[LazyLoad] All retries failed for ${moduleName}, performing hard reload...`);
+    logger.error(`[LazyLoad] All retries failed for ${moduleName}, performing hard reload...`);
 
     // Mark that we're reloading to prevent infinite loop
     const reloadKey = `chunk_reload_${moduleName}`;

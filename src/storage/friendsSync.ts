@@ -180,7 +180,9 @@ export function updateMyStreak(streak: number): void {
     saveMyProfile(profile);
 
     // Sync to cloud if available
-    syncMyProfileToCloud(profile).catch(() => {});
+    syncMyProfileToCloud(profile).catch((err) => {
+      logger.warn('[FriendsSync] Failed to sync profile to cloud:', err);
+    });
   }
 }
 
@@ -194,7 +196,9 @@ export function updateMyLevel(level: number): void {
     saveMyProfile(profile);
 
     // Sync to cloud if available
-    syncMyProfileToCloud(profile).catch(() => {});
+    syncMyProfileToCloud(profile).catch((err) => {
+      logger.warn('[FriendsSync] Failed to sync profile to cloud:', err);
+    });
   }
 }
 

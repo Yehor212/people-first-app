@@ -13,6 +13,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { Capacitor } from '@capacitor/core';
 import { haptics } from '@/lib/haptics';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 type FeedbackType = 'bug' | 'feature' | 'other';
 
@@ -69,7 +70,7 @@ export function FeedbackButton({
 
         if (error) {
           // If table doesn't exist, store locally
-          console.warn('[Feedback] Supabase error, storing locally:', error.message);
+          logger.warn('[Feedback] Supabase error, storing locally:', error.message);
           storeFeedbackLocally(feedbackData);
         }
       } else {
@@ -80,7 +81,7 @@ export function FeedbackButton({
       toast.success(t.feedbackSent || 'Thanks for your feedback!');
       handleClose();
     } catch (error) {
-      console.error('[Feedback] Error:', error);
+      logger.error('[Feedback] Error:', error);
       toast.error(t.feedbackError || 'Failed to send feedback');
     } finally {
       setIsSubmitting(false);
@@ -204,6 +205,6 @@ function storeFeedbackLocally(data: Record<string, unknown>): void {
     pending.push(data);
     localStorage.setItem('zenflow_pending_feedback', JSON.stringify(pending));
   } catch (error) {
-    console.error('[Feedback] Failed to store locally:', error);
+    logger.error('[Feedback] Failed to store locally:', error);
   }
 }

@@ -22,6 +22,7 @@ import { Database, CloudDownload, RefreshCw } from 'lucide-react';
 import { pullFromCloud } from '@/storage/realtimeSync';
 import { getCurrentUserId } from '@/lib/supabaseClient';
 import { toast } from 'sonner';
+import { logger } from '@/lib/logger';
 
 export function DatabaseRecoveryDialog() {
   const { t } = useLanguage();
@@ -34,13 +35,13 @@ export function DatabaseRecoveryDialog() {
   useEffect(() => {
     const handleRecoveryNeeded = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      console.log('[DatabaseRecovery] Recovery needed:', detail);
+      logger.log('[DatabaseRecovery] Recovery needed:', detail);
       setIsOpen(true);
     };
 
     const handleRecoveryFailed = (e: Event) => {
       const detail = (e as CustomEvent).detail;
-      console.error('[DatabaseRecovery] Recovery failed:', detail);
+      logger.error('[DatabaseRecovery] Recovery failed:', detail);
       toast.error(t.storageError || 'Storage error', {
         description: t.storageErrorDesc || 'Could not recover local database.',
       });
@@ -76,7 +77,7 @@ export function DatabaseRecoveryDialog() {
         });
       }
     } catch (error) {
-      console.error('[DatabaseRecovery] Restore failed:', error);
+      logger.error('[DatabaseRecovery] Restore failed:', error);
       toast.error(t.syncError || 'Sync error');
     } finally {
       setIsRestoring(false);

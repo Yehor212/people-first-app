@@ -1164,7 +1164,9 @@ export function Index() {
     triggerXpPopup(treatResult.earned, 'focus'); // Show treats earned
 
     // Queue for offline sync (uses offline queue with retry logic)
-    queueFocusSessionSync(session).catch(() => {});
+    queueFocusSessionSync(session).catch((err) => {
+      logger.warn('[Index] Failed to queue focus session sync:', err);
+    });
     triggerSync(); // Auto-sync to cloud
     haptics.focusCompleted();
 

@@ -196,7 +196,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       onComplete({ skipped: true, modules: modules.map(m => m.id) });
       logger.log('[OnboardingFlow] onComplete called successfully');
     } catch (error) {
-      console.error('[OnboardingFlow] Error in handleSkip:', error);
+      logger.error('[OnboardingFlow] Error in handleSkip:', error);
       transitionLockRef.current = false;
     }
   };
@@ -222,7 +222,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       onComplete({ modules: selectedModules });
       logger.log('[OnboardingFlow] onComplete called successfully');
     } catch (error) {
-      console.error('[OnboardingFlow] Error in handleComplete:', error);
+      logger.error('[OnboardingFlow] Error in handleComplete:', error);
       transitionLockRef.current = false;
     }
   };

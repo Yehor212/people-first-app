@@ -8,6 +8,7 @@
  */
 
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 import { FireIcon, IconProps } from './FireIcon';
 import { StarIcon } from './StarIcon';
 import { DiamondIcon } from './DiamondIcon';
@@ -100,7 +101,7 @@ export function PremiumIcon({
   const IconComponent = iconMap[name];
 
   if (!IconComponent) {
-    console.warn(`PremiumIcon: Unknown icon name "${name}"`);
+    logger.warn(`PremiumIcon: Unknown icon name "${name}"`);
     return null;
   }
 

@@ -455,7 +455,7 @@ export async function shareChallenge(
       return true;
     } catch (error) {
       if ((error as Error).name !== 'AbortError') {
-        console.error('Share failed:', error);
+        logger.error('Share failed:', error);
       }
       return false;
     }

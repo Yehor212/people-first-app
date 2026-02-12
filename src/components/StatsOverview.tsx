@@ -6,6 +6,7 @@ import { StreakCelebration } from './StreakCelebration';
 import { shouldShowStreakMessage } from '@/lib/motivationalMessages';
 import { safeParseInt } from '@/lib/validation';
 import { getEntryCount } from '@/features/journal/journalStorage';
+import { logger } from '@/lib/logger';
 
 interface StatsOverviewProps {
   moods: MoodEntry[];
@@ -26,7 +27,11 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
   });
 
   const [journalCount, setJournalCount] = useState(0);
-  useEffect(() => { getEntryCount().then(setJournalCount).catch(() => {}); }, []);
+  useEffect(() => {
+    getEntryCount().then(setJournalCount).catch((err) => {
+      logger.warn('[StatsOverview] Failed to get journal entry count:', err);
+    });
+  }, []);
 
   const todayHabitsCompleted = habits.filter(h => h.completedDates.includes(today)).length;
   const totalHabits = habits.length;

@@ -10,6 +10,7 @@
  */
 
 import { generateId, getToday } from './utils';
+import { logger } from '@/lib/logger';
 
 // ============================================
 // TYPES
@@ -482,7 +483,7 @@ export function saveSeasonalProgress(progress: Record<string, UserSeasonalProgre
   try {
     localStorage.setItem(SEASONAL_PROGRESS_KEY, JSON.stringify(progress));
   } catch (error) {
-    console.warn('[SeasonalEvents] Failed to save progress:', error);
+    logger.warn('[SeasonalEvents] Failed to save progress:', error);
   }
 }
 

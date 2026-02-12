@@ -14,6 +14,7 @@ import { Share2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { FireIcon, StarIcon, TrophyIcon, TargetIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface Achievement {
   id: string;
@@ -271,7 +272,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
         URL.revokeObjectURL(url);
       }
     } catch (error) {
-      console.error('Share failed:', error);
+      logger.error('Share failed:', error);
     } finally {
       setIsSharing(false);
     }
