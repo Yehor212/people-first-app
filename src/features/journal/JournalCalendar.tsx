@@ -102,7 +102,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
       <div className="flex items-center justify-between mb-1.5">
         <button
           onClick={() => setStartOffset(prev => prev + 7)}
-          className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[32px] min-h-[32px] flex items-center justify-center"
+          className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <ChevronLeft className="w-4 h-4 text-muted-foreground" />
         </button>
@@ -173,7 +173,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
                 isToday && !isSelected && 'ring-1 ring-primary/40',
               )}
             >
-              <span className="text-[9px] text-muted-foreground leading-none">
+              <span className="text-[10px] text-muted-foreground leading-none">
                 {dayNames[d.dayOfWeek]}
               </span>
               <span className={cn(
@@ -213,7 +213,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
           >
             <div className="flex items-center justify-center gap-3 pt-1.5 pb-0.5 flex-wrap">
               {MOOD_LEGEND.map(({ mood, color, key }) => (
-                <span key={mood} className="flex items-center gap-1 text-[9px] text-muted-foreground/70">
+                <span key={mood} className="flex items-center gap-1 text-[10px] text-muted-foreground/70">
                   <span className={cn('w-1.5 h-1.5 rounded-full', color)} />
                   {ts[key] || mood}
                 </span>

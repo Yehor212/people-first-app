@@ -74,7 +74,7 @@ export function JournalStickerPicker({ onSelect, onClose }: JournalStickerPicker
             >
               <StickerRenderer emoji={cat.icon} size="sm" />
               <span className={cn(
-                'text-[8px] truncate max-w-[52px]',
+                'text-[10px] truncate max-w-[52px]',
                 activeCategory === i ? 'text-primary/80' : 'text-muted-foreground/50',
               )}>
                 {ts[cat.labelKey] || cat.key}

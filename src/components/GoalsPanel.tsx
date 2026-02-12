@@ -345,8 +345,11 @@ function PremiumGoalCard({
           </motion.button>
         ) : !isComplete ? (
           <button
-            onClick={() => { hapticTap(); onDelete(); }}
-            className="p-2 rounded-xl hover:bg-destructive/10 transition-colors"
+            onClick={() => {
+              if (!window.confirm(t.confirmDelete || 'Delete this goal?')) return;
+              hapticTap(); onDelete();
+            }}
+            className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-destructive/10 transition-colors"
             aria-label={t.delete || 'Delete'}
           >
             <X className="w-4 h-4 text-muted-foreground" />
@@ -572,7 +575,7 @@ function AddGoalSheet({
                   >
                     <span className="text-lg">{th.emoji}</span>
                     <span className={cn(
-                      'text-[11px] font-medium capitalize',
+                      'text-xs font-medium capitalize',
                       selected ? 'text-foreground' : 'text-muted-foreground',
                     )}>
                       {t[`goal${goalType.charAt(0).toUpperCase() + goalType.slice(1)}`] || goalType}

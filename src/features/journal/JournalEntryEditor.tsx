@@ -748,7 +748,7 @@ export function JournalEntryEditor({
           )}
         >
           <Smile className="w-5 h-5 text-muted-foreground" />
-          <span className="text-[9px] text-muted-foreground/60">{ts.journalToolbarSticker || 'Sticker'}</span>
+          <span className="text-[10px] text-muted-foreground/60">{ts.journalToolbarSticker || 'Sticker'}</span>
         </button>
 
         <button
@@ -761,7 +761,7 @@ export function JournalEntryEditor({
           )}
         >
           <Camera className="w-5 h-5 text-muted-foreground" />
-          <span className="text-[9px] text-muted-foreground/60">{ts.journalToolbarPhoto || 'Photo'}</span>
+          <span className="text-[10px] text-muted-foreground/60">{ts.journalToolbarPhoto || 'Photo'}</span>
         </button>
 
         {/* Dictation button */}
@@ -780,7 +780,7 @@ export function JournalEntryEditor({
           ) : (
             <Mic className="w-5 h-5 text-muted-foreground" />
           )}
-          <span className={cn('text-[9px]', voice.isListening ? 'text-red-500' : 'text-muted-foreground/60')}>
+          <span className={cn('text-[10px]', voice.isListening ? 'text-red-500' : 'text-muted-foreground/60')}>
             {voice.isListening ? (ts.journalDictateStop || 'Stop') : (ts.journalToolbarVoice || 'Voice')}
           </span>
         </button>
@@ -796,7 +796,7 @@ export function JournalEntryEditor({
           )}
         >
           <Circle className="w-5 h-5 text-muted-foreground" />
-          <span className="text-[9px] text-muted-foreground/60">{ts.journalToolbarRecord || 'Record'}</span>
+          <span className="text-[10px] text-muted-foreground/60">{ts.journalToolbarRecord || 'Record'}</span>
         </button>
 
         <button
@@ -804,7 +804,7 @@ export function JournalEntryEditor({
           className="flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors min-h-[44px] flex flex-col items-center justify-center gap-0.5"
         >
           <span className="text-base leading-none">{mood ? MOOD_OPTIONS.find(m => m.mood === mood)?.emoji : '\u{1F3AD}'}</span>
-          <span className="text-[9px] text-muted-foreground/60">{ts.journalToolbarMood || 'Mood'}</span>
+          <span className="text-[10px] text-muted-foreground/60">{ts.journalToolbarMood || 'Mood'}</span>
         </button>
 
         <button
@@ -812,7 +812,7 @@ export function JournalEntryEditor({
           className="flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors min-h-[44px] flex flex-col items-center justify-center gap-0.5"
         >
           <Hash className="w-5 h-5 text-muted-foreground" />
-          <span className="text-[9px] text-muted-foreground/60">{ts.journalToolbarTags || 'Tags'}</span>
+          <span className="text-[10px] text-muted-foreground/60">{ts.journalToolbarTags || 'Tags'}</span>
         </button>
       </div>
 

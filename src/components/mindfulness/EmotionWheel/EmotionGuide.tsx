@@ -93,7 +93,7 @@ export function EmotionGuide({ onSelectEmotion }: EmotionGuideProps) {
               </div>
 
               {/* Intensity levels */}
-              <div className="flex gap-3 text-[11px] text-muted-foreground">
+              <div className="flex gap-3 text-xs text-muted-foreground">
                 <span>{INTENSITY_EMOJIS.mild} {emotionT[secondary.mild]}</span>
                 <span>{INTENSITY_EMOJIS.moderate} {emotionT[secondary.moderate]}</span>
                 <span>{INTENSITY_EMOJIS.intense} {emotionT[secondary.intense]}</span>

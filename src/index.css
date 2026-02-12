@@ -632,11 +632,13 @@
   /* Ensure html fills viewport correctly */
   html {
     height: -webkit-fill-available;
+    overscroll-behavior: contain;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Nunito', sans-serif;
+    overscroll-behavior: contain;
     /* Safe area padding for Android/iOS notches and navigation bars */
     padding-top: var(--safe-top);
     padding-bottom: var(--safe-bottom);
@@ -2319,7 +2321,17 @@ body {
   transition: background-color 0.8s ease-out;
 }
 
-body * {
+/* Theme transition — scoped to main containers (body * caused Android GPU overhead) */
+body > div,
+.card,
+.bg-card,
+.bg-background,
+.bg-muted,
+nav,
+header,
+main,
+aside,
+footer {
   transition: background-color 0.5s ease-out, border-color 0.5s ease-out, box-shadow 0.5s ease-out;
 }
 

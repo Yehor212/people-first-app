@@ -184,8 +184,9 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   }, [onAwardXp, onEarnTreats]);
 
   const handleDeleteTask = useCallback((taskId: string) => {
+    if (!window.confirm(t.confirmDelete || 'Delete this task?')) return;
     setTasks(prev => prev.filter(task => task.id !== taskId));
-  }, []);
+  }, [t]);
 
   const renderTaskCard = (task: PrioritizedTask, index?: number) => {
     const isTopThree = index !== undefined && index < 3;
@@ -265,7 +266,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
 
           <button
             onClick={() => handleDeleteTask(task.id)}
-            className="flex-shrink-0 p-1 text-muted-foreground hover:text-destructive transition-colors"
+            className="flex-shrink-0 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
           >
             <Trash2 className="w-4 h-4" />
           </button>

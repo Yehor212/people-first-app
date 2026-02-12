@@ -13,6 +13,7 @@ import { Download, X, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { startAppUpdate, UpdateState, dismissUpdate, openGooglePlayStore } from '@/lib/appUpdateManager';
 import { haptics } from '@/lib/haptics';
+import { logger } from '@/lib/logger';
 
 interface UpdatePromptProps {
   /** Update state from checkForAppUpdate() */
@@ -44,8 +45,17 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
         await openGooglePlayStore();
       } else {
         // Standard: Use Google Play In-App Updates
-        await startAppUpdate(true);
+        const success = await startAppUpdate(true);
+        if (!success) {
+          // In-App Update failed — fall back to Play Store directly
+          logger.warn('[UpdatePrompt] In-app update failed, opening Play Store');
+          await openGooglePlayStore();
+        }
       }
+    } catch (error) {
+      // Last resort: open Play Store directly
+      logger.error('[UpdatePrompt] Update failed:', error);
+      await openGooglePlayStore();
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +89,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
   const ButtonIcon = useFallback ? ExternalLink : Download;
 
   return (
-    <div className="fixed inset-x-4 top-4 z-[200] animate-slide-down" style={{ top: 'calc(env(safe-area-inset-top) + 1rem)' }}>
+    <div className="fixed inset-x-4 top-4 z-[250] animate-slide-down" style={{ top: 'calc(env(safe-area-inset-top) + 1rem)' }}>
       <div className="bg-gradient-to-r from-primary to-primary/90 text-primary-foreground rounded-2xl p-4 shadow-lg">
         <div className="flex items-start gap-3">
           <div className="p-2 bg-white/20 rounded-xl">

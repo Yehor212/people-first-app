@@ -327,7 +327,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                         )}
                         style={{ height: `${Math.max(height, 4)}%` }}
                       />
-                      <span className="text-[8px] text-muted-foreground/60">{d.day}</span>
+                      <span className="text-[10px] text-muted-foreground/60">{d.day}</span>
                     </div>
                   );
                 })}

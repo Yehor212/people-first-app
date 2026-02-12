@@ -59,6 +59,7 @@ export function AICoachChat() {
   };
 
   const handleClear = () => {
+    if (!window.confirm(t.confirmDelete || 'Clear all chat history?')) return;
     haptics.buttonTap();
     clearHistory();
   };
@@ -113,6 +114,13 @@ export function AICoachChat() {
                 <Trash2 className="w-5 h-5" />
               </motion.button>
             )}
+            <button
+              onClick={() => { if (!isLoading) closeCoach(); }}
+              className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl hover:bg-muted transition-colors"
+              aria-label={t.close || 'Close'}
+            >
+              <X className="w-5 h-5 text-muted-foreground" />
+            </button>
           </div>
         </div>
 

@@ -13,6 +13,11 @@ const config: CapacitorConfig = {
     cleartext: false,
   },
   plugins: {
+    SplashScreen: {
+      launchAutoHide: false,
+      launchFadeOutDuration: 300,
+      androidScaleType: 'CENTER_CROP',
+    },
     LocalNotifications: {
       // Default icon color (emerald)
       iconColor: '#10B981',

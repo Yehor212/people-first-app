@@ -1,6 +1,8 @@
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { Home, Settings, Sparkles, BarChart3 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { haptics } from '@/lib/haptics';
 
 type TabType = 'home' | 'garden' | 'stats' | 'achievements' | 'settings';
 
@@ -11,6 +13,17 @@ interface NavigationProps {
 
 export function Navigation({ activeTab, onTabChange }: NavigationProps) {
   const { t } = useLanguage();
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  // Hide nav when software keyboard is open (Android adjustResize shrinks viewport)
+  useEffect(() => {
+    const threshold = window.screen.height * 0.75;
+    const onResize = () => {
+      setKeyboardOpen(window.innerHeight < threshold);
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   const tabs = [
     { id: 'home' as TabType, icon: Home, label: t.home },
@@ -18,6 +31,8 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
     { id: 'stats' as TabType, icon: BarChart3, label: t.stats },
     { id: 'settings' as TabType, icon: Settings, label: t.settings },
   ];
+
+  if (keyboardOpen) return null;
 
   return (
     <nav
@@ -31,7 +46,10 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
           {tabs.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => onTabChange(tab.id)}
+              onClick={() => {
+                haptics.tabChanged();
+                onTabChange(tab.id);
+              }}
               role="tab"
               aria-selected={activeTab === tab.id}
               aria-label={tab.label}

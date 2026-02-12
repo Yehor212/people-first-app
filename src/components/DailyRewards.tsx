@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { safeJsonParse } from '@/lib/safeJson';
 import { safeParseInt } from '@/lib/validation';
 import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import {
   getDailyLoginRewards,
   getLoginStreakBonus,
@@ -24,6 +25,7 @@ interface DailyRewardsProps {
 
 export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
   const { t } = useLanguage();
+  useBackHandler(true, onClose);
   const [rewards, setRewards] = useState<DailyLoginReward[]>(getDailyLoginRewards());
   const [currentDay, setCurrentDay] = useState(1);
   const [loginStreak, setLoginStreak] = useState(0);

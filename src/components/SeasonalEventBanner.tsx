@@ -139,7 +139,7 @@ export function SeasonalEventBanner({
         {/* Dismiss button */}
         <button
           onClick={() => handleDismiss(currentEvent.id)}
-          className="absolute top-3 right-3 p-1.5 rounded-full bg-background/20 hover:bg-background/40 transition-colors z-10"
+          className="absolute top-3 right-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-background/20 hover:bg-background/40 transition-colors z-10"
           aria-label={t.dismiss || 'Dismiss'}
         >
           <X className="w-4 h-4 text-foreground/70" />

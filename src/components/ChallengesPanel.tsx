@@ -459,7 +459,7 @@ export function ChallengesPanel({
                       {badge.unlocked && (
                         <button
                           onClick={() => handleShareBadge(badge)}
-                          className="absolute top-2 end-2 p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                          className="absolute top-2 end-2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
                           aria-label={t.shareButton || 'Share'}
                         >
                           <Share2 className="w-3.5 h-3.5" />
@@ -506,7 +506,7 @@ export function ChallengesPanel({
                       {badge.unlocked && (
                         <button
                           onClick={() => handleShareBadge(badge)}
-                          className="absolute top-2 end-2 p-1.5 rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
+                          className="absolute top-2 end-2 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-primary/10 hover:bg-primary/20 text-primary transition-colors"
                           aria-label={t.shareButton || 'Share'}
                         >
                           <Share2 className="w-3.5 h-3.5" />

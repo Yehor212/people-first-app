@@ -176,7 +176,7 @@ export function SyncStatusIndicatorCompact() {
     return (
       <div className="relative" aria-label={t.sessionExpired || 'Cloud sync paused'}>
         <CloudOff className="w-5 h-5 text-amber-500" />
-        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[9px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold" aria-hidden="true">!</span>
+        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold" aria-hidden="true">!</span>
       </div>
     );
   }

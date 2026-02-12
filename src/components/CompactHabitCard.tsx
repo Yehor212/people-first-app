@@ -435,7 +435,7 @@ export function CompactHabitCard({
               {habit.name}
             </p>
             {!isDueToday && (
-              <span className="text-[9px] text-muted-foreground/40 italic">
+              <span className="text-[10px] text-muted-foreground/40 italic">
                 {(t as unknown as Record<string, string>).habitRestDay || 'Rest day'}
               </span>
             )}

@@ -413,7 +413,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
       {/* Close button */}
       <button
         onClick={() => setIsOpen(false)}
-        className="absolute top-3 right-3 p-1.5 rounded-full hover:bg-black/10 transition-colors"
+        className="absolute top-3 right-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
       >
         <X className="w-4 h-4 text-muted-foreground" />
       </button>

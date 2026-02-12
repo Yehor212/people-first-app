@@ -273,7 +273,14 @@ export function ShareModal(props: ShareModalProps) {
     <>
       <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => onOpenChange(false)} />
       <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background h-[85vh] overflow-hidden animate-slide-up pb-safe">
-        <div className="pb-4 px-6 pt-6 text-center">
+        <div className="pb-4 px-6 pt-6 text-center relative">
+          <button
+            onClick={() => onOpenChange(false)}
+            className="absolute top-4 right-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            aria-label={t.close || 'Close'}
+          >
+            <X className="w-5 h-5 text-muted-foreground" />
+          </button>
           <h2 className="text-lg font-semibold">{getModalTitle()}</h2>
           <p className="text-center text-sm text-muted-foreground">
             {t.sharePrivacyNote || 'Share your progress with friends'}

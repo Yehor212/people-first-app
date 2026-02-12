@@ -277,7 +277,7 @@ export function ComebackChallenge({
       {/* Close button */}
       <button
         onClick={handleDismiss}
-        className="absolute top-4 right-4 z-10 p-1.5 rounded-full bg-muted/50 hover:bg-muted transition-colors"
+        className="absolute top-4 right-4 z-10 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-muted/50 hover:bg-muted transition-colors"
         aria-label={t.dismiss || 'Dismiss'}
       >
         <X className="w-4 h-4 text-muted-foreground" />

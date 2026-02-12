@@ -1116,7 +1116,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                             handleReminderChange(index, 'days', newDays);
                           }}
                           className={cn(
-                            "w-8 h-8 min-w-[32px] min-h-[32px] text-[10px] rounded-lg transition-colors font-medium",
+                            "w-10 h-10 min-w-[40px] min-h-[40px] text-[10px] rounded-lg transition-colors font-medium",
                             "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
                             isPrimaryCTA
                               ? reminder.days.includes(day)

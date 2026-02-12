@@ -164,7 +164,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                       <StickerRenderer key={i} emoji={s} size="xs" />
                     ))}
                     {entry.stickers.length > 4 && (
-                      <span className="text-[9px] text-muted-foreground/60 ms-1">+{entry.stickers.length - 4}</span>
+                      <span className="text-[10px] text-muted-foreground/60 ms-1">+{entry.stickers.length - 4}</span>
                     )}
                   </div>
                 )}
@@ -184,10 +184,10 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                   </span>
                 ))}
                 {entry.tags.length > 2 && (
-                  <span className="text-[9px] text-muted-foreground/50">+{entry.tags.length - 2}</span>
+                  <span className="text-[10px] text-muted-foreground/50">+{entry.tags.length - 2}</span>
                 )}
                 {wordCount > 0 && (
-                  <span className="text-[9px] text-muted-foreground/40 ms-auto">
+                  <span className="text-[10px] text-muted-foreground/40 ms-auto">
                     {wordCount}w
                   </span>
                 )}

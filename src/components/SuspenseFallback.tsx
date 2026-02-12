@@ -41,10 +41,11 @@ export function PageSpinner() {
   return (
     <div
       className="fixed inset-0 z-50 bg-background flex items-center justify-center"
-      aria-hidden="true"
-      role="presentation"
+      role="status"
+      aria-label="Loading"
     >
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" />
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" aria-hidden="true" />
+      <span className="sr-only">Loading...</span>
     </div>
   );
 }
@@ -56,10 +57,11 @@ export function InlineSpinner({ className }: { className?: string }) {
   return (
     <div
       className={cn('flex items-center justify-center p-4', className)}
-      aria-hidden="true"
-      role="presentation"
+      role="status"
+      aria-label="Loading"
     >
-      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" aria-hidden="true" />
+      <span className="sr-only">Loading...</span>
     </div>
   );
 }

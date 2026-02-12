@@ -124,12 +124,12 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <button
-        className="relative flex-shrink-0 w-[52px] h-[28px] rounded-full bg-slate-700 transition-colors"
-        style={{ minWidth: '52px', minHeight: '28px' }}
+        className="relative flex-shrink-0 w-[52px] h-[36px] rounded-full bg-slate-700 transition-colors"
+        style={{ minWidth: '52px', minHeight: '36px' }}
         aria-label={t.toggleTheme || 'Toggle theme'}
         disabled
       >
-        <div className="absolute top-[3px] left-[27px] w-[22px] h-[22px] rounded-full bg-slate-800 flex items-center justify-center">
+        <div className="absolute top-[7px] left-[27px] w-[22px] h-[22px] rounded-full bg-slate-800 flex items-center justify-center">
           <Moon className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
         </div>
       </button>
@@ -141,17 +141,17 @@ export function ThemeToggle() {
       onClick={toggleTheme}
       className={cn(
         "relative flex-shrink-0 rounded-full transition-all duration-300",
-        "w-[52px] h-[28px]",
+        "w-[52px] h-[36px]",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         effectiveTheme === 'light' ? 'bg-sky-300' : 'bg-slate-700'
       )}
-      style={{ minWidth: '52px', minHeight: '28px' }}
+      style={{ minWidth: '52px', minHeight: '36px' }}
       aria-label={effectiveTheme === 'light' ? (t.switchToDark || 'Switch to dark mode') : (t.switchToLight || 'Switch to light mode')}
     >
       {/* Toggle circle */}
       <div
         className={cn(
-          "absolute top-[3px] w-[22px] h-[22px] rounded-full transition-all duration-300 flex items-center justify-center shadow-sm",
+          "absolute top-[7px] w-[22px] h-[22px] rounded-full transition-all duration-300 flex items-center justify-center shadow-sm",
           effectiveTheme === 'light'
             ? 'left-[3px] bg-yellow-400'
             : 'left-[27px] bg-slate-800'

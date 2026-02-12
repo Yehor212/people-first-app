@@ -133,7 +133,7 @@ export function JournalCalendarFull({
       <div className="flex items-center justify-between mb-2">
         <button
           onClick={() => navigateMonth(-1)}
-          className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[32px] min-h-[32px] flex items-center justify-center"
+          className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <ChevronLeft className="w-4 h-4 text-muted-foreground" />
         </button>
@@ -160,7 +160,7 @@ export function JournalCalendarFull({
         <button
           onClick={() => navigateMonth(1)}
           disabled={!canGoForward}
-          className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-30 min-w-[32px] min-h-[32px] flex items-center justify-center"
+          className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-30 min-w-[44px] min-h-[44px] flex items-center justify-center"
         >
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </button>
@@ -169,7 +169,7 @@ export function JournalCalendarFull({
       {/* Day name headers */}
       <div className="grid grid-cols-7 mb-1">
         {dayNames.map((name, i) => (
-          <div key={i} className="text-center text-[9px] font-medium text-muted-foreground/60 py-0.5">
+          <div key={i} className="text-center text-[10px] font-medium text-muted-foreground/60 py-0.5">
             {name}
           </div>
         ))}
@@ -216,7 +216,7 @@ export function JournalCalendarFull({
                 )}
               >
                 <span className={cn(
-                  'text-[11px] font-medium leading-none',
+                  'text-xs font-medium leading-none',
                   cell.isToday ? 'text-primary font-bold' : 'text-foreground',
                   isFuture && 'text-muted-foreground/50',
                 )}>

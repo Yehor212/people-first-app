@@ -173,7 +173,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
         {/* Dismiss */}
         <button
           onClick={onDismiss}
-          className="p-1 hover:bg-muted rounded-lg transition-colors opacity-60 hover:opacity-100"
+          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-lg transition-colors opacity-60 hover:opacity-100"
         >
           <X className="w-4 h-4" />
         </button>

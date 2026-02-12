@@ -12,6 +12,7 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 import com.google.android.play.core.appupdate.AppUpdateInfo;
 import com.google.android.play.core.appupdate.AppUpdateManager;
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory;
+import com.google.android.play.core.appupdate.AppUpdateOptions;
 import com.google.android.play.core.install.model.AppUpdateType;
 import com.google.android.play.core.install.model.UpdateAvailability;
 import com.google.android.gms.tasks.Task;
@@ -61,8 +62,8 @@ public class AppUpdatePlugin extends Plugin {
                 try {
                     appUpdateManager.startUpdateFlowForResult(
                             info,
-                            AppUpdateType.IMMEDIATE,
                             activity,
+                            AppUpdateOptions.newBuilder(AppUpdateType.IMMEDIATE).build(),
                             UPDATE_REQUEST_CODE
                     );
                     call.resolve();
@@ -93,8 +94,8 @@ public class AppUpdatePlugin extends Plugin {
                 try {
                     appUpdateManager.startUpdateFlowForResult(
                             info,
-                            AppUpdateType.FLEXIBLE,
                             activity,
+                            AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build(),
                             UPDATE_REQUEST_CODE
                     );
                     call.resolve();

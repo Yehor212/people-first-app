@@ -308,7 +308,7 @@ export function WeekCrystal({
                           isToday && 'bg-primary/10 ring-1 ring-primary/30'
                         )}
                       >
-                        <span className="text-[9px] text-muted-foreground mb-0.5">
+                        <span className="text-[10px] text-muted-foreground mb-0.5">
                           {dayNames[dayOfWeek]?.slice(0, 1)}
                         </span>
                         {/* Mini crystal */}
@@ -321,7 +321,7 @@ export function WeekCrystal({
                           }}
                         />
                         <span
-                          className="text-[9px] font-bold mt-0.5"
+                          className="text-[10px] font-bold mt-0.5"
                           style={{ color: dayTheme.glow }}
                         >
                           {day.score > 0 ? day.score : '—'}

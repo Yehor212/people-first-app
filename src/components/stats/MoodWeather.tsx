@@ -398,12 +398,12 @@ export function MoodWeather({ mood, emotion, className }: MoodWeatherProps) {
         </motion.span>
 
         {/* Label */}
-        <h3 className="text-[11px] font-bold text-foreground text-center uppercase tracking-wider leading-tight">
+        <h3 className="text-xs font-bold text-foreground text-center uppercase tracking-wider leading-tight">
           {label}
         </h3>
 
         {/* Message */}
-        <p className="text-[9px] text-muted-foreground text-center mt-1 leading-tight line-clamp-2 px-1">
+        <p className="text-[10px] text-muted-foreground text-center mt-1 leading-tight line-clamp-2 px-1">
           {message}
         </p>
       </div>

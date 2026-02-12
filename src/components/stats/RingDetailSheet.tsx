@@ -11,7 +11,7 @@
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Target, Brain, TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight } from 'lucide-react';
+import { Heart, Target, Brain, TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight, X } from 'lucide-react';
 // Sheet replaced with custom bottom-sheet modal
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -345,6 +345,15 @@ export function RingDetailSheet({
           {/* Handle bar */}
           <div className="absolute top-3 left-1/2 -translate-x-1/2 w-12 h-1.5 rounded-full bg-foreground/30" />
 
+          {/* Close button */}
+          <button
+            onClick={() => onOpenChange(false)}
+            className="absolute top-3 right-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-foreground/20 hover:bg-foreground/30 transition-colors z-10"
+            aria-label={t.close || 'Close'}
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+
           {/* Header content */}
           <div className="absolute bottom-5 inset-x-6 flex items-end justify-between">
             <div className="flex items-center gap-4">
@@ -442,7 +451,7 @@ export function RingDetailSheet({
               >
                 <span className="text-xl">{stat.emoji}</span>
                 <p className="text-lg font-bold text-foreground mt-1">{stat.value}</p>
-                <p className="text-[11px] text-muted-foreground font-medium">{stat.label}</p>
+                <p className="text-xs text-muted-foreground font-medium">{stat.label}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -487,7 +496,7 @@ export function RingDetailSheet({
                         boxShadow: intensity > 0.6 ? `0 0 8px ${theme.glowColor}` : 'none',
                       }}
                     >
-                      <span className="text-[9px] font-bold text-white">
+                      <span className="text-[10px] font-bold text-white">
                         {Math.round(day.value)}
                       </span>
                     </div>

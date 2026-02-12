@@ -51,7 +51,7 @@ const DEFAULT_DOPAMINE_SETTINGS: DopamineSettings = {
   intensity: 'normal',
   animations: true,
   sounds: true,
-  haptics: false,
+  haptics: true,
   confetti: true,
   streakFire: true,
   moodDrivenUI: true,
