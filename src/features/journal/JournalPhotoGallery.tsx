@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { X, Trash2, ZoomIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useScrollLock } from '@/hooks/useScrollLock';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import type { JournalPhoto } from './types';
 import { getPhotosForEntry, getPhotoById } from './journalStorage';
 
@@ -22,22 +24,25 @@ export function JournalPhotoGallery({
   const [lightboxPhoto, setLightboxPhoto] = useState<JournalPhoto | null>(null);
   const [fullData, setFullData] = useState<string | null>(null);
 
+  const closeLightbox = () => {
+    setLightboxPhoto(null);
+    setFullData(null);
+  };
+
+  useScrollLock(!!lightboxPhoto);
+  useBackHandler(!!lightboxPhoto, closeLightbox);
+
   useEffect(() => {
     if (photoIds.length === 0) { setPhotos([]); return; }
     getPhotosForEntry(entryId).then(all => {
       setPhotos(all.filter(p => photoIds.includes(p.id)));
-    });
+    }).catch(() => setPhotos([]));
   }, [entryId, photoIds]);
 
   const openLightbox = async (photo: JournalPhoto) => {
     setLightboxPhoto(photo);
     const full = await getPhotoById(photo.id);
-    if (full) setFullData(full.data);
-  };
-
-  const closeLightbox = () => {
-    setLightboxPhoto(null);
-    setFullData(null);
+    setFullData(full?.data ?? photo.thumbnail);
   };
 
   if (photos.length === 0) return null;

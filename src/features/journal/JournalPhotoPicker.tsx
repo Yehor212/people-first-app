@@ -47,6 +47,8 @@ export function JournalPhotoPicker({
       <div className="fixed inset-0 z-[64] bg-black/30 animate-fade-in" onClick={onClose} />
 
       <div
+        role="dialog"
+        aria-modal="true"
         className={cn(
           'fixed bottom-0 left-0 right-0 z-[65]',
           'bg-card/95 backdrop-blur-xl border-t border-border/40',

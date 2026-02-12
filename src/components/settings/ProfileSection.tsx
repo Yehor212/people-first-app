@@ -67,6 +67,7 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
       await supabase.auth.updateUser({ data: { full_name: sanitized } });
     } catch (error) {
       logger.error("Failed to update profile name:", error);
+      setNameStatus(t.nameSavedLocally || 'Saved locally');
     }
   };
 

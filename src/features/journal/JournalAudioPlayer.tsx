@@ -23,13 +23,24 @@ export function JournalAudioPlayer({ src, duration }: JournalAudioPlayerProps) {
     const audio = new Audio(src);
     audioRef.current = audio;
 
-    audio.addEventListener('loadeddata', () => setLoaded(true));
-    audio.addEventListener('timeupdate', () => setCurrentTime(audio.currentTime));
-    audio.addEventListener('ended', () => { setPlaying(false); setCurrentTime(0); });
-    audio.addEventListener('pause', () => setPlaying(false));
-    audio.addEventListener('play', () => setPlaying(true));
+    const onLoaded = () => setLoaded(true);
+    const onTimeUpdate = () => setCurrentTime(audio.currentTime);
+    const onEnded = () => { setPlaying(false); setCurrentTime(0); };
+    const onPause = () => setPlaying(false);
+    const onPlay = () => setPlaying(true);
+
+    audio.addEventListener('loadeddata', onLoaded);
+    audio.addEventListener('timeupdate', onTimeUpdate);
+    audio.addEventListener('ended', onEnded);
+    audio.addEventListener('pause', onPause);
+    audio.addEventListener('play', onPlay);
 
     return () => {
+      audio.removeEventListener('loadeddata', onLoaded);
+      audio.removeEventListener('timeupdate', onTimeUpdate);
+      audio.removeEventListener('ended', onEnded);
+      audio.removeEventListener('pause', onPause);
+      audio.removeEventListener('play', onPlay);
       audio.pause();
       audio.src = '';
     };
@@ -51,6 +62,7 @@ export function JournalAudioPlayer({ src, duration }: JournalAudioPlayerProps) {
       <button
         onClick={togglePlay}
         disabled={!loaded}
+        aria-label={playing ? 'Pause' : 'Play'}
         className={cn(
           'w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0',
           'bg-primary/15 text-primary',

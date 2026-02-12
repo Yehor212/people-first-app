@@ -364,7 +364,7 @@ export function JournalEntryEditor({
   useEffect(() => {
     if (entry?.audioIds && entry.audioIds.length > 0) {
       import('./journalStorage').then(({ getAudioForEntry }) => {
-        getAudioForEntry(entry.id).then(setAudioRecordings);
+        getAudioForEntry(entry.id).then(setAudioRecordings).catch(() => setAudioRecordings([]));
       });
     }
   }, [entry]);
