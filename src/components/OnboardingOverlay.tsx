@@ -11,6 +11,7 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, X, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import {
   getOnboardingState,
   shouldShowWelcome,
@@ -28,6 +29,7 @@ interface OnboardingOverlayProps {
  */
 export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
   const { t } = useLanguage();
+  useScrollLock(true);
   const [step, setStep] = useState(0);
 
   const steps = [

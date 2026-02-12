@@ -5,6 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 export interface DopamineSettings {
   intensity: 'minimal' | 'normal' | 'adhd';
@@ -36,6 +37,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
   const { t } = useLanguage();
 
   useBackHandler(true, onClose);
+  useScrollLock(true);
 
   const [settings, setSettings] = useState<DopamineSettings>(DEFAULT_SETTINGS);
 

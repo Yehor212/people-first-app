@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 import { createFocusTrap, announceSuccess } from '@/lib/a11y';
 import { hapticSuccess } from '@/lib/haptics';
@@ -153,6 +154,7 @@ export function JournalEntryEditor({
   onBack,
 }: JournalEntryEditorProps) {
   const { t, language } = useLanguage();
+  useScrollLock(true);
   const ts = t as unknown as Record<string, string>;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);

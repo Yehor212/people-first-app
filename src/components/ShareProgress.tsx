@@ -1,6 +1,7 @@
 import { Share2, Download, X, Sparkles, Loader2 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -26,6 +27,7 @@ interface ShareProgressProps {
 
 export function ShareProgress({ stats, onClose }: ShareProgressProps) {
   const { t } = useLanguage();
+  useScrollLock(true);
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
   const [shareError, setShareError] = useState<string | null>(null);

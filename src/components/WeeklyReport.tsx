@@ -4,6 +4,7 @@ import { safeAverage } from '@/lib/validation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { TrendingUp, TrendingDown, Minus, Flame, Brain, Heart, Target, Calendar, Award, Sparkles, CalendarDays, X } from 'lucide-react';
 import { EmojiOrIcon } from '@/components/icons';
 import { cn, formatDate, parseLocalDate } from '@/lib/utils';
@@ -80,6 +81,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
   const { t, language } = useLanguage();
 
   useBackHandler(true, onClose);
+  useScrollLock(true);
 
   // Keyboard navigation for modal
   const { modalRef, handleKeyDown } = useModalKeyboard({

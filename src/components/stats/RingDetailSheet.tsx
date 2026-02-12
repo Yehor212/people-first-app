@@ -15,6 +15,7 @@ import { Heart, Target, Brain, TrendingUp, TrendingDown, Minus, Sparkles, Zap, C
 // Sheet replaced with custom bottom-sheet modal
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { cn } from '@/lib/utils';
 
 export type RingType = 'mood' | 'habits' | 'focus';
@@ -267,6 +268,7 @@ export function RingDetailSheet({
   const { t } = useLanguage();
 
   useBackHandler(open, () => onOpenChange(false));
+  useScrollLock(open);
 
   const theme = ringType ? ringThemes[ringType] : null;
 

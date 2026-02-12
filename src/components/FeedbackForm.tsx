@@ -7,6 +7,7 @@ import { APP_VERSION } from '@/lib/appVersion';
 import { Capacitor } from '@capacitor/core';
 import { logger } from '@/lib/logger';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { safeLocalStorageGet } from '@/lib/safeJson';
 import { supabase } from '@/lib/supabaseClient';
 import { emailSchema } from '@/lib/validation';
@@ -21,6 +22,7 @@ type FeedbackCategory = 'bug' | 'feature' | 'other';
 export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   const { t } = useLanguage();
   useBackHandler(open, () => onOpenChange(false));
+  useScrollLock(open);
   const [category, setCategory] = useState<FeedbackCategory>('bug');
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');

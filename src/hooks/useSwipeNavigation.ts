@@ -36,6 +36,8 @@ interface UseSwipeNavigationOptions<T extends string> {
   velocityThreshold?: number;
   /** Whether swipe navigation is enabled (default: true) */
   enabled?: boolean;
+  /** Whether the layout is RTL — flips swipe direction for Arabic/Hebrew */
+  isRTL?: boolean;
 }
 
 interface UseSwipeNavigationReturn {
@@ -72,6 +74,7 @@ export function useSwipeNavigation<T extends string>({
   threshold = 50,
   velocityThreshold = 0.3,
   enabled = true,
+  isRTL = false,
 }: UseSwipeNavigationOptions<T>): UseSwipeNavigationReturn {
   const containerRef = useRef<HTMLDivElement>(null);
   const swipeState = useRef<SwipeState>({
@@ -198,9 +201,11 @@ export function useSwipeNavigation<T extends string>({
       }
 
       // Determine direction and change tab
-      // Swipe left = go to next tab (content moves left, next tab appears from right)
-      // Swipe right = go to previous tab (content moves right, previous tab appears from left)
-      const direction = deltaX > 0 ? 'prev' : 'next';
+      // LTR: swipe left → next, swipe right → prev
+      // RTL: swipe left → prev, swipe right → next (mirrored)
+      const direction = deltaX > 0
+        ? (isRTL ? 'next' : 'prev')
+        : (isRTL ? 'prev' : 'next');
       const newTab = getAdjacentTab(direction);
 
       if (newTab) {
@@ -208,7 +213,7 @@ export function useSwipeNavigation<T extends string>({
         onTabChange(newTab);
       }
     },
-    [enabled, threshold, velocityThreshold, getAdjacentTab, onTabChange]
+    [enabled, threshold, velocityThreshold, getAdjacentTab, onTabChange, isRTL]
   );
 
   // Cleanup on unmount

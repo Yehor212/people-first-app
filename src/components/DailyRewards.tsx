@@ -11,6 +11,7 @@ import { safeJsonParse } from '@/lib/safeJson';
 import { safeParseInt } from '@/lib/validation';
 import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import {
   getDailyLoginRewards,
   getLoginStreakBonus,
@@ -26,6 +27,7 @@ interface DailyRewardsProps {
 export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
   const { t } = useLanguage();
   useBackHandler(true, onClose);
+  useScrollLock(true);
   const [rewards, setRewards] = useState<DailyLoginReward[]>(getDailyLoginRewards());
   const [currentDay, setCurrentDay] = useState(1);
   const [loginStreak, setLoginStreak] = useState(0);

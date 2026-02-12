@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { X, ChevronDown, ChevronUp, Sparkles, Bug, Zap, Trash2, History } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { cn } from '@/lib/utils';
 import changelog from 'virtual:changelog';
 import type { ChangelogVersion, ChangelogSection } from '@/types/changelog';
@@ -135,6 +136,7 @@ function VersionCard({
 export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
   const { t } = useLanguage();
   useBackHandler(true, onClose);
+  useScrollLock(true);
   const [expandedVersions, setExpandedVersions] = useState<Set<string>>(() => {
     // Expand the first (latest) version by default
     if (changelog.length > 0) {

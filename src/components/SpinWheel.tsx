@@ -7,6 +7,7 @@ import { useState, useRef } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { getSpinWheelPrizes, spinWheel, SpinWheelPrize } from '@/lib/adhdHooks';
 
 interface SpinWheelProps {
@@ -28,6 +29,7 @@ const COLORS = [
 
 export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
   const { t } = useLanguage();
+  useScrollLock(true);
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [prize, setPrize] = useState<SpinWheelPrize | null>(null);

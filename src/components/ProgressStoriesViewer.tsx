@@ -21,6 +21,7 @@ import { cn, interpolate } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { StorySlide, MoodTrendData, HabitStatsData, FocusStatsData } from '@/lib/progressStories';
 import { generateWeeklyCard, WeeklyProgressData, shareImage } from '@/lib/shareCards';
 import { Badge } from '@/types';
@@ -103,6 +104,7 @@ export function ProgressStoriesViewer({
   const { t, language } = useLanguage();
 
   useBackHandler(true, onClose);
+  useScrollLock(true);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);

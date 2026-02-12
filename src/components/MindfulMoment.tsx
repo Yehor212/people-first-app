@@ -7,6 +7,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { X, Heart, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { cn } from '@/lib/utils';
 import {
   MindfulPrompt,
@@ -41,6 +42,7 @@ export function MindfulMoment({
   prompt: providedPrompt,
 }: MindfulMomentProps) {
   const { language, t } = useLanguage();
+  useScrollLock(isOpen);
   const [currentPrompt, setCurrentPrompt] = useState<MindfulPrompt | null>(null);
   const [countdown, setCountdown] = useState(0);
   const [showResponse, setShowResponse] = useState(false);

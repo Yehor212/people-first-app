@@ -146,7 +146,7 @@ import { checkForAppUpdate, wasUpdateDismissed, dismissUpdate, UpdateState } fro
 type TabType = 'home' | 'garden' | 'stats' | 'achievements' | 'settings';
 
 export function Index() {
-  const { t, language } = useLanguage();
+  const { t, language, isRTL } = useLanguage();
   const { setEmotionFromEntries } = useEmotionTheme();
   const { isFeatureVisible } = useFeatureFlags();
   // const { openCoach, setUserData, onboardingData, saveOnboardingAnswer } = useAICoach(); // Hidden until AI ready
@@ -171,6 +171,7 @@ export function Index() {
     tabs: SWIPE_TABS,
     threshold: 50,
     velocityThreshold: 0.3,
+    isRTL,
   });
 
   // App initialization state (must be first)

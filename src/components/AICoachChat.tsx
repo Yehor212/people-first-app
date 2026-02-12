@@ -13,6 +13,7 @@ import { useAICoach, ChatMessage } from '@/contexts/AICoachContext';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 
 export function AICoachChat() {
   const { t } = useLanguage();
@@ -27,6 +28,7 @@ export function AICoachChat() {
   } = useAICoach();
 
   useBackHandler(isOpen, () => { if (!isLoading) closeCoach(); });
+  useScrollLock(isOpen);
 
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
