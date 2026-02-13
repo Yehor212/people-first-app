@@ -126,7 +126,7 @@ function csvEscape(str: string): string {
 export async function exportMarkdown(): Promise<void> {
   const entries = await storage.getAllEntries();
 
-  const lines: string[] = ['# Personal Journal\n'];
+  const lines: string[] = ['# Diary\n'];
 
   for (const entry of entries) {
     const dt = new Date(entry.createdAt);
@@ -195,7 +195,7 @@ export async function exportPDF(
   // Cover page
   doc.setFontSize(24);
   doc.setTextColor(60, 60, 60);
-  doc.text('Personal Journal', pageWidth / 2, 60, { align: 'center' });
+  doc.text('Diary', pageWidth / 2, 60, { align: 'center' });
 
   doc.setFontSize(12);
   doc.setTextColor(120, 120, 120);

@@ -2290,7 +2290,7 @@ export function Index() {
               </Suspense>
             </LazyErrorBoundary>
 
-            {/* Personal Journal */}
+            {/* Diary */}
             <LazyErrorBoundary componentName="Journal">
               <Suspense fallback={<SkeletonCard />}>
                 <JournalModule />

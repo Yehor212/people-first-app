@@ -183,8 +183,8 @@ export function JournalLockScreen({
           {mode === 'change'
             ? (ts.journalPasswordChange || 'Change Password')
             : mode === 'setup'
-              ? (ts.journalPasswordSetup || 'Set Journal Password')
-              : (ts.journalLocked || 'Journal Locked')}
+              ? (ts.journalPasswordSetup || 'Set Diary Password')
+              : (ts.journalLocked || 'Diary Locked')}
         </h2>
 
         {mode === 'change' && step === 'current' && (
@@ -207,7 +207,7 @@ export function JournalLockScreen({
 
         {mode === 'setup' && step === 'enter' && (
           <p className="text-xs text-muted-foreground text-center mb-4 px-2">
-            {ts.journalPasswordHint || 'This password protects only your journal. There is no recovery \u2014 remember it well.'}
+            {ts.journalPasswordHint || 'This password protects only your diary. There is no recovery \u2014 remember it well.'}
           </p>
         )}
 

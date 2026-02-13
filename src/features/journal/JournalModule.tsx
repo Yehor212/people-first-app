@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
-import { BookOpen, Lock, ChevronRight, X, Settings, Loader2, CheckCircle2, Mail, PenLine, Download, Upload, BarChart3 } from 'lucide-react';
+import { Lock, ChevronRight, X, Settings, Loader2, CheckCircle2, Mail, PenLine, Download, Upload, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { cn, getToday } from '@/lib/utils';
@@ -22,11 +22,22 @@ import { StickerRenderer } from './StickerRenderer';
 import { useJournalReminder, getDaysSinceLastEntry } from './useJournalReminder';
 import { useScreenSecurity } from './useScreenSecurity';
 import { ParticleBackground } from '@/components/stats/ParticleBackground';
+import type { MoodType } from '@/types';
+import { hapticSuccess } from '@/lib/haptics';
+import { logger } from '@/lib/logger';
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
 const LazyJournalStats = lazy(() =>
   import('./JournalStats').then(m => ({ default: m.JournalStats }))
 );
+
+const QUICK_MOOD_OPTIONS: { mood: MoodType; emoji: string }[] = [
+  { mood: 'great', emoji: '\u{1F604}' },
+  { mood: 'good', emoji: '\u{1F642}' },
+  { mood: 'okay', emoji: '\u{1F610}' },
+  { mood: 'bad', emoji: '\u{1F614}' },
+  { mood: 'terrible', emoji: '\u{1F622}' },
+];
 
 type ModuleState = 'card' | 'open';
 
@@ -48,6 +59,7 @@ export function JournalModule() {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [hasDraft, setHasDraft] = useState(false);
+  const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Secure password reset via email verification
@@ -59,7 +71,7 @@ export function JournalModule() {
   const journal = useJournal();
   const security = useJournalSecurity();
   const reminder = useJournalReminder({
-    reminderTitle: ts.journalReminderNotifTitle || 'Time to Journal',
+    reminderTitle: ts.journalReminderNotifTitle || 'Time to Write',
     reminderBody: ts.journalReminderNotifBody || 'Take a moment to capture your thoughts and feelings.',
   });
   const screenSecurity = useScreenSecurity(moduleState === 'open');
@@ -155,6 +167,24 @@ export function JournalModule() {
     setModuleState('card');
     security.lock();
   };
+
+  const handleQuickMood = useCallback(async (mood: MoodType) => {
+    try {
+      await journal.createEntry({
+        title: '',
+        content: '',
+        stickers: [],
+        photoIds: [],
+        tags: [],
+        mood,
+        date: getToday(),
+      });
+      void hapticSuccess();
+      toast.success(ts.journalQuickMoodSaved || 'Mood saved');
+    } catch (err) {
+      logger.error('[JournalModule] Quick mood failed:', err);
+    }
+  }, [journal, ts]);
 
   const handleNewEntry = () => {
     journal.editEntry(null);
@@ -320,12 +350,12 @@ export function JournalModule() {
               {todayMood ? (
                 <StickerRenderer emoji={MOOD_EMOJI[todayMood]} size="xs" />
               ) : (
-                <BookOpen className="w-5 h-5 text-purple-500" />
+                <PenLine className="w-5 h-5 text-purple-500" />
               )}
             </div>
             <div>
               <h3 className="text-sm font-semibold text-foreground">
-                {ts.journalTitle || 'Personal Journal'}
+                {ts.journalTitle || 'Diary'}
               </h3>
               {security.hasPassword && (
                 <span className="flex items-center gap-1 text-[10px] text-muted-foreground/60">
@@ -373,6 +403,28 @@ export function JournalModule() {
           <span className="flex-1" />
           <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
         </div>
+
+        {/* Quick mood row (when no entry today) */}
+        {!hasTodayEntry && (
+          <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border/20">
+            <span className="text-[10px] text-muted-foreground me-1">
+              {ts.journalQuickMood || 'How are you?'}
+            </span>
+            {QUICK_MOOD_OPTIONS.map((opt) => (
+              <button
+                key={opt.mood}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleQuickMood(opt.mood);
+                }}
+                className="p-1.5 rounded-lg hover:bg-muted/50 active:scale-90 transition-transform min-w-[44px] min-h-[44px] flex items-center justify-center"
+                aria-label={opt.mood}
+              >
+                <span className="text-xl">{opt.emoji}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </motion.button>
     );
   }
@@ -383,7 +435,7 @@ export function JournalModule() {
       ref={overlayRef}
       role="dialog"
       aria-modal="true"
-      aria-label={ts.journalTitle || 'Personal Journal'}
+      aria-label={ts.journalTitle || 'Diary'}
       className="fixed inset-0 z-[60] bg-background md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up"
       dir={isRTL ? 'rtl' : 'ltr'}
     >
@@ -394,7 +446,7 @@ export function JournalModule() {
           {/* Header with close */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
             <h2 className="text-base font-bold text-foreground">
-              {ts.journalTitle || 'Personal Journal'}
+              {ts.journalTitle || 'Diary'}
             </h2>
             <button onClick={handleClose} className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={ts.close || 'Close'}>
               <X className="w-5 h-5 text-foreground" />
@@ -512,7 +564,7 @@ export function JournalModule() {
                       {maskEmail(resetEmail)}
                     </p>
                     <p className="text-xs text-muted-foreground text-center mb-4">
-                      {ts.journalResetCheckEmail || 'Click the link in your email to remove the journal password. This page will update automatically.'}
+                      {ts.journalResetCheckEmail || 'Click the link in your email to remove the diary password. This page will update automatically.'}
                     </p>
                     {resetError && (
                       <p className="text-xs text-destructive text-center mb-3">{resetError}</p>
@@ -550,7 +602,7 @@ export function JournalModule() {
                       </motion.div>
                     </div>
                     <p className="text-sm font-medium text-foreground text-center">
-                      {ts.journalResetSuccess || 'Journal password removed'}
+                      {ts.journalResetSuccess || 'Diary password removed'}
                     </p>
                   </div>
                 )}
@@ -565,7 +617,7 @@ export function JournalModule() {
         <>
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/30">
             <h2 className="text-base font-bold text-foreground">
-              {ts.journalPasswordSetup || 'Set Journal Password'}
+              {ts.journalPasswordSetup || 'Set Diary Password'}
             </h2>
             <button onClick={() => setShowPasswordSettings(false)} className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={ts.close || 'Close'}>
               <X className="w-5 h-5 text-foreground" />
@@ -653,7 +705,7 @@ export function JournalModule() {
                 <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-gradient-to-r from-primary/[0.03] via-background/80 to-primary/[0.02] backdrop-blur-xl">
                   <div className="flex items-center gap-2">
                     <h2 className="text-base font-bold text-foreground">
-                      {ts.journalTitle || 'Personal Journal'}
+                      {ts.journalTitle || 'Diary'}
                     </h2>
                     {streak > 0 && (
                       <span className="text-[10px] font-bold text-orange-500 bg-gradient-to-r from-orange-500/15 to-amber-500/10 border border-orange-500/10 px-1.5 py-0.5 rounded-full flex-shrink-0 animate-streak-fire-glow">
@@ -673,7 +725,7 @@ export function JournalModule() {
                     <button
                       onClick={() => setShowPasswordSettings(true)}
                       className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
-                      title={ts.journalSettings || 'Journal settings'}
+                      title={ts.journalSettings || 'Diary settings'}
                       aria-label={ts.settings || 'Settings'}
                     >
                       <Settings className="w-4 h-4" />
@@ -733,7 +785,7 @@ export function JournalModule() {
                     <div
                       role="dialog"
                       aria-modal="true"
-                      aria-label={ts.journalSettings || 'Journal Settings'}
+                      aria-label={ts.journalSettings || 'Diary Settings'}
                       className="fixed bottom-0 left-0 right-0 z-[65] animate-slide-up"
                       onClick={e => e.stopPropagation()}
                     >
@@ -743,7 +795,7 @@ export function JournalModule() {
                       </div>
                       <div className="bg-card p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
                         <h3 className="text-base font-semibold text-foreground mb-4">
-                          {ts.journalSettings || 'Journal Settings'}
+                          {ts.journalSettings || 'Diary Settings'}
                         </h3>
                         {security.hasPassword ? (
                           showChangePassword ? (
@@ -780,12 +832,7 @@ export function JournalModule() {
                                 {ts.journalPasswordChange || 'Change Password'}
                               </button>
                               <button
-                                onClick={async () => {
-                                  if (window.confirm(ts.journalPasswordRemoveConfirm || 'Are you sure? Your journal will be accessible without a password.')) {
-                                    await security.removePassword();
-                                    setShowPasswordSettings(false);
-                                  }
-                                }}
+                                onClick={() => setShowRemovePasswordConfirm(true)}
                                 className="w-full py-3 rounded-xl bg-destructive/10 text-destructive text-sm font-medium min-h-[44px]"
                               >
                                 {ts.journalPasswordRemove || 'Remove Password Lock'}
@@ -795,7 +842,7 @@ export function JournalModule() {
                         ) : (
                           <div>
                             <p className="text-sm text-muted-foreground mb-3">
-                              {ts.journalPasswordHint || 'Protect your journal with a password'}
+                              {ts.journalPasswordHint || 'Protect your diary with a password'}
                             </p>
                             <JournalLockScreen
                               mode="setup"
@@ -840,7 +887,7 @@ export function JournalModule() {
                                   {ts.journalScreenshotBlock || 'Block Screenshots'}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                  {ts.journalScreenshotBlockSubtitle || 'Prevent screen capture while journal is open'}
+                                  {ts.journalScreenshotBlockSubtitle || 'Prevent screen capture while diary is open'}
                                 </p>
                               </div>
                               <Switch
@@ -1049,6 +1096,43 @@ export function JournalModule() {
         </>
       )}
       </div>
+
+      {/* Remove password confirmation dialog */}
+      {showRemovePasswordConfirm && (
+        <>
+          <div className="fixed inset-0 z-[70] bg-black/40 animate-fade-in" onClick={() => setShowRemovePasswordConfirm(false)} />
+          <div
+            role="dialog"
+            aria-modal="true"
+            className="fixed inset-x-4 top-1/2 -translate-y-1/2 z-[71] bg-card rounded-2xl p-6 shadow-xl animate-scale-in max-w-sm mx-auto"
+          >
+            <h3 className="text-base font-semibold text-foreground mb-2">
+              {ts.journalPasswordRemove || 'Remove Password Lock'}
+            </h3>
+            <p className="text-sm text-muted-foreground mb-5">
+              {ts.journalPasswordRemoveConfirm || 'Are you sure? Your diary will be accessible without a password.'}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowRemovePasswordConfirm(false)}
+                className="flex-1 py-2.5 rounded-xl bg-muted text-foreground text-sm font-medium min-h-[44px]"
+              >
+                {ts.cancel || 'Cancel'}
+              </button>
+              <button
+                onClick={async () => {
+                  await security.removePassword();
+                  setShowRemovePasswordConfirm(false);
+                  setShowPasswordSettings(false);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-destructive text-destructive-foreground text-sm font-medium min-h-[44px]"
+              >
+                {ts.journalPasswordRemove || 'Remove'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -51,3 +51,9 @@ export const MAX_STICKERS_PER_ENTRY = 5;
 export const MAX_AUDIO_PER_ENTRY = 3;
 export const MAX_AUDIO_DURATION_SEC = 300; // 5 minutes
 export const JOURNAL_PASSWORD_KEY = 'journal_password';
+
+/** Count words in text. Handles empty/whitespace strings. */
+export function countWords(text: string): number {
+  if (!text || !text.trim()) return 0;
+  return text.trim().split(/\s+/).filter(Boolean).length;
+}

@@ -12,6 +12,7 @@ import { PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tool
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { JournalEntry } from './types';
+import { countWords } from './types';
 import type { MoodType } from '@/types';
 
 const MOOD_COLORS: Record<MoodType, string> = {
@@ -180,10 +181,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
   }, [entries, dayNames]);
 
   const totalWords = useMemo(() => {
-    return entries.reduce((sum, e) => {
-      if (!e.content.trim()) return sum;
-      return sum + e.content.trim().split(/\s+/).filter(Boolean).length;
-    }, 0);
+    return entries.reduce((sum, e) => sum + countWords(e.content), 0);
   }, [entries]);
 
   return (
@@ -198,7 +196,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
         <h2 className="text-base font-bold text-foreground">
-          {ts.journalStatsTitle || 'Journal Statistics'}
+          {ts.journalStatsTitle || 'Diary Statistics'}
         </h2>
         <div className="w-[44px]" />
       </div>

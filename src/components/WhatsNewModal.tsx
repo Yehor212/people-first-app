@@ -40,14 +40,14 @@ export const CHANGELOG: Record<string, ChangelogItem[]> = {
       titleKey: 'whatsNew.treatsSystem.title',
       descriptionKey: 'whatsNew.treatsSystem.description',
       title: 'Treats System',
-      description: 'Earn treats from habits, journaling, and focus sessions. Use them to water and grow your tree!',
+      description: 'Earn treats from habits, writing, and focus sessions. Use them to water and grow your tree!',
     },
     {
       icon: <MessageSquare className="w-5 h-5 text-blue-500" />,
       titleKey: 'whatsNew.personalJournal.title',
       descriptionKey: 'whatsNew.personalJournal.description',
-      title: 'Personal Journal',
-      description: 'Voice journaling, premium templates, export, and biometric lock for your private entries.',
+      title: 'Diary',
+      description: 'Voice notes, premium templates, export, and biometric lock for your private entries.',
     },
     {
       icon: <Settings className="w-5 h-5 text-indigo-500" />,

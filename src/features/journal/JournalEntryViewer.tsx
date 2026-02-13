@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo, Fragment } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Pencil, Trash2, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { JournalEntry, JournalAudio } from './types';
+import { countWords } from './types';
 import type { MoodType, PrimaryEmotion } from '@/types';
 import { JournalPhotoGallery } from './JournalPhotoGallery';
 import { JournalAudioPlayer } from './JournalAudioPlayer';
@@ -35,25 +36,81 @@ const MOOD_TO_EMOTION: Record<MoodType, PrimaryEmotion> = {
   terrible: 'anger',
 };
 
-/** Lightweight markdown renderer for **bold** and *italic* */
-function renderContent(text: string): React.ReactNode[] {
-  // Split by **bold** first, then *italic*
-  const parts: React.ReactNode[] = [];
-  const boldRegex = /\*\*(.+?)\*\*/g;
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
+/** Lightweight markdown renderer: **bold**, *italic*, ## headings, - lists, > quotes, --- hr */
+function renderContent(content: string): React.ReactNode[] {
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
 
-  while ((match = boldRegex.exec(text)) !== null) {
-    if (match.index > lastIndex) {
-      parts.push(text.slice(lastIndex, match.index));
+  const renderInline = (text: string, key: string): React.ReactNode => {
+    const parts: React.ReactNode[] = [];
+    const regex = /(\*\*(.+?)\*\*|\*(.+?)\*)/g;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
+    let partIdx = 0;
+
+    while ((match = regex.exec(text)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push(text.slice(lastIndex, match.index));
+      }
+      if (match[2]) {
+        parts.push(<strong key={`${key}-b-${partIdx++}`} className="font-semibold">{match[2]}</strong>);
+      } else if (match[3]) {
+        parts.push(<em key={`${key}-i-${partIdx++}`} className="italic">{match[3]}</em>);
+      }
+      lastIndex = match.index + match[0].length;
     }
-    parts.push(<strong key={match.index} className="font-semibold text-foreground">{match[1]}</strong>);
-    lastIndex = match.index + match[0].length;
-  }
-  if (lastIndex < text.length) {
-    parts.push(text.slice(lastIndex));
-  }
-  return parts;
+
+    if (lastIndex < text.length) {
+      parts.push(text.slice(lastIndex));
+    }
+
+    return parts.length > 0 ? <>{parts}</> : text;
+  };
+
+  lines.forEach((line, i) => {
+    const trimmed = line.trim();
+    const key = `line-${i}`;
+
+    if (trimmed.startsWith('### ')) {
+      elements.push(
+        <h3 key={key} className="text-sm font-bold text-foreground mt-3 mb-1">
+          {renderInline(trimmed.slice(4), key)}
+        </h3>,
+      );
+    } else if (trimmed.startsWith('## ')) {
+      elements.push(
+        <h2 key={key} className="text-base font-bold text-foreground mt-4 mb-1">
+          {renderInline(trimmed.slice(3), key)}
+        </h2>,
+      );
+    } else if (trimmed.startsWith('> ')) {
+      elements.push(
+        <blockquote key={key} className="border-s-2 border-primary/40 ps-3 my-2 text-muted-foreground italic">
+          {renderInline(trimmed.slice(2), key)}
+        </blockquote>,
+      );
+    } else if (trimmed === '---' || trimmed === '***') {
+      elements.push(<hr key={key} className="my-3 border-border/30" />);
+    } else if (trimmed.startsWith('- ') || (trimmed.startsWith('* ') && !trimmed.startsWith('**'))) {
+      const listText = trimmed.slice(2);
+      elements.push(
+        <div key={key} className="flex gap-2 my-0.5">
+          <span className="text-muted-foreground select-none" aria-hidden="true">{'\u2022'}</span>
+          <span>{renderInline(listText, key)}</span>
+        </div>,
+      );
+    } else if (trimmed === '') {
+      elements.push(<div key={key} className="h-2" />);
+    } else {
+      elements.push(
+        <p key={key} className="my-0.5">
+          {renderInline(trimmed, key)}
+        </p>,
+      );
+    }
+  });
+
+  return elements;
 }
 
 function getRelativeTime(timestamp: number, t: Record<string, string>): string {
@@ -104,17 +161,14 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
   const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const relativeTime = useMemo(() => getRelativeTime(entry.createdAt, ts), [entry.createdAt, ts]);
 
-  const wordCount = useMemo(() => {
-    if (!entry.content.trim()) return 0;
-    return entry.content.trim().split(/\s+/).filter(Boolean).length;
-  }, [entry.content]);
+  const wordCount = useMemo(() => countWords(entry.content), [entry.content]);
 
   const handleShare = async () => {
     const text = [entry.title, entry.content].filter(Boolean).join('\n\n');
     if (!text) return;
     try {
       if (navigator.share) {
-        await navigator.share({ title: entry.title || 'Journal Entry', text });
+        await navigator.share({ title: entry.title || 'Diary Entry', text });
       } else {
         await navigator.clipboard.writeText(text);
         toast.success(ts.journalShareCopied || 'Copied to clipboard');
@@ -254,7 +308,7 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
 
           {/* Content */}
           {entry.content && (
-            <div className="text-sm text-foreground/90 leading-8 whitespace-pre-wrap border-s-2 border-primary/10 ps-4">
+            <div className="text-[15px] leading-7 text-foreground/90">
               {renderContent(entry.content)}
             </div>
           )}

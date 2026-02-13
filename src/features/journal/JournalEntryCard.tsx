@@ -1,10 +1,11 @@
-import { memo, useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { memo, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Trash2, Clock, Image as ImageIcon, Mic, Bookmark } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticTap, hapticMedium } from '@/lib/haptics';
 import type { JournalEntry } from './types';
+import { countWords } from './types';
 import { StickerRenderer } from './StickerRenderer';
 import { getPhotoById } from './journalStorage';
 
@@ -43,6 +44,10 @@ const MOOD_GLOW: Record<string, string> = {
 const DEFAULT_BG = 'from-primary/3 to-transparent';
 const DEFAULT_ACCENT = 'from-primary/20 to-primary/10';
 
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function getRelativeTime(timestamp: number, ts: Record<string, string>): string {
   const diff = Date.now() - timestamp;
   const minutes = Math.floor(diff / 60_000);
@@ -62,6 +67,7 @@ interface JournalEntryCardProps {
   onDelete: () => void;
   onEdit?: (entry: JournalEntry) => void;
   privateMode?: boolean;
+  searchQuery?: string;
 }
 
 export const JournalEntryCard = memo(function JournalEntryCard({
@@ -70,9 +76,27 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   onDelete,
   onEdit,
   privateMode = false,
+  searchQuery,
 }: JournalEntryCardProps) {
   const { t, isRTL } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+
+  // ── Search highlight ──
+  const highlightText = useCallback((text: string): React.ReactNode => {
+    if (!searchQuery || !searchQuery.trim()) return text;
+    try {
+      const regex = new RegExp(`(${escapeRegex(searchQuery)})`, 'gi');
+      const parts = text.split(regex);
+      if (parts.length <= 1) return text;
+      return parts.map((part, i) =>
+        regex.test(part)
+          ? <mark key={i} className="bg-primary/20 text-foreground rounded-sm px-0.5">{part}</mark>
+          : part
+      );
+    } catch {
+      return text;
+    }
+  }, [searchQuery]);
 
   // ── Swipe-to-delete ──
   const swipeStartX = useRef(0);
@@ -191,7 +215,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   const preview = rawPreview + (entry.content.length > 140 ? '...' : '');
   const time = new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const relativeTime = useMemo(() => getRelativeTime(entry.createdAt, ts), [entry.createdAt, ts]);
-  const wordCount = entry.content.trim() ? entry.content.trim().split(/\s+/).filter(Boolean).length : 0;
+  const wordCount = countWords(entry.content);
 
   // Load first photo thumbnail
   const [thumbnail, setThumbnail] = useState<string | null>(null);
@@ -268,7 +292,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                   <Bookmark className="w-3.5 h-3.5 text-muted-foreground/40 flex-shrink-0" />
                 )}
                 <h4 className="text-sm font-semibold text-foreground truncate">
-                  {entry.title || time}
+                  {entry.title ? highlightText(entry.title) : time}
                 </h4>
                 <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">{relativeTime}</span>
               </div>
@@ -276,7 +300,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
               {/* Content preview (hidden in private mode) */}
               {!privateMode && preview && (
                 <p className="text-xs text-muted-foreground/80 line-clamp-2 leading-relaxed">
-                  {preview}
+                  {highlightText(preview)}
                 </p>
               )}
 

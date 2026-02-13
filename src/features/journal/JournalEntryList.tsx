@@ -8,6 +8,10 @@ import type { MoodType } from '@/types';
 import { JournalEntryCard } from './JournalEntryCard';
 import { StickerRenderer } from './StickerRenderer';
 
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 const MOOD_EMOJIS: Record<string, string> = {
   great: '\u{1F604}',
   good: '\u{1F642}',
@@ -172,7 +176,7 @@ export function JournalEntryList({
           ))}
         </div>
         <h3 className="text-base font-semibold text-foreground mb-1">
-          {ts.journalEmpty || 'Your journal is empty'}
+          {ts.journalEmpty || 'Your diary is empty'}
         </h3>
         <p className="text-sm text-muted-foreground text-center mb-2 max-w-[260px]">
           {ts.journalEmptyHint || 'Start writing to capture your thoughts, feelings, and memories.'}
@@ -267,7 +271,7 @@ export function JournalEntryList({
               key={m}
               onClick={() => setSelectedMood(selectedMood === m ? null : m)}
               className={cn(
-                'flex-shrink-0 text-base px-2 py-0.5 rounded-full transition-colors min-h-[32px]',
+                'flex-shrink-0 text-base px-2 py-0.5 rounded-full transition-colors min-h-[44px]',
                 selectedMood === m ? 'bg-primary/15 ring-1 ring-primary/30' : 'hover:bg-muted/50',
               )}
             >
@@ -284,7 +288,7 @@ export function JournalEntryList({
               key={tag}
               onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
               className={cn(
-                'flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors min-h-[32px]',
+                'flex-shrink-0 px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors min-h-[44px]',
                 selectedTag === tag
                   ? 'bg-primary/15 text-primary ring-1 ring-primary/30'
                   : 'bg-muted/50 text-foreground hover:bg-muted/70',
@@ -319,6 +323,7 @@ export function JournalEntryList({
                   onTap={() => onOpenEntry(entry.id)}
                   onDelete={() => onDeleteEntry(entry.id)}
                   privateMode={privateMode}
+                  searchQuery={debouncedSearch}
                 />
               </motion.div>
             ))}
@@ -338,7 +343,7 @@ export function JournalEntryList({
           </p>
           <button
             onClick={() => { setSearchInput(''); setSelectedMood(null); setSelectedTag(null); }}
-            className="text-xs text-primary font-medium px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors min-h-[32px]"
+            className="text-xs text-primary font-medium px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors min-h-[44px]"
           >
             {ts.journalClearAllFilters || 'Clear all filters'}
           </button>

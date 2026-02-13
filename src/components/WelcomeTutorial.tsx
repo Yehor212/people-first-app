@@ -130,7 +130,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
           t.tutorialFeature2 || 'Build habits step by step',
           t.tutorialFeature2b || '✨ Customize icons, colors & goals!',
           t.tutorialFeature3 || 'Focus sessions with ambient sounds',
-          t.tutorialFeature4 || 'Gratitude journaling',
+          t.tutorialFeature4 || 'Gratitude diary',
         ],
       },
       dayclock: {
@@ -161,9 +161,9 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
         description: t.tutorialMoodDesc || 'Quick daily check-ins help you notice what affects your energy and focus. Over time, you\'ll understand yourself better.',
       },
       journal: {
-        title: t.tutorialJournalTitle || 'Personal Journal',
+        title: t.tutorialJournalTitle || 'Diary',
         subtitle: t.tutorialJournalSubtitle || 'Your private space to reflect',
-        description: t.tutorialJournalDesc || 'Write about your day, capture thoughts, and track your journey. Your journal is always private and secure.',
+        description: t.tutorialJournalDesc || 'Write about your day, capture thoughts, and track your journey. Your diary is always private and secure.',
         features: [
           t.tutorialJournalFeature1 || '✍️ Text, photos, and audio entries',
           t.tutorialJournalFeature2 || '🔒 Lock with PIN for privacy',

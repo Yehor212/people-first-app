@@ -10,7 +10,7 @@ import { createFocusTrap, announceSuccess } from '@/lib/a11y';
 import { hapticSuccess } from '@/lib/haptics';
 import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
 import type { MoodType } from '@/types';
-import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY } from './types';
+import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY, countWords } from './types';
 import { JournalStickerPicker } from './JournalStickerPicker';
 import { JournalPhotoPicker } from './JournalPhotoPicker';
 import { JournalPhotoGallery } from './JournalPhotoGallery';
@@ -216,10 +216,7 @@ export function JournalEntryEditor({
       JSON.stringify(tags) !== init.tags;
   }, [title, content, stickers, photoIds, audioIds, mood, tags]);
 
-  const wordCount = useMemo(() => {
-    if (!content.trim()) return 0;
-    return content.trim().split(/\s+/).filter(Boolean).length;
-  }, [content]);
+  const wordCount = useMemo(() => countWords(content), [content]);
 
   const [promptSeed, setPromptSeed] = useState(0);
   const randomPrompts = useMemo(() => {
@@ -517,7 +514,7 @@ export function JournalEntryEditor({
   };
 
   return (
-    <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Journal Entry'} className="fixed inset-0 z-[60] bg-background md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up">
+    <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] bg-background md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up">
       <div className="w-full h-full flex flex-col md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden">
       {/* Header — frosted glass */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/80 backdrop-blur-xl">
@@ -811,12 +808,22 @@ export function JournalEntryEditor({
           )}
         />
 
-        {/* Word count + auto-save indicator */}
+        {/* Word count + char count + reading time + auto-save indicator */}
         <div className="flex items-center gap-2">
           {wordCount > 0 && (
-            <p className="text-[10px] text-muted-foreground/40">
-              {wordCount} {ts.journalWords || 'words'}
-            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground/60">
+                {wordCount} {ts.journalWords || 'words'}
+              </span>
+              <span className="text-[10px] text-muted-foreground/40">
+                {content.length} {ts.journalChars || 'chars'}
+              </span>
+              {wordCount >= 50 && (
+                <span className="text-[10px] text-muted-foreground/40">
+                  ~{Math.ceil(wordCount / 200)} {ts.journalMinRead || 'min read'}
+                </span>
+              )}
+            </div>
           )}
           <AnimatePresence>
             {draftSavedAt > 0 && (
