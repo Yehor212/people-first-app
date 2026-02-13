@@ -41,7 +41,7 @@ export const Header = memo(function Header({ userName = 'Friend', onOpenChalleng
   }, [language]);
 
   return (
-    <header className="mb-4 animate-fade-in">
+    <header className="mb-4 motion-safe:animate-fade-in">
       {/* Top row: Logo, sync status, and theme toggle */}
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">

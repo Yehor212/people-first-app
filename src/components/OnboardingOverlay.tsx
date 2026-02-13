@@ -12,6 +12,7 @@ import { useState, useEffect } from 'react';
 import { Sparkles, X, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import {
   getOnboardingState,
   shouldShowWelcome,
@@ -30,6 +31,10 @@ interface OnboardingOverlayProps {
 export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
   const { t } = useLanguage();
   useScrollLock(true);
+  useBackHandler(true, () => {
+    markWelcomeSeen();
+    onClose();
+  });
   const [step, setStep] = useState(0);
 
   const steps = [
@@ -69,12 +74,12 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in px-3 sm:px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in px-3 sm:px-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="onboarding-welcome-title"
     >
-      <div className="relative max-w-lg w-full bg-card rounded-xl sm:rounded-2xl zen-shadow-card border border-border overflow-hidden animate-scale-in">
+      <div className="relative max-w-lg w-full bg-card rounded-xl sm:rounded-2xl zen-shadow-card border border-border overflow-hidden motion-safe:animate-scale-in">
         {/* Header - responsive */}
         <div className="p-4 sm:p-6 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
           <div className="flex items-center justify-between mb-3 sm:mb-4">
@@ -85,7 +90,7 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
                 onClose();
               }}
               aria-label={t.close}
-              className="p-2 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
+              className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-colors"
             >
               <X className="w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
             </button>

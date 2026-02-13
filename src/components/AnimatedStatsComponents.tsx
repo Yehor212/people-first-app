@@ -516,11 +516,11 @@ export function AnimatedCalendar({
           ))}
         </select>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ms-auto flex items-center gap-2">
           <button
             onClick={() => handleMonthShift(-1)}
             aria-label={prevMonthLabel}
-            className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors"
+            className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -534,7 +534,7 @@ export function AnimatedCalendar({
           <button
             onClick={() => handleMonthShift(1)}
             aria-label={nextMonthLabel}
-            className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors"
+            className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
             <ChevronRight className="w-4 h-4" />
           </button>

@@ -319,7 +319,7 @@ export function WeeklyReview({
       {/* Animated cosmic background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <motion.div
-          className="absolute -top-1/2 -right-1/2 w-full h-full rounded-full"
+          className="absolute -top-1/2 -end-1/2 w-full h-full rounded-full"
           style={{
             background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
           }}
@@ -330,7 +330,7 @@ export function WeeklyReview({
           transition={{ duration: 8, repeat: Infinity }}
         />
         <motion.div
-          className="absolute -bottom-1/2 -left-1/2 w-full h-full rounded-full"
+          className="absolute -bottom-1/2 -start-1/2 w-full h-full rounded-full"
           style={{
             background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 60%)',
           }}

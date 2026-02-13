@@ -74,6 +74,9 @@ function ShootingStar() {
   const [position, setPosition] = useState({ startX: 20, startY: 15, angle: 40 });
 
   useEffect(() => {
+    let hideTimeout: ReturnType<typeof setTimeout>;
+    let scheduleTimeout: ReturnType<typeof setTimeout>;
+
     const triggerStar = () => {
       setPosition({
         startX: 10 + Math.random() * 40,
@@ -81,20 +84,23 @@ function ShootingStar() {
         angle: 25 + Math.random() * 35,
       });
       setVisible(true);
-      setTimeout(() => setVisible(false), 800);
+      hideTimeout = setTimeout(() => setVisible(false), 800);
     };
 
     // Random interval between 6-12 seconds
     const scheduleNext = () => {
       const delay = 6000 + Math.random() * 6000;
-      return setTimeout(() => {
+      scheduleTimeout = setTimeout(() => {
         if (Math.random() > 0.4) triggerStar();
         scheduleNext();
       }, delay);
     };
 
-    const timeout = scheduleNext();
-    return () => clearTimeout(timeout);
+    scheduleNext();
+    return () => {
+      clearTimeout(hideTimeout);
+      clearTimeout(scheduleTimeout);
+    };
   }, []);
 
   return (

@@ -145,7 +145,7 @@ function AlertCard({
             e.stopPropagation();
             onDismiss();
           }}
-          className="absolute top-3 end-3 p-1.5 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+          className="absolute top-2 end-2 p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
           aria-label={t.close || 'Dismiss'}
         >
           <X className="w-4 h-4 text-white/80" />

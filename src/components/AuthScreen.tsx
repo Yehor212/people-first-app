@@ -278,15 +278,15 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
       if (signInError) {
         logger.error(`[Auth] ${provider} sign-in error:`, signInError);
 
-        // Enhanced error messages
-        let errorMessage = `Failed to sign in with ${provider}.`;
+        // Enhanced error messages (developer-facing OAuth config errors — not user-visible in normal flow)
+        let errorMessage = t.authUnexpectedError || `Failed to sign in with ${provider}.`;
 
         if (signInError.message.includes('invalid_client')) {
-          errorMessage = `${provider} OAuth not configured correctly. Please check the provider settings in Supabase.`;
+          errorMessage = t.authNotConfigured || `${provider} OAuth not configured correctly.`;
         } else if (signInError.message.includes('redirect_uri')) {
-          errorMessage = 'Redirect URI mismatch. Please add com.zenflow.app://login-callback to Supabase allowed URLs.';
+          errorMessage = t.authNotConfigured || 'Redirect URI mismatch.';
         } else if (signInError.message.includes('unauthorized')) {
-          errorMessage = `OAuth client not authorized. Please enable ${provider} provider in Supabase.`;
+          errorMessage = t.authNotConfigured || `OAuth client not authorized.`;
         }
 
         setError(errorMessage);
@@ -312,11 +312,11 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
     }
   };
 
-  const handleGoogleSignIn = () => handleOAuthSignIn('google');
-  const handleAppleSignIn = () => handleOAuthSignIn('apple');
-  const handleFacebookSignIn = () => handleOAuthSignIn('facebook');
+  const handleGoogleSignIn = () => void handleOAuthSignIn('google');
+  const handleAppleSignIn = () => void handleOAuthSignIn('apple');
+  const handleFacebookSignIn = () => void handleOAuthSignIn('facebook');
 
-  const handleEmailSignIn = async () => {
+  const handleEmailSignIn = () => {
     // For now, just skip - can implement magic link later
     onSkip();
   };
@@ -356,7 +356,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
       role="main"
       aria-labelledby="auth-title"
     >
-      <div className="w-full max-w-md animate-fade-in">
+      <div className="w-full max-w-md motion-safe:animate-fade-in">
         {/* Logo */}
         <header className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4" aria-hidden="true">

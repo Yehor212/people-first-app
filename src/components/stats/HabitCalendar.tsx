@@ -176,7 +176,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => handleMonthChange(-1)}
-              className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+              className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label={t.calendarPrevMonth || 'Previous month'}
             >
               <ChevronLeft className="w-4 h-4" />
@@ -186,7 +186,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
             </span>
             <button
               onClick={() => handleMonthChange(1)}
-              className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
+              className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label={t.calendarNextMonth || 'Next month'}
             >
               <ChevronRight className="w-4 h-4" />
@@ -307,7 +307,8 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
                 </div>
                 <button
                   onClick={() => setSelectedDay(null)}
-                  className="p-1 rounded-lg hover:bg-muted/50 transition-colors"
+                  className="p-1 rounded-lg hover:bg-muted/50 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  aria-label={t.close || 'Close'}
                 >
                   <X className="w-4 h-4" />
                 </button>

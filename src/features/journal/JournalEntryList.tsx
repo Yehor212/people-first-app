@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, Search, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -49,10 +49,17 @@ export function JournalEntryList({
 }: JournalEntryListProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
+
+  // Debounce search input (300ms) to avoid filtering on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchInput), 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Available moods and tags from entries (before local filtering)
   const activeMoods = useMemo(() => {
@@ -78,9 +85,9 @@ export function JournalEntryList({
     return count;
   }, [groupedEntries]);
 
-  // Filter entries by search + mood + tag
+  // Filter entries by debounced search + mood + tag
   const filteredGroups = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim();
+    const q = debouncedSearch.toLowerCase().trim();
     return groupedEntries
       .map(group => ({
         ...group,
@@ -94,9 +101,9 @@ export function JournalEntryList({
         }),
       }))
       .filter(g => g.entries.length > 0);
-  }, [groupedEntries, searchQuery, selectedMood, selectedTag]);
+  }, [groupedEntries, debouncedSearch, selectedMood, selectedTag]);
 
-  const hasActiveFilters = searchQuery || selectedMood || selectedTag;
+  const hasActiveFilters = debouncedSearch || selectedMood || selectedTag;
   const showFilters = activeMoods.size > 0 || allTags.length > 0;
 
   // Loading skeleton
@@ -231,8 +238,8 @@ export function JournalEntryList({
         <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         <input
           type="text"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
           placeholder={ts.journalSearch || 'Search entries...'}
           className={cn(
             'w-full ps-9 pe-9 py-2.5 rounded-xl text-sm',
@@ -241,9 +248,9 @@ export function JournalEntryList({
             'placeholder:text-muted-foreground/50',
           )}
         />
-        {searchQuery && (
+        {searchInput && (
           <button
-            onClick={() => setSearchQuery('')}
+            onClick={() => setSearchInput('')}
             className="absolute end-1 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-muted/50"
             aria-label={ts.clear || 'Clear search'}
           >
@@ -319,20 +326,22 @@ export function JournalEntryList({
         </div>
       ))}
 
-      {/* No results */}
+      {/* No results after filtering */}
       {hasActiveFilters && filteredGroups.length === 0 && (
-        <div className="text-center py-8">
-          <p className="text-sm text-muted-foreground">
-            {ts.journalNoResults || 'No entries found'}
+        <div className="flex flex-col items-center py-8 text-center">
+          <span className="text-3xl mb-2">{'\u{1F50D}'}</span>
+          <p className="text-sm text-muted-foreground mb-1">
+            {ts.journalNoMatchingEntries || 'No entries match your search'}
           </p>
-          {(selectedMood || selectedTag) && (
-            <button
-              onClick={() => { setSelectedMood(null); setSelectedTag(null); }}
-              className="mt-2 text-xs text-primary hover:underline"
-            >
-              {ts.journalClearFilters || 'Clear filters'}
-            </button>
-          )}
+          <p className="text-[10px] text-muted-foreground/50 mb-3 max-w-[220px]">
+            {ts.journalNoMatchingHint || 'Try a different keyword or clear your filters'}
+          </p>
+          <button
+            onClick={() => { setSearchInput(''); setSelectedMood(null); setSelectedTag(null); }}
+            className="text-xs text-primary font-medium px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors min-h-[32px]"
+          >
+            {ts.journalClearAllFilters || 'Clear all filters'}
+          </button>
         </div>
       )}
 

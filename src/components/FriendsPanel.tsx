@@ -9,7 +9,7 @@
  * - Friend activity feed
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -82,6 +82,14 @@ export function FriendsPanel({
   const [isSharing, setIsSharing] = useState(false);
   const [confirmRemoveFriend, setConfirmRemoveFriend] = useState<Friend | null>(null);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
 
   // Dual back handler: detail view closes first, then panel
   useBackHandler(!selectedFriend, onClose);
@@ -128,7 +136,8 @@ export function FriendsPanel({
       setCopied(true);
       void hapticSuccess();
       announce(t.codeCopied || 'Code copied to clipboard');
-      setTimeout(() => setCopied(false), 2000);
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       void hapticError();
     }
@@ -217,7 +226,7 @@ export function FriendsPanel({
       role="dialog"
       aria-modal="true"
       aria-labelledby="friends-panel-title"
-      className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto animate-fade-in"
+      className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto motion-safe:animate-fade-in"
     >
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Header */}
@@ -290,6 +299,7 @@ export function FriendsPanel({
                     size="icon"
                     onClick={handleCopyCode}
                     className="h-10 w-10 shrink-0"
+                    aria-label={copied ? (t.codeCopied || 'Copied') : (t.copyCode || 'Copy code')}
                   >
                     {copied ? (
                       <Check className="w-4 h-4 text-green-500" />
@@ -303,6 +313,7 @@ export function FriendsPanel({
                     onClick={handleShare}
                     disabled={isSharing}
                     className="h-10 w-10 shrink-0"
+                    aria-label={t.shareButton || 'Share'}
                   >
                     {isSharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
                   </Button>
@@ -382,12 +393,13 @@ export function FriendsPanel({
                           setAddError(null);
                         }}
                         className="shrink-0"
+                        aria-label={t.cancel || 'Cancel'}
                       >
                         <X className="w-4 h-4" />
                       </Button>
                     </div>
                     {addError && (
-                      <p className="text-sm text-destructive">{addError}</p>
+                      <p className="text-sm text-destructive" role="status" aria-live="polite">{addError}</p>
                     )}
                     <Button
                       variant="gradient"

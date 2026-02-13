@@ -49,6 +49,14 @@ export function useJournalVoice(language: string) {
 
   const isSupported = typeof window !== 'undefined' && !!getSpeechRecognition();
 
+  // Auto-clear error message after 3s
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   const start = useCallback(() => {
     const SpeechRecognition = getSpeechRecognition();
     if (!SpeechRecognition) {

@@ -3,7 +3,7 @@
  * Helps ADHD users discover features gradually without overwhelming them
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Lightbulb, ChevronRight, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -66,6 +66,14 @@ export function OnboardingHints(props: OnboardingHintsProps) {
   const [currentHint, setCurrentHint] = useState<Hint | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
+  const animationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
+    };
+  }, []);
 
   // Hint content with translations
   const getHintContent = (id: string) => {
@@ -112,7 +120,8 @@ export function OnboardingHints(props: OnboardingHintsProps) {
 
     if (availableHints.length > 0 && availableHints[0] !== currentHint) {
       setIsAnimating(true);
-      setTimeout(() => {
+      if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
+      animationTimerRef.current = setTimeout(() => {
         setCurrentHint(availableHints[0]);
         setIsVisible(true);
         setIsAnimating(false);
@@ -126,7 +135,8 @@ export function OnboardingHints(props: OnboardingHintsProps) {
   const handleDismiss = () => {
     if (currentHint) {
       setIsAnimating(true);
-      setTimeout(() => {
+      if (animationTimerRef.current) clearTimeout(animationTimerRef.current);
+      animationTimerRef.current = setTimeout(() => {
         props.onDismiss(currentHint.id);
         setIsVisible(false);
         setIsAnimating(false);
@@ -148,7 +158,7 @@ export function OnboardingHints(props: OnboardingHintsProps) {
       <div className="flex items-start gap-3">
         {/* Icon */}
         <div className="w-10 h-10 rounded-xl bg-primary/20 flex items-center justify-center flex-shrink-0">
-          <Lightbulb className="w-5 h-5 text-primary animate-pulse" />
+          <Lightbulb className="w-5 h-5 text-primary motion-safe:animate-pulse" />
         </div>
 
         {/* Content */}

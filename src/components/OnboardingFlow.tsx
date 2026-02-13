@@ -67,6 +67,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [animatingModule, setAnimatingModule] = useState<string | null>(null);
   const [clickAttempts, setClickAttempts] = useState(0);
   const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const animatingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fallback: If user clicks multiple times and nothing happens, force complete
   useEffect(() => {
@@ -85,6 +86,9 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     return () => {
       if (completionTimeoutRef.current) {
         clearTimeout(completionTimeoutRef.current);
+      }
+      if (animatingTimerRef.current) {
+        clearTimeout(animatingTimerRef.current);
       }
     };
   }, [clickAttempts, onComplete, selectedModules]);
@@ -167,7 +171,8 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   const toggleModule = (moduleId: ToggleableFeature) => {
     setAnimatingModule(moduleId);
-    setTimeout(() => setAnimatingModule(null), 400);
+    if (animatingTimerRef.current) clearTimeout(animatingTimerRef.current);
+    animatingTimerRef.current = setTimeout(() => setAnimatingModule(null), 400);
 
     setSelectedModules(prev =>
       prev.includes(moduleId)
@@ -263,7 +268,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                       isSelected
                         ? `bg-gradient-to-br ${module.gradient} shadow-lg`
                         : "bg-secondary/50 hover:bg-secondary",
-                      isAnimating && "animate-selection-pop"
+                      isAnimating && "motion-safe:animate-selection-pop"
                     )}
                     style={{ animationDelay: `${index * 50}ms` }}
                   >

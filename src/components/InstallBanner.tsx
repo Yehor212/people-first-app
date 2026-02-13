@@ -25,14 +25,14 @@ export function InstallBanner() {
           </p>
           <button
             onClick={promptInstall}
-            className="mt-3 px-4 py-2 zen-gradient text-primary-foreground text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
+            className="mt-3 px-4 py-2 min-h-[44px] zen-gradient text-primary-foreground text-sm font-medium rounded-xl hover:opacity-90 transition-opacity"
           >
             {t.install || 'Install'}
           </button>
         </div>
         <button
           onClick={() => setDismissed(true)}
-          className="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+          className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
           aria-label={t.dismiss || 'Dismiss'}
         >
           <X className="w-5 h-5" />

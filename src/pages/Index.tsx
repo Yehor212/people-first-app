@@ -98,6 +98,7 @@ import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdat
 import { syncTasks, syncQuests, subscribeToTaskUpdates, subscribeToQuestUpdates } from '@/storage/tasksCloudSync';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { MoodInsights } from '@/components/MoodInsights';
+import { InnerWorldGarden } from '@/components/garden';
 import { StreakBanner } from '@/components/StreakBanner';
 import { UrgencyAlert } from '@/components/UrgencyAlert';
 import { RestModeCard } from '@/components/RestModeCard';
@@ -299,6 +300,14 @@ export function Index() {
     // Treats system
     earnTreats,
     treatsBalance,
+    // Companion interactions
+    petCompanion,
+    feedCompanion,
+    // Emoji helpers
+    getPlantEmoji,
+    getCreatureEmoji,
+    getCompanionEmoji,
+    FEED_COST,
     // Rest mode
     isRestMode,
     activateRestMode,
@@ -2250,6 +2259,24 @@ export function Index() {
               onOpenTasks={isFeatureVisible('tasks') ? () => setShowTasksPanel(true) : undefined}
               onOpenQuests={isFeatureVisible('quests') ? () => setShowQuestsPanel(true) : undefined}
               onOpenFriends={() => setShowFriendsPanel(true)}
+            />
+
+            {/* Inner World Garden - Visual garden with plants, creatures, companion */}
+            <InnerWorldGarden
+              world={innerWorld}
+              treatsBalance={treatsBalance}
+              isRestMode={isRestMode}
+              isLoading={isLoadingInnerWorld}
+              plantSeed={plantSeed}
+              waterPlants={waterPlants}
+              attractCreature={attractCreature}
+              feedCreatures={feedCreatures}
+              petCompanion={petCompanion}
+              feedCompanion={feedCompanion}
+              getPlantEmoji={getPlantEmoji}
+              getCreatureEmoji={getCreatureEmoji}
+              getCompanionEmoji={getCompanionEmoji}
+              feedCost={FEED_COST}
             />
 
             {/* Schedule Timeline - ADHD-friendly day planner with habits auto-synced */}

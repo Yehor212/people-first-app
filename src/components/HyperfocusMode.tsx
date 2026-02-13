@@ -598,7 +598,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
               {selectedSoundId && audioStatus.state !== 'loading' && (
                 <motion.button
                   onClick={toggleSound}
-                  aria-label={isSoundPlaying ? 'Mute sound' : 'Unmute sound'}
+                  aria-label={isSoundPlaying ? t.muteSound : t.unmuteSound}
                   className={cn(
                     "p-2.5 min-w-[44px] min-h-[44px] rounded-xl transition-all flex items-center justify-center",
                     isSoundPlaying
@@ -641,14 +641,16 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             {/* All available sounds */}
             {SOUNDS.map(sound => {
               const isSelected = selectedSoundId === sound.id;
-              const emoji = {
-                underwater: '🌊',
-                thunderstorm: '⛈️',
-                ocean: '🏖️',
-                river: '🏞️',
-                cafe: '☕',
-                fireplace: '🔥',
-              }[sound.id] || '🎵';
+              const soundMeta: Record<string, { emoji: string; labelKey: string }> = {
+                underwater: { emoji: '🌊', labelKey: 'hyperfocusSoundOcean' },
+                thunderstorm: { emoji: '⛈️', labelKey: 'hyperfocusSoundRain' },
+                ocean: { emoji: '🏖️', labelKey: 'hyperfocusSoundOcean' },
+                river: { emoji: '🏞️', labelKey: 'hyperfocusSoundForest' },
+                cafe: { emoji: '☕', labelKey: 'hyperfocusSoundCoffee' },
+                fireplace: { emoji: '🔥', labelKey: 'hyperfocusSoundFireplace' },
+              };
+              const meta = soundMeta[sound.id] || { emoji: '🎵', labelKey: '' };
+              const localizedName = (t as unknown as Record<string, string>)[meta.labelKey] || sound.nameEn;
 
               return (
                 <motion.button
@@ -666,8 +668,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                 >
-                  <span className="text-lg">{emoji}</span>
-                  <span>{sound.nameEn}</span>
+                  <span className="text-lg">{meta.emoji}</span>
+                  <span>{localizedName}</span>
                 </motion.button>
               );
             })}
@@ -691,7 +693,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   )}
                   whileTap={{ scale: 0.95 }}
                 >
-                  {spotifyAutoPlay ? 'Auto-play ON' : 'Auto-play OFF'}
+                  {spotifyAutoPlay ? t.spotifyAutoPlayOn : t.spotifyAutoPlayOff}
                 </motion.button>
               )}
             </div>

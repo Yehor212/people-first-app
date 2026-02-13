@@ -91,20 +91,35 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
     weekly: false,
     bonus: false,
   });
+  // Timer refs for cleanup (D4)
+  const dailyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const weeklyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bonusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup debounce timers on unmount (D4)
+  useEffect(() => {
+    return () => {
+      if (dailyTimerRef.current) clearTimeout(dailyTimerRef.current);
+      if (weeklyTimerRef.current) clearTimeout(weeklyTimerRef.current);
+      if (bonusTimerRef.current) clearTimeout(bonusTimerRef.current);
+    };
+  }, []);
 
   // Manual refresh with debounce protection
   const handleRefreshDaily = useCallback(() => {
     if (refreshDebounceRef.current.daily) return;
     refreshDebounceRef.current.daily = true;
     setDailyQuest(generateDailyQuest());
-    setTimeout(() => { refreshDebounceRef.current.daily = false; }, 300);
+    if (dailyTimerRef.current) clearTimeout(dailyTimerRef.current);
+    dailyTimerRef.current = setTimeout(() => { refreshDebounceRef.current.daily = false; }, 300);
   }, []);
 
   const handleRefreshWeekly = useCallback(() => {
     if (refreshDebounceRef.current.weekly) return;
     refreshDebounceRef.current.weekly = true;
     setWeeklyQuest(generateWeeklyQuest());
-    setTimeout(() => { refreshDebounceRef.current.weekly = false; }, 300);
+    if (weeklyTimerRef.current) clearTimeout(weeklyTimerRef.current);
+    weeklyTimerRef.current = setTimeout(() => { refreshDebounceRef.current.weekly = false; }, 300);
   }, []);
 
   const handleGenerateBonus = useCallback(() => {
@@ -112,7 +127,8 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
     if (!bonusQuest || shouldRegenerateQuest(bonusQuest)) {
       refreshDebounceRef.current.bonus = true;
       setBonusQuest(generateBonusQuest());
-      setTimeout(() => { refreshDebounceRef.current.bonus = false; }, 300);
+      if (bonusTimerRef.current) clearTimeout(bonusTimerRef.current);
+      bonusTimerRef.current = setTimeout(() => { refreshDebounceRef.current.bonus = false; }, 300);
     }
   }, [bonusQuest]);
 

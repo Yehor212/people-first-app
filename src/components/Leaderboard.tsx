@@ -80,11 +80,13 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
 
   // Track mounted state to prevent state updates after unmount
   const isMountedRef = useRef(true);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     isMountedRef.current = true;
     return () => {
       isMountedRef.current = false;
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     };
   }, []);
 
@@ -144,7 +146,8 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
       if (retry < MAX_RETRIES) {
         const delay = RETRY_DELAYS[retry] || 5000;
         logger.log(`[Leaderboard] Retrying in ${delay}ms (attempt ${retry + 1}/${MAX_RETRIES})`);
-        setTimeout(() => {
+        if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = setTimeout(() => {
           if (isMountedRef.current) {
             void loadData(retry + 1);
           }
@@ -173,21 +176,25 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
 
   // Handle opt-in toggle
   const handleOptInToggle = async (checked: boolean) => {
-    if (checked) {
-      const success = await optInToLeaderboard(displayName || 'Zen User');
-      if (success) {
-        setIsOptedIn(true);
-        toast.success(t.leaderboardOptedIn || 'You joined the leaderboard!');
-        announce('You joined the leaderboard');
-        void loadData(0);
+    try {
+      if (checked) {
+        const success = await optInToLeaderboard(displayName || 'Zen User');
+        if (success) {
+          setIsOptedIn(true);
+          toast.success(t.leaderboardOptedIn || 'You joined the leaderboard!');
+          announce('You joined the leaderboard');
+          void loadData(0);
+        }
+      } else {
+        const success = await optOutOfLeaderboard();
+        if (success) {
+          setIsOptedIn(false);
+          toast.success(t.leaderboardOptedOut || 'You left the leaderboard');
+          announce('You left the leaderboard');
+        }
       }
-    } else {
-      const success = await optOutOfLeaderboard();
-      if (success) {
-        setIsOptedIn(false);
-        toast.success(t.leaderboardOptedOut || 'You left the leaderboard');
-        announce('You left the leaderboard');
-      }
+    } catch (err) {
+      logger.error('[Leaderboard] Opt-in toggle failed:', err);
     }
   };
 
@@ -195,10 +202,14 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
   const handleNameUpdate = async () => {
     if (!displayName.trim()) return;
 
-    const success = await updateDisplayName(displayName);
-    if (success) {
-      toast.success(t.nameUpdated || 'Display name updated!');
-      void loadData(0);
+    try {
+      const success = await updateDisplayName(displayName);
+      if (success) {
+        toast.success(t.nameUpdated || 'Display name updated!');
+        void loadData(0);
+      }
+    } catch (err) {
+      logger.error('[Leaderboard] Name update failed:', err);
     }
   };
 
@@ -249,8 +260,8 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
 
       {isOpen && (
         <>
-          <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => setIsOpen(false)} />
-          <div role="dialog" aria-modal="true" aria-label={t.leaderboard || 'Leaderboard'} className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden animate-slide-up pb-safe">
+          <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in" onClick={() => setIsOpen(false)} />
+          <div role="dialog" aria-modal="true" aria-label={t.leaderboard || 'Leaderboard'} className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-safe">
 
         <div className="pb-4 px-6 pt-6 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-xl font-semibold">
@@ -324,7 +335,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
             </div>
             <Switch
               checked={isOptedIn}
-              onCheckedChange={handleOptInToggle}
+              onCheckedChange={(checked) => void handleOptInToggle(checked)}
               aria-label={t.showOnLeaderboard || 'Show on leaderboard'}
             />
           </div>
@@ -337,8 +348,8 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                 placeholder={t.displayName || 'Display name'}
                 maxLength={20}
                 className="flex-1 bg-foreground/10 border-foreground/10 text-foreground placeholder:text-foreground/40"
-                onBlur={handleNameUpdate}
-                onKeyDown={(e) => e.key === 'Enter' && handleNameUpdate()}
+                onBlur={() => void handleNameUpdate()}
+                onKeyDown={(e) => e.key === 'Enter' && void handleNameUpdate()}
               />
             </div>
           )}
@@ -374,11 +385,11 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
               <SkeletonList count={5} />
             </div>
           ) : error ? (
-            <div className="text-center py-12">
+            <div className="text-center py-12" role="status" aria-live="polite">
               <Trophy className="w-12 h-12 mx-auto mb-3 text-destructive/50" />
               <p className="text-destructive mb-3">{error}</p>
               <button
-                onClick={() => loadData(0)}
+                onClick={() => void loadData(0)}
                 className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
               >
                 {t.retry || 'Retry'}
@@ -500,7 +511,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
 
         {/* Refresh button - Premium */}
         <motion.button
-          onClick={() => loadData(0)}
+          onClick={() => void loadData(0)}
           disabled={isLoading}
           className="absolute top-4 end-4 p-2.5 rounded-xl bg-foreground/5 border border-foreground/10 hover:bg-foreground/10 transition-colors"
           aria-label={t.refresh || 'Refresh'}

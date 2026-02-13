@@ -335,8 +335,9 @@ function PremiumGoalCard({
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             onClick={() => { void hapticTap(); onComplete(); }}
+            aria-label={t.claimReward || 'Claim reward'}
             className={cn(
-              'p-2.5 rounded-xl',
+              'p-2.5 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center',
               'bg-gradient-to-br from-emerald-400 to-teal-500',
               'text-white shadow-lg active:scale-95 transition-transform',
             )}
@@ -531,8 +532,8 @@ function AddGoalSheet({
 
   return (
     <>
-      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => onOpenChange(false)} />
-      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden animate-slide-up pb-safe">
+      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in" onClick={() => onOpenChange(false)} />
+      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)]">
         <h2 className="sr-only">{t.addGoal || 'Add Goal'}</h2>
 
         {/* Header */}

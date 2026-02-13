@@ -1,5 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { toast } from 'sonner';
 import { MAX_AUDIO_DURATION_SEC } from './types';
+import { logger } from '@/lib/logger';
 
 function blobToBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -33,6 +35,14 @@ export function useAudioRecorder() {
   const streamRef = useRef<MediaStream | null>(null);
 
   const isSupported = typeof window !== 'undefined' && typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+
+  // Auto-clear error message after 3s
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
 
   const start = useCallback(async () => {
     setError(null);
@@ -90,8 +100,10 @@ export function useAudioRecorder() {
           if (timerRef.current) clearInterval(timerRef.current);
         }
       }, 1000);
-    } catch {
+    } catch (err) {
       setError('Microphone access denied');
+      logger.error('[useAudioRecorder] Microphone access denied:', err);
+      toast.error('Microphone access denied');
     }
   }, []);
 

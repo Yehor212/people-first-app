@@ -444,7 +444,7 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
                             setEditingMood(null);
                             setEditingNote('');
                           }}
-                          className="ml-auto text-xs text-muted-foreground hover:text-foreground"
+                          className="ms-auto text-xs text-muted-foreground hover:text-foreground min-h-[44px] flex items-center"
                         >
                           {t.cancel || 'Cancel'}
                         </button>

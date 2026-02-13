@@ -384,6 +384,7 @@ interface AnimatedHabitButtonProps {
   isCompleted: boolean;
   isAnimating: boolean;
   onClick: () => void;
+  label?: string;
 }
 
 export function AnimatedHabitButton({
@@ -392,10 +393,12 @@ export function AnimatedHabitButton({
   isCompleted,
   isAnimating,
   onClick,
+  label,
 }: AnimatedHabitButtonProps) {
   return (
     <button
       onClick={onClick}
+      aria-label={label || (isCompleted ? 'Completed' : 'Mark complete')}
       className={cn(
         "relative w-14 h-14 rounded-2xl flex items-center justify-center text-2xl transition-all duration-200",
         "btn-press overflow-hidden",

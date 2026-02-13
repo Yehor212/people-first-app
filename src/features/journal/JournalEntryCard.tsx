@@ -1,8 +1,9 @@
-import { memo, useState, useEffect, useMemo } from 'react';
+import { memo, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Trash2, Clock, Image as ImageIcon, Mic, Bookmark } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { hapticTap, hapticMedium } from '@/lib/haptics';
 import type { JournalEntry } from './types';
 import { StickerRenderer } from './StickerRenderer';
 import { getPhotoById } from './journalStorage';
@@ -42,17 +43,16 @@ const MOOD_GLOW: Record<string, string> = {
 const DEFAULT_BG = 'from-primary/3 to-transparent';
 const DEFAULT_ACCENT = 'from-primary/20 to-primary/10';
 
-function getRelativeTime(timestamp: number): string {
+function getRelativeTime(timestamp: number, ts: Record<string, string>): string {
   const diff = Date.now() - timestamp;
   const minutes = Math.floor(diff / 60_000);
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1) return ts.justNow || 'Just now';
+  if (minutes < 60) return `${minutes} ${ts.minutesAgo || 'min ago'}`;
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
+  if (hours < 24) return `${hours} ${hours === 1 ? (ts.hourAgo || 'hour ago') : (ts.hoursAgo || 'hours ago')}`;
   const days = Math.floor(hours / 24);
-  if (days < 7) return `${days}d ago`;
-  const weeks = Math.floor(days / 7);
-  if (weeks < 5) return `${weeks}w ago`;
+  if (days === 1) return ts.yesterday || 'Yesterday';
+  if (days < 7) return `${days} ${ts.daysAgo || 'days ago'}`;
   return new Date(timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
@@ -60,6 +60,7 @@ interface JournalEntryCardProps {
   entry: JournalEntry;
   onTap: () => void;
   onDelete: () => void;
+  onEdit?: (entry: JournalEntry) => void;
   privateMode?: boolean;
 }
 
@@ -67,15 +68,129 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   entry,
   onTap,
   onDelete,
+  onEdit,
   privateMode = false,
 }: JournalEntryCardProps) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+
+  // ── Swipe-to-delete ──
+  const swipeStartX = useRef(0);
+  const swipeDeltaX = useRef(0);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const isSwiping = useRef(false);
+
+  // ── Long-press to edit ──
+  const touchStartTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const touchStartPos = useRef<{ x: number; y: number } | null>(null);
+  const longPressTriggered = useRef(false);
+
+  const clearLongPress = useCallback(() => {
+    if (touchStartTimer.current) {
+      clearTimeout(touchStartTimer.current);
+      touchStartTimer.current = null;
+    }
+  }, []);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => clearLongPress();
+  }, [clearLongPress]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    longPressTriggered.current = false;
+    isSwiping.current = false;
+    const touch = e.touches[0];
+    touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+
+    // Exclude 20px edge zones (Android system back gesture)
+    if (touch.clientX < 20 || touch.clientX > window.innerWidth - 20) {
+      swipeStartX.current = 0;
+      return;
+    }
+
+    swipeStartX.current = touch.clientX;
+    swipeDeltaX.current = 0;
+
+    touchStartTimer.current = setTimeout(() => {
+      longPressTriggered.current = true;
+      void hapticMedium();
+      onEdit?.(entry);
+    }, 500);
+  }, [entry, onEdit]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!touchStartPos.current) return;
+    const touch = e.touches[0];
+    const dx = touch.clientX - touchStartPos.current.x;
+    const dy = Math.abs(touch.clientY - touchStartPos.current.y);
+
+    // Cancel long-press on any movement
+    if (Math.abs(dx) > 10 || dy > 10) {
+      clearLongPress();
+    }
+
+    // Swipe detection: only horizontal, skip if started in edge zone
+    if (!swipeStartX.current) return;
+    const swipeDelta = touch.clientX - swipeStartX.current;
+    // In RTL, swipe right to delete; in LTR, swipe left to delete
+    const deleteDelta = isRTL ? swipeDelta : -swipeDelta;
+
+    if (deleteDelta > 10 && dy < 30) {
+      isSwiping.current = true;
+    }
+
+    if (isSwiping.current && cardRef.current) {
+      // Clamp: allow sliding up to 100px in delete direction
+      const clamped = isRTL
+        ? Math.min(swipeDelta, 100)
+        : Math.max(swipeDelta, -100);
+      swipeDeltaX.current = swipeDelta;
+      cardRef.current.style.transform = `translateX(${clamped}px)`;
+      cardRef.current.style.transition = 'none';
+    }
+  }, [clearLongPress, isRTL]);
+
+  const handleTouchEnd = useCallback(() => {
+    clearLongPress();
+    touchStartPos.current = null;
+
+    const deleteDelta = isRTL ? swipeDeltaX.current : -swipeDeltaX.current;
+
+    if (isSwiping.current && deleteDelta > 80) {
+      // Delete threshold reached
+      void hapticTap();
+      onDelete();
+    }
+
+    // Reset card position
+    if (cardRef.current) {
+      cardRef.current.style.transition = 'transform 0.2s ease-out';
+      cardRef.current.style.transform = '';
+    }
+
+    swipeDeltaX.current = 0;
+    isSwiping.current = false;
+  }, [clearLongPress, isRTL, onDelete]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    if (onEdit) e.preventDefault();
+  }, [onEdit]);
+
+  const handleCardClick = useCallback(() => {
+    // Prevent tap from firing after long-press
+    if (longPressTriggered.current) {
+      longPressTriggered.current = false;
+      return;
+    }
+    onTap();
+  }, [onTap]);
+
   // Strip markdown ** for cleaner preview
   const rawPreview = entry.content.replace(/\*\*/g, '').slice(0, 140);
   const preview = rawPreview + (entry.content.length > 140 ? '...' : '');
   const time = new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  const relativeTime = useMemo(() => getRelativeTime(entry.createdAt), [entry.createdAt]);
+  const relativeTime = useMemo(() => getRelativeTime(entry.createdAt, ts), [entry.createdAt, ts]);
   const wordCount = entry.content.trim() ? entry.content.trim().split(/\s+/).filter(Boolean).length : 0;
 
   // Load first photo thumbnail
@@ -96,7 +211,11 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
   return (
     <motion.div
-      onClick={onTap}
+      onClick={handleCardClick}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onContextMenu={handleContextMenu}
       whileTap={{ scale: 0.97 }}
       whileHover={{ y: -2 }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
@@ -206,7 +325,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                 {time}
               </span>
               <button
-                onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                onClick={(e) => { e.stopPropagation(); void hapticTap(); onDelete(); }}
                 className="p-2.5 -m-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label={ts.delete || 'Delete'}
               >

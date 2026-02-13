@@ -125,6 +125,7 @@ function CrystalDay({
       onClick={onClick}
       disabled={!isCurrentMonth}
       style={{ perspective: 200 }}
+      aria-label={`${dayNum}`}
     >
       {/* Crystal shape (rotated square) */}
       <motion.div
@@ -223,8 +224,8 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
     return days;
   }, [currentDate]);
 
-  // Weekday labels
-  const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  // Weekday labels from i18n
+  const weekdays = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat].map(d => d?.slice(0, 1) || '');
 
   // Month navigation
   const goToPrevMonth = () => {
@@ -271,7 +272,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
       {/* Header with month navigation */}
       <div className="relative flex items-center justify-between mb-4">
         <motion.button
-          className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+          className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={goToPrevMonth}
@@ -291,7 +292,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
         </motion.h3>
 
         <motion.button
-          className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors"
+          className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={goToNextMonth}

@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GratitudeEntry } from '@/types';
 import { getToday, generateId, cn } from '@/lib/utils';
@@ -34,6 +34,14 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
   const [text, setText] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const validationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup validation timer on unmount
+  useEffect(() => {
+    return () => {
+      if (validationTimerRef.current) clearTimeout(validationTimerRef.current);
+    };
+  }, []);
 
   // Generate floating particles for premium CTA mode
   const floatingParticles = useMemo<FloatingParticle[]>(() => {
@@ -82,7 +90,8 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
         : t.invalidInput;
       setValidationError(errorMessage);
       // Auto-clear error after 3 seconds
-      setTimeout(() => setValidationError(null), 3000);
+      if (validationTimerRef.current) clearTimeout(validationTimerRef.current);
+      validationTimerRef.current = setTimeout(() => setValidationError(null), 3000);
       return;
     }
 

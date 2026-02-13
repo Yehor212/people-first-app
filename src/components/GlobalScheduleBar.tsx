@@ -81,6 +81,7 @@ export function GlobalScheduleBar({ events, onTap }: GlobalScheduleBarProps) {
   return (
     <button
       onClick={onTap}
+      aria-label={t.viewSchedule || 'View schedule'}
       className={cn(
         "w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all",
         "bg-card/80 backdrop-blur-sm border border-border/50",

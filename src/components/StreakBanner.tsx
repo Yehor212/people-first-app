@@ -368,7 +368,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
             ))}
           </div>
           <span className="text-xs text-muted-foreground font-medium">
-            {todayProgress.completed} of 4
+            {todayProgress.completed} / 4
           </span>
         </div>
 
@@ -380,7 +380,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
               setShowShareDialog(true);
             }}
             className={cn(
-              "p-2 rounded-lg transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
+              "p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
               streak >= 7
                 ? "bg-yellow-500/20 hover:bg-yellow-500/30 text-yellow-500"
                 : "bg-orange-500/20 hover:bg-orange-500/30 text-orange-500"
@@ -448,9 +448,9 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
               }}
             >
               {/* Animated gradient orbs */}
-              <div className="absolute top-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full opacity-40"
+              <div className="absolute top-[-20%] end-[-20%] w-[60%] h-[60%] rounded-full opacity-40"
                 style={{ background: 'radial-gradient(circle, #f97316 0%, transparent 70%)' }} />
-              <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-30"
+              <div className="absolute bottom-[-10%] start-[-10%] w-[50%] h-[50%] rounded-full opacity-30"
                 style={{ background: 'radial-gradient(circle, #ef4444 0%, transparent 70%)' }} />
 
               {/* Content */}
@@ -462,8 +462,8 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                     <Flame className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-xl font-bold">ZenFlow</h1>
-                    <p className="text-xs text-white/60">Streak Achievement</p>
+                    <h1 className="text-xl font-bold">{t.appName || 'ZenFlow'}</h1>
+                    <p className="text-xs text-white/60">{t.shareAchievements || 'Streak Achievement'}</p>
                   </div>
                 </div>
 

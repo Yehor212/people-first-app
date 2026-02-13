@@ -61,7 +61,7 @@ function Spotlight({ side }: { side: 'left' | 'right' }) {
     <motion.div
       className="absolute top-0 w-24 h-full pointer-events-none"
       style={{
-        [side]: '5%',
+        [side === 'left' ? 'insetInlineStart' : 'insetInlineEnd']: '5%',
         background: `linear-gradient(${angle}deg,
           hsl(var(--temple-spotlight) / 0.15) 0%,
           hsl(var(--temple-spotlight) / 0.05) 50%,
@@ -85,7 +85,7 @@ function TempleColumn({ side }: { side: 'left' | 'right' }) {
     <div
       className={cn(
         "absolute top-0 bottom-0 w-12 pointer-events-none",
-        side === 'left' ? 'left-0' : 'right-0'
+        side === 'left' ? 'start-0' : 'end-0'
       )}
     >
       <svg className="w-full h-full" viewBox="0 0 48 200" preserveAspectRatio="none">

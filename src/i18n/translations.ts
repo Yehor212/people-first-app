@@ -910,6 +910,8 @@ export interface Translations {
   audioTapToEnable: string;
   audioRetry: string;
   audioError: string;
+  muteSound: string;
+  unmuteSound: string;
 
   // Leaderboard
   // Note: weekly/monthly defined above in Personal Goals section
@@ -1298,6 +1300,64 @@ export interface Translations {
   plants: string;
   creatures: string;
   level: string;
+
+  // Garden Visual UI
+  gardenLoading: string;
+  gardenEmptyTitle: string;
+  gardenEmptyDescription: string;
+  gardenTreatsBalance: string;
+  gardenPlantFirstSeed: string;
+  gardenActionPlant: string;
+  gardenActionWater: string;
+  gardenActionFeed: string;
+  gardenTreats: string;
+  gardenScene: string;
+  gardenStageEmpty: string;
+  gardenStageSprouting: string;
+  gardenStageGrowing: string;
+  gardenStageFlourishing: string;
+  gardenStageMagical: string;
+  gardenStageLegendary: string;
+  gardenPlants: string;
+  gardenGrowth: string;
+  gardenPlantedAgo: string;
+  gardenWaterPlant: string;
+  gardenSpecial: string;
+  gardenSource_mood: string;
+  gardenSource_habit: string;
+  gardenSource_focus: string;
+  gardenSource_gratitude: string;
+  plantStage_seed: string;
+  plantStage_sprout: string;
+  plantStage_growing: string;
+  plantStage_blooming: string;
+  plantStage_magnificent: string;
+  plantType_flower: string;
+  plantType_tree: string;
+  plantType_crystal: string;
+  plantType_mushroom: string;
+  creatureStage_egg: string;
+  creatureStage_baby: string;
+  creatureStage_juvenile: string;
+  creatureStage_adult: string;
+  creatureStage_mythical: string;
+  creatureType_butterfly: string;
+  creatureType_bird: string;
+  creatureType_firefly: string;
+  creatureType_spirit: string;
+  creatureHappiness: string;
+  creatureArrivedAgo: string;
+  creatureFeed: string;
+  companionLevel: string;
+  companionPetAction: string;
+  companionFeedAction: string;
+  companionMood_sleeping: string;
+  companionMood_calm: string;
+  companionMood_happy: string;
+  companionMood_excited: string;
+  companionMood_celebrating: string;
+  companionMood_supportive: string;
+  dayAgo: string;
 
   // Streak Banner
   startStreak: string;
@@ -2170,6 +2230,11 @@ export interface Translations {
   journalExportTextDesc: string;
   journalExportSuccess: string;
   journalExportFailed: string;
+
+  // Journal filtering
+  journalNoMatchingEntries: string;
+  journalNoMatchingHint: string;
+  journalClearAllFilters: string;
 }
 
 // Base translations (RTL languages added dynamically below)
@@ -3059,6 +3124,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioTapToEnable: 'Tap to enable sound',
     audioRetry: 'Retry',
     audioError: 'Audio error',
+    muteSound: 'Mute sound',
+    unmuteSound: 'Unmute sound',
 
     // Leaderboard
     leaderboard: 'Leaderboard',
@@ -3432,6 +3499,64 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     free: 'Free',
     fullness: 'Fullness',
     earnTreatsHint: 'Complete activities to earn treats for your companion!',
+
+    // Garden Visual UI
+    gardenLoading: 'Loading your garden...',
+    gardenEmptyTitle: 'Your Garden Awaits',
+    gardenEmptyDescription: 'Earn treats by logging moods, completing habits, and finishing focus sessions. Then plant your first seed!',
+    gardenTreatsBalance: 'Treats',
+    gardenPlantFirstSeed: 'Plant Your First Seed',
+    gardenActionPlant: 'Plant',
+    gardenActionWater: 'Water All',
+    gardenActionFeed: 'Feed',
+    gardenTreats: 'treats',
+    gardenScene: 'Garden scene',
+    gardenStageEmpty: 'Empty',
+    gardenStageSprouting: 'Sprouting',
+    gardenStageGrowing: 'Growing',
+    gardenStageFlourishing: 'Flourishing',
+    gardenStageMagical: 'Magical',
+    gardenStageLegendary: 'Legendary',
+    gardenPlants: 'plants',
+    gardenGrowth: 'Growth',
+    gardenPlantedAgo: 'Planted',
+    gardenWaterPlant: 'Water Plant',
+    gardenSpecial: 'Special',
+    gardenSource_mood: 'Mood',
+    gardenSource_habit: 'Habit',
+    gardenSource_focus: 'Focus',
+    gardenSource_gratitude: 'Gratitude',
+    plantStage_seed: 'Seed',
+    plantStage_sprout: 'Sprout',
+    plantStage_growing: 'Growing',
+    plantStage_blooming: 'Blooming',
+    plantStage_magnificent: 'Magnificent',
+    plantType_flower: 'Flower',
+    plantType_tree: 'Tree',
+    plantType_crystal: 'Crystal',
+    plantType_mushroom: 'Mushroom',
+    creatureStage_egg: 'Egg',
+    creatureStage_baby: 'Baby',
+    creatureStage_juvenile: 'Juvenile',
+    creatureStage_adult: 'Adult',
+    creatureStage_mythical: 'Mythical',
+    creatureType_butterfly: 'Butterfly',
+    creatureType_bird: 'Bird',
+    creatureType_firefly: 'Firefly',
+    creatureType_spirit: 'Spirit',
+    creatureHappiness: 'Happiness',
+    creatureArrivedAgo: 'Arrived',
+    creatureFeed: 'Feed Creature',
+    companionLevel: 'Lv',
+    companionPetAction: 'Pet',
+    companionFeedAction: 'Feed',
+    companionMood_sleeping: 'Sleeping',
+    companionMood_calm: 'Calm',
+    companionMood_happy: 'Happy',
+    companionMood_excited: 'Excited',
+    companionMood_celebrating: 'Celebrating',
+    companionMood_supportive: 'Supportive',
+    dayAgo: 'day ago',
 
     touch: 'Touch',
     water: 'Water',
@@ -4266,6 +4391,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalExportTextDesc: 'Plain text format',
     journalExportSuccess: 'Export complete',
     journalExportFailed: 'Export failed',
+    journalNoMatchingEntries: 'No entries match your search',
+    journalNoMatchingHint: 'Try a different keyword or clear your filters',
+    journalClearAllFilters: 'Clear all filters',
   },
 
   uk: {
@@ -5153,6 +5281,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioTapToEnable: 'Натисніть для увімкнення звуку',
     audioRetry: 'Повторити',
     audioError: 'Помилка аудіо',
+    muteSound: 'Вимкнути звук',
+    unmuteSound: 'Увімкнути звук',
 
     // Leaderboard
     leaderboard: 'Лідерборд',
@@ -5526,6 +5656,64 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     free: 'Безкоштовно',
     fullness: 'Ситість',
     earnTreatsHint: 'Виконуй активності щоб заробляти смаколики для улюбленця!',
+
+    // Garden Visual UI
+    gardenLoading: 'Завантаження саду...',
+    gardenEmptyTitle: 'Ваш сад чекає',
+    gardenEmptyDescription: 'Заробляйте смаколики, записуючи настрій, виконуючи звички та фокус-сесії. Потім посадіть першу насінину!',
+    gardenTreatsBalance: 'Смаколики',
+    gardenPlantFirstSeed: 'Посадити першу насінину',
+    gardenActionPlant: 'Посадити',
+    gardenActionWater: 'Полити все',
+    gardenActionFeed: 'Годувати',
+    gardenTreats: 'смаколиків',
+    gardenScene: 'Сцена саду',
+    gardenStageEmpty: 'Порожній',
+    gardenStageSprouting: 'Проростає',
+    gardenStageGrowing: 'Зростає',
+    gardenStageFlourishing: 'Цвіте',
+    gardenStageMagical: 'Магічний',
+    gardenStageLegendary: 'Легендарний',
+    gardenPlants: 'рослин',
+    gardenGrowth: 'Зростання',
+    gardenPlantedAgo: 'Посаджено',
+    gardenWaterPlant: 'Полити рослину',
+    gardenSpecial: 'Особлива',
+    gardenSource_mood: 'Настрій',
+    gardenSource_habit: 'Звичка',
+    gardenSource_focus: 'Фокус',
+    gardenSource_gratitude: 'Вдячність',
+    plantStage_seed: 'Насінина',
+    plantStage_sprout: 'Паросток',
+    plantStage_growing: 'Зростає',
+    plantStage_blooming: 'Цвіте',
+    plantStage_magnificent: 'Розкішна',
+    plantType_flower: 'Квітка',
+    plantType_tree: 'Дерево',
+    plantType_crystal: 'Кристал',
+    plantType_mushroom: 'Гриб',
+    creatureStage_egg: 'Яйце',
+    creatureStage_baby: 'Малюк',
+    creatureStage_juvenile: 'Підліток',
+    creatureStage_adult: 'Дорослий',
+    creatureStage_mythical: 'Міфічний',
+    creatureType_butterfly: 'Метелик',
+    creatureType_bird: 'Птах',
+    creatureType_firefly: 'Світлячок',
+    creatureType_spirit: 'Дух',
+    creatureHappiness: 'Щастя',
+    creatureArrivedAgo: 'Прибув',
+    creatureFeed: 'Годувати створіння',
+    companionLevel: 'Рв',
+    companionPetAction: 'Погладити',
+    companionFeedAction: 'Годувати',
+    companionMood_sleeping: 'Спить',
+    companionMood_calm: 'Спокійний',
+    companionMood_happy: 'Щасливий',
+    companionMood_excited: 'Збуджений',
+    companionMood_celebrating: 'Святкує',
+    companionMood_supportive: 'Підтримує',
+    dayAgo: 'день тому',
 
     touch: 'Доторкнутись',
     water: 'Полити',
@@ -6360,6 +6548,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalExportTextDesc: 'Текстовий формат',
     journalExportSuccess: 'Експорт завершено',
     journalExportFailed: 'Помилка експорту',
+    journalNoMatchingEntries: 'Немає записів за вашим пошуком',
+    journalNoMatchingHint: 'Спробуйте інше ключове слово або очистіть фільтри',
+    journalClearAllFilters: 'Очистити всі фільтри',
   },
 
   es: {
@@ -7248,6 +7439,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioTapToEnable: 'Toca para habilitar sonido',
     audioRetry: 'Reintentar',
     audioError: 'Error de audio',
+    muteSound: 'Silenciar sonido',
+    unmuteSound: 'Activar sonido',
 
     // Leaderboard
     leaderboard: 'Clasificación',
@@ -7621,6 +7814,64 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     free: 'Gratis',
     fullness: 'Saciedad',
     earnTreatsHint: '¡Completa actividades para ganar golosinas para tu compañero!',
+
+    // Garden Visual UI
+    gardenLoading: 'Cargando tu jardín...',
+    gardenEmptyTitle: 'Tu jardín te espera',
+    gardenEmptyDescription: '¡Gana golosinas registrando estados de ánimo, completando hábitos y sesiones de enfoque. Luego planta tu primera semilla!',
+    gardenTreatsBalance: 'Golosinas',
+    gardenPlantFirstSeed: 'Planta tu primera semilla',
+    gardenActionPlant: 'Plantar',
+    gardenActionWater: 'Regar todo',
+    gardenActionFeed: 'Alimentar',
+    gardenTreats: 'golosinas',
+    gardenScene: 'Escena del jardín',
+    gardenStageEmpty: 'Vacío',
+    gardenStageSprouting: 'Brotando',
+    gardenStageGrowing: 'Creciendo',
+    gardenStageFlourishing: 'Floreciendo',
+    gardenStageMagical: 'Mágico',
+    gardenStageLegendary: 'Legendario',
+    gardenPlants: 'plantas',
+    gardenGrowth: 'Crecimiento',
+    gardenPlantedAgo: 'Plantada',
+    gardenWaterPlant: 'Regar planta',
+    gardenSpecial: 'Especial',
+    gardenSource_mood: 'Ánimo',
+    gardenSource_habit: 'Hábito',
+    gardenSource_focus: 'Enfoque',
+    gardenSource_gratitude: 'Gratitud',
+    plantStage_seed: 'Semilla',
+    plantStage_sprout: 'Brote',
+    plantStage_growing: 'Creciendo',
+    plantStage_blooming: 'Floreciendo',
+    plantStage_magnificent: 'Magnífica',
+    plantType_flower: 'Flor',
+    plantType_tree: 'Árbol',
+    plantType_crystal: 'Cristal',
+    plantType_mushroom: 'Hongo',
+    creatureStage_egg: 'Huevo',
+    creatureStage_baby: 'Bebé',
+    creatureStage_juvenile: 'Juvenil',
+    creatureStage_adult: 'Adulto',
+    creatureStage_mythical: 'Mítico',
+    creatureType_butterfly: 'Mariposa',
+    creatureType_bird: 'Pájaro',
+    creatureType_firefly: 'Luciérnaga',
+    creatureType_spirit: 'Espíritu',
+    creatureHappiness: 'Felicidad',
+    creatureArrivedAgo: 'Llegó',
+    creatureFeed: 'Alimentar criatura',
+    companionLevel: 'Nv',
+    companionPetAction: 'Acariciar',
+    companionFeedAction: 'Alimentar',
+    companionMood_sleeping: 'Durmiendo',
+    companionMood_calm: 'Tranquilo',
+    companionMood_happy: 'Feliz',
+    companionMood_excited: 'Emocionado',
+    companionMood_celebrating: 'Celebrando',
+    companionMood_supportive: 'Apoyando',
+    dayAgo: 'día',
 
     touch: 'Tocar',
     water: 'Regar',
@@ -8455,6 +8706,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalExportTextDesc: 'Formato de texto plano',
     journalExportSuccess: 'Exportación completa',
     journalExportFailed: 'Error de exportación',
+    journalNoMatchingEntries: 'No hay entradas que coincidan',
+    journalNoMatchingHint: 'Prueba otra palabra clave o limpia los filtros',
+    journalClearAllFilters: 'Limpiar todos los filtros',
   },
 
   de: {
@@ -9343,6 +9597,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioTapToEnable: 'Tippen zum Aktivieren',
     audioRetry: 'Erneut versuchen',
     audioError: 'Audiofehler',
+    muteSound: 'Ton stumm schalten',
+    unmuteSound: 'Ton einschalten',
 
     // Leaderboard
     leaderboard: 'Bestenliste',
@@ -9716,6 +9972,64 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     free: 'Kostenlos',
     fullness: 'Sättigung',
     earnTreatsHint: 'Mach Aktivitäten um Leckerlis für deinen Begleiter zu verdienen!',
+
+    // Garden Visual UI
+    gardenLoading: 'Dein Garten wird geladen...',
+    gardenEmptyTitle: 'Dein Garten wartet',
+    gardenEmptyDescription: 'Verdiene Leckerlis durch Stimmungslogs, Gewohnheiten und Fokus-Sitzungen. Dann pflanze deinen ersten Samen!',
+    gardenTreatsBalance: 'Leckerlis',
+    gardenPlantFirstSeed: 'Ersten Samen pflanzen',
+    gardenActionPlant: 'Pflanzen',
+    gardenActionWater: 'Alle gießen',
+    gardenActionFeed: 'Füttern',
+    gardenTreats: 'Leckerlis',
+    gardenScene: 'Gartenszene',
+    gardenStageEmpty: 'Leer',
+    gardenStageSprouting: 'Keimend',
+    gardenStageGrowing: 'Wachsend',
+    gardenStageFlourishing: 'Blühend',
+    gardenStageMagical: 'Magisch',
+    gardenStageLegendary: 'Legendär',
+    gardenPlants: 'Pflanzen',
+    gardenGrowth: 'Wachstum',
+    gardenPlantedAgo: 'Gepflanzt',
+    gardenWaterPlant: 'Pflanze gießen',
+    gardenSpecial: 'Besonders',
+    gardenSource_mood: 'Stimmung',
+    gardenSource_habit: 'Gewohnheit',
+    gardenSource_focus: 'Fokus',
+    gardenSource_gratitude: 'Dankbarkeit',
+    plantStage_seed: 'Samen',
+    plantStage_sprout: 'Keimling',
+    plantStage_growing: 'Wachsend',
+    plantStage_blooming: 'Blühend',
+    plantStage_magnificent: 'Prächtig',
+    plantType_flower: 'Blume',
+    plantType_tree: 'Baum',
+    plantType_crystal: 'Kristall',
+    plantType_mushroom: 'Pilz',
+    creatureStage_egg: 'Ei',
+    creatureStage_baby: 'Baby',
+    creatureStage_juvenile: 'Jungtier',
+    creatureStage_adult: 'Erwachsen',
+    creatureStage_mythical: 'Mythisch',
+    creatureType_butterfly: 'Schmetterling',
+    creatureType_bird: 'Vogel',
+    creatureType_firefly: 'Glühwürmchen',
+    creatureType_spirit: 'Geist',
+    creatureHappiness: 'Glück',
+    creatureArrivedAgo: 'Angekommen',
+    creatureFeed: 'Kreatur füttern',
+    companionLevel: 'Lv',
+    companionPetAction: 'Streicheln',
+    companionFeedAction: 'Füttern',
+    companionMood_sleeping: 'Schläft',
+    companionMood_calm: 'Ruhig',
+    companionMood_happy: 'Glücklich',
+    companionMood_excited: 'Aufgeregt',
+    companionMood_celebrating: 'Feiert',
+    companionMood_supportive: 'Unterstützend',
+    dayAgo: 'Tag',
 
     touch: 'Berühren',
     water: 'Gießen',
@@ -10550,6 +10864,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalExportTextDesc: 'Klartextformat',
     journalExportSuccess: 'Export abgeschlossen',
     journalExportFailed: 'Export fehlgeschlagen',
+    journalNoMatchingEntries: 'Keine passenden Einträge gefunden',
+    journalNoMatchingHint: 'Versuche ein anderes Stichwort oder lösche die Filter',
+    journalClearAllFilters: 'Alle Filter löschen',
   },
 
   fr: {
@@ -11438,6 +11755,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioTapToEnable: 'Appuyez pour activer le son',
     audioRetry: 'Réessayer',
     audioError: 'Erreur audio',
+    muteSound: 'Couper le son',
+    unmuteSound: 'Activer le son',
 
     // Leaderboard
     leaderboard: 'Classement',
@@ -11811,6 +12130,64 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     free: 'Gratuit',
     fullness: 'Satiété',
     earnTreatsHint: 'Fais des activités pour gagner des friandises pour ton compagnon!',
+
+    // Garden Visual UI
+    gardenLoading: 'Chargement de ton jardin...',
+    gardenEmptyTitle: 'Ton jardin t\'attend',
+    gardenEmptyDescription: 'Gagne des friandises en notant ton humeur, complétant des habitudes et des sessions de concentration. Puis plante ta première graine !',
+    gardenTreatsBalance: 'Friandises',
+    gardenPlantFirstSeed: 'Planter ta première graine',
+    gardenActionPlant: 'Planter',
+    gardenActionWater: 'Tout arroser',
+    gardenActionFeed: 'Nourrir',
+    gardenTreats: 'friandises',
+    gardenScene: 'Scène du jardin',
+    gardenStageEmpty: 'Vide',
+    gardenStageSprouting: 'Germant',
+    gardenStageGrowing: 'En croissance',
+    gardenStageFlourishing: 'Épanoui',
+    gardenStageMagical: 'Magique',
+    gardenStageLegendary: 'Légendaire',
+    gardenPlants: 'plantes',
+    gardenGrowth: 'Croissance',
+    gardenPlantedAgo: 'Planté',
+    gardenWaterPlant: 'Arroser la plante',
+    gardenSpecial: 'Spécial',
+    gardenSource_mood: 'Humeur',
+    gardenSource_habit: 'Habitude',
+    gardenSource_focus: 'Concentration',
+    gardenSource_gratitude: 'Gratitude',
+    plantStage_seed: 'Graine',
+    plantStage_sprout: 'Pousse',
+    plantStage_growing: 'En croissance',
+    plantStage_blooming: 'En fleur',
+    plantStage_magnificent: 'Magnifique',
+    plantType_flower: 'Fleur',
+    plantType_tree: 'Arbre',
+    plantType_crystal: 'Cristal',
+    plantType_mushroom: 'Champignon',
+    creatureStage_egg: 'Œuf',
+    creatureStage_baby: 'Bébé',
+    creatureStage_juvenile: 'Juvénile',
+    creatureStage_adult: 'Adulte',
+    creatureStage_mythical: 'Mythique',
+    creatureType_butterfly: 'Papillon',
+    creatureType_bird: 'Oiseau',
+    creatureType_firefly: 'Luciole',
+    creatureType_spirit: 'Esprit',
+    creatureHappiness: 'Bonheur',
+    creatureArrivedAgo: 'Arrivé',
+    creatureFeed: 'Nourrir la créature',
+    companionLevel: 'Nv',
+    companionPetAction: 'Caresser',
+    companionFeedAction: 'Nourrir',
+    companionMood_sleeping: 'Dort',
+    companionMood_calm: 'Calme',
+    companionMood_happy: 'Heureux',
+    companionMood_excited: 'Excité',
+    companionMood_celebrating: 'Fête',
+    companionMood_supportive: 'Soutient',
+    dayAgo: 'jour',
 
     touch: 'Toucher',
     water: 'Arroser',
@@ -12645,6 +13022,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalExportTextDesc: 'Format texte brut',
     journalExportSuccess: 'Exportation terminée',
     journalExportFailed: 'Échec de l\'exportation',
+    journalNoMatchingEntries: 'Aucune entrée ne correspond',
+    journalNoMatchingHint: 'Essayez un autre mot-clé ou effacez les filtres',
+    journalClearAllFilters: 'Effacer tous les filtres',
   },
 
   ja: {
@@ -13532,6 +13912,8 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     audioTapToEnable: 'タップして音声を有効化',
     audioRetry: '再試行',
     audioError: 'オーディオエラー',
+    muteSound: 'ミュート',
+    unmuteSound: 'ミュート解除',
 
     // Leaderboard
     leaderboard: 'リーダーボード',
@@ -13905,6 +14287,64 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     free: '無料',
     fullness: '満腹度',
     earnTreatsHint: '活動を完了してコンパニオンのおやつを獲得！',
+
+    // Garden Visual UI
+    gardenLoading: 'ガーデンを読み込み中...',
+    gardenEmptyTitle: 'ガーデンが待っています',
+    gardenEmptyDescription: '気分を記録したり、習慣を完了したり、集中セッションを行っておやつを獲得しましょう。そして最初の種を植えよう！',
+    gardenTreatsBalance: 'おやつ',
+    gardenPlantFirstSeed: '最初の種を植える',
+    gardenActionPlant: '植える',
+    gardenActionWater: '全て水やり',
+    gardenActionFeed: '餌やり',
+    gardenTreats: 'おやつ',
+    gardenScene: 'ガーデンシーン',
+    gardenStageEmpty: '空',
+    gardenStageSprouting: '発芽中',
+    gardenStageGrowing: '成長中',
+    gardenStageFlourishing: '満開',
+    gardenStageMagical: '魔法的',
+    gardenStageLegendary: '伝説的',
+    gardenPlants: '本',
+    gardenGrowth: '成長',
+    gardenPlantedAgo: '植えた',
+    gardenWaterPlant: '水をあげる',
+    gardenSpecial: '特別',
+    gardenSource_mood: '気分',
+    gardenSource_habit: '習慣',
+    gardenSource_focus: '集中',
+    gardenSource_gratitude: '感謝',
+    plantStage_seed: '種',
+    plantStage_sprout: '芽',
+    plantStage_growing: '成長中',
+    plantStage_blooming: '開花中',
+    plantStage_magnificent: '壮大',
+    plantType_flower: '花',
+    plantType_tree: '木',
+    plantType_crystal: 'クリスタル',
+    plantType_mushroom: 'キノコ',
+    creatureStage_egg: '卵',
+    creatureStage_baby: '赤ちゃん',
+    creatureStage_juvenile: '幼体',
+    creatureStage_adult: '成体',
+    creatureStage_mythical: '神話的',
+    creatureType_butterfly: '蝶',
+    creatureType_bird: '鳥',
+    creatureType_firefly: 'ホタル',
+    creatureType_spirit: '精霊',
+    creatureHappiness: '幸福度',
+    creatureArrivedAgo: '到着',
+    creatureFeed: '生き物に餌をあげる',
+    companionLevel: 'Lv',
+    companionPetAction: 'なでる',
+    companionFeedAction: '餌やり',
+    companionMood_sleeping: '睡眠中',
+    companionMood_calm: '穏やか',
+    companionMood_happy: '幸せ',
+    companionMood_excited: 'ワクワク',
+    companionMood_celebrating: 'お祝い中',
+    companionMood_supportive: '応援中',
+    dayAgo: '日前',
 
     touch: '触る',
     water: '水',
@@ -14739,6 +15179,9 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     journalExportTextDesc: 'プレーンテキスト形式',
     journalExportSuccess: 'エクスポート完了',
     journalExportFailed: 'エクスポートに失敗',
+    journalNoMatchingEntries: '一致するエントリがありません',
+    journalNoMatchingHint: '別のキーワードを試すかフィルターをクリアしてください',
+    journalClearAllFilters: 'すべてのフィルターをクリア',
   },
 };
 
@@ -15511,6 +15954,8 @@ const arabicOverrides: Partial<Translations> = {
   audioTapToEnable: 'اضغط لتفعيل الصوت',
   audioRetry: 'إعادة المحاولة',
   audioError: 'خطأ في الصوت',
+  muteSound: 'كتم الصوت',
+  unmuteSound: 'إلغاء كتم الصوت',
 
   // Leaderboard
   leaderboard: 'لوحة المتصدرين',
@@ -15929,6 +16374,63 @@ const arabicOverrides: Partial<Translations> = {
   free: 'مجاني',
   fullness: 'الشبع',
   earnTreatsHint: 'أكمل الأنشطة لكسب مكافآت',
+  // Garden Visual UI
+  gardenLoading: 'جارٍ تحميل حديقتك...',
+  gardenEmptyTitle: 'حديقتك بانتظارك',
+  gardenEmptyDescription: 'اكسب مكافآت بتسجيل مزاجك وإكمال العادات وجلسات التركيز. ثم ازرع بذرتك الأولى!',
+  gardenTreatsBalance: 'مكافآت',
+  gardenPlantFirstSeed: 'ازرع بذرتك الأولى',
+  gardenActionPlant: 'زراعة',
+  gardenActionWater: 'سقي الكل',
+  gardenActionFeed: 'إطعام',
+  gardenTreats: 'مكافآت',
+  gardenScene: 'مشهد الحديقة',
+  gardenStageEmpty: 'فارغ',
+  gardenStageSprouting: 'ينبت',
+  gardenStageGrowing: 'ينمو',
+  gardenStageFlourishing: 'مزدهر',
+  gardenStageMagical: 'سحري',
+  gardenStageLegendary: 'أسطوري',
+  gardenPlants: 'نباتات',
+  gardenGrowth: 'النمو',
+  gardenPlantedAgo: 'زُرعت',
+  gardenWaterPlant: 'سقي النبتة',
+  gardenSpecial: 'مميز',
+  gardenSource_mood: 'المزاج',
+  gardenSource_habit: 'العادة',
+  gardenSource_focus: 'التركيز',
+  gardenSource_gratitude: 'الامتنان',
+  plantStage_seed: 'بذرة',
+  plantStage_sprout: 'برعم',
+  plantStage_growing: 'ينمو',
+  plantStage_blooming: 'يتفتح',
+  plantStage_magnificent: 'رائع',
+  plantType_flower: 'زهرة',
+  plantType_tree: 'شجرة',
+  plantType_crystal: 'بلورة',
+  plantType_mushroom: 'فطر',
+  creatureStage_egg: 'بيضة',
+  creatureStage_baby: 'صغير',
+  creatureStage_juvenile: 'يافع',
+  creatureStage_adult: 'بالغ',
+  creatureStage_mythical: 'أسطوري',
+  creatureType_butterfly: 'فراشة',
+  creatureType_bird: 'طائر',
+  creatureType_firefly: 'يراعة',
+  creatureType_spirit: 'روح',
+  creatureHappiness: 'السعادة',
+  creatureArrivedAgo: 'وصل',
+  creatureFeed: 'إطعام المخلوق',
+  companionLevel: 'مس',
+  companionPetAction: 'مداعبة',
+  companionFeedAction: 'إطعام',
+  companionMood_sleeping: 'نائم',
+  companionMood_calm: 'هادئ',
+  companionMood_happy: 'سعيد',
+  companionMood_excited: 'متحمس',
+  companionMood_celebrating: 'يحتفل',
+  companionMood_supportive: 'داعم',
+  dayAgo: 'يوم',
   companionHungry: 'رفيقك جائع!',
 
   // Tree System
@@ -16797,6 +17299,9 @@ const arabicOverrides: Partial<Translations> = {
   journalExportTextDesc: 'صيغة نص عادي',
   journalExportSuccess: 'اكتمل التصدير',
   journalExportFailed: 'فشل التصدير',
+  journalNoMatchingEntries: 'لا توجد إدخالات مطابقة',
+  journalNoMatchingHint: 'جرّب كلمة مفتاحية أخرى أو امسح الفلاتر',
+  journalClearAllFilters: 'مسح جميع الفلاتر',
 };
 
 // Hebrew RTL overrides (merged with English)
@@ -17888,6 +18393,8 @@ const hebrewOverrides: Partial<Translations> = {
   audioTapToEnable: 'לחץ להפעלת צליל',
   audioRetry: 'נסה שוב',
   audioError: 'שגיאת שמע',
+  muteSound: 'השתק',
+  unmuteSound: 'בטל השתקה',
 
   // Widget Settings
   widgetSettings: 'הגדרות ווידג\'ט',
@@ -18179,6 +18686,64 @@ const hebrewOverrides: Partial<Translations> = {
   free: 'חינם',
   fullness: 'שובע',
   earnTreatsHint: 'השלם פעילויות כדי להרוויח חטיפים למלווה שלך!',
+
+  // Garden Visual UI
+  gardenLoading: 'טוען את הגינה שלך...',
+  gardenEmptyTitle: 'הגינה שלך מחכה',
+  gardenEmptyDescription: 'הרוויח חטיפים על ידי רישום מצב רוח, השלמת הרגלים ומפגשי ריכוז. אז שתול את הזרע הראשון!',
+  gardenTreatsBalance: 'חטיפים',
+  gardenPlantFirstSeed: 'שתול את הזרע הראשון',
+  gardenActionPlant: 'שתילה',
+  gardenActionWater: 'השקה לכולם',
+  gardenActionFeed: 'האכלה',
+  gardenTreats: 'חטיפים',
+  gardenScene: 'סצנת הגינה',
+  gardenStageEmpty: 'ריק',
+  gardenStageSprouting: 'נובט',
+  gardenStageGrowing: 'צומח',
+  gardenStageFlourishing: 'פורח',
+  gardenStageMagical: 'קסום',
+  gardenStageLegendary: 'אגדי',
+  gardenPlants: 'צמחים',
+  gardenGrowth: 'גדילה',
+  gardenPlantedAgo: 'נשתל',
+  gardenWaterPlant: 'השקה צמח',
+  gardenSpecial: 'מיוחד',
+  gardenSource_mood: 'מצב רוח',
+  gardenSource_habit: 'הרגל',
+  gardenSource_focus: 'ריכוז',
+  gardenSource_gratitude: 'הכרת תודה',
+  plantStage_seed: 'זרע',
+  plantStage_sprout: 'נבט',
+  plantStage_growing: 'צומח',
+  plantStage_blooming: 'פורח',
+  plantStage_magnificent: 'מרהיב',
+  plantType_flower: 'פרח',
+  plantType_tree: 'עץ',
+  plantType_crystal: 'קריסטל',
+  plantType_mushroom: 'פטרייה',
+  creatureStage_egg: 'ביצה',
+  creatureStage_baby: 'תינוק',
+  creatureStage_juvenile: 'צעיר',
+  creatureStage_adult: 'בוגר',
+  creatureStage_mythical: 'מיתולוגי',
+  creatureType_butterfly: 'פרפר',
+  creatureType_bird: 'ציפור',
+  creatureType_firefly: 'גחלילית',
+  creatureType_spirit: 'רוח',
+  creatureHappiness: 'אושר',
+  creatureArrivedAgo: 'הגיע',
+  creatureFeed: 'האכלת יצור',
+  companionLevel: 'רמ',
+  companionPetAction: 'ליטוף',
+  companionFeedAction: 'האכלה',
+  companionMood_sleeping: 'ישן',
+  companionMood_calm: 'רגוע',
+  companionMood_happy: 'שמח',
+  companionMood_excited: 'נרגש',
+  companionMood_celebrating: 'חוגג',
+  companionMood_supportive: 'תומך',
+  dayAgo: 'יום',
 
   // Tree
   touch: 'נגיעה',
@@ -18923,6 +19488,9 @@ const hebrewOverrides: Partial<Translations> = {
   journalExportTextDesc: 'פורמט טקסט רגיל',
   journalExportSuccess: 'הייצוא הושלם',
   journalExportFailed: 'הייצוא נכשל',
+  journalNoMatchingEntries: 'אין רשומות תואמות',
+  journalNoMatchingHint: 'נסה מילת מפתח אחרת או נקה את המסננים',
+  journalClearAllFilters: 'נקה את כל המסננים',
 };
 
 // Add RTL languages with English fallback

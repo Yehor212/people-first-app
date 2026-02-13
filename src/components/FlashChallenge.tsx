@@ -48,7 +48,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
 
   if (isExpired && !challenge.completed) {
     return (
-      <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 animate-fade-in">
+      <div className="bg-red-500/10 border border-red-500/30 rounded-2xl p-4 motion-safe:animate-fade-in">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-red-500/20 rounded-xl">
             <AlertTriangle className="w-5 h-5 text-red-500" />
@@ -71,7 +71,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
 
   if (challenge.completed) {
     return (
-      <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-2xl p-4 animate-scale-in">
+      <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border border-green-500/30 rounded-2xl p-4 motion-safe:animate-scale-in">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-green-500/20 rounded-xl">
             <Trophy className="w-5 h-5 text-green-500" />
@@ -99,7 +99,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
       className={cn(
         'rounded-2xl p-4 transition-all',
         isUrgent
-          ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-2 border-red-500/50 animate-pulse'
+          ? 'bg-gradient-to-r from-red-500/20 to-orange-500/20 border-2 border-red-500/50 motion-safe:animate-pulse'
           : challenge.type === 'flash'
           ? 'bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30'
           : challenge.type === 'hourly'
@@ -114,7 +114,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
           isUrgent ? 'bg-red-500/20' : 'bg-yellow-500/20'
         )}>
           {isUrgent ? (
-            <AlertTriangle className="w-5 h-5 text-red-500 animate-bounce" />
+            <AlertTriangle className="w-5 h-5 text-red-500 motion-safe:animate-bounce" />
           ) : (
             <Zap className="w-5 h-5 text-yellow-500" />
           )}
@@ -125,8 +125,8 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
           <div className="flex items-center gap-2 mb-1">
             <span className="font-bold">{challenge.title}</span>
             {isUrgent && (
-              <span className="px-2 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full animate-pulse">
-                HURRY!
+              <span className="px-2 py-0.5 text-xs font-bold bg-red-500 text-white rounded-full motion-safe:animate-pulse">
+                {t.hurry || 'HURRY!'}
               </span>
             )}
           </div>
@@ -145,7 +145,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
             />
             {progress > 0 && progress < 100 && (
               <div
-                className="absolute top-0 h-full w-2 bg-foreground/50 animate-pulse"
+                className="absolute top-0 h-full w-2 bg-foreground/50 motion-safe:animate-pulse"
                 style={{ left: `${progress}%`, transform: 'translateX(-50%)' }}
               />
             )}
@@ -203,7 +203,7 @@ export function FlashChallengeCompact({ challenge, onClick }: { challenge: TimeC
       className={cn(
         'w-full flex items-center gap-2 p-2 rounded-xl text-start transition-all hover:scale-[1.02]',
         isUrgent
-          ? 'bg-red-500/20 border border-red-500/50 animate-pulse'
+          ? 'bg-red-500/20 border border-red-500/50 motion-safe:animate-pulse'
           : 'bg-yellow-500/10 border border-yellow-500/30'
       )}
     >

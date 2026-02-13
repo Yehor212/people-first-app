@@ -192,7 +192,7 @@ export function ChallengesPanel({
   };
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="challenges-title" className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-labelledby="challenges-title" className="fixed inset-0 bg-background/95 backdrop-blur-sm z-[60] flex items-center justify-center p-4 motion-safe:animate-fade-in">
       <div className="w-full max-w-2xl max-h-[90dvh] flex flex-col bg-card rounded-3xl zen-shadow-card overflow-hidden">
         {/* Header */}
         <div className="zen-gradient p-6 flex items-center justify-between">
@@ -548,7 +548,7 @@ export function ChallengesPanel({
 
       {/* Inline Share Dialog for badges */}
       {showShareDialog && selectedBadge && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-4 animate-fade-in" role="dialog" aria-modal="true">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-4 motion-safe:animate-fade-in" role="dialog" aria-modal="true">
           {/* Close button */}
           <button
             onClick={() => setShowShareDialog(false)}
@@ -617,7 +617,7 @@ export function ChallengesPanel({
 
             {/* Error Message */}
             {shareError && (
-              <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-center">
+              <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-center" role="status" aria-live="polite">
                 <p className="text-red-400 text-sm">{shareError}</p>
               </div>
             )}

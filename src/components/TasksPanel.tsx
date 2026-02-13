@@ -204,7 +204,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
       <div
         key={task.id}
         className={cn(
-          'p-4 rounded-2xl transition-all duration-300 animate-fade-in',
+          'p-4 rounded-2xl transition-all duration-300 motion-safe:animate-fade-in',
           task.completed
             ? 'bg-primary/5 opacity-70 scale-95'
             : isTopThree
@@ -324,7 +324,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
 
         {/* Momentum Bonus */}
         {consecutiveCompletions > 0 && (
-          <div className="p-4 zen-gradient rounded-xl zen-shadow animate-scale-in">
+          <div className="p-4 zen-gradient rounded-xl zen-shadow motion-safe:animate-scale-in">
             <div className="flex items-center gap-3">
               <div className="text-4xl">🔥</div>
               <div className="flex-1">
@@ -341,7 +341,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
 
         {/* Add Task Form */}
         {showAddForm && (
-          <div className="p-4 bg-card rounded-2xl border-2 border-primary/30 zen-shadow-card animate-scale-in space-y-4">
+          <div className="p-4 bg-card rounded-2xl border-2 border-primary/30 zen-shadow-card motion-safe:animate-scale-in space-y-4">
             <input
               type="text"
               value={newTaskName}

@@ -83,8 +83,8 @@ export function AICoachChat() {
   return (
     <>
       {/* Prevent closing while message is being sent */}
-      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => { if (!isLoading) closeCoach(); }} />
-      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden animate-slide-up flex flex-col">
+      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in" onClick={() => { if (!isLoading) closeCoach(); }} />
+      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up flex flex-col">
         <h2 className="sr-only">{t.aiCoachTitle || 'AI Coach'}</h2>
         {/* Header - Premium */}
         <div className="flex items-center justify-between p-4 border-b border-border relative">
@@ -195,7 +195,7 @@ export function AICoachChat() {
         </div>
 
         {/* Input - Premium */}
-        <div className="p-4 border-t border-border pb-safe relative">
+        <div className="p-4 border-t border-border pb-[env(safe-area-inset-bottom)] relative">
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
@@ -208,7 +208,7 @@ export function AICoachChat() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyPress}
               placeholder={t.aiCoachPlaceholder || 'Type a message...'}
               className={cn(
                 "flex-1 px-4 py-3.5 rounded-xl transition-all",
@@ -268,7 +268,7 @@ function ChatBubble({ message, index }: { message: ChatMessage; index: number })
       <div
         className={cn(
           "max-w-[80%] px-4 py-3 rounded-2xl",
-          isCoach ? "rounded-tl-sm" : "rounded-tr-sm"
+          isCoach ? "rounded-ss-sm" : "rounded-se-sm"
         )}
         style={isCoach ? {
           background: 'hsl(var(--secondary))',
@@ -316,7 +316,7 @@ function TypingIndicator() {
         <Bot className="w-5 h-5 text-violet-400" />
       </div>
       <div
-        className="px-5 py-4 rounded-2xl rounded-tl-sm"
+        className="px-5 py-4 rounded-2xl rounded-ss-sm"
         style={{
           background: 'hsl(var(--secondary))',
           backdropFilter: 'blur(8px)',

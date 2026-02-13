@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, memo, useRef } from 'react';
+import { useState, useCallback, useMemo, memo, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Habit, HabitType, HabitReminder, HabitFrequency, HabitCategory } from '@/types';
 import { getToday, generateId, formatDate, cn, parseLocalDate, calculateStreak } from '@/lib/utils';
@@ -77,6 +77,19 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   // Swipe hint for first-time users
   const [swipeHintSeen] = useState(() => !!localStorage.getItem('habit-swipe-hint-seen'));
   const swipeHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Refs for celebration timeouts (cleanup on unmount)
+  const celebrationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const celebrationHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup all timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (swipeHintTimerRef.current) clearTimeout(swipeHintTimerRef.current);
+      if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
+      if (celebrationHideTimerRef.current) clearTimeout(celebrationHideTimerRef.current);
+    };
+  }, []);
 
   // Celebration states
   const [showAllComplete, setShowAllComplete] = useState(false);
@@ -435,10 +448,12 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
 
       if (otherHabitsCompleted && habits.length > 1) {
         // All habits will be complete after this one
-        setTimeout(() => {
+        if (celebrationTimerRef.current) clearTimeout(celebrationTimerRef.current);
+        celebrationTimerRef.current = setTimeout(() => {
           setShowAllComplete(true);
           playLevelUp();
-          setTimeout(() => setShowAllComplete(false), 4000);
+          if (celebrationHideTimerRef.current) clearTimeout(celebrationHideTimerRef.current);
+          celebrationHideTimerRef.current = setTimeout(() => setShowAllComplete(false), 4000);
         }, 1800); // Delay after celebration ends
       }
     }
@@ -1117,7 +1132,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                             handleReminderChange(index, 'days', newDays);
                           }}
                           className={cn(
-                            "w-10 h-10 min-w-[40px] min-h-[40px] text-[10px] rounded-lg transition-colors font-medium",
+                            "w-11 h-11 min-w-[44px] min-h-[44px] text-[10px] rounded-lg transition-colors font-medium",
                             "focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1 focus-visible:outline-none",
                             isPrimaryCTA
                               ? reminder.days.includes(day)

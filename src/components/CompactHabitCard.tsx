@@ -7,7 +7,7 @@
 import { Habit } from '@/types';
 import { cn, getToday, parseLocalDate } from '@/lib/utils';
 import { Check, Minus, Plus, Trash2, Users, Star, Crown, Zap, Pencil } from 'lucide-react';
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ProgressRing, ProgressRingCompact } from './ui/progress-ring';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -172,6 +172,13 @@ export function CompactHabitCard({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const touchStartX = useRef(0);
+
+  // Cleanup delete confirmation timer on unmount
+  useEffect(() => {
+    return () => {
+      if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
+    };
+  }, []);
 
   const habitType = habit.type || 'daily';
 
@@ -573,7 +580,7 @@ export function CompactHabitCard({
           {onEdit && (
             <button
               onClick={() => onEdit(habit)}
-              className="p-2 rounded-lg hover:bg-muted/80 text-muted-foreground min-w-[36px] min-h-[36px] flex items-center justify-center"
+              className="p-2 rounded-lg hover:bg-muted/80 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label={t.edit || 'Edit'}
             >
               <Pencil className="w-3.5 h-3.5" />
@@ -592,7 +599,7 @@ export function CompactHabitCard({
               }
             }}
             className={cn(
-              "p-2 rounded-lg min-w-[36px] min-h-[36px] flex items-center justify-center transition-colors",
+              "p-2 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors",
               showDeleteConfirm
                 ? "bg-destructive/15 text-destructive"
                 : "hover:bg-destructive/10 text-muted-foreground hover:text-destructive"

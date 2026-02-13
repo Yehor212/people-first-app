@@ -2,6 +2,7 @@ import { Share2, Download, X, Sparkles, Loader2 } from 'lucide-react';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -27,6 +28,7 @@ interface ShareProgressProps {
 
 export function ShareProgress({ stats, onClose }: ShareProgressProps) {
   const { t } = useLanguage();
+  useBackHandler(true, onClose);
   useScrollLock(true);
   const cardRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
@@ -163,7 +165,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
   const achievement = getAchievementData();
 
   return (
-    <div role="dialog" aria-modal="true" aria-label={t.shareTitle || 'Share Progress'} className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4 pt-safe pb-safe animate-fade-in">
+    <div role="dialog" aria-modal="true" aria-label={t.shareTitle || 'Share Progress'} className="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4 pt-safe pb-safe motion-safe:animate-fade-in">
       {/* Close button */}
       <button
         onClick={onClose}
@@ -293,7 +295,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
 
         {/* Error Message */}
         {shareError && (
-          <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-center animate-fade-in">
+          <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-center motion-safe:animate-fade-in" role="status" aria-live="polite">
             <p className="text-red-400 text-sm">{shareError}</p>
             <button
               onClick={() => setShareError(null)}

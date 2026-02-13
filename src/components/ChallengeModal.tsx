@@ -3,7 +3,7 @@
  * Part of v1.4.0 Social & Sharing
  */
 
-import { useState, useEffect, useMemo, memo } from 'react';
+import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import {
   X,
   Share2,
@@ -176,9 +176,11 @@ function ChallengeCard({
 function ParticipantsLeaderboard({
   challenge,
   t,
+  username,
 }: {
   challenge: Challenge;
   t: Record<string, string>;
+  username?: string;
 }) {
   const [leaderboard, setLeaderboard] = useState<ChallengeLeaderboard | null>(null);
   const [loading, setLoading] = useState(true);
@@ -543,14 +545,23 @@ function ChallengeDetailsView({
   onBack,
   onDelete,
   t,
+  username,
 }: {
   challenge: Challenge;
   onBack: () => void;
   onDelete: () => void;
   t: Record<string, string>;
+  username?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
 
   const throttledCopyCode = useThrottledCallback(async () => {
     void hapticTap();
@@ -558,7 +569,8 @@ function ChallengeDetailsView({
       await navigator.clipboard.writeText(challenge.code);
       setCopied(true);
       void hapticSuccess();
-      setTimeout(() => setCopied(false), 2000);
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+      copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
     } catch {
       void hapticWarning();
     }
@@ -728,7 +740,7 @@ function ChallengeDetailsView({
       )}
 
       {/* Participants Leaderboard - Cloud Feature */}
-      <ParticipantsLeaderboard challenge={challenge} t={t} />
+      <ParticipantsLeaderboard challenge={challenge} t={t} username={username} />
 
       {/* Challenge code - Premium */}
       <motion.div
@@ -1046,7 +1058,7 @@ function JoinChallengeView({
           onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
         />
         {error && (
-          <p className="text-sm text-destructive mt-2 text-center">{error}</p>
+          <p className="text-sm text-destructive mt-2 text-center" role="status" aria-live="polite">{error}</p>
         )}
       </div>
 
@@ -1269,6 +1281,7 @@ export const ChallengeModal = memo(function ChallengeModal({
               onBack={handleBack}
               onDelete={handleBack}
               t={t}
+              username={username}
             />
           )}
         </div>

@@ -3,7 +3,7 @@
  * Part of v1.4.0 Social & Sharing
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Download, Share2, Copy, Check, Loader2, Image } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -91,6 +91,16 @@ export function ShareModal(props: ShareModalProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
+  const sharedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (sharedTimerRef.current) clearTimeout(sharedTimerRef.current);
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+    };
+  }, []);
 
   // Generate image when modal opens
   useEffect(() => {
@@ -179,7 +189,8 @@ export function ShareModal(props: ShareModalProps) {
       if (success) {
         void hapticSuccess();
         setShared(true);
-        setTimeout(() => setShared(false), 2000);
+        if (sharedTimerRef.current) clearTimeout(sharedTimerRef.current);
+        sharedTimerRef.current = setTimeout(() => setShared(false), 2000);
       } else {
         // shareImage already downloaded the file as fallback
         // Show success toast - the image was saved
@@ -202,7 +213,8 @@ export function ShareModal(props: ShareModalProps) {
       if (success) {
         void hapticSuccess();
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
+        copiedTimerRef.current = setTimeout(() => setCopied(false), 2000);
       } else {
         toast.error(t.copyError || 'Could not copy to clipboard.');
       }
@@ -271,8 +283,8 @@ export function ShareModal(props: ShareModalProps) {
 
   return (
     <>
-      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in" onClick={() => onOpenChange(false)} />
-      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden animate-slide-up pb-safe">
+      <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in" onClick={() => onOpenChange(false)} />
+      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-safe">
         <div className="pb-4 px-6 pt-6 text-center relative">
           <button
             onClick={() => onOpenChange(false)}

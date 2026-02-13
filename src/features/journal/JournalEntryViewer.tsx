@@ -9,6 +9,7 @@ import type { MoodType, PrimaryEmotion } from '@/types';
 import { JournalPhotoGallery } from './JournalPhotoGallery';
 import { JournalAudioPlayer } from './JournalAudioPlayer';
 import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
+import { StickerRenderer } from './StickerRenderer';
 
 const MOOD_DISPLAY: Record<MoodType, string> = {
   great: '\u{1F604}',

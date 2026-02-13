@@ -1,8 +1,11 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { Camera, Image as ImageIcon, X, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { logger } from '@/lib/logger';
 
 interface JournalPhotoPickerProps {
   onSelectFile: (file: File) => Promise<void>;
@@ -23,6 +26,23 @@ export function JournalPhotoPicker({
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [hasCamera, setHasCamera] = useState(true);
+
+  useEffect(() => {
+    if (Capacitor.getPlatform() === 'web') {
+      if (navigator.mediaDevices?.enumerateDevices) {
+        navigator.mediaDevices.enumerateDevices()
+          .then(devices => {
+            setHasCamera(devices.some(d => d.kind === 'videoinput'));
+          })
+          .catch(() => {
+            setHasCamera(false);
+          });
+      } else {
+        setHasCamera(false);
+      }
+    }
+  }, []);
 
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -31,8 +51,9 @@ export function JournalPhotoPicker({
     try {
       await onSelectFile(file);
       onClose();
-    } catch {
-      // stay open on error
+    } catch (err) {
+      logger.error('[JournalPhotoPicker] Photo upload failed:', err);
+      toast.error(ts.journalPhotoError || 'Failed to load photo');
     } finally {
       setLoading(false);
       e.target.value = '';
@@ -50,7 +71,7 @@ export function JournalPhotoPicker({
         role="dialog"
         aria-modal="true"
         className={cn(
-          'fixed bottom-0 left-0 right-0 z-[65]',
+          'fixed bottom-0 inset-x-0 z-[65]',
           'bg-card/95 backdrop-blur-xl border-t border-border/40',
           'rounded-t-2xl shadow-lg animate-slide-up',
           'pb-[env(safe-area-inset-bottom)]',
@@ -79,22 +100,24 @@ export function JournalPhotoPicker({
             </div>
           ) : (
             <div className="flex gap-3">
-              <button
-                onClick={() => cameraRef.current?.click()}
-                disabled={remaining <= 0}
-                className={cn(
-                  'flex-1 flex flex-col items-center gap-2 py-6 rounded-xl',
-                  'bg-muted/50 border border-border/30',
-                  'active:scale-95 transition-transform',
-                  'disabled:opacity-40',
-                  'min-h-[80px]',
-                )}
-              >
-                <Camera className="w-6 h-6 text-foreground" />
-                <span className="text-xs font-medium text-foreground">
-                  {ts.journalPhotoTake || 'Take Photo'}
-                </span>
-              </button>
+              {hasCamera && (
+                <button
+                  onClick={() => cameraRef.current?.click()}
+                  disabled={remaining <= 0}
+                  className={cn(
+                    'flex-1 flex flex-col items-center gap-2 py-6 rounded-xl',
+                    'bg-muted/50 border border-border/30',
+                    'active:scale-95 transition-transform',
+                    'disabled:opacity-40',
+                    'min-h-[80px]',
+                  )}
+                >
+                  <Camera className="w-6 h-6 text-foreground" />
+                  <span className="text-xs font-medium text-foreground">
+                    {ts.journalPhotoTake || 'Take Photo'}
+                  </span>
+                </button>
+              )}
 
               <button
                 onClick={() => galleryRef.current?.click()}

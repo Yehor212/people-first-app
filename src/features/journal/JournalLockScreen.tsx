@@ -49,6 +49,14 @@ export function JournalLockScreen({
 
   useEffect(() => { inputRef.current?.focus(); }, [step]);
 
+  // Auto-clear error message after 3s
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   const triggerShake = () => {
     setShake(true);
     setWrongGlow(true);

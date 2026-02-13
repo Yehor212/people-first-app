@@ -271,10 +271,8 @@ export function JournalEntryEditor({
     }
   }, [content]);
 
-  // Focus textarea on mount for new entries
-  useEffect(() => {
-    if (!entry) setTimeout(() => textareaRef.current?.focus(), 100);
-  }, [entry]);
+  // Title auto-focuses for new entries via autoFocus prop on the input.
+  // No additional textarea focus needed — user starts with the title.
 
   // Focus trap for editor overlay
   useEffect(() => {
@@ -643,6 +641,7 @@ export function JournalEntryEditor({
           value={title}
           onChange={e => setTitle(e.target.value)}
           placeholder={ts.journalEntryTitle || 'Title (optional)'}
+          autoFocus={!entry}
           className={cn(
             'w-full text-lg font-semibold bg-transparent border-none outline-none',
             'placeholder:text-muted-foreground/40',
