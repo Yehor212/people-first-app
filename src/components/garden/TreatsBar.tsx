@@ -4,6 +4,7 @@
  */
 
 import { memo } from 'react';
+import { Sprout, Droplets, Cookie, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 
@@ -32,21 +33,21 @@ export const TreatsBar = memo(function TreatsBar({
   const actions = [
     {
       key: 'plant',
-      emoji: '\u{1F331}',
+      icon: <Sprout className="w-4 h-4 text-green-500" />,
       label: ts.gardenActionPlant || 'Plant',
       cost: plantCost,
       onClick: onPlantSeed,
     },
     {
       key: 'water',
-      emoji: '\u{1F4A7}',
+      icon: <Droplets className="w-4 h-4 text-blue-500" />,
       label: ts.gardenActionWater || 'Water All',
       cost: waterCost,
       onClick: onWaterPlants,
     },
     {
       key: 'feed',
-      emoji: '\u{1F356}',
+      icon: <Cookie className="w-4 h-4 text-amber-500" />,
       label: ts.gardenActionFeed || 'Feed',
       cost: feedCost,
       onClick: onFeedCreatures,
@@ -57,7 +58,7 @@ export const TreatsBar = memo(function TreatsBar({
     <div className="flex items-center justify-between gap-2 px-4 py-2 bg-card/80 backdrop-blur-sm rounded-2xl border border-border/50">
       {/* Treats balance */}
       <div className="flex items-center gap-1.5 min-w-0">
-        <span aria-hidden="true">{'\u2728'}</span>
+        <Sparkles className="w-4 h-4 text-amber-500" aria-hidden="true" />
         <span className="text-sm font-bold text-foreground">{treatsBalance}</span>
         <span className="text-xs text-muted-foreground truncate">
           {ts.gardenTreats || 'treats'}
@@ -83,7 +84,7 @@ export const TreatsBar = memo(function TreatsBar({
                   : 'bg-card hover:bg-accent/50 motion-safe:active:scale-95'
               )}
             >
-              <span aria-hidden="true">{action.emoji}</span>
+              <span aria-hidden="true">{action.icon}</span>
               <span className="hidden sm:inline">{action.label}</span>
               <span className="text-muted-foreground">{action.cost}</span>
             </button>

@@ -5,7 +5,7 @@
 
 import { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { Droplets, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -103,7 +103,7 @@ export const PlantDetailModal = memo(function PlantDetailModal({
 
         <div className="p-6 text-center">
           {/* Plant emoji */}
-          <span className="text-7xl block mb-4 motion-safe:animate-bounce" aria-hidden="true">
+          <span className="text-5xl block mb-4" aria-hidden="true">
             {getPlantEmoji(plant)}
           </span>
 
@@ -156,7 +156,7 @@ export const PlantDetailModal = memo(function PlantDetailModal({
                 : 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
             )}
           >
-            {'\u{1F4A7}'} {ts.gardenWaterPlant || 'Water Plant'} ({waterCost} {ts.gardenTreats || 'treats'})
+            <Droplets className="w-4 h-4 inline-block me-1" /> {ts.gardenWaterPlant || 'Water Plant'} ({waterCost} {ts.gardenTreats || 'treats'})
           </button>
         </div>
       </motion.div>

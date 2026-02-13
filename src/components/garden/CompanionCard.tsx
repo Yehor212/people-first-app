@@ -5,6 +5,7 @@
 
 import { memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Moon } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticTap, hapticSuccess } from '@/lib/haptics';
 import { cn } from '@/lib/utils';
@@ -57,8 +58,7 @@ export const CompanionCard = memo(function CompanionCard({
   };
 
   return (
-    <motion.div
-      whileTap={{ scale: 0.95 }}
+    <div
       className={cn(
         'relative flex items-center gap-3 px-4 py-3 rounded-2xl border border-border/50',
         'bg-card/90 backdrop-blur-sm shadow-sm',
@@ -67,7 +67,7 @@ export const CompanionCard = memo(function CompanionCard({
       )}
     >
       {/* Companion emoji */}
-      <span className="text-5xl select-none" aria-hidden="true">
+      <span className="text-3xl select-none" aria-hidden="true">
         {getCompanionEmoji()}
       </span>
 
@@ -87,6 +87,10 @@ export const CompanionCard = memo(function CompanionCard({
 
         {/* Fullness bar */}
         <div className="mt-1.5">
+          <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-0.5">
+            <span>{ts.fullness || 'Fullness'}</span>
+            <span>{fullnessPercent}%</span>
+          </div>
           <div className="h-2 rounded-full bg-muted overflow-hidden">
             <div
               className="h-full rounded-full bg-primary transition-all"
@@ -130,11 +134,11 @@ export const CompanionCard = memo(function CompanionCard({
             className="absolute inset-0 flex items-center justify-center rounded-2xl bg-background/40 backdrop-blur-[2px]"
             aria-hidden="true"
           >
-            <span className="text-3xl motion-safe:animate-pulse">{'\u{1F4A4}'}</span>
+            <Moon className="w-8 h-8 text-muted-foreground motion-safe:animate-pulse" />
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.div>
+    </div>
   );
 });
 

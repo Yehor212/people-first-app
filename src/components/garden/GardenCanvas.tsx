@@ -1,11 +1,7 @@
 /**
  * GardenCanvas - The visual garden scene renderer.
- * Renders plants and creatures on a relative-positioned canvas with seasonal backgrounds,
- * weather effects, and interactive elements. Plants and creatures are positioned using
- * percentage-based coordinates (0-100 range) for responsive layout.
- *
- * NOTE: left/top % positioning for absolute elements within the canvas is intentional
- * and does NOT need RTL conversion — these are spatial coordinates, not directional.
+ * Renders plants and creatures in a responsive CSS Grid of card tiles
+ * with seasonal backgrounds, weather effects, and interactive elements.
  */
 
 import { memo, useMemo } from 'react';
@@ -13,11 +9,13 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { WeatherOverlay } from './WeatherOverlay';
 import { GardenStageLabel } from './GardenStageLabel';
+import { GROWTH_THRESHOLDS } from '@/lib/innerWorldConstants';
 import type {
   GardenPlant,
   GardenCreature,
   GardenWeather,
   GardenStage,
+  PlantStage,
   Season,
 } from '@/types';
 
@@ -47,15 +45,15 @@ const SEASON_GRADIENTS: Record<Season, string> = {
   winter: 'from-blue-200/80 via-slate-100/60 to-blue-50/40 dark:from-blue-900/40 dark:via-slate-900/30 dark:to-blue-950/20',
 };
 
-/**
- * Season-specific ground gradient classes.
- */
-const GROUND_GRADIENTS: Record<Season, string> = {
-  spring: 'from-green-900/25 to-green-800/10 dark:from-green-950/40 dark:to-green-900/20',
-  summer: 'from-amber-900/20 to-amber-800/10 dark:from-amber-950/35 dark:to-amber-900/15',
-  autumn: 'from-orange-900/25 to-amber-800/10 dark:from-orange-950/40 dark:to-orange-900/20',
-  winter: 'from-slate-400/25 to-blue-300/10 dark:from-slate-800/40 dark:to-blue-900/20',
-};
+const STAGE_ORDER: PlantStage[] = ['seed', 'sprout', 'growing', 'blooming', 'magnificent'];
+
+function getGrowthPercent(plant: GardenPlant): number {
+  const idx = STAGE_ORDER.indexOf(plant.stage);
+  if (plant.stage === 'magnificent') return 100;
+  const current = GROWTH_THRESHOLDS[plant.stage];
+  const next = GROWTH_THRESHOLDS[STAGE_ORDER[idx + 1]];
+  return Math.min(100, Math.max(0, ((plant.growthPoints - current) / (next - current)) * 100));
+}
 
 export const GardenCanvas = memo(function GardenCanvas({
   plants,
@@ -71,16 +69,14 @@ export const GardenCanvas = memo(function GardenCanvas({
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
-  // Memoize labels so they only recalculate on language change
-  const ariaLabels = useMemo(() => ({
-    gardenScene: ts.gardenScene || 'Garden scene',
-  }), [ts.gardenScene]);
+  // Memoize the scene aria-label so it only recalculates on language change
+  const sceneLabel = useMemo(() => ts.gardenScene || 'World scene', [ts.gardenScene]);
 
   return (
     <div
-      className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden border border-border/30 shadow-sm"
-      role="img"
-      aria-label={ariaLabels.gardenScene}
+      className="relative w-full min-h-[200px] rounded-2xl overflow-hidden border border-border/30 shadow-sm"
+      role="region"
+      aria-label={sceneLabel}
     >
       {/* Season background gradient */}
       <div
@@ -94,89 +90,79 @@ export const GardenCanvas = memo(function GardenCanvas({
       {/* Weather overlay (particles) */}
       <WeatherOverlay weather={weather} />
 
-      {/* Ground area */}
-      <div
-        className={cn(
-          'absolute bottom-0 inset-x-0 h-1/4 bg-gradient-to-t',
-          GROUND_GRADIENTS[season]
-        )}
-        aria-hidden="true"
-      />
-
-      {/* Plants rendered at their positions */}
-      {plants.map((plant) => {
-        const stageLabel = ts[`plantStage_${plant.stage}`] || plant.stage;
-        const typeLabel = ts[`plantType_${plant.type}`] || plant.type;
-
-        return (
-          <button
-            key={plant.id}
-            onClick={() => onSelectPlant(plant)}
-            style={{
-              position: 'absolute',
-              left: `${plant.position.x}%`,
-              top: `${plant.position.y}%`,
-            }}
-            className={cn(
-              'transform -translate-x-1/2 -translate-y-1/2',
-              'text-2xl cursor-pointer',
-              'motion-safe:hover:scale-110 transition-transform',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full',
-              plant.isSpecial && 'text-3xl'
-            )}
-            aria-label={`${typeLabel} - ${stageLabel}`}
-          >
-            <span aria-hidden="true">{getPlantEmoji(plant)}</span>
-          </button>
-        );
-      })}
-
-      {/* Creatures rendered at their positions with subtle floating animation */}
-      {creatures.map((creature) => {
-        const stageLabel = ts[`creatureStage_${creature.stage}`] || creature.stage;
-        const typeLabel = ts[`creatureType_${creature.type}`] || creature.type;
-
-        return (
-          <button
-            key={creature.id}
-            onClick={() => onSelectCreature(creature)}
-            style={{
-              position: 'absolute',
-              left: `${creature.position.x}%`,
-              top: `${creature.position.y}%`,
-            }}
-            className={cn(
-              'transform -translate-x-1/2 -translate-y-1/2',
-              'text-2xl cursor-pointer',
-              'motion-safe:hover:scale-110 motion-safe:animate-[garden-float_4s_ease-in-out_infinite] transition-transform',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-full',
-              creature.isSpecial && 'text-3xl'
-            )}
-            aria-label={`${typeLabel} - ${stageLabel}`}
-          >
-            <span aria-hidden="true">{getCreatureEmoji(creature)}</span>
-          </button>
-        );
-      })}
-
-      {/* Garden stage label positioned at top-start */}
-      <div className="absolute top-3 start-3 z-10">
+      {/* Header: stage label */}
+      <div className="relative z-10 px-3 pt-3">
         <GardenStageLabel stage={gardenStage} plantCount={plants.length} />
       </div>
 
-      {/* Creature count badge at top-end (only if creatures exist) */}
+      {/* Plants grid */}
+      <div className="relative z-10 grid grid-cols-3 sm:grid-cols-4 gap-2 p-3">
+        {plants.map((plant) => {
+          const stageLabel = ts[`plantStage_${plant.stage}`] || plant.stage;
+          const typeLabel = ts[`plantType_${plant.type}`] || plant.type;
+          const growthPercent = getGrowthPercent(plant);
+
+          return (
+            <button
+              key={plant.id}
+              onClick={() => onSelectPlant(plant)}
+              className={cn(
+                'flex flex-col items-center gap-1.5 p-3 rounded-xl',
+                'bg-white/10 dark:bg-white/5 backdrop-blur-sm',
+                'border border-white/20 dark:border-white/10',
+                'motion-safe:hover:scale-[1.03] transition-all duration-200',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
+                plant.isSpecial && 'ring-1 ring-amber-400/40'
+              )}
+              aria-label={`${typeLabel} - ${stageLabel}`}
+            >
+              <span className="text-2xl" aria-hidden="true">{getPlantEmoji(plant)}</span>
+              <span className="text-[10px] font-medium text-white/80 truncate max-w-full capitalize">
+                {typeLabel}
+              </span>
+              {/* Thin growth progress bar */}
+              <div className="w-full h-1 rounded-full bg-white/20 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-primary transition-all"
+                  style={{ width: `${growthPercent}%` }}
+                />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Creatures section (if any, with separator) */}
       {creatures.length > 0 && (
-        <div className="absolute top-3 end-3 z-10">
-          <span
-            className={cn(
-              'inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium',
-              'bg-purple-500/15 text-purple-600 dark:text-purple-400 border border-purple-500/30'
-            )}
-          >
-            <span aria-hidden="true">{'\u{1F98B}'}</span>
-            <span>{creatures.length}</span>
-          </span>
-        </div>
+        <>
+          <div className="relative z-10 mx-3 border-t border-white/10" />
+          <div className="relative z-10 grid grid-cols-3 sm:grid-cols-4 gap-2 p-3 pt-2">
+            {creatures.map((creature) => {
+              const stageLabel = ts[`creatureStage_${creature.stage}`] || creature.stage;
+              const typeLabel = ts[`creatureType_${creature.type}`] || creature.type;
+
+              return (
+                <button
+                  key={creature.id}
+                  onClick={() => onSelectCreature(creature)}
+                  className={cn(
+                    'flex flex-col items-center gap-1.5 p-3 rounded-xl',
+                    'bg-white/10 dark:bg-white/5 backdrop-blur-sm',
+                    'border border-white/20 dark:border-white/10',
+                    'motion-safe:hover:scale-[1.03] transition-all duration-200',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2'
+                  )}
+                  aria-label={`${typeLabel} - ${stageLabel}`}
+                >
+                  <span className="text-2xl" aria-hidden="true">{getCreatureEmoji(creature)}</span>
+                  <span className="text-[10px] font-medium text-white/80 truncate max-w-full capitalize">
+                    {typeLabel}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );

@@ -26,21 +26,13 @@ export function JournalPhotoPicker({
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
-  const [hasCamera, setHasCamera] = useState(true);
+  // capture="environment" only opens a real camera on native mobile (Android/iOS).
+  // On desktop web it silently falls back to file picker — identical to gallery button.
+  const [hasCamera, setHasCamera] = useState(false);
 
   useEffect(() => {
-    if (Capacitor.getPlatform() === 'web') {
-      if (navigator.mediaDevices?.enumerateDevices) {
-        navigator.mediaDevices.enumerateDevices()
-          .then(devices => {
-            setHasCamera(devices.some(d => d.kind === 'videoinput'));
-          })
-          .catch(() => {
-            setHasCamera(false);
-          });
-      } else {
-        setHasCamera(false);
-      }
+    if (Capacitor.isNativePlatform()) {
+      setHasCamera(true);
     }
   }, []);
 

@@ -27,15 +27,15 @@ function generateParticles(count: number): Particle[] {
     id: i,
     x: Math.random() * 100,
     y: Math.random() * 100,
-    size: 2 + Math.random() * 4,
+    size: 1.5 + Math.random() * 2.5,
     delay: Math.random() * 6,
     duration: 4 + Math.random() * 8,
-    opacity: 0.2 + Math.random() * 0.5,
+    opacity: 0.1 + Math.random() * 0.3,
   }));
 }
 
 export function WeatherOverlay({ weather }: WeatherOverlayProps) {
-  const particles = useMemo(() => generateParticles(12), []);
+  const particles = useMemo(() => generateParticles(8), []);
 
   return (
     <div

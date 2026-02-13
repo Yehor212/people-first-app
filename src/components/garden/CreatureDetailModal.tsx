@@ -5,7 +5,7 @@
 
 import { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { Cookie, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -85,7 +85,7 @@ export const CreatureDetailModal = memo(function CreatureDetailModal({
 
         <div className="p-6 text-center">
           {/* Creature emoji */}
-          <span className="text-7xl block mb-4 motion-safe:animate-bounce" aria-hidden="true">
+          <span className="text-5xl block mb-4" aria-hidden="true">
             {getCreatureEmoji(creature)}
           </span>
 
@@ -132,7 +132,7 @@ export const CreatureDetailModal = memo(function CreatureDetailModal({
                 : 'bg-muted text-muted-foreground cursor-not-allowed opacity-50'
             )}
           >
-            {'\u{1F356}'} {ts.creatureFeed || 'Feed Creature'} ({feedCost} {ts.gardenTreats || 'treats'})
+            <Cookie className="w-4 h-4 inline-block me-1" /> {ts.creatureFeed || 'Feed Creature'} ({feedCost} {ts.gardenTreats || 'treats'})
           </button>
         </div>
       </motion.div>

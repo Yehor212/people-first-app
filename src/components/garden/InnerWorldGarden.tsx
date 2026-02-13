@@ -94,7 +94,7 @@ export const InnerWorldGarden = memo(function InnerWorldGarden({
       <div className="flex flex-col items-center justify-center py-20 gap-3">
         <Loader2 className="w-8 h-8 text-primary motion-safe:animate-spin" />
         <span className="text-sm text-muted-foreground">
-          {ts.gardenLoading || 'Loading your garden...'}
+          {ts.gardenLoading || 'Loading your world...'}
         </span>
       </div>
     );
