@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { Sparkles, Shield, Zap, Download, Moon, X, RefreshCw, MessageSquare, ToggleRight, Bug } from 'lucide-react';
+import { Sparkles, Shield, Zap, Download, Moon, X, RefreshCw, MessageSquare, ToggleRight, Bug, Settings } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -48,6 +48,13 @@ export const CHANGELOG: Record<string, ChangelogItem[]> = {
       descriptionKey: 'whatsNew.personalJournal.description',
       title: 'Personal Journal',
       description: 'Voice journaling, premium templates, export, and biometric lock for your private entries.',
+    },
+    {
+      icon: <Settings className="w-5 h-5 text-indigo-500" />,
+      titleKey: 'whatsNew.settingsRedesign.title',
+      descriptionKey: 'whatsNew.settingsRedesign.description',
+      title: 'Redesigned Settings',
+      description: 'Cleaner settings with better import flow, auto-clearing notifications, and improved accessibility.',
     },
     {
       icon: <Bug className="w-5 h-5 text-orange-500" />,
