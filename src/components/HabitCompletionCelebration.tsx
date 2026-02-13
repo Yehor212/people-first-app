@@ -138,10 +138,10 @@ export function HabitCompletionCelebration({
           </div>
 
           {/* Sparkle effects */}
-          <div className="absolute -top-1 -right-1 animate-sparkle-burst">
+          <div className="absolute -top-1 -end-1 animate-sparkle-burst">
             <Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />
           </div>
-          <div className="absolute -bottom-1 -left-1 animate-sparkle-burst delay-100">
+          <div className="absolute -bottom-1 -start-1 animate-sparkle-burst delay-100">
             <Star className="w-3 h-3 text-yellow-300 fill-yellow-300" />
           </div>
         </div>
@@ -156,7 +156,7 @@ export function HabitCompletionCelebration({
         <AnimatePresence>
           {(phase === 'xp' || phase === 'streak') && (
             <motion.div
-              className="absolute -top-10 right-4 flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-sm"
+              className="absolute -top-10 end-4 flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-sm"
               style={{
                 background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
                 color: '#78350f',
@@ -331,7 +331,7 @@ export function DailyProgressBar({ completedCount, totalCount, className }: Dail
         {/* Progress fill */}
         <div
           className={cn(
-            "absolute inset-y-0 left-0 rounded-full transition-all duration-500 ease-out",
+            "absolute inset-y-0 start-0 rounded-full transition-all duration-500 ease-out",
             isComplete
               ? "bg-gradient-to-r from-mood-good to-emerald-400"
               : "bg-gradient-to-r from-primary to-accent"

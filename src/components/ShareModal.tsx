@@ -106,7 +106,7 @@ export function ShareModal(props: ShareModalProps) {
       return;
     }
 
-    generateImage();
+    void generateImage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, mode, language]);
 
@@ -160,7 +160,7 @@ export function ShareModal(props: ShareModalProps) {
 
   const handleDownload = useThrottledCallback(() => {
     if (!imageBlob) return;
-    hapticTap();
+    void hapticTap();
 
     const filename = `zenflow-${mode}-${Date.now()}.png`;
     downloadImage(imageBlob, filename);
@@ -168,7 +168,7 @@ export function ShareModal(props: ShareModalProps) {
 
   const handleShare = useThrottledCallback(async () => {
     if (!imageBlob) return;
-    hapticTap();
+    void hapticTap();
 
     const title = getShareTitle();
     const text = getShareText();
@@ -177,14 +177,14 @@ export function ShareModal(props: ShareModalProps) {
       const success = await shareImage(imageBlob, title, text);
 
       if (success) {
-        hapticSuccess();
+        void hapticSuccess();
         setShared(true);
         setTimeout(() => setShared(false), 2000);
       } else {
         // shareImage already downloaded the file as fallback
         // Show success toast - the image was saved
         toast.success(t.imageSaved || 'Image saved to downloads!');
-        hapticSuccess();
+        void hapticSuccess();
       }
     } catch (error) {
       logger.error('Share failed:', error);
@@ -194,13 +194,13 @@ export function ShareModal(props: ShareModalProps) {
 
   const handleCopy = useThrottledCallback(async () => {
     if (!imageBlob) return;
-    hapticTap();
+    void hapticTap();
 
     try {
       const success = await copyImageToClipboard(imageBlob);
 
       if (success) {
-        hapticSuccess();
+        void hapticSuccess();
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } else {
@@ -276,7 +276,7 @@ export function ShareModal(props: ShareModalProps) {
         <div className="pb-4 px-6 pt-6 text-center relative">
           <button
             onClick={() => onOpenChange(false)}
-            className="absolute top-4 right-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            className="absolute top-4 end-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted transition-colors"
             aria-label={t.close || 'Close'}
           >
             <X className="w-5 h-5 text-muted-foreground" />

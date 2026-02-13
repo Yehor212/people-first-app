@@ -46,7 +46,7 @@ export function SyncStatusListener() {
         action: {
           label: t.syncNow || 'Sync now',
           onClick: () => {
-            offlineQueue.processQueue();
+            void offlineQueue.processQueue();
           },
         },
       });

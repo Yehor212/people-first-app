@@ -98,6 +98,7 @@ export function JournalPrompt({ onUsePrompt, category, compact = false }: Journa
           onClick={handleShuffle}
           className="p-2 bg-secondary hover:bg-muted rounded-lg transition-colors"
           title={t.shufflePrompt || 'Get another prompt'}
+          aria-label={t.shufflePrompt || 'Get another prompt'}
         >
           <Shuffle className="w-4 h-4" />
         </button>

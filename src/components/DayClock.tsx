@@ -465,7 +465,7 @@ function ActivityRow({
         {completed ? '✅' : emoji}
       </div>
 
-      <div className="flex-1 text-left min-w-0">
+      <div className="flex-1 text-start min-w-0">
         <span className={cn(
           "text-sm font-medium truncate block",
           completed ? "text-[hsl(var(--mood-good))]" : "text-foreground"

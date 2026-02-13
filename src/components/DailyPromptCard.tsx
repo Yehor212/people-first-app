@@ -39,7 +39,7 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
   const [promptKey, setPromptKey] = useState(0); // For animating prompt text change
 
   const handleShuffle = useCallback(() => {
-    hapticTap();
+    void hapticTap();
     setShowParticles(true);
     setTimeout(() => setShowParticles(false), 600);
     setCurrentPrompt(getRandomPrompt());
@@ -48,7 +48,7 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
   }, []);
 
   const handleUse = useCallback(() => {
-    hapticTap();
+    void hapticTap();
     const text = getPromptText(currentPrompt, language);
     onUsePrompt(text);
   }, [currentPrompt, language, onUsePrompt]);
@@ -134,7 +134,7 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
       <div className="relative p-4">
         {/* Animated opening quote */}
         <motion.span
-          className="absolute left-2 top-2 text-amber-400/40 text-3xl font-serif pointer-events-none select-none"
+          className="absolute start-2 top-2 text-amber-400/40 text-3xl font-serif pointer-events-none select-none"
           animate={{
             opacity: [0.3, 0.5, 0.3],
             y: [0, -2, 0],
@@ -148,7 +148,7 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
         <AnimatePresence mode="wait">
           <motion.p
             key={promptKey}
-            className="text-lg text-foreground/90 italic leading-relaxed min-h-[56px] mb-4 pl-4"
+            className="text-lg text-foreground/90 italic leading-relaxed min-h-[56px] mb-4 ps-4"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}

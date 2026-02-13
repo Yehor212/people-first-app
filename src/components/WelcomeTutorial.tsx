@@ -350,7 +350,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
 
           {/* Features list for features slide */}
           {content.features && (
-            <div className="mt-6 space-y-3 text-left">
+            <div className="mt-6 space-y-3 text-start">
               {content.features.map((feature, index) => (
                 <div
                   key={index}
@@ -392,6 +392,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
           {currentSlide > 0 && (
             <button
               onClick={handlePrev}
+              aria-label={t.back || 'Back'}
               className="p-3 sm:p-4 bg-secondary rounded-xl hover:bg-muted transition-colors"
             >
               <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />

@@ -433,7 +433,7 @@ export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGala
 
       {/* Title */}
       <motion.div
-        className="absolute top-4 left-4 z-10"
+        className="absolute top-4 start-4 z-10"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
       >

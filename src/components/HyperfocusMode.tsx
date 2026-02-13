@@ -157,9 +157,9 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     if (!spotifyConnected || !spotifyAutoPlay) return;
 
     if (isRunning && !isPaused) {
-      startFocusPlayback();
+      void startFocusPlayback();
     } else {
-      stopFocusPlayback();
+      void stopFocusPlayback();
     }
   }, [isRunning, isPaused, spotifyConnected, spotifyAutoPlay]);
 
@@ -172,14 +172,14 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       setSpotifyTrack(track);
     };
 
-    pollTrack();
+    void pollTrack();
     const interval = setInterval(pollTrack, 5000);
     return () => clearInterval(interval);
   }, [spotifyConnected]);
 
   // Handle Spotify connect
   const handleSpotifyConnect = () => {
-    connectSpotify();
+    void connectSpotify();
   };
 
   // Play sound helper — uses playDirect() for iOS gesture context compatibility.
@@ -344,8 +344,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       {/* Close Button - Fixed position with safe area for iOS */}
       <button
         onClick={onExit}
-        className="fixed top-4 right-4 z-[110] p-3 min-w-[48px] min-h-[48px] bg-secondary hover:bg-secondary/80 rounded-xl transition-all text-slate-600 dark:text-white flex items-center justify-center active:scale-95"
-        style={{ top: 'max(1rem, env(safe-area-inset-top, 1rem))', right: 'max(1rem, env(safe-area-inset-right, 1rem))' }}
+        className="fixed top-4 end-4 z-[110] p-3 min-w-[48px] min-h-[48px] bg-secondary hover:bg-secondary/80 rounded-xl transition-all text-slate-600 dark:text-white flex items-center justify-center active:scale-95"
+        style={{ top: 'max(1rem, env(safe-area-inset-top, 1rem))', insetInlineEnd: 'max(1rem, env(safe-area-inset-right, 1rem))' }}
         aria-label={t.close}
       >
         <X className="w-6 h-6" />

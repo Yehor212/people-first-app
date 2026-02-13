@@ -102,7 +102,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
             files: [file],
           });
         } else {
-          downloadImage(blob);
+          void downloadImage(blob);
         }
       }
       onClose();
@@ -309,7 +309,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
           <button
             onClick={() => {
               setShareError(null);
-              handleShare();
+              void handleShare();
             }}
             disabled={downloading}
             className="flex-1 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
@@ -331,6 +331,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
             onClick={() => downloadImage()}
             disabled={downloading}
             className="py-4 px-6 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            aria-label={t.download || 'Download'}
           >
             {downloading ? (
               <Loader2 className="w-5 h-5 animate-spin" />

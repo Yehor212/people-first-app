@@ -215,7 +215,7 @@ export function Index() {
       }
 
       // Preload share card assets in background for faster sharing
-      preloadShareCardAssets();
+      void preloadShareCardAssets();
 
       if (result.wasUpdated) {
         logger.log('[Index] App was updated, showing update message');
@@ -236,7 +236,7 @@ export function Index() {
       }
     };
 
-    initialize();
+    void initialize();
   }, []); // Run only once on mount
 
   // Track current date and detect midnight change
@@ -488,7 +488,7 @@ export function Index() {
       }
     };
 
-    checkSession();
+    void checkSession();
 
     // Also listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -928,7 +928,7 @@ export function Index() {
     triggerXpPopup(treatResult.earned, 'mood'); // Show treats earned
 
     triggerSync(); // Auto-sync to cloud
-    haptics.moodSaved();
+    void haptics.moodSaved();
 
     // Inner World: Plant a flower based on mood
     plantSeed('mood', entry.mood);
@@ -954,7 +954,7 @@ export function Index() {
     awardXp('mood');
     earnTreats('mood', 5, 'Quick mood');
     triggerSync();
-    haptics.moodSaved();
+    void haptics.moodSaved();
     plantSeed('mood', mood);
     waterPlants('mood');
 
@@ -1031,7 +1031,7 @@ export function Index() {
           awardXp('habit'); // +10 XP for each completion
           const treatResult = earnTreats('habit', 10, 'Completed habit');
           triggerXpPopup(treatResult.earned, 'habit'); // Show treats earned
-          haptics.habitToggled();
+          void haptics.habitToggled();
           trackTimeOfDayCompletion(); // Track for Early Bird/Night Owl badges
         }
 
@@ -1053,7 +1053,7 @@ export function Index() {
         awardXp('habit'); // +10 XP for completing habit (legacy)
         const treatResult = earnTreats('habit', 10, 'Completed habit');
         triggerXpPopup(treatResult.earned, 'habit'); // Show treats earned
-        haptics.habitCompleted();
+        void haptics.habitCompleted();
         // Confetti burst at center of screen
         setConfettiBurst({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
         trackTimeOfDayCompletion(); // Track for Early Bird/Night Owl badges
@@ -1169,7 +1169,7 @@ export function Index() {
       logger.warn('[Index] Failed to queue focus session sync:', err);
     });
     triggerSync(); // Auto-sync to cloud
-    haptics.focusCompleted();
+    void haptics.focusCompleted();
 
     // Show MindfulMoment after focus session (only for sessions > 5 min)
     if (session.duration >= 5) {
@@ -1204,7 +1204,7 @@ export function Index() {
     triggerXpPopup(treatResult.earned, 'gratitude'); // Show treats earned
 
     triggerSync(); // Auto-sync to cloud
-    haptics.gratitudeSaved();
+    void haptics.gratitudeSaved();
 
     // Inner World: Plant a mushroom and attract creatures
     plantSeed('gratitude');
@@ -1603,14 +1603,14 @@ export function Index() {
           logger.log('[Index] appUrlOpen event:', event.url);
           // Try challenge URL first, then auth URL
           if (!handleChallengeUrl(event.url)) {
-            handleAuthUrl(event.url);
+            void handleAuthUrl(event.url);
           }
         }
       });
       removeListener = () => listener.remove();
     };
 
-    setup();
+    void setup();
     return () => { removeListener(); };
   }, []); // Listener registers ONCE, no dependencies
 
@@ -1623,7 +1623,7 @@ export function Index() {
     if (pendingUrl) {
       logger.log('[Index] Processing pending auth URL');
 
-      (async () => {
+      void (async () => {
         try {
           await handleAuthCallback(supabase, pendingUrl);
 
@@ -1678,8 +1678,8 @@ export function Index() {
       if (data.session) {
         migrateExistingUser();
       }
-      syncIfNeeded(data.session?.user?.id ?? null);
-    });
+      void syncIfNeeded(data.session?.user?.id ?? null);
+    }).catch(() => {});
 
     // Correct destructuring pattern for auth subscription
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -1687,7 +1687,7 @@ export function Index() {
       if (session) {
         migrateExistingUser();
       }
-      syncIfNeeded(session?.user?.id ?? null);
+      void syncIfNeeded(session?.user?.id ?? null);
     });
 
     return () => {
@@ -1711,11 +1711,11 @@ export function Index() {
       }
     };
 
-    syncName();
+    void syncName();
 
     // Correct destructuring pattern for auth subscription
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      syncName();
+      void syncName();
     });
 
     return () => {
@@ -1890,7 +1890,7 @@ export function Index() {
       }
     };
 
-    syncWithCloudIfLoggedIn();
+    void syncWithCloudIfLoggedIn();
 
     return () => {
       active = false;
@@ -2011,7 +2011,7 @@ export function Index() {
       {/* Skip to main content link for accessibility */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:shadow-lg"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:start-4 focus:z-[100] focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-lg focus:shadow-lg"
       >
         {t.skipToContent || 'Skip to main content'}
       </a>

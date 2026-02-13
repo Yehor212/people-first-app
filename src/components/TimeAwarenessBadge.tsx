@@ -168,7 +168,7 @@ export function TimeAwarenessBadge({
       </div>
 
       {/* Time info */}
-      <div className="text-left">
+      <div className="text-start">
         <div className={cn(
           "text-xs font-medium",
           message.urgent ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"

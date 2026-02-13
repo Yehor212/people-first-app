@@ -196,7 +196,7 @@ export function SwipeableHabit({
 
       {/* Swipe hint arrow (when not completed and not swiping) */}
       {!completed && !isSwiping && !showSuccess && (
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 z-5 pointer-events-none sm:hidden">
+        <div className="absolute end-2 top-1/2 -translate-y-1/2 z-5 pointer-events-none sm:hidden">
           <motion.div
             animate={{ x: [0, 5, 0] }}
             transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}

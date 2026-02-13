@@ -99,7 +99,7 @@ export function useInfiniteScroll<T>({
       observerRef.current = new IntersectionObserver(
         (entries) => {
           if (entries[0]?.isIntersecting && hasMore && !loadingRef.current) {
-            loadMore();
+            void loadMore();
           }
         },
         {
@@ -117,7 +117,7 @@ export function useInfiniteScroll<T>({
     // Only run initial load once, track via ref to prevent infinite loop
     if (autoLoad && !initialLoadDoneRef.current && hasMore) {
       initialLoadDoneRef.current = true;
-      loadMore();
+      void loadMore();
     }
   }, [autoLoad, hasMore, loadMore]);
 

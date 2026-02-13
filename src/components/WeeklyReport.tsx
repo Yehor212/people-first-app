@@ -200,7 +200,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="absolute top-4 end-4 z-10 p-2 rounded-full bg-background/80 backdrop-blur-sm hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           aria-label={t.close || 'Close'}
         >
           <X className="w-5 h-5 text-muted-foreground" />
@@ -270,7 +270,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
               <p className="text-xs text-muted-foreground">{t.habits}</p>
               {weekStats.improvement !== 0 && (
                 <div className={cn(
-                  "absolute top-3 right-3 flex items-center gap-1 text-xs font-medium",
+                  "absolute top-3 end-3 flex items-center gap-1 text-xs font-medium",
                   weekStats.improvement > 0 ? "text-[hsl(var(--mood-good))]" : "text-destructive"
                 )}>
                   {weekStats.improvement > 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}

@@ -167,7 +167,7 @@ export function ProgressStoriesViewer({
   }, [currentIndex]);
 
   const goToPrevious = useCallback(() => {
-    hapticTap();
+    void hapticTap();
     if (currentIndex > 0) {
       setCurrentIndex(i => i - 1);
       setProgress(0);
@@ -175,7 +175,7 @@ export function ProgressStoriesViewer({
   }, [currentIndex]);
 
   const goToNext = useCallback(() => {
-    hapticTap();
+    void hapticTap();
     if (currentIndex < slides.length - 1) {
       setCurrentIndex(i => i + 1);
       setProgress(0);
@@ -185,12 +185,12 @@ export function ProgressStoriesViewer({
   }, [currentIndex, slides.length, onClose]);
 
   const togglePause = useCallback(() => {
-    hapticTap();
+    void hapticTap();
     setIsPaused(p => !p);
   }, []);
 
   const handleShare = useCallback(async () => {
-    hapticTap();
+    void hapticTap();
     setIsSharing(true);
     setIsPaused(true);
 
@@ -236,7 +236,7 @@ export function ProgressStoriesViewer({
       );
 
       if (shared) {
-        hapticSuccess();
+        void hapticSuccess();
       }
     } catch (error) {
       logger.error('Failed to share:', error);
@@ -306,7 +306,7 @@ export function ProgressStoriesViewer({
           <button
             onClick={(e) => {
               e.stopPropagation();
-              hapticTap();
+              void hapticTap();
               onClose();
             }}
             className="p-2 rounded-full bg-black/20 text-white"
@@ -330,7 +330,7 @@ export function ProgressStoriesViewer({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleShare();
+                void handleShare();
               }}
               disabled={isSharing}
               className="p-2 rounded-full bg-black/20 text-white"

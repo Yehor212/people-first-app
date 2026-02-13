@@ -82,7 +82,7 @@ export function UpdateRequiredDialog() {
               {t.updateRequiredTitle || 'Update Available'}
             </AlertDialogTitle>
           </div>
-          <AlertDialogDescription className="text-left">
+          <AlertDialogDescription className="text-start">
             {t.updateRequiredDesc ||
               'A new version of the app is available. Please refresh to get the latest features and fixes.'}
           </AlertDialogDescription>

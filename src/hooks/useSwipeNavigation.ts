@@ -209,7 +209,7 @@ export function useSwipeNavigation<T extends string>({
       const newTab = getAdjacentTab(direction);
 
       if (newTab) {
-        hapticTap();
+        void hapticTap();
         onTabChange(newTab);
       }
     },

@@ -110,7 +110,7 @@ function SuggestionItem({
       <div className="flex gap-2 mt-3 pt-3 border-t border-border">
         <button
           onClick={() => {
-            hapticSuccess();
+            void hapticSuccess();
             onApply();
           }}
           className="flex-1 flex items-center justify-center gap-1 px-3 py-2 bg-primary/10 text-primary text-xs font-medium rounded-lg hover:bg-primary/20 transition-colors"
@@ -120,10 +120,11 @@ function SuggestionItem({
         </button>
         <button
           onClick={() => {
-            hapticTap();
+            void hapticTap();
             onDismiss();
           }}
           className="flex items-center justify-center px-3 py-2 bg-muted text-muted-foreground text-xs rounded-lg hover:bg-muted/80 transition-colors"
+          aria-label={t.dismiss || 'Dismiss'}
         >
           <X className="w-3 h-3" />
         </button>
@@ -306,7 +307,7 @@ export function SmartRemindersCard({
         <div className="border-t border-border">
           <button
             onClick={() => {
-              hapticTap();
+              void hapticTap();
               setShowHabitSuggestions(!showHabitSuggestions);
             }}
             className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"

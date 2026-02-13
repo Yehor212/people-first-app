@@ -35,12 +35,12 @@ export function FeedbackButton({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleOpen = () => {
-    haptics.light();
+    void haptics.light();
     setIsOpen(true);
   };
 
   const handleClose = () => {
-    haptics.light();
+    void haptics.light();
     setIsOpen(false);
     setMessage('');
     setType('bug');
@@ -49,7 +49,7 @@ export function FeedbackButton({
   const handleSubmit = async () => {
     if (!message.trim()) return;
 
-    haptics.medium();
+    void haptics.medium();
     setIsSubmitting(true);
 
     try {
@@ -95,8 +95,8 @@ export function FeedbackButton({
   ];
 
   const positionClasses = position === 'bottom-right'
-    ? 'right-4 bottom-20'
-    : 'left-4 bottom-20';
+    ? 'end-4 bottom-20'
+    : 'start-4 bottom-20';
 
   return (
     <>
@@ -169,7 +169,7 @@ export function FeedbackButton({
               />
 
               {/* Character count */}
-              <p className="text-xs text-muted-foreground text-right">
+              <p className="text-xs text-muted-foreground text-end">
                 {message.length}/1000
               </p>
 

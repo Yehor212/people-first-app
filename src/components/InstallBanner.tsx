@@ -33,6 +33,7 @@ export function InstallBanner() {
         <button
           onClick={() => setDismissed(true)}
           className="p-2 min-w-[40px] min-h-[40px] flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+          aria-label={t.dismiss || 'Dismiss'}
         >
           <X className="w-5 h-5" />
         </button>

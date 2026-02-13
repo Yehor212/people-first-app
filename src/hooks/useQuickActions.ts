@@ -57,7 +57,7 @@ export function useQuickActions(): UseQuickActionsReturn {
 
     init().then(cleanup => {
       cleanupFn = cleanup;
-    });
+    }).catch(() => {});
 
     return () => {
       cleanupFn?.();

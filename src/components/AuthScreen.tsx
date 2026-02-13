@@ -90,8 +90,8 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
       }
     };
 
-    checkSession();
-   
+    void checkSession();
+
   }, []); // Removed onComplete from deps - uses onCompleteRef instead
 
   // Listen for auth state changes (handles OAuth callback)
@@ -165,7 +165,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
       // Setup native app state listener
       App.addListener('appStateChange', ({ isActive }) => {
         if (isActive && loadingProvider) {
-          checkSessionOnResume();
+          void checkSessionOnResume();
         }
       }).then(listener => {
         listenerHandle = listener;
@@ -183,7 +183,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
 
     // Web fallback
     const handleFocus = () => {
-      if (loadingProvider) checkSessionOnResume();
+      if (loadingProvider) void checkSessionOnResume();
     };
     window.addEventListener('focus', handleFocus);
     return () => {

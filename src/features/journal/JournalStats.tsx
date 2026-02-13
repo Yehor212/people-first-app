@@ -193,6 +193,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
         <button
           onClick={onBack}
           className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          aria-label={ts.back || 'Back'}
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>

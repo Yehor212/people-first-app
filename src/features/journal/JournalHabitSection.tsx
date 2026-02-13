@@ -46,7 +46,7 @@ export function JournalHabitSection({ date, snapshot, onSnapshotChange }: Journa
         }));
         onSnapshotChange(initial);
       }
-    });
+    }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date]);
 

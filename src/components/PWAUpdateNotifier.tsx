@@ -105,7 +105,7 @@ export function PWAUpdateNotifier() {
     // Check for updates when tab regains focus
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        navigator.serviceWorker.ready.then((reg) => {
+        void navigator.serviceWorker.ready.then((reg) => {
           reg.update().catch(() => {});
         });
       }

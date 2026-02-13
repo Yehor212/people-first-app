@@ -68,7 +68,7 @@ export function useJournalSecurity() {
     // Load biometric setting
     db.settings.get(BIOMETRIC_SETTINGS_KEY).then(entry => {
       if (entry?.value) setBiometricEnabledState(true);
-    });
+    }).catch(() => {});
   }, []);
 
   // Auto-lock timer

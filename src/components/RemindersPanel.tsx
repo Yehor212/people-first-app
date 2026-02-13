@@ -43,7 +43,7 @@ export function RemindersPanel({ reminders, onUpdateReminders, habits }: Reminde
           <div className="p-2 zen-gradient rounded-xl">
             <Bell className="w-4 h-4 text-primary-foreground" />
           </div>
-          <div className="text-left">
+          <div className="text-start">
             <h3 className="font-semibold text-foreground text-sm">{t.remindersTitle || 'Reminders'}</h3>
             <p className="text-xs text-muted-foreground">{t.remindersActive || 'Active'}</p>
           </div>
@@ -60,15 +60,15 @@ export function RemindersPanel({ reminders, onUpdateReminders, habits }: Reminde
           {/* Mood - 3 times */}
           <div className="space-y-2">
             <span className="text-sm font-medium text-foreground">{t.moodReminder || 'Mood'} 😊</span>
-            <div className="flex items-center justify-between pl-4">
+            <div className="flex items-center justify-between ps-4">
               <span className="text-xs text-muted-foreground">{t.morning || 'Morning'}</span>
               <span className="text-xs text-muted-foreground">{reminders.moodTimeMorning || '09:00'}</span>
             </div>
-            <div className="flex items-center justify-between pl-4">
+            <div className="flex items-center justify-between ps-4">
               <span className="text-xs text-muted-foreground">{t.afternoon || 'Afternoon'}</span>
               <span className="text-xs text-muted-foreground">{reminders.moodTimeAfternoon || '14:00'}</span>
             </div>
-            <div className="flex items-center justify-between pl-4">
+            <div className="flex items-center justify-between ps-4">
               <span className="text-xs text-muted-foreground">{t.evening || 'Evening'}</span>
               <span className="text-xs text-muted-foreground">{reminders.moodTimeEvening || '20:00'}</span>
             </div>

@@ -436,7 +436,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
         {canShowStory && (
           <button
             onClick={() => {
-              hapticTap();
+              void hapticTap();
               setShowStoryViewer(true);
             }}
             aria-label={t.weeklyStory || 'Weekly Story'}
@@ -495,14 +495,14 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
           {/* Quick Actions */}
           <div className="grid grid-cols-3 gap-2">
             <button
-              onClick={() => { hapticTap(); onQuickAction?.('logMood'); }}
+              onClick={() => { void hapticTap(); onQuickAction?.('logMood'); }}
               className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl transition-colors"
             >
               <Heart className="w-5 h-5 text-pink-500" />
               <span className="text-xs font-medium text-foreground truncate w-full text-center">{t.quickActionLogMood}</span>
             </button>
             <button
-              onClick={() => { hapticTap(); onQuickAction?.('startFocus'); }}
+              onClick={() => { void hapticTap(); onQuickAction?.('startFocus'); }}
               className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl transition-colors"
             >
               <Target className="w-5 h-5 text-blue-500" />
@@ -510,7 +510,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             </button>
             {canShowStory && (
               <button
-                onClick={() => { hapticTap(); setShowStoryViewer(true); }}
+                onClick={() => { void hapticTap(); setShowStoryViewer(true); }}
                 className="flex flex-col items-center gap-1.5 p-3 bg-secondary/80 hover:bg-secondary rounded-xl transition-colors"
               >
                 <PlayCircle className="w-5 h-5 text-primary" />
@@ -526,7 +526,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             focusSessions={completedFocusSessions}
             gratitudeEntries={gratitudeEntries}
             onRecommendationAction={(actionId) => {
-              hapticTap();
+              void hapticTap();
             }}
           />
 

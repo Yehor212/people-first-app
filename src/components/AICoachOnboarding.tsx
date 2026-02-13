@@ -236,13 +236,13 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
   };
 
   const handleGoalSelect = (goalId: GoalId) => {
-    haptics.buttonTap();
+    void haptics.buttonTap();
     setSelectedGoal(goalId);
     saveOnboardingAnswer('mainGoal', goalId);
   };
 
   const handleNext = () => {
-    haptics.buttonTap();
+    void haptics.buttonTap();
     if (step === 'intro') {
       setStep('goal');
     } else if (step === 'goal' && selectedGoal) {
@@ -261,7 +261,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
   };
 
   const handleSkip = () => {
-    haptics.buttonTap();
+    void haptics.buttonTap();
     onSkip();
   };
 

@@ -206,6 +206,7 @@ export function JournalEntryList({
           <button
             onClick={() => setBannerDismissed(true)}
             className="p-1 rounded text-muted-foreground hover:bg-muted/50 flex-shrink-0"
+            aria-label={ts.dismiss || 'Dismiss'}
           >
             <X className="w-3.5 h-3.5" />
           </button>
@@ -244,6 +245,7 @@ export function JournalEntryList({
           <button
             onClick={() => setSearchQuery('')}
             className="absolute end-1 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-muted/50"
+            aria-label={ts.clear || 'Clear search'}
           >
             <X className="w-3.5 h-3.5 text-muted-foreground" />
           </button>

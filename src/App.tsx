@@ -22,7 +22,7 @@ import { useDopamineSettings } from "@/components/DopamineSettings";
 const queryClient = new QueryClient();
 
 // Preload html2canvas in the background to speed up share modal
-preloadShareCardAssets();
+void preloadShareCardAssets();
 
 // Controls reduce-motion class on body based on Dopamine Settings
 function ReduceMotionController() {

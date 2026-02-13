@@ -88,7 +88,7 @@ export function QuickActionsBar({
             <div className="relative">
               <Bell className="w-5 h-5 text-primary" />
               {totalItems > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -end-1 w-4 h-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                   {totalItems}
                 </span>
               )}
@@ -127,7 +127,7 @@ export function QuickActionsBar({
               <div className="p-2 bg-pink-500/20 rounded-lg">
                 <Gift className="w-5 h-5 text-pink-500" />
               </div>
-              <div className="flex-1 text-left">
+              <div className="flex-1 text-start">
                 <div className="font-medium">{t.dailyRewards || 'Daily Rewards'}</div>
                 <div className="text-xs text-muted-foreground">
                   {t.claim || 'Claim your reward!'}
@@ -148,7 +148,7 @@ export function QuickActionsBar({
               <div className="p-2 bg-yellow-500/20 rounded-lg">
                 <Zap className="w-5 h-5 text-yellow-500" />
               </div>
-              <div className="flex-1 text-left">
+              <div className="flex-1 text-start">
                 <div className="font-medium">{t.spinWheel || 'Spin the Wheel!'}</div>
                 <div className="text-xs text-muted-foreground">
                   {spinTokens} {t.spinsAvailable || 'spins available'}
@@ -178,7 +178,7 @@ export function QuickActionsBar({
               )}>
                 <span className="text-xl">{challenge.icon}</span>
               </div>
-              <div className="flex-1 text-left">
+              <div className="flex-1 text-start">
                 <div className="font-medium text-sm">{challenge.title}</div>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">

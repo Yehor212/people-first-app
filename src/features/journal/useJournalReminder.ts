@@ -39,12 +39,12 @@ export function useJournalReminder(translations: {
     if (!Capacitor.isNativePlatform()) return;
 
     if (settings.enabled) {
-      scheduleJournalReminder(
+      void scheduleJournalReminder(
         { hour: settings.hour, minute: settings.minute },
         { title: translations.reminderTitle, body: translations.reminderBody },
       );
     } else {
-      cancelJournalReminder();
+      void cancelJournalReminder();
     }
   }, [settings, loading, translations.reminderTitle, translations.reminderBody]);
 

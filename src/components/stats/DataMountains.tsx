@@ -242,7 +242,7 @@ export function DataMountains({
       {/* Title */}
       {title && (
         <motion.h4
-          className="absolute top-3 left-4 text-sm font-medium text-slate-700 dark:text-white/80 z-10"
+          className="absolute top-3 start-4 text-sm font-medium text-slate-700 dark:text-white/80 z-10"
           initial={{ opacity: 0, x: -10 }}
           animate={{ opacity: 1, x: 0 }}
         >

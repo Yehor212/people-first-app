@@ -146,7 +146,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
         logger.log(`[Leaderboard] Retrying in ${delay}ms (attempt ${retry + 1}/${MAX_RETRIES})`);
         setTimeout(() => {
           if (isMountedRef.current) {
-            loadData(retry + 1);
+            void loadData(retry + 1);
           }
         }, delay);
         return;
@@ -167,7 +167,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
   // Load data when opened or tab changes
   useEffect(() => {
     if (isOpen) {
-      loadData(0); // Start fresh with retry count 0
+      void loadData(0); // Start fresh with retry count 0
     }
   }, [isOpen, loadData]);
 
@@ -179,7 +179,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
         setIsOptedIn(true);
         toast.success(t.leaderboardOptedIn || 'You joined the leaderboard!');
         announce('You joined the leaderboard');
-        loadData(0);
+        void loadData(0);
       }
     } else {
       const success = await optOutOfLeaderboard();
@@ -198,7 +198,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
     const success = await updateDisplayName(displayName);
     if (success) {
       toast.success(t.nameUpdated || 'Display name updated!');
-      loadData(0);
+      void loadData(0);
     }
   };
 
@@ -502,7 +502,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
         <motion.button
           onClick={() => loadData(0)}
           disabled={isLoading}
-          className="absolute top-4 right-4 p-2.5 rounded-xl bg-foreground/5 border border-foreground/10 hover:bg-foreground/10 transition-colors"
+          className="absolute top-4 end-4 p-2.5 rounded-xl bg-foreground/5 border border-foreground/10 hover:bg-foreground/10 transition-colors"
           aria-label={t.refresh || 'Refresh'}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}

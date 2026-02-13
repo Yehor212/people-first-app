@@ -49,7 +49,7 @@ export function ChallengesPanel({
   const shareCardRef = useRef<HTMLDivElement>(null);
 
   const handleShareBadge = (badge: Badge) => {
-    hapticTap();
+    void hapticTap();
     setSelectedBadge(badge);
     setShowShareDialog(true);
     setShareError(null);
@@ -117,7 +117,7 @@ export function ChallengesPanel({
             files: [file],
           });
         } else {
-          downloadImage(blob);
+          void downloadImage(blob);
         }
       }
       setShowShareDialog(false);
@@ -577,7 +577,7 @@ export function ChallengesPanel({
               {/* Content */}
               <div className="relative z-10 h-full flex flex-col items-center justify-center p-6 text-white">
                 {/* Header */}
-                <div className="absolute top-4 left-4 flex items-center gap-2">
+                <div className="absolute top-4 start-4 flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
                     <Trophy className="w-4 h-4" />
                   </div>
@@ -645,6 +645,7 @@ export function ChallengesPanel({
                 onClick={() => downloadImage()}
                 disabled={isSharing}
                 className="py-4 px-6 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                aria-label={t.download || 'Download'}
               >
                 {isSharing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
               </button>

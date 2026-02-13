@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { JournalPhoto } from './types';
 import { getPhotosForEntry, getPhotoById } from './journalStorage';
 
@@ -20,6 +21,8 @@ export function JournalPhotoGallery({
   onRemovePhoto,
   editable = false,
 }: JournalPhotoGalleryProps) {
+  const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   const [photos, setPhotos] = useState<JournalPhoto[]>([]);
   const [lightboxPhoto, setLightboxPhoto] = useState<JournalPhoto | null>(null);
   const [fullData, setFullData] = useState<string | null>(null);
@@ -71,6 +74,7 @@ export function JournalPhotoGallery({
               <button
                 onClick={() => onRemovePhoto(photo.id)}
                 className="absolute -top-1.5 -end-1.5 w-7 h-7 bg-destructive rounded-full flex items-center justify-center shadow-md"
+                aria-label={ts.delete || 'Remove'}
               >
                 <X className="w-3.5 h-3.5 text-white" />
               </button>
@@ -92,6 +96,7 @@ export function JournalPhotoGallery({
             <button
               onClick={closeLightbox}
               className="absolute top-[max(1rem,env(safe-area-inset-top))] end-4 p-2.5 bg-white/10 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              aria-label={ts.close || 'Close'}
             >
               <X className="w-5 h-5 text-white" />
             </button>
@@ -104,6 +109,7 @@ export function JournalPhotoGallery({
                   closeLightbox();
                 }}
                 className="absolute top-[max(1rem,env(safe-area-inset-top))] start-4 p-2.5 bg-destructive/80 rounded-full z-10 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                aria-label={ts.delete || 'Delete'}
               >
                 <Trash2 className="w-5 h-5 text-white" />
               </button>

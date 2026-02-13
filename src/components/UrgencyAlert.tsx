@@ -167,7 +167,7 @@ function AlertCard({
             <Icon className="w-6 h-6 text-white" />
           </motion.div>
 
-          <div className="flex-1 min-w-0 pr-6">
+          <div className="flex-1 min-w-0 pe-6">
             <h3 className="text-lg font-bold text-white mb-1 tracking-tight">
               {alert.title}
             </h3>

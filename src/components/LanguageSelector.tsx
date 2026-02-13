@@ -62,7 +62,7 @@ export function LanguageSelector({ onComplete }: LanguageSelectorProps) {
                 )}
               >
                 <span className="text-2xl">{languageFlags[lang]}</span>
-                <span className="font-medium text-foreground flex-1 text-left">
+                <span className="font-medium text-foreground flex-1 text-start">
                   {languageNames[lang]}
                 </span>
                 {language === lang && (

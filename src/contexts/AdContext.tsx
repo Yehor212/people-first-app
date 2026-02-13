@@ -93,7 +93,7 @@ export function AdProvider({
         const check = canShowRewardedAd(currentMoodRef.current);
         setCanShow(check.allowed);
       }
-    });
+    }).catch(() => {});
   }, [adConsent, isPremium]);
 
   // Refresh can-show status periodically

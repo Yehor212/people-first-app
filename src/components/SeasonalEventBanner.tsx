@@ -93,7 +93,7 @@ export function SeasonalEventBanner({
       >
         <button
           onClick={() => onOpenDetails?.(currentEvent)}
-          className="flex items-center gap-3 w-full text-left"
+          className="flex items-center gap-3 w-full text-start"
         >
           <span className="text-2xl">{currentEvent.icon}</span>
           <div className="flex-1 min-w-0">
@@ -139,7 +139,7 @@ export function SeasonalEventBanner({
         {/* Dismiss button */}
         <button
           onClick={() => handleDismiss(currentEvent.id)}
-          className="absolute top-3 right-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-background/20 hover:bg-background/40 transition-colors z-10"
+          className="absolute top-3 end-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-background/20 hover:bg-background/40 transition-colors z-10"
           aria-label={t.dismiss || 'Dismiss'}
         >
           <X className="w-4 h-4 text-foreground/70" />
@@ -257,7 +257,7 @@ export function SeasonalEventBanner({
             onClick={() => onOpenDetails?.(currentEvent)}
           >
             {t.viewDetails || 'View Details'}
-            <ChevronRight className="w-4 h-4 ml-1" />
+            <ChevronRight className="w-4 h-4 ms-1" />
           </Button>
         </div>
 
@@ -274,6 +274,7 @@ export function SeasonalEventBanner({
                     ? "w-6 bg-foreground"
                     : "bg-foreground/30"
                 )}
+                aria-label={`${t.page || 'Page'} ${index + 1}`}
               />
             ))}
           </div>

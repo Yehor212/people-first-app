@@ -192,7 +192,7 @@ export function ComebackChallenge({
   // Auto-complete handler
   useEffect(() => {
     if (isComplete && challengeAccepted) {
-      hapticSuccess();
+      void hapticSuccess();
       announceSuccess(t.challengeCompleted || 'Challenge completed!');
       onComplete(challengeConfig.xpReward);
     }
@@ -204,14 +204,14 @@ export function ComebackChallenge({
   }
 
   const handleAcceptChallenge = () => {
-    hapticTap();
+    void hapticTap();
     setChallengeAccepted(true);
     setChallengeStartDate(today);
     setIsExpanded(true);
   };
 
   const handleDismiss = () => {
-    hapticTap();
+    void hapticTap();
     onDismiss();
   };
 
@@ -277,7 +277,7 @@ export function ComebackChallenge({
       {/* Close button */}
       <button
         onClick={handleDismiss}
-        className="absolute top-4 right-4 z-10 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-muted/50 hover:bg-muted transition-colors"
+        className="absolute top-4 end-4 z-10 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-muted/50 hover:bg-muted transition-colors"
         aria-label={t.dismiss || 'Dismiss'}
       >
         <X className="w-4 h-4 text-muted-foreground" />
@@ -305,7 +305,7 @@ export function ComebackChallenge({
 
             {/* Badge for tier */}
             <motion.div
-              className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center"
+              className="absolute -top-1 -end-1 w-5 h-5 rounded-full flex items-center justify-center"
               style={{ background: colors.primary }}
               animate={{ scale: [1, 1.1, 1] }}
               transition={{ duration: 1.5, repeat: Infinity }}

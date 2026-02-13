@@ -60,6 +60,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
           <button
             onClick={onDismiss}
             className="p-2 hover:bg-red-500/10 rounded-lg transition-colors"
+            aria-label={t.dismiss || 'Dismiss'}
           >
             <X className="w-4 h-4 text-red-500" />
           </button>
@@ -84,6 +85,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
           <button
             onClick={onDismiss}
             className="p-2 hover:bg-green-500/10 rounded-lg transition-colors"
+            aria-label={t.dismiss || 'Dismiss'}
           >
             <X className="w-4 h-4 text-green-500" />
           </button>
@@ -174,6 +176,7 @@ export function FlashChallenge({ challenge, onComplete, onDismiss }: FlashChalle
         <button
           onClick={onDismiss}
           className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-lg transition-colors opacity-60 hover:opacity-100"
+          aria-label={t.dismiss || 'Dismiss'}
         >
           <X className="w-4 h-4" />
         </button>
@@ -198,7 +201,7 @@ export function FlashChallengeCompact({ challenge, onClick }: { challenge: TimeC
     <button
       onClick={onClick}
       className={cn(
-        'w-full flex items-center gap-2 p-2 rounded-xl text-left transition-all hover:scale-[1.02]',
+        'w-full flex items-center gap-2 p-2 rounded-xl text-start transition-all hover:scale-[1.02]',
         isUrgent
           ? 'bg-red-500/20 border border-red-500/50 animate-pulse'
           : 'bg-yellow-500/10 border border-yellow-500/30'

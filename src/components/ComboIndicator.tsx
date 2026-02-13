@@ -47,13 +47,13 @@ export function ComboIndicator({ combo, className }: ComboIndicatorProps) {
   return (
     <div
       className={cn(
-        'fixed top-[calc(1rem+var(--safe-top))] right-4 z-40 animate-slide-up',
+        'fixed top-[calc(1rem+var(--safe-top))] end-4 z-40 animate-slide-up',
         className
       )}
     >
       <div
         className={cn(
-          'relative rounded-2xl p-3 pr-4 shadow-xl transition-all',
+          'relative rounded-2xl p-3 pe-4 shadow-xl transition-all',
           isMaxCombo
             ? 'bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-orange-500/50'
             : combo.count >= 5
@@ -64,7 +64,7 @@ export function ComboIndicator({ combo, className }: ComboIndicatorProps) {
       >
         {/* Fire animation for high combos */}
         {combo.count >= 5 && (
-          <div className="absolute -top-3 -right-1">
+          <div className="absolute -top-3 -end-1">
             <Flame
               className={cn(
                 'w-6 h-6',

@@ -98,7 +98,7 @@ export function EmptyState({
           "bg-amber-500/10 dark:bg-amber-500/20 border border-amber-500/20"
         )}>
           <Lightbulb className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <p className={cn("text-amber-700 dark:text-amber-300 text-left", sizes.message)}>
+          <p className={cn("text-amber-700 dark:text-amber-300 text-start", sizes.message)}>
             {hint}
           </p>
         </div>

@@ -210,25 +210,25 @@ export function setupPushListeners(): void {
 
   // Token received
   // Don't log token values, even partially
-  PushNotifications.addListener('registration', async (token: Token) => {
+  void PushNotifications.addListener('registration', async (token: Token) => {
     logger.log('[Push] Token received (length:', token.value.length, ')');
     await savePushToken(token.value);
   });
 
   // Registration error
-  PushNotifications.addListener('registrationError', (error) => {
+  void PushNotifications.addListener('registrationError', (error) => {
     logger.error('[Push] Registration error:', error);
   });
 
   // Notification received while app is in foreground
-  PushNotifications.addListener('pushNotificationReceived', (notification) => {
+  void PushNotifications.addListener('pushNotificationReceived', (notification) => {
     logger.log('[Push] Foreground notification:', notification.title);
     // In foreground, we might want to show a toast instead
     // The system won't show a heads-up notification when app is open
   });
 
   // Notification tapped
-  PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
+  void PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
     logger.log('[Push] Notification tapped');
     handlePushAction(action.notification);
   });

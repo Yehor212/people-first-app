@@ -49,7 +49,7 @@ export function AICoachChat() {
 
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
-    haptics.buttonTap();
+    void haptics.buttonTap();
     const message = input;
     setInput('');
     await sendMessage(message);
@@ -58,13 +58,13 @@ export function AICoachChat() {
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   };
 
   const handleClear = () => {
     const previousMessages = [...messages];
-    haptics.buttonTap();
+    void haptics.buttonTap();
     clearHistory();
     toast(`🗑️ ${t.confirmDelete || 'Chat cleared'}`, {
       duration: 5000,
@@ -72,7 +72,7 @@ export function AICoachChat() {
         label: t.undo || 'Undo',
         onClick: () => {
           restoreHistory(previousMessages);
-          haptics.buttonTap();
+          void haptics.buttonTap();
         },
       },
     });

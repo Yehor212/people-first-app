@@ -108,7 +108,7 @@ export function FriendsPanel({
   // Refresh friends data from cloud
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    hapticTap();
+    void hapticTap();
 
     try {
       await refreshFriendsData();
@@ -126,11 +126,11 @@ export function FriendsPanel({
     try {
       await navigator.clipboard.writeText(myProfile.friendCode);
       setCopied(true);
-      hapticSuccess();
+      void hapticSuccess();
       announce(t.codeCopied || 'Code copied to clipboard');
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      hapticError();
+      void hapticError();
     }
   }, [myProfile, t]);
 
@@ -139,11 +139,11 @@ export function FriendsPanel({
     if (!myProfile) return;
 
     setIsSharing(true);
-    hapticTap();
+    void hapticTap();
     try {
       const success = await shareFriendCode(myProfile, t as unknown as Record<string, string>);
       if (success) {
-        hapticSuccess();
+        void hapticSuccess();
       }
     } finally {
       setIsSharing(false);
@@ -156,19 +156,19 @@ export function FriendsPanel({
 
     setIsAdding(true);
     setAddError(null);
-    hapticTap();
+    void hapticTap();
 
     try {
       const result = await addFriendByCode(friendCode.trim());
 
       if (result.success) {
-        hapticSuccess();
+        void hapticSuccess();
         announce(t.friendAdded || 'Friend added successfully');
         setFriendCode('');
         setShowAddFriend(false);
         setFriends(getFriendsSortedByActivity());
       } else {
-        hapticError();
+        void hapticError();
         setAddError(result.error || t.addFriendError || 'Could not add friend');
       }
     } finally {
@@ -180,7 +180,7 @@ export function FriendsPanel({
 
   // Remove friend
   const handleRemoveFriend = useCallback((friend: Friend) => {
-    hapticTap();
+    void hapticTap();
 
     if (removeFriend(friend.id)) {
       setFriends(getFriendsSortedByActivity());
@@ -194,7 +194,7 @@ export function FriendsPanel({
 
     const updated = updateMyProfile({ [key]: value });
     setMyProfile(updated);
-    hapticTap();
+    void hapticTap();
   }, [myProfile]);
 
   // Format relative time
@@ -233,12 +233,14 @@ export function FriendsPanel({
               onClick={handleRefresh}
               disabled={isRefreshing}
               className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+              aria-label={t.refresh || 'Refresh'}
             >
               <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
             </button>
             <button
               onClick={() => setShowSettings(!showSettings)}
               className="p-3 rounded-xl bg-muted hover:bg-muted/80 transition-colors"
+              aria-label={t.settings || 'Settings'}
             >
               <Settings className="w-4 h-4" />
             </button>

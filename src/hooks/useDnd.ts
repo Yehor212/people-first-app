@@ -100,7 +100,7 @@ export function useDnd(): UseDndReturn {
 
   // Initial check on mount
   useEffect(() => {
-    refresh();
+    void refresh();
   }, [refresh]);
 
   // Periodically check DND status (every 30 seconds when app is focused)
@@ -112,7 +112,7 @@ export function useDnd(): UseDndReturn {
     // Also check when app comes to foreground
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        refresh();
+        void refresh();
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);

@@ -68,7 +68,7 @@ export function AnimatedMoodDistribution({
           <div className="p-2.5 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl shadow-lg shadow-pink-500/20">
             <Heart className="w-5 h-5 text-white" />
           </div>
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-pink-400 rounded-full animate-pulse" />
+          <div className="absolute -top-1 -end-1 w-2 h-2 bg-pink-400 rounded-full animate-pulse" />
         </div>
         <h3 className="text-lg font-bold text-foreground flex-1">{title}</h3>
         {totalMoods > 0 && (
@@ -144,7 +144,7 @@ export function AnimatedMoodDistribution({
 
                     {/* Percentage Label on Bar */}
                     {percentage > 15 && (
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-white/90">
+                      <span className="absolute end-2 top-1/2 -translate-y-1/2 text-xs font-bold text-white/90">
                         {Math.round(percentage)}%
                       </span>
                     )}
@@ -153,7 +153,7 @@ export function AnimatedMoodDistribution({
 
                 {/* Count */}
                 <div className={cn(
-                  "min-w-[3rem] text-right transition-all duration-300",
+                  "min-w-[3rem] text-end transition-all duration-300",
                   "group-hover:scale-110"
                 )}>
                   <span className={cn(
@@ -245,7 +245,7 @@ export function AnimatedEmotionDistribution({
           <div className="p-2.5 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl shadow-lg shadow-pink-500/20">
             <Heart className="w-5 h-5 text-white" />
           </div>
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-pink-400 rounded-full animate-pulse" />
+          <div className="absolute -top-1 -end-1 w-2 h-2 bg-pink-400 rounded-full animate-pulse" />
         </div>
         <h3 className="text-lg font-bold text-foreground flex-1">{title}</h3>
         {totalEmotions > 0 && (
@@ -321,7 +321,7 @@ export function AnimatedEmotionDistribution({
 
                     {/* Percentage Label on Bar */}
                     {percentage > 20 && (
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-white/90">
+                      <span className="absolute end-2 top-1/2 -translate-y-1/2 text-xs font-bold text-white/90">
                         {Math.round(percentage)}%
                       </span>
                     )}
@@ -330,7 +330,7 @@ export function AnimatedEmotionDistribution({
 
                 {/* Count */}
                 <div className={cn(
-                  "min-w-[2.5rem] text-right transition-all duration-300",
+                  "min-w-[2.5rem] text-end transition-all duration-300",
                   "group-hover:scale-110"
                 )}>
                   <span className={cn(
@@ -498,7 +498,7 @@ export function AnimatedCalendar({
           <div className="p-2.5 bg-gradient-to-br from-violet-500 to-purple-500 rounded-xl shadow-lg shadow-violet-500/20">
             <Calendar className="w-5 h-5 text-white" />
           </div>
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
+          <div className="absolute -top-1 -end-1 w-2 h-2 bg-violet-400 rounded-full animate-pulse" />
         </div>
         <h3 className="text-lg font-bold text-foreground">{title}</h3>
       </div>

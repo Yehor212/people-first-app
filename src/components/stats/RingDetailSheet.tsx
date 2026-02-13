@@ -334,7 +334,7 @@ export function RingDetailSheet({
           {/* Animated gradient orb */}
           <motion.div
             className={cn(
-              'absolute -top-24 -right-24 w-72 h-72 rounded-full blur-3xl',
+              'absolute -top-24 -end-24 w-72 h-72 rounded-full blur-3xl',
               `bg-gradient-to-br ${theme.gradient}`
             )}
             animate={{
@@ -350,7 +350,7 @@ export function RingDetailSheet({
           {/* Close button */}
           <button
             onClick={() => onOpenChange(false)}
-            className="absolute top-3 right-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-foreground/20 hover:bg-foreground/30 transition-colors z-10"
+            className="absolute top-3 end-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full bg-foreground/20 hover:bg-foreground/30 transition-colors z-10"
             aria-label={t.close || 'Close'}
           >
             <X className="w-5 h-5 text-white" />

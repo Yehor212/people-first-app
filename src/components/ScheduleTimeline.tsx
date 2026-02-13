@@ -571,7 +571,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
       }
     };
 
-    loadGoogleEvents();
+    void loadGoogleEvents();
     return () => { cancelled = true; };
   }, [selectedDate]);
 

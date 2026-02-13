@@ -334,7 +334,7 @@ function PremiumGoalCard({
           <motion.button
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            onClick={() => { hapticTap(); onComplete(); }}
+            onClick={() => { void hapticTap(); onComplete(); }}
             className={cn(
               'p-2.5 rounded-xl',
               'bg-gradient-to-br from-emerald-400 to-teal-500',
@@ -428,7 +428,7 @@ function GoalSuggestions({
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: i * 0.1 }}
           onClick={() => {
-            hapticTap();
+            void hapticTap();
             onAdd({
               id: generateId(),
               type: s.type,
@@ -478,7 +478,7 @@ function AddGoalSheet({
   useBackHandler(open, () => onOpenChange(false));
 
   const handleSubmit = () => {
-    hapticTap();
+    void hapticTap();
 
     const titles: Record<GoalType, string> = {
       habit: habitId
@@ -562,7 +562,7 @@ function AddGoalSheet({
                 return (
                   <button
                     key={goalType}
-                    onClick={() => { hapticTap(); setType(goalType); }}
+                    onClick={() => { void hapticTap(); setType(goalType); }}
                     className={cn(
                       'p-3 rounded-xl border transition-all flex flex-col items-center gap-1.5',
                       selected
@@ -614,7 +614,7 @@ function AddGoalSheet({
               {(['week', 'month'] as GoalPeriod[]).map((p) => (
                 <button
                   key={p}
-                  onClick={() => { hapticTap(); setPeriod(p); }}
+                  onClick={() => { void hapticTap(); setPeriod(p); }}
                   className={cn(
                     'p-3 rounded-xl border transition-all text-sm font-medium',
                     period === p
@@ -640,7 +640,7 @@ function AddGoalSheet({
               {getTargetPresets().map((preset) => (
                 <button
                   key={preset}
-                  onClick={() => { hapticTap(); setTarget(preset); }}
+                  onClick={() => { void hapticTap(); setTarget(preset); }}
                   className={cn(
                     'flex-1 p-3 rounded-xl border transition-all text-sm font-bold',
                     target === preset
@@ -702,7 +702,7 @@ export function GoalsPanel({
   const completedGoals = goalsWithProgress.filter(g => g.goal.status === 'completed');
 
   const handleComplete = useCallback((goal: Goal) => {
-    hapticTap();
+    void hapticTap();
     onUpdateGoal({ ...goal, status: 'completed', completedAt: getToday() });
   }, [onUpdateGoal]);
 
@@ -725,7 +725,7 @@ export function GoalsPanel({
         </div>
 
         <button
-          onClick={() => { hapticTap(); setShowAddSheet(true); }}
+          onClick={() => { void hapticTap(); setShowAddSheet(true); }}
           className={cn(
             'p-2 rounded-xl transition-all',
             'bg-gradient-to-br from-primary/10 to-accent/5',
@@ -747,13 +747,13 @@ export function GoalsPanel({
             progress={progress}
             onComplete={() => handleComplete(goal)}
             onDelete={() => {
-              hapticTap();
+              void hapticTap();
               onDeleteGoal(goal.id);
               toast(`🗑️ ${(t as Record<string, string>).goalDeleted || 'Goal deleted'}`, {
                 duration: 5000,
                 action: {
                   label: (t as Record<string, string>).undo || 'Undo',
-                  onClick: () => { onAddGoal(goal); hapticTap(); },
+                  onClick: () => { onAddGoal(goal); void hapticTap(); },
                 },
               });
             }}
@@ -771,7 +771,7 @@ export function GoalsPanel({
           size="compact"
           action={{
             label: t.addGoal || 'Add Goal',
-            onClick: () => { hapticTap(); setShowAddSheet(true); },
+            onClick: () => { void hapticTap(); setShowAddSheet(true); },
             icon: <Plus className="w-4 h-4" />,
           }}
         />

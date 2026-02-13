@@ -319,7 +319,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
         onClick={handleShare}
         disabled={isSharing}
         className={cn(
-          "absolute top-3 right-3 z-20 p-2.5 rounded-full transition-all",
+          "absolute top-3 end-3 z-20 p-2.5 rounded-full transition-all",
           "bg-amber-500/20 hover:bg-amber-500/40",
           "backdrop-blur-sm border border-amber-500/30",
           isSharing && "opacity-50 cursor-wait"

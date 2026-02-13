@@ -22,7 +22,7 @@ export function AuthGate({ onComplete }: AuthGateProps) {
         </div>
 
         <div className="bg-card rounded-3xl p-6 zen-shadow-card mb-6">
-          <div className="space-y-4 text-left">
+          <div className="space-y-4 text-start">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center">
                 <span className="text-2xl">😊</span>

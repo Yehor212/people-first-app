@@ -23,7 +23,7 @@ export function useJournal() {
     }
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => { void refresh(); }, [refresh]);
 
   // Filtered entries by selected date
   const filteredEntries = useMemo(() => {

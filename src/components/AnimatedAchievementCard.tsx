@@ -148,7 +148,7 @@ export function AnimatedAchievementCard({
         </div>
 
         {/* Animated value */}
-        <div className="text-right">
+        <div className="text-end">
           <div className={cn(
             "text-3xl font-black transition-all duration-300",
             "bg-clip-text text-transparent",
@@ -156,7 +156,7 @@ export function AnimatedAchievementCard({
             isAnimating && "scale-110"
           )}>
             {displayValue}
-            {suffix && <span className="text-lg ml-1">{suffix}</span>}
+            {suffix && <span className="text-lg ms-1">{suffix}</span>}
           </div>
         </div>
       </div>
@@ -165,7 +165,7 @@ export function AnimatedAchievementCard({
       <div className="relative mt-4 h-1.5 bg-secondary/50 rounded-full overflow-hidden">
         <div
           className={cn(
-            "absolute inset-y-0 left-0 rounded-full transition-all duration-1000 ease-out",
+            "absolute inset-y-0 start-0 rounded-full transition-all duration-1000 ease-out",
             config.progressColor
           )}
           style={{
@@ -225,13 +225,14 @@ export function AnimatedAchievementsSection({
             <Trophy className="w-5 h-5 text-white" />
           </div>
           {/* Sparkle decorations */}
-          <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
-          <div className="absolute -bottom-1 -left-1 w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse delay-300" />
+          <div className="absolute -top-1 -end-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+          <div className="absolute -bottom-1 -start-1 w-1.5 h-1.5 bg-amber-400 rounded-full animate-pulse delay-300" />
         </div>
         <h3 className="text-lg font-bold text-foreground flex-1">{title}</h3>
         {onShare && (
           <button
             onClick={onShare}
+            aria-label="Share"
             className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl text-white shadow-lg shadow-primary/20 hover:scale-105 transition-transform"
           >
             <TrendingUp className="w-5 h-5" />

@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { Zap, Star, Gift, Flame, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDopamineSettings } from '@/components/DopamineSettings';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface UserProgressBarProps {
   level: number;
@@ -27,6 +28,7 @@ export function UserProgressBar({
   onOpenDailyRewards,
   onOpenSpinWheel,
 }: UserProgressBarProps) {
+  const { t } = useLanguage();
   const dopamine = useDopamineSettings();
   const [animatedXp, setAnimatedXp] = useState(currentXp);
   const [showLevelUp, setShowLevelUp] = useState(false);
@@ -76,9 +78,9 @@ export function UserProgressBar({
       {showLevelUp && dopamine.animations && (
         <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
           <div className="bg-yellow-500 text-white px-6 py-3 rounded-2xl font-bold text-lg animate-bounce shadow-lg">
-            <Star className="w-5 h-5 inline mr-2" />
+            <Star className="w-5 h-5 inline me-2" />
             Level Up! Level {level}
-            <Star className="w-5 h-5 inline ml-2" />
+            <Star className="w-5 h-5 inline ms-2" />
           </div>
         </div>
       )}
@@ -128,6 +130,7 @@ export function UserProgressBar({
             {onOpenDailyRewards && (
               <button
                 onClick={onOpenDailyRewards}
+                aria-label="Daily Rewards"
                 className={cn(
                   'p-2.5 rounded-xl transition-all',
                   'bg-gradient-to-br from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30',
@@ -147,9 +150,10 @@ export function UserProgressBar({
                   'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 hover:from-yellow-500/30 hover:to-orange-500/30',
                   dopamine.animations && 'hover:scale-105 active:scale-95 hover:rotate-12'
                 )}
+                aria-label={t.spinWheel || 'Spin wheel'}
               >
                 <Trophy className="w-5 h-5 text-yellow-500" />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -end-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
                   {spinTokens}
                 </span>
               </button>
@@ -161,7 +165,7 @@ export function UserProgressBar({
         <div className="relative h-3 bg-muted rounded-full overflow-hidden">
           <div
             className={cn(
-              'absolute inset-y-0 left-0 rounded-full',
+              'absolute inset-y-0 start-0 rounded-full',
               'bg-gradient-to-r from-primary via-accent to-primary bg-[length:200%_100%]',
               dopamine.animations && 'transition-all duration-500 animate-gradient'
             )}

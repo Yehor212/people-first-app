@@ -85,7 +85,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
         <div className="relative p-6 text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-foreground/20 rounded-full transition-colors"
+            className="absolute top-4 end-4 p-2 hover:bg-foreground/20 rounded-full transition-colors"
             aria-label={t.close || 'Close'}
           >
             <X className="w-5 h-5" />
@@ -139,7 +139,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
                         left: '20%',
                       }}
                     >
-                      <span className="text-lg mr-1">{prize.icon}</span>
+                      <span className="text-lg me-1">{prize.icon}</span>
                     </div>
                   </div>
                 );
@@ -168,7 +168,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
                 prize.rarity === 'common' && 'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
               )}>
                 <span className="text-4xl">{prize.icon}</span>
-                <div className="text-left">
+                <div className="text-start">
                   <div className="font-bold text-xl">{prize.label}</div>
                   <div className="text-sm opacity-90">
                     {prize.rarity === 'legendary' && '🌟 LEGENDARY!'}

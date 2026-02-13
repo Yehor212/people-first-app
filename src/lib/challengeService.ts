@@ -378,7 +378,7 @@ export function subscribeToChallenge(
     .subscribe();
 
   return () => {
-    supabase.removeChannel(channel);
+    void supabase.removeChannel(channel);
   };
 }
 

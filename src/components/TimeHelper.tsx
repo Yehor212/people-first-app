@@ -128,6 +128,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
           <button
             onClick={onClose}
             className="p-2 hover:bg-muted rounded-lg transition-colors"
+            aria-label={t.close || 'Close'}
           >
             <X className="w-5 h-5" />
           </button>

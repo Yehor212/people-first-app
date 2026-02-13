@@ -151,7 +151,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
         <div className="zen-gradient p-6 text-white relative overflow-hidden">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 hover:bg-foreground/20 rounded-full transition-colors"
+            className="absolute top-4 end-4 p-2 hover:bg-foreground/20 rounded-full transition-colors"
             aria-label={t.close}
           >
             <X className="w-5 h-5" />
@@ -204,7 +204,7 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
                     </div>
                   )}
                   {isFuture && (
-                    <Lock className="absolute bottom-1 right-1 w-3 h-3 text-muted-foreground" />
+                    <Lock className="absolute bottom-1 end-1 w-3 h-3 text-muted-foreground" />
                   )}
                 </div>
               );

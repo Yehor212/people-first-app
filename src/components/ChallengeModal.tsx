@@ -103,7 +103,7 @@ function ChallengeCard({
     <motion.button
       onClick={onClick}
       className={cn(
-        "relative w-full p-4 rounded-2xl text-left overflow-hidden",
+        "relative w-full p-4 rounded-2xl text-start overflow-hidden",
         "bg-slate-100/60 dark:bg-white/5 backdrop-blur-sm border border-slate-200/60 dark:border-white/10",
         "hover:bg-slate-200/60 dark:hover:bg-white/10 transition-all"
       )}
@@ -112,11 +112,11 @@ function ChallengeCard({
     >
       {/* Gradient accent on left */}
       <div
-        className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-violet-500 to-purple-600"
+        className="absolute top-0 start-0 w-1 h-full bg-gradient-to-b from-violet-500 to-purple-600"
         style={{ boxShadow: '0 0 8px rgba(139, 92, 246, 0.4)' }}
       />
 
-      <div className="flex items-start justify-between gap-3 pl-2">
+      <div className="flex items-start justify-between gap-3 ps-2">
         <div className="flex items-center gap-3">
           <div
             className="text-3xl p-2 rounded-xl"
@@ -139,7 +139,7 @@ function ChallengeCard({
       </div>
 
       {/* Progress bar - Premium */}
-      <div className="mt-3 pl-2">
+      <div className="mt-3 ps-2">
         <div className="flex items-center justify-between text-xs mb-1.5">
           <span className="text-slate-500 dark:text-white/60">
             {challenge.myProgress}/{challenge.duration} {t.days || 'days'}
@@ -193,7 +193,7 @@ function ParticipantsLeaderboard({
       return;
     }
 
-    loadLeaderboard();
+    void loadLeaderboard();
   }, [challenge.code, cloudAvailable]);
 
   // Subscribe to real-time updates
@@ -367,7 +367,7 @@ function ParticipantsLeaderboard({
             </div>
 
             {/* Progress */}
-            <div className="text-right">
+            <div className="text-end">
               <div className="font-semibold text-slate-800 dark:text-white">
                 {member.daysCompleted}/{leaderboard.challenge.duration}
               </div>
@@ -408,7 +408,7 @@ function CreateChallengeView({
   const [isCreating, setIsCreating] = useState(false);
 
   const handleCreate = async () => {
-    hapticTap();
+    void hapticTap();
     setIsCreating(true);
 
     const challenge = createChallenge(habit, duration, username);
@@ -416,7 +416,7 @@ function CreateChallengeView({
     // Small delay for effect
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    hapticSuccess();
+    void hapticSuccess();
     onCreated(challenge);
   };
 
@@ -460,7 +460,7 @@ function CreateChallengeView({
             <motion.button
               key={opt.value}
               onClick={() => {
-                hapticTap();
+                void hapticTap();
                 setDuration(opt.value);
               }}
               className={cn(
@@ -553,23 +553,23 @@ function ChallengeDetailsView({
   const [isSharing, setIsSharing] = useState(false);
 
   const throttledCopyCode = useThrottledCallback(async () => {
-    hapticTap();
+    void hapticTap();
     try {
       await navigator.clipboard.writeText(challenge.code);
       setCopied(true);
-      hapticSuccess();
+      void hapticSuccess();
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      hapticWarning();
+      void hapticWarning();
     }
   }, 1000);
 
   const throttledShare = useThrottledCallback(async () => {
-    hapticTap();
+    void hapticTap();
     setIsSharing(true);
     const success = await shareChallenge(challenge, t);
     if (success) {
-      hapticSuccess();
+      void hapticSuccess();
     }
     setIsSharing(false);
   }, 1000);
@@ -608,7 +608,7 @@ function ChallengeDetailsView({
   // handleShare and handleCopyCode are throttled above (throttledShare, throttledCopyCode)
 
   const handleDelete = () => {
-    hapticWarning();
+    void hapticWarning();
     if (confirm(t.confirmDeleteChallenge || 'Delete this challenge?')) {
       deleteChallenge(challenge.id);
       onDelete();
@@ -783,7 +783,7 @@ function ChallengeDetailsView({
           onClick={handleDelete}
           className="h-12"
         >
-          <Trash2 className="w-4 h-4 mr-2" />
+          <Trash2 className="w-4 h-4 me-2" />
           {t.delete || 'Delete'}
         </Button>
 
@@ -792,7 +792,7 @@ function ChallengeDetailsView({
           disabled={isSharing}
           className="h-12"
         >
-          <Share2 className="w-4 h-4 mr-2" />
+          <Share2 className="w-4 h-4 me-2" />
           {isSharing ? t.sharing || 'Sharing...' : t.shareButton || 'Share'}
         </Button>
       </div>
@@ -838,7 +838,7 @@ function ChallengesListView({
           variant="outline"
           className="mt-6"
         >
-          <UserPlus className="w-4 h-4 mr-2" />
+          <UserPlus className="w-4 h-4 me-2" />
           {t.joinChallenge || 'Join Challenge'}
         </Button>
       </div>
@@ -853,7 +853,7 @@ function ChallengesListView({
         variant="outline"
         className="w-full h-12"
       >
-        <UserPlus className="w-4 h-4 mr-2" />
+        <UserPlus className="w-4 h-4 me-2" />
         {t.joinChallenge || 'Join Challenge'}
       </Button>
 
@@ -963,7 +963,7 @@ function JoinChallengeView({
   };
 
   const handleJoin = async () => {
-    hapticTap();
+    void hapticTap();
     setError('');
 
     // If we have full invite data, use it
@@ -971,7 +971,7 @@ function JoinChallengeView({
       setIsJoining(true);
       const challenge = joinChallenge(initialInvite);
       await new Promise(resolve => setTimeout(resolve, 300));
-      hapticSuccess();
+      void hapticSuccess();
       onJoined(challenge);
       return;
     }
@@ -981,13 +981,13 @@ function JoinChallengeView({
 
     if (!challenge) {
       setError(t.invalidChallengeCode || 'Invalid code. Format: ZEN-XXXXXX');
-      hapticWarning();
+      void hapticWarning();
       return;
     }
 
     setIsJoining(true);
     await new Promise(resolve => setTimeout(resolve, 300));
-    hapticSuccess();
+    void hapticSuccess();
     onJoined(challenge);
   };
 
@@ -1070,7 +1070,7 @@ function JoinChallengeView({
             <span className="animate-pulse">{t.joining || 'Joining...'}</span>
           ) : (
             <>
-              <UserPlus className="w-5 h-5 mr-2" />
+              <UserPlus className="w-5 h-5 me-2" />
               {t.join || 'Join'}
             </>
           )}
@@ -1104,7 +1104,7 @@ export const ChallengeModal = memo(function ChallengeModal({
 
   // Android back button: navigate sub-views before closing entire modal
   useBackHandler(open && (mode === 'details' || mode === 'join' || mode === 'create'), () => {
-    hapticTap();
+    void hapticTap();
     setSelectedChallenge(null);
     setNewlyCreatedChallenge(null);
     setPendingInvite(undefined);
@@ -1140,19 +1140,19 @@ export const ChallengeModal = memo(function ChallengeModal({
   };
 
   const handleSelectChallenge = (challenge: Challenge) => {
-    hapticTap();
+    void hapticTap();
     setSelectedChallenge(challenge);
     setMode('details');
   };
 
   const handleJoinMode = () => {
-    hapticTap();
+    void hapticTap();
     setPendingInvite(undefined);
     setMode('join');
   };
 
   const handleBack = () => {
-    hapticTap();
+    void hapticTap();
     setSelectedChallenge(null);
     setNewlyCreatedChallenge(null);
     setPendingInvite(undefined);

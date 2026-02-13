@@ -184,6 +184,7 @@ export function OnboardingHints(props: OnboardingHintsProps) {
         <button
           onClick={handleDismiss}
           className="p-2 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+          aria-label={t.dismiss || 'Dismiss'}
         >
           <X className="w-4 h-4 text-muted-foreground" />
         </button>

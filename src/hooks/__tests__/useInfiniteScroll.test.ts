@@ -224,9 +224,9 @@ describe('useInfiniteScroll', () => {
 
       // Call loadMore multiple times quickly
       await act(async () => {
-        result.current.loadMore();
-        result.current.loadMore();
-        result.current.loadMore();
+        void result.current.loadMore();
+        void result.current.loadMore();
+        void result.current.loadMore();
         await new Promise(r => setTimeout(r, 150));
       });
 

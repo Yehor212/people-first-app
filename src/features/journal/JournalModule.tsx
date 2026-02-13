@@ -113,7 +113,7 @@ export function JournalModule() {
 
   // Load entry count for card preview
   useEffect(() => {
-    getEntryCount().then(setEntryCount);
+    getEntryCount().then(setEntryCount).catch(() => {});
   }, [journal.totalCount]);
 
   // Check for unsaved draft (for card badge)
@@ -396,7 +396,7 @@ export function JournalModule() {
             <h2 className="text-base font-bold text-foreground">
               {ts.journalTitle || 'Personal Journal'}
             </h2>
-            <button onClick={handleClose} className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center">
+            <button onClick={handleClose} className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={ts.close || 'Close'}>
               <X className="w-5 h-5 text-foreground" />
             </button>
           </div>
@@ -567,7 +567,7 @@ export function JournalModule() {
             <h2 className="text-base font-bold text-foreground">
               {ts.journalPasswordSetup || 'Set Journal Password'}
             </h2>
-            <button onClick={() => setShowPasswordSettings(false)} className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center">
+            <button onClick={() => setShowPasswordSettings(false)} className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={ts.close || 'Close'}>
               <X className="w-5 h-5 text-foreground" />
             </button>
           </div>
@@ -666,6 +666,7 @@ export function JournalModule() {
                       onClick={() => journal.openStats()}
                       className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
                       title={ts.journalStatsTitle || 'Statistics'}
+                      aria-label={ts.journalStatsTitle || 'Statistics'}
                     >
                       <BarChart3 className="w-4 h-4" />
                     </button>
@@ -673,10 +674,11 @@ export function JournalModule() {
                       onClick={() => setShowPasswordSettings(true)}
                       className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
                       title={ts.journalSettings || 'Journal settings'}
+                      aria-label={ts.settings || 'Settings'}
                     >
                       <Settings className="w-4 h-4" />
                     </button>
-                    <button onClick={handleClose} className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center">
+                    <button onClick={handleClose} className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={ts.close || 'Close'}>
                       <X className="w-5 h-5 text-foreground" />
                     </button>
                   </div>
@@ -902,7 +904,7 @@ export function JournalModule() {
                                 value={`${String(reminder.hour).padStart(2, '0')}:${String(reminder.minute).padStart(2, '0')}`}
                                 onChange={e => {
                                   const [h, m] = e.target.value.split(':').map(Number);
-                                  if (!isNaN(h) && !isNaN(m)) reminder.setTime(h, m);
+                                  if (!isNaN(h) && !isNaN(m)) void reminder.setTime(h, m);
                                 }}
                                 className="px-2 py-1 rounded-lg bg-muted/50 border border-border/30 text-sm text-foreground min-h-[36px]"
                               />
@@ -953,7 +955,7 @@ export function JournalModule() {
                                     `${ts.journalImportSuccess || 'Imported'}: ${result.imported} entries, ${result.photosImported} photos` +
                                     (result.skipped > 0 ? ` (${result.skipped} ${ts.journalImportDuplicate || 'duplicates skipped'})` : '')
                                   );
-                                  journal.refresh();
+                                  void journal.refresh();
                                 }
                               } catch {
                                 toast.error(ts.journalImportFailed || 'Import failed');

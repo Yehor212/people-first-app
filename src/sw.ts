@@ -123,7 +123,7 @@ self.addEventListener('sync', (event) => {
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
     console.log('[SW] Skip waiting requested');
-    self.skipWaiting();
+    void self.skipWaiting();
   }
 
   if (event.data?.type === 'CLEAR_CACHES') {
@@ -153,7 +153,7 @@ self.addEventListener('message', (event) => {
 // Log service worker lifecycle
 self.addEventListener('install', () => {
   console.log('[SW] Installing — skip waiting for immediate activation');
-  self.skipWaiting();
+  void self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {

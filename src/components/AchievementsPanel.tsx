@@ -88,7 +88,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({ stats, unlock
             </h3>
             <p className="text-white/80 text-sm">{userLevel.title}</p>
           </div>
-          <div className="text-right">
+          <div className="text-end">
             <div className="text-3xl font-bold">{stats.totalXp}</div>
             <div className="text-white/80 text-sm">{t.xp || 'XP'}</div>
           </div>
@@ -208,7 +208,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({ stats, unlock
                     {selectedAchievement.rarity.toUpperCase()}
                   </Badge>
                   <Badge variant="secondary">
-                    <TrendingUp className="w-3 h-3 mr-1" />
+                    <TrendingUp className="w-3 h-3 me-1" />
                     {selectedAchievement.points} {t.xp || 'XP'}
                   </Badge>
                 </div>

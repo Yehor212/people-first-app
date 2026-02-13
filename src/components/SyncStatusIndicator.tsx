@@ -162,13 +162,19 @@ export function SyncStatusIndicatorCompact() {
 
   useEffect(() => {
     if (!supabase) return;
+    let isMounted = true;
     supabase.auth.getSession().then(({ data }) => {
-      setHasSession(!!data.session);
+      if (isMounted) setHasSession(!!data.session);
+    }).catch(() => {
+      if (isMounted) setHasSession(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setHasSession(!!session);
+      if (isMounted) setHasSession(!!session);
     });
-    return () => subscription?.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
   }, []);
 
   // Session expired: sync is enabled but no valid session
@@ -176,7 +182,7 @@ export function SyncStatusIndicatorCompact() {
     return (
       <div className="relative" aria-label={t.sessionExpired || 'Cloud sync paused'}>
         <CloudOff className="w-5 h-5 text-amber-500" />
-        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold" aria-hidden="true">!</span>
+        <span className="absolute -top-1 -end-1 bg-amber-500 text-white text-[10px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold" aria-hidden="true">!</span>
       </div>
     );
   }
@@ -193,7 +199,7 @@ export function SyncStatusIndicatorCompact() {
     return (
       <div className="relative" aria-label={`${t.syncOffline || 'Offline'} - ${pendingCount}`}>
         <WifiOff className="w-5 h-5 text-amber-500" />
-        <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold" aria-hidden="true">
+        <span className="absolute -top-1 -end-1 bg-amber-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold" aria-hidden="true">
           {pendingCount > 9 ? '9+' : pendingCount}
         </span>
       </div>
@@ -213,7 +219,7 @@ export function SyncStatusIndicatorCompact() {
       <div className="relative" aria-label={`${t.syncSyncing || 'Syncing'} ${pendingCount}`}>
         <Loader className="w-5 h-5 text-blue-500 animate-spin" />
         {pendingCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold" aria-hidden="true">
+          <span className="absolute -top-1 -end-1 bg-blue-500 text-white text-[10px] rounded-full w-4 h-4 flex items-center justify-center font-bold" aria-hidden="true">
             {pendingCount > 9 ? '9+' : pendingCount}
           </span>
         )}

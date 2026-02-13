@@ -47,7 +47,7 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
             <button
               key={tab.id}
               onClick={() => {
-                haptics.tabChanged();
+                void haptics.tabChanged();
                 onTabChange(tab.id);
               }}
               role="tab"

@@ -177,7 +177,7 @@ export function SettingsPanel({
     if (!supabase) return;
     supabase.auth.getSession().then(({ data }) => {
       setSessionEmail(data.session?.user?.email ?? null);
-    });
+    }).catch(() => {});
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       setSessionEmail(session?.user?.email ?? null);
     });
@@ -189,7 +189,7 @@ export function SettingsPanel({
   // Check Google Calendar connection when session is available
   useEffect(() => {
     if (!sessionEmail) return;
-    isCalendarConnected().then(setCalendarConnected);
+    isCalendarConnected().then(setCalendarConnected).catch(() => {});
   }, [sessionEmail]);
 
   // Load weekly digest setting when logged in
@@ -221,7 +221,7 @@ export function SettingsPanel({
       }
     };
 
-    loadWeeklyDigestSetting();
+    void loadWeeklyDigestSetting();
   }, [sessionEmail]);
 
   const handleWeeklyDigestToggle = async (enabled: boolean) => {
@@ -404,7 +404,7 @@ export function SettingsPanel({
     if (enabled) {
       setAuthStatus(t.settingsCloudSyncEnabled);
       // Trigger immediate sync when enabled
-      handleSync();
+      void handleSync();
     } else {
       setAuthStatus(t.settingsCloudSyncDisabledByUser);
     }
@@ -1111,7 +1111,7 @@ export function SettingsPanel({
                   onCheckedChange={(checked) => {
                     weeklyDigestTouchedRef.current = true;
                     setWeeklyDigestEnabled(checked); // Optimistic update
-                    handleWeeklyDigestToggle(checked);
+                    void handleWeeklyDigestToggle(checked);
                   }}
                   disabled={weeklyDigestLoading}
                   aria-label={t.weeklyDigestTitle}

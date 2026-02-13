@@ -2,6 +2,7 @@ import { memo, useState, useEffect, useMemo } from 'react';
 import { Trash2, Clock, Image as ImageIcon, Mic, Bookmark } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { JournalEntry } from './types';
 import { StickerRenderer } from './StickerRenderer';
 import { getPhotoById } from './journalStorage';
@@ -68,6 +69,8 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   onDelete,
   privateMode = false,
 }: JournalEntryCardProps) {
+  const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   // Strip markdown ** for cleaner preview
   const rawPreview = entry.content.replace(/\*\*/g, '').slice(0, 140);
   const preview = rawPreview + (entry.content.length > 140 ? '...' : '');
@@ -82,7 +85,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     let cancelled = false;
     getPhotoById(entry.photoIds[0]).then(photo => {
       if (!cancelled && photo?.thumbnail) setThumbnail(photo.thumbnail);
-    });
+    }).catch(() => {});
     return () => { cancelled = true; };
   }, [entry.photoIds]);
 
@@ -205,6 +208,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(); }}
                 className="p-2.5 -m-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+                aria-label={ts.delete || 'Delete'}
               >
                 <Trash2 className="w-4 h-4" />
               </button>

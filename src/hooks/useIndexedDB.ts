@@ -290,7 +290,7 @@ export function useIndexedDB<T>({
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
-    loadData(true);
+    void loadData(true);
   }, [loadData]);
 
   // Track mounted state to prevent memory leaks and state updates after unmount
@@ -318,7 +318,7 @@ export function useIndexedDB<T>({
   // Reload data when refresh is triggered
   useEffect(() => {
     if (refreshCounter > 0) {
-      loadData(false);
+      void loadData(false);
     }
   }, [refreshCounter, loadData]);
 
@@ -329,7 +329,7 @@ export function useIndexedDB<T>({
         : value;
 
       // Save to IndexedDB
-      (async () => {
+      void (async () => {
         try {
           if (idField === 'key') {
             await table.put({ key: localStorageKey, value: newValue });

@@ -91,7 +91,7 @@ export function InsightCard({ insight }: InsightCardProps) {
           {getIcon()}
         </div>
 
-        <div className="flex-1 text-left">
+        <div className="flex-1 text-start">
           <h3 className={`font-semibold ${colors.text} mb-1`}>
             {insight.title}
           </h3>

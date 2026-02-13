@@ -360,7 +360,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
       };
       onAddHabit(habit);
       toast({ description: `${selectedIcon} ${t.habitCreated || 'Habit created!'}`, duration: 3000 });
-      hapticTap();
+      void hapticTap();
     }
 
     resetForm();
@@ -400,7 +400,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         label: undoLabel,
         onClick: () => {
           onToggleHabit(habit.id, today);
-          hapticTap();
+          void hapticTap();
         },
       },
     });
@@ -547,7 +547,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             isPrimaryCTA ? (
               <motion.button
                 onClick={() => {
-                  hapticTap();
+                  void hapticTap();
                   onOpenChallenge();
                 }}
                 aria-label={t.friendChallenges}
@@ -567,7 +567,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                 variant="secondary"
                 size="icon"
                 onClick={() => {
-                  hapticTap();
+                  void hapticTap();
                   onOpenChallenge();
                 }}
                 aria-label={t.friendChallenges}
@@ -645,7 +645,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                   <motion.button
                     key={template.id}
                     onClick={() => handleQuickAdd(template.id)}
-                    className="flex items-center gap-2 px-3 py-3 min-h-[52px] rounded-xl bg-foreground/5 border border-foreground/10 text-foreground/80 hover:bg-foreground/10 hover:text-foreground transition-all text-left"
+                    className="flex items-center gap-2 px-3 py-3 min-h-[52px] rounded-xl bg-foreground/5 border border-foreground/10 text-foreground/80 hover:bg-foreground/10 hover:text-foreground transition-all text-start"
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
@@ -1282,7 +1282,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               onDelete={(id: string) => {
                 const deletedHabit = habits.find(h => h.id === id);
                 onDeleteHabit(id);
-                hapticTap();
+                void hapticTap();
                 if (deletedHabit) {
                   const ts = t as unknown as Record<string, string>;
                   toast(`${deletedHabit.icon || '🗑️'} ${ts.habitDeleted || 'Habit deleted'}`, {
@@ -1291,7 +1291,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                       label: ts.undo || 'Undo',
                       onClick: () => {
                         onAddHabit(deletedHabit);
-                        hapticTap();
+                        void hapticTap();
                       },
                     },
                   });

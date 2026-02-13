@@ -84,7 +84,7 @@ function RecommendationCard({
 
   const handleClick = () => {
     if (onAction) {
-      hapticTap();
+      void hapticTap();
       onAction(recommendation.id);
     }
   };
@@ -101,7 +101,7 @@ function RecommendationCard({
       onClick={handleClick}
       aria-label={title}
       className={cn(
-        'relative w-full text-left p-3 rounded-xl border transition-all duration-200 overflow-hidden',
+        'relative w-full text-start p-3 rounded-xl border transition-all duration-200 overflow-hidden',
         'active:scale-[0.98]',
         style.base,
         style.hover,
@@ -338,7 +338,7 @@ export function WeeklyInsightsCard({
             {recommendations.length > 2 && (
               <button
                 onClick={() => {
-                  hapticTap();
+                  void hapticTap();
                   setShowAllRecommendations(!showAllRecommendations);
                 }}
                 aria-expanded={showAllRecommendations}

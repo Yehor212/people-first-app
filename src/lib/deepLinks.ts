@@ -98,7 +98,7 @@ export function setupDeepLinks(): void {
   logger.log('[DeepLinks] Setting up deep link listeners');
 
   // Listen for app opened via URL
-  App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
+  void App.addListener('appUrlOpen', (event: URLOpenListenerEvent) => {
     handleDeepLink(event.url);
   });
 

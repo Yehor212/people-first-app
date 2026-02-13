@@ -240,7 +240,7 @@ export function JournalEntryEditor({
         setDraftAvailable(draft);
         setShowTemplatePicker(false);
       }
-    });
+    }).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -249,7 +249,7 @@ export function JournalEntryEditor({
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
       if (title || content || stickers.length > 0 || mood || tags.length > 0 || audioIds.length > 0) {
-        saveDraft(draftKey, { title, content, stickers, photoIds, audioIds, mood, tags, savedAt: Date.now() });
+        void saveDraft(draftKey, { title, content, stickers, photoIds, audioIds, mood, tags, savedAt: Date.now() });
         setDraftSavedAt(Date.now());
       }
     }, 3000);
@@ -288,7 +288,7 @@ export function JournalEntryEditor({
     if (isDirty) {
       setShowUnsavedDialog(true);
     } else {
-      clearDraft(draftKey);
+      void clearDraft(draftKey);
       onBack();
     }
   }, [isDirty, draftKey, onBack]);
@@ -311,14 +311,14 @@ export function JournalEntryEditor({
         date,
         habitSnapshot: habitSnapshot.length > 0 ? habitSnapshot : undefined,
       });
-      clearDraft(draftKey);
+      void clearDraft(draftKey);
       toast.success(title.trim() ? `"${title.trim().slice(0, 30)}"` : (ts.journalEntrySaved || 'Entry saved'));
       announceSuccess(ts.journalEntrySaved || 'Entry saved');
       setSaving(false);
       setSaveSuccess(true);
       // Celebration: sound + haptic
       try { const { playSuccess } = await import('@/lib/audioManager'); playSuccess(); } catch { /* optional */ }
-      hapticSuccess();
+      void hapticSuccess();
       // Navigate after brief celebration
       setTimeout(() => onBack(), 600);
     } catch {
@@ -332,7 +332,7 @@ export function JournalEntryEditor({
   }, [handleSave]);
 
   const handleDiscard = useCallback(() => {
-    clearDraft(draftKey);
+    void clearDraft(draftKey);
     setShowUnsavedDialog(false);
     onBack();
   }, [draftKey, onBack]);
@@ -353,7 +353,7 @@ export function JournalEntryEditor({
       }
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && hasContent && !saving) {
         e.preventDefault();
-        handleSave();
+        void handleSave();
       }
     };
     document.addEventListener('keydown', handleKeyDown);
@@ -365,7 +365,7 @@ export function JournalEntryEditor({
     if (entry?.audioIds && entry.audioIds.length > 0) {
       import('./journalStorage').then(({ getAudioForEntry }) => {
         getAudioForEntry(entry.id).then(setAudioRecordings).catch(() => setAudioRecordings([]));
-      });
+      }).catch(() => {});
     }
   }, [entry]);
 
@@ -401,7 +401,7 @@ export function JournalEntryEditor({
           recorder.reset();
         }
       };
-      storeRecording();
+      void storeRecording();
       return () => { cancelled = true; };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -432,7 +432,7 @@ export function JournalEntryEditor({
   };
 
   const handleDismissDraft = () => {
-    clearDraft(draftKey);
+    void clearDraft(draftKey);
     setDraftAvailable(null);
   };
 
@@ -526,6 +526,7 @@ export function JournalEntryEditor({
         <button
           onClick={handleBack}
           className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          aria-label={ts.back || 'Back'}
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
@@ -554,6 +555,7 @@ export function JournalEntryEditor({
             <button
               onClick={() => setShowDeleteConfirm(true)}
               className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+              aria-label={ts.delete || 'Delete'}
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -624,6 +626,7 @@ export function JournalEntryEditor({
               <button
                 onClick={handleDismissDraft}
                 className="p-1 rounded hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                aria-label={ts.dismiss || 'Dismiss'}
               >
                 <X className="w-3.5 h-3.5 text-muted-foreground" />
               </button>
@@ -666,6 +669,7 @@ export function JournalEntryEditor({
                 <button
                   onClick={() => setPromptsHidden(true)}
                   className="p-1 rounded hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+                  aria-label={ts.close || 'Close'}
                 >
                   <X className="w-3 h-3 text-muted-foreground/50" />
                 </button>
@@ -742,6 +746,7 @@ export function JournalEntryEditor({
                 <button
                   onClick={() => handleRemoveAudio(audio.id)}
                   className="p-1.5 rounded-lg hover:bg-destructive/10 text-muted-foreground/50 hover:text-destructive transition-colors min-w-[32px] min-h-[32px] flex items-center justify-center"
+                  aria-label={ts.delete || 'Remove'}
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -771,6 +776,7 @@ export function JournalEntryEditor({
               <button
                 onClick={() => voice.stop()}
                 className="p-1 rounded-md hover:bg-red-500/20 min-w-[28px] min-h-[28px] flex items-center justify-center"
+                aria-label={ts.stop || 'Stop'}
               >
                 <Square className="w-3 h-3 text-red-500" />
               </button>

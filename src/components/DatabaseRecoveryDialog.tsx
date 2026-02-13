@@ -105,7 +105,7 @@ export function DatabaseRecoveryDialog() {
               {t.databaseRecoveryTitle || 'Local data was reset'}
             </AlertDialogTitle>
           </div>
-          <AlertDialogDescription className="text-left">
+          <AlertDialogDescription className="text-start">
             {t.databaseRecoveryDesc ||
               'Your local storage was cleared (possibly from clearing browser data). We can try to restore your data from the cloud if you have an account.'}
           </AlertDialogDescription>

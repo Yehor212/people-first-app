@@ -279,7 +279,7 @@ export function cleanup(): void {
   state.activeTimeouts.length = 0;
 
   if (state.context) {
-    state.context.close();
+    void state.context.close();
     state.context = null;
   }
 }

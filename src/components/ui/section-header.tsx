@@ -77,7 +77,7 @@ export function SectionHeader({
             <Icon className={cn(config.icon, "text-primary-foreground")} />
           </div>
           {/* Decorative pulse dot */}
-          <div className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary/60 rounded-full animate-pulse" />
+          <div className="absolute -top-0.5 -end-0.5 w-2 h-2 bg-primary/60 rounded-full animate-pulse" />
         </div>
       )}
 

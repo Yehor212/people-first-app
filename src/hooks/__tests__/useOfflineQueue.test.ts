@@ -141,7 +141,7 @@ describe('useOfflineQueue', () => {
       const { result } = renderHook(() => useOfflineQueue());
 
       act(() => {
-        result.current.clearQueue();
+        void result.current.clearQueue();
       });
 
       expect(offlineQueue.clearQueue).toHaveBeenCalled();

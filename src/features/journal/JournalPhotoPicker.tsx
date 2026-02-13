@@ -67,7 +67,7 @@ export function JournalPhotoPicker({
             <span className="text-sm font-semibold text-foreground">
               {ts.journalPhotoAdd || 'Add Photo'} ({remaining} {ts.journalRemaining || 'remaining'})
             </span>
-            <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center">
+            <button onClick={onClose} className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center" aria-label={ts.close || 'Close'}>
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>

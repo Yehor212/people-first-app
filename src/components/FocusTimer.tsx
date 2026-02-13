@@ -425,7 +425,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
         setFocusElapsed(Math.floor(focusAccumulatedRef.current / 1000));
       }
       setIsRunning(false);
-      haptics.focusPaused();
+      void haptics.focusPaused();
       return;
     }
 
@@ -435,7 +435,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     endTimeRef.current = Date.now() + (timeLeft > 0 ? timeLeft : (isBreak ? breakDuration : focusDuration)) * 1000;
     if (!isBreak) {
       focusStartRef.current = Date.now();
-      haptics.focusStarted();
+      void haptics.focusStarted();
     }
     setIsRunning(true);
   };

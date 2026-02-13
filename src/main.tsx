@@ -166,13 +166,13 @@ document.addEventListener('visibilitychange', () => {
  */
 if (Capacitor.isNativePlatform()) {
   // App paused (going to background)
-  CapacitorApp.addListener('pause', () => {
+  void CapacitorApp.addListener('pause', () => {
     logger.log('[Main] App paused - saving state');
     handleAppPause();
   });
 
   // App resumed (coming back to foreground)
-  CapacitorApp.addListener('resume', () => {
+  void CapacitorApp.addListener('resume', () => {
     logger.log('[Main] App resumed - checking for pending sync');
     void handleAppResume();
   });
@@ -219,7 +219,7 @@ if (isCapacitor) {
       window.caches.keys().then((names) => {
         names.forEach((name) => {
           if (name.includes('workbox') || name.includes('precache') || name.includes('runtime')) {
-            window.caches.delete(name);
+            void window.caches.delete(name);
           }
         });
       }).catch((err) => {
@@ -291,4 +291,7 @@ initializeApp().then((shouldRender) => {
   if (shouldRender) {
     createRoot(document.getElementById("root")).render(<App />);
   }
+}).catch(err => {
+  console.error('[Init] Fatal:', err);
+  createRoot(document.getElementById("root")).render(<App />);
 });

@@ -53,7 +53,7 @@ export function FeatureToggleItem({
         checked={enabled && !isLocked}
         onCheckedChange={onToggle}
         disabled={isDisabled}
-        className="shrink-0 ml-3"
+        className="shrink-0 ms-3"
       />
     </div>
   );

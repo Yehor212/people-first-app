@@ -156,7 +156,7 @@ export function InsightsPanel({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-primary" />
-              <h3 className="font-semibold text-left">
+              <h3 className="font-semibold text-start">
                 {t.insightsTitle || 'Personal Insights'}
               </h3>
               {visibleCount > 0 && (

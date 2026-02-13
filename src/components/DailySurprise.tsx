@@ -347,7 +347,7 @@ interface DailySurpriseProps {
 }
 
 export function DailySurprise({ onNavigate }: DailySurpriseProps) {
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [hasSeenToday, setHasSeenToday] = useState(false);
 
@@ -407,7 +407,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
           <div className="p-2 bg-secondary rounded-xl">
             <Gift className="w-6 h-6 text-primary" />
           </div>
-          <div className="flex-1 text-left">
+          <div className="flex-1 text-start">
             <p className="font-semibold text-foreground">
               {language === 'uk' ? 'Сюрприз дня' :
                language === 'es' ? 'Sorpresa del día' :
@@ -447,7 +447,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
       >
         <div className="flex items-center gap-2">
           <span className="text-lg">{todaySurprise.emoji}</span>
-          <p className="text-sm text-muted-foreground flex-1 text-left truncate">
+          <p className="text-sm text-muted-foreground flex-1 text-start truncate">
             {todaySurprise.title[language] || todaySurprise.title.en}
           </p>
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
@@ -465,7 +465,8 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
       {/* Close button */}
       <button
         onClick={() => setIsOpen(false)}
-        className="absolute top-3 right-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+        className="absolute top-3 end-3 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-black/10 transition-colors"
+        aria-label={t.close || 'Close'}
       >
         <X className="w-4 h-4 text-muted-foreground" />
       </button>

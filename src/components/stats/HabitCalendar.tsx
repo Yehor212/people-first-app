@@ -261,7 +261,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
                 {/* Perfect day indicator */}
                 {dayData.completionRate === 1 && dayData.totalHabits > 0 && (
                   <motion.div
-                    className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-400 rounded-full"
+                    className="absolute -top-0.5 -end-0.5 w-2 h-2 bg-amber-400 rounded-full"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     style={{ boxShadow: '0 0 4px rgba(251, 191, 36, 0.6)' }}
@@ -274,7 +274,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
 
         {/* Legend */}
         <div className="flex items-center justify-center gap-1 mt-4">
-          <span className="text-[10px] text-muted-foreground mr-1">{t.less || 'Less'}</span>
+          <span className="text-[10px] text-muted-foreground me-1">{t.less || 'Less'}</span>
           {[0, 1, 2, 3, 4].map((level) => (
             <div
               key={level}
@@ -284,7 +284,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
               )}
             />
           ))}
-          <span className="text-[10px] text-muted-foreground ml-1">{t.more || 'More'}</span>
+          <span className="text-[10px] text-muted-foreground ms-1">{t.more || 'More'}</span>
         </div>
       </div>
 

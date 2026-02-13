@@ -17,7 +17,7 @@ export function useScreenSecurity(journalOpen: boolean) {
   useEffect(() => {
     db.settings.get(SETTINGS_KEY).then(entry => {
       if (entry?.value) setEnabledState(true);
-    });
+    }).catch(() => {});
   }, []);
 
   // Apply FLAG_SECURE when journal is open and setting enabled
@@ -26,15 +26,15 @@ export function useScreenSecurity(journalOpen: boolean) {
 
     let cleanup = false;
 
-    import('@/plugins/ScreenSecurityPlugin').then(({ default: ScreenSecurity }) => {
-      if (!cleanup) ScreenSecurity.enable();
-    });
+    void import('@/plugins/ScreenSecurityPlugin').then(({ default: ScreenSecurity }) => {
+      if (!cleanup) void ScreenSecurity.enable();
+    }).catch(() => {});
 
     return () => {
       cleanup = true;
-      import('@/plugins/ScreenSecurityPlugin').then(({ default: ScreenSecurity }) => {
-        ScreenSecurity.disable();
-      });
+      void import('@/plugins/ScreenSecurityPlugin').then(({ default: ScreenSecurity }) => {
+        void ScreenSecurity.disable();
+      }).catch(() => {});
     };
   }, [isNative, enabled, journalOpen]);
 

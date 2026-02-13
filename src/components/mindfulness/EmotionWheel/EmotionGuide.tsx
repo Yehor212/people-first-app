@@ -37,7 +37,7 @@ export function EmotionGuide({ onSelectEmotion }: EmotionGuideProps) {
       </p>
 
       {/* Emotion cards */}
-      <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1 -mr-1 overscroll-contain touch-pan-y">
+      <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pe-1 -me-1 overscroll-contain touch-pan-y">
         {EMOTION_ORDER.map((emotion, index) => {
           const entry = guide.emotions[emotion];
           const color = getEmotionColor(emotion, 'moderate');
@@ -51,11 +51,11 @@ export function EmotionGuide({ onSelectEmotion }: EmotionGuideProps) {
               transition={{ delay: index * 0.05 }}
               onClick={() => onSelectEmotion(emotion)}
               className={cn(
-                "w-full text-left rounded-xl p-3 transition-all",
+                "w-full text-start rounded-xl p-3 transition-all",
                 "bg-secondary/40 hover:bg-secondary/70 active:scale-[0.98]",
-                "border-l-[3px]"
+                "border-s-[3px]"
               )}
-              style={{ borderLeftColor: color }}
+              style={{ borderInlineStartColor: color }}
             >
               {/* Header row */}
               <div className="flex items-center gap-2.5 mb-2">

@@ -16,7 +16,7 @@ export function AchievementToast({ achievement }: AchievementToastProps) {
       <div className="flex items-center gap-4">
         <div className="relative">
           <div className="text-5xl animate-scale-in">{achievement.icon}</div>
-          <Sparkles className="absolute -top-1 -right-1 w-4 h-4 text-yellow-300 animate-pulse" />
+          <Sparkles className="absolute -top-1 -end-1 w-4 h-4 text-yellow-300 animate-pulse" />
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">

@@ -65,7 +65,7 @@ export function useGamification() {
       setGratitudeEntries(gratitudeData);
     };
 
-    loadData();
+    void loadData();
 
     // Refresh periodically
     const interval = setInterval(loadData, 5000);

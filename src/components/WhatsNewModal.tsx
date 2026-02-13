@@ -309,7 +309,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
         <div className="relative px-6 py-5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">
           <button
             onClick={handleDismiss}
-            className="absolute top-4 right-4 p-1 rounded-full hover:bg-muted transition-colors"
+            className="absolute top-4 end-4 p-1 rounded-full hover:bg-muted transition-colors"
             aria-label={t.close}
           >
             <X className="w-5 h-5 text-muted-foreground" />

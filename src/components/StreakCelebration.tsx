@@ -67,7 +67,8 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
         {/* Close button */}
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
+          className="absolute top-4 end-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-10"
+          aria-label={t.close || 'Close'}
         >
           <X className="w-5 h-5 text-white/70" />
         </button>

@@ -103,6 +103,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
         <button
           onClick={() => setStartOffset(prev => prev + 7)}
           className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          aria-label={ts.previous || 'Previous week'}
         >
           <ChevronLeft className="w-4 h-4 text-muted-foreground" />
         </button>
@@ -142,6 +143,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
           onClick={() => setStartOffset(prev => Math.max(0, prev - 7))}
           disabled={!canGoForward}
           className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-30 min-w-[32px] min-h-[32px] flex items-center justify-center"
+          aria-label={ts.next || 'Next week'}
         >
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </button>

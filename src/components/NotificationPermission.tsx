@@ -16,7 +16,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
   useScrollLock(showPrompt);
 
   useEffect(() => {
-    checkPermission();
+    void checkPermission();
   }, []);
 
   const checkPermission = async () => {
@@ -83,7 +83,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
         {/* Close button */}
         <button
           onClick={handleDeny}
-          className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground transition-colors"
+          className="absolute top-4 end-4 p-2 text-muted-foreground hover:text-foreground transition-colors"
           aria-label={t.close || 'Close'}
         >
           <X className="w-5 h-5" />

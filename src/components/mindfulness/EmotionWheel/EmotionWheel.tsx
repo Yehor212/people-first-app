@@ -172,7 +172,7 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
             <button
               onClick={handleBack}
               aria-label={t.back || 'Back'}
-              className="p-1.5 -ml-1.5 hover:bg-secondary rounded-lg transition-colors"
+              className="p-1.5 -ms-1.5 hover:bg-secondary rounded-lg transition-colors"
             >
               <ChevronRight className="w-5 h-5 rotate-180" />
             </button>
@@ -190,7 +190,7 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
             <button
               onClick={() => setViewState('guide')}
               aria-label={guideData.title}
-              className="p-2.5 -mr-1 hover:bg-secondary rounded-xl transition-colors"
+              className="p-2.5 -me-1 hover:bg-secondary rounded-xl transition-colors"
             >
               <HelpCircle className="w-5 h-5 text-muted-foreground" />
             </button>
@@ -366,7 +366,7 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
             </div>
           ))}
           {todayCount > 5 && (
-            <span className="text-xs text-muted-foreground ml-1">
+            <span className="text-xs text-muted-foreground ms-1">
               +{todayCount - 5}
             </span>
           )}

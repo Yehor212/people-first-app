@@ -59,7 +59,7 @@ export function PullToRefresh({
 
       // Haptic feedback when crossing threshold
       if (resistedDistance >= THRESHOLD && pullDistance < THRESHOLD) {
-        haptics.light();
+        void haptics.light();
       }
     }
   }, [enabled, refreshing, pullDistance]);
@@ -69,7 +69,7 @@ export function PullToRefresh({
 
     if (pullDistance >= THRESHOLD) {
       setRefreshing(true);
-      haptics.medium();
+      void haptics.medium();
 
       try {
         await onRefresh();

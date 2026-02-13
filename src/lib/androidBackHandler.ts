@@ -303,7 +303,7 @@ export async function initAndroidBackHandler(): Promise<void> {
     if (timeSinceLastPress < DOUBLE_TAP_DELAY) {
       // Second tap within delay - exit app
       logger.log('[AndroidBackHandler] Double tap detected, exiting app');
-      App.exitApp();
+      void App.exitApp();
     } else {
       // First tap - show toast and update timestamp
       logger.log('[AndroidBackHandler] First tap, showing exit toast');

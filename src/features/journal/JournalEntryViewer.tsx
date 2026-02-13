@@ -87,7 +87,7 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
     if (entry.audioIds && entry.audioIds.length > 0) {
       import('./journalStorage').then(({ getAudioForEntry }) => {
         getAudioForEntry(entry.id).then(setAudioRecordings).catch(() => setAudioRecordings([]));
-      });
+      }).catch(() => {});
     } else {
       setAudioRecordings([]);
     }
@@ -130,6 +130,7 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
         <button
           onClick={onBack}
           className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+          aria-label={ts.back || 'Back'}
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
         </button>
@@ -142,12 +143,14 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
           <button
             onClick={handleShare}
             className="p-2 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label={ts.shareButton || 'Share'}
           >
             <Share2 className="w-4 h-4" />
           </button>
           <button
             onClick={onDelete}
             className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
+            aria-label={ts.delete || 'Delete'}
           >
             <Trash2 className="w-4 h-4" />
           </button>

@@ -36,7 +36,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
   const useFallback = updateState.useFallback ?? false;
 
   const handleUpdate = async () => {
-    haptics.buttonPress();
+    void haptics.buttonPress();
     setIsLoading(true);
 
     try {
@@ -62,7 +62,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
   };
 
   const handleDismiss = () => {
-    haptics.buttonPress();
+    void haptics.buttonPress();
     dismissUpdate();
     onDismiss();
   };
@@ -99,7 +99,7 @@ export function UpdatePrompt({ updateState, onDismiss }: UpdatePromptProps) {
             <h3 className="font-semibold text-lg">
               {title}
               {updateState.latestVersion && (
-                <span className="text-sm opacity-80 ml-2">v{updateState.latestVersion}</span>
+                <span className="text-sm opacity-80 ms-2">v{updateState.latestVersion}</span>
               )}
             </h3>
             <p className="text-sm opacity-90 mt-0.5">

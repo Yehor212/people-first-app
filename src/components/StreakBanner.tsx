@@ -174,7 +174,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
             files: [file],
           });
         } else {
-          downloadImage(blob);
+          void downloadImage(blob);
         }
       }
       setShowShareDialog(false);
@@ -376,7 +376,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
         {streak >= 3 && (
           <button
             onClick={() => {
-              hapticTap();
+              void hapticTap();
               setShowShareDialog(true);
             }}
             className={cn(
@@ -536,6 +536,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                 onClick={() => downloadImage()}
                 disabled={isSharing}
                 className="py-4 px-6 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                aria-label={t.download || 'Download'}
               >
                 {isSharing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
               </button>

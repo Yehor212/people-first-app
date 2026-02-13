@@ -231,7 +231,7 @@ export function CompactHabitCard({
   };
 
   const handleToggle = () => {
-    hapticTap();
+    void hapticTap();
     onToggle(habit.id, today);
   };
 
@@ -260,7 +260,7 @@ export function CompactHabitCard({
       {/* Actions (revealed on swipe) */}
       <div
         className={cn(
-          'absolute right-0 top-0 bottom-0 flex items-center transition-all duration-200',
+          'absolute end-0 top-0 bottom-0 flex items-center transition-all duration-200',
           isSwiped ? (onChallenge ? 'w-[10.5rem]' : 'w-28') : 'w-0'
         )}
       >
@@ -268,7 +268,7 @@ export function CompactHabitCard({
         {onEdit && (
           <button
             onClick={() => {
-              hapticTap();
+              void hapticTap();
               if (deleteTimerRef.current) { clearTimeout(deleteTimerRef.current); deleteTimerRef.current = null; }
               setShowDeleteConfirm(false);
               onEdit(habit);
@@ -284,7 +284,7 @@ export function CompactHabitCard({
         {onChallenge && (
           <button
             onClick={() => {
-              hapticTap();
+              void hapticTap();
               if (deleteTimerRef.current) { clearTimeout(deleteTimerRef.current); deleteTimerRef.current = null; }
               setShowDeleteConfirm(false);
               onChallenge(habit);
@@ -305,7 +305,7 @@ export function CompactHabitCard({
               setShowDeleteConfirm(false);
               if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
             } else {
-              hapticTap();
+              void hapticTap();
               setShowDeleteConfirm(true);
               deleteTimerRef.current = setTimeout(() => setShowDeleteConfirm(false), 3000);
             }
@@ -586,7 +586,7 @@ export function CompactHabitCard({
                 setShowDeleteConfirm(false);
                 if (deleteTimerRef.current) clearTimeout(deleteTimerRef.current);
               } else {
-                hapticTap();
+                void hapticTap();
                 setShowDeleteConfirm(true);
                 deleteTimerRef.current = setTimeout(() => setShowDeleteConfirm(false), 3000);
               }

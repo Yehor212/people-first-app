@@ -16,7 +16,7 @@ export function SkipLink() {
         focus:not-sr-only
         focus:absolute
         focus:top-4
-        focus:left-4
+        focus:start-4
         focus:z-[1000]
         focus:bg-primary
         focus:text-primary-foreground

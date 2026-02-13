@@ -43,6 +43,7 @@ export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePick
             <button
               onClick={onClose}
               className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
+              aria-label={ts.close || 'Close'}
             >
               <X className="w-4 h-4 text-muted-foreground" />
             </button>

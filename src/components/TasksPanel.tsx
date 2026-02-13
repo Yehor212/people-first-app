@@ -219,6 +219,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
               'mt-1 flex-shrink-0 transition-colors',
               task.completed ? 'text-primary' : 'text-muted-foreground hover:text-primary'
             )}
+            aria-label={t.markComplete || 'Toggle complete'}
           >
             {task.completed ? (
               <CheckCircle2 className="w-5 h-5" />
@@ -276,6 +277,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
           <button
             onClick={() => handleDeleteTask(task.id)}
             className="flex-shrink-0 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors"
+            aria-label={t.delete || 'Delete'}
           >
             <Trash2 className="w-4 h-4" />
           </button>
@@ -304,6 +306,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
                   ? 'bg-muted text-foreground'
                   : 'zen-gradient text-white hover:opacity-90'
               )}
+              aria-label={t.addTask || 'Add task'}
             >
               <Plus className="w-5 h-5" />
             </button>
