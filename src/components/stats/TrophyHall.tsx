@@ -8,13 +8,16 @@
  * - 3D flip cards for each achievement
  */
 
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Share2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/components/ThemeToggle';
 import { FireIcon, StarIcon, TrophyIcon, TargetIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
+import { shareImage } from '@/lib/shareActions';
+import { hapticError } from '@/lib/haptics';
 
 interface Achievement {
   id: string;
@@ -224,55 +227,53 @@ function AchievementCard({
 
 export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }: TrophyHallProps) {
   const { t } = useLanguage();
+  const { effectiveTheme } = useTheme();
   const [isSharing, setIsSharing] = useState(false);
+  const [shareError, setShareError] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const errorTimerRef = useRef<number | null>(null);
+
+  // Cleanup error timer on unmount
+  useEffect(() => {
+    return () => {
+      if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current);
+    };
+  }, []);
 
   // Share achievements as image
   const handleShare = async () => {
     if (!cardRef.current || isSharing) return;
     setIsSharing(true);
+    setShareError(false);
 
     try {
-      // Lazy load html2canvas
+      // Lazy load html2canvas (CJS — must be isolated)
       const html2canvas = (await import('html2canvas')).default;
 
-      // Generate image
       const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#0a0a0a',
+        backgroundColor: effectiveTheme === 'dark' ? '#0a0a0a' : '#FFFBEB',
         scale: 2,
         useCORS: true,
       });
 
-      // Convert to blob
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((b) => {
-          if (b) {
-            resolve(b);
-          } else {
-            reject(new Error('Failed to create blob'));
-          }
+          if (b) resolve(b);
+          else reject(new Error('Failed to create blob'));
         }, 'image/png', 1.0);
       });
 
-      // Share or download
-      const file = new File([blob], 'zenflow-achievements.png', { type: 'image/png' });
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: 'My ZenFlow Achievements',
-          text: `🏆 ${streak} day streak | ⏱️ ${focusMinutes} focus mins | ✅ ${habitsCompleted} habits`,
-        });
-      } else {
-        // Fallback: download
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'zenflow-achievements.png';
-        a.click();
-        URL.revokeObjectURL(url);
-      }
+      await shareImage(
+        blob,
+        t.shareAchievements || 'My ZenFlow Achievements',
+        `${streak} ${t.daysInRow || 'day streak'} | ${focusMinutes} ${t.focusMinutes || 'focus mins'} | ${habitsCompleted} ${t.habitsCompleted || 'habits'}`
+      );
     } catch (error) {
       logger.error('Share failed:', error);
+      void hapticError();
+      setShareError(true);
+      if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = window.setTimeout(() => setShareError(false), 3000);
     } finally {
       setIsSharing(false);
     }
@@ -339,6 +340,17 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
           <Share2 className="w-4 h-4 text-amber-700 dark:text-amber-200" />
         )}
       </motion.button>
+
+      {/* Share error toast */}
+      {shareError && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="absolute top-14 end-3 z-20 px-3 py-2 rounded-lg bg-destructive/90 text-destructive-foreground text-xs font-medium backdrop-blur-sm animate-fade-in"
+        >
+          {t.shareGenerateError || 'Failed to share. Try again.'}
+        </div>
+      )}
 
       {/* Theme-aware temple background */}
       <div

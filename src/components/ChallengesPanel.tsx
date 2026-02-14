@@ -1,27 +1,17 @@
-import { useState, useRef } from 'react';
-import { toast } from 'sonner';
-import { Trophy, Target, Lock, CheckCircle2, Plus, X, Share2, Download, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { Trophy, Target, Lock, CheckCircle2, Plus, X, Share2 } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocale } from '@/lib/timeUtils';
 import { Challenge, Badge } from '@/types';
 import { challengeTemplates, createChallengeFromTemplate } from '@/lib/challenges';
-import { getBadgeById, getRarityColor, getRarityGradient } from '@/lib/badges';
+import { getBadgeById, getRarityColor } from '@/lib/badges';
 import { hapticTap } from '@/lib/haptics';
 import { VirtualGrid, shouldVirtualize } from '@/components/ui/virtual-list';
 import { EmojiOrIcon } from '@/components/icons';
-import { Share } from '@capacitor/share';
-import { Capacitor } from '@capacitor/core';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import { logger } from '@/lib/logger';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
-
-// Lazy load html2canvas
-const getHtml2Canvas = async () => {
-  const module = await import('html2canvas');
-  return module.default;
-};
+import { UnifiedShareModal } from '@/components/share';
 
 interface ChallengesPanelProps {
   activeChallenges: Challenge[];
@@ -38,138 +28,21 @@ export function ChallengesPanel({
 }: ChallengesPanelProps) {
   const { t, language } = useLanguage();
   const [selectedTab, setSelectedTab] = useState<'active' | 'available' | 'badges'>('active');
-  const [showShareDialog, setShowShareDialog] = useState(false);
-
-  useBackHandler(!showShareDialog, onClose);
-  useBackHandler(showShareDialog, () => setShowShareDialog(false));
-  useScrollLock(true);
+  const [showShareModal, setShowShareModal] = useState(false);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
-  const [isSharing, setIsSharing] = useState(false);
-  const [shareError, setShareError] = useState<string | null>(null);
-  const shareCardRef = useRef<HTMLDivElement>(null);
+
+  useBackHandler(!showShareModal, onClose);
+  useBackHandler(showShareModal, () => setShowShareModal(false));
+  useScrollLock(true);
 
   const handleShareBadge = (badge: Badge) => {
     void hapticTap();
     setSelectedBadge(badge);
-    setShowShareDialog(true);
-    setShareError(null);
-  };
-
-  const handleShare = async () => {
-    if (!shareCardRef.current || !selectedBadge) return;
-
-    try {
-      setIsSharing(true);
-      setShareError(null);
-      const html2canvas = await getHtml2Canvas();
-      const canvas = await html2canvas(shareCardRef.current, {
-        backgroundColor: null,
-        scale: 2,
-      });
-
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => resolve(blob), 'image/png');
-      });
-
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const base64Data = await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(blob);
-            reader.onloadend = () => {
-              const result = reader.result as string;
-              resolve(result.split(',')[1] || '');
-            };
-          });
-
-          const fileName = `zenflow-badge-${Date.now()}.png`;
-          const savedFile = await Filesystem.writeFile({
-            path: fileName,
-            data: base64Data,
-            directory: Directory.Cache,
-          });
-
-          await Share.share({
-            title: selectedBadge.title[language] || 'Badge Unlocked!',
-            text: `${selectedBadge.title[language]} - ZenFlow Achievement! 🏆`,
-            files: [savedFile.uri],
-            dialogTitle: t.shareDialogTitle,
-          });
-
-          try {
-            await Filesystem.deleteFile({ path: fileName, directory: Directory.Cache });
-          } catch (e) {
-            logger.warn('[ChallengesPanel] Cleanup failed:', e);
-          }
-        } catch (error) {
-          logger.error('[ChallengesPanel] Native share failed:', error);
-          setShareError(t.shareFailed || 'Share failed');
-          // Show toast for better visibility
-          toast.error(t.shareFailed || 'Share failed');
-          return;
-        }
-      } else {
-        if (navigator.share && navigator.canShare) {
-          const file = new File([blob], 'zenflow-badge.png', { type: 'image/png' });
-          await navigator.share({
-            title: selectedBadge.title[language] || 'Badge Unlocked!',
-            text: `${selectedBadge.title[language]} - ZenFlow Achievement! 🏆`,
-            files: [file],
-          });
-        } else {
-          void downloadImage(blob);
-        }
-      }
-      setShowShareDialog(false);
-    } catch (error) {
-      logger.error('[ChallengesPanel] Share failed:', error);
-      setShareError(t.shareFailed || 'Share failed');
-      // Show toast for better visibility
-      toast.error(t.shareFailed || 'Share failed');
-    } finally {
-      setIsSharing(false);
-    }
-  };
-
-  const downloadImage = async (existingBlob?: Blob) => {
-    if (!shareCardRef.current) return;
-    setIsSharing(true);
-    try {
-      let blob = existingBlob;
-      if (!blob) {
-        const html2canvas = await getHtml2Canvas();
-        const canvas = await html2canvas(shareCardRef.current, { backgroundColor: null, scale: 2 });
-        blob = await new Promise<Blob>((resolve) => {
-          canvas.toBlob((blob) => resolve(blob), 'image/png');
-        });
-      }
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `zenflow-badge-${selectedBadge?.id || 'achievement'}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      logger.error('[ChallengesPanel] Download failed:', error);
-    } finally {
-      setIsSharing(false);
-    }
+    setShowShareModal(true);
   };
 
   const getProgressPercent = (challenge: Challenge) => {
     return Math.min(100, Math.round((challenge.progress / challenge.target) * 100));
-  };
-
-  const _getChallengeTypeIcon = (type: Challenge['type']) => {
-    switch (type) {
-      case 'streak': return '🔥';
-      case 'focus': return '🎯';
-      case 'gratitude': return '🙏';
-      case 'total': return '💪';
-      default: return '⭐';
-    }
   };
 
   const getChallengeTypeLabel = (type: Challenge['type']) => {
@@ -442,7 +315,6 @@ export function ChallengesPanel({
           {selectedTab === 'badges' && (
             <>
               {shouldVirtualize(badges.length) ? (
-                // Use virtualized grid for large badge lists
                 <VirtualGrid
                   items={badges}
                   columns={2}
@@ -494,7 +366,6 @@ export function ChallengesPanel({
                   )}
                 />
               ) : (
-                // Regular grid for small badge lists
                 <div className="grid grid-cols-2 gap-3">
                   {badges.map((badge) => (
                     <div
@@ -546,112 +417,14 @@ export function ChallengesPanel({
         </div>
       </div>
 
-      {/* Inline Share Dialog for badges */}
-      {showShareDialog && selectedBadge && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[70] flex items-center justify-center p-4 motion-safe:animate-fade-in" role="dialog" aria-modal="true">
-          {/* Close button */}
-          <button
-            onClick={() => setShowShareDialog(false)}
-            className="absolute top-4 end-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors z-10 min-w-[44px] min-h-[44px] flex items-center justify-center"
-            aria-label={t.close}
-          >
-            <X className="w-6 h-6 text-white" />
-          </button>
-
-          <div className="w-full max-w-sm">
-            {/* Share Card */}
-            <div
-              ref={shareCardRef}
-              className="relative overflow-hidden aspect-square"
-              style={{
-                background: `linear-gradient(135deg, ${getRarityGradient(selectedBadge.rarity)})`,
-                borderRadius: '24px',
-              }}
-            >
-              {/* Decorative elements */}
-              <div className="absolute top-[-20%] right-[-20%] w-[60%] h-[60%] rounded-full opacity-30"
-                style={{ background: 'radial-gradient(circle, white 0%, transparent 70%)' }} />
-              <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full opacity-20"
-                style={{ background: 'radial-gradient(circle, white 0%, transparent 70%)' }} />
-
-              {/* Content */}
-              <div className="relative z-10 h-full flex flex-col items-center justify-center p-6 text-white">
-                {/* Header */}
-                <div className="absolute top-4 start-4 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                    <Trophy className="w-4 h-4" />
-                  </div>
-                  <span className="text-sm font-semibold opacity-80">ZenFlow</span>
-                </div>
-
-                {/* Badge Icon */}
-                <div className="text-8xl mb-4">
-                  <EmojiOrIcon emoji={selectedBadge.icon} iconName={selectedBadge.iconName} size="xl" />
-                </div>
-
-                {/* Badge Title */}
-                <h2 className="font-black text-2xl text-center mb-2 drop-shadow-lg">
-                  {selectedBadge.title[language]}
-                </h2>
-
-                {/* Badge Description */}
-                <p className="text-white/80 text-center text-sm max-w-[80%] mb-4">
-                  {selectedBadge.description[language]}
-                </p>
-
-                {/* Rarity Badge */}
-                <div className="px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-sm">
-                  <span className="text-xs font-bold uppercase tracking-wider">
-                    {selectedBadge.rarity}
-                  </span>
-                </div>
-
-                {/* Unlock Date */}
-                {selectedBadge.unlockedDate && (
-                  <p className="absolute bottom-4 text-xs text-white/60">
-                    {new Date(selectedBadge.unlockedDate).toLocaleDateString(getLocale(language))}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Error Message */}
-            {shareError && (
-              <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-xl text-center" role="status" aria-live="polite">
-                <p className="text-red-400 text-sm">{shareError}</p>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 mt-4">
-              <button
-                onClick={handleShare}
-                disabled={isSharing}
-                className="flex-1 py-4 rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50 bg-white text-slate-900"
-              >
-                {isSharing ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
-                    {t.generating || 'Generating...'}
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="w-5 h-5" />
-                    {t.shareButton || 'Share'}
-                  </>
-                )}
-              </button>
-              <button
-                onClick={() => downloadImage()}
-                disabled={isSharing}
-                className="py-4 px-6 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                aria-label={t.download || 'Download'}
-              >
-                {isSharing ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> : <Download className="w-5 h-5" />}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Badge Share Modal */}
+      {selectedBadge && (
+        <UnifiedShareModal
+          open={showShareModal}
+          onOpenChange={setShowShareModal}
+          mode="achievement"
+          badge={selectedBadge}
+        />
       )}
     </div>
   );

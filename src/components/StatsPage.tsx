@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/card';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { SectionHeader } from '@/components/ui/section-header';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { ShareProgress } from '@/components/ShareProgress';
+import { UnifiedShareModal } from '@/components/share';
 import { AnimatedEmotionDistribution } from '@/components/AnimatedStatsComponents';
 import { EmptyState } from '@/components/EmptyState';
 // Lazy-load ProgressStoriesViewer to isolate DOMPurify CJS into its own chunk
@@ -61,14 +61,13 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
   const [statsTab, setStatsTab] = useState<'overview' | 'trends' | 'calendar'>('calendar');
   const statsContainerRef = useRef<HTMLDivElement>(null);
 
-  useBackHandler(showShareDialog, () => setShowShareDialog(false));
   useBackHandler(showStoryViewer, () => setShowStoryViewer(false));
 
   const [selectedDate, setSelectedDate] = useState<string | null>(todayKey);
   const [selectedRing, setSelectedRing] = useState<RingType | null>(null);
   const [showMonthSelector, setShowMonthSelector] = useState(false);
 
-  useScrollLock(showShareDialog || showStoryViewer || selectedRing !== null || showMonthSelector);
+  useScrollLock(showStoryViewer || selectedRing !== null || showMonthSelector);
   const monthNames = [
     t.january, t.february, t.march, t.april, t.may, t.june,
     t.july, t.august, t.september, t.october, t.november, t.december
@@ -1221,18 +1220,20 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
       )}
 
       {/* Share Progress Dialog */}
-      {showShareDialog && (
-        <ShareProgress
-          stats={{
-            currentStreak: stats.currentStreak,
-            habitsCompleted: habits.filter(h => h.completedDates.includes(todayKey)).length,
-            totalHabits: habits.length,
-            focusMinutes: stats.totalFocusMinutes,
-            level: Math.floor(stats.currentStreak / 7) + 1,
-          }}
-          onClose={() => setShowShareDialog(false)}
-        />
-      )}
+      <UnifiedShareModal
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        mode="progress"
+        data={{
+          type: 'progress',
+          title: t.myProgress || 'My Progress',
+          stats: [
+            { label: t.currentStreak || 'Streak', value: stats.currentStreak },
+            { label: t.habitsCompleted || 'Habits', value: habits.filter(h => h.completedDates.includes(todayKey)).length },
+            { label: t.focusMinutes || 'Focus', value: stats.totalFocusMinutes },
+          ],
+        }}
+      />
 
       {/* Weekly Progress Stories Viewer */}
       {showStoryViewer && storySlides.length > 0 && (

@@ -23,9 +23,10 @@ import { logger } from '@/lib/logger';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { StorySlide, MoodTrendData, HabitStatsData, FocusStatsData } from '@/lib/progressStories';
-import { generateWeeklyCard, WeeklyProgressData, shareImage } from '@/lib/shareCards';
+import { generateWeeklyCard, WeeklyProgressData } from '@/lib/shareCards';
+import { shareImage } from '@/lib/shareActions';
 import { Badge } from '@/types';
-import { hapticTap, hapticSuccess } from '@/lib/haptics';
+import { hapticTap, hapticSuccess, hapticError } from '@/lib/haptics';
 
 // Import premium slide components
 import {
@@ -110,7 +111,9 @@ export function ProgressStoriesViewer({
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [shareError, setShareError] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const errorTimerRef = useRef<number | null>(null);
 
   const SLIDE_DURATION = 5000; // 5 seconds per slide
   const PROGRESS_INTERVAL = 50; // Update progress every 50ms
@@ -165,6 +168,13 @@ export function ProgressStoriesViewer({
   useEffect(() => {
     setProgress(0);
   }, [currentIndex]);
+
+  // Cleanup error timer
+  useEffect(() => {
+    return () => {
+      if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current);
+    };
+  }, []);
 
   const goToPrevious = useCallback(() => {
     void hapticTap();
@@ -224,7 +234,7 @@ export function ProgressStoriesViewer({
         newBadges,
       };
 
-      const blob = await generateWeeklyCard(weeklyData, undefined, language);
+      const blob = await generateWeeklyCard(weeklyData, undefined, 'dark', undefined, language);
       const shared = await shareImage(
         blob,
         t.myProgress || 'My Weekly Progress',
@@ -240,6 +250,10 @@ export function ProgressStoriesViewer({
       }
     } catch (error) {
       logger.error('Failed to share:', error);
+      void hapticError();
+      setShareError(true);
+      if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current);
+      errorTimerRef.current = window.setTimeout(() => setShareError(false), 3000);
     } finally {
       setIsSharing(false);
     }
@@ -352,6 +366,19 @@ export function ProgressStoriesViewer({
           <span>{t.storyTapCenter || 'Tap center to pause'}</span>
           <span>{t.storyTapRight || 'Tap right →'}</span>
         </div>
+
+        {/* Share error toast */}
+        {shareError && (
+          <div className="absolute top-20 start-0 end-0 flex justify-center z-20 pointer-events-none">
+            <div
+              role="status"
+              aria-live="polite"
+              className="px-4 py-2 rounded-full bg-red-500/90 text-white text-sm font-medium backdrop-blur-sm animate-fade-in"
+            >
+              {t.shareGenerateError || 'Failed to share. Try again.'}
+            </div>
+          </div>
+        )}
 
         {/* Pause indicator */}
         {isPaused && !isSharing && (
