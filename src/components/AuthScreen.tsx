@@ -3,6 +3,7 @@ import { Leaf, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { getAuthRedirectUrl, isNativePlatform, AUTH_COMPLETE_EVENT } from '@/lib/authRedirect';
 import { canStartAuthFlow, startAuthFlow, endAuthFlow } from '@/lib/authGuard';
+import { authenticateWithGoogleNative } from '@/lib/nativeGoogleAuth';
 import { App } from '@capacitor/app';
 import { logger } from '@/lib/logger';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -311,7 +312,57 @@ export function AuthScreen({ onComplete }: AuthScreenProps) {
     }
   };
 
-  const handleGoogleSignIn = () => void handleOAuthSignIn('google');
+  // Native Google Sign-In for Android (no browser redirect)
+  const handleNativeGoogleSignIn = async () => {
+    if (!supabase) {
+      setError(t.authSupabaseNotConfigured);
+      return;
+    }
+
+    if (!canStartAuthFlow()) {
+      setError(t.authTooManyAttempts);
+      return;
+    }
+
+    startAuthFlow();
+    setLoadingProvider('google');
+    setError(null);
+    setDebugInfo(null);
+
+    try {
+      const result = await authenticateWithGoogleNative();
+
+      if (result.success && result.user) {
+        endAuthFlow();
+        tryComplete(result.user, 'nativeGoogleSignIn');
+      } else if (result.error === 'cancelled') {
+        // User cancelled — just reset UI
+        endAuthFlow();
+        setLoadingProvider(null);
+      } else {
+        // Native failed — fall back to OAuth redirect
+        logger.warn('[Auth] Native sign-in failed, falling back to OAuth:', result.error);
+        endAuthFlow();
+        setLoadingProvider(null);
+        // Retry with browser-based OAuth
+        void handleOAuthSignIn('google');
+      }
+    } catch (err) {
+      logger.error('[Auth] Native Google sign-in error:', err);
+      endAuthFlow();
+      setLoadingProvider(null);
+      // Fall back to OAuth
+      void handleOAuthSignIn('google');
+    }
+  };
+
+  const handleGoogleSignIn = () => {
+    if (isNativePlatform()) {
+      void handleNativeGoogleSignIn();
+    } else {
+      void handleOAuthSignIn('google');
+    }
+  };
   const handleAppleSignIn = () => void handleOAuthSignIn('apple');
   const handleFacebookSignIn = () => void handleOAuthSignIn('facebook');
 
