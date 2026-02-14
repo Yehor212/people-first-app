@@ -340,19 +340,19 @@ export function AuthScreen({ onComplete }: AuthScreenProps) {
         endAuthFlow();
         setLoadingProvider(null);
       } else {
-        // Native failed — fall back to OAuth redirect
-        logger.warn('[Auth] Native sign-in failed, falling back to OAuth:', result.error);
+        // Native failed — show error (no browser fallback on Android)
+        logger.error('[Auth] Native sign-in failed:', result.error);
         endAuthFlow();
         setLoadingProvider(null);
-        // Retry with browser-based OAuth
-        void handleOAuthSignIn('google');
+        setError(t.authGoogleSignInFailed || 'Google Sign-In failed. Please try again.');
+        setDebugInfo(result.error || null);
       }
     } catch (err) {
       logger.error('[Auth] Native Google sign-in error:', err);
       endAuthFlow();
       setLoadingProvider(null);
-      // Fall back to OAuth
-      void handleOAuthSignIn('google');
+      setError(t.authGoogleSignInFailed || 'Google Sign-In failed. Please try again.');
+      setDebugInfo(err instanceof Error ? err.message : null);
     }
   };
 

@@ -1815,6 +1815,7 @@ export interface Translations {
   authTooManyAttempts: string;
   authSupabaseNotConfigured: string;
   authUnexpectedError: string;
+  authGoogleSignInFailed: string;
 
   // Common UI actions (P0/P1 fix)
   increase: string;
@@ -3971,6 +3972,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     authTooManyAttempts: 'Too many sign-in attempts. Please wait a moment and try again.',
     authSupabaseNotConfigured: 'Supabase not configured. Please add your Supabase credentials.',
     authUnexpectedError: 'Unexpected error occurred. Please try again.',
+    authGoogleSignInFailed: 'Google Sign-In failed. Please try again.',
 
     // Common UI actions (P0/P1 fix)
     increase: 'Increase',
@@ -6132,6 +6134,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     authTooManyAttempts: 'Забагато спроб входу. Зачекайте та спробуйте знову.',
     authSupabaseNotConfigured: 'Supabase не налаштовано. Додайте облікові дані Supabase.',
     authUnexpectedError: 'Сталася неочікувана помилка. Спробуйте знову.',
+    authGoogleSignInFailed: 'Помилка входу через Google. Спробуйте ще раз.',
 
     // Common UI actions (P0/P1 fix)
     increase: 'Збільшити',
@@ -8294,6 +8297,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     authTooManyAttempts: 'Demasiados intentos de inicio de sesión. Espera un momento e inténtalo de nuevo.',
     authSupabaseNotConfigured: 'Supabase no configurado. Por favor, añade tus credenciales de Supabase.',
     authUnexpectedError: 'Ocurrió un error inesperado. Por favor, inténtalo de nuevo.',
+    authGoogleSignInFailed: 'Error al iniciar sesión con Google. Inténtalo de nuevo.',
 
     // Common UI actions (P0/P1 fix)
     increase: 'Aumentar',
@@ -10456,6 +10460,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     authTooManyAttempts: 'Zu viele Anmeldeversuche. Bitte warten Sie einen Moment und versuchen Sie es erneut.',
     authSupabaseNotConfigured: 'Supabase nicht konfiguriert. Bitte fügen Sie Ihre Supabase-Anmeldedaten hinzu.',
     authUnexpectedError: 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuchen Sie es erneut.',
+    authGoogleSignInFailed: 'Google-Anmeldung fehlgeschlagen. Bitte versuchen Sie es erneut.',
 
     // Common UI actions (P0/P1 fix)
     increase: 'Erhöhen',
@@ -12618,6 +12623,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     authTooManyAttempts: 'Trop de tentatives de connexion. Veuillez patienter et réessayer.',
     authSupabaseNotConfigured: 'Supabase non configuré. Veuillez ajouter vos identifiants Supabase.',
     authUnexpectedError: 'Une erreur inattendue s\'est produite. Veuillez réessayer.',
+    authGoogleSignInFailed: 'Échec de la connexion Google. Veuillez réessayer.',
 
     // Common UI actions (P0/P1 fix)
     increase: 'Augmenter',
@@ -14779,6 +14785,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     authTooManyAttempts: 'サインイン試行が多すぎます。しばらく待ってからもう一度お試しください。',
     authSupabaseNotConfigured: 'Supabaseが設定されていません。Supabaseの資格情報を追加してください。',
     authUnexpectedError: '予期しないエラーが発生しました。もう一度お試しください。',
+    authGoogleSignInFailed: 'Googleログインに失敗しました。もう一度お試しください。',
 
     // Common UI actions (P0/P1 fix)
     increase: '増加',
@@ -16871,6 +16878,7 @@ const arabicOverrides: Partial<Translations> = {
   authTooManyAttempts: 'محاولات تسجيل دخول كثيرة. انتظر لحظة وحاول مرة أخرى.',
   authSupabaseNotConfigured: 'Supabase غير مهيأ. أضف بيانات اعتماد Supabase.',
   authUnexpectedError: 'حدث خطأ غير متوقع. حاول مرة أخرى.',
+  authGoogleSignInFailed: 'فشل تسجيل الدخول بجوجل. حاول مرة أخرى.',
 
   // Common UI actions (P0/P1 fix)
   increase: 'زيادة',
@@ -19128,6 +19136,7 @@ const hebrewOverrides: Partial<Translations> = {
   authTooManyAttempts: 'יותר מדי ניסיונות התחברות. המתן/י רגע ונסה/י שוב.',
   authSupabaseNotConfigured: 'Supabase לא מוגדר. הוסף את פרטי Supabase שלך.',
   authUnexpectedError: 'שגיאה בלתי צפויה. נסה/י שוב.',
+  authGoogleSignInFailed: 'הכניסה עם Google נכשלה. נסה/י שוב.',
 
   // Accessibility / Navigation
   increase: 'הגדל',

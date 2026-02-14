@@ -51,6 +51,13 @@ repositories {
     }
 }
 
+configurations.all {
+    resolutionStrategy {
+        // Force lower version of androidx.browser to stay compatible with AGP 8.2 / compileSdk 35
+        force 'androidx.browser:browser:1.8.0'
+    }
+}
+
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.1.0'
