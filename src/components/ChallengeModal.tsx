@@ -329,7 +329,7 @@ function ParticipantsLeaderboard({
         <span className="text-sm font-medium text-slate-800 dark:text-white">
           {t.participants || 'Participants'} ({leaderboard.members.length})
         </span>
-        <Cloud className="w-3 h-3 text-emerald-400 ml-auto" />
+        <Cloud className="w-3 h-3 text-emerald-400 ms-auto" />
       </div>
 
       <div className="p-2 space-y-1 max-h-[200px] overflow-y-auto">
@@ -948,6 +948,13 @@ function JoinChallengeView({
   const [code, setCode] = useState(initialInvite?.code || '');
   const [error, setError] = useState('');
   const [isJoining, setIsJoining] = useState(false);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
+  }, []);
 
   // Auto-format code as user types (add dash after ZEN)
   const handleCodeChange = (value: string) => {
@@ -1054,7 +1061,7 @@ function JoinChallengeView({
           autoComplete="off"
           autoCorrect="off"
           disabled={!!initialInvite?.habitName}
-          onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
+          onFocus={(e) => { const el = e.target; scrollTimeoutRef.current = setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
         />
         {error && (
           <p className="text-sm text-destructive mt-2 text-center" role="status" aria-live="polite">{error}</p>

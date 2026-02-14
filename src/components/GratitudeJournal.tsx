@@ -35,11 +35,13 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
   const [isExpanded, setIsExpanded] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const validationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Cleanup validation timer on unmount
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (validationTimerRef.current) clearTimeout(validationTimerRef.current);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     };
   }, []);
 
@@ -303,7 +305,7 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
                 } : {}}
                 rows={3}
                 autoFocus
-                onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
+                onFocus={(e) => { const el = e.target; scrollTimeoutRef.current = setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
               />
 
               {/* Validation error message */}

@@ -110,7 +110,7 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
 
           {/* Pulsing category badge */}
           <motion.div
-            className="ml-auto px-2.5 py-1 rounded-full text-xs font-medium"
+            className="ms-auto px-2.5 py-1 rounded-full text-xs font-medium"
             style={{
               background: 'rgba(245, 158, 11, 0.25)',
               color: 'rgb(251, 191, 36)',

@@ -484,7 +484,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
             {getToday()}
           </p>
         </div>
-        <span className="text-2xl ml-auto">{todaySurprise.emoji}</span>
+        <span className="text-2xl ms-auto">{todaySurprise.emoji}</span>
       </div>
 
       {/* Content */}

@@ -185,7 +185,7 @@ export function TimeAwarenessBadge({
 
       {/* Visual time indicator */}
       {isWorkHours && minutesUntilWorkdayEnd > 0 && (
-        <div className="ml-auto">
+        <div className="ms-auto">
           <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
             <div
               className={cn(
