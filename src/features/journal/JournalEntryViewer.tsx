@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ArrowLeft, Pencil, Trash2, Share2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -171,7 +170,6 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
         await navigator.share({ title: entry.title || 'Diary Entry', text });
       } else {
         await navigator.clipboard.writeText(text);
-        toast.success(ts.journalShareCopied || 'Copied to clipboard');
       }
     } catch {
       // User cancelled share

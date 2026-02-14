@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Cloud, CheckCircle, Loader2, Mail } from 'lucide-react';
-import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
@@ -242,7 +241,6 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
       const errorMessage = formatError(error);
       logger.error('[AccountSection] Sync failed:', errorMessage);
       setAuthStatus(`${t.syncError} ${errorMessage}`);
-      toast.error(t.syncError || 'Sync failed');
     } finally {
       setIsSyncing(false);
     }
@@ -292,12 +290,10 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
       if (error) {
         setWeeklyDigestEnabled(!enabled); // Revert on error
         logger.error('[AccountSection] Failed to update weekly digest:', error);
-        toast.error(t.settingsSaveFailed || 'Failed to save setting');
       }
     } catch (error) {
       setWeeklyDigestEnabled(!enabled); // Revert on error
       logger.error('[AccountSection] Weekly digest toggle error:', error);
-      toast.error(t.settingsSaveFailed || 'Failed to save setting');
     } finally {
       setWeeklyDigestLoading(false);
     }

@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { toast } from 'sonner';
 import { Plus, Zap, Clock, Star, Calendar, Trash2, CheckCircle2, Circle, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -85,7 +84,6 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
       await pushTasksToCloud(tasks);
     }).catch(err => {
       logger.error('[TasksPanel] Cloud sync failed:', err);
-      toast.error(t.syncFailedLocal);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks, isLoaded]);
@@ -185,17 +183,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   }, [onAwardXp, onEarnTreats]);
 
   const handleDeleteTask = useCallback((taskId: string) => {
-    const deletedTask = tasks.find(task => task.id === taskId);
     setTasks(prev => prev.filter(task => task.id !== taskId));
-    if (deletedTask) {
-      toast(`🗑️ ${t.confirmDelete || 'Task deleted'}`, {
-        duration: 5000,
-        action: {
-          label: t.undo || 'Undo',
-          onClick: () => setTasks(prev => [...prev, deletedTask]),
-        },
-      });
-    }
   }, [tasks, t]);
 
   const renderTaskCard = (task: PrioritizedTask, index?: number) => {

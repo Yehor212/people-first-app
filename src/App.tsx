@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Toaster as Sonner } from "@/components/ui/sonner";
+
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -10,8 +10,7 @@ import { FeatureFlagsProvider } from "@/contexts/FeatureFlagsContext";
 import { XpPopupProvider } from "@/components/XpPopup";
 import { FlyingEmojiProvider } from "@/components/FlyingMoodEmoji";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { PWAUpdateNotifier } from "@/components/PWAUpdateNotifier";
-import { SyncStatusListener } from "@/components/SyncStatusListener";
+
 import { DatabaseRecoveryDialog } from "@/components/DatabaseRecoveryDialog";
 import { UpdateRequiredDialog } from "@/components/UpdateRequiredDialog";
 import Index from "./pages/Index";
@@ -69,9 +68,8 @@ const App = () => (
                 <ErrorBoundary>
                   <TooltipProvider>
                     <ReduceMotionController />
-                    <Sonner />
-                    <PWAUpdateNotifier />
-                    <SyncStatusListener />
+
+
                     <DatabaseRecoveryDialog />
                     <UpdateRequiredDialog />
                     <BrowserRouter basename={getBasename()}>

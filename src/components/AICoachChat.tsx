@@ -6,7 +6,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, X, Sparkles, Bot, User, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
+
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAICoach, ChatMessage } from '@/contexts/AICoachContext';
 // Sheet replaced with custom bottom-sheet modal
@@ -24,7 +24,6 @@ export function AICoachChat() {
     closeCoach,
     sendMessage,
     clearHistory,
-    restoreHistory,
   } = useAICoach();
 
   useBackHandler(isOpen, () => { if (!isLoading) closeCoach(); });
@@ -63,19 +62,8 @@ export function AICoachChat() {
   };
 
   const handleClear = () => {
-    const previousMessages = [...messages];
     void haptics.buttonTap();
     clearHistory();
-    toast(`🗑️ ${t.confirmDelete || 'Chat cleared'}`, {
-      duration: 5000,
-      action: {
-        label: t.undo || 'Undo',
-        onClick: () => {
-          restoreHistory(previousMessages);
-          void haptics.buttonTap();
-        },
-      },
-    });
   };
 
   if (!isOpen) return null;

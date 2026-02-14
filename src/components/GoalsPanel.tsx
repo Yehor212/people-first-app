@@ -12,7 +12,7 @@
 
 import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
+
 import {
   Target, Plus, Check, X, Flame, Brain, Heart, Calendar,
   Trophy, Sparkles, ChevronRight, Zap,
@@ -750,13 +750,6 @@ export function GoalsPanel({
             onDelete={() => {
               void hapticTap();
               onDeleteGoal(goal.id);
-              toast(`🗑️ ${(t as Record<string, string>).goalDeleted || 'Goal deleted'}`, {
-                duration: 5000,
-                action: {
-                  label: (t as Record<string, string>).undo || 'Undo',
-                  onClick: () => { onAddGoal(goal); void hapticTap(); },
-                },
-              });
             }}
             t={t}
           />

@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
 import { Lock, ChevronRight, X, Settings, Loader2, CheckCircle2, Mail, PenLine, Download, Upload, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
@@ -181,7 +180,6 @@ export function JournalModule() {
         const milestones = [7, 14, 30, 60, 100];
         if (milestones.includes(newStreak)) {
           try { const { playStreakMilestone } = await import('@/lib/audioManager'); playStreakMilestone(); } catch { /* optional */ }
-          toast(`\u{1F525} ${newStreak} ${ts.journalSavedStreak || 'day streak!'}`, { duration: 3000 });
         }
       }
     }
@@ -197,28 +195,6 @@ export function JournalModule() {
     if (!entry) return;
 
     deletedEntryRef.current = { id, data: entry };
-
-    // Show undo toast
-    toast(ts.journalEntryDeleted || 'Entry deleted', {
-      action: {
-        label: ts.journalUndo || 'Undo',
-        onClick: async () => {
-          if (deletedEntryRef.current?.id === id) {
-            await journal.createEntry({
-              title: entry.title,
-              content: entry.content,
-              stickers: entry.stickers,
-              photoIds: entry.photoIds,
-              mood: entry.mood,
-              tags: entry.tags,
-              date: entry.date,
-            });
-            deletedEntryRef.current = null;
-          }
-        },
-      },
-      duration: 5000,
-    });
   }, [journal, ts]);
 
   const maskEmail = (email: string) => {
@@ -762,7 +738,6 @@ export function JournalModule() {
                                 onChangePassword={async (oldPw, newPw) => {
                                   const ok = await security.changePassword(oldPw, newPw);
                                   if (ok) {
-                                    toast.success(ts.journalPasswordChangeSuccess || 'Password changed successfully');
                                     setShowChangePassword(false);
                                     setShowPasswordSettings(false);
                                   }
@@ -948,17 +923,11 @@ export function JournalModule() {
                               try {
                                 const { importJournalBackup } = await import('./journalImport');
                                 const result = await importJournalBackup(file);
-                                if (result.errors.length > 0) {
-                                  toast.error(result.errors[0]);
-                                } else {
-                                  toast.success(
-                                    `${ts.journalImportSuccess || 'Imported'}: ${result.imported} entries, ${result.photosImported} photos` +
-                                    (result.skipped > 0 ? ` (${result.skipped} ${ts.journalImportDuplicate || 'duplicates skipped'})` : '')
-                                  );
+                                if (!result.errors.length) {
                                   void journal.refresh();
                                 }
                               } catch {
-                                toast.error(ts.journalImportFailed || 'Import failed');
+                                // import failed
                               } finally {
                                 setImporting(false);
                               }
@@ -1013,10 +982,9 @@ export function JournalModule() {
                                   else if (fmt.key === 'csv') await exp.exportCSV();
                                   else if (fmt.key === 'pdf') await exp.exportPDF();
                                   else if (fmt.key === 'md') await exp.exportMarkdown();
-                                  toast.success(ts.journalExportSuccess || 'Export complete');
                                   setShowExportPicker(false);
                                 } catch {
-                                  toast.error(ts.journalExportFailed || 'Export failed');
+                                  // export failed
                                 } finally {
                                   setExporting(false);
                                 }

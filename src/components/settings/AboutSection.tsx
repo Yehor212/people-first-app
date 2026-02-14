@@ -3,7 +3,6 @@ import { Sparkles, History, RefreshCw, CheckCircle, ExternalLink, MessageSquare,
 import { Capacitor } from '@capacitor/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
-import { toast } from 'sonner';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { checkForAppUpdate, openGooglePlayStore, UpdateState } from '@/lib/appUpdateManager';
 import { APP_VERSION } from '@/lib/appVersion';
@@ -35,7 +34,6 @@ export function AboutSection() {
     if (versionTapCount.current >= 5) {
       versionTapCount.current = 0;
       toggleDemoMode();
-      toast(isDemoMode ? (t.demoModeDisabled || 'Demo mode disabled') : (t.demoModeEnabled || 'Demo mode enabled'));
       return;
     }
 
@@ -62,7 +60,6 @@ export function AboutSection() {
     } catch (error) {
       logger.error('[Settings] Update check failed:', error);
       setUpdateCheckStatus('error');
-      toast.error(t.updateCheckFailed || 'Could not check for updates');
     }
   };
 

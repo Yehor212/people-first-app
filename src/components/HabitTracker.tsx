@@ -14,7 +14,7 @@ import { HabitCompletionCelebration, DailyProgressBar } from './HabitCompletionC
 import { CompactHabitCard } from './CompactHabitCard';
 import { hapticTap } from '@/lib/haptics';
 import { getActiveChallenges } from '@/lib/friendChallenge';
-import { toast } from 'sonner';
+
 import { announceSuccess } from '@/lib/a11y';
 import { playSuccess, playStreakMilestone, playLevelUp } from '@/lib/audioManager';
 
@@ -330,7 +330,6 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
 
   const handleAddHabit = () => {
     if (!newHabitName.trim()) {
-      toast({ description: t.habitNameRequired || 'Enter a habit name', duration: 2000 });
       return;
     }
 
@@ -354,10 +353,6 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         ...(selectedType === 'reduce' && { targetCount: dailyTarget }),
       };
       onUpdateHabit(updatedHabit);
-      toast({
-        description: `${selectedIcon} ${t.habitUpdated || 'Habit updated'}`,
-        duration: 3000,
-      });
     } else {
       // Create new habit
       const habit: Habit = {
@@ -382,7 +377,6 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         ...(selectedType === 'reduce' && { progressByDate: {}, targetCount: dailyTarget }),
       };
       onAddHabit(habit);
-      toast({ description: `${selectedIcon} ${t.habitCreated || 'Habit created!'}`, duration: 3000 });
       void hapticTap();
     }
 
@@ -396,7 +390,6 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
 
   // Handle habit toggle with celebrations
   // Added debounce to prevent rapid toggles causing multiple celebrations
-  // Added undo toast for accidental toggles
   const handleHabitToggle = useCallback((habit: Habit) => {
     // Prevent rapid double-toggle
     if (toggleDebounceRef.current.has(habit.id)) {
@@ -409,24 +402,6 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
 
     // Trigger the toggle
     onToggleHabit(habit.id, today);
-
-    // Show undo toast for accidental toggles (for accessibility)
-    // This helps users with motor impairments who might accidentally tap
-    const undoLabel = t.undo || 'Undo';
-    const actionLabel = wasCompleted
-      ? (t.habitUnchecked || 'Habit unchecked')
-      : (t.habitCompleted || 'Habit completed');
-
-    toast(`${habit.icon} ${actionLabel}`, {
-      duration: 4000,
-      action: {
-        label: undoLabel,
-        onClick: () => {
-          onToggleHabit(habit.id, today);
-          void hapticTap();
-        },
-      },
-    });
 
     // If the habit is being completed (not uncompleted)
     if (!wasCompleted) {
@@ -1306,22 +1281,8 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               onToggle={() => handleHabitToggle(habit)}
               onAdjust={onAdjustHabit}
               onDelete={(id: string) => {
-                const deletedHabit = habits.find(h => h.id === id);
                 onDeleteHabit(id);
                 void hapticTap();
-                if (deletedHabit) {
-                  const ts = t as unknown as Record<string, string>;
-                  toast(`${deletedHabit.icon || '🗑️'} ${ts.habitDeleted || 'Habit deleted'}`, {
-                    duration: 5000,
-                    action: {
-                      label: ts.undo || 'Undo',
-                      onClick: () => {
-                        onAddHabit(deletedHabit);
-                        void hapticTap();
-                      },
-                    },
-                  });
-                }
               }}
               onEdit={onUpdateHabit ? handleEditHabit : undefined}
               onChallenge={onOpenChallenge ? (h) => onOpenChallenge(h) : undefined}

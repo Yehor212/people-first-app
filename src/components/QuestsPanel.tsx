@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { toast } from 'sonner';
 import { logger } from '@/lib/logger';
 import { safeJsonParse } from '@/lib/safeJson';
 import { Sparkles, Trophy, Clock, Zap, Target, X, Star } from 'lucide-react';
@@ -61,7 +60,6 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     pushQuestsToCloud(data).catch(err => {
       logger.error('Failed to push quests to cloud:', err);
-      toast.error(t.syncFailedLocal);
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dailyQuest, weeklyQuest, bonusQuest, isLoaded]);

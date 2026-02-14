@@ -274,8 +274,7 @@ export const silentSync = async () => {
       }
       addCategorizedBreadcrumb('sync', 'Auto-sync failed', { error: (error as Error).message }, 'error');
       logger.warn('[Sync] Auto-sync failed:', error);
-      // Track failures and emit event for UI notification
-      // SyncStatusListener handles the toast display (checks shouldNotify flag)
+      // Track failures and emit event for monitoring
       consecutiveSyncFailures++;
       emitSyncFailureEvent(error, consecutiveSyncFailures);
       throw error; // Re-throw for orchestrator retry logic

@@ -3,7 +3,6 @@ import { Download, Upload, Trash2, Loader2, FileText, FileSpreadsheet } from 'lu
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
 import { Capacitor } from '@capacitor/core';
-import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
@@ -106,7 +105,6 @@ export function DataSection({
     } catch (error) {
       logger.error('Export failed:', error);
       setDataStatus(t.exportError);
-      toast.error(t.exportError || 'Export failed');
     } finally {
       setIsExporting(false);
     }
@@ -117,7 +115,6 @@ export function DataSection({
     try {
       exportAllToCSV({ moods, habits, focusSessions, gratitudeEntries });
     } catch (e) {
-      toast.error(t.exportError || 'Export failed');
       logger.error('[Settings] CSV export error:', e);
     } finally {
       setIsExportingCSV(false);
@@ -129,7 +126,6 @@ export function DataSection({
     try {
       exportProgressReportPDF({ moods, habits, focusSessions, gratitudeEntries, userName });
     } catch (e) {
-      toast.error(t.exportError || 'Export failed');
       logger.error('[Settings] PDF export error:', e);
     } finally {
       setIsExportingPDF(false);
@@ -208,7 +204,6 @@ export function DataSection({
     } catch (error) {
       logger.error('Import failed:', error);
       setDataStatus(t.importError);
-      toast.error(t.importError || 'Import failed');
     } finally {
       setIsImporting(false);
       setPendingImportFile(null);

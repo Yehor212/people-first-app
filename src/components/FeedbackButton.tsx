@@ -12,7 +12,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Capacitor } from '@capacitor/core';
 import { haptics } from '@/lib/haptics';
-import { toast } from 'sonner';
+
 import { logger } from '@/lib/logger';
 
 type FeedbackType = 'bug' | 'feature' | 'other';
@@ -78,11 +78,9 @@ export function FeedbackButton({
         storeFeedbackLocally(feedbackData);
       }
 
-      toast.success(t.feedbackSent || 'Thanks for your feedback!');
       handleClose();
     } catch (error) {
       logger.error('[Feedback] Error:', error);
-      toast.error(t.feedbackError || 'Failed to send feedback');
     } finally {
       setIsSubmitting(false);
     }

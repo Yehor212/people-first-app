@@ -1,7 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { Camera, Image as ImageIcon, X, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -47,7 +46,6 @@ export function JournalPhotoPicker({
       onClose();
     } catch (err) {
       logger.error('[JournalPhotoPicker] Photo upload failed:', err);
-      toast.error(ts.journalPhotoError || 'Failed to load photo');
     } finally {
       setLoading(false);
       e.target.value = '';

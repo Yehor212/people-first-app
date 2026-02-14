@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, Sparkles, X, Calendar, Shuffle, Mic, MicOff, Circle, Square, LayoutTemplate } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from 'sonner';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
@@ -316,7 +315,6 @@ export function JournalEntryEditor({
         habitSnapshot: habitSnapshot.length > 0 ? habitSnapshot : undefined,
       });
       void clearDraft(draftKey);
-      toast.success(title.trim() ? `"${title.trim().slice(0, 30)}"` : (ts.journalEntrySaved || 'Entry saved'));
       announceSuccess(ts.journalEntrySaved || 'Entry saved');
       setSaving(false);
       setSaveSuccess(true);
@@ -398,10 +396,8 @@ export function JournalEntryEditor({
           setAudioRecordings(prev => [...prev, audio]);
           recorder.reset();
           setShowRecordingOverlay(false);
-          toast.success(ts.journalAudioSaved || 'Audio saved');
         } catch {
           if (cancelled) return;
-          toast.error(ts.journalAudioError || 'Failed to save audio');
           recorder.reset();
         }
       };
@@ -455,7 +451,7 @@ export function JournalEntryEditor({
       const photo = await onAddPhoto(file, entryId);
       setPhotoIds(prev => [...prev, photo.id]);
     } catch {
-      toast.error(ts.journalPhotoError || 'Failed to add photo');
+      // photo add failed
     }
   };
 
@@ -484,7 +480,6 @@ export function JournalEntryEditor({
       voice.stop();
     } else {
       if (!voice.isSupported) {
-        toast.error(ts.journalVoiceNotSupported || 'Speech recognition not supported in this browser');
         return;
       }
       voice.start();
@@ -493,11 +488,9 @@ export function JournalEntryEditor({
 
   const handleStartRecording = async () => {
     if (!recorder.isSupported) {
-      toast.error(ts.journalVoiceNotSupported || 'Audio recording not supported');
       return;
     }
     if (audioIds.length >= MAX_AUDIO_PER_ENTRY) {
-      toast.error(ts.journalAudioMaxReached || `Maximum ${MAX_AUDIO_PER_ENTRY} recordings`);
       return;
     }
     closeAllPickers();

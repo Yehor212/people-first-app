@@ -21,7 +21,7 @@ import { useBackHandler } from '@/hooks/useBackHandler';
 import { Database, CloudDownload, RefreshCw } from 'lucide-react';
 import { pullFromCloud } from '@/storage/realtimeSync';
 import { getCurrentUserId } from '@/lib/supabaseClient';
-import { toast } from 'sonner';
+
 import { logger } from '@/lib/logger';
 
 export function DatabaseRecoveryDialog() {
@@ -42,9 +42,6 @@ export function DatabaseRecoveryDialog() {
     const handleRecoveryFailed = (e: Event) => {
       const detail = (e as CustomEvent).detail;
       logger.error('[DatabaseRecovery] Recovery failed:', detail);
-      toast.error(t.storageError || 'Storage error', {
-        description: t.storageErrorDesc || 'Could not recover local database.',
-      });
     };
 
     window.addEventListener('zenflow:database-recovery-needed', handleRecoveryNeeded);
@@ -61,24 +58,13 @@ export function DatabaseRecoveryDialog() {
     try {
       const userId = await getCurrentUserId();
       if (!userId) {
-        toast.error(t.syncError || 'Sync error', {
-          description: t.authRequired || 'Please sign in to restore from cloud.',
-        });
         setIsOpen(false);
         return;
       }
 
-      const success = await pullFromCloud();
-      if (success) {
-        toast.success(t.syncPulled || 'Data restored from cloud');
-      } else {
-        toast.error(t.syncError || 'Sync error', {
-          description: t.syncFailedLocal || 'Could not restore data from cloud.',
-        });
-      }
+      await pullFromCloud();
     } catch (error) {
       logger.error('[DatabaseRecovery] Restore failed:', error);
-      toast.error(t.syncError || 'Sync error');
     } finally {
       setIsRestoring(false);
       setIsOpen(false);
@@ -88,9 +74,6 @@ export function DatabaseRecoveryDialog() {
   const handleStartFresh = () => {
     // Just close the dialog - app will continue with empty local DB
     setIsOpen(false);
-    toast(t.databaseRecoveryStartFresh || 'Starting fresh', {
-      description: t.databaseRecoveryStartFreshDesc || 'Local data has been reset.',
-    });
   };
 
   return (

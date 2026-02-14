@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { toast } from 'sonner';
 import { MAX_AUDIO_DURATION_SEC } from './types';
 import { logger } from '@/lib/logger';
 
@@ -103,7 +102,6 @@ export function useAudioRecorder() {
     } catch (err) {
       setError('Microphone access denied');
       logger.error('[useAudioRecorder] Microphone access denied:', err);
-      toast.error('Microphone access denied');
     }
   }, []);
 

@@ -47,7 +47,7 @@ import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { toast } from 'sonner';
+
 
 // ============================================
 // TYPES
@@ -180,7 +180,6 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
         const success = await optInToLeaderboard(displayName || 'Zen User');
         if (success) {
           setIsOptedIn(true);
-          toast.success(t.leaderboardOptedIn || 'You joined the leaderboard!');
           announce('You joined the leaderboard');
           void loadData(0);
         }
@@ -188,7 +187,6 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
         const success = await optOutOfLeaderboard();
         if (success) {
           setIsOptedIn(false);
-          toast.success(t.leaderboardOptedOut || 'You left the leaderboard');
           announce('You left the leaderboard');
         }
       }
@@ -204,7 +202,6 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
     try {
       const success = await updateDisplayName(displayName);
       if (success) {
-        toast.success(t.nameUpdated || 'Display name updated!');
         void loadData(0);
       }
     } catch (err) {

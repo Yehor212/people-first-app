@@ -9,7 +9,6 @@ import {
   calculateLevel,
   getXpForAction,
 } from '@/lib/gamification';
-import { toast } from 'sonner';
 import { addFriendActivity, loadMyProfile, updateMyLevel } from '@/storage/friendsSync';
 
 interface GamificationState {
@@ -138,11 +137,6 @@ export function useGamification() {
       if (!initialLoadRef.current && isRealChange && achievementsToShow.length > 0) {
         const profile = loadMyProfile();
         achievementsToShow.forEach((achievement) => {
-          toast.success(`🎉 ${achievement.name}`, {
-            description: `${achievement.description} (+${achievement.points} XP)`,
-            duration: 5000,
-          });
-
           // Track for friends activity feed
           if (profile) {
             const isStreak = achievement.id.startsWith('streak_');
