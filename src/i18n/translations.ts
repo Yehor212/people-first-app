@@ -653,6 +653,10 @@ export interface Translations {
   whatsNewTitle: string;
   whatsNewVersion: string;
   whatsNewGotIt: string;
+  whatsNew?: {
+    googleOnly?: { title: string; description: string };
+    codeQuality?: { title: string; description: string };
+  };
 
   // Accessibility
   skipToContent: string;
@@ -2743,6 +2747,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     whatsNewTitle: "What's New",
     whatsNewVersion: 'Version',
     whatsNewGotIt: 'Got it!',
+    whatsNew: {
+      googleOnly: { title: 'Google Sign-In Only', description: 'Sign in securely with Google. Email and skip options removed for better account security.' },
+      codeQuality: { title: 'Code Quality', description: '271 code quality warnings fixed to zero. Smoother, more reliable experience.' },
+    },
 
     // Accessibility
     skipToContent: 'Skip to main content',
@@ -4905,6 +4913,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     whatsNewTitle: 'Що нового',
     whatsNewVersion: 'Версія',
     whatsNewGotIt: 'Зрозуміло!',
+    whatsNew: {
+      googleOnly: { title: 'Тільки вхід через Google', description: 'Безпечний вхід через Google. Опції електронної пошти та пропуску видалені для кращої безпеки.' },
+      codeQuality: { title: 'Якість коду', description: '271 попередження якості коду виправлено до нуля. Плавніша та надійніша робота.' },
+    },
 
     // Accessibility
     skipToContent: 'Перейти до вмісту',
@@ -7068,6 +7080,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     whatsNewTitle: 'Novedades',
     whatsNewVersion: 'Versión',
     whatsNewGotIt: '¡Entendido!',
+    whatsNew: {
+      googleOnly: { title: 'Solo inicio de sesión con Google', description: 'Inicia sesión de forma segura con Google. Las opciones de correo electrónico y omitir se eliminaron para mayor seguridad.' },
+      codeQuality: { title: 'Calidad del código', description: '271 advertencias de calidad de código corregidas a cero. Experiencia más fluida y confiable.' },
+    },
 
     // Accessibility
     skipToContent: 'Ir al contenido principal',
@@ -9231,6 +9247,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     whatsNewTitle: 'Was ist neu',
     whatsNewVersion: 'Version',
     whatsNewGotIt: 'Verstanden!',
+    whatsNew: {
+      googleOnly: { title: 'Nur Google-Anmeldung', description: 'Sicher mit Google anmelden. E-Mail- und Überspringen-Optionen wurden für mehr Sicherheit entfernt.' },
+      codeQuality: { title: 'Codequalität', description: '271 Code-Qualitätswarnungen auf null behoben. Reibungsloseres, zuverlässigeres Erlebnis.' },
+    },
 
     // Accessibility
     skipToContent: 'Zum Hauptinhalt springen',
@@ -11394,6 +11414,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     whatsNewTitle: 'Nouveautés',
     whatsNewVersion: 'Version',
     whatsNewGotIt: 'Compris !',
+    whatsNew: {
+      googleOnly: { title: 'Connexion Google uniquement', description: 'Connectez-vous en toute sécurité avec Google. Les options e-mail et ignorer ont été supprimées pour plus de sécurité.' },
+      codeQuality: { title: 'Qualité du code', description: '271 avertissements de qualité de code corrigés à zéro. Expérience plus fluide et fiable.' },
+    },
 
     // Accessibility
     skipToContent: 'Aller au contenu principal',
@@ -13556,6 +13580,10 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     whatsNewTitle: '新機能',
     whatsNewVersion: 'バージョン',
     whatsNewGotIt: '了解！',
+    whatsNew: {
+      googleOnly: { title: 'Googleサインインのみ', description: 'Googleで安全にサインイン。アカウントセキュリティ向上のため、メールとスキップオプションを削除しました。' },
+      codeQuality: { title: 'コード品質', description: '271件のコード品質警告をすべて修正。よりスムーズで信頼性の高い体験。' },
+    },
 
     // Accessibility
     skipToContent: 'メインコンテンツへスキップ',
@@ -15728,6 +15756,10 @@ const arabicOverrides: Partial<Translations> = {
   whatsNewTitle: 'ما الجديد',
   whatsNewVersion: 'الإصدار {version}',
   whatsNewGotIt: 'فهمت!',
+  whatsNew: {
+    googleOnly: { title: 'تسجيل الدخول عبر Google فقط', description: 'سجّل الدخول بأمان عبر Google. تم إزالة خيارات البريد الإلكتروني والتخطي لتعزيز أمان الحساب.' },
+    codeQuality: { title: 'جودة الكود', description: 'تم إصلاح 271 تحذير جودة الكود إلى الصفر. تجربة أكثر سلاسة وموثوقية.' },
+  },
 
   // Accessibility
   skipToContent: 'تخطي للمحتوى',
@@ -17819,6 +17851,10 @@ const hebrewOverrides: Partial<Translations> = {
   whatsNewTitle: 'מה חדש',
   whatsNewVersion: 'גרסה {version}',
   whatsNewGotIt: 'הבנתי!',
+  whatsNew: {
+    googleOnly: { title: 'כניסה עם Google בלבד', description: 'התחבר בצורה מאובטחת עם Google. אפשרויות דוא״ל ודילוג הוסרו לאבטחת חשבון טובה יותר.' },
+    codeQuality: { title: 'איכות קוד', description: '271 אזהרות איכות קוד תוקנו לאפס. חוויה חלקה ואמינה יותר.' },
+  },
 
   // Accessibility
   skipToContent: 'דלג לתוכן',
