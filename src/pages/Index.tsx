@@ -65,6 +65,7 @@ const BreathingExercise = lazyWithRetry(() => import('@/components/BreathingExer
 const JournalModule = lazyWithRetry(() => import('@/features/journal').then(m => ({ default: m.JournalModule })), 'JournalModule');
 
 // Heavy components lazy-loaded for better initial load performance
+const ScheduleTimeline = lazyWithRetry(() => import('@/components/ScheduleTimeline').then(m => ({ default: m.ScheduleTimeline })), 'ScheduleTimeline');
 const HabitTracker = lazyWithRetry(() => import('@/components/HabitTracker').then(m => ({ default: m.HabitTracker })), 'HabitTracker');
 const FocusTimer = lazyWithRetry(() => import('@/components/FocusTimer').then(m => ({ default: m.FocusTimer })), 'FocusTimer');
 const EmotionWheel = lazyWithRetry(() => import('@/components/mindfulness/EmotionWheel').then(m => ({ default: m.EmotionWheel })), 'EmotionWheel');
@@ -95,7 +96,6 @@ import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdat
 import { syncTasks, syncQuests, subscribeToTaskUpdates, subscribeToQuestUpdates } from '@/storage/tasksCloudSync';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { MoodInsights } from '@/components/MoodInsights';
-import { InnerWorldGarden } from '@/components/garden';
 import { StreakBanner } from '@/components/StreakBanner';
 import { UrgencyAlert } from '@/components/UrgencyAlert';
 import { RestModeCard } from '@/components/RestModeCard';
@@ -294,15 +294,15 @@ export function Index() {
     gardenStats: _gardenStats,
     // Treats system
     earnTreats,
-    treatsBalance,
-    // Companion interactions
-    petCompanion,
-    feedCompanion,
-    // Emoji helpers
-    getPlantEmoji,
-    getCreatureEmoji,
-    getCompanionEmoji,
-    FEED_COST,
+    treatsBalance: _treatsBalance,
+    // Companion interactions (unused — InnerWorldGarden removed)
+    petCompanion: _petCompanion,
+    feedCompanion: _feedCompanion,
+    // Emoji helpers (unused — InnerWorldGarden removed)
+    getPlantEmoji: _getPlantEmoji,
+    getCreatureEmoji: _getCreatureEmoji,
+    getCompanionEmoji: _getCompanionEmoji,
+    FEED_COST: _FEED_COST,
     // Rest mode
     isRestMode,
     activateRestMode,
@@ -527,7 +527,7 @@ export function Index() {
 
 
   // Schedule events for ADHD timeline
-  const [scheduleEvents, _setScheduleEvents, isLoadingSchedule] = useIndexedDB<ScheduleEvent[]>({
+  const [scheduleEvents, setScheduleEvents, isLoadingSchedule] = useIndexedDB<ScheduleEvent[]>({
     table: db.settings,
     localStorageKey: 'zenflow-schedule-events',
     initialValue: [],
@@ -602,6 +602,26 @@ export function Index() {
   //     setUserData(safeMoods, safeHabits, innerWorld);
   //   }
   // }, [isLoading, isLoadingInnerWorld, safeMoods, safeHabits, innerWorld, setUserData]);
+
+  // Schedule event handlers
+  const handleAddScheduleEvent = (event: Omit<ScheduleEvent, 'id'>) => {
+    const newEvent: ScheduleEvent = {
+      ...event,
+      id: generateId(),
+      source: 'manual',
+      isEditable: true,
+    };
+    setScheduleEvents(prev => [...prev, newEvent]);
+  };
+
+  const handleDeleteScheduleEvent = (id: string) => {
+    const eventToDelete = allScheduleEvents.find(e => e.id === id);
+    if (eventToDelete?.source === 'habit' || eventToDelete?.source === 'google') {
+      logger.warn('[Schedule] Cannot delete habit/google-generated event directly');
+      return;
+    }
+    setScheduleEvents(scheduleEvents.filter(e => e.id !== id));
+  };
 
   // Filter today's schedule events (manual only)
   const _todayScheduleEvents = useMemo(() => {
@@ -2230,23 +2250,16 @@ export function Index() {
               onOpenFriends={() => setShowFriendsPanel(true)}
             />
 
-            {/* Inner World Garden - Visual garden with plants, creatures, companion */}
-            <InnerWorldGarden
-              world={innerWorld}
-              treatsBalance={treatsBalance}
-              isRestMode={isRestMode}
-              isLoading={isLoadingInnerWorld}
-              plantSeed={plantSeed}
-              waterPlants={waterPlants}
-              attractCreature={attractCreature}
-              feedCreatures={feedCreatures}
-              petCompanion={petCompanion}
-              feedCompanion={feedCompanion}
-              getPlantEmoji={getPlantEmoji}
-              getCreatureEmoji={getCreatureEmoji}
-              getCompanionEmoji={getCompanionEmoji}
-              feedCost={FEED_COST}
-            />
+            {/* Schedule Timeline - ADHD-friendly day planner with habits auto-synced */}
+            <LazyErrorBoundary componentName="Schedule Timeline">
+              <Suspense fallback={<SkeletonList />}>
+                <ScheduleTimeline
+                  events={todayAllEvents}
+                  onAddEvent={handleAddScheduleEvent}
+                  onDeleteEvent={handleDeleteScheduleEvent}
+                />
+              </Suspense>
+            </LazyErrorBoundary>
 
             {/* Diary */}
             <LazyErrorBoundary componentName="Journal">
