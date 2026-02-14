@@ -914,22 +914,67 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                         }}
                       />
 
-                      {/* Hour grid lines */}
-                      <div className="absolute inset-0 flex">
-                        {HOURS.map((hour) => (
-                          <div
-                            key={hour}
-                            className={cn(
-                              "border-r h-full",
-                              hour === 0
-                                ? "border-purple-500/60 border-r-2"
-                                : hour % 6 === 0
-                                  ? "border-border/80 border-r-[1.5px]"
-                                  : "border-border/40"
-                            )}
-                            style={{ width: `${HOUR_WIDTH_PX}px` }}
-                          />
-                        ))}
+                      {/* Hour grid lines - Premium cosmic dividers */}
+                      <div className="absolute inset-0 flex" aria-hidden="true">
+                        {HOURS.map((hour) => {
+                          const isMajor = hour % 6 === 0;
+                          const isOdd = hour % 2 === 1;
+                          return (
+                            <div key={hour} className="relative h-full" style={{ width: `${HOUR_WIDTH_PX}px` }}>
+                              {/* Zebra stripe for odd hours */}
+                              {isOdd && (
+                                <div
+                                  className="absolute inset-0"
+                                  style={{ backgroundColor: 'hsl(var(--timeline-stripe) / 0.04)' }}
+                                />
+                              )}
+                              {/* Right-edge divider line */}
+                              <div
+                                className="absolute top-0 bottom-0 end-0"
+                                style={{
+                                  width: isMajor ? '2px' : '1px',
+                                  backgroundColor: isMajor
+                                    ? 'hsl(var(--timeline-divider-major) / 0.6)'
+                                    : 'hsl(var(--timeline-divider) / 0.35)',
+                                }}
+                              />
+                              {/* Glow effect behind major dividers */}
+                              {isMajor && (
+                                <div
+                                  className="absolute top-0 bottom-0 end-0 pointer-events-none"
+                                  style={{
+                                    width: '8px',
+                                    transform: 'translateX(50%)',
+                                    background: `linear-gradient(180deg, hsl(var(--timeline-divider-glow) / 0.25) 0%, hsl(var(--timeline-divider-glow) / 0.08) 40%, hsl(var(--timeline-divider-glow) / 0.08) 60%, hsl(var(--timeline-divider-glow) / 0.25) 100%)`,
+                                    filter: 'blur(2px)',
+                                  }}
+                                />
+                              )}
+                              {/* Top tick mark */}
+                              <div
+                                className="absolute top-0 end-0"
+                                style={{
+                                  width: '2px',
+                                  height: isMajor ? '10px' : '6px',
+                                  backgroundColor: isMajor
+                                    ? 'hsl(var(--timeline-tick) / 0.8)'
+                                    : 'hsl(var(--timeline-tick) / 0.4)',
+                                }}
+                              />
+                              {/* Bottom tick mark */}
+                              <div
+                                className="absolute bottom-0 end-0"
+                                style={{
+                                  width: '2px',
+                                  height: isMajor ? '10px' : '6px',
+                                  backgroundColor: isMajor
+                                    ? 'hsl(var(--timeline-tick) / 0.8)'
+                                    : 'hsl(var(--timeline-tick) / 0.4)',
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
 
                       {/* 3D Event Cards */}

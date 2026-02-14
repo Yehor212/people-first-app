@@ -220,6 +220,13 @@
     --cosmic-clock-ring: 263 50% 70%;         /* Clock ring strokes */
     --cosmic-clock-marker: 263 60% 55%;       /* Hour markers */
 
+    /* Timeline hour dividers */
+    --timeline-divider: 263 40% 70%;
+    --timeline-divider-major: 263 70% 55%;
+    --timeline-divider-glow: 263 84% 66%;
+    --timeline-stripe: 263 30% 92%;
+    --timeline-tick: 263 60% 50%;
+
     --cosmic-pill-bg: 263 40% 90%;            /* Day pill background */
     --cosmic-pill-text: 263 40% 40%;          /* Day pill text */
     --cosmic-pill-selected-text: 0 0% 100%;   /* Selected = white */
@@ -407,6 +414,13 @@
     --cosmic-clock-ring: 0 0% 100%;
     --cosmic-clock-marker: 0 0% 100%;
 
+    /* Timeline hour dividers */
+    --timeline-divider: 0 0% 30%;
+    --timeline-divider-major: 263 70% 55%;
+    --timeline-divider-glow: 263 84% 66%;
+    --timeline-stripe: 0 0% 100%;
+    --timeline-tick: 263 70% 65%;
+
     --cosmic-pill-bg: 0 0% 10%;               /* Dark pill background */
     --cosmic-pill-text: 0 0% 60%;
     --cosmic-pill-selected-text: 0 0% 100%;
@@ -561,6 +575,13 @@
 
     --cosmic-clock-ring: 0 0% 100%;
     --cosmic-clock-marker: 0 0% 100%;
+
+    /* Timeline hour dividers */
+    --timeline-divider: 0 0% 25%;
+    --timeline-divider-major: 263 84% 55%;
+    --timeline-divider-glow: 263 84% 60%;
+    --timeline-stripe: 0 0% 100%;
+    --timeline-tick: 263 80% 60%;
 
     --cosmic-pill-bg: 0 0% 5%;
     --cosmic-pill-text: 0 0% 55%;
