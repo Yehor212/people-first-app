@@ -194,11 +194,19 @@ export function Index() {
     error: null,
     wasUpdated: false
   });
+  const [loadingFadeOut, setLoadingFadeOut] = useState(false);
 
   // App initialization effect (before other useEffects)
   useEffect(() => {
+    let active = true;
     const initialize = async () => {
       logger.log('[Index] Starting app initialization...');
+      const startTime = Date.now();
+
+      // Hide native splash IMMEDIATELY so web animation is visible
+      if (Capacitor.isNativePlatform()) {
+        SplashScreen.hide().catch(() => {});
+      }
 
       // Initialize offline queue handlers for offline-first sync
       initializeOfflineQueueHandlers();
@@ -210,10 +218,23 @@ export function Index() {
 
       const result = await initializeApp();
 
-      // Hide splash screen now that init is done (success or error)
-      if (Capacitor.isNativePlatform()) {
-        SplashScreen.hide().catch(() => {});
+      // Ensure animation plays for minimum 2 seconds
+      // (logo spring 0-0.6s, text 0.3s, subtitle 0.6s, shimmer 0.8s — 2s shows full sequence)
+      const elapsed = Date.now() - startTime;
+      const MIN_DISPLAY_MS = 2000;
+      if (elapsed < MIN_DISPLAY_MS) {
+        await new Promise(r => window.setTimeout(r, MIN_DISPLAY_MS - elapsed));
       }
+
+      if (!active) return;
+
+      // Start exit fade animation
+      setLoadingFadeOut(true);
+
+      // After fade completes, remove loading screen and set final state
+      await new Promise(r => window.setTimeout(r, 400));
+
+      if (!active) return;
 
       if (!result.success) {
         setInitializationState({
@@ -231,6 +252,7 @@ export function Index() {
         logger.log('[Index] App was updated, showing update message');
         // Show brief update success message
         initTimeoutRef.current = setTimeout(() => {
+          if (!active) return;
           setInitializationState({
             isInitializing: false,
             error: null,
@@ -247,6 +269,7 @@ export function Index() {
     };
 
     void initialize();
+    return () => { active = false; };
   }, []); // Run only once on mount
 
   // Track current date and detect midnight change
@@ -1922,8 +1945,8 @@ export function Index() {
       <motion.div
         key="loading"
         className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background"
-        exit={{ opacity: 0 }}
-        transition={{ duration: 0.3 }}
+        animate={{ opacity: loadingFadeOut ? 0 : 1 }}
+        transition={{ duration: 0.4 }}
       >
         {/* Ambient glow */}
         <motion.div

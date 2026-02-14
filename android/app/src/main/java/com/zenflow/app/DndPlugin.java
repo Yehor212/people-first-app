@@ -190,6 +190,11 @@ public class DndPlugin extends Plugin {
     @PluginMethod
     public void requestPolicyAccess(PluginCall call) {
         try {
+            if (getActivity() == null) {
+                Log.w(TAG, "Activity not available for notification policy settings");
+                call.resolve();
+                return;
+            }
             Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
             getActivity().startActivity(intent);
         } catch (Exception e) {

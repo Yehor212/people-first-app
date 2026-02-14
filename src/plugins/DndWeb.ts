@@ -38,7 +38,7 @@ export class DndWeb implements DndPluginInterface {
     };
   }
 
-  async setDnd(): Promise<SetDndResult> {
+  async setDnd(_options?: { enabled: boolean }): Promise<SetDndResult> {
     // Not applicable on web
     return { success: false };
   }
