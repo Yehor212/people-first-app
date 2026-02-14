@@ -22,22 +22,11 @@ import { StickerRenderer } from './StickerRenderer';
 import { useJournalReminder, getDaysSinceLastEntry } from './useJournalReminder';
 import { useScreenSecurity } from './useScreenSecurity';
 import { ParticleBackground } from '@/components/stats/ParticleBackground';
-import type { MoodType } from '@/types';
-import { hapticSuccess } from '@/lib/haptics';
-import { logger } from '@/lib/logger';
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
 const LazyJournalStats = lazy(() =>
   import('./JournalStats').then(m => ({ default: m.JournalStats }))
 );
-
-const QUICK_MOOD_OPTIONS: { mood: MoodType; emoji: string }[] = [
-  { mood: 'great', emoji: '\u{1F604}' },
-  { mood: 'good', emoji: '\u{1F642}' },
-  { mood: 'okay', emoji: '\u{1F610}' },
-  { mood: 'bad', emoji: '\u{1F614}' },
-  { mood: 'terrible', emoji: '\u{1F622}' },
-];
 
 type ModuleState = 'card' | 'open';
 
@@ -170,23 +159,6 @@ export function JournalModule() {
     security.lock();
   };
 
-  const handleQuickMood = useCallback(async (mood: MoodType) => {
-    try {
-      await journal.createEntry({
-        title: '',
-        content: '',
-        stickers: [],
-        photoIds: [],
-        tags: [],
-        mood,
-        date: getToday(),
-      });
-      void hapticSuccess();
-      toast.success(ts.journalQuickMoodSaved || 'Mood saved');
-    } catch (err) {
-      logger.error('[JournalModule] Quick mood failed:', err);
-    }
-  }, [journal, ts]);
 
   const handleNewEntry = () => {
     journal.editEntry(null);
@@ -406,28 +378,6 @@ export function JournalModule() {
           <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
         </div>
 
-        {/* Quick mood row (when no entry today) */}
-        {!hasTodayEntry && (
-          <div className="flex items-center gap-1 mt-3 pt-3 border-t border-border/20">
-            <span className="text-[10px] text-muted-foreground me-1">
-              {ts.journalQuickMood || 'How are you?'}
-            </span>
-            {QUICK_MOOD_OPTIONS.map((opt) => (
-              <button
-                key={opt.mood}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // eslint-disable-next-line @typescript-eslint/no-floating-promises
-                  handleQuickMood(opt.mood);
-                }}
-                className="p-1.5 rounded-lg hover:bg-muted/50 active:scale-90 transition-transform min-w-[44px] min-h-[44px] flex items-center justify-center"
-                aria-label={opt.mood}
-              >
-                <span className="text-xl">{opt.emoji}</span>
-              </button>
-            ))}
-          </div>
-        )}
       </motion.button>
     );
   }

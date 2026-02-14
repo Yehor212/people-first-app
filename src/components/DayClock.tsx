@@ -270,6 +270,46 @@ export function DayClock({
               cy="100"
             />
 
+            {/* Hour tick marks — 12 ticks every 2 hours */}
+            {Array.from({ length: 12 }, (_, i) => {
+              const hour = (i * 2 + 6) % 24;
+              const angle = (i * 30 - 90) * (Math.PI / 180);
+              const outerR = 93;
+              const innerR = hour % 6 === 0 ? 83 : 87;
+              const isCurrentPeriodTick = (
+                (currentPeriod === 'morning' && hour >= 6 && hour < 12) ||
+                (currentPeriod === 'afternoon' && hour >= 12 && hour < 18) ||
+                (currentPeriod === 'evening' && (hour >= 18 || hour < 6))
+              );
+              return (
+                <g key={`tick-${i}`}>
+                  <line
+                    x1={100 + outerR * Math.cos(angle)}
+                    y1={100 + outerR * Math.sin(angle)}
+                    x2={100 + innerR * Math.cos(angle)}
+                    y2={100 + innerR * Math.sin(angle)}
+                    stroke={isCurrentPeriodTick ? '#94a3b8' : '#475569'}
+                    strokeWidth={hour % 6 === 0 ? 2.5 : 1.5}
+                    strokeLinecap="round"
+                  />
+                  {hour % 6 === 0 && (
+                    <text
+                      x={100 + 72 * Math.cos(angle)}
+                      y={100 + 72 * Math.sin(angle)}
+                      fill="#64748b"
+                      fontSize="9"
+                      fontWeight="600"
+                      textAnchor="middle"
+                      dominantBaseline="central"
+                      transform={`rotate(90, ${100 + 72 * Math.cos(angle)}, ${100 + 72 * Math.sin(angle)})`}
+                    >
+                      {hour}
+                    </text>
+                  )}
+                </g>
+              );
+            })}
+
             {/* Time period segments */}
             <RingSegment
               startAngle={0}
