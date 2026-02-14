@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { Trophy, Target, Lock, CheckCircle2, Plus, X, Share2, Download, Loader2 } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
@@ -6,7 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { getLocale } from '@/lib/timeUtils';
 import { Challenge, Badge } from '@/types';
 import { challengeTemplates, createChallengeFromTemplate } from '@/lib/challenges';
-import { badgeDefinitions, getBadgeById, getRarityColor, getRarityGradient } from '@/lib/badges';
+import { getBadgeById, getRarityColor, getRarityGradient } from '@/lib/badges';
 import { hapticTap } from '@/lib/haptics';
 import { VirtualGrid, shouldVirtualize } from '@/components/ui/virtual-list';
 import { EmojiOrIcon } from '@/components/icons';
@@ -162,7 +162,7 @@ export function ChallengesPanel({
     return Math.min(100, Math.round((challenge.progress / challenge.target) * 100));
   };
 
-  const getChallengeTypeIcon = (type: Challenge['type']) => {
+  const _getChallengeTypeIcon = (type: Challenge['type']) => {
     switch (type) {
       case 'streak': return '🔥';
       case 'focus': return '🎯';

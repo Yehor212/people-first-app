@@ -3959,7 +3959,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     // Auth Screen (P0 fix)
     authWelcomeTitle: 'Welcome to ZenFlow',
     authWelcomeSubtitle: 'Sign in to sync your data across devices',
-    authContinueWith: 'Continue with',
+    authContinueWith: 'Sign in to continue',
     authSigningInGoogle: 'Signing in with Google...',
     authNotConfiguredMessage: 'Authentication not configured. Configure Supabase to enable sign-in.',
     authExportDebugInfo: 'Export debug info',
@@ -6120,7 +6120,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     // Auth Screen (P0 fix)
     authWelcomeTitle: 'Ласкаво просимо до ZenFlow',
     authWelcomeSubtitle: 'Увійдіть, щоб синхронізувати дані між пристроями',
-    authContinueWith: 'Продовжити через',
+    authContinueWith: 'Увійдіть, щоб продовжити',
     authSigningInGoogle: 'Вхід через Google...',
     authNotConfiguredMessage: 'Автентифікацію не налаштовано. Налаштуйте Supabase для входу.',
     authExportDebugInfo: 'Експорт налагоджувальної інформації',
@@ -8282,7 +8282,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     // Auth Screen (P0 fix)
     authWelcomeTitle: 'Bienvenido a ZenFlow',
     authWelcomeSubtitle: 'Inicia sesión para sincronizar tus datos entre dispositivos',
-    authContinueWith: 'Continuar con',
+    authContinueWith: 'Inicia sesión para continuar',
     authSigningInGoogle: 'Iniciando sesión con Google...',
     authNotConfiguredMessage: 'Autenticación no configurada. Configura Supabase para habilitar el inicio de sesión.',
     authExportDebugInfo: 'Exportar información de depuración',
@@ -10444,7 +10444,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     // Auth Screen (P0 fix)
     authWelcomeTitle: 'Willkommen bei ZenFlow',
     authWelcomeSubtitle: 'Melden Sie sich an, um Ihre Daten geräteübergreifend zu synchronisieren',
-    authContinueWith: 'Weiter mit',
+    authContinueWith: 'Anmelden, um fortzufahren',
     authSigningInGoogle: 'Anmeldung mit Google...',
     authNotConfiguredMessage: 'Authentifizierung nicht konfiguriert. Konfigurieren Sie Supabase, um die Anmeldung zu aktivieren.',
     authExportDebugInfo: 'Debug-Info exportieren',
@@ -12606,7 +12606,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     // Auth Screen (P0 fix)
     authWelcomeTitle: 'Bienvenue sur ZenFlow',
     authWelcomeSubtitle: 'Connectez-vous pour synchroniser vos données entre appareils',
-    authContinueWith: 'Continuer avec',
+    authContinueWith: 'Connectez-vous pour continuer',
     authSigningInGoogle: 'Connexion avec Google...',
     authNotConfiguredMessage: 'Authentification non configurée. Configurez Supabase pour activer la connexion.',
     authExportDebugInfo: 'Exporter les infos de débogage',
@@ -14767,7 +14767,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     // Auth Screen (P0 fix)
     authWelcomeTitle: 'ZenFlowへようこそ',
     authWelcomeSubtitle: 'サインインしてデバイス間でデータを同期',
-    authContinueWith: '続行',
+    authContinueWith: 'サインインして続行',
     authSigningInGoogle: 'Googleでサインイン中...',
     authNotConfiguredMessage: '認証が設定されていません。Supabaseを設定してサインインを有効にしてください。',
     authExportDebugInfo: 'デバッグ情報をエクスポート',
@@ -16859,7 +16859,7 @@ const arabicOverrides: Partial<Translations> = {
   // Auth Screen (P0 fix)
   authWelcomeTitle: 'مرحباً بك في ZenFlow',
   authWelcomeSubtitle: 'سجل الدخول لمزامنة بياناتك عبر الأجهزة',
-  authContinueWith: 'المتابعة باستخدام',
+  authContinueWith: 'سجل الدخول للمتابعة',
   authSigningInGoogle: 'جاري تسجيل الدخول بـ Google...',
   authNotConfiguredMessage: 'لم يتم تكوين المصادقة. قم بتكوين Supabase لتمكين تسجيل الدخول.',
   authExportDebugInfo: 'تصدير معلومات التصحيح',
@@ -19116,7 +19116,7 @@ const hebrewOverrides: Partial<Translations> = {
   // Auth Welcome
   authWelcomeTitle: 'ברוכים הבאים ל-ZenFlow',
   authWelcomeSubtitle: 'התחבר/י כדי לסנכרן נתונים בין מכשירים',
-  authContinueWith: 'המשך עם',
+  authContinueWith: 'התחבר/י כדי להמשיך',
   authSigningInGoogle: 'מתחבר עם Google...',
   authNotConfiguredMessage: 'אימות לא מוגדר. הגדר Supabase כדי לאפשר התחברות.',
   authExportDebugInfo: 'ייצא מידע ניפוי',

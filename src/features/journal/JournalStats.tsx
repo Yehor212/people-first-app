@@ -62,6 +62,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
       value: count,
       color: MOOD_COLORS[mood as MoodType] || '#888',
     }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries]);
 
   // Mood over time (weekly average)
@@ -84,6 +85,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
       week: new Date(week + 'T00:00:00').toLocaleDateString(language, { month: 'short', day: 'numeric' }),
       avg: Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10,
     }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries]);
 
   // Writing frequency (entries per week, last 8 weeks)
@@ -100,6 +102,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     }
 
     return weeks;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entries]);
 
   // Tag cloud

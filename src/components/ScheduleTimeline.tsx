@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Clock, X, Check, Home, Sparkles, Calendar } from 'lucide-react';
+import { Plus, X, Check, Home, Sparkles, Calendar } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn, getToday, formatDate, parseLocalDate } from '@/lib/utils';

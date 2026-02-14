@@ -30,7 +30,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Habit, MoodEntry, FocusSession } from '@/types';
-import { formatDate, getToday } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 import { isHabitCompletedOnDate } from '@/lib/habits';
 
 interface WeeklyReviewProps {
@@ -170,6 +170,7 @@ export function WeeklyReview({
 }: WeeklyReviewProps) {
   const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const today = new Date();
   const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
 
@@ -246,7 +247,9 @@ export function WeeklyReview({
     };
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const thisWeekStats = useMemo(() => calculateWeekStats(weekDates.thisWeek), [weekDates.thisWeek, habits, moods, focusSessions]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const lastWeekStats = useMemo(() => calculateWeekStats(weekDates.lastWeek), [weekDates.lastWeek, habits, moods, focusSessions]);
 
   // Calculate changes

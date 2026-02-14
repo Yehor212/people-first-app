@@ -95,7 +95,7 @@ function moodToValue(mood: string): number {
  * Calculate Pearson correlation coefficient
  * Returns value between -1 (negative correlation) and 1 (positive correlation)
  */
-function calculateCorrelation(x: number[], y: number[]): number {
+function _calculateCorrelation(x: number[], y: number[]): number {
   if (x.length !== y.length || x.length === 0) return 0;
 
   const n = x.length;

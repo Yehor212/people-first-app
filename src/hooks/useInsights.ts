@@ -6,7 +6,7 @@
  */
 
 import { useMemo, useEffect, useState } from 'react';
-import type { MoodEntry, Habit, FocusSession, Insight } from '@/types';
+import type { MoodEntry, Habit, FocusSession } from '@/types';
 import { generateInsights, type InsightTranslations } from '@/lib/insightsEngine';
 import { logger } from '@/lib/logger';
 import { safeJsonParse } from '@/lib/safeJson';

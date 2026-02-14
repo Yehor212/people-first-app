@@ -131,7 +131,7 @@ export function initializeOfflineQueueHandlers(): void {
   });
 
   // Settings handler
-  offlineQueue.registerHandler('UPDATE_SETTINGS', async (action: OfflineAction) => {
+  offlineQueue.registerHandler('UPDATE_SETTINGS', async (_action: OfflineAction) => {
     // Settings are synced via full backup sync
     // This is a placeholder for future granular settings sync
     logger.log('[OfflineQueue] Settings sync - using full backup');

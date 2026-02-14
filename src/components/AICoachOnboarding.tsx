@@ -26,7 +26,7 @@ const GOALS: readonly { id: GoalId; icon: typeof Heart; emoji: string }[] = [
 ];
 
 export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps) {
-  const { t, language } = useLanguage();
+  const { t: _t, language } = useLanguage();
   const { saveOnboardingAnswer } = useAICoach();
 
   const [step, setStep] = useState<Step>('intro');

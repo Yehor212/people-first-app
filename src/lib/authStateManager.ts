@@ -45,6 +45,7 @@ class AuthStateManager {
     }
 
     // If completion is in progress, wait for it
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.completionPromise) {
       logger.log(`[AuthStateManager] Completion in progress, waiting (source: ${source})`);
       await this.completionPromise;

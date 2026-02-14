@@ -161,7 +161,6 @@ export function AdProvider({
 // HOOK
 // ============================================
 
-// eslint-disable-next-line react-refresh/only-export-components
 export function useAds(): AdContextValue {
   const context = useContext(AdContext);
   if (!context) {

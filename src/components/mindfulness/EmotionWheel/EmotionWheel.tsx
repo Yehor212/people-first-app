@@ -13,7 +13,6 @@ import { sanitizeString } from '@/lib/sanitize';
 import { logger } from '@/lib/logger';
 import {
   EMOTION_ORDER,
-  EMOTION_EMOJIS,
   INTENSITY_EMOJIS,
   getEmotionColorWithAlpha,
   getEmotionTranslations,

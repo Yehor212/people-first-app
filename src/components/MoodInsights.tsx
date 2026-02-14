@@ -190,7 +190,7 @@ export function MoodInsights({
       {/* Other Insights */}
       <AnimatePresence>
         {showAll && otherInsights.map((insight, index) => {
-          const Icon = getInsightIcon(insight.type);
+          const _Icon = getInsightIcon(insight.type);
           return (
             <motion.div
               key={insight.id}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Cloud, Mail, CheckCircle, Loader2 } from 'lucide-react';
+import { Cloud, CheckCircle, Loader2, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -26,7 +26,6 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
   const { t } = useLanguage();
 
   // ── State ──────────────────────────────────────────────────────────
-  const [authEmail, setAuthEmail] = useState('');
   const [authStatus, setAuthStatus] = useState<string | null>(null);
   const [sessionEmail, setSessionEmail] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -146,29 +145,6 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
   };
 
   // ── Auth handlers ──────────────────────────────────────────────────
-  const handleSignIn = async () => {
-    if (!supabase) {
-      setAuthStatus(t.authNotConfigured);
-      return;
-    }
-    if (!authEmail.trim()) return;
-    setIsSigningIn(true);
-    setAuthStatus(null);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: authEmail.trim(),
-        options: { emailRedirectTo: getAuthRedirectUrl() },
-      });
-      if (error) {
-        setAuthStatus(t.authError);
-        return;
-      }
-      setAuthStatus(t.authEmailSent);
-    } finally {
-      setIsSigningIn(false);
-    }
-  };
-
   const handleGoogle = async () => {
     if (!supabase) {
       setAuthStatus(t.authNotConfigured);
@@ -511,26 +487,10 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
                 </p>
               </div>
             )}
-            <input
-              type="email"
-              value={authEmail}
-              onChange={(e) => setAuthEmail(e.target.value)}
-              placeholder={t.emailPlaceholder || 'Email address'}
-              aria-label={t.emailPlaceholder || 'Email address'}
-              className="w-full p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-            <button
-              onClick={() => { void handleSignIn(); }}
-              disabled={isSigningIn}
-              className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSigningIn && <Loader2 className="w-4 h-4 motion-safe:animate-spin" aria-label={t.signingIn || 'Signing in...'} />}
-              {t.sendMagicLink || 'Send Magic Link'}
-            </button>
             <button
               onClick={() => { void handleGoogle(); }}
               disabled={isSigningIn}
-              className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSigningIn && <Loader2 className="w-4 h-4 motion-safe:animate-spin" aria-label={t.signingIn || 'Signing in...'} />}
               {t.continueWithGoogle || 'Continue with Google'}

@@ -5,7 +5,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
-import { TrendingUp, TrendingDown, Minus, Flame, Brain, Heart, Target, Calendar, Award, Sparkles, CalendarDays, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Brain, Heart, Target, Award, Sparkles, X } from 'lucide-react';
 import { EmojiOrIcon } from '@/components/icons';
 import { cn, formatDate, parseLocalDate } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -18,17 +18,7 @@ interface WeeklyReportProps {
   onClose: () => void;
 }
 
-interface WeekStats {
-  habitsCompleted: number;
-  totalHabitsGoal: number;
-  focusMinutes: number;
-  gratitudeCount: number;
-  moodAverage: number;
-  bestDay: string;
-  improvement: number;
-}
-
-function getWeekDates() {
+function _getWeekDates() {
   const now = new Date();
   const dayOfWeek = now.getDay();
   const monday = new Date(now);

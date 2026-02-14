@@ -1,5 +1,4 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Flame, Clock, Trophy, Check, Circle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useWidgetData } from '@/hooks/useWidgetSync';
 import { cn } from '@/lib/utils';
@@ -87,7 +86,7 @@ function StatCard({
 /**
  * Progress indicator for habits
  */
-function HabitsProgress({ done, total }: { done: number; total: number }) {
+function _HabitsProgress({ done, total }: { done: number; total: number }) {
   const percentage = total > 0 ? (done / total) * 100 : 0;
 
   return (

@@ -13,7 +13,7 @@ interface SessionExpiredBannerProps {
 
 export function SessionExpiredBanner({ onSignIn }: SessionExpiredBannerProps) {
   const { t } = useLanguage();
-  const [dismissed, setDismissed] = useState(false);
+  const [dismissed, _setDismissed] = useState(false);
 
   if (dismissed) return null;
 

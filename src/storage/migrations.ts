@@ -1,6 +1,5 @@
 import { db } from '@/storage/db';
 import { logger } from '@/lib/logger';
-import { DATA_SCHEMA_VERSION } from '@/lib/appVersion';
 
 export interface Migration {
   version: number;

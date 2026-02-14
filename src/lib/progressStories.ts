@@ -6,7 +6,6 @@
  */
 
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, Badge } from '@/types';
-import { getToday } from './utils';
 
 // ============================================
 // TYPES

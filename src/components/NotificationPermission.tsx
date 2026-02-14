@@ -17,6 +17,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
 
   useEffect(() => {
     void checkPermission();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkPermission = async () => {

@@ -147,7 +147,7 @@ export function syncChallengeProgress(stats: UserStats, focusMinutes: number, gr
 }
 
 // Check and unlock special badges based on conditions
-export function checkSpecialBadges(stats: UserStats, habits: Habit[]): Badge[] {
+export function checkSpecialBadges(stats: UserStats, _habits: Habit[]): Badge[] {
   const badges = getBadges();
   const newlyUnlocked: Badge[] = [];
 

@@ -8,7 +8,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { X, Heart, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
-import { cn } from '@/lib/utils';
+
 import {
   MindfulPrompt,
   MINDFUL_TYPE_LABELS,

@@ -34,7 +34,7 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
   const [currentPrompt, setCurrentPrompt] = useState<JournalPrompt>(() =>
     getDailyPrompt()
   );
-  const [isShuffled, setIsShuffled] = useState(false);
+  const [_isShuffled, setIsShuffled] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
   const [promptKey, setPromptKey] = useState(0); // For animating prompt text change
 

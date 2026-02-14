@@ -92,7 +92,7 @@ function playTone(frequency: number, duration: number, type: OscillatorType = 's
 
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + duration);
-  } catch (e) {
+  } catch (_e) {
     // Audio not available - silent fail
   }
 }
@@ -111,7 +111,7 @@ export function playSuccess(): void {
     notes.forEach((freq, i) => {
       scheduleTimeout(() => playTone(freq, 0.2), i * 80);
     });
-  } catch (e) {
+  } catch (_e) {
     // Silent fail
   }
 }
@@ -130,7 +130,7 @@ export function playStreakMilestone(): void {
     notes.forEach((freq, i) => {
       scheduleTimeout(() => playTone(freq, 0.3, 'triangle'), i * 100);
     });
-  } catch (e) {
+  } catch (_e) {
     // Silent fail
   }
 }
@@ -154,7 +154,7 @@ export function playLevelUp(): void {
     notes.forEach(({ freq, delay }) => {
       scheduleTimeout(() => playTone(freq, 0.4, 'sine'), delay);
     });
-  } catch (e) {
+  } catch (_e) {
     // Silent fail
   }
 }

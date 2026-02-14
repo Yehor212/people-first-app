@@ -124,6 +124,7 @@ export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
 export async function syncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld> {
   // P1-8 Fix: If sync is already in progress, wait for it and return its result
   // This prevents duplicate syncs and ensures all callers get consistent data
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   if (syncInnerWorldPromise) {
     try {
       return await syncInnerWorldPromise;

@@ -166,6 +166,7 @@ export async function unlockAudio(): Promise<void> {
     } catch { /* ignore */ }
     return;
   }
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   if (unlockPromise) return unlockPromise;
 
   unlockPromise = (async () => {
@@ -715,6 +716,7 @@ export class AmbientSoundGenerator {
     };
 
     // Promise catch for NotAllowedError (play blocked by browser policy)
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (playPromise) {
       playPromise.catch(err => {
         if (myPlaybackId !== this.playbackId) return;
@@ -744,6 +746,7 @@ export class AmbientSoundGenerator {
 
     logger.log(`[AmbientSounds] resumeDirect: ${soundId}`);
 
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (playPromise) {
       playPromise.then(() => {
         this.setStatus({ state: 'playing', error: undefined });

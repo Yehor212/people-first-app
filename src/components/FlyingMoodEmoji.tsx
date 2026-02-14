@@ -62,8 +62,8 @@ function FlyingEmojiItem({ emoji, onComplete }: { emoji: FlyingEmoji; onComplete
   }, [onComplete]);
 
   // Calculate the arc path
-  const deltaX = emoji.endX - emoji.startX;
-  const deltaY = emoji.endY - emoji.startY;
+  const _deltaX = emoji.endX - emoji.startX;
+  const _deltaY = emoji.endY - emoji.startY;
 
   return (
     <div

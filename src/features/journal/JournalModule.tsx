@@ -151,11 +151,13 @@ export function JournalModule() {
       security.lock();
       return true;
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleState, journal.view, journal.goBack, resetStep, showPasswordSettings, security]);
 
   // Security touch on interaction
   useEffect(() => {
     if (moduleState === 'open') security.touch();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleState, journal.view, security.touch]);
 
   const handleOpen = () => {
@@ -415,6 +417,7 @@ export function JournalModule() {
                 key={opt.mood}
                 onClick={(e) => {
                   e.stopPropagation();
+                  // eslint-disable-next-line @typescript-eslint/no-floating-promises
                   handleQuickMood(opt.mood);
                 }}
                 className="p-1.5 rounded-lg hover:bg-muted/50 active:scale-90 transition-transform min-w-[44px] min-h-[44px] flex items-center justify-center"

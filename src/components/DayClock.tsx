@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Language } from '@/i18n/translations';
-import { Zap, Flame, Star, Sparkles, Heart, Target, Brain, Trophy } from 'lucide-react';
+import { Zap, Flame, Sparkles } from 'lucide-react';
 
 // Locale mapping for date/time formatting
 const localeMap: Record<Language, string> = {
@@ -32,7 +32,7 @@ const MASCOT_STATES = {
 };
 
 // Activity config with rewards
-const ACTIVITIES = {
+const _ACTIVITIES = {
   mood: { emoji: '💜', points: 10, color: 'from-purple-500 to-pink-500' },
   habit: { emoji: '🎯', points: 15, color: 'from-green-500 to-emerald-500' },
   focus: { emoji: '🧠', points: 20, color: 'from-blue-500 to-cyan-500' },

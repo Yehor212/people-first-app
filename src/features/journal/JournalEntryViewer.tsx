@@ -12,7 +12,7 @@ import { JournalAudioPlayer } from './JournalAudioPlayer';
 import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
 import { StickerRenderer } from './StickerRenderer';
 
-const MOOD_DISPLAY: Record<MoodType, string> = {
+const _MOOD_DISPLAY: Record<MoodType, string> = {
   great: '\u{1F604}',
   good: '\u{1F642}',
   okay: '\u{1F610}',

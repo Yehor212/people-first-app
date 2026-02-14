@@ -224,7 +224,7 @@ export function AnimatedEmotionDistribution({
   });
   const [isVisible, setIsVisible] = useState(false);
 
-  const emotionLabels = useMemo(() => getEmotionLabels(language), [language]);
+  const _emotionLabels = useMemo(() => getEmotionLabels(language), [language]);
 
   useEffect(() => {
     setIsVisible(true);
@@ -450,7 +450,7 @@ export function AnimatedCalendar({
   gratitudesLabel,
   selectDayLabel,
   moodTodayLabel,
-  noDataLabel,
+  noDataLabel: _noDataLabel,
   prevMonthLabel,
   nextMonthLabel,
 }: AnimatedCalendarProps) {

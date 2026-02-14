@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Habit, HabitType, HabitReminder, HabitFrequency, HabitCategory } from '@/types';
 import { getToday, generateId, formatDate, cn, parseLocalDate, calculateStreak } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
-import { Plus, X, ChevronRight, Settings2, Zap, Users, Sparkles, Leaf, CheckCircle } from 'lucide-react';
+import { Plus, X, ChevronRight, Settings2, Users, Sparkles, Leaf, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -258,6 +258,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
       streaks.set(habit.id, getHabitStreak(habit));
     });
     return streaks;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [habits, today]);
 
   const handleAddReminder = () => {
@@ -380,7 +381,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   };
 
   // Get progress using memoized map for performance
-  const getProgress = useCallback((habit: Habit) => {
+  const _getProgress = useCallback((habit: Habit) => {
     return progressMap.get(habit.id) ?? 0;
   }, [progressMap]);
 
@@ -457,6 +458,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         }, 1800); // Delay after celebration ends
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [habits, onToggleHabit, today, t]);
 
   return (

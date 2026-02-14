@@ -19,6 +19,7 @@ const moodColors: Record<string, string> = {
 export const WeeklyCalendar = memo(function WeeklyCalendar({ moods, habits }: WeeklyCalendarProps) {
   const { t } = useLanguage();
   
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
   
   // Use Map for O(1) mood lookups instead of O(n) find()

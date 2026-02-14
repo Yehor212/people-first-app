@@ -1,4 +1,4 @@
-import { useEmotionTheme, emotionSupportMessages } from '@/contexts/EmotionThemeContext';
+import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Heart, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';

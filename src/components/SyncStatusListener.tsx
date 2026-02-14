@@ -38,7 +38,7 @@ export function SyncStatusListener() {
     // Handler: Offline queue is full
     const handleQueueFull = (e: Event) => {
       if (!shouldShowToast('queue-full')) return;
-      const detail = (e as CustomEvent).detail;
+      const _detail = (e as CustomEvent).detail;
       toast.error(t.syncQueueFull || 'Sync queue is full', {
         description: t.syncQueueFullDesc || 'Some changes may not sync. Please connect to the internet.',
         icon: <WifiOff className="h-4 w-4" />,
@@ -55,7 +55,7 @@ export function SyncStatusListener() {
     // Handler: Offline queue warning (>80% full)
     const handleQueueWarning = (e: Event) => {
       if (!shouldShowToast('queue-warning')) return;
-      const detail = (e as CustomEvent).detail;
+      const _detail = (e as CustomEvent).detail;
       toast.warning(t.syncQueueWarning || 'Sync queue filling up', {
         description: t.syncQueueWarningDesc || 'Connect to the internet to sync your changes.',
         icon: <AlertTriangle className="h-4 w-4" />,
@@ -66,7 +66,7 @@ export function SyncStatusListener() {
     // Handler: Sync failure
     const handleSyncFailure = (e: Event) => {
       if (!shouldShowToast('sync-failure')) return;
-      const detail = (e as CustomEvent).detail;
+      const _detail = (e as CustomEvent).detail;
       toast.error(t.syncError || 'Sync failed', {
         description: t.syncFailedLocal || 'Changes saved locally. Will retry when online.',
         icon: <AlertTriangle className="h-4 w-4" />,
@@ -75,7 +75,7 @@ export function SyncStatusListener() {
     };
 
     // Handler: Sync success
-    const handleSyncSuccess = (e: Event) => {
+    const handleSyncSuccess = (_e: Event) => {
       if (!shouldShowToast('sync-success')) return;
       toast.success(t.syncSuccess || 'Sync complete', {
         icon: <CheckCircle2 className="h-4 w-4" />,
@@ -86,7 +86,7 @@ export function SyncStatusListener() {
     // Handler: Storage error
     const handleStorageError = (e: Event) => {
       if (!shouldShowToast('storage-error')) return;
-      const detail = (e as CustomEvent).detail;
+      const _detail = (e as CustomEvent).detail;
       toast.error(t.storageError || 'Storage error', {
         description: t.storageErrorDesc || 'There was a problem saving your data locally.',
         icon: <Database className="h-4 w-4" />,
@@ -97,7 +97,7 @@ export function SyncStatusListener() {
     // Handler: Transaction failed
     const handleTransactionFailed = (e: Event) => {
       if (!shouldShowToast('transaction-failed')) return;
-      const detail = (e as CustomEvent).detail;
+      const _detail = (e as CustomEvent).detail;
       toast.error(t.syncTransactionFailed || 'Data save failed', {
         description: t.syncTransactionFailedDesc || 'Could not save data. Please try again.',
         icon: <Database className="h-4 w-4" />,
@@ -106,7 +106,7 @@ export function SyncStatusListener() {
     };
 
     // Handler: Background sync failed
-    const handleBackgroundSyncFailed = (e: Event) => {
+    const handleBackgroundSyncFailed = (_e: Event) => {
       if (!shouldShowToast('background-sync-failed')) return;
       toast.warning(t.backgroundSyncFailed || 'Background sync unavailable', {
         description: t.backgroundSyncFailedDesc || 'Changes will sync when you return to the app.',
@@ -116,7 +116,7 @@ export function SyncStatusListener() {
     };
 
     // Handler: IndexedDB timeout
-    const handleIndexedDBTimeout = (e: Event) => {
+    const handleIndexedDBTimeout = (_e: Event) => {
       if (!shouldShowToast('indexeddb-timeout')) return;
       toast.warning(t.indexedDBTimeout || 'Storage is slow', {
         description: t.indexedDBTimeoutDesc || 'The database is taking longer than expected.',

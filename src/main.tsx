@@ -13,7 +13,6 @@ import { cleanupShareCache } from "./lib/shareCards";
 import { initA11y } from "./lib/a11y";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";
-import { SplashScreen } from "@capacitor/splash-screen";
 import {
   checkAppVersion,
   forceHardReload,
@@ -92,7 +91,7 @@ window.addEventListener('beforeunload', () => {
       }));
       logger.log(`[Main] Saved ${queueState.actions.length} pending actions before unload`);
     }
-  } catch (error) {
+  } catch (_error) {
     // Ignore errors during unload
   }
 });
@@ -124,7 +123,7 @@ function handleAppPause(): void {
         hidden: true,
       }));
     }
-  } catch (error) {
+  } catch (_error) {
     // Ignore errors
   }
 
@@ -229,7 +228,7 @@ if (isCapacitor) {
         }
       });
     }
-  } catch (e) {
+  } catch (_e) {
     // Ignore errors - these are non-critical cleanup operations
   }
 }

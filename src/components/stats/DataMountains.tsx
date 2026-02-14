@@ -137,9 +137,10 @@ export function DataMountains({
   color = 'mood',
   className,
 }: DataMountainsProps) {
-  const { t } = useLanguage();
+  const { t: _t } = useLanguage();
 
   // Filter out invalid data points that could cause NaN in path calculations
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const safeData = (data && Array.isArray(data))
     ? data.filter(d => d && typeof d.value === 'number' && !isNaN(d.value))
     : [];

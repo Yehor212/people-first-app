@@ -139,11 +139,11 @@ function SuggestionItem({
 
 function HabitSuggestionItem({
   suggestion,
-  onApply,
+  _onApply,
   t,
 }: {
   suggestion: HabitReminderSuggestion;
-  onApply: () => void;
+  _onApply: () => void;
   t: Record<string, string>;
 }) {
   const confidenceColors = {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Challenge, Badge, UserStats } from '@/types';
+import { Challenge, Badge } from '@/types';
 import {
   getChallenges,
   getBadges,
@@ -11,8 +11,8 @@ import {
 } from '@/lib/challengeStorage';
 
 export function useChallenges() {
-  const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [badges, setBadges] = useState<Badge[]>([]);
+  const [_challenges, setChallenges] = useState<Challenge[]>([]);
+  const [_badges, setBadges] = useState<Badge[]>([]);
 
   // Load challenges and badges on mount
   useEffect(() => {
@@ -22,12 +22,12 @@ export function useChallenges() {
     setBadges(loadedBadges);
   }, []);
 
-  const startChallenge = (challenge: Challenge) => {
+  const _startChallenge = (challenge: Challenge) => {
     addChallenge(challenge);
     return challenge;
   };
 
-  const updateProgress = (challengeId: string, progress: number) => {
+  const _updateProgress = (challengeId: string, progress: number) => {
     return updateChallenge(challengeId, { progress });
   };
 

@@ -18,7 +18,6 @@ import {
   shouldShowWelcome,
   markWelcomeSeen,
   getUnlockProgress,
-  type OnboardingState,
 } from '@/lib/onboardingFlow';
 
 interface OnboardingOverlayProps {
@@ -135,7 +134,7 @@ export function WelcomeOverlay({ onClose }: { onClose: () => void }) {
  */
 export function DayProgressIndicator() {
   const { t } = useLanguage();
-  const [progress, setProgress] = useState(getUnlockProgress());
+  const [progress, _setProgress] = useState(getUnlockProgress());
   const state = getOnboardingState();
 
   // Skip for existing users

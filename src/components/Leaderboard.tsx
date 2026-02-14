@@ -40,7 +40,6 @@ import {
   RefreshCw,
   Crown,
   Medal,
-  Sparkles,
   X,
 } from 'lucide-react';
 // Sheet replaced with custom bottom-sheet modal
@@ -70,13 +69,13 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
   useScrollLock(isOpen);
   const [activeTab, setActiveTab] = useState<LeaderboardType>('weekly');
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [userEntry, setUserEntry] = useState<LeaderboardEntry | null>(null);
+  const [_userEntry, setUserEntry] = useState<LeaderboardEntry | null>(null);
   const [userRanks, setUserRanks] = useState<LeaderboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [isOptedIn, setIsOptedIn] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
+  const [_retryCount, setRetryCount] = useState(0);
 
   // Track mounted state to prevent state updates after unmount
   const isMountedRef = useRef(true);

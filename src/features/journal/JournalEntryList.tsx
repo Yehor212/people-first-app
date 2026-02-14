@@ -8,10 +8,6 @@ import type { MoodType } from '@/types';
 import { JournalEntryCard } from './JournalEntryCard';
 import { StickerRenderer } from './StickerRenderer';
 
-function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
 const MOOD_EMOJIS: Record<string, string> = {
   great: '\u{1F604}',
   good: '\u{1F642}',

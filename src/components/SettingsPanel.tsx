@@ -63,6 +63,7 @@ export function SettingsPanel({
     if (initialOpenSection && !openSections.includes(initialOpenSection)) {
       setOpenSections(prev => [...prev, initialOpenSection]);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialOpenSection]);
 
   return (

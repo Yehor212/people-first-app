@@ -69,7 +69,7 @@ export function InsightsPanel({
 
   const {
     insights,
-    topInsight,
+    topInsight: _topInsight,
     dismissInsight,
     hasEnoughData,
     visibleCount,
@@ -237,7 +237,7 @@ export function InsightsPanel({
           )}
 
           <div className="p-4 space-y-3">
-            {displayInsights.map((insight, index) => (
+            {displayInsights.map((insight, _index) => (
               <div key={insight.id} className="relative group">
                 <InsightCard insight={insight} />
 

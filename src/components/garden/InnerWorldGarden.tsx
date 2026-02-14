@@ -44,7 +44,7 @@ export const InnerWorldGarden = memo(function InnerWorldGarden({
   isLoading,
   plantSeed,
   waterPlants,
-  attractCreature,
+  attractCreature: _attractCreature,
   feedCreatures,
   petCompanion,
   feedCompanion,

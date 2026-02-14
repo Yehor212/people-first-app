@@ -15,7 +15,7 @@ const QUESTS_STORAGE_KEY = 'zenflow_quests';
 // UUID validation regex for secure user_id filtering
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const isValidUUID = (id: string): boolean => {
+const _isValidUUID = (id: string): boolean => {
   return typeof id === 'string' && UUID_REGEX.test(id);
 };
 

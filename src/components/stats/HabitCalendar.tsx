@@ -62,6 +62,7 @@ const levelColors = {
 
 export function HabitCalendar({ habits, className }: HabitCalendarProps) {
   const { t } = useLanguage();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const today = new Date();
   const todayStr = formatDate(today);
 

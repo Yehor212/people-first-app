@@ -9,7 +9,7 @@
  */
 
 import { useState, useMemo, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Share2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { FireIcon, StarIcon, TrophyIcon, TargetIcon } from '@/components/icons';

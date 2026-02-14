@@ -97,7 +97,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
   const currentWeatherInput = useMemo(() => deriveCurrentWeather(moods), [moods]);
 
   // Short month names for compact displays (heatmap)
-  const shortMonthNames = monthNames.map(name => name?.slice(0, 3) || name);
+  const _shortMonthNames = monthNames.map(name => name?.slice(0, 3) || name);
   
   // Legacy moodScore for backward compat with components
   const moodScore = (mood: MoodEntry['mood']) => {
@@ -525,7 +525,7 @@ export const StatsPage = memo(function StatsPage({ moods, habits, focusSessions,
             habits={habits}
             focusSessions={completedFocusSessions}
             gratitudeEntries={gratitudeEntries}
-            onRecommendationAction={(actionId) => {
+            onRecommendationAction={(_actionId) => {
               void hapticTap();
             }}
           />

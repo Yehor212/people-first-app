@@ -3,9 +3,8 @@
  * Part of v1.4.0 Social & Sharing
  */
 
-import { useState, useEffect, useRef, useMemo, memo } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import {
-  X,
   Share2,
   Trophy,
   Users,
@@ -34,7 +33,6 @@ import {
   ChallengeInvite,
   CHALLENGE_DURATIONS,
   createChallenge,
-  getActiveChallenges,
   getAllChallenges,
   shareChallenge,
   getChallengeProgress,
@@ -49,7 +47,7 @@ import {
   getChallengeLeaderboard as getCloudLeaderboard,
   subscribeToChallenge,
 } from '@/lib/challengeService';
-import type { ChallengeLeaderboard, ChallengeMember } from '@/types/challenges';
+import type { ChallengeLeaderboard } from '@/types/challenges';
 
 // ============================================
 // TYPES
@@ -196,6 +194,7 @@ function ParticipantsLeaderboard({
     }
 
     void loadLeaderboard();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [challenge.code, cloudAvailable]);
 
   // Subscribe to real-time updates
@@ -233,7 +232,7 @@ function ParticipantsLeaderboard({
       // Get leaderboard
       const data = await getCloudLeaderboard(cloudChallenge.id);
       setLeaderboard(data);
-    } catch (err) {
+    } catch (_err) {
       setError(t.leaderboardError || 'Failed to load leaderboard');
     } finally {
       setLoading(false);
@@ -542,7 +541,7 @@ function CreateChallengeView({
 
 function ChallengeDetailsView({
   challenge,
-  onBack,
+  onBack: _onBack,
   onDelete,
   t,
   username,

@@ -212,7 +212,7 @@ export const exportAllToCSV = (data: {
 // PDF EXPORT
 // ============================================
 
-interface PDFSection {
+interface _PDFSection {
   title: string;
   content: string;
 }

@@ -72,7 +72,7 @@ const broadcastRefreshStatus = (type: 'REFRESH_START' | 'REFRESH_COMPLETE', succ
   if (!refreshChannel) return;
   try {
     refreshChannel.postMessage({ type, success });
-  } catch (error) {
+  } catch (_error) {
     // Channel might be closed
   }
 };
@@ -167,6 +167,7 @@ const tryRefreshSession = async (): Promise<boolean> => {
   }
 
   // If refresh already in progress in this tab, wait for it
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   if (refreshInProgress && refreshPromise) {
     logger.log('[API] Refresh already in progress, waiting...');
     return refreshPromise;

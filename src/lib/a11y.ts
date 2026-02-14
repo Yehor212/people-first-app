@@ -168,7 +168,7 @@ export function createFocusTrap(
   }
 
   const firstFocusable = focusableElements[0];
-  const lastFocusable = focusableElements[focusableElements.length - 1];
+  const _lastFocusable = focusableElements[focusableElements.length - 1];
 
   // Focus initial element
   if (autoFocus) {

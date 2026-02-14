@@ -419,7 +419,7 @@ function analyzeMoodTrend(moods: MoodEntry[]): MoodInsight | null {
 /**
  * Generate consistency insight
  */
-function analyzeConsistency(moods: MoodEntry[], habits: Habit[]): MoodInsight | null {
+function analyzeConsistency(moods: MoodEntry[], _habits: Habit[]): MoodInsight | null {
   if (moods.length < 14) return null;
 
   // Check logging consistency

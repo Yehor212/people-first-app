@@ -145,6 +145,7 @@ class SyncOrchestrator {
    */
   private async startProcessing(): Promise<void> {
     // If already processing, wait for it to complete
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.processingPromise) {
       await this.processingPromise;
       // After waiting, recursively check if we need to process more

@@ -186,7 +186,7 @@ export async function showRewardedAd(): Promise<RewardedAdResult> {
       await prepareRewardedAd();
     }
 
-    const result = await AdMobPlugin.showRewardVideoAd();
+    const _result = await AdMobPlugin.showRewardVideoAd();
 
     // Track counts
     state.sessionAdCount++;

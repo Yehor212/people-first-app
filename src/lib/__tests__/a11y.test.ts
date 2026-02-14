@@ -218,7 +218,7 @@ describe('WCAG 2.1 AA Compliance Checks', () => {
         'destructive': 'destructive-foreground',
       };
 
-      Object.entries(expectedPattern).forEach(([bg, fg]) => {
+      Object.entries(expectedPattern).forEach(([_bg, fg]) => {
         expect(fg).toContain('foreground');
       });
     });

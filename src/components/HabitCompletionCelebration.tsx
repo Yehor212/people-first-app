@@ -72,11 +72,11 @@ interface HabitCompletionCelebrationProps {
 
 export function HabitCompletionCelebration({
   habitName,
-  habitIcon,
+  habitIcon: _habitIcon,
   habitColor,
   xpGained = 10,
   streakDays,
-  isAllComplete,
+  isAllComplete: _isAllComplete,
   onComplete,
 }: HabitCompletionCelebrationProps) {
   const { t } = useLanguage();

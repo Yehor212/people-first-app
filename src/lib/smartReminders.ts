@@ -103,7 +103,7 @@ function getDayFromDate(dateStr: string): number {
 /**
  * Calculate mode (most frequent value) from array
  */
-function calculateMode(values: number[]): number | null {
+function _calculateMode(values: number[]): number | null {
   if (values.length === 0) return null;
 
   const counts = new Map<number, number>();
@@ -348,7 +348,7 @@ export function generateSmartSuggestions(
     if (topMoodHour && moodPatterns.consistency >= 40) {
       const suggestedTime = formatHoursToTime(topMoodHour.hour);
       const currentMorning = parseTimeToHours(currentSettings.moodTimeMorning);
-      const currentAfternoon = parseTimeToHours(currentSettings.moodTimeAfternoon);
+      const _currentAfternoon = parseTimeToHours(currentSettings.moodTimeAfternoon);
 
       // Suggest adjusting morning reminder if user logs mood earlier/later
       if (Math.abs(topMoodHour.hour - currentMorning) > 1) {

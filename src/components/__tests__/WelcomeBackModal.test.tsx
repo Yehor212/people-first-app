@@ -266,8 +266,8 @@ describe('WelcomeBackModal', () => {
     expect(container).toBeTruthy();
 
     // The habits section header should not be present (TrendingUp icon section)
-    const habitsHeader = container.querySelector('h3');
-    const hasHabitsSection = Array.from(container.querySelectorAll('h3')).some(
+    const _habitsHeader = container.querySelector('h3');
+    const _hasHabitsSection = Array.from(container.querySelectorAll('h3')).some(
       h3 => h3.textContent?.includes('Habits') || h3.textContent?.includes('привычки')
     );
     // When habits array is empty, the habits section conditionally doesn't render

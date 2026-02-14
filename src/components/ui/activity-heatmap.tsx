@@ -50,7 +50,7 @@ const LEVEL_STYLES = {
 } as const;
 
 // Keep simple array for legend - using theme tokens
-const LEVEL_COLORS = [
+const _LEVEL_COLORS = [
   'bg-[hsl(var(--chart-activity-0))]',
   'bg-[hsl(var(--chart-activity-1))]',
   'bg-[hsl(var(--chart-activity-2))]',

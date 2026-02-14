@@ -3,7 +3,7 @@
  * Manages the growth of plants, creatures, and companion in the Inner World
  */
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useCallback, useMemo, useEffect, useRef } from 'react';
 import { logger } from '@/lib/logger';
 import { useIndexedDB } from './useIndexedDB';
 import { db } from '@/storage/db';
@@ -22,7 +22,6 @@ import {
   CompanionMood,
   CompanionType,
   GardenStage,
-  GardenWeather,
   Season,
   MoodType,
   TreatsWallet,
@@ -39,10 +38,8 @@ import {
   COMPANION_EMOJIS,
 } from '@/lib/innerWorldConstants';
 import {
-  TREAT_REWARDS,
   COMPANION_COSTS,
   COMPANION_LEVELING,
-  FULLNESS_DECAY,
   calculateTreatsEarned,
 } from '@/lib/treatConstants';
 
@@ -845,6 +842,7 @@ export function useInnerWorld() {
     }));
 
     return { success: true };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setWorld, today, restModeStatus]);
 
   // Deactivate rest mode for today

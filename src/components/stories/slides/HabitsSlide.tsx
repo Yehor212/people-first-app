@@ -47,7 +47,7 @@ function SoftParticle({ delay, x, y }: { delay: number; x: number; y: number }) 
 
 export function HabitsSlide({ slide, t }: HabitsSlideProps) {
   const data = slide.data as HabitStatsData;
-  const completionRate = data?.completionRate || 0;
+  const _completionRate = data?.completionRate || 0;
 
   // Generate minimal soft particles (only 4)
   const particles = useMemo(() => [

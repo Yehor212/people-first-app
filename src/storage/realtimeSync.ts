@@ -860,7 +860,7 @@ const isValidFocusStatus = (val: unknown): val is FocusSession['status'] =>
   typeof val === 'string' && (VALID_FOCUS_STATUSES as readonly string[]).includes(val);
 
 // Handle realtime changes from other devices
-const handleRealtimeChange = async (table: string, payload: { eventType: string; new: Record<string, unknown> | null; old: Record<string, unknown> | null }) => {
+const _handleRealtimeChange = async (table: string, payload: { eventType: string; new: Record<string, unknown> | null; old: Record<string, unknown> | null }) => {
   logger.log('[Realtime] Change received:', table, payload.eventType);
 
   try {

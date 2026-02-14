@@ -230,7 +230,7 @@ interface WhatsNewModalProps {
 }
 
 export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
-  const { t, language } = useLanguage();
+  const { t, language: _language } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const [currentVersion, setCurrentVersion] = useState<string | null>(null);
 

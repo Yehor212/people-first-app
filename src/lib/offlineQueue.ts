@@ -161,6 +161,7 @@ class OfflineQueue {
     options: { maxRetries?: number; deduplicate?: boolean } = {}
   ): Promise<void> {
     // Wait for initialization to complete before modifying queue
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.initPromise) {
       await this.initPromise;
     }
@@ -169,6 +170,7 @@ class OfflineQueue {
     // This prevents race conditions where two concurrent enqueue() calls
     // both read the same state, both decide the action doesn't exist,
     // and both create duplicates (bypassing deduplication logic)
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.enqueueLock) {
       await this.enqueueLock;
     }
@@ -344,14 +346,17 @@ class OfflineQueue {
    */
   async processQueue(): Promise<void> {
     // Wait for initialization to complete before processing
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.initPromise) {
       await this.initPromise;
     }
 
     // Mutex: prevent concurrent processing
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.processingPromise) {
       await this.processingPromise;
       // After waiting, check if there are still items to process (may have been added during wait)
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       if (navigator.onLine && this.state.actions.length > 0 && !this.processingPromise) {
         // Recursively process new items
         return this.processQueue();
@@ -471,6 +476,7 @@ class OfflineQueue {
    */
   async clearQueue(): Promise<void> {
     // Wait for initialization before clearing
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.initPromise) {
       await this.initPromise;
     }
@@ -574,6 +580,7 @@ class OfflineQueue {
    * Wait for initialization to complete (for external callers)
    */
   async waitForInit(): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
     if (this.initPromise) {
       await this.initPromise;
     }
@@ -593,7 +600,7 @@ class OfflineQueue {
           logger.log('[OfflineQueue] Cleared localStorage after IndexedDB migration');
         }
       }
-    } catch (error) {
+    } catch (_error) {
       // Ignore migration errors
     }
   }

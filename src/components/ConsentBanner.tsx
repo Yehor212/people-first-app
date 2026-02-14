@@ -5,7 +5,7 @@
 
 import { Shield, BarChart3 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { PrivacySettings } from '@/types';
+
 
 interface ConsentBannerProps {
   onConsent: (analytics: boolean) => void;

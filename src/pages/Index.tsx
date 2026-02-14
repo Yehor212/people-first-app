@@ -14,7 +14,6 @@ import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { triggerXpPopup } from '@/components/XpPopup';
 import { ConfettiBurst } from '@/components/ConfettiBurst';
 import { SessionExpiredBanner } from '@/components/SessionExpiredBanner';
-import { DayClock } from '@/components/DayClock';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
 import { generateId, getToday, calculateStreak } from '@/lib/utils';
@@ -76,7 +75,6 @@ import { InstallBanner } from '@/components/InstallBanner';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { WelcomeTutorial } from '@/components/WelcomeTutorial';
 // import { AICoachOnboarding } from '@/components/AICoachOnboarding'; // Hidden until AI ready
-import { AuthGate } from '@/components/AuthGate';
 import { AchievementsPanel } from '@/components/AchievementsPanel';
 import { NotificationPermission } from '@/components/NotificationPermission';
 import { AuthScreen } from '@/components/AuthScreen';
@@ -94,7 +92,7 @@ import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
-import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates, initializeBadgesInCloud } from '@/storage/challengeCloudSync';
+import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates } from '@/storage/challengeCloudSync';
 import { syncTasks, syncQuests, subscribeToTaskUpdates, subscribeToQuestUpdates } from '@/storage/tasksCloudSync';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { MoodInsights } from '@/components/MoodInsights';
@@ -121,10 +119,8 @@ import { FeatureUnlock } from '@/components/FeatureUnlock';
 import { QuickStatsRow } from '@/components/ui/stat-card';
 import { SkeletonCard, SkeletonStats, SkeletonList, SkeletonSection } from '@/components/ui/skeleton';
 import { MindfulMoment } from '@/components/MindfulMoment';
-import { DailyPromptCard } from '@/components/DailyPromptCard';
 import {
   initializeOnboarding,
-  isFeatureUnlocked,
   checkFeatureUnlock,
   unlockFeature,
   shouldShowWelcome,
@@ -295,8 +291,8 @@ export function Index() {
     waterPlants,
     attractCreature,
     feedCreatures,
-    clearWelcomeBack,
-    gardenStats,
+    clearWelcomeBack: _clearWelcomeBack,
+    gardenStats: _gardenStats,
     // Treats system
     earnTreats,
     treatsBalance,
@@ -340,7 +336,7 @@ export function Index() {
   const [showTasksPanel, setShowTasksPanel] = useState(false);
   const [showQuestsPanel, setShowQuestsPanel] = useState(false);
   const [showFriendsPanel, setShowFriendsPanel] = useState(false);
-  const [calmMode, setCalmMode] = useState(false);
+  const [_calmMode, _setCalmMode] = useState(false);
   const [confettiBurst, setConfettiBurst] = useState<{ x: number; y: number } | null>(null);
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
@@ -543,12 +539,13 @@ export function Index() {
   const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingTutorial || isLoadingOnboarding || isLoadingPrivacy || isLoadingNotificationPermission || isLoadingGoogleAuth || isLoadingSchedule || isLoadingInnerWorld;
 
   // Defensive array guards - prevent crashes from corrupted cloud sync data
-  const safeMoods = Array.isArray(moods) ? moods : [];
-  const safeHabits = Array.isArray(habits) ? habits : [];
-  const safeFocusSessions = Array.isArray(focusSessions) ? focusSessions : [];
-  const safeGratitudeEntries = Array.isArray(gratitudeEntries) ? gratitudeEntries : [];
-  const safeScheduleEvents = Array.isArray(scheduleEvents) ? scheduleEvents : [];
-  const safeBadges = Array.isArray(badges) ? badges : [];
+  // Wrapped in useMemo to stabilize references for hook dependencies
+  const safeMoods = useMemo(() => Array.isArray(moods) ? moods : [], [moods]);
+  const safeHabits = useMemo(() => Array.isArray(habits) ? habits : [], [habits]);
+  const safeFocusSessions = useMemo(() => Array.isArray(focusSessions) ? focusSessions : [], [focusSessions]);
+  const safeGratitudeEntries = useMemo(() => Array.isArray(gratitudeEntries) ? gratitudeEntries : [], [gratitudeEntries]);
+  const safeScheduleEvents = useMemo(() => Array.isArray(scheduleEvents) ? scheduleEvents : [], [scheduleEvents]);
+  const safeBadges = useMemo(() => Array.isArray(badges) ? badges : [], [badges]);
 
   // Register Android back button handler for modal panels
   useEffect(() => {
@@ -630,7 +627,7 @@ export function Index() {
   };
 
   // Filter today's schedule events (manual only)
-  const todayScheduleEvents = useMemo(() => {
+  const _todayScheduleEvents = useMemo(() => {
     return safeScheduleEvents.filter(e => e.date === currentDate);
   }, [safeScheduleEvents, currentDate]);
 
@@ -971,7 +968,7 @@ export function Index() {
   }, [awardXp, earnTreats, plantSeed, waterPlants, setMoods]);
 
   // Update existing mood entry (for same-day editing)
-  const handleUpdateMood = (entryId: string, newMood: MoodEntry['mood'], note?: string) => {
+  const _handleUpdateMood = (entryId: string, newMood: MoodEntry['mood'], note?: string) => {
     setMoods(prev => prev.map(entry => {
       if (entry.id !== entryId) return entry;
       return {
@@ -1244,7 +1241,7 @@ export function Index() {
   }, [earnTreats]);
 
   // DailyPromptCard handler - opens GratitudeJournal with prompt
-  const handleUseJournalPrompt = useCallback((promptText: string) => {
+  const _handleUseJournalPrompt = useCallback((promptText: string) => {
     setJournalPromptText(promptText);
     // Scroll to gratitude section
     gratitudeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1273,6 +1270,7 @@ export function Index() {
     } catch {
       // Silently fail — offline banner will show if no connection
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Open challenge modal from HabitTracker
@@ -1302,7 +1300,7 @@ export function Index() {
     setUserNameCustom(true);
   };
 
-  const handleAuthComplete = (userData?: { name: string; email: string }) => {
+  const _handleAuthComplete = (userData?: { name: string; email: string }) => {
     if (userData) {
       // User signed in with Google - use their name
       setUserName(userData.name);
@@ -1323,12 +1321,6 @@ export function Index() {
     // Then set persistent values (async IndexedDB)
     setUserName(userData.name);
     setUserNameCustom(false);
-    setGoogleAuthChecked(true);
-  };
-
-  const handleGoogleAuthSkip = () => {
-    logger.log('[Index] Google auth skipped');
-    setAuthBypassFlag(true);  // Immediate UI update
     setGoogleAuthChecked(true);
   };
 
@@ -1492,6 +1484,7 @@ export function Index() {
     ).catch((error) => {
       logger.error('Failed to schedule mood quick-log notification:', error);
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reminders.enabled, reminders.moodTimeMorning, t.howAreYouNow]);
 
   // Lock screen quick actions handler
@@ -1621,6 +1614,7 @@ export function Index() {
 
     void setup();
     return () => { removeListener(); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Listener registers ONCE, no dependencies
 
   // Process pending auth URL when supabase becomes ready
@@ -1663,6 +1657,7 @@ export function Index() {
     return () => {
       active = false;
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase, setUserName, setUserNameCustom, setGoogleAuthChecked]);
 
   useEffect(() => {
@@ -1954,7 +1949,7 @@ export function Index() {
     return <LanguageSelector onComplete={handleLanguageSelected} />;
   }
 
-  // Google Auth screen (optional - can be skipped)
+  // Google Auth screen (required - Google sign-in only)
   // Shown after language selection, before tutorial
   // Check both googleAuthChecked (IndexedDB) and authBypassFlag (synchronous)
   // authBypassFlag provides immediate skip while IndexedDB writes are pending
@@ -1964,7 +1959,6 @@ export function Index() {
     return (
       <AuthScreen
         onComplete={handleGoogleAuthComplete}
-        onSkip={handleGoogleAuthSkip}
       />
     );
   }

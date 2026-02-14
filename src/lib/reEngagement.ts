@@ -123,7 +123,7 @@ export function wasStreakBroken(
 
   const today = getToday();
   const lastActiveDate = new Date(lastActive);
-  const todayDate = new Date(today);
+  const _todayDate = new Date(today);
 
   // Check each day in absence period
   for (let i = 1; i < daysAway; i++) {

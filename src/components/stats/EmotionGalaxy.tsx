@@ -155,7 +155,7 @@ function OrbitingEmotion({
   // Elliptical orbit parameters - VERY large radius to guarantee empty center
   // Min radius = 80px, ensures NO emoji can be in center
   const rx = 80 + orbitIndex * 15;    // X radius: 80-155px (ALWAYS far from center!)
-  const ry = rx * 0.5;                // Y radius: 40-78px
+  const _ry = rx * 0.5;                // Y radius: 40-78px
 
   // Size based on frequency (inner = more frequent = larger)
   const sizePx = 38 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 14;
@@ -303,7 +303,7 @@ function OrbitingEmotion({
   );
 }
 
-export function EmotionGalaxy({ emotions, totalEntries, className }: EmotionGalaxyProps) {
+export function EmotionGalaxy({ emotions, totalEntries: _totalEntries, className }: EmotionGalaxyProps) {
   const { t } = useLanguage();
 
   // Sort emotions by count (most frequent first = inner orbit)

@@ -5,7 +5,7 @@
  */
 
 import { createContext, useContext, useEffect, useState, ReactNode, useRef, useMemo, useCallback } from 'react';
-import { PrimaryEmotion, MoodEntry, EmotionIntensity } from '@/types';
+import { PrimaryEmotion, MoodEntry } from '@/types';
 import { getToday } from '@/lib/utils';
 import { shouldShowMoodEffects } from '@/lib/animationUtils';
 

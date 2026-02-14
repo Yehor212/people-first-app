@@ -16,7 +16,7 @@ import {
   Achievement,
   ACHIEVEMENTS,
   AchievementId,
-  UserLevel,
+
   calculateLevel,
   getBadgeColor,
   getBadgeGlow,

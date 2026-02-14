@@ -33,8 +33,8 @@ export function SwipeableHabit({
   onComplete,
   disabled = false,
   completed = false,
-  habitColor = 'bg-primary',
-  habitIcon,
+  habitColor: _habitColor = 'bg-primary',
+  habitIcon: _habitIcon,
   className,
 }: SwipeableHabitProps) {
   const [swipeProgress, setSwipeProgress] = useState(0);

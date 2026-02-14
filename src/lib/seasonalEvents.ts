@@ -9,7 +9,6 @@
  * - Special seasonal content
  */
 
-import { generateId, getToday } from './utils';
 import { logger } from '@/lib/logger';
 
 // ============================================

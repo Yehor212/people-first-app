@@ -64,6 +64,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
         clearInterval(intervalRef.current);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning, duration, soundEnabled, pingInterval]);
 
   // Use centralized AudioManager for ping sound

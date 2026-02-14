@@ -7,7 +7,7 @@
 
 import { Habit } from '@/types';
 import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
-import { generateSecureRandom, generateSecureId } from './validation';
+import { generateSecureId } from './validation';
 import { parseLocalDate } from '@/lib/utils';
 import { logger } from './logger';
 import {

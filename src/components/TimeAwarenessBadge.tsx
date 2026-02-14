@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { Clock, Sunset, Coffee, Moon, Sun, Calendar } from 'lucide-react';
+import { Sunset, Coffee, Moon, Sun, Calendar } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn, formatDate } from '@/lib/utils';
 import { ScheduleEvent } from '@/types';

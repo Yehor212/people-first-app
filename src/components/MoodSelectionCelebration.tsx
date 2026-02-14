@@ -38,7 +38,7 @@ export function MoodSelectionCelebration({
   const [phase, setPhase] = useState<'jump' | 'calendar' | 'done'>('jump');
   const [showXP, setShowXP] = useState(false);
 
-  const TimeIcon = timeIcons[timeOfDay];
+  const _TimeIcon = timeIcons[timeOfDay];
   const today = new Date();
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 

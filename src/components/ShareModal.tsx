@@ -8,7 +8,6 @@ import { X, Download, Share2, Copy, Check, Loader2, Image } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 // Sheet replaced with custom bottom-sheet modal
-import { Button } from '@/components/ui/button';
 import { cn, interpolate } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
@@ -33,7 +32,7 @@ import { Badge } from '@/types';
 // TYPES
 // ============================================
 
-type ShareMode = 'achievement' | 'streak' | 'progress' | 'weekly' | 'custom';
+type _ShareMode = 'achievement' | 'streak' | 'progress' | 'weekly' | 'custom';
 
 interface BaseShareModalProps {
   open: boolean;

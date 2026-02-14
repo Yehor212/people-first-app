@@ -25,7 +25,7 @@ vi.mock('@/lib/habits', () => ({
 }));
 
 vi.mock('@/lib/emotionConstants', () => ({
-  getEmotionScore: vi.fn((emotion: string, intensity?: number) => {
+  getEmotionScore: vi.fn((emotion: string, _intensity?: number) => {
     const scores: Record<string, number> = {
       joy: 5,
       peace: 4,

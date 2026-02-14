@@ -87,6 +87,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
       logger.error('[TasksPanel] Cloud sync failed:', err);
       toast.error(t.syncFailedLocal);
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks, isLoaded]);
 
   // Save momentum state

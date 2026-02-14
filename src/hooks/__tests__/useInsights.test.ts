@@ -409,7 +409,7 @@ describe('useInsights', () => {
   describe('memoization', () => {
     it('regenerates insights when data changes', async () => {
       const { useInsights } = await import('../useInsights');
-      const { result, rerender } = renderHook(
+      const { result: _result, rerender } = renderHook(
         ({ moods }) =>
           useInsights({
             moods,

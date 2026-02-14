@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   calculateLevel,
   getXpForAction,
@@ -8,7 +8,6 @@ import {
   getBadgeGlow,
   ACHIEVEMENTS,
   type UserStats,
-  type AchievementId,
 } from '../gamification';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 

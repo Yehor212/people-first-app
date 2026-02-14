@@ -12,9 +12,8 @@ import { X, ChevronDown, ChevronUp, Sparkles, Bug, Zap, Trash2, History } from '
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
-import { cn } from '@/lib/utils';
 import changelog from 'virtual:changelog';
-import type { ChangelogVersion, ChangelogSection } from '@/types/changelog';
+import type { ChangelogVersion } from '@/types/changelog';
 
 interface ChangelogPanelProps {
   onClose: () => void;

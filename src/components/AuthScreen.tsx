@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Leaf, Mail, Loader2, AlertCircle } from 'lucide-react';
+import { Leaf, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { getAuthRedirectUrl, isNativePlatform, AUTH_COMPLETE_EVENT } from '@/lib/authRedirect';
 import { canStartAuthFlow, startAuthFlow, endAuthFlow } from '@/lib/authGuard';
@@ -13,13 +13,12 @@ const SHOW_FACEBOOK_AUTH = false;
 
 interface AuthScreenProps {
   onComplete: (userData: { name: string; email: string }) => void;
-  onSkip: () => void;
 }
 
 // Track which provider is currently loading
 type AuthProvider = 'google' | 'apple' | 'facebook' | null;
 
-export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
+export function AuthScreen({ onComplete }: AuthScreenProps) {
   const { t } = useLanguage();
   const [loadingProvider, setLoadingProvider] = useState<AuthProvider>(null);
   const [error, setError] = useState<string | null>(null);
@@ -316,15 +315,6 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
   const handleAppleSignIn = () => void handleOAuthSignIn('apple');
   const handleFacebookSignIn = () => void handleOAuthSignIn('facebook');
 
-  const handleEmailSignIn = () => {
-    // For now, just skip - can implement magic link later
-    onSkip();
-  };
-
-  const handleSkip = () => {
-    onSkip();
-  };
-
   // Export debug info
   const exportDebugInfo = () => {
     const info = {
@@ -493,36 +483,7 @@ export function AuthScreen({ onComplete, onSkip }: AuthScreenProps) {
             </div>
           )}
 
-          {/* Divider */}
-          <div className="relative my-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border"></div>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-card px-2 text-muted-foreground">{t.authOr}</span>
-            </div>
-          </div>
-
-          {/* Email Sign In Button (Magic Link) */}
-          <button
-            onClick={handleEmailSignIn}
-            disabled={isLoading}
-            aria-label={t.authContinueEmail}
-            className="w-full py-3 bg-secondary text-secondary-foreground font-medium rounded-2xl hover:bg-muted transition-colors flex items-center justify-center gap-2"
-          >
-            <Mail className="w-5 h-5" aria-hidden="true" />
-            {t.authContinueEmail}
-          </button>
         </section>
-
-        {/* Skip Button */}
-        <button
-          onClick={handleSkip}
-          aria-label={t.authSkipForNow}
-          className="w-full py-3 bg-transparent text-muted-foreground font-medium rounded-2xl hover:bg-secondary/50 transition-colors"
-        >
-          {t.authSkipForNow}
-        </button>
 
         {/* Privacy Note */}
         <p className="text-center text-xs text-muted-foreground mt-4">

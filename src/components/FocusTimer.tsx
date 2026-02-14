@@ -143,7 +143,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
   const [isRunning, setIsRunning] = useState(savedState?.isRunning || false);
   const [isBreak, setIsBreak] = useState(savedState?.isBreak || false);
   const [label, setLabel] = useState(savedState?.label || '');
-  const [focusElapsed, setFocusElapsed] = useState(0);
+  const [_focusElapsed, setFocusElapsed] = useState(0);
   const [showReflection, setShowReflection] = useState(false);
   const [reflectionValue, setReflectionValue] = useState<number | null>(null);
   const [pendingSession, setPendingSession] = useState<FocusSession | null>(null);
@@ -183,7 +183,6 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
       setIsBreak(false);
       logger.log('[FocusTimer] Recovered expired session:', expired.duration, 'min');
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fix: Synchronous save on unmount to prevent state loss when switching tabs
@@ -291,6 +290,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
         clearTimeout(saveDebounceRef.current);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning, isBreak, focusMinutes, breakMinutes, label, preset]);
 
   // Restore state on mount
@@ -410,6 +410,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
         clearInterval(intervalRef.current);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning, isBreak, focusMinutes, focusDuration, breakDuration, label, todayMinutes, onMinuteUpdate]);
 
   const toggleTimer = () => {

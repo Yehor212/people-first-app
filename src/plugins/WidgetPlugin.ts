@@ -1,5 +1,5 @@
 import { registerPlugin } from '@capacitor/core';
-import type { WidgetPlugin, WidgetData } from './widgetTypes';
+import type { WidgetPlugin } from './widgetTypes';
 
 // Re-export types for convenience
 export type { WidgetData, WidgetPlugin } from './widgetTypes';

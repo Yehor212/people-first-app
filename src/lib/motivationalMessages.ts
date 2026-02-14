@@ -135,7 +135,7 @@ export const streakMessages: Record<number, StreakMessage> = {
   }
 };
 
-export function getStreakMessage(streak: number, language: Language): StreakMessage | null {
+export function getStreakMessage(streak: number, _language: Language): StreakMessage | null {
   // Get exact match first
   if (streakMessages[streak]) {
     return streakMessages[streak];

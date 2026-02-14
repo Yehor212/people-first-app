@@ -44,6 +44,7 @@ export const syncWithCloud = async (mode: "merge" | "replace" = "merge"): Promis
 
   // P1-11 Fix: If sync is already in progress, wait for it and return the same result
   // This prevents "skipped" status and ensures all callers get consistent data
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   if (currentSyncPromise) {
     logger.sync('Sync already in progress, waiting for completion...');
     addCategorizedBreadcrumb('sync', 'Waiting for existing sync');

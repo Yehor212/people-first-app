@@ -122,7 +122,7 @@ export function ComebackChallenge({
   className,
 }: ComebackChallengeProps) {
   const { t } = useLanguage();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [_isExpanded, setIsExpanded] = useState(false);
   const [challengeAccepted, setChallengeAccepted] = useState(false);
   const [challengeStartDate, setChallengeStartDate] = useState<string | null>(null);
   const today = getToday();

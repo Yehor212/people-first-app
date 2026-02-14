@@ -2,8 +2,6 @@ import { Bell, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ReminderSettings, Habit } from '@/types';
-import { Switch } from '@/components/ui/switch';
-import { cn } from '@/lib/utils';
 
 interface RemindersPanelProps {
   reminders: ReminderSettings;
@@ -11,7 +9,7 @@ interface RemindersPanelProps {
   habits: Habit[];
 }
 
-export function RemindersPanel({ reminders, onUpdateReminders, habits }: RemindersPanelProps) {
+export function RemindersPanel({ reminders, onUpdateReminders, habits: _habits }: RemindersPanelProps) {
   const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
 

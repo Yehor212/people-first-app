@@ -3,7 +3,6 @@ import { useIndexedDB } from './useIndexedDB';
 import { db } from '@/storage/db';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import {
-  Achievement,
   AchievementId,
   checkAchievements,
   UserStats,
@@ -172,6 +171,7 @@ export function useGamification() {
     if (initialLoadRef.current) {
       initialLoadRef.current = false;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moods, habits, focusSessions, gratitudeEntries]);
 
   // Award XP for actions
@@ -207,6 +207,7 @@ export function useGamification() {
       }
     }
     prevLevelRef.current = userLevel.level;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userLevel.level]);
 
   return {

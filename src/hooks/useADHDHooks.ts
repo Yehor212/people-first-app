@@ -113,7 +113,7 @@ export function useADHDHooks(currentStreak: number) {
   }, [currentStreak]);
 
   // Save state changes
-  const saveState = useCallback((updates: Partial<ADHDHooksState>) => {
+  const _saveState = useCallback((updates: Partial<ADHDHooksState>) => {
     setState(prev => {
       const newState = { ...prev, ...updates };
 

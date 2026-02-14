@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { logger } from '@/lib/logger';
-import { X, Play, Pause, Volume2, VolumeX, Music, ExternalLink, Sparkles, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
+import { X, Play, Pause, Volume2, VolumeX, Music, Sparkles, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
@@ -74,7 +73,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
 
   // Spotify state
-  const [spotifyConnected, setSpotifyConnected] = useState(isSpotifyConnected());
+  const [spotifyConnected, _setSpotifyConnected] = useState(isSpotifyConnected());
   const [spotifyTrack, setSpotifyTrack] = useState<SpotifyTrack | null>(null);
   const [spotifyAutoPlay, setSpotifyAutoPlay] = useState(false);
 
@@ -147,6 +146,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   useEffect(() => {
     return () => {
       if (soundGeneratorRef.current) {
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         soundGeneratorRef.current.stop();
       }
     };
@@ -178,7 +178,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   }, [spotifyConnected]);
 
   // Handle Spotify connect
-  const handleSpotifyConnect = () => {
+  const _handleSpotifyConnect = () => {
     void connectSpotify();
   };
 
