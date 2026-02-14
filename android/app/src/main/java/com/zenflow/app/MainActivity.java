@@ -3,8 +3,14 @@ package com.zenflow.app;
 import android.content.Intent;
 import android.os.Bundle;
 import com.getcapacitor.BridgeActivity;
+import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
 
-public class MainActivity extends BridgeActivity {
+public class MainActivity extends BridgeActivity implements ModifiedMainActivityForSocialLoginPlugin {
+
+    @Override
+    public void IHaveModifiedTheMainActivityForTheUseWithSocialLoginPlugin() {
+        // Marker interface required by @capgo/capacitor-social-login for Google scopes
+    }
 
     // P0 Fix #6: Store pending intent for OAuth callbacks that arrive before bridge is ready
     private Intent pendingDeepLinkIntent = null;

@@ -10,7 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { supabase } from '@/lib/supabaseClient';
 import { syncWithCloud } from '@/storage/cloudSync';
-import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { getAuthRedirectUrl, isNativePlatform } from '@/lib/authRedirect';
+import { authenticateWithGoogleNative } from '@/lib/nativeGoogleAuth';
 import { isCloudSyncEnabled, setCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { removePushToken } from '@/lib/pushNotifications';
 import { offlineQueue } from '@/lib/offlineQueue';
@@ -152,21 +153,42 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
     }
 
     setIsSigningIn(true);
-    const redirectUrl = getAuthRedirectUrl();
-    logger.log('[AccountSection] Starting Google sign-in with redirect:', redirectUrl);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: redirectUrl,
-        },
-      });
+      // Use native Google Sign-In on Android (no browser redirect)
+      if (isNativePlatform()) {
+        logger.log('[AccountSection] Starting native Google sign-in...');
+        const result = await authenticateWithGoogleNative();
 
-      if (error) {
-        logger.error('[AccountSection] Google sign-in error:', error);
-        setAuthStatus(t.authError);
+        if (result.success) {
+          logger.log('[AccountSection] Native sign-in successful');
+          // Session will be picked up by auth state listener
+        } else if (result.error === 'cancelled') {
+          logger.log('[AccountSection] User cancelled sign-in');
+        } else {
+          logger.error('[AccountSection] Native sign-in failed:', result.error);
+          setAuthStatus(t.authGoogleSignInFailed || 'Google Sign-In failed.');
+        }
+      } else {
+        // Web/PWA: use browser OAuth
+        const redirectUrl = getAuthRedirectUrl();
+        logger.log('[AccountSection] Starting Google sign-in with redirect:', redirectUrl);
+
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: redirectUrl,
+          },
+        });
+
+        if (error) {
+          logger.error('[AccountSection] Google sign-in error:', error);
+          setAuthStatus(t.authError);
+        }
       }
+    } catch (err) {
+      logger.error('[AccountSection] Sign-in error:', err);
+      setAuthStatus(t.authGoogleSignInFailed || 'Google Sign-In failed.');
     } finally {
       setIsSigningIn(false);
     }
