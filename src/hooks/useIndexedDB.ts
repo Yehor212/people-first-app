@@ -11,8 +11,9 @@ export const triggerDataRefresh = () => {
   refreshListeners.forEach(listener => listener());
 };
 
-// Timeout for IndexedDB operations (10 seconds, increased from 5s for slow devices)
-const INDEXEDDB_TIMEOUT_MS = 10000;
+// Timeout for IndexedDB operations (30s — exportBackup reads 7 tables in one
+// Dexie transaction which can take 10-20s on Android, blocking other hooks)
+const INDEXEDDB_TIMEOUT_MS = 30000;
 
 // Helper to add timeout to promises
 // P2-3 Fix: Emit event when timeout occurs so UI can show stale data warning

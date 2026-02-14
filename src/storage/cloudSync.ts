@@ -5,7 +5,6 @@ import logger from "@/lib/logger";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
 import { generateSecureRandom, isAbortError } from "@/lib/validation";
 import { addCategorizedBreadcrumb } from "@/lib/sentry";
-import { toast } from 'sonner';
 
 const BACKUP_TABLE = "user_backups";
 const SYNC_INTERVAL = 10 * 60 * 1000; // 10 minutes (granular sync handles individual items)
@@ -276,12 +275,9 @@ export const silentSync = async () => {
       addCategorizedBreadcrumb('sync', 'Auto-sync failed', { error: (error as Error).message }, 'error');
       logger.warn('[Sync] Auto-sync failed:', error);
       // Track failures and emit event for UI notification
+      // SyncStatusListener handles the toast display (checks shouldNotify flag)
       consecutiveSyncFailures++;
       emitSyncFailureEvent(error, consecutiveSyncFailures);
-      // Show toast only after multiple consecutive failures to avoid spamming on transient errors
-      if (consecutiveSyncFailures >= MAX_FAILURES_BEFORE_NOTIFY) {
-        toast.error('Sync failed. Changes saved locally.');
-      }
       throw error; // Re-throw for orchestrator retry logic
     }
   }, { priority: 5, maxRetries: 3 });

@@ -63,10 +63,12 @@ export function SyncStatusListener() {
       });
     };
 
-    // Handler: Sync failure
+    // Handler: Sync failure — only show after multiple consecutive failures
     const handleSyncFailure = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      // Only notify user after 3+ consecutive failures (shouldNotify flag from cloudSync)
+      if (!detail?.shouldNotify) return;
       if (!shouldShowToast('sync-failure')) return;
-      const _detail = (e as CustomEvent).detail;
       toast.error(t.syncError || 'Sync failed', {
         description: t.syncFailedLocal || 'Changes saved locally. Will retry when online.',
         icon: <AlertTriangle className="h-4 w-4" />,
