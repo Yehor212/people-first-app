@@ -217,7 +217,8 @@ export async function updateMyProgress(
       p_user_id: userId,
       p_days_completed: daysCompleted,
       p_current_streak: currentStreak,
-    });
+    })
+    .abortSignal(AbortSignal.timeout(10000));
 
   if (error) {
     logger.error('[ChallengeService] Failed to update progress:', error);
@@ -271,7 +272,8 @@ export async function getChallengeLeaderboard(
 
   // Get leaderboard via RPC
   const { data: members, error: membersError } = await supabase
-    .rpc('get_challenge_leaderboard', { p_challenge_id: challengeId });
+    .rpc('get_challenge_leaderboard', { p_challenge_id: challengeId })
+    .abortSignal(AbortSignal.timeout(10000));
 
   if (membersError) {
     logger.error('[ChallengeService] Failed to get leaderboard:', membersError);

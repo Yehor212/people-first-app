@@ -595,12 +595,12 @@ export const pullFromCloud = async (): Promise<boolean> => {
       gratitudeRes,
       settingsRes,
     ] = await Promise.all([
-      supabase.from('moods').select('*').eq('user_id', userId),
+      supabase.from('moods').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
       supabase.from('habits').select('*').eq('user_id', userId).eq('is_archived', false),
-      supabase.from('habit_completions').select('*').eq('user_id', userId),
+      supabase.from('habit_completions').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(2000),
       supabase.from('habit_reminders').select('*').eq('user_id', userId),
-      supabase.from('focus_sessions').select('*').eq('user_id', userId),
-      supabase.from('gratitude_entries').select('*').eq('user_id', userId),
+      supabase.from('focus_sessions').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
+      supabase.from('gratitude_entries').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
       supabase.from('user_settings').select('*').eq('user_id', userId),
     ]);
 
