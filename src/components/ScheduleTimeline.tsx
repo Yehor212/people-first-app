@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, X, Check, Home, Sparkles, Calendar } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
+import type { Translations } from '@/i18n/translations';
 import { cn, getToday, formatDate, parseLocalDate } from '@/lib/utils';
 import { ScheduleEvent } from '@/types';
 import { safeParseInt } from '@/lib/validation';
@@ -919,12 +920,12 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
                           <div
                             key={hour}
                             className={cn(
-                              "border-r",
+                              "border-r h-full",
                               hour === 0
-                                ? "border-purple-500/40 border-r-2"
+                                ? "border-purple-500/60 border-r-2"
                                 : hour % 6 === 0
-                                  ? "border-border"
-                                  : "border-border/50"
+                                  ? "border-border/80 border-r-[1.5px]"
+                                  : "border-border/40"
                             )}
                             style={{ width: `${HOUR_WIDTH_PX}px` }}
                           />
@@ -1288,7 +1289,7 @@ function AddEventModal({
 }
 
 // Task Focus Panel - detailed minute view for active tasks
-function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Record<string, string> }) {
+function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Translations }) {
   const [now, setNow] = useState(Date.now());
   const initialTimeRef = useRef(Date.now());
 
