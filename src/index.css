@@ -249,12 +249,6 @@
     --temple-spotlight: 51 100% 50%;          /* Gold spotlight beam */
     --temple-ambient-glow: 51 100% 50%;       /* Bottom ambient glow */
 
-    /* Temple column browns (stone pillars) */
-    --temple-column-dark: 30 30% 27%;         /* #5a4530 */
-    --temple-column-mid: 30 25% 44%;          /* #8b7355 */
-    --temple-column-cap: 30 20% 35%;          /* #6b5b45 */
-    --temple-column-base: 30 18% 40%;         /* #7a6a54 */
-
     /* Trophy pedestal gold gradient */
     --trophy-gold-bright: 45 65% 52%;         /* #d4af37 - top */
     --trophy-gold-mid: 45 90% 38%;            /* #b8960c - middle */
@@ -442,12 +436,6 @@
     --temple-spotlight: 51 100% 50%;          /* Gold - same across themes */
     --temple-ambient-glow: 51 100% 50%;
 
-    /* Column colors - slightly more saturated for dark */
-    --temple-column-dark: 30 35% 25%;
-    --temple-column-mid: 30 30% 42%;
-    --temple-column-cap: 30 25% 33%;
-    --temple-column-base: 30 22% 38%;
-
     /* Trophy gold - same across themes (metallic) */
     --trophy-gold-bright: 45 65% 52%;
     --trophy-gold-mid: 45 90% 38%;
@@ -603,12 +591,6 @@
     /* ===== TROPHY HALL / TEMPLE TOKENS (OLED) ===== */
     --temple-spotlight: 51 100% 50%;          /* Gold - consistent */
     --temple-ambient-glow: 51 100% 50%;
-
-    /* Column colors - higher contrast for OLED */
-    --temple-column-dark: 30 40% 22%;
-    --temple-column-mid: 30 35% 40%;
-    --temple-column-cap: 30 30% 30%;
-    --temple-column-base: 30 25% 35%;
 
     /* Trophy gold - unchanged (metallic looks good on black) */
     --trophy-gold-bright: 45 65% 52%;

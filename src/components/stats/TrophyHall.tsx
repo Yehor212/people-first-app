@@ -2,7 +2,6 @@
  * TrophyHall - "Зала Слави" (Hall of Fame)
  *
  * Temple-style achievements display with:
- * - Decorative columns on sides
  * - Central pedestal with main achievement
  * - Spotlight beams with dust particles
  * - 3D flip cards for each achievement
@@ -39,7 +38,7 @@ function DustParticle({ delay, x }: { delay: number; x: number }) {
   return (
     <motion.div
       className="absolute w-1 h-1 rounded-full bg-amber-200/60"
-      style={{ left: `${x}%`, top: '10%' }}
+      style={{ insetInlineStart: `${x}%`, top: '10%' }}
       initial={{ y: 0, opacity: 0 }}
       animate={{
         y: [0, 150, 200],
@@ -82,36 +81,6 @@ function Spotlight({ side }: { side: 'left' | 'right' }) {
   );
 }
 
-// Temple column SVG
-function TempleColumn({ side }: { side: 'left' | 'right' }) {
-  return (
-    <div
-      className={cn(
-        "absolute top-0 bottom-0 w-12 pointer-events-none",
-        side === 'left' ? 'start-0' : 'end-0'
-      )}
-    >
-      <svg className="w-full h-full" viewBox="0 0 48 200" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id={`columnGrad-${side}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#5a4530" />
-            <stop offset="50%" stopColor="#8b7355" />
-            <stop offset="100%" stopColor="#5a4530" />
-          </linearGradient>
-        </defs>
-        {/* Column capital */}
-        <rect x="4" y="0" width="40" height="12" fill="#6b5b45" rx="2" />
-        <rect x="2" y="10" width="44" height="6" fill="#7a6a54" />
-        {/* Column shaft */}
-        <rect x="8" y="16" width="32" height="168" fill={`url(#columnGrad-${side})`} />
-        {/* Column base */}
-        <rect x="2" y="184" width="44" height="6" fill="#7a6a54" />
-        <rect x="0" y="188" width="48" height="12" fill="#6b5b45" rx="2" />
-      </svg>
-    </div>
-  );
-}
-
 // Achievement card with 3D flip
 function AchievementCard({
   achievement,
@@ -141,13 +110,18 @@ function AchievementCard({
     <motion.div
       className={cn(
         "relative cursor-pointer",
-        isMain ? "w-28 h-36" : "w-24 h-32"
+        isMain ? "w-32 h-40" : "w-28 h-36"
       )}
       style={{ perspective: 1000 }}
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 + index * 0.15, type: 'spring', stiffness: 100 }}
       onClick={() => setIsFlipped(!isFlipped)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsFlipped(!isFlipped); } }}
+      role="button"
+      tabIndex={0}
+      aria-label={`${achievement.label}: ${achievement.value}`}
+      aria-pressed={isFlipped}
     >
       <motion.div
         className="relative w-full h-full"
@@ -205,7 +179,7 @@ function AchievementCard({
         <div
           className={cn(
             "mx-auto rounded-t-sm",
-            isMain ? "w-20 h-3" : "w-16 h-2"
+            isMain ? "w-24 h-3" : "w-20 h-2"
           )}
           style={{
             background: 'linear-gradient(180deg, hsl(var(--trophy-gold-bright)) 0%, hsl(var(--trophy-gold-mid)) 50%, hsl(var(--trophy-gold-dark)) 100%)',
@@ -214,7 +188,7 @@ function AchievementCard({
         <div
           className={cn(
             "mx-auto rounded-b-sm",
-            isMain ? "w-24 h-2" : "w-20 h-1.5"
+            isMain ? "w-28 h-2" : "w-24 h-1.5"
           )}
           style={{
             background: 'linear-gradient(180deg, hsl(var(--trophy-gold-dark)) 0%, hsl(var(--trophy-gold-deep)) 100%)',
@@ -295,14 +269,17 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
     return scores.indexOf(Math.max(...scores));
   }, [streak, focusMinutes, habitsCompleted]);
 
-  // Dust particles
-  const dustParticles = useMemo(() =>
-    Array.from({ length: 15 }, (_, i) => ({
+  // Dust particles — fewer on mobile for performance
+  const dustParticles = useMemo(() => {
+    const isMobile = window.matchMedia('(max-width: 768px)').matches
+      || window.matchMedia('(pointer: coarse)').matches;
+    const count = isMobile ? 8 : 15;
+    return Array.from({ length: count }, (_, i) => ({
       id: i,
       x: 20 + Math.random() * 60,
       delay: Math.random() * 3,
-    })),
-  []);
+    }));
+  }, []);
 
   return (
     <div
@@ -320,24 +297,24 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
         onClick={handleShare}
         disabled={isSharing}
         className={cn(
-          "absolute top-3 end-3 z-20 p-2.5 rounded-full transition-all",
+          "absolute top-3 end-3 z-20 p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-all",
           "bg-amber-500/20 hover:bg-amber-500/40",
           "backdrop-blur-sm border border-amber-500/30",
           isSharing && "opacity-50 cursor-wait"
         )}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        aria-label={t.shareAchievements || 'Share achievements'}
+        aria-label={isSharing ? (t.sharing || 'Sharing...') : (t.shareAchievements || 'Share achievements')}
       >
         {isSharing ? (
           <motion.div
             animate={{ rotate: 360 }}
             transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
           >
-            <Share2 className="w-4 h-4 text-amber-700 dark:text-amber-200" />
+            <Share2 className="w-4 h-4 text-amber-700 dark:text-amber-200" aria-hidden="true" />
           </motion.div>
         ) : (
-          <Share2 className="w-4 h-4 text-amber-700 dark:text-amber-200" />
+          <Share2 className="w-4 h-4 text-amber-700 dark:text-amber-200" aria-hidden="true" />
         )}
       </motion.button>
 
@@ -368,10 +345,6 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
         }}
       />
 
-      {/* Temple columns */}
-      <TempleColumn side="left" />
-      <TempleColumn side="right" />
-
       {/* Spotlights */}
       <Spotlight side="left" />
       <Spotlight side="right" />
@@ -383,7 +356,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
 
       {/* Marble floor reflection */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-16 hidden dark:block"
+        className="absolute bottom-0 inset-x-0 h-16 hidden dark:block"
         style={{
           background: `linear-gradient(180deg,
             transparent 0%,
@@ -393,7 +366,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
       />
 
       {/* Content */}
-      <div className="relative z-10 flex flex-col items-center py-6 px-4">
+      <div className="relative z-10 flex flex-col items-center py-6 px-6">
         {/* Title */}
         <motion.div
           className="flex items-center gap-2 mb-6"
@@ -407,7 +380,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
         </motion.div>
 
         {/* Achievement cards */}
-        <div className="flex items-end justify-center gap-4">
+        <div className="flex items-end justify-center gap-5">
           {achievements.map((achievement, i) => (
             <AchievementCard
               key={achievement.id}
@@ -431,7 +404,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
 
       {/* Golden ambient glow at bottom */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-24 pointer-events-none"
+        className="absolute bottom-0 inset-x-0 h-24 pointer-events-none"
         style={{
           background: `radial-gradient(ellipse at bottom, hsl(var(--temple-ambient-glow) / 0.08) 0%, transparent 70%)`,
         }}

@@ -17107,6 +17107,7 @@ const arabicOverrides: Partial<Translations> = {
   shareGeneratingSlow: 'قد يستغرق هذا لحظة...',
   shareRetry: 'إعادة المحاولة',
   shareSharedSuccess: 'تمت المشاركة بنجاح!',
+  sharing: 'جارٍ المشاركة...',
   clipboardCopyFailed: 'تعذر النسخ إلى الحافظة.',
   updateCheckFailedToast: 'تعذر التحقق من التحديثات',
   allActivitiesComplete: 'أكملت جميع الأنشطة لهذا اليوم',
