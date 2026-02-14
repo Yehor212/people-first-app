@@ -133,32 +133,18 @@ export async function getUserRanks(): Promise<LeaderboardStats> {
     return { weeklyRank: null, monthlyRank: null, streakRank: null, totalParticipants: 0 };
   }
 
-  // Count total participants (estimated is faster — avoids full table scan)
-  const { count: total } = await supabase
-    .from('leaderboards')
-    .select('*', { count: 'estimated', head: true })
-    .eq('opt_in', true);
-
-  // Get weekly rank (estimated count for performance)
-  const { count: weeklyAbove } = await supabase
-    .from('leaderboards')
-    .select('*', { count: 'estimated', head: true })
-    .eq('opt_in', true)
-    .gt('weekly_xp', userEntry.weeklyXp);
-
-  // Get monthly rank
-  const { count: monthlyAbove } = await supabase
-    .from('leaderboards')
-    .select('*', { count: 'estimated', head: true })
-    .eq('opt_in', true)
-    .gt('monthly_xp', userEntry.monthlyXp);
-
-  // Get streak rank
-  const { count: streakAbove } = await supabase
-    .from('leaderboards')
-    .select('*', { count: 'estimated', head: true })
-    .eq('opt_in', true)
-    .gt('current_streak', userEntry.currentStreak);
+  // Run all 4 count queries in parallel (estimated count avoids full table scan)
+  const [
+    { count: total },
+    { count: weeklyAbove },
+    { count: monthlyAbove },
+    { count: streakAbove },
+  ] = await Promise.all([
+    supabase.from('leaderboards').select('*', { count: 'estimated', head: true }).eq('opt_in', true),
+    supabase.from('leaderboards').select('*', { count: 'estimated', head: true }).eq('opt_in', true).gt('weekly_xp', userEntry.weeklyXp),
+    supabase.from('leaderboards').select('*', { count: 'estimated', head: true }).eq('opt_in', true).gt('monthly_xp', userEntry.monthlyXp),
+    supabase.from('leaderboards').select('*', { count: 'estimated', head: true }).eq('opt_in', true).gt('current_streak', userEntry.currentStreak),
+  ]);
 
   return {
     weeklyRank: (weeklyAbove ?? 0) + 1,

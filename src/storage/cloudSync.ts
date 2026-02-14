@@ -8,8 +8,8 @@ import { addCategorizedBreadcrumb } from "@/lib/sentry";
 import { toast } from 'sonner';
 
 const BACKUP_TABLE = "user_backups";
-const SYNC_INTERVAL = 5 * 60 * 1000; // 5 minutes
-const SYNC_DEBOUNCE = 60 * 1000; // 60 seconds after data change (increased to reduce race conditions)
+const SYNC_INTERVAL = 10 * 60 * 1000; // 10 minutes (granular sync handles individual items)
+const SYNC_DEBOUNCE = 120 * 1000; // 2 minutes after data change (reduced from 60s to lower write pressure)
 
 let syncInterval: ReturnType<typeof setInterval> | null = null;
 let syncTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -187,7 +187,11 @@ const doSyncWithCloud = async (
       throw new Error("Sync operation aborted due to timeout");
     }
 
-    const mergedBackup = await exportBackup();
+    // Only re-export if we actually merged remote data into local
+    // For single-device users (most common), this saves a full IndexedDB scan
+    const finalBackup = syncStatus === "merged" || syncStatus === "pulled"
+      ? await exportBackup()
+      : localBackup;
 
     // Final abort check before upsert
     if (abortSignal.aborted) {
@@ -197,7 +201,7 @@ const doSyncWithCloud = async (
     const { error: upsertError } = await supabase.from(BACKUP_TABLE).upsert(
       {
         user_id: user.id,
-        payload: mergedBackup,
+        payload: finalBackup,
         updated_at: new Date().toISOString()
       },
       { onConflict: "user_id" }

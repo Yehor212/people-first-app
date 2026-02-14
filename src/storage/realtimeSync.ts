@@ -14,7 +14,6 @@ import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { Database } from '@/types/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { offlineQueue } from '@/lib/offlineQueue';
-import { toast } from 'sonner';
 
 // Type aliases for Supabase table rows (LOW priority fix: replace `as any[]`)
 type MoodRow = Database['public']['Tables']['moods']['Row'];
@@ -596,9 +595,9 @@ export const pullFromCloud = async (): Promise<boolean> => {
       settingsRes,
     ] = await Promise.all([
       supabase.from('moods').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
-      supabase.from('habits').select('*').eq('user_id', userId).eq('is_archived', false),
+      supabase.from('habits').select('*').eq('user_id', userId).eq('is_archived', false).limit(200),
       supabase.from('habit_completions').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(2000),
-      supabase.from('habit_reminders').select('*').eq('user_id', userId),
+      supabase.from('habit_reminders').select('*').eq('user_id', userId).limit(500),
       supabase.from('focus_sessions').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
       supabase.from('gratitude_entries').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
       supabase.from('user_settings').select('*').eq('user_id', userId),
@@ -754,7 +753,7 @@ export const pullFromCloud = async (): Promise<boolean> => {
     }
     addCategorizedBreadcrumb('sync', 'pullFromCloud failed', { error: (error as Error).message }, 'error');
     logger.error('[Sync] Failed to pull from cloud:', error);
-    toast.error('Sync failed. Changes saved locally.');
+    logger.warn('[Sync] Operation failed, will retry via orchestrator');
     return false;
   }
 };
@@ -813,7 +812,7 @@ export const pushToCloud = async (): Promise<boolean> => {
     }
     addCategorizedBreadcrumb('sync', 'pushToCloud failed', { error: (error as Error).message }, 'error');
     logger.error('[Sync] Failed to push to cloud:', error);
-    toast.error('Sync failed. Changes saved locally.');
+    logger.warn('[Sync] Operation failed, will retry via orchestrator');
     return false;
   }
 };

@@ -7,7 +7,6 @@ import { Quest, QuestCondition, QuestReward } from '@/lib/randomQuests';
 import { syncOrchestrator } from '@/lib/syncOrchestrator';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import { triggerDataRefresh } from '@/hooks/useIndexedDB';
-import { toast } from 'sonner';
 
 const TASKS_STORAGE_KEY = 'zenflow_tasks';
 const QUESTS_STORAGE_KEY = 'zenflow_quests';
@@ -136,7 +135,8 @@ export async function pullTasksFromCloud(): Promise<Task[] | null> {
     .from('user_tasks')
     .select('*')
     .eq('user_id', user.id)
-    .order('updated_at', { ascending: false });
+    .order('updated_at', { ascending: false })
+    .limit(500);
 
   if (error) {
     logger.error('Error pulling tasks:', error);
@@ -165,7 +165,7 @@ export async function pushTasksToCloud(tasks: Task[]): Promise<void> {
 
   if (error) {
     logger.error('Error pushing tasks:', error);
-    toast.error('Sync failed. Changes saved locally.');
+    logger.warn('[Sync] Operation failed, will retry via orchestrator');
   }
 }
 
@@ -248,7 +248,7 @@ export async function syncTasks(): Promise<Task[]> {
     // If cloud pull failed, keep local data and skip sync
     if (cloudTasks === null) {
       logger.warn('[TasksSync] Cloud pull failed, keeping local data');
-      toast.error('Sync failed. Changes saved locally.');
+      logger.warn('[Sync] Operation failed, will retry via orchestrator');
       mergedTasks = localTasks;
       return;
     }
@@ -318,7 +318,8 @@ export async function pullQuestsFromCloud(): Promise<QuestsState | undefined> {
     .from('user_quests')
     .select('*')
     .eq('user_id', user.id)
-    .order('updated_at', { ascending: false });
+    .order('updated_at', { ascending: false })
+    .limit(50);
 
   if (error) {
     logger.error('Error pulling quests:', error);
@@ -358,7 +359,7 @@ export async function pushQuestsToCloud(quests: { daily: Quest | null; weekly: Q
 
   if (error) {
     logger.error('Error pushing quests:', error);
-    toast.error('Sync failed. Changes saved locally.');
+    logger.warn('[Sync] Operation failed, will retry via orchestrator');
   }
 }
 
@@ -381,7 +382,7 @@ export async function syncQuests(): Promise<QuestsState> {
     // If cloud pull failed, keep local data and skip sync
     if (cloudQuests === undefined) {
       logger.warn('[QuestsSync] Cloud pull failed, keeping local data');
-      toast.error('Sync failed. Changes saved locally.');
+      logger.warn('[Sync] Operation failed, will retry via orchestrator');
       mergedQuests = localQuests;
       return;
     }

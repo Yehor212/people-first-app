@@ -305,7 +305,8 @@ export async function getMyChallenges(): Promise<ChallengeLeaderboard[]> {
   const { data: memberships, error } = await supabase
     .from('friend_challenge_members')
     .select('challenge_id')
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .limit(20);
 
   if (error) {
     logger.error('[ChallengeService] Failed to get my challenges:', error);

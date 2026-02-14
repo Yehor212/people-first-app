@@ -4,7 +4,6 @@ import { Challenge, Badge } from '@/types';
 import { getChallenges, saveChallenges, getBadges, saveBadges } from '@/lib/challengeStorage';
 import { syncOrchestrator } from '@/lib/syncOrchestrator';
 import { triggerDataRefresh } from '@/hooks/useIndexedDB';
-import { toast } from 'sonner';
 
 // Supabase types
 interface SupabaseChallenge {
@@ -132,7 +131,9 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
       const { data: cloudChallenges, error: fetchError } = await supabase
         .from('user_challenges')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(100);
 
       if (fetchError) {
         logger.error('Failed to fetch challenges from cloud:', fetchError);
@@ -222,7 +223,7 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
   }, { priority: 6, maxRetries: 3 });
 
   if (result.error) {
-    toast.error('Sync failed. Changes saved locally.');
+    logger.warn('[Sync] Operation failed, will retry via orchestrator');
   }
 
   return result;
@@ -328,7 +329,9 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
       const { data: cloudBadges, error: fetchError } = await supabase
         .from('user_badges')
         .select('*')
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+        .limit(200);
 
       if (fetchError) {
         logger.error('Failed to fetch badges from cloud:', fetchError);
@@ -414,7 +417,7 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
   }, { priority: 6, maxRetries: 3 });
 
   if (result.error) {
-    toast.error('Sync failed. Changes saved locally.');
+    logger.warn('[Sync] Operation failed, will retry via orchestrator');
   }
 
   return result;
