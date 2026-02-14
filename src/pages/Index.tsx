@@ -164,7 +164,7 @@ export function Index() {
   const SWIPE_TABS: TabType[] = ['home', 'garden', 'stats', 'settings'];
   const { containerProps: swipeProps, containerRef: swipeContainerRef } = useSwipeNavigation({
     activeTab,
-    onTabChange: setActiveTab,
+    onTabChange: (tab: TabType) => setActiveTab(tab),
     tabs: SWIPE_TABS,
     threshold: 50,
     velocityThreshold: 0.3,
