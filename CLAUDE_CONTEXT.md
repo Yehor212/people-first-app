@@ -1,7 +1,7 @@
 # ZenFlow — Project Context for Claude
 
 > **Complete project reference for continuing work in new chat sessions.**
-> **Updated:** 2026-02-10 | **Version:** 1.7.0
+> **Updated:** 2026-02-13 | **Version:** 1.7.1
 Design this feature as a complete end-to-end user journey. Output strictly in this order: Goal → Actors/Permissions → Entry Points → State Machine (states + transitions) → Verification/Authorization → Error States → Edge Cases → Copy (exact button labels/messages) → Abuse/Security/Privacy → Then propose UI screens/components → Then API contract → Then code plan. If any detail is missing, create an Assumptions Ledger with options and pick a safe default. Finally run Contradiction & Absurdity Check and fix all issues before showing UI/code.
 ---
 

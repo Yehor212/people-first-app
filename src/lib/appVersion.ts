@@ -2,7 +2,7 @@
 import { safeJsonParse } from './safeJson';
 import { logger } from './logger';
 
-export const APP_VERSION = '1.7.0'; // Synced with package.json
+export const APP_VERSION = '1.7.1'; // Synced with package.json
 export const DATA_SCHEMA_VERSION = 2; // Data schema version
 export const MIN_SUPPORTED_VERSION = '1.0.0'; // Minimum supported version
 

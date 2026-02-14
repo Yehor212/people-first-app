@@ -27,6 +27,22 @@ interface ChangelogItem {
 
 // Changelog entries by version — exported for SettingsPanel banner
 export const CHANGELOG: Record<string, ChangelogItem[]> = {
+  '1.7.1': [
+    {
+      icon: <Shield className="w-5 h-5 text-green-500" />,
+      titleKey: 'whatsNew.googleOnly.title',
+      descriptionKey: 'whatsNew.googleOnly.description',
+      title: 'Google Sign-In Only',
+      description: 'Sign in securely with Google. Email and skip options removed for better account security.',
+    },
+    {
+      icon: <Zap className="w-5 h-5 text-yellow-500" />,
+      titleKey: 'whatsNew.codeQuality.title',
+      descriptionKey: 'whatsNew.codeQuality.description',
+      title: 'Code Quality',
+      description: '271 code quality warnings fixed to zero. Smoother, more reliable experience.',
+    },
+  ],
   '1.7.0': [
     {
       icon: <Sparkles className="w-5 h-5 text-purple-500" />,

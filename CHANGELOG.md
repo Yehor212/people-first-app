@@ -2,6 +2,20 @@
 
 All notable changes to ZenFlow will be documented in this file.
 
+## [1.7.1] — 2026-02-13
+
+### Changed — Google-Only Authentication
+- Removed email magic link and "Skip for now" from AuthScreen
+- Removed email sign-in from Settings account section
+- Google OAuth is now the only authentication method
+
+### Fixed — ESLint Zero Warnings (Closure-Grade Audit)
+- Fixed all 271 ESLint warnings across 96+ source files
+- Added eslint-whitelist.md documenting 55 inline suppressions
+- TypeScript strict mode: 0 errors, 0 warnings
+
+---
+
 ## [1.7.0] — 2026-02-10
 
 ### Added — Premium Animated Tree
