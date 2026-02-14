@@ -147,7 +147,7 @@ export function ActivityHeatMap({
         <div className="overflow-x-auto">
           <div className="inline-flex flex-col gap-1 min-w-max">
             {/* Month labels row */}
-            <div className="flex ml-7">
+            <div className="flex ms-7">
               {monthLabels.map((m, i) => (
                 <div
                   key={i}
@@ -168,7 +168,7 @@ export function ActivityHeatMap({
             {/* Grid with staggered entrance */}
             <div className="flex gap-[2px]">
               {/* Day labels column */}
-              <div className="flex flex-col gap-[2px] mr-1 justify-center">
+              <div className="flex flex-col gap-[2px] me-1 justify-center">
                 {(labels.dayNames || DEFAULT_DAY_NAMES).map((day, i) => (
                   <div
                     key={i}

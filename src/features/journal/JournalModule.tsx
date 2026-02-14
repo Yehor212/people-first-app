@@ -428,7 +428,7 @@ export function JournalModule() {
                 {/* Checking session */}
                 {resetStep === 'checking' && (
                   <div className="flex items-center justify-center py-6">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" aria-label={t.loading || 'Loading...'} />
                   </div>
                 )}
 
@@ -492,7 +492,7 @@ export function JournalModule() {
                           'disabled:opacity-50 flex items-center justify-center gap-2',
                         )}
                       >
-                        {resetStep === 'sending' && <Loader2 className="w-4 h-4 animate-spin" />}
+                        {resetStep === 'sending' && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
                         {ts.journalResetSendLink || 'Send Link'}
                       </button>
                     </div>
@@ -523,7 +523,7 @@ export function JournalModule() {
                       <p className="text-xs text-destructive text-center mb-3">{resetError}</p>
                     )}
                     <div className="flex items-center justify-center gap-2 mb-3">
-                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" aria-hidden="true" />
                       <span className="text-xs text-muted-foreground">{ts.journalResetWaiting || 'Waiting for verification...'}</span>
                     </div>
                     <button
@@ -616,7 +616,7 @@ export function JournalModule() {
               >
                 <Suspense fallback={
                   <div className="flex-1 flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+                    <Loader2 className="w-6 h-6 animate-spin text-primary" aria-label={t.loading || 'Loading...'} />
                   </div>
                 }>
                   <LazyJournalStats
@@ -923,7 +923,7 @@ export function JournalModule() {
                               disabled={exporting}
                               className="flex-1 py-2.5 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] flex items-center justify-center gap-1.5 disabled:opacity-50"
                             >
-                              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                              {exporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" /> : <Download className="w-3.5 h-3.5" />}
                               {ts.journalExport || 'Export'}
                             </button>
                             <button
@@ -931,7 +931,7 @@ export function JournalModule() {
                               disabled={importing}
                               className="flex-1 py-2.5 rounded-xl bg-muted/50 text-foreground text-sm font-medium min-h-[44px] flex items-center justify-center gap-1.5 disabled:opacity-50"
                             >
-                              {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
+                              {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" /> : <Upload className="w-3.5 h-3.5" />}
                               {ts.journalImport || 'Import'}
                             </button>
                           </div>

@@ -60,8 +60,8 @@ export function TimeInput({
             "[&::-webkit-calendar-picker-indicator]:w-full",
             "[&::-webkit-calendar-picker-indicator]:h-full",
             "[&::-webkit-calendar-picker-indicator]:cursor-pointer",
-            icon ? "pl-10" : "pl-4",
-            "pr-10" // Space for clock icon
+            icon ? "ps-10" : "ps-4",
+            "pe-10" // Space for clock icon
           )}
         />
 

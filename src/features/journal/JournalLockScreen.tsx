@@ -37,6 +37,15 @@ export function JournalLockScreen({
   const [wrongGlow, setWrongGlow] = useState(false);
   const [step, setStep] = useState<'current' | 'enter' | 'confirm'>(mode === 'change' ? 'current' : 'enter');
   const inputRef = useRef<HTMLInputElement>(null);
+  const shakeTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const glowTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  useEffect(() => {
+    return () => {
+      if (shakeTimeoutRef.current) clearTimeout(shakeTimeoutRef.current);
+      if (glowTimeoutRef.current) clearTimeout(glowTimeoutRef.current);
+    };
+  }, []);
 
   // Cooldown timer display
   const [countdown, setCountdown] = useState(cooldownRemaining);
@@ -60,8 +69,8 @@ export function JournalLockScreen({
   const triggerShake = () => {
     setShake(true);
     setWrongGlow(true);
-    setTimeout(() => setShake(false), 500);
-    setTimeout(() => setWrongGlow(false), 1000);
+    shakeTimeoutRef.current = setTimeout(() => setShake(false), 500);
+    glowTimeoutRef.current = setTimeout(() => setWrongGlow(false), 1000);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

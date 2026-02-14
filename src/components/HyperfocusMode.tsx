@@ -557,7 +557,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                     exit={{ opacity: 0, scale: 0.8 }}
                     className="flex items-center gap-1.5 px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg"
                   >
-                    <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                    <Loader2 className="w-4 h-4 text-blue-500 animate-spin" aria-hidden="true" />
                     <span className="text-xs text-blue-600 dark:text-blue-400">
                       {t.audioLoading || 'Loading...'}
                     </span>

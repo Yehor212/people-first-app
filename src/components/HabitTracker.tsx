@@ -106,6 +106,15 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
 
   // Debounce ref to prevent rapid toggle causing multiple celebrations
   const toggleDebounceRef = useRef<Set<string>>(new Set());
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimeoutRef.current) clearTimeout(debounceTimeoutRef.current);
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
+  }, []);
 
   const today = getToday();
 
@@ -394,7 +403,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
       return;
     }
     toggleDebounceRef.current.add(habit.id);
-    setTimeout(() => toggleDebounceRef.current.delete(habit.id), 500);
+    debounceTimeoutRef.current = setTimeout(() => toggleDebounceRef.current.delete(habit.id), 500);
 
     const wasCompleted = isCompletedToday(habit);
 
@@ -842,7 +851,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)'
             } : undefined}
             autoFocus
-            onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
+            onFocus={(e) => { const el = e.target; scrollTimeoutRef.current = setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
           />
 
           <div className="relative mb-4">

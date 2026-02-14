@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { STICKER_CATEGORIES } from './stickerUtils';
 import { StickerRenderer } from './StickerRenderer';
 
@@ -15,6 +16,7 @@ export function JournalStickerPicker({ onSelect, onClose }: JournalStickerPicker
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   useBackHandler(true, onClose);
+  useScrollLock(true);
   const [activeCategory, setActiveCategory] = useState(0);
 
   const [recents] = useState<string[]>(() => {

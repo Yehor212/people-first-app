@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { logger } from '@/lib/logger';
 
 interface JournalPhotoPickerProps {
@@ -23,6 +24,7 @@ export function JournalPhotoPicker({
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   useBackHandler(true, onClose);
+  useScrollLock(true);
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -87,7 +89,7 @@ export function JournalPhotoPicker({
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              <Loader2 className="w-6 h-6 text-primary animate-spin" aria-hidden="true" />
               <span className="ms-2 text-sm text-muted-foreground">{ts.journalCompressing || 'Compressing...'}</span>
             </div>
           ) : (

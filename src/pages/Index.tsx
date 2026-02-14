@@ -158,6 +158,19 @@ export function Index() {
   }, [activeTab]);
   // const [showAIOnboarding, setShowAIOnboarding] = useState(false); // Hidden until AI ready
   const lastSyncedUserIdRef = useRef<string | null>(null);
+  const initTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const processingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const mindfulTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const quickActionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  useEffect(() => {
+    return () => {
+      if (initTimeoutRef.current) clearTimeout(initTimeoutRef.current);
+      if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current);
+      if (mindfulTimeoutRef.current) clearTimeout(mindfulTimeoutRef.current);
+      if (quickActionTimeoutRef.current) clearTimeout(quickActionTimeoutRef.current);
+    };
+  }, []);
 
   // Swipe navigation for mobile tab switching
   const SWIPE_TABS: TabType[] = ['home', 'garden', 'stats', 'settings'];
@@ -216,7 +229,7 @@ export function Index() {
       if (result.wasUpdated) {
         logger.log('[Index] App was updated, showing update message');
         // Show brief update success message
-        setTimeout(() => {
+        initTimeoutRef.current = setTimeout(() => {
           setInitializationState({
             isInitializing: false,
             error: null,
@@ -1007,7 +1020,7 @@ export function Index() {
     processingHabitsRef.current.add(processingKey);
 
     // Clear processing flag after a short delay
-    setTimeout(() => {
+    processingTimeoutRef.current = setTimeout(() => {
       processingHabitsRef.current.delete(processingKey);
     }, 500);
 
@@ -1176,7 +1189,7 @@ export function Index() {
 
     // Show MindfulMoment after focus session (only for sessions > 5 min)
     if (session.duration >= 5) {
-      setTimeout(() => setShowMindfulMoment(true), 500);
+      mindfulTimeoutRef.current = setTimeout(() => setShowMindfulMoment(true), 500);
     }
 
     // Inner World: Plant a crystal when completing focus session
@@ -1493,7 +1506,7 @@ export function Index() {
       setActiveTab('home');
 
       // Small delay to ensure tab switch is complete before scrolling
-      setTimeout(() => {
+      quickActionTimeoutRef.current = setTimeout(() => {
         switch (action) {
           case 'mood':
             handleNavigateToSection('mood');
@@ -2326,7 +2339,7 @@ export function Index() {
                   currentFocusMinutes={currentFocusMinutes}
                   onQuickAction={(action) => {
                     setActiveTab('home');
-                    setTimeout(() => {
+                    quickActionTimeoutRef.current = setTimeout(() => {
                       if (action === 'logMood') moodRef.current?.scrollIntoView({ behavior: 'smooth' });
                       if (action === 'startFocus') focusRef.current?.scrollIntoView({ behavior: 'smooth' });
                     }, 100);

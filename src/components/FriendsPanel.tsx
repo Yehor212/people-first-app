@@ -315,7 +315,7 @@ export function FriendsPanel({
                     className="h-10 w-10 shrink-0"
                     aria-label={t.shareButton || 'Share'}
                   >
-                    {isSharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+                    {isSharing ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : <Share2 className="w-4 h-4" />}
                   </Button>
                 </div>
               </div>

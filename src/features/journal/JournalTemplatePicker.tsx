@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { X, FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
+import { useScrollLock } from '@/hooks/useScrollLock';
 import { BUILTIN_TEMPLATES, generateTemplateContent, type JournalTemplate } from './journalTemplates';
 import { StickerRenderer } from './StickerRenderer';
 
@@ -13,6 +15,8 @@ interface JournalTemplatePickerProps {
 export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePickerProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  useBackHandler(true, onClose);
+  useScrollLock(true);
 
   const handleSelectTemplate = (template: JournalTemplate) => {
     const content = generateTemplateContent(template, ts);
@@ -27,6 +31,8 @@ export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePick
     <>
       <div className="fixed inset-0 z-[64] bg-black/30 animate-fade-in" onClick={onClose} />
       <div
+        role="dialog"
+        aria-modal="true"
         className="fixed bottom-0 left-0 right-0 z-[65] animate-slide-up"
         onClick={e => e.stopPropagation()}
       >

@@ -256,7 +256,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
           >
             {status === 'sending' ? (
               <>
-                <Loader2 className="w-5 h-5 me-2 animate-spin" />
+                <Loader2 className="w-5 h-5 me-2 animate-spin" aria-hidden="true" />
                 {t.feedbackSending}
               </>
             ) : status === 'success' ? (

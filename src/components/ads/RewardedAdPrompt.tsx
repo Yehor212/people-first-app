@@ -78,7 +78,7 @@ export function RewardedAdPrompt({
           className,
         )}
       >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : contextIcon}
+        {loading ? <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> : contextIcon}
         <span>{ctaLabel || defaultCtaLabel}</span>
         <span className="font-bold">{rewardLabel || defaultRewardLabel}</span>
       </button>
@@ -116,7 +116,7 @@ export function RewardedAdPrompt({
           )}
         >
           {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
           ) : (
             <span className="flex items-center gap-1.5">
               <Play className="w-4 h-4" />

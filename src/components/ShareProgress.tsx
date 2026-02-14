@@ -319,7 +319,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
           >
             {downloading ? (
               <>
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
                 {t.generating || 'Generating...'}
               </>
             ) : (
@@ -336,7 +336,7 @@ export function ShareProgress({ stats, onClose }: ShareProgressProps) {
             aria-label={t.download || 'Download'}
           >
             {downloading ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
             ) : (
               <Download className="w-5 h-5" />
             )}

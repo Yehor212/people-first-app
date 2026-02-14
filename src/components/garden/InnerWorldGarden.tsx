@@ -92,7 +92,7 @@ export const InnerWorldGarden = memo(function InnerWorldGarden({
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-3">
-        <Loader2 className="w-8 h-8 text-primary motion-safe:animate-spin" />
+        <Loader2 className="w-8 h-8 text-primary motion-safe:animate-spin" aria-label={ts.gardenLoading || 'Loading your world...'} />
         <span className="text-sm text-muted-foreground">
           {ts.gardenLoading || 'Loading your world...'}
         </span>

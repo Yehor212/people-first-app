@@ -159,6 +159,8 @@ export function JournalEntryEditor({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const draftTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const focusTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const editorOverlayRef = useRef<HTMLDivElement>(null);
   const draftKey = getDraftKey(entry?.id || null);
 
@@ -253,6 +255,13 @@ export function JournalEntryEditor({
     return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
   }, [title, content, stickers, photoIds, audioIds, mood, tags, draftKey]);
 
+  useEffect(() => {
+    return () => {
+      if (navigationTimeoutRef.current) clearTimeout(navigationTimeoutRef.current);
+      if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
+    };
+  }, []);
+
   // Clear draft saved indicator after 2s
   useEffect(() => {
     if (!draftSavedAt) return;
@@ -315,7 +324,7 @@ export function JournalEntryEditor({
       try { const { playSuccess } = await import('@/lib/audioManager'); playSuccess(); } catch { /* optional */ }
       void hapticSuccess();
       // Navigate after brief celebration
-      setTimeout(() => onBack(), 600);
+      navigationTimeoutRef.current = setTimeout(() => onBack(), 600);
     } catch {
       setSaving(false);
     }
@@ -1015,11 +1024,11 @@ export function JournalEntryEditor({
               setPromptsHidden(true);
             }
             setShowTemplatePicker(false);
-            setTimeout(() => textareaRef.current?.focus(), 100);
+            focusTimeoutRef.current = setTimeout(() => textareaRef.current?.focus(), 100);
           }}
           onClose={() => {
             setShowTemplatePicker(false);
-            setTimeout(() => textareaRef.current?.focus(), 100);
+            focusTimeoutRef.current = setTimeout(() => textareaRef.current?.focus(), 100);
           }}
         />
       )}

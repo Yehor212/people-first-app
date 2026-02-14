@@ -269,7 +269,7 @@ function ParticipantsLeaderboard({
           background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
         }}
       >
-        <Loader2 className="w-6 h-6 mx-auto mb-2 text-primary animate-spin" />
+        <Loader2 className="w-6 h-6 mx-auto mb-2 text-primary animate-spin" aria-label={t.loadingParticipants || 'Loading participants...'} />
         <p className="text-sm text-muted-foreground">{t.loadingParticipants || 'Loading participants...'}</p>
       </motion.div>
     );

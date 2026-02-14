@@ -327,7 +327,7 @@ export function ShareModal(props: ShareModalProps) {
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
                 >
-                  <Loader2 className="w-8 h-8 text-violet-400" />
+                  <Loader2 className="w-8 h-8 text-violet-400" aria-label={t.generating || 'Generating...'} />
                 </motion.div>
               </div>
             ) : imageUrl ? (

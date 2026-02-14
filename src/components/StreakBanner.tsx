@@ -522,7 +522,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
               >
                 {isSharing ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />
                     {t.generating || 'Generating...'}
                   </>
                 ) : (
@@ -538,7 +538,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                 className="py-4 px-6 bg-white/10 hover:bg-white/20 text-white rounded-2xl font-semibold flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                 aria-label={t.download || 'Download'}
               >
-                {isSharing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Download className="w-5 h-5" />}
+                {isSharing ? <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" /> : <Download className="w-5 h-5" />}
               </button>
             </div>
           </div>
