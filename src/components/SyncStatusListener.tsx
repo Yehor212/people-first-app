@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { WifiOff, AlertTriangle, CheckCircle2, Database, RefreshCw } from 'lucide-react';
 import { offlineQueue } from '@/lib/offlineQueue';
+import { logger } from '@/lib/logger';
 
 export function SyncStatusListener() {
   const { t } = useLanguage();
@@ -117,14 +118,11 @@ export function SyncStatusListener() {
       });
     };
 
-    // Handler: IndexedDB timeout
+    // Handler: IndexedDB timeout — suppressed for end users
+    // IndexedDB contention during backup sync causes false positives.
+    // Data loads via fallback, then real data arrives. Not actionable by users.
     const handleIndexedDBTimeout = (_e: Event) => {
-      if (!shouldShowToast('indexeddb-timeout')) return;
-      toast.warning(t.indexedDBTimeout || 'Storage is slow', {
-        description: t.indexedDBTimeoutDesc || 'The database is taking longer than expected.',
-        icon: <Database className="h-4 w-4" />,
-        duration: 5000,
-      });
+      logger.debug('[SyncStatus] IndexedDB timeout — suppressed toast (data loads via fallback)');
     };
 
     // Register all event listeners
