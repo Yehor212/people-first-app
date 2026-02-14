@@ -58,38 +58,28 @@ function AnimatedFire({ intensity = 1, size = 'sm' }: { intensity?: number; size
             <stop offset="100%" stopColor="#fbbf24" />
           </linearGradient>
         </defs>
-        <motion.path
+        <path
           d="M12 2C12 2 8 6 8 10C8 12 10 14 12 14C14 14 16 12 16 10C16 6 12 2 12 2Z"
           fill="url(#fireGradient)"
-          animate={{
-            d: [
-              "M12 2C12 2 8 6 8 10C8 12 10 14 12 14C14 14 16 12 16 10C16 6 12 2 12 2Z",
-              "M12 1C12 1 7 5 7 10C7 13 10 15 12 15C14 15 17 13 17 10C17 5 12 1 12 1Z",
-              "M12 2C12 2 8 6 8 10C8 12 10 14 12 14C14 14 16 12 16 10C16 6 12 2 12 2Z",
-            ],
-          }}
-          transition={{
-            duration: animationDuration * 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-        <motion.path
+        >
+          <animate
+            attributeName="d"
+            values="M12 2C12 2 8 6 8 10C8 12 10 14 12 14C14 14 16 12 16 10C16 6 12 2 12 2Z;M12 1C12 1 7 5 7 10C7 13 10 15 12 15C14 15 17 13 17 10C17 5 12 1 12 1Z;M12 2C12 2 8 6 8 10C8 12 10 14 12 14C14 14 16 12 16 10C16 6 12 2 12 2Z"
+            dur={`${animationDuration * 2}s`}
+            repeatCount="indefinite"
+          />
+        </path>
+        <path
           d="M12 6C12 6 10 8 10 10C10 11 11 12 12 12C13 12 14 11 14 10C14 8 12 6 12 6Z"
           fill="#fef3c7"
-          animate={{
-            d: [
-              "M12 6C12 6 10 8 10 10C10 11 11 12 12 12C13 12 14 11 14 10C14 8 12 6 12 6Z",
-              "M12 5C12 5 9 7 9 10C9 11.5 11 13 12 13C13 13 15 11.5 15 10C15 7 12 5 12 5Z",
-              "M12 6C12 6 10 8 10 10C10 11 11 12 12 12C13 12 14 11 14 10C14 8 12 6 12 6Z",
-            ],
-          }}
-          transition={{
-            duration: animationDuration * 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
+        >
+          <animate
+            attributeName="d"
+            values="M12 6C12 6 10 8 10 10C10 11 11 12 12 12C13 12 14 11 14 10C14 8 12 6 12 6Z;M12 5C12 5 9 7 9 10C9 11.5 11 13 12 13C13 13 15 11.5 15 10C15 7 12 5 12 5Z;M12 6C12 6 10 8 10 10C10 11 11 12 12 12C13 12 14 11 14 10C14 8 12 6 12 6Z"
+            dur={`${animationDuration * 2}s`}
+            repeatCount="indefinite"
+          />
+        </path>
       </svg>
     </motion.div>
   );
