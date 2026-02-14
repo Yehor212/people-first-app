@@ -33,6 +33,11 @@ export interface PolicyAccessResult {
   granted: boolean;
 }
 
+export interface SetDndResult {
+  success: boolean;
+  error?: string;
+}
+
 export interface DndPluginInterface {
   /**
    * Check if Do Not Disturb mode is currently active
@@ -49,6 +54,17 @@ export interface DndPluginInterface {
    * (Required for modifying DND settings)
    */
   hasNotificationPolicyAccess(): Promise<PolicyAccessResult>;
+
+  /**
+   * Set Do Not Disturb mode on or off
+   * Requires notification policy access
+   */
+  setDnd(options: { enabled: boolean }): Promise<SetDndResult>;
+
+  /**
+   * Open system settings for notification policy access
+   */
+  requestPolicyAccess(): Promise<void>;
 }
 
 // ============================================

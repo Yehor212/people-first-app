@@ -66,6 +66,50 @@ export async function getDndStatus(): Promise<DndStatusResult> {
   }
 }
 
+/**
+ * Set DND mode on or off
+ * Requires notification policy access
+ */
+export async function setDndEnabled(enabled: boolean): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+
+  try {
+    const result = await DndPlugin.setDnd({ enabled });
+    return result.success;
+  } catch (error) {
+    logger.error('[DND] Failed to set DND:', error);
+    return false;
+  }
+}
+
+/**
+ * Open system settings to grant DND policy access
+ */
+export async function requestDndPolicyAccess(): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+
+  try {
+    await DndPlugin.requestPolicyAccess();
+  } catch (error) {
+    logger.error('[DND] Failed to open policy settings:', error);
+  }
+}
+
+/**
+ * Check if app has notification policy access (required for setDnd)
+ */
+export async function checkPolicyAccess(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+
+  try {
+    const result = await DndPlugin.hasNotificationPolicyAccess();
+    return result.granted;
+  } catch (error) {
+    logger.error('[DND] Failed to check policy access:', error);
+    return false;
+  }
+}
+
 // ============================================
 // HOOK
 // ============================================

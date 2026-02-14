@@ -1,37 +1,186 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" width="1024" height="500">
   <defs>
+    <!-- Background gradient -->
     <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#5ab88a;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#3d8a68;stop-opacity:1" />
+      <stop offset="0%" stop-color="#0a1f1f"/>
+      <stop offset="45%" stop-color="#122f28"/>
+      <stop offset="100%" stop-color="#1a4a3a"/>
     </linearGradient>
+
+    <!-- Accent gradient for line -->
+    <linearGradient id="accentLine" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="60%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#14b8a6" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Glow orbs -->
+    <radialGradient id="orb1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#14b8a6" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#14b8a6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb3" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fab44a" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#fab44a" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orbGreen" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#10b981" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Card glow filter -->
+    <filter id="cardGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+
+    <!-- Icon glow filter -->
+    <filter id="iconGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
+      <feFlood flood-color="#10b981" flood-opacity="0.5" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Leaf glow -->
+    <filter id="leafGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="6" result="blur"/>
+      <feFlood flood-color="#10b981" flood-opacity="0.4" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="shadow"/>
+      <feMerge>
+        <feMergeNode in="shadow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Sparkle glow -->
+    <filter id="sparkle" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2"/>
+    </filter>
   </defs>
 
-  <!-- Background -->
+  <!-- ============ BACKGROUND ============ -->
   <rect width="1024" height="500" fill="url(#bgGrad)"/>
 
-  <!-- Decorative circles -->
-  <circle cx="100" cy="400" r="150" fill="white" opacity="0.05"/>
-  <circle cx="924" cy="100" r="200" fill="white" opacity="0.05"/>
-  <circle cx="512" cy="250" r="300" fill="white" opacity="0.03"/>
+  <!-- Background glow orbs for depth -->
+  <ellipse cx="180" cy="250" rx="280" ry="250" fill="url(#orb1)"/>
+  <ellipse cx="750" cy="150" rx="320" ry="280" fill="url(#orb2)"/>
+  <ellipse cx="900" cy="420" rx="200" ry="180" fill="url(#orb3)"/>
+  <ellipse cx="500" cy="480" rx="400" ry="200" fill="url(#orbGreen)"/>
 
-  <!-- Leaf icon -->
-  <g transform="translate(120, 150) scale(8)"
-     fill="none"
-     stroke="white"
-     stroke-width="2"
-     stroke-linecap="round"
-     stroke-linejoin="round"
-     opacity="0.9">
+  <!-- Subtle wave shape -->
+  <path d="M0 380 Q256 340 512 370 Q768 400 1024 350 L1024 500 L0 500 Z" fill="rgba(255,255,255,0.02)"/>
+  <path d="M0 420 Q300 390 600 410 Q800 430 1024 400 L1024 500 L0 500 Z" fill="rgba(255,255,255,0.015)"/>
+
+  <!-- Decorative floating leaves -->
+  <g opacity="0.04" fill="white">
+    <path transform="translate(60, 60) scale(2) rotate(-30)" d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+    <path transform="translate(920, 380) scale(1.5) rotate(15)" d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+    <path transform="translate(480, 30) scale(1.2) rotate(45)" d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
+  </g>
+
+  <!-- Sparkle dots -->
+  <circle cx="350" cy="80" r="2" fill="#10b981" opacity="0.4" filter="url(#sparkle)"/>
+  <circle cx="470" cy="460" r="1.5" fill="#14b8a6" opacity="0.3" filter="url(#sparkle)"/>
+  <circle cx="620" cy="50" r="2.5" fill="#fab44a" opacity="0.35" filter="url(#sparkle)"/>
+  <circle cx="950" cy="120" r="1.8" fill="#10b981" opacity="0.3" filter="url(#sparkle)"/>
+  <circle cx="200" cy="440" r="2" fill="#14b8a6" opacity="0.25" filter="url(#sparkle)"/>
+  <circle cx="780" cy="470" r="1.5" fill="#fab44a" opacity="0.3" filter="url(#sparkle)"/>
+
+  <!-- ============ LEFT SIDE: BRANDING ============ -->
+
+  <!-- Leaf icon with glow -->
+  <g transform="translate(60, 110) scale(5.5)" filter="url(#leafGlow)"
+     fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/>
     <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>
   </g>
 
   <!-- App name -->
-  <text x="380" y="220" font-family="Arial, sans-serif" font-size="72" font-weight="bold" fill="white">ZenFlow</text>
+  <text x="195" y="185" font-family="'Segoe UI', 'SF Pro Display', Arial, sans-serif" font-size="68" font-weight="700" fill="white" letter-spacing="-1">ZenFlow</text>
 
-  <!-- Tagline -->
-  <text x="380" y="290" font-family="Arial, sans-serif" font-size="28" fill="white" opacity="0.9">Habits • Mood • Focus • Gratitude</text>
+  <!-- Accent line under name -->
+  <rect x="197" y="198" width="180" height="3" rx="1.5" fill="url(#accentLine)"/>
 
-  <!-- Features -->
-  <text x="380" y="360" font-family="Arial, sans-serif" font-size="20" fill="white" opacity="0.7">Build mindful daily routines</text>
+  <!-- Subtitle -->
+  <text x="197" y="240" font-family="'Segoe UI', 'SF Pro Display', Arial, sans-serif" font-size="22" fill="white" opacity="0.75" font-weight="300" letter-spacing="0.5">Your Wellness Companion</text>
+
+  <!-- Feature bullets -->
+  <g font-family="'Segoe UI', 'SF Pro Display', Arial, sans-serif" font-size="17" fill="white" opacity="0.6">
+    <!-- Row 1 -->
+    <circle cx="207" cy="290" r="3" fill="#10b981" opacity="1"/>
+    <text x="218" y="295">Habits · Mood · Focus Timer</text>
+    <!-- Row 2 -->
+    <circle cx="207" cy="320" r="3" fill="#14b8a6" opacity="1"/>
+    <text x="218" y="325">Journal · Garden · Challenges</text>
+    <!-- Row 3 -->
+    <circle cx="207" cy="350" r="3" fill="#fab44a" opacity="1"/>
+    <text x="218" y="355">Free · Offline · 8 Languages</text>
+  </g>
+
+  <!-- ============ RIGHT SIDE: FEATURE CARDS ============ -->
+
+  <!-- Card 1: Mood Tracking (top-left) -->
+  <g transform="translate(560, 70) rotate(-1.5, 70, 65)">
+    <!-- Card background -->
+    <rect width="170" height="130" rx="16" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+    <!-- Mood icon: smiley face -->
+    <g transform="translate(60, 22)" stroke="#10b981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#iconGlow)">
+      <circle cx="25" cy="25" r="22"/>
+      <path d="M17 30s3 5 8 5 8-5 8-5"/>
+      <line x1="18" y1="20" x2="18.01" y2="20" stroke-width="3"/>
+      <line x1="32" y1="20" x2="32.01" y2="20" stroke-width="3"/>
+    </g>
+    <!-- Label -->
+    <text x="85" y="100" font-family="'Segoe UI', Arial, sans-serif" font-size="15" fill="white" opacity="0.9" text-anchor="middle" font-weight="500">Mood</text>
+    <text x="85" y="118" font-family="'Segoe UI', Arial, sans-serif" font-size="11" fill="white" opacity="0.5" text-anchor="middle">Track emotions</text>
+  </g>
+
+  <!-- Card 2: Focus Timer (top-right) -->
+  <g transform="translate(770, 55) rotate(2, 70, 65)">
+    <rect width="170" height="130" rx="16" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+    <!-- Timer icon: clock circle with play -->
+    <g transform="translate(60, 22)" stroke="#14b8a6" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#iconGlow)">
+      <circle cx="25" cy="25" r="22"/>
+      <polyline points="25 13 25 25 33 29"/>
+    </g>
+    <text x="85" y="100" font-family="'Segoe UI', Arial, sans-serif" font-size="15" fill="white" opacity="0.9" text-anchor="middle" font-weight="500">Focus</text>
+    <text x="85" y="118" font-family="'Segoe UI', Arial, sans-serif" font-size="11" fill="white" opacity="0.5" text-anchor="middle">Pomodoro timer</text>
+  </g>
+
+  <!-- Card 3: Stats (bottom-left) -->
+  <g transform="translate(545, 230) rotate(1, 70, 65)">
+    <rect width="170" height="130" rx="16" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+    <!-- Chart icon: bar chart -->
+    <g transform="translate(55, 18)" stroke="#fab44a" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#iconGlow)">
+      <rect x="8" y="20" width="8" height="26" rx="2" fill="#fab44a" opacity="0.3"/>
+      <rect x="21" y="8" width="8" height="38" rx="2" fill="#fab44a" opacity="0.3"/>
+      <rect x="34" y="14" width="8" height="32" rx="2" fill="#fab44a" opacity="0.3"/>
+    </g>
+    <text x="85" y="100" font-family="'Segoe UI', Arial, sans-serif" font-size="15" fill="white" opacity="0.9" text-anchor="middle" font-weight="500">Insights</text>
+    <text x="85" y="118" font-family="'Segoe UI', Arial, sans-serif" font-size="11" fill="white" opacity="0.5" text-anchor="middle">Trends &amp; streaks</text>
+  </g>
+
+  <!-- Card 4: Habits (bottom-right) -->
+  <g transform="translate(755, 215) rotate(-2, 70, 65)">
+    <rect width="170" height="130" rx="16" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+    <!-- Habits icon: checkmark in circle + streak flame -->
+    <g transform="translate(55, 18)" stroke="#10b981" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" filter="url(#iconGlow)">
+      <circle cx="25" cy="25" r="22"/>
+      <polyline points="16 25 22 31 34 19"/>
+    </g>
+    <text x="85" y="100" font-family="'Segoe UI', Arial, sans-serif" font-size="15" fill="white" opacity="0.9" text-anchor="middle" font-weight="500">Habits</text>
+    <text x="85" y="118" font-family="'Segoe UI', Arial, sans-serif" font-size="11" fill="white" opacity="0.5" text-anchor="middle">Build streaks</text>
+  </g>
+
+  <!-- ============ BOTTOM ACCENT ============ -->
+  <!-- Subtle bottom gradient line -->
+  <rect x="0" y="496" width="1024" height="4" fill="url(#accentLine)"/>
 </svg>

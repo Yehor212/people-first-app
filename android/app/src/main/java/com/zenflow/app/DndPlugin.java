@@ -2,7 +2,9 @@ package com.zenflow.app;
 
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Build;
+import android.provider.Settings;
 import android.util.Log;
 
 import com.getcapacitor.JSObject;
@@ -135,6 +137,65 @@ public class DndPlugin extends Plugin {
         }
 
         call.resolve(result);
+    }
+
+    /**
+     * Set Do Not Disturb mode on or off.
+     * Requires NOTIFICATION_POLICY access (user must grant in system settings).
+     */
+    @PluginMethod
+    public void setDnd(PluginCall call) {
+        JSObject result = new JSObject();
+        boolean enabled = call.getBoolean("enabled", true);
+
+        try {
+            Context context = getContext();
+            NotificationManager notificationManager =
+                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+            if (notificationManager == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                result.put("success", false);
+                result.put("error", "Not supported");
+                call.resolve(result);
+                return;
+            }
+
+            if (!notificationManager.isNotificationPolicyAccessGranted()) {
+                result.put("success", false);
+                result.put("error", "Permission not granted");
+                call.resolve(result);
+                return;
+            }
+
+            int filter = enabled
+                ? NotificationManager.INTERRUPTION_FILTER_PRIORITY
+                : NotificationManager.INTERRUPTION_FILTER_ALL;
+            notificationManager.setInterruptionFilter(filter);
+
+            Log.d(TAG, "DND set - enabled: " + enabled + ", filter: " + filter);
+            result.put("success", true);
+        } catch (Exception e) {
+            Log.e(TAG, "Error setting DND", e);
+            result.put("success", false);
+            result.put("error", e.getMessage());
+        }
+
+        call.resolve(result);
+    }
+
+    /**
+     * Open system notification policy access settings.
+     * User must grant DND modification permission here.
+     */
+    @PluginMethod
+    public void requestPolicyAccess(PluginCall call) {
+        try {
+            Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
+            getActivity().startActivity(intent);
+        } catch (Exception e) {
+            Log.e(TAG, "Error opening notification policy settings", e);
+        }
+        call.resolve();
     }
 
     /**

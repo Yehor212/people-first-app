@@ -909,6 +909,18 @@ export interface Translations {
   hyperfocusTipText: string;
   hyperfocusPauseMsg: string;
 
+  // App Loading
+  initializingApp: string;
+
+  // Phone Focus Mode (DND)
+  focusModeToggle: string;
+  focusModeEnabled: string;
+  focusModeDisabled: string;
+  focusModePermTitle: string;
+  focusModePermDesc: string;
+  focusModeOpenSettings: string;
+  focusModeRestored: string;
+
   // Audio Status
   audioLoading: string;
   audioTapToEnable: string;
@@ -3150,6 +3162,14 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTip: 'Tip',
     hyperfocusTipText: 'Every 25 minutes there will be a short breathing pause. This helps prevent burnout!',
     hyperfocusPauseMsg: 'Press Play to continue',
+    initializingApp: 'Preparing your zen space...',
+    focusModeToggle: 'Phone Focus Mode',
+    focusModeEnabled: 'Focus mode on — distractions silenced',
+    focusModeDisabled: 'Focus mode off',
+    focusModePermTitle: 'Enable Focus Mode',
+    focusModePermDesc: 'ZenFlow needs permission to silence notifications during focus sessions.',
+    focusModeOpenSettings: 'Open Settings',
+    focusModeRestored: 'Previous notification settings restored',
 
     // Audio Status
     audioLoading: 'Loading...',
@@ -5335,6 +5355,14 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTip: 'Порада',
     hyperfocusTipText: 'Кожні 25 хвилин буде коротка дихальна пауза. Це допомагає уникнути вигорання!',
     hyperfocusPauseMsg: 'Натисніть Play, щоб продовжити',
+    initializingApp: 'Підготовка вашого простору...',
+    focusModeToggle: 'Режим фокусу телефону',
+    focusModeEnabled: 'Режим фокусу увімкнено — відволікання вимкнено',
+    focusModeDisabled: 'Режим фокусу вимкнено',
+    focusModePermTitle: 'Увімкнути режим фокусу',
+    focusModePermDesc: 'ZenFlow потребує дозволу для вимкнення сповіщень під час сеансів фокусу.',
+    focusModeOpenSettings: 'Відкрити налаштування',
+    focusModeRestored: 'Попередні налаштування сповіщень відновлено',
 
     // Audio Status
     audioLoading: 'Завантаження...',
@@ -7521,6 +7549,14 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTip: 'Consejo',
     hyperfocusTipText: 'Cada 25 minutos habrá una breve pausa de respiración. ¡Esto ayuda a prevenir el agotamiento!',
     hyperfocusPauseMsg: 'Presiona Play para continuar',
+    initializingApp: 'Preparando tu espacio zen...',
+    focusModeToggle: 'Modo enfoque del teléfono',
+    focusModeEnabled: 'Modo enfoque activado — distracciones silenciadas',
+    focusModeDisabled: 'Modo enfoque desactivado',
+    focusModePermTitle: 'Activar modo enfoque',
+    focusModePermDesc: 'ZenFlow necesita permiso para silenciar notificaciones durante sesiones de enfoque.',
+    focusModeOpenSettings: 'Abrir ajustes',
+    focusModeRestored: 'Configuración de notificaciones restaurada',
 
     // Audio Status
     audioLoading: 'Cargando...',
@@ -9707,6 +9743,14 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTip: 'Tipp',
     hyperfocusTipText: 'Alle 25 Minuten gibt es eine kurze Atempause. Das hilft, Burnout zu vermeiden!',
     hyperfocusPauseMsg: 'Drücke Play zum Fortfahren',
+    initializingApp: 'Dein Zen-Bereich wird vorbereitet...',
+    focusModeToggle: 'Telefon-Fokusmodus',
+    focusModeEnabled: 'Fokusmodus an — Ablenkungen stumm',
+    focusModeDisabled: 'Fokusmodus aus',
+    focusModePermTitle: 'Fokusmodus aktivieren',
+    focusModePermDesc: 'ZenFlow benötigt die Berechtigung, Benachrichtigungen während Fokussitzungen stummzuschalten.',
+    focusModeOpenSettings: 'Einstellungen öffnen',
+    focusModeRestored: 'Vorherige Benachrichtigungseinstellungen wiederhergestellt',
 
     // Audio Status
     audioLoading: 'Wird geladen...',
@@ -11893,6 +11937,14 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTip: 'Astuce',
     hyperfocusTipText: 'Toutes les 25 minutes, il y aura une courte pause respiratoire. Cela aide à prévenir l\'épuisement!',
     hyperfocusPauseMsg: 'Appuyez sur Play pour continuer',
+    initializingApp: 'Préparation de votre espace zen...',
+    focusModeToggle: 'Mode concentration du téléphone',
+    focusModeEnabled: 'Mode concentration activé — distractions coupées',
+    focusModeDisabled: 'Mode concentration désactivé',
+    focusModePermTitle: 'Activer le mode concentration',
+    focusModePermDesc: 'ZenFlow a besoin de la permission de couper les notifications pendant les sessions de concentration.',
+    focusModeOpenSettings: 'Ouvrir les paramètres',
+    focusModeRestored: 'Paramètres de notification précédents restaurés',
 
     // Audio Status
     audioLoading: 'Chargement...',
@@ -14078,6 +14130,14 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     hyperfocusTip: 'ヒント',
     hyperfocusTipText: '25分ごとに短い呼吸休憩があります。燃え尽き症候群を防ぎます！',
     hyperfocusPauseMsg: '再生を押して続行',
+    initializingApp: 'Zenスペースを準備中...',
+    focusModeToggle: 'スマホ集中モード',
+    focusModeEnabled: '集中モードON — 通知をサイレント',
+    focusModeDisabled: '集中モードOFF',
+    focusModePermTitle: '集中モードを有効にする',
+    focusModePermDesc: 'ZenFlowは集中セッション中に通知をサイレントにする許可が必要です。',
+    focusModeOpenSettings: '設定を開く',
+    focusModeRestored: '以前の通知設定に戻しました',
 
     // Audio Status
     audioLoading: '読み込み中...',
@@ -16148,6 +16208,14 @@ const arabicOverrides: Partial<Translations> = {
   hyperfocusTip: 'نصيحة',
   hyperfocusTipText: 'أغلق كل المشتتات للتركيز الأقصى',
   hyperfocusPauseMsg: 'خذ استراحة قصيرة',
+  initializingApp: 'جارٍ تحضير مساحتك...',
+  focusModeToggle: 'وضع تركيز الهاتف',
+  focusModeEnabled: 'وضع التركيز مفعّل — الإشعارات صامتة',
+  focusModeDisabled: 'وضع التركيز معطّل',
+  focusModePermTitle: 'تفعيل وضع التركيز',
+  focusModePermDesc: 'يحتاج ZenFlow إذنًا لكتم الإشعارات أثناء جلسات التركيز.',
+  focusModeOpenSettings: 'فتح الإعدادات',
+  focusModeRestored: 'تمت استعادة إعدادات الإشعارات السابقة',
 
   // Audio Status
   audioLoading: 'جاري التحميل...',
@@ -18620,6 +18688,14 @@ const hebrewOverrides: Partial<Translations> = {
   hyperfocusTip: 'טיפ',
   hyperfocusTipText: 'כל 25 דקות תהיה הפסקת נשימה קצרה. זה עוזר למנוע שחיקה!',
   hyperfocusPauseMsg: 'לחץ Play כדי להמשיך',
+  initializingApp: 'מכין את מרחב הזן שלך...',
+  focusModeToggle: 'מצב ריכוז בטלפון',
+  focusModeEnabled: 'מצב ריכוז פעיל — הסחות הושתקו',
+  focusModeDisabled: 'מצב ריכוז כבוי',
+  focusModePermTitle: 'הפעל מצב ריכוז',
+  focusModePermDesc: 'ZenFlow צריך הרשאה להשתיק התראות במהלך מפגשי ריכוז.',
+  focusModeOpenSettings: 'פתח הגדרות',
+  focusModeRestored: 'הגדרות התראות קודמות שוחזרו',
   audioLoading: 'טוען...',
   audioTapToEnable: 'לחץ להפעלת צליל',
   audioRetry: 'נסה שוב',

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { logger } from '@/lib/logger';
@@ -1915,15 +1916,70 @@ export function Index() {
     };
   }, []);
 
-  // Show initialization screen
+  // Show premium initialization screen
   if (initializationState.isInitializing) {
     return (
-      <div className="flex items-center justify-center min-h-screen zen-gradient-hero">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Initializing ZenFlow...</p>
-        </div>
-      </div>
+      <motion.div
+        key="loading"
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background"
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+      >
+        {/* Ambient glow */}
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(circle at 50% 40%, hsl(var(--primary) / 0.08) 0%, transparent 60%)'
+          }}
+          animate={{ opacity: [0.5, 1, 0.5] }}
+          transition={{ duration: 3, repeat: Infinity }}
+        />
+
+        {/* Logo with spring entrance */}
+        <motion.div
+          className="text-6xl mb-6"
+          initial={{ scale: 0, rotate: -30 }}
+          animate={{ scale: 1, rotate: 0 }}
+          transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+        >
+          🌿
+        </motion.div>
+
+        {/* Brand name */}
+        <motion.h1
+          className="text-2xl font-bold text-foreground tracking-wide"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
+        >
+          ZenFlow
+        </motion.h1>
+
+        {/* Localized subtitle */}
+        <motion.p
+          className="text-sm text-muted-foreground mt-3"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+        >
+          {t.initializingApp || 'Preparing your zen space...'}
+        </motion.p>
+
+        {/* Shimmer progress bar */}
+        <motion.div
+          className="mt-8 w-32 h-1 rounded-full bg-muted overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+        >
+          <motion.div
+            className="h-full rounded-full bg-primary/60"
+            animate={{ x: ['-100%', '200%'] }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            style={{ width: '40%' }}
+          />
+        </motion.div>
+      </motion.div>
     );
   }
 

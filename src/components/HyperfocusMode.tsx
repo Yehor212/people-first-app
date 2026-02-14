@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Play, Pause, Volume2, VolumeX, Music, Sparkles, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
+import { X, Play, Pause, Volume2, VolumeX, Music, Sparkles, Loader2, AlertCircle, RotateCcw, Shield } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { checkDndActive, setDndEnabled, checkPolicyAccess, requestDndPolicyAccess } from '@/hooks/useDnd';
 import { getAmbientSoundGenerator, SOUNDS, AmbientSoundGenerator, AudioStatus } from '@/lib/ambientSounds';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 import {
   isSpotifyConnected,
   connectSpotify,
@@ -61,6 +64,12 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   const [selectedSoundId, setSelectedSoundId] = useState<string | null>(null);
   const [isSoundPlaying, setIsSoundPlaying] = useState(false);
   const [showBreathingAnimation, setShowBreathingAnimation] = useState(false);
+
+  // DND (Phone Focus Mode) state
+  const [dndEnabled, setDndEnabledState] = useState(false);
+  const [dndPreviousState, setDndPreviousState] = useState(false);
+  const [showDndPermission, setShowDndPermission] = useState(false);
+
   // Use global singleton to prevent audio overlap
   const soundGeneratorRef = useRef<AmbientSoundGenerator>(getAmbientSoundGenerator());
 
@@ -273,6 +282,64 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
       setIsSoundPlaying(false);
     }
   };
+
+  // DND toggle handler
+  const handleDndToggle = async () => {
+    if (dndEnabled) {
+      // Turning OFF — restore
+      await setDndEnabled(false);
+      setDndEnabledState(false);
+      return;
+    }
+    // Turning ON — check permission first
+    const hasAccess = await checkPolicyAccess();
+    if (!hasAccess) {
+      setShowDndPermission(true);
+      return;
+    }
+    // Save current DND state before we change it
+    const currentlyActive = await checkDndActive();
+    setDndPreviousState(currentlyActive);
+    const success = await setDndEnabled(true);
+    if (success) setDndEnabledState(true);
+  };
+
+  // Restore DND on unmount if we enabled it
+  const dndEnabledRef = useRef(false);
+  const dndPreviousRef = useRef(false);
+  dndEnabledRef.current = dndEnabled;
+  dndPreviousRef.current = dndPreviousState;
+
+  useEffect(() => {
+    return () => {
+      if (dndEnabledRef.current && !dndPreviousRef.current) {
+        void setDndEnabled(false);
+        logger.log('[HyperfocusMode] DND restored on unmount');
+      }
+    };
+  }, []);
+
+  // Re-check permission when returning from system settings
+  useEffect(() => {
+    if (!showDndPermission) return;
+
+    const handleVisibility = async () => {
+      if (document.visibilityState === 'visible') {
+        const hasAccess = await checkPolicyAccess();
+        if (hasAccess) {
+          setShowDndPermission(false);
+          // Auto-enable now that permission is granted
+          const currentlyActive = await checkDndActive();
+          setDndPreviousState(currentlyActive);
+          const success = await setDndEnabled(true);
+          if (success) setDndEnabledState(true);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+  }, [showDndPermission]);
 
   // Lock body scroll when component mounts
   useScrollLock(true);
@@ -538,6 +605,95 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             {t.hyperfocusExit}
           </motion.button>
         </div>
+
+        {/* Phone Focus Mode — DND toggle (Android only) */}
+        {Capacitor.isNativePlatform() && (
+          <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto mb-4">
+            <motion.button
+              onClick={() => void handleDndToggle()}
+              className={cn(
+                "w-full px-4 py-3 min-h-[52px] rounded-2xl flex items-center justify-between",
+                "border transition-all",
+                dndEnabled
+                  ? "bg-violet-500/20 border-violet-500/40"
+                  : "bg-secondary border-border"
+              )}
+              whileTap={{ scale: 0.98 }}
+              aria-label={t.focusModeToggle || 'Phone Focus Mode'}
+              aria-pressed={dndEnabled}
+              role="switch"
+            >
+              <div className="flex items-center gap-3">
+                <Shield className={cn("w-5 h-5", dndEnabled ? "text-violet-600 dark:text-violet-300" : "text-slate-500 dark:text-white/60")} aria-hidden="true" />
+                <div className="text-start">
+                  <span className={cn("text-sm font-medium", dndEnabled ? "text-violet-700 dark:text-violet-200" : "text-slate-700 dark:text-white/80")}>
+                    {t.focusModeToggle || 'Phone Focus Mode'}
+                  </span>
+                  {dndEnabled && (
+                    <p className="text-xs text-violet-600/70 dark:text-violet-300/60">
+                      {t.focusModeEnabled || 'Focus mode on — distractions silenced'}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {/* Toggle indicator */}
+              <div className={cn(
+                "w-11 h-6 rounded-full transition-colors flex-shrink-0",
+                dndEnabled ? "bg-violet-500" : "bg-muted"
+              )}>
+                <motion.div
+                  className="w-5 h-5 rounded-full bg-white shadow-sm mt-0.5"
+                  animate={{ marginInlineStart: dndEnabled ? '22px' : '2px' }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                />
+              </div>
+            </motion.button>
+          </div>
+        )}
+
+        {/* DND Permission Modal */}
+        {showDndPermission && (
+          <div
+            className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6"
+            role="dialog"
+            aria-modal="true"
+            aria-label={t.focusModePermTitle || 'Enable Focus Mode'}
+            onClick={() => setShowDndPermission(false)}
+          >
+            <motion.div
+              className="bg-card rounded-2xl p-6 max-w-sm w-full shadow-xl border border-border"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2.5 rounded-xl bg-violet-500/20">
+                  <Shield className="w-6 h-6 text-violet-500" aria-hidden="true" />
+                </div>
+                <h3 className="text-lg font-bold text-foreground">
+                  {t.focusModePermTitle || 'Enable Focus Mode'}
+                </h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">
+                {t.focusModePermDesc || 'ZenFlow needs permission to silence notifications during focus sessions.'}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDndPermission(false)}
+                  className="flex-1 py-3 min-h-[44px] rounded-xl bg-secondary text-foreground font-medium transition-opacity hover:opacity-80"
+                >
+                  {t.cancel || 'Cancel'}
+                </button>
+                <button
+                  onClick={() => void requestDndPolicyAccess()}
+                  className="flex-1 py-3 min-h-[44px] rounded-xl bg-violet-500 text-white font-medium transition-opacity hover:opacity-90"
+                >
+                  {t.focusModeOpenSettings || 'Open Settings'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
 
         {/* Premium Ambient Sound Selector */}
         <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto bg-secondary backdrop-blur-md rounded-2xl p-4 border border-border">

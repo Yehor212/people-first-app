@@ -10,6 +10,7 @@ import type {
   DndCheckResult,
   DndStatusResult,
   PolicyAccessResult,
+  SetDndResult,
 } from './DndPlugin';
 
 export class DndWeb implements DndPluginInterface {
@@ -35,5 +36,14 @@ export class DndWeb implements DndPluginInterface {
     return {
       granted: false,
     };
+  }
+
+  async setDnd(): Promise<SetDndResult> {
+    // Not applicable on web
+    return { success: false };
+  }
+
+  async requestPolicyAccess(): Promise<void> {
+    // Not applicable on web
   }
 }
