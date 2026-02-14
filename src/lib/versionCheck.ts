@@ -142,7 +142,8 @@ export function isOAuthReturn(): boolean {
     referrer.includes('accounts.google.com') ||
     referrer.includes('google.com/o/oauth') ||
     referrer.includes('supabase.co/auth') ||
-    referrer.includes('supabase.io/auth')
+    referrer.includes('supabase.io/auth') ||
+    referrer.includes('api.zenflowapp.online/auth')
   );
 }
 

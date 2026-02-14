@@ -33,7 +33,7 @@ cleanupOutdatedCaches();
 
 // Cache Supabase Storage (public assets only)
 registerRoute(
-  ({ url }) => url.hostname.includes('supabase.co') && url.pathname.includes('/storage/v1/object/public/'),
+  ({ url }) => (url.hostname.includes('supabase.co') || url.hostname === 'api.zenflowapp.online') && url.pathname.includes('/storage/v1/object/public/'),
   new CacheFirst({
     cacheName: 'supabase-storage',
     plugins: [
