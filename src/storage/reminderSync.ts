@@ -3,11 +3,15 @@ import { ReminderSettings } from "@/types";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
 import { logger } from "@/lib/logger";
 
+// Circuit breaker: after first schema/table error, skip all attempts this session.
+// Resets on page reload (module re-import).
+let reminderSyncDisabled = false;
+
 export const syncReminderSettings = async (
   reminders: ReminderSettings,
   language: string
 ) => {
-  if (!supabase) return;
+  if (!supabase || reminderSyncDisabled) return;
 
   // Use orchestrator for queue-based sync
   await syncOrchestrator.sync('reminders', async () => {
@@ -58,7 +62,8 @@ export const syncReminderSettings = async (
       // Don't throw on table-related errors - the table might not exist yet in Supabase
       // This is a non-critical feature, so we log and continue
       if (error.code === '42P01' || error.message.includes('does not exist')) {
-        logger.warn('[ReminderSync] Table does not exist, skipping sync');
+        reminderSyncDisabled = true;
+        logger.warn('[ReminderSync] Table does not exist, disabling sync for this session');
         return;
       }
 
@@ -66,8 +71,8 @@ export const syncReminderSettings = async (
       // These are common when migrations haven't been applied yet
       if (error.code === 'PGRST204' || error.message.includes('violates') ||
           error.code?.startsWith('PGRST') || error.message.includes('Bad Request')) {
-        // Log once at warn level, not error - this is expected during migration transitions
-        logger.warn('[ReminderSync] Schema mismatch or validation error, skipping sync');
+        reminderSyncDisabled = true;
+        logger.warn('[ReminderSync] Schema mismatch, disabling sync for this session');
         return;
       }
 

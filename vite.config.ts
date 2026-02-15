@@ -118,6 +118,8 @@ export default defineConfig(({ mode }) => {
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Use lottie-web light build (no eval/expressions) to comply with CSP
+      "lottie-web": path.resolve(__dirname, "node_modules/lottie-web/build/player/lottie_light.js"),
     },
   },
 
