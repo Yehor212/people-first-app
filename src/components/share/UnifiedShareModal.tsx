@@ -1,11 +1,10 @@
 /**
  * UnifiedShareModal - Single modal for all share card generation and actions
- * Replaces ShareModal.tsx, ShareProgress.tsx, and inline share dialogs
- * Part of v1.8.0 Share System Redesign
+ * Duolingo-style UX: big preview + prominent Share button + secondary actions
  */
 
 import { useCallback, useMemo } from 'react';
-import { X, Download, Share2, Copy, Check, Loader2, Image, RefreshCw } from 'lucide-react';
+import { X, Download, Share2, Copy, Check, Loader2, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn, interpolate } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -254,66 +253,47 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed bottom-0 start-0 end-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)]"
+        className="fixed bottom-0 start-0 end-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)]"
       >
         {/* Header */}
-        <div className="px-6 pt-6 pb-4 text-center relative">
+        <div className="px-6 pt-5 pb-3 text-center relative">
           {/* Drag handle */}
           <div className="absolute top-3 start-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-muted-foreground/30" />
 
           <button
             onClick={() => onOpenChange(false)}
-            className="absolute top-4 end-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted transition-colors"
+            className="absolute top-3 end-4 p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-muted transition-colors"
             aria-label={t.close || 'Close'}
           >
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
 
           <h2 className="text-lg font-semibold mt-2">{getModalTitle()}</h2>
-          <p className="text-sm text-muted-foreground mt-1">
-            {t.sharePrivacyNote || 'Share your progress with friends'}
-          </p>
         </div>
 
         {/* Scrollable content */}
-        <div className="px-6 overflow-y-auto" style={{ maxHeight: 'calc(85dvh - 100px)' }}>
+        <div className="px-4 overflow-y-auto" style={{ maxHeight: 'calc(90dvh - 80px)' }}>
 
-          {/* Preview Card */}
-          <div className="flex items-center justify-center py-4">
+          {/* Preview Card — large, full-width */}
+          <div className="flex items-center justify-center py-2">
             <motion.div
-              className="relative w-full max-w-[300px] aspect-square rounded-2xl overflow-hidden"
+              className={cn(
+                "relative w-full rounded-2xl overflow-hidden",
+                mode === 'weekly' ? 'max-w-[360px]' : 'max-w-[360px] aspect-square'
+              )}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.2 }}
               style={{
-                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.05) 100%)',
-                boxShadow: '0 0 30px rgba(139, 92, 246, 0.15), 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255,255,255,0.05)'
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
               }}
             >
-              {/* Shimmer effect */}
-              <motion.div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%)',
-                }}
-                animate={{ x: ['-100%', '100%'] }}
-                transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, ease: 'linear' }}
-              />
-
               {isGenerating ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  >
-                    <Loader2 className="w-8 h-8 text-violet-400" aria-label={t.generating || 'Generating...'} />
-                  </motion.div>
-                  <span className="text-xs text-muted-foreground">
-                    {t.shareGeneratingSlow || 'This may take a moment...'}
-                  </span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/50">
+                  <Loader2 className="w-8 h-8 text-primary animate-spin" aria-label={t.generating || 'Generating...'} />
                 </div>
               ) : isError ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6">
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 bg-muted/50">
                   <div className="text-sm text-destructive text-center" role="status" aria-live="polite">
                     {error}
                   </div>
@@ -329,21 +309,17 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
                 <img
                   src={imageUrl}
                   alt={t.sharePreview || 'Share preview'}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <Image className="w-12 h-12 text-white/30" />
-                </div>
-              )}
+              ) : null}
             </motion.div>
           </div>
 
           {/* Success indicator */}
           {isSuccess && lastAction && (
-            <div role="status" aria-live="polite" className="text-center mb-3">
+            <div role="status" aria-live="polite" className="text-center mb-2">
               <motion.div
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-sm font-medium"
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-sm font-medium"
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
@@ -354,36 +330,63 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="grid grid-cols-3 gap-3 pt-2 pb-4">
+          {/* Primary action: Share button — full width, prominent */}
+          <div className="pt-2 pb-2">
+            <motion.button
+              onClick={handleShare}
+              disabled={!hasImage || !imageBlob}
+              aria-label={t.shareButton || 'Share'}
+              className={cn(
+                "w-full flex items-center justify-center gap-3 h-14 min-h-[44px] rounded-2xl text-base font-semibold transition-all",
+                isSuccess && lastAction === 'share'
+                  ? "bg-emerald-500 text-white"
+                  : "bg-gradient-to-r from-violet-500 to-purple-600 text-white hover:from-violet-600 hover:to-purple-700",
+                "disabled:opacity-50 disabled:cursor-not-allowed",
+                "shadow-lg"
+              )}
+              style={{
+                boxShadow: isSuccess && lastAction === 'share'
+                  ? '0 4px 20px rgba(16, 185, 129, 0.4)'
+                  : '0 4px 20px rgba(139, 92, 246, 0.4)'
+              }}
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              {isSuccess && lastAction === 'share' ? (
+                <Check className="w-5 h-5" />
+              ) : (
+                <Share2 className="w-5 h-5" />
+              )}
+              {isSuccess && lastAction === 'share'
+                ? (t.shareSharedSuccess || 'Shared!')
+                : (t.shareButton || 'Share')}
+            </motion.button>
+          </div>
+
+          {/* Secondary actions: Download + Copy */}
+          <div className="grid grid-cols-2 gap-3 pb-4">
             {/* Download */}
             <motion.button
               onClick={handleDownload}
               disabled={!hasImage || !imageBlob}
               aria-label={t.shareDownload || 'Download'}
               className={cn(
-                "flex flex-col items-center justify-center gap-2 h-20 min-h-[44px] rounded-xl transition-all",
-                "bg-slate-100 dark:bg-white/5 backdrop-blur-sm border border-slate-200 dark:border-white/10",
+                "flex items-center justify-center gap-2 h-12 min-h-[44px] rounded-xl text-sm font-medium transition-all",
+                "bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10",
                 "hover:bg-slate-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
               )}
-              whileHover={{ scale: 1.02, y: -2 }}
+              whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.3) 0%, rgba(37, 99, 235, 0.2) 100%)',
-                  boxShadow: '0 0 12px rgba(59, 130, 246, 0.3)'
-                }}
-              >
-                {isSuccess && lastAction === 'download' ? (
-                  <Check className="w-5 h-5 text-emerald-500" />
-                ) : (
-                  <Download className="w-5 h-5 text-blue-500 dark:text-blue-400" />
-                )}
-              </div>
-              <span className="text-xs text-slate-600 dark:text-white/70">
-                {t.shareDownload || 'Download'}
+              {isSuccess && lastAction === 'download' ? (
+                <Check className="w-4 h-4 text-emerald-500" />
+              ) : (
+                <Download className="w-4 h-4 text-muted-foreground" />
+              )}
+              <span className="text-foreground/80">
+                {isSuccess && lastAction === 'download'
+                  ? (t.imageSaved || 'Saved!')
+                  : (t.shareDownload || 'Download')}
               </span>
             </motion.button>
 
@@ -393,85 +396,27 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
               disabled={!hasImage || !imageBlob}
               aria-label={isSuccess && lastAction === 'copy' ? (t.shareCopied || 'Copied') : (t.shareCopyLink || 'Copy')}
               className={cn(
-                "flex flex-col items-center justify-center gap-2 h-20 min-h-[44px] rounded-xl transition-all",
+                "flex items-center justify-center gap-2 h-12 min-h-[44px] rounded-xl text-sm font-medium transition-all",
                 isSuccess && lastAction === 'copy'
-                  ? "bg-emerald-500/20 border border-emerald-500/40"
-                  : "bg-slate-100 dark:bg-white/5 backdrop-blur-sm border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10",
+                  ? "bg-emerald-500/15 border border-emerald-500/30"
+                  : "bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10",
                 "disabled:opacity-50 disabled:cursor-not-allowed"
               )}
-              style={isSuccess && lastAction === 'copy' ? { boxShadow: '0 0 16px rgba(16, 185, 129, 0.4)' } : undefined}
-              whileHover={{ scale: 1.02, y: -2 }}
+              whileHover={{ scale: 1.01 }}
               whileTap={{ scale: 0.98 }}
             >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{
-                  background: isSuccess && lastAction === 'copy'
-                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.4) 0%, rgba(20, 184, 166, 0.3) 100%)'
-                    : 'linear-gradient(135deg, rgba(168, 85, 247, 0.3) 0%, rgba(139, 92, 246, 0.2) 100%)',
-                  boxShadow: isSuccess && lastAction === 'copy'
-                    ? '0 0 12px rgba(16, 185, 129, 0.4)'
-                    : '0 0 12px rgba(168, 85, 247, 0.3)'
-                }}
-              >
-                {isSuccess && lastAction === 'copy' ? (
-                  <Check className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                ) : (
-                  <Copy className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                )}
-              </div>
-              <span className={cn("text-xs", isSuccess && lastAction === 'copy' ? "text-emerald-600 dark:text-emerald-400" : "text-slate-600 dark:text-white/70")}>
+              {isSuccess && lastAction === 'copy' ? (
+                <Check className="w-4 h-4 text-emerald-500" />
+              ) : (
+                <Copy className="w-4 h-4 text-muted-foreground" />
+              )}
+              <span className={cn(
+                isSuccess && lastAction === 'copy' ? "text-emerald-600 dark:text-emerald-400" : "text-foreground/80"
+              )}>
                 {isSuccess && lastAction === 'copy' ? (t.shareCopied || 'Copied!') : (t.shareCopyLink || 'Copy')}
               </span>
             </motion.button>
-
-            {/* Share */}
-            <motion.button
-              onClick={handleShare}
-              disabled={!hasImage || !imageBlob}
-              aria-label={isSuccess && lastAction === 'share' ? (t.shareCopied || 'Shared') : (t.shareButton || 'Share')}
-              className={cn(
-                "flex flex-col items-center justify-center gap-2 h-20 min-h-[44px] rounded-xl transition-all",
-                isSuccess && lastAction === 'share'
-                  ? "bg-emerald-500/20 border border-emerald-500/40"
-                  : "bg-gradient-to-br from-violet-500/20 to-purple-600/20 border border-violet-500/30",
-                "disabled:opacity-50 disabled:cursor-not-allowed"
-              )}
-              style={{
-                boxShadow: isSuccess && lastAction === 'share'
-                  ? '0 0 16px rgba(16, 185, 129, 0.4)'
-                  : '0 0 16px rgba(139, 92, 246, 0.3)'
-              }}
-              whileHover={{ scale: 1.02, y: -2 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{
-                  background: isSuccess && lastAction === 'share'
-                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.5) 0%, rgba(20, 184, 166, 0.4) 100%)'
-                    : 'linear-gradient(135deg, rgba(139, 92, 246, 0.5) 0%, rgba(168, 85, 247, 0.4) 100%)',
-                  boxShadow: isSuccess && lastAction === 'share'
-                    ? '0 0 16px rgba(16, 185, 129, 0.5)'
-                    : '0 0 16px rgba(139, 92, 246, 0.5)'
-                }}
-              >
-                {isSuccess && lastAction === 'share' ? (
-                  <Check className="w-5 h-5 text-white" />
-                ) : (
-                  <Share2 className="w-5 h-5 text-white" />
-                )}
-              </div>
-              <span className={cn("text-xs font-medium", isSuccess && lastAction === 'share' ? "text-emerald-600 dark:text-emerald-400" : "text-violet-700 dark:text-violet-300")}>
-                {isSuccess && lastAction === 'share' ? (t.shareCopied || 'Shared!') : (t.shareButton || 'Share')}
-              </span>
-            </motion.button>
           </div>
-
-          {/* Footer */}
-          <p className="text-xs text-center text-muted-foreground pb-4">
-            {t.shareFooter || 'Share your progress on social media to inspire others!'}
-          </p>
         </div>
       </div>
     </>

@@ -16,6 +16,7 @@ import { FireIcon, StarIcon, TrophyIcon, TargetIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { shareImage } from '@/lib/shareActions';
+import { generateTrophyCard, DEFAULT_CARD_TRANSLATIONS, ShareCardTranslations } from '@/lib/shareCards';
 import { hapticError } from '@/lib/haptics';
 
 interface Achievement {
@@ -200,7 +201,7 @@ function AchievementCard({
 }
 
 export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }: TrophyHallProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { effectiveTheme } = useTheme();
   const [isSharing, setIsSharing] = useState(false);
   const [shareError, setShareError] = useState(false);
@@ -214,28 +215,27 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
     };
   }, []);
 
-  // Share achievements as image
+  // Share achievements as Canvas 2D generated image
   const handleShare = async () => {
-    if (!cardRef.current || isSharing) return;
+    if (isSharing) return;
     setIsSharing(true);
     setShareError(false);
 
     try {
-      // Lazy load html2canvas (CJS — must be isolated)
-      const html2canvas = (await import('html2canvas')).default;
-
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: effectiveTheme === 'dark' ? '#0a0a0a' : '#FFFBEB',
-        scale: 2,
-        useCORS: true,
-      });
-
-      const blob = await new Promise<Blob>((resolve, reject) => {
-        canvas.toBlob((b) => {
-          if (b) resolve(b);
-          else reject(new Error('Failed to create blob'));
-        }, 'image/png', 1.0);
-      });
+      const cardTranslations: ShareCardTranslations = {
+        ...DEFAULT_CARD_TRANSLATIONS,
+        streak: t.shareCardStreak || DEFAULT_CARD_TRANSLATIONS.streak,
+        focus: t.shareCardFocus || DEFAULT_CARD_TRANSLATIONS.focus,
+        habits: t.shareCardHabits || DEFAULT_CARD_TRANSLATIONS.habits,
+        trackHabits: t.shareCardTrackHabits || DEFAULT_CARD_TRANSLATIONS.trackHabits,
+      };
+      const theme = effectiveTheme === 'dark' ? 'dark' : 'light';
+      const blob = await generateTrophyCard(
+        { streak, focusMinutes, habitsCompleted },
+        cardTranslations,
+        theme,
+        language,
+      );
 
       await shareImage(
         blob,

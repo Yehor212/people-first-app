@@ -129,7 +129,8 @@ export async function shareImage(
         dialogTitle: title,
       });
 
-      await deleteFileWithRetry(fileName);
+      // Don't delete file immediately — receiving app may still be reading it.
+      // Cleanup handled by cleanupShareCache() on app resume (24h TTL).
       return true;
     } catch (err) {
       logger.error('[ShareActions] Native share failed:', err);

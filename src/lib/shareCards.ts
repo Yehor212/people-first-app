@@ -1,16 +1,21 @@
 /**
- * Share Cards - Generate beautiful share images for social media
- * Refactored in v1.8.0: translations, theme support, uses shareCardRenderer
+ * Share Cards - Generate beautiful share images using Canvas 2D API
+ * Replaces DOM-based html2canvas approach for instant, reliable rendering
  */
 
 import { Badge } from '@/types';
 import { logger } from '@/lib/logger';
 import {
-  renderCardToBlob,
+  createCanvas,
+  fillGradientRect,
+  drawRoundedRect,
+  drawText,
+  drawRadialOverlay,
+  canvasToBlob,
   ensureSanitizer,
   sanitizeText,
-  createStyledSpan,
   preloadShareCardAssets,
+  measureText,
 } from '@/lib/shareCardRenderer';
 
 // Re-export preload for app initialization
@@ -47,6 +52,12 @@ export interface WeeklyProgressData {
   focusMinutes: number;
   streak: number;
   newBadges: Badge[];
+}
+
+export interface TrophyShareData {
+  streak: number;
+  focusMinutes: number;
+  habitsCompleted: number;
 }
 
 /** Translations passed to card generators for localized content */
@@ -90,7 +101,7 @@ export const DEFAULT_CARD_TRANSLATIONS: ShareCardTranslations = {
 // ============================================
 
 interface ThemePalette {
-  cardBg: string;
+  cardBg: [number, string][];
   textColor: string;
   textSecondary: string;
   glassBg: string;
@@ -99,21 +110,21 @@ interface ThemePalette {
 }
 
 const DARK_PALETTE: ThemePalette = {
-  cardBg: 'linear-gradient(180deg, #1E293B 0%, #0F172A 100%)',
-  textColor: 'white',
+  cardBg: [[0, '#1E293B'], [1, '#0F172A']],
+  textColor: '#FFFFFF',
   textSecondary: 'rgba(255,255,255,0.7)',
   glassBg: 'rgba(255,255,255,0.05)',
-  glassBorder: '1px solid rgba(255,255,255,0.1)',
-  footerBorder: '1px solid rgba(255,255,255,0.1)',
+  glassBorder: 'rgba(255,255,255,0.1)',
+  footerBorder: 'rgba(255,255,255,0.1)',
 };
 
 const LIGHT_PALETTE: ThemePalette = {
-  cardBg: 'linear-gradient(180deg, #F8FAFC 0%, #E2E8F0 100%)',
+  cardBg: [[0, '#F8FAFC'], [1, '#E2E8F0']],
   textColor: '#0F172A',
   textSecondary: 'rgba(15,23,42,0.6)',
   glassBg: 'rgba(0,0,0,0.03)',
-  glassBorder: '1px solid rgba(0,0,0,0.08)',
-  footerBorder: '1px solid rgba(0,0,0,0.08)',
+  glassBorder: 'rgba(0,0,0,0.08)',
+  footerBorder: 'rgba(0,0,0,0.08)',
 };
 
 function getPalette(theme: 'light' | 'dark'): ThemePalette {
@@ -124,11 +135,11 @@ function getPalette(theme: 'light' | 'dark'): ThemePalette {
 // CARD GRADIENTS
 // ============================================
 
-const CARD_GRADIENTS: Record<ShareCardType, string> = {
-  achievement: 'linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%)',
-  streak: 'linear-gradient(135deg, #FF6B35 0%, #F7931E 50%, #FFB347 100%)',
-  progress: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 50%, #6D28D9 100%)',
-  weekly: 'linear-gradient(135deg, #3B82F6 0%, #2563EB 50%, #1D4ED8 100%)',
+const CARD_GRADIENTS: Record<ShareCardType, [number, string][]> = {
+  achievement: [[0, '#10B981'], [0.5, '#059669'], [1, '#047857']],
+  streak: [[0, '#FF6B35'], [0.5, '#F7931E'], [1, '#FFB347']],
+  progress: [[0, '#8B5CF6'], [0.5, '#7C3AED'], [1, '#6D28D9']],
+  weekly: [[0, '#3B82F6'], [0.5, '#2563EB'], [1, '#1D4ED8']],
 };
 
 const RARITY_COLORS: Record<string, { border: string; glow: string }> = {
@@ -139,10 +150,18 @@ const RARITY_COLORS: Record<string, { border: string; glow: string }> = {
 };
 
 // ============================================
+// CONSTANTS
+// ============================================
+
+const FONT_FAMILY = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+const CARD_SIZE = 1080;
+const WEEKLY_HEIGHT = 1350;
+const PADDING = 80;
+
+// ============================================
 // UTILITY FUNCTIONS
 // ============================================
 
-/** RTL languages need dir="rtl" on card container for correct text rendering */
 function isRTL(lang: string): boolean {
   return lang === 'ar' || lang === 'he';
 }
@@ -164,210 +183,277 @@ function formatMinutes(minutes: number): string {
   return `${minutes}m`;
 }
 
-// ============================================
-// CARD TEMPLATES
-// ============================================
-
-function createCardElement(data: ShareCardData, lang: string = 'en'): HTMLDivElement {
-  const card = document.createElement('div');
-  const gradient = CARD_GRADIENTS[data.type];
-  const rarity = data.rarity || 'common';
-  const rarityStyle = RARITY_COLORS[rarity];
-  const rtl = isRTL(lang);
-
-  if (rtl) card.setAttribute('dir', 'rtl');
-  card.style.cssText = `
-    width: 1080px; height: 1080px;
-    background: ${gradient};
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 80px; box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: white; position: relative; overflow: hidden;
-    ${rtl ? 'direction: rtl;' : ''}
-  `;
-
-  // Background pattern
-  const pattern = document.createElement('div');
-  pattern.style.cssText = `
-    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-    background-image: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 0%, transparent 50%),
-                      radial-gradient(circle at 80% 20%, rgba(255,255,255,0.08) 0%, transparent 40%);
-    pointer-events: none;
-  `;
-  card.appendChild(pattern);
-
-  const content = document.createElement('div');
-  content.style.cssText = `
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    z-index: 1; text-align: center; gap: 40px;
-  `;
-
-  if (data.icon) {
-    const iconContainer = document.createElement('div');
-    iconContainer.style.cssText = `font-size: 140px; line-height: 1; filter: drop-shadow(0 0 30px ${rarityStyle.glow});`;
-    iconContainer.textContent = data.icon;
-    content.appendChild(iconContainer);
-  }
-
-  const title = document.createElement('div');
-  title.style.cssText = `font-size: 72px; font-weight: 800; letter-spacing: -1px; text-shadow: 0 4px 20px rgba(0,0,0,0.3); max-width: 900px;`;
-  title.textContent = data.title;
-  content.appendChild(title);
-
-  if (data.subtitle || data.value) {
-    const subtitle = document.createElement('div');
-    subtitle.style.cssText = `font-size: 48px; font-weight: 600; opacity: 0.95; text-shadow: 0 2px 10px rgba(0,0,0,0.2);`;
-    subtitle.textContent = data.subtitle || String(data.value);
-    content.appendChild(subtitle);
-  }
-
-  if (data.stats && data.stats.length > 0) {
-    const statsRow = document.createElement('div');
-    statsRow.style.cssText = `display: flex; gap: 60px; margin-top: 20px;`;
-
-    data.stats.forEach(stat => {
-      const statBox = document.createElement('div');
-      statBox.style.cssText = `display: flex; flex-direction: column; align-items: center; padding: 24px 40px; background: rgba(255,255,255,0.15); border-radius: 20px;`;
-
-      const statValue = document.createElement('div');
-      statValue.style.cssText = `font-size: 48px; font-weight: 700;`;
-      statValue.textContent = String(stat.value);
-
-      const statLabel = document.createElement('div');
-      statLabel.style.cssText = `font-size: 24px; opacity: 0.9; margin-top: 8px;`;
-      statLabel.textContent = stat.label;
-
-      statBox.appendChild(statValue);
-      statBox.appendChild(statLabel);
-      statsRow.appendChild(statBox);
-    });
-    content.appendChild(statsRow);
-  }
-
-  if (data.type === 'achievement' && data.rarity && data.rarity !== 'common') {
-    const rarityBadge = document.createElement('div');
-    rarityBadge.style.cssText = `
-      padding: 12px 32px; background: rgba(255,255,255,0.2); border: 3px solid ${rarityStyle.border};
-      border-radius: 50px; font-size: 28px; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 2px; box-shadow: 0 0 20px ${rarityStyle.glow};
-    `;
-    rarityBadge.textContent = data.rarity;
-    content.appendChild(rarityBadge);
-  }
-
-  card.appendChild(content);
-
-  // Footer
-  const footer = document.createElement('div');
-  footer.style.cssText = `position: absolute; bottom: 60px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 16px; font-size: 28px; opacity: 0.8;`;
-
-  if (data.username) {
-    footer.appendChild(createStyledSpan(`@${data.username}`));
-    footer.appendChild(createStyledSpan('•', 'opacity: 0.5'));
-  }
-  footer.appendChild(createStyledSpan('ZenFlow', 'font-weight: 600;'));
-  if (data.date) {
-    footer.appendChild(createStyledSpan(data.date, 'opacity: 0.5; margin-left: 8px;'));
-  }
-  card.appendChild(footer);
-
-  return card;
+function getTextAlign(lang: string): CanvasTextAlign {
+  return isRTL(lang) ? 'right' : 'center';
 }
 
-function createStreakCard(
+function getTextX(lang: string, width: number): number {
+  if (isRTL(lang)) return width - PADDING;
+  return width / 2;
+}
+
+function getDirection(lang: string): CanvasDirection | undefined {
+  return isRTL(lang) ? 'rtl' : undefined;
+}
+
+// ============================================
+// CARD DRAWING FUNCTIONS
+// ============================================
+
+function drawBackgroundPattern(ctx: CanvasRenderingContext2D, w: number, h: number): void {
+  drawRadialOverlay(ctx, w * 0.2, h * 0.8, w * 0.5, 'rgba(255,255,255,0.1)');
+  drawRadialOverlay(ctx, w * 0.8, h * 0.2, w * 0.4, 'rgba(255,255,255,0.08)');
+}
+
+function drawFooter(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  username?: string,
+  date?: string,
+  lang: string = 'en'
+): void {
+  const y = h - 60;
+  const parts: string[] = [];
+  if (username) parts.push(`@${sanitizeText(username)}`);
+  parts.push('ZenFlow');
+  if (date) parts.push(date);
+  const text = parts.join(' • ');
+
+  drawText(ctx, text, getTextX(lang, w), y, {
+    font: `600 28px ${FONT_FAMILY}`,
+    color: 'white',
+    align: isRTL(lang) ? 'right' : 'center',
+    baseline: 'middle',
+    opacity: 0.8,
+    direction: getDirection(lang),
+  });
+}
+
+function drawStreakCard(
+  ctx: CanvasRenderingContext2D,
   streak: number,
   tr: ShareCardTranslations,
   habitName?: string,
   username?: string,
   lang: string = 'en'
-): HTMLDivElement {
-  const card = document.createElement('div');
-  const rtl = isRTL(lang);
-  if (rtl) card.setAttribute('dir', 'rtl');
-  card.style.cssText = `
-    width: 1080px; height: 1080px;
-    background: linear-gradient(135deg, #FF6B35 0%, #F7931E 50%, #FFB347 100%);
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 80px; box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: white; position: relative; overflow: hidden;
-    ${rtl ? 'direction: rtl;' : ''}
-  `;
+): void {
+  const W = CARD_SIZE;
 
-  const fireRow = document.createElement('div');
-  fireRow.style.cssText = `font-size: 60px; margin-bottom: 40px; filter: drop-shadow(0 0 20px rgba(255,107,53,0.5));`;
-  fireRow.textContent = '🔥'.repeat(Math.min(streak, 10));
-  card.appendChild(fireRow);
+  // Background
+  fillGradientRect(ctx, 0, 0, W, W, 135, CARD_GRADIENTS.streak);
+  drawBackgroundPattern(ctx, W, W);
 
-  const streakNum = document.createElement('div');
-  streakNum.style.cssText = `font-size: 200px; font-weight: 900; line-height: 1; text-shadow: 0 8px 40px rgba(0,0,0,0.3);`;
-  streakNum.textContent = String(streak);
-  card.appendChild(streakNum);
+  const centerX = getTextX(lang, W);
+  const align = getTextAlign(lang);
+  const dir = getDirection(lang);
 
-  const label = document.createElement('div');
-  label.style.cssText = `font-size: 56px; font-weight: 700; letter-spacing: 8px; text-transform: uppercase; margin-top: 20px;`;
-  label.textContent = tr.dayStreak;
-  card.appendChild(label);
+  // Fire emojis row
+  const fireCount = Math.min(streak, 10);
+  const fireText = '🔥'.repeat(fireCount);
+  drawText(ctx, fireText, W / 2, 280, {
+    font: `60px ${FONT_FAMILY}`,
+    color: 'white',
+    align: 'center',
+    baseline: 'middle',
+    shadow: { color: 'rgba(255,107,53,0.5)', blur: 20 },
+  });
 
+  // Streak number
+  drawText(ctx, String(streak), W / 2, 480, {
+    font: `900 200px ${FONT_FAMILY}`,
+    color: 'white',
+    align: 'center',
+    baseline: 'middle',
+    shadow: { color: 'rgba(0,0,0,0.3)', blur: 40, offsetY: 8 },
+  });
+
+  // Day streak label
+  drawText(ctx, tr.dayStreak, centerX, 600, {
+    font: `700 56px ${FONT_FAMILY}`,
+    color: 'white',
+    align,
+    baseline: 'middle',
+    direction: dir,
+  });
+
+  // Habit name pill
   if (habitName) {
-    const habit = document.createElement('div');
-    habit.style.cssText = `font-size: 36px; margin-top: 40px; padding: 16px 40px; background: rgba(255,255,255,0.2); border-radius: 50px;`;
-    habit.textContent = `"${sanitizeText(habitName)}"`;
-    card.appendChild(habit);
+    const pillText = `"${sanitizeText(habitName)}"`;
+    const textWidth = measureText(ctx, pillText, `36px ${FONT_FAMILY}`);
+    const pillW = textWidth + 80;
+    const pillH = 64;
+    const pillX = W / 2 - pillW / 2;
+    const pillY = 660;
+    drawRoundedRect(ctx, pillX, pillY, pillW, pillH, 50, 'rgba(255,255,255,0.2)');
+    drawText(ctx, pillText, W / 2, pillY + pillH / 2, {
+      font: `36px ${FONT_FAMILY}`,
+      color: 'white',
+      align: 'center',
+      baseline: 'middle',
+    });
   }
 
-  const footer = document.createElement('div');
-  footer.style.cssText = `position: absolute; bottom: 60px; font-size: 28px; opacity: 0.9; display: flex; align-items: center; gap: 16px;`;
+  // Footer
+  const footerY = W - 60;
   if (username) {
-    footer.appendChild(createStyledSpan(`@${username}`));
-    footer.appendChild(createStyledSpan('•', 'opacity: 0.5'));
-    footer.appendChild(createStyledSpan('ZenFlow', 'font-weight: 600;'));
+    drawText(ctx, `@${sanitizeText(username)} • ZenFlow`, centerX, footerY, {
+      font: `600 28px ${FONT_FAMILY}`,
+      color: 'white',
+      align,
+      baseline: 'middle',
+      opacity: 0.9,
+      direction: dir,
+    });
   } else {
-    footer.appendChild(createStyledSpan(tr.trackHabits, 'font-weight: 600;'));
+    drawText(ctx, tr.trackHabits, centerX, footerY, {
+      font: `600 28px ${FONT_FAMILY}`,
+      color: 'white',
+      align,
+      baseline: 'middle',
+      opacity: 0.9,
+      direction: dir,
+    });
   }
-  card.appendChild(footer);
-
-  return card;
 }
 
-function createWeeklyCard(
+function drawGenericCard(
+  ctx: CanvasRenderingContext2D,
+  data: ShareCardData,
+  lang: string = 'en'
+): void {
+  const W = CARD_SIZE;
+  const gradient = CARD_GRADIENTS[data.type];
+  const rarity = data.rarity || 'common';
+  const rarityStyle = RARITY_COLORS[rarity];
+
+  // Background
+  fillGradientRect(ctx, 0, 0, W, W, 135, gradient);
+  drawBackgroundPattern(ctx, W, W);
+
+  const centerX = getTextX(lang, W);
+  const align = getTextAlign(lang);
+  const dir = getDirection(lang);
+  let y = 260;
+
+  // Icon (emoji)
+  if (data.icon) {
+    drawText(ctx, data.icon, W / 2, y, {
+      font: `140px ${FONT_FAMILY}`,
+      color: 'white',
+      align: 'center',
+      baseline: 'middle',
+      shadow: { color: rarityStyle.glow, blur: 30 },
+    });
+    y += 120;
+  }
+
+  // Title
+  drawText(ctx, sanitizeText(data.title), centerX, y, {
+    font: `800 72px ${FONT_FAMILY}`,
+    color: 'white',
+    align,
+    baseline: 'middle',
+    maxWidth: 900,
+    shadow: { color: 'rgba(0,0,0,0.3)', blur: 20, offsetY: 4 },
+    direction: dir,
+  });
+  y += 80;
+
+  // Subtitle or value
+  if (data.subtitle || data.value) {
+    drawText(ctx, sanitizeText(data.subtitle || String(data.value)), centerX, y, {
+      font: `600 48px ${FONT_FAMILY}`,
+      color: 'white',
+      align,
+      baseline: 'middle',
+      opacity: 0.95,
+      shadow: { color: 'rgba(0,0,0,0.2)', blur: 10, offsetY: 2 },
+      direction: dir,
+    });
+    y += 70;
+  }
+
+  // Stats row
+  if (data.stats && data.stats.length > 0) {
+    y += 20;
+    const statW = 180;
+    const statH = 100;
+    const gap = 30;
+    const totalW = data.stats.length * statW + (data.stats.length - 1) * gap;
+    let sx = W / 2 - totalW / 2;
+
+    for (const stat of data.stats) {
+      drawRoundedRect(ctx, sx, y, statW, statH, 20, 'rgba(255,255,255,0.15)');
+      drawText(ctx, String(stat.value), sx + statW / 2, y + 38, {
+        font: `700 48px ${FONT_FAMILY}`,
+        color: 'white',
+        align: 'center',
+        baseline: 'middle',
+      });
+      drawText(ctx, stat.label, sx + statW / 2, y + 76, {
+        font: `24px ${FONT_FAMILY}`,
+        color: 'white',
+        align: 'center',
+        baseline: 'middle',
+        opacity: 0.9,
+      });
+      sx += statW + gap;
+    }
+    y += statH + 30;
+  }
+
+  // Rarity badge
+  if (data.type === 'achievement' && data.rarity && data.rarity !== 'common') {
+    const badgeText = data.rarity.toUpperCase();
+    const badgeW = measureText(ctx, badgeText, `600 28px ${FONT_FAMILY}`) + 64;
+    const badgeH = 52;
+    const bx = W / 2 - badgeW / 2;
+    drawRoundedRect(ctx, bx, y, badgeW, badgeH, 50, 'rgba(255,255,255,0.2)', rarityStyle.border, 3);
+    drawText(ctx, badgeText, W / 2, y + badgeH / 2, {
+      font: `600 28px ${FONT_FAMILY}`,
+      color: 'white',
+      align: 'center',
+      baseline: 'middle',
+    });
+  }
+
+  // Footer
+  drawFooter(ctx, W, W, data.username, data.date, lang);
+}
+
+function drawWeeklyCard(
+  ctx: CanvasRenderingContext2D,
   data: WeeklyProgressData,
   tr: ShareCardTranslations,
   palette: ThemePalette,
   username?: string,
   lang: string = 'en'
-): HTMLDivElement {
-  const card = document.createElement('div');
-  const rtl = isRTL(lang);
-  if (rtl) card.setAttribute('dir', 'rtl');
-  card.style.cssText = `
-    width: 1080px; height: 1350px;
-    background: ${palette.cardBg};
-    display: flex; flex-direction: column; padding: 80px; box-sizing: border-box;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: ${palette.textColor}; position: relative;
-    ${rtl ? 'direction: rtl;' : ''}
-  `;
+): void {
+  const W = CARD_SIZE;
+  const H = WEEKLY_HEIGHT;
+  const dir = getDirection(lang);
+
+  // Background
+  fillGradientRect(ctx, 0, 0, W, H, 180, palette.cardBg);
 
   // Header
-  const header = document.createElement('div');
-  header.style.cssText = `margin-bottom: 60px; text-align: center;`;
+  drawText(ctx, tr.weeklyReview, W / 2, 100, {
+    font: `28px ${FONT_FAMILY}`,
+    color: palette.textSecondary,
+    align: 'center',
+    baseline: 'middle',
+    direction: dir,
+  });
+  drawText(ctx, sanitizeText(data.weekRange), W / 2, 150, {
+    font: `700 48px ${FONT_FAMILY}`,
+    color: palette.textColor,
+    align: 'center',
+    baseline: 'middle',
+    direction: dir,
+  });
 
-  const headerLabel = document.createElement('div');
-  headerLabel.style.cssText = `font-size: 28px; opacity: 0.7; margin-bottom: 12px;`;
-  headerLabel.textContent = tr.weeklyReview;
-  header.appendChild(headerLabel);
-
-  const headerWeek = document.createElement('div');
-  headerWeek.style.cssText = `font-size: 48px; font-weight: 700;`;
-  headerWeek.textContent = sanitizeText(data.weekRange);
-  header.appendChild(headerWeek);
-  card.appendChild(header);
-
-  // Stats grid
-  const statsGrid = document.createElement('div');
-  statsGrid.style.cssText = `display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 60px;`;
-
+  // Stats grid (2x2)
   const statItems = [
     { icon: '😊', label: tr.mood, value: getMoodText(data.moodAverage, tr), color: '#10B981' },
     { icon: '✅', label: tr.habits, value: `${data.habitsCompleted}/${data.habitsTotal}`, color: '#3B82F6' },
@@ -375,79 +461,194 @@ function createWeeklyCard(
     { icon: '🔥', label: tr.streak, value: `${data.streak} ${tr.days}`, color: '#F59E0B' },
   ];
 
-  statItems.forEach(stat => {
-    const box = document.createElement('div');
-    box.style.cssText = `background: ${palette.glassBg}; border-radius: 24px; padding: 32px; border: ${palette.glassBorder};`;
+  const gridX = PADDING;
+  const gridY = 220;
+  const cellW = (W - PADDING * 2 - 24) / 2;
+  const cellH = 180;
+  const gap = 24;
 
-    const iconDiv = document.createElement('div');
-    iconDiv.style.cssText = 'font-size: 48px; margin-bottom: 16px;';
-    iconDiv.textContent = stat.icon;
-    box.appendChild(iconDiv);
+  statItems.forEach((stat, i) => {
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const cx = gridX + col * (cellW + gap);
+    const cy = gridY + row * (cellH + gap);
 
-    const valueDiv = document.createElement('div');
-    valueDiv.style.cssText = `font-size: 36px; font-weight: 700; color: ${stat.color};`;
-    valueDiv.textContent = sanitizeText(stat.value);
-    box.appendChild(valueDiv);
+    drawRoundedRect(ctx, cx, cy, cellW, cellH, 24, palette.glassBg, palette.glassBorder, 1);
 
-    const labelDiv = document.createElement('div');
-    labelDiv.style.cssText = `font-size: 24px; color: ${palette.textSecondary}; margin-top: 8px;`;
-    labelDiv.textContent = stat.label;
-    box.appendChild(labelDiv);
+    // Icon
+    drawText(ctx, stat.icon, cx + 32, cy + 48, {
+      font: `48px ${FONT_FAMILY}`,
+      baseline: 'middle',
+    });
 
-    statsGrid.appendChild(box);
+    // Value
+    drawText(ctx, sanitizeText(stat.value), cx + 32, cy + 110, {
+      font: `700 36px ${FONT_FAMILY}`,
+      color: stat.color,
+      baseline: 'middle',
+      direction: dir,
+    });
+
+    // Label
+    drawText(ctx, stat.label, cx + 32, cy + 152, {
+      font: `24px ${FONT_FAMILY}`,
+      color: palette.textSecondary,
+      baseline: 'middle',
+      direction: dir,
+    });
   });
-  card.appendChild(statsGrid);
+
+  let nextY = gridY + 2 * (cellH + gap) + 20;
 
   // New badges
   if (data.newBadges.length > 0) {
-    const badgesSection = document.createElement('div');
-    badgesSection.style.cssText = `margin-bottom: 60px;`;
-
-    const badgesTitle = document.createElement('div');
-    badgesTitle.style.cssText = `font-size: 28px; color: ${palette.textSecondary}; margin-bottom: 24px; text-align: center;`;
-    badgesTitle.textContent = tr.newAchievements;
-    badgesSection.appendChild(badgesTitle);
-
-    const badgesRow = document.createElement('div');
-    badgesRow.style.cssText = `display: flex; justify-content: center; gap: 24px; flex-wrap: wrap;`;
-
-    data.newBadges.slice(0, 4).forEach(badge => {
-      const badgeEl = document.createElement('div');
-      badgeEl.style.cssText = `background: ${palette.glassBg}; border-radius: 16px; padding: 24px; text-align: center; min-width: 140px;`;
-
-      const badgeIcon = document.createElement('div');
-      badgeIcon.style.cssText = 'font-size: 48px;';
-      badgeIcon.textContent = badge.icon;
-      badgeEl.appendChild(badgeIcon);
-
-      const badgeTitle = document.createElement('div');
-      badgeTitle.style.cssText = `font-size: 18px; margin-top: 12px; color: ${palette.textSecondary};`;
-      badgeTitle.textContent = sanitizeText(badge.title[lang] || badge.title['en']);
-      badgeEl.appendChild(badgeTitle);
-
-      badgesRow.appendChild(badgeEl);
+    drawText(ctx, tr.newAchievements, W / 2, nextY, {
+      font: `28px ${FONT_FAMILY}`,
+      color: palette.textSecondary,
+      align: 'center',
+      baseline: 'middle',
+      direction: dir,
     });
+    nextY += 40;
 
-    badgesSection.appendChild(badgesRow);
-    card.appendChild(badgesSection);
+    const badgeSize = 120;
+    const badgeGap = 24;
+    const badges = data.newBadges.slice(0, 4);
+    const totalBadgeW = badges.length * badgeSize + (badges.length - 1) * badgeGap;
+    let bx = W / 2 - totalBadgeW / 2;
+
+    for (const badge of badges) {
+      drawRoundedRect(ctx, bx, nextY, badgeSize, badgeSize + 30, 16, palette.glassBg);
+      // Badge icon
+      drawText(ctx, badge.icon, bx + badgeSize / 2, nextY + 50, {
+        font: `48px ${FONT_FAMILY}`,
+        align: 'center',
+        baseline: 'middle',
+      });
+      // Badge title
+      const badgeTitle = badge.title[lang] || badge.title['en'];
+      drawText(ctx, sanitizeText(badgeTitle), bx + badgeSize / 2, nextY + badgeSize + 10, {
+        font: `18px ${FONT_FAMILY}`,
+        color: palette.textSecondary,
+        align: 'center',
+        baseline: 'middle',
+        maxWidth: badgeSize - 8,
+        direction: dir,
+      });
+      bx += badgeSize + badgeGap;
+    }
+    nextY += badgeSize + 60;
   }
 
   // Footer
-  const footer = document.createElement('div');
-  footer.style.cssText = `margin-top: auto; text-align: center; padding-top: 40px; border-top: ${palette.footerBorder};`;
+  const footerY = H - 80;
+  // Divider line
+  ctx.beginPath();
+  ctx.moveTo(PADDING, footerY - 30);
+  ctx.lineTo(W - PADDING, footerY - 30);
+  ctx.strokeStyle = palette.footerBorder;
+  ctx.lineWidth = 1;
+  ctx.stroke();
 
-  const footerBrand = document.createElement('div');
-  footerBrand.style.cssText = `font-size: 32px; font-weight: 600; margin-bottom: 8px;`;
-  footerBrand.textContent = 'ZenFlow';
-  footer.appendChild(footerBrand);
+  drawText(ctx, 'ZenFlow', W / 2, footerY, {
+    font: `600 32px ${FONT_FAMILY}`,
+    color: palette.textColor,
+    align: 'center',
+    baseline: 'middle',
+    direction: dir,
+  });
 
-  const footerInfo = document.createElement('div');
-  footerInfo.style.cssText = `font-size: 20px; color: ${palette.textSecondary};`;
-  footerInfo.textContent = username ? `@${sanitizeText(username)} • zenflow.app` : 'zenflow.app';
-  footer.appendChild(footerInfo);
+  const footerInfo = username ? `@${sanitizeText(username)} • zenflow.app` : 'zenflow.app';
+  drawText(ctx, footerInfo, W / 2, footerY + 36, {
+    font: `20px ${FONT_FAMILY}`,
+    color: palette.textSecondary,
+    align: 'center',
+    baseline: 'middle',
+    direction: dir,
+  });
+}
 
-  card.appendChild(footer);
-  return card;
+function drawTrophyCard(
+  ctx: CanvasRenderingContext2D,
+  data: TrophyShareData,
+  tr: ShareCardTranslations,
+  theme: 'light' | 'dark',
+  lang: string = 'en'
+): void {
+  const W = CARD_SIZE;
+  const dir = getDirection(lang);
+  const palette = getPalette(theme);
+
+  // Background
+  fillGradientRect(ctx, 0, 0, W, W, 135, [
+    [0, theme === 'dark' ? '#1a1a2e' : '#FFFBEB'],
+    [0.5, theme === 'dark' ? '#16213e' : '#FEF3C7'],
+    [1, theme === 'dark' ? '#0f3460' : '#FDE68A'],
+  ]);
+
+  // Trophy icon
+  drawText(ctx, '🏆', W / 2, 200, {
+    font: `120px ${FONT_FAMILY}`,
+    align: 'center',
+    baseline: 'middle',
+    shadow: { color: 'rgba(245,158,11,0.5)', blur: 30 },
+  });
+
+  // Title
+  drawText(ctx, 'ZenFlow', W / 2, 320, {
+    font: `800 64px ${FONT_FAMILY}`,
+    color: palette.textColor,
+    align: 'center',
+    baseline: 'middle',
+    direction: dir,
+  });
+
+  // Stats
+  const stats = [
+    { icon: '🔥', label: tr.streak, value: `${data.streak}`, color: '#F59E0B' },
+    { icon: '⏱️', label: tr.focus, value: formatMinutes(data.focusMinutes), color: '#8B5CF6' },
+    { icon: '✅', label: tr.habits, value: `${data.habitsCompleted}`, color: '#10B981' },
+  ];
+
+  const statW = 260;
+  const statH = 140;
+  const gap = 30;
+  const totalW = stats.length * statW + (stats.length - 1) * gap;
+  let sx = W / 2 - totalW / 2;
+  const statY = 420;
+
+  for (const stat of stats) {
+    drawRoundedRect(ctx, sx, statY, statW, statH, 24, palette.glassBg, palette.glassBorder, 1);
+    drawText(ctx, stat.icon, sx + statW / 2, statY + 40, {
+      font: `40px ${FONT_FAMILY}`,
+      align: 'center',
+      baseline: 'middle',
+    });
+    drawText(ctx, stat.value, sx + statW / 2, statY + 85, {
+      font: `700 40px ${FONT_FAMILY}`,
+      color: stat.color,
+      align: 'center',
+      baseline: 'middle',
+    });
+    drawText(ctx, stat.label, sx + statW / 2, statY + 120, {
+      font: `22px ${FONT_FAMILY}`,
+      color: palette.textSecondary,
+      align: 'center',
+      baseline: 'middle',
+      direction: dir,
+    });
+    sx += statW + gap;
+  }
+
+  // Footer
+  drawText(ctx, tr.trackHabits, W / 2, W - 80, {
+    font: `600 28px ${FONT_FAMILY}`,
+    color: palette.textSecondary,
+    align: 'center',
+    baseline: 'middle',
+    opacity: 0.8,
+    direction: dir,
+  });
 }
 
 // ============================================
@@ -456,8 +657,9 @@ function createWeeklyCard(
 
 export async function generateShareCard(data: ShareCardData, lang: string = 'en'): Promise<Blob> {
   await ensureSanitizer();
-  const cardElement = createCardElement(data, lang);
-  return renderCardToBlob(cardElement, 1080, 1080);
+  const [canvas, ctx] = createCanvas(CARD_SIZE, CARD_SIZE);
+  drawGenericCard(ctx, data, lang);
+  return canvasToBlob(canvas);
 }
 
 export async function generateStreakCard(
@@ -468,8 +670,9 @@ export async function generateStreakCard(
   lang: string = 'en'
 ): Promise<Blob> {
   await ensureSanitizer();
-  const cardElement = createStreakCard(streak, tr, habitName, username, lang);
-  return renderCardToBlob(cardElement, 1080, 1080);
+  const [canvas, ctx] = createCanvas(CARD_SIZE, CARD_SIZE);
+  drawStreakCard(ctx, streak, tr, habitName, username, lang);
+  return canvasToBlob(canvas);
 }
 
 export async function generateWeeklyCard(
@@ -481,8 +684,9 @@ export async function generateWeeklyCard(
 ): Promise<Blob> {
   await ensureSanitizer();
   const palette = getPalette(theme);
-  const cardElement = createWeeklyCard(data, tr, palette, username, lang);
-  return renderCardToBlob(cardElement, 1080, 1350);
+  const [canvas, ctx] = createCanvas(CARD_SIZE, WEEKLY_HEIGHT);
+  drawWeeklyCard(ctx, data, tr, palette, username, lang);
+  return canvasToBlob(canvas);
 }
 
 export async function generateAchievementCard(
@@ -501,6 +705,18 @@ export async function generateAchievementCard(
       ? new Date(badge.unlockedDate).toLocaleDateString()
       : new Date().toLocaleDateString(),
   }, lang);
+}
+
+export async function generateTrophyCard(
+  data: TrophyShareData,
+  tr: ShareCardTranslations = DEFAULT_CARD_TRANSLATIONS,
+  theme: 'light' | 'dark' = 'dark',
+  lang: string = 'en'
+): Promise<Blob> {
+  await ensureSanitizer();
+  const [canvas, ctx] = createCanvas(CARD_SIZE, CARD_SIZE);
+  drawTrophyCard(ctx, data, tr, theme, lang);
+  return canvasToBlob(canvas);
 }
 
 // Legacy re-exports for backwards compatibility during migration
