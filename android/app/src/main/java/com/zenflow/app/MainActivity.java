@@ -2,6 +2,7 @@ package com.zenflow.app;
 
 import android.content.Intent;
 import android.os.Bundle;
+import androidx.activity.EdgeToEdge;
 import com.getcapacitor.BridgeActivity;
 import ee.forgr.capacitor.social.login.ModifiedMainActivityForSocialLoginPlugin;
 
@@ -17,6 +18,9 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
+        // Enable edge-to-edge display (required for targetSdk 35 / Android 15+)
+        EdgeToEdge.enable(this);
+
         // P0 Fix #5: Call super.onCreate() FIRST before registering plugins
         // This ensures the Capacitor Bridge is properly initialized
         super.onCreate(savedInstanceState);

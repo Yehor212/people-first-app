@@ -37,7 +37,6 @@ export const applyTheme = (effectiveTheme: EffectiveTheme) => {
   if (Capacitor.isNativePlatform()) {
     const isDark = effectiveTheme === 'dark';
     StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});
-    StatusBar.setBackgroundColor({ color: isDark ? '#0a0a0a' : '#f5f0e8' }).catch(() => {});
   }
 };
 
