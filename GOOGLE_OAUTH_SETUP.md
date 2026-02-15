@@ -66,6 +66,7 @@ SHA1: AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD
    ```
    com.zenflow.app://login-callback
    https://bwgfslmxmueyglpumkbf.supabase.co/auth/v1/callback
+   https://yehor212.github.io/people-first-app/
    ```
 8. Add to **Site URL**: `com.zenflow.app://`
 9. Click **Save**
@@ -215,6 +216,7 @@ npm run cap:open:android
 ### Redirect URLs
 - **Android Deep Link**: `com.zenflow.app://login-callback`
 - **Supabase Callback**: `https://bwgfslmxmueyglpumkbf.supabase.co/auth/v1/callback`
+- **Web (GitHub Pages)**: `https://yehor212.github.io/people-first-app/`
 
 ### Important Files
 - **Android Manifest**: `android/app/src/main/AndroidManifest.xml`
