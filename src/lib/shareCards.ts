@@ -4,7 +4,6 @@
  */
 
 import { Badge } from '@/types';
-import { logger } from '@/lib/logger';
 import {
   createCanvas,
   fillGradientRect,
@@ -475,24 +474,32 @@ function drawWeeklyCard(
 
     drawRoundedRect(ctx, cx, cy, cellW, cellH, 24, palette.glassBg, palette.glassBorder, 1);
 
+    // RTL: align content to end of cell
+    const rtl = isRTL(lang);
+    const textX = rtl ? cx + cellW - 32 : cx + 32;
+    const textAlign: CanvasTextAlign = rtl ? 'right' : 'left';
+
     // Icon
-    drawText(ctx, stat.icon, cx + 32, cy + 48, {
+    drawText(ctx, stat.icon, textX, cy + 48, {
       font: `48px ${FONT_FAMILY}`,
+      align: textAlign,
       baseline: 'middle',
     });
 
     // Value
-    drawText(ctx, sanitizeText(stat.value), cx + 32, cy + 110, {
+    drawText(ctx, sanitizeText(stat.value), textX, cy + 110, {
       font: `700 36px ${FONT_FAMILY}`,
       color: stat.color,
+      align: textAlign,
       baseline: 'middle',
       direction: dir,
     });
 
     // Label
-    drawText(ctx, stat.label, cx + 32, cy + 152, {
+    drawText(ctx, stat.label, textX, cy + 152, {
       font: `24px ${FONT_FAMILY}`,
       color: palette.textSecondary,
+      align: textAlign,
       baseline: 'middle',
       direction: dir,
     });
@@ -721,6 +728,3 @@ export async function generateTrophyCard(
 
 // Legacy re-exports for backwards compatibility during migration
 export { downloadImage, shareImage, copyImageToClipboard } from '@/lib/shareActions';
-
-// Suppress unused import warning
-void logger;

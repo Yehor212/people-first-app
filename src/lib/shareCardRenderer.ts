@@ -33,7 +33,7 @@ export async function preloadShareCardAssets(): Promise<void> {
  */
 export function sanitizeText(text: string | undefined | null): string {
   if (!text) return '';
-  if (!_DOMPurify) return text;
+  if (!_DOMPurify) return text.replace(/<[^>]*>/g, '');
   return _DOMPurify.sanitize(text, { ALLOWED_TAGS: [] });
 }
 
@@ -80,7 +80,8 @@ export function drawLinearGradient(
   const rad = ((angleDeg - 90) * Math.PI) / 180;
   const cx = x + w / 2;
   const cy = y + h / 2;
-  const len = Math.max(w, h);
+  // CSS-spec gradient line length for non-square rects
+  const len = (Math.abs(w * Math.sin(rad)) + Math.abs(h * Math.cos(rad))) / 2;
   const dx = Math.cos(rad) * len;
   const dy = Math.sin(rad) * len;
   const grad = ctx.createLinearGradient(cx - dx, cy - dy, cx + dx, cy + dy);
@@ -121,7 +122,18 @@ export function drawRoundedRect(
   lineWidth?: number
 ): void {
   ctx.beginPath();
-  ctx.roundRect(x, y, w, h, radius);
+  // Polyfill for older Android WebViews (Chrome <112)
+  if (ctx.roundRect) {
+    ctx.roundRect(x, y, w, h, radius);
+  } else {
+    const r = Math.min(radius, w / 2, h / 2);
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
   if (fillStyle) {
     ctx.fillStyle = fillStyle;
     ctx.fill();
@@ -141,7 +153,6 @@ interface TextOptions {
   maxWidth?: number;
   direction?: CanvasDirection;
   shadow?: { color: string; blur: number; offsetX?: number; offsetY?: number };
-  letterSpacing?: number;
   opacity?: number;
 }
 

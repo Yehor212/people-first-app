@@ -7,17 +7,14 @@
  * - 3D flip cards for each achievement
  */
 
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Share2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useTheme } from '@/components/ThemeToggle';
 import { FireIcon, StarIcon, TrophyIcon, TargetIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { logger } from '@/lib/logger';
-import { shareImage } from '@/lib/shareActions';
-import { generateTrophyCard, DEFAULT_CARD_TRANSLATIONS, ShareCardTranslations } from '@/lib/shareCards';
-import { hapticError } from '@/lib/haptics';
+import { UnifiedShareModal } from '@/components/share';
+import { hapticTap } from '@/lib/haptics';
 
 interface Achievement {
   id: string;
@@ -201,57 +198,8 @@ function AchievementCard({
 }
 
 export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }: TrophyHallProps) {
-  const { t, language } = useLanguage();
-  const { effectiveTheme } = useTheme();
-  const [isSharing, setIsSharing] = useState(false);
-  const [shareError, setShareError] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const errorTimerRef = useRef<number | null>(null);
-
-  // Cleanup error timer on unmount
-  useEffect(() => {
-    return () => {
-      if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current);
-    };
-  }, []);
-
-  // Share achievements as Canvas 2D generated image
-  const handleShare = async () => {
-    if (isSharing) return;
-    setIsSharing(true);
-    setShareError(false);
-
-    try {
-      const cardTranslations: ShareCardTranslations = {
-        ...DEFAULT_CARD_TRANSLATIONS,
-        streak: t.shareCardStreak || DEFAULT_CARD_TRANSLATIONS.streak,
-        focus: t.shareCardFocus || DEFAULT_CARD_TRANSLATIONS.focus,
-        habits: t.shareCardHabits || DEFAULT_CARD_TRANSLATIONS.habits,
-        trackHabits: t.shareCardTrackHabits || DEFAULT_CARD_TRANSLATIONS.trackHabits,
-      };
-      const theme = effectiveTheme === 'dark' ? 'dark' : 'light';
-      const blob = await generateTrophyCard(
-        { streak, focusMinutes, habitsCompleted },
-        cardTranslations,
-        theme,
-        language,
-      );
-
-      await shareImage(
-        blob,
-        t.shareAchievements || 'My ZenFlow Achievements',
-        `${streak} ${t.daysInRow || 'day streak'} | ${focusMinutes} ${t.focusMinutes || 'focus mins'} | ${habitsCompleted} ${t.habitsCompleted || 'habits'}`
-      );
-    } catch (error) {
-      logger.error('Share failed:', error);
-      void hapticError();
-      setShareError(true);
-      if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current);
-      errorTimerRef.current = window.setTimeout(() => setShareError(false), 3000);
-    } finally {
-      setIsSharing(false);
-    }
-  };
+  const { t } = useLanguage();
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const achievements: Achievement[] = useMemo(() => [
     { id: 'streak', type: 'streak', value: streak, label: t.currentStreak || 'Current Streak', icon: 'fire' },
@@ -283,7 +231,6 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
 
   return (
     <div
-      ref={cardRef}
       className={cn(
         "relative overflow-hidden rounded-2xl",
         // Light mode: add shadow and ring for visual separation
@@ -294,40 +241,18 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
     >
       {/* Share button */}
       <motion.button
-        onClick={handleShare}
-        disabled={isSharing}
+        onClick={() => { void hapticTap(); setShowShareModal(true); }}
         className={cn(
           "absolute top-3 end-3 z-20 p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full transition-all",
           "bg-amber-500/20 hover:bg-amber-500/40",
           "backdrop-blur-sm border border-amber-500/30",
-          isSharing && "opacity-50 cursor-wait"
         )}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.95 }}
-        aria-label={isSharing ? (t.sharing || 'Sharing...') : (t.shareAchievements || 'Share achievements')}
+        aria-label={t.shareAchievements || 'Share achievements'}
       >
-        {isSharing ? (
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-          >
-            <Share2 className="w-4 h-4 text-amber-700 dark:text-amber-200" aria-hidden="true" />
-          </motion.div>
-        ) : (
-          <Share2 className="w-4 h-4 text-amber-700 dark:text-amber-200" aria-hidden="true" />
-        )}
+        <Share2 className="w-4 h-4 text-amber-700 dark:text-amber-200" aria-hidden="true" />
       </motion.button>
-
-      {/* Share error toast */}
-      {shareError && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="absolute top-14 end-3 z-20 px-3 py-2 rounded-lg bg-destructive/90 text-destructive-foreground text-xs font-medium backdrop-blur-sm animate-fade-in"
-        >
-          {t.shareGenerateError || 'Failed to share. Try again.'}
-        </div>
-      )}
 
       {/* Theme-aware temple background */}
       <div
@@ -408,6 +333,14 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
         style={{
           background: `radial-gradient(ellipse at bottom, hsl(var(--temple-ambient-glow) / 0.08) 0%, transparent 70%)`,
         }}
+      />
+
+      {/* Share modal */}
+      <UnifiedShareModal
+        open={showShareModal}
+        onOpenChange={setShowShareModal}
+        mode="trophy"
+        data={{ streak, focusMinutes, habitsCompleted }}
       />
     </div>
   );

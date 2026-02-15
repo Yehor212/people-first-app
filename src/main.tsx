@@ -9,7 +9,7 @@ import { setupDeepLinks } from "./lib/deepLinks";
 import { offlineQueue } from "./lib/offlineQueue";
 import { flushSync } from "./storage/cloudSync";
 import { initSentry, captureError } from "./lib/sentry";
-import { cleanupShareCache } from "./lib/shareCards";
+import { cleanupShareCache } from "./lib/shareActions";
 import { initA11y } from "./lib/a11y";
 import { App as CapacitorApp } from "@capacitor/app";
 import { Capacitor } from "@capacitor/core";

@@ -133,6 +133,11 @@ export async function shareImage(
       // Cleanup handled by cleanupShareCache() on app resume (24h TTL).
       return true;
     } catch (err) {
+      // User cancellation is not an error (Capacitor throws on cancel/dismiss)
+      const msg = (err as Error)?.message?.toLowerCase() || '';
+      if (msg.includes('cancel') || msg.includes('dismiss') || msg.includes('user')) {
+        return false;
+      }
       logger.error('[ShareActions] Native share failed:', err);
       return false;
     }

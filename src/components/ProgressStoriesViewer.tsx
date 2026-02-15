@@ -14,19 +14,17 @@
  * - Outro: New Day Sunrise
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X, Share2, Pause, Play } from 'lucide-react';
-import { cn, interpolate } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { logger } from '@/lib/logger';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { StorySlide, MoodTrendData, HabitStatsData, FocusStatsData } from '@/lib/progressStories';
-import { generateWeeklyCard, WeeklyProgressData } from '@/lib/shareCards';
-import { shareImage } from '@/lib/shareActions';
+import { WeeklyProgressData } from '@/lib/shareCards';
+import { UnifiedShareModal } from '@/components/share';
 import { Badge } from '@/types';
-import { hapticTap, hapticSuccess, hapticError } from '@/lib/haptics';
+import { hapticTap } from '@/lib/haptics';
 
 // Import premium slide components
 import {
@@ -110,10 +108,9 @@ export function ProgressStoriesViewer({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [isSharing, setIsSharing] = useState(false);
-  const [shareError, setShareError] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const errorTimerRef = useRef<number | null>(null);
+  const wasPausedBeforeShareRef = useRef(false);
 
   const SLIDE_DURATION = 5000; // 5 seconds per slide
   const PROGRESS_INTERVAL = 50; // Update progress every 50ms
@@ -122,7 +119,7 @@ export function ProgressStoriesViewer({
 
   // Auto-advance timer
   useEffect(() => {
-    if (isPaused || isSharing) return;
+    if (isPaused) return;
 
     let isMounted = true;
 
@@ -162,19 +159,12 @@ export function ProgressStoriesViewer({
         timerRef.current = null;
       }
     };
-  }, [currentIndex, isPaused, isSharing, slides.length, onClose]);
+  }, [currentIndex, isPaused, slides.length, onClose]);
 
   // Reset progress when slide changes
   useEffect(() => {
     setProgress(0);
   }, [currentIndex]);
-
-  // Cleanup error timer
-  useEffect(() => {
-    return () => {
-      if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current);
-    };
-  }, []);
 
   const goToPrevious = useCallback(() => {
     void hapticTap();
@@ -199,65 +189,42 @@ export function ProgressStoriesViewer({
     setIsPaused(p => !p);
   }, []);
 
-  const handleShare = useCallback(async () => {
+  // Pre-compute weekly data from slides for the share modal
+  const weeklyShareData = useMemo((): WeeklyProgressData => {
+    const moodData = slides.find(s => s.type === 'mood')?.data as MoodTrendData | undefined;
+    const habitData = slides.find(s => s.type === 'habits')?.data as HabitStatsData | undefined;
+    const focusData = slides.find(s => s.type === 'focus')?.data as FocusStatsData | undefined;
+
+    const totalCompletions = habitData?.totalCompletions || 0;
+    const completionRate = habitData?.completionRate || 0;
+    const habitsTotal = completionRate > 0
+      ? Math.round(totalCompletions / (completionRate / 100))
+      : totalCompletions;
+
+    return {
+      weekRange,
+      moodAverage: moodData?.average || 0,
+      habitsCompleted: totalCompletions,
+      habitsTotal: Math.max(habitsTotal, totalCompletions),
+      focusMinutes: focusData?.totalMinutes || 0,
+      streak,
+      newBadges,
+    };
+  }, [slides, weekRange, streak, newBadges]);
+
+  const handleShare = useCallback(() => {
     void hapticTap();
-    setIsSharing(true);
+    wasPausedBeforeShareRef.current = isPaused;
     setIsPaused(true);
+    setShowShareModal(true);
+  }, [isPaused]);
 
-    try {
-      // Extract real data from slides using proper types
-      const moodSlide = slides.find(s => s.type === 'mood');
-      const habitSlide = slides.find(s => s.type === 'habits');
-      const focusSlide = slides.find(s => s.type === 'focus');
-
-      const moodData = moodSlide?.data as MoodTrendData | undefined;
-      const habitData = habitSlide?.data as HabitStatsData | undefined;
-      const focusData = focusSlide?.data as FocusStatsData | undefined;
-
-      // Calculate habitsTotal from completionRate
-      // completionRate = (totalCompletions / totalPossible) * 100
-      // So: totalPossible = totalCompletions / (completionRate / 100)
-      const totalCompletions = habitData?.totalCompletions || 0;
-      const completionRate = habitData?.completionRate || 0;
-      const habitsTotal = completionRate > 0
-        ? Math.round(totalCompletions / (completionRate / 100))
-        : totalCompletions;
-
-      // Generate weekly card with actual data from slides
-      const weeklyData: WeeklyProgressData = {
-        weekRange,
-        moodAverage: moodData?.average || 0,
-        habitsCompleted: totalCompletions,
-        habitsTotal: Math.max(habitsTotal, totalCompletions), // Ensure total >= completed
-        focusMinutes: focusData?.totalMinutes || 0,
-        streak,
-        newBadges,
-      };
-
-      const blob = await generateWeeklyCard(weeklyData, undefined, 'dark', undefined, language);
-      const shared = await shareImage(
-        blob,
-        t.myProgress || 'My Weekly Progress',
-        interpolate(t.shareText || '{streak} day streak! {habits} habits completed, {focus} minutes of focus.', {
-          streak,
-          habits: totalCompletions,
-          focus: focusData?.totalMinutes || 0,
-        })
-      );
-
-      if (shared) {
-        void hapticSuccess();
-      }
-    } catch (error) {
-      logger.error('Failed to share:', error);
-      void hapticError();
-      setShareError(true);
-      if (errorTimerRef.current) window.clearTimeout(errorTimerRef.current);
-      errorTimerRef.current = window.setTimeout(() => setShareError(false), 3000);
-    } finally {
-      setIsSharing(false);
+  const handleShareModalClose = useCallback((open: boolean) => {
+    setShowShareModal(open);
+    if (!open && !wasPausedBeforeShareRef.current) {
+      setIsPaused(false);
     }
-  }, [weekRange, streak, newBadges, language, t, slides]);
+  }, []);
 
   // Handle touch/click navigation
   const handleTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
@@ -344,13 +311,12 @@ export function ProgressStoriesViewer({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                void handleShare();
+                handleShare();
               }}
-              disabled={isSharing}
-              className="p-2 rounded-full bg-black/20 text-white"
+              className="p-2 rounded-full bg-black/20 text-white min-h-[44px] min-w-[44px] flex items-center justify-center"
               aria-label={t.shareButton || 'Share'}
             >
-              <Share2 className={cn('w-5 h-5', isSharing && 'animate-pulse')} />
+              <Share2 className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -367,21 +333,8 @@ export function ProgressStoriesViewer({
           <span>{t.storyTapRight || 'Tap right →'}</span>
         </div>
 
-        {/* Share error toast */}
-        {shareError && (
-          <div className="absolute top-20 start-0 end-0 flex justify-center z-20 pointer-events-none">
-            <div
-              role="status"
-              aria-live="polite"
-              className="px-4 py-2 rounded-full bg-red-500/90 text-white text-sm font-medium backdrop-blur-sm animate-fade-in"
-            >
-              {t.shareGenerateError || 'Failed to share. Try again.'}
-            </div>
-          </div>
-        )}
-
         {/* Pause indicator */}
-        {isPaused && !isSharing && (
+        {isPaused && !showShareModal && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/30">
             <div className="bg-white/20 rounded-full p-4">
               <Pause className="w-12 h-12 text-white" />
@@ -389,6 +342,14 @@ export function ProgressStoriesViewer({
           </div>
         )}
       </div>
+
+      {/* Share modal */}
+      <UnifiedShareModal
+        open={showShareModal}
+        onOpenChange={handleShareModalClose}
+        mode="weekly"
+        data={weeklyShareData}
+      />
     </div>
   );
 }

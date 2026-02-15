@@ -72,6 +72,7 @@ export function useShareFlow({ open, generateFn, errorMessage }: UseShareFlowOpt
   const isMountedRef = useRef(true);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastThrottleRef = useRef<Record<string, number>>({});
+  const genIdRef = useRef(0);
 
   // Track mounted state
   useEffect(() => {
@@ -93,6 +94,10 @@ export function useShareFlow({ open, generateFn, errorMessage }: UseShareFlowOpt
       if (state.imageUrl) {
         URL.revokeObjectURL(state.imageUrl);
       }
+      // Clear any pending success timer (M6)
+      if (successTimerRef.current) clearTimeout(successTimerRef.current);
+      // Invalidate any in-flight generation (H2)
+      genIdRef.current++;
       dispatch({ type: 'RESET' });
       return;
     }
@@ -102,18 +107,22 @@ export function useShareFlow({ open, generateFn, errorMessage }: UseShareFlowOpt
   }, [open]);
 
   const generate = useCallback(async () => {
+    // Revoke old URL to prevent leak on retry (H1)
+    if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
+    const id = ++genIdRef.current;
     dispatch({ type: 'GENERATE_START' });
     try {
       const blob = await generateFn();
-      if (!isMountedRef.current) return;
+      // Abort if unmounted or a newer generation started (H2)
+      if (!isMountedRef.current || id !== genIdRef.current) return;
       const url = URL.createObjectURL(blob);
       dispatch({ type: 'GENERATE_SUCCESS', blob, url });
     } catch (error) {
-      if (!isMountedRef.current) return;
+      if (!isMountedRef.current || id !== genIdRef.current) return;
       logger.error('[useShareFlow] Generation failed:', error);
       dispatch({ type: 'GENERATE_ERROR', error: errorMessage });
     }
-  }, [generateFn, errorMessage]);
+  }, [generateFn, errorMessage, state.imageUrl]);
 
   const startSuccessTimer = useCallback(() => {
     if (successTimerRef.current) clearTimeout(successTimerRef.current);

@@ -15,12 +15,14 @@ import { useShareFlow } from '@/hooks/useShareFlow';
 import {
   ShareCardData,
   WeeklyProgressData,
+  TrophyShareData,
   ShareCardTranslations,
   DEFAULT_CARD_TRANSLATIONS,
   generateShareCard,
   generateStreakCard,
   generateWeeklyCard,
   generateAchievementCard,
+  generateTrophyCard,
 } from '@/lib/shareCards';
 import type { Badge } from '@/types';
 
@@ -55,11 +57,17 @@ interface WeeklyProps extends BaseProps {
   data: WeeklyProgressData;
 }
 
+interface TrophyProps extends BaseProps {
+  mode: 'trophy';
+  data: TrophyShareData;
+}
+
 export type UnifiedShareModalProps =
   | AchievementProps
   | StreakProps
   | ProgressProps
-  | WeeklyProps;
+  | WeeklyProps
+  | TrophyProps;
 
 // ============================================
 // TRANSLATION BRIDGE
@@ -101,39 +109,23 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
 
   const theme = effectiveTheme === 'dark' ? 'dark' : 'light';
 
+  // Extract mode-specific data before the switch (H4: proper deps)
+  const badgeData = props.mode === 'achievement' ? props.badge : null;
+  const streakValue = props.mode === 'streak' ? props.streak : null;
+  const habitName = props.mode === 'streak' ? props.habitName : undefined;
+  const weeklyData = props.mode === 'weekly' ? props.data : null;
+  const progressData = props.mode === 'progress' ? props.data : null;
+  const trophyData = props.mode === 'trophy' ? props.data : null;
+
   // Build the generate function for this mode
   const generateFn = useCallback(async (): Promise<Blob> => {
-    switch (props.mode) {
-      case 'achievement':
-        return generateAchievementCard(
-          props.badge,
-          language,
-          username
-        );
-
-      case 'streak':
-        return generateStreakCard(
-          props.streak,
-          cardTranslations,
-          props.habitName,
-          username,
-          language
-        );
-
-      case 'weekly':
-        return generateWeeklyCard(
-          props.data,
-          cardTranslations,
-          theme,
-          username,
-          language
-        );
-
-      case 'progress':
-        return generateShareCard(props.data, language);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, language, username, theme, cardTranslations]);
+    if (badgeData) return generateAchievementCard(badgeData, language, username);
+    if (streakValue !== null) return generateStreakCard(streakValue, cardTranslations, habitName, username, language);
+    if (weeklyData) return generateWeeklyCard(weeklyData, cardTranslations, theme, username, language);
+    if (progressData) return generateShareCard(progressData, language);
+    if (trophyData) return generateTrophyCard(trophyData, cardTranslations, theme, language);
+    throw new Error('Unknown share mode');
+  }, [badgeData, streakValue, habitName, weeklyData, progressData, trophyData, language, username, theme, cardTranslations]);
 
   const {
     status,
@@ -189,6 +181,8 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
         return t.myProgress || 'My Weekly Progress';
       case 'progress':
         return t.myProgress || 'My Progress';
+      case 'trophy':
+        return t.shareAchievements || 'My ZenFlow Achievements';
     }
   }
 
@@ -206,9 +200,15 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
         });
       case 'progress':
         return interpolate(t.shareText || '{streak} day streak! {habits} habits completed, {focus} minutes of focus.', {
-          streak: props.data.stats?.find(s => s.label.toLowerCase().includes('streak'))?.value || 0,
-          habits: props.data.stats?.find(s => s.label.toLowerCase().includes('habit'))?.value || 0,
-          focus: props.data.stats?.find(s => s.label.toLowerCase().includes('focus'))?.value || 0,
+          streak: props.data.stats?.[0]?.value || 0,
+          habits: props.data.stats?.[1]?.value || 0,
+          focus: props.data.stats?.[2]?.value || 0,
+        });
+      case 'trophy':
+        return interpolate(t.shareText || '{streak} day streak! {habits} habits completed, {focus} minutes of focus.', {
+          streak: props.data.streak,
+          habits: props.data.habitsCompleted,
+          focus: props.data.focusMinutes,
         });
     }
   }
@@ -223,6 +223,8 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
         return t.myProgress || 'Share Weekly Report';
       case 'progress':
         return t.shareAchievements || 'Share Progress';
+      case 'trophy':
+        return t.hallOfFame || 'Hall of Fame';
     }
   }
 
@@ -245,7 +247,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in"
+        className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in"
         onClick={() => onOpenChange(false)}
       />
 
@@ -253,12 +255,13 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
       <div
         role="dialog"
         aria-modal="true"
-        className="fixed bottom-0 start-0 end-0 z-[60] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)]"
+        aria-labelledby="share-dialog-title"
+        className="fixed bottom-0 start-0 end-0 z-[110] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)]"
       >
         {/* Header */}
         <div className="px-6 pt-5 pb-3 text-center relative">
           {/* Drag handle */}
-          <div className="absolute top-3 start-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-muted-foreground/30" />
+          <div className="absolute top-3 start-1/2 -translate-x-1/2 w-10 h-1 rounded-full bg-muted-foreground/30" aria-hidden="true" />
 
           <button
             onClick={() => onOpenChange(false)}
@@ -268,7 +271,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
 
-          <h2 className="text-lg font-semibold mt-2">{getModalTitle()}</h2>
+          <h2 id="share-dialog-title" className="text-lg font-semibold mt-2">{getModalTitle()}</h2>
         </div>
 
         {/* Scrollable content */}
@@ -279,7 +282,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
             <motion.div
               className={cn(
                 "relative w-full rounded-2xl overflow-hidden",
-                mode === 'weekly' ? 'max-w-[360px]' : 'max-w-[360px] aspect-square'
+                mode === 'weekly' ? 'max-w-[360px] aspect-[4/5]' : 'max-w-[360px] aspect-square'
               )}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -349,8 +352,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
                   ? '0 4px 20px rgba(16, 185, 129, 0.4)'
                   : '0 4px 20px rgba(139, 92, 246, 0.4)'
               }}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
+              {...(hasImage && imageBlob ? { whileHover: { scale: 1.01 }, whileTap: { scale: 0.98 } } : {})}
             >
               {isSuccess && lastAction === 'share' ? (
                 <Check className="w-5 h-5" />
@@ -375,8 +377,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
                 "bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10",
                 "hover:bg-slate-200 dark:hover:bg-white/10 disabled:opacity-50 disabled:cursor-not-allowed"
               )}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
+              {...(hasImage && imageBlob ? { whileHover: { scale: 1.01 }, whileTap: { scale: 0.98 } } : {})}
             >
               {isSuccess && lastAction === 'download' ? (
                 <Check className="w-4 h-4 text-emerald-500" />
@@ -402,8 +403,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
                   : "bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 hover:bg-slate-200 dark:hover:bg-white/10",
                 "disabled:opacity-50 disabled:cursor-not-allowed"
               )}
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
+              {...(hasImage && imageBlob ? { whileHover: { scale: 1.01 }, whileTap: { scale: 0.98 } } : {})}
             >
               {isSuccess && lastAction === 'copy' ? (
                 <Check className="w-4 h-4 text-emerald-500" />
