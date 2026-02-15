@@ -921,6 +921,7 @@ export interface Translations {
   focusModeOpenSettings: string;
   focusModeRestored: string;
   focusModeError: string;
+  focusModeSettingsError: string;
 
   // Audio Status
   audioLoading: string;
@@ -3172,6 +3173,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     focusModeOpenSettings: 'Open Settings',
     focusModeRestored: 'Previous notification settings restored',
     focusModeError: 'Could not enable focus mode',
+    focusModeSettingsError: 'Could not open settings. Go to Settings → Apps → ZenFlow → Notifications.',
 
     // Audio Status
     audioLoading: 'Loading...',
@@ -5366,6 +5368,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     focusModeOpenSettings: 'Відкрити налаштування',
     focusModeRestored: 'Попередні налаштування сповіщень відновлено',
     focusModeError: 'Не вдалося увімкнути режим фокусу',
+    focusModeSettingsError: 'Не вдалося відкрити налаштування. Перейдіть: Налаштування → Додатки → ZenFlow → Сповіщення.',
 
     // Audio Status
     audioLoading: 'Завантаження...',
@@ -7561,6 +7564,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     focusModeOpenSettings: 'Abrir ajustes',
     focusModeRestored: 'Configuración de notificaciones restaurada',
     focusModeError: 'No se pudo activar el modo de enfoque',
+    focusModeSettingsError: 'No se pudieron abrir los ajustes. Ve a Ajustes → Apps → ZenFlow → Notificaciones.',
 
     // Audio Status
     audioLoading: 'Cargando...',
@@ -9756,6 +9760,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     focusModeOpenSettings: 'Einstellungen öffnen',
     focusModeRestored: 'Vorherige Benachrichtigungseinstellungen wiederhergestellt',
     focusModeError: 'Fokusmodus konnte nicht aktiviert werden',
+    focusModeSettingsError: 'Einstellungen konnten nicht geöffnet werden. Gehe zu Einstellungen → Apps → ZenFlow → Benachrichtigungen.',
 
     // Audio Status
     audioLoading: 'Wird geladen...',
@@ -11951,6 +11956,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     focusModeOpenSettings: 'Ouvrir les paramètres',
     focusModeRestored: 'Paramètres de notification précédents restaurés',
     focusModeError: 'Impossible d\'activer le mode concentration',
+    focusModeSettingsError: 'Impossible d\'ouvrir les paramètres. Allez dans Paramètres → Apps → ZenFlow → Notifications.',
 
     // Audio Status
     audioLoading: 'Chargement...',
@@ -14145,6 +14151,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     focusModeOpenSettings: '設定を開く',
     focusModeRestored: '以前の通知設定に戻しました',
     focusModeError: '集中モードを有効にできませんでした',
+    focusModeSettingsError: '設定を開けませんでした。設定→アプリ→ZenFlow→通知に移動してください。',
 
     // Audio Status
     audioLoading: '読み込み中...',
@@ -16224,6 +16231,7 @@ const arabicOverrides: Partial<Translations> = {
   focusModeOpenSettings: 'فتح الإعدادات',
   focusModeRestored: 'تمت استعادة إعدادات الإشعارات السابقة',
   focusModeError: 'تعذر تفعيل وضع التركيز',
+  focusModeSettingsError: 'تعذر فتح الإعدادات. انتقل إلى الإعدادات ← التطبيقات ← ZenFlow ← الإشعارات.',
 
   // Audio Status
   audioLoading: 'جاري التحميل...',
@@ -18705,6 +18713,7 @@ const hebrewOverrides: Partial<Translations> = {
   focusModeOpenSettings: 'פתח הגדרות',
   focusModeRestored: 'הגדרות התראות קודמות שוחזרו',
   focusModeError: 'לא ניתן להפעיל מצב ריכוז',
+  focusModeSettingsError: 'לא ניתן לפתוח הגדרות. עבור אל הגדרות ← אפליקציות ← ZenFlow ← התראות.',
   audioLoading: 'טוען...',
   audioTapToEnable: 'לחץ להפעלת צליל',
   audioRetry: 'נסה שוב',

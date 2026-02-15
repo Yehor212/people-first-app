@@ -3,6 +3,7 @@ package com.zenflow.app;
 import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 import android.util.Log;
@@ -185,22 +186,51 @@ public class DndPlugin extends Plugin {
 
     /**
      * Open system notification policy access settings.
-     * User must grant DND modification permission here.
+     * Uses a 3-level fallback chain for maximum device compatibility.
      */
     @PluginMethod
     public void requestPolicyAccess(PluginCall call) {
+        if (getActivity() == null) {
+            call.reject("Activity not available");
+            return;
+        }
+
+        // Attempt 1: Direct notification policy access settings
         try {
-            if (getActivity() == null) {
-                call.reject("Activity not available");
-                return;
-            }
             Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
             getActivity().startActivity(intent);
             call.resolve();
+            return;
         } catch (Exception e) {
-            Log.e(TAG, "Error opening notification policy settings", e);
-            call.reject("Failed to open settings: " + e.getMessage());
+            Log.w(TAG, "ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS failed: " + e.getMessage());
         }
+
+        // Attempt 2: App-specific notification settings (API 26+)
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+                intent.putExtra(Settings.EXTRA_APP_PACKAGE, getContext().getPackageName());
+                getActivity().startActivity(intent);
+                call.resolve();
+                return;
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "ACTION_APP_NOTIFICATION_SETTINGS failed: " + e.getMessage());
+        }
+
+        // Attempt 3: App details settings (works on all versions)
+        try {
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.parse("package:" + getContext().getPackageName()));
+            getActivity().startActivity(intent);
+            call.resolve();
+            return;
+        } catch (Exception e) {
+            Log.w(TAG, "ACTION_APPLICATION_DETAILS_SETTINGS failed: " + e.getMessage());
+        }
+
+        // All fallbacks failed
+        call.reject("Could not open any settings screen");
     }
 
     /**

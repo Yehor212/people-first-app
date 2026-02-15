@@ -71,6 +71,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   const [dndPreviousState, setDndPreviousState] = useState(false);
   const [showDndPermission, setShowDndPermission] = useState(false);
   const [dndError, setDndError] = useState(false);
+  const [dndSettingsError, setDndSettingsError] = useState(false);
   const dndErrorTimerRef = useRef<number | null>(null);
 
   // Use global singleton to prevent audio overlap
@@ -720,6 +721,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 </button>
                 <button
                   onClick={async () => {
+                    setDndSettingsError(false);
                     const opened = await requestDndPolicyAccess();
                     if (!opened) {
                       // Settings couldn't open — re-check permission as fallback
@@ -730,6 +732,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                         setDndPreviousState(currentlyActive);
                         const success = await setDndEnabled(true);
                         if (success) setDndEnabledState(true);
+                      } else {
+                        setDndSettingsError(true);
                       }
                     }
                   }}
@@ -738,6 +742,11 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   {t.focusModeOpenSettings || 'Open Settings'}
                 </button>
               </div>
+              {dndSettingsError && (
+                <p className="text-xs text-red-500 dark:text-red-400 mt-3 text-center" role="status" aria-live="polite">
+                  {t.focusModeSettingsError || 'Could not open settings. Go to Settings → Apps → ZenFlow → Notifications.'}
+                </p>
+              )}
             </motion.div>
           </div>
         )}
