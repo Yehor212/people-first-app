@@ -38,6 +38,7 @@ import { hapticTap, hapticSuccess, hapticError } from '@/lib/haptics';
 import { announce } from '@/lib/a11y';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { isUserOnline, subscribeToPresence } from '@/lib/presenceService';
 import {
   loadMyProfile,
   initializeMyProfile,
@@ -83,6 +84,12 @@ export function FriendsPanel({
   const [confirmRemoveFriend, setConfirmRemoveFriend] = useState<Friend | null>(null);
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const copiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Presence: re-render when online users change
+  const [, forcePresenceUpdate] = useState(0);
+  useEffect(() => {
+    return subscribeToPresence(() => forcePresenceUpdate(n => n + 1));
+  }, []);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -458,8 +465,11 @@ export function FriendsPanel({
 
                     {/* Profile card */}
                     <div className="flex flex-col items-center text-center mb-6">
-                      <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-4xl mb-3">
+                      <div className="w-20 h-20 rounded-2xl bg-primary/10 flex items-center justify-center text-4xl mb-3 relative">
                         {selectedFriend.avatarEmoji}
+                        {selectedFriend.userId && isUserOnline(selectedFriend.userId) && (
+                          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-card" />
+                        )}
                       </div>
                       <h3 className="text-xl font-bold text-foreground">
                         {selectedFriend.displayName}
@@ -608,8 +618,11 @@ export function FriendsPanel({
                             tabIndex={0}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedFriend(friend); } }}
                           >
-                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0">
+                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-xl shrink-0 relative">
                               {friend.avatarEmoji}
+                              {friend.userId && isUserOnline(friend.userId) && (
+                                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-card" />
+                              )}
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-foreground truncate">

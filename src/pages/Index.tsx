@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { logger } from '@/lib/logger';
@@ -24,6 +24,7 @@ import { normalizeHabit } from '@/lib/habits';
 import { supabase } from '@/lib/supabaseClient';
 import { syncReminderSettings } from '@/storage/reminderSync';
 import { syncWithCloud, startAutoSync, stopAutoSync, triggerSync } from '@/storage/cloudSync';
+import { joinPresence, leavePresence } from '@/lib/presenceService';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { Capacitor } from '@capacitor/core';
 import { generateHabitScheduleEvents, mergeScheduleEvents } from '@/lib/habitScheduleSync';
@@ -1706,6 +1707,8 @@ export function Index() {
         await syncWithCloud('merge');
         // Start auto-sync after successful initial sync
         startAutoSync();
+        // Join Presence channel for friend online status
+        joinPresence().catch(() => {});
       } catch (error) {
         logger.error('Cloud sync failed:', error);
       }
@@ -1732,6 +1735,7 @@ export function Index() {
       active = false;
       subscription?.unsubscribe();
       stopAutoSync(); // Clean up auto-sync listeners and intervals
+      leavePresence().catch(() => {}); // Leave Presence channel
     };
   }, [isLoading]);
 

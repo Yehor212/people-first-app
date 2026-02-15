@@ -157,13 +157,15 @@ const doSyncWithCloud = async (
         (localData.moods?.length || 0) +
         (localData.habits?.length || 0) +
         (localData.focusSessions?.length || 0) +
-        (localData.gratitudeEntries?.length || 0);
+        (localData.gratitudeEntries?.length || 0) +
+        (localData.journalEntries?.length || 0);
 
       const remoteItemCount =
         (remoteData.moods?.length || 0) +
         (remoteData.habits?.length || 0) +
         (remoteData.focusSessions?.length || 0) +
-        (remoteData.gratitudeEntries?.length || 0);
+        (remoteData.gratitudeEntries?.length || 0) +
+        (remoteData.journalEntries?.length || 0);
 
       logger.sync(`Local items: ${localItemCount}, Remote items: ${remoteItemCount}`);
 

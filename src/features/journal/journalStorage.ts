@@ -9,6 +9,15 @@ import {
   deleteAudioFromStorage,
   deleteEntryMediaFromStorage,
 } from '@/storage/journalStorageService';
+import {
+  syncJournalEntry,
+  deleteJournalEntryFromCloud,
+  syncJournalPhoto,
+  syncJournalAudio,
+  deleteJournalPhotoFromCloud,
+  deleteJournalAudioFromCloud,
+} from '@/storage/realtimeSync';
+import { triggerSync } from '@/storage/cloudSync';
 
 // ============================================
 // JOURNAL ENTRIES CRUD
@@ -35,11 +44,22 @@ export async function saveEntry(entry: Omit<JournalEntry, 'id' | 'createdAt' | '
     updatedAt: now,
   };
   await db.journalEntries.add(full);
+
+  // Granular sync to cloud (non-blocking)
+  syncJournalEntry(full).catch(() => {});
+  triggerSync();
+
   return full;
 }
 
 export async function updateEntry(id: string, changes: Partial<Omit<JournalEntry, 'id' | 'createdAt'>>): Promise<void> {
   await db.journalEntries.update(id, { ...changes, updatedAt: Date.now() });
+
+  // Granular sync to cloud (non-blocking) — re-read full entry for sync
+  void db.journalEntries.get(id).then(updated => {
+    if (updated) syncJournalEntry(updated).catch(() => {});
+  });
+  triggerSync();
 }
 
 export async function deleteEntry(id: string): Promise<void> {
@@ -59,10 +79,14 @@ export async function deleteEntry(id: string): Promise<void> {
   });
 
   // Clean up from Supabase Storage (fire-and-forget, non-blocking)
-  deleteEntryMediaFromStorage(
+  void deleteEntryMediaFromStorage(
     photos.map(p => p.id),
     audios.map(a => a.id),
   );
+
+  // Delete from cloud tables (fire-and-forget)
+  deleteJournalEntryFromCloud(id).catch(() => {});
+  triggerSync();
 }
 
 export async function getEntryCount(): Promise<number> {
@@ -136,14 +160,20 @@ export async function compressAndStorePhoto(
     await db.journalPhotos.add(photo);
 
     // Background upload to Supabase Storage (non-blocking)
-    uploadPhoto(photo.id, full.dataUrl).then(async (result) => {
+    void uploadPhoto(photo.id, full.dataUrl).then(async (result) => {
       if (result) {
         await db.journalPhotos.update(photo.id, {
           storagePath: result.path,
           storageUrl: result.signedUrl,
         });
+        // Sync photo metadata with storage path to cloud table
+        const updated = await db.journalPhotos.get(photo.id);
+        if (updated) syncJournalPhoto(updated).catch(() => {});
       }
     });
+
+    // Sync photo metadata (without storagePath yet — will be updated after upload)
+    syncJournalPhoto(photo).catch(() => {});
 
     return photo;
   } finally {
@@ -170,8 +200,9 @@ export async function deletePhoto(id: string, entryId: string): Promise<void> {
       });
     }
   });
-  // Clean up from Supabase Storage (fire-and-forget)
-  deletePhotoFromStorage(id);
+  // Clean up from Supabase Storage + cloud table (fire-and-forget)
+  void deletePhotoFromStorage(id);
+  deleteJournalPhotoFromCloud(id).catch(() => {});
 }
 
 // ============================================
@@ -201,14 +232,20 @@ export async function storeAudio(
   await db.journalAudio.add(audio);
 
   // Background upload to Supabase Storage (non-blocking)
-  uploadAudioToStorage(audio.id, data, mimeType).then(async (result) => {
+  void uploadAudioToStorage(audio.id, data, mimeType).then(async (result) => {
     if (result) {
       await db.journalAudio.update(audio.id, {
         storagePath: result.path,
         storageUrl: result.signedUrl,
       });
+      // Sync audio metadata with storage path to cloud table
+      const updated = await db.journalAudio.get(audio.id);
+      if (updated) syncJournalAudio(updated).catch(() => {});
     }
   });
+
+  // Sync audio metadata (without storagePath yet — will be updated after upload)
+  syncJournalAudio(audio).catch(() => {});
 
   return audio;
 }
@@ -232,6 +269,7 @@ export async function deleteAudio(id: string, entryId: string): Promise<void> {
       });
     }
   });
-  // Clean up from Supabase Storage (fire-and-forget)
-  deleteAudioFromStorage(id);
+  // Clean up from Supabase Storage + cloud table (fire-and-forget)
+  void deleteAudioFromStorage(id);
+  deleteJournalAudioFromCloud(id).catch(() => {});
 }

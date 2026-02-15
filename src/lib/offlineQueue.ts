@@ -49,7 +49,9 @@ export type OfflineActionType =
   | 'CREATE_FOCUS_SESSION'
   | 'CREATE_GRATITUDE'
   | 'DELETE_GRATITUDE'
-  | 'UPDATE_SETTINGS';
+  | 'UPDATE_SETTINGS'
+  | 'SYNC_JOURNAL_ENTRY'
+  | 'DELETE_JOURNAL_ENTRY';
 
 export interface OfflineAction {
   id: string;

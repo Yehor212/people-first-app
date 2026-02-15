@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Plus, Search, X } from 'lucide-react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Plus, Search, X, Sparkles, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -7,6 +7,8 @@ import type { JournalEntry } from './types';
 import type { MoodType } from '@/types';
 import { JournalEntryCard } from './JournalEntryCard';
 import { StickerRenderer } from './StickerRenderer';
+import { searchJournalSemantic, generateAllMissingEmbeddings, type SemanticSearchResult } from '@/lib/journalAI';
+import { supabase } from '@/lib/supabaseClient';
 
 const MOOD_EMOJIS: Record<string, string> = {
   great: '\u{1F604}',
@@ -55,11 +57,62 @@ export function JournalEntryList({
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  // Debounce search input (300ms) to avoid filtering on every keystroke
+  // AI search state
+  const [aiMode, setAiMode] = useState(false);
+  const [aiSearching, setAiSearching] = useState(false);
+  const [aiResults, setAiResults] = useState<SemanticSearchResult[]>([]);
+  const [aiIndexing, setAiIndexing] = useState(false);
+  const aiIndexedRef = useRef(false);
+
+  // Debounce search input — 300ms for text, 800ms for AI
   useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(searchInput), 300);
+    const delay = aiMode ? 800 : 300;
+    const timer = setTimeout(() => setDebouncedSearch(searchInput), delay);
     return () => clearTimeout(timer);
-  }, [searchInput]);
+  }, [searchInput, aiMode]);
+
+  // AI search effect
+  useEffect(() => {
+    if (!aiMode || !debouncedSearch.trim()) {
+      setAiResults([]);
+      return;
+    }
+
+    let cancelled = false;
+    setAiSearching(true);
+
+    searchJournalSemantic(debouncedSearch.trim())
+      .then(results => {
+        if (!cancelled) setAiResults(results);
+      })
+      .catch(() => {
+        if (!cancelled) setAiResults([]);
+      })
+      .finally(() => {
+        if (!cancelled) setAiSearching(false);
+      });
+
+    return () => { cancelled = true; };
+  }, [aiMode, debouncedSearch]);
+
+  // Toggle AI mode — backfill embeddings on first activation
+  const toggleAiMode = useCallback(() => {
+    if (!supabase) return;
+
+    setAiMode(prev => {
+      const next = !prev;
+      if (next && !aiIndexedRef.current) {
+        aiIndexedRef.current = true;
+        setAiIndexing(true);
+        void generateAllMissingEmbeddings().finally(() => setAiIndexing(false));
+      }
+      if (!next) {
+        setAiResults([]);
+        setAiSearching(false);
+      }
+      return next;
+    });
+  }, []);
 
   // Available moods and tags from entries (before local filtering)
   const activeMoods = useMemo(() => {
@@ -85,8 +138,27 @@ export function JournalEntryList({
     return count;
   }, [groupedEntries]);
 
-  // Filter entries by debounced search + mood + tag
+  // All entries flat map for ID lookup
+  const entriesById = useMemo(() => {
+    const map = new Map<string, JournalEntry>();
+    groupedEntries.forEach(g => g.entries.forEach(e => map.set(e.id, e)));
+    return map;
+  }, [groupedEntries]);
+
+  // AI search results mapped to local entries
+  const aiMatchedEntries = useMemo(() => {
+    if (!aiMode || aiResults.length === 0) return [];
+    return aiResults
+      .map(r => {
+        const entry = entriesById.get(r.entry_id);
+        return entry ? { entry, similarity: r.similarity } : null;
+      })
+      .filter((r): r is { entry: JournalEntry; similarity: number } => r !== null);
+  }, [aiMode, aiResults, entriesById]);
+
+  // Filter entries by debounced search + mood + tag (text mode only)
   const filteredGroups = useMemo(() => {
+    if (aiMode) return []; // AI mode uses aiMatchedEntries instead
     const q = debouncedSearch.toLowerCase().trim();
     return groupedEntries
       .map(group => ({
@@ -101,10 +173,11 @@ export function JournalEntryList({
         }),
       }))
       .filter(g => g.entries.length > 0);
-  }, [groupedEntries, debouncedSearch, selectedMood, selectedTag]);
+  }, [groupedEntries, debouncedSearch, selectedMood, selectedTag, aiMode]);
 
   const hasActiveFilters = debouncedSearch || selectedMood || selectedTag;
-  const showFilters = activeMoods.size > 0 || allTags.length > 0;
+  const showFilters = !aiMode && (activeMoods.size > 0 || allTags.length > 0);
+  const showAiToggle = !!supabase; // Only show AI toggle when cloud is available
 
   // Loading skeleton
   if (loading) {
@@ -233,33 +306,67 @@ export function JournalEntryList({
         </div>
       )}
 
-      {/* Search bar */}
+      {/* Search bar with AI toggle */}
       <div className="relative">
         <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
         <input
           type="text"
           value={searchInput}
           onChange={e => setSearchInput(e.target.value)}
-          placeholder={ts.journalSearch || 'Search entries...'}
+          placeholder={aiMode
+            ? (ts.journalAiSearchPlaceholder || 'Describe what you\'re looking for...')
+            : (ts.journalSearch || 'Search entries...')}
           className={cn(
-            'w-full ps-9 pe-9 py-2.5 rounded-xl text-sm',
+            'w-full ps-9 py-2.5 rounded-xl text-sm',
             'bg-muted/50 border border-border/30',
             'focus:outline-none focus:ring-2 focus:ring-primary/30',
             'placeholder:text-muted-foreground/50',
+            showAiToggle ? 'pe-20' : 'pe-9',
+            aiMode && 'border-purple-500/30 ring-1 ring-purple-500/20',
           )}
         />
-        {searchInput && (
-          <button
-            onClick={() => setSearchInput('')}
-            className="absolute end-1 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-muted/50"
-            aria-label={ts.clear || 'Clear search'}
-          >
-            <X className="w-3.5 h-3.5 text-muted-foreground" />
-          </button>
-        )}
+        <div className="absolute end-1 top-1/2 -translate-y-1/2 flex items-center gap-0.5">
+          {(searchInput || aiSearching) && (
+            <button
+              onClick={() => { setSearchInput(''); setAiResults([]); }}
+              className="p-2 rounded-lg hover:bg-muted/50"
+              aria-label={ts.clear || 'Clear search'}
+            >
+              {aiSearching
+                ? <Loader2 className="w-3.5 h-3.5 text-purple-500 animate-spin" />
+                : <X className="w-3.5 h-3.5 text-muted-foreground" />
+              }
+            </button>
+          )}
+          {showAiToggle && (
+            <button
+              onClick={toggleAiMode}
+              className={cn(
+                'p-2 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center',
+                aiMode
+                  ? 'bg-purple-500/15 text-purple-500'
+                  : 'hover:bg-muted/50 text-muted-foreground',
+              )}
+              aria-label={aiMode ? 'Switch to text search' : 'Switch to AI search'}
+              title={aiMode ? 'AI Search ON' : 'AI Search'}
+            >
+              <Sparkles className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Mood / tag filter pills */}
+      {/* AI indexing banner */}
+      {aiIndexing && (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
+          <Loader2 className="w-3.5 h-3.5 text-purple-500 animate-spin flex-shrink-0" />
+          <p className="text-xs text-purple-600 dark:text-purple-400">
+            {ts.journalAiIndexing || 'Building AI search index...'}
+          </p>
+        </div>
+      )}
+
+      {/* Mood / tag filter pills (text mode only) */}
       {showFilters && (
         <div className="flex gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1 pb-1">
           {Array.from(activeMoods).map(m => (
@@ -296,8 +403,47 @@ export function JournalEntryList({
         </div>
       )}
 
-      {/* Grouped entries with stagger animation */}
-      {filteredGroups.map(group => (
+      {/* AI search results */}
+      {aiMode && debouncedSearch.trim() && !aiSearching && (
+        <>
+          {aiMatchedEntries.length > 0 ? (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="show"
+              className="space-y-2"
+            >
+              {aiMatchedEntries.map(({ entry, similarity }) => (
+                <motion.div key={entry.id} variants={itemVariants} className="relative">
+                  <div className="absolute top-2 end-2 z-10 px-1.5 py-0.5 rounded-md bg-purple-500/10 text-purple-600 dark:text-purple-400 text-[10px] font-medium">
+                    {Math.round(similarity * 100)}%
+                  </div>
+                  <JournalEntryCard
+                    entry={entry}
+                    onTap={() => onOpenEntry(entry.id)}
+                    onDelete={() => onDeleteEntry(entry.id)}
+                    privateMode={privateMode}
+                    searchQuery={debouncedSearch}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <div className="flex flex-col items-center py-8 text-center">
+              <span className="text-3xl mb-2">{'\u{1F50D}'}</span>
+              <p className="text-sm text-muted-foreground mb-1">
+                {ts.journalNoAiResults || 'No similar entries found'}
+              </p>
+              <p className="text-[10px] text-muted-foreground/50 mb-3 max-w-[220px]">
+                {ts.journalNoAiResultsHint || 'Try describing your thoughts differently'}
+              </p>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Text search: grouped entries with stagger animation */}
+      {!aiMode && filteredGroups.map(group => (
         <div key={group.key}>
           <div className="flex items-center gap-2 px-1 mb-2.5">
             <h3 className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
@@ -327,8 +473,8 @@ export function JournalEntryList({
         </div>
       ))}
 
-      {/* No results after filtering */}
-      {hasActiveFilters && filteredGroups.length === 0 && (
+      {/* No results after filtering (text mode) */}
+      {!aiMode && hasActiveFilters && filteredGroups.length === 0 && (
         <div className="flex flex-col items-center py-8 text-center">
           <span className="text-3xl mb-2">{'\u{1F50D}'}</span>
           <p className="text-sm text-muted-foreground mb-1">

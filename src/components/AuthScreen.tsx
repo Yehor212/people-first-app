@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Leaf, Loader2, AlertCircle } from 'lucide-react';
+import { Leaf, Loader2, AlertCircle, Phone, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { getAuthRedirectUrl, isNativePlatform, AUTH_COMPLETE_EVENT } from '@/lib/authRedirect';
 import { canStartAuthFlow, startAuthFlow, endAuthFlow } from '@/lib/authGuard';
@@ -11,19 +11,31 @@ import { useLanguage } from '@/contexts/LanguageContext';
 // Temporarily disabled auth providers (not production-ready)
 const SHOW_APPLE_AUTH = false;
 const SHOW_FACEBOOK_AUTH = false;
+const SHOW_PHONE_AUTH = false; // Enable when Twilio is configured in Supabase Dashboard
+
+// Phone number validation: E.164 format (+7-15 digits)
+const PHONE_REGEX = /^\+\d{7,15}$/;
 
 interface AuthScreenProps {
   onComplete: (userData: { name: string; email: string }) => void;
 }
 
 // Track which provider is currently loading
-type AuthProvider = 'google' | 'apple' | 'facebook' | null;
+type AuthProvider = 'google' | 'apple' | 'facebook' | 'phone' | null;
+
+// Phone auth flow steps
+type PhoneStep = 'idle' | 'input' | 'otp';
 
 export function AuthScreen({ onComplete }: AuthScreenProps) {
   const { t } = useLanguage();
   const [loadingProvider, setLoadingProvider] = useState<AuthProvider>(null);
   const [error, setError] = useState<string | null>(null);
   const [debugInfo, setDebugInfo] = useState<string | null>(null);
+
+  // Phone auth state
+  const [phoneStep, setPhoneStep] = useState<PhoneStep>('idle');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otpCode, setOtpCode] = useState('');
 
   // Prevent double onComplete calls (race condition with Index.tsx listener)
   const hasCompletedRef = useRef(false);
@@ -366,6 +378,93 @@ export function AuthScreen({ onComplete }: AuthScreenProps) {
   const handleAppleSignIn = () => void handleOAuthSignIn('apple');
   const handleFacebookSignIn = () => void handleOAuthSignIn('facebook');
 
+  // Phone Auth handlers
+  const handlePhoneStart = () => {
+    setError(null);
+    setPhoneStep('input');
+    setPhoneNumber('');
+    setOtpCode('');
+  };
+
+  const handleSendOtp = async () => {
+    if (!supabase) return;
+
+    const normalized = phoneNumber.trim();
+    if (!PHONE_REGEX.test(normalized)) {
+      setError('Enter a valid phone number with country code (e.g. +1234567890)');
+      return;
+    }
+
+    setLoadingProvider('phone');
+    setError(null);
+
+    try {
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        phone: normalized,
+      });
+
+      if (otpError) {
+        logger.warn('[Auth] OTP send error:', otpError.message);
+        setError(otpError.message);
+        setLoadingProvider(null);
+        return;
+      }
+
+      logger.log('[Auth] OTP sent to phone');
+      setPhoneStep('otp');
+      setLoadingProvider(null);
+    } catch (err) {
+      logger.error('[Auth] OTP send failed:', err);
+      setError('Failed to send code. Please try again.');
+      setLoadingProvider(null);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!supabase) return;
+
+    const code = otpCode.trim();
+    if (code.length !== 6 || !/^\d{6}$/.test(code)) {
+      setError('Enter a 6-digit code');
+      return;
+    }
+
+    setLoadingProvider('phone');
+    setError(null);
+
+    try {
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        phone: phoneNumber.trim(),
+        token: code,
+        type: 'sms',
+      });
+
+      if (verifyError) {
+        logger.warn('[Auth] OTP verify error:', verifyError.message);
+        setError(verifyError.message);
+        setLoadingProvider(null);
+        return;
+      }
+
+      if (data.session?.user) {
+        const phone = data.session.user.phone || phoneNumber.trim();
+        const metadata = data.session.user.user_metadata || {};
+        const name = metadata.full_name || metadata.name || phone;
+        tryComplete({ name, email: data.session.user.email || '' }, 'phoneOtp');
+      }
+    } catch (err) {
+      logger.error('[Auth] OTP verify failed:', err);
+      setError('Verification failed. Please try again.');
+      setLoadingProvider(null);
+    }
+  };
+
+  const handlePhoneBack = () => {
+    setPhoneStep('idle');
+    setLoadingProvider(null);
+    setError(null);
+  };
+
   // Export debug info
   const exportDebugInfo = () => {
     const info = {
@@ -500,6 +599,94 @@ export function AuthScreen({ onComplete }: AuthScreenProps) {
               </>
             )}
           </button>
+          )}
+
+          {/* Phone Sign In */}
+          {SHOW_PHONE_AUTH && phoneStep === 'idle' && (
+          <button
+            onClick={handlePhoneStart}
+            disabled={isLoading || !supabase}
+            className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Phone className="w-5 h-5" />
+            {t.continueWithPhone || 'Continue with Phone'}
+          </button>
+          )}
+
+          {/* Phone number input */}
+          {SHOW_PHONE_AUTH && phoneStep === 'input' && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <button
+                onClick={handlePhoneBack}
+                className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground"
+                aria-label="Back"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm font-medium text-foreground">
+                {t.authEnterPhone || 'Enter your phone number'}
+              </span>
+            </div>
+            <input
+              type="tel"
+              value={phoneNumber}
+              onChange={e => setPhoneNumber(e.target.value)}
+              placeholder="+1234567890"
+              autoFocus
+              className="w-full px-4 py-3.5 rounded-xl text-base bg-muted/50 border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/50"
+            />
+            <button
+              onClick={() => void handleSendOtp()}
+              disabled={loadingProvider === 'phone' || !phoneNumber.trim()}
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingProvider === 'phone' ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                t.authSendCode || 'Send code'
+              )}
+            </button>
+          </div>
+          )}
+
+          {/* OTP verification */}
+          {SHOW_PHONE_AUTH && phoneStep === 'otp' && (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-1">
+              <button
+                onClick={() => setPhoneStep('input')}
+                className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground"
+                aria-label="Back"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+              <span className="text-sm text-muted-foreground">
+                {(t.authCodeSentTo || 'Code sent to {phone}').replace('{phone}', phoneNumber)}
+              </span>
+            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={otpCode}
+              onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              placeholder="000000"
+              autoFocus
+              className="w-full px-4 py-3.5 rounded-xl text-center text-2xl tracking-[0.5em] font-mono bg-muted/50 border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/30"
+            />
+            <button
+              onClick={() => void handleVerifyOtp()}
+              disabled={loadingProvider === 'phone' || otpCode.length !== 6}
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingProvider === 'phone' ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                t.authVerify || 'Verify'
+              )}
+            </button>
+          </div>
           )}
 
           {!supabase && (

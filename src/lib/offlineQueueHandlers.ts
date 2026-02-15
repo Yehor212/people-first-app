@@ -10,8 +10,10 @@ import { syncMood, deleteMoodFromCloud } from '@/storage/realtimeSync';
 import { syncHabit, deleteHabitFromCloud } from '@/storage/realtimeSync';
 import { syncFocusSession } from '@/storage/realtimeSync';
 import { syncGratitude, deleteGratitudeFromCloud } from '@/storage/realtimeSync';
+import { syncJournalEntry, deleteJournalEntryFromCloud } from '@/storage/realtimeSync';
 import { logger } from './logger';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
+import type { JournalEntry } from '@/features/journal/types';
 import {
   moodEntrySchema,
   habitSchema,
@@ -135,6 +137,20 @@ export function initializeOfflineQueueHandlers(): void {
     // Settings are synced via full backup sync
     // This is a placeholder for future granular settings sync
     logger.log('[OfflineQueue] Settings sync - using full backup');
+  });
+
+  // Journal handlers
+  offlineQueue.registerHandler('SYNC_JOURNAL_ENTRY', async (action: OfflineAction) => {
+    const entry = action.payload as JournalEntry;
+    if (!entry || typeof entry.id !== 'string' || typeof entry.date !== 'string') {
+      logger.warn('[OfflineQueue] Invalid journal entry payload, skipping:', action.entityId);
+      return;
+    }
+    await syncJournalEntry(entry);
+  });
+
+  offlineQueue.registerHandler('DELETE_JOURNAL_ENTRY', async (action: OfflineAction) => {
+    await deleteJournalEntryFromCloud(action.entityId);
   });
 
   logger.log('[OfflineQueue] Handlers initialized');

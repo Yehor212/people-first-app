@@ -594,6 +594,105 @@ export interface Database {
           updated_at?: string;
         };
       };
+      journal_entries: {
+        Row: {
+          id: string;
+          user_id: string;
+          date: string;
+          title: string;
+          content: string;
+          stickers: string[];
+          mood: string | null;
+          tags: string[];
+          template_id: string | null;
+          habit_snapshot: unknown;
+          photo_ids: string[];
+          audio_ids: string[];
+          created_at: number;
+          updated_at: number;
+        };
+        Insert: {
+          id: string;
+          user_id: string;
+          date: string;
+          title?: string;
+          content?: string;
+          stickers?: string[];
+          mood?: string | null;
+          tags?: string[];
+          template_id?: string | null;
+          habit_snapshot?: unknown;
+          photo_ids?: string[];
+          audio_ids?: string[];
+          created_at: number;
+          updated_at: number;
+        };
+        Update: {
+          date?: string;
+          title?: string;
+          content?: string;
+          stickers?: string[];
+          mood?: string | null;
+          tags?: string[];
+          template_id?: string | null;
+          habit_snapshot?: unknown;
+          photo_ids?: string[];
+          audio_ids?: string[];
+          updated_at?: number;
+        };
+      };
+      journal_photos: {
+        Row: {
+          id: string;
+          user_id: string;
+          entry_id: string;
+          width: number;
+          height: number;
+          storage_path: string | null;
+          storage_url: string | null;
+          created_at: number;
+        };
+        Insert: {
+          id: string;
+          user_id: string;
+          entry_id: string;
+          width?: number;
+          height?: number;
+          storage_path?: string | null;
+          storage_url?: string | null;
+          created_at: number;
+        };
+        Update: {
+          storage_path?: string | null;
+          storage_url?: string | null;
+        };
+      };
+      journal_audio: {
+        Row: {
+          id: string;
+          user_id: string;
+          entry_id: string;
+          duration: number;
+          mime_type: string;
+          storage_path: string | null;
+          storage_url: string | null;
+          created_at: number;
+        };
+        Insert: {
+          id: string;
+          user_id: string;
+          entry_id: string;
+          duration?: number;
+          mime_type?: string;
+          storage_path?: string | null;
+          storage_url?: string | null;
+          created_at: number;
+        };
+        Update: {
+          storage_path?: string | null;
+          storage_url?: string | null;
+        };
+      };
       feedback: {
         Row: {
           id: string;

@@ -21,6 +21,8 @@ import * as Sentry from '@sentry/react';
 
 export interface Friend {
   id: string;
+  /** Supabase auth user ID (for Presence online status) */
+  userId?: string;
   friendCode: string;
   displayName: string;
   avatarEmoji: string;
@@ -240,6 +242,7 @@ export async function addFriendByCode(friendCode: string): Promise<{
       if (friendData) {
         const friend: Friend = {
           id: generateSecureId('friend'),
+          userId: friendData.userId,
           friendCode: normalizedCode,
           displayName: friendData.displayName,
           avatarEmoji: friendData.avatarEmoji,
@@ -363,6 +366,7 @@ async function syncMyProfileToCloud(profile: MyProfile): Promise<void> {
  * Find friend by their code in cloud
  */
 async function findFriendByCode(friendCode: string): Promise<{
+  userId?: string;
   displayName: string;
   avatarEmoji: string;
   currentStreak: number;
@@ -375,13 +379,14 @@ async function findFriendByCode(friendCode: string): Promise<{
   try {
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('display_name, avatar_emoji, current_streak, level, updated_at, status')
+      .select('user_id, display_name, avatar_emoji, current_streak, level, updated_at, status')
       .eq('friend_code', friendCode)
       .single();
 
     if (error || !data) return null;
 
     return {
+      userId: data.user_id,
       displayName: data.display_name || 'Zen Friend',
       avatarEmoji: data.avatar_emoji || '🧘',
       currentStreak: data.current_streak || 0,
@@ -418,7 +423,7 @@ export async function refreshFriendsData(): Promise<void> {
 
     const { data, error } = await supabase
       .from('user_profiles')
-      .select('friend_code, display_name, avatar_emoji, current_streak, level, updated_at, status, share_activity')
+      .select('user_id, friend_code, display_name, avatar_emoji, current_streak, level, updated_at, status, share_activity')
       .in('friend_code', friendCodes);
 
     if (error || !data) return;
@@ -429,6 +434,7 @@ export async function refreshFriendsData(): Promise<void> {
       if (cloudData) {
         return {
           ...friend,
+          userId: cloudData.user_id || friend.userId,
           displayName: cloudData.display_name || friend.displayName,
           avatarEmoji: cloudData.avatar_emoji || friend.avatarEmoji,
           currentStreak: cloudData.current_streak ?? 0,

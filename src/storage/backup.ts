@@ -1,6 +1,6 @@
 import { db } from "@/storage/db";
 import { FocusSession, GratitudeEntry, Habit, MoodEntry } from "@/types";
-import type { JournalEntry, JournalPhoto } from "@/features/journal/types";
+import type { JournalEntry, JournalPhoto, JournalAudio } from "@/features/journal/types";
 import { generateId } from "@/lib/utils";
 import {
   sanitizeObject,
@@ -59,6 +59,7 @@ export interface BackupPayloadV3 {
     settings: SettingsEntry[];
     journalEntries?: JournalEntry[];
     journalPhotos?: JournalPhoto[];
+    journalAudio?: JournalAudio[];
   };
 }
 
@@ -79,6 +80,7 @@ export interface ImportReport {
   settings: ImportReportEntry;
   journalEntries?: ImportReportEntry;
   journalPhotos?: ImportReportEntry;
+  journalAudio?: ImportReportEntry;
 }
 
 export const BACKUP_SCHEMA_VERSION = 3;
@@ -106,9 +108,9 @@ export const exportBackup = async (): Promise<BackupPayloadV3> => {
   // This ensures all data is read consistently without interleaved writes
   const data = await db.transaction(
     'r',
-    [db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos],
+    [db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio],
     async () => {
-      const [moods, habits, focusSessions, gratitudeEntries, settings, journalEntries, journalPhotos] = await Promise.all([
+      const [moods, habits, focusSessions, gratitudeEntries, settings, journalEntries, journalPhotos, journalAudio] = await Promise.all([
         db.moods.toArray(),
         db.habits.toArray(),
         db.focusSessions.toArray(),
@@ -116,9 +118,22 @@ export const exportBackup = async (): Promise<BackupPayloadV3> => {
         db.settings.toArray(),
         db.journalEntries.toArray(),
         db.journalPhotos.toArray(),
+        db.journalAudio.toArray(),
       ]);
 
-      return { moods, habits, focusSessions, gratitudeEntries, settings, journalEntries, journalPhotos };
+      // Optimize: strip base64 data from media that has been uploaded to Storage
+      // The binary data lives in Supabase Storage buckets and can be re-downloaded
+      const optimizedPhotos = journalPhotos.map(p => ({
+        ...p,
+        data: p.storagePath ? '' : p.data,
+        thumbnail: p.storagePath ? '' : p.thumbnail,
+      }));
+      const optimizedAudio = journalAudio.map(a => ({
+        ...a,
+        data: a.storagePath ? '' : a.data,
+      }));
+
+      return { moods, habits, focusSessions, gratitudeEntries, settings, journalEntries, journalPhotos: optimizedPhotos, journalAudio: optimizedAudio };
     }
   );
 
@@ -146,7 +161,7 @@ const normalizeBackup = (payload: BackupPayload) => {
       schemaVersion: BACKUP_SCHEMA_VERSION,
       createdAt: (payload as BackupPayloadV1).exportedAt || new Date().toISOString(),
       deviceId: "legacy",
-      data: { ...payload.data, journalEntries: [] as JournalEntry[], journalPhotos: [] as JournalPhoto[] }
+      data: { ...payload.data, journalEntries: [] as JournalEntry[], journalPhotos: [] as JournalPhoto[], journalAudio: [] as JournalAudio[] }
     };
   }
   const p = payload as BackupPayloadV2 | BackupPayloadV3;
@@ -158,6 +173,7 @@ const normalizeBackup = (payload: BackupPayload) => {
       ...p.data,
       journalEntries: ('journalEntries' in p.data ? p.data.journalEntries : undefined) || [],
       journalPhotos: ('journalPhotos' in p.data ? p.data.journalPhotos : undefined) || [],
+      journalAudio: ('journalAudio' in p.data ? p.data.journalAudio : undefined) || [],
     }
   };
 };
@@ -165,7 +181,7 @@ const normalizeBackup = (payload: BackupPayload) => {
 export const importBackup = async (payload: BackupPayload, mode: ImportMode): Promise<ImportReport> => {
   const normalized = normalizeBackup(payload);
 
-  const { moods, habits, focusSessions, gratitudeEntries, settings, journalEntries, journalPhotos } = normalized.data;
+  const { moods, habits, focusSessions, gratitudeEntries, settings, journalEntries, journalPhotos, journalAudio } = normalized.data;
 
   // Type-safe validation using Zod schemas
   const validateAndSanitize = <T>(
@@ -211,9 +227,12 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
   const validJournalPhotos = (journalPhotos || []).filter(
     (p) => !!p && typeof p === 'object' && typeof p.id === 'string' && typeof p.entryId === 'string'
   );
+  const validJournalAudio = (journalAudio || []).filter(
+    (a) => !!a && typeof a === 'object' && typeof a.id === 'string' && typeof a.entryId === 'string'
+  );
 
   if (mode === "replace") {
-    await db.transaction("rw", db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, async () => {
+    await db.transaction("rw", db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio, async () => {
       await db.moods.clear();
       await db.habits.clear();
       await db.focusSessions.clear();
@@ -221,6 +240,7 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
       await db.settings.clear();
       await db.journalEntries.clear();
       await db.journalPhotos.clear();
+      await db.journalAudio.clear();
 
       if (validMoods.valid.length) await db.moods.bulkAdd(validMoods.valid);
       if (validHabits.valid.length) await db.habits.bulkAdd(validHabits.valid);
@@ -229,6 +249,7 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
       if (validSettings.valid.length) await db.settings.bulkAdd(validSettings.valid);
       if (validJournalEntries.length) await db.journalEntries.bulkAdd(validJournalEntries);
       if (validJournalPhotos.length) await db.journalPhotos.bulkAdd(validJournalPhotos);
+      if (validJournalAudio.length) await db.journalAudio.bulkAdd(validJournalAudio);
     });
 
     return {
@@ -240,6 +261,7 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
       settings: { added: validSettings.valid.length, updated: 0, skipped: validSettings.skipped },
       journalEntries: { added: validJournalEntries.length, updated: 0, skipped: (journalEntries || []).length - validJournalEntries.length },
       journalPhotos: { added: validJournalPhotos.length, updated: 0, skipped: (journalPhotos || []).length - validJournalPhotos.length },
+      journalAudio: { added: validJournalAudio.length, updated: 0, skipped: (journalAudio || []).length - validJournalAudio.length },
     };
   }
 
@@ -270,16 +292,19 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
   const settingsUpdates = validSettings.valid.length - settingsAdds;
 
   // Journal keys for merge counting
-  const [journalEntryKeys, journalPhotoKeys] = await Promise.all([
+  const [journalEntryKeys, journalPhotoKeys, journalAudioKeys] = await Promise.all([
     db.journalEntries.toCollection().primaryKeys(),
     db.journalPhotos.toCollection().primaryKeys(),
+    db.journalAudio.toCollection().primaryKeys(),
   ]);
   const journalEntryKeySet = new Set(journalEntryKeys);
   const journalPhotoKeySet = new Set(journalPhotoKeys);
+  const journalAudioKeySet = new Set(journalAudioKeys);
   const journalEntryAdds = validJournalEntries.filter(e => !journalEntryKeySet.has(e.id)).length;
   const journalPhotoAdds = validJournalPhotos.filter(p => !journalPhotoKeySet.has(p.id)).length;
+  const journalAudioAdds = validJournalAudio.filter(a => !journalAudioKeySet.has(a.id)).length;
 
-  await db.transaction("rw", db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, async () => {
+  await db.transaction("rw", db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio, async () => {
     if (validMoods.valid.length) await db.moods.bulkPut(validMoods.valid);
 
     // For habits: use timestamp-based conflict resolution to prevent data loss
@@ -313,6 +338,7 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
     if (validSettings.valid.length) await db.settings.bulkPut(validSettings.valid);
     if (validJournalEntries.length) await db.journalEntries.bulkPut(validJournalEntries);
     if (validJournalPhotos.length) await db.journalPhotos.bulkPut(validJournalPhotos);
+    if (validJournalAudio.length) await db.journalAudio.bulkPut(validJournalAudio);
   });
 
   return {
@@ -324,5 +350,6 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
     settings: { added: settingsAdds, updated: settingsUpdates, skipped: validSettings.skipped },
     journalEntries: { added: journalEntryAdds, updated: validJournalEntries.length - journalEntryAdds, skipped: (journalEntries || []).length - validJournalEntries.length },
     journalPhotos: { added: journalPhotoAdds, updated: validJournalPhotos.length - journalPhotoAdds, skipped: (journalPhotos || []).length - validJournalPhotos.length },
+    journalAudio: { added: journalAudioAdds, updated: validJournalAudio.length - journalAudioAdds, skipped: (journalAudio || []).length - validJournalAudio.length },
   };
 };
