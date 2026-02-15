@@ -85,13 +85,15 @@ export async function setDndEnabled(enabled: boolean): Promise<boolean> {
 /**
  * Open system settings to grant DND policy access
  */
-export async function requestDndPolicyAccess(): Promise<void> {
-  if (!Capacitor.isNativePlatform()) return;
+export async function requestDndPolicyAccess(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
 
   try {
     await DndPlugin.requestPolicyAccess();
+    return true;
   } catch (error) {
     logger.error('[DND] Failed to open policy settings:', error);
+    return false;
   }
 }
 

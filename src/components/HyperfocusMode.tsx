@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Play, Pause, Volume2, VolumeX, Music, Sparkles, Loader2, AlertCircle, RotateCcw, Shield } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { App } from '@capacitor/app';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
@@ -323,22 +324,40 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   useEffect(() => {
     if (!showDndPermission) return;
 
-    const handleVisibility = async () => {
-      if (document.visibilityState === 'visible') {
-        const hasAccess = await checkPolicyAccess();
-        if (hasAccess) {
-          setShowDndPermission(false);
-          // Auto-enable now that permission is granted
-          const currentlyActive = await checkDndActive();
-          setDndPreviousState(currentlyActive);
-          const success = await setDndEnabled(true);
-          if (success) setDndEnabledState(true);
-        }
+    const checkAndEnable = async () => {
+      const hasAccess = await checkPolicyAccess();
+      if (hasAccess) {
+        setShowDndPermission(false);
+        // Auto-enable now that permission is granted
+        const currentlyActive = await checkDndActive();
+        setDndPreviousState(currentlyActive);
+        const success = await setDndEnabled(true);
+        if (success) setDndEnabledState(true);
       }
     };
 
+    // Listener 1: Standard visibility change
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        void checkAndEnable();
+      }
+    };
     document.addEventListener('visibilitychange', handleVisibility);
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
+
+    // Listener 2: Capacitor App resume (more reliable on Android after intent)
+    let appListener: { remove: () => Promise<void> } | null = null;
+    if (Capacitor.isNativePlatform()) {
+      void App.addListener('resume', () => {
+        void checkAndEnable();
+      }).then(handle => { appListener = handle; });
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      if (appListener) {
+        void appListener.remove();
+      }
+    };
   }, [showDndPermission]);
 
   // Lock body scroll when component mounts
@@ -685,7 +704,20 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   {t.cancel || 'Cancel'}
                 </button>
                 <button
-                  onClick={() => void requestDndPolicyAccess()}
+                  onClick={async () => {
+                    const opened = await requestDndPolicyAccess();
+                    if (!opened) {
+                      // Settings couldn't open — re-check permission as fallback
+                      const hasAccess = await checkPolicyAccess();
+                      if (hasAccess) {
+                        setShowDndPermission(false);
+                        const currentlyActive = await checkDndActive();
+                        setDndPreviousState(currentlyActive);
+                        const success = await setDndEnabled(true);
+                        if (success) setDndEnabledState(true);
+                      }
+                    }
+                  }}
                   className="flex-1 py-3 min-h-[44px] rounded-xl bg-violet-500 text-white font-medium transition-opacity hover:opacity-90"
                 >
                   {t.focusModeOpenSettings || 'Open Settings'}
