@@ -30,6 +30,7 @@ public class MainActivity extends BridgeActivity implements ModifiedMainActivity
         registerPlugin(ReviewPlugin.class);
         registerPlugin(AppUpdatePlugin.class);
         registerPlugin(DndPlugin.class);
+        registerPlugin(StatusBarStylePlugin.class);
 
         // P0 Fix #6: Process any pending deep link intent after bridge is ready
         if (pendingDeepLinkIntent != null) {

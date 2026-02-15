@@ -3,7 +3,7 @@ import { Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Capacitor } from '@capacitor/core';
-import { StatusBar, Style } from '@capacitor/status-bar';
+import { StatusBarStyle, Style } from '@/lib/statusBarStyle';
 
 /** Theme options: light, dark, or follow system preference */
 export type ThemeOption = 'light' | 'dark' | 'system';
@@ -36,7 +36,7 @@ export const applyTheme = (effectiveTheme: EffectiveTheme) => {
 
   if (Capacitor.isNativePlatform()) {
     const isDark = effectiveTheme === 'dark';
-    StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});
+    StatusBarStyle.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});
   }
 };
 

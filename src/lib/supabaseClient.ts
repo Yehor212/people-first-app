@@ -107,6 +107,14 @@ export const supabase: SupabaseClient<Database> | null =
           detectSessionInUrl: shouldDetectSessionInUrl(),
           storage: getAuthStorage(),
           flowType: 'pkce',
+          // Fix: bypass Web Locks API that causes AbortError on page reload (OAuth redirect).
+          // navigator.locks.request() fails with "signal is aborted without reason" when the
+          // page reloads after OAuth redirect, preventing PKCE code exchange.
+          // Safe for single-tab app — lock only prevents concurrent auth ops across tabs.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          lock: async (_name: string, _acquireTimeout: number, fn: () => Promise<any>) => {
+            return await fn();
+          },
         },
       })
     : null;

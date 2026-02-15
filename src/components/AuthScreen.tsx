@@ -18,6 +18,8 @@ const PHONE_REGEX = /^\+\d{7,15}$/;
 
 interface AuthScreenProps {
   onComplete: (userData: { name: string; email: string }) => void;
+  webOAuthError?: string | null;
+  onClearError?: () => void;
 }
 
 // Track which provider is currently loading
@@ -26,7 +28,7 @@ type AuthProvider = 'google' | 'apple' | 'facebook' | 'phone' | null;
 // Phone auth flow steps
 type PhoneStep = 'idle' | 'input' | 'otp';
 
-export function AuthScreen({ onComplete }: AuthScreenProps) {
+export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScreenProps) {
   const { t } = useLanguage();
   const [loadingProvider, setLoadingProvider] = useState<AuthProvider>(null);
   const [error, setError] = useState<string | null>(null);
@@ -48,6 +50,14 @@ export function AuthScreen({ onComplete }: AuthScreenProps) {
   useEffect(() => {
     onCompleteRef.current = onComplete;
   });
+
+  // Show web OAuth error from Index.tsx if present (e.g., code exchange timeout)
+  useEffect(() => {
+    if (webOAuthError) {
+      setError(webOAuthError);
+      onClearError?.();
+    }
+  }, [webOAuthError, onClearError]);
 
   // Safe completion helper - ensures onComplete is called exactly once
   // This function atomically checks and sets the flag to prevent race conditions

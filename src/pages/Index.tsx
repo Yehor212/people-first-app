@@ -410,6 +410,11 @@ export function Index() {
   // This is needed because setGoogleAuthChecked uses async IndexedDB write
   const [authBypassFlag, setAuthBypassFlag] = useState(false);
 
+  // Web OAuth callback processing state
+  // true = URL has ?code= and we're waiting for Supabase to exchange it for session
+  const [isProcessingWebOAuth, setIsProcessingWebOAuth] = useState(false);
+  const [webOAuthError, setWebOAuthError] = useState<string | null>(null);
+
   // Используем useIndexedDB для hasSelectedLanguage
   const [hasSelectedLanguage, setHasSelectedLanguage, isLoadingLangSelected] = useIndexedDB({
     table: db.settings,
@@ -544,6 +549,62 @@ export function Index() {
       subscription?.unsubscribe();
     };
   }, [googleAuthChecked, isLoadingGoogleAuth, setGoogleAuthChecked]);
+
+  // Web OAuth callback detection — runs ONCE on mount
+  // Detects ?code= or ?error= in URL (from Supabase PKCE redirect)
+  // Shows loading state while exchange completes, prevents AuthScreen flash
+  useEffect(() => {
+    if (isNativePlatform() || !supabase) return;
+
+    const url = new URL(window.location.href);
+    const hasCode = url.searchParams.has('code');
+    const hasError = url.searchParams.has('error');
+    const errorDescription = url.searchParams.get('error_description');
+
+    if (!hasCode && !hasError) return;
+
+    // Handle error case immediately
+    if (hasError) {
+      logger.error('[Index] OAuth error in URL:', url.searchParams.get('error'), errorDescription);
+      setWebOAuthError(errorDescription || 'Authentication failed. Please try again.');
+      window.history.replaceState({}, '', window.location.pathname);
+      return;
+    }
+
+    // Has ?code= — wait for Supabase to exchange it
+    logger.log('[Index] Web OAuth callback detected, waiting for code exchange...');
+    setIsProcessingWebOAuth(true);
+
+    let settled = false;
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (settled) return;
+
+      if (event === 'SIGNED_IN' && session) {
+        settled = true;
+        logger.log('[Index] Web OAuth code exchange succeeded');
+        window.history.replaceState({}, '', window.location.pathname);
+        setIsProcessingWebOAuth(false);
+      }
+    });
+
+    // Timeout: if no SIGNED_IN event after 15 seconds, exchange likely failed
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      logger.error('[Index] Web OAuth code exchange timed out after 15s');
+      setIsProcessingWebOAuth(false);
+      setWebOAuthError('Sign-in took too long. Please try again.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }, 15000);
+
+    return () => {
+      settled = true;
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Run once on mount
 
   // GDPR: analytics OFF by default (opt-in, not opt-out)
   const [privacy, setPrivacy, isLoadingPrivacy] = useIndexedDB<PrivacySettings>({
@@ -2142,9 +2203,23 @@ export function Index() {
   // Also check hasValidSession - if session exists, skip to app
   // hasValidSession: null = checking, true = has session, false = no session
   if (!googleAuthChecked && !authBypassFlag && hasValidSession === false) {
+    // If processing web OAuth callback, show loading instead of AuthScreen
+    if (isProcessingWebOAuth) {
+      return (
+        <div className="min-h-screen zen-gradient-hero flex items-center justify-center p-4">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">{t.authSigningIn}</p>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <AuthScreen
         onComplete={handleGoogleAuthComplete}
+        webOAuthError={webOAuthError}
+        onClearError={() => setWebOAuthError(null)}
       />
     );
   }
