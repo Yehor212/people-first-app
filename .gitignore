@@ -95,3 +95,13 @@ dev-dist/
 nul
 c:temp*
 supabase/.temp/
+
+# ============================================
+# Debug / analysis output
+# ============================================
+*_keys.txt
+all_keys.txt
+*keys_unique.txt
+eslint_output.json
+eslint_full_output.txt
+build_output.txt
