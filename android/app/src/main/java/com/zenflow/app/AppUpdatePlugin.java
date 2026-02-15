@@ -48,15 +48,14 @@ public class AppUpdatePlugin extends Plugin {
 
     @PluginMethod
     public void startImmediateUpdate(PluginCall call) {
-        Activity activity = getActivity();
-        if (activity == null) {
-            call.reject("Activity not available");
-            return;
-        }
-
         Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
 
         appUpdateInfoTask.addOnSuccessListener(info -> {
+            Activity activity = getActivity();
+            if (activity == null) {
+                call.reject("Activity no longer available");
+                return;
+            }
             if (info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
                     && info.isUpdateTypeAllowed(AppUpdateType.IMMEDIATE)) {
                 try {
@@ -80,15 +79,14 @@ public class AppUpdatePlugin extends Plugin {
 
     @PluginMethod
     public void startFlexibleUpdate(PluginCall call) {
-        Activity activity = getActivity();
-        if (activity == null) {
-            call.reject("Activity not available");
-            return;
-        }
-
         Task<AppUpdateInfo> appUpdateInfoTask = appUpdateManager.getAppUpdateInfo();
 
         appUpdateInfoTask.addOnSuccessListener(info -> {
+            Activity activity = getActivity();
+            if (activity == null) {
+                call.reject("Activity no longer available");
+                return;
+            }
             if (info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
                     && info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)) {
                 try {

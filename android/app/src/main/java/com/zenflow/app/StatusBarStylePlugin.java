@@ -30,16 +30,22 @@ public class StatusBarStylePlugin extends Plugin {
 
         getBridge().executeOnMainThread(() -> {
             try {
+                android.app.Activity activity = getActivity();
+                if (activity == null) {
+                    call.reject("Activity not available");
+                    return;
+                }
+
                 currentStyle = style;
                 String resolvedStyle = style;
 
                 if ("DEFAULT".equals(resolvedStyle)) {
-                    int nightMode = getActivity().getResources().getConfiguration().uiMode
+                    int nightMode = activity.getResources().getConfiguration().uiMode
                             & Configuration.UI_MODE_NIGHT_MASK;
                     resolvedStyle = (nightMode == Configuration.UI_MODE_NIGHT_YES) ? "DARK" : "LIGHT";
                 }
 
-                Window window = getActivity().getWindow();
+                Window window = activity.getWindow();
                 View decorView = window.getDecorView();
                 WindowInsetsControllerCompat controller =
                         WindowCompat.getInsetsController(window, decorView);
@@ -57,10 +63,13 @@ public class StatusBarStylePlugin extends Plugin {
         super.handleOnConfigurationChanged(newConfig);
         // Re-apply style when system theme changes (only matters for DEFAULT)
         if ("DEFAULT".equals(currentStyle)) {
+            android.app.Activity activity = getActivity();
+            if (activity == null) return;
+
             int nightMode = newConfig.uiMode & Configuration.UI_MODE_NIGHT_MASK;
             String resolved = (nightMode == Configuration.UI_MODE_NIGHT_YES) ? "DARK" : "LIGHT";
             try {
-                Window window = getActivity().getWindow();
+                Window window = activity.getWindow();
                 View decorView = window.getDecorView();
                 WindowInsetsControllerCompat controller =
                         WindowCompat.getInsetsController(window, decorView);

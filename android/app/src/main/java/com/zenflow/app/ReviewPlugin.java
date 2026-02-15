@@ -26,24 +26,20 @@ public class ReviewPlugin extends Plugin {
 
     @PluginMethod
     public void requestReview(PluginCall call) {
-        Activity activity = getActivity();
-        if (activity == null) {
-            call.reject("Activity not available");
-            return;
-        }
-
         Task<ReviewInfo> request = reviewManager.requestReviewFlow();
         request.addOnCompleteListener(task -> {
             if (task.isSuccessful()) {
+                Activity activity = getActivity();
+                if (activity == null) {
+                    call.reject("Activity no longer available");
+                    return;
+                }
                 reviewInfo = task.getResult();
                 Task<Void> flow = reviewManager.launchReviewFlow(activity, reviewInfo);
                 flow.addOnCompleteListener(flowTask -> {
-                    // The flow has finished. The API does not indicate whether the user
-                    // reviewed or not, or even whether the review dialog was shown.
                     call.resolve();
                 });
             } else {
-                // There was some problem, e.g. Google Play services not available
                 call.reject("Failed to request review flow: " +
                     (task.getException() != null ? task.getException().getMessage() : "Unknown error"));
             }

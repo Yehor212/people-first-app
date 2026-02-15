@@ -57,8 +57,6 @@ public class DndPlugin extends Plugin {
                 result.put("active", isDndActive);
                 result.put("filter", filter);
                 result.put("filterName", getFilterName(filter));
-
-                Log.d(TAG, "DND check - active: " + isDndActive + ", filter: " + filter);
             } else {
                 // Pre-Marshmallow: DND check not available
                 result.put("active", false);
@@ -172,8 +170,6 @@ public class DndPlugin extends Plugin {
                 ? NotificationManager.INTERRUPTION_FILTER_PRIORITY
                 : NotificationManager.INTERRUPTION_FILTER_ALL;
             notificationManager.setInterruptionFilter(filter);
-
-            Log.d(TAG, "DND set - enabled: " + enabled + ", filter: " + filter);
             result.put("success", true);
         } catch (Exception e) {
             Log.e(TAG, "Error setting DND", e);
@@ -190,7 +186,8 @@ public class DndPlugin extends Plugin {
      */
     @PluginMethod
     public void requestPolicyAccess(PluginCall call) {
-        if (getActivity() == null) {
+        android.app.Activity activity = getActivity();
+        if (activity == null) {
             call.reject("Activity not available");
             return;
         }
@@ -198,7 +195,7 @@ public class DndPlugin extends Plugin {
         // Attempt 1: Direct notification policy access settings
         try {
             Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
-            getActivity().startActivity(intent);
+            activity.startActivity(intent);
             call.resolve();
             return;
         } catch (Exception e) {
@@ -210,7 +207,7 @@ public class DndPlugin extends Plugin {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
                 intent.putExtra(Settings.EXTRA_APP_PACKAGE, getContext().getPackageName());
-                getActivity().startActivity(intent);
+                activity.startActivity(intent);
                 call.resolve();
                 return;
             }
@@ -222,7 +219,7 @@ public class DndPlugin extends Plugin {
         try {
             Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
             intent.setData(Uri.parse("package:" + getContext().getPackageName()));
-            getActivity().startActivity(intent);
+            activity.startActivity(intent);
             call.resolve();
             return;
         } catch (Exception e) {
