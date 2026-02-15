@@ -2,6 +2,13 @@ import { db } from '@/storage/db';
 import { generateId } from '@/lib/utils';
 import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
 import { MAX_PHOTOS_PER_ENTRY, MAX_AUDIO_PER_ENTRY } from './types';
+import {
+  uploadPhoto,
+  uploadAudio as uploadAudioToStorage,
+  deletePhotoFromStorage,
+  deleteAudioFromStorage,
+  deleteEntryMediaFromStorage,
+} from '@/storage/journalStorageService';
 
 // ============================================
 // JOURNAL ENTRIES CRUD
@@ -36,14 +43,26 @@ export async function updateEntry(id: string, changes: Partial<Omit<JournalEntry
 }
 
 export async function deleteEntry(id: string): Promise<void> {
-  // Delete associated photos first
+  // Collect associated media before deleting
   const photos = await db.journalPhotos.where('entryId').equals(id).toArray();
-  await db.transaction('rw', [db.journalEntries, db.journalPhotos], async () => {
+  const audios = await db.journalAudio.where('entryId').equals(id).toArray();
+
+  // Delete from local IndexedDB (photos + audio + entry)
+  await db.transaction('rw', [db.journalEntries, db.journalPhotos, db.journalAudio], async () => {
     if (photos.length) {
       await db.journalPhotos.bulkDelete(photos.map(p => p.id));
     }
+    if (audios.length) {
+      await db.journalAudio.bulkDelete(audios.map(a => a.id));
+    }
     await db.journalEntries.delete(id);
   });
+
+  // Clean up from Supabase Storage (fire-and-forget, non-blocking)
+  deleteEntryMediaFromStorage(
+    photos.map(p => p.id),
+    audios.map(a => a.id),
+  );
 }
 
 export async function getEntryCount(): Promise<number> {
@@ -115,6 +134,17 @@ export async function compressAndStorePhoto(
     };
 
     await db.journalPhotos.add(photo);
+
+    // Background upload to Supabase Storage (non-blocking)
+    uploadPhoto(photo.id, full.dataUrl).then(async (result) => {
+      if (result) {
+        await db.journalPhotos.update(photo.id, {
+          storagePath: result.path,
+          storageUrl: result.signedUrl,
+        });
+      }
+    });
+
     return photo;
   } finally {
     URL.revokeObjectURL(objectUrl);
@@ -132,7 +162,6 @@ export async function getPhotoById(id: string): Promise<JournalPhoto | undefined
 export async function deletePhoto(id: string, entryId: string): Promise<void> {
   await db.transaction('rw', [db.journalEntries, db.journalPhotos], async () => {
     await db.journalPhotos.delete(id);
-    // Remove photoId reference from entry
     const entry = await db.journalEntries.get(entryId);
     if (entry) {
       await db.journalEntries.update(entryId, {
@@ -141,6 +170,8 @@ export async function deletePhoto(id: string, entryId: string): Promise<void> {
       });
     }
   });
+  // Clean up from Supabase Storage (fire-and-forget)
+  deletePhotoFromStorage(id);
 }
 
 // ============================================
@@ -168,6 +199,17 @@ export async function storeAudio(
   };
 
   await db.journalAudio.add(audio);
+
+  // Background upload to Supabase Storage (non-blocking)
+  uploadAudioToStorage(audio.id, data, mimeType).then(async (result) => {
+    if (result) {
+      await db.journalAudio.update(audio.id, {
+        storagePath: result.path,
+        storageUrl: result.signedUrl,
+      });
+    }
+  });
+
   return audio;
 }
 
@@ -190,4 +232,6 @@ export async function deleteAudio(id: string, entryId: string): Promise<void> {
       });
     }
   });
+  // Clean up from Supabase Storage (fire-and-forget)
+  deleteAudioFromStorage(id);
 }

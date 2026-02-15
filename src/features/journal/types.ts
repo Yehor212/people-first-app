@@ -26,6 +26,8 @@ export interface JournalPhoto {
   width: number;
   height: number;
   createdAt: number;
+  storagePath?: string;   // Supabase Storage path (e.g. "{userId}/{photoId}.jpg")
+  storageUrl?: string;    // Signed URL for CDN access
 }
 
 /** PBKDF2-hashed password stored in settings table */
@@ -44,6 +46,8 @@ export interface JournalAudio {
   duration: number;       // seconds
   mimeType: string;       // 'audio/webm' or 'audio/mp4'
   createdAt: number;
+  storagePath?: string;   // Supabase Storage path
+  storageUrl?: string;    // Signed URL for access
 }
 
 export const MAX_PHOTOS_PER_ENTRY = 5;
