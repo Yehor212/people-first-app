@@ -21,6 +21,7 @@ import {
 
 // Temporarily disabled features
 const SHOW_SPOTIFY = false;
+const SHOW_DND = false;
 
 // Star particle for cosmic background (dark theme only)
 function CosmicStar({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
@@ -637,7 +638,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         </div>
 
         {/* Phone Focus Mode — DND toggle (Android only) */}
-        {Capacitor.isNativePlatform() && (
+        {SHOW_DND && Capacitor.isNativePlatform() && (
           <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto mb-4">
             <motion.button
               onClick={() => void handleDndToggle()}
@@ -687,7 +688,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         )}
 
         {/* DND Permission Modal */}
-        {showDndPermission && (
+        {SHOW_DND && showDndPermission && (
           <div
             className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6"
             role="dialog"
