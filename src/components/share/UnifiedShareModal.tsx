@@ -4,6 +4,7 @@
  */
 
 import { useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Download, Share2, Copy, Check, Loader2, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn, interpolate } from '@/lib/utils';
@@ -243,7 +244,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <>
       {/* Backdrop */}
       <div
@@ -419,7 +420,8 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
           </div>
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 }
 

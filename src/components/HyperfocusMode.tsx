@@ -70,6 +70,8 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   const [dndEnabled, setDndEnabledState] = useState(false);
   const [dndPreviousState, setDndPreviousState] = useState(false);
   const [showDndPermission, setShowDndPermission] = useState(false);
+  const [dndError, setDndError] = useState(false);
+  const dndErrorTimerRef = useRef<number | null>(null);
 
   // Use global singleton to prevent audio overlap
   const soundGeneratorRef = useRef<AmbientSoundGenerator>(getAmbientSoundGenerator());
@@ -302,7 +304,14 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
     const currentlyActive = await checkDndActive();
     setDndPreviousState(currentlyActive);
     const success = await setDndEnabled(true);
-    if (success) setDndEnabledState(true);
+    if (success) {
+      setDndEnabledState(true);
+      setDndError(false);
+    } else {
+      setDndError(true);
+      if (dndErrorTimerRef.current) window.clearTimeout(dndErrorTimerRef.current);
+      dndErrorTimerRef.current = window.setTimeout(() => setDndError(false), 3000);
+    }
   };
 
   // Restore DND on unmount if we enabled it
@@ -317,6 +326,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         void setDndEnabled(false);
         logger.log('[HyperfocusMode] DND restored on unmount');
       }
+      if (dndErrorTimerRef.current) window.clearTimeout(dndErrorTimerRef.current);
     };
   }, []);
 
@@ -651,6 +661,11 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   {dndEnabled && (
                     <p className="text-xs text-violet-600/70 dark:text-violet-300/60">
                       {t.focusModeEnabled || 'Focus mode on — distractions silenced'}
+                    </p>
+                  )}
+                  {dndError && !dndEnabled && (
+                    <p className="text-xs text-red-500 dark:text-red-400" role="status" aria-live="polite">
+                      {t.focusModeError || 'Could not enable focus mode'}
                     </p>
                   )}
                 </div>

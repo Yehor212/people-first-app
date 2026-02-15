@@ -920,6 +920,7 @@ export interface Translations {
   focusModePermDesc: string;
   focusModeOpenSettings: string;
   focusModeRestored: string;
+  focusModeError: string;
 
   // Audio Status
   audioLoading: string;
@@ -3170,6 +3171,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     focusModePermDesc: 'ZenFlow needs permission to silence notifications during focus sessions.',
     focusModeOpenSettings: 'Open Settings',
     focusModeRestored: 'Previous notification settings restored',
+    focusModeError: 'Could not enable focus mode',
 
     // Audio Status
     audioLoading: 'Loading...',
@@ -5363,6 +5365,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     focusModePermDesc: 'ZenFlow потребує дозволу для вимкнення сповіщень під час сеансів фокусу.',
     focusModeOpenSettings: 'Відкрити налаштування',
     focusModeRestored: 'Попередні налаштування сповіщень відновлено',
+    focusModeError: 'Не вдалося увімкнути режим фокусу',
 
     // Audio Status
     audioLoading: 'Завантаження...',
@@ -7557,6 +7560,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     focusModePermDesc: 'ZenFlow necesita permiso para silenciar notificaciones durante sesiones de enfoque.',
     focusModeOpenSettings: 'Abrir ajustes',
     focusModeRestored: 'Configuración de notificaciones restaurada',
+    focusModeError: 'No se pudo activar el modo de enfoque',
 
     // Audio Status
     audioLoading: 'Cargando...',
@@ -9751,6 +9755,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     focusModePermDesc: 'ZenFlow benötigt die Berechtigung, Benachrichtigungen während Fokussitzungen stummzuschalten.',
     focusModeOpenSettings: 'Einstellungen öffnen',
     focusModeRestored: 'Vorherige Benachrichtigungseinstellungen wiederhergestellt',
+    focusModeError: 'Fokusmodus konnte nicht aktiviert werden',
 
     // Audio Status
     audioLoading: 'Wird geladen...',
@@ -11945,6 +11950,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     focusModePermDesc: 'ZenFlow a besoin de la permission de couper les notifications pendant les sessions de concentration.',
     focusModeOpenSettings: 'Ouvrir les paramètres',
     focusModeRestored: 'Paramètres de notification précédents restaurés',
+    focusModeError: 'Impossible d\'activer le mode concentration',
 
     // Audio Status
     audioLoading: 'Chargement...',
@@ -14138,6 +14144,7 @@ const baseTranslations: Partial<Record<Language, Translations>> = {
     focusModePermDesc: 'ZenFlowは集中セッション中に通知をサイレントにする許可が必要です。',
     focusModeOpenSettings: '設定を開く',
     focusModeRestored: '以前の通知設定に戻しました',
+    focusModeError: '集中モードを有効にできませんでした',
 
     // Audio Status
     audioLoading: '読み込み中...',
@@ -16216,6 +16223,7 @@ const arabicOverrides: Partial<Translations> = {
   focusModePermDesc: 'يحتاج ZenFlow إذنًا لكتم الإشعارات أثناء جلسات التركيز.',
   focusModeOpenSettings: 'فتح الإعدادات',
   focusModeRestored: 'تمت استعادة إعدادات الإشعارات السابقة',
+  focusModeError: 'تعذر تفعيل وضع التركيز',
 
   // Audio Status
   audioLoading: 'جاري التحميل...',
@@ -18696,6 +18704,7 @@ const hebrewOverrides: Partial<Translations> = {
   focusModePermDesc: 'ZenFlow צריך הרשאה להשתיק התראות במהלך מפגשי ריכוז.',
   focusModeOpenSettings: 'פתח הגדרות',
   focusModeRestored: 'הגדרות התראות קודמות שוחזרו',
+  focusModeError: 'לא ניתן להפעיל מצב ריכוז',
   audioLoading: 'טוען...',
   audioTapToEnable: 'לחץ להפעלת צליל',
   audioRetry: 'נסה שוב',
