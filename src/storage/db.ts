@@ -100,6 +100,65 @@ export const settingsRepo = db.settings;
 export const journalEntriesRepo = db.journalEntries;
 export const journalPhotosRepo = db.journalPhotos;
 
+/**
+ * User-specific settings keys stored in db.settings IndexedDB table.
+ * These are cleared on sign-out. Device-level keys are NOT listed here:
+ * zenflow-language-selected, zenflow-tutorial-complete, zenflow-onboarding-complete,
+ * zenflow-google-auth-checked, zenflow-notification-permission-checked, zenflow-privacy
+ */
+const USER_SETTINGS_KEYS = [
+  'zenflow-moods', 'zenflow-habits', 'zenflow-focus', 'zenflow-gratitude',
+  'zenflow-username', 'zenflow-username-custom',
+  'zenflow-reminders', 'zenflow-schedule-events',
+  'zenflow-special-badges', 'zenflow-last-weekly-report',
+];
+
+/**
+ * Clear all user data from IndexedDB and localStorage.
+ * Called on sign-out / delete-account to prevent data leakage between accounts.
+ *
+ * IMPORTANT: Call stopAutoSync() BEFORE this function to prevent
+ * background sync from uploading empty data to cloud.
+ */
+export const clearLocalUserData = async (): Promise<void> => {
+  try {
+    await db.transaction('rw',
+      db.moods, db.habits, db.focusSessions, db.gratitudeEntries,
+      db.journalEntries, db.journalPhotos, db.journalAudio,
+      db.offlineQueue, db.settings,
+      async () => {
+        await db.moods.clear();
+        await db.habits.clear();
+        await db.focusSessions.clear();
+        await db.gratitudeEntries.clear();
+        await db.journalEntries.clear();
+        await db.journalPhotos.clear();
+        await db.journalAudio.clear();
+        await db.offlineQueue.clear();
+        // Delete user-specific settings rows (keep device-level settings)
+        await db.settings.bulkDelete(USER_SETTINGS_KEYS);
+      }
+    );
+  } catch (error) {
+    logger.error('[DB] Failed to clear IndexedDB tables:', error);
+    // Fallback: delete and recreate the entire database
+    try {
+      await db.delete();
+      await db.open();
+    } catch (fallbackError) {
+      logger.error('[DB] Database recreation failed:', fallbackError);
+    }
+  }
+
+  // Clear user-data localStorage keys (must match IndexedDB keys above)
+  const allUserKeys = [
+    ...USER_SETTINGS_KEYS,
+    'zenflow_cloud_sync_enabled',  // Cloud sync preference (per-account)
+    'zenflow_offline_queue',        // Offline queue localStorage fallback
+  ];
+  allUserKeys.forEach(key => localStorage.removeItem(key));
+};
+
 // Helper to check database health with timeout
 export const checkDatabaseHealth = async (): Promise<boolean> => {
   // First check if IndexedDB is available at all

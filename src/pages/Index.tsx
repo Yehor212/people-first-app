@@ -160,6 +160,7 @@ export function Index() {
   }, [activeTab]);
   // const [showAIOnboarding, setShowAIOnboarding] = useState(false); // Hidden until AI ready
   const lastSyncedUserIdRef = useRef<string | null>(null);
+  const hadSignOutRef = useRef(false);
   const initTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const processingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const mindfulTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -1763,9 +1764,17 @@ export function Index() {
     const syncIfNeeded = async (userId?: string | null) => {
       if (!active || !userId) return;
       if (lastSyncedUserIdRef.current === userId) return;
+
+      // Use 'replace' if: (a) sign-out happened, or (b) different user was synced before
+      const isAccountSwitch = hadSignOutRef.current ||
+        (lastSyncedUserIdRef.current !== null && lastSyncedUserIdRef.current !== userId);
+
       lastSyncedUserIdRef.current = userId;
+      hadSignOutRef.current = false;
+
       try {
-        await syncWithCloud('merge');
+        // Use 'replace' on account switch to avoid merging different users' data
+        await syncWithCloud(isAccountSwitch ? 'replace' : 'merge');
         // Start auto-sync after successful initial sync
         startAutoSync();
         // Join Presence channel for friend online status
@@ -1784,7 +1793,12 @@ export function Index() {
     }).catch(() => {});
 
     // Correct destructuring pattern for auth subscription
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // Reset sync refs on sign-out so next sign-in uses 'replace' mode
+      if (event === 'SIGNED_OUT') {
+        lastSyncedUserIdRef.current = null;
+        hadSignOutRef.current = true;
+      }
       // v1.1.1 Migration: Auto-enable cloud sync when user signs in
       if (session) {
         migrateExistingUser();

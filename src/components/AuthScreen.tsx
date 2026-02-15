@@ -286,7 +286,10 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
         redirectTo: redirectUrl,
       };
 
-      if (provider === 'apple') {
+      if (provider === 'google') {
+        // Always show account picker to support account switching
+        options.queryParams = { prompt: 'select_account' };
+      } else if (provider === 'apple') {
         options.scopes = 'name email';
       } else if (provider === 'facebook') {
         options.scopes = 'email,public_profile';

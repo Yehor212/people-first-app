@@ -8,13 +8,15 @@ import { logger } from '@/lib/logger';
 import { Switch } from '@/components/ui/switch';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { supabase } from '@/lib/supabaseClient';
-import { syncWithCloud } from '@/storage/cloudSync';
+import { syncWithCloud, stopAutoSync } from '@/storage/cloudSync';
 import { getAuthRedirectUrl, isNativePlatform } from '@/lib/authRedirect';
 import { authenticateWithGoogleNative } from '@/lib/nativeGoogleAuth';
 import { isCloudSyncEnabled, setCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { removePushToken } from '@/lib/pushNotifications';
 import { offlineQueue } from '@/lib/offlineQueue';
 import { isCalendarEnabled, isCalendarConnected } from '@/lib/googleCalendar';
+import { clearLocalUserData } from '@/storage/db';
+import { triggerDataRefresh } from '@/hooks/useIndexedDB';
 
 interface AccountSectionProps {
   userName: string;
@@ -177,6 +179,9 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
           provider: 'google',
           options: {
             redirectTo: redirectUrl,
+            queryParams: {
+              prompt: 'select_account',
+            },
           },
         });
 
@@ -214,6 +219,13 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
           // Continue with sign-out even if flush fails
         }
       }
+
+      // Stop background sync FIRST to prevent empty-data upload race condition
+      stopAutoSync();
+
+      // Clear local user data to prevent data leakage between accounts
+      await clearLocalUserData();
+      triggerDataRefresh();
 
       // Remove FCM push token before signing out
       await removePushToken();
@@ -312,6 +324,10 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
       if (error) {
         throw error;
       }
+      // Stop sync + clear local data before signing out (same as handleSignOut)
+      stopAutoSync();
+      await clearLocalUserData();
+      triggerDataRefresh();
       await supabase.auth.signOut();
       onResetData();
       setShowDeleteConfirm(false);
