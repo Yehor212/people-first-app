@@ -4,7 +4,7 @@ import type { FeatureId } from '@/lib/onboardingFlow';
 import type { ChallengeInvite } from '@/lib/friendChallenge';
 import type { UpdateState } from '@/lib/appUpdateManager';
 
-type ModalName =
+export type ModalName =
   | 'showWeeklyReport' | 'showWidgetSettings' | 'showChallenges'
   | 'showChallengeModal' | 'showTimeHelper' | 'showTasksPanel'
   | 'showQuestsPanel' | 'showFriendsPanel' | 'showWelcomeOverlay'
@@ -122,6 +122,27 @@ export const useUIStore = create<UIState & UIActions>((set, get) => ({
   setJournalPromptText: (journalPromptText) => set({ journalPromptText }),
   setCurrentFocusMinutes: (currentFocusMinutes) => set({ currentFocusMinutes }),
 }));
+
+/**
+ * Creates a stable toggle function for a modal: (value: boolean) => void.
+ * Replaces 11 useCallback wrappers in Index.tsx.
+ * Usage: const setShowWeeklyReport = useModalToggle('showWeeklyReport');
+ */
+const modalToggleCache = new Map<ModalName, (value: boolean) => void>();
+export function getModalToggle(name: ModalName): (value: boolean) => void {
+  let fn = modalToggleCache.get(name);
+  if (!fn) {
+    fn = (value: boolean) => {
+      if (value) {
+        useUIStore.getState().openModal(name);
+      } else {
+        useUIStore.getState().closeModal(name);
+      }
+    };
+    modalToggleCache.set(name, fn);
+  }
+  return fn;
+}
 
 // Derived selector: any modal open (for scroll lock, etc.)
 export const selectAnyModalOpen = (state: UIState): boolean =>

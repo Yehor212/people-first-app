@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
-import { useAppStore, useUIStore, selectAnyModalOpen, useHydrateGamification, useUserDataStore, useHydrateUserData, type TabType } from '@/stores';
+import { useAppStore, useUIStore, selectAnyModalOpen, getModalToggle, useHydrateGamification, useUserDataStore, useHydrateUserData, type TabType } from '@/stores';
 import { motion } from 'framer-motion';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
@@ -222,19 +222,18 @@ export function Index() {
   const showFriendsPanel = useUIStore(s => s.showFriendsPanel);
   const confettiBurst = useUIStore(s => s.confettiBurst);
   const setConfettiBurst = useUIStore(s => s.setConfettiBurst);
-  // Modal setters (convenience wrappers for JSX callbacks)
-  const { openModal, closeModal } = useUIStore.getState();
-  const setShowWeeklyReport = useCallback((v: boolean) => v ? openModal('showWeeklyReport') : closeModal('showWeeklyReport'), [openModal, closeModal]);
-  const setShowWidgetSettings = useCallback((v: boolean) => v ? openModal('showWidgetSettings') : closeModal('showWidgetSettings'), [openModal, closeModal]);
-  const setShowChallenges = useCallback((v: boolean) => v ? openModal('showChallenges') : closeModal('showChallenges'), [openModal, closeModal]);
-  const setShowChallengeModal = useCallback((v: boolean) => v ? openModal('showChallengeModal') : closeModal('showChallengeModal'), [openModal, closeModal]);
-  const setShowTimeHelper = useCallback((v: boolean) => v ? openModal('showTimeHelper') : closeModal('showTimeHelper'), [openModal, closeModal]);
-  const setShowTasksPanel = useCallback((v: boolean) => v ? openModal('showTasksPanel') : closeModal('showTasksPanel'), [openModal, closeModal]);
-  const setShowQuestsPanel = useCallback((v: boolean) => v ? openModal('showQuestsPanel') : closeModal('showQuestsPanel'), [openModal, closeModal]);
-  const setShowFriendsPanel = useCallback((v: boolean) => v ? openModal('showFriendsPanel') : closeModal('showFriendsPanel'), [openModal, closeModal]);
-  const setShowWelcomeOverlay = useCallback((v: boolean) => v ? openModal('showWelcomeOverlay') : closeModal('showWelcomeOverlay'), [openModal, closeModal]);
-  const setShowWelcomeBack = useCallback((v: boolean) => v ? openModal('showWelcomeBack') : closeModal('showWelcomeBack'), [openModal, closeModal]);
-  const setShowMindfulMoment = useCallback((v: boolean) => v ? openModal('showMindfulMoment') : closeModal('showMindfulMoment'), [openModal, closeModal]);
+  // Modal toggle functions (stable references via getModalToggle utility)
+  const setShowWeeklyReport = getModalToggle('showWeeklyReport');
+  const setShowWidgetSettings = getModalToggle('showWidgetSettings');
+  const setShowChallenges = getModalToggle('showChallenges');
+  const setShowChallengeModal = getModalToggle('showChallengeModal');
+  const setShowTimeHelper = getModalToggle('showTimeHelper');
+  const setShowTasksPanel = getModalToggle('showTasksPanel');
+  const setShowQuestsPanel = getModalToggle('showQuestsPanel');
+  const setShowFriendsPanel = getModalToggle('showFriendsPanel');
+  const setShowWelcomeOverlay = getModalToggle('showWelcomeOverlay');
+  const setShowWelcomeBack = getModalToggle('showWelcomeBack');
+  const setShowMindfulMoment = getModalToggle('showMindfulMoment');
 
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
