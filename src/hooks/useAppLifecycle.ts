@@ -94,10 +94,10 @@ export function useAppLifecycle(): void {
       active = false;
       if (initTimeoutRef.current) clearTimeout(initTimeoutRef.current);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only: register lifecycle listeners once
 
   // Initialize currentDate on mount
   useEffect(() => {
     if (!currentDate) setCurrentDate(getToday());
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only: initialize currentDate once
 }

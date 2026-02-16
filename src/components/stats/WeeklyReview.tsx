@@ -9,7 +9,7 @@
  * - Animated progress rings and sparkles
  */
 
-import { useMemo, useState } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Trophy,
@@ -170,7 +170,6 @@ export function WeeklyReview({
 }: WeeklyReviewProps) {
   const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const today = new Date();
   const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
 
@@ -193,7 +192,7 @@ export function WeeklyReview({
   }, [today]);
 
   // Calculate week stats
-  const calculateWeekStats = (dates: string[]): WeekStats => {
+  const calculateWeekStats = useCallback((dates: string[]): WeekStats => {
     let habitsCompleted = 0;
     let totalPossible = 0;
     let focusMinutes = 0;
@@ -245,12 +244,10 @@ export function WeeklyReview({
       perfectDays,
       bestDay,
     };
-  };
+  }, [habits, moods, focusSessions]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const thisWeekStats = useMemo(() => calculateWeekStats(weekDates.thisWeek), [weekDates.thisWeek, habits, moods, focusSessions]);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const lastWeekStats = useMemo(() => calculateWeekStats(weekDates.lastWeek), [weekDates.lastWeek, habits, moods, focusSessions]);
+  const thisWeekStats = useMemo(() => calculateWeekStats(weekDates.thisWeek), [weekDates.thisWeek, calculateWeekStats]);
+  const lastWeekStats = useMemo(() => calculateWeekStats(weekDates.lastWeek), [weekDates.lastWeek, calculateWeekStats]);
 
   // Calculate changes
   const changes = {

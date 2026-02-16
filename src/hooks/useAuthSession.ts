@@ -133,7 +133,7 @@ export function useAuthSession(isLoading: boolean): void {
       subscription.unsubscribe();
       clearTimeout(timeout);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: check OAuth redirect once
   }, []); // Run once on mount
 
   // Process pending auth URL when supabase becomes ready
@@ -174,7 +174,7 @@ export function useAuthSession(isLoading: boolean): void {
     return () => {
       active = false;
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: subscribe to auth state once
   }, [supabase, setUserName, setUserNameCustom, setGoogleAuthChecked]);
 
   // Cloud sync on auth change

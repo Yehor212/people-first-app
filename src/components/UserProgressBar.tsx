@@ -61,7 +61,7 @@ export function UserProgressBar({
     };
 
     requestAnimationFrame(animate);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: animation start value, including would cause loop
   }, [currentXp, dopamine.animations]);
 
   // Check for level up

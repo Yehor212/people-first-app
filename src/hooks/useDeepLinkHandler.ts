@@ -125,6 +125,6 @@ export function useDeepLinkHandler(): void {
 
     void setup();
     return () => { removeListener(); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: register deep link listener once
   }, []); // Listener registers ONCE, no dependencies
 }

@@ -61,7 +61,6 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
     pushQuestsToCloud(data).catch(err => {
       logger.error('Failed to push quests to cloud:', err);
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dailyQuest, weeklyQuest, bonusQuest, isLoaded]);
 
   // Check and regenerate expired/completed quests
@@ -82,7 +81,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
     } else if (bonusQuest && shouldRegenerateQuest(bonusQuest)) {
       setBonusQuest(null);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: regenerate expired quests once on load
   }, [isLoaded]);
 
   // Debounce refs to prevent rapid refresh spam

@@ -226,7 +226,7 @@ export function JournalEntryEditor({
     void promptSeed;
     const shuffled = [...prompts].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 5);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: reshuffle only on seed change, not language
   }, [promptSeed]);
 
   const hasContent = content.trim() || title.trim() || stickers.length > 0 || photoIds.length > 0 || audioIds.length > 0 || mood;
@@ -239,7 +239,7 @@ export function JournalEntryEditor({
         setShowTemplatePicker(false);
       }
     }).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: load draft on editor open
   }, []);
 
   // ── Auto-save draft (3s debounce) ──
@@ -404,8 +404,7 @@ export function JournalEntryEditor({
       void storeRecording();
       return () => { cancelled = true; };
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recorder.audioData, recorder.isRecording]);
+  }, [recorder.audioData, recorder.isRecording, onAddAudio, entryId, recorder.duration, recorder.mimeType, recorder.reset]);
 
   // Android back button (priority order)
   useEffect(() => {

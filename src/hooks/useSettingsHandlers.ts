@@ -55,7 +55,7 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
     } catch {
       // Silently fail — offline banner will show if no connection
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: stable callback, all deps are setters
   }, []);
 
   const handleAddScheduleEvent = useCallback((event: Omit<ScheduleEvent, 'id'>) => {

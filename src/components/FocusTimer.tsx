@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useRef, memo } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { logger } from '@/lib/logger';
@@ -212,7 +212,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
   }, []);
 
   // Persist timer state
-  const saveTimerState = () => {
+  const saveTimerState = useCallback(() => {
     const state: TimerState = {
       endTime: endTimeRef.current,
       focusMinutes,
@@ -229,7 +229,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     } catch (e) {
       logger.error('Failed to save timer state:', e);
     }
-  };
+  }, [focusMinutes, breakMinutes, isRunning, isBreak, label, preset]);
 
   const todaySessions = sessions.filter(s => s.date === getToday() && s.status !== 'aborted');
   const todayMinutes = todaySessions.reduce((acc, s) => acc + s.duration, 0);
@@ -290,8 +290,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
         clearTimeout(saveDebounceRef.current);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRunning, isBreak, focusMinutes, breakMinutes, label, preset]);
+  }, [saveTimerState]);
 
   // Restore state on mount
   useEffect(() => {
@@ -410,8 +409,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
         clearInterval(intervalRef.current);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRunning, isBreak, focusMinutes, focusDuration, breakDuration, label, todayMinutes, onMinuteUpdate]);
+  }, [isRunning, isBreak, focusMinutes, focusDuration, breakDuration, label, todayMinutes, onMinuteUpdate, saveTimerState]);
 
   const toggleTimer = () => {
     if (isRunning) {

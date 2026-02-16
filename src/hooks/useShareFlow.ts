@@ -103,7 +103,7 @@ export function useShareFlow({ open, generateFn, errorMessage }: UseShareFlowOpt
     }
 
     void generate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: generate only on open, not during generation
   }, [open]);
 
   const generate = useCallback(async () => {

@@ -165,7 +165,7 @@ export function useGamification() {
     if (initialLoadRef.current) {
       initialLoadRef.current = false;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: including gamificationState would cause infinite loop
   }, [moods, habits, focusSessions, gratitudeEntries]);
 
   // Award XP for actions
@@ -201,7 +201,6 @@ export function useGamification() {
       }
     }
     prevLevelRef.current = userLevel.level;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userLevel.level]);
 
   return {

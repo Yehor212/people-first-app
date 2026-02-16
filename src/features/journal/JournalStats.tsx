@@ -36,13 +36,13 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
-  const moodLabels: Record<MoodType, string> = {
+  const moodLabels = useMemo<Record<MoodType, string>>(() => ({
     great: ts.moodGreat || 'Great',
     good: ts.moodGood || 'Good',
     okay: ts.moodOkay || 'Okay',
     bad: ts.moodBad || 'Bad',
     terrible: ts.moodTerrible || 'Terrible',
-  };
+  }), [language, ts]);
 
   const dayNames = useMemo(() => {
     const formatter = new Intl.DateTimeFormat(language, { weekday: 'short' });
@@ -62,8 +62,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
       value: count,
       color: MOOD_COLORS[mood as MoodType] || '#888',
     }));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries]);
+  }, [entries, moodLabels]);
 
   // Mood over time (weekly average)
   const moodTimeline = useMemo(() => {
@@ -85,8 +84,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
       week: new Date(week + 'T00:00:00').toLocaleDateString(language, { month: 'short', day: 'numeric' }),
       avg: Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10,
     }));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries]);
+  }, [entries, language]);
 
   // Writing frequency (entries per week, last 8 weeks)
   const frequency = useMemo(() => {
@@ -102,8 +100,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     }
 
     return weeks;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries]);
+  }, [entries, language]);
 
   // Tag cloud
   const tagCloud = useMemo(() => {

@@ -53,7 +53,7 @@
 ```
 src/
   pages/
-    Index.tsx                   # 652-line orchestrator: gates → hooks → tabs (was 2,800 lines)
+    Index.tsx                   # 374-line orchestrator: hooks → tabs (was 2,800 → 652 → 374)
 
   stores/                       # Zustand stores + bridge hooks
     appStore.ts                 # Auth, initialization, active tab
@@ -72,8 +72,11 @@ src/
     useNotificationSetup.ts     # FCM, local reminders, channels
     useOnboardingEffects.ts     # Progressive onboarding, re-engagement
     useCloudSyncEffects.ts      # Cloud sync, realtime subscriptions
-    useAppUpdateCheck.ts        # Version check
-    useWeeklyReportTrigger.ts   # Auto-show weekly report on Monday
+    useAppUpdateCheck.ts        # Version check (reads onboardingComplete from store)
+    useWeeklyReportTrigger.ts   # Auto-show weekly report on Monday (reads from store)
+    useSettingsHandlers.ts      # Reset, name change, pull-to-refresh, schedule CRUD
+    useReminderMigration.ts     # One-time moodTime → 3-time format migration
+    useEmotionSync.ts           # Sync emotion theme with current mood
     # Feature handlers (extracted from Index.tsx)
     useMoodHandlers.ts          # handleAddMood, handleQuickMood
     useHabitHandlers.ts         # handleToggleHabit, CRUD (~180 lines, most complex)
@@ -85,7 +88,7 @@ src/
     useDeepLinkHandler.ts       # Auth + challenge deep links
     # Domain hooks
     useGamification.ts          # XP, levels, treats, achievements
-    useInnerWorld.ts            # Garden, creatures, rest mode (~28KB)
+    useInnerWorld.ts            # Garden, creatures, rest mode (542 lines, dead code removed)
     useIndexedDB.ts             # Generic IndexedDB persistence hook
     useSwipeNavigation.ts       # Mobile tab swipe
     useSessionTimeout.ts        # Auto-logout after inactivity
@@ -101,6 +104,7 @@ src/
       SettingsTab.tsx           # ~58 lines — settings panel wrapper
     ModalLayer.tsx              # 10 modal renders (weekly report, challenges, etc.)
     OverlayLayer.tsx            # Confetti, consent, update, onboarding overlays
+    AuthGate.tsx                # 7 initialization gates (splash, language, auth, tutorial, onboarding, notifications)
     SplashScreen.tsx            # Premium loading animation
     ErrorBoundary.tsx           # LazyErrorBoundary + ModalErrorBoundary
     # ... 50+ feature components
@@ -499,7 +503,7 @@ On PR to main:
 ## Known Technical Debt
 
 > Track items here until resolved. Remove when done.
-> Last audit: 2026-02-15 (after Phase 2 completion)
+> Last audit: 2026-02-15 (after Phase 4 completion)
 
 ### Resolved
 
@@ -511,8 +515,9 @@ On PR to main:
 
 | ID | Severity | Description | Before | After | Status |
 |----|----------|-------------|--------|-------|--------|
-| TD-01 | ~~CRITICAL~~ → MEDIUM | Index.tsx god component | 2,800 lines, 46 useState, 29 useEffect | **652 lines**, 4 useState, 6 useEffect, 53 imports | Orchestrator pattern. Still over 400-line limit. |
+| TD-01 | ~~CRITICAL~~ → LOW | Index.tsx god component | 2,800 lines, 46 useState, 29 useEffect | **374 lines**, 4 useState, 4 useEffect, 43 imports | Under 400-line limit. AuthGate, useSettingsHandlers, useReminderMigration, useEmotionSync extracted. |
 | TD-02 | ~~CRITICAL~~ → LOW | No state management | All prop drilling | **4 Zustand stores** + bridge hooks. Tab components still receive handler props. | Feature handlers not yet in stores. |
+| TD-06 | ~~HIGH~~ → LOW | exhaustive-deps eslint suppressions | **41** across 28 files | **16 remaining** (all annotated with reasons). 25 fixed: dead suppressions removed, missing deps added, useCallback refactors. | Only intentional mount-only effects remain. |
 | TD-10 | HIGH | No runtime validation | Zero validation | **Array.isArray** validation in `_hydrateFromDB`. No Zod schemas yet. | Partial — store boundary only. |
 
 ### Open
@@ -522,12 +527,11 @@ On PR to main:
 | TD-03 | CRITICAL | Non-atomic IndexedDB writes (read-modify-write race) | 375 lines, core `put()` not transactional | src/hooks/useIndexedDB.ts |
 | TD-04 | CRITICAL | CSP `unsafe-inline` for scripts and styles | `script-src 'self' 'unsafe-inline'` | index.html:9 |
 | TD-05 | CRITICAL | Web Locks API bypass in auth (causes AbortError on reload) | Active bypass comment in code | src/lib/supabaseClient.ts |
-| TD-06 | HIGH | exhaustive-deps eslint suppressions | **41** across 7 files | hooks/, pages/ |
 | TD-07 | HIGH | Direct `localStorage` calls instead of hooks/stores | **188 calls in 58 files** | Various |
 | TD-08 | HIGH | translations.ts monolith (all languages in one file) | **19,879 lines** | src/i18n/translations.ts |
 | TD-09 | HIGH | Low test coverage | 543 tests pass, but ~6% line coverage | src/__tests__/ |
 | TD-11 | MEDIUM | No CI/CD pipeline (GitHub Actions) | Manual builds only | — |
 | TD-12 | MEDIUM | React Router vestigial (only 1 route `/`) | Could remove entirely | src/App.tsx |
 | TD-14 | MEDIUM | Unused dependencies in package.json | Partially cleaned (html2canvas removed) | package.json |
-| TD-15 | MEDIUM | useInnerWorld.ts is 28KB monolith | 780+ lines, garden + creatures + rest mode + treats | src/hooks/useInnerWorld.ts |
+| TD-15 | ~~MEDIUM~~ → LOW | useInnerWorld.ts monolith | ~~780+ lines~~ → **542 lines** (12 dead functions removed, garden/ dir deleted) | src/hooks/useInnerWorld.ts |
 | TD-16 | LOW | Prop drilling in HomeTab (~30 props) | Handlers + inner world values passed as props | src/components/tabs/HomeTab.tsx |

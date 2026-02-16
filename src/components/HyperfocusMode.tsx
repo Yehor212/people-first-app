@@ -160,7 +160,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   useEffect(() => {
     return () => {
       if (soundGeneratorRef.current) {
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- ref.current in cleanup is intentional
         soundGeneratorRef.current.stop();
       }
     };

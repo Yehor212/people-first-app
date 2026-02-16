@@ -139,14 +139,12 @@ export function JournalModule() {
       security.lock();
       return true;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleState, journal.view, journal.goBack, resetStep, showPasswordSettings, security]);
 
   // Security touch on interaction
   useEffect(() => {
     if (moduleState === 'open') security.touch();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moduleState, journal.view, security.touch]);
+  }, [moduleState, journal.view, security]);
 
   const handleOpen = () => {
     setModuleState('open');

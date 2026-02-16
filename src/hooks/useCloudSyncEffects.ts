@@ -176,5 +176,5 @@ export function useCloudSyncEffects({
       taskSub?.();
       questSub?.();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- mount-only: set up sync subscriptions once
 }

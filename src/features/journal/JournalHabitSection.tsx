@@ -5,7 +5,7 @@
  * Reads from Dexie habits table.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { ChevronDown, ChevronUp, CheckCircle2, Circle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -31,6 +31,8 @@ export function JournalHabitSection({ date, snapshot, onSnapshotChange }: Journa
   const ts = t as unknown as Record<string, string>;
   const [collapsed, setCollapsed] = useState(true);
   const [habits, setHabits] = useState<Habit[]>([]);
+  const onSnapshotChangeRef = useRef(onSnapshotChange);
+  onSnapshotChangeRef.current = onSnapshotChange;
 
   // Load habits from DB
   useEffect(() => {
@@ -44,11 +46,10 @@ export function JournalHabitSection({ date, snapshot, onSnapshotChange }: Journa
           habitIcon: h.icon,
           completed: h.completedDates?.includes(date) || false,
         }));
-        onSnapshotChange(initial);
+        onSnapshotChangeRef.current(initial);
       }
     }).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date]);
+  }, [date, snapshot.length]);
 
   const completedCount = useMemo(() => snapshot.filter(s => s.completed).length, [snapshot]);
 

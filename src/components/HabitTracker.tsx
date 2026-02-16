@@ -18,6 +18,36 @@ import { getActiveChallenges } from '@/lib/friendChallenge';
 import { announceSuccess } from '@/lib/a11y';
 import { playSuccess, playStreakMilestone, playLevelUp } from '@/lib/audioManager';
 
+// Pure function: calculate habit streak (consecutive days, custom-day aware)
+function getHabitStreak(habit: Habit): number {
+  if (!habit.completedDates || habit.completedDates.length === 0) return 0;
+
+  // For daily habits or habits without custom schedule, use proven utility
+  if (!habit.customDays || habit.frequency !== 'custom') {
+    return calculateStreak(habit.completedDates);
+  }
+
+  // For custom-schedule habits, skip non-scheduled days
+  const completedSet = new Set(habit.completedDates);
+  let streak = 0;
+  const checkDate = new Date();
+  for (let daysBack = 0; daysBack < 365; daysBack++) {
+    const dateStr = formatDate(checkDate);
+    const dow = checkDate.getDay();
+    if (habit.customDays.includes(dow)) {
+      if (completedSet.has(dateStr)) {
+        streak++;
+      } else if (daysBack === 0) {
+        // Today is scheduled but not yet done — grace period, don't break
+      } else {
+        break;
+      }
+    }
+    checkDate.setDate(checkDate.getDate() - 1);
+  }
+  return streak;
+}
+
 const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿', '🚭', '🍷', '🇬🇧', '💪', '🧠'];
 const habitColors = [
   'bg-primary',
@@ -178,36 +208,6 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     return habits.filter(h => (h.category || 'health') === categoryFilter);
   }, [habits, categoryFilter]);
 
-  // Calculate habit streak (consecutive days, custom-day aware)
-  const getHabitStreak = (habit: Habit): number => {
-    if (!habit.completedDates || habit.completedDates.length === 0) return 0;
-
-    // For daily habits or habits without custom schedule, use proven utility
-    if (!habit.customDays || habit.frequency !== 'custom') {
-      return calculateStreak(habit.completedDates);
-    }
-
-    // For custom-schedule habits, skip non-scheduled days
-    const completedSet = new Set(habit.completedDates);
-    let streak = 0;
-    const checkDate = new Date();
-    for (let daysBack = 0; daysBack < 365; daysBack++) {
-      const dateStr = formatDate(checkDate);
-      const dow = checkDate.getDay();
-      if (habit.customDays.includes(dow)) {
-        if (completedSet.has(dateStr)) {
-          streak++;
-        } else if (daysBack === 0) {
-          // Today is scheduled but not yet done — grace period, don't break
-        } else {
-          break;
-        }
-      }
-      checkDate.setDate(checkDate.getDate() - 1);
-    }
-    return streak;
-  };
-
   // Check if habit is completed today (uses memoized map for performance)
   const isCompletedToday = useCallback((habit: Habit) => {
     return completionStatusMap.get(habit.id) ?? false;
@@ -267,7 +267,6 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
       streaks.set(habit.id, getHabitStreak(habit));
     });
     return streaks;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [habits, today]);
 
   const handleAddReminder = () => {
@@ -442,8 +441,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
         }, 1800); // Delay after celebration ends
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [habits, onToggleHabit, today, t]);
+  }, [habits, onToggleHabit, today, t, isCompletedToday]);
 
   return (
     <div className={cn(

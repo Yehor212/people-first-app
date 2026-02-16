@@ -164,8 +164,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
     const title = getShareTitle();
     const text = getShareText();
     void share(title, text);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, share, language]);
+  }, [mode, share, language, t, props]);
 
   const handleCopy = useCallback(() => {
     void copy();

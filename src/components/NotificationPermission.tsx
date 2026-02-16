@@ -17,7 +17,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
 
   useEffect(() => {
     void checkPermission();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: check permission once
   }, []);
 
   const checkPermission = async () => {

@@ -3,7 +3,7 @@
  * Part of v1.4.0 Social & Sharing
  */
 
-import { useState, useEffect, useRef, memo } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import {
   Share2,
   Trophy,
@@ -187,28 +187,7 @@ function ParticipantsLeaderboard({
   // Check if cloud is available
   const cloudAvailable = isCloudChallengesAvailable();
 
-  useEffect(() => {
-    if (!cloudAvailable) {
-      setLoading(false);
-      return;
-    }
-
-    void loadLeaderboard();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [challenge.code, cloudAvailable]);
-
-  // Subscribe to real-time updates
-  useEffect(() => {
-    if (!cloudAvailable || !leaderboard?.challenge?.id) return;
-
-    const unsubscribe = subscribeToChallenge(leaderboard.challenge.id, (members) => {
-      setLeaderboard(prev => prev ? { ...prev, members } : null);
-    });
-
-    return () => unsubscribe();
-  }, [cloudAvailable, leaderboard?.challenge?.id]);
-
-  const loadLeaderboard = async () => {
+  const loadLeaderboard = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -237,7 +216,27 @@ function ParticipantsLeaderboard({
     } finally {
       setLoading(false);
     }
-  };
+  }, [challenge.code, challenge.habitName, challenge.habitIcon, challenge.duration, challenge.startDate, username, t]);
+
+  useEffect(() => {
+    if (!cloudAvailable) {
+      setLoading(false);
+      return;
+    }
+
+    void loadLeaderboard();
+  }, [cloudAvailable, loadLeaderboard]);
+
+  // Subscribe to real-time updates
+  useEffect(() => {
+    if (!cloudAvailable || !leaderboard?.challenge?.id) return;
+
+    const unsubscribe = subscribeToChallenge(leaderboard.challenge.id, (members) => {
+      setLeaderboard(prev => prev ? { ...prev, members } : null);
+    });
+
+    return () => unsubscribe();
+  }, [cloudAvailable, leaderboard?.challenge?.id]);
 
   // Not available in local-only mode
   if (!cloudAvailable) {

@@ -508,7 +508,7 @@ export function useInnerWorld() {
     }));
 
     return { success: true };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: world.restDays read is guarded by restModeStatus
   }, [setWorld, today, restModeStatus]);
 
   // Deactivate rest mode for today

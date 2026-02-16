@@ -60,10 +60,11 @@ export function SettingsPanel({
 
   // Auto-open and scroll to section when initialOpenSection changes
   useEffect(() => {
-    if (initialOpenSection && !openSections.includes(initialOpenSection)) {
-      setOpenSections(prev => [...prev, initialOpenSection]);
+    if (initialOpenSection) {
+      setOpenSections(prev =>
+        prev.includes(initialOpenSection) ? prev : [...prev, initialOpenSection]
+      );
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialOpenSection]);
 
   return (

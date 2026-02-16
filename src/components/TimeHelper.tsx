@@ -43,7 +43,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(intervalRef.current);
-          playCompletionSound();
+          if (soundEnabled) playLevelUp();
           return 0;
         }
 
@@ -54,7 +54,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
         if (soundEnabled && elapsed > 0 && elapsed % (pingInterval * 60) === 0) {
           const timeSinceLastPing = Date.now() - lastPingRef.current;
           if (timeSinceLastPing > 1000) { // Prevent double pings
-            playPing();
+            playNotification();
             lastPingRef.current = Date.now();
           }
         }
@@ -68,22 +68,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
         clearInterval(intervalRef.current);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isRunning, duration, soundEnabled, pingInterval]);
-
-  // Use centralized AudioManager for ping sound
-  const playPing = () => {
-    if (soundEnabled) {
-      playNotification();
-    }
-  };
-
-  // Use centralized AudioManager for completion sound
-  const playCompletionSound = () => {
-    if (soundEnabled) {
-      playLevelUp();
-    }
-  };
 
   const formatTime = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);

@@ -93,7 +93,6 @@ export function MoodTracker({ entries, onAddEntry, onUpdateEntry, isPrimaryCTA =
     terrible: null,
   });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const moods: { type: MoodType; emoji: string; label: string; color: string }[] = [
     { type: 'great', emoji: '😄', label: t.great, color: 'bg-mood-great' },
     { type: 'good', emoji: '🙂', label: t.good, color: 'bg-mood-good' },
