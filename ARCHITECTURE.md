@@ -2,7 +2,28 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-15
+> Last updated: 2026-02-16 (Professional Audit)
+
+---
+
+## Codebase Metrics (as of 2026-02-16)
+
+| Metric | Value | Command |
+|--------|-------|---------|
+| Source files | 420 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
+| Test files | 25 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
+| Total LOC | ~59,000 | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
+| Tests passing | 543/543 | `npx vitest --run` |
+| ESLint errors | 3 | `npx eslint src/ --quiet` |
+| ESLint warnings | 21 | `npx eslint src/` |
+| TypeScript errors | 0 | `npx tsc --noEmit` |
+| God components (>400L) | 17 | See [Known Technical Debt](#known-technical-debt) |
+| Direct localStorage calls | 188 | `grep -rn 'localStorage\.' src/ \| wc -l` |
+| Silent .catch(() => {}) | 34 | `grep -rn '\.catch.*=> {}' src/ \| wc -l` |
+| React.memo components | 12 / 80+ | `grep -rl 'memo(' src/ --include="*.tsx" \| wc -l` |
+| lazy() imports | 6 | `grep -rn 'lazy(' src/ \| wc -l` |
+
+> Update these metrics after each major refactor phase. Compare deltas to track progress.
 
 ---
 
@@ -514,7 +535,7 @@ On PR to main:
 ## Known Technical Debt
 
 > Track items here until resolved. Remove when done.
-> Last audit: 2026-02-16 (after Phase 8: ChallengeModal decomposition)
+> Last audit: 2026-02-16 (Professional Audit — 19 findings across 3 categories)
 
 ### Resolved
 
@@ -543,6 +564,69 @@ On PR to main:
 | TD-07 | HIGH | Direct `localStorage` calls instead of hooks/stores | **188 calls in 58 files** | Various |
 | TD-08 | HIGH | translations.ts monolith (all languages in one file) | **19,879 lines** | src/i18n/translations.ts |
 | TD-09 | HIGH | Low test coverage | 543 tests pass, but ~6% line coverage | src/__tests__/ |
-| TD-11 | MEDIUM | No CI/CD pipeline (GitHub Actions) | Manual builds only | — |
+| TD-11 | ~~MEDIUM~~ → HIGH | CI pipeline missing lint + typecheck | `deploy.yml` runs `i18n:check → test → build` only. **No** `lint`, `tsc --noEmit`, `playwright`, `npm audit`. | .github/workflows/deploy.yml |
 | TD-15 | ~~MEDIUM~~ → LOW | useInnerWorld.ts monolith | ~~780+ lines~~ → **542 lines** (12 dead functions removed, garden/ dir deleted) | src/hooks/useInnerWorld.ts |
 | TD-16 | LOW | Prop drilling in HomeTab (~30 props) | Handlers + inner world values passed as props | src/components/tabs/HomeTab.tsx |
+| TD-17 | HIGH | Silent `.catch(() => {})` swallowing errors | **34 instances** across 15 files. Violates own Error Handling rule §7. Top: journalStorage.ts (11×) | Various — `grep '\.catch.*=> {}' src/` |
+| TD-18 | HIGH | Memory leaks: uncleaned setTimeout in contexts | MoodThemeContext.tsx:180,186 + EmotionThemeContext.tsx — no useRef/clearTimeout cleanup | src/contexts/MoodThemeContext.tsx, EmotionThemeContext.tsx |
+| TD-19 | HIGH | Raw console.* calls bypassing logger.ts | **29 calls** in prod code. Logger abstraction exists but not used everywhere | Various — `grep 'console\.\(log\|error\|warn\)' src/` |
+| TD-20 | HIGH | 17 god components violating 400-line / 5-useState rules | ScheduleTimeline 1,653L/17st, HyperfocusMode 1,012L/16st, MoodTracker 712L/15st, FriendsPanel 694L/15st, StatsPage 1,281L/11st, + 12 more | See God Components table below |
+| TD-21 | MEDIUM | Scattered Capacitor platform checks | **58** `isNativePlatform()/getPlatform()` calls across 20+ files. Export in authRedirect.ts unused | Various — `grep 'Capacitor\.\(isNativePlatform\|getPlatform\)' src/` |
+| TD-22 | MEDIUM | Scattered import.meta.env access | **25 calls** across 11 files. No centralized config.ts | Various — `grep 'import\.meta\.env' src/` |
+| TD-23 | MEDIUM | Direct Supabase calls in UI components | **71** `.from(`/`supabase.` calls in `/components/`. No service layer. | src/components/ — `grep 'supabase\.\|\.from(' src/components/` |
+| TD-24 | LOW | Low memoization + lazy loading coverage | Only **12/80+** components use React.memo. Only **6** lazy() imports. Heavy components not lazy-loaded. | Various |
+
+### God Components (TD-20 Detail)
+
+> Verified 2026-02-16 via `wc -l` + `grep -c 'useState\|useEffect'`. Limit: 400 lines, 5 useState, 3 useEffect.
+
+| File | Lines | useState | useEffect | Priority |
+|------|-------|----------|-----------|----------|
+| ScheduleTimeline.tsx | **1,653** | 17 | 6 | P0 — largest, most complex |
+| StatsPage.tsx | **1,281** | 11 | 0 | P0 |
+| JournalEntryEditor.tsx | **1,165** | — | — | P1 (in features/) |
+| JournalModule.tsx | **1,057** | — | — | P1 (in features/) |
+| HyperfocusMode.tsx | **1,012** | 16 | 10 | P0 — worst useState/useEffect |
+| BreathingExercise.tsx | **833** | 9 | 4 | P1 |
+| GoalsPanel.tsx | **815** | 6 | 0 | P1 |
+| AuthScreen.tsx | **749** | 7 | 8 | P1 |
+| MoodTracker.tsx | **712** | 15 | 3 | P1 — 3× useState limit |
+| FriendsPanel.tsx | **694** | 15 | 4 | P1 — 3× useState limit |
+| AnimatedStatsComponents.tsx | **694** | — | — | P2 |
+| AnimatedEmotionEmoji.tsx | **650** | — | — | P2 |
+| sidebar.tsx | **641** | — | — | P2 (shadcn, may skip) |
+| CompactHabitCard.tsx | **605** | — | — | P2 |
+| RingDetailSheet.tsx | **567** | — | — | P2 |
+| EmotionGalaxy.tsx | **559** | — | — | P2 |
+| WeeklyReview.tsx | **548** | — | — | P2 |
+
+---
+
+### CI/CD: Actual vs Required
+
+> `deploy.yml` exists but is incomplete vs ARCHITECTURE.md §15 requirements.
+
+| Step | Required (§15) | Actual (deploy.yml) | Status |
+|------|---------------|---------------------|--------|
+| npm ci | Yes | Yes | PASS |
+| npm run lint | Yes | **No** | FAIL |
+| npm run typecheck | Yes | **No** | FAIL |
+| npm test | Yes | Yes | PASS |
+| npm run build | Yes | Yes | PASS |
+| npm audit | Recommended | **No** | MISSING |
+| Playwright E2E | Recommended | **No** | MISSING |
+
+---
+
+### Audit Cadence
+
+> Run this checklist monthly (or after each major refactor). Compare metrics against [Codebase Metrics](#codebase-metrics-as-of-2026-02-16) table.
+
+1. `npx tsc --noEmit` — must be 0 errors
+2. `npx eslint src/ --quiet` — track error count
+3. `npx vitest --run` — all tests pass
+4. `npm run build` — succeeds
+5. `grep -rn 'localStorage\.' src/ | wc -l` — track decrease from 188
+6. `grep -rn '\.catch.*=> {}' src/ | wc -l` — track decrease from 34
+7. `find src -name "*.tsx" -exec wc -l {} + | sort -rn | head -20` — god component progress
+8. `grep -rl 'memo(' src/ --include="*.tsx" | wc -l` — memo adoption
