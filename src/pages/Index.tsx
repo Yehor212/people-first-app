@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
+import { useAppStore, useUIStore, selectAnyModalOpen, useGamificationStore, useHydrateGamification, useUserDataStore, useHydrateUserData, type TabType } from '@/stores';
 import { motion } from 'framer-motion';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { logger } from '@/lib/logger';
 import { addFriendActivity, loadMyProfile } from '@/storage/friendsSync';
-import { useIndexedDB } from '@/hooks/useIndexedDB';
 import { initializeApp } from '@/lib/appInitializer';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent } from '@/types';
+import { MoodEntry, Habit, FocusSession, GratitudeEntry, ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
 import { AdProvider } from '@/contexts/AdContext';
@@ -103,7 +103,7 @@ import { UrgencyAlert } from '@/components/UrgencyAlert';
 import { RestModeCard } from '@/components/RestModeCard';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
 import { ChallengeModal } from '@/components/ChallengeModal';
-import { decodeInviteData, ChallengeInvite } from '@/lib/friendChallenge';
+import { decodeInviteData } from '@/lib/friendChallenge';
 import { initializeOfflineQueueHandlers, queueFocusSessionSync } from '@/lib/offlineQueueHandlers';
 import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
 import { ConsentBanner } from '@/components/ConsentBanner';
@@ -139,9 +139,7 @@ import {
 } from '@/lib/reEngagement';
 import { recordHabitForChallenge } from '@/lib/comebackChallenge';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
-import { checkForAppUpdate, wasUpdateDismissed, dismissUpdate, UpdateState } from '@/lib/appUpdateManager';
-
-type TabType = 'home' | 'garden' | 'stats' | 'achievements' | 'settings';
+import { checkForAppUpdate, wasUpdateDismissed, dismissUpdate } from '@/lib/appUpdateManager';
 
 export function Index() {
   const { t, language, isRTL } = useLanguage();
@@ -152,12 +150,11 @@ export function Index() {
   // Security: Auto-logout after 15 minutes of inactivity (when supabase is configured)
   useSessionTimeout(!!supabase);
 
-  const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [settingsOpenSection, setSettingsOpenSection] = useState<string | undefined>();
-  // Clear settings section override when leaving settings tab
-  useEffect(() => {
-    if (activeTab !== 'settings') setSettingsOpenSection(undefined);
-  }, [activeTab]);
+  // Navigation state from Zustand (replaces useState + useEffect for settings clearing)
+  const activeTab = useAppStore(s => s.activeTab);
+  const setActiveTab = useAppStore(s => s.setActiveTab);
+  const settingsOpenSection = useAppStore(s => s.settingsOpenSection);
+  const setSettingsOpenSection = useAppStore(s => s.setSettingsOpenSection);
   // const [showAIOnboarding, setShowAIOnboarding] = useState(false); // Hidden until AI ready
   const lastSyncedUserIdRef = useRef<string | null>(null);
   const hadSignOutRef = useRef(false);
@@ -186,17 +183,11 @@ export function Index() {
     isRTL,
   });
 
-  // App initialization state (must be first)
-  const [initializationState, setInitializationState] = useState<{
-    isInitializing: boolean;
-    error: string | null;
-    wasUpdated: boolean;
-  }>({
-    isInitializing: true,
-    error: null,
-    wasUpdated: false
-  });
-  const [loadingFadeOut, setLoadingFadeOut] = useState(false);
+  // App lifecycle state from Zustand
+  const initializationState = useAppStore(s => s.initializationState);
+  const setInitializationState = useAppStore(s => s.setInitializationState);
+  const loadingFadeOut = useAppStore(s => s.loadingFadeOut);
+  const setLoadingFadeOut = useAppStore(s => s.setLoadingFadeOut);
 
   // App initialization effect (before other useEffects)
   useEffect(() => {
@@ -274,8 +265,13 @@ export function Index() {
     return () => { active = false; };
   }, []); // Run only once on mount
 
-  // Track current date and detect midnight change
-  const [currentDate, setCurrentDate] = useState(getToday());
+  // Track current date and detect midnight change (Zustand)
+  const currentDate = useAppStore(s => s.currentDate);
+  const setCurrentDate = useAppStore(s => s.setCurrentDate);
+  // Initialize currentDate on mount
+  useEffect(() => {
+    if (!currentDate) setCurrentDate(getToday());
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Check for date change every minute (for midnight reset of mood)
   useEffect(() => {
@@ -350,165 +346,109 @@ export function Index() {
     daysUntilRestAvailable,
   } = useInnerWorld();
 
+  // Register gamification hooks into Zustand store (bridge pattern)
+  useHydrateGamification({ awardXp, earnTreats, plantSeed, waterPlants });
+  const rewardUser = useGamificationStore(s => s.rewardUser);
+
   // Guard against double habit toggles (prevents duplicate rewards)
   const processingHabitsRef = useRef<Set<string>>(new Set());
 
   // Guard against concurrent reminder syncs (prevents infinite loop on 400 error)
   const reminderSyncPendingRef = useRef(false);
 
-  // Current focus minutes (real-time)
-  const [currentFocusMinutes, setCurrentFocusMinutes] = useState<number | undefined>(undefined);
+  // Current focus minutes (real-time) from UI store
+  const currentFocusMinutes = useUIStore(s => s.currentFocusMinutes);
+  const setCurrentFocusMinutes = useUIStore(s => s.setCurrentFocusMinutes);
 
-  // Weekly report state
-  const [showWeeklyReport, setShowWeeklyReport] = useState(false);
+  // UI modal/panel state from Zustand uiStore
+  const showWeeklyReport = useUIStore(s => s.showWeeklyReport);
+  const showWidgetSettings = useUIStore(s => s.showWidgetSettings);
+  const showChallenges = useUIStore(s => s.showChallenges);
+  const showChallengeModal = useUIStore(s => s.showChallengeModal);
+  const challengeInvite = useUIStore(s => s.challengeInvite);
+  const setChallengeInvite = useUIStore(s => s.setChallengeInvite);
+  const challengeHabit = useUIStore(s => s.challengeHabit);
+  const setChallengeHabit = useUIStore(s => s.setChallengeHabit);
+  const showTimeHelper = useUIStore(s => s.showTimeHelper);
+  const showTasksPanel = useUIStore(s => s.showTasksPanel);
+  const showQuestsPanel = useUIStore(s => s.showQuestsPanel);
+  const showFriendsPanel = useUIStore(s => s.showFriendsPanel);
+  const confettiBurst = useUIStore(s => s.confettiBurst);
+  const setConfettiBurst = useUIStore(s => s.setConfettiBurst);
+  // Modal setters (convenience wrappers for JSX callbacks)
+  const { openModal, closeModal } = useUIStore.getState();
+  const setShowWeeklyReport = useCallback((v: boolean) => v ? openModal('showWeeklyReport') : closeModal('showWeeklyReport'), [openModal, closeModal]);
+  const setShowWidgetSettings = useCallback((v: boolean) => v ? openModal('showWidgetSettings') : closeModal('showWidgetSettings'), [openModal, closeModal]);
+  const setShowChallenges = useCallback((v: boolean) => v ? openModal('showChallenges') : closeModal('showChallenges'), [openModal, closeModal]);
+  const setShowChallengeModal = useCallback((v: boolean) => v ? openModal('showChallengeModal') : closeModal('showChallengeModal'), [openModal, closeModal]);
+  const setShowTimeHelper = useCallback((v: boolean) => v ? openModal('showTimeHelper') : closeModal('showTimeHelper'), [openModal, closeModal]);
+  const setShowTasksPanel = useCallback((v: boolean) => v ? openModal('showTasksPanel') : closeModal('showTasksPanel'), [openModal, closeModal]);
+  const setShowQuestsPanel = useCallback((v: boolean) => v ? openModal('showQuestsPanel') : closeModal('showQuestsPanel'), [openModal, closeModal]);
+  const setShowFriendsPanel = useCallback((v: boolean) => v ? openModal('showFriendsPanel') : closeModal('showFriendsPanel'), [openModal, closeModal]);
+  const setShowWelcomeOverlay = useCallback((v: boolean) => v ? openModal('showWelcomeOverlay') : closeModal('showWelcomeOverlay'), [openModal, closeModal]);
+  const setShowWelcomeBack = useCallback((v: boolean) => v ? openModal('showWelcomeBack') : closeModal('showWelcomeBack'), [openModal, closeModal]);
+  const setShowMindfulMoment = useCallback((v: boolean) => v ? openModal('showMindfulMoment') : closeModal('showMindfulMoment'), [openModal, closeModal]);
 
-  // Widget settings state
-  const [showWidgetSettings, setShowWidgetSettings] = useState(false);
-
-  // Challenges state
-  const [showChallenges, setShowChallenges] = useState(false);
-  const [showChallengeModal, setShowChallengeModal] = useState(false);
-  const [challengeInvite, setChallengeInvite] = useState<ChallengeInvite | undefined>(undefined);
-  const [challengeHabit, setChallengeHabit] = useState<Habit | undefined>(undefined);
-  const [showTimeHelper, setShowTimeHelper] = useState(false);
-  const [showTasksPanel, setShowTasksPanel] = useState(false);
-  const [showQuestsPanel, setShowQuestsPanel] = useState(false);
-  const [showFriendsPanel, setShowFriendsPanel] = useState(false);
-  const [_calmMode, _setCalmMode] = useState(false);
-  const [confettiBurst, setConfettiBurst] = useState<{ x: number; y: number } | null>(null);
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
 
-  // Progressive Onboarding state
-  const [showWelcomeOverlay, setShowWelcomeOverlay] = useState(false);
-  const [featureToUnlock, setFeatureToUnlock] = useState<FeatureId | null>(null);
+  // Onboarding, celebrations, update state from UI store
+  const showWelcomeOverlay = useUIStore(s => s.showWelcomeOverlay);
+  const featureToUnlock = useUIStore(s => s.featureToUnlock);
+  const setFeatureToUnlock = useUIStore(s => s.setFeatureToUnlock);
+  const showWelcomeBack = useUIStore(s => s.showWelcomeBack);
+  const welcomeBackData = useUIStore(s => s.welcomeBackData);
+  const setWelcomeBackData = useUIStore(s => s.setWelcomeBackData);
+  const updateState = useUIStore(s => s.updateState);
+  const setUpdateState = useUIStore(s => s.setUpdateState);
+  const showMindfulMoment = useUIStore(s => s.showMindfulMoment);
 
-  // Re-engagement (Welcome Back) state
-  const [showWelcomeBack, setShowWelcomeBack] = useState(false);
-  const [welcomeBackData, setWelcomeBackData] = useState<{
-    daysAway: number;
-    streakBroken: boolean;
-    currentStreak: number;
-    topHabits: Array<{ habit: Habit; successRate: number }>;
-  } | null>(null);
-
-  // App Update state (Google Play In-App Updates)
-  const [updateState, setUpdateState] = useState<UpdateState | null>(null);
-
-  // MindfulMoment - shows after focus session completion
-  const [showMindfulMoment, setShowMindfulMoment] = useState(false);
-
-  // Lock background scroll when any modal/panel is open
-  const anyModalOpen = showWeeklyReport || showWidgetSettings || showChallenges
-    || showChallengeModal || showTimeHelper || showTasksPanel || showQuestsPanel
-    || showFriendsPanel || showWelcomeOverlay || showWelcomeBack || showMindfulMoment;
+  // Lock background scroll when any modal/panel is open (computed from UI store)
+  const anyModalOpen = useUIStore(selectAnyModalOpen);
   useScrollLock(anyModalOpen);
 
-  // Journal prompt text - from DailyPromptCard to GratitudeJournal
-  const [journalPromptText, setJournalPromptText] = useState<string | undefined>(undefined);
+  // Journal prompt text from UI store
+  const journalPromptText = useUIStore(s => s.journalPromptText);
+  const setJournalPromptText = useUIStore(s => s.setJournalPromptText);
 
-  // Synchronous bypass flag for Auth - immediately skips AuthScreen
-  // This is needed because setGoogleAuthChecked uses async IndexedDB write
-  const [authBypassFlag, setAuthBypassFlag] = useState(false);
+  // Auth state from app store
+  const authBypassFlag = useAppStore(s => s.authBypassFlag);
+  const setAuthBypassFlag = useAppStore(s => s.setAuthBypassFlag);
+  const isProcessingWebOAuth = useAppStore(s => s.isProcessingWebOAuth);
+  const setIsProcessingWebOAuth = useAppStore(s => s.setIsProcessingWebOAuth);
+  const webOAuthError = useAppStore(s => s.webOAuthError);
+  const setWebOAuthError = useAppStore(s => s.setWebOAuthError);
 
-  // Web OAuth callback processing state
-  // true = URL has ?code= and we're waiting for Supabase to exchange it for session
-  const [isProcessingWebOAuth, setIsProcessingWebOAuth] = useState(false);
-  const [webOAuthError, setWebOAuthError] = useState<string | null>(null);
+  // ── User data from Zustand store (hydrated from IndexedDB via bridge hook) ──
+  useHydrateUserData();
+  const hasSelectedLanguage = useUserDataStore(s => s.hasSelectedLanguage);
+  const setHasSelectedLanguage = useUserDataStore(s => s.setHasSelectedLanguage);
+  const userName = useUserDataStore(s => s.userName);
+  const setUserName = useUserDataStore(s => s.setUserName);
+  const userNameCustom = useUserDataStore(s => s.userNameCustom);
+  const setUserNameCustom = useUserDataStore(s => s.setUserNameCustom);
+  const moods = useUserDataStore(s => s.moods);
+  const setMoods = useUserDataStore(s => s.setMoods);
+  const habits = useUserDataStore(s => s.habits);
+  const setHabits = useUserDataStore(s => s.setHabits);
+  const focusSessions = useUserDataStore(s => s.focusSessions);
+  const setFocusSessions = useUserDataStore(s => s.setFocusSessions);
+  const gratitudeEntries = useUserDataStore(s => s.gratitudeEntries);
+  const setGratitudeEntries = useUserDataStore(s => s.setGratitudeEntries);
+  const reminders = useUserDataStore(s => s.reminders);
+  const setReminders = useUserDataStore(s => s.setReminders);
+  const tutorialComplete = useUserDataStore(s => s.tutorialComplete);
+  const setTutorialComplete = useUserDataStore(s => s.setTutorialComplete);
+  const onboardingComplete = useUserDataStore(s => s.onboardingComplete);
+  const setOnboardingComplete = useUserDataStore(s => s.setOnboardingComplete);
+  const notificationPermissionChecked = useUserDataStore(s => s.notificationPermissionChecked);
+  const setNotificationPermissionChecked = useUserDataStore(s => s.setNotificationPermissionChecked);
+  const googleAuthChecked = useUserDataStore(s => s.googleAuthChecked);
+  const setGoogleAuthChecked = useUserDataStore(s => s.setGoogleAuthChecked);
 
-  // Используем useIndexedDB для hasSelectedLanguage
-  const [hasSelectedLanguage, setHasSelectedLanguage, isLoadingLangSelected] = useIndexedDB({
-    table: db.settings,
-    localStorageKey: 'zenflow-language-selected',
-    initialValue: false,
-    idField: 'key'
-  });
-
-  // User data
-  // Используем useIndexedDB для userName
-  const [userName, setUserName, isLoadingUserName] = useIndexedDB({
-    table: db.settings,
-    localStorageKey: 'zenflow-username',
-    initialValue: 'Friend',
-    idField: 'key'
-  });
-
-  const [userNameCustom, setUserNameCustom, isLoadingUserNameCustom] = useIndexedDB({
-    table: db.settings,
-    localStorageKey: 'zenflow-username-custom',
-    initialValue: false,
-    idField: 'key'
-  });
-
-  // App data
-  // Используем useIndexedDB для moods
-  const [moods, setMoods, isLoadingMoods] = useIndexedDB<MoodEntry[]>({
-    table: db.moods,
-    localStorageKey: 'zenflow-moods',
-    initialValue: []
-  });
-
-  // Используем useIndexedDB для habits
-  const [habits, setHabits, isLoadingHabits] = useIndexedDB<Habit[]>({
-    table: db.habits,
-    localStorageKey: 'zenflow-habits',
-    initialValue: []
-  });
-
-  // Используем useIndexedDB для focusSessions
-  const [focusSessions, setFocusSessions, isLoadingFocus] = useIndexedDB<FocusSession[]>({
-    table: db.focusSessions,
-    localStorageKey: 'zenflow-focus',
-    initialValue: []
-  });
-
-  // Используем useIndexedDB для gratitudeEntries
-  const [gratitudeEntries, setGratitudeEntries, isLoadingGratitude] = useIndexedDB<GratitudeEntry[]>({
-    table: db.gratitudeEntries,
-    localStorageKey: 'zenflow-gratitude',
-    initialValue: []
-  });
-
-
-  const [reminders, setReminders, isLoadingReminders] = useIndexedDB<ReminderSettings>({
-    table: db.settings,
-    localStorageKey: 'zenflow-reminders',
-    initialValue: defaultReminderSettings,
-    idField: 'key'
-  });
-
-  const [tutorialComplete, setTutorialComplete, isLoadingTutorial] = useIndexedDB({
-    table: db.settings,
-    localStorageKey: 'zenflow-tutorial-complete',
-    initialValue: false,
-    idField: 'key'
-  });
-
-  const [onboardingComplete, setOnboardingComplete, isLoadingOnboarding] = useIndexedDB({
-    table: db.settings,
-    localStorageKey: 'zenflow-onboarding-complete',
-    initialValue: false,
-    idField: 'key'
-  });
-
-  const [notificationPermissionChecked, setNotificationPermissionChecked, isLoadingNotificationPermission] = useIndexedDB({
-    table: db.settings,
-    localStorageKey: 'zenflow-notification-permission-checked',
-    initialValue: false,
-    idField: 'key'
-  });
-
-  // Google Auth check (shown once after language selection)
-  const [googleAuthChecked, setGoogleAuthChecked, isLoadingGoogleAuth] = useIndexedDB({
-    table: db.settings,
-    localStorageKey: 'zenflow-google-auth-checked',
-    initialValue: false,
-    idField: 'key'
-  });
-
-  // Track actual Supabase session state to prevent login loop
-  // null = unknown (checking), true = has session, false = no session
-  const [hasValidSession, setHasValidSession] = useState<boolean | null>(null);
+  // Auth session state from app store
+  const hasValidSession = useAppStore(s => s.hasValidSession);
+  const setHasValidSession = useAppStore(s => s.setHasValidSession);
 
   // Check Supabase session on mount - restore auth state if session exists
   useEffect(() => {
@@ -524,7 +464,7 @@ export function Index() {
 
         // If session exists but googleAuthChecked is false, restore it
         // This prevents the login loop after OAuth redirect
-        if (sessionExists && !googleAuthChecked && !isLoadingGoogleAuth) {
+        if (sessionExists && !googleAuthChecked && !isLoadingUserData) {
           logger.log('[Index] Session exists but auth not checked - restoring state');
           setGoogleAuthChecked(true);
         }
@@ -549,7 +489,7 @@ export function Index() {
       active = false;
       subscription?.unsubscribe();
     };
-  }, [googleAuthChecked, isLoadingGoogleAuth, setGoogleAuthChecked]);
+  }, [googleAuthChecked, isLoadingUserData, setGoogleAuthChecked]);
 
   // Web OAuth callback detection — runs ONCE on mount
   // Detects ?code= or ?error= in URL (from Supabase PKCE redirect)
@@ -607,13 +547,11 @@ export function Index() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run once on mount
 
-  // GDPR: analytics OFF by default (opt-in, not opt-out)
-  const [privacy, setPrivacy, isLoadingPrivacy] = useIndexedDB<PrivacySettings>({
-    table: db.settings,
-    localStorageKey: 'zenflow-privacy',
-    initialValue: { noTracking: false, analytics: false, consentShown: false },
-    idField: 'key'
-  });
+  // GDPR (privacy + scheduleEvents now from store, hydrated by useHydrateUserData)
+  const privacy = useUserDataStore(s => s.privacy);
+  const setPrivacy = useUserDataStore(s => s.setPrivacy);
+  const scheduleEvents = useUserDataStore(s => s.scheduleEvents);
+  const setScheduleEvents = useUserDataStore(s => s.setScheduleEvents);
 
   // GDPR consent handler
   const handleConsentResponse = (analyticsAllowed: boolean) => {
@@ -625,17 +563,9 @@ export function Index() {
     });
   };
 
-
-  // Schedule events for ADHD timeline
-  const [scheduleEvents, setScheduleEvents, isLoadingSchedule] = useIndexedDB<ScheduleEvent[]>({
-    table: db.settings,
-    localStorageKey: 'zenflow-schedule-events',
-    initialValue: [],
-    idField: 'key'
-  });
-
-  // Loading handling
-  const isLoading = isLoadingLangSelected || isLoadingUserName || isLoadingUserNameCustom || isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingReminders || isLoadingTutorial || isLoadingOnboarding || isLoadingPrivacy || isLoadingNotificationPermission || isLoadingGoogleAuth || isLoadingSchedule || isLoadingInnerWorld;
+  // Loading handling (IndexedDB fields from store + InnerWorld from hook)
+  const isLoadingUserData = useUserDataStore(s => s.isLoading);
+  const isLoading = isLoadingUserData || isLoadingInnerWorld;
 
   // Defensive array guards - prevent crashes from corrupted cloud sync data
   // Wrapped in useMemo to stabilize references for hook dependencies
@@ -646,32 +576,18 @@ export function Index() {
   const safeScheduleEvents = useMemo(() => Array.isArray(scheduleEvents) ? scheduleEvents : [], [scheduleEvents]);
   const safeBadges = useMemo(() => Array.isArray(badges) ? badges : [], [badges]);
 
-  // Register Android back button handler for modal panels
+  // Register Android back button handler for modal panels (uses UI store)
   useEffect(() => {
     const unregister = registerModalCloseCallback(() => {
-      // Close panels in priority order (most recently opened first)
-      if (showFriendsPanel) { setShowFriendsPanel(false); return true; }
-      if (showTasksPanel) { setShowTasksPanel(false); return true; }
-      if (showQuestsPanel) { setShowQuestsPanel(false); return true; }
-      if (showChallenges) { setShowChallenges(false); return true; }
-      if (showChallengeModal) { setShowChallengeModal(false); return true; }
-      if (showWidgetSettings) { setShowWidgetSettings(false); return true; }
-      if (showWeeklyReport) { setShowWeeklyReport(false); return true; }
-      if (showTimeHelper) { setShowTimeHelper(false); return true; }
-      if (showMindfulMoment) { setShowMindfulMoment(false); return true; }
-      if (showWelcomeBack) { setShowWelcomeBack(false); return true; }
-      if (showWelcomeOverlay) { setShowWelcomeOverlay(false); return true; }
-      return false;
+      return useUIStore.getState().tryCloseTopModal();
     });
     return unregister;
-  }, [showFriendsPanel, showTasksPanel, showQuestsPanel, showChallenges, showChallengeModal,
-      showWidgetSettings, showWeeklyReport, showTimeHelper,
-      showMindfulMoment, showWelcomeBack, showWelcomeOverlay]);
+  }, []);
 
 
   // Migrate old reminder settings to new 3-time mood format
   useEffect(() => {
-    if (isLoadingReminders) return;
+    if (isLoadingUserData) return;
 
     // Check if we have old moodTime but missing new fields
     const needsMigration = reminders.moodTime && !reminders.moodTimeMorning;
@@ -694,7 +610,7 @@ export function Index() {
         ...prev,
       }));
     }
-  }, [isLoadingReminders, reminders.moodTime, reminders.moodTimeMorning, setReminders]);
+  }, [isLoadingUserData, reminders.moodTime, reminders.moodTimeMorning, setReminders]);
 
   // Update AI Coach context with user data - Hidden until AI ready
   // useEffect(() => {
@@ -860,15 +776,15 @@ export function Index() {
 
   // Sync widget with calculated streak (same as StreakBanner shows)
   // Wait for all data that affects streak to be loaded
-  const isWidgetDataLoading = isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude || isLoadingInnerWorld;
+  const isWidgetDataLoading = isLoadingUserData || isLoadingInnerWorld;
   useWidgetSync(widgetStreak, habits, todayFocusMinutes, lastBadgeName, isWidgetDataLoading);
 
   // Sync emotion theme with current mood entries
   useEffect(() => {
-    if (!isLoadingMoods) {
+    if (!isLoadingUserData) {
       setEmotionFromEntries(moods);
     }
-  }, [moods, isLoadingMoods, setEmotionFromEntries]);
+  }, [moods, isLoadingUserData, setEmotionFromEntries]);
 
   // Initialize Progressive Onboarding
   useEffect(() => {
@@ -1019,28 +935,9 @@ export function Index() {
 
   // Handlers
   const handleAddMood = (entry: MoodEntry) => {
-    setMoods(prev => {
-      // Add new entry without removing existing ones for the same day
-      // This allows multiple mood entries per day (morning/afternoon/evening)
-      return [...prev, entry];
-    });
-    awardXp('mood'); // +5 XP (legacy gamification)
-
-    // Earn treats for companion (new unified reward system)
-    const treatResult = earnTreats('mood', 5, 'Logged mood');
-    triggerXpPopup(treatResult.earned, 'mood'); // Show treats earned
-
-    triggerSync(); // Auto-sync to cloud
-    void haptics.moodSaved();
-
-    // Inner World: Plant a flower based on mood
-    plantSeed('mood', entry.mood);
-    waterPlants('mood');
-
-    // Update challenge progress
+    setMoods(prev => [...prev, entry]);
+    rewardUser('mood', { treats: 5, treatReason: 'Logged mood', haptic: haptics.moodSaved, seedExtra: entry.mood });
     updateChallengeProgress();
-
-    // AI Coach: Low mood check removed — will re-add when AI Coach is ready
   };
 
   // Quick mood handler for one-tap notification actions
@@ -1054,15 +951,10 @@ export function Index() {
     };
 
     setMoods(prev => [...prev, entry]);
-    awardXp('mood');
-    earnTreats('mood', 5, 'Quick mood');
-    triggerSync();
-    void haptics.moodSaved();
-    plantSeed('mood', mood);
-    waterPlants('mood');
+    rewardUser('mood', { treats: 5, treatReason: 'Quick mood', haptic: haptics.moodSaved, skipPopup: true, seedExtra: mood });
 
     logger.log('Quick mood logged from notification:', mood);
-  }, [awardXp, earnTreats, plantSeed, waterPlants, setMoods]);
+  }, [rewardUser, setMoods]);
 
   // Update existing mood entry (for same-day editing)
   const _handleUpdateMood = (entryId: string, newMood: MoodEntry['mood'], note?: string) => {
@@ -1260,36 +1152,24 @@ export function Index() {
 
   const handleCompleteFocusSession = (session: FocusSession) => {
     setFocusSessions(prev => [...prev, session]);
-    awardXp('focus'); // +15 XP (legacy)
 
-    // Earn treats based on focus duration (0.5 treats per minute)
     const focusTreats = Math.round(session.duration * 0.5);
-    const treatResult = earnTreats('focus', focusTreats, `Focus ${session.duration}min`);
-    triggerXpPopup(treatResult.earned, 'focus'); // Show treats earned
+    rewardUser('focus', { treats: focusTreats, treatReason: `Focus ${session.duration}min`, haptic: haptics.focusCompleted });
 
     // Queue for offline sync (uses offline queue with retry logic)
     queueFocusSessionSync(session).catch((err) => {
       logger.warn('[Index] Failed to queue focus session sync:', err);
     });
-    triggerSync(); // Auto-sync to cloud
-    void haptics.focusCompleted();
 
     // Show MindfulMoment after focus session (only for sessions > 5 min)
     if (session.duration >= 5) {
       mindfulTimeoutRef.current = setTimeout(() => setShowMindfulMoment(true), 500);
     }
 
-    // Inner World: Plant a crystal when completing focus session
-    plantSeed('focus');
-    waterPlants('focus');
-
-    // Update challenge progress
     updateChallengeProgress();
-
-    // Check for feature unlocks (progressive onboarding)
     checkForFeatureUnlocks();
 
-    // Update quest progress and award XP for completed quests
+    // Award bonus treats for completed quests
     const completedQuests = updateAllQuestsProgress({ type: 'focus_completed', value: session.duration });
     completedQuests.forEach(quest => {
       const xpReward = quest.reward.xp;
@@ -1300,28 +1180,15 @@ export function Index() {
 
   const handleAddGratitude = (entry: GratitudeEntry) => {
     setGratitudeEntries(prev => [...prev, entry]);
-    awardXp('gratitude'); // +8 XP (legacy)
+    rewardUser('gratitude', { treats: 8, treatReason: 'Gratitude entry', haptic: haptics.gratitudeSaved });
 
-    // Earn treats for companion
-    const treatResult = earnTreats('gratitude', 8, 'Gratitude entry');
-    triggerXpPopup(treatResult.earned, 'gratitude'); // Show treats earned
-
-    triggerSync(); // Auto-sync to cloud
-    void haptics.gratitudeSaved();
-
-    // Inner World: Plant a mushroom and attract creatures
-    plantSeed('gratitude');
-    waterPlants('gratitude');
-    // 30% chance to attract a creature
-    if (Math.random() < 0.3) {
-      attractCreature();
-    }
+    // Gratitude-specific: attract creatures
+    if (Math.random() < 0.3) attractCreature();
     feedCreatures();
 
-    // Update challenge progress
     updateChallengeProgress();
 
-    // Update quest progress and award XP for completed quests
+    // Award bonus treats for completed quests
     const completedQuests = updateAllQuestsProgress({ type: 'gratitude_added', value: 1 });
     completedQuests.forEach(quest => {
       const xpReward = quest.reward.xp;

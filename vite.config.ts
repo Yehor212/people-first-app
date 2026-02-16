@@ -210,7 +210,7 @@ export default defineConfig(({ mode }) => {
           }
 
           // Remaining small UI libs (sonner, vaul, cmdk, embla, etc.)
-          if (id.includes('sonner') || id.includes('vaul') || id.includes('cmdk') || id.includes('embla-carousel') || id.includes('input-otp') || id.includes('react-day-picker') || id.includes('react-resizable-panels') || id.includes('next-themes')) {
+          if (id.includes('sonner') || id.includes('vaul') || id.includes('cmdk') || id.includes('embla-carousel') || id.includes('input-otp') || id.includes('react-day-picker') || id.includes('react-resizable-panels')) {
             return 'ui-extras';
           }
 
