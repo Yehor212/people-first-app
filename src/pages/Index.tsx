@@ -5,7 +5,14 @@ import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { logger } from '@/lib/logger';
 import { addFriendActivity, loadMyProfile } from '@/storage/friendsSync';
-import { initializeApp } from '@/lib/appInitializer';
+import { useAppLifecycle } from '@/hooks/useAppLifecycle';
+import { useDateTracking } from '@/hooks/useDateTracking';
+import { useAuthSession } from '@/hooks/useAuthSession';
+import { useNotificationSetup } from '@/hooks/useNotificationSetup';
+import { useOnboardingEffects } from '@/hooks/useOnboardingEffects';
+import { useCloudSyncEffects } from '@/hooks/useCloudSyncEffects';
+import { useAppUpdateCheck } from '@/hooks/useAppUpdateCheck';
+import { useWeeklyReportTrigger } from '@/hooks/useWeeklyReportTrigger';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
@@ -22,14 +29,8 @@ import { safeLocalStorageGet } from '@/lib/safeJson';
 import { findTemplateIdByName, getHabitTemplateName } from '@/lib/habitTemplates';
 import { normalizeHabit } from '@/lib/habits';
 import { supabase } from '@/lib/supabaseClient';
-import { syncReminderSettings } from '@/storage/reminderSync';
-import { syncWithCloud, startAutoSync, stopAutoSync, triggerSync } from '@/storage/cloudSync';
-import { joinPresence, leavePresence } from '@/lib/presenceService';
-import { SplashScreen } from '@capacitor/splash-screen';
-import { Capacitor } from '@capacitor/core';
+import { syncWithCloud, triggerSync } from '@/storage/cloudSync';
 import { generateHabitScheduleEvents, mergeScheduleEvents } from '@/lib/habitScheduleSync';
-import { migrateExistingUser } from '@/lib/cloudSyncSettings';
-import { useQuickActions, QuickActionType } from '@/hooks/useQuickActions';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { App } from '@capacitor/app';
 import {
@@ -37,19 +38,8 @@ import {
   isNativePlatform,
   notifyAuthComplete,
   setPendingAuthUrl,
-  getPendingAuthUrl
 } from '@/lib/authRedirect';
-import { AUTH_SESSION_EXPIRED_EVENT } from '@/lib/apiClient';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
-import {
-  scheduleLocalReminders,
-  scheduleHabitReminders,
-  registerMoodNotificationActions,
-  setupNotificationActionListener,
-  setMoodActionCallback,
-  scheduleMoodQuickLogNotification,
-  initializeNotificationChannel,
-} from '@/lib/localNotifications';
 
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
@@ -94,8 +84,6 @@ import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
-import { syncChallengesWithCloud, syncBadgesWithCloud, subscribeToChallengeUpdates, subscribeToBadgeUpdates } from '@/storage/challengeCloudSync';
-import { syncTasks, syncQuests, subscribeToTaskUpdates, subscribeToQuestUpdates } from '@/storage/tasksCloudSync';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
@@ -104,13 +92,11 @@ import { RestModeCard } from '@/components/RestModeCard';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
 import { ChallengeModal } from '@/components/ChallengeModal';
 import { decodeInviteData } from '@/lib/friendChallenge';
-import { initializeOfflineQueueHandlers, queueFocusSessionSync } from '@/lib/offlineQueueHandlers';
+import { queueFocusSessionSync } from '@/lib/offlineQueueHandlers';
 import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
 import { ConsentBanner } from '@/components/ConsentBanner';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { haptics } from '@/lib/haptics';
-import { preloadShareCardAssets } from '@/lib/shareCards';
-import { initializePushNotifications } from '@/lib/pushNotifications';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { useScrollLock } from '@/hooks/useScrollLock';
 // import { AICoachChat } from '@/components/AICoachChat'; // Hidden until AI ready
@@ -121,25 +107,14 @@ import { QuickStatsRow } from '@/components/ui/stat-card';
 import { SkeletonCard, SkeletonStats, SkeletonList, SkeletonSection } from '@/components/ui/skeleton';
 import { MindfulMoment } from '@/components/MindfulMoment';
 import {
-  initializeOnboarding,
   checkFeatureUnlock,
   unlockFeature,
-  shouldShowWelcome,
-  updateOnboardingProgress,
   type FeatureId
 } from '@/lib/onboardingFlow';
 import { WelcomeBackModal } from '@/components/WelcomeBackModal';
-import {
-  shouldShowWelcomeBack,
-  markWelcomeBackShown,
-  getDaysSinceLastActive,
-  calculateHabitSuccessRates,
-  wasStreakBroken,
-  updateLastActiveDate
-} from '@/lib/reEngagement';
 import { recordHabitForChallenge } from '@/lib/comebackChallenge';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
-import { checkForAppUpdate, wasUpdateDismissed, dismissUpdate } from '@/lib/appUpdateManager';
+import { dismissUpdate } from '@/lib/appUpdateManager';
 
 export function Index() {
   const { t, language, isRTL } = useLanguage();
@@ -156,16 +131,12 @@ export function Index() {
   const settingsOpenSection = useAppStore(s => s.settingsOpenSection);
   const setSettingsOpenSection = useAppStore(s => s.setSettingsOpenSection);
   // const [showAIOnboarding, setShowAIOnboarding] = useState(false); // Hidden until AI ready
-  const lastSyncedUserIdRef = useRef<string | null>(null);
-  const hadSignOutRef = useRef(false);
-  const initTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const processingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const mindfulTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const quickActionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   useEffect(() => {
     return () => {
-      if (initTimeoutRef.current) clearTimeout(initTimeoutRef.current);
       if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current);
       if (mindfulTimeoutRef.current) clearTimeout(mindfulTimeoutRef.current);
       if (quickActionTimeoutRef.current) clearTimeout(quickActionTimeoutRef.current);
@@ -185,117 +156,14 @@ export function Index() {
 
   // App lifecycle state from Zustand
   const initializationState = useAppStore(s => s.initializationState);
-  const setInitializationState = useAppStore(s => s.setInitializationState);
   const loadingFadeOut = useAppStore(s => s.loadingFadeOut);
-  const setLoadingFadeOut = useAppStore(s => s.setLoadingFadeOut);
 
-  // App initialization effect (before other useEffects)
-  useEffect(() => {
-    let active = true;
-    const initialize = async () => {
-      logger.log('[Index] Starting app initialization...');
-      const startTime = Date.now();
+  // Extracted lifecycle hooks (from Step 1 decomposition)
+  useAppLifecycle();
+  useDateTracking();
 
-      // Hide native splash IMMEDIATELY so web animation is visible
-      if (Capacitor.isNativePlatform()) {
-        SplashScreen.hide().catch(() => {});
-      }
-
-      // Initialize offline queue handlers for offline-first sync
-      initializeOfflineQueueHandlers();
-
-      // Apply OLED mode if previously enabled
-      if (localStorage.getItem('zenflow_oled_mode') === 'true') {
-        document.documentElement.classList.add('oled');
-      }
-
-      const result = await initializeApp();
-
-      // Ensure animation plays for minimum 2 seconds
-      // (logo spring 0-0.6s, text 0.3s, subtitle 0.6s, shimmer 0.8s — 2s shows full sequence)
-      const elapsed = Date.now() - startTime;
-      const MIN_DISPLAY_MS = 2000;
-      if (elapsed < MIN_DISPLAY_MS) {
-        await new Promise(r => window.setTimeout(r, MIN_DISPLAY_MS - elapsed));
-      }
-
-      if (!active) return;
-
-      // Start exit fade animation
-      setLoadingFadeOut(true);
-
-      // After fade completes, remove loading screen and set final state
-      await new Promise(r => window.setTimeout(r, 400));
-
-      if (!active) return;
-
-      if (!result.success) {
-        setInitializationState({
-          isInitializing: false,
-          error: result.error || 'Initialization failed',
-          wasUpdated: result.wasUpdated
-        });
-        return;
-      }
-
-      // Preload share card assets in background for faster sharing
-      void preloadShareCardAssets();
-
-      if (result.wasUpdated) {
-        logger.log('[Index] App was updated, showing update message');
-        // Show brief update success message
-        initTimeoutRef.current = setTimeout(() => {
-          if (!active) return;
-          setInitializationState({
-            isInitializing: false,
-            error: null,
-            wasUpdated: true
-          });
-        }, 1000);
-      } else {
-        setInitializationState({
-          isInitializing: false,
-          error: null,
-          wasUpdated: false
-        });
-      }
-    };
-
-    void initialize();
-    return () => { active = false; };
-  }, []); // Run only once on mount
-
-  // Track current date and detect midnight change (Zustand)
+  // Track current date (read only — setting handled by hooks above)
   const currentDate = useAppStore(s => s.currentDate);
-  const setCurrentDate = useAppStore(s => s.setCurrentDate);
-  // Initialize currentDate on mount
-  useEffect(() => {
-    if (!currentDate) setCurrentDate(getToday());
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Check for date change every minute (for midnight reset of mood)
-  useEffect(() => {
-    const checkDateChange = () => {
-      const newDate = getToday();
-      if (newDate !== currentDate) {
-        logger.log('Date changed from', currentDate, 'to', newDate);
-        setCurrentDate(newDate);
-        // This will trigger a re-render and all date-dependent useMemo hooks will recalculate
-      }
-    };
-
-    // Check every minute
-    const interval = setInterval(checkDateChange, 60000);
-
-    // Also check on window focus (in case device was sleeping)
-    const handleFocus = () => checkDateChange();
-    window.addEventListener('focus', handleFocus);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [currentDate]);
 
   // Section refs for navigation
   const moodRef = useRef<HTMLDivElement>(null);
@@ -307,9 +175,6 @@ export function Index() {
     const refs = { mood: moodRef, habits: habitsRef, focus: focusRef, gratitude: gratitudeRef };
     refs[section]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
-
-  // Lock screen quick actions integration
-  const { onAction: onQuickAction } = useQuickActions();
 
   // NOTE: Schedule event handlers, hint dismissal, and useMemo hooks moved below state declarations
   // to avoid TDZ (Temporal Dead Zone) errors in production builds
@@ -353,9 +218,6 @@ export function Index() {
   // Guard against double habit toggles (prevents duplicate rewards)
   const processingHabitsRef = useRef<Set<string>>(new Set());
 
-  // Guard against concurrent reminder syncs (prevents infinite loop on 400 error)
-  const reminderSyncPendingRef = useRef(false);
-
   // Current focus minutes (real-time) from UI store
   const currentFocusMinutes = useUIStore(s => s.currentFocusMinutes);
   const setCurrentFocusMinutes = useUIStore(s => s.setCurrentFocusMinutes);
@@ -398,7 +260,6 @@ export function Index() {
   const setFeatureToUnlock = useUIStore(s => s.setFeatureToUnlock);
   const showWelcomeBack = useUIStore(s => s.showWelcomeBack);
   const welcomeBackData = useUIStore(s => s.welcomeBackData);
-  const setWelcomeBackData = useUIStore(s => s.setWelcomeBackData);
   const updateState = useUIStore(s => s.updateState);
   const setUpdateState = useUIStore(s => s.setUpdateState);
   const showMindfulMoment = useUIStore(s => s.showMindfulMoment);
@@ -415,7 +276,6 @@ export function Index() {
   const authBypassFlag = useAppStore(s => s.authBypassFlag);
   const setAuthBypassFlag = useAppStore(s => s.setAuthBypassFlag);
   const isProcessingWebOAuth = useAppStore(s => s.isProcessingWebOAuth);
-  const setIsProcessingWebOAuth = useAppStore(s => s.setIsProcessingWebOAuth);
   const webOAuthError = useAppStore(s => s.webOAuthError);
   const setWebOAuthError = useAppStore(s => s.setWebOAuthError);
 
@@ -425,7 +285,6 @@ export function Index() {
   const setHasSelectedLanguage = useUserDataStore(s => s.setHasSelectedLanguage);
   const userName = useUserDataStore(s => s.userName);
   const setUserName = useUserDataStore(s => s.setUserName);
-  const userNameCustom = useUserDataStore(s => s.userNameCustom);
   const setUserNameCustom = useUserDataStore(s => s.setUserNameCustom);
   const moods = useUserDataStore(s => s.moods);
   const setMoods = useUserDataStore(s => s.setMoods);
@@ -448,104 +307,6 @@ export function Index() {
 
   // Auth session state from app store
   const hasValidSession = useAppStore(s => s.hasValidSession);
-  const setHasValidSession = useAppStore(s => s.setHasValidSession);
-
-  // Check Supabase session on mount - restore auth state if session exists
-  useEffect(() => {
-    let active = true;
-
-    const checkSession = async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (!active) return;
-
-        const sessionExists = !!data.session;
-        setHasValidSession(sessionExists);
-
-        // If session exists but googleAuthChecked is false, restore it
-        // This prevents the login loop after OAuth redirect
-        if (sessionExists && !googleAuthChecked && !isLoadingUserData) {
-          logger.log('[Index] Session exists but auth not checked - restoring state');
-          setGoogleAuthChecked(true);
-        }
-      } catch (error) {
-        logger.error('[Index] Error checking session:', error);
-        if (active) {
-          setHasValidSession(false);
-        }
-      }
-    };
-
-    void checkSession();
-
-    // Also listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (active) {
-        setHasValidSession(!!session);
-      }
-    });
-
-    return () => {
-      active = false;
-      subscription?.unsubscribe();
-    };
-  }, [googleAuthChecked, isLoadingUserData, setGoogleAuthChecked]);
-
-  // Web OAuth callback detection — runs ONCE on mount
-  // Detects ?code= or ?error= in URL (from Supabase PKCE redirect)
-  // Shows loading state while exchange completes, prevents AuthScreen flash
-  useEffect(() => {
-    if (isNativePlatform() || !supabase) return;
-
-    const url = new URL(window.location.href);
-    const hasCode = url.searchParams.has('code');
-    const hasError = url.searchParams.has('error');
-    const errorDescription = url.searchParams.get('error_description');
-
-    if (!hasCode && !hasError) return;
-
-    // Handle error case immediately
-    if (hasError) {
-      logger.error('[Index] OAuth error in URL:', url.searchParams.get('error'), errorDescription);
-      setWebOAuthError(errorDescription || 'Authentication failed. Please try again.');
-      window.history.replaceState({}, '', window.location.pathname);
-      return;
-    }
-
-    // Has ?code= — wait for Supabase to exchange it
-    logger.log('[Index] Web OAuth callback detected, waiting for code exchange...');
-    setIsProcessingWebOAuth(true);
-
-    let settled = false;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (settled) return;
-
-      if (event === 'SIGNED_IN' && session) {
-        settled = true;
-        logger.log('[Index] Web OAuth code exchange succeeded');
-        window.history.replaceState({}, '', window.location.pathname);
-        setIsProcessingWebOAuth(false);
-      }
-    });
-
-    // Timeout: if no SIGNED_IN event after 15 seconds, exchange likely failed
-    const timeout = setTimeout(() => {
-      if (settled) return;
-      settled = true;
-      logger.error('[Index] Web OAuth code exchange timed out after 15s');
-      setIsProcessingWebOAuth(false);
-      setWebOAuthError('Sign-in took too long. Please try again.');
-      window.history.replaceState({}, '', window.location.pathname);
-    }, 15000);
-
-    return () => {
-      settled = true;
-      subscription.unsubscribe();
-      clearTimeout(timeout);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Run once on mount
 
   // GDPR (privacy + scheduleEvents now from store, hydrated by useHydrateUserData)
   const privacy = useUserDataStore(s => s.privacy);
@@ -566,6 +327,9 @@ export function Index() {
   // Loading handling (IndexedDB fields from store + InnerWorld from hook)
   const isLoadingUserData = useUserDataStore(s => s.isLoading);
   const isLoading = isLoadingUserData || isLoadingInnerWorld;
+
+  // Auth session management (extracted to hook)
+  useAuthSession(isLoading);
 
   // Defensive array guards - prevent crashes from corrupted cloud sync data
   // Wrapped in useMemo to stabilize references for hook dependencies
@@ -786,71 +550,10 @@ export function Index() {
     }
   }, [moods, isLoadingUserData, setEmotionFromEntries]);
 
-  // Initialize Progressive Onboarding
-  useEffect(() => {
-    if (isLoading || !onboardingComplete) return;
-
-    // Detect existing users (skip onboarding)
-    const hasExistingData = safeMoods.length > 0 || safeHabits.length > 0 || safeFocusSessions.length > 0;
-
-    // Initialize onboarding state
-    initializeOnboarding({ hasExistingData });
-
-    // Update progress (check for day change)
-    updateOnboardingProgress();
-
-    // Show welcome overlay for new users
-    if (shouldShowWelcome()) {
-      setShowWelcomeOverlay(true);
-    }
-  }, [isLoading, onboardingComplete, safeMoods.length, safeHabits.length, safeFocusSessions.length]);
-
-  // Re-engagement detection (Welcome Back for 3+ day absence)
-  useEffect(() => {
-    if (isLoading || !onboardingComplete || isLoadingInnerWorld) return;
-
-    // Update last active date
-    updateLastActiveDate();
-
-    // Check if we should show welcome back modal
-    if (shouldShowWelcomeBack()) {
-      const daysAway = getDaysSinceLastActive();
-      const topHabits = calculateHabitSuccessRates(safeHabits);
-      const streakBroken = wasStreakBroken(innerWorld.currentActiveStreak, daysAway, innerWorld.restDays);
-
-      setWelcomeBackData({
-        daysAway,
-        streakBroken,
-        currentStreak: innerWorld.currentActiveStreak,
-        topHabits
-      });
-      setShowWelcomeBack(true);
-      markWelcomeBackShown();
-    }
-  }, [isLoading, onboardingComplete, isLoadingInnerWorld, safeHabits, innerWorld.currentActiveStreak, innerWorld.restDays]);
-
-  // Check for app updates (Google Play In-App Updates)
-  // NOTE: Update check runs only after app is fully loaded to prevent blocking
-  useEffect(() => {
-    if (isLoading || !onboardingComplete) return;
-
-    // Delay update check to ensure app is fully rendered first
-    const timeoutId = setTimeout(async () => {
-      if (wasUpdateDismissed()) return;
-
-      try {
-        const state = await checkForAppUpdate();
-        if (state.available) {
-          logger.log('[AppUpdate] Update available:', state);
-          setUpdateState(state);
-        }
-      } catch (error) {
-        logger.warn('[AppUpdate] Check failed (non-critical):', error);
-      }
-    }, 3000); // 3 second delay
-
-    return () => clearTimeout(timeoutId);
-  }, [isLoading, onboardingComplete]);
+  // Onboarding, re-engagement, update check (extracted to hooks)
+  useOnboardingEffects({ isLoading, innerWorldStreak: innerWorld.currentActiveStreak, innerWorldRestDays: innerWorld.restDays || [] });
+  useAppUpdateCheck(isLoading, onboardingComplete);
+  useWeeklyReportTrigger(isLoading, onboardingComplete);
 
   // Check for feature unlocks after user actions
   const checkForFeatureUnlocks = useCallback(() => {
@@ -1308,22 +1011,8 @@ export function Index() {
     setNotificationPermissionChecked(true);
   };
 
-  const reminderCopy = useMemo(() => {
-    const habitNameMap = new Map(safeHabits.map((habit) => [habit.id, habit.name]));
-    const habitNames = reminders.habitIds
-      .map((id) => habitNameMap.get(id))
-      .filter(Boolean);
-    const habitBody =
-      habitNames.length === 0
-        ? t.reminderHabitBody
-        : `${t.reminderHabitBody} ${habitNames.join(", ")}`;
-
-    return {
-      mood: { title: t.reminderMoodTitle, body: t.reminderMoodBody },
-      habit: { title: t.reminderHabitTitle, body: habitBody },
-      focus: { title: t.reminderFocusTitle, body: t.reminderFocusBody }
-    };
-  }, [safeHabits, reminders.habitIds, t]);
+  // Notification setup (extracted to hook)
+  useNotificationSetup({ handleQuickMood });
 
   useEffect(() => {
     if (safeHabits.length === 0) return;
@@ -1352,129 +1041,8 @@ export function Index() {
     });
   }, [language, safeHabits.length, setHabits]);
 
-  useEffect(() => {
-    if (!supabase || reminderSyncPendingRef.current) return;
-
-    reminderSyncPendingRef.current = true;
-    const timeoutId = window.setTimeout(() => {
-      syncReminderSettings(reminders, language)
-        .catch((error) => {
-          logger.error("Failed to sync reminder settings:", error);
-        })
-        .finally(() => {
-          reminderSyncPendingRef.current = false;
-        });
-    }, 500);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-      // Don't reset pending flag here - let the promise complete
-    };
-  }, [reminders, language]);
-
-  useEffect(() => {
-    if (!isNativePlatform()) return;
-    scheduleLocalReminders(reminders, reminderCopy).catch((error) => {
-      logger.error("Failed to schedule local reminders:", error);
-    });
-  }, [reminders, reminderCopy]);
-
-  // Schedule per-habit push notifications
-  useEffect(() => {
-    if (!isNativePlatform()) return;
-    scheduleHabitReminders(habits, {
-      reminderTitle: t.reminderHabitTitle,
-      reminderBody: t.reminderHabitBody
-    }).catch((error) => {
-      logger.error("Failed to schedule habit reminders:", error);
-    });
-  }, [habits, t.reminderHabitTitle, t.reminderHabitBody]);
-
-  // Initialize notification channel (Android 8+ requirement)
-  useEffect(() => {
-    if (!isNativePlatform()) return;
-    initializeNotificationChannel().catch((error) => {
-      logger.error('Failed to initialize notification channel:', error);
-    });
-  }, []);
-
-  // Initialize FCM push notifications (Android)
-  useEffect(() => {
-    if (!isNativePlatform()) return;
-    initializePushNotifications().catch((error) => {
-      logger.error('Failed to initialize push notifications:', error);
-    });
-  }, []);
-
-  // Set up one-tap mood notification actions
-  useEffect(() => {
-    if (!isNativePlatform()) return;
-
-    let cleanupListener: (() => void) | null = null;
-
-    const setupMoodActions = async () => {
-      // Register notification action types (mood emoji buttons)
-      await registerMoodNotificationActions();
-
-      // Set up listener for action taps
-      cleanupListener = await setupNotificationActionListener();
-
-      // Register callback to handle quick mood logging
-      setMoodActionCallback(handleQuickMood);
-    };
-
-    setupMoodActions().catch((error) => {
-      logger.error('Failed to setup mood notification actions:', error);
-    });
-
-    return () => {
-      if (cleanupListener) cleanupListener();
-    };
-  }, [handleQuickMood]);
-
-  // Schedule mood quick-log notification with action buttons (morning check-in)
-  useEffect(() => {
-    if (!isNativePlatform() || isLoadingInnerWorld || !reminders.enabled) return;
-
-    const parseTime = (time: string) => {
-      const [hours, minutes] = time.split(':').map(Number);
-      return { hour: hours, minute: minutes };
-    };
-
-    // Use morning time for the quick-log notification
-    scheduleMoodQuickLogNotification(
-      parseTime(reminders.moodTimeMorning),
-      t.howAreYouNow || 'How are you feeling? Tap! 😊'
-    ).catch((error) => {
-      logger.error('Failed to schedule mood quick-log notification:', error);
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reminders.enabled, reminders.moodTimeMorning, t.howAreYouNow]);
-
-  // Lock screen quick actions handler
-  useEffect(() => {
-    onQuickAction((action: QuickActionType) => {
-      logger.log('[Index] Quick action triggered:', action);
-
-      // Switch to home tab first
-      setActiveTab('home');
-
-      // Small delay to ensure tab switch is complete before scrolling
-      quickActionTimeoutRef.current = setTimeout(() => {
-        switch (action) {
-          case 'mood':
-            handleNavigateToSection('mood');
-            break;
-          case 'focus':
-            handleNavigateToSection('focus');
-            break;
-          case 'habits':
-            handleNavigateToSection('habits');
-            break;
-        }
-      }, 100);
-    });
-  }, [onQuickAction, handleNavigateToSection]);
+  // Cloud sync + quick actions (extracted to hook)
+  useCloudSyncEffects({ setChallenges, setBadges, handleNavigateToSection, quickActionTimeoutRef });
 
   // Deep link listener - ALWAYS register, store URL if supabase not ready
   useEffect(() => {
@@ -1580,310 +1148,6 @@ export function Index() {
     return () => { removeListener(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Listener registers ONCE, no dependencies
-
-  // Process pending auth URL when supabase becomes ready
-  useEffect(() => {
-    if (!supabase || !isNativePlatform()) return;
-
-    let active = true;
-    const pendingUrl = getPendingAuthUrl();
-    if (pendingUrl) {
-      logger.log('[Index] Processing pending auth URL');
-
-      void (async () => {
-        try {
-          await handleAuthCallback(supabase, pendingUrl);
-
-          // Check if component is still mounted
-          if (!active) return;
-
-          const { data } = await supabase.auth.getSession();
-          if (!active) return;
-
-          if (data.session?.user) {
-            const metadata = data.session.user.user_metadata;
-            const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
-
-            // Don't log email (PII)
-            logger.log('[Auth] Pending auth processed successfully');
-            setAuthBypassFlag(true);
-            notifyAuthComplete();
-            setUserName(name);
-            setUserNameCustom(false);
-            setGoogleAuthChecked(true);
-          }
-        } catch (error) {
-          logger.error('[Index] Failed to process pending auth:', error);
-        }
-      })();
-    }
-
-    return () => {
-      active = false;
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [supabase, setUserName, setUserNameCustom, setGoogleAuthChecked]);
-
-  useEffect(() => {
-    if (!supabase || isLoading) return;
-    let active = true;
-
-    const syncIfNeeded = async (userId?: string | null) => {
-      if (!active || !userId) return;
-      if (lastSyncedUserIdRef.current === userId) return;
-
-      // Use 'replace' if: (a) sign-out happened, or (b) different user was synced before
-      const isAccountSwitch = hadSignOutRef.current ||
-        (lastSyncedUserIdRef.current !== null && lastSyncedUserIdRef.current !== userId);
-
-      lastSyncedUserIdRef.current = userId;
-      hadSignOutRef.current = false;
-
-      try {
-        // Use 'replace' on account switch to avoid merging different users' data
-        await syncWithCloud(isAccountSwitch ? 'replace' : 'merge');
-        // Start auto-sync after successful initial sync
-        startAutoSync();
-        // Join Presence channel for friend online status
-        joinPresence().catch(() => {});
-      } catch (error) {
-        logger.error('Cloud sync failed:', error);
-      }
-    };
-
-    supabase.auth.getSession().then(({ data }) => {
-      // v1.1.1 Migration: Auto-enable cloud sync for existing users
-      if (data.session) {
-        migrateExistingUser();
-      }
-      void syncIfNeeded(data.session?.user?.id ?? null);
-    }).catch(() => {});
-
-    // Correct destructuring pattern for auth subscription
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      // Reset sync refs on sign-out so next sign-in uses 'replace' mode
-      if (event === 'SIGNED_OUT') {
-        lastSyncedUserIdRef.current = null;
-        hadSignOutRef.current = true;
-      }
-      // v1.1.1 Migration: Auto-enable cloud sync when user signs in
-      if (session) {
-        migrateExistingUser();
-      }
-      void syncIfNeeded(session?.user?.id ?? null);
-    });
-
-    return () => {
-      active = false;
-      subscription?.unsubscribe();
-      stopAutoSync(); // Clean up auto-sync listeners and intervals
-      leavePresence().catch(() => {}); // Leave Presence channel
-    };
-  }, [isLoading]);
-
-  useEffect(() => {
-    if (userNameCustom || !supabase) return;
-    let active = true;
-
-    const syncName = async () => {
-      const { data } = await supabase.auth.getUser();
-      const metadata = data.user?.user_metadata as { full_name?: string; name?: string } | undefined;
-      const candidate = metadata?.full_name || metadata?.name;
-      if (!active || !candidate) return;
-      if (candidate !== userName) {
-        setUserName(candidate);
-      }
-    };
-
-    void syncName();
-
-    // Correct destructuring pattern for auth subscription
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      void syncName();
-    });
-
-    return () => {
-      active = false;
-      subscription?.unsubscribe();
-    };
-  }, [userNameCustom, userName, setUserName]);
-
-  // Throttle session expired events (not more than once per 5 seconds)
-  const lastSessionExpiredRef = useRef<number>(0);
-
-  // Session expired handler - listens for 401 errors from API/sync
-  // Verify actual session state before resetting auth
-  useEffect(() => {
-    const handleSessionExpired = async () => {
-      // Throttle - ignore if we just handled one
-      const now = Date.now();
-      if (now - lastSessionExpiredRef.current < 5000) {
-        logger.log('[Index] Session expired event throttled');
-        return;
-      }
-      lastSessionExpiredRef.current = now;
-
-      logger.warn('[Index] Session expired event received, verifying session...');
-
-      // Check if session is actually expired before resetting
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) {
-          logger.log('[Index] Session still valid, ignoring expired event');
-          return; // Session is valid - don't reset!
-        }
-      } catch (error) {
-        logger.error('[Index] Error checking session:', error);
-        // On error, fall through to reset (safer)
-      }
-
-      // Session truly expired - reset auth state
-      logger.warn('[Index] Session confirmed expired, resetting auth state');
-      setHasValidSession(false);  // Must set this for AuthScreen to show
-      setAuthBypassFlag(false);
-      setGoogleAuthChecked(false);
-    };
-
-    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
-    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
-  }, [setGoogleAuthChecked]);
-
-  // Weekly report auto-show on Monday
-  useEffect(() => {
-    if (!onboardingComplete || isLoading) return;
-
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
-    const checkWeeklyReport = () => {
-      const lastShown = localStorage.getItem('zenflow-last-weekly-report');
-      const today = new Date();
-      const dayOfWeek = today.getDay();
-
-      // Function to check if lastShown is in a different week
-      const isNewWeek = (lastShownDate: string) => {
-        const last = new Date(lastShownDate);
-        const lastMonday = new Date(last);
-        lastMonday.setDate(last.getDate() - (last.getDay() === 0 ? 6 : last.getDay() - 1));
-        lastMonday.setHours(0, 0, 0, 0);
-
-        const thisMonday = new Date(today);
-        thisMonday.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
-        thisMonday.setHours(0, 0, 0, 0);
-
-        return lastMonday.getTime() !== thisMonday.getTime();
-      };
-
-      // Show on Monday (1) if not shown this week
-      if (dayOfWeek === 1 && (!lastShown || isNewWeek(lastShown))) {
-        // Delay to let data load
-        timeoutId = setTimeout(() => {
-          setShowWeeklyReport(true);
-          localStorage.setItem('zenflow-last-weekly-report', today.toISOString());
-        }, 1000);
-      }
-    };
-
-    checkWeeklyReport();
-
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-  }, [onboardingComplete, isLoading]);
-
-  // Cloud sync for challenges and badges
-  useEffect(() => {
-    let active = true;
-    let challengeSub: (() => void) | null = null;
-    let badgeSub: (() => void) | null = null;
-    let taskSub: (() => void) | null = null;
-    let questSub: (() => void) | null = null;
-
-    const syncWithCloudIfLoggedIn = async () => {
-      // Guard: skip if Supabase is not available (local mode)
-      if (!supabase) return;
-
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-
-        // Check if component is still mounted
-        if (!active) return;
-
-        if (user) {
-          // Sync challenges
-          const { challenges: syncedChallenges } = await syncChallengesWithCloud(user.id);
-          if (active && syncedChallenges) {
-            setChallenges(syncedChallenges);
-          }
-
-          // Sync badges
-          const { badges: syncedBadges } = await syncBadgesWithCloud(user.id);
-          if (active && syncedBadges) {
-            setBadges(syncedBadges);
-          }
-
-          // Check again before continuing
-          if (!active) return;
-
-          // Sync tasks and quests (updates localStorage for Panels to read)
-          await syncTasks();
-          await syncQuests();
-
-          // Check again before setting up subscriptions
-          if (!active) return;
-
-          // Subscribe to real-time updates
-          challengeSub = subscribeToChallengeUpdates(user.id, (updatedChallenge) => {
-            if (!active) return;
-            setChallenges(prev => {
-              const index = prev.findIndex(c => c.id === updatedChallenge.id);
-              if (index !== -1) {
-                const updated = [...prev];
-                updated[index] = updatedChallenge;
-                return updated;
-              }
-              return [...prev, updatedChallenge];
-            });
-          });
-
-          badgeSub = subscribeToBadgeUpdates(user.id, (updatedBadge) => {
-            if (!active) return;
-            setBadges(prev => {
-              const index = prev.findIndex(b => b.id === updatedBadge.id);
-              if (index !== -1) {
-                const updated = [...prev];
-                updated[index] = updatedBadge;
-                return updated;
-              }
-              return prev;
-            });
-          });
-
-          // Subscribe to tasks/quests updates to keep localStorage fresh
-          taskSub = subscribeToTaskUpdates(user.id, () => {
-            if (!active) return;
-            logger.log('[Index] Tasks updated from cloud');
-          });
-
-          questSub = subscribeToQuestUpdates(user.id, () => {
-            if (!active) return;
-            logger.log('[Index] Quests updated from cloud');
-          });
-        }
-      } catch (error) {
-        logger.error('[Index] Cloud sync error:', error);
-      }
-    };
-
-    void syncWithCloudIfLoggedIn();
-
-    return () => {
-      active = false;
-      challengeSub?.();
-      badgeSub?.();
-      taskSub?.();
-      questSub?.();
-    };
-  }, []);
 
   // Show premium initialization screen
   if (initializationState.isInitializing) {
