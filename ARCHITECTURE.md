@@ -503,13 +503,15 @@ On PR to main:
 ## Known Technical Debt
 
 > Track items here until resolved. Remove when done.
-> Last audit: 2026-02-15 (after Phase 4 completion)
+> Last audit: 2026-02-15 (after Phase 5 completion)
 
 ### Resolved
 
 | ID | Was | Resolution | Date |
 |----|-----|-----------|------|
+| TD-12 | React Router vestigial (only 1 route `/`) | Removed entirely. SPA renders `<Index />` directly. `NavLink.tsx` (dead code) + `NotFound.tsx` deleted. Cleaned vite.config.ts manualChunks/optimizeDeps. | Phase 5 |
 | TD-13 | No React Error Boundary | `ErrorBoundary.tsx` with `LazyErrorBoundary` + `ModalErrorBoundary` wrapping all lazy components | Pre-Phase 2 |
+| TD-14 | Unused dependencies in package.json | `react-router-dom`, `@hookform/resolvers`, `embla-carousel-react`, `react-resizable-panels` removed. 3 dead shadcn/ui wrappers deleted (`carousel.tsx`, `resizable.tsx`, `chart.tsx`). 8 packages removed total. | Phase 5 |
 
 ### Partially Resolved
 
@@ -531,7 +533,5 @@ On PR to main:
 | TD-08 | HIGH | translations.ts monolith (all languages in one file) | **19,879 lines** | src/i18n/translations.ts |
 | TD-09 | HIGH | Low test coverage | 543 tests pass, but ~6% line coverage | src/__tests__/ |
 | TD-11 | MEDIUM | No CI/CD pipeline (GitHub Actions) | Manual builds only | — |
-| TD-12 | MEDIUM | React Router vestigial (only 1 route `/`) | Could remove entirely | src/App.tsx |
-| TD-14 | MEDIUM | Unused dependencies in package.json | Partially cleaned (html2canvas removed) | package.json |
 | TD-15 | ~~MEDIUM~~ → LOW | useInnerWorld.ts monolith | ~~780+ lines~~ → **542 lines** (12 dead functions removed, garden/ dir deleted) | src/hooks/useInnerWorld.ts |
 | TD-16 | LOW | Prop drilling in HomeTab (~30 props) | Handlers + inner world values passed as props | src/components/tabs/HomeTab.tsx |

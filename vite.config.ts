@@ -142,7 +142,7 @@ export default defineConfig(({ mode }) => {
           }
 
           // Core React libraries
-          if (id.includes('react-dom') || id.includes('react-router') || id.includes('scheduler')) {
+          if (id.includes('react-dom') || id.includes('scheduler')) {
             return 'react-vendor';
           }
           // React core (match 'react/' but not 'react-*' packages)
@@ -204,13 +204,13 @@ export default defineConfig(({ mode }) => {
             return 'sentry';
           }
 
-          // Form utilities (zod, react-hook-form, resolvers)
-          if (id.includes('zod') || id.includes('react-hook-form') || id.includes('@hookform')) {
+          // Form utilities (zod, react-hook-form)
+          if (id.includes('zod') || id.includes('react-hook-form')) {
             return 'forms';
           }
 
-          // Remaining small UI libs (sonner, vaul, cmdk, embla, etc.)
-          if (id.includes('sonner') || id.includes('vaul') || id.includes('cmdk') || id.includes('embla-carousel') || id.includes('input-otp') || id.includes('react-day-picker') || id.includes('react-resizable-panels')) {
+          // Remaining small UI libs (sonner, vaul, cmdk, etc.)
+          if (id.includes('sonner') || id.includes('vaul') || id.includes('cmdk') || id.includes('input-otp') || id.includes('react-day-picker')) {
             return 'ui-extras';
           }
 
@@ -232,6 +232,6 @@ export default defineConfig(({ mode }) => {
   },
 
   optimizeDeps: {
-    include: ["react", "react-dom", "react-router-dom", "@supabase/supabase-js", "dexie", "nanoid"],
+    include: ["react", "react-dom", "@supabase/supabase-js", "dexie", "nanoid"],
   },
 };});
