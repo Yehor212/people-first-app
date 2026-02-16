@@ -20,7 +20,6 @@ let backButtonListenerHandle: PluginListenerHandle | null = null;
 let isShowingExitToast = false;
 let toastTimeoutId: ReturnType<typeof setTimeout> | null = null;
 let toastFadeTimeoutId: ReturnType<typeof setTimeout> | null = null;
-let toastStyleAdded = false;
 
 // Modal close callback registry for React state-based modals
 type ModalCloseCallback = () => boolean; // returns true if modal was closed
@@ -67,34 +66,6 @@ function showExitToast(message: string) {
     animation: toast-slide-up 0.3s ease-out;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   `;
-
-  // Add animation keyframes only once
-  if (!toastStyleAdded) {
-    const style = document.createElement('style');
-    style.id = 'android-toast-styles';
-    style.textContent = `
-      @keyframes toast-slide-up {
-        from {
-          opacity: 0;
-          transform: translateX(-50%) translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateX(-50%) translateY(0);
-        }
-      }
-      @keyframes toast-fade-out {
-        from {
-          opacity: 1;
-        }
-        to {
-          opacity: 0;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-    toastStyleAdded = true;
-  }
 
   document.body.appendChild(toast);
 

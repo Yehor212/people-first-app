@@ -3817,3 +3817,22 @@ input::-moz-focus-inner {
 [dir="rtl"] .font-mono {
   direction: ltr;
 }
+
+/* Toast animations (used by androidBackHandler.ts) */
+@keyframes toast-slide-up {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+@keyframes toast-fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/* Feature unlock bounce animation (used by FeatureUnlock.tsx) */
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(-10%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+  50% { transform: translateY(0); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+}
+.animate-bounce-slow {
+  animation: bounce-slow 2s infinite;
+}
