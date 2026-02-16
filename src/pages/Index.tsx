@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
-import { useAppStore, useUIStore, selectAnyModalOpen, useGamificationStore, useHydrateGamification, useUserDataStore, useHydrateUserData, type TabType } from '@/stores';
+import { useAppStore, useUIStore, selectAnyModalOpen, useHydrateGamification, useUserDataStore, useHydrateUserData, type TabType } from '@/stores';
 import { motion } from 'framer-motion';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { logger } from '@/lib/logger';
-import { addFriendActivity, loadMyProfile } from '@/storage/friendsSync';
 import { useAppLifecycle } from '@/hooks/useAppLifecycle';
 import { useDateTracking } from '@/hooks/useDateTracking';
 import { useAuthSession } from '@/hooks/useAuthSession';
@@ -13,20 +12,22 @@ import { useOnboardingEffects } from '@/hooks/useOnboardingEffects';
 import { useCloudSyncEffects } from '@/hooks/useCloudSyncEffects';
 import { useAppUpdateCheck } from '@/hooks/useAppUpdateCheck';
 import { useWeeklyReportTrigger } from '@/hooks/useWeeklyReportTrigger';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry, ScheduleEvent } from '@/types';
+import { useChallengeHandlers } from '@/hooks/useChallengeHandlers';
+import { useMoodHandlers } from '@/hooks/useMoodHandlers';
+import { useHabitHandlers } from '@/hooks/useHabitHandlers';
+import { useFocusHandlers } from '@/hooks/useFocusHandlers';
+import { useGratitudeHandlers } from '@/hooks/useGratitudeHandlers';
+import { MoodEntry, ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
 import { AdProvider } from '@/contexts/AdContext';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
-import { triggerXpPopup } from '@/components/XpPopup';
 import { ConfettiBurst } from '@/components/ConfettiBurst';
 import { SessionExpiredBanner } from '@/components/SessionExpiredBanner';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
 import { generateId, getToday, calculateStreak } from '@/lib/utils';
-import { safeLocalStorageGet } from '@/lib/safeJson';
-import { findTemplateIdByName, getHabitTemplateName } from '@/lib/habitTemplates';
 import { normalizeHabit } from '@/lib/habits';
 import { supabase } from '@/lib/supabaseClient';
 import { syncWithCloud, triggerSync } from '@/storage/cloudSync';
@@ -83,8 +84,7 @@ const FriendsPanel = lazyWithRetry(() => import('@/components/FriendsPanel').the
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';
-import { getChallenges, getBadges, addChallenge, syncChallengeProgress } from '@/lib/challengeStorage';
-import { updateAllQuestsProgress } from '@/lib/randomQuests';
+import { getChallenges, getBadges, addChallenge } from '@/lib/challengeStorage';
 import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
 import { UrgencyAlert } from '@/components/UrgencyAlert';
@@ -92,11 +92,9 @@ import { RestModeCard } from '@/components/RestModeCard';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
 import { ChallengeModal } from '@/components/ChallengeModal';
 import { decodeInviteData } from '@/lib/friendChallenge';
-import { queueFocusSessionSync } from '@/lib/offlineQueueHandlers';
 import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
 import { ConsentBanner } from '@/components/ConsentBanner';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
-import { haptics } from '@/lib/haptics';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { useScrollLock } from '@/hooks/useScrollLock';
 // import { AICoachChat } from '@/components/AICoachChat'; // Hidden until AI ready
@@ -106,18 +104,12 @@ import { FeatureUnlock } from '@/components/FeatureUnlock';
 import { QuickStatsRow } from '@/components/ui/stat-card';
 import { SkeletonCard, SkeletonStats, SkeletonList, SkeletonSection } from '@/components/ui/skeleton';
 import { MindfulMoment } from '@/components/MindfulMoment';
-import {
-  checkFeatureUnlock,
-  unlockFeature,
-  type FeatureId
-} from '@/lib/onboardingFlow';
 import { WelcomeBackModal } from '@/components/WelcomeBackModal';
-import { recordHabitForChallenge } from '@/lib/comebackChallenge';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { dismissUpdate } from '@/lib/appUpdateManager';
 
 export function Index() {
-  const { t, language, isRTL } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const { setEmotionFromEntries } = useEmotionTheme();
   const { isFeatureVisible } = useFeatureFlags();
   // const { openCoach, setUserData, onboardingData, saveOnboardingAnswer } = useAICoach(); // Hidden until AI ready
@@ -131,14 +123,10 @@ export function Index() {
   const settingsOpenSection = useAppStore(s => s.settingsOpenSection);
   const setSettingsOpenSection = useAppStore(s => s.setSettingsOpenSection);
   // const [showAIOnboarding, setShowAIOnboarding] = useState(false); // Hidden until AI ready
-  const processingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const mindfulTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const quickActionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   useEffect(() => {
     return () => {
-      if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current);
-      if (mindfulTimeoutRef.current) clearTimeout(mindfulTimeoutRef.current);
       if (quickActionTimeoutRef.current) clearTimeout(quickActionTimeoutRef.current);
     };
   }, []);
@@ -213,10 +201,7 @@ export function Index() {
 
   // Register gamification hooks into Zustand store (bridge pattern)
   useHydrateGamification({ awardXp, earnTreats, plantSeed, waterPlants });
-  const rewardUser = useGamificationStore(s => s.rewardUser);
 
-  // Guard against double habit toggles (prevents duplicate rewards)
-  const processingHabitsRef = useRef<Set<string>>(new Set());
 
   // Current focus minutes (real-time) from UI store
   const currentFocusMinutes = useUIStore(s => s.currentFocusMinutes);
@@ -270,7 +255,6 @@ export function Index() {
 
   // Journal prompt text from UI store
   const journalPromptText = useUIStore(s => s.journalPromptText);
-  const setJournalPromptText = useUIStore(s => s.setJournalPromptText);
 
   // Auth state from app store
   const authBypassFlag = useAppStore(s => s.authBypassFlag);
@@ -339,6 +323,39 @@ export function Index() {
   const safeGratitudeEntries = useMemo(() => Array.isArray(gratitudeEntries) ? gratitudeEntries : [], [gratitudeEntries]);
   const safeScheduleEvents = useMemo(() => Array.isArray(scheduleEvents) ? scheduleEvents : [], [scheduleEvents]);
   const safeBadges = useMemo(() => Array.isArray(badges) ? badges : [], [badges]);
+
+  // Challenge/feature unlock handlers (used by mood/habit/focus/gratitude handlers)
+  const { checkForFeatureUnlocks, updateChallengeProgress, handleOpenChallenge } = useChallengeHandlers({
+    safeMoods,
+    safeHabits,
+    safeFocusSessions,
+    safeGratitudeEntries,
+    currentActiveStreak: innerWorld.currentActiveStreak,
+    setChallenges,
+    setBadges,
+  });
+
+  // Feature handlers (extracted from Index.tsx body)
+  const { handleAddMood, handleQuickMood } = useMoodHandlers({ updateChallengeProgress });
+  const { handleToggleHabit, handleAdjustHabit, handleAddHabit, handleUpdateHabit, handleDeleteHabit } = useHabitHandlers({
+    awardXp,
+    earnTreats,
+    plantSeed,
+    waterPlants,
+    updateChallengeProgress,
+    checkForFeatureUnlocks,
+  });
+  const { handleCompleteFocusSession, handleMindfulMomentComplete } = useFocusHandlers({
+    earnTreats,
+    updateChallengeProgress,
+    checkForFeatureUnlocks,
+  });
+  const { handleAddGratitude, handleJournalPromptUsed } = useGratitudeHandlers({
+    earnTreats,
+    attractCreature,
+    feedCreatures,
+    updateChallengeProgress,
+  });
 
   // Register Android back button handler for modal panels (uses UI store)
   useEffect(() => {
@@ -555,370 +572,6 @@ export function Index() {
   useAppUpdateCheck(isLoading, onboardingComplete);
   useWeeklyReportTrigger(isLoading, onboardingComplete);
 
-  // Check for feature unlocks after user actions
-  const checkForFeatureUnlocks = useCallback(() => {
-    const habitsCompleted = safeHabits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0);
-    const focusSessionsCompleted = safeFocusSessions.length;
-    const moodEntriesCount = safeMoods.length;
-
-    const stats = { habitsCompleted, focusSessionsCompleted, moodEntriesCount };
-
-    // Check each feature for unlock conditions
-    const featuresToCheck: FeatureId[] = ['focusTimer', 'xp', 'quests', 'tasks', 'challenges'];
-
-    for (const feature of featuresToCheck) {
-      const { shouldUnlock } = checkFeatureUnlock({ feature, stats });
-
-      if (shouldUnlock) {
-        unlockFeature(feature);
-        // Show celebration
-        setFeatureToUnlock(feature);
-        break; // Show one unlock at a time
-      }
-    }
-  }, [safeHabits, safeFocusSessions, safeMoods]);
-
-  // Helper function to update challenge progress after user actions
-  const updateChallengeProgress = useCallback(() => {
-    const totalFocusMinutes = safeFocusSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
-    const totalGratitude = safeGratitudeEntries.length;
-    const totalHabitsCompleted = safeHabits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0);
-
-    // Calculate perfect days (days where ALL habits were completed)
-    const habitDates = new Set<string>();
-    safeHabits.forEach(h => h.completedDates?.forEach(d => habitDates.add(d)));
-    let perfectDaysCount = 0;
-    habitDates.forEach(date => {
-      const allCompleted = safeHabits.every(h => h.completedDates?.includes(date));
-      if (allCompleted && safeHabits.length > 0) perfectDaysCount++;
-    });
-
-    // Calculate zen master days (days with mood + habits + focus + gratitude)
-    const moodDates = new Set(safeMoods.map(m => m.date));
-    const focusDates = new Set(safeFocusSessions.map(f => f.date));
-    const gratitudeDates = new Set(safeGratitudeEntries.map(g => g.date));
-    let zenMasterDays = 0;
-    habitDates.forEach(date => {
-      const hasMood = moodDates.has(date);
-      const hasFocus = focusDates.has(date);
-      const hasGratitude = gratitudeDates.has(date);
-      const allHabits = safeHabits.every(h => h.completedDates?.includes(date));
-      if (hasMood && allHabits && hasFocus && hasGratitude && safeHabits.length > 0) {
-        zenMasterDays++;
-      }
-    });
-
-    // Get early bird / night owl counts from localStorage (tracked incrementally)
-    const specialBadgeData = safeLocalStorageGet<Record<string, number>>('zenflow-special-badges', {});
-
-    // Build UserStats object matching types/index.ts interface
-    const userStats = {
-      totalFocusMinutes,
-      currentStreak: innerWorld.currentActiveStreak || 0,
-      longestStreak: innerWorld.currentActiveStreak || 0, // Approximation
-      habitsCompleted: totalHabitsCompleted,
-      moodEntries: safeMoods.length,
-      gratitudeEntries: totalGratitude,
-      perfectDaysCount,
-      earlyBirdCount: specialBadgeData.earlyBirdCount || 0,
-      nightOwlCount: specialBadgeData.nightOwlCount || 0,
-      zenMasterDays,
-    };
-
-    const newBadges = syncChallengeProgress(userStats, totalFocusMinutes, totalGratitude);
-
-    // Refresh challenges and badges state
-    setChallenges(getChallenges());
-
-    if (newBadges.length > 0) {
-      setBadges(getBadges());
-      // Could add a celebration/notification for new badges here
-    }
-  }, [safeFocusSessions, safeGratitudeEntries, safeHabits, safeMoods, innerWorld.currentActiveStreak]);
-
-  // Handlers
-  const handleAddMood = (entry: MoodEntry) => {
-    setMoods(prev => [...prev, entry]);
-    rewardUser('mood', { treats: 5, treatReason: 'Logged mood', haptic: haptics.moodSaved, seedExtra: entry.mood });
-    updateChallengeProgress();
-  };
-
-  // Quick mood handler for one-tap notification actions
-  const handleQuickMood = useCallback((mood: MoodEntry['mood']) => {
-    const today = getToday();
-    const entry: MoodEntry = {
-      id: generateId(),
-      mood,
-      date: today,
-      timestamp: Date.now(),
-    };
-
-    setMoods(prev => [...prev, entry]);
-    rewardUser('mood', { treats: 5, treatReason: 'Quick mood', haptic: haptics.moodSaved, skipPopup: true, seedExtra: mood });
-
-    logger.log('Quick mood logged from notification:', mood);
-  }, [rewardUser, setMoods]);
-
-  // Update existing mood entry (for same-day editing)
-  const _handleUpdateMood = (entryId: string, newMood: MoodEntry['mood'], note?: string) => {
-    setMoods(prev => prev.map(entry => {
-      if (entry.id !== entryId) return entry;
-      return {
-        ...entry,
-        mood: newMood,
-        note: note ?? entry.note,
-      };
-    }));
-    triggerSync(); // Auto-sync to cloud
-  };
-
-  // Track early bird / night owl for special badges
-  const trackTimeOfDayCompletion = useCallback(() => {
-    const hour = new Date().getHours();
-    let data: Record<string, number> = {};
-    try {
-      data = JSON.parse(localStorage.getItem('zenflow-special-badges') || '{}');
-    } catch {
-      // Ignore parse errors
-    }
-
-    if (hour < 8) {
-      // Early Bird: before 8 AM
-      data.earlyBirdCount = (data.earlyBirdCount || 0) + 1;
-    } else if (hour >= 22) {
-      // Night Owl: after 10 PM
-      data.nightOwlCount = (data.nightOwlCount || 0) + 1;
-    }
-
-    localStorage.setItem('zenflow-special-badges', JSON.stringify(data));
-  }, []);
-
-  const handleToggleHabit = (habitId: string, date: string) => {
-    // Guard against rapid double-clicks (prevents duplicate rewards)
-    const processingKey = `${habitId}-${date}`;
-    if (processingHabitsRef.current.has(processingKey)) {
-      return; // Already processing this habit
-    }
-    processingHabitsRef.current.add(processingKey);
-
-    // Clear processing flag after a short delay
-    processingTimeoutRef.current = setTimeout(() => {
-      processingHabitsRef.current.delete(processingKey);
-    }, 500);
-
-    setHabits(prev => prev.map(habit => {
-      if (habit.id !== habitId) return habit;
-
-      const habitType = habit.type || 'daily';
-
-      // Reduce habits use handleAdjustHabit
-      if (habitType === 'reduce') return habit;
-
-      // Continuous habits don't toggle - they track failures
-      if (habitType === 'continuous') return habit;
-
-      // Multiple times per day habits
-      if (habitType === 'multiple') {
-        const completionsByDate = { ...(habit.completionsByDate || {}) };
-        const current = completionsByDate[date] ?? 0;
-        const target = habit.dailyTarget ?? 1;
-
-        // Increment count up to target
-        if (current < target) {
-          completionsByDate[date] = current + 1;
-          awardXp('habit'); // +10 XP for each completion
-          const treatResult = earnTreats('habit', 10, 'Completed habit');
-          triggerXpPopup(treatResult.earned, 'habit'); // Show treats earned
-          void haptics.habitToggled();
-          trackTimeOfDayCompletion(); // Track for Early Bird/Night Owl badges
-        }
-
-        const existingDates = habit.completedDates || [];
-        return {
-          ...habit,
-          completionsByDate,
-          completedDates: completionsByDate[date] >= target
-            ? [...new Set([...existingDates, date])]
-            : existingDates.filter(d => d !== date),
-          updatedAt: new Date().toISOString(), // Timestamp for conflict resolution
-        };
-      }
-
-      // Daily and scheduled habits (normal toggle)
-      const existingDates = habit.completedDates || [];
-      const completed = existingDates.includes(date);
-      if (!completed) {
-        awardXp('habit'); // +10 XP for completing habit (legacy)
-        const treatResult = earnTreats('habit', 10, 'Completed habit');
-        triggerXpPopup(treatResult.earned, 'habit'); // Show treats earned
-        void haptics.habitCompleted();
-        // Confetti burst at center of screen
-        setConfettiBurst({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-        trackTimeOfDayCompletion(); // Track for Early Bird/Night Owl badges
-        // Inner World: Plant a tree when completing habit
-        plantSeed('habit');
-        waterPlants('habit');
-
-        // Track for friends activity feed
-        const friendProfile = loadMyProfile();
-        if (friendProfile) {
-          addFriendActivity({
-            friendId: friendProfile.friendCode,
-            friendName: friendProfile.displayName,
-            activityType: 'habit_completed',
-            description: habit.name,
-            icon: habit.icon || '✅',
-          });
-        }
-
-        // Track comeback challenge progress
-        const challengeResult = recordHabitForChallenge(date);
-        if (challengeResult.challengeComplete) {
-          // Award bonus XP for completing comeback challenge
-          earnTreats('habit', challengeResult.bonusXp, 'Comeback Challenge Complete!');
-          triggerXpPopup(challengeResult.bonusXp, 'bonus');
-        }
-      }
-      return {
-        ...habit,
-        completedDates: completed
-          ? existingDates.filter(d => d !== date)
-          : [...existingDates, date],
-        updatedAt: new Date().toISOString(), // Timestamp for conflict resolution
-      };
-    }));
-    triggerSync(); // Auto-sync to cloud
-
-    // Update challenge progress
-    updateChallengeProgress();
-
-    // Check for feature unlocks (progressive onboarding)
-    checkForFeatureUnlocks();
-
-    // Update quest progress and award XP for completed quests
-    const completedQuests = updateAllQuestsProgress({ type: 'habit_completed', value: 1 });
-    completedQuests.forEach(quest => {
-      const xpReward = quest.reward.xp;
-      earnTreats('habit', xpReward, `Quest: ${quest.title}`);
-      triggerXpPopup(xpReward, 'bonus');
-    });
-  };
-
-  const handleAdjustHabit = (habitId: string, date: string, delta: number) => {
-    setHabits(prev => prev.map(habit => {
-      if (habit.id !== habitId) return habit;
-      const habitType = habit.type || 'daily';
-
-      if (habitType === 'reduce') {
-        const progressByDate = { ...(habit.progressByDate || {}) };
-        const current = typeof progressByDate[date] === 'number' ? progressByDate[date] : 0;
-        progressByDate[date] = Math.max(0, current + delta);
-        return { ...habit, progressByDate };
-      }
-
-      if (habitType === 'multiple') {
-        const completionsByDate = { ...(habit.completionsByDate || {}) };
-        const current = completionsByDate[date] ?? 0;
-        const target = habit.dailyTarget ?? 1;
-        const next = Math.max(0, Math.min(target, current + delta));
-        completionsByDate[date] = next;
-        const existingDates = habit.completedDates || [];
-        return {
-          ...habit,
-          completionsByDate,
-          completedDates: next >= target
-            ? [...new Set([...existingDates, date])]
-            : existingDates.filter(d => d !== date),
-          updatedAt: new Date().toISOString(),
-        };
-      }
-
-      return habit;
-    }));
-    triggerSync(); // Auto-sync to cloud
-  };
-
-  const handleAddHabit = (habit: Habit) => {
-    setHabits(prev => [...prev, habit]);
-    triggerSync(); // Auto-sync to cloud
-  };
-
-  const handleUpdateHabit = (updatedHabit: Habit) => {
-    setHabits(prev => prev.map(h => h.id === updatedHabit.id ? updatedHabit : h));
-    triggerSync(); // Auto-sync to cloud
-  };
-
-  const handleDeleteHabit = (habitId: string) => {
-    setHabits(prev => prev.filter(h => h.id !== habitId));
-    triggerSync(); // Auto-sync to cloud
-  };
-
-  const handleCompleteFocusSession = (session: FocusSession) => {
-    setFocusSessions(prev => [...prev, session]);
-
-    const focusTreats = Math.round(session.duration * 0.5);
-    rewardUser('focus', { treats: focusTreats, treatReason: `Focus ${session.duration}min`, haptic: haptics.focusCompleted });
-
-    // Queue for offline sync (uses offline queue with retry logic)
-    queueFocusSessionSync(session).catch((err) => {
-      logger.warn('[Index] Failed to queue focus session sync:', err);
-    });
-
-    // Show MindfulMoment after focus session (only for sessions > 5 min)
-    if (session.duration >= 5) {
-      mindfulTimeoutRef.current = setTimeout(() => setShowMindfulMoment(true), 500);
-    }
-
-    updateChallengeProgress();
-    checkForFeatureUnlocks();
-
-    // Award bonus treats for completed quests
-    const completedQuests = updateAllQuestsProgress({ type: 'focus_completed', value: session.duration });
-    completedQuests.forEach(quest => {
-      const xpReward = quest.reward.xp;
-      earnTreats('focus', xpReward, `Quest: ${quest.title}`);
-      triggerXpPopup(xpReward, 'bonus');
-    });
-  };
-
-  const handleAddGratitude = (entry: GratitudeEntry) => {
-    setGratitudeEntries(prev => [...prev, entry]);
-    rewardUser('gratitude', { treats: 8, treatReason: 'Gratitude entry', haptic: haptics.gratitudeSaved });
-
-    // Gratitude-specific: attract creatures
-    if (Math.random() < 0.3) attractCreature();
-    feedCreatures();
-
-    updateChallengeProgress();
-
-    // Award bonus treats for completed quests
-    const completedQuests = updateAllQuestsProgress({ type: 'gratitude_added', value: 1 });
-    completedQuests.forEach(quest => {
-      const xpReward = quest.reward.xp;
-      earnTreats('gratitude', xpReward, `Quest: ${quest.title}`);
-      triggerXpPopup(xpReward, 'bonus');
-    });
-  };
-
-  // MindfulMoment completion handler
-  const handleMindfulMomentComplete = useCallback(() => {
-    // Award treats for completing mindful moment
-    const treatResult = earnTreats('mindful', 1, 'Mindful Moment');
-    triggerXpPopup(treatResult.earned, 'mindful');
-  }, [earnTreats]);
-
-  // DailyPromptCard handler - opens GratitudeJournal with prompt
-  const _handleUseJournalPrompt = useCallback((promptText: string) => {
-    setJournalPromptText(promptText);
-    // Scroll to gratitude section
-    gratitudeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, []);
-
-  // Clear journal prompt text after it's been used
-  const handleJournalPromptUsed = useCallback(() => {
-    setJournalPromptText(undefined);
-  }, []);
-
   // Pull-to-refresh handler: sync with cloud and reload data
   const handlePullToRefresh = useCallback(async () => {
     try {
@@ -940,12 +593,6 @@ export function Index() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Open challenge modal from HabitTracker
-  const handleOpenChallenge = useCallback((habit?: Habit) => {
-    setChallengeHabit(habit);
-    setShowChallengeModal(true);
-  }, []);
-
   const handleResetData = () => {
     setMoods([]);
     setHabits([]);
@@ -965,15 +612,6 @@ export function Index() {
   const handleNameChange = (name: string) => {
     setUserName(name);
     setUserNameCustom(true);
-  };
-
-  const _handleAuthComplete = (userData?: { name: string; email: string }) => {
-    if (userData) {
-      // User signed in with Google - use their name
-      setUserName(userData.name);
-      setUserNameCustom(false); // Allow them to change it later
-    }
-    // Auth is now optional - no need to set gate complete
   };
 
   // Google Auth handlers (shown once after language selection)
@@ -1013,33 +651,6 @@ export function Index() {
 
   // Notification setup (extracted to hook)
   useNotificationSetup({ handleQuickMood });
-
-  useEffect(() => {
-    if (safeHabits.length === 0) return;
-    setHabits(prev => {
-      let changed = false;
-      const updated = prev.map(habit => {
-        const normalized = normalizeHabit(habit);
-        const templateId = normalized.templateId || findTemplateIdByName(normalized.name);
-        if (!templateId) {
-          if (normalized !== habit) {
-            changed = true;
-          }
-          return normalized;
-        }
-        const localizedName = getHabitTemplateName(templateId, language);
-        if (normalized.name !== localizedName || normalized.templateId !== templateId || normalized !== habit) {
-          changed = true;
-          return { ...normalized, name: localizedName, templateId };
-        }
-        if (normalized !== habit) {
-          changed = true;
-        }
-        return normalized;
-      });
-      return changed ? updated : prev;
-    });
-  }, [language, safeHabits.length, setHabits]);
 
   // Cloud sync + quick actions (extracted to hook)
   useCloudSyncEffects({ setChallenges, setBadges, handleNavigateToSection, quickActionTimeoutRef });
