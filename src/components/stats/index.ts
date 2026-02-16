@@ -17,3 +17,6 @@ export { TrophyHall } from './TrophyHall';
 export { DataMountains } from './DataMountains';
 export { EmotionGalaxy } from './EmotionGalaxy';
 export { CrystalCalendar } from './CrystalCalendar';
+
+// TD-20: Decomposed StatsPage orchestrator + sub-components
+export { StatsPage } from './StatsPage';

@@ -570,7 +570,7 @@ On PR to main:
 | TD-17 | ~~HIGH~~ → DONE | ~~Silent `.catch(() => {})` swallowing errors~~ | **Fixed 2026-02-16**: All 34 instances replaced with `logger.warn`/`logger.error` across 20 files. Categorized by risk: fire-and-forget (warn), data ops (error), with-fallback (warn + fallback). | Various |
 | TD-18 | ~~HIGH~~ → DONE | ~~Memory leaks: uncleaned setTimeout in contexts~~ | **Fixed 2026-02-16**: MoodThemeContext — added useRef + clearTimeout cleanup (EmotionThemeContext already correct). | src/contexts/MoodThemeContext.tsx |
 | TD-19 | ~~HIGH~~ → DONE | ~~Raw console.* calls bypassing logger.ts~~ | **Fixed 2026-02-16**: 16 calls replaced with logger.* in 4 files (main.tsx, sw.ts, sentry.ts, gamificationStore.ts). Remaining: logger.ts (6, implementation) + crashReporting.ts (7, implementation). | Various |
-| TD-20 | HIGH | 17 god components violating 400-line / 5-useState rules | ScheduleTimeline 1,653L/17st, HyperfocusMode 1,012L/16st, MoodTracker 712L/15st, FriendsPanel 694L/15st, StatsPage 1,281L/11st, + 12 more | See God Components table below |
+| TD-20 | HIGH (1/17 done) | 17 god components violating 400-line / 5-useState rules | **ScheduleTimeline DONE** (1,647L→9 files in `schedule/`, max 343L, 2 useState). Remaining: HyperfocusMode 1,012L/16st, MoodTracker 712L/15st, FriendsPanel 694L/15st, StatsPage 1,281L/11st, + 12 more | See God Components table below |
 | TD-21 | MEDIUM | Scattered Capacitor platform checks | **58** `isNativePlatform()/getPlatform()` calls across 20+ files. Export in authRedirect.ts unused | Various — `grep 'Capacitor\.\(isNativePlatform\|getPlatform\)' src/` |
 | TD-22 | MEDIUM | Scattered import.meta.env access | **25 calls** across 11 files. No centralized config.ts | Various — `grep 'import\.meta\.env' src/` |
 | TD-23 | MEDIUM | Direct Supabase calls in UI components | **71** `.from(`/`supabase.` calls in `/components/`. No service layer. | src/components/ — `grep 'supabase\.\|\.from(' src/components/` |
@@ -582,7 +582,7 @@ On PR to main:
 
 | File | Lines | useState | useEffect | Priority |
 |------|-------|----------|-----------|----------|
-| ScheduleTimeline.tsx | **1,653** | 17 | 6 | P0 — largest, most complex |
+| ~~ScheduleTimeline.tsx~~ | ~~1,653~~ → **343** | ~~17~~ → **2** | ~~6~~ → **0** | ~~P0~~ DONE — decomposed into `schedule/` (9 files, max 343L) |
 | StatsPage.tsx | **1,281** | 11 | 0 | P0 |
 | JournalEntryEditor.tsx | **1,165** | — | — | P1 (in features/) |
 | JournalModule.tsx | **1,057** | — | — | P1 (in features/) |
