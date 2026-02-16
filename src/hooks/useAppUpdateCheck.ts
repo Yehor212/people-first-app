@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useUIStore } from '@/stores';
+import { useUIStore, useUserDataStore } from '@/stores';
 import { checkForAppUpdate, wasUpdateDismissed } from '@/lib/appUpdateManager';
 import { logger } from '@/lib/logger';
 
@@ -7,8 +7,9 @@ import { logger } from '@/lib/logger';
  * Checks for Google Play In-App Updates after app is fully loaded.
  * Delays check by 3s to avoid blocking initial render.
  */
-export function useAppUpdateCheck(isLoading: boolean, onboardingComplete: boolean): void {
+export function useAppUpdateCheck(isLoading: boolean): void {
   const setUpdateState = useUIStore(s => s.setUpdateState);
+  const onboardingComplete = useUserDataStore(s => s.onboardingComplete);
 
   useEffect(() => {
     if (isLoading || !onboardingComplete) return;

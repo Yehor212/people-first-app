@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
-import { useUIStore } from '@/stores';
+import { useUIStore, useUserDataStore } from '@/stores';
 
 /**
  * Auto-shows weekly report on Monday if not already shown this week.
  */
-export function useWeeklyReportTrigger(isLoading: boolean, onboardingComplete: boolean): void {
+export function useWeeklyReportTrigger(isLoading: boolean): void {
+  const onboardingComplete = useUserDataStore(s => s.onboardingComplete);
+
   useEffect(() => {
     if (!onboardingComplete || isLoading) return;
 

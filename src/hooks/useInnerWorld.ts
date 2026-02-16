@@ -20,7 +20,6 @@ import {
   CreatureType,
   CreatureStage,
   CompanionMood,
-  CompanionType,
   GardenStage,
   Season,
   MoodType,
@@ -33,15 +32,8 @@ import {
   CREATURE_THRESHOLDS,
   GARDEN_STAGE_THRESHOLDS,
   MOOD_COLORS,
-  PLANT_EMOJIS,
-  CREATURE_EMOJIS,
-  COMPANION_EMOJIS,
 } from '@/lib/innerWorldConstants';
-import {
-  COMPANION_COSTS,
-  COMPANION_LEVELING,
-  calculateTreatsEarned,
-} from '@/lib/treatConstants';
+import { calculateTreatsEarned } from '@/lib/treatConstants';
 
 // ============================================
 // DEFAULT STATE
@@ -410,43 +402,6 @@ export function useInnerWorld() {
     }));
   }, [setWorld]);
 
-  // Change companion
-  // Use functional update to prevent race conditions
-  const setCompanionType = useCallback((type: CompanionType) => {
-    setWorld(prev => ({
-      ...prev,
-      companion: {
-        ...prev.companion,
-        type,
-      },
-    }));
-  }, [setWorld]);
-
-  // Rename companion
-  // Use functional update to prevent race conditions
-  const renameCompanion = useCallback((name: string) => {
-    setWorld(prev => ({
-      ...prev,
-      companion: {
-        ...prev.companion,
-        name,
-      },
-    }));
-  }, [setWorld]);
-
-  // Clear welcome back state
-  // Use functional update to prevent race conditions
-  const clearWelcomeBack = useCallback(() => {
-    setWorld(prev => ({
-      ...prev,
-      pendingGrowth: {
-        plantsToGrow: 0,
-        creaturesArrived: 0,
-        companionMissedYou: false,
-      },
-    }));
-  }, [setWorld]);
-
   // ============================================
   // TREATS SYSTEM
   // ============================================
@@ -494,295 +449,6 @@ export function useInnerWorld() {
 
     return result;
   }, [setWorld]);
-
-  // Spend treats (e.g., to feed companion)
-  // Use functional update to prevent race conditions
-  // Removed world.treats?.balance from deps - functional update handles this
-  const spendTreats = useCallback((amount: number, purpose: string): boolean => {
-    let success = false;
-    const transactionId = generateId();
-    const now = Date.now();
-
-    setWorld(prev => {
-      const currentBalance = prev.treats?.balance || 0;
-      if (currentBalance < amount) {
-        success = false;
-        return prev; // Not enough treats - don't update
-      }
-
-      success = true;
-      const transaction: TreatTransaction = {
-        id: transactionId,
-        amount: -amount,
-        source: 'mood',
-        timestamp: now,
-        description: purpose,
-      };
-
-      const transactions = [transaction, ...(prev.treats?.transactions || [])].slice(0, 50);
-
-      return {
-        ...prev,
-        treats: {
-          ...prev.treats,
-          balance: currentBalance - amount,
-          lifetimeSpent: (prev.treats?.lifetimeSpent || 0) + amount,
-          transactions,
-        },
-      };
-    });
-
-    return success;
-  }, [setWorld]);
-
-  // ============================================
-  // COMPANION INTERACTIONS
-  // ============================================
-
-  // Pet the companion - FREE action, small XP gain, shows love
-  // Use functional update to prevent stale closure race conditions
-  const petCompanion = useCallback(() => {
-    const now = Date.now();
-    let result = { xpGain: 0, canPetAgain: false, leveledUp: false, newLevel: 0 };
-
-    setWorld(prev => {
-      const timeSinceLastPet = prev.companion.lastPetTime
-        ? now - prev.companion.lastPetTime
-        : Infinity;
-
-      // Cooldown for full effect (1 minute)
-      const canPetAgain = timeSinceLastPet > COMPANION_COSTS.pet.cooldownMs;
-      const xpGain = canPetAgain ? COMPANION_COSTS.pet.xpGain : 2;
-
-      // Calculate level up
-      let newExperience = prev.companion.experience + xpGain;
-      let newLevel = prev.companion.level;
-      const xpNeeded = COMPANION_LEVELING.xpPerLevel(newLevel);
-
-      if (newExperience >= xpNeeded) {
-        newLevel += 1;
-        newExperience -= xpNeeded;
-      }
-
-      result = {
-        xpGain,
-        canPetAgain,
-        leveledUp: newLevel > prev.companion.level,
-        newLevel,
-      };
-
-      return {
-        ...prev,
-        companion: {
-          ...prev.companion,
-          lastPetTime: now,
-          lastInteraction: now,
-          interactionCount: (prev.companion.interactionCount || 0) + 1,
-          experience: newExperience,
-          level: newLevel,
-        },
-      };
-    });
-
-    return result;
-  }, [setWorld]);
-
-  // Feed the companion - COSTS TREATS, increases fullness and XP
-  // Use functional update to prevent stale closure race conditions
-  const feedCompanion = useCallback(() => {
-    const now = Date.now();
-    const treatCost = COMPANION_COSTS.feed.treatCost;
-    let result: {
-      success: boolean;
-      reason?: string;
-      needed?: number;
-      have?: number;
-      fullnessGain: number;
-      xpGain: number;
-      treatCost?: number;
-      newBalance?: number;
-      leveledUp?: boolean;
-      newLevel?: number;
-    } = { success: false, fullnessGain: 0, xpGain: 0 };
-
-    setWorld(prev => {
-      const currentBalance = prev.treats?.balance || 0;
-
-      // Check if enough treats
-      if (currentBalance < treatCost) {
-        result = {
-          success: false,
-          reason: 'not_enough_treats',
-          needed: treatCost,
-          have: currentBalance,
-          fullnessGain: 0,
-          xpGain: 0,
-        };
-        return prev; // No state change
-      }
-
-      const fullnessGain = COMPANION_COSTS.feed.fullnessGain;
-      const xpGain = COMPANION_COSTS.feed.xpGain;
-
-      // Update fullness and derive hunger from it
-      const newFullness = Math.min(100, (prev.companion.fullness || 50) + fullnessGain);
-      const newHunger = 100 - newFullness; // Inverse relationship
-      const newHappiness = Math.min(100, Math.max(30, newFullness)); // Happiness linked to fullness
-
-      // Deduct treats
-      const transaction: TreatTransaction = {
-        id: generateId(),
-        amount: -treatCost,
-        source: 'mood',
-        timestamp: now,
-        description: 'Feed companion',
-      };
-      const transactions = [transaction, ...(prev.treats?.transactions || [])].slice(0, 50);
-
-      // Calculate level up
-      let newExperience = prev.companion.experience + xpGain;
-      let newLevel = prev.companion.level;
-      const xpNeeded = COMPANION_LEVELING.xpPerLevel(newLevel);
-
-      if (newExperience >= xpNeeded) {
-        newLevel += 1;
-        newExperience -= xpNeeded;
-      }
-
-      result = {
-        success: true,
-        fullnessGain,
-        xpGain,
-        treatCost,
-        newBalance: currentBalance - treatCost,
-        leveledUp: newLevel > prev.companion.level,
-        newLevel,
-      };
-
-      return {
-        ...prev,
-        treats: {
-          ...prev.treats,
-          balance: currentBalance - treatCost,
-          lifetimeSpent: (prev.treats?.lifetimeSpent || 0) + treatCost,
-          transactions,
-        },
-        companion: {
-          ...prev.companion,
-          fullness: newFullness,
-          hunger: newHunger,
-          happiness: newHappiness,
-          lastFeedTime: now,
-          lastInteraction: now,
-          interactionCount: (prev.companion.interactionCount || 0) + 1,
-          experience: newExperience,
-          level: newLevel,
-          mood: newHappiness >= 80 ? 'excited' : newHappiness >= 50 ? 'happy' : 'calm',
-        },
-      };
-    });
-
-    return result;
-  }, [setWorld]);
-
-  // Talk to companion - get advice and increase wisdom
-  // Use functional update to prevent stale closure race conditions
-  const talkToCompanion = useCallback(() => {
-    const now = Date.now();
-    const wisdomGain = 2;
-    const xpGain = 3;
-
-    setWorld(prev => {
-      const newWisdom = Math.min(100, prev.companion.personality.wisdom + wisdomGain);
-
-      return {
-        ...prev,
-        companion: {
-          ...prev.companion,
-          lastInteraction: now,
-          interactionCount: (prev.companion.interactionCount || 0) + 1,
-          experience: prev.companion.experience + xpGain,
-          personality: {
-            ...prev.companion.personality,
-            wisdom: newWisdom,
-          },
-        },
-      };
-    });
-
-    return { wisdomGain, xpGain };
-  }, [setWorld]);
-
-  // Update companion stats based on user activity (call this from Index.tsx)
-  // Use functional update to prevent stale closure race conditions
-  const updateCompanionFromActivity = useCallback((
-    activityType: 'mood' | 'habit' | 'focus' | 'gratitude',
-    moodValue?: MoodType
-  ) => {
-    const now = Date.now();
-    let happinessChange = 5;
-    const hungerIncrease = 3; // Activities make companion hungry
-    const personalityChanges = { energy: 0, wisdom: 0, warmth: 0 };
-
-    switch (activityType) {
-      case 'mood':
-        // Positive moods increase warmth more
-        if (moodValue === 'great' || moodValue === 'good') {
-          personalityChanges.warmth = 3;
-          happinessChange = 10;
-        } else if (moodValue === 'bad' || moodValue === 'terrible') {
-          // Companion becomes supportive when user is sad
-          happinessChange = 2;
-          personalityChanges.warmth = 5; // Empathy increases warmth
-        }
-        break;
-      case 'habit':
-        personalityChanges.energy = 3;
-        happinessChange = 8;
-        break;
-      case 'focus':
-        personalityChanges.wisdom = 3;
-        personalityChanges.energy = 2;
-        happinessChange = 10;
-        break;
-      case 'gratitude':
-        personalityChanges.warmth = 5;
-        happinessChange = 12;
-        break;
-    }
-
-    setWorld(prev => {
-      const newHappiness = Math.min(100, (prev.companion.happiness || 50) + happinessChange);
-      const newHunger = Math.min(100, (prev.companion.hunger || 50) + hungerIncrease);
-
-      return {
-        ...prev,
-        companion: {
-          ...prev.companion,
-          happiness: newHappiness,
-          hunger: newHunger,
-          lastInteraction: now,
-          mood: newHappiness >= 80 ? 'excited' : newHappiness >= 50 ? 'happy' : 'calm',
-          personality: {
-            energy: Math.min(100, prev.companion.personality.energy + personalityChanges.energy),
-            wisdom: Math.min(100, prev.companion.personality.wisdom + personalityChanges.wisdom),
-            warmth: Math.min(100, prev.companion.personality.warmth + personalityChanges.warmth),
-          },
-        },
-      };
-    });
-  }, [setWorld]);
-
-  // Computed values
-  const gardenStats = useMemo(() => ({
-    totalPlants: world.plants.length,
-    bloomingPlants: world.plants.filter(p => p.stage === 'blooming' || p.stage === 'magnificent').length,
-    totalCreatures: world.creatures.length,
-    happyCreatures: world.creatures.filter(c => c.happiness >= 50).length,
-    companionLevel: world.companion.level,
-    daysActive: world.daysActive,
-    currentStreak: world.currentActiveStreak,
-  }), [world]);
 
   // ============================================
   // REST MODE (with cooldown: max 1 day per 7 days)
@@ -859,34 +525,12 @@ export function useInnerWorld() {
 
     // Treats system
     earnTreats,
-    spendTreats,
-    treatsBalance: world.treats?.balance || 0,
 
     // Actions
     plantSeed,
     waterPlants,
     attractCreature,
     feedCreatures,
-    setCompanionType,
-    renameCompanion,
-    clearWelcomeBack,
-
-    // Companion interactions (simplified: feed costs treats, pet is free)
-    petCompanion,
-    feedCompanion,
-    talkToCompanion,
-    updateCompanionFromActivity,
-
-    // Stats
-    gardenStats,
-
-    // Helpers
-    getPlantEmoji: (plant: GardenPlant) => PLANT_EMOJIS[plant.type][plant.stage],
-    getCreatureEmoji: (creature: GardenCreature) => CREATURE_EMOJIS[creature.type][creature.stage],
-    getCompanionEmoji: () => COMPANION_EMOJIS[world.companion.type],
-
-    // Constants for UI
-    FEED_COST: COMPANION_COSTS.feed.treatCost,
 
     // Rest mode
     isRestMode,

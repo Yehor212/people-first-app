@@ -42,91 +42,130 @@
 | Analytics | Firebase (Crashlytics + Analytics) |
 | Ads | AdMob via @capacitor-community/admob |
 | Error Monitoring | Sentry |
-| i18n | Custom (8 languages) |
+| i18n | Custom (8 languages: en, uk, es, de, fr, ja, ar, he) |
 
 ---
 
 ## Folder Structure
 
+### Current State (as of Phase 2 completion)
+
 ```
 src/
-  app/                          # App shell (providers, routing, error boundary)
-    App.tsx                     # Root component, provider tree
-    ErrorBoundary.tsx           # Global React error boundary
-    routes.tsx                  # Route definitions
-    providers.tsx               # All context/provider wrappers
+  pages/
+    Index.tsx                   # 652-line orchestrator: gates → hooks → tabs (was 2,800 lines)
 
-  features/                     # Feature modules — self-contained domains
+  stores/                       # Zustand stores + bridge hooks
+    appStore.ts                 # Auth, initialization, active tab
+    userDataStore.ts            # Moods, habits, focus sessions, gratitude (with array validation)
+    uiStore.ts                  # Modals, confetti, focus minutes, getModalToggle utility
+    gamificationStore.ts        # XP/treats bridge to useGamification hook
+    useHydrateUserData.ts       # Bridge: IndexedDB → Zustand (14 useIndexedDB calls)
+    useHydrateGamification.ts   # Bridge: registers gamification hooks into store
+    index.ts                    # Barrel export
+
+  hooks/                        # Custom hooks (40 files)
+    # Lifecycle hooks (extracted from Index.tsx)
+    useAppLifecycle.ts          # App init, splash, loading
+    useDateTracking.ts          # Midnight detection, date sync
+    useAuthSession.ts           # Supabase session, OAuth, sync
+    useNotificationSetup.ts     # FCM, local reminders, channels
+    useOnboardingEffects.ts     # Progressive onboarding, re-engagement
+    useCloudSyncEffects.ts      # Cloud sync, realtime subscriptions
+    useAppUpdateCheck.ts        # Version check
+    useWeeklyReportTrigger.ts   # Auto-show weekly report on Monday
+    # Feature handlers (extracted from Index.tsx)
+    useMoodHandlers.ts          # handleAddMood, handleQuickMood
+    useHabitHandlers.ts         # handleToggleHabit, CRUD (~180 lines, most complex)
+    useFocusHandlers.ts         # handleCompleteFocusSession
+    useGratitudeHandlers.ts     # handleAddGratitude
+    useChallengeHandlers.ts     # updateChallengeProgress, feature unlock
+    # Derived data
+    useDerivedData.ts           # 14 useMemos: schedule events, CTA system, widget data
+    useDeepLinkHandler.ts       # Auth + challenge deep links
+    # Domain hooks
+    useGamification.ts          # XP, levels, treats, achievements
+    useInnerWorld.ts            # Garden, creatures, rest mode (~28KB)
+    useIndexedDB.ts             # Generic IndexedDB persistence hook
+    useSwipeNavigation.ts       # Mobile tab swipe
+    useSessionTimeout.ts        # Auto-logout after inactivity
+    useScrollLock.ts            # Lock scroll when modal open
+    # ... 20+ more domain/utility hooks
+
+  components/
+    tabs/                       # Tab content components (extracted from Index.tsx JSX)
+      HomeTab.tsx               # ~200 lines — mood, habits, gratitude, streak
+      GardenTab.tsx             # ~115 lines — schedule, journal, breathing, focus
+      StatsTab.tsx              # ~45 lines — stats page wrapper
+      AchievementsTab.tsx       # ~34 lines — achievements + leaderboard
+      SettingsTab.tsx           # ~58 lines — settings panel wrapper
+    ModalLayer.tsx              # 10 modal renders (weekly report, challenges, etc.)
+    OverlayLayer.tsx            # Confetti, consent, update, onboarding overlays
+    SplashScreen.tsx            # Premium loading animation
+    ErrorBoundary.tsx           # LazyErrorBoundary + ModalErrorBoundary
+    # ... 50+ feature components
+
+  features/                     # Feature modules (only journal migrated)
+    journal/                    # Self-contained: JournalModule, Calendar, Editor, Sticker
+
+  contexts/                     # React contexts
+    LanguageContext.tsx          # i18n with 8 languages
+    EmotionThemeContext.tsx      # Dynamic background based on mood
+    FeatureFlagsContext.tsx      # Module visibility flags
+    AdContext.tsx                # AdMob integration
+
+  lib/                          # Utilities & platform services
+  storage/                      # Dexie DB, cloud sync, realtime
+  i18n/
+    translations.ts             # 19,879-line monolith (all 8 languages)
+  plugins/                      # Custom Capacitor plugins
+```
+
+### Target State (future phases)
+
+```
+src/
+  features/                     # Each domain self-contained
     mood/
-      components/               # UI components for this feature
-      hooks/                    # Feature-specific hooks
-      store.ts                  # Zustand slice for this feature
-      types.ts                  # Feature-local types
-      utils.ts                  # Feature-local utilities
+      components/
+      hooks/
+      store.ts                  # Zustand slice
+      types.ts
       index.ts                  # Barrel export (public API)
     habits/
     focus/
     journal/                    # (already migrated)
     breathing/
-    garden/                     # Inner World
+    garden/
     challenges/
-    friends/
     schedule/
-    gamification/               # XP, treats, streaks, levels, rewards
+    gamification/
     onboarding/
     settings/
-
-  shared/                       # Cross-feature reusable code
-    components/                 # Generic UI (Button, Modal, Card, etc.)
-      ui/                       # shadcn/ui primitives
-    hooks/                      # Cross-feature hooks (useDebounce, usePlatform, etc.)
-    lib/                        # Utilities & platform services
-      haptics.ts
-      logger.ts
-      platformUtils.ts
-      validation.ts             # Zod schemas for shared types
+  shared/
+    components/ui/              # shadcn/ui primitives
+    hooks/                      # Cross-feature hooks
+    lib/                        # Platform utilities
     types/                      # Shared type definitions
-      index.ts
-      supabase.ts               # Auto-generated DB types
-    constants/                  # App-wide constants
-
-  stores/                       # Global Zustand stores
-    appStore.ts                 # Auth, initialization, active tab
-    userDataStore.ts            # Moods, habits, focus sessions, gratitude
-    gamificationStore.ts        # XP, treats, streaks, badges
-    syncStore.ts                # Cloud sync state, offline queue
-
-  storage/                      # Persistence layer
-    db.ts                       # Dexie database schema
-    cloudSync.ts                # Supabase sync orchestration
-    realtimeSync.ts             # Realtime subscriptions
-
-  i18n/
-    locales/                    # One JSON file per language
-      en.json
-      uk.json
-      ru.json
-      ...
-    index.ts                    # i18n setup, useTranslation hook
-
-  plugins/                      # Custom Capacitor plugins
+  stores/                       # Only global orchestration stores
+  i18n/locales/                 # One JSON per language (split from monolith)
 ```
 
 ---
 
 ## Feature Module Pattern
 
-Every feature is a self-contained module:
+**Current state:** Only `journal/` is migrated to feature module pattern. Other features still live in `components/` and `hooks/`.
+
+Target structure for each feature module:
 
 ```
 src/features/mood/
   components/
     MoodTracker.tsx             # Main feature UI
     MoodSelector.tsx            # Sub-component
-    MoodHistory.tsx             # Sub-component
   hooks/
     useMoodData.ts              # Data access hook
-    useMoodAnalytics.ts         # Feature-specific logic
   store.ts                      # Zustand slice
   types.ts                      # Feature-local types
   utils.ts                      # Pure helper functions
@@ -148,45 +187,58 @@ src/features/mood/
 
 ## State Management
 
-### Three-layer model
+### Current Architecture: Bridge Pattern
+
+User data lives in **IndexedDB** (via Dexie + `useIndexedDB` hook) and is bridged into **Zustand** stores for fast, synchronous reads by any component.
 
 | Layer | Tool | Scope | Example |
 |-------|------|-------|---------|
-| **Global client state** | Zustand | App-wide, persisted | Auth state, user preferences, active tab |
-| **Server state** | TanStack React Query | Remote data, cached | Supabase queries, friend profiles |
-| **Local UI state** | useState | Single component | Modal open/close, form input value |
+| **Persistence** | Dexie (IndexedDB) | Source of truth | Moods, habits, focus sessions |
+| **Global client state** | Zustand | In-memory mirror + app state | Auth, active tab, modals, user data |
+| **Local UI state** | useState | Single component | Form input, local toggle |
+
+### Bridge Pattern (how it works)
+
+```
+IndexedDB (Dexie)
+  ↕ useIndexedDB hooks (14 calls in useHydrateUserData)
+Zustand userDataStore
+  ← _hydrateFromDB() syncs values + validates arrays
+  ← _registerSetters() registers IndexedDB write functions
+  → setMoods()/setHabits()/etc. write to BOTH store AND IndexedDB
+  ↕ Components read via useUserDataStore(selector)
+```
+
+The bridge hook `useHydrateUserData` (in `stores/`) calls `useIndexedDB` for each data field, then:
+1. Syncs loaded values into Zustand via `_hydrateFromDB()` (with `Array.isArray` validation)
+2. Registers setter functions via `_registerSetters()` so store actions persist to IndexedDB
+
+### Stores
+
+| Store | Responsibility | Key Pattern |
+|-------|---------------|-------------|
+| `appStore` | Auth, initialization, active tab, navigation | Plain Zustand |
+| `userDataStore` | All user data (moods, habits, settings) | Bridge to IndexedDB |
+| `uiStore` | Modals, confetti, focus minutes | `getModalToggle(name)` utility |
+| `gamificationStore` | XP/treats bridge | Registers hooks from `useGamification` |
+
+### `getModalToggle` Pattern
+
+Module-level cached toggle functions for modal open/close, replacing 11 `useCallback` wrappers:
+
+```typescript
+// In uiStore.ts — called at module scope, not inside components
+const setShowWeeklyReport = getModalToggle('showWeeklyReport');
+// Returns: (value: boolean) => void — stable reference, no re-renders
+```
 
 ### Rules
 
 1. **Zustand for shared state.** If 2+ components need the same data, it goes in a Zustand store.
-2. **React Query for server data.** All Supabase reads go through `useQuery`. All writes through `useMutation`.
-3. **useState for UI-only state.** If it dies with the component, it's local state.
-4. **No prop drilling deeper than 1 level.** Parent → Child is fine. Parent → Child → Grandchild → use a store.
-5. **No direct localStorage.** Use Zustand `persist` middleware or `useIndexedDB` hook. Zero raw `localStorage.getItem` calls.
-
-### Store file pattern
-
-```typescript
-// stores/userDataStore.ts
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
-
-interface UserDataState {
-  moods: MoodEntry[];
-  addMood: (entry: MoodEntry) => void;
-  // ...
-}
-
-export const useUserDataStore = create<UserDataState>()(
-  persist(
-    (set, get) => ({
-      moods: [],
-      addMood: (entry) => set((s) => ({ moods: [...s.moods, entry] })),
-    }),
-    { name: 'zenflow-user-data' }
-  )
-);
-```
+2. **useState for UI-only state.** If it dies with the component, it's local state.
+3. **No prop drilling deeper than 1 level.** Parent → Child is fine. Parent → Child → Grandchild → use a store.
+4. **No direct localStorage.** Use `useIndexedDB` hook or Zustand store. Zero raw `localStorage.getItem` calls.
+5. **Array validation at hydration boundary.** `_hydrateFromDB` validates arrays survive corrupted cloud sync data.
 
 ---
 
@@ -203,22 +255,26 @@ User Action
             → Feature Component (re-render)
 ```
 
-### Reward Pipeline (single function, never copy-paste)
+### Reward Pipeline
+
+**Current implementation:** `rewardUser()` in `gamificationStore.ts` — a Zustand action that calls registered hooks via bridge pattern:
 
 ```typescript
-// shared/lib/rewardPipeline.ts
-export function rewardUser(action: RewardAction, config: RewardConfig): void {
-  awardXp(action);
-  const result = earnTreats(action, config.treats, config.reason);
+// gamificationStore.ts
+rewardUser: (action, config) => {
+  const hooks = get()._hooks;
+  if (!hooks) return { treatsEarned: 0 };  // Guard: hooks not yet registered
+  hooks.awardXp(action);
+  const result = hooks.earnTreats(action, config.treats, config.reason);
   triggerXpPopup(result.earned, action);
   triggerSync();
   haptics[config.hapticMethod]();
-  plantSeed(action, config.seedType);
-  waterPlants(action);
-  updateChallengeProgress();
-  if (config.questUpdate) updateQuestProgress(action);
+  hooks.plantSeed(action, config.seedType);
+  hooks.waterPlants(action);
 }
 ```
+
+Hooks are registered via `useHydrateGamification({ awardXp, earnTreats, plantSeed, waterPlants })` in Index.tsx.
 
 ---
 
@@ -395,12 +451,16 @@ export function rewardUser(action: RewardAction, config: RewardConfig): void {
 
 ## i18n
 
+### Current State
+
+All translations live in a single 19,879-line file: `src/i18n/translations.ts`. Not yet split into per-language JSON files.
+
 ### Rules
 
-1. **One JSON file per language:** `src/i18n/locales/{lang}.json`
-2. **Flat key structure:** `"mood.tracker.title"` not nested objects
-3. **No hardcoded user-facing strings.** Everything goes through `t()`.
-4. **Supported languages:** en, uk, ru, de, fr, es, pt, ja, zh
+1. **Target:** One JSON file per language: `src/i18n/locales/{lang}.json`
+2. **No hardcoded user-facing strings.** Everything goes through `t()`.
+3. **Supported languages (8):** en, uk, es, de, fr, ja, ar, he
+4. **RTL support:** ar, he (Arabic, Hebrew)
 5. **Fallback:** English for missing keys.
 
 ---
@@ -439,20 +499,35 @@ On PR to main:
 ## Known Technical Debt
 
 > Track items here until resolved. Remove when done.
+> Last audit: 2026-02-15 (after Phase 2 completion)
 
-| ID | Severity | Description | File | Status |
-|----|----------|-------------|------|--------|
-| TD-01 | CRITICAL | Index.tsx is 2,800-line god component | src/pages/Index.tsx | Open |
-| TD-02 | CRITICAL | No state management, all prop drilling | src/pages/Index.tsx | Open |
-| TD-03 | CRITICAL | Non-atomic IndexedDB writes | src/hooks/useIndexedDB.ts:337 | Open |
-| TD-04 | CRITICAL | CSP unsafe-inline | index.html:9 | Open |
-| TD-05 | CRITICAL | Web Locks bypass in auth | src/lib/supabaseClient.ts:114 | Open |
-| TD-06 | HIGH | 40+ exhaustive-deps suppressions | Various | Open |
-| TD-07 | HIGH | 178 direct localStorage calls in 54 files | Various | Open |
-| TD-08 | HIGH | translations.ts is 19,879 lines | src/i18n/translations.ts | Open |
-| TD-09 | HIGH | Test coverage ~6% | src/__tests__/ | Open |
-| TD-10 | HIGH | No runtime validation at data boundaries | Various | Open |
-| TD-11 | MEDIUM | No CI/CD pipeline | — | Open |
-| TD-12 | MEDIUM | React Router vestigial (1 route) | src/App.tsx | Open |
-| TD-13 | MEDIUM | No React Error Boundary | src/App.tsx | Open |
-| TD-14 | MEDIUM | Unused deps (next-themes, etc.) | package.json | Open |
+### Resolved
+
+| ID | Was | Resolution | Date |
+|----|-----|-----------|------|
+| TD-13 | No React Error Boundary | `ErrorBoundary.tsx` with `LazyErrorBoundary` + `ModalErrorBoundary` wrapping all lazy components | Pre-Phase 2 |
+
+### Partially Resolved
+
+| ID | Severity | Description | Before | After | Status |
+|----|----------|-------------|--------|-------|--------|
+| TD-01 | ~~CRITICAL~~ → MEDIUM | Index.tsx god component | 2,800 lines, 46 useState, 29 useEffect | **652 lines**, 4 useState, 6 useEffect, 53 imports | Orchestrator pattern. Still over 400-line limit. |
+| TD-02 | ~~CRITICAL~~ → LOW | No state management | All prop drilling | **4 Zustand stores** + bridge hooks. Tab components still receive handler props. | Feature handlers not yet in stores. |
+| TD-10 | HIGH | No runtime validation | Zero validation | **Array.isArray** validation in `_hydrateFromDB`. No Zod schemas yet. | Partial — store boundary only. |
+
+### Open
+
+| ID | Severity | Description | Current Measurement | File |
+|----|----------|-------------|-------------------|------|
+| TD-03 | CRITICAL | Non-atomic IndexedDB writes (read-modify-write race) | 375 lines, core `put()` not transactional | src/hooks/useIndexedDB.ts |
+| TD-04 | CRITICAL | CSP `unsafe-inline` for scripts and styles | `script-src 'self' 'unsafe-inline'` | index.html:9 |
+| TD-05 | CRITICAL | Web Locks API bypass in auth (causes AbortError on reload) | Active bypass comment in code | src/lib/supabaseClient.ts |
+| TD-06 | HIGH | exhaustive-deps eslint suppressions | **41** across 7 files | hooks/, pages/ |
+| TD-07 | HIGH | Direct `localStorage` calls instead of hooks/stores | **188 calls in 58 files** | Various |
+| TD-08 | HIGH | translations.ts monolith (all languages in one file) | **19,879 lines** | src/i18n/translations.ts |
+| TD-09 | HIGH | Low test coverage | 543 tests pass, but ~6% line coverage | src/__tests__/ |
+| TD-11 | MEDIUM | No CI/CD pipeline (GitHub Actions) | Manual builds only | — |
+| TD-12 | MEDIUM | React Router vestigial (only 1 route `/`) | Could remove entirely | src/App.tsx |
+| TD-14 | MEDIUM | Unused dependencies in package.json | Partially cleaned (html2canvas removed) | package.json |
+| TD-15 | MEDIUM | useInnerWorld.ts is 28KB monolith | 780+ lines, garden + creatures + rest mode + treats | src/hooks/useInnerWorld.ts |
+| TD-16 | LOW | Prop drilling in HomeTab (~30 props) | Handlers + inner world values passed as props | src/components/tabs/HomeTab.tsx |

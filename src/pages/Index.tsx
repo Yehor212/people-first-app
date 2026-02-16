@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore, useUIStore, selectAnyModalOpen, useHydrateGamification, useUserDataStore, useHydrateUserData, type TabType } from '@/stores';
-import { logger } from '@/lib/logger';
 import { useAppLifecycle } from '@/hooks/useAppLifecycle';
 import { useDateTracking } from '@/hooks/useDateTracking';
 import { useAuthSession } from '@/hooks/useAuthSession';
@@ -15,37 +14,27 @@ import { useHabitHandlers } from '@/hooks/useHabitHandlers';
 import { useFocusHandlers } from '@/hooks/useFocusHandlers';
 import { useGratitudeHandlers } from '@/hooks/useGratitudeHandlers';
 import { useDerivedData } from '@/hooks/useDerivedData';
-import { ScheduleEvent } from '@/types';
+import { useSettingsHandlers } from '@/hooks/useSettingsHandlers';
+import { useReminderMigration } from '@/hooks/useReminderMigration';
+import { useEmotionSync } from '@/hooks/useEmotionSync';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
 import { AdProvider } from '@/contexts/AdContext';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
-import { db } from '@/storage/db';
-import { defaultReminderSettings } from '@/lib/reminders';
-import { generateId } from '@/lib/utils';
-import { normalizeHabit } from '@/lib/habits';
 import { supabase } from '@/lib/supabaseClient';
-import { syncWithCloud } from '@/storage/cloudSync';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 
 import { ModalLayer } from '@/components/ModalLayer';
 import { Navigation } from '@/components/Navigation';
 import { OverlayLayer } from '@/components/OverlayLayer';
-import { SplashScreen } from '@/components/SplashScreen';
+import { AuthGate } from '@/components/AuthGate';
 import { useDeepLinkHandler } from '@/hooks/useDeepLinkHandler';
 import { HomeTab } from '@/components/tabs/HomeTab';
 import { GardenTab } from '@/components/tabs/GardenTab';
 import { StatsTab } from '@/components/tabs/StatsTab';
 import { AchievementsTab } from '@/components/tabs/AchievementsTab';
 import { SettingsTab } from '@/components/tabs/SettingsTab';
-
-import { LanguageSelector } from '@/components/LanguageSelector';
-import { OnboardingFlow } from '@/components/OnboardingFlow';
-import { WelcomeTutorial } from '@/components/WelcomeTutorial';
-import { NotificationPermission } from '@/components/NotificationPermission';
-import { AuthScreen } from '@/components/AuthScreen';
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';
@@ -56,7 +45,6 @@ import { useScrollLock } from '@/hooks/useScrollLock';
 
 export function Index() {
   const { t, isRTL } = useLanguage();
-  const { setEmotionFromEntries } = useEmotionTheme();
   const { isFeatureVisible } = useFeatureFlags();
 
   // Security: Auto-logout after 15 minutes of inactivity (when supabase is configured)
@@ -85,10 +73,6 @@ export function Index() {
     isRTL,
   });
 
-  // App lifecycle state from Zustand
-  const initializationState = useAppStore(s => s.initializationState);
-  const loadingFadeOut = useAppStore(s => s.loadingFadeOut);
-
   // Extracted lifecycle hooks (from Step 1 decomposition)
   useAppLifecycle();
   useDateTracking();
@@ -112,29 +96,10 @@ export function Index() {
   const {
     world: innerWorld,
     isLoading: isLoadingInnerWorld,
-    plantSeed,
-    waterPlants,
-    attractCreature,
-    feedCreatures,
-    clearWelcomeBack: _clearWelcomeBack,
-    gardenStats: _gardenStats,
-    // Treats system
+    plantSeed, waterPlants, attractCreature, feedCreatures,
     earnTreats,
-    treatsBalance: _treatsBalance,
-    // Companion interactions (unused — InnerWorldGarden removed)
-    petCompanion: _petCompanion,
-    feedCompanion: _feedCompanion,
-    // Emoji helpers (unused — InnerWorldGarden removed)
-    getPlantEmoji: _getPlantEmoji,
-    getCreatureEmoji: _getCreatureEmoji,
-    getCompanionEmoji: _getCompanionEmoji,
-    FEED_COST: _FEED_COST,
-    // Rest mode
-    isRestMode,
-    activateRestMode,
-    deactivateRestMode,
-    canActivateRestMode,
-    daysUntilRestAvailable,
+    isRestMode, activateRestMode, deactivateRestMode,
+    canActivateRestMode, daysUntilRestAvailable,
   } = useInnerWorld();
 
   // Register gamification hooks into Zustand store (bridge pattern)
@@ -151,47 +116,17 @@ export function Index() {
   const anyModalOpen = useUIStore(selectAnyModalOpen);
   useScrollLock(anyModalOpen);
 
-  // Auth state from app store
-  const authBypassFlag = useAppStore(s => s.authBypassFlag);
-  const setAuthBypassFlag = useAppStore(s => s.setAuthBypassFlag);
-  const isProcessingWebOAuth = useAppStore(s => s.isProcessingWebOAuth);
-  const webOAuthError = useAppStore(s => s.webOAuthError);
-  const setWebOAuthError = useAppStore(s => s.setWebOAuthError);
-
   // ── User data from Zustand store (hydrated from IndexedDB via bridge hook) ──
   useHydrateUserData();
-  const hasSelectedLanguage = useUserDataStore(s => s.hasSelectedLanguage);
-  const setHasSelectedLanguage = useUserDataStore(s => s.setHasSelectedLanguage);
   const userName = useUserDataStore(s => s.userName);
-  const setUserName = useUserDataStore(s => s.setUserName);
-  const setUserNameCustom = useUserDataStore(s => s.setUserNameCustom);
   const moods = useUserDataStore(s => s.moods);
-  const setMoods = useUserDataStore(s => s.setMoods);
   const habits = useUserDataStore(s => s.habits);
-  const setHabits = useUserDataStore(s => s.setHabits);
   const focusSessions = useUserDataStore(s => s.focusSessions);
-  const setFocusSessions = useUserDataStore(s => s.setFocusSessions);
   const gratitudeEntries = useUserDataStore(s => s.gratitudeEntries);
-  const setGratitudeEntries = useUserDataStore(s => s.setGratitudeEntries);
   const reminders = useUserDataStore(s => s.reminders);
   const setReminders = useUserDataStore(s => s.setReminders);
-  const tutorialComplete = useUserDataStore(s => s.tutorialComplete);
-  const setTutorialComplete = useUserDataStore(s => s.setTutorialComplete);
-  const onboardingComplete = useUserDataStore(s => s.onboardingComplete);
-  const setOnboardingComplete = useUserDataStore(s => s.setOnboardingComplete);
-  const notificationPermissionChecked = useUserDataStore(s => s.notificationPermissionChecked);
-  const setNotificationPermissionChecked = useUserDataStore(s => s.setNotificationPermissionChecked);
-  const googleAuthChecked = useUserDataStore(s => s.googleAuthChecked);
-  const setGoogleAuthChecked = useUserDataStore(s => s.setGoogleAuthChecked);
-
-  // Auth session state from app store
-  const hasValidSession = useAppStore(s => s.hasValidSession);
-
-  // GDPR (privacy + scheduleEvents now from store, hydrated by useHydrateUserData)
   const privacy = useUserDataStore(s => s.privacy);
   const setPrivacy = useUserDataStore(s => s.setPrivacy);
-  const scheduleEvents = useUserDataStore(s => s.scheduleEvents);
-  const setScheduleEvents = useUserDataStore(s => s.setScheduleEvents);
 
   // Loading handling (IndexedDB fields from store + InnerWorld from hook)
   const isLoadingUserData = useUserDataStore(s => s.isLoading);
@@ -242,32 +177,8 @@ export function Index() {
   }, []);
 
 
-  // Migrate old reminder settings to new 3-time mood format
-  useEffect(() => {
-    if (isLoadingUserData) return;
-
-    // Check if we have old moodTime but missing new fields
-    const needsMigration = reminders.moodTime && !reminders.moodTimeMorning;
-
-    if (needsMigration) {
-      const oldTime = reminders.moodTime || '09:00';
-      setReminders(prev => ({
-        ...defaultReminderSettings,
-        ...prev,
-        moodTimeMorning: oldTime,
-        moodTimeAfternoon: '14:00',
-        moodTimeEvening: '20:00',
-        moodTime: undefined, // Remove old field
-      }));
-      logger.log('[Migration] Migrated reminder settings to 3-time mood format');
-    } else if (!reminders.moodTimeMorning) {
-      // Ensure defaults are set for new users
-      setReminders(prev => ({
-        ...defaultReminderSettings,
-        ...prev,
-      }));
-    }
-  }, [isLoadingUserData, reminders.moodTime, reminders.moodTimeMorning, setReminders]);
+  // Reminder settings migration (old moodTime → 3-time format)
+  useReminderMigration();
 
   // Derived data (schedule events, CTA system, widget data)
   const {
@@ -281,114 +192,16 @@ export function Index() {
   const isWidgetDataLoading = isLoadingUserData || isLoadingInnerWorld;
   useWidgetSync(widgetStreak, habits, todayFocusMinutes, lastBadgeName, isWidgetDataLoading);
 
-  // Schedule event handlers
-  const handleAddScheduleEvent = (event: Omit<ScheduleEvent, 'id'>) => {
-    const newEvent: ScheduleEvent = {
-      ...event,
-      id: generateId(),
-      source: 'manual',
-      isEditable: true,
-    };
-    setScheduleEvents(prev => [...prev, newEvent]);
-  };
+  // Settings/data management handlers
+  const { handleResetData, handleNameChange, handlePullToRefresh,
+          handleAddScheduleEvent, handleDeleteScheduleEvent } = useSettingsHandlers(allScheduleEvents);
 
-  const handleDeleteScheduleEvent = (id: string) => {
-    const eventToDelete = allScheduleEvents.find(e => e.id === id);
-    if (eventToDelete?.source === 'habit' || eventToDelete?.source === 'google') {
-      logger.warn('[Schedule] Cannot delete habit/google-generated event directly');
-      return;
-    }
-    setScheduleEvents(scheduleEvents.filter(e => e.id !== id));
-  };
-
-  // Sync emotion theme with current mood entries
-  useEffect(() => {
-    if (!isLoadingUserData) {
-      setEmotionFromEntries(moods);
-    }
-  }, [moods, isLoadingUserData, setEmotionFromEntries]);
-
-  // Onboarding, re-engagement, update check (extracted to hooks)
+  // Emotion theme sync, onboarding, re-engagement, update check (extracted to hooks)
+  useEmotionSync();
   useOnboardingEffects({ isLoading, innerWorldStreak: innerWorld.currentActiveStreak, innerWorldRestDays: innerWorld.restDays || [] });
-  useAppUpdateCheck(isLoading, onboardingComplete);
-  useWeeklyReportTrigger(isLoading, onboardingComplete);
+  useAppUpdateCheck(isLoading);
+  useWeeklyReportTrigger(isLoading);
 
-  // Pull-to-refresh handler: sync with cloud and reload data
-  const handlePullToRefresh = useCallback(async () => {
-    try {
-      await syncWithCloud('merge');
-      // Reload data from IndexedDB after sync
-      const [m, h, f, g] = await Promise.all([
-        db.moods.toArray(),
-        db.habits.toArray(),
-        db.focusSessions.toArray(),
-        db.gratitudeEntries.toArray(),
-      ]);
-      setMoods(m);
-      setHabits(h.map(normalizeHabit));
-      setFocusSessions(f);
-      setGratitudeEntries(g);
-    } catch {
-      // Silently fail — offline banner will show if no connection
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleResetData = () => {
-    setMoods([]);
-    setHabits([]);
-    setFocusSessions([]);
-    setGratitudeEntries([]);
-    setUserName('Friend');
-    setUserNameCustom(false);
-    // Reset onboarding to show first screen after page refresh
-    setOnboardingComplete(false);
-    setHasSelectedLanguage(false);
-  };
-
-  const handleLanguageSelected = () => {
-    setHasSelectedLanguage(true);
-  };
-
-  const handleNameChange = (name: string) => {
-    setUserName(name);
-    setUserNameCustom(true);
-  };
-
-  // Google Auth handlers (shown once after language selection)
-  const handleGoogleAuthComplete = (userData: { name: string; email: string }) => {
-    // Don't log email (PII)
-    logger.log('[Index] Google auth completed');
-
-    // CRITICAL: Set synchronous bypass flag FIRST (immediate UI update)
-    // This ensures we skip AuthScreen immediately, before IndexedDB writes
-    setAuthBypassFlag(true);
-
-    // Then set persistent values (async IndexedDB)
-    setUserName(userData.name);
-    setUserNameCustom(false);
-    setGoogleAuthChecked(true);
-  };
-
-  // New simplified onboarding - just modules selection
-  const handleOnboardingComplete = (result: {
-    skipped?: boolean;
-    modules?: string[];
-  }) => {
-    logger.log('[Index] handleOnboardingComplete called', result);
-    // Module preferences are already saved by OnboardingFlow via FeatureFlags context
-    // Just mark onboarding as complete
-    try {
-      setOnboardingComplete(true);
-      logger.log('[Index] setOnboardingComplete(true) called successfully');
-    } catch (error) {
-      logger.error('[Index] Error in handleOnboardingComplete:', error);
-    }
-  };
-
-  const handleNotificationPermissionComplete = () => {
-    setNotificationPermissionChecked(true);
-  };
 
   // Notification setup (extracted to hook)
   useNotificationSetup({ handleQuickMood });
@@ -399,100 +212,8 @@ export function Index() {
   // Deep link listener (auth + challenge URLs, extracted to hook)
   useDeepLinkHandler();
 
-  // Show premium initialization screen
-  if (initializationState.isInitializing) {
-    return (
-      <SplashScreen
-        loadingFadeOut={loadingFadeOut}
-        subtitle={t.initializingApp || 'Preparing your zen space...'}
-      />
-    );
-  }
-
-  // Show initialization error
-  if (initializationState.error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen zen-gradient-hero p-4">
-        <div className="max-w-md bg-card rounded-3xl p-6 zen-shadow-card space-y-4">
-          <h2 className="text-2xl font-bold text-destructive">Initialization Error</h2>
-          <p className="text-muted-foreground">{initializationState.error}</p>
-          <button
-            onClick={() => window.location.reload()}
-            className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-semibold hover:opacity-90 transition-opacity"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
-  // Language selection shown before tutorial
-  // This ensures tutorial is shown in user's preferred language
-  if (!hasSelectedLanguage) {
-    return <LanguageSelector onComplete={handleLanguageSelected} />;
-  }
-
-  // Google Auth screen (required - Google sign-in only)
-  // Shown after language selection, before tutorial
-  // Check both googleAuthChecked (IndexedDB) and authBypassFlag (synchronous)
-  // authBypassFlag provides immediate skip while IndexedDB writes are pending
-  // Also check hasValidSession - if session exists, skip to app
-  // hasValidSession: null = checking, true = has session, false = no session
-  if (!googleAuthChecked && !authBypassFlag && hasValidSession === false) {
-    // If processing web OAuth callback, show loading instead of AuthScreen
-    if (isProcessingWebOAuth) {
-      return (
-        <div className="min-h-screen zen-gradient-hero flex items-center justify-center p-4">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">{t.authSigningIn}</p>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-      <AuthScreen
-        onComplete={handleGoogleAuthComplete}
-        webOAuthError={webOAuthError}
-        onClearError={() => setWebOAuthError(null)}
-      />
-    );
-  }
-
-  // Show tutorial before onboarding for new users
-  // Now tutorial will be in the language user just selected
-  if (!tutorialComplete) {
-    return (
-      <WelcomeTutorial
-        onComplete={() => {
-          setTutorialComplete(true);
-        }}
-        onSkip={() => {
-          setTutorialComplete(true);
-        }}
-      />
-    );
-  }
-
-  if (!onboardingComplete) {
-    return <OnboardingFlow onComplete={handleOnboardingComplete} />;
-  }
-
-  if (!notificationPermissionChecked) {
-    return <NotificationPermission onComplete={handleNotificationPermissionComplete} />;
-  }
-
   return (
+    <AuthGate isLoading={isLoading}>
     <AdProvider
       onEarnTreats={(amount) => earnTreats('ad', amount, 'Ad reward')}
       onEarnXp={() => awardXp('habit')}
@@ -646,6 +367,7 @@ export function Index() {
 
     </div>
     </AdProvider>
+    </AuthGate>
   );
 };
 
