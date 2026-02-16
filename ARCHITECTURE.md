@@ -86,6 +86,7 @@ src/
     # Derived data
     useDerivedData.ts           # 14 useMemos: schedule events, CTA system, widget data
     useDeepLinkHandler.ts       # Auth + challenge deep links
+    useHabitForm.ts             # Habit creation/edit form state + handlers (extracted from HabitTracker)
     # Domain hooks
     useGamification.ts          # XP, levels, treats, achievements
     useInnerWorld.ts            # Garden, creatures, rest mode (542 lines, dead code removed)
@@ -107,6 +108,7 @@ src/
     AuthGate.tsx                # 7 initialization gates (splash, language, auth, tutorial, onboarding, notifications)
     SplashScreen.tsx            # Premium loading animation
     ErrorBoundary.tsx           # LazyErrorBoundary + ModalErrorBoundary
+    HabitCreationForm.tsx       # Form JSX for habit creation/editing (extracted from HabitTracker)
     # ... 50+ feature components
 
   features/                     # Feature modules (only journal migrated)
