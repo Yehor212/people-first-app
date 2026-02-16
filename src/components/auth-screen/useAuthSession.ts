@@ -1,0 +1,218 @@
+import { useState, useEffect, useRef } from 'react';
+import { supabase } from '@/lib/supabaseClient';
+import { isNativePlatform, AUTH_COMPLETE_EVENT } from '@/lib/authRedirect';
+import { endAuthFlow } from '@/lib/authGuard';
+import { App } from '@capacitor/app';
+import { logger } from '@/lib/logger';
+import type { AuthProvider, PhoneStep } from './types';
+
+interface UseAuthSessionOptions {
+  onComplete: (userData: { name: string; email: string }) => void;
+  webOAuthError?: string | null;
+  onClearError?: () => void;
+}
+
+export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseAuthSessionOptions) {
+  const [loadingProvider, setLoadingProvider] = useState<AuthProvider>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
+
+  // Phone auth state
+  const [phoneStep, setPhoneStep] = useState<PhoneStep>('idle');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+
+  // Prevent double onComplete calls (race condition with Index.tsx listener)
+  const hasCompletedRef = useRef(false);
+  // Ref for OAuth timeout
+  const oauthTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Use ref for onComplete to avoid dependency array issues
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  });
+
+  // Show web OAuth error from Index.tsx if present
+  useEffect(() => {
+    if (webOAuthError) {
+      setError(webOAuthError);
+      onClearError?.();
+    }
+  }, [webOAuthError, onClearError]);
+
+  // Safe completion helper - ensures onComplete is called exactly once
+  const tryComplete = (userData: { name: string; email: string }, source: string): boolean => {
+    if (hasCompletedRef.current) {
+      logger.log(`[Auth] Completion already done, ignoring from ${source}`);
+      return false;
+    }
+    hasCompletedRef.current = true;
+
+    if (oauthTimeoutRef.current) {
+      clearTimeout(oauthTimeoutRef.current);
+      oauthTimeoutRef.current = null;
+    }
+
+    setLoadingProvider(null);
+    logger.log(`[Auth] Completing auth from ${source}`);
+    onCompleteRef.current(userData);
+    return true;
+  };
+
+  // Check if already signed in
+  useEffect(() => {
+    const checkSession = async () => {
+      if (!supabase) return;
+      if (hasCompletedRef.current) return;
+
+      try {
+        const { data, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) {
+          logger.error('[Auth] Session check error:', sessionError);
+          setDebugInfo(`Session error: ${sessionError.message}`);
+          return;
+        }
+
+        if (data.session?.user) {
+          const metadata = data.session.user.user_metadata;
+          const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
+          const email = data.session.user.email || '';
+          tryComplete({ name, email }, 'checkSession');
+        }
+      } catch (err) {
+        logger.error('[Auth] Unexpected error checking session:', err);
+        setDebugInfo(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    };
+
+    void checkSession();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Listen for auth state changes (handles OAuth callback)
+  useEffect(() => {
+    if (!supabase) return;
+
+    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
+      logger.log('[Auth] Auth state changed:', event);
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        endAuthFlow();
+        const metadata = session.user.user_metadata;
+        const name = metadata?.full_name || metadata?.name || session.user.email?.split('@')[0] || 'Friend';
+        const email = session.user.email || '';
+        tryComplete({ name, email }, 'onAuthStateChange');
+      } else if (event === 'SIGNED_OUT') {
+        endAuthFlow();
+        setLoadingProvider(null);
+      }
+    });
+
+    return () => {
+      subscription?.subscription?.unsubscribe?.();
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Check session when app resumes from OAuth browser
+  useEffect(() => {
+    if (!supabase) return;
+
+    let isMounted = true;
+    let listenerHandle: { remove: () => Promise<void> } | null = null;
+
+    const checkSessionOnResume = async () => {
+      if (!isMounted || !loadingProvider || hasCompletedRef.current) return;
+
+      await new Promise(resolve => setTimeout(resolve, 300));
+      if (!isMounted || hasCompletedRef.current) return;
+
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (!isMounted) return;
+
+        if (data.session?.user) {
+          const metadata = data.session.user.user_metadata;
+          const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
+          const email = data.session.user.email || '';
+          tryComplete({ name, email }, 'checkSessionOnResume');
+        } else if (!hasCompletedRef.current) {
+          logger.log('[Auth] No session on resume, user may have canceled');
+          setLoadingProvider(null);
+          if (oauthTimeoutRef.current) {
+            clearTimeout(oauthTimeoutRef.current);
+            oauthTimeoutRef.current = null;
+          }
+        }
+      } catch (err) {
+        logger.error('[Auth] Error checking session on resume:', err);
+        if (isMounted && !hasCompletedRef.current) setLoadingProvider(null);
+      }
+    };
+
+    if (isNativePlatform()) {
+      App.addListener('appStateChange', ({ isActive }) => {
+        if (isActive && loadingProvider) {
+          void checkSessionOnResume();
+        }
+      }).then(listener => {
+        listenerHandle = listener;
+      }).catch(err => {
+        logger.error('[Auth] Failed to add appStateChange listener:', err);
+      });
+
+      return () => {
+        isMounted = false;
+        if (listenerHandle) {
+          listenerHandle.remove().catch(err => logger.warn('[Auth]', 'Listener remove failed:', err));
+        }
+      };
+    }
+
+    // Web fallback
+    const handleFocus = () => {
+      if (loadingProvider) void checkSessionOnResume();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      isMounted = false;
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadingProvider]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Listen for auth completion from Index.tsx
+  useEffect(() => {
+    const handleAuthComplete = () => {
+      logger.log('[Auth] Received auth complete event from Index.tsx');
+      setLoadingProvider(null);
+      if (oauthTimeoutRef.current) {
+        clearTimeout(oauthTimeoutRef.current);
+        oauthTimeoutRef.current = null;
+      }
+    };
+
+    window.addEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
+    return () => window.removeEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
+  }, []);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (oauthTimeoutRef.current) {
+        clearTimeout(oauthTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  return {
+    loadingProvider, setLoadingProvider,
+    error, setError,
+    debugInfo, setDebugInfo,
+    phoneStep, setPhoneStep,
+    phoneNumber, setPhoneNumber,
+    otpCode, setOtpCode,
+    hasCompletedRef, oauthTimeoutRef,
+    tryComplete,
+    isLoading: loadingProvider !== null,
+  };
+}
