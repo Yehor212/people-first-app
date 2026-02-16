@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppStore, useUIStore, selectAnyModalOpen, useHydrateGamification, useUserDataStore, useHydrateUserData, type TabType } from '@/stores';
 import { logger } from '@/lib/logger';
 import { useAppLifecycle } from '@/hooks/useAppLifecycle';
@@ -14,6 +14,7 @@ import { useMoodHandlers } from '@/hooks/useMoodHandlers';
 import { useHabitHandlers } from '@/hooks/useHabitHandlers';
 import { useFocusHandlers } from '@/hooks/useFocusHandlers';
 import { useGratitudeHandlers } from '@/hooks/useGratitudeHandlers';
+import { useDerivedData } from '@/hooks/useDerivedData';
 import { ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
@@ -22,11 +23,10 @@ import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
-import { generateId, calculateStreak } from '@/lib/utils';
+import { generateId } from '@/lib/utils';
 import { normalizeHabit } from '@/lib/habits';
 import { supabase } from '@/lib/supabaseClient';
 import { syncWithCloud } from '@/storage/cloudSync';
-import { generateHabitScheduleEvents, mergeScheduleEvents } from '@/lib/habitScheduleSync';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 
@@ -42,33 +42,22 @@ import { AchievementsTab } from '@/components/tabs/AchievementsTab';
 import { SettingsTab } from '@/components/tabs/SettingsTab';
 
 import { LanguageSelector } from '@/components/LanguageSelector';
-// RemindersPanel only used in Settings, imported there directly
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { WelcomeTutorial } from '@/components/WelcomeTutorial';
-// import { AICoachOnboarding } from '@/components/AICoachOnboarding'; // Hidden until AI ready
 import { NotificationPermission } from '@/components/NotificationPermission';
 import { AuthScreen } from '@/components/AuthScreen';
-// WeeklyReport, TimeHelper → moved to ModalLayer
-
-// Lazy-loaded components (ChallengesPanel, TasksPanel, QuestsPanel, WidgetSettings, FriendsPanel → moved to ModalLayer)
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges } from '@/lib/challengeStorage';
-// WhatsNewModal → moved to ModalLayer
-// ChallengeModal → moved to ModalLayer
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { useScrollLock } from '@/hooks/useScrollLock';
-// import { AICoachChat } from '@/components/AICoachChat'; // Hidden until AI ready
-// import { useAICoach } from '@/contexts/AICoachContext'; // Hidden until AI ready
-// MindfulMoment → moved to ModalLayer
 
 export function Index() {
   const { t, isRTL } = useLanguage();
   const { setEmotionFromEntries } = useEmotionTheme();
   const { isFeatureVisible } = useFeatureFlags();
-  // const { openCoach, setUserData, onboardingData, saveOnboardingAnswer } = useAICoach(); // Hidden until AI ready
 
   // Security: Auto-logout after 15 minutes of inactivity (when supabase is configured)
   useSessionTimeout(!!supabase);
@@ -77,7 +66,6 @@ export function Index() {
   const activeTab = useAppStore(s => s.activeTab);
   const setActiveTab = useAppStore(s => s.setActiveTab);
   const settingsOpenSection = useAppStore(s => s.settingsOpenSection);
-  // const [showAIOnboarding, setShowAIOnboarding] = useState(false); // Hidden until AI ready
   const quickActionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   useEffect(() => {
@@ -105,9 +93,6 @@ export function Index() {
   useAppLifecycle();
   useDateTracking();
 
-  // Track current date (read only — setting handled by hooks above)
-  const currentDate = useAppStore(s => s.currentDate);
-
   // Section refs for navigation
   const moodRef = useRef<HTMLDivElement>(null);
   const habitsRef = useRef<HTMLDivElement>(null);
@@ -119,8 +104,6 @@ export function Index() {
     refs[section]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
 
-  // NOTE: Schedule event handlers, hint dismissal, and useMemo hooks moved below state declarations
-  // to avoid TDZ (Temporal Dead Zone) errors in production builds
 
   // Gamification system
   const { stats, gamificationState, userLevel, awardXp } = useGamification();
@@ -217,21 +200,12 @@ export function Index() {
   // Auth session management (extracted to hook)
   useAuthSession(isLoading);
 
-  // Defensive array guards - prevent crashes from corrupted cloud sync data
-  // Wrapped in useMemo to stabilize references for hook dependencies
-  const safeMoods = useMemo(() => Array.isArray(moods) ? moods : [], [moods]);
-  const safeHabits = useMemo(() => Array.isArray(habits) ? habits : [], [habits]);
-  const safeFocusSessions = useMemo(() => Array.isArray(focusSessions) ? focusSessions : [], [focusSessions]);
-  const safeGratitudeEntries = useMemo(() => Array.isArray(gratitudeEntries) ? gratitudeEntries : [], [gratitudeEntries]);
-  const safeScheduleEvents = useMemo(() => Array.isArray(scheduleEvents) ? scheduleEvents : [], [scheduleEvents]);
-  const safeBadges = useMemo(() => Array.isArray(badges) ? badges : [], [badges]);
-
   // Challenge/feature unlock handlers (used by mood/habit/focus/gratitude handlers)
   const { checkForFeatureUnlocks, updateChallengeProgress, handleOpenChallenge } = useChallengeHandlers({
-    safeMoods,
-    safeHabits,
-    safeFocusSessions,
-    safeGratitudeEntries,
+    safeMoods: moods,
+    safeHabits: habits,
+    safeFocusSessions: focusSessions,
+    safeGratitudeEntries: gratitudeEntries,
     currentActiveStreak: innerWorld.currentActiveStreak,
     setChallenges,
     setBadges,
@@ -295,12 +269,17 @@ export function Index() {
     }
   }, [isLoadingUserData, reminders.moodTime, reminders.moodTimeMorning, setReminders]);
 
-  // Update AI Coach context with user data - Hidden until AI ready
-  // useEffect(() => {
-  //   if (!isLoading && !isLoadingInnerWorld) {
-  //     setUserData(safeMoods, safeHabits, innerWorld);
-  //   }
-  // }, [isLoading, isLoadingInnerWorld, safeMoods, safeHabits, innerWorld, setUserData]);
+  // Derived data (schedule events, CTA system, widget data)
+  const {
+    allScheduleEvents, todayAllEvents,
+    habitsDueToday, completedTodayCount, currentPrimaryCTA,
+    todayFocusMinutes, lastBadgeName, widgetStreak,
+  } = useDerivedData({ restDays: innerWorld.restDays || [] }, badges);
+
+  // Sync widget with calculated streak (same as StreakBanner shows)
+  // Wait for all data that affects streak to be loaded
+  const isWidgetDataLoading = isLoadingUserData || isLoadingInnerWorld;
+  useWidgetSync(widgetStreak, habits, todayFocusMinutes, lastBadgeName, isWidgetDataLoading);
 
   // Schedule event handlers
   const handleAddScheduleEvent = (event: Omit<ScheduleEvent, 'id'>) => {
@@ -321,146 +300,6 @@ export function Index() {
     }
     setScheduleEvents(scheduleEvents.filter(e => e.id !== id));
   };
-
-  // Filter today's schedule events (manual only)
-  const _todayScheduleEvents = useMemo(() => {
-    return safeScheduleEvents.filter(e => e.date === currentDate);
-  }, [safeScheduleEvents, currentDate]);
-
-  // v1.4.0: Generate habit-based schedule events (7 days ahead)
-  const habitScheduleEvents = useMemo(() => {
-    return generateHabitScheduleEvents(safeHabits, 7);
-  }, [safeHabits]);
-
-  // v1.4.0: Merge manual and habit events for full schedule
-  const allScheduleEvents = useMemo(() => {
-    return mergeScheduleEvents(safeScheduleEvents, habitScheduleEvents);
-  }, [safeScheduleEvents, habitScheduleEvents]);
-
-  // v1.4.0: Today's combined events (manual + habits)
-  const todayAllEvents = useMemo(() => {
-    return allScheduleEvents.filter(e => e.date === currentDate);
-  }, [allScheduleEvents, currentDate]);
-
-  // Check if user has mood today
-  const hasMoodToday = useMemo(() => {
-    return safeMoods.some(m => m.date === currentDate);
-  }, [safeMoods, currentDate]);
-
-  // Check if user has focus session today
-  const hasFocusToday = useMemo(() => {
-    return safeFocusSessions.some(s => s.date === currentDate);
-  }, [safeFocusSessions, currentDate]);
-
-  // Check if user has gratitude today
-  const hasGratitudeToday = useMemo(() => {
-    return safeGratitudeEntries.some(g => g.date === currentDate);
-  }, [safeGratitudeEntries, currentDate]);
-
-  // Filter habits that are actually due today (excludes weekly/custom off-days)
-  const habitsDueToday = useMemo(() => {
-    const todayDow = new Date().getDay();
-    return safeHabits.filter(habit => {
-      if (habit.frequency === 'custom' && habit.customDays) {
-        return habit.customDays.includes(todayDow);
-      }
-      if (habit.frequency === 'weekly') {
-        return todayDow === new Date(habit.createdAt).getDay();
-      }
-      return true; // daily or unset
-    });
-  }, [safeHabits]);
-
-  // Check if user has uncompleted habits today (due-today only)
-  const hasUncompletedHabits = useMemo(() => {
-    if (habitsDueToday.length === 0) return false;
-    return habitsDueToday.some(h => {
-      const habitType = h.type || 'daily';
-      // Continuous habits: uncompleted if failed today
-      if (habitType === 'continuous') return h.failedDates?.includes(currentDate) ?? false;
-      // Reduce habits: uncompleted if not yet logged or above target
-      if (habitType === 'reduce') {
-        const progress = h.progressByDate?.[currentDate];
-        return progress === undefined || progress > (h.targetCount ?? 0);
-      }
-      // Multiple times per day habits
-      if (habitType === 'multiple') {
-        const completions = h.completionsByDate?.[currentDate] ?? 0;
-        return completions < (h.dailyTarget ?? 1);
-      }
-      // Daily and scheduled habits
-      return !h.completedDates?.includes(currentDate);
-    });
-  }, [habitsDueToday, currentDate]);
-
-  // Count completed habits today (due-today only, for QuickStatsRow)
-  const completedTodayCount = useMemo(() => {
-    return habitsDueToday.filter(h => {
-      const habitType = h.type || 'daily';
-      if (habitType === 'reduce') {
-        const progress = h.progressByDate?.[currentDate];
-        return progress !== undefined && progress <= (h.targetCount ?? 0);
-      }
-      if (habitType === 'multiple') {
-        const completions = h.completionsByDate?.[currentDate] ?? 0;
-        return completions >= (h.dailyTarget ?? 1);
-      }
-      if (habitType === 'continuous') {
-        return !(h.failedDates?.includes(currentDate));
-      }
-      return h.completedDates?.includes(currentDate);
-    }).length;
-  }, [habitsDueToday, currentDate]);
-
-  // Determine current primary CTA (Smart Focus System)
-  // Priority: mood → habits → focus → gratitude → complete
-  const currentPrimaryCTA = useMemo(() => {
-    // 1. Mood is always first priority
-    if (!hasMoodToday) return 'mood' as const;
-    // 2. Habits - if there are uncompleted ones
-    if (hasUncompletedHabits) return 'habits' as const;
-    // 3. Focus - if no session today
-    if (!hasFocusToday) return 'focus' as const;
-    // 4. Gratitude - if no entry today
-    if (!hasGratitudeToday) return 'gratitude' as const;
-    // 5. All complete!
-    return 'complete' as const;
-  }, [hasMoodToday, hasUncompletedHabits, hasFocusToday, hasGratitudeToday]);
-
-  // Widget synchronization
-  const todayFocusMinutes = useMemo(() => {
-    return safeFocusSessions
-      .filter(s => s.date.startsWith(currentDate))
-      .reduce((sum, s) => sum + (s.duration || 0), 0);
-  }, [safeFocusSessions, currentDate]);
-
-  const lastBadgeName = useMemo(() => {
-    const unlockedBadges = safeBadges.filter(b => b.unlocked && b.unlockedDate);
-    if (!unlockedBadges.length) return undefined;
-    // Sort by unlockedDate string (ISO format sorts correctly)
-    const latest = unlockedBadges.sort((a, b) =>
-      (b.unlockedDate || '').localeCompare(a.unlockedDate || '')
-    )[0];
-    return latest.title?.['en'] || latest.id;
-  }, [safeBadges]);
-
-  // Calculate streak for widget (same logic as StreakBanner)
-  const widgetStreak = useMemo(() => {
-    const allActivityDates = [
-      ...safeMoods.map(m => m.date),
-      ...safeHabits.flatMap(h => h.completedDates || []),
-      ...safeFocusSessions.map(f => f.date),
-      ...safeGratitudeEntries.map(g => g.date),
-      ...(innerWorld.restDays || []),
-    ];
-    const uniqueActivityDates = [...new Set(allActivityDates)].sort();
-    return calculateStreak(uniqueActivityDates);
-  }, [safeMoods, safeHabits, safeFocusSessions, safeGratitudeEntries, innerWorld.restDays]);
-
-  // Sync widget with calculated streak (same as StreakBanner shows)
-  // Wait for all data that affects streak to be loaded
-  const isWidgetDataLoading = isLoadingUserData || isLoadingInnerWorld;
-  useWidgetSync(widgetStreak, habits, todayFocusMinutes, lastBadgeName, isWidgetDataLoading);
 
   // Sync emotion theme with current mood entries
   useEffect(() => {
@@ -637,10 +476,6 @@ export function Index() {
       <WelcomeTutorial
         onComplete={() => {
           setTutorialComplete(true);
-          // AI Coach Onboarding hidden until AI ready
-          // if (!onboardingData.completedAt) {
-          //   setShowAIOnboarding(true);
-          // }
         }}
         onSkip={() => {
           setTutorialComplete(true);
@@ -648,19 +483,6 @@ export function Index() {
       />
     );
   }
-
-  // AI Coach Onboarding hidden until AI ready
-  // if (showAIOnboarding) {
-  //   return (
-  //     <AICoachOnboarding
-  //       onComplete={() => {
-  //         saveOnboardingAnswer('completedAt', String(Date.now()));
-  //         setShowAIOnboarding(false);
-  //       }}
-  //       onSkip={() => setShowAIOnboarding(false)}
-  //     />
-  //   );
-  // }
 
   if (!onboardingComplete) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
@@ -719,10 +541,10 @@ export function Index() {
 
         {activeTab === 'home' && (
           <HomeTab
-            safeMoods={safeMoods}
-            safeHabits={safeHabits}
-            safeFocusSessions={safeFocusSessions}
-            safeGratitudeEntries={safeGratitudeEntries}
+            safeMoods={moods}
+            safeHabits={habits}
+            safeFocusSessions={focusSessions}
+            safeGratitudeEntries={gratitudeEntries}
             restDays={innerWorld.restDays}
             currentActiveStreak={innerWorld.currentActiveStreak}
             isRestMode={isRestMode}
@@ -753,10 +575,10 @@ export function Index() {
 
         {activeTab === 'garden' && (
           <GardenTab
-            safeMoods={safeMoods}
-            safeHabits={safeHabits}
-            safeFocusSessions={safeFocusSessions}
-            safeGratitudeEntries={safeGratitudeEntries}
+            safeMoods={moods}
+            safeHabits={habits}
+            safeFocusSessions={focusSessions}
+            safeGratitudeEntries={gratitudeEntries}
             todayAllEvents={todayAllEvents}
             handleAddScheduleEvent={handleAddScheduleEvent}
             handleDeleteScheduleEvent={handleDeleteScheduleEvent}
@@ -767,10 +589,10 @@ export function Index() {
 
         {activeTab === 'stats' && (
           <StatsTab
-            safeMoods={safeMoods}
-            safeHabits={safeHabits}
-            safeFocusSessions={safeFocusSessions}
-            safeGratitudeEntries={safeGratitudeEntries}
+            safeMoods={moods}
+            safeHabits={habits}
+            safeFocusSessions={focusSessions}
+            safeGratitudeEntries={gratitudeEntries}
             restDays={innerWorld.restDays}
             currentFocusMinutes={currentFocusMinutes}
             onQuickAction={(action) => {
@@ -797,10 +619,10 @@ export function Index() {
             onResetData={handleResetData}
             reminders={reminders}
             onRemindersChange={setReminders}
-            safeHabits={safeHabits}
-            safeMoods={safeMoods}
-            safeFocusSessions={safeFocusSessions}
-            safeGratitudeEntries={safeGratitudeEntries}
+            safeHabits={habits}
+            safeMoods={moods}
+            safeFocusSessions={focusSessions}
+            safeGratitudeEntries={gratitudeEntries}
             privacy={privacy}
             onPrivacyChange={setPrivacy}
             initialOpenSection={settingsOpenSection}
@@ -821,10 +643,6 @@ export function Index() {
         currentStreak={innerWorld.currentActiveStreak}
         userLevel={userLevel.level}
       />
-
-      {/* AI Coach Chat - Hidden until AI ready
-      {isFeatureVisible('aiCoach') && <AICoachChat />}
-      */}
 
     </div>
     </AdProvider>

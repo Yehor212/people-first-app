@@ -126,5 +126,13 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
   setGoogleAuthChecked: createFieldAction<boolean>('googleAuthChecked', 'setGoogleAuthChecked', set, get),
 
   _registerSetters: (setters) => set({ _setters: setters }),
-  _hydrateFromDB: (data) => set(data),
+  _hydrateFromDB: (data) => set({
+    ...data,
+    // Defensive: ensure arrays survive corrupted cloud sync data
+    ...(data.moods !== undefined && { moods: Array.isArray(data.moods) ? data.moods : [] }),
+    ...(data.habits !== undefined && { habits: Array.isArray(data.habits) ? data.habits : [] }),
+    ...(data.focusSessions !== undefined && { focusSessions: Array.isArray(data.focusSessions) ? data.focusSessions : [] }),
+    ...(data.gratitudeEntries !== undefined && { gratitudeEntries: Array.isArray(data.gratitudeEntries) ? data.gratitudeEntries : [] }),
+    ...(data.scheduleEvents !== undefined && { scheduleEvents: Array.isArray(data.scheduleEvents) ? data.scheduleEvents : [] }),
+  }),
 }));
