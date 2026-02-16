@@ -87,6 +87,7 @@ src/
     useDerivedData.ts           # 14 useMemos: schedule events, CTA system, widget data
     useDeepLinkHandler.ts       # Auth + challenge deep links
     useHabitForm.ts             # Habit creation/edit form state + handlers (extracted from HabitTracker)
+    useFocusTimer.ts            # Timer state machine + persistence + handlers (extracted from FocusTimer)
     # Domain hooks
     useGamification.ts          # XP, levels, treats, achievements
     useInnerWorld.ts            # Garden, creatures, rest mode (542 lines, dead code removed)
@@ -109,6 +110,7 @@ src/
     SplashScreen.tsx            # Premium loading animation
     ErrorBoundary.tsx           # LazyErrorBoundary + ModalErrorBoundary
     HabitCreationForm.tsx       # Form JSX for habit creation/editing (extracted from HabitTracker)
+    FocusReflectionModal.tsx    # Post-focus reflection modal (extracted from FocusTimer)
     # ... 50+ feature components
 
   features/                     # Feature modules (only journal migrated)
@@ -505,7 +507,7 @@ On PR to main:
 ## Known Technical Debt
 
 > Track items here until resolved. Remove when done.
-> Last audit: 2026-02-15 (after Phase 5 completion)
+> Last audit: 2026-02-16 (after Phase 7: FocusTimer decomposition)
 
 ### Resolved
 
