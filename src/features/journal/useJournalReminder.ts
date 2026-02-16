@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { db } from '@/storage/db';
 import { scheduleJournalReminder, cancelJournalReminder } from '@/lib/localNotifications';
+import { logger } from '@/lib/logger';
 
 const SETTINGS_KEY = 'journal_reminder';
 
@@ -30,7 +31,7 @@ export function useJournalReminder(translations: {
       if (entry?.value) {
         setSettingsState(entry.value as JournalReminderSettings);
       }
-    }).catch(() => {}).finally(() => setLoading(false));
+    }).catch(err => logger.warn('[Journal]', 'Reminder settings load failed:', err)).finally(() => setLoading(false));
   }, []);
 
   // Sync notification scheduling whenever settings change

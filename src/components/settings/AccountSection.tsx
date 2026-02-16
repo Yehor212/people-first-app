@@ -73,7 +73,7 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
     if (!supabase) return;
     supabase.auth.getSession().then(({ data }) => {
       setSessionEmail(data.session?.user?.email ?? null);
-    }).catch(() => { /* no-op */ });
+    }).catch(err => logger.warn('[Account]', 'Session check failed:', err));
     const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
       setSessionEmail(session?.user?.email ?? null);
     });
@@ -85,7 +85,7 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
   // ── Google Calendar connection ─────────────────────────────────────
   useEffect(() => {
     if (!sessionEmail) return;
-    isCalendarConnected().then(setCalendarConnected).catch(() => { /* no-op */ });
+    isCalendarConnected().then(setCalendarConnected).catch(err => logger.warn('[Account]', 'Calendar check failed:', err));
   }, [sessionEmail]);
 
   // ── Load weekly digest setting ─────────────────────────────────────

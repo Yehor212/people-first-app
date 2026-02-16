@@ -28,7 +28,7 @@ export function useAppLifecycle(): void {
 
       // Hide native splash IMMEDIATELY so web animation is visible
       if (Capacitor.isNativePlatform()) {
-        SplashScreen.hide().catch(() => {});
+        SplashScreen.hide().catch(err => logger.warn('[Splash]', 'Hide failed:', err));
       }
 
       // Initialize offline queue handlers for offline-first sync

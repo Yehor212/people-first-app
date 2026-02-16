@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Capacitor } from '@capacitor/core';
 import { StatusBarStyle, Style } from '@/lib/statusBarStyle';
+import { logger } from '@/lib/logger';
 
 /** Theme options: light, dark, or follow system preference */
 export type ThemeOption = 'light' | 'dark' | 'system';
@@ -36,7 +37,7 @@ export const applyTheme = (effectiveTheme: EffectiveTheme) => {
 
   if (Capacitor.isNativePlatform()) {
     const isDark = effectiveTheme === 'dark';
-    StatusBarStyle.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(() => {});
+    StatusBarStyle.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(err => logger.warn('[Theme]', 'StatusBar style failed:', err));
   }
 };
 

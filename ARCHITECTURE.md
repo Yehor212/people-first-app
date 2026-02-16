@@ -14,12 +14,12 @@
 | Test files | 25 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
 | Total LOC | ~59,000 | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
 | Tests passing | 543/543 | `npx vitest --run` |
-| ESLint errors | 3 | `npx eslint src/ --quiet` |
+| ESLint errors | 0 | `npx eslint src/ --quiet` |
 | ESLint warnings | 21 | `npx eslint src/` |
 | TypeScript errors | 0 | `npx tsc --noEmit` |
 | God components (>400L) | 17 | See [Known Technical Debt](#known-technical-debt) |
 | Direct localStorage calls | 188 | `grep -rn 'localStorage\.' src/ \| wc -l` |
-| Silent .catch(() => {}) | 34 | `grep -rn '\.catch.*=> {}' src/ \| wc -l` |
+| Silent .catch(() => {}) | 0 | `grep -rn '\.catch.*=> {}' src/ \| wc -l` |
 | React.memo components | 12 / 80+ | `grep -rl 'memo(' src/ --include="*.tsx" \| wc -l` |
 | lazy() imports | 6 | `grep -rn 'lazy(' src/ \| wc -l` |
 
@@ -564,12 +564,12 @@ On PR to main:
 | TD-07 | HIGH | Direct `localStorage` calls instead of hooks/stores | **188 calls in 58 files** | Various |
 | TD-08 | HIGH | translations.ts monolith (all languages in one file) | **19,879 lines** | src/i18n/translations.ts |
 | TD-09 | HIGH | Low test coverage | 543 tests pass, but ~6% line coverage | src/__tests__/ |
-| TD-11 | ~~MEDIUM~~ → HIGH | CI pipeline missing lint + typecheck | `deploy.yml` runs `i18n:check → test → build` only. **No** `lint`, `tsc --noEmit`, `playwright`, `npm audit`. | .github/workflows/deploy.yml |
+| TD-11 | ~~HIGH~~ → DONE | ~~CI pipeline missing lint + typecheck~~ | **Fixed 2026-02-16**: Added `eslint --quiet` + `tsc --noEmit` steps to deploy.yml. Still missing: `playwright`, `npm audit`. | .github/workflows/deploy.yml |
 | TD-15 | ~~MEDIUM~~ → LOW | useInnerWorld.ts monolith | ~~780+ lines~~ → **542 lines** (12 dead functions removed, garden/ dir deleted) | src/hooks/useInnerWorld.ts |
 | TD-16 | LOW | Prop drilling in HomeTab (~30 props) | Handlers + inner world values passed as props | src/components/tabs/HomeTab.tsx |
-| TD-17 | HIGH | Silent `.catch(() => {})` swallowing errors | **34 instances** across 15 files. Violates own Error Handling rule §7. Top: journalStorage.ts (11×) | Various — `grep '\.catch.*=> {}' src/` |
-| TD-18 | HIGH | Memory leaks: uncleaned setTimeout in contexts | MoodThemeContext.tsx:180,186 + EmotionThemeContext.tsx — no useRef/clearTimeout cleanup | src/contexts/MoodThemeContext.tsx, EmotionThemeContext.tsx |
-| TD-19 | HIGH | Raw console.* calls bypassing logger.ts | **29 calls** in prod code. Logger abstraction exists but not used everywhere | Various — `grep 'console\.\(log\|error\|warn\)' src/` |
+| TD-17 | ~~HIGH~~ → DONE | ~~Silent `.catch(() => {})` swallowing errors~~ | **Fixed 2026-02-16**: All 34 instances replaced with `logger.warn`/`logger.error` across 20 files. Categorized by risk: fire-and-forget (warn), data ops (error), with-fallback (warn + fallback). | Various |
+| TD-18 | ~~HIGH~~ → DONE | ~~Memory leaks: uncleaned setTimeout in contexts~~ | **Fixed 2026-02-16**: MoodThemeContext — added useRef + clearTimeout cleanup (EmotionThemeContext already correct). | src/contexts/MoodThemeContext.tsx |
+| TD-19 | ~~HIGH~~ → DONE | ~~Raw console.* calls bypassing logger.ts~~ | **Fixed 2026-02-16**: 16 calls replaced with logger.* in 4 files (main.tsx, sw.ts, sentry.ts, gamificationStore.ts). Remaining: logger.ts (6, implementation) + crashReporting.ts (7, implementation). | Various |
 | TD-20 | HIGH | 17 god components violating 400-line / 5-useState rules | ScheduleTimeline 1,653L/17st, HyperfocusMode 1,012L/16st, MoodTracker 712L/15st, FriendsPanel 694L/15st, StatsPage 1,281L/11st, + 12 more | See God Components table below |
 | TD-21 | MEDIUM | Scattered Capacitor platform checks | **58** `isNativePlatform()/getPlatform()` calls across 20+ files. Export in authRedirect.ts unused | Various — `grep 'Capacitor\.\(isNativePlatform\|getPlatform\)' src/` |
 | TD-22 | MEDIUM | Scattered import.meta.env access | **25 calls** across 11 files. No centralized config.ts | Various — `grep 'import\.meta\.env' src/` |
@@ -609,8 +609,8 @@ On PR to main:
 | Step | Required (§15) | Actual (deploy.yml) | Status |
 |------|---------------|---------------------|--------|
 | npm ci | Yes | Yes | PASS |
-| npm run lint | Yes | **No** | FAIL |
-| npm run typecheck | Yes | **No** | FAIL |
+| npx eslint src/ --quiet | Yes | Yes (added 2026-02-16) | PASS |
+| npx tsc --noEmit | Yes | Yes (added 2026-02-16) | PASS |
 | npm test | Yes | Yes | PASS |
 | npm run build | Yes | Yes | PASS |
 | npm audit | Recommended | **No** | MISSING |

@@ -10,6 +10,7 @@ import { JournalPhotoGallery } from './JournalPhotoGallery';
 import { JournalAudioPlayer } from './JournalAudioPlayer';
 import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
 import { StickerRenderer } from './StickerRenderer';
+import { logger } from '@/lib/logger';
 
 const _MOOD_DISPLAY: Record<MoodType, string> = {
   great: '\u{1F604}',
@@ -143,8 +144,8 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
   useEffect(() => {
     if (entry.audioIds && entry.audioIds.length > 0) {
       import('./journalStorage').then(({ getAudioForEntry }) => {
-        getAudioForEntry(entry.id).then(setAudioRecordings).catch(() => setAudioRecordings([]));
-      }).catch(() => {});
+        getAudioForEntry(entry.id).then(setAudioRecordings).catch(err => { logger.warn('[Journal]', 'Audio load failed:', err); setAudioRecordings([]); });
+      }).catch(err => logger.warn('[Journal]', 'Audio module load failed:', err));
     } else {
       setAudioRecordings([]);
     }

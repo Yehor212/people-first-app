@@ -7,6 +7,7 @@ import { useBackHandler } from '@/hooks/useBackHandler';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { JournalPhoto } from './types';
 import { getPhotosForEntry, getPhotoById } from './journalStorage';
+import { logger } from '@/lib/logger';
 
 interface JournalPhotoGalleryProps {
   entryId: string;
@@ -39,7 +40,7 @@ export function JournalPhotoGallery({
     if (photoIds.length === 0) { setPhotos([]); return; }
     getPhotosForEntry(entryId).then(all => {
       setPhotos(all.filter(p => photoIds.includes(p.id)));
-    }).catch(() => setPhotos([]));
+    }).catch(err => { logger.warn('[Journal]', 'Photos load failed:', err); setPhotos([]); });
   }, [entryId, photoIds]);
 
   const openLightbox = async (photo: JournalPhoto) => {

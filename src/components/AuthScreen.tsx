@@ -198,7 +198,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
       return () => {
         isMounted = false;
         if (listenerHandle) {
-          listenerHandle.remove().catch(() => {});
+          listenerHandle.remove().catch(err => logger.warn('[Auth]', 'Listener remove failed:', err));
         }
       };
     }

@@ -18,6 +18,7 @@ import {
   deleteJournalAudioFromCloud,
 } from '@/storage/realtimeSync';
 import { triggerSync } from '@/storage/cloudSync';
+import { logger } from '@/lib/logger';
 
 // ============================================
 // JOURNAL ENTRIES CRUD
@@ -46,7 +47,7 @@ export async function saveEntry(entry: Omit<JournalEntry, 'id' | 'createdAt' | '
   await db.journalEntries.add(full);
 
   // Granular sync to cloud (non-blocking)
-  syncJournalEntry(full).catch(() => {});
+  syncJournalEntry(full).catch(err => logger.warn('[JournalSync]', 'Entry sync failed:', err));
   triggerSync();
 
   return full;
@@ -57,7 +58,7 @@ export async function updateEntry(id: string, changes: Partial<Omit<JournalEntry
 
   // Granular sync to cloud (non-blocking) — re-read full entry for sync
   void db.journalEntries.get(id).then(updated => {
-    if (updated) syncJournalEntry(updated).catch(() => {});
+    if (updated) syncJournalEntry(updated).catch(err => logger.warn('[JournalSync]', 'Entry update sync failed:', err));
   });
   triggerSync();
 }
@@ -85,7 +86,7 @@ export async function deleteEntry(id: string): Promise<void> {
   );
 
   // Delete from cloud tables (fire-and-forget)
-  deleteJournalEntryFromCloud(id).catch(() => {});
+  deleteJournalEntryFromCloud(id).catch(err => logger.warn('[JournalSync]', 'Entry delete sync failed:', err));
   triggerSync();
 }
 
@@ -168,12 +169,12 @@ export async function compressAndStorePhoto(
         });
         // Sync photo metadata with storage path to cloud table
         const updated = await db.journalPhotos.get(photo.id);
-        if (updated) syncJournalPhoto(updated).catch(() => {});
+        if (updated) syncJournalPhoto(updated).catch(err => logger.warn('[JournalSync]', 'Photo sync failed:', err));
       }
     });
 
     // Sync photo metadata (without storagePath yet — will be updated after upload)
-    syncJournalPhoto(photo).catch(() => {});
+    syncJournalPhoto(photo).catch(err => logger.warn('[JournalSync]', 'Photo metadata sync failed:', err));
 
     return photo;
   } finally {
@@ -202,7 +203,7 @@ export async function deletePhoto(id: string, entryId: string): Promise<void> {
   });
   // Clean up from Supabase Storage + cloud table (fire-and-forget)
   void deletePhotoFromStorage(id);
-  deleteJournalPhotoFromCloud(id).catch(() => {});
+  deleteJournalPhotoFromCloud(id).catch(err => logger.warn('[JournalSync]', 'Photo delete sync failed:', err));
 }
 
 // ============================================
@@ -240,12 +241,12 @@ export async function storeAudio(
       });
       // Sync audio metadata with storage path to cloud table
       const updated = await db.journalAudio.get(audio.id);
-      if (updated) syncJournalAudio(updated).catch(() => {});
+      if (updated) syncJournalAudio(updated).catch(err => logger.warn('[JournalSync]', 'Audio sync failed:', err));
     }
   });
 
   // Sync audio metadata (without storagePath yet — will be updated after upload)
-  syncJournalAudio(audio).catch(() => {});
+  syncJournalAudio(audio).catch(err => logger.warn('[JournalSync]', 'Audio metadata sync failed:', err));
 
   return audio;
 }
@@ -271,5 +272,5 @@ export async function deleteAudio(id: string, entryId: string): Promise<void> {
   });
   // Clean up from Supabase Storage + cloud table (fire-and-forget)
   void deleteAudioFromStorage(id);
-  deleteJournalAudioFromCloud(id).catch(() => {});
+  deleteJournalAudioFromCloud(id).catch(err => logger.warn('[JournalSync]', 'Audio delete sync failed:', err));
 }

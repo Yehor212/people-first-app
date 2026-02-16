@@ -14,6 +14,7 @@ import { WifiOff, X, AlertTriangle, RefreshCw } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
 import { motion, AnimatePresence } from 'framer-motion';
+import { logger } from '@/lib/logger';
 
 export function OfflineBanner() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -76,7 +77,7 @@ export function OfflineBanner() {
     // Also try to check connection
     fetch('/favicon.ico', { method: 'HEAD', cache: 'no-cache' })
       .then(() => setIsOnline(true))
-      .catch(() => setIsOnline(false));
+      .catch(err => { logger.warn('[Network]', 'Connectivity check failed:', err); setIsOnline(false); });
   };
 
   return (

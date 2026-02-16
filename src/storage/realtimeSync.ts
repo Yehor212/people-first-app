@@ -1104,7 +1104,7 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
     logger.log('[Sync] Journal entry synced:', entry.id);
 
     // Fire-and-forget: generate vector embedding for semantic search
-    generateEmbeddings([entry.id]).catch(() => {});
+    generateEmbeddings([entry.id]).catch(err => logger.warn('[Sync]', 'Embedding generation failed:', err));
   } catch (error) {
     if (isAbortError(error)) {
       logger.warn('[Sync] Journal entry sync aborted:', entry.id);

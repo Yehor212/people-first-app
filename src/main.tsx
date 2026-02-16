@@ -30,7 +30,7 @@ import { checkDatabaseHealth } from "./storage/db";
 try {
   initSentry();
 } catch (e) {
-  console.warn('[Main] Sentry init failed:', e);
+  logger.warn('[Main] Sentry init failed:', e);
 }
 
 // Setup chunk error handler EARLY to catch lazy loading failures
@@ -208,9 +208,7 @@ if (isCapacitor) {
         registrations.forEach((registration) => registration.unregister());
       }).catch((err) => {
         // Log SW unregister errors in dev mode
-        if (import.meta.env.DEV) {
-          console.warn('[main] SW unregister failed:', err);
-        }
+        logger.warn('[Main] SW unregister failed:', err);
       });
     }
     // Clear workbox/PWA caches on Capacitor only
@@ -223,9 +221,7 @@ if (isCapacitor) {
         });
       }).catch((err) => {
         // Log cache clear errors in dev mode
-        if (import.meta.env.DEV) {
-          console.warn('[main] Cache clear failed:', err);
-        }
+        logger.warn('[Main] Cache clear failed:', err);
       });
     }
   } catch (_e) {
@@ -291,6 +287,6 @@ initializeApp().then((shouldRender) => {
     createRoot(document.getElementById("root")).render(<App />);
   }
 }).catch(err => {
-  console.error('[Init] Fatal:', err);
+  logger.error('[Init] Fatal:', err);
   createRoot(document.getElementById("root")).render(<App />);
 });

@@ -84,7 +84,7 @@ export async function initializeAds(): Promise<boolean> {
     logger.log('[Ads] AdMob initialized');
 
     // Pre-load first rewarded ad
-    prepareRewardedAd().catch(() => {});
+    prepareRewardedAd().catch(err => logger.warn('[Ads]', 'Rewarded ad preload failed:', err));
 
     return true;
   } catch {
@@ -204,7 +204,7 @@ export async function showRewardedAd(): Promise<RewardedAdResult> {
     localStorage.setItem(AD_STORAGE_KEYS.lastAdTimestamp, String(Date.now()));
 
     // Pre-load next ad
-    prepareRewardedAd().catch(() => {});
+    prepareRewardedAd().catch(err => logger.warn('[Ads]', 'Rewarded ad preload failed:', err));
 
     return {
       success: true,
@@ -215,7 +215,7 @@ export async function showRewardedAd(): Promise<RewardedAdResult> {
     logger.warn('[Ads] Rewarded ad failed/dismissed:', err);
 
     // Pre-load next ad
-    prepareRewardedAd().catch(() => {});
+    prepareRewardedAd().catch(err => logger.warn('[Ads]', 'Rewarded ad preload failed:', err));
 
     return { success: false, rewarded: false, error: 'dismissed_or_failed' };
   }

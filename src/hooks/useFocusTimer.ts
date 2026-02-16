@@ -334,7 +334,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
                 id: Date.now(),
                 channelId: getCurrentChannelId(),
               }],
-            }).catch(() => {});
+            }).catch(err => logger.warn('[Focus]', 'Notification failed:', err));
           }
 
           // Switch to break mode

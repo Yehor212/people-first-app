@@ -18,6 +18,7 @@ import { StickerRenderer } from './StickerRenderer';
 import { JournalTemplatePicker } from './JournalTemplatePicker';
 import { useJournalVoice } from './useJournalVoice';
 import { useAudioRecorder } from './useAudioRecorder';
+import { logger } from '@/lib/logger';
 import { JournalHabitSection } from './JournalHabitSection';
 
 const MOOD_OPTIONS: { mood: MoodType; emoji: string }[] = [
@@ -238,7 +239,7 @@ export function JournalEntryEditor({
         setDraftAvailable(draft);
         setShowTemplatePicker(false);
       }
-    }).catch(() => {});
+    }).catch(err => logger.warn('[Journal]', 'Draft load failed:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: load draft on editor open
   }, []);
 
@@ -366,8 +367,8 @@ export function JournalEntryEditor({
   useEffect(() => {
     if (entry?.audioIds && entry.audioIds.length > 0) {
       import('./journalStorage').then(({ getAudioForEntry }) => {
-        getAudioForEntry(entry.id).then(setAudioRecordings).catch(() => setAudioRecordings([]));
-      }).catch(() => {});
+        getAudioForEntry(entry.id).then(setAudioRecordings).catch(err => { logger.warn('[Journal]', 'Audio load failed:', err); setAudioRecordings([]); });
+      }).catch(err => logger.warn('[Journal]', 'Audio module load failed:', err));
     }
   }, [entry]);
 

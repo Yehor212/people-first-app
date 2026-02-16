@@ -14,6 +14,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { isCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
 import { supabase } from '@/lib/supabaseClient';
+import { logger } from '@/lib/logger';
 import { Cloud, CloudOff, AlertCircle, CheckCircle, Loader, WifiOff } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ru, enUS, uk, es, de, fr, ja } from 'date-fns/locale';
@@ -165,7 +166,8 @@ export function SyncStatusIndicatorCompact() {
     let isMounted = true;
     supabase.auth.getSession().then(({ data }) => {
       if (isMounted) setHasSession(!!data.session);
-    }).catch(() => {
+    }).catch(err => {
+      logger.warn('[Sync]', 'Session check failed:', err);
       if (isMounted) setHasSession(false);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {

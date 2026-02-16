@@ -199,7 +199,7 @@ export function useAuthSession(isLoading: boolean): void {
         // Start auto-sync after successful initial sync
         startAutoSync();
         // Join Presence channel for friend online status
-        joinPresence().catch(() => {});
+        joinPresence().catch(err => logger.warn('[Auth]', 'Presence join failed:', err));
       } catch (error) {
         logger.error('Cloud sync failed:', error);
       }
@@ -211,7 +211,7 @@ export function useAuthSession(isLoading: boolean): void {
         migrateExistingUser();
       }
       void syncIfNeeded(data.session?.user?.id ?? null);
-    }).catch(() => {});
+    }).catch(err => logger.warn('[Auth]', 'Session check failed:', err));
 
     // Correct destructuring pattern for auth subscription
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -231,7 +231,7 @@ export function useAuthSession(isLoading: boolean): void {
       active = false;
       subscription?.unsubscribe();
       stopAutoSync();
-      leavePresence().catch(() => {});
+      leavePresence().catch(err => logger.warn('[Auth]', 'Presence leave failed:', err));
     };
   }, [isLoading]);
 

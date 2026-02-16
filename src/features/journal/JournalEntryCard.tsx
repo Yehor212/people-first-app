@@ -8,6 +8,7 @@ import type { JournalEntry } from './types';
 import { countWords } from './types';
 import { StickerRenderer } from './StickerRenderer';
 import { getPhotoById } from './journalStorage';
+import { logger } from '@/lib/logger';
 
 const MOOD_STICKER: Record<string, string> = {
   great: '\u{1F604}',
@@ -224,7 +225,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     let cancelled = false;
     getPhotoById(entry.photoIds[0]).then(photo => {
       if (!cancelled && photo?.thumbnail) setThumbnail(photo.thumbnail);
-    }).catch(() => {});
+    }).catch(err => logger.warn('[Journal]', 'Photo load failed:', err));
     return () => { cancelled = true; };
   }, [entry.photoIds]);
 

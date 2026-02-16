@@ -9,6 +9,7 @@
 
 import * as Sentry from '@sentry/react';
 import { Capacitor } from '@capacitor/core';
+import { logger } from '@/lib/logger';
 
 // Declare global app version
 declare const __APP_VERSION__: string;
@@ -22,7 +23,7 @@ export function initSentry(): void {
 
   // Skip if no DSN configured (development without Sentry)
   if (!dsn) {
-    console.log('[Sentry] No DSN configured, skipping initialization');
+    logger.log('[Sentry] No DSN configured, skipping initialization');
     return;
   }
 
@@ -151,7 +152,7 @@ export function initSentry(): void {
 
       // Don't send events in development
       if (import.meta.env.DEV) {
-        console.log('[Sentry] Would send event:', event);
+        logger.log('[Sentry] Would send event:', event);
         return null;
       }
 
@@ -169,7 +170,7 @@ export function initSentry(): void {
 
   // Only log in development
   if (import.meta.env.DEV) {
-    console.log('[Sentry] Initialized successfully');
+    logger.log('[Sentry] Initialized successfully');
   }
 }
 

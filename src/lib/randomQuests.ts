@@ -208,8 +208,8 @@ export function generateDailyQuest(): Quest {
   const template = categoryTemplate.templates[Math.floor(Math.random() * categoryTemplate.templates.length)];
 
   // Get translated title and description (for backward compat in stored quests)
-  const title = t[template.titleKey];
-  const description = t[template.descriptionKey];
+  const title = t[template.titleKey] as string;
+  const description = t[template.descriptionKey] as string;
 
   // Determine count from template or fallback
   let count = template.condition.count || 3;
@@ -262,8 +262,8 @@ export function generateWeeklyQuest(): Quest {
   const template = categoryTemplate.templates[Math.floor(Math.random() * categoryTemplate.templates.length)];
 
   // Get translated title and description (for backward compat in stored quests)
-  const title = t[template.titleKey];
-  const description = t[template.descriptionKey];
+  const title = t[template.titleKey] as string;
+  const description = t[template.descriptionKey] as string;
 
   // Determine count from template or fallback
   let count = template.condition.count || 7;
@@ -324,8 +324,8 @@ export function generateBonusQuest(): Quest {
   );
 
   // Get translated title and description (for backward compat in stored quests)
-  const title = t[template.titleKey];
-  const description = t[template.descriptionKey];
+  const title = t[template.titleKey] as string;
+  const description = t[template.descriptionKey] as string;
 
   let count = 10;
   let total = 10;

@@ -13,6 +13,7 @@ import { ExpirationPlugin } from 'workbox-expiration';
 // REMOVED: BackgroundSyncPlugin - POST caching was causing "Request body already used" errors
 // import { BackgroundSyncPlugin } from 'workbox-background-sync';
 import { setCacheNameDetails } from 'workbox-core';
+import { logger } from '@/lib/logger';
 
 declare const self: ServiceWorkerGlobalScope;
 
@@ -105,7 +106,7 @@ registerRoute(
 
 // Listen for sync events (triggered when coming back online)
 self.addEventListener('sync', (event) => {
-  console.log('[SW] Sync event received:', event.tag);
+  logger.log('[SW] Sync event received:', event.tag);
 
   if (event.tag === 'zenflow-sync') {
     // Notify clients to process their offline queue
@@ -122,18 +123,18 @@ self.addEventListener('sync', (event) => {
 // Listen for messages from the main app
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
-    console.log('[SW] Skip waiting requested');
+    logger.log('[SW] Skip waiting requested');
     void self.skipWaiting();
   }
 
   if (event.data?.type === 'CLEAR_CACHES') {
     // Clear all caches when app detects version mismatch
-    console.log('[SW] Clear caches requested');
+    logger.log('[SW] Clear caches requested');
     event.waitUntil(
       caches.keys().then((cacheNames) => {
         return Promise.all(
           cacheNames.map((cacheName) => {
-            console.log('[SW] Deleting cache:', cacheName);
+            logger.log('[SW] Deleting cache:', cacheName);
             return caches.delete(cacheName);
           })
         );
@@ -144,7 +145,7 @@ self.addEventListener('message', (event) => {
   if (event.data?.type === 'REGISTER_SYNC') {
     // Register a sync event (will fire when online)
     self.registration.sync?.register('zenflow-sync').catch((err) => {
-      console.warn('[SW] Background sync registration failed:', err);
+      logger.warn('[SW] Background sync registration failed:', err);
     });
   }
 
@@ -152,13 +153,13 @@ self.addEventListener('message', (event) => {
 
 // Log service worker lifecycle
 self.addEventListener('install', () => {
-  console.log('[SW] Installing — skip waiting for immediate activation');
+  logger.log('[SW] Installing — skip waiting for immediate activation');
   void self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating...');
+  logger.log('[SW] Activating...');
   event.waitUntil(self.clients.claim());
 });
 
-console.log('[SW] Service Worker loaded');
+logger.log('[SW] Service Worker loaded');

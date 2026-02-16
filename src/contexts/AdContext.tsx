@@ -21,6 +21,7 @@ import {
   getRemainingRewardedAds,
 } from '@/lib/adController';
 import { AD_REWARDS } from '@/lib/adConfig';
+import { logger } from '@/lib/logger';
 
 // ============================================
 // TYPES
@@ -93,7 +94,7 @@ export function AdProvider({
         const check = canShowRewardedAd(currentMoodRef.current);
         setCanShow(check.allowed);
       }
-    }).catch(() => {});
+    }).catch(err => logger.warn('[Ads]', 'Ad init failed:', err));
   }, [adConsent, isPremium]);
 
   // Refresh can-show status periodically

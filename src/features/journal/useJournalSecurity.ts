@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { db } from '@/storage/db';
 import type { JournalPassword } from './types';
 import { JOURNAL_PASSWORD_KEY } from './types';
+import { logger } from '@/lib/logger';
 
 const BIOMETRIC_SETTINGS_KEY = 'journal_biometric';
 
@@ -54,21 +55,21 @@ export function useJournalSecurity() {
   useEffect(() => {
     db.settings.get(JOURNAL_PASSWORD_KEY).then(entry => {
       setHasPassword(!!entry?.value);
-    }).catch(() => setHasPassword(false));
+    }).catch(err => { logger.warn('[Journal]', 'Password check failed:', err); setHasPassword(false); });
 
     // Check biometric availability
     if (Capacitor.isNativePlatform()) {
       import('@/plugins/BiometricPlugin').then(({ default: BiometricAuth }) => {
         BiometricAuth.isAvailable().then(result => {
           setBiometricAvailable(result.available);
-        }).catch(() => setBiometricAvailable(false));
-      }).catch(() => setBiometricAvailable(false));
+        }).catch(err => { logger.warn('[Journal]', 'Biometric check failed:', err); setBiometricAvailable(false); });
+      }).catch(err => { logger.warn('[Journal]', 'Biometric plugin load failed:', err); setBiometricAvailable(false); });
     }
 
     // Load biometric setting
     db.settings.get(BIOMETRIC_SETTINGS_KEY).then(entry => {
       if (entry?.value) setBiometricEnabledState(true);
-    }).catch(() => {});
+    }).catch(err => logger.warn('[Journal]', 'Biometric setting load failed:', err));
   }, []);
 
   // Auto-lock timer

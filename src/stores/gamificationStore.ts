@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { triggerXpPopup } from '@/components/XpPopup';
 import { triggerSync } from '@/storage/cloudSync';
+import { logger } from '@/lib/logger';
 
 // Hook functions registered by bridge (from useGamification + useInnerWorld)
 interface RegisteredHooks {
@@ -44,7 +45,7 @@ export const useGamificationStore = create<GamificationState & GamificationActio
   rewardUser: (activity, options) => {
     const hooks = get()._hooks;
     if (!hooks) {
-      console.warn('[rewardUser] called before hooks registered');
+      logger.warn('[rewardUser] called before hooks registered');
       return { treatsEarned: 0 };
     }
 

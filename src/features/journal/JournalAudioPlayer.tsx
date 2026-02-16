@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 
 interface JournalAudioPlayerProps {
   src: string;          // base64 data URL
@@ -51,7 +52,7 @@ export function JournalAudioPlayer({ src, duration }: JournalAudioPlayerProps) {
     if (playing) {
       audioRef.current.pause();
     } else {
-      audioRef.current.play().catch(() => {});
+      audioRef.current.play().catch(err => logger.warn('[Audio]', 'Playback failed:', err));
     }
   };
 

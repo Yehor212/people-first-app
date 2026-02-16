@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react';
 import { MoodType, MoodEntry } from '@/types';
 import { getToday } from '@/lib/utils';
 
@@ -151,6 +151,16 @@ export function MoodThemeProvider({ children }: { children: ReactNode }) {
   const [currentMood, setCurrentMood] = useState<MoodType | 'neutral'>('neutral');
   const [currentTheme, setCurrentTheme] = useState<MoodTheme>(moodThemes.neutral);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const transitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const endTransitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+      if (endTransitionTimeoutRef.current) clearTimeout(endTransitionTimeoutRef.current);
+    };
+  }, []);
 
   // Update mood from entries
   const setMoodFromEntries = (entries: MoodEntry[]) => {
@@ -174,16 +184,20 @@ export function MoodThemeProvider({ children }: { children: ReactNode }) {
 
   // Smooth transition between moods
   const transitionToMood = (newMood: MoodType | 'neutral') => {
+    // Clear any pending transitions
+    if (transitionTimeoutRef.current) clearTimeout(transitionTimeoutRef.current);
+    if (endTransitionTimeoutRef.current) clearTimeout(endTransitionTimeoutRef.current);
+
     setIsTransitioning(true);
 
     // Start transition
-    setTimeout(() => {
+    transitionTimeoutRef.current = setTimeout(() => {
       setCurrentMood(newMood);
       setCurrentTheme(moodThemes[newMood]);
     }, 150);
 
     // End transition
-    setTimeout(() => {
+    endTransitionTimeoutRef.current = setTimeout(() => {
       setIsTransitioning(false);
     }, 600);
   };

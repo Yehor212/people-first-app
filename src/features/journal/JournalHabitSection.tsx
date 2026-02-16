@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { db } from '@/storage/db';
 import type { Habit } from '@/types';
+import { logger } from '@/lib/logger';
 
 interface HabitSnapshot {
   habitId: string;
@@ -48,7 +49,7 @@ export function JournalHabitSection({ date, snapshot, onSnapshotChange }: Journa
         }));
         onSnapshotChangeRef.current(initial);
       }
-    }).catch(() => {});
+    }).catch(err => logger.warn('[Journal]', 'Habit data load failed:', err));
   }, [date, snapshot.length]);
 
   const completedCount = useMemo(() => snapshot.filter(s => s.completed).length, [snapshot]);

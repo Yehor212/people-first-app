@@ -57,7 +57,7 @@ export function useQuickActions(): UseQuickActionsReturn {
 
     init().then(cleanup => {
       cleanupFn = cleanup;
-    }).catch(() => {});
+    }).catch(err => logger.warn('[QuickActions]', 'Init failed:', err));
 
     return () => {
       cleanupFn?.();

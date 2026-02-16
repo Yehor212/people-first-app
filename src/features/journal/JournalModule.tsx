@@ -17,6 +17,7 @@ import { JournalEntryViewer } from './JournalEntryViewer';
 import { JournalCalendar } from './JournalCalendar';
 import { JournalCalendarFull } from './JournalCalendarFull';
 import { getEntryCount } from './journalStorage';
+import { logger } from '@/lib/logger';
 import { StickerRenderer } from './StickerRenderer';
 import { useJournalReminder, getDaysSinceLastEntry } from './useJournalReminder';
 import { useScreenSecurity } from './useScreenSecurity';
@@ -113,7 +114,7 @@ export function JournalModule() {
 
   // Load entry count for card preview
   useEffect(() => {
-    getEntryCount().then(setEntryCount).catch(() => {});
+    getEntryCount().then(setEntryCount).catch(err => logger.warn('[Journal]', 'Entry count failed:', err));
   }, [journal.totalCount]);
 
   // Check for unsaved draft (for card badge)
@@ -122,8 +123,8 @@ export function JournalModule() {
     import('@/storage/db').then(({ settingsRepo }) => {
       settingsRepo.get('journal_draft_new').then(record => {
         setHasDraft(!!record?.value);
-      }).catch(() => setHasDraft(false));
-    }).catch(() => setHasDraft(false));
+      }).catch(err => { logger.warn('[Journal]', 'Draft check failed:', err); setHasDraft(false); });
+    }).catch(err => { logger.warn('[Journal]', 'DB module load failed:', err); setHasDraft(false); });
   }, [moduleState, journal.totalCount]);
 
   // Android back button handling
