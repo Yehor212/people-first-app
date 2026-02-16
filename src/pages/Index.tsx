@@ -42,6 +42,7 @@ import {
 } from '@/lib/authRedirect';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 
+import { ModalLayer } from '@/components/ModalLayer';
 import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
 import { OfflineBanner } from '@/components/OfflineBanner';
@@ -71,26 +72,20 @@ import { WelcomeTutorial } from '@/components/WelcomeTutorial';
 import { AchievementsPanel } from '@/components/AchievementsPanel';
 import { NotificationPermission } from '@/components/NotificationPermission';
 import { AuthScreen } from '@/components/AuthScreen';
-import { WeeklyReport } from '@/components/WeeklyReport';
-import { TimeHelper } from '@/components/TimeHelper';
+// WeeklyReport, TimeHelper → moved to ModalLayer
 
-// More lazy-loaded components (opened via modals/sheets) with retry logic
-const ChallengesPanel = lazyWithRetry(() => import('@/components/ChallengesPanel').then(m => ({ default: m.ChallengesPanel })), 'ChallengesPanel');
-const TasksPanel = lazyWithRetry(() => import('@/components/TasksPanel').then(m => ({ default: m.TasksPanel })), 'TasksPanel');
-const QuestsPanel = lazyWithRetry(() => import('@/components/QuestsPanel').then(m => ({ default: m.QuestsPanel })), 'QuestsPanel');
-const WidgetSettings = lazyWithRetry(() => import('@/pages/WidgetSettings').then(m => ({ default: m.WidgetSettings })), 'WidgetSettings');
+// Lazy-loaded components (ChallengesPanel, TasksPanel, QuestsPanel, WidgetSettings, FriendsPanel → moved to ModalLayer)
 const Leaderboard = lazyWithRetry(() => import('@/components/Leaderboard').then(m => ({ default: m.Leaderboard })), 'Leaderboard');
-const FriendsPanel = lazyWithRetry(() => import('@/components/FriendsPanel').then(m => ({ default: m.FriendsPanel })), 'FriendsPanel');
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';
-import { getChallenges, getBadges, addChallenge } from '@/lib/challengeStorage';
+import { getChallenges, getBadges } from '@/lib/challengeStorage';
 import { MoodInsights } from '@/components/MoodInsights';
 import { StreakBanner } from '@/components/StreakBanner';
 import { UrgencyAlert } from '@/components/UrgencyAlert';
 import { RestModeCard } from '@/components/RestModeCard';
-import { WhatsNewModal } from '@/components/WhatsNewModal';
-import { ChallengeModal } from '@/components/ChallengeModal';
+// WhatsNewModal → moved to ModalLayer
+// ChallengeModal → moved to ModalLayer
 import { decodeInviteData } from '@/lib/friendChallenge';
 import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
 import { ConsentBanner } from '@/components/ConsentBanner';
@@ -103,7 +98,7 @@ import { OnboardingOverlay, DayProgressIndicator } from '@/components/Onboarding
 import { FeatureUnlock } from '@/components/FeatureUnlock';
 import { QuickStatsRow } from '@/components/ui/stat-card';
 import { SkeletonCard, SkeletonStats, SkeletonList, SkeletonSection } from '@/components/ui/skeleton';
-import { MindfulMoment } from '@/components/MindfulMoment';
+// MindfulMoment → moved to ModalLayer
 import { WelcomeBackModal } from '@/components/WelcomeBackModal';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 import { dismissUpdate } from '@/lib/appUpdateManager';
@@ -207,33 +202,19 @@ export function Index() {
   const currentFocusMinutes = useUIStore(s => s.currentFocusMinutes);
   const setCurrentFocusMinutes = useUIStore(s => s.setCurrentFocusMinutes);
 
-  // UI modal/panel state from Zustand uiStore
-  const showWeeklyReport = useUIStore(s => s.showWeeklyReport);
-  const showWidgetSettings = useUIStore(s => s.showWidgetSettings);
-  const showChallenges = useUIStore(s => s.showChallenges);
-  const showChallengeModal = useUIStore(s => s.showChallengeModal);
-  const challengeInvite = useUIStore(s => s.challengeInvite);
+  // UI state from Zustand uiStore (modal rendering moved to ModalLayer)
   const setChallengeInvite = useUIStore(s => s.setChallengeInvite);
-  const challengeHabit = useUIStore(s => s.challengeHabit);
-  const setChallengeHabit = useUIStore(s => s.setChallengeHabit);
-  const showTimeHelper = useUIStore(s => s.showTimeHelper);
-  const showTasksPanel = useUIStore(s => s.showTasksPanel);
-  const showQuestsPanel = useUIStore(s => s.showQuestsPanel);
-  const showFriendsPanel = useUIStore(s => s.showFriendsPanel);
   const confettiBurst = useUIStore(s => s.confettiBurst);
   const setConfettiBurst = useUIStore(s => s.setConfettiBurst);
-  // Modal toggle functions (stable references via getModalToggle utility)
-  const setShowWeeklyReport = getModalToggle('showWeeklyReport');
+  // Modal toggle functions still used in Index.tsx (stable references via getModalToggle utility)
   const setShowWidgetSettings = getModalToggle('showWidgetSettings');
   const setShowChallenges = getModalToggle('showChallenges');
   const setShowChallengeModal = getModalToggle('showChallengeModal');
-  const setShowTimeHelper = getModalToggle('showTimeHelper');
   const setShowTasksPanel = getModalToggle('showTasksPanel');
   const setShowQuestsPanel = getModalToggle('showQuestsPanel');
   const setShowFriendsPanel = getModalToggle('showFriendsPanel');
   const setShowWelcomeOverlay = getModalToggle('showWelcomeOverlay');
   const setShowWelcomeBack = getModalToggle('showWelcomeBack');
-  const setShowMindfulMoment = getModalToggle('showMindfulMoment');
 
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
@@ -246,7 +227,6 @@ export function Index() {
   const welcomeBackData = useUIStore(s => s.welcomeBackData);
   const updateState = useUIStore(s => s.updateState);
   const setUpdateState = useUIStore(s => s.setUpdateState);
-  const showMindfulMoment = useUIStore(s => s.showMindfulMoment);
 
   // Lock background scroll when any modal/panel is open (computed from UI store)
   const anyModalOpen = useUIStore(selectAnyModalOpen);
@@ -1406,128 +1386,16 @@ export function Index() {
 
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-      {/* Weekly Report Modal */}
-      {showWeeklyReport && (
-        <WeeklyReport
-          moods={safeMoods}
-          habits={safeHabits}
-          focusSessions={safeFocusSessions}
-          gratitudeEntries={safeGratitudeEntries}
-          onClose={() => setShowWeeklyReport(false)}
-        />
-      )}
-
-      {/* Widget Settings Modal */}
-      {showWidgetSettings && (
-        <LazyErrorBoundary componentName="Widget Settings">
-          <Suspense fallback={<div className="fixed inset-0 z-50 bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
-            <div className="fixed inset-0 z-50 bg-background">
-              <WidgetSettings onBack={() => setShowWidgetSettings(false)} />
-            </div>
-          </Suspense>
-        </LazyErrorBoundary>
-      )}
-
-      {/* Challenges Panel Modal (Progressive: Day 4) */}
-      {showChallenges && isFeatureVisible('challenges') && (
-        <LazyErrorBoundary componentName="Challenges">
-          <Suspense fallback={<SkeletonSection />}>
-            <ChallengesPanel
-              activeChallenges={challenges}
-              badges={safeBadges}
-              onStartChallenge={(challenge) => {
-                addChallenge(challenge);
-                setChallenges(getChallenges());
-                setBadges(getBadges());
-              }}
-              onClose={() => setShowChallenges(false)}
-            />
-          </Suspense>
-        </LazyErrorBoundary>
-      )}
-
-      {/* Time Helper Modal */}
-      {isFeatureVisible('focusTimer') && showTimeHelper && (
-        <TimeHelper onClose={() => setShowTimeHelper(false)} />
-      )}
-
-      {/* Tasks Panel Modal (Progressive: Day 4) */}
-      {showTasksPanel && isFeatureVisible('tasks') && (
-        <LazyErrorBoundary componentName="Tasks">
-          <Suspense fallback={<SkeletonList />}>
-            <TasksPanel
-              onClose={() => setShowTasksPanel(false)}
-              onAwardXp={(_source, amount) => {
-                // Award XP through gamification (using habit as proxy for task)
-                for (let i = 0; i < Math.ceil(amount / 15); i++) {
-                  awardXp('habit');
-                }
-              }}
-              onEarnTreats={(_source, amount, reason) => {
-                // Use 'habit' as treat source since 'task' is not a valid TreatSource
-                earnTreats('habit', amount, reason);
-                triggerSync(); // Sync inner world treats
-              }}
-            />
-          </Suspense>
-        </LazyErrorBoundary>
-      )}
-
-      {/* Quests Panel Modal (Progressive: Day 3) */}
-      {showQuestsPanel && isFeatureVisible('quests') && (
-        <LazyErrorBoundary componentName="Quests">
-          <Suspense fallback={<SkeletonList />}>
-            <QuestsPanel
-              onClose={() => setShowQuestsPanel(false)}
-            />
-          </Suspense>
-        </LazyErrorBoundary>
-      )}
-
-      {/* Friends Panel */}
-      {showFriendsPanel && (
-        <LazyErrorBoundary componentName="Friends">
-          <Suspense fallback={<SkeletonList />}>
-            <FriendsPanel
-              onClose={() => setShowFriendsPanel(false)}
-              userName={userName}
-              currentStreak={innerWorld.currentActiveStreak}
-              level={userLevel.level}
-            />
-          </Suspense>
-        </LazyErrorBoundary>
-      )}
-
-      {/* Challenge Modal - for deep link invites and habit challenges */}
-      {isFeatureVisible('challenges') && (
-        <ChallengeModal
-          open={showChallengeModal}
-          onOpenChange={(open) => {
-            setShowChallengeModal(open);
-            if (!open) {
-              setChallengeInvite(undefined);
-              setChallengeHabit(undefined);
-            }
-          }}
-          habit={challengeHabit}
-          initialInvite={challengeInvite}
-          username={userName}
-        />
-      )}
-
-      {/* What's New Modal - shows after app update */}
-      <WhatsNewModal />
-
-      {/* MindfulMoment - shows after focus session completion */}
-      {isFeatureVisible('focusTimer') && (
-        <MindfulMoment
-          isOpen={showMindfulMoment}
-          onClose={() => setShowMindfulMoment(false)}
-          onComplete={handleMindfulMomentComplete}
-          onViewProgress={() => setActiveTab('stats')}
-          trigger="focus"
-        />
-      )}
+      <ModalLayer
+        challenges={challenges}
+        setChallenges={setChallenges}
+        setBadges={setBadges}
+        awardXp={awardXp}
+        earnTreats={earnTreats}
+        handleMindfulMomentComplete={handleMindfulMomentComplete}
+        currentStreak={innerWorld.currentActiveStreak}
+        userLevel={userLevel.level}
+      />
 
       {/* AI Coach Chat - Hidden until AI ready
       {isFeatureVisible('aiCoach') && <AICoachChat />}
