@@ -6,6 +6,8 @@
 import { App, type PluginListenerHandle } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
 import { logger } from './logger';
+import { SK } from './storageKeys';
+import { storageGetRaw } from './safeJson';
 
 // Track last back button press timestamp
 let lastBackPress = 0;
@@ -242,7 +244,7 @@ function closeTopModal(): boolean {
  */
 function getExitMessage(): string {
   try {
-    const lang = localStorage.getItem('zenflow-language') || 'en';
+    const lang = storageGetRaw(SK.LANGUAGE, 'en');
     const messages: Record<string, string> = {
       en: 'Press again to exit',
       uk: 'Натисніть ще раз для виходу',

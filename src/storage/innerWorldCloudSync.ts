@@ -2,11 +2,10 @@
 
 import { logger } from '@/lib/logger';
 import { safeLocalStorageSet } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 import { supabase } from '@/lib/supabaseClient';
 import { InnerWorld } from '@/types';
 import { z } from 'zod';
-
-const INNER_WORLD_STORAGE_KEY = 'zenflow-inner-world';
 
 /**
  * P2-8 Fix: Zod schema for validating InnerWorld cloud data
@@ -175,7 +174,7 @@ async function doSyncInnerWorld(localWorld: InnerWorld): Promise<InnerWorld> {
   }
 
   // Save merged state (use safe wrapper for Safari Private Mode)
-  safeLocalStorageSet(INNER_WORLD_STORAGE_KEY, winner);
+  safeLocalStorageSet(SK.INNER_WORLD, winner);
   await pushInnerWorldToCloud(winner);
 
   return winner;

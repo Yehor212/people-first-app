@@ -17,13 +17,28 @@ vi.mock('@/lib/logger', () => ({
 
 // Mock safeJson
 vi.mock('@/lib/safeJson', () => ({
-  safeJsonParse: vi.fn((str, defaultVal) => {
+  safeJsonParse: vi.fn((str: string | null, defaultVal: unknown) => {
     if (!str) return defaultVal;
+    try { return JSON.parse(str); } catch { return defaultVal; }
+  }),
+  safeLocalStorageGet: vi.fn((key: string, defaultVal: unknown) => {
     try {
+      const str = localStorage.getItem(key);
+      if (!str) return defaultVal;
       return JSON.parse(str);
-    } catch {
-      return defaultVal;
-    }
+    } catch { return defaultVal; }
+  }),
+  safeLocalStorageSet: vi.fn((key: string, value: unknown) => {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; }
+  }),
+  storageGetRaw: vi.fn((key: string, fallback = '') => {
+    try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
+  }),
+  storageSetRaw: vi.fn((key: string, value: string) => {
+    try { localStorage.setItem(key, value); } catch { /* */ }
+  }),
+  storageRemove: vi.fn((key: string) => {
+    try { localStorage.removeItem(key); } catch { /* */ }
   }),
 }));
 
@@ -77,14 +92,6 @@ vi.mock('@/lib/adhdHooks', () => ({
   generateWeekendChallenge: () => mockGenerateWeekendChallenge(),
   getStreakRiskNotification: (streak: number, hours: number) => mockGetStreakRiskNotification(streak, hours),
   getComebackNotification: (days: number) => mockGetComebackNotification(days),
-  ADHD_STORAGE_KEYS: {
-    COMBO_STATE: 'zenflow-adhd-combo',
-    SPIN_TOKENS: 'zenflow-adhd-spins',
-    MYSTERY_BOXES: 'zenflow-adhd-boxes',
-    TIME_CHALLENGES: 'zenflow-adhd-challenges',
-    LAST_LOGIN: 'zenflow-adhd-login',
-    LOGIN_STREAK: 'zenflow-adhd-streak',
-  },
 }));
 
 // Mock localStorage
@@ -122,8 +129,8 @@ describe('useADHDHooks', () => {
     });
 
     it('loads saved state from localStorage', async () => {
-      localStorageMock['zenflow-adhd-combo'] = JSON.stringify({ count: 5, multiplier: 2, lastActionAt: 100 });
-      localStorageMock['zenflow-adhd-spins'] = '3';
+      localStorageMock['zenflow_combo_state'] = JSON.stringify({ count: 5, multiplier: 2, lastActionAt: 100 });
+      localStorageMock['zenflow_spin_tokens'] = '3';
 
       const { useADHDHooks } = await import('../useADHDHooks');
       const { result } = renderHook(() => useADHDHooks(5));
@@ -154,7 +161,7 @@ describe('useADHDHooks', () => {
         result.current.incrementCombo();
       });
 
-      expect(localStorageMock['zenflow-adhd-combo']).toBeDefined();
+      expect(localStorageMock['zenflow_combo_state']).toBeDefined();
     });
   });
 
@@ -171,7 +178,7 @@ describe('useADHDHooks', () => {
     });
 
     it('uses spin token', async () => {
-      localStorageMock['zenflow-adhd-spins'] = '3';
+      localStorageMock['zenflow_spin_tokens'] = '3';
 
       const { useADHDHooks } = await import('../useADHDHooks');
       const { result } = renderHook(() => useADHDHooks(5));
@@ -359,7 +366,7 @@ describe('useADHDHooks', () => {
 
   describe('daily rewards', () => {
     it('shows daily rewards on new day', async () => {
-      localStorageMock['zenflow-adhd-login'] = 'Mon Jan 01 2024'; // Old date
+      localStorageMock['zenflow_last_login'] = 'Mon Jan 01 2024'; // Old date
 
       const { useADHDHooks } = await import('../useADHDHooks');
       const { result } = renderHook(() => useADHDHooks(5));
@@ -368,7 +375,7 @@ describe('useADHDHooks', () => {
     });
 
     it('closes daily rewards', async () => {
-      localStorageMock['zenflow-adhd-login'] = 'Mon Jan 01 2024';
+      localStorageMock['zenflow_last_login'] = 'Mon Jan 01 2024';
 
       const { useADHDHooks } = await import('../useADHDHooks');
       const { result } = renderHook(() => useADHDHooks(5));
@@ -381,7 +388,7 @@ describe('useADHDHooks', () => {
     });
 
     it('claims daily reward', async () => {
-      localStorageMock['zenflow-adhd-login'] = 'Mon Jan 01 2024';
+      localStorageMock['zenflow_last_login'] = 'Mon Jan 01 2024';
 
       const { useADHDHooks } = await import('../useADHDHooks');
       const { result } = renderHook(() => useADHDHooks(5));
@@ -391,7 +398,7 @@ describe('useADHDHooks', () => {
       });
 
       expect(result.current.showDailyRewards).toBe(false);
-      expect(localStorageMock['zenflow-adhd-login']).toBeDefined();
+      expect(localStorageMock['zenflow_last_login']).toBeDefined();
     });
   });
 });

@@ -149,23 +149,6 @@ export const ANIMATION = {
 } as const;
 
 // ============================================
-// STORAGE KEYS
-// ============================================
-
-export const STORAGE_KEYS = {
-  TASKS: 'zenflow_tasks',
-  MOMENTUM: 'zenflow_task_momentum',
-  MOODS: 'zenflow_moods',
-  HABITS: 'zenflow_habits',
-  GRATITUDE: 'zenflow_gratitude',
-  FOCUS_SESSIONS: 'zenflow_focus_sessions',
-  SETTINGS: 'zenflow_settings',
-  INNER_WORLD: 'zenflow_inner_world',
-  CHALLENGES: 'zenflow_challenges',
-  THEME: 'zenflow_theme',
-} as const;
-
-// ============================================
 // LIMITS
 // ============================================
 

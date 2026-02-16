@@ -12,6 +12,8 @@
 import { LocalNotifications, ActionPerformed } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { logger } from './logger';
+import { SK } from './storageKeys';
+import { storageGetRaw, storageSetRaw } from './safeJson';
 
 // ============================================
 // CONSTANTS
@@ -234,22 +236,14 @@ export function isQuickActionsActive(): boolean {
  * Get the current quick actions setting from storage
  */
 export function getQuickActionsSetting(): boolean {
-  try {
-    return localStorage.getItem('zenflow_quick_actions_enabled') === 'true';
-  } catch {
-    return false;
-  }
+  return storageGetRaw(SK.QUICK_ACTIONS_ENABLED) === 'true';
 }
 
 /**
  * Save quick actions setting to storage
  */
 export function saveQuickActionsSetting(enabled: boolean): void {
-  try {
-    localStorage.setItem('zenflow_quick_actions_enabled', String(enabled));
-  } catch (error) {
-    logger.error('[QuickActions] Failed to save setting:', error);
-  }
+  storageSetRaw(SK.QUICK_ACTIONS_ENABLED, String(enabled));
 }
 
 // ============================================

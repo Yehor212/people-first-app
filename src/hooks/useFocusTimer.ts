@@ -2,7 +2,8 @@ import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { logger } from '@/lib/logger';
 import { FocusSession } from '@/types';
 import { getToday, generateId } from '@/lib/utils';
-import { safeJsonParse } from '@/lib/safeJson';
+import { safeJsonParse, safeLocalStorageSet, storageGetRaw, storageRemove } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 import { safeParseInt } from '@/lib/validation';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -20,8 +21,6 @@ import { getCurrentChannelId } from '@/lib/notificationSounds';
 
 const DEFAULT_FOCUS_MINUTES = 25;
 const DEFAULT_BREAK_MINUTES = 5;
-const TIMER_STORAGE_KEY = 'zenflow-timer-state';
-
 interface TimerState {
   endTime: number | null;
   focusMinutes: number;
@@ -36,7 +35,7 @@ interface TimerState {
 
 // Load timer state from localStorage - outside hook to avoid recreation on every render
 function loadTimerState(): TimerState | null {
-  const stored = localStorage.getItem(TIMER_STORAGE_KEY);
+  const stored = storageGetRaw(SK.TIMER_STATE);
   if (stored) {
     return safeJsonParse<TimerState | null>(stored, null);
   }
@@ -99,7 +98,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
   // Timer state
   const [timeLeft, setTimeLeft] = useState(() => {
     if (expiredSessionRef.current) {
-      localStorage.removeItem(TIMER_STORAGE_KEY);
+      storageRemove(SK.TIMER_STATE);
       return (savedState?.focusMinutes || DEFAULT_FOCUS_MINUTES) * 60;
     }
     if (savedState?.endTime && savedState.isRunning) {
@@ -201,11 +200,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
         focusAccumulated: focusAccumulatedRef.current,
         preset,
       };
-      try {
-        localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
-      } catch {
-        // Ignore storage errors on unmount
-      }
+      safeLocalStorageSet(SK.TIMER_STATE, state);
     };
   }, []);
 
@@ -222,10 +217,8 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
       focusAccumulated: focusAccumulatedRef.current,
       preset,
     };
-    try {
-      localStorage.setItem(TIMER_STORAGE_KEY, JSON.stringify(state));
-    } catch (e) {
-      logger.error('Failed to save timer state:', e);
+    if (!safeLocalStorageSet(SK.TIMER_STATE, state)) {
+      logger.error('Failed to save timer state');
     }
   }, [focusMinutes, breakMinutes, isRunning, isBreak, label, preset]);
 
@@ -272,7 +265,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
         const remaining = Math.ceil((saved.endTime - now) / 1000);
         setTimeLeft(remaining);
       } else {
-        localStorage.removeItem(TIMER_STORAGE_KEY);
+        storageRemove(SK.TIMER_STATE);
       }
     }
   }, []);
@@ -354,7 +347,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
           setIsBreak(false);
           setTimeLeft(focusDuration);
         }
-        localStorage.removeItem(TIMER_STORAGE_KEY);
+        storageRemove(SK.TIMER_STATE);
       }
 
       // Save state every 10 ticks (5 seconds) to reduce localStorage writes
@@ -427,7 +420,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
     setIsRunning(false);
     setIsBreak(false);
     setTimeLeft(focusDuration);
-    localStorage.removeItem(TIMER_STORAGE_KEY);
+    storageRemove(SK.TIMER_STATE);
     saveTimerState();
   };
 

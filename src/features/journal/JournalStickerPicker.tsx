@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { SK } from '@/lib/storageKeys';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import { STICKER_CATEGORIES } from './stickerUtils';
 import { StickerRenderer } from './StickerRenderer';
 
@@ -20,18 +22,14 @@ export function JournalStickerPicker({ onSelect, onClose }: JournalStickerPicker
   const [activeCategory, setActiveCategory] = useState(0);
 
   const [recents] = useState<string[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem('journal-recent-stickers') || '[]');
-    } catch { return []; }
+    return safeLocalStorageGet<string[]>(SK.JOURNAL_RECENT_STICKERS, []);
   });
 
   const handleSelect = (sticker: string) => {
     onSelect(sticker);
-    try {
-      const prev = JSON.parse(localStorage.getItem('journal-recent-stickers') || '[]') as string[];
-      const updated = [sticker, ...prev.filter(s => s !== sticker)].slice(0, 16);
-      localStorage.setItem('journal-recent-stickers', JSON.stringify(updated));
-    } catch { /* ignore */ }
+    const prev = safeLocalStorageGet<string[]>(SK.JOURNAL_RECENT_STICKERS, []);
+    const updated = [sticker, ...prev.filter(s => s !== sticker)].slice(0, 16);
+    safeLocalStorageSet(SK.JOURNAL_RECENT_STICKERS, updated);
   };
 
   return (

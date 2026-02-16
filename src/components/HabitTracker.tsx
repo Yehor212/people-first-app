@@ -12,6 +12,8 @@ import { HabitCompletionCelebration, DailyProgressBar } from './HabitCompletionC
 import { CompactHabitCard } from './CompactHabitCard';
 import { HabitCreationForm } from './HabitCreationForm';
 import { hapticTap } from '@/lib/haptics';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 import { getActiveChallenges } from '@/lib/friendChallenge';
 import { useHabitForm, habitCategories } from '@/hooks/useHabitForm';
 import { announceSuccess } from '@/lib/a11y';
@@ -65,7 +67,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   useBackHandler(form.isAdding && !form.showCustomForm, () => form.setIsAdding(false));
 
   // Swipe hint for first-time users
-  const [swipeHintSeen] = useState(() => !!localStorage.getItem('habit-swipe-hint-seen'));
+  const [swipeHintSeen] = useState(() => !!storageGetRaw(SK.HABIT_SWIPE_HINT_SEEN));
   const swipeHintTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // List display state
@@ -385,7 +387,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               className="text-center text-[10px] text-muted-foreground/40 py-2"
               ref={(el) => {
                 if (el && !swipeHintTimerRef.current) {
-                  swipeHintTimerRef.current = setTimeout(() => { localStorage.setItem('habit-swipe-hint-seen', '1'); }, 8000);
+                  swipeHintTimerRef.current = setTimeout(() => { storageSetRaw(SK.HABIT_SWIPE_HINT_SEEN, '1'); }, 8000);
                 }
               }}
             >

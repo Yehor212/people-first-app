@@ -9,6 +9,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { MoodEntry, Habit, InnerWorld } from '@/types';
 import { supabase } from '@/lib/supabaseClient';
 import { logger } from '@/lib/logger';
+import { SK } from '@/lib/storageKeys';
 
 // Constants
 const API_TIMEOUT = 30000; // 30 seconds timeout for API calls
@@ -71,10 +72,6 @@ interface AICoachContextType {
 
 const AICoachContext = createContext<AICoachContextType | undefined>(undefined);
 
-// Storage keys
-const COACH_HISTORY_KEY = 'zenflow_coach_history';
-const ONBOARDING_DATA_KEY = 'zenflow_coach_onboarding';
-
 interface AICoachProviderProps {
   children: ReactNode;
 }
@@ -85,8 +82,8 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [currentTrigger, setCurrentTrigger] = useState<CoachTrigger>('manual');
   const [daysAwayContext, setDaysAwayContext] = useState(0);
-  const [messages, setMessages] = useLocalStorage<ChatMessage[]>(COACH_HISTORY_KEY, []);
-  const [onboardingData, setOnboardingData] = useLocalStorage<OnboardingData>(ONBOARDING_DATA_KEY, {});
+  const [messages, setMessages] = useLocalStorage<ChatMessage[]>(SK.COACH_HISTORY, []);
+  const [onboardingData, setOnboardingData] = useLocalStorage<OnboardingData>(SK.COACH_ONBOARDING, {});
 
   // Store user data in ref to avoid re-renders
   const userDataRef = useRef<UserDataRef>({

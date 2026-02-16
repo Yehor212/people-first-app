@@ -1,13 +1,11 @@
 // Application version management
-import { safeJsonParse } from './safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
+import { SK } from '@/lib/storageKeys';
 import { logger } from './logger';
 
 export const APP_VERSION = '1.7.2'; // Synced with package.json
 export const DATA_SCHEMA_VERSION = 2; // Data schema version
 export const MIN_SUPPORTED_VERSION = '1.0.0'; // Minimum supported version
-
-// Key for storing app metadata
-export const APP_METADATA_KEY = 'zenflow-app-metadata';
 
 export interface AppMetadata {
   appVersion: string;
@@ -19,17 +17,13 @@ export interface AppMetadata {
 
 // Get current app metadata
 export const getAppMetadata = (): AppMetadata | null => {
-  const stored = localStorage.getItem(APP_METADATA_KEY);
-  if (!stored) return null;
-  return safeJsonParse<AppMetadata | null>(stored, null);
+  return safeLocalStorageGet<AppMetadata | null>(SK.APP_METADATA, null);
 };
 
 // Save app metadata
 export const saveAppMetadata = (metadata: AppMetadata): void => {
-  try {
-    localStorage.setItem(APP_METADATA_KEY, JSON.stringify(metadata));
-  } catch (error) {
-    logger.error('[AppVersion] Failed to save metadata:', error);
+  if (!safeLocalStorageSet(SK.APP_METADATA, metadata)) {
+    logger.error('[AppVersion] Failed to save metadata');
   }
 };
 

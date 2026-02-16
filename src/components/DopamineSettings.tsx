@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { safeJsonParse } from '@/lib/safeJson';
+import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 import { Volume2, VolumeX, Sparkles, Zap, Award, Music } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -27,8 +28,6 @@ const DEFAULT_SETTINGS: DopamineSettings = {
   moodDrivenUI: true,
 };
 
-const STORAGE_KEY = 'zenflow_dopamine_settings';
-
 interface DopamineSettingsProps {
   onClose: () => void;
 }
@@ -43,9 +42,8 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
 
   // Load settings from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = safeJsonParse(stored, DEFAULT_SETTINGS);
+    const parsed = safeLocalStorageGet<DopamineSettings | null>(SK.DOPAMINE_SETTINGS, null);
+    if (parsed) {
       setSettings({ ...DEFAULT_SETTINGS, ...parsed });
     }
   }, []);
@@ -54,7 +52,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
   const updateSettings = useCallback((newSettings: Partial<DopamineSettings>) => {
     setSettings(prev => {
       const updated = { ...prev, ...newSettings };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      safeLocalStorageSet(SK.DOPAMINE_SETTINGS, updated);
       // Dispatch custom event for same-tab updates
       window.dispatchEvent(new CustomEvent('dopamine-settings-change', { detail: updated }));
       return updated;
@@ -355,9 +353,8 @@ export function useDopamineSettings(): DopamineSettings {
   const [settings, setSettings] = useState<DopamineSettings>(() => {
     // Initialize from localStorage on first render
     if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const parsed = safeJsonParse(stored, DEFAULT_SETTINGS);
+      const parsed = safeLocalStorageGet<DopamineSettings | null>(SK.DOPAMINE_SETTINGS, null);
+      if (parsed) {
         return { ...DEFAULT_SETTINGS, ...parsed };
       }
     }
@@ -367,7 +364,7 @@ export function useDopamineSettings(): DopamineSettings {
   useEffect(() => {
     // Listen for cross-tab storage changes
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY && e.newValue) {
+      if (e.key === SK.DOPAMINE_SETTINGS && e.newValue) {
         const parsed = safeJsonParse(e.newValue, DEFAULT_SETTINGS);
         setSettings({ ...DEFAULT_SETTINGS, ...parsed });
       }
@@ -389,6 +386,3 @@ export function useDopamineSettings(): DopamineSettings {
 
   return settings;
 }
-
-// Export storage key for use in other components
-export { STORAGE_KEY as DOPAMINE_SETTINGS_STORAGE_KEY };

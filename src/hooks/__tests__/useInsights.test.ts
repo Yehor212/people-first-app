@@ -18,13 +18,28 @@ vi.mock('@/lib/logger', () => ({
 
 // Mock safeJson
 vi.mock('@/lib/safeJson', () => ({
-  safeJsonParse: vi.fn((str, defaultVal) => {
+  safeJsonParse: vi.fn((str: string | null, defaultVal: unknown) => {
     if (!str) return defaultVal;
+    try { return JSON.parse(str); } catch { return defaultVal; }
+  }),
+  safeLocalStorageGet: vi.fn((key: string, defaultVal: unknown) => {
     try {
+      const str = localStorage.getItem(key);
+      if (!str) return defaultVal;
       return JSON.parse(str);
-    } catch {
-      return defaultVal;
-    }
+    } catch { return defaultVal; }
+  }),
+  safeLocalStorageSet: vi.fn((key: string, value: unknown) => {
+    try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; }
+  }),
+  storageGetRaw: vi.fn((key: string, fallback = '') => {
+    try { return localStorage.getItem(key) ?? fallback; } catch { return fallback; }
+  }),
+  storageSetRaw: vi.fn((key: string, value: string) => {
+    try { localStorage.setItem(key, value); } catch { /* */ }
+  }),
+  storageRemove: vi.fn((key: string) => {
+    try { localStorage.removeItem(key); } catch { /* */ }
   }),
 }));
 

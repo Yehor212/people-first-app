@@ -14,6 +14,7 @@ import { App } from '@capacitor/app';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
 import { APP_VERSION } from '@/lib/appVersion';
+import { SSK } from '@/lib/storageKeys';
 
 export type UpdatePriority = 'low' | 'medium' | 'high' | 'critical';
 
@@ -364,17 +365,11 @@ export async function isUpdateSupported(): Promise<boolean> {
 }
 
 /**
- * Storage key for tracking dismissed updates.
- * Users can dismiss non-critical updates once per session.
- */
-const DISMISSED_KEY = 'zenflow-update-dismissed';
-
-/**
  * Check if update was dismissed this session.
  */
 export function wasUpdateDismissed(): boolean {
   try {
-    const dismissed = sessionStorage.getItem(DISMISSED_KEY);
+    const dismissed = sessionStorage.getItem(SSK.UPDATE_DISMISSED);
     return dismissed === 'true';
   } catch {
     // sessionStorage not available
@@ -387,7 +382,7 @@ export function wasUpdateDismissed(): boolean {
  */
 export function dismissUpdate(): void {
   try {
-    sessionStorage.setItem(DISMISSED_KEY, 'true');
+    sessionStorage.setItem(SSK.UPDATE_DISMISSED, 'true');
   } catch {
     // sessionStorage not available
   }

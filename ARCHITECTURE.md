@@ -18,7 +18,7 @@
 | ESLint warnings | 21 | `npx eslint src/` |
 | TypeScript errors | 0 | `npx tsc --noEmit` |
 | God components (>400L) | 17 | See [Known Technical Debt](#known-technical-debt) |
-| Direct localStorage calls | 188 | `grep -rn 'localStorage\.' src/ \| wc -l` |
+| Direct localStorage calls | 0 (was 199) | Enforced by ESLint `no-restricted-globals` rule. All access via `SK` + `safeJson`. |
 | Silent .catch(() => {}) | 0 | `grep -rn '\.catch.*=> {}' src/ \| wc -l` |
 | React.memo components | 12 / 80+ | `grep -rl 'memo(' src/ --include="*.tsx" \| wc -l` |
 | lazy() imports | 6 | `grep -rn 'lazy(' src/ \| wc -l` |
@@ -273,7 +273,7 @@ const setShowWeeklyReport = getModalToggle('showWeeklyReport');
 1. **Zustand for shared state.** If 2+ components need the same data, it goes in a Zustand store.
 2. **useState for UI-only state.** If it dies with the component, it's local state.
 3. **No prop drilling deeper than 1 level.** Parent → Child is fine. Parent → Child → Grandchild → use a store.
-4. **No direct localStorage.** Use `useIndexedDB` hook or Zustand store. Zero raw `localStorage.getItem` calls.
+4. **No direct localStorage.** Use `SK` keys from `src/lib/storageKeys.ts` + `safeJson` accessors (`storageGetRaw`, `safeLocalStorageGet`, etc.). ESLint enforces this.
 5. **Array validation at hydration boundary.** `_hydrateFromDB` validates arrays survive corrupted cloud sync data.
 
 ---
@@ -318,7 +318,7 @@ Hooks are registered via `useHydrateGamification({ awardXp, earnTreats, plantSee
 
 1. **Dexie (IndexedDB) is the source of truth** for user data (moods, habits, focus sessions, etc.)
 2. **Zustand persist** is for app state (preferences, UI state, auth tokens)
-3. **NEVER use `localStorage.getItem/setItem` directly.** Always go through a hook or store.
+3. **NEVER use `localStorage` directly.** Use `SK.*` keys + `safeJson` accessors (`storageGetRaw`, `safeLocalStorageSet`, etc.). ESLint `no-restricted-globals` enforces this.
 4. **Atomic writes**: When updating IndexedDB, persist FIRST, then update React state on success.
 5. **Cloud sync is async and non-blocking.** Local-first: the app must work fully offline.
 
@@ -558,11 +558,11 @@ On PR to main:
 
 | ID | Severity | Description | Current Measurement | File |
 |----|----------|-------------|-------------------|------|
-| TD-03 | CRITICAL | Non-atomic IndexedDB writes (read-modify-write race) | 375 lines, core `put()` not transactional | src/hooks/useIndexedDB.ts |
+| TD-03 | ~~CRITICAL~~ → DONE | ~~Non-atomic IndexedDB writes (read-modify-write race)~~ | **Fixed 2026-02-16**: Wrapped `clear()` + `bulkPut()` in `table.db.transaction('rw', table, ...)` for atomic array writes. Single `put()` calls (settings) were already atomic. Follows existing pattern from `clearLocalUserData()` in db.ts. | src/hooks/useIndexedDB.ts |
 | TD-04 | CRITICAL | CSP `unsafe-inline` for scripts and styles | `script-src 'self' 'unsafe-inline'` | index.html:9 |
-| TD-05 | CRITICAL | Web Locks API bypass in auth (causes AbortError on reload) | Active bypass comment in code | src/lib/supabaseClient.ts |
-| TD-07 | HIGH | Direct `localStorage` calls instead of hooks/stores | **188 calls in 58 files** | Various |
-| TD-08 | HIGH | translations.ts monolith (all languages in one file) | **19,879 lines** | src/i18n/translations.ts |
+| TD-05 | ~~CRITICAL~~ → DONE | ~~Web Locks API bypass in auth (causes AbortError on reload)~~ | **Fixed 2026-02-16**: Replaced no-op lock bypass with `resilientNavigatorLock` — tries `navigator.locks` first (cross-tab coordination), catches `AbortError` during OAuth redirect, falls back to in-memory serialization. Uses existing `isAbortError()` from validation.ts. | src/lib/supabaseClient.ts |
+| TD-07 | ~~HIGH~~ → DONE | ~~Direct `localStorage` calls~~ | **Fixed 2026-02-16**: Central `SK` registry (src/lib/storageKeys.ts) + safeJson accessors + ESLint `no-restricted-globals` rule. 199 raw calls → 0 across 50+ files. | src/lib/storageKeys.ts |
+| TD-08 | ~~HIGH~~ → DONE | ~~translations.ts monolith (all languages in one file)~~ | **Fixed 2026-02-16**: Split 19,879-line monolith into per-language files. `types.ts` (2,280L), 8 language files in `languages/` (~2,200L each), `index.ts` (37L assembler), `translations.ts` (3L re-export). Zero import changes needed. | src/i18n/ |
 | TD-09 | HIGH | Low test coverage | 543 tests pass, but ~6% line coverage | src/__tests__/ |
 | TD-11 | ~~HIGH~~ → DONE | ~~CI pipeline missing lint + typecheck~~ | **Fixed 2026-02-16**: Added `eslint --quiet` + `tsc --noEmit` steps to deploy.yml. Still missing: `playwright`, `npm audit`. | .github/workflows/deploy.yml |
 | TD-15 | ~~MEDIUM~~ → LOW | useInnerWorld.ts monolith | ~~780+ lines~~ → **542 lines** (12 dead functions removed, garden/ dir deleted) | src/hooks/useInnerWorld.ts |
@@ -626,7 +626,7 @@ On PR to main:
 2. `npx eslint src/ --quiet` — track error count
 3. `npx vitest --run` — all tests pass
 4. `npm run build` — succeeds
-5. `grep -rn 'localStorage\.' src/ | wc -l` — track decrease from 188
+5. `grep -rn 'localStorage\.' src/ | wc -l` — **0** (enforced by ESLint, was 199)
 6. `grep -rn '\.catch.*=> {}' src/ | wc -l` — track decrease from 34
 7. `find src -name "*.tsx" -exec wc -l {} + | sort -rn | head -20` — god component progress
 8. `grep -rl 'memo(' src/ --include="*.tsx" | wc -l` — memo adoption

@@ -10,6 +10,8 @@ import { supabase } from '@/lib/supabaseClient';
 import { userNameSchema } from '@/lib/validation';
 import { sanitizeUserName } from '@/lib/sanitize';
 import { useTheme, ThemeOption } from '@/components/ThemeToggle';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 
 interface ProfileSectionProps {
   userName: string;
@@ -25,7 +27,7 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
   const [name, setName] = useState(userName);
   const [nameStatus, setNameStatus] = useState<string | null>(null);
   const [oledMode, setOledMode] = useState(() => {
-    return localStorage.getItem('zenflow_oled_mode') === 'true';
+    return storageGetRaw(SK.OLED_MODE) === 'true';
   });
 
   useEffect(() => {
@@ -73,7 +75,7 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
 
   const handleOledModeChange = (checked: boolean) => {
     setOledMode(checked);
-    localStorage.setItem('zenflow_oled_mode', String(checked));
+    storageSetRaw(SK.OLED_MODE, String(checked));
   };
 
   return (

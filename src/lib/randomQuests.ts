@@ -2,17 +2,14 @@
 // Generates daily/weekly quests with XP rewards and badge unlocks
 
 import { logger } from './logger';
-import { safeJsonParse } from './safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet, storageGetRaw } from './safeJson';
+import { SK } from '@/lib/storageKeys';
 import { translations } from '@/i18n/translations';
 
 
 // Helper to get current language from localStorage
 function getCurrentLanguage(): string {
-  try {
-    return localStorage.getItem('zenflow-language') || 'en';
-  } catch {
-    return 'en';
-  }
+  return storageGetRaw(SK.LANGUAGE, 'en');
 }
 
 // Helper to get translations for current language
@@ -467,8 +464,6 @@ export function getQuestDifficultyColor(type: QuestType): string {
   return colors[type];
 }
 
-const QUESTS_STORAGE_KEY = 'zenflow_quests';
-
 /**
  * Update all quests progress from localStorage and return newly completed quests
  * Call this from Index.tsx when user performs actions
@@ -480,10 +475,9 @@ export function updateAllQuestsProgress(
   }
 ): Quest[] {
   try {
-    const stored = localStorage.getItem(QUESTS_STORAGE_KEY);
-    if (!stored) return [];
+    const data = safeLocalStorageGet<{ daily?: Quest | null; weekly?: Quest | null; bonus?: Quest | null }>(SK.QUESTS, null);
+    if (!data) return [];
 
-    const data = safeJsonParse<{ daily?: Quest | null; weekly?: Quest | null; bonus?: Quest | null }>(stored, {});
     const newlyCompleted: Quest[] = [];
 
     // Update each quest type
@@ -503,7 +497,7 @@ export function updateAllQuestsProgress(
     });
 
     // Save updated quests back to localStorage
-    localStorage.setItem(QUESTS_STORAGE_KEY, JSON.stringify(data));
+    safeLocalStorageSet(SK.QUESTS, data);
 
     return newlyCompleted;
   } catch (error) {

@@ -9,7 +9,8 @@ import { useMemo, useEffect, useState } from 'react';
 import type { MoodEntry, Habit, FocusSession } from '@/types';
 import { generateInsights, type InsightTranslations } from '@/lib/insightsEngine';
 import { logger } from '@/lib/logger';
-import { safeJsonParse } from '@/lib/safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet, storageGetRaw, storageSetRaw, storageRemove } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 
 interface UseInsightsOptions {
   moods: MoodEntry[];
@@ -66,33 +67,32 @@ export function useInsights({
     if (!autoRefresh) return;
 
     const today = getToday();
-    const lastDate = localStorage.getItem('zenflow-insights-last-generated');
+    const lastDate = storageGetRaw(SK.INSIGHTS_LAST_GENERATED);
 
     // Regenerate if it's a new day
     if (lastDate !== today && insights.length > 0) {
       logger.log('[useInsights] New day detected, insights will refresh');
-      localStorage.setItem('zenflow-insights-last-generated', today);
+      storageSetRaw(SK.INSIGHTS_LAST_GENERATED, today);
       setLastGeneratedDate(today);
     }
   }, [autoRefresh, insights.length]);
 
   // Track insights visibility
   const [dismissedInsights, setDismissedInsights] = useState<string[]>(() => {
-    const stored = localStorage.getItem('zenflow-insights-dismissed');
-    return safeJsonParse<string[]>(stored, []);
+    return safeLocalStorageGet<string[]>(SK.INSIGHTS_DISMISSED, []);
   });
 
   // Dismiss an insight
   const dismissInsight = (insightId: string) => {
     const updated = [...dismissedInsights, insightId];
     setDismissedInsights(updated);
-    localStorage.setItem('zenflow-insights-dismissed', JSON.stringify(updated));
+    safeLocalStorageSet(SK.INSIGHTS_DISMISSED, updated);
   };
 
   // Clear dismissed insights (for testing or reset)
   const clearDismissed = () => {
     setDismissedInsights([]);
-    localStorage.removeItem('zenflow-insights-dismissed');
+    storageRemove(SK.INSIGHTS_DISMISSED);
   };
 
   // Filter out dismissed insights

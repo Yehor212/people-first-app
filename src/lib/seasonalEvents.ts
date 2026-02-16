@@ -10,6 +10,8 @@
  */
 
 import { logger } from '@/lib/logger';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 
 // ============================================
 // TYPES
@@ -461,28 +463,19 @@ export function getUpcomingEvents(date: Date = new Date()): SeasonalEvent[] {
 // PROGRESS TRACKING
 // ============================================
 
-const SEASONAL_PROGRESS_KEY = 'zenflow_seasonal_progress';
-
 /**
  * Get user's progress for all seasonal events
  */
 export function getSeasonalProgress(): Record<string, UserSeasonalProgress> {
-  try {
-    const stored = localStorage.getItem(SEASONAL_PROGRESS_KEY);
-    return stored ? JSON.parse(stored) : {};
-  } catch {
-    return {};
-  }
+  return safeLocalStorageGet<Record<string, UserSeasonalProgress>>(SK.SEASONAL_PROGRESS, {});
 }
 
 /**
  * Save user's seasonal progress
  */
 export function saveSeasonalProgress(progress: Record<string, UserSeasonalProgress>): void {
-  try {
-    localStorage.setItem(SEASONAL_PROGRESS_KEY, JSON.stringify(progress));
-  } catch (error) {
-    logger.warn('[SeasonalEvents] Failed to save progress:', error);
+  if (!safeLocalStorageSet(SK.SEASONAL_PROGRESS, progress)) {
+    logger.warn('[SeasonalEvents] Failed to save progress');
   }
 }
 

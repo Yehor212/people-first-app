@@ -5,14 +5,14 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Capacitor } from '@capacitor/core';
 import { StatusBarStyle, Style } from '@/lib/statusBarStyle';
 import { logger } from '@/lib/logger';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 
 /** Theme options: light, dark, or follow system preference */
 export type ThemeOption = 'light' | 'dark' | 'system';
 
 /** Effective theme is always light or dark (system resolves to one of these) */
 export type EffectiveTheme = 'light' | 'dark';
-
-const THEME_KEY = 'zenflow-theme';
 
 /** Get system preference */
 export const getSystemTheme = (): EffectiveTheme => {
@@ -23,7 +23,7 @@ export const getSystemTheme = (): EffectiveTheme => {
 /** Get stored theme preference */
 export const getStoredTheme = (): ThemeOption => {
   if (typeof window === 'undefined') return 'system';
-  const stored = localStorage.getItem(THEME_KEY);
+  const stored = storageGetRaw(SK.THEME);
   if (stored === 'light' || stored === 'dark' || stored === 'system') {
     return stored;
   }
@@ -43,7 +43,7 @@ export const applyTheme = (effectiveTheme: EffectiveTheme) => {
 
 /** Save theme preference */
 export const setThemePreference = (theme: ThemeOption) => {
-  localStorage.setItem(THEME_KEY, theme);
+  storageSetRaw(SK.THEME, theme);
 
   // Apply immediately
   const effective = theme === 'system' ? getSystemTheme() : theme;

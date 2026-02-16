@@ -2,21 +2,17 @@ import { Challenge, Badge, UserStats, Habit } from '@/types';
 import { badgeDefinitions } from './badges';
 import { formatDate } from './utils';
 import { logger } from './logger';
-import { safeLocalStorageGet } from './safeJson';
-
-const CHALLENGES_KEY = 'zenflow_challenges';
-const BADGES_KEY = 'zenflow_badges';
+import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from './safeJson';
+import { SK } from './storageKeys';
 
 // Challenge Storage
 export function getChallenges(): Challenge[] {
-  return safeLocalStorageGet<Challenge[]>(CHALLENGES_KEY, []);
+  return safeLocalStorageGet<Challenge[]>(SK.CHALLENGES, []);
 }
 
 export function saveChallenges(challenges: Challenge[]): void {
-  try {
-    localStorage.setItem(CHALLENGES_KEY, JSON.stringify(challenges));
-  } catch (error) {
-    logger.error('Failed to save challenges:', error);
+  if (!safeLocalStorageSet(SK.CHALLENGES, challenges)) {
+    logger.error('Failed to save challenges');
   }
 }
 
@@ -43,7 +39,7 @@ export function deleteChallenge(challengeId: string): void {
 
 // Badge Storage
 export function getBadges(): Badge[] {
-  const data = safeLocalStorageGet<Badge[] | null>(BADGES_KEY, null);
+  const data = safeLocalStorageGet<Badge[] | null>(SK.BADGES, null);
   if (data) {
     return data;
   }
@@ -59,10 +55,8 @@ export function initializeBadges(): Badge[] {
 }
 
 export function saveBadges(badges: Badge[]): void {
-  try {
-    localStorage.setItem(BADGES_KEY, JSON.stringify(badges));
-  } catch (error) {
-    logger.error('Failed to save badges:', error);
+  if (!safeLocalStorageSet(SK.BADGES, badges)) {
+    logger.error('Failed to save badges');
   }
 }
 
@@ -220,6 +214,6 @@ export function getUnlockedBadgesCount(): number {
 
 // Clear all challenges and badges (for testing or reset)
 export function clearAllChallengesAndBadges(): void {
-  localStorage.removeItem(CHALLENGES_KEY);
-  localStorage.removeItem(BADGES_KEY);
+  storageRemove(SK.CHALLENGES);
+  storageRemove(SK.BADGES);
 }

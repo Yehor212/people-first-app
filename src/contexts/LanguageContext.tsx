@@ -1,6 +1,8 @@
 import { createContext, useContext, ReactNode, useEffect, useRef, useMemo } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Language, Translations, translations } from '@/i18n/translations';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw } from '@/lib/safeJson';
 
 // Extend Navigator for IE compatibility (userLanguage property)
 declare global {
@@ -86,7 +88,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     if (hasAutoDetectedRef.current) return;
     hasAutoDetectedRef.current = true;
 
-    const hasSelectedLanguage = localStorage.getItem('zenflow-language-selected');
+    const hasSelectedLanguage = storageGetRaw(SK.LANGUAGE_SELECTED);
     if (!hasSelectedLanguage) {
       // User hasn't manually selected a language yet, use detected language
       const detected = detectBrowserLanguage();

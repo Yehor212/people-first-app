@@ -12,6 +12,7 @@
 
 import { logger } from './logger';
 import { safeSessionStorageGet, safeSessionStorageSet } from './safeJson';
+import { SSK } from '@/lib/storageKeys';
 import { rateLimiter, RateLimitError } from './rateLimiter';
 
 // ============================================
@@ -52,7 +53,6 @@ interface SpotifyApiPlaylistItem {
 // CONSTANTS
 // ============================================
 
-const STORAGE_KEY = 'zenflow_spotify_tokens';
 const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || '';
 
 // Whitelist allowed redirect URIs to prevent OAuth hijacking
@@ -149,7 +149,7 @@ export function isSpotifyConnected(): boolean {
  * Use sessionStorage instead of localStorage for tokens
  */
 function getStoredTokens(): SpotifyTokens | null {
-  return safeSessionStorageGet<SpotifyTokens | null>(STORAGE_KEY, null);
+  return safeSessionStorageGet<SpotifyTokens | null>(SSK.SPOTIFY_TOKENS, null);
 }
 
 /**
@@ -157,7 +157,7 @@ function getStoredTokens(): SpotifyTokens | null {
  * Use sessionStorage instead of localStorage for tokens
  */
 function storeTokens(tokens: SpotifyTokens): void {
-  safeSessionStorageSet(STORAGE_KEY, tokens);
+  safeSessionStorageSet(SSK.SPOTIFY_TOKENS, tokens);
 }
 
 /**
@@ -165,8 +165,8 @@ function storeTokens(tokens: SpotifyTokens): void {
  * Use sessionStorage for token storage
  */
 export function disconnectSpotify(): void {
-  sessionStorage.removeItem(STORAGE_KEY);
-  sessionStorage.removeItem('spotify_pkce_verifier');
+  sessionStorage.removeItem(SSK.SPOTIFY_TOKENS);
+  sessionStorage.removeItem(SSK.SPOTIFY_PKCE_VERIFIER);
   logger.log('[Spotify] Disconnected');
 }
 
@@ -183,7 +183,7 @@ export async function connectSpotify(): Promise<void> {
 
   // Store verifier for callback
   // Use sessionStorage for PKCE verifier (more secure - cleared on tab close)
-  sessionStorage.setItem('spotify_pkce_verifier', verifier);
+  sessionStorage.setItem(SSK.SPOTIFY_PKCE_VERIFIER, verifier);
 
   const params = new URLSearchParams({
     client_id: SPOTIFY_CLIENT_ID,
@@ -202,7 +202,7 @@ export async function connectSpotify(): Promise<void> {
  * Handle OAuth callback
  */
 export async function handleSpotifyCallback(code: string): Promise<boolean> {
-  const verifier = sessionStorage.getItem('spotify_pkce_verifier');
+  const verifier = sessionStorage.getItem(SSK.SPOTIFY_PKCE_VERIFIER);
   if (!verifier) {
     logger.error('[Spotify] No PKCE verifier found');
     return false;
@@ -235,7 +235,7 @@ export async function handleSpotifyCallback(code: string): Promise<boolean> {
       expiresAt: Date.now() + data.expires_in * 1000,
     });
 
-    sessionStorage.removeItem('spotify_pkce_verifier');
+    sessionStorage.removeItem(SSK.SPOTIFY_PKCE_VERIFIER);
     logger.log('[Spotify] Connected successfully');
     return true;
   } catch (error) {

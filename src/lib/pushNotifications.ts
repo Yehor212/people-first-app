@@ -13,6 +13,8 @@ import { Capacitor } from '@capacitor/core';
 import { supabase, getCurrentUserId } from './supabaseClient';
 import { logger } from './logger';
 import { App } from '@capacitor/app';
+import { SK } from './storageKeys';
+import { storageGetRaw, storageSetRaw } from './safeJson';
 
 // Device ID for token management
 let deviceId: string | null = null;
@@ -30,10 +32,12 @@ async function getDeviceId(): Promise<string> {
   } catch {
     // Fallback to random ID stored in localStorage
     try {
-      deviceId = localStorage.getItem('zenflow_device_id');
-      if (!deviceId) {
+      const stored = storageGetRaw(SK.DEVICE_ID);
+      if (stored) {
+        deviceId = stored;
+      } else {
         deviceId = `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-        localStorage.setItem('zenflow_device_id', deviceId);
+        storageSetRaw(SK.DEVICE_ID, deviceId);
       }
     } catch {
       deviceId = `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;

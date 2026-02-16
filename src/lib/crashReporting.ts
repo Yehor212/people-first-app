@@ -7,7 +7,8 @@
 
 import { Capacitor } from '@capacitor/core';
 import { logger } from './logger';
-import { safeLocalStorageGet } from './safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
+import { SK } from '@/lib/storageKeys';
 
 interface CrashReportingInterface {
   log: (message: string) => void;
@@ -35,8 +36,7 @@ const webFallback: CrashReportingInterface = {
 
     // Store in localStorage for debug reports
     try {
-      const LOG_KEY = 'zenflow-crash-log';
-      const existing = safeLocalStorageGet<{ message: string; stack?: string; context?: Record<string, string>; time: string }[]>(LOG_KEY, []);
+      const existing = safeLocalStorageGet<{ message: string; stack?: string; context?: Record<string, string>; time: string }[]>(SK.CRASH_LOG, []);
       const entry = {
         message: error.message,
         stack: error.stack,
@@ -44,7 +44,7 @@ const webFallback: CrashReportingInterface = {
         time: new Date().toISOString()
       };
       const next = [...existing, entry].slice(-20);
-      localStorage.setItem(LOG_KEY, JSON.stringify(next));
+      safeLocalStorageSet(SK.CRASH_LOG, next);
     } catch {
       // Ignore storage errors
     }

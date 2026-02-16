@@ -7,7 +7,8 @@ import { SkeletonSection, SkeletonList } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
-import { safeJsonParse } from '@/lib/safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 import { playSuccess, playStreakMilestone } from '@/lib/audioManager';
 import { taskNameSchema, safeParseInt } from '@/lib/validation';
 import { sanitizeString } from '@/lib/sanitize';
@@ -21,9 +22,6 @@ import {
 } from '@/lib/taskMomentum';
 import { pushTasksToCloud } from '@/storage/tasksCloudSync';
 import { syncOrchestrator } from '@/lib/syncOrchestrator';
-
-const STORAGE_KEY = 'zenflow_tasks';
-const MOMENTUM_KEY = 'zenflow_task_momentum';
 
 interface TasksPanelProps {
   onClose?: () => void;
@@ -54,18 +52,14 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
 
   // Load tasks from localStorage on mount
   useEffect(() => {
-    const storedTasks = localStorage.getItem(STORAGE_KEY);
-    if (storedTasks) {
-      const parsed = safeJsonParse<Task[]>(storedTasks, []);
-      setTasks(Array.isArray(parsed) ? parsed : []);
-    }
+    const parsedTasks = safeLocalStorageGet<Task[]>(SK.TASKS, []);
+    setTasks(Array.isArray(parsedTasks) ? parsedTasks : []);
 
-    const storedMomentum = localStorage.getItem(MOMENTUM_KEY);
-    if (storedMomentum) {
-      const parsed = safeJsonParse<{ lastCompletion?: number; count?: number }>(storedMomentum, {});
+    const parsedMomentum = safeLocalStorageGet<{ lastCompletion?: number; count?: number }>(SK.TASK_MOMENTUM, null);
+    if (parsedMomentum) {
       // Reset momentum if last completion was more than 30 minutes ago
-      if (parsed.lastCompletion && Date.now() - parsed.lastCompletion < 30 * 60 * 1000) {
-        setConsecutiveCompletions(parsed.count || 0);
+      if (parsedMomentum.lastCompletion && Date.now() - parsedMomentum.lastCompletion < 30 * 60 * 1000) {
+        setConsecutiveCompletions(parsedMomentum.count || 0);
       }
     }
     setIsLoaded(true);
@@ -74,7 +68,7 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   // Save tasks to localStorage whenever they change
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+    safeLocalStorageSet(SK.TASKS, tasks);
 
     // Dispatch custom event to notify ScheduleTimeline about task changes
     window.dispatchEvent(new CustomEvent('zenflow-tasks-updated'));
@@ -90,10 +84,10 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   // Save momentum state
   useEffect(() => {
     if (!isLoaded) return;
-    localStorage.setItem(MOMENTUM_KEY, JSON.stringify({
+    safeLocalStorageSet(SK.TASK_MOMENTUM, {
       count: consecutiveCompletions,
       lastCompletion: consecutiveCompletions > 0 ? Date.now() : null,
-    }));
+    });
   }, [consecutiveCompletions, isLoaded]);
 
   const prioritizedTasks = useMemo(() => prioritizeForADHD(tasks), [tasks]);

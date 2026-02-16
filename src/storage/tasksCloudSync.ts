@@ -6,10 +6,8 @@ import { Task } from '@/lib/taskMomentum';
 import { Quest, QuestCondition, QuestReward } from '@/lib/randomQuests';
 import { syncOrchestrator } from '@/lib/syncOrchestrator';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 import { triggerDataRefresh } from '@/hooks/useIndexedDB';
-
-const TASKS_STORAGE_KEY = 'zenflow_tasks';
-const QUESTS_STORAGE_KEY = 'zenflow_quests';
 
 // UUID validation regex for secure user_id filtering
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -240,7 +238,7 @@ export async function syncTasks(): Promise<Task[]> {
 
   await syncOrchestrator.sync('tasks', async () => {
     // Get local tasks first (safe fallback)
-    const localTasks = safeLocalStorageGet<Task[]>(TASKS_STORAGE_KEY, []);
+    const localTasks = safeLocalStorageGet<Task[]>(SK.TASKS, []);
 
     // Pull from cloud
     const cloudTasks = await pullTasksFromCloud();
@@ -291,7 +289,7 @@ export async function syncTasks(): Promise<Task[]> {
     mergedTasks = Array.from(taskMap.values());
 
     // Save merged to local
-    safeLocalStorageSet(TASKS_STORAGE_KEY, mergedTasks);
+    safeLocalStorageSet(SK.TASKS, mergedTasks);
 
     // Trigger React state refresh so UI updates
     triggerDataRefresh();
@@ -374,7 +372,7 @@ export async function syncQuests(): Promise<QuestsState> {
 
   await syncOrchestrator.sync('quests', async () => {
     // Get local quests first (safe fallback)
-    const localQuests = safeLocalStorageGet<QuestsState>(QUESTS_STORAGE_KEY, defaultQuests);
+    const localQuests = safeLocalStorageGet<QuestsState>(SK.QUESTS, defaultQuests);
 
     // Pull from cloud
     const cloudQuests = await pullQuestsFromCloud();
@@ -414,7 +412,7 @@ export async function syncQuests(): Promise<QuestsState> {
     };
 
     // Save merged to local
-    safeLocalStorageSet(QUESTS_STORAGE_KEY, mergedQuests);
+    safeLocalStorageSet(SK.QUESTS, mergedQuests);
 
     // Trigger React state refresh so UI updates
     triggerDataRefresh();

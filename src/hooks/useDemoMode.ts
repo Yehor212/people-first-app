@@ -1,19 +1,19 @@
 import { useState, useCallback } from 'react';
-
-const DEMO_MODE_KEY = 'zenflow-demo-mode';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw, storageRemove } from '@/lib/safeJson';
 
 export function useDemoMode() {
   const [isDemoMode, setIsDemoMode] = useState(() => {
-    return localStorage.getItem(DEMO_MODE_KEY) === 'true';
+    return storageGetRaw(SK.DEMO_MODE) === 'true';
   });
 
   const enableDemoMode = useCallback(() => {
-    localStorage.setItem(DEMO_MODE_KEY, 'true');
+    storageSetRaw(SK.DEMO_MODE, 'true');
     setIsDemoMode(true);
   }, []);
 
   const disableDemoMode = useCallback(() => {
-    localStorage.removeItem(DEMO_MODE_KEY);
+    storageRemove(SK.DEMO_MODE);
     setIsDemoMode(false);
   }, []);
 
@@ -26,5 +26,5 @@ export function useDemoMode() {
 }
 
 export function isDemoModeEnabled(): boolean {
-  return localStorage.getItem(DEMO_MODE_KEY) === 'true';
+  return storageGetRaw(SK.DEMO_MODE) === 'true';
 }

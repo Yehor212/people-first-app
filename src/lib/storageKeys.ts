@@ -1,0 +1,148 @@
+/**
+ * Central registry for all localStorage and sessionStorage keys.
+ *
+ * Import `SK` for localStorage keys, `SSK` for sessionStorage keys.
+ * Never use raw string keys — always reference this registry.
+ *
+ * @example
+ * import { SK } from '@/lib/storageKeys';
+ * storageGetRaw(SK.THEME, 'system');
+ * safeLocalStorageSet(SK.TASKS, tasks);
+ */
+
+// ─────────────────────────────────────────────
+// localStorage keys
+// ─────────────────────────────────────────────
+
+export const SK = {
+  // ─── Core Data ───
+  TASKS: 'zenflow_tasks',
+  TASK_MOMENTUM: 'zenflow_task_momentum',
+  INNER_WORLD: 'zenflow-inner-world',
+  CHALLENGES: 'zenflow_challenges',
+  LAST_STATE: 'zenflow_last_state',
+  QUESTS: 'zenflow_quests',
+  OFFLINE_QUEUE: 'zenflow_offline_queue',
+
+  // ─── Theme & UI ───
+  THEME: 'zenflow-theme',
+  OLED_MODE: 'zenflow_oled_mode',
+  LANGUAGE: 'zenflow-language',
+  LANGUAGE_SELECTED: 'zenflow-language-selected',
+  INSIGHTS_COLLAPSED: 'zenflow-insights-collapsed',
+  FEATURE_FLAGS: 'zenflow-feature-flags',
+
+  // ─── ADHD Gamification ───
+  COMBO_STATE: 'zenflow_combo_state',
+  DAILY_LOGIN: 'zenflow_daily_login',
+  LOGIN_STREAK: 'zenflow_login_streak',
+  LAST_LOGIN: 'zenflow_last_login',
+  SPIN_TOKENS: 'zenflow_spin_tokens',
+  MYSTERY_BOXES: 'zenflow_mystery_boxes',
+  TIME_CHALLENGES: 'zenflow_time_challenges',
+  ACTIVE_POWERUPS: 'zenflow_active_powerups',
+  DOPAMINE_SETTINGS: 'zenflow_dopamine_settings',
+  BADGES: 'zenflow_badges',
+  SPECIAL_BADGES: 'zenflow-special-badges',
+  DAILY_SURPRISE_SEEN: 'zenflow-daily-surprise-seen',
+  LAST_SHOWN_STREAK: 'zenflow-last-shown-streak',
+
+  // ─── Ads ───
+  AD_DAILY_REWARDED: 'zenflow-ad-rewarded-count',
+  AD_COUNT_DATE: 'zenflow-ad-count-date',
+  AD_SESSION_COUNT: 'zenflow-ad-session-count',
+  AD_LAST_SHOWN: 'zenflow-ad-last-shown',
+  AD_LAST_DISMISS: 'zenflow-ad-last-dismiss',
+  AD_CONSENT_SHOWN: 'zenflow-ad-consent-shown',
+
+  // ─── Timer ───
+  TIMER_STATE: 'zenflow-timer-state',
+
+  // ─── Journal ───
+  JOURNAL_PASSWORD: 'journal_password',
+  JOURNAL_BIOMETRIC: 'journal_biometric',
+  JOURNAL_REMINDER: 'journal_reminder',
+  JOURNAL_SCREENSHOT_BLOCK: 'journal_screenshot_block',
+  JOURNAL_PRIVATE_MODE: 'journal_private_mode',
+  JOURNAL_PASSWORD_RESET: 'journal_password_reset_pending',
+  JOURNAL_CALENDAR_MODE: 'journal-calendar-mode',
+  JOURNAL_LEGEND_SEEN: 'journal-legend-seen',
+  JOURNAL_RECENT_STICKERS: 'journal-recent-stickers',
+
+  // ─── Audio ───
+  AUDIO_MUTED: 'zenflow-audio-muted',
+  AUDIO_VOLUME: 'zenflow-audio-volume',
+  NOTIFICATION_SOUND: 'zenflow_notification_sound',
+
+  // ─── Feedback & Errors ───
+  PENDING_FEEDBACK: 'zenflow_pending_feedback',
+  FEEDBACK: 'zenflow_feedback',
+  ERROR_LOG: 'zenflow-error-log',
+  CRASH_LOG: 'zenflow-crash-log',
+
+  // ─── Insights ───
+  INSIGHTS_LAST_GENERATED: 'zenflow-insights-last-generated',
+  INSIGHTS_DISMISSED: 'zenflow-insights-dismissed',
+
+  // ─── Onboarding & Hints ───
+  ONBOARDING_STATE: 'zenflow_onboarding_state',
+  HABIT_SWIPE_HINT_SEEN: 'habit-swipe-hint-seen',
+  NOTIFICATION_PERMISSION_ASKED: 'notification-permission-asked',
+
+  // ─── Version & Updates ───
+  APP_METADATA: 'zenflow-app-metadata',
+  LAST_SEEN_VERSION: 'zenflow_last_seen_version',
+  LAST_VERSION_CHECK: 'zenflow_last_version_check',
+
+  // ─── Social & Friends ───
+  FRIENDS: 'zenflow_friends',
+  MY_FRIEND_PROFILE: 'zenflow_my_friend_profile',
+  FRIEND_ACTIVITIES: 'zenflow_friend_activities',
+
+  // ─── Cloud Sync ───
+  CLOUD_SYNC_ENABLED: 'zenflow_cloud_sync_enabled',
+  DEVICE_ID: 'zenflow_device_id',
+
+  // ─── Coach ───
+  COACH_HISTORY: 'zenflow_coach_history',
+  COACH_ONBOARDING: 'zenflow_coach_onboarding',
+
+  // ─── Re-engagement ───
+  LAST_ACTIVE_DATE: 'zenflow_last_active_date',
+  WELCOME_BACK_SHOWN: 'zenflow_welcome_back_shown',
+  COMEBACK_CHALLENGE: 'zenflow_comeback_challenge',
+  REVIEW_PROMPT: 'zenflow_review_prompt',
+  WEEKLY_REPORT: 'zenflow-last-weekly-report',
+
+  // ─── Seasonal ───
+  SEASONAL_PROGRESS: 'zenflow_seasonal_progress',
+
+  // ─── Calendar ───
+  CALENDAR_CACHE: 'zenflow_calendar_cache',
+
+  // ─── Misc ───
+  DEMO_MODE: 'zenflow-demo-mode',
+  QUICK_ACTIONS_ENABLED: 'zenflow_quick_actions_enabled',
+  WIDGET_DATA: 'zenflow-widget-data',
+  DISMISSED_URGENCY: 'zenflow-dismissed-urgency',
+
+  // ─── Dynamic key builders ───
+  journalDraft: (id: string) => `journal_draft_${id}`,
+  whatsNewDismissed: (version: string) => `zenflow_whats_new_v${version}_dismissed`,
+} as const;
+
+// ─────────────────────────────────────────────
+// sessionStorage keys
+// ─────────────────────────────────────────────
+
+export const SSK = {
+  HARD_RELOAD_TS: 'zenflow_hard_reload_ts',
+  VERSION_CHECK_FLAG: 'zenflow_check_version',
+  UPDATE_DISMISSED: 'zenflow-update-dismissed',
+  SPOTIFY_TOKENS: 'zenflow_spotify_tokens',
+  SPOTIFY_PKCE_VERIFIER: 'spotify_pkce_verifier',
+  DISMISSED_EVENTS: 'zenflow_dismissed_events',
+
+  // Dynamic
+  chunkReload: (moduleName: string) => `chunk_reload_${moduleName}`,
+} as const;

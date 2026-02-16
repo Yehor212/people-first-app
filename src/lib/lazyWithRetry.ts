@@ -1,6 +1,7 @@
 import { lazy, ComponentType } from 'react';
 import { forceHardReload, markForVersionCheck } from './versionCheck';
 import { logger } from '@/lib/logger';
+import { SSK } from '@/lib/storageKeys';
 
 type ImportFn<T> = () => Promise<{ default: T }>;
 
@@ -54,7 +55,7 @@ export function lazyWithRetry<T extends ComponentType<any>>(
     logger.error(`[LazyLoad] All retries failed for ${moduleName}, performing hard reload...`);
 
     // Mark that we're reloading to prevent infinite loop
-    const reloadKey = `chunk_reload_${moduleName}`;
+    const reloadKey = SSK.chunkReload(moduleName);
     const lastReload = sessionStorage.getItem(reloadKey);
     const now = Date.now();
 

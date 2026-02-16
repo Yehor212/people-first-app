@@ -5,6 +5,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Capacitor } from '@capacitor/core';
 import { logger } from '@/lib/logger';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 
 interface NotificationPermissionProps {
   onComplete: () => void;
@@ -28,7 +30,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
     }
 
     // Check if we've already asked
-    const hasAsked = localStorage.getItem('notification-permission-asked');
+    const hasAsked = storageGetRaw(SK.NOTIFICATION_PERMISSION_ASKED);
     if (hasAsked) {
       onComplete();
       return;
@@ -37,7 +39,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
     try {
       const permission = await LocalNotifications.checkPermissions();
       if (permission.display === 'granted') {
-        localStorage.setItem('notification-permission-asked', 'true');
+        storageSetRaw(SK.NOTIFICATION_PERMISSION_ASKED, 'true');
         onComplete();
         return;
       }
@@ -53,7 +55,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
   const handleAllow = async () => {
     try {
       const result = await LocalNotifications.requestPermissions();
-      localStorage.setItem('notification-permission-asked', 'true');
+      storageSetRaw(SK.NOTIFICATION_PERMISSION_ASKED, 'true');
 
       if (result.display === 'granted') {
         logger.log('[Notifications] Permission granted');
@@ -69,7 +71,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
   };
 
   const handleDeny = () => {
-    localStorage.setItem('notification-permission-asked', 'true');
+    storageSetRaw(SK.NOTIFICATION_PERMISSION_ASKED, 'true');
     setShowPrompt(false);
     onComplete();
   };

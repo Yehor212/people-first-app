@@ -5,9 +5,8 @@
 
 import Review from '@/plugins/ReviewPlugin';
 import { logger } from './logger';
-import { safeJsonParse } from './safeJson';
-
-const STORAGE_KEY = 'zenflow_review_prompt';
+import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from './safeJson';
+import { SK } from './storageKeys';
 
 interface ReviewState {
   /** When the app was first installed */
@@ -23,12 +22,9 @@ interface ReviewState {
 }
 
 const getState = (): ReviewState => {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    const parsed = safeJsonParse<ReviewState | null>(saved, null);
-    if (parsed) {
-      return parsed;
-    }
+  const parsed = safeLocalStorageGet<ReviewState | null>(SK.REVIEW_PROMPT, null);
+  if (parsed) {
+    return parsed;
   }
 
   // Default state for new installs
@@ -42,11 +38,7 @@ const getState = (): ReviewState => {
 };
 
 const saveState = (state: ReviewState) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    // Ignore storage errors
-  }
+  safeLocalStorageSet(SK.REVIEW_PROMPT, state);
 };
 
 /**
@@ -153,5 +145,5 @@ export const markReviewDeclined = () => {
  * Reset review state (for testing).
  */
 export const resetReviewState = () => {
-  localStorage.removeItem(STORAGE_KEY);
+  storageRemove(SK.REVIEW_PROMPT);
 };

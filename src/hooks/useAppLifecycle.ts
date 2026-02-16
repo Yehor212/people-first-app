@@ -7,6 +7,8 @@ import { getToday } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { SplashScreen } from '@capacitor/splash-screen';
 import { Capacitor } from '@capacitor/core';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw } from '@/lib/safeJson';
 
 /**
  * Handles app initialization, splash screen, and currentDate init.
@@ -35,7 +37,7 @@ export function useAppLifecycle(): void {
       initializeOfflineQueueHandlers();
 
       // Apply OLED mode if previously enabled
-      if (localStorage.getItem('zenflow_oled_mode') === 'true') {
+      if (storageGetRaw(SK.OLED_MODE) === 'true') {
         document.documentElement.classList.add('oled');
       }
 

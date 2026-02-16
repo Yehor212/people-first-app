@@ -13,8 +13,8 @@ import { useBackHandler } from '@/hooks/useBackHandler';
 import { APP_VERSION, wasAppUpdated } from '@/lib/appVersion';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
-
-const LAST_SEEN_VERSION_KEY = 'zenflow_last_seen_version';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 
 interface ChangelogItem {
   icon: React.ReactNode;
@@ -254,7 +254,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
   const { modalProps } = useModalKeyboard({
     isOpen: isVisible,
     onClose: () => {
-      localStorage.setItem(LAST_SEEN_VERSION_KEY, APP_VERSION);
+      storageSetRaw(SK.LAST_SEEN_VERSION, APP_VERSION);
       setIsVisible(false);
       onClose?.();
       logger.log('[WhatsNew] Modal dismissed via keyboard');
@@ -266,7 +266,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
 
   useEffect(() => {
     // Check if we should show the modal
-    const lastSeenVersion = localStorage.getItem(LAST_SEEN_VERSION_KEY);
+    const lastSeenVersion = storageGetRaw(SK.LAST_SEEN_VERSION);
 
     // Show if:
     // 1. App was updated (version changed from stored metadata)
@@ -279,21 +279,21 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
         logger.log('[WhatsNew] Showing modal for version:', APP_VERSION);
       } else {
         // No changelog for this version, mark as seen
-        localStorage.setItem(LAST_SEEN_VERSION_KEY, APP_VERSION);
+        storageSetRaw(SK.LAST_SEEN_VERSION, APP_VERSION);
       }
     }
   }, []);
 
   // Android back button: dismiss modal
   useBackHandler(isVisible, () => {
-    localStorage.setItem(LAST_SEEN_VERSION_KEY, APP_VERSION);
+    storageSetRaw(SK.LAST_SEEN_VERSION, APP_VERSION);
     setIsVisible(false);
     onClose?.();
     logger.log('[WhatsNew] Modal dismissed via back button');
   });
 
   const handleDismiss = () => {
-    localStorage.setItem(LAST_SEEN_VERSION_KEY, APP_VERSION);
+    storageSetRaw(SK.LAST_SEEN_VERSION, APP_VERSION);
     setIsVisible(false);
     onClose?.();
     logger.log('[WhatsNew] Modal dismissed');

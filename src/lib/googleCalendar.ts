@@ -12,7 +12,8 @@
 
 import { supabase } from './supabaseClient';
 import { logger } from './logger';
-import { safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from './safeJson';
+import { SK } from '@/lib/storageKeys';
 import { rateLimiter, RateLimitError } from './rateLimiter';
 
 // ============================================
@@ -57,7 +58,6 @@ interface GoogleCalendarEventItem {
 // CONSTANTS
 // ============================================
 
-const STORAGE_KEY = 'zenflow_calendar_cache';
 const CACHE_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
 
@@ -81,14 +81,14 @@ async function calendarFetch(url: string, options?: RequestInit): Promise<Respon
  * Get cached calendar state
  */
 function getCachedState(): CalendarSyncState | null {
-  return safeLocalStorageGet<CalendarSyncState | null>(STORAGE_KEY, null);
+  return safeLocalStorageGet<CalendarSyncState | null>(SK.CALENDAR_CACHE, null);
 }
 
 /**
  * Save calendar state to cache
  */
 function saveCacheState(state: CalendarSyncState): void {
-  safeLocalStorageSet(STORAGE_KEY, state);
+  safeLocalStorageSet(SK.CALENDAR_CACHE, state);
 }
 
 /**
@@ -399,7 +399,7 @@ export async function fetchCalendarEventsWithCache(
  * Clear calendar cache
  */
 export function clearCalendarCache(): void {
-  localStorage.removeItem(STORAGE_KEY);
+  storageRemove(SK.CALENDAR_CACHE);
   dateCache.clear();
   logger.log('[Calendar] Cache cleared');
 }

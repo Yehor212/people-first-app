@@ -14,15 +14,13 @@
  */
 
 import { logger } from './logger';
+import { storageGetRaw, storageSetRaw } from './safeJson';
+import { SK, SSK } from '@/lib/storageKeys';
 
 interface VersionManifest {
   version: string;
   buildTime: number;
 }
-
-const VERSION_CHECK_FLAG = 'zenflow_check_version';
-const RELOAD_TIMESTAMP_KEY = 'zenflow_hard_reload_ts';
-const LAST_VERSION_CHECK_KEY = 'zenflow_last_version_check';
 const VERSION_CHECK_INTERVAL = 1 * 60 * 1000; // 1 minute — aggressive for GitHub Pages (no custom cache headers)
 
 /**
@@ -79,7 +77,7 @@ export async function forceHardReload(): Promise<void> {
   logger.log('[VersionCheck] Performing hard reload...');
 
   // Prevent infinite reload loops
-  const lastReload = sessionStorage.getItem(RELOAD_TIMESTAMP_KEY);
+  const lastReload = sessionStorage.getItem(SSK.HARD_RELOAD_TS);
   const now = Date.now();
 
   if (lastReload && now - parseInt(lastReload, 10) < 30000) {
@@ -87,7 +85,7 @@ export async function forceHardReload(): Promise<void> {
     return;
   }
 
-  sessionStorage.setItem(RELOAD_TIMESTAMP_KEY, now.toString());
+  sessionStorage.setItem(SSK.HARD_RELOAD_TS, now.toString());
 
   try {
     // 1. Clear ALL caches (await completion)
@@ -118,16 +116,16 @@ export async function forceHardReload(): Promise<void> {
  * Used before reload in lazyWithRetry to ensure fresh check.
  */
 export function markForVersionCheck(): void {
-  sessionStorage.setItem(VERSION_CHECK_FLAG, 'true');
+  sessionStorage.setItem(SSK.VERSION_CHECK_FLAG, 'true');
 }
 
 /**
  * Check if version check was requested (and clear the flag).
  */
 export function shouldCheckVersion(): boolean {
-  const shouldCheck = sessionStorage.getItem(VERSION_CHECK_FLAG) === 'true';
+  const shouldCheck = sessionStorage.getItem(SSK.VERSION_CHECK_FLAG) === 'true';
   if (shouldCheck) {
-    sessionStorage.removeItem(VERSION_CHECK_FLAG);
+    sessionStorage.removeItem(SSK.VERSION_CHECK_FLAG);
   }
   return shouldCheck;
 }
@@ -152,25 +150,17 @@ export function isOAuthReturn(): boolean {
  * Returns true if we should check (5+ minutes since last check).
  */
 export function shouldAutoCheckVersion(): boolean {
-  try {
-    const lastCheck = localStorage.getItem(LAST_VERSION_CHECK_KEY);
-    if (!lastCheck) return true;
+  const lastCheck = storageGetRaw(SK.LAST_VERSION_CHECK) || null;
+  if (!lastCheck) return true;
 
-    const elapsed = Date.now() - parseInt(lastCheck, 10);
-    return elapsed >= VERSION_CHECK_INTERVAL;
-  } catch {
-    return true; // If localStorage fails, check anyway
-  }
+  const elapsed = Date.now() - parseInt(lastCheck, 10);
+  return elapsed >= VERSION_CHECK_INTERVAL;
 }
 
 /**
  * Mark the current time as last version check.
  */
 export function markVersionChecked(): void {
-  try {
-    localStorage.setItem(LAST_VERSION_CHECK_KEY, Date.now().toString());
-  } catch {
-    // Ignore localStorage errors
-  }
+  storageSetRaw(SK.LAST_VERSION_CHECK, Date.now().toString());
 }
 

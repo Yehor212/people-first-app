@@ -11,9 +11,8 @@
  */
 
 import { logger } from '@/lib/logger';
-import { safeJsonParse } from '@/lib/safeJson';
-
-const ONBOARDING_STORAGE_KEY = 'zenflow_onboarding_state';
+import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 
 export interface OnboardingState {
   isNewUser: boolean; // false for existing users (skip onboarding)
@@ -99,12 +98,9 @@ const UNLOCK_CONDITIONS: UnlockCondition[] = [
  * Get onboarding state from localStorage
  */
 export function getOnboardingState(): OnboardingState {
-  const stored = localStorage.getItem(ONBOARDING_STORAGE_KEY);
-  if (stored) {
-    const parsed = safeJsonParse<OnboardingState | null>(stored, null);
-    if (parsed) {
-      return parsed;
-    }
+  const parsed = safeLocalStorageGet<OnboardingState | null>(SK.ONBOARDING_STATE, null);
+  if (parsed) {
+    return parsed;
   }
 
   // Default state for new users - ALL features unlocked immediately
@@ -131,10 +127,8 @@ export function getOnboardingState(): OnboardingState {
  * Save onboarding state to localStorage
  */
 export function saveOnboardingState(state: OnboardingState): void {
-  try {
-    localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(state));
-  } catch (error) {
-    logger.error('[Onboarding] Failed to save state:', error);
+  if (!safeLocalStorageSet(SK.ONBOARDING_STATE, state)) {
+    logger.error('[Onboarding] Failed to save state');
   }
 }
 
@@ -372,7 +366,7 @@ export function getUnlockProgress(): {
  * Reset onboarding (for testing or user request)
  */
 export function resetOnboarding(): void {
-  localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+  storageRemove(SK.ONBOARDING_STATE);
   logger.log('[Onboarding] State reset');
 }
 

@@ -34,7 +34,8 @@ declare global {
 
 import { logger } from './logger';
 import { generateSecureRandom } from './validation';
-import { safeJsonParse } from './safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from './safeJson';
+import { SK } from './storageKeys';
 import { db, OfflineQueueItem } from '@/storage/db';
 
 // Action types that can be queued
@@ -70,7 +71,6 @@ interface QueueState {
   isProcessing: boolean;
 }
 
-const STORAGE_KEY = 'zenflow_offline_queue';
 const MAX_QUEUE_SIZE = 1000; // Prevent unbounded growth
 const DEFAULT_MAX_RETRIES = 5;
 const RETRY_BASE_DELAY = 1000; // 1 second
@@ -533,28 +533,10 @@ class OfflineQueue {
   }
 
   private loadFromLocalStorage(): void {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const data = safeJsonParse<{ actions: OfflineAction[] }>(stored, { actions: [] });
-        this.state.actions = data.actions || [];
-        logger.log('[OfflineQueue] Loaded from localStorage:', this.state.actions.length, 'actions');
-      }
-    } catch (error) {
-      logger.error('[OfflineQueue] Failed to load from localStorage:', error);
-
-      // Emit storage error event if localStorage is unavailable
-      // This typically happens in Safari Private Mode or when storage is full
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('zenflow:storage-error', {
-          detail: {
-            type: 'load_failed',
-            error: error instanceof Error ? error.message : String(error),
-            message: 'Unable to load saved data. Your browser storage may be full or disabled.',
-            recoverable: true, // Can try to continue without previous data
-          }
-        }));
-      }
+    const data = safeLocalStorageGet<{ actions: OfflineAction[] }>(SK.OFFLINE_QUEUE, { actions: [] });
+    if (data.actions && data.actions.length > 0) {
+      this.state.actions = data.actions;
+      logger.log('[OfflineQueue] Loaded from localStorage:', this.state.actions.length, 'actions');
     }
   }
 
@@ -593,14 +575,11 @@ class OfflineQueue {
    */
   private async migrateFromLocalStorage(): Promise<void> {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const data = safeJsonParse<{ actions: OfflineAction[] }>(stored, { actions: [] });
-        if (data.actions && data.actions.length > 0) {
-          // Data already in IndexedDB, remove from localStorage
-          localStorage.removeItem(STORAGE_KEY);
-          logger.log('[OfflineQueue] Cleared localStorage after IndexedDB migration');
-        }
+      const data = safeLocalStorageGet<{ actions: OfflineAction[] }>(SK.OFFLINE_QUEUE, { actions: [] });
+      if (data.actions && data.actions.length > 0) {
+        // Data already in IndexedDB, remove from localStorage
+        storageRemove(SK.OFFLINE_QUEUE);
+        logger.log('[OfflineQueue] Cleared localStorage after IndexedDB migration');
       }
     } catch (_error) {
       // Ignore migration errors
@@ -643,13 +622,13 @@ class OfflineQueue {
   }
 
   private persistToLocalStorage(): void {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        actions: this.state.actions,
-        lastProcessedAt: this.state.lastProcessedAt,
-      }));
-    } catch (error) {
-      logger.error('[OfflineQueue] Failed to persist to localStorage:', error);
+    const success = safeLocalStorageSet(SK.OFFLINE_QUEUE, {
+      actions: this.state.actions,
+      lastProcessedAt: this.state.lastProcessedAt,
+    });
+
+    if (!success) {
+      logger.error('[OfflineQueue] Failed to persist to localStorage');
 
       // CRITICAL - Both IndexedDB AND localStorage failed!
       // Emit storage error event so UI can warn user about potential data loss
@@ -658,7 +637,6 @@ class OfflineQueue {
           detail: {
             type: 'persist_failed',
             queueSize: this.state.actions.length,
-            error: error instanceof Error ? error.message : String(error),
             message: 'Unable to save your changes. Data may be lost if you close the app.',
             recoverable: false,
           }

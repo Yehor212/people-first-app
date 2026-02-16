@@ -8,6 +8,8 @@
 import { LocalNotifications, Channel } from '@capacitor/local-notifications';
 import { Capacitor } from '@capacitor/core';
 import { logger } from './logger';
+import { storageGetRaw, storageSetRaw } from './safeJson';
+import { SK } from '@/lib/storageKeys';
 
 // ============================================
 // TYPES
@@ -27,8 +29,6 @@ export interface NotificationSoundOption {
 // ============================================
 // CONSTANTS
 // ============================================
-
-const STORAGE_KEY = 'zenflow_notification_sound';
 
 export const NOTIFICATION_SOUNDS: NotificationSoundOption[] = [
   {
@@ -73,13 +73,9 @@ export const NOTIFICATION_SOUNDS: NotificationSoundOption[] = [
  * Get saved notification sound preference
  */
 export function getNotificationSound(): NotificationSoundType {
-  try {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved && NOTIFICATION_SOUNDS.some(s => s.id === saved)) {
-      return saved as NotificationSoundType;
-    }
-  } catch {
-    // Ignore storage errors
+  const saved = storageGetRaw(SK.NOTIFICATION_SOUND);
+  if (saved && NOTIFICATION_SOUNDS.some(s => s.id === saved)) {
+    return saved as NotificationSoundType;
   }
   return 'default';
 }
@@ -88,11 +84,7 @@ export function getNotificationSound(): NotificationSoundType {
  * Save notification sound preference
  */
 export function setNotificationSound(sound: NotificationSoundType): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, sound);
-  } catch {
-    // Ignore storage errors
-  }
+  storageSetRaw(SK.NOTIFICATION_SOUND, sound);
 }
 
 /**

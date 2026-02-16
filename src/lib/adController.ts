@@ -12,8 +12,9 @@ import {
   AD_UNIT_IDS,
   AD_FREQUENCY,
   AD_MOOD_RULES,
-  AD_STORAGE_KEYS,
 } from '@/lib/adConfig';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 
 // ============================================
 // TYPES
@@ -149,9 +150,9 @@ export function canShowRewardedAd(currentMood?: string): {
 
   // Daily limit
   const today = new Date().toDateString();
-  const savedDate = localStorage.getItem(AD_STORAGE_KEYS.dailyCountDate);
+  const savedDate = storageGetRaw(SK.AD_COUNT_DATE);
   const dailyCount = savedDate === today
-    ? parseInt(localStorage.getItem(AD_STORAGE_KEYS.dailyRewardedCount) || '0', 10)
+    ? parseInt(storageGetRaw(SK.AD_DAILY_REWARDED) || '0', 10)
     : 0;
 
   if (dailyCount >= AD_FREQUENCY.maxRewardedPerDay) {
@@ -193,15 +194,15 @@ export async function showRewardedAd(): Promise<RewardedAdResult> {
     state.lastAdTime = Date.now();
 
     const today = new Date().toDateString();
-    const savedDate = localStorage.getItem(AD_STORAGE_KEYS.dailyCountDate);
+    const savedDate = storageGetRaw(SK.AD_COUNT_DATE);
     let dailyCount = savedDate === today
-      ? parseInt(localStorage.getItem(AD_STORAGE_KEYS.dailyRewardedCount) || '0', 10)
+      ? parseInt(storageGetRaw(SK.AD_DAILY_REWARDED) || '0', 10)
       : 0;
 
     dailyCount++;
-    localStorage.setItem(AD_STORAGE_KEYS.dailyRewardedCount, String(dailyCount));
-    localStorage.setItem(AD_STORAGE_KEYS.dailyCountDate, today);
-    localStorage.setItem(AD_STORAGE_KEYS.lastAdTimestamp, String(Date.now()));
+    storageSetRaw(SK.AD_DAILY_REWARDED, String(dailyCount));
+    storageSetRaw(SK.AD_COUNT_DATE, today);
+    storageSetRaw(SK.AD_LAST_SHOWN, String(Date.now()));
 
     // Pre-load next ad
     prepareRewardedAd().catch(err => logger.warn('[Ads]', 'Rewarded ad preload failed:', err));
@@ -238,9 +239,9 @@ export function isAdSdkAvailable(): boolean {
  */
 export function getRemainingRewardedAds(): number {
   const today = new Date().toDateString();
-  const savedDate = localStorage.getItem(AD_STORAGE_KEYS.dailyCountDate);
+  const savedDate = storageGetRaw(SK.AD_COUNT_DATE);
   const dailyCount = savedDate === today
-    ? parseInt(localStorage.getItem(AD_STORAGE_KEYS.dailyRewardedCount) || '0', 10)
+    ? parseInt(storageGetRaw(SK.AD_DAILY_REWARDED) || '0', 10)
     : 0;
 
   return Math.max(0, AD_FREQUENCY.maxRewardedPerDay - dailyCount);

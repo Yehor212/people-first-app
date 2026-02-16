@@ -335,10 +335,12 @@ export function useIndexedDB<T>({
           if (idField === 'key') {
             await table.put({ key: localStorageKey, value: newValue });
           } else if (Array.isArray(newValue)) {
-            await table.clear();
-            if (newValue.length > 0) {
-              await table.bulkPut(newValue);
-            }
+            await table.db.transaction('rw', table, async () => {
+              await table.clear();
+              if (newValue.length > 0) {
+                await table.bulkPut(newValue);
+              }
+            });
           }
           // Also save to localStorage as backup
           try {

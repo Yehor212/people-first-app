@@ -51,6 +51,25 @@ export default tseslint.config(
       "@typescript-eslint/restrict-template-expressions": "off",
       "@typescript-eslint/no-redundant-type-constituents": "off",
       "@typescript-eslint/unbound-method": "off",
+      // TD-07: Ban direct localStorage access — use SK keys + safeJson accessors
+      "no-restricted-globals": ["error", {
+        "name": "localStorage",
+        "message": "Use SK keys from @/lib/storageKeys + accessors from @/lib/safeJson (storageGetRaw, safeLocalStorageGet, etc.)",
+      }],
+    },
+  },
+  // Allow direct localStorage in wrapper implementations, diagnostics, and tests
+  {
+    files: [
+      "src/lib/safeJson.ts",
+      "src/hooks/useLocalStorage.ts",
+      "src/hooks/useIndexedDB.ts",
+      "src/components/StorageErrorBanner.tsx",
+      "src/components/ErrorBoundary.tsx",
+      "**/__tests__/**",
+    ],
+    rules: {
+      "no-restricted-globals": "off",
     },
   },
 );

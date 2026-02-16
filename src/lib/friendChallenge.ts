@@ -7,6 +7,7 @@
 
 import { Habit } from '@/types';
 import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
+import { SK } from '@/lib/storageKeys';
 import { generateSecureId } from './validation';
 import { parseLocalDate } from '@/lib/utils';
 import { logger } from './logger';
@@ -47,7 +48,6 @@ export interface ChallengeInvite {
 // CONSTANTS
 // ============================================
 
-const STORAGE_KEY = 'zenflow_challenges';
 const CODE_PREFIX = 'ZEN';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No confusing chars (0, O, I, 1)
 
@@ -99,14 +99,14 @@ function getToday(): string {
  * Load challenges from localStorage
  */
 function loadChallenges(): Challenge[] {
-  return safeLocalStorageGet<Challenge[]>(STORAGE_KEY, []);
+  return safeLocalStorageGet<Challenge[]>(SK.CHALLENGES, []);
 }
 
 /**
  * Save challenges to localStorage
  */
 function saveChallenges(challenges: Challenge[]): void {
-  safeLocalStorageSet(STORAGE_KEY, challenges);
+  safeLocalStorageSet(SK.CHALLENGES, challenges);
 }
 
 // ============================================

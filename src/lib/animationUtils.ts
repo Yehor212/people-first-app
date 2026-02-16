@@ -2,7 +2,8 @@
 // Used by non-React code (audioManager, haptics) to check user preferences
 // Also provides standard Framer Motion presets for consistent animations
 
-import { safeJsonParse } from './safeJson';
+import { safeLocalStorageGet } from './safeJson';
+import { SK } from './storageKeys';
 
 /**
  * Standard Framer Motion animation presets
@@ -35,8 +36,6 @@ export const motionPresets = {
   },
 } as const;
 
-const DOPAMINE_STORAGE_KEY = 'zenflow_dopamine_settings';
-
 interface DopamineSettings {
   intensity: 'minimal' | 'normal' | 'adhd';
   animations: boolean;
@@ -66,12 +65,7 @@ export function getDopamineSettings(): DopamineSettings {
     return DEFAULT_DOPAMINE_SETTINGS;
   }
 
-  const stored = localStorage.getItem(DOPAMINE_STORAGE_KEY);
-  if (!stored) {
-    return DEFAULT_DOPAMINE_SETTINGS;
-  }
-
-  const parsed = safeJsonParse<DopamineSettings | null>(stored, null);
+  const parsed = safeLocalStorageGet<DopamineSettings | null>(SK.DOPAMINE_SETTINGS, null);
   return parsed ? { ...DEFAULT_DOPAMINE_SETTINGS, ...parsed } : DEFAULT_DOPAMINE_SETTINGS;
 }
 

@@ -8,9 +8,8 @@
 import { Habit } from '@/types';
 import { logger } from '@/lib/logger';
 import { getToday } from '@/lib/utils';
-
-const LAST_ACTIVE_KEY = 'zenflow_last_active_date';
-const WELCOME_BACK_SHOWN_KEY = 'zenflow_welcome_back_shown';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 const ABSENCE_THRESHOLD_DAYS = 3;
 
 /**
@@ -18,14 +17,14 @@ const ABSENCE_THRESHOLD_DAYS = 3;
  */
 export function updateLastActiveDate(): void {
   const today = getToday();
-  localStorage.setItem(LAST_ACTIVE_KEY, today);
+  storageSetRaw(SK.LAST_ACTIVE_DATE, today);
 }
 
 /**
  * Get last active date
  */
 export function getLastActiveDate(): string | null {
-  return localStorage.getItem(LAST_ACTIVE_KEY);
+  return storageGetRaw(SK.LAST_ACTIVE_DATE) || null;
 }
 
 /**
@@ -55,7 +54,7 @@ export function shouldShowWelcomeBack(): boolean {
   }
 
   // Already shown welcome back for this return
-  const lastShown = localStorage.getItem(WELCOME_BACK_SHOWN_KEY);
+  const lastShown = storageGetRaw(SK.WELCOME_BACK_SHOWN) || null;
   const lastActive = getLastActiveDate();
 
   if (lastShown === lastActive) {
@@ -72,7 +71,7 @@ export function shouldShowWelcomeBack(): boolean {
 export function markWelcomeBackShown(): void {
   const lastActive = getLastActiveDate();
   if (lastActive) {
-    localStorage.setItem(WELCOME_BACK_SHOWN_KEY, lastActive);
+    storageSetRaw(SK.WELCOME_BACK_SHOWN, lastActive);
   }
   updateLastActiveDate();
 }

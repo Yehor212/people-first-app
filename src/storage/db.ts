@@ -2,6 +2,8 @@ import Dexie, { Table } from 'dexie';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import type { JournalEntry, JournalPhoto, JournalAudio } from '@/features/journal/types';
 import { logger } from '@/lib/logger';
+import { SK } from '@/lib/storageKeys';
+import { storageRemove } from '@/lib/safeJson';
 
 /**
  * Offline queue action stored in IndexedDB
@@ -153,10 +155,10 @@ export const clearLocalUserData = async (): Promise<void> => {
   // Clear user-data localStorage keys (must match IndexedDB keys above)
   const allUserKeys = [
     ...USER_SETTINGS_KEYS,
-    'zenflow_cloud_sync_enabled',  // Cloud sync preference (per-account)
-    'zenflow_offline_queue',        // Offline queue localStorage fallback
+    SK.CLOUD_SYNC_ENABLED,  // Cloud sync preference (per-account)
+    SK.OFFLINE_QUEUE,        // Offline queue localStorage fallback
   ];
-  allUserKeys.forEach(key => localStorage.removeItem(key));
+  allUserKeys.forEach(key => storageRemove(key));
 };
 
 // Helper to check database health with timeout

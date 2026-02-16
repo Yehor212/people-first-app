@@ -5,7 +5,8 @@
  * Awards bonus XP (100) upon completion to boost retention.
  */
 
-const COMEBACK_CHALLENGE_KEY = 'zenflow_comeback_challenge';
+import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from './safeJson';
+import { SK } from './storageKeys';
 
 export interface ComebackChallenge {
   startDate: string;        // ISO date (YYYY-MM-DD)
@@ -21,13 +22,7 @@ export interface ComebackChallenge {
  * Get the current comeback challenge from localStorage
  */
 export function getComebackChallenge(): ComebackChallenge | null {
-  try {
-    const stored = localStorage.getItem(COMEBACK_CHALLENGE_KEY);
-    if (!stored) return null;
-    return JSON.parse(stored) as ComebackChallenge;
-  } catch {
-    return null;
-  }
+  return safeLocalStorageGet<ComebackChallenge | null>(SK.COMEBACK_CHALLENGE, null);
 }
 
 /**
@@ -43,7 +38,7 @@ export function startComebackChallenge(): ComebackChallenge {
     dailyProgress: {},
     status: 'active',
   };
-  localStorage.setItem(COMEBACK_CHALLENGE_KEY, JSON.stringify(challenge));
+  safeLocalStorageSet(SK.COMEBACK_CHALLENGE, challenge);
   return challenge;
 }
 
@@ -62,7 +57,7 @@ export function hasActiveComebackChallenge(): boolean {
   if (daysSinceStart > 7) {
     // Mark as expired
     challenge.status = 'expired';
-    localStorage.setItem(COMEBACK_CHALLENGE_KEY, JSON.stringify(challenge));
+    safeLocalStorageSet(SK.COMEBACK_CHALLENGE, challenge);
     return false;
   }
 
@@ -111,7 +106,7 @@ export function recordHabitForChallenge(today: string): {
     }
   }
 
-  localStorage.setItem(COMEBACK_CHALLENGE_KEY, JSON.stringify(challenge));
+  safeLocalStorageSet(SK.COMEBACK_CHALLENGE, challenge);
   return result;
 }
 
@@ -145,5 +140,5 @@ export function getChallengeProgress(): {
  * Clear the comeback challenge (for testing or reset)
  */
 export function clearComebackChallenge(): void {
-  localStorage.removeItem(COMEBACK_CHALLENGE_KEY);
+  storageRemove(SK.COMEBACK_CHALLENGE);
 }

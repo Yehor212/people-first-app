@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { logger } from '@/lib/logger';
-import { safeJsonParse } from '@/lib/safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 import { Sparkles, Trophy, Clock, Zap, Target, X, Star } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -18,8 +19,6 @@ import {
   getQuestDifficultyColor,
 } from '@/lib/randomQuests';
 import { pushQuestsToCloud } from '@/storage/tasksCloudSync';
-
-const STORAGE_KEY = 'zenflow_quests';
 
 interface QuestsPanelProps {
   onClose?: () => void;
@@ -39,9 +38,8 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
 
   // Load quests from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      const parsed = safeJsonParse<{ daily?: Quest | null; weekly?: Quest | null; bonus?: Quest | null }>(stored, {});
+    const parsed = safeLocalStorageGet<{ daily?: Quest | null; weekly?: Quest | null; bonus?: Quest | null }>(SK.QUESTS, null);
+    if (parsed) {
       setDailyQuest(parsed.daily || null);
       setWeeklyQuest(parsed.weekly || null);
       setBonusQuest(parsed.bonus || null);
@@ -57,7 +55,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
       weekly: weeklyQuest,
       bonus: bonusQuest,
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    safeLocalStorageSet(SK.QUESTS, data);
     pushQuestsToCloud(data).catch(err => {
       logger.error('Failed to push quests to cloud:', err);
     });

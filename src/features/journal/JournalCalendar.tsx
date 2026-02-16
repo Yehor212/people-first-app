@@ -3,6 +3,8 @@ import { ChevronLeft, ChevronRight, Info, CalendarRange } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 import type { MoodType } from '@/types';
 
 const MOOD_COLORS: Record<string, string> = {
@@ -52,7 +54,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
   const ts = t as unknown as Record<string, string>;
   const [startOffset, setStartOffset] = useState(0);
   const [showLegend, setShowLegend] = useState(() => {
-    return !localStorage.getItem('journal-legend-seen');
+    return !storageGetRaw(SK.JOURNAL_LEGEND_SEEN);
   });
 
   const dayNames = useMemo(() => getLocalizedDayNames(language), [language]);
@@ -130,7 +132,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
           <button
             onClick={() => {
               setShowLegend(v => !v);
-              localStorage.setItem('journal-legend-seen', '1');
+              storageSetRaw(SK.JOURNAL_LEGEND_SEEN, '1');
             }}
             className="p-1 rounded-md hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
             aria-label="Mood legend"

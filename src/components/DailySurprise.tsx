@@ -3,6 +3,8 @@ import { Gift, Sparkles, Brain, Target, Heart, Lightbulb, X, ChevronRight } from
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { getToday } from '@/lib/utils';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 
 type SurpriseType = 'quote' | 'fact' | 'challenge' | 'tip' | 'affirmation';
 
@@ -362,7 +364,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
 
   // Check if already seen today
   useEffect(() => {
-    const seenDate = localStorage.getItem('zenflow-daily-surprise-seen');
+    const seenDate = storageGetRaw(SK.DAILY_SURPRISE_SEEN);
     const today = getToday();
     if (seenDate === today) {
       setHasSeenToday(true);
@@ -372,7 +374,7 @@ export function DailySurprise({ onNavigate }: DailySurpriseProps) {
   const handleOpen = () => {
     setIsOpen(true);
     const today = getToday();
-    localStorage.setItem('zenflow-daily-surprise-seen', today);
+    storageSetRaw(SK.DAILY_SURPRISE_SEEN, today);
     setHasSeenToday(true);
   };
 

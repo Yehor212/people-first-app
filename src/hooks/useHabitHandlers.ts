@@ -9,6 +9,8 @@ import { findTemplateIdByName, getHabitTemplateName } from '@/lib/habitTemplates
 import { addFriendActivity, loadMyProfile } from '@/storage/friendsSync';
 import { recordHabitForChallenge } from '@/lib/comebackChallenge';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
+import { SK } from '@/lib/storageKeys';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import type { Habit } from '@/types';
 
 interface UseHabitHandlersParams {
@@ -43,12 +45,7 @@ export function useHabitHandlers({
   // Track early bird / night owl for special badges
   const trackTimeOfDayCompletion = useCallback(() => {
     const hour = new Date().getHours();
-    let data: Record<string, number> = {};
-    try {
-      data = JSON.parse(localStorage.getItem('zenflow-special-badges') || '{}');
-    } catch {
-      // Ignore parse errors
-    }
+    const data: Record<string, number> = safeLocalStorageGet(SK.SPECIAL_BADGES, {});
 
     if (hour < 8) {
       data.earlyBirdCount = (data.earlyBirdCount || 0) + 1;
@@ -56,7 +53,7 @@ export function useHabitHandlers({
       data.nightOwlCount = (data.nightOwlCount || 0) + 1;
     }
 
-    localStorage.setItem('zenflow-special-badges', JSON.stringify(data));
+    safeLocalStorageSet(SK.SPECIAL_BADGES, data);
   }, []);
 
   const handleToggleHabit = (habitId: string, date: string) => {

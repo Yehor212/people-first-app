@@ -18,6 +18,8 @@ import { JournalCalendar } from './JournalCalendar';
 import { JournalCalendarFull } from './JournalCalendarFull';
 import { getEntryCount } from './journalStorage';
 import { logger } from '@/lib/logger';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw, storageRemove } from '@/lib/safeJson';
 import { StickerRenderer } from './StickerRenderer';
 import { useJournalReminder, getDaysSinceLastEntry } from './useJournalReminder';
 import { useScreenSecurity } from './useScreenSecurity';
@@ -38,10 +40,10 @@ export function JournalModule() {
   const [showPasswordSettings, setShowPasswordSettings] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [calendarMode, setCalendarMode] = useState<'strip' | 'full'>(() => {
-    return (localStorage.getItem('journal-calendar-mode') as 'strip' | 'full') || 'strip';
+    return (storageGetRaw(SK.JOURNAL_CALENDAR_MODE, 'strip') as 'strip' | 'full');
   });
   const [privateMode, setPrivateMode] = useState(() => {
-    return localStorage.getItem('journal_private_mode') === 'true';
+    return storageGetRaw(SK.JOURNAL_PRIVATE_MODE) === 'true';
   });
 
   const [showExportPicker, setShowExportPicker] = useState(false);
@@ -236,7 +238,7 @@ export function JournalModule() {
         setResetStep('confirm');
         return;
       }
-      localStorage.setItem('journal_password_reset_pending', String(Date.now()));
+      storageSetRaw(SK.JOURNAL_PASSWORD_RESET, String(Date.now()));
       setResetStep('sent');
     } catch {
       setResetError(ts.journalResetSendFailed || 'Failed to send link. Check your connection.');
@@ -262,10 +264,10 @@ export function JournalModule() {
     if (resetStep !== 'sent' || !supabase) return;
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        const pending = localStorage.getItem('journal_password_reset_pending');
+        const pending = storageGetRaw(SK.JOURNAL_PASSWORD_RESET);
         if (pending && Date.now() - Number(pending) < 600_000) {
           await security.removePassword();
-          localStorage.removeItem('journal_password_reset_pending');
+          storageRemove(SK.JOURNAL_PASSWORD_RESET);
           setResetStep('success');
         }
       }
@@ -673,7 +675,7 @@ export function JournalModule() {
                       onSelectDate={journal.setSelectedDate}
                       onToggleMode={() => {
                         setCalendarMode('strip');
-                        localStorage.setItem('journal-calendar-mode', 'strip');
+                        storageSetRaw(SK.JOURNAL_CALENDAR_MODE, 'strip');
                       }}
                     />
                   ) : (
@@ -683,7 +685,7 @@ export function JournalModule() {
                       onSelectDate={journal.setSelectedDate}
                       onToggleMode={() => {
                         setCalendarMode('full');
-                        localStorage.setItem('journal-calendar-mode', 'full');
+                        storageSetRaw(SK.JOURNAL_CALENDAR_MODE, 'full');
                       }}
                     />
                   )}
@@ -842,7 +844,7 @@ export function JournalModule() {
                               checked={privateMode}
                               onCheckedChange={(checked) => {
                                 setPrivateMode(checked);
-                                localStorage.setItem('journal_private_mode', String(checked));
+                                storageSetRaw(SK.JOURNAL_PRIVATE_MODE, String(checked));
                               }}
                               aria-label={ts.journalPrivateMode || 'Hide previews'}
                               className="mt-0.5 shrink-0"

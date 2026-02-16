@@ -1,5 +1,7 @@
 import { useEffect } from 'react';
 import { useUIStore, useUserDataStore } from '@/stores';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 
 /**
  * Auto-shows weekly report on Monday if not already shown this week.
@@ -13,7 +15,7 @@ export function useWeeklyReportTrigger(isLoading: boolean): void {
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const checkWeeklyReport = () => {
-      const lastShown = localStorage.getItem('zenflow-last-weekly-report');
+      const lastShown = storageGetRaw(SK.WEEKLY_REPORT);
       const today = new Date();
       const dayOfWeek = today.getDay();
 
@@ -36,7 +38,7 @@ export function useWeeklyReportTrigger(isLoading: boolean): void {
         // Delay to let data load
         timeoutId = setTimeout(() => {
           useUIStore.getState().openModal('showWeeklyReport');
-          localStorage.setItem('zenflow-last-weekly-report', today.toISOString());
+          storageSetRaw(SK.WEEKLY_REPORT, today.toISOString());
         }, 1000);
       }
     };

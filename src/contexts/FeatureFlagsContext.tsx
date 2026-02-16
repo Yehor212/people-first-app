@@ -11,6 +11,7 @@
 import { createContext, useContext, ReactNode, useMemo, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { isFeatureUnlocked, FeatureId } from '@/lib/onboardingFlow';
+import { SK } from '@/lib/storageKeys';
 
 // All toggleable features
 export type ToggleableFeature =
@@ -66,7 +67,7 @@ const FEATURE_TO_ONBOARDING: Partial<Record<ToggleableFeature, FeatureId>> = {
 };
 
 export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
-  const [flags, setFlags] = useLocalStorage<FeatureFlags>('zenflow-feature-flags', DEFAULT_FLAGS);
+  const [flags, setFlags] = useLocalStorage<FeatureFlags>(SK.FEATURE_FLAGS, DEFAULT_FLAGS);
 
   // Set a single feature flag
   const setFlag = useCallback((feature: ToggleableFeature, enabled: boolean) => {

@@ -24,6 +24,8 @@ import {
 import { pauseAllAudio, resumeAllAudio } from "./lib/audioLifecycle";
 import { setupChunkErrorHandler } from "./components/UpdateRequiredDialog";
 import { checkDatabaseHealth } from "./storage/db";
+import { SK } from "./lib/storageKeys";
+import { safeLocalStorageSet } from "./lib/safeJson";
 
 // Initialize Sentry FIRST for error monitoring (before any other code runs)
 // Wrapped in try/catch — Sentry must never crash the app
@@ -75,8 +77,6 @@ window.addEventListener('error', (event) => {
  *
  * Uses sendBeacon for reliable data transmission even during page unload.
  */
-const LAST_STATE_KEY = 'zenflow_last_state';
-
 // Save critical state before app closes
 window.addEventListener('beforeunload', () => {
   try {
@@ -84,11 +84,11 @@ window.addEventListener('beforeunload', () => {
     const queueState = offlineQueue.getState();
     if (queueState.actions.length > 0) {
       // Use localStorage as it's synchronous
-      localStorage.setItem(LAST_STATE_KEY, JSON.stringify({
+      safeLocalStorageSet(SK.LAST_STATE, {
         timestamp: Date.now(),
         pendingActions: queueState.actions.length,
         queueSnapshot: queueState.actions.slice(0, 10), // Save first 10 for recovery
-      }));
+      });
       logger.log(`[Main] Saved ${queueState.actions.length} pending actions before unload`);
     }
   } catch (_error) {
@@ -117,11 +117,11 @@ function handleAppPause(): void {
   try {
     const queueState = offlineQueue.getState();
     if (queueState.actions.length > 0) {
-      localStorage.setItem(LAST_STATE_KEY, JSON.stringify({
+      safeLocalStorageSet(SK.LAST_STATE, {
         timestamp: Date.now(),
         pendingActions: queueState.actions.length,
         hidden: true,
-      }));
+      });
     }
   } catch (_error) {
     // Ignore errors

@@ -19,6 +19,8 @@ import { JournalTemplatePicker } from './JournalTemplatePicker';
 import { useJournalVoice } from './useJournalVoice';
 import { useAudioRecorder } from './useAudioRecorder';
 import { logger } from '@/lib/logger';
+import { SK } from '@/lib/storageKeys';
+import { safeLocalStorageSet, safeJsonParse, storageGetRaw, storageRemove } from '@/lib/safeJson';
 import { JournalHabitSection } from './JournalHabitSection';
 
 const MOOD_OPTIONS: { mood: MoodType; emoji: string }[] = [
@@ -67,7 +69,7 @@ function formatRecordingTime(sec: number): string {
 }
 
 function getDraftKey(entryId: string | null): string {
-  return `journal_draft_${entryId || 'new'}`;
+  return SK.journalDraft(entryId || 'new');
 }
 
 async function saveDraft(key: string, data: DraftData) {
@@ -76,7 +78,7 @@ async function saveDraft(key: string, data: DraftData) {
     await settingsRepo.put({ key, value: data });
   } catch {
     // Fallback to localStorage
-    try { localStorage.setItem(key, JSON.stringify(data)); } catch { /* quota */ }
+    safeLocalStorageSet(key, data);
   }
 }
 
@@ -90,23 +92,25 @@ async function loadDraft(key: string): Promise<DraftData | null> {
       return data;
     }
     // Migrate from localStorage if exists
-    const raw = localStorage.getItem(key);
+    const raw = storageGetRaw(key);
     if (raw) {
-      const data = JSON.parse(raw) as DraftData;
-      if (Date.now() - data.savedAt > 7 * 86400000) { localStorage.removeItem(key); return null; }
+      const data = safeJsonParse<DraftData | null>(raw, null);
+      if (!data) { storageRemove(key); return null; }
+      if (Date.now() - data.savedAt > 7 * 86400000) { storageRemove(key); return null; }
       // Migrate to IndexedDB
       await settingsRepo.put({ key, value: data });
-      localStorage.removeItem(key);
+      storageRemove(key);
       return data;
     }
     return null;
   } catch {
     // Fallback to localStorage
     try {
-      const raw = localStorage.getItem(key);
+      const raw = storageGetRaw(key);
       if (!raw) return null;
-      const data = JSON.parse(raw) as DraftData;
-      if (Date.now() - data.savedAt > 7 * 86400000) { localStorage.removeItem(key); return null; }
+      const data = safeJsonParse<DraftData | null>(raw, null);
+      if (!data) return null;
+      if (Date.now() - data.savedAt > 7 * 86400000) { storageRemove(key); return null; }
       return data;
     } catch { return null; }
   }
@@ -117,7 +121,7 @@ async function clearDraft(key: string) {
     const { settingsRepo } = await import('@/storage/db');
     await settingsRepo.delete(key);
   } catch { /* non-critical */ }
-  localStorage.removeItem(key);
+  storageRemove(key);
 }
 
 // ── Component ──

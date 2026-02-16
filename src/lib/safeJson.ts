@@ -145,6 +145,31 @@ export const safeSessionStorageSet = (key: string, value: unknown): boolean => {
   }
 };
 
+// ─── Raw string helpers (no JSON parse/stringify) ───
+
+/** Safe raw string get from localStorage. For theme, language, simple flags. */
+export function storageGetRaw(key: string, fallback = ''): string {
+  try {
+    return localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/** Safe raw string set to localStorage. */
+export function storageSetRaw(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch { /* quota or security error */ }
+}
+
+/** Safe localStorage remove. */
+export function storageRemove(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch { /* ignore */ }
+}
+
 export default {
   parse: safeJsonParse,
   stringify: safeJsonStringify,

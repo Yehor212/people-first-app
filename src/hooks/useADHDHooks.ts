@@ -5,8 +5,9 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/lib/logger';
-import { safeJsonParse } from '@/lib/safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet, storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 import { safeParseInt } from '@/lib/validation';
+import { SK } from '@/lib/storageKeys';
 
 import {
   ComboState,
@@ -17,7 +18,6 @@ import {
   generateFlashChallenge,
   generateHourlyChallenge,
   generateWeekendChallenge,
-  ADHD_STORAGE_KEYS,
   getStreakRiskNotification,
   getComebackNotification,
   ADHDNotification,
@@ -51,28 +51,24 @@ export function useADHDHooks(currentStreak: number) {
     const loadState = () => {
       try {
         // Combo - use safe parse to prevent crashes from corrupted data
-        const savedCombo = localStorage.getItem(ADHD_STORAGE_KEYS.COMBO_STATE);
-        const combo = safeJsonParse(savedCombo, initCombo());
+        const combo = safeLocalStorageGet(SK.COMBO_STATE, initCombo());
 
         // Spin tokens
-        const savedSpins = localStorage.getItem(ADHD_STORAGE_KEYS.SPIN_TOKENS);
-        const spinTokens = safeParseInt(savedSpins, 0, 0, 100);
+        const spinTokens = safeParseInt(storageGetRaw(SK.SPIN_TOKENS), 0, 0, 100);
 
         // Mystery boxes - use safe parse
-        const savedBoxes = localStorage.getItem(ADHD_STORAGE_KEYS.MYSTERY_BOXES);
-        const mysteryBoxes: MysteryBox[] = safeJsonParse(savedBoxes, []);
+        const mysteryBoxes: MysteryBox[] = safeLocalStorageGet(SK.MYSTERY_BOXES, []);
 
         // Challenges - use safe parse
-        const savedChallenges = localStorage.getItem(ADHD_STORAGE_KEYS.TIME_CHALLENGES);
-        let activeChallenges: TimeChallenge[] = safeJsonParse(savedChallenges, []);
+        let activeChallenges: TimeChallenge[] = safeLocalStorageGet(SK.TIME_CHALLENGES, []);
 
         // Filter expired challenges
         const now = Date.now();
         activeChallenges = activeChallenges.filter(c => c.expiresAt > now || c.completed);
 
         // Last login
-        const lastLoginDate = localStorage.getItem(ADHD_STORAGE_KEYS.LAST_LOGIN);
-        const loginStreak = safeParseInt(localStorage.getItem(ADHD_STORAGE_KEYS.LOGIN_STREAK), 0, 0, 1000);
+        const lastLoginDate = storageGetRaw(SK.LAST_LOGIN) || null;
+        const loginStreak = safeParseInt(storageGetRaw(SK.LOGIN_STREAK), 0, 0, 1000);
 
         // Check if should show daily rewards
         const today = new Date().toDateString();
@@ -119,16 +115,16 @@ export function useADHDHooks(currentStreak: number) {
 
       // Persist to localStorage
       if (updates.combo) {
-        localStorage.setItem(ADHD_STORAGE_KEYS.COMBO_STATE, JSON.stringify(updates.combo));
+        safeLocalStorageSet(SK.COMBO_STATE, updates.combo);
       }
       if (updates.spinTokens !== undefined) {
-        localStorage.setItem(ADHD_STORAGE_KEYS.SPIN_TOKENS, String(updates.spinTokens));
+        storageSetRaw(SK.SPIN_TOKENS, String(updates.spinTokens));
       }
       if (updates.mysteryBoxes) {
-        localStorage.setItem(ADHD_STORAGE_KEYS.MYSTERY_BOXES, JSON.stringify(updates.mysteryBoxes));
+        safeLocalStorageSet(SK.MYSTERY_BOXES, updates.mysteryBoxes);
       }
       if (updates.activeChallenges) {
-        localStorage.setItem(ADHD_STORAGE_KEYS.TIME_CHALLENGES, JSON.stringify(updates.activeChallenges));
+        safeLocalStorageSet(SK.TIME_CHALLENGES, updates.activeChallenges);
       }
 
       return newState;
@@ -139,7 +135,7 @@ export function useADHDHooks(currentStreak: number) {
   const incrementCombo = useCallback(() => {
     setState(prev => {
       const newCombo = updateCombo(prev.combo);
-      localStorage.setItem(ADHD_STORAGE_KEYS.COMBO_STATE, JSON.stringify(newCombo));
+      safeLocalStorageSet(SK.COMBO_STATE, newCombo);
       return { ...prev, combo: newCombo };
     });
   }, []);
@@ -148,7 +144,7 @@ export function useADHDHooks(currentStreak: number) {
   const addSpinToken = useCallback((count: number = 1) => {
     setState(prev => {
       const newCount = prev.spinTokens + count;
-      localStorage.setItem(ADHD_STORAGE_KEYS.SPIN_TOKENS, String(newCount));
+      storageSetRaw(SK.SPIN_TOKENS, String(newCount));
       return { ...prev, spinTokens: newCount };
     });
   }, []);
@@ -158,7 +154,7 @@ export function useADHDHooks(currentStreak: number) {
     setState(prev => {
       if (prev.spinTokens <= 0) return prev;
       const newCount = prev.spinTokens - 1;
-      localStorage.setItem(ADHD_STORAGE_KEYS.SPIN_TOKENS, String(newCount));
+      storageSetRaw(SK.SPIN_TOKENS, String(newCount));
       return { ...prev, spinTokens: newCount };
     });
   }, []);
@@ -175,7 +171,7 @@ export function useADHDHooks(currentStreak: number) {
 
     setState(prev => {
       const newBoxes = [...prev.mysteryBoxes, newBox];
-      localStorage.setItem(ADHD_STORAGE_KEYS.MYSTERY_BOXES, JSON.stringify(newBoxes));
+      safeLocalStorageSet(SK.MYSTERY_BOXES, newBoxes);
       return { ...prev, mysteryBoxes: newBoxes };
     });
 
@@ -188,7 +184,7 @@ export function useADHDHooks(currentStreak: number) {
       const newBoxes = prev.mysteryBoxes.map(box =>
         box.id === boxId ? { ...box, openedAt: Date.now() } : box
       );
-      localStorage.setItem(ADHD_STORAGE_KEYS.MYSTERY_BOXES, JSON.stringify(newBoxes));
+      safeLocalStorageSet(SK.MYSTERY_BOXES, newBoxes);
       return { ...prev, mysteryBoxes: newBoxes };
     });
   }, []);
@@ -197,7 +193,7 @@ export function useADHDHooks(currentStreak: number) {
   const removeMysteryBox = useCallback((boxId: string) => {
     setState(prev => {
       const newBoxes = prev.mysteryBoxes.filter(box => box.id !== boxId);
-      localStorage.setItem(ADHD_STORAGE_KEYS.MYSTERY_BOXES, JSON.stringify(newBoxes));
+      safeLocalStorageSet(SK.MYSTERY_BOXES, newBoxes);
       return { ...prev, mysteryBoxes: newBoxes };
     });
   }, []);
@@ -214,7 +210,7 @@ export function useADHDHooks(currentStreak: number) {
 
     setState(prev => {
       const newChallenges = [...prev.activeChallenges, challenge];
-      localStorage.setItem(ADHD_STORAGE_KEYS.TIME_CHALLENGES, JSON.stringify(newChallenges));
+      safeLocalStorageSet(SK.TIME_CHALLENGES, newChallenges);
       return { ...prev, activeChallenges: newChallenges };
     });
 
@@ -229,7 +225,7 @@ export function useADHDHooks(currentStreak: number) {
           ? { ...c, progress, completed: progress >= c.target }
           : c
       );
-      localStorage.setItem(ADHD_STORAGE_KEYS.TIME_CHALLENGES, JSON.stringify(newChallenges));
+      safeLocalStorageSet(SK.TIME_CHALLENGES, newChallenges);
       return { ...prev, activeChallenges: newChallenges };
     });
   }, []);
@@ -238,7 +234,7 @@ export function useADHDHooks(currentStreak: number) {
   const removeChallenge = useCallback((challengeId: string) => {
     setState(prev => {
       const newChallenges = prev.activeChallenges.filter(c => c.id !== challengeId);
-      localStorage.setItem(ADHD_STORAGE_KEYS.TIME_CHALLENGES, JSON.stringify(newChallenges));
+      safeLocalStorageSet(SK.TIME_CHALLENGES, newChallenges);
       return { ...prev, activeChallenges: newChallenges };
     });
   }, []);
@@ -259,7 +255,7 @@ export function useADHDHooks(currentStreak: number) {
   // Claim daily reward
   const claimDailyReward = useCallback(() => {
     const today = new Date().toDateString();
-    localStorage.setItem(ADHD_STORAGE_KEYS.LAST_LOGIN, today);
+    storageSetRaw(SK.LAST_LOGIN, today);
     setState(prev => ({
       ...prev,
       showDailyRewards: false,

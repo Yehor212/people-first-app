@@ -12,6 +12,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Gift, Trophy, Sparkles, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { SSK } from '@/lib/storageKeys';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
 import {
@@ -44,7 +45,7 @@ export function SeasonalEventBanner({
 
     // Load dismissed events from sessionStorage
     try {
-      const dismissedStr = sessionStorage.getItem('zenflow_dismissed_events');
+      const dismissedStr = sessionStorage.getItem(SSK.DISMISSED_EVENTS);
       if (dismissedStr) {
         setDismissed(new Set(JSON.parse(dismissedStr)));
       }
@@ -65,7 +66,7 @@ export function SeasonalEventBanner({
     const newDismissed = new Set(dismissed);
     newDismissed.add(eventId);
     setDismissed(newDismissed);
-    sessionStorage.setItem('zenflow_dismissed_events', JSON.stringify([...newDismissed]));
+    sessionStorage.setItem(SSK.DISMISSED_EVENTS, JSON.stringify([...newDismissed]));
   };
 
   const completedChallenges = currentEvent.challenges.filter(c => c.completed).length;

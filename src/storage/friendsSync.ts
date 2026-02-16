@@ -12,6 +12,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { logger } from '@/lib/logger';
 import { generateSecureId } from '@/lib/validation';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 import { isAbortError } from '@/lib/validation';
 import * as Sentry from '@sentry/react';
 
@@ -69,9 +70,6 @@ export interface MyProfile {
 // CONSTANTS
 // ============================================
 
-const FRIENDS_STORAGE_KEY = 'zenflow_friends';
-const MY_PROFILE_KEY = 'zenflow_my_friend_profile';
-const FRIEND_ACTIVITIES_KEY = 'zenflow_friend_activities';
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const CODE_PREFIX = 'ZF';
 
@@ -80,29 +78,29 @@ const CODE_PREFIX = 'ZF';
 // ============================================
 
 export function loadFriends(): Friend[] {
-  return safeLocalStorageGet<Friend[]>(FRIENDS_STORAGE_KEY, []);
+  return safeLocalStorageGet<Friend[]>(SK.FRIENDS, []);
 }
 
 export function saveFriends(friends: Friend[]): void {
-  safeLocalStorageSet(FRIENDS_STORAGE_KEY, friends);
+  safeLocalStorageSet(SK.FRIENDS, friends);
 }
 
 export function loadMyProfile(): MyProfile | null {
-  return safeLocalStorageGet<MyProfile | null>(MY_PROFILE_KEY, null);
+  return safeLocalStorageGet<MyProfile | null>(SK.MY_FRIEND_PROFILE, null);
 }
 
 export function saveMyProfile(profile: MyProfile): void {
-  safeLocalStorageSet(MY_PROFILE_KEY, profile);
+  safeLocalStorageSet(SK.MY_FRIEND_PROFILE, profile);
 }
 
 export function loadFriendActivities(): FriendActivity[] {
-  return safeLocalStorageGet<FriendActivity[]>(FRIEND_ACTIVITIES_KEY, []);
+  return safeLocalStorageGet<FriendActivity[]>(SK.FRIEND_ACTIVITIES, []);
 }
 
 export function saveFriendActivities(activities: FriendActivity[]): void {
   // Keep only last 50 activities
   const trimmed = activities.slice(0, 50);
-  safeLocalStorageSet(FRIEND_ACTIVITIES_KEY, trimmed);
+  safeLocalStorageSet(SK.FRIEND_ACTIVITIES, trimmed);
 }
 
 // ============================================

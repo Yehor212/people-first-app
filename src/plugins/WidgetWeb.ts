@@ -1,14 +1,15 @@
 import { WebPlugin } from '@capacitor/core';
 import type { WidgetPlugin, WidgetData } from './widgetTypes';
 import { logger } from '@/lib/logger';
-import { safeJsonParse } from '@/lib/safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 
 export class WidgetWeb extends WebPlugin implements WidgetPlugin {
   async updateWidget(data: WidgetData): Promise<void> {
     logger.log('[Widget] update (web platform - no-op):', data);
     // On web, we don't have native widgets
     // Store in localStorage for future use
-    localStorage.setItem('zenflow-widget-data', JSON.stringify(data));
+    safeLocalStorageSet(SK.WIDGET_DATA, data);
   }
 
   async getWidgetData(): Promise<WidgetData> {
@@ -20,8 +21,7 @@ export class WidgetWeb extends WebPlugin implements WidgetPlugin {
       habits: [],
     };
 
-    const stored = localStorage.getItem('zenflow-widget-data');
-    return safeJsonParse(stored, defaultData);
+    return safeLocalStorageGet<WidgetData>(SK.WIDGET_DATA, defaultData);
   }
 
   async isSupported(): Promise<{ supported: boolean }> {

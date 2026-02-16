@@ -12,8 +12,8 @@ import type { InsightTranslations } from '@/lib/insightsEngine';
 import { InsightCard } from './InsightCard';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Sparkles, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
-
-const COLLAPSED_STORAGE_KEY = 'zenflow-insights-collapsed';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 
 interface InsightsPanelProps {
   moods: MoodEntry[];
@@ -37,14 +37,14 @@ export function InsightsPanel({
   // Collapsible state with localStorage persistence
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (!collapsible) return false;
-    const stored = localStorage.getItem(COLLAPSED_STORAGE_KEY);
+    const stored = storageGetRaw(SK.INSIGHTS_COLLAPSED);
     return stored === 'true';
   });
 
   // Persist collapsed state
   useEffect(() => {
     if (collapsible) {
-      localStorage.setItem(COLLAPSED_STORAGE_KEY, String(isCollapsed));
+      storageSetRaw(SK.INSIGHTS_COLLAPSED, String(isCollapsed));
     }
   }, [isCollapsed, collapsible]);
 

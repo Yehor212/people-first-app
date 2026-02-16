@@ -2,12 +2,11 @@ import React from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { APP_VERSION, getAppMetadata } from "@/lib/appVersion";
 import { crashReporting } from "@/lib/crashReporting";
-import { safeLocalStorageGet } from "@/lib/safeJson";
+import { safeLocalStorageGet, safeLocalStorageSet } from "@/lib/safeJson";
+import { SK } from "@/lib/storageKeys";
 import { captureError } from "@/lib/sentry";
 import { createFocusTrap, announceError } from "@/lib/a11y";
 import { logger } from "@/lib/logger";
-
-const LOG_KEY = "zenflow-error-log";
 
 const logError = (payload: Record<string, unknown>) => {
   try {
@@ -19,9 +18,9 @@ const logError = (payload: Record<string, unknown>) => {
       time: new Date().toISOString()
     };
 
-    const existing = safeLocalStorageGet<Record<string, unknown>[]>(LOG_KEY, []);
+    const existing = safeLocalStorageGet<Record<string, unknown>[]>(SK.ERROR_LOG, []);
     const next = [...existing, enhancedPayload].slice(-10); // Keep last 10 errors
-    localStorage.setItem(LOG_KEY, JSON.stringify(next));
+    safeLocalStorageSet(SK.ERROR_LOG, next);
   } catch {
     // Ignore storage errors.
   }
@@ -49,7 +48,7 @@ const exportDebugReport = (error?: Error | null) => {
       indexedDBAvailable: typeof indexedDB !== 'undefined',
     },
     // Add last 10 errors from log
-    recentErrors: safeLocalStorageGet<Record<string, unknown>[]>(LOG_KEY, [])
+    recentErrors: safeLocalStorageGet<Record<string, unknown>[]>(SK.ERROR_LOG, [])
   };
 
   const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });

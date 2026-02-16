@@ -14,14 +14,13 @@ import { cn, getToday, formatDate, parseLocalDate } from '@/lib/utils';
 import { ScheduleEvent } from '@/types';
 import { safeParseInt } from '@/lib/validation';
 import { Task } from '@/lib/taskMomentum';
-import { safeJsonParse } from '@/lib/safeJson';
+import { safeLocalStorageGet } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 import { ParticleBackground } from '@/components/stats';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { fetchCalendarEventsWithCache, isCalendarEnabled, CalendarEvent } from '@/lib/googleCalendar';
 import { logger } from '@/lib/logger';
-
-const TASKS_STORAGE_KEY = 'zenflow_tasks';
 
 interface ScheduleTimelineProps {
   events: ScheduleEvent[];
@@ -438,18 +437,13 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
   // Load tasks from localStorage
   useEffect(() => {
     const loadTasks = () => {
-      const stored = localStorage.getItem(TASKS_STORAGE_KEY);
-      if (stored) {
-        const parsed = safeJsonParse<Task[]>(stored, []);
-        setTasks(Array.isArray(parsed) ? parsed : []);
-      } else {
-        setTasks([]);
-      }
+      const parsed = safeLocalStorageGet<Task[]>(SK.TASKS, []);
+      setTasks(Array.isArray(parsed) ? parsed : []);
     };
     loadTasks();
 
     const handleStorage = (e: StorageEvent) => {
-      if (e.key === TASKS_STORAGE_KEY) loadTasks();
+      if (e.key === SK.TASKS) loadTasks();
     };
     window.addEventListener('storage', handleStorage);
 

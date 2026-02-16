@@ -10,6 +10,8 @@ declare global {
   }
 }
 import { safeParseFloat } from '@/lib/validation';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 import { shouldPlaySounds } from './animationUtils';
 
 type SoundType = 'success' | 'complete' | 'streak' | 'levelUp' | 'notification';
@@ -187,11 +189,7 @@ export function playSound(type: SoundType): void {
 // Mute control
 export function setMuted(muted: boolean): void {
   state.isMuted = muted;
-  try {
-    localStorage.setItem('zenflow-audio-muted', muted ? '1' : '0');
-  } catch {
-    // Safari Private Mode or quota exceeded - silent fail
-  }
+  storageSetRaw(SK.AUDIO_MUTED, muted ? '1' : '0');
 }
 
 export function isMuted(): boolean {
@@ -201,11 +199,7 @@ export function isMuted(): boolean {
 // Volume control (0.0 - 1.0)
 export function setVolume(volume: number): void {
   state.volume = Math.max(0, Math.min(1, volume));
-  try {
-    localStorage.setItem('zenflow-audio-volume', state.volume.toString());
-  } catch {
-    // Safari Private Mode or quota exceeded - silent fail
-  }
+  storageSetRaw(SK.AUDIO_VOLUME, state.volume.toString());
 }
 
 export function getVolume(): number {
@@ -214,18 +208,14 @@ export function getVolume(): number {
 
 // Initialize from localStorage
 export function initAudioManager(): void {
-  try {
-    const mutedStr = localStorage.getItem('zenflow-audio-muted');
-    if (mutedStr === '1') {
-      state.isMuted = true;
-    }
+  const mutedStr = storageGetRaw(SK.AUDIO_MUTED);
+  if (mutedStr === '1') {
+    state.isMuted = true;
+  }
 
-    const volumeStr = localStorage.getItem('zenflow-audio-volume');
-    if (volumeStr) {
-      state.volume = safeParseFloat(volumeStr, 0.3, 0, 1);
-    }
-  } catch {
-    // Safari Private Mode - use defaults
+  const volumeStr = storageGetRaw(SK.AUDIO_VOLUME);
+  if (volumeStr) {
+    state.volume = safeParseFloat(volumeStr, 0.3, 0, 1);
   }
 }
 

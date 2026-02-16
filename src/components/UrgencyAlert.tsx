@@ -15,6 +15,8 @@ import { Clock, Flame, AlertTriangle, Sparkles, ChevronRight, X } from 'lucide-r
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Habit } from '@/types';
 import { cn, interpolate, getToday } from '@/lib/utils';
+import { SK } from '@/lib/storageKeys';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 
 interface UrgencyAlertProps {
   habits: Habit[];
@@ -254,27 +256,22 @@ export function UrgencyAlert({
 }: UrgencyAlertProps) {
   const { t } = useLanguage();
   const [dismissedAlerts, setDismissedAlerts] = useState<Set<string>>(() => {
-    try {
-      const stored = localStorage.getItem('zenflow-dismissed-urgency');
-      const data = stored ? JSON.parse(stored) : {};
-      // Clear dismissed alerts from previous day
-      const today = new Date().toDateString();
-      if (data.date !== today) {
-        return new Set();
-      }
-      return new Set(data.alerts || []);
-    } catch {
+    const data = safeLocalStorageGet<{ date?: string; alerts?: string[] }>(SK.DISMISSED_URGENCY, {});
+    // Clear dismissed alerts from previous day
+    const today = new Date().toDateString();
+    if (data.date !== today) {
       return new Set();
     }
+    return new Set(data.alerts || []);
   });
 
   // Persist dismissed alerts
   useEffect(() => {
     const today = new Date().toDateString();
-    localStorage.setItem('zenflow-dismissed-urgency', JSON.stringify({
+    safeLocalStorageSet(SK.DISMISSED_URGENCY, {
       date: today,
       alerts: Array.from(dismissedAlerts),
-    }));
+    });
   }, [dismissedAlerts]);
 
   const today = getToday();

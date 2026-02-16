@@ -7,15 +7,15 @@ import { useState, useEffect, useRef } from 'react';
 import { Gift, Sparkles, Check, Lock, Zap, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { safeJsonParse } from '@/lib/safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet, storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 import { safeParseInt } from '@/lib/validation';
+import { SK } from '@/lib/storageKeys';
 import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import {
   getDailyLoginRewards,
   getLoginStreakBonus,
-  ADHD_STORAGE_KEYS,
   DailyLoginReward,
 } from '@/lib/adhdHooks';
 
@@ -51,17 +51,16 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
 
   useEffect(() => {
     // Load saved state
-    const savedLogin = localStorage.getItem(ADHD_STORAGE_KEYS.DAILY_LOGIN);
-    const savedStreak = localStorage.getItem(ADHD_STORAGE_KEYS.LOGIN_STREAK);
-    const lastLogin = localStorage.getItem(ADHD_STORAGE_KEYS.LAST_LOGIN);
+    const savedLogin = safeLocalStorageGet<{ rewards?: DailyLoginReward[]; currentDay?: number }>(SK.DAILY_LOGIN, null);
+    const savedStreak = storageGetRaw(SK.LOGIN_STREAK);
+    const lastLogin = storageGetRaw(SK.LAST_LOGIN) || null;
 
     const today = new Date().toDateString();
     const yesterday = new Date(Date.now() - 86400000).toDateString();
 
     if (savedLogin) {
-      const data = safeJsonParse<{ rewards?: DailyLoginReward[]; currentDay?: number }>(savedLogin, {});
-      setRewards(data.rewards || getDailyLoginRewards());
-      setCurrentDay(data.currentDay || 1);
+      setRewards(savedLogin.rewards || getDailyLoginRewards());
+      setCurrentDay(savedLogin.currentDay || 1);
     }
 
     if (savedStreak) {
@@ -77,11 +76,11 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
         // Continue streak
         const newStreak = safeParseInt(savedStreak, 0, 0, 1000) + 1;
         setLoginStreak(newStreak);
-        localStorage.setItem(ADHD_STORAGE_KEYS.LOGIN_STREAK, String(newStreak));
+        storageSetRaw(SK.LOGIN_STREAK, String(newStreak));
       } else if (lastLogin && lastLogin !== today) {
         // Streak broken - reset
         setLoginStreak(1);
-        localStorage.setItem(ADHD_STORAGE_KEYS.LOGIN_STREAK, '1');
+        storageSetRaw(SK.LOGIN_STREAK, '1');
         // Reset rewards cycle
         setCurrentDay(1);
         setRewards(getDailyLoginRewards());
@@ -106,11 +105,11 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
 
     // Save state
     const nextDay = currentDay >= 7 ? 1 : currentDay + 1;
-    localStorage.setItem(ADHD_STORAGE_KEYS.DAILY_LOGIN, JSON.stringify({
+    safeLocalStorageSet(SK.DAILY_LOGIN, {
       rewards: nextDay === 1 ? getDailyLoginRewards() : updatedRewards,
       currentDay: nextDay,
-    }));
-    localStorage.setItem(ADHD_STORAGE_KEYS.LAST_LOGIN, new Date().toDateString());
+    });
+    storageSetRaw(SK.LAST_LOGIN, new Date().toDateString());
 
     // Store timeout ref and check mounted before state update
     claimTimeoutRef.current = setTimeout(() => {

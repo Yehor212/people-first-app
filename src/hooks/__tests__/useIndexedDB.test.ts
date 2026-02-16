@@ -20,7 +20,12 @@ vi.mock('@/lib/logger', () => ({
 const createMockTable = (initialData: Record<string, unknown> = {}) => {
   let storage: Record<string, unknown> = { ...initialData };
 
+  const mockDb = {
+    transaction: vi.fn((_mode: string, _table: unknown, fn: () => Promise<void>) => fn()),
+  };
+
   return {
+    db: mockDb,
     get: vi.fn((key: string) => Promise.resolve(storage[key])),
     put: vi.fn((data: { key: string; value: unknown }) => {
       storage[data.key] = data;

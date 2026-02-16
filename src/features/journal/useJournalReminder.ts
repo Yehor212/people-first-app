@@ -3,8 +3,9 @@ import { Capacitor } from '@capacitor/core';
 import { db } from '@/storage/db';
 import { scheduleJournalReminder, cancelJournalReminder } from '@/lib/localNotifications';
 import { logger } from '@/lib/logger';
+import { SK } from '@/lib/storageKeys';
 
-const SETTINGS_KEY = 'journal_reminder';
+const SETTINGS_KEY = SK.JOURNAL_REMINDER;
 
 interface JournalReminderSettings {
   enabled: boolean;

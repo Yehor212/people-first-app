@@ -3,20 +3,20 @@ import { Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { APP_VERSION } from '@/lib/appVersion';
 import { CHANGELOG } from '@/components/WhatsNewModal';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 
 export function WhatsNewBanner() {
   const { t } = useLanguage();
-  const whatsNewKey = `zenflow_whats_new_v${APP_VERSION}_dismissed`;
-
   const [showWhatsNew, setShowWhatsNew] = useState(() => {
-    const dismissed = localStorage.getItem(whatsNewKey);
+    const dismissed = storageGetRaw(SK.whatsNewDismissed(APP_VERSION));
     return dismissed !== 'true' && (CHANGELOG[APP_VERSION]?.length ?? 0) > 0;
   });
 
   if (!showWhatsNew) return null;
 
   const handleDismiss = () => {
-    localStorage.setItem(whatsNewKey, 'true');
+    storageSetRaw(SK.whatsNewDismissed(APP_VERSION), 'true');
     setShowWhatsNew(false);
   };
 

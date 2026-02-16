@@ -5,6 +5,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { StreakCelebration } from './StreakCelebration';
 import { shouldShowStreakMessage } from '@/lib/motivationalMessages';
 import { safeParseInt } from '@/lib/validation';
+import { SK } from '@/lib/storageKeys';
+import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 import { getEntryCount } from '@/features/journal/journalStorage';
 import { logger } from '@/lib/logger';
 
@@ -22,7 +24,7 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
   const today = getToday();
   const [showCelebration, setShowCelebration] = useState(false);
   const [lastShownStreak, setLastShownStreak] = useState<number>(() => {
-    const saved = localStorage.getItem('zenflow-last-shown-streak');
+    const saved = storageGetRaw(SK.LAST_SHOWN_STREAK);
     return saved ? safeParseInt(saved, 0, 0) : 0;
   });
 
@@ -52,7 +54,7 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
     if (shouldShowStreakMessage(streak, lastShownStreak)) {
       setShowCelebration(true);
       setLastShownStreak(streak);
-      localStorage.setItem('zenflow-last-shown-streak', streak.toString());
+      storageSetRaw(SK.LAST_SHOWN_STREAK, streak.toString());
     }
   }, [streak, lastShownStreak]);
 

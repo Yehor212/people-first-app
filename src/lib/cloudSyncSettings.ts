@@ -11,22 +11,16 @@
  */
 
 import { logger } from './logger';
-
-const CLOUD_SYNC_ENABLED_KEY = 'zenflow_cloud_sync_enabled';
+import { storageGetRaw, storageSetRaw } from './safeJson';
+import { SK } from '@/lib/storageKeys';
 
 /**
  * Check if cloud sync is enabled by user
  * Default: false (OFF) for privacy-first approach
  */
 export const isCloudSyncEnabled = (): boolean => {
-  try {
-    const enabled = localStorage.getItem(CLOUD_SYNC_ENABLED_KEY);
-    // Explicitly check for 'true' string
-    return enabled === 'true';
-  } catch (error) {
-    logger.error('[CloudSync] Error reading cloud sync setting:', error);
-    return false; // Fail safe: disable sync if can't read
-  }
+  // storageGetRaw returns '' on error/missing — explicitly check for 'true'
+  return storageGetRaw(SK.CLOUD_SYNC_ENABLED) === 'true';
 };
 
 /**
@@ -34,12 +28,8 @@ export const isCloudSyncEnabled = (): boolean => {
  * Persists user preference to localStorage
  */
 export const setCloudSyncEnabled = (enabled: boolean): void => {
-  try {
-    localStorage.setItem(CLOUD_SYNC_ENABLED_KEY, String(enabled));
-    logger.log(`[CloudSync] Cloud sync ${enabled ? 'enabled' : 'disabled'} by user`);
-  } catch (error) {
-    logger.error('[CloudSync] Error saving cloud sync setting:', error);
-  }
+  storageSetRaw(SK.CLOUD_SYNC_ENABLED, String(enabled));
+  logger.log(`[CloudSync] Cloud sync ${enabled ? 'enabled' : 'disabled'} by user`);
 };
 
 /**
@@ -50,20 +40,16 @@ export const setCloudSyncEnabled = (enabled: boolean): void => {
  * New users after v1.1.1 will have sync OFF by default (privacy-first).
  */
 export const migrateExistingUser = (): void => {
-  try {
-    const existingSetting = localStorage.getItem(CLOUD_SYNC_ENABLED_KEY);
+  const existingSetting = storageGetRaw(SK.CLOUD_SYNC_ENABLED) || null;
 
-    // Only migrate if no preference set yet
-    if (existingSetting === null) {
-      setCloudSyncEnabled(true);
-      logger.log('[CloudSync] Migrated existing user: cloud sync enabled');
-    }
-  } catch (error) {
-    logger.error('[CloudSync] Error during migration:', error);
+  // Only migrate if no preference set yet
+  if (existingSetting === null) {
+    setCloudSyncEnabled(true);
+    logger.log('[CloudSync] Migrated existing user: cloud sync enabled');
   }
 };
 
 /**
  * Get the localStorage key (for testing)
  */
-export const getCloudSyncKey = (): string => CLOUD_SYNC_ENABLED_KEY;
+export const getCloudSyncKey = (): string => SK.CLOUD_SYNC_ENABLED;

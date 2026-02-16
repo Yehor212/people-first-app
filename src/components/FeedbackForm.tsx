@@ -8,7 +8,8 @@ import { Capacitor } from '@capacitor/core';
 import { logger } from '@/lib/logger';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
-import { safeLocalStorageGet } from '@/lib/safeJson';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
 import { supabase } from '@/lib/supabaseClient';
 import { emailSchema } from '@/lib/validation';
 
@@ -67,9 +68,9 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
       // Always save to localStorage as backup first
       const saveToLocalStorage = () => {
         try {
-          const stored = safeLocalStorageGet<Record<string, unknown>[]>('zenflow_feedback', []);
+          const stored = safeLocalStorageGet<Record<string, unknown>[]>(SK.FEEDBACK, []);
           stored.push({ ...feedbackData, created_at: new Date().toISOString() });
-          localStorage.setItem('zenflow_feedback', JSON.stringify(stored.slice(-20)));
+          safeLocalStorageSet(SK.FEEDBACK, stored.slice(-20));
           logger.log('[Feedback] Saved to localStorage backup');
         } catch (e) {
           logger.warn('[Feedback] Failed to save to localStorage:', e);

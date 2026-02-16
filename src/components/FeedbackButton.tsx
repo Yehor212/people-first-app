@@ -14,6 +14,8 @@ import { Capacitor } from '@capacitor/core';
 import { haptics } from '@/lib/haptics';
 
 import { logger } from '@/lib/logger';
+import { SK } from '@/lib/storageKeys';
+import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 
 type FeedbackType = 'bug' | 'feature' | 'other';
 
@@ -198,10 +200,9 @@ export function FeedbackButton({
 // Store feedback locally when Supabase is unavailable
 function storeFeedbackLocally(data: Record<string, unknown>): void {
   try {
-    const stored = localStorage.getItem('zenflow_pending_feedback');
-    const pending = stored ? JSON.parse(stored) : [];
+    const pending = safeLocalStorageGet<Record<string, unknown>[]>(SK.PENDING_FEEDBACK, []);
     pending.push(data);
-    localStorage.setItem('zenflow_pending_feedback', JSON.stringify(pending));
+    safeLocalStorageSet(SK.PENDING_FEEDBACK, pending);
   } catch (error) {
     logger.error('[Feedback] Failed to store locally:', error);
   }
