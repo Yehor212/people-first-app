@@ -111,6 +111,13 @@ src/
     ErrorBoundary.tsx           # LazyErrorBoundary + ModalErrorBoundary
     HabitCreationForm.tsx       # Form JSX for habit creation/editing (extracted from HabitTracker)
     FocusReflectionModal.tsx    # Post-focus reflection modal (extracted from FocusTimer)
+    challenges/                 # Challenge sub-components (extracted from ChallengeModal)
+      ChallengeCard.tsx         # Single challenge card (presentational)
+      ParticipantsLeaderboard.tsx # Cloud leaderboard with real-time updates
+      CreateChallengeView.tsx   # Challenge creation form
+      ChallengeDetailsView.tsx  # Challenge details + share/delete
+      ChallengesListView.tsx    # Active/completed/expired lists
+      JoinChallengeView.tsx     # Join by code/invite
     # ... 50+ feature components
 
   features/                     # Feature modules (only journal migrated)
@@ -507,7 +514,7 @@ On PR to main:
 ## Known Technical Debt
 
 > Track items here until resolved. Remove when done.
-> Last audit: 2026-02-16 (after Phase 7: FocusTimer decomposition)
+> Last audit: 2026-02-16 (after Phase 8: ChallengeModal decomposition)
 
 ### Resolved
 
