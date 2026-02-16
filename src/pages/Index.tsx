@@ -1,8 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState, Suspense } from 'react';
-import { useAppStore, useUIStore, selectAnyModalOpen, getModalToggle, useHydrateGamification, useUserDataStore, useHydrateUserData, type TabType } from '@/stores';
-import { motion } from 'framer-motion';
-import { lazyWithRetry } from '@/lib/lazyWithRetry';
-import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAppStore, useUIStore, selectAnyModalOpen, useHydrateGamification, useUserDataStore, useHydrateUserData, type TabType } from '@/stores';
 import { logger } from '@/lib/logger';
 import { useAppLifecycle } from '@/hooks/useAppLifecycle';
 import { useDateTracking } from '@/hooks/useDateTracking';
@@ -17,91 +14,55 @@ import { useMoodHandlers } from '@/hooks/useMoodHandlers';
 import { useHabitHandlers } from '@/hooks/useHabitHandlers';
 import { useFocusHandlers } from '@/hooks/useFocusHandlers';
 import { useGratitudeHandlers } from '@/hooks/useGratitudeHandlers';
-import { MoodEntry, ScheduleEvent } from '@/types';
+import { ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useEmotionTheme } from '@/contexts/EmotionThemeContext';
 import { AdProvider } from '@/contexts/AdContext';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
-import { ConfettiBurst } from '@/components/ConfettiBurst';
-import { SessionExpiredBanner } from '@/components/SessionExpiredBanner';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
-import { generateId, getToday, calculateStreak } from '@/lib/utils';
+import { generateId, calculateStreak } from '@/lib/utils';
 import { normalizeHabit } from '@/lib/habits';
 import { supabase } from '@/lib/supabaseClient';
-import { syncWithCloud, triggerSync } from '@/storage/cloudSync';
+import { syncWithCloud } from '@/storage/cloudSync';
 import { generateHabitScheduleEvents, mergeScheduleEvents } from '@/lib/habitScheduleSync';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
-import { App } from '@capacitor/app';
-import {
-  handleAuthCallback,
-  isNativePlatform,
-  notifyAuthComplete,
-  setPendingAuthUrl,
-} from '@/lib/authRedirect';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 
 import { ModalLayer } from '@/components/ModalLayer';
-import { Header } from '@/components/Header';
 import { Navigation } from '@/components/Navigation';
-import { OfflineBanner } from '@/components/OfflineBanner';
-import { StorageErrorBanner } from '@/components/StorageErrorBanner';
-import { PullToRefresh } from '@/components/PullToRefresh';
+import { OverlayLayer } from '@/components/OverlayLayer';
+import { SplashScreen } from '@/components/SplashScreen';
+import { useDeepLinkHandler } from '@/hooks/useDeepLinkHandler';
+import { HomeTab } from '@/components/tabs/HomeTab';
+import { GardenTab } from '@/components/tabs/GardenTab';
+import { StatsTab } from '@/components/tabs/StatsTab';
+import { AchievementsTab } from '@/components/tabs/AchievementsTab';
+import { SettingsTab } from '@/components/tabs/SettingsTab';
 
-// Lazy-loaded components with retry logic for chunk loading failures
-const StatsPage = lazyWithRetry(() => import('@/components/StatsPage').then(m => ({ default: m.StatsPage })), 'StatsPage');
-const SettingsPanel = lazyWithRetry(() => import('@/components/SettingsPanel').then(m => ({ default: m.SettingsPanel })), 'SettingsPanel');
-const GratitudeJournal = lazyWithRetry(() => import('@/components/GratitudeJournal').then(m => ({ default: m.GratitudeJournal })), 'GratitudeJournal');
-const BreathingExercise = lazyWithRetry(() => import('@/components/BreathingExercise').then(m => ({ default: m.BreathingExercise })), 'BreathingExercise');
-
-// Journal module (lazy-loaded feature)
-const JournalModule = lazyWithRetry(() => import('@/features/journal').then(m => ({ default: m.JournalModule })), 'JournalModule');
-
-// Heavy components lazy-loaded for better initial load performance
-const ScheduleTimeline = lazyWithRetry(() => import('@/components/ScheduleTimeline').then(m => ({ default: m.ScheduleTimeline })), 'ScheduleTimeline');
-const HabitTracker = lazyWithRetry(() => import('@/components/HabitTracker').then(m => ({ default: m.HabitTracker })), 'HabitTracker');
-const FocusTimer = lazyWithRetry(() => import('@/components/FocusTimer').then(m => ({ default: m.FocusTimer })), 'FocusTimer');
-const EmotionWheel = lazyWithRetry(() => import('@/components/mindfulness/EmotionWheel').then(m => ({ default: m.EmotionWheel })), 'EmotionWheel');
 import { LanguageSelector } from '@/components/LanguageSelector';
-import { InstallBanner } from '@/components/InstallBanner';
 // RemindersPanel only used in Settings, imported there directly
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { WelcomeTutorial } from '@/components/WelcomeTutorial';
 // import { AICoachOnboarding } from '@/components/AICoachOnboarding'; // Hidden until AI ready
-import { AchievementsPanel } from '@/components/AchievementsPanel';
 import { NotificationPermission } from '@/components/NotificationPermission';
 import { AuthScreen } from '@/components/AuthScreen';
 // WeeklyReport, TimeHelper → moved to ModalLayer
 
 // Lazy-loaded components (ChallengesPanel, TasksPanel, QuestsPanel, WidgetSettings, FriendsPanel → moved to ModalLayer)
-const Leaderboard = lazyWithRetry(() => import('@/components/Leaderboard').then(m => ({ default: m.Leaderboard })), 'Leaderboard');
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges } from '@/lib/challengeStorage';
-import { MoodInsights } from '@/components/MoodInsights';
-import { StreakBanner } from '@/components/StreakBanner';
-import { UrgencyAlert } from '@/components/UrgencyAlert';
-import { RestModeCard } from '@/components/RestModeCard';
 // WhatsNewModal → moved to ModalLayer
 // ChallengeModal → moved to ModalLayer
-import { decodeInviteData } from '@/lib/friendChallenge';
-import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
-import { ConsentBanner } from '@/components/ConsentBanner';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { useScrollLock } from '@/hooks/useScrollLock';
 // import { AICoachChat } from '@/components/AICoachChat'; // Hidden until AI ready
 // import { useAICoach } from '@/contexts/AICoachContext'; // Hidden until AI ready
-import { OnboardingOverlay, DayProgressIndicator } from '@/components/OnboardingOverlay';
-import { FeatureUnlock } from '@/components/FeatureUnlock';
-import { QuickStatsRow } from '@/components/ui/stat-card';
-import { SkeletonCard, SkeletonStats, SkeletonList, SkeletonSection } from '@/components/ui/skeleton';
 // MindfulMoment → moved to ModalLayer
-import { WelcomeBackModal } from '@/components/WelcomeBackModal';
-import { UpdatePrompt } from '@/components/UpdatePrompt';
-import { dismissUpdate } from '@/lib/appUpdateManager';
 
 export function Index() {
   const { t, isRTL } = useLanguage();
@@ -116,7 +77,6 @@ export function Index() {
   const activeTab = useAppStore(s => s.activeTab);
   const setActiveTab = useAppStore(s => s.setActiveTab);
   const settingsOpenSection = useAppStore(s => s.settingsOpenSection);
-  const setSettingsOpenSection = useAppStore(s => s.setSettingsOpenSection);
   // const [showAIOnboarding, setShowAIOnboarding] = useState(false); // Hidden until AI ready
   const quickActionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
@@ -200,40 +160,13 @@ export function Index() {
 
   // Current focus minutes (real-time) from UI store
   const currentFocusMinutes = useUIStore(s => s.currentFocusMinutes);
-  const setCurrentFocusMinutes = useUIStore(s => s.setCurrentFocusMinutes);
-
-  // UI state from Zustand uiStore (modal rendering moved to ModalLayer)
-  const setChallengeInvite = useUIStore(s => s.setChallengeInvite);
-  const confettiBurst = useUIStore(s => s.confettiBurst);
-  const setConfettiBurst = useUIStore(s => s.setConfettiBurst);
-  // Modal toggle functions still used in Index.tsx (stable references via getModalToggle utility)
-  const setShowWidgetSettings = getModalToggle('showWidgetSettings');
-  const setShowChallenges = getModalToggle('showChallenges');
-  const setShowChallengeModal = getModalToggle('showChallengeModal');
-  const setShowTasksPanel = getModalToggle('showTasksPanel');
-  const setShowQuestsPanel = getModalToggle('showQuestsPanel');
-  const setShowFriendsPanel = getModalToggle('showFriendsPanel');
-  const setShowWelcomeOverlay = getModalToggle('showWelcomeOverlay');
-  const setShowWelcomeBack = getModalToggle('showWelcomeBack');
 
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
 
-  // Onboarding, celebrations, update state from UI store
-  const showWelcomeOverlay = useUIStore(s => s.showWelcomeOverlay);
-  const featureToUnlock = useUIStore(s => s.featureToUnlock);
-  const setFeatureToUnlock = useUIStore(s => s.setFeatureToUnlock);
-  const showWelcomeBack = useUIStore(s => s.showWelcomeBack);
-  const welcomeBackData = useUIStore(s => s.welcomeBackData);
-  const updateState = useUIStore(s => s.updateState);
-  const setUpdateState = useUIStore(s => s.setUpdateState);
-
   // Lock background scroll when any modal/panel is open (computed from UI store)
   const anyModalOpen = useUIStore(selectAnyModalOpen);
   useScrollLock(anyModalOpen);
-
-  // Journal prompt text from UI store
-  const journalPromptText = useUIStore(s => s.journalPromptText);
 
   // Auth state from app store
   const authBypassFlag = useAppStore(s => s.authBypassFlag);
@@ -276,16 +209,6 @@ export function Index() {
   const setPrivacy = useUserDataStore(s => s.setPrivacy);
   const scheduleEvents = useUserDataStore(s => s.scheduleEvents);
   const setScheduleEvents = useUserDataStore(s => s.setScheduleEvents);
-
-  // GDPR consent handler
-  const handleConsentResponse = (analyticsAllowed: boolean) => {
-    setPrivacy({
-      ...privacy,
-      analytics: analyticsAllowed,
-      noTracking: !analyticsAllowed,
-      consentShown: true,
-    });
-  };
 
   // Loading handling (IndexedDB fields from store + InnerWorld from hook)
   const isLoadingUserData = useUserDataStore(s => s.isLoading);
@@ -634,268 +557,16 @@ export function Index() {
   // Cloud sync + quick actions (extracted to hook)
   useCloudSyncEffects({ setChallenges, setBadges, handleNavigateToSection, quickActionTimeoutRef });
 
-  // Deep link listener - ALWAYS register, store URL if supabase not ready
-  useEffect(() => {
-    if (!isNativePlatform()) return;
-
-    let removeListener = () => {};
-
-    const handleAuthUrl = async (url: string) => {
-      // Check if URL is auth callback
-      if (!url.includes('login-callback')) return;
-
-      logger.log('[Index] Auth URL received:', url);
-
-      // If supabase not ready, store for later
-      if (!supabase) {
-        logger.log('[Index] Supabase not ready, storing pending URL');
-        setPendingAuthUrl(url);
-        return;
-      }
-
-      try {
-        await handleAuthCallback(supabase, url);
-
-        const { data } = await supabase.auth.getSession();
-        if (data.session?.user) {
-          const metadata = data.session.user.user_metadata;
-          const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
-
-          // Don't log email (PII)
-          logger.log('[Auth] OAuth callback successful');
-          setAuthBypassFlag(true);
-          notifyAuthComplete();
-          setUserName(name);
-          setUserNameCustom(false);
-          setGoogleAuthChecked(true);
-        }
-      } catch (error) {
-        logger.error('[Index] Failed to handle auth callback:', error);
-      }
-    };
-
-    // Handle challenge deep links
-    const handleChallengeUrl = (url: string): boolean => {
-      try {
-        const parsedUrl = new URL(url);
-        // Check if it's a challenge invite URL
-        // Support both: zenflow://challenge?data=... and https://zenflow.app/challenge?data=...
-        const isCustomScheme = parsedUrl.protocol === 'zenflow:' && parsedUrl.hostname === 'challenge';
-        const isHttpsScheme = parsedUrl.hostname === 'zenflow.app' && parsedUrl.pathname.startsWith('/challenge');
-
-        if (isCustomScheme || isHttpsScheme) {
-          const data = parsedUrl.searchParams.get('data');
-          if (data) {
-            const invite = decodeInviteData(data);
-            if (invite) {
-              logger.log('[Index] Challenge invite received:', invite.code);
-              // Only open challenge modal if challenges feature is enabled
-              if (isFeatureVisible('challenges')) {
-                setChallengeInvite(invite);
-                setShowChallengeModal(true);
-                return true;
-              } else {
-                logger.log('[Index] Challenges feature disabled, ignoring invite');
-              }
-            }
-          }
-        }
-      } catch (error) {
-        logger.error('[Index] Failed to parse challenge URL:', error);
-      }
-      return false;
-    };
-
-    const setup = async () => {
-      try {
-        // Check launch URL (cold start with deep link)
-        const launch = await App.getLaunchUrl();
-        if (launch?.url) {
-          logger.log('[Index] Launch URL found:', launch.url);
-          // Try challenge URL first, then auth URL
-          if (!handleChallengeUrl(launch.url)) {
-            await handleAuthUrl(launch.url);
-          }
-        }
-      } catch (error) {
-        logger.error('[Index] Failed to read launch URL:', error);
-      }
-
-      // Listen for future deep links
-      const listener = await App.addListener('appUrlOpen', (event) => {
-        if (event?.url) {
-          logger.log('[Index] appUrlOpen event:', event.url);
-          // Try challenge URL first, then auth URL
-          if (!handleChallengeUrl(event.url)) {
-            void handleAuthUrl(event.url);
-          }
-        }
-      });
-      removeListener = () => listener.remove();
-    };
-
-    void setup();
-    return () => { removeListener(); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Listener registers ONCE, no dependencies
+  // Deep link listener (auth + challenge URLs, extracted to hook)
+  useDeepLinkHandler();
 
   // Show premium initialization screen
   if (initializationState.isInitializing) {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
     return (
-      <motion.div
-        key="loading"
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background overflow-hidden"
-        animate={{
-          opacity: loadingFadeOut ? 0 : 1,
-          scale: loadingFadeOut ? 1.02 : 1,
-        }}
-        transition={{ duration: 0.5, ease: 'easeInOut' }}
-      >
-        {/* Aurora ambient layer 1 — top-center warm glow */}
-        {!prefersReducedMotion && (
-          <motion.div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: 'radial-gradient(ellipse 60% 50% at 50% 30%, hsl(var(--primary) / 0.10) 0%, transparent 70%)'
-            }}
-            animate={{ opacity: [0.4, 0.8, 0.4] }}
-            transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-          />
-        )}
-
-        {/* Aurora ambient layer 2 — bottom accent glow */}
-        {!prefersReducedMotion && (
-          <motion.div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: 'radial-gradient(ellipse 50% 40% at 50% 70%, hsl(var(--accent) / 0.05) 0%, transparent 70%)'
-            }}
-            animate={{ opacity: [0.3, 0.6, 0.3] }}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
-          />
-        )}
-
-        {/* Floating bokeh orbs — CSS only, GPU composited */}
-        {!prefersReducedMotion && (
-          <>
-            <div className="absolute w-24 h-24 rounded-full bg-primary/[0.05] blur-[20px] animate-float" style={{ top: '20%', left: '15%', animationDuration: '6s' }} />
-            <div className="absolute w-16 h-16 rounded-full bg-primary/[0.07] blur-[20px] animate-float" style={{ top: '15%', right: '20%', animationDuration: '7s', animationDelay: '-2s' }} />
-            <div className="absolute w-20 h-20 rounded-full bg-primary/[0.04] blur-[20px] animate-float" style={{ bottom: '25%', left: '20%', animationDuration: '5s', animationDelay: '-1s' }} />
-            <div className="absolute w-14 h-14 rounded-full bg-primary/[0.06] blur-[20px] animate-float" style={{ bottom: '20%', right: '15%', animationDuration: '8s', animationDelay: '-3s' }} />
-            <div className="absolute w-10 h-10 rounded-full bg-primary/[0.08] blur-[20px] animate-float" style={{ top: '45%', left: '10%', animationDuration: '6.5s', animationDelay: '-4s' }} />
-            <div className="absolute w-12 h-12 rounded-full bg-primary/[0.05] blur-[20px] animate-float" style={{ top: '40%', right: '10%', animationDuration: '7.5s', animationDelay: '-2.5s' }} />
-          </>
-        )}
-
-        {/* Glow ring behind logo */}
-        <motion.div
-          className="absolute rounded-full"
-          style={{
-            width: 120,
-            height: 120,
-            background: 'radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)',
-            filter: 'blur(10px)',
-          }}
-          initial={prefersReducedMotion ? { scale: 1, opacity: 0.15 } : { scale: 0, opacity: 0 }}
-          animate={prefersReducedMotion
-            ? { scale: 1, opacity: 0.15 }
-            : { scale: [1, 1.15, 1], opacity: [0.15, 0.25, 0.15] }
-          }
-          transition={prefersReducedMotion ? {} : { delay: 0.3, duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-        />
-
-        {/* Logo — inline SVG from icon-source.svg */}
-        <motion.div
-          className="mb-6 relative"
-          initial={prefersReducedMotion ? {} : { scale: 0, rotate: -15 }}
-          animate={{ scale: 1, rotate: 0 }}
-          transition={prefersReducedMotion ? {} : { type: 'spring', stiffness: 180, damping: 14, delay: 0.1 }}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 512 512"
-            width="80"
-            height="80"
-            className="drop-shadow-lg"
-            role="img"
-            aria-label="ZenFlow"
-          >
-            <defs>
-              <linearGradient id="splashBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#1a6b52" />
-                <stop offset="50%" stopColor="#2a9d6e" />
-                <stop offset="100%" stopColor="#3dbd80" />
-              </linearGradient>
-              <radialGradient id="splashHighlight" cx="35%" cy="35%" r="60%">
-                <stop offset="0%" stopColor="white" stopOpacity="0.12" />
-                <stop offset="100%" stopColor="white" stopOpacity="0" />
-              </radialGradient>
-              <radialGradient id="splashLeafGlow" cx="50%" cy="45%" r="35%">
-                <stop offset="0%" stopColor="white" stopOpacity="0.2" />
-                <stop offset="100%" stopColor="white" stopOpacity="0" />
-              </radialGradient>
-            </defs>
-            <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#splashBgGrad)" />
-            <rect x="16" y="16" width="480" height="480" rx="100" ry="100" fill="url(#splashHighlight)" />
-            <ellipse cx="256" cy="240" rx="130" ry="130" fill="url(#splashLeafGlow)" />
-            <g transform="translate(106, 96) scale(12.5)">
-              <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"
-                fill="white" fillOpacity="0.2" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"
-                fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-            </g>
-            <circle cx="340" cy="140" r="3" fill="white" opacity="0.4" />
-            <circle cx="345" cy="135" r="1.5" fill="white" opacity="0.6" />
-          </svg>
-        </motion.div>
-
-        {/* Brand name */}
-        <motion.h1
-          className="text-3xl font-bold text-foreground tracking-[0.15em]"
-          initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={prefersReducedMotion ? {} : { delay: 0.5, duration: 0.5, ease: 'easeOut' }}
-        >
-          ZenFlow
-        </motion.h1>
-
-        {/* Localized subtitle */}
-        <motion.p
-          className="text-sm text-muted-foreground mt-3"
-          initial={prefersReducedMotion ? {} : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={prefersReducedMotion ? {} : { delay: 0.8, duration: 0.5 }}
-        >
-          {t.initializingApp || 'Preparing your zen space...'}
-        </motion.p>
-
-        {/* Progress dots */}
-        <motion.div
-          className="flex items-center gap-2 mt-8"
-          initial={prefersReducedMotion ? {} : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={prefersReducedMotion ? {} : { delay: 1.0 }}
-        >
-          {[0, 1, 2].map((i) => (
-            <motion.div
-              key={i}
-              className="w-1.5 h-1.5 rounded-full bg-primary/40"
-              animate={prefersReducedMotion ? {} : {
-                y: [0, -6, 0],
-                opacity: [0.4, 1, 0.4],
-              }}
-              transition={prefersReducedMotion ? {} : {
-                duration: 0.8,
-                repeat: Infinity,
-                delay: i * 0.15,
-                ease: 'easeInOut',
-              }}
-            />
-          ))}
-        </motion.div>
-      </motion.div>
+      <SplashScreen
+        loadingFadeOut={loadingFadeOut}
+        subtitle={t.initializingApp || 'Preparing your zen space...'}
+      />
     );
   }
 
@@ -1018,73 +689,10 @@ export function Index() {
       {/* Dynamic mood-based background overlay */}
       <MoodBackgroundOverlay />
 
-      {/* Confetti burst on habit completion */}
-      {confettiBurst && (
-        <ConfettiBurst
-          x={confettiBurst.x}
-          y={confettiBurst.y}
-          onComplete={() => setConfettiBurst(null)}
-        />
-      )}
-
-      {/* GDPR Consent Banner - shows once after onboarding */}
-      {!privacy.consentShown && onboardingComplete && (
-        <ConsentBanner onConsent={handleConsentResponse} />
-      )}
-
-      {/* App Update Banner - shows when Google Play update is available */}
-      {updateState && updateState.available && (
-        <UpdatePrompt
-          updateState={updateState}
-          onDismiss={() => {
-            dismissUpdate();
-            setUpdateState(null);
-          }}
-        />
-      )}
-
-      {/* Progressive Onboarding - Welcome overlay for new users */}
-      {showWelcomeOverlay && (
-        <OnboardingOverlay onClose={() => setShowWelcomeOverlay(false)} />
-      )}
-
-      {/* Feature Unlock Celebration */}
-      {featureToUnlock && (
-        <FeatureUnlock
-          feature={featureToUnlock}
-          onClose={() => setFeatureToUnlock(null)}
-        />
-      )}
-
-      {/* Re-engagement - Welcome Back Modal (3+ day absence) */}
-      {showWelcomeBack && welcomeBackData && (
-        <WelcomeBackModal
-          daysAway={welcomeBackData.daysAway}
-          streakBroken={welcomeBackData.streakBroken}
-          currentStreak={welcomeBackData.currentStreak}
-          topHabits={welcomeBackData.topHabits}
-          onClose={() => setShowWelcomeBack(false)}
-          onQuickMoodLog={(mood) => {
-            // Quick mood logging from welcome back modal
-            const newMood: MoodEntry = {
-              id: generateId(),
-              mood,
-              date: getToday(),
-              timestamp: Date.now()
-            };
-            setMoods(prev => [...prev, newMood]);
-            awardXp('mood');
-            earnTreats('mood', 5, 'Welcome back mood');
-            triggerSync(); // Sync mood and inner world
-          }}
-        />
-      )}
-
-      {/* Offline banner - shows when user loses connection */}
-      <OfflineBanner />
-
-      {/* Storage error banner - shows when localStorage/IndexedDB fails */}
-      <StorageErrorBanner />
+      <OverlayLayer
+        awardXp={awardXp}
+        earnTreats={earnTreats}
+      />
 
       {/* Swipe container for tab navigation on mobile */}
       <div
@@ -1110,276 +718,93 @@ export function Index() {
         )}
 
         {activeTab === 'home' && (
-          <div className="animate-tab-enter">
-          <PullToRefresh onRefresh={handlePullToRefresh}>
-            <InstallBanner />
-            <Header
-              userName={userName}
-              onOpenChallenges={isFeatureVisible('challenges') ? () => setShowChallenges(true) : undefined}
-              onOpenTasks={isFeatureVisible('tasks') ? () => setShowTasksPanel(true) : undefined}
-              onOpenQuests={isFeatureVisible('quests') ? () => setShowQuestsPanel(true) : undefined}
-            />
-
-            {/* Session expired banner - shows when user was authenticated but session is lost */}
-            {hasValidSession === false && googleAuthChecked && userName !== 'Friend' && (
-              <SessionExpiredBanner onSignIn={() => { setSettingsOpenSection('account'); setActiveTab('settings'); }} />
-            )}
-
-            <div className="space-y-3">
-              {/* Progressive Onboarding - Day progress indicator */}
-              <DayProgressIndicator />
-
-              {/* Streak Banner - Prominent streak display with Rest Mode button */}
-              <StreakBanner
-                moods={safeMoods}
-                habits={safeHabits}
-                focusSessions={safeFocusSessions}
-                gratitudeEntries={safeGratitudeEntries}
-                restDays={innerWorld.restDays}
-                onRestMode={activateRestMode}
-                isRestMode={isRestMode}
-                canActivateRestMode={canActivateRestMode}
-                daysUntilRestAvailable={daysUntilRestAvailable}
-              />
-
-              {/* Quick Stats Row - At-a-glance progress overview */}
-              <QuickStatsRow
-                habitsCompleted={completedTodayCount}
-                habitsTotal={habitsDueToday.length}
-                focusMinutes={isFeatureVisible('focusTimer') ? todayFocusMinutes : undefined}
-                level={userLevel.level}
-                labels={{
-                  habits: t.habits,
-                  focus: t.focus,
-                  level: t.level || 'Level',
-                }}
-              />
-
-              {/* Urgency Alert - Smart reminders for pending habits */}
-              <UrgencyAlert
-                habits={habitsDueToday}
-                currentStreak={innerWorld.currentActiveStreak}
-                onHabitClick={() => {
-                  // Scroll to habit tracker
-                  habitsRef.current?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              />
-
-
-
-              {/* Rest Mode UI - Simplified interface when taking a break */}
-              {isRestMode ? (
-                <RestModeCard
-                  streak={innerWorld.currentActiveStreak}
-                  onCancel={deactivateRestMode}
-                />
-              ) : currentPrimaryCTA === 'complete' ? (
-                /* All activities complete - show celebration */
-                <AllCompleteCelebration streak={innerWorld.currentActiveStreak} />
-              ) : (
-                <>
-                  {/* Smart Primary CTA System - Sequential focus with collapsible completed sections */}
-
-                  {/* Mood Tracker */}
-                  <div ref={moodRef}>
-                    <ModalErrorBoundary fallbackTitle="Mood Tracker Error" fallbackBody="Unable to load mood tracker. Try refreshing.">
-                      <Suspense fallback={<SkeletonCard />}>
-                        <EmotionWheel
-                          entries={safeMoods}
-                          onAddEntry={handleAddMood}
-                        />
-                      </Suspense>
-                    </ModalErrorBoundary>
-                  </div>
-
-                  {/* Habit Tracker */}
-                  <div ref={habitsRef}>
-                    <ModalErrorBoundary fallbackTitle="Habit Tracker Error" fallbackBody="Unable to load habit tracker. Try refreshing.">
-                      <Suspense fallback={<SkeletonList />}>
-                        <HabitTracker
-                          habits={safeHabits}
-                          onToggleHabit={handleToggleHabit}
-                          onAdjustHabit={handleAdjustHabit}
-                          onAddHabit={handleAddHabit}
-                          onUpdateHabit={handleUpdateHabit}
-                          onDeleteHabit={handleDeleteHabit}
-                          onOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
-                        />
-                      </Suspense>
-                    </ModalErrorBoundary>
-                  </div>
-
-                  {/* Daily Prompt Card - HIDDEN: prompt is now built into GratitudeJournal via JournalPrompt */}
-                  {/* {isFeatureVisible('gratitudeJournal') && (
-                    <DailyPromptCard
-                      onUsePrompt={handleUseJournalPrompt}
-                    />
-                  )} */}
-
-                  {/* Gratitude Journal */}
-                  {isFeatureVisible('gratitudeJournal') && (
-                    <div ref={gratitudeRef}>
-                      <LazyErrorBoundary componentName="Gratitude Journal">
-                        <Suspense fallback={<SkeletonCard />}>
-                          <GratitudeJournal
-                            entries={safeGratitudeEntries}
-                            onAddEntry={handleAddGratitude}
-                            initialText={journalPromptText}
-                            onInitialTextUsed={handleJournalPromptUsed}
-                          />
-                        </Suspense>
-                      </LazyErrorBoundary>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </PullToRefresh>
-          </div>
+          <HomeTab
+            safeMoods={safeMoods}
+            safeHabits={safeHabits}
+            safeFocusSessions={safeFocusSessions}
+            safeGratitudeEntries={safeGratitudeEntries}
+            restDays={innerWorld.restDays}
+            currentActiveStreak={innerWorld.currentActiveStreak}
+            isRestMode={isRestMode}
+            activateRestMode={activateRestMode}
+            deactivateRestMode={deactivateRestMode}
+            canActivateRestMode={canActivateRestMode}
+            daysUntilRestAvailable={daysUntilRestAvailable}
+            completedTodayCount={completedTodayCount}
+            habitsDueToday={habitsDueToday}
+            todayFocusMinutes={todayFocusMinutes}
+            currentPrimaryCTA={currentPrimaryCTA}
+            userLevel={userLevel.level}
+            handleAddMood={handleAddMood}
+            handleToggleHabit={handleToggleHabit}
+            handleAdjustHabit={handleAdjustHabit}
+            handleAddHabit={handleAddHabit}
+            handleUpdateHabit={handleUpdateHabit}
+            handleDeleteHabit={handleDeleteHabit}
+            handleAddGratitude={handleAddGratitude}
+            handleJournalPromptUsed={handleJournalPromptUsed}
+            handleOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
+            handlePullToRefresh={handlePullToRefresh}
+            moodRef={moodRef}
+            habitsRef={habitsRef}
+            gratitudeRef={gratitudeRef}
+          />
         )}
 
         {activeTab === 'garden' && (
-          <div className="animate-tab-enter">
-          <div className="space-y-4">
-            <Header
-              userName={userName}
-              onOpenChallenges={isFeatureVisible('challenges') ? () => setShowChallenges(true) : undefined}
-              onOpenTasks={isFeatureVisible('tasks') ? () => setShowTasksPanel(true) : undefined}
-              onOpenQuests={isFeatureVisible('quests') ? () => setShowQuestsPanel(true) : undefined}
-              onOpenFriends={() => setShowFriendsPanel(true)}
-            />
-
-            {/* Schedule Timeline - ADHD-friendly day planner with habits auto-synced */}
-            <LazyErrorBoundary componentName="Schedule Timeline">
-              <Suspense fallback={<SkeletonList />}>
-                <ScheduleTimeline
-                  events={todayAllEvents}
-                  onAddEvent={handleAddScheduleEvent}
-                  onDeleteEvent={handleDeleteScheduleEvent}
-                />
-              </Suspense>
-            </LazyErrorBoundary>
-
-            {/* Diary */}
-            <LazyErrorBoundary componentName="Journal">
-              <Suspense fallback={<SkeletonCard />}>
-                <JournalModule />
-              </Suspense>
-            </LazyErrorBoundary>
-
-            {/* Breathing Exercise - Compact mindfulness card */}
-            {isFeatureVisible('breathingExercise') && (
-              <LazyErrorBoundary componentName="Breathing Exercise">
-                <Suspense fallback={<SkeletonCard lines={1} />}>
-                  <BreathingExercise
-                    compact
-                    onComplete={(pattern) => {
-                      const treatResult = earnTreats('breathing', 5, `Breathing: ${pattern.name}`);
-                      triggerXpPopup(treatResult.earned, 'breathing');
-                      triggerSync();
-                    }}
-                  />
-                </Suspense>
-              </LazyErrorBoundary>
-            )}
-
-            {/* Focus Timer */}
-            {isFeatureVisible('focusTimer') && (
-              <ModalErrorBoundary fallbackTitle="Focus Timer Error" fallbackBody="Unable to load focus timer. Try refreshing.">
-                <Suspense fallback={<SkeletonCard />}>
-                  <FocusTimer
-                    sessions={safeFocusSessions}
-                    onCompleteSession={handleCompleteFocusSession}
-                    onMinuteUpdate={setCurrentFocusMinutes}
-                    isPrimaryCTA={true}
-                  />
-                </Suspense>
-              </ModalErrorBoundary>
-            )}
-
-            {/* Insights */}
-            <LazyErrorBoundary componentName="Insights">
-              <MoodInsights
-                moods={safeMoods}
-                habits={safeHabits}
-                focusSessions={safeFocusSessions}
-                gratitudeEntries={safeGratitudeEntries}
-              />
-            </LazyErrorBoundary>
-
-          </div>
-          </div>
+          <GardenTab
+            safeMoods={safeMoods}
+            safeHabits={safeHabits}
+            safeFocusSessions={safeFocusSessions}
+            safeGratitudeEntries={safeGratitudeEntries}
+            todayAllEvents={todayAllEvents}
+            handleAddScheduleEvent={handleAddScheduleEvent}
+            handleDeleteScheduleEvent={handleDeleteScheduleEvent}
+            handleCompleteFocusSession={handleCompleteFocusSession}
+            earnTreats={earnTreats}
+          />
         )}
 
         {activeTab === 'stats' && (
-          <div className="animate-tab-enter">
-            <Header userName={userName} />
-            <LazyErrorBoundary componentName="Stats">
-              <Suspense fallback={<SkeletonStats count={4} className="px-4 pt-8" />}>
-                <StatsPage
-                  moods={safeMoods}
-                  habits={safeHabits}
-                  focusSessions={safeFocusSessions}
-                  gratitudeEntries={safeGratitudeEntries}
-                  restDays={innerWorld.restDays}
-                  currentFocusMinutes={currentFocusMinutes}
-                  onQuickAction={(action) => {
-                    setActiveTab('home');
-                    quickActionTimeoutRef.current = setTimeout(() => {
-                      if (action === 'logMood') moodRef.current?.scrollIntoView({ behavior: 'smooth' });
-                      if (action === 'startFocus') focusRef.current?.scrollIntoView({ behavior: 'smooth' });
-                    }, 100);
-                  }}
-                />
-              </Suspense>
-            </LazyErrorBoundary>
-          </div>
+          <StatsTab
+            safeMoods={safeMoods}
+            safeHabits={safeHabits}
+            safeFocusSessions={safeFocusSessions}
+            safeGratitudeEntries={safeGratitudeEntries}
+            restDays={innerWorld.restDays}
+            currentFocusMinutes={currentFocusMinutes}
+            onQuickAction={(action) => {
+              setActiveTab('home');
+              quickActionTimeoutRef.current = setTimeout(() => {
+                if (action === 'logMood') moodRef.current?.scrollIntoView({ behavior: 'smooth' });
+                if (action === 'startFocus') focusRef.current?.scrollIntoView({ behavior: 'smooth' });
+              }, 100);
+            }}
+          />
         )}
 
         {activeTab === 'achievements' && (
-          <div className="animate-tab-enter">
-          <div className="content-with-nav px-4">
-            <LazyErrorBoundary componentName="Achievements">
-              <AchievementsPanel
-                stats={stats}
-                unlockedAchievements={gamificationState.unlockedAchievements}
-              />
-            </LazyErrorBoundary>
-            {/* Leaderboard - Social Feature from v1.3.0 "Harmony" */}
-            <LazyErrorBoundary componentName="Leaderboard">
-              <Suspense fallback={<SkeletonList count={3} />}>
-                <div className="mt-6">
-                  <Leaderboard />
-                </div>
-              </Suspense>
-            </LazyErrorBoundary>
-          </div>
-          </div>
+          <AchievementsTab
+            stats={stats}
+            unlockedAchievements={gamificationState.unlockedAchievements}
+          />
         )}
 
         {activeTab === 'settings' && (
-          <div className="animate-tab-enter">
-            <Header userName={userName} />
-            <LazyErrorBoundary componentName="Settings">
-              <Suspense fallback={<SkeletonSection />}>
-                <SettingsPanel
-                  userName={userName}
-                  onNameChange={handleNameChange}
-                  onResetData={handleResetData}
-                  reminders={reminders}
-                  onRemindersChange={setReminders}
-                  habits={safeHabits}
-                  moods={safeMoods}
-                  focusSessions={safeFocusSessions}
-                  gratitudeEntries={safeGratitudeEntries}
-                  privacy={privacy}
-                  onPrivacyChange={setPrivacy}
-                  onOpenWidgetSettings={() => setShowWidgetSettings(true)}
-                  initialOpenSection={settingsOpenSection}
-                />
-              </Suspense>
-            </LazyErrorBoundary>
-          </div>
+          <SettingsTab
+            userName={userName}
+            onNameChange={handleNameChange}
+            onResetData={handleResetData}
+            reminders={reminders}
+            onRemindersChange={setReminders}
+            safeHabits={safeHabits}
+            safeMoods={safeMoods}
+            safeFocusSessions={safeFocusSessions}
+            safeGratitudeEntries={safeGratitudeEntries}
+            privacy={privacy}
+            onPrivacyChange={setPrivacy}
+            initialOpenSection={settingsOpenSection}
+          />
         )}
         </main>
       </div>
