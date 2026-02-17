@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-16 (TD-20 Phase 5 — 33 god components resolved, ALL component LOC violations done)
+> Last updated: 2026-02-16 (TD-20 Phase 6 — 33 components + 3 hooks + 3 hook-only resolved, DayClock deleted)
 
 ---
 
@@ -17,7 +17,7 @@
 | ESLint errors | 0 | `npx eslint src/ --quiet` |
 | ESLint warnings | 21 | `npx eslint src/` |
 | TypeScript errors | 0 | `npx tsc --noEmit` |
-| God components (>400L) | 1 remaining (33 resolved, 1 dead code, 3 out-of-scope) | See [Known Technical Debt](#known-technical-debt) |
+| God components (>400L) | 0 remaining (33 components + 3 hooks resolved, 1 dead code deleted, 3 out-of-scope) | See [Known Technical Debt](#known-technical-debt) |
 | Direct localStorage calls | 0 (was 199) | Enforced by ESLint `no-restricted-globals` rule. All access via `SK` + `safeJson`. |
 | Silent .catch(() => {}) | 0 | `grep -rn '\.catch.*=> {}' src/ \| wc -l` |
 | React.memo components | 12 / 80+ | `grep -rl 'memo(' src/ --include="*.tsx" \| wc -l` |
@@ -535,7 +535,7 @@ On PR to main:
 ## Known Technical Debt
 
 > Track items here until resolved. Remove when done.
-> Last audit: 2026-02-16 (TD-20 Phase 5 — 33 god components resolved, 1 component SKIP + 3 hook remaining)
+> Last audit: 2026-02-16 (TD-20 Phase 6 — 33 components + 3 hooks + 3 hook-only resolved, 1 SKIP, DayClock deleted)
 
 ### Resolved
 
@@ -565,12 +565,12 @@ On PR to main:
 | TD-08 | ~~HIGH~~ → DONE | ~~translations.ts monolith (all languages in one file)~~ | **Fixed 2026-02-16**: Split 19,879-line monolith into per-language files. `types.ts` (2,280L), 8 language files in `languages/` (~2,200L each), `index.ts` (37L assembler), `translations.ts` (3L re-export). Zero import changes needed. | src/i18n/ |
 | TD-09 | HIGH | Low test coverage | 543 tests pass, but ~6% line coverage | src/__tests__/ |
 | TD-11 | ~~HIGH~~ → DONE | ~~CI pipeline missing lint + typecheck~~ | **Fixed 2026-02-16**: Added `eslint --quiet` + `tsc --noEmit` steps to deploy.yml. Still missing: `playwright`, `npm audit`. | .github/workflows/deploy.yml |
-| TD-15 | ~~MEDIUM~~ → LOW | useInnerWorld.ts monolith | ~~780+ lines~~ → **542 lines** (12 dead functions removed, garden/ dir deleted) | src/hooks/useInnerWorld.ts |
+| TD-15 | ~~MEDIUM~~ → DONE | useInnerWorld.ts monolith | ~~780+ lines~~ → **336 lines** (extracted innerWorldHelpers.ts + useRestMode.ts) | src/hooks/useInnerWorld.ts |
 | TD-16 | LOW | Prop drilling in HomeTab (~30 props) | Handlers + inner world values passed as props | src/components/tabs/HomeTab.tsx |
 | TD-17 | ~~HIGH~~ → DONE | ~~Silent `.catch(() => {})` swallowing errors~~ | **Fixed 2026-02-16**: All 34 instances replaced with `logger.warn`/`logger.error` across 20 files. Categorized by risk: fire-and-forget (warn), data ops (error), with-fallback (warn + fallback). | Various |
 | TD-18 | ~~HIGH~~ → DONE | ~~Memory leaks: uncleaned setTimeout in contexts~~ | **Fixed 2026-02-16**: MoodThemeContext — added useRef + clearTimeout cleanup (EmotionThemeContext already correct). | src/contexts/MoodThemeContext.tsx |
 | TD-19 | ~~HIGH~~ → DONE | ~~Raw console.* calls bypassing logger.ts~~ | **Fixed 2026-02-16**: 16 calls replaced with logger.* in 4 files (main.tsx, sw.ts, sentry.ts, gamificationStore.ts). Remaining: logger.ts (6, implementation) + crashReporting.ts (7, implementation). | Various |
-| TD-20 | ~~HIGH~~ → LOW (33/34 done) | God components violating 400-line / 5-useState / 3-useEffect rules | **33 resolved**, 1 dead code (DayClock), 1 SKIP (sidebar). 3 hook LOC violations + 4 hook-only violations remaining. | See God Components table below |
+| TD-20 | ~~HIGH~~ → DONE | God components violating 400-line / 5-useState / 3-useEffect rules | **33 components + 3 hooks + 3 hook-only resolved**, DayClock deleted, 1 SKIP (sidebar), Celebrations.tsx false positive (4 components × 1 useEffect each). | See God Components table below |
 | TD-21 | MEDIUM | Scattered Capacitor platform checks | **58** `isNativePlatform()/getPlatform()` calls across 20+ files. Export in authRedirect.ts unused | Various — `grep 'Capacitor\.\(isNativePlatform\|getPlatform\)' src/` |
 | TD-22 | MEDIUM | Scattered import.meta.env access | **25 calls** across 11 files. No centralized config.ts | Various — `grep 'import\.meta\.env' src/` |
 | TD-23 | MEDIUM | Direct Supabase calls in UI components | **71** `.from(`/`supabase.` calls in `/components/`. No service layer. | src/components/ — `grep 'supabase\.\|\.from(' src/components/` |
@@ -578,8 +578,9 @@ On PR to main:
 
 ### God Components (TD-20 Detail)
 
-> Last audit: 2026-02-16 via `wc -l` + `grep -c 'useState(' + 'useEffect('`. Limit: 400 lines, 5 useState, 3 useEffect.
+> Last audit: 2026-02-16 (Phase 6) via `wc -l` + `grep -c 'useState(' + 'useEffect('`. Limit: 400 lines, 5 useState, 3 useEffect.
 > Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.
+> **TD-20 COMPLETE**: All component and hook violations resolved. Only sidebar.tsx (vendored) remains as SKIP.
 
 #### Resolved (33 components)
 
@@ -619,34 +620,39 @@ On PR to main:
 | WhatsNewModal.tsx | 402L / 2st / 1eff | max 231L / 2st | `whats-new-modal/` — 3 files (changelog extracted) |
 | QuestsPanel.tsx | 401L / 4st / 4eff | max 271L / 4st | `quests-panel/` — 3 files |
 
+#### Resolved — Hook LOC violations (3 hooks, Phase 6)
+
+| File | Was | Now | Resolution |
+|------|-----|-----|------------|
+| hooks/useInnerWorld.ts | 542L / 0st / 4eff | 336L | `innerWorldHelpers.ts` (161L) + `useRestMode.ts` (89L) |
+| hooks/useFocusTimer.ts | 513L / 18st / 8eff | 399L | `focusTimerTypes.ts` (68L) + `useFocusTimerConfig.ts` (85L) |
+| hooks/useStatsCalculations.ts | 413L / 0st / 0eff | 373L | `statsTypes.ts` (44L) — types extracted |
+
+#### Resolved — Hook-only violations (3 files, Phase 6)
+
+| File | Was | Now | Resolution |
+|------|-----|-----|------------|
+| schedule/AddEventModal.tsx | 269L / **8**st / 0eff | 5st | Merged 4 time useState into 1 object |
+| auth-screen/useAuthSession.ts | 218L / 2st / **7**eff | 3eff | Removed ref-sync effect + merged 4 mount effects |
+| schedule/useScheduleData.ts | 283L / 3st / **4**eff | 3eff | Merged task-loading + time-interval mount effects |
+
+#### False positive (not a violation)
+
+| File | Lines | useState | useEffect | Notes |
+|------|-------|----------|-----------|-------|
+| Celebrations.tsx | 311 | 4 | 4 | 4 components × 1 useEffect each — no single component exceeds limit |
+
 #### Remaining — Component LOC violations (1 file >400L — SKIP)
 
 | File | Lines | useState | useEffect | Notes |
 |------|-------|----------|-----------|-------|
 | ui/sidebar.tsx | **641** | 2 | 1 | shadcn vendored — SKIP |
 
-#### Dead code (no imports)
+#### Dead code (deleted)
 
 | File | Lines | Notes |
 |------|-------|-------|
-| DayClock.tsx | **527** | 0 imports found in codebase |
-
-#### Remaining — Hook/utility LOC violations (3 files >400L)
-
-| File | Lines | useState | useEffect | Notes |
-|------|-------|----------|-----------|-------|
-| hooks/useInnerWorld.ts | **542** | 5 | 2 | P3 |
-| hooks/useFocusTimer.ts | **513** | 4 | 3 | P3 |
-| hooks/useStatsCalculations.ts | **413** | 0 | 0 | P3 — pure calc |
-
-#### Remaining — Hook-only violations (LOC compliant)
-
-| File | Lines | useState | useEffect | Violation |
-|------|-------|----------|-----------|-----------|
-| schedule/AddEventModal.tsx | 269 | **8** | 0 | useState > 5 |
-| auth-screen/useAuthSession.ts | 218 | 2 | **7** | useEffect > 3 |
-| schedule/useScheduleData.ts | 283 | 3 | **4** | useEffect > 3 |
-| Celebrations.tsx | 311 | 4 | **4** | useEffect > 3 |
+| ~~DayClock.tsx~~ | ~~527~~ | Deleted — 0 component imports found in codebase |
 
 #### Out of scope
 
