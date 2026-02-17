@@ -231,8 +231,7 @@ export function JournalEntryEditor({
     void promptSeed;
     const shuffled = [...prompts].sort(() => Math.random() - 0.5);
     return shuffled.slice(0, 5);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: reshuffle only on seed change, not language
-  }, [promptSeed]);
+  }, [promptSeed, ts]);
 
   const hasContent = content.trim() || title.trim() || stickers.length > 0 || photoIds.length > 0 || audioIds.length > 0 || mood;
 
