@@ -15,6 +15,7 @@ import { logger } from './logger';
 import { App } from '@capacitor/app';
 import { SK } from './storageKeys';
 import { storageGetRaw, storageSetRaw } from './safeJson';
+import { SUPABASE_URL } from '@/lib/env';
 
 // Device ID for token management
 let deviceId: string | null = null;
@@ -268,7 +269,7 @@ export async function sendTestPush(): Promise<boolean> {
     if (!session) return false;
 
     const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-push-now`,
+      `${SUPABASE_URL}/functions/v1/send-push-now`,
       {
         method: 'POST',
         headers: {

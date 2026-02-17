@@ -10,6 +10,7 @@ import { MoodEntry, Habit, InnerWorld } from '@/types';
 import { supabase } from '@/lib/supabaseClient';
 import { logger } from '@/lib/logger';
 import { SK } from '@/lib/storageKeys';
+import { SUPABASE_URL } from '@/lib/env';
 
 // Constants
 const API_TIMEOUT = 30000; // 30 seconds timeout for API calls
@@ -212,7 +213,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
         throw new Error('Not authenticated');
       }
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseUrl = SUPABASE_URL;
 
       const response = await fetch(
         `${supabaseUrl}/functions/v1/ai-coach`,

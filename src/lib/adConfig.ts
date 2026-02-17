@@ -7,18 +7,20 @@
  * Mood-aware gating prevents ads when user is feeling bad.
  */
 
+import { ADMOB_REWARDED_ID_ANDROID, ADMOB_BANNER_ID_ANDROID, ADMOB_REWARDED_ID_IOS, ADMOB_BANNER_ID_IOS } from '@/lib/env';
+
 // ============================================
 // AD UNIT IDS (replace with real IDs from AdMob)
 // ============================================
 
 export const AD_UNIT_IDS = {
   android: {
-    rewarded: import.meta.env.VITE_ADMOB_REWARDED_ID_ANDROID || 'ca-app-pub-9501460293702808/3235100902',
-    banner: import.meta.env.VITE_ADMOB_BANNER_ID_ANDROID || 'ca-app-pub-3940256099942544/6300978111',     // test ID (no banner unit yet)
+    rewarded: ADMOB_REWARDED_ID_ANDROID,
+    banner: ADMOB_BANNER_ID_ANDROID,     // test ID (no banner unit yet)
   },
   ios: {
-    rewarded: import.meta.env.VITE_ADMOB_REWARDED_ID_IOS || 'ca-app-pub-3940256099942544/1712485313',     // test ID
-    banner: import.meta.env.VITE_ADMOB_BANNER_ID_IOS || 'ca-app-pub-3940256099942544/2934735716',         // test ID
+    rewarded: ADMOB_REWARDED_ID_IOS,     // test ID
+    banner: ADMOB_BANNER_ID_IOS,         // test ID
   },
 } as const;
 

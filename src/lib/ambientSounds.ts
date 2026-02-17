@@ -14,6 +14,7 @@
 import { logger } from './logger';
 import { isAbortError } from './validation';
 import * as Sentry from '@sentry/react';
+import { BASE_URL } from '@/lib/env';
 
 // ============================================
 // AUDIO STATUS TRACKING
@@ -315,7 +316,7 @@ export interface SoundInfo {
 }
 
 // Get base path from Vite config (or use default for GitHub Pages)
-const BASE_PATH = import.meta.env.BASE_URL || '/people-first-app/';
+const BASE_PATH = BASE_URL;
 
 /**
  * All available sounds - LOCAL ONLY

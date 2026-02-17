@@ -1,5 +1,6 @@
 import { PrivacySettings } from '@/types';
 import { logger } from './logger';
+import { IS_DEV } from '@/lib/env';
 
 // Google Analytics gtag type declaration
 declare global {
@@ -20,7 +21,7 @@ class Analytics {
     if (!this.enabled) return;
 
     // Only log to console in development
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       logger.log('[Analytics]', event, properties);
     }
 

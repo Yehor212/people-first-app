@@ -4,9 +4,11 @@
  * sensitive data leakage in production.
  */
 
-const isDev = import.meta.env.DEV;
+import { IS_DEV } from '@/lib/env';
+
+const isDev = IS_DEV;
 // Auth logging - ONLY enabled in development to prevent token leaks
-const DEBUG_AUTH = import.meta.env.DEV;
+const DEBUG_AUTH = IS_DEV;
 
 export const logger = {
   log: (...args: unknown[]) => {

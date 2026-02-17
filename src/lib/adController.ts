@@ -8,6 +8,7 @@
 
 import { Capacitor } from '@capacitor/core';
 import { logger } from '@/lib/logger';
+import { IS_DEV } from '@/lib/env';
 import {
   AD_UNIT_IDS,
   AD_FREQUENCY,
@@ -77,7 +78,7 @@ export async function initializeAds(): Promise<boolean> {
     AdMobPlugin = module.AdMob;
 
     await AdMobPlugin.initialize({
-      initializeForTesting: import.meta.env.DEV,
+      initializeForTesting: IS_DEV,
     });
 
     state.initialized = true;

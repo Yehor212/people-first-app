@@ -1,6 +1,7 @@
 import { Capacitor } from "@capacitor/core";
 import { logger } from "./logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { BASE_URL } from '@/lib/env';
 
 const NATIVE_REDIRECT_URL = "com.zenflow.app://login-callback";
 
@@ -36,7 +37,7 @@ export const getAuthRedirectUrl = () => {
 
   // Web: construct clean redirect URL
   const origin = window.location.origin;
-  const basePath = import.meta.env.BASE_URL || '/';
+  const basePath = BASE_URL;
 
   // Ensure proper path format (no double slashes)
   const cleanBase = basePath.startsWith('/') ? basePath : `/${basePath}`;

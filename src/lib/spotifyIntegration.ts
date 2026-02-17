@@ -14,6 +14,7 @@ import { logger } from './logger';
 import { safeSessionStorageGet, safeSessionStorageSet } from './safeJson';
 import { SSK } from '@/lib/storageKeys';
 import { rateLimiter, RateLimitError } from './rateLimiter';
+import { SPOTIFY_CLIENT_ID } from '@/lib/env';
 
 // ============================================
 // TYPES
@@ -52,8 +53,6 @@ interface SpotifyApiPlaylistItem {
 // ============================================
 // CONSTANTS
 // ============================================
-
-const SPOTIFY_CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || '';
 
 // Whitelist allowed redirect URIs to prevent OAuth hijacking
 const ALLOWED_ORIGINS = [

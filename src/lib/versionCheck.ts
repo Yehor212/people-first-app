@@ -16,6 +16,7 @@
 import { logger } from './logger';
 import { storageGetRaw, storageSetRaw } from './safeJson';
 import { SK, SSK } from '@/lib/storageKeys';
+import { BASE_URL } from '@/lib/env';
 
 interface VersionManifest {
   version: string;
@@ -31,7 +32,7 @@ const VERSION_CHECK_INTERVAL = 1 * 60 * 1000; // 1 minute — aggressive for Git
 export async function checkAppVersion(): Promise<boolean> {
   try {
     // Determine base path (same as Vite config)
-    const basePath = import.meta.env.BASE_URL || '/';
+    const basePath = BASE_URL;
 
     // Fetch with no-store to bypass all caches
     // Cache-bust URL with timestamp to bypass GitHub Pages CDN cache

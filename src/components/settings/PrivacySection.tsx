@@ -2,6 +2,7 @@ import { Shield } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { PrivacySettings } from '@/types';
 import { Switch } from '@/components/ui/switch';
+import { BASE_URL } from '@/lib/env';
 
 interface PrivacySectionProps {
   privacy: PrivacySettings;
@@ -11,7 +12,7 @@ interface PrivacySectionProps {
 export function PrivacySection({ privacy, onPrivacyChange }: PrivacySectionProps) {
   const { t } = useLanguage();
 
-  const baseUrl = import.meta.env.BASE_URL || '/';
+  const baseUrl = BASE_URL;
   const privacyHref = `${baseUrl}privacy.html`;
   const termsHref = `${baseUrl}terms.html`;
 

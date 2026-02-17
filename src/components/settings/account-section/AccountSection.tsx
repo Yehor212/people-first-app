@@ -11,6 +11,7 @@ import type { AccountSectionProps } from './types';
 import { useAccountAuth } from './useAccountAuth';
 import { useAccountSync } from './useAccountSync';
 import { useDeleteAccount } from './useDeleteAccount';
+import { BASE_URL } from '@/lib/env';
 
 export function AccountSection({ userName, onNameChange, onResetData }: AccountSectionProps) {
   const { t } = useLanguage();
@@ -24,7 +25,7 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
   useBackHandler(del.showDeleteConfirm, () => del.setShowDeleteConfirm(false));
   useScrollLock(del.showDeleteConfirm);
 
-  const baseUrl = import.meta.env.BASE_URL || '/';
+  const baseUrl = BASE_URL;
   const deleteAccountHref = `${baseUrl}delete-account.html`;
 
   return (

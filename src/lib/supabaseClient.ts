@@ -4,6 +4,7 @@ import { Database } from '@/types/supabase';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
 import { isAbortError } from '@/lib/validation';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, IS_DEV } from '@/lib/env';
 
 /**
  * Zod schema for validating Supabase user object
@@ -27,7 +28,7 @@ export function validateSupabaseUser(user: unknown): User | null {
   const result = supabaseUserSchema.safeParse(user);
   if (!result.success) {
     // Log validation error in development
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       logger.warn('[Supabase] User validation failed:', result.error.issues);
     }
     return null;
@@ -37,8 +38,6 @@ export function validateSupabaseUser(user: unknown): User | null {
   return user as User;
 }
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 /**
  * Validate Supabase environment variables
@@ -65,7 +64,7 @@ export function getSupabaseConfigStatus(): SupabaseConfigStatus {
 const configStatus = getSupabaseConfigStatus();
 if (!configStatus.isConfigured && typeof window !== 'undefined') {
   // Log warning in development
-  if (import.meta.env.DEV) {
+  if (IS_DEV) {
     logger.warn(
       '[Supabase] Cloud sync disabled - environment variables not configured.',
       configStatus.missingUrl ? 'Missing VITE_SUPABASE_URL.' : '',
@@ -170,7 +169,7 @@ export const getCurrentUser = async () => {
 
   // Log errors for debugging
   if (error) {
-    if (import.meta.env.DEV) {
+    if (IS_DEV) {
       logger.warn('[Supabase] getUser error:', error.message);
     }
     return null;

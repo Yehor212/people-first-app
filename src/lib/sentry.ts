@@ -10,6 +10,7 @@
 import * as Sentry from '@sentry/react';
 import { Capacitor } from '@capacitor/core';
 import { logger } from '@/lib/logger';
+import { SENTRY_DSN, MODE, IS_DEV } from '@/lib/env';
 
 // Declare global app version
 declare const __APP_VERSION__: string;
@@ -19,7 +20,7 @@ declare const __APP_VERSION__: string;
  * Call this as early as possible in the app lifecycle
  */
 export function initSentry(): void {
-  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  const dsn = SENTRY_DSN;
 
   // Skip if no DSN configured (development without Sentry)
   if (!dsn) {
@@ -56,7 +57,7 @@ export function initSentry(): void {
 
   Sentry.init({
     dsn,
-    environment: import.meta.env.MODE,
+    environment: MODE,
     release: `zenflow@${__APP_VERSION__}`,
 
     // Performance monitoring - sample 10% of transactions
@@ -151,7 +152,7 @@ export function initSentry(): void {
       }
 
       // Don't send events in development
-      if (import.meta.env.DEV) {
+      if (IS_DEV) {
         logger.log('[Sentry] Would send event:', event);
         return null;
       }
@@ -169,7 +170,7 @@ export function initSentry(): void {
   });
 
   // Only log in development
-  if (import.meta.env.DEV) {
+  if (IS_DEV) {
     logger.log('[Sentry] Initialized successfully');
   }
 }
