@@ -572,7 +572,7 @@ On PR to main:
 | TD-19 | ~~HIGH~~ → DONE | ~~Raw console.* calls bypassing logger.ts~~ | **Fixed 2026-02-16**: 16 calls replaced with logger.* in 4 files (main.tsx, sw.ts, sentry.ts, gamificationStore.ts). Remaining: logger.ts (6, implementation) + crashReporting.ts (7, implementation). | Various |
 | TD-20 | ~~HIGH~~ → DONE | God components violating 400-line / 5-useState / 3-useEffect rules | **33 components + 3 hooks + 3 hook-only resolved**, DayClock deleted, 1 SKIP (sidebar), Celebrations.tsx false positive (4 components × 1 useEffect each). | See God Components table below |
 | TD-21 | MEDIUM | Scattered Capacitor platform checks | **58** `isNativePlatform()/getPlatform()` calls across 20+ files. Export in authRedirect.ts unused | Various — `grep 'Capacitor\.\(isNativePlatform\|getPlatform\)' src/` |
-| TD-22 | MEDIUM | Scattered import.meta.env access | **25 calls** across 11 files. No centralized config.ts | Various — `grep 'import\.meta\.env' src/` |
+| TD-22 | ~~MEDIUM~~ → DONE | ~~Scattered import.meta.env access~~ | **Fixed 2026-02-16**: Created `src/lib/env.ts` — single source of truth for 11 env vars. 26 scattered calls → 0 outside env.ts. 15 files updated. | src/lib/env.ts |
 | TD-23 | MEDIUM | Direct Supabase calls in UI components | **71** `.from(`/`supabase.` calls in `/components/`. No service layer. | src/components/ — `grep 'supabase\.\|\.from(' src/components/` |
 | TD-24 | LOW | Low memoization + lazy loading coverage | Only **12/80+** components use React.memo. Only **6** lazy() imports. Heavy components not lazy-loaded. | Various |
 
