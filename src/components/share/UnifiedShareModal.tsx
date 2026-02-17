@@ -7,91 +7,24 @@ import { useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Download, Share2, Copy, Check, Loader2, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { cn, interpolate } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/components/ThemeToggle';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { useShareFlow } from '@/hooks/useShareFlow';
 import {
-  ShareCardData,
-  WeeklyProgressData,
-  TrophyShareData,
-  ShareCardTranslations,
-  DEFAULT_CARD_TRANSLATIONS,
   generateShareCard,
   generateStreakCard,
   generateWeeklyCard,
   generateAchievementCard,
   generateTrophyCard,
 } from '@/lib/shareCards';
-import type { Badge } from '@/types';
+import type { UnifiedShareModalProps } from './shareTypes';
+import { buildCardTranslations } from './shareTypes';
+import { getShareTitle, getShareText, getModalTitle, getSuccessMessage } from './shareHelpers';
 
-// ============================================
-// TYPES
-// ============================================
-
-interface BaseProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  username?: string;
-}
-
-interface AchievementProps extends BaseProps {
-  mode: 'achievement';
-  badge: Badge;
-}
-
-interface StreakProps extends BaseProps {
-  mode: 'streak';
-  streak: number;
-  habitName?: string;
-}
-
-interface ProgressProps extends BaseProps {
-  mode: 'progress';
-  data: ShareCardData;
-}
-
-interface WeeklyProps extends BaseProps {
-  mode: 'weekly';
-  data: WeeklyProgressData;
-}
-
-interface TrophyProps extends BaseProps {
-  mode: 'trophy';
-  data: TrophyShareData;
-}
-
-export type UnifiedShareModalProps =
-  | AchievementProps
-  | StreakProps
-  | ProgressProps
-  | WeeklyProps
-  | TrophyProps;
-
-// ============================================
-// TRANSLATION BRIDGE
-// ============================================
-
-function buildCardTranslations(t: Record<string, string>): ShareCardTranslations {
-  return {
-    dayStreak: t.shareCardDayStreak || DEFAULT_CARD_TRANSLATIONS.dayStreak,
-    weeklyReview: t.shareCardWeeklyReview || DEFAULT_CARD_TRANSLATIONS.weeklyReview,
-    mood: t.shareCardMood || DEFAULT_CARD_TRANSLATIONS.mood,
-    habits: t.shareCardHabits || DEFAULT_CARD_TRANSLATIONS.habits,
-    focus: t.shareCardFocus || DEFAULT_CARD_TRANSLATIONS.focus,
-    streak: t.shareCardStreak || DEFAULT_CARD_TRANSLATIONS.streak,
-    days: t.shareCardDays || DEFAULT_CARD_TRANSLATIONS.days,
-    newAchievements: t.shareCardNewAchievements || DEFAULT_CARD_TRANSLATIONS.newAchievements,
-    trackHabits: t.shareCardTrackHabits || DEFAULT_CARD_TRANSLATIONS.trackHabits,
-    moodGreat: t.shareCardMoodGreat || DEFAULT_CARD_TRANSLATIONS.moodGreat,
-    moodGood: t.shareCardMoodGood || DEFAULT_CARD_TRANSLATIONS.moodGood,
-    moodOkay: t.shareCardMoodOkay || DEFAULT_CARD_TRANSLATIONS.moodOkay,
-    moodLow: t.shareCardMoodLow || DEFAULT_CARD_TRANSLATIONS.moodLow,
-    moodTough: t.shareCardMoodTough || DEFAULT_CARD_TRANSLATIONS.moodTough,
-  };
-}
+export type { UnifiedShareModalProps } from './shareTypes';
 
 // ============================================
 // COMPONENT
@@ -154,6 +87,9 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
   const isSuccess = status === 'success';
   const isError = status === 'error';
 
+  // Cast t for helper functions
+  const tRecord = t as unknown as Record<string, string>;
+
   // Actions
   const handleDownload = useCallback(() => {
     const filename = `zenflow-${mode}-${Date.now()}.png`;
@@ -161,85 +97,14 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
   }, [mode, download]);
 
   const handleShare = useCallback(() => {
-    const title = getShareTitle();
-    const text = getShareText();
+    const title = getShareTitle(props, tRecord);
+    const text = getShareText(props, tRecord, language);
     void share(title, text);
   }, [mode, share, language, t, props]);
 
   const handleCopy = useCallback(() => {
     void copy();
   }, [copy]);
-
-  // Title/text helpers
-  function getShareTitle(): string {
-    switch (props.mode) {
-      case 'achievement':
-        return t.shareTitle || 'Achievement Unlocked!';
-      case 'streak':
-        return `${props.streak} ${t.shareStreak || 'Day Streak'}`;
-      case 'weekly':
-        return t.myProgress || 'My Weekly Progress';
-      case 'progress':
-        return t.myProgress || 'My Progress';
-      case 'trophy':
-        return t.shareAchievements || 'My ZenFlow Achievements';
-    }
-  }
-
-  function getShareText(): string {
-    switch (props.mode) {
-      case 'achievement':
-        return `${props.badge.title[language] || props.badge.title['en']} - ZenFlow`;
-      case 'streak':
-        return `${props.streak} ${t.shareStreak || 'day streak'}`;
-      case 'weekly':
-        return interpolate(t.shareText || '{streak} day streak! {habits} habits completed, {focus} minutes of focus.', {
-          streak: props.data.streak,
-          habits: props.data.habitsCompleted,
-          focus: props.data.focusMinutes,
-        });
-      case 'progress':
-        return interpolate(t.shareText || '{streak} day streak! {habits} habits completed, {focus} minutes of focus.', {
-          streak: props.data.stats?.[0]?.value || 0,
-          habits: props.data.stats?.[1]?.value || 0,
-          focus: props.data.stats?.[2]?.value || 0,
-        });
-      case 'trophy':
-        return interpolate(t.shareText || '{streak} day streak! {habits} habits completed, {focus} minutes of focus.', {
-          streak: props.data.streak,
-          habits: props.data.habitsCompleted,
-          focus: props.data.focusMinutes,
-        });
-    }
-  }
-
-  function getModalTitle(): string {
-    switch (props.mode) {
-      case 'achievement':
-        return t.shareAchievements || 'Share Achievement';
-      case 'streak':
-        return t.shareStreak || 'Share Streak';
-      case 'weekly':
-        return t.myProgress || 'Share Weekly Report';
-      case 'progress':
-        return t.shareAchievements || 'Share Progress';
-      case 'trophy':
-        return t.hallOfFame || 'Hall of Fame';
-    }
-  }
-
-  function getSuccessMessage(): string {
-    switch (lastAction) {
-      case 'download':
-        return t.shareDownloadSuccess || t.imageSaved || 'Image saved!';
-      case 'copy':
-        return t.shareCopySuccess || t.shareCopied || 'Copied to clipboard!';
-      case 'share':
-        return t.shareSharedSuccess || 'Shared successfully!';
-      default:
-        return '';
-    }
-  }
 
   if (!open) return null;
 
@@ -271,7 +136,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
 
-          <h2 id="share-dialog-title" className="text-lg font-semibold mt-2">{getModalTitle()}</h2>
+          <h2 id="share-dialog-title" className="text-lg font-semibold mt-2">{getModalTitle(props, tRecord)}</h2>
         </div>
 
         {/* Scrollable content */}
@@ -328,7 +193,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
                 exit={{ opacity: 0 }}
               >
                 <Check className="w-4 h-4" />
-                {getSuccessMessage()}
+                {getSuccessMessage(lastAction, tRecord)}
               </motion.div>
             </div>
           )}
