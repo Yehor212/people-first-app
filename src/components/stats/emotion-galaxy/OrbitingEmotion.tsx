@@ -1,0 +1,167 @@
+import { motion } from 'framer-motion';
+import type { EmotionData } from './types';
+
+// Premium Orbiting Emotion with comet trail and 3D effects
+export function OrbitingEmotion({
+  emotion,
+  orbitIndex,
+  totalOrbits,
+  angle,
+  animationDuration,
+}: {
+  emotion: EmotionData;
+  orbitIndex: number;
+  totalOrbits: number;
+  angle: number;
+  animationDuration: number;
+}) {
+  // Elliptical orbit parameters - VERY large radius to guarantee empty center
+  // Min radius = 80px, ensures NO emoji can be in center
+  const rx = 80 + orbitIndex * 15;    // X radius: 80-155px (ALWAYS far from center!)
+  const _ry = rx * 0.5;                // Y radius: 40-78px
+
+  // Size based on frequency (inner = more frequent = larger)
+  const sizePx = 38 + (1 - orbitIndex / Math.max(totalOrbits - 1, 1)) * 14;
+
+  // Kepler's law: inner orbits are significantly faster
+  const keplerDuration = animationDuration * (0.8 + orbitIndex * 0.25);
+
+  return (
+    <>
+      {/* Comet Trail - 4 fading segments that follow the emoji */}
+      {[0, 1, 2, 3].map((trailIndex) => {
+        const trailOffset = (trailIndex + 1) * 12; // Degrees behind
+        const trailOpacity = 0.35 - trailIndex * 0.08;
+        const trailSize = sizePx * (0.7 - trailIndex * 0.12);
+        const trailBlur = 3 + trailIndex * 2;
+
+        return (
+          <motion.div
+            key={`trail-${orbitIndex}-${trailIndex}`}
+            className="absolute pointer-events-none"
+            style={{
+              left: '50%',
+              top: '50%',
+              width: 1,
+              height: 1,
+              transformOrigin: '0 0',
+            }}
+            animate={{ rotate: [angle - trailOffset, angle - trailOffset + 360] }}
+            transition={{
+              duration: keplerDuration,
+              repeat: Infinity,
+              ease: 'linear',
+            }}
+          >
+            <div
+              className="absolute rounded-full"
+              style={{
+                left: rx,  // Position at orbit radius
+                top: 0,
+                width: trailSize,
+                height: trailSize,
+                marginLeft: -trailSize / 2,
+                marginTop: -trailSize / 2,
+                background: `radial-gradient(circle, ${emotion.color}${Math.round(trailOpacity * 255).toString(16).padStart(2, '0')} 0%, transparent 70%)`,
+                filter: `blur(${trailBlur}px)`,
+              }}
+            />
+          </motion.div>
+        );
+      })}
+
+      {/* Main Emoji Orb - Rotating wrapper */}
+      <motion.div
+        className="absolute"
+        style={{
+          left: '50%',
+          top: '50%',
+          width: 1,
+          height: 1,
+          transformOrigin: '0 0',
+        }}
+        animate={{ rotate: [angle, angle + 360] }}
+        transition={{
+          duration: keplerDuration,
+          repeat: Infinity,
+          ease: 'linear',
+        }}
+      >
+        {/* Emoji container positioned at orbit radius using calc() */}
+        <motion.div
+          className="absolute"
+          style={{
+            left: rx,      // Position directly at rx pixels from rotation center
+            top: 0,
+            width: sizePx,
+            height: sizePx,
+            marginLeft: -sizePx / 2,
+            marginTop: -sizePx / 2,
+          }}
+          // Counter-rotate to keep emoji upright
+          animate={{ rotate: [-angle, -angle - 360] }}
+          transition={{
+            duration: keplerDuration,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
+        >
+          {/* Outer glow halo - NO BLUR for clarity */}
+          <motion.div
+            className="absolute rounded-full"
+            style={{
+              inset: -4,
+              background: `radial-gradient(circle, ${emotion.color}20 0%, transparent 70%)`,
+            }}
+            animate={{
+              scale: [1.0, 1.2, 1.0],
+              opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+
+          {/* Inner glow ring with multi-layer shadow */}
+          <motion.div
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: `radial-gradient(circle at 35% 35%, ${emotion.color}40 0%, ${emotion.color}20 50%, ${emotion.color}10 100%)`,
+              boxShadow: `
+                0 0 12px ${emotion.color}70,
+                0 0 24px ${emotion.color}40,
+                inset 0 0 10px ${emotion.color}30,
+                inset 2px 2px 4px rgba(255,255,255,0.15)
+              `,
+            }}
+            animate={{
+              boxShadow: [
+                `0 0 12px ${emotion.color}70, 0 0 24px ${emotion.color}40, inset 0 0 10px ${emotion.color}30, inset 2px 2px 4px rgba(255,255,255,0.15)`,
+                `0 0 18px ${emotion.color}90, 0 0 36px ${emotion.color}50, inset 0 0 14px ${emotion.color}40, inset 2px 2px 6px rgba(255,255,255,0.2)`,
+                `0 0 12px ${emotion.color}70, 0 0 24px ${emotion.color}40, inset 0 0 10px ${emotion.color}30, inset 2px 2px 4px rgba(255,255,255,0.15)`,
+              ],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+
+          {/* Emoji */}
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{
+              fontSize: sizePx * 0.52,
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+            }}
+          >
+            {emotion.emoji}
+          </div>
+        </motion.div>
+      </motion.div>
+    </>
+  );
+}

@@ -1,0 +1,156 @@
+/**
+ * PremiumChart - Animated SVG chart with glow effects
+ */
+
+import { motion } from 'framer-motion';
+import type { DayData } from './types';
+
+// Premium animated chart with glow effects
+export function PremiumChart({ data, color, glowColor, dayNames }: { data: DayData[]; color: string; glowColor: string; dayNames: string[] }) {
+  if (data.length < 2) return null;
+
+  const values = data.map(d => d.value).map(v => (Number.isFinite(v) ? v : 0));
+  const max = Math.max(...values, 100);
+  const height = 100;
+  const width = 300;
+  const padding = { top: 15, bottom: 25, left: 15, right: 15 };
+  const chartWidth = width - padding.left - padding.right;
+  const chartHeight = height - padding.top - padding.bottom;
+
+  const points = values.map((value, i) => ({
+    x: padding.left + (i / (values.length - 1)) * chartWidth,
+    y: padding.top + chartHeight - (value / max) * chartHeight,
+    value,
+  }));
+
+  const pathD = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  const areaD = `${pathD} L ${points[points.length - 1].x} ${height - padding.bottom} L ${points[0].x} ${height - padding.bottom} Z`;
+
+  // Guard: if path contains NaN (bad data), don't render SVG
+  if (pathD.includes('NaN')) return null;
+
+  const dayLabels = data.map(d => {
+    const dayOfWeek = new Date(d.date).getDay();
+    return dayNames[dayOfWeek]?.slice(0, 1) || '';
+  });
+
+  return (
+    <svg width={width} height={height} className="overflow-visible">
+      <defs>
+        <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={color} stopOpacity="0.4" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+        <filter id="chartGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Area fill with gradient */}
+      <motion.path
+        d={areaD}
+        fill="url(#chartGradient)"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+      />
+
+      {/* Glow line */}
+      <motion.path
+        d={pathD}
+        fill="none"
+        stroke={glowColor}
+        strokeWidth="6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        style={{ filter: 'blur(4px)' }}
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 1.2, ease: 'easeOut' }}
+      />
+
+      {/* Main line */}
+      <motion.path
+        d={pathD}
+        fill="none"
+        stroke={color}
+        strokeWidth="3"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        initial={{ pathLength: 0 }}
+        animate={{ pathLength: 1 }}
+        transition={{ duration: 1.2, ease: 'easeOut' }}
+      />
+
+      {/* Data points with animation */}
+      {points.map((point, i) => (
+        <motion.g key={i}>
+          {/* Outer glow ring */}
+          <motion.circle
+            cx={point.x}
+            cy={point.y}
+            r="8"
+            fill={glowColor}
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 0.3 }}
+            transition={{ delay: 0.8 + i * 0.08 }}
+          />
+          {/* Inner dot */}
+          <motion.circle
+            cx={point.x}
+            cy={point.y}
+            r="5"
+            fill="white"
+            stroke={color}
+            strokeWidth="2"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.8 + i * 0.08, type: 'spring' }}
+          />
+          {/* Value label for last point */}
+          {i === points.length - 1 && (
+            <motion.g
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.2 }}
+            >
+              <rect
+                x={point.x - 18}
+                y={point.y - 28}
+                width="36"
+                height="20"
+                rx="10"
+                fill={color}
+              />
+              <text
+                x={point.x}
+                y={point.y - 14}
+                textAnchor="middle"
+                className="text-xs font-bold fill-white"
+              >
+                {Math.round(point.value)}%
+              </text>
+            </motion.g>
+          )}
+        </motion.g>
+      ))}
+
+      {/* Day labels */}
+      {dayLabels.map((label, i) => (
+        <text
+          key={i}
+          x={points[i]?.x || 0}
+          y={height - 6}
+          textAnchor="middle"
+          className="text-[10px] font-medium fill-muted-foreground"
+        >
+          {label}
+        </text>
+      ))}
+    </svg>
+  );
+}
