@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { Switch } from '@/components/ui/switch';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { supabase } from '@/lib/supabaseClient';
+import { updateProfileName } from '@/lib/accountService';
 import { userNameSchema } from '@/lib/validation';
 import { sanitizeUserName } from '@/lib/sanitize';
 import { useTheme, ThemeOption } from '@/components/ThemeToggle';
@@ -64,9 +64,11 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
     onNameChange(sanitized);
     setNameStatus(t.nameSaved);
 
-    if (!supabase) return;
     try {
-      await supabase.auth.updateUser({ data: { full_name: sanitized } });
+      const success = await updateProfileName(sanitized);
+      if (!success) {
+        setNameStatus(t.nameSavedLocally || 'Saved locally');
+      }
     } catch (error) {
       logger.error("Failed to update profile name:", error);
       setNameStatus(t.nameSavedLocally || 'Saved locally');

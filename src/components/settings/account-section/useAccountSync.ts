@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { loadWeeklyDigest, updateWeeklyDigest } from '@/lib/accountService';
 import { syncWithCloud } from '@/storage/cloudSync';
 import { isCloudSyncEnabled, setCloudSyncEnabled } from '@/lib/cloudSyncSettings';
 import { isCalendarConnected } from '@/lib/googleCalendar';
@@ -35,18 +36,10 @@ export function useAccountSync({ sessionEmail, setAuthStatus, t }: UseAccountSyn
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-        const { data, error } = await supabase
-          .from('user_settings')
-          .select('weekly_digest_enabled')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        if (error) {
-          logger.error('[AccountSection] Failed to load weekly digest setting:', error);
-          return;
-        }
+        const value = await loadWeeklyDigest(user.id);
         if (weeklyDigestTouchedRef.current) return;
-        if (data) {
-          setWeeklyDigestEnabled(data.weekly_digest_enabled ?? false);
+        if (value !== null) {
+          setWeeklyDigestEnabled(value);
         }
       } catch (error) {
         logger.error('[AccountSection] Error loading weekly digest:', error);
@@ -98,16 +91,9 @@ export function useAccountSync({ sessionEmail, setAuthStatus, t }: UseAccountSyn
         logger.warn('[AccountSection] No user for weekly digest');
         return;
       }
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({
-          user_id: user.id,
-          weekly_digest_enabled: enabled,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'user_id' });
-      if (error) {
+      const success = await updateWeeklyDigest(user.id, enabled);
+      if (!success) {
         setWeeklyDigestEnabled(!enabled);
-        logger.error('[AccountSection] Failed to update weekly digest:', error);
       }
     } catch (error) {
       setWeeklyDigestEnabled(!enabled);

@@ -10,7 +10,7 @@ import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
-import { supabase } from '@/lib/supabaseClient';
+import { submitDetailedFeedback } from '@/lib/feedbackService';
 import { emailSchema } from '@/lib/validation';
 
 interface FeedbackFormProps {
@@ -77,46 +77,9 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
         }
       };
 
-      // Try to send to Supabase
-      if (supabase) {
-        try {
-          const { error } = await supabase
-            .from('feedback')
-            .insert([feedbackData]);
-
-          if (error) {
-            // Log specific error for debugging
-            logger.error('[Feedback] Supabase error:', {
-              code: error.code,
-              message: error.message,
-              details: error.details,
-              hint: error.hint
-            });
-            // Save locally as fallback
-            saveToLocalStorage();
-          } else {
-            logger.log('[Feedback] Sent to Supabase successfully');
-
-            // Send email notification via Edge Function (non-blocking)
-            supabase.functions.invoke('send-feedback-email', {
-              body: feedbackData
-            }).then(({ error: emailError }) => {
-              if (emailError) {
-                logger.warn('[Feedback] Email notification failed (non-critical):', emailError);
-              } else {
-                logger.log('[Feedback] Email notification sent');
-              }
-            }).catch((err) => {
-              logger.warn('[Feedback] Email notification error (non-critical):', err);
-            });
-          }
-        } catch (supabaseErr) {
-          logger.error('[Feedback] Supabase exception:', supabaseErr);
-          saveToLocalStorage();
-        }
-      } else {
-        // Supabase not configured, store locally
-        logger.log('[Feedback] Supabase not configured, storing locally');
+      // Try to send to Supabase, fall back to local storage
+      const sent = await submitDetailedFeedback(feedbackData);
+      if (!sent) {
         saveToLocalStorage();
       }
 

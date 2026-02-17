@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { MessageSquarePlus, Send, X, Bug, Lightbulb, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { supabase } from '@/lib/supabaseClient';
+import { submitQuickFeedback } from '@/lib/feedbackService';
 import { platform } from '@/lib/platform';
 import { haptics } from '@/lib/haptics';
 
@@ -64,19 +64,9 @@ export function FeedbackButton({
         created_at: new Date().toISOString(),
       };
 
-      // Try to submit to Supabase if available
-      if (supabase) {
-        const { error } = await supabase
-          .from('user_feedback')
-          .insert(feedbackData);
-
-        if (error) {
-          // If table doesn't exist, store locally
-          logger.warn('[Feedback] Supabase error, storing locally:', error.message);
-          storeFeedbackLocally(feedbackData);
-        }
-      } else {
-        // No Supabase, store locally
+      // Try to submit to Supabase, fall back to local storage
+      const sent = await submitQuickFeedback(feedbackData);
+      if (!sent) {
         storeFeedbackLocally(feedbackData);
       }
 
