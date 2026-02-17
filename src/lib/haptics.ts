@@ -4,11 +4,11 @@
  */
 
 import { Haptics, ImpactStyle, NotificationType } from '@capacitor/haptics';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { shouldTriggerHaptics } from './animationUtils';
 
 // Check if haptics are available (native platform only)
-const isHapticsAvailable = Capacitor.isNativePlatform();
+const isHapticsAvailable = isNative;
 
 // Combined check for availability AND user preference
 function canTriggerHaptics(): boolean {

@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { Sun, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { StatusBarStyle, Style } from '@/lib/statusBarStyle';
 import { logger } from '@/lib/logger';
 import { SK } from '@/lib/storageKeys';
@@ -35,7 +35,7 @@ export const applyTheme = (effectiveTheme: EffectiveTheme) => {
   const root = document.documentElement;
   root.classList.toggle('dark', effectiveTheme === 'dark');
 
-  if (Capacitor.isNativePlatform()) {
+  if (isNative) {
     const isDark = effectiveTheme === 'dark';
     StatusBarStyle.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch(err => logger.warn('[Theme]', 'StatusBar style failed:', err));
   }

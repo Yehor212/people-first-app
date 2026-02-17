@@ -10,7 +10,7 @@ import { useScrollLock } from '@/hooks/useScrollLock';
 import { haptics } from '@/lib/haptics';
 import { announceSuccess } from '@/lib/a11y';
 import { LocalNotifications } from '@capacitor/local-notifications';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { getCurrentChannelId } from '@/lib/notificationSounds';
 
 import { DEFAULT_FOCUS_MINUTES, loadTimerState, createFocusSession } from './focusTimerTypes';
@@ -258,7 +258,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
 
           announceSuccess(t.focusCompletedShort || 'Focus session complete');
 
-          if (Capacitor.isNativePlatform()) {
+          if (isNative) {
             LocalNotifications.schedule({
               notifications: [{
                 title: 'ZenFlow',

@@ -6,7 +6,7 @@ import { preloadShareCardAssets } from '@/lib/shareCards';
 import { getToday } from '@/lib/utils';
 import { logger } from '@/lib/logger';
 import { SplashScreen } from '@capacitor/splash-screen';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { SK } from '@/lib/storageKeys';
 import { storageGetRaw } from '@/lib/safeJson';
 
@@ -29,7 +29,7 @@ export function useAppLifecycle(): void {
       const startTime = Date.now();
 
       // Hide native splash IMMEDIATELY so web animation is visible
-      if (Capacitor.isNativePlatform()) {
+      if (isNative) {
         SplashScreen.hide().catch(err => logger.warn('[Splash]', 'Hide failed:', err));
       }
 

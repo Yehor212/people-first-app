@@ -9,7 +9,7 @@
  */
 
 import { PushNotifications, Token, ActionPerformed, PushNotificationSchema } from '@capacitor/push-notifications';
-import { Capacitor } from '@capacitor/core';
+import { isNative, isAndroid } from '@/lib/platform';
 import { supabase, getCurrentUserId } from './supabaseClient';
 import { logger } from './logger';
 import { App } from '@capacitor/app';
@@ -52,7 +52,7 @@ async function getDeviceId(): Promise<string> {
  * Check if push notifications are available
  */
 export function isPushAvailable(): boolean {
-  return Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'android';
+  return isNative && isAndroid;
 }
 
 /**

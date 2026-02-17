@@ -10,7 +10,7 @@ import { MessageSquarePlus, Send, X, Bug, Lightbulb, HelpCircle } from 'lucide-r
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/lib/supabaseClient';
-import { Capacitor } from '@capacitor/core';
+import { platform } from '@/lib/platform';
 import { haptics } from '@/lib/haptics';
 
 import { logger } from '@/lib/logger';
@@ -59,7 +59,7 @@ export function FeedbackButton({
         type,
         message: message.trim(),
         app_version: (window as { __APP_VERSION__?: string }).__APP_VERSION__ || 'unknown',
-        platform: Capacitor.getPlatform(),
+        platform,
         user_agent: navigator.userAgent,
         created_at: new Date().toISOString(),
       };

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { db } from '@/storage/db';
 import type { JournalPassword } from './types';
 import { JOURNAL_PASSWORD_KEY } from './types';
@@ -58,7 +58,7 @@ export function useJournalSecurity() {
     }).catch(err => { logger.warn('[Journal]', 'Password check failed:', err); setHasPassword(false); });
 
     // Check biometric availability
-    if (Capacitor.isNativePlatform()) {
+    if (isNative) {
       import('@/plugins/BiometricPlugin').then(({ default: BiometricAuth }) => {
         BiometricAuth.isAvailable().then(result => {
           setBiometricAvailable(result.available);

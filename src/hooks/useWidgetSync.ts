@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { logger } from '@/lib/logger';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import Widget, { type WidgetData } from '@/plugins/WidgetPlugin';
 import type { Habit } from '@/types';
 import { formatDate } from '@/lib/utils';
@@ -21,7 +21,7 @@ export function useWidgetSync(
     let isMounted = true;
 
     // Only run on native platforms
-    if (!Capacitor.isNativePlatform()) {
+    if (!isNative) {
       return;
     }
 

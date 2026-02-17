@@ -12,7 +12,7 @@ import { initSentry, captureError } from "./lib/sentry";
 import { cleanupShareCache } from "./lib/shareActions";
 import { initA11y } from "./lib/a11y";
 import { App as CapacitorApp } from "@capacitor/app";
-import { Capacitor } from "@capacitor/core";
+import { isNative } from "@/lib/platform";
 import {
   checkAppVersion,
   forceHardReload,
@@ -163,7 +163,7 @@ document.addEventListener('visibilitychange', () => {
  * Handles pause/resume events for better state preservation on native platforms
  * Note: Uses deduplicated handlers to prevent race with visibilitychange
  */
-if (Capacitor.isNativePlatform()) {
+if (isNative) {
   // App paused (going to background)
   void CapacitorApp.addListener('pause', () => {
     logger.log('[Main] App paused - saving state');

@@ -10,7 +10,7 @@
  */
 
 import { LocalNotifications, ActionPerformed } from '@capacitor/local-notifications';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { logger } from './logger';
 import { SK } from './storageKeys';
 import { storageGetRaw, storageSetRaw } from './safeJson';
@@ -48,7 +48,7 @@ let isQuickActionsEnabled = false;
  * Initialize the quick actions notification channel
  */
 export async function initializeQuickActionsChannel(): Promise<void> {
-  if (!Capacitor.isNativePlatform()) return;
+  if (!isNative) return;
 
   try {
     await LocalNotifications.createChannel({
@@ -72,7 +72,7 @@ export async function initializeQuickActionsChannel(): Promise<void> {
  * Register quick action types with the notification system
  */
 export async function registerQuickActionTypes(): Promise<void> {
-  if (!Capacitor.isNativePlatform()) return;
+  if (!isNative) return;
 
   try {
     await LocalNotifications.registerActionTypes({
@@ -151,7 +151,7 @@ export async function showQuickActionsNotification(
     body?: string;
   } = {}
 ): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
+  if (!isNative) {
     logger.log('[QuickActions] Skipped - not native platform');
     return false;
   }
@@ -196,7 +196,7 @@ export async function showQuickActionsNotification(
  * Hide the quick actions notification
  */
 export async function hideQuickActionsNotification(): Promise<void> {
-  if (!Capacitor.isNativePlatform()) return;
+  if (!isNative) return;
 
   try {
     await LocalNotifications.cancel({
@@ -255,7 +255,7 @@ export function saveQuickActionsSetting(enabled: boolean): void {
  * Call this during app startup
  */
 export async function initializeQuickActions(): Promise<void> {
-  if (!Capacitor.isNativePlatform()) return;
+  if (!isNative) return;
 
   try {
     // Create channel

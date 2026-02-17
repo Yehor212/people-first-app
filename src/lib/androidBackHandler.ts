@@ -4,7 +4,7 @@
  */
 
 import { App, type PluginListenerHandle } from '@capacitor/app';
-import { Capacitor } from '@capacitor/core';
+import { isNative, isAndroid } from '@/lib/platform';
 import { logger } from './logger';
 import { SK } from './storageKeys';
 import { storageGetRaw } from './safeJson';
@@ -237,7 +237,7 @@ function getExitMessage(): string {
  */
 export async function initAndroidBackHandler(): Promise<void> {
   // Only run on Android
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') {
+  if (!isNative || !isAndroid) {
     return;
   }
 
@@ -294,7 +294,7 @@ export async function initAndroidBackHandler(): Promise<void> {
  * This preserves pause/resume listeners registered in main.tsx
  */
 export async function removeAndroidBackHandler(): Promise<void> {
-  if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'android') {
+  if (!isNative || !isAndroid) {
     return;
   }
 

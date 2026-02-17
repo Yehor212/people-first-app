@@ -26,7 +26,7 @@
  */
 
 import { LocalNotifications, ActionPerformed, Channel } from '@capacitor/local-notifications';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { logger } from './logger';
 import { ReminderSettings, Habit, MoodType } from '@/types';
 import { getCurrentChannelId, initializeNotificationChannels } from './notificationSounds';
@@ -48,7 +48,7 @@ function getActiveChannelId(): string {
  * Now initializes multiple channels for different sound options
  */
 export async function initializeNotificationChannel(): Promise<void> {
-  if (!Capacitor.isNativePlatform()) return;
+  if (!isNative) return;
 
   try {
     // Initialize all sound-based channels
@@ -82,7 +82,7 @@ export async function checkNotificationStatus(): Promise<{
   pendingCount: number;
   channelExists: boolean;
 }> {
-  if (!Capacitor.isNativePlatform()) {
+  if (!isNative) {
     return { hasPermission: false, pendingCount: 0, channelExists: false };
   }
 
@@ -381,7 +381,7 @@ export async function scheduleJournalReminder(
   time: { hour: number; minute: number },
   copy: { title: string; body: string }
 ): Promise<void> {
-  if (!Capacitor.isNativePlatform()) return;
+  if (!isNative) return;
 
   try {
     const permission = await LocalNotifications.checkPermissions();
@@ -407,7 +407,7 @@ export async function scheduleJournalReminder(
 }
 
 export async function cancelJournalReminder(): Promise<void> {
-  if (!Capacitor.isNativePlatform()) return;
+  if (!isNative) return;
   try {
     const pending = await LocalNotifications.getPending();
     const journalNotifs = pending.notifications.filter(n => n.id === JOURNAL_REMINDER_ID);

@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import DndPlugin, { DndStatusResult } from '@/plugins/DndPlugin';
 import { logger } from '@/lib/logger';
 
@@ -36,7 +36,7 @@ export interface UseDndReturn {
  * Can be used outside of React components
  */
 export async function checkDndActive(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) {
+  if (!isNative) {
     return false;
   }
 
@@ -54,7 +54,7 @@ export async function checkDndActive(): Promise<boolean> {
  * Can be used outside of React components
  */
 export async function getDndStatus(): Promise<DndStatusResult> {
-  if (!Capacitor.isNativePlatform()) {
+  if (!isNative) {
     return { available: false };
   }
 
@@ -71,7 +71,7 @@ export async function getDndStatus(): Promise<DndStatusResult> {
  * Requires notification policy access
  */
 export async function setDndEnabled(enabled: boolean): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) return false;
+  if (!isNative) return false;
 
   try {
     const result = await DndPlugin.setDnd({ enabled });
@@ -86,7 +86,7 @@ export async function setDndEnabled(enabled: boolean): Promise<boolean> {
  * Open system settings to grant DND policy access
  */
 export async function requestDndPolicyAccess(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) return false;
+  if (!isNative) return false;
 
   try {
     await DndPlugin.requestPolicyAccess();
@@ -101,7 +101,7 @@ export async function requestDndPolicyAccess(): Promise<boolean> {
  * Check if app has notification policy access (required for setDnd)
  */
 export async function checkPolicyAccess(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) return false;
+  if (!isNative) return false;
 
   try {
     const result = await DndPlugin.hasNotificationPolicyAccess();
@@ -117,7 +117,6 @@ export async function checkPolicyAccess(): Promise<boolean> {
 // ============================================
 
 export function useDnd(): UseDndReturn {
-  const isNative = Capacitor.isNativePlatform();
   const [isDndActive, setIsDndActive] = useState(false);
   const [status, setStatus] = useState<DndStatusResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);

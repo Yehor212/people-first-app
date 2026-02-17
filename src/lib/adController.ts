@@ -6,7 +6,7 @@
  * gracefully no-op so the app works without ads.
  */
 
-import { Capacitor } from '@capacitor/core';
+import { isNative, platform } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import { IS_DEV } from '@/lib/env';
 import {
@@ -63,7 +63,7 @@ export async function initializeAds(): Promise<boolean> {
   if (state.initialized) return state.sdkAvailable;
 
   // Only native platforms have AdMob
-  if (!Capacitor.isNativePlatform()) {
+  if (!isNative) {
     state.initialized = true;
     state.sdkAvailable = false;
     logger.log('[Ads] PWA mode — ads disabled');
@@ -108,8 +108,7 @@ async function prepareRewardedAd(): Promise<void> {
   if (!state.sdkAvailable || !AdMobPlugin) return;
 
   try {
-    const platform = Capacitor.getPlatform() as 'android' | 'ios';
-    const adId = AD_UNIT_IDS[platform]?.rewarded;
+    const adId = AD_UNIT_IDS[platform as 'android' | 'ios']?.rewarded;
     if (!adId) return;
 
     await AdMobPlugin.prepareRewardVideoAd({ adId });

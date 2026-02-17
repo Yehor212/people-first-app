@@ -6,7 +6,7 @@
  */
 
 import { LocalNotifications, Channel } from '@capacitor/local-notifications';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { logger } from './logger';
 import { storageGetRaw, storageSetRaw } from './safeJson';
 import { SK } from '@/lib/storageKeys';
@@ -105,7 +105,7 @@ export function getCurrentChannelId(): string {
  * Must be called once at app startup
  */
 export async function initializeNotificationChannels(): Promise<void> {
-  if (!Capacitor.isNativePlatform()) return;
+  if (!isNative) return;
 
   try {
     // Create channel for each sound option

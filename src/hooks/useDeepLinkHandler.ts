@@ -3,7 +3,8 @@ import { useAppStore, useUIStore, useUserDataStore, getModalToggle } from '@/sto
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { logger } from '@/lib/logger';
 import { App } from '@capacitor/app';
-import { handleAuthCallback, isNativePlatform, notifyAuthComplete, setPendingAuthUrl } from '@/lib/authRedirect';
+import { handleAuthCallback, notifyAuthComplete, setPendingAuthUrl } from '@/lib/authRedirect';
+import { isNative } from '@/lib/platform';
 import { supabase } from '@/lib/supabaseClient';
 import { decodeInviteData } from '@/lib/friendChallenge';
 
@@ -25,7 +26,7 @@ export function useDeepLinkHandler(): void {
   const setChallengeInvite = useUIStore(s => s.setChallengeInvite);
 
   useEffect(() => {
-    if (!isNativePlatform()) return;
+    if (!isNative) return;
 
     let removeListener = () => {};
 

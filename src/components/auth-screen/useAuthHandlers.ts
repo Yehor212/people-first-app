@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabaseClient';
-import { getAuthRedirectUrl, isNativePlatform } from '@/lib/authRedirect';
+import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { isNative } from '@/lib/platform';
 import { canStartAuthFlow, startAuthFlow, endAuthFlow } from '@/lib/authGuard';
 import { authenticateWithGoogleNative } from '@/lib/nativeGoogleAuth';
 import { logger } from '@/lib/logger';
@@ -41,7 +42,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
       const redirectUrl = getAuthRedirectUrl();
       logger.log(`[Auth] Starting ${provider} sign-in with redirect URL:`, redirectUrl);
 
-      const platform = isNativePlatform() ? 'native' : 'web';
+      const platform = isNative ? 'native' : 'web';
       logger.log('[Auth] Platform:', platform);
       session.setDebugInfo(`Platform: ${platform}, Redirect: ${redirectUrl}`);
 
@@ -144,7 +145,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
   };
 
   const handleGoogleSignIn = () => {
-    if (isNativePlatform()) {
+    if (isNative) {
       void handleNativeGoogleSignIn();
     } else {
       void handleOAuthSignIn('google');
@@ -244,7 +245,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
   const exportDebugInfo = () => {
     const info = {
       timestamp: new Date().toISOString(),
-      platform: isNativePlatform() ? 'native' : 'web',
+      platform: isNative ? 'native' : 'web',
       redirectUrl: getAuthRedirectUrl(),
       supabaseConfigured: !!supabase,
       error: session.error,

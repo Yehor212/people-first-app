@@ -13,7 +13,7 @@
 
 import { supabase } from './supabaseClient';
 import { logger } from './logger';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 
 // Event name for session expiration
 export const AUTH_SESSION_EXPIRED_EVENT = 'auth:session-expired';
@@ -34,7 +34,7 @@ const MAX_REFRESH_RESOLVERS = 100;
 
 // Initialize BroadcastChannel for web only
 const initRefreshChannel = (): void => {
-  if (Capacitor.isNativePlatform()) return;
+  if (isNative) return;
   if (refreshChannel) return;
 
   try {

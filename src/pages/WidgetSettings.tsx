@@ -3,7 +3,7 @@ import { ArrowLeft, Smartphone, Monitor, Info } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { WidgetPreview } from '@/components/WidgetPreview';
-import { Capacitor } from '@capacitor/core';
+import { isNative, platform, isIos, isAndroid } from '@/lib/platform';
 
 interface WidgetSettingsProps {
   onBack: () => void;
@@ -13,7 +13,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
   const { t } = useLanguage();
   useBackHandler(true, onBack);
   const [activeTab, setActiveTab] = useState<'preview' | 'setup'>('preview');
-  const isNativePlatform = Capacitor.isNativePlatform();
+  const isNativePlatform = isNative;
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -96,7 +96,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                   </span>
                   <span className="text-sm font-medium">
                     {isNativePlatform
-                      ? Capacitor.getPlatform()
+                      ? platform
                       : t.widgetWeb}
                   </span>
                 </div>
@@ -124,7 +124,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
             {/* Platform-specific instructions */}
             {isNativePlatform ? (
               <>
-                {Capacitor.getPlatform() === 'ios' && (
+                {isIos && (
                   <div className="space-y-4">
                     <h2 className="text-lg font-bold">
                       {t.widgetSetupiOS}
@@ -188,7 +188,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
                   </div>
                 )}
 
-                {Capacitor.getPlatform() === 'android' && (
+                {isAndroid && (
                   <div className="space-y-4">
                     <h2 className="text-lg font-bold">
                       {t.widgetSetupAndroid}

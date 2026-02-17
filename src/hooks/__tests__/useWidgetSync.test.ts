@@ -21,12 +21,14 @@ vi.mock('@/lib/utils', () => ({
   formatDate: vi.fn(() => '2024-01-15'),
 }));
 
-// Mock Capacitor
-let mockIsNativePlatform = false;
-vi.mock('@capacitor/core', () => ({
-  Capacitor: {
-    isNativePlatform: () => mockIsNativePlatform,
-  },
+// Mock platform
+let mockIsNative = false;
+vi.mock('@/lib/platform', () => ({
+  get isNative() { return mockIsNative; },
+  get platform() { return mockIsNative ? 'android' : 'web'; },
+  get isAndroid() { return mockIsNative; },
+  get isIos() { return false; },
+  get isWeb() { return !mockIsNative; },
 }));
 
 // Mock Widget plugin
@@ -62,7 +64,7 @@ describe('useWidgetSync', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockIsNativePlatform = false;
+    mockIsNative = false;
     mockIsSupported.mockResolvedValue({ supported: true });
     mockUpdateWidget.mockResolvedValue(undefined);
   });
@@ -73,7 +75,7 @@ describe('useWidgetSync', () => {
 
   describe('non-native platform', () => {
     it('does not sync on web platform', async () => {
-      mockIsNativePlatform = false;
+      mockIsNative = false;
 
       const { useWidgetSync } = await import('../useWidgetSync');
       renderHook(() => useWidgetSync(5, mockHabits, 30, 'badge'));
@@ -88,15 +90,17 @@ describe('useWidgetSync', () => {
 
   describe('native platform', () => {
     beforeEach(() => {
-      mockIsNativePlatform = true;
+      mockIsNative = true;
     });
 
     it('checks widget support on native', async () => {
       vi.resetModules();
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          isNativePlatform: () => true,
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
 
       const { useWidgetSync } = await import('../useWidgetSync');
@@ -109,10 +113,12 @@ describe('useWidgetSync', () => {
 
     it('updates widget with correct data', async () => {
       vi.resetModules();
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          isNativePlatform: () => true,
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
 
       const { useWidgetSync } = await import('../useWidgetSync');
@@ -133,10 +139,12 @@ describe('useWidgetSync', () => {
 
     it('includes habit list in widget data', async () => {
       vi.resetModules();
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          isNativePlatform: () => true,
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
 
       const { useWidgetSync } = await import('../useWidgetSync');
@@ -156,10 +164,12 @@ describe('useWidgetSync', () => {
 
     it('limits habits list to 5', async () => {
       vi.resetModules();
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          isNativePlatform: () => true,
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
 
       const manyHabits: Habit[] = Array(10).fill(null).map((_, i) => ({
@@ -184,10 +194,12 @@ describe('useWidgetSync', () => {
       vi.resetModules();
       mockIsSupported.mockResolvedValue({ supported: false });
 
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          isNativePlatform: () => true,
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
 
       const { useWidgetSync } = await import('../useWidgetSync');
@@ -205,10 +217,12 @@ describe('useWidgetSync', () => {
 
     it('skips update when still loading', async () => {
       vi.resetModules();
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          isNativePlatform: () => true,
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
 
       const { useWidgetSync } = await import('../useWidgetSync');
@@ -224,10 +238,12 @@ describe('useWidgetSync', () => {
       vi.resetModules();
       mockUpdateWidget.mockRejectedValue(new Error('Update failed'));
 
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          isNativePlatform: () => true,
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
       vi.doMock('@/lib/logger', () => ({
         logger: {
@@ -251,10 +267,12 @@ describe('useWidgetSync', () => {
       vi.resetModules();
       mockIsSupported.mockRejectedValue(new Error('Support check failed'));
 
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          isNativePlatform: () => true,
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
       vi.doMock('@/lib/logger', () => ({
         logger: {
@@ -274,10 +292,12 @@ describe('useWidgetSync', () => {
 
     it('updates when dependencies change', async () => {
       vi.resetModules();
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          isNativePlatform: () => true,
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
 
       const { useWidgetSync } = await import('../useWidgetSync');

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { db } from '@/storage/db';
 import { scheduleJournalReminder, cancelJournalReminder } from '@/lib/localNotifications';
 import { logger } from '@/lib/logger';
@@ -38,7 +38,7 @@ export function useJournalReminder(translations: {
   // Sync notification scheduling whenever settings change
   useEffect(() => {
     if (loading) return;
-    if (!Capacitor.isNativePlatform()) return;
+    if (!isNative) return;
 
     if (settings.enabled) {
       void scheduleJournalReminder(

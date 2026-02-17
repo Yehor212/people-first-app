@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import { exportBackup } from '@/storage/backup';
 import { exportAllToCSV, exportProgressReportPDF } from '@/lib/exportService';
@@ -32,7 +32,7 @@ export function useDataExport({ setDataStatus, t, moods, habits, focusSessions, 
       const dateStr = now.toISOString().split('T')[0];
       const filename = `ZenFlow_Backup_${dateStr}_${now.getTime()}.json`;
 
-      if (Capacitor.isNativePlatform()) {
+      if (isNative) {
         const file = await Filesystem.writeFile({
           path: filename,
           data: json,

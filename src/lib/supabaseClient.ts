@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { Database } from '@/types/supabase';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
@@ -94,7 +94,7 @@ const getAuthStorage = () => {
  * - Native: false (handled via deep links separately)
  */
 const shouldDetectSessionInUrl = (): boolean => {
-  return !Capacitor.isNativePlatform();
+  return !isNative;
 };
 
 // ─── Resilient lock for Supabase auth ───

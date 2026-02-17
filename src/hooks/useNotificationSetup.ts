@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import { useUserDataStore } from '@/stores';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { isNativePlatform } from '@/lib/authRedirect';
+import { isNative } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import {
   scheduleLocalReminders,
@@ -48,7 +48,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
 
   // Schedule local reminders
   useEffect(() => {
-    if (!isNativePlatform()) return;
+    if (!isNative) return;
     scheduleLocalReminders(reminders, reminderCopy).catch((error) => {
       logger.error("Failed to schedule local reminders:", error);
     });
@@ -56,7 +56,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
 
   // Schedule per-habit push notifications
   useEffect(() => {
-    if (!isNativePlatform()) return;
+    if (!isNative) return;
     scheduleHabitReminders(habits, {
       reminderTitle: t.reminderHabitTitle,
       reminderBody: t.reminderHabitBody,
@@ -67,7 +67,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
 
   // Initialize notification channel (Android 8+ requirement)
   useEffect(() => {
-    if (!isNativePlatform()) return;
+    if (!isNative) return;
     initializeNotificationChannel().catch((error) => {
       logger.error('Failed to initialize notification channel:', error);
     });
@@ -75,7 +75,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
 
   // Initialize FCM push notifications (Android)
   useEffect(() => {
-    if (!isNativePlatform()) return;
+    if (!isNative) return;
     initializePushNotifications().catch((error) => {
       logger.error('Failed to initialize push notifications:', error);
     });
@@ -83,7 +83,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
 
   // Set up one-tap mood notification actions
   useEffect(() => {
-    if (!isNativePlatform()) return;
+    if (!isNative) return;
 
     let cleanupListener: (() => void) | null = null;
 
@@ -109,7 +109,7 @@ export function useNotificationSetup({ handleQuickMood }: UseNotificationSetupPa
 
   // Schedule mood quick-log notification with action buttons (morning check-in)
   useEffect(() => {
-    if (!isNativePlatform() || !reminders.enabled) return;
+    if (!isNative || !reminders.enabled) return;
 
     const parseTime = (time: string) => {
       const [hours, minutes] = time.split(':').map(Number);

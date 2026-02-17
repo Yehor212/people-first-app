@@ -16,15 +16,17 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 // Mock variables
-let mockIsNativePlatform = false;
+let mockIsNative = false;
 let mockIsDndActiveResult = { active: false };
 let mockGetDndStatusResult: any = { available: false };
 
-// Mock Capacitor
-vi.mock('@capacitor/core', () => ({
-  Capacitor: {
-    isNativePlatform: () => mockIsNativePlatform,
-  },
+// Mock platform
+vi.mock('@/lib/platform', () => ({
+  get isNative() { return mockIsNative; },
+  get platform() { return mockIsNative ? 'android' : 'web'; },
+  get isAndroid() { return mockIsNative; },
+  get isIos() { return false; },
+  get isWeb() { return !mockIsNative; },
 }));
 
 // Mock DndPlugin
@@ -38,7 +40,7 @@ vi.mock('@/plugins/DndPlugin', () => ({
 describe('useDnd', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockIsNativePlatform = false;
+    mockIsNative = false;
     mockIsDndActiveResult = { active: false };
     mockGetDndStatusResult = { available: false };
   });
@@ -49,7 +51,7 @@ describe('useDnd', () => {
 
   describe('non-native platform', () => {
     it('returns inactive DND on non-native platform', async () => {
-      mockIsNativePlatform = false;
+      mockIsNative = false;
 
       const { useDnd } = await import('../useDnd');
       const { result } = renderHook(() => useDnd());
@@ -65,7 +67,7 @@ describe('useDnd', () => {
 
   describe('native platform', () => {
     beforeEach(() => {
-      mockIsNativePlatform = true;
+      mockIsNative = true;
     });
 
     it('fetches DND status on mount', async () => {
@@ -100,7 +102,7 @@ describe('useDnd', () => {
 
   describe('refresh function', () => {
     it('exists and is callable', async () => {
-      mockIsNativePlatform = false;
+      mockIsNative = false;
 
       const { useDnd } = await import('../useDnd');
       const { result } = renderHook(() => useDnd());
@@ -123,10 +125,12 @@ describe('checkDndActive helper', () => {
 
   it('returns false on non-native platform', async () => {
     vi.resetModules();
-    vi.doMock('@capacitor/core', () => ({
-      Capacitor: {
-        isNativePlatform: () => false,
-      },
+    vi.doMock('@/lib/platform', () => ({
+      isNative: false,
+      platform: 'web',
+      isAndroid: false,
+      isIos: false,
+      isWeb: true,
     }));
 
     const { checkDndActive } = await import('../useDnd');
@@ -137,10 +141,12 @@ describe('checkDndActive helper', () => {
 
   it('returns true when DND is active on native', async () => {
     vi.resetModules();
-    vi.doMock('@capacitor/core', () => ({
-      Capacitor: {
-        isNativePlatform: () => true,
-      },
+    vi.doMock('@/lib/platform', () => ({
+      isNative: true,
+      platform: 'android',
+      isAndroid: true,
+      isIos: false,
+      isWeb: false,
     }));
     vi.doMock('@/plugins/DndPlugin', () => ({
       default: {
@@ -157,10 +163,12 @@ describe('checkDndActive helper', () => {
 
   it('returns false when DND is inactive on native', async () => {
     vi.resetModules();
-    vi.doMock('@capacitor/core', () => ({
-      Capacitor: {
-        isNativePlatform: () => true,
-      },
+    vi.doMock('@/lib/platform', () => ({
+      isNative: true,
+      platform: 'android',
+      isAndroid: true,
+      isIos: false,
+      isWeb: false,
     }));
     vi.doMock('@/plugins/DndPlugin', () => ({
       default: {
@@ -177,10 +185,12 @@ describe('checkDndActive helper', () => {
 
   it('returns false on error', async () => {
     vi.resetModules();
-    vi.doMock('@capacitor/core', () => ({
-      Capacitor: {
-        isNativePlatform: () => true,
-      },
+    vi.doMock('@/lib/platform', () => ({
+      isNative: true,
+      platform: 'android',
+      isAndroid: true,
+      isIos: false,
+      isWeb: false,
     }));
     vi.doMock('@/plugins/DndPlugin', () => ({
       default: {
@@ -210,10 +220,12 @@ describe('getDndStatus helper', () => {
 
   it('returns unavailable status on non-native platform', async () => {
     vi.resetModules();
-    vi.doMock('@capacitor/core', () => ({
-      Capacitor: {
-        isNativePlatform: () => false,
-      },
+    vi.doMock('@/lib/platform', () => ({
+      isNative: false,
+      platform: 'web',
+      isAndroid: false,
+      isIos: false,
+      isWeb: true,
     }));
 
     const { getDndStatus } = await import('../useDnd');
@@ -224,10 +236,12 @@ describe('getDndStatus helper', () => {
 
   it('returns status from plugin on native', async () => {
     vi.resetModules();
-    vi.doMock('@capacitor/core', () => ({
-      Capacitor: {
-        isNativePlatform: () => true,
-      },
+    vi.doMock('@/lib/platform', () => ({
+      isNative: true,
+      platform: 'android',
+      isAndroid: true,
+      isIos: false,
+      isWeb: false,
     }));
     vi.doMock('@/plugins/DndPlugin', () => ({
       default: {
@@ -244,10 +258,12 @@ describe('getDndStatus helper', () => {
 
   it('returns unavailable status on error', async () => {
     vi.resetModules();
-    vi.doMock('@capacitor/core', () => ({
-      Capacitor: {
-        isNativePlatform: () => true,
-      },
+    vi.doMock('@/lib/platform', () => ({
+      isNative: true,
+      platform: 'android',
+      isAndroid: true,
+      isIos: false,
+      isWeb: false,
     }));
     vi.doMock('@/plugins/DndPlugin', () => ({
       default: {

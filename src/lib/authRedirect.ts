@@ -1,4 +1,4 @@
-import { Capacitor } from "@capacitor/core";
+import { isNative } from '@/lib/platform';
 import { logger } from "./logger";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { BASE_URL } from '@/lib/env';
@@ -31,7 +31,7 @@ const sanitizeErrorMessage = (message: string): string => {
 };
 
 export const getAuthRedirectUrl = () => {
-  if (Capacitor.isNativePlatform()) {
+  if (isNative) {
     return NATIVE_REDIRECT_URL;
   }
 
@@ -49,7 +49,7 @@ export const getAuthRedirectUrl = () => {
   return redirectUrl;
 };
 
-export const isNativePlatform = () => Capacitor.isNativePlatform();
+export const isNativePlatform = () => isNative;
 
 export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: string) => {
   if (!supabaseClient || !url) return;

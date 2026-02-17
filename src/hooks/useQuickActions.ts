@@ -6,7 +6,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { isAndroid } from '@/lib/platform';
 import {
   initializeQuickActions,
   toggleQuickActionsNotification,
@@ -36,7 +36,6 @@ export interface UseQuickActionsReturn {
 // ============================================
 
 export function useQuickActions(): UseQuickActionsReturn {
-  const isAndroid = Capacitor.getPlatform() === 'android';
   const [isEnabled, setIsEnabled] = useState(() => getQuickActionsSetting());
   const [actionCallback, setActionCallback] = useState<((action: QuickActionType) => void) | null>(null);
 

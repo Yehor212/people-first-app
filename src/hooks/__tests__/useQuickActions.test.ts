@@ -16,14 +16,16 @@ vi.mock('@/lib/logger', () => ({
 }));
 
 // Mock variables
-let mockPlatform = 'web';
+let mockIsAndroid = false;
 let mockQuickActionsSetting = false;
 
-// Mock Capacitor
-vi.mock('@capacitor/core', () => ({
-  Capacitor: {
-    getPlatform: () => mockPlatform,
-  },
+// Mock platform
+vi.mock('@/lib/platform', () => ({
+  get isNative() { return mockIsAndroid; },
+  get platform() { return mockIsAndroid ? 'android' : 'web'; },
+  get isAndroid() { return mockIsAndroid; },
+  get isIos() { return false; },
+  get isWeb() { return !mockIsAndroid; },
 }));
 
 // Mock quickActions module
@@ -51,7 +53,7 @@ vi.mock('@/lib/quickActions', () => ({
 describe('useQuickActions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPlatform = 'web';
+    mockIsAndroid = false;
     mockQuickActionsSetting = false;
   });
 
@@ -61,7 +63,7 @@ describe('useQuickActions', () => {
 
   describe('initialization', () => {
     it('returns initial state on web platform', async () => {
-      mockPlatform = 'web';
+      mockIsAndroid = false;
 
       const { useQuickActions } = await import('../useQuickActions');
       const { result } = renderHook(() => useQuickActions());
@@ -73,13 +75,15 @@ describe('useQuickActions', () => {
     });
 
     it('returns isAndroid true on android platform', async () => {
-      mockPlatform = 'android';
+      mockIsAndroid = true;
 
       vi.resetModules();
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          getPlatform: () => 'android',
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
 
       const { useQuickActions } = await import('../useQuickActions');
@@ -115,16 +119,18 @@ describe('useQuickActions', () => {
 
   describe('android initialization', () => {
     it('initializes quick actions on android', async () => {
-      mockPlatform = 'android';
+      mockIsAndroid = true;
 
       vi.resetModules();
       const mockInit = vi.fn(() => Promise.resolve());
       const mockSetup = vi.fn(() => Promise.resolve(() => {}));
 
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          getPlatform: () => 'android',
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
       vi.doMock('@/lib/quickActions', () => ({
         initializeQuickActions: mockInit,
@@ -153,7 +159,7 @@ describe('useQuickActions', () => {
     });
 
     it('does not initialize on web', async () => {
-      mockPlatform = 'web';
+      mockIsAndroid = false;
 
       const { useQuickActions } = await import('../useQuickActions');
       renderHook(() => useQuickActions());
@@ -164,7 +170,7 @@ describe('useQuickActions', () => {
 
   describe('toggle', () => {
     it('does nothing on non-android', async () => {
-      mockPlatform = 'web';
+      mockIsAndroid = false;
 
       const { useQuickActions } = await import('../useQuickActions');
       const { result } = renderHook(() => useQuickActions());
@@ -181,10 +187,12 @@ describe('useQuickActions', () => {
       const mockToggle = vi.fn(() => Promise.resolve(true));
       const mockSave = vi.fn();
 
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          getPlatform: () => 'android',
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
       vi.doMock('@/lib/quickActions', () => ({
         initializeQuickActions: () => Promise.resolve(),
@@ -217,10 +225,12 @@ describe('useQuickActions', () => {
       const mockToggle = vi.fn(() => Promise.resolve(false));
       const mockSave = vi.fn();
 
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          getPlatform: () => 'android',
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
       vi.doMock('@/lib/quickActions', () => ({
         initializeQuickActions: () => Promise.resolve(),
@@ -251,10 +261,12 @@ describe('useQuickActions', () => {
       vi.resetModules();
       const mockToggle = vi.fn(() => Promise.reject(new Error('Toggle failed')));
 
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          getPlatform: () => 'android',
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
       vi.doMock('@/lib/quickActions', () => ({
         initializeQuickActions: () => Promise.resolve(),
@@ -291,7 +303,7 @@ describe('useQuickActions', () => {
 
   describe('onAction', () => {
     it('registers action callback', async () => {
-      mockPlatform = 'web';
+      mockIsAndroid = false;
 
       const { useQuickActions } = await import('../useQuickActions');
       const { result } = renderHook(() => useQuickActions());
@@ -313,10 +325,12 @@ describe('useQuickActions', () => {
       const mockCleanup = vi.fn();
       const mockSetup = vi.fn(() => Promise.resolve(mockCleanup));
 
-      vi.doMock('@capacitor/core', () => ({
-        Capacitor: {
-          getPlatform: () => 'android',
-        },
+      vi.doMock('@/lib/platform', () => ({
+        isNative: true,
+        platform: 'android',
+        isAndroid: true,
+        isIos: false,
+        isWeb: false,
       }));
       vi.doMock('@/lib/quickActions', () => ({
         initializeQuickActions: () => Promise.resolve(),

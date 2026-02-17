@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { Sparkles, History, RefreshCw, CheckCircle, ExternalLink, MessageSquare, ChevronRight } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
 import { AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -101,7 +101,7 @@ export function AboutSection() {
             </button>
 
             {/* Check for Updates Button - Only on native */}
-            {Capacitor.isNativePlatform() && (
+            {isNative && (
               <div className="space-y-3">
                 <button
                   onClick={handleCheckForUpdates}

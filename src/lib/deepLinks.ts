@@ -9,7 +9,7 @@
  */
 
 import { App, URLOpenListenerEvent } from '@capacitor/app';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { logger } from './logger';
 
 // Event name for deep link navigation
@@ -90,7 +90,7 @@ function handleDeepLink(url: string): void {
  * Call this once at app startup
  */
 export function setupDeepLinks(): void {
-  if (!Capacitor.isNativePlatform()) {
+  if (!isNative) {
     logger.log('[DeepLinks] Not on native platform, skipping setup');
     return;
   }

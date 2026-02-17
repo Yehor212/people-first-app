@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Bell, CheckCircle, Zap, Volume2 } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
@@ -198,7 +198,7 @@ export function NotificationsSection({
           </div>
 
           {/* Notification Sound Selection - Only on native */}
-          {Capacitor.isNativePlatform() && (
+          {isNative && (
             <div className="mt-4 p-4 bg-secondary/50 rounded-xl">
               <div className="flex items-center gap-3 mb-3">
                 <Volume2 className="w-5 h-5 text-primary" />

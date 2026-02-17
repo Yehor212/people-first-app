@@ -4,7 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { MessageSquare, Bug, Lightbulb, HelpCircle, Send, Loader2, X } from 'lucide-react';
 import { APP_VERSION } from '@/lib/appVersion';
-import { Capacitor } from '@capacitor/core';
+import { platform } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
@@ -48,7 +48,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
     try {
       // Collect device info
       const deviceInfo = {
-        platform: Capacitor.getPlatform(),
+        platform,
         appVersion: APP_VERSION,
         userAgent: navigator.userAgent,
         screenSize: `${window.innerWidth}x${window.innerHeight}`,
@@ -274,7 +274,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
 
           {/* Version Info */}
           <p className="text-xs text-muted-foreground text-center">
-            v{APP_VERSION} | {Capacitor.getPlatform()}
+            v{APP_VERSION} | {platform}
           </p>
         </div>
       </div>

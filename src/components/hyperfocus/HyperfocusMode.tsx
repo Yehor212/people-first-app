@@ -7,7 +7,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { X, Play, Pause, Sparkles, Shield, Music } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
@@ -158,7 +158,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
         </div>
 
         {/* Phone Focus Mode — DND toggle (Android only) */}
-        {SHOW_DND && Capacitor.isNativePlatform() && (
+        {SHOW_DND && isNative && (
           <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg mx-auto mb-4">
             <motion.button
               onClick={() => void dnd.handleDndToggle()}

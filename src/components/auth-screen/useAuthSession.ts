@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { isNativePlatform, AUTH_COMPLETE_EVENT } from '@/lib/authRedirect';
+import { AUTH_COMPLETE_EVENT } from '@/lib/authRedirect';
+import { isNative } from '@/lib/platform';
 import { endAuthFlow } from '@/lib/authGuard';
 import { App } from '@capacitor/app';
 import { logger } from '@/lib/logger';
@@ -141,7 +142,7 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
       }
     };
 
-    if (isNativePlatform()) {
+    if (isNative) {
       App.addListener('appStateChange', ({ isActive }) => {
         if (isActive && loadingProvider) {
           void checkSessionOnResume();

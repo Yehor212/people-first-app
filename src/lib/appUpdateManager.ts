@@ -9,7 +9,7 @@
  */
 
 import AppUpdate, { AppUpdateInfo } from '@/plugins/AppUpdatePlugin';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { App } from '@capacitor/app';
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
@@ -155,7 +155,7 @@ async function checkVersionFromRemote(): Promise<RemoteVersionConfig | null> {
  */
 export async function openGooglePlayStore(): Promise<boolean> {
   try {
-    if (Capacitor.isNativePlatform()) {
+    if (isNative) {
       // On Android, try market:// URL first (opens directly in Play Store app)
       // Fallback to HTTPS URL if market:// fails
       const marketUrl = 'market://details?id=com.zenflow.app';
@@ -205,7 +205,7 @@ const getPriorityLevel = (priority: number, stalenessDays: number): UpdatePriori
  */
 export async function checkForAppUpdate(): Promise<UpdateState> {
   // Skip on non-native platforms
-  if (!Capacitor.isNativePlatform()) {
+  if (!isNative) {
     return {
       available: false,
       priority: 'low',

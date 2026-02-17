@@ -5,7 +5,7 @@
 
 import { Share } from '@capacitor/share';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 
 // Cache cleanup constants
@@ -57,7 +57,7 @@ async function deleteFileWithRetry(fileName: string): Promise<void> {
  * Clean up stale cache files on app resume
  */
 export async function cleanupShareCache(): Promise<void> {
-  if (!Capacitor.isNativePlatform()) return;
+  if (!isNative) return;
 
   try {
     const result = await Filesystem.readdir({
@@ -112,7 +112,7 @@ export async function shareImage(
   title: string,
   text?: string
 ): Promise<boolean> {
-  if (Capacitor.isNativePlatform()) {
+  if (isNative) {
     try {
       const base64Data = await blobToBase64(blob);
       const fileName = `${CACHE_FILE_PREFIX}${Date.now()}.png`;

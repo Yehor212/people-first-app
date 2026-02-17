@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { Camera, Image as ImageIcon, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -32,7 +32,7 @@ export function JournalPhotoPicker({
   const [hasCamera, setHasCamera] = useState(false);
 
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
+    if (isNative) {
       setHasCamera(true);
     }
   }, []);

@@ -5,7 +5,7 @@
  * On Web, errors are logged to console and localStorage.
  */
 
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { logger } from './logger';
 import { safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
 import { SK } from '@/lib/storageKeys';
@@ -18,7 +18,7 @@ interface CrashReportingInterface {
   setCustomKey: (key: string, value: string | number | boolean) => void;
 }
 
-const isNative = Capacitor.isNativePlatform();
+// isNative imported from @/lib/platform
 
 // For native platforms, Firebase Crashlytics is automatically initialized
 // and captures crashes. These methods provide additional logging.

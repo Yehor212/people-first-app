@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { db } from '@/storage/db';
 import { logger } from '@/lib/logger';
 
@@ -12,7 +12,6 @@ const SETTINGS_KEY = 'journal_screenshot_block';
 
 export function useScreenSecurity(journalOpen: boolean) {
   const [enabled, setEnabledState] = useState(false);
-  const isNative = Capacitor.isNativePlatform();
 
   // Load setting
   useEffect(() => {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Bell, X } from 'lucide-react';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { SK } from '@/lib/storageKeys';
@@ -24,7 +24,7 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
 
   const checkPermission = async () => {
     // Only show on native platforms
-    if (!Capacitor.isNativePlatform()) {
+    if (!isNative) {
       onComplete();
       return;
     }

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { isNative } from '@/lib/platform';
 import { App } from '@capacitor/app';
 import { checkDndActive, setDndEnabled, checkPolicyAccess } from '@/hooks/useDnd';
 import { logger } from '@/lib/logger';
@@ -52,7 +52,7 @@ export function useHyperfocusDnd() {
     document.addEventListener('visibilitychange', handleVisibility);
 
     let appListener: { remove: () => Promise<void> } | null = null;
-    if (Capacitor.isNativePlatform()) {
+    if (isNative) {
       void App.addListener('resume', () => {
         void checkAndEnable();
       }).then(handle => { appListener = handle; });

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
-import { getAuthRedirectUrl, isNativePlatform } from '@/lib/authRedirect';
+import { getAuthRedirectUrl } from '@/lib/authRedirect';
+import { isNative } from '@/lib/platform';
 import { authenticateWithGoogleNative } from '@/lib/nativeGoogleAuth';
 import { removePushToken } from '@/lib/pushNotifications';
 import { offlineQueue } from '@/lib/offlineQueue';
@@ -48,7 +49,7 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
     }
     setIsSigningIn(true);
     try {
-      if (isNativePlatform()) {
+      if (isNative) {
         logger.log('[AccountSection] Starting native Google sign-in...');
         const result = await authenticateWithGoogleNative();
         if (result.success) {

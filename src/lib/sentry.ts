@@ -8,7 +8,7 @@
  */
 
 import * as Sentry from '@sentry/react';
-import { Capacitor } from '@capacitor/core';
+import { isNative, platform } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import { SENTRY_DSN, MODE, IS_DEV } from '@/lib/env';
 
@@ -28,7 +28,7 @@ export function initSentry(): void {
     return;
   }
 
-  const isNative = Capacitor.isNativePlatform();
+  // isNative imported from @/lib/platform
 
   // Build integrations list — replay only on web (rrweb crashes Android WebView)
   const integrations: Sentry.Integration[] = [
@@ -163,8 +163,8 @@ export function initSentry(): void {
     // Add platform context
     initialScope: {
       tags: {
-        platform: Capacitor.getPlatform(),
-        isNative: Capacitor.isNativePlatform() ? 'yes' : 'no',
+        platform,
+        isNative: isNative ? 'yes' : 'no',
       },
     },
   });
