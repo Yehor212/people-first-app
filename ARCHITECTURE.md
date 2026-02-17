@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-16 (TD-20 Phase 2 — 12 god components resolved)
+> Last updated: 2026-02-16 (TD-20 Phase 3 — 19 god components resolved)
 
 ---
 
@@ -17,7 +17,7 @@
 | ESLint errors | 0 | `npx eslint src/ --quiet` |
 | ESLint warnings | 21 | `npx eslint src/` |
 | TypeScript errors | 0 | `npx tsc --noEmit` |
-| God components (>400L) | 23 (was 17, 12 resolved, 16 newly found) | See [Known Technical Debt](#known-technical-debt) |
+| God components (>400L) | 15 remaining (19 resolved, 1 dead code, 3 out-of-scope) | See [Known Technical Debt](#known-technical-debt) |
 | Direct localStorage calls | 0 (was 199) | Enforced by ESLint `no-restricted-globals` rule. All access via `SK` + `safeJson`. |
 | Silent .catch(() => {}) | 0 | `grep -rn '\.catch.*=> {}' src/ \| wc -l` |
 | React.memo components | 12 / 80+ | `grep -rl 'memo(' src/ --include="*.tsx" \| wc -l` |
@@ -535,7 +535,7 @@ On PR to main:
 ## Known Technical Debt
 
 > Track items here until resolved. Remove when done.
-> Last audit: 2026-02-16 (TD-20 Phase 2 — 12 god components resolved, 27 remaining violations)
+> Last audit: 2026-02-16 (TD-20 Phase 3 — 19 god components resolved, 15 component + 3 hook remaining)
 
 ### Resolved
 
@@ -570,7 +570,7 @@ On PR to main:
 | TD-17 | ~~HIGH~~ → DONE | ~~Silent `.catch(() => {})` swallowing errors~~ | **Fixed 2026-02-16**: All 34 instances replaced with `logger.warn`/`logger.error` across 20 files. Categorized by risk: fire-and-forget (warn), data ops (error), with-fallback (warn + fallback). | Various |
 | TD-18 | ~~HIGH~~ → DONE | ~~Memory leaks: uncleaned setTimeout in contexts~~ | **Fixed 2026-02-16**: MoodThemeContext — added useRef + clearTimeout cleanup (EmotionThemeContext already correct). | src/contexts/MoodThemeContext.tsx |
 | TD-19 | ~~HIGH~~ → DONE | ~~Raw console.* calls bypassing logger.ts~~ | **Fixed 2026-02-16**: 16 calls replaced with logger.* in 4 files (main.tsx, sw.ts, sentry.ts, gamificationStore.ts). Remaining: logger.ts (6, implementation) + crashReporting.ts (7, implementation). | Various |
-| TD-20 | HIGH (12/17 done) | God components violating 400-line / 5-useState / 3-useEffect rules | **12 resolved** (8 original P0/P1 + 4 bonus). Fresh audit found 16 additional >400L files. **23 LOC violations + 4 hook-only violations remaining.** | See God Components table below |
+| TD-20 | HIGH (19/26 done) | God components violating 400-line / 5-useState / 3-useEffect rules | **19 resolved**, 1 dead code (DayClock). 15 component + 3 hook LOC violations + 4 hook-only violations remaining. | See God Components table below |
 | TD-21 | MEDIUM | Scattered Capacitor platform checks | **58** `isNativePlatform()/getPlatform()` calls across 20+ files. Export in authRedirect.ts unused | Various — `grep 'Capacitor\.\(isNativePlatform\|getPlatform\)' src/` |
 | TD-22 | MEDIUM | Scattered import.meta.env access | **25 calls** across 11 files. No centralized config.ts | Various — `grep 'import\.meta\.env' src/` |
 | TD-23 | MEDIUM | Direct Supabase calls in UI components | **71** `.from(`/`supabase.` calls in `/components/`. No service layer. | src/components/ — `grep 'supabase\.\|\.from(' src/components/` |
@@ -581,7 +581,7 @@ On PR to main:
 > Last audit: 2026-02-16 via `wc -l` + `grep -c 'useState(' + 'useEffect('`. Limit: 400 lines, 5 useState, 3 useEffect.
 > Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.
 
-#### Resolved (12 components)
+#### Resolved (19 components)
 
 | File | Was | Now | Resolution |
 |------|-----|-----|------------|
@@ -597,20 +597,19 @@ On PR to main:
 | Leaderboard.tsx | 526L / 10st / 2eff | max 230L / 2st | `leaderboard/` — 5 files |
 | AccountSection.tsx | 548L / 14st / 5eff | max 232L / 0st | `account-section/` — 6 files |
 | DataSection.tsx | 419L / 9st / 1eff | max 260L / 2st | `data-section/` — 4 files |
+| AnimatedStatsComponents.tsx | 694L / 4st / 3eff | max 349L / 2st | `animated-stats/` — 3 files |
+| AnimatedEmotionEmoji.tsx | 650L / 0st / 0eff | max 305L / 0st | `animated-emotion-emoji/` — 3 files |
+| CompactHabitCard.tsx | 605L / 2st / 1eff | max 400L / 2st | `compact-habit-card/` — 4 files |
+| RingDetailSheet.tsx | 567L / 0st / 0eff | max 332L / 0st | `ring-detail-sheet/` — 5 files |
+| EmotionGalaxy.tsx | 559L / 2st / 1eff | max 280L / 0st | `emotion-galaxy/` — 6 files |
+| WeeklyReview.tsx | 548L / 1st / 0eff | max 294L / 1st | `weekly-review/` — 5 files (hook extracted) |
+| HabitCreationForm.tsx | 536L / 0st / 1eff | max 394L / 0st | `habit-creation-form/` — 4 files |
 
-#### Remaining — LOC violations (23 files >400L)
+#### Remaining — Component LOC violations (15 files >400L)
 
 | File | Lines | useState | useEffect | Notes |
 |------|-------|----------|-----------|-------|
-| AnimatedStatsComponents.tsx | **694** | 4 | 3 | P2 — multiple sub-components in one file |
-| AnimatedEmotionEmoji.tsx | **650** | 0 | 0 | P2 — pure animation/rendering config |
-| ui/sidebar.tsx | **641** | 2 | 1 | P2 — shadcn vendored, may skip |
-| CompactHabitCard.tsx | **605** | 2 | 1 | P2 |
-| stats/RingDetailSheet.tsx | **567** | 0 | 0 | P2 |
-| stats/EmotionGalaxy.tsx | **559** | 2 | 1 | P2 |
-| stats/WeeklyReview.tsx | **548** | 1 | 0 | P2 |
-| HabitCreationForm.tsx | **536** | 0 | 1 | P3 |
-| DayClock.tsx | **527** | 3 | 2 | P3 |
+| ui/sidebar.tsx | **641** | 2 | 1 | shadcn vendored — SKIP |
 | DailySurprise.tsx | **513** | 2 | 1 | P3 |
 | ComebackChallenge.tsx | **513** | 2 | 1 | P3 |
 | WelcomeTutorial.tsx | **471** | 2 | 1 | P3 |
@@ -626,6 +625,20 @@ On PR to main:
 | WhatsNewModal.tsx | **402** | 1 | 1 | P3 |
 | QuestsPanel.tsx | **401** | 1 | **4** | P3 — also useEffect violation |
 
+#### Dead code (no imports)
+
+| File | Lines | Notes |
+|------|-------|-------|
+| DayClock.tsx | **527** | 0 imports found in codebase |
+
+#### Remaining — Hook/utility LOC violations (3 files >400L)
+
+| File | Lines | useState | useEffect | Notes |
+|------|-------|----------|-----------|-------|
+| hooks/useInnerWorld.ts | **542** | 5 | 2 | P3 |
+| hooks/useFocusTimer.ts | **513** | 4 | 3 | P3 |
+| hooks/useStatsCalculations.ts | **413** | 0 | 0 | P3 — pure calc |
+
 #### Remaining — Hook-only violations (LOC compliant)
 
 | File | Lines | useState | useEffect | Violation |
@@ -635,12 +648,13 @@ On PR to main:
 | schedule/useScheduleData.ts | 283 | 3 | **4** | useEffect > 3 |
 | Celebrations.tsx | 311 | 4 | **4** | useEffect > 3 |
 
-#### Out of scope (in features/)
+#### Out of scope
 
 | File | Lines | Notes |
 |------|-------|-------|
-| features/journal/JournalEntryEditor.tsx | **1,165** | Separate feature module |
-| features/journal/JournalModule.tsx | **1,057** | Separate feature module |
+| features/journal/JournalEntryEditor.tsx | **1,170** | Separate feature module |
+| features/journal/JournalModule.tsx | **1,060** | Separate feature module |
+| features/journal/JournalEntryList.tsx | **513** | Separate feature module |
 
 ---
 
