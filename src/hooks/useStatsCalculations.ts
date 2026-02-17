@@ -4,53 +4,13 @@
  */
 
 import { useMemo } from 'react';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry, PrimaryEmotion } from '@/types';
+import { MoodEntry } from '@/types';
 import { calculateStreak, getToday, parseLocalDate } from '@/lib/utils';
 import { getHabitCompletedDates } from '@/lib/habits';
 import { getEmotionScore, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
+import type { UseStatsCalculationsProps, Stats, PremiumStats, MoodInsights } from './statsTypes';
 
-export type StatsRange = 'week' | 'month' | 'all';
-
-interface UseStatsCalculationsProps {
-  moods: MoodEntry[];
-  habits: Habit[];
-  focusSessions: FocusSession[];
-  gratitudeEntries: GratitudeEntry[];
-  restDays: string[];
-  currentFocusMinutes?: number;
-  range: StatsRange;
-  selectedTag: string;
-  monthNames: string[];
-}
-
-interface Stats {
-  totalFocusMinutes: number;
-  allTimeFocusMinutes: number;
-  totalHabitCompletions: number;
-  currentStreak: number;
-  moodCounts: Record<string, number>;
-  emotionCounts: Record<PrimaryEmotion, number>;
-  totalEmotionEntries: number;
-  thisMonthMoods: number;
-  thisMonthFocusMinutes: number;
-  thisMonthGratitude: number;
-  monthName: string;
-}
-
-interface PremiumStats {
-  moodScore: number;
-  habitRate: number;
-  focusScore: number;
-  weekScore: number;
-  weeklyChange: number;
-  currentMood: string;
-}
-
-interface MoodInsights {
-  bestDay: { day: string; avg: number } | null;
-  focusAvg: { withFocus: number; withoutFocus: number } | null;
-  habitDiffs: Array<{ id: string; name: string; diff: number }>;
-}
+export type { StatsRange } from './statsTypes';
 
 export function useStatsCalculations({
   moods,

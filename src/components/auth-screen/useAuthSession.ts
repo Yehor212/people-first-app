@@ -29,9 +29,7 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
 
   // Use ref for onComplete to avoid dependency array issues
   const onCompleteRef = useRef(onComplete);
-  useEffect(() => {
-    onCompleteRef.current = onComplete;
-  });
+  onCompleteRef.current = onComplete;
 
   // Show web OAuth error from Index.tsx if present
   useEffect(() => {
@@ -60,57 +58,50 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
     return true;
   };
 
-  // Check if already signed in
+  // Check session, subscribe to auth events, listen for completion
   useEffect(() => {
     const checkSession = async () => {
       if (!supabase) return;
       if (hasCompletedRef.current) return;
-
       try {
         const { data, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          logger.error('[Auth] Session check error:', sessionError);
-          setDebugInfo(`Session error: ${sessionError.message}`);
-          return;
-        }
-
+        if (sessionError) { logger.error('[Auth] Session check error:', sessionError); setDebugInfo(`Session error: ${sessionError.message}`); return; }
         if (data.session?.user) {
           const metadata = data.session.user.user_metadata;
           const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
           const email = data.session.user.email || '';
           tryComplete({ name, email }, 'checkSession');
         }
-      } catch (err) {
-        logger.error('[Auth] Unexpected error checking session:', err);
-        setDebugInfo(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
-      }
+      } catch (err) { logger.error('[Auth] Unexpected error checking session:', err); setDebugInfo(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`); }
     };
-
     void checkSession();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Listen for auth state changes (handles OAuth callback)
-  useEffect(() => {
-    if (!supabase) return;
+    let subscription: { unsubscribe?: () => void } | undefined;
+    if (supabase) {
+      const { data } = supabase.auth.onAuthStateChange((event, session) => {
+        logger.log('[Auth] Auth state changed:', event);
+        if (event === 'SIGNED_IN' && session?.user) {
+          endAuthFlow();
+          const metadata = session.user.user_metadata;
+          const name = metadata?.full_name || metadata?.name || session.user.email?.split('@')[0] || 'Friend';
+          const email = session.user.email || '';
+          tryComplete({ name, email }, 'onAuthStateChange');
+        } else if (event === 'SIGNED_OUT') { endAuthFlow(); setLoadingProvider(null); }
+      });
+      subscription = data?.subscription;
+    }
 
-    const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
-      logger.log('[Auth] Auth state changed:', event);
-
-      if (event === 'SIGNED_IN' && session?.user) {
-        endAuthFlow();
-        const metadata = session.user.user_metadata;
-        const name = metadata?.full_name || metadata?.name || session.user.email?.split('@')[0] || 'Friend';
-        const email = session.user.email || '';
-        tryComplete({ name, email }, 'onAuthStateChange');
-      } else if (event === 'SIGNED_OUT') {
-        endAuthFlow();
-        setLoadingProvider(null);
-      }
-    });
+    const handleAuthComplete = () => {
+      logger.log('[Auth] Received auth complete event from Index.tsx');
+      setLoadingProvider(null);
+      if (oauthTimeoutRef.current) { clearTimeout(oauthTimeoutRef.current); oauthTimeoutRef.current = null; }
+    };
+    window.addEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
 
     return () => {
-      subscription?.subscription?.unsubscribe?.();
+      subscription?.unsubscribe?.();
+      window.removeEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
+      if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -179,30 +170,6 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
       window.removeEventListener('focus', handleFocus);
     };
   }, [loadingProvider]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Listen for auth completion from Index.tsx
-  useEffect(() => {
-    const handleAuthComplete = () => {
-      logger.log('[Auth] Received auth complete event from Index.tsx');
-      setLoadingProvider(null);
-      if (oauthTimeoutRef.current) {
-        clearTimeout(oauthTimeoutRef.current);
-        oauthTimeoutRef.current = null;
-      }
-    };
-
-    window.addEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
-    return () => window.removeEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
-  }, []);
-
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (oauthTimeoutRef.current) {
-        clearTimeout(oauthTimeoutRef.current);
-      }
-    };
-  }, []);
 
   return {
     loadingProvider, setLoadingProvider,

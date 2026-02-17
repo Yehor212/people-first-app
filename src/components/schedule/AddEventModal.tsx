@@ -24,10 +24,7 @@ export function AddEventModal({
   const { t, language } = useLanguage();
   const [selectedPreset, setSelectedPreset] = useState(EVENT_PRESETS[0]);
   const [eventDate, setEventDate] = useState(initialDate);
-  const [startHour, setStartHour] = useState(9);
-  const [startMinute, setStartMinute] = useState(0);
-  const [endHour, setEndHour] = useState(10);
-  const [endMinute, setEndMinute] = useState(0);
+  const [time, setTime] = useState({ startHour: 9, startMinute: 0, endHour: 10, endMinute: 0 });
   const [customTitle, setCustomTitle] = useState('');
   const [note, setNote] = useState('');
 
@@ -48,18 +45,18 @@ export function AddEventModal({
 
   const handleAdd = () => {
     const title = customTitle || (t[selectedPreset.labelKey as keyof typeof t]) || selectedPreset.id;
-    let finalEndHour = endHour;
-    let finalEndMinute = endMinute;
-    const startTotal = startHour * 60 + startMinute;
-    const endTotal = endHour * 60 + endMinute;
+    let finalEndHour = time.endHour;
+    let finalEndMinute = time.endMinute;
+    const startTotal = time.startHour * 60 + time.startMinute;
+    const endTotal = time.endHour * 60 + time.endMinute;
     if (endTotal <= startTotal) {
-      finalEndHour = Math.min(startHour + 1, 23);
-      finalEndMinute = startHour >= 23 ? 59 : startMinute;
+      finalEndHour = Math.min(time.startHour + 1, 23);
+      finalEndMinute = time.startHour >= 23 ? 59 : time.startMinute;
     }
     onAdd({
       title,
-      startHour,
-      startMinute,
+      startHour: time.startHour,
+      startMinute: time.startMinute,
       endHour: finalEndHour,
       endMinute: finalEndMinute,
       colorVar: selectedPreset.colorVar,
@@ -196,8 +193,8 @@ export function AddEventModal({
               <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">{t.scheduleStart || 'Start'}</label>
               <div className="flex gap-1">
                 <select
-                  value={startHour}
-                  onChange={(e) => setStartHour(safeParseInt(e.target.value, 9, 0, 23))}
+                  value={time.startHour}
+                  onChange={(e) => setTime(prev => ({ ...prev, startHour: safeParseInt(e.target.value, 9, 0, 23) }))}
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
                 >
                   {HOURS.map((h) => (
@@ -205,8 +202,8 @@ export function AddEventModal({
                   ))}
                 </select>
                 <select
-                  value={startMinute}
-                  onChange={(e) => setStartMinute(safeParseInt(e.target.value, 0, 0, 59))}
+                  value={time.startMinute}
+                  onChange={(e) => setTime(prev => ({ ...prev, startMinute: safeParseInt(e.target.value, 0, 0, 59) }))}
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
                 >
                   {[0, 15, 30, 45].map((m) => (
@@ -219,8 +216,8 @@ export function AddEventModal({
               <label className="text-xs text-slate-600 dark:text-white/60 mb-1 block">{t.scheduleEnd || 'End'}</label>
               <div className="flex gap-1">
                 <select
-                  value={endHour}
-                  onChange={(e) => setEndHour(safeParseInt(e.target.value, 10, 0, 23))}
+                  value={time.endHour}
+                  onChange={(e) => setTime(prev => ({ ...prev, endHour: safeParseInt(e.target.value, 10, 0, 23) }))}
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
                 >
                   {HOURS.map((h) => (
@@ -228,8 +225,8 @@ export function AddEventModal({
                   ))}
                 </select>
                 <select
-                  value={endMinute}
-                  onChange={(e) => setEndMinute(safeParseInt(e.target.value, 0, 0, 59))}
+                  value={time.endMinute}
+                  onChange={(e) => setTime(prev => ({ ...prev, endMinute: safeParseInt(e.target.value, 0, 0, 59) }))}
                   className="flex-1 p-2 bg-secondary backdrop-blur-sm rounded-lg text-sm text-slate-800 dark:text-white border border-border"
                 >
                   {[0, 15, 30, 45].map((m) => (

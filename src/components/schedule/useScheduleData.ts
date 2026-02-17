@@ -47,7 +47,7 @@ export function useScheduleData(
   const [tasks, setTasks] = useState<Task[]>([]);
   const isScrollingProgrammatically = useRef(false);
 
-  // Load tasks from localStorage
+  // Load tasks + time ticker (mount-only)
   useEffect(() => {
     const loadTasks = () => {
       const parsed = safeLocalStorageGet<Task[]>(SK.TASKS, []);
@@ -63,9 +63,12 @@ export function useScheduleData(
     const handleTasksUpdate = () => loadTasks();
     window.addEventListener('zenflow-tasks-updated', handleTasksUpdate);
 
+    const interval = setInterval(() => setCurrentTime(new Date()), 60000);
+
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('zenflow-tasks-updated', handleTasksUpdate);
+      clearInterval(interval);
     };
   }, []);
 
@@ -203,12 +206,6 @@ export function useScheduleData(
   }, [safeEvents]);
 
   const isToday = selectedDate === getToday();
-
-  // Update time every minute
-  useEffect(() => {
-    const interval = setInterval(() => setCurrentTime(new Date()), 60000);
-    return () => clearInterval(interval);
-  }, []);
 
   // Scroll helpers
   const scrollDaySelectorToDate = useCallback((date: string) => {
