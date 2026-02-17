@@ -1,0 +1,1 @@
+export { AnimatedEmotionEmoji } from './AnimatedEmotionEmoji';
