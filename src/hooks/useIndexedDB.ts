@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Table } from 'dexie';
+import { z } from 'zod';
 import { logger } from '@/lib/logger';
+import { validateArray, validateObject } from '@/lib/schemas';
 
 // Event emitter for cross-hook data refresh
 type RefreshListener = () => void;
@@ -131,18 +133,24 @@ const releaseInitLock = (): void => {
 };
 
 interface UseIndexedDBOptions<T> {
-   
+
   table: Table<any, string>;
   localStorageKey: string;
   initialValue: T;
   idField?: string;
+  /** Schema for validating individual array items (when T extends unknown[]) */
+  itemSchema?: z.ZodType<any>;
+  /** Schema for validating single object values (when using idField='key') */
+  objectSchema?: z.ZodType<any>;
 }
 
 export function useIndexedDB<T>({
   table,
   localStorageKey,
   initialValue,
-  idField = 'id'
+  idField = 'id',
+  itemSchema,
+  objectSchema,
 }: UseIndexedDBOptions<T>): [T, (value: T | ((prev: T) => T)) => void, boolean] {
   const [data, setData] = useState<T>(initialValue);
   const [isLoading, setIsLoading] = useState(true);
@@ -152,6 +160,17 @@ export function useIndexedDB<T>({
   const initialValueRef = useRef(initialValue);
   // Track mounted state to prevent memory leaks
   const isMountedRef = useRef(true);
+
+  // Apply schema validation if provided (otherwise passthrough)
+  const applyValidation = useCallback((raw: unknown): T | null => {
+    if (itemSchema && Array.isArray(raw)) {
+      return validateArray(itemSchema, raw, localStorageKey) as T;
+    }
+    if (objectSchema && !Array.isArray(raw)) {
+      return validateObject(objectSchema, raw, localStorageKey) as T | null;
+    }
+    return raw as T;
+  }, [itemSchema, objectSchema, localStorageKey]);
 
   // Load data function (used both on init and refresh)
   const loadData = useCallback(async (isInitialLoad = false) => {
@@ -178,10 +197,13 @@ export function useIndexedDB<T>({
           const isArray = Array.isArray(record.value);
           if (isPrimitive || isArray) {
             // Don't merge primitives or arrays - just use the value directly
-            setData(record.value as T);
+            const validated = applyValidation(record.value);
+            setData(validated !== null ? validated : defaults);
           } else {
             // Merge with initialValue to ensure all required fields exist (handles schema migrations)
-            setData({ ...defaults, ...record.value } as T);
+            const merged = { ...defaults, ...record.value };
+            const validated = applyValidation(merged);
+            setData(validated !== null ? validated : defaults);
           }
         } else if (isInitialLoad) {
           // Try localStorage fallback only on initial load
@@ -195,7 +217,8 @@ export function useIndexedDB<T>({
                 const isArray = Array.isArray(parsed);
                 if (isPrimitive || isArray) {
                   // Don't merge primitives or arrays - just use the value directly
-                  setData(parsed as T);
+                  const validated = applyValidation(parsed);
+                  setData(validated !== null ? validated : defaults);
                   table.put({ key: localStorageKey, value: parsed }).catch((err) => {
                     // Log migration errors
                     logger.warn('[useIndexedDB] Migration put failed:', err);
@@ -203,7 +226,8 @@ export function useIndexedDB<T>({
                 } else {
                   // Merge with initialValue to ensure all required fields exist
                   const merged = { ...defaults, ...parsed };
-                  setData(merged as T);
+                  const validated = applyValidation(merged);
+                  setData(validated !== null ? validated : defaults);
                   // Migrate to IndexedDB (don't wait, fire and forget)
                   table.put({ key: localStorageKey, value: merged }).catch((err) => {
                     // Log migration errors
@@ -227,7 +251,8 @@ export function useIndexedDB<T>({
           [] as unknown[]
         );
         if (records.length > 0) {
-          setData(records as T);
+          const validated = applyValidation(records);
+          setData(validated !== null ? validated : defaults);
         } else if (isInitialLoad) {
           // Try localStorage fallback only on initial load
           try {
@@ -236,7 +261,8 @@ export function useIndexedDB<T>({
               try {
                 const parsed = JSON.parse(stored);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                  setData(parsed as T);
+                  const validated = applyValidation(parsed);
+                  setData(validated !== null ? validated : defaults);
                   // Migrate to IndexedDB (don't wait, fire and forget)
                   table.bulkPut(parsed).catch((err) => {
                     // Log migration errors
@@ -266,10 +292,13 @@ export function useIndexedDB<T>({
             const isArray = Array.isArray(parsed);
             if (isPrimitive || isArray) {
               // Don't merge primitives or arrays - just use the value directly
-              setData(parsed as T);
+              const validated = applyValidation(parsed);
+              setData(validated !== null ? validated : defaults);
             } else {
               // Merge with initialValue to ensure all required fields exist
-              setData({ ...defaults, ...parsed } as T);
+              const merged = { ...defaults, ...parsed };
+              const validated = applyValidation(merged);
+              setData(validated !== null ? validated : defaults);
             }
           } catch (parseError) {
             logger.warn('Failed to parse localStorage fallback data:', parseError);
@@ -285,7 +314,7 @@ export function useIndexedDB<T>({
         releaseInitLock();
       }
     }
-  }, [table, localStorageKey, idField]);
+  }, [table, localStorageKey, idField, applyValidation]);
 
   // Initial load
   useEffect(() => {

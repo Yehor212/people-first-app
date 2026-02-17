@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { logger } from '@/lib/logger';
 import { useIndexedDB } from './useIndexedDB';
 import { db } from '@/storage/db';
+import { innerWorldSchema } from '@/lib/schemas';
 import { generateId, getToday } from '@/lib/utils';
 import { pushInnerWorldToCloud } from '@/storage/innerWorldCloudSync';
 import { updateMyStreak } from '@/storage/friendsSync';
@@ -43,6 +44,7 @@ export function useInnerWorld() {
     localStorageKey: 'zenflow-inner-world',
     initialValue: createDefaultInnerWorld(),
     idField: 'key',
+    objectSchema: innerWorldSchema,
   });
 
   // Rest mode (extracted hook)

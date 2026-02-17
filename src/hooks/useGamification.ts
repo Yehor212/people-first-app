@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useIndexedDB } from './useIndexedDB';
 import { db } from '@/storage/db';
+import { gamificationStateSchema } from '@/lib/schemas';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import {
   AchievementId,
@@ -32,6 +33,7 @@ export function useGamification() {
     localStorageKey: 'gamification',
     initialValue: INITIAL_STATE,
     idField: 'key',
+    objectSchema: gamificationStateSchema,
   });
 
   const [moods, setMoods] = useState<MoodEntry[]>([]);

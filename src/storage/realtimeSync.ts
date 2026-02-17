@@ -16,6 +16,13 @@ import { Database } from '@/types/supabase';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { offlineQueue } from '@/lib/offlineQueue';
 import { generateEmbeddings } from '@/lib/journalAI';
+import {
+  runtimeMoodEntrySchema,
+  runtimeHabitSchema,
+  runtimeFocusSessionSchema,
+  runtimeGratitudeEntrySchema,
+  validateArray,
+} from '@/lib/schemas';
 
 // Type aliases for Supabase table rows (LOW priority fix: replace `as any[]`)
 type MoodRow = Database['public']['Tables']['moods']['Row'];
@@ -636,15 +643,19 @@ export const pullFromCloud = async (): Promise<boolean> => {
     const journalAudioData = journalAudioRes.data || [];
 
     // Transform cloud data to local format
-    const moods: MoodEntry[] = moodsData.map(m => ({
-      id: m.id,
-      mood: m.mood,
-      note: m.note || undefined,
-      date: m.date,
-      timestamp: m.timestamp,
-      tags: m.tags,
-      emotion: m.emotion || undefined,
-    }));
+    const moods: MoodEntry[] = validateArray(
+      runtimeMoodEntrySchema,
+      moodsData.map(m => ({
+        id: m.id,
+        mood: m.mood,
+        note: m.note || undefined,
+        date: m.date,
+        timestamp: m.timestamp,
+        tags: m.tags,
+        emotion: m.emotion || undefined,
+      })),
+      'cloud-moods'
+    ) as MoodEntry[];
 
     // Group completions and reminders by habit
     const completionsByHabit = new Map<string, { dates: string[], byDate: Record<string, number>, durationByDate: Record<string, number> }>();
@@ -672,47 +683,59 @@ export const pullFromCloud = async (): Promise<boolean> => {
       });
     }
 
-    const habits: Habit[] = habitsData.map(h => {
-      const completions = completionsByHabit.get(h.id);
-      const reminders = remindersByHabit.get(h.id) || [];
-      return {
-        id: h.id,
-        name: h.name,
-        icon: h.icon,
-        color: h.color,
-        completedDates: completions?.dates || [],
-        createdAt: new Date(h.created_at).getTime(),
-        templateId: h.template_id || undefined,
-        type: h.type,
-        reminders,
-        frequency: h.frequency,
-        customDays: h.custom_days,
-        requiresDuration: h.requires_duration,
-        targetDuration: h.target_duration || undefined,
-        startDate: h.start_date || undefined,
-        dailyTarget: h.daily_target,
-        targetCount: h.target_count || undefined,
-        completionsByDate: completions?.byDate,
-        durationByDate: completions?.durationByDate,
-      };
-    });
+    const habits: Habit[] = validateArray(
+      runtimeHabitSchema,
+      habitsData.map(h => {
+        const completions = completionsByHabit.get(h.id);
+        const reminders = remindersByHabit.get(h.id) || [];
+        return {
+          id: h.id,
+          name: h.name,
+          icon: h.icon,
+          color: h.color,
+          completedDates: completions?.dates || [],
+          createdAt: new Date(h.created_at).getTime(),
+          templateId: h.template_id || undefined,
+          type: h.type,
+          reminders,
+          frequency: h.frequency,
+          customDays: h.custom_days,
+          requiresDuration: h.requires_duration,
+          targetDuration: h.target_duration || undefined,
+          startDate: h.start_date || undefined,
+          dailyTarget: h.daily_target,
+          targetCount: h.target_count || undefined,
+          completionsByDate: completions?.byDate,
+          durationByDate: completions?.durationByDate,
+        };
+      }),
+      'cloud-habits'
+    ) as Habit[];
 
-    const focusSessions: FocusSession[] = focusData.map(f => ({
-      id: f.id,
-      duration: f.duration,
-      completedAt: f.completed_at,
-      date: f.date,
-      label: f.label || undefined,
-      status: f.status,
-      reflection: f.reflection || undefined,
-    }));
+    const focusSessions: FocusSession[] = validateArray(
+      runtimeFocusSessionSchema,
+      focusData.map(f => ({
+        id: f.id,
+        duration: f.duration,
+        completedAt: f.completed_at,
+        date: f.date,
+        label: f.label || undefined,
+        status: f.status,
+        reflection: f.reflection || undefined,
+      })),
+      'cloud-focusSessions'
+    ) as FocusSession[];
 
-    const gratitudeEntries: GratitudeEntry[] = gratitudeData.map(g => ({
-      id: g.id,
-      text: g.text,
-      date: g.date,
-      timestamp: g.timestamp,
-    }));
+    const gratitudeEntries: GratitudeEntry[] = validateArray(
+      runtimeGratitudeEntrySchema,
+      gratitudeData.map(g => ({
+        id: g.id,
+        text: g.text,
+        date: g.date,
+        timestamp: g.timestamp,
+      })),
+      'cloud-gratitudeEntries'
+    ) as GratitudeEntry[];
 
     // Transform journal data from cloud to local format
     // Note: photos/audio only have metadata here — binary data lives in Storage
@@ -948,20 +971,6 @@ export const unsubscribeFromRealtime = async (): Promise<void> => {
   logger.log('[Realtime] Unsubscribed');
 };
 
-// P1-10 Fix: Validation helpers for realtime data
-const isValidString = (val: unknown): val is string => typeof val === 'string' && val.length > 0;
-const isValidNumber = (val: unknown): val is number => typeof val === 'number' && !isNaN(val);
-const isValidStringArray = (val: unknown): val is string[] =>
-  Array.isArray(val) && val.every(item => typeof item === 'string');
-
-const VALID_MOODS = ['great', 'good', 'okay', 'bad', 'terrible'] as const;
-const isValidMood = (val: unknown): val is MoodEntry['mood'] =>
-  typeof val === 'string' && (VALID_MOODS as readonly string[]).includes(val);
-
-const VALID_FOCUS_STATUSES = ['completed', 'abandoned', 'paused'] as const;
-const isValidFocusStatus = (val: unknown): val is FocusSession['status'] =>
-  typeof val === 'string' && (VALID_FOCUS_STATUSES as readonly string[]).includes(val);
-
 // Handle realtime changes from other devices
 const _handleRealtimeChange = async (table: string, payload: { eventType: string; new: Record<string, unknown> | null; old: Record<string, unknown> | null }) => {
   logger.log('[Realtime] Change received:', table, payload.eventType);
@@ -971,26 +980,23 @@ const _handleRealtimeChange = async (table: string, payload: { eventType: string
       case 'moods':
         if (payload.eventType === 'DELETE') {
           const oldId = payload.old?.id;
-          if (isValidString(oldId)) await db.moods.delete(oldId);
+          if (typeof oldId === 'string' && oldId.length > 0) await db.moods.delete(oldId);
         } else if (payload.new) {
           const moodData = payload.new;
-          // P1-10 Fix: Validate all required fields before inserting
-          if (
-            isValidString(moodData.id) &&
-            isValidMood(moodData.mood) &&
-            isValidString(moodData.date)
-          ) {
-            await db.moods.put({
-              id: moodData.id,
-              mood: moodData.mood,
-              note: isValidString(moodData.note) ? moodData.note : undefined,
-              date: moodData.date,
-              timestamp: isValidNumber(moodData.timestamp) ? moodData.timestamp : Date.now(),
-              tags: isValidStringArray(moodData.tags) ? moodData.tags : [],
-              emotion: isValidString(moodData.emotion) ? moodData.emotion as MoodEntry['emotion'] : undefined,
-            });
+          const mapped = {
+            id: moodData.id,
+            mood: moodData.mood,
+            note: moodData.note || undefined,
+            date: moodData.date,
+            timestamp: moodData.timestamp ?? Date.now(),
+            tags: Array.isArray(moodData.tags) ? moodData.tags : [],
+            emotion: moodData.emotion || undefined,
+          };
+          const validated = runtimeMoodEntrySchema.safeParse(mapped);
+          if (validated.success) {
+            await db.moods.put(validated.data as MoodEntry);
           } else {
-            logger.warn('[Realtime] Invalid mood data received, skipping:', moodData);
+            logger.warn('[Realtime] Invalid mood data received, skipping:', validated.error.issues[0]);
           }
         }
         break;
@@ -998,25 +1004,23 @@ const _handleRealtimeChange = async (table: string, payload: { eventType: string
       case 'focus_sessions':
         if (payload.eventType === 'DELETE') {
           const oldId = payload.old?.id;
-          if (isValidString(oldId)) await db.focusSessions.delete(oldId);
+          if (typeof oldId === 'string' && oldId.length > 0) await db.focusSessions.delete(oldId);
         } else if (payload.new) {
           const focusData = payload.new;
-          // P1-10 Fix: Validate all required fields before inserting
-          if (
-            isValidString(focusData.id) &&
-            isValidString(focusData.date)
-          ) {
-            await db.focusSessions.put({
-              id: focusData.id,
-              duration: isValidNumber(focusData.duration) ? focusData.duration : 0,
-              completedAt: isValidNumber(focusData.completed_at) ? focusData.completed_at : Date.now(),
-              date: focusData.date,
-              label: isValidString(focusData.label) ? focusData.label : undefined,
-              status: isValidFocusStatus(focusData.status) ? focusData.status : 'completed',
-              reflection: isValidNumber(focusData.reflection) ? focusData.reflection : undefined,
-            });
+          const mapped = {
+            id: focusData.id,
+            duration: typeof focusData.duration === 'number' ? focusData.duration : 0,
+            completedAt: typeof focusData.completed_at === 'number' ? focusData.completed_at : Date.now(),
+            date: focusData.date,
+            label: focusData.label || undefined,
+            status: focusData.status || 'completed',
+            reflection: typeof focusData.reflection === 'number' ? focusData.reflection : undefined,
+          };
+          const validated = runtimeFocusSessionSchema.safeParse(mapped);
+          if (validated.success) {
+            await db.focusSessions.put(validated.data as FocusSession);
           } else {
-            logger.warn('[Realtime] Invalid focus session data received, skipping:', focusData);
+            logger.warn('[Realtime] Invalid focus session data received, skipping:', validated.error.issues[0]);
           }
         }
         break;
@@ -1024,23 +1028,20 @@ const _handleRealtimeChange = async (table: string, payload: { eventType: string
       case 'gratitude_entries':
         if (payload.eventType === 'DELETE') {
           const oldId = payload.old?.id;
-          if (isValidString(oldId)) await db.gratitudeEntries.delete(oldId);
+          if (typeof oldId === 'string' && oldId.length > 0) await db.gratitudeEntries.delete(oldId);
         } else if (payload.new) {
           const gratData = payload.new;
-          // P1-10 Fix: Validate all required fields before inserting
-          if (
-            isValidString(gratData.id) &&
-            isValidString(gratData.text) &&
-            isValidString(gratData.date)
-          ) {
-            await db.gratitudeEntries.put({
-              id: gratData.id,
-              text: gratData.text,
-              date: gratData.date,
-              timestamp: isValidNumber(gratData.timestamp) ? gratData.timestamp : Date.now(),
-            });
+          const mapped = {
+            id: gratData.id,
+            text: gratData.text,
+            date: gratData.date,
+            timestamp: typeof gratData.timestamp === 'number' ? gratData.timestamp : Date.now(),
+          };
+          const validated = runtimeGratitudeEntrySchema.safeParse(mapped);
+          if (validated.success) {
+            await db.gratitudeEntries.put(validated.data as GratitudeEntry);
           } else {
-            logger.warn('[Realtime] Invalid gratitude data received, skipping:', gratData);
+            logger.warn('[Realtime] Invalid gratitude data received, skipping:', validated.error.issues[0]);
           }
         }
         break;

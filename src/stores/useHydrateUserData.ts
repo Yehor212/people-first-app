@@ -4,6 +4,15 @@ import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
 import { useUserDataStore, type RegisteredSetters } from './userDataStore';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent } from '@/types';
+import {
+  runtimeMoodEntrySchema,
+  runtimeHabitSchema,
+  runtimeFocusSessionSchema,
+  runtimeGratitudeEntrySchema,
+  reminderSettingsSchema,
+  privacySettingsSchema,
+  scheduleEventSchema,
+} from '@/lib/schemas';
 
 /**
  * Bridge hook: loads all user data from IndexedDB via useIndexedDB hooks,
@@ -40,24 +49,28 @@ export function useHydrateUserData(): void {
     table: db.moods,
     localStorageKey: 'zenflow-moods',
     initialValue: [],
+    itemSchema: runtimeMoodEntrySchema,
   });
 
   const [habits, setHabits, isLoadingHabits] = useIndexedDB<Habit[]>({
     table: db.habits,
     localStorageKey: 'zenflow-habits',
     initialValue: [],
+    itemSchema: runtimeHabitSchema,
   });
 
   const [focusSessions, setFocusSessions, isLoadingFocus] = useIndexedDB<FocusSession[]>({
     table: db.focusSessions,
     localStorageKey: 'zenflow-focus',
     initialValue: [],
+    itemSchema: runtimeFocusSessionSchema,
   });
 
   const [gratitudeEntries, setGratitudeEntries, isLoadingGratitude] = useIndexedDB<GratitudeEntry[]>({
     table: db.gratitudeEntries,
     localStorageKey: 'zenflow-gratitude',
     initialValue: [],
+    itemSchema: runtimeGratitudeEntrySchema,
   });
 
   const [reminders, setReminders, isLoadingReminders] = useIndexedDB<ReminderSettings>({
@@ -65,6 +78,7 @@ export function useHydrateUserData(): void {
     localStorageKey: 'zenflow-reminders',
     initialValue: defaultReminderSettings,
     idField: 'key',
+    objectSchema: reminderSettingsSchema,
   });
 
   const [tutorialComplete, setTutorialComplete, isLoadingTutorial] = useIndexedDB({
@@ -100,6 +114,7 @@ export function useHydrateUserData(): void {
     localStorageKey: 'zenflow-privacy',
     initialValue: { noTracking: false, analytics: false, consentShown: false },
     idField: 'key',
+    objectSchema: privacySettingsSchema,
   });
 
   const [scheduleEvents, setScheduleEvents, isLoadingSchedule] = useIndexedDB<ScheduleEvent[]>({
@@ -107,6 +122,7 @@ export function useHydrateUserData(): void {
     localStorageKey: 'zenflow-schedule-events',
     initialValue: [],
     idField: 'key',
+    itemSchema: scheduleEventSchema,
   });
 
   // ── Register IndexedDB setters (once, via stable refs) ──
