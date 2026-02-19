@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { isNative } from '@/lib/platform';
 import { canStartAuthFlow, startAuthFlow, endAuthFlow } from '@/lib/authGuard';
-import { authenticateWithGoogleNative } from '@/lib/nativeGoogleAuth';
 import { logger } from '@/lib/logger';
 import { PHONE_REGEX } from './types';
 import type { useAuthSession } from './useAuthSession';
@@ -50,9 +49,13 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
         redirectTo: string;
         scopes?: string;
         queryParams?: Record<string, string>;
+        skipBrowserRedirect?: boolean;
       } = {
         redirectTo: redirectUrl,
       };
+      if (isNative) {
+        options.skipBrowserRedirect = true;
+      }
 
       if (provider === 'google') {
         options.queryParams = { prompt: 'select_account' };
@@ -91,6 +94,17 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
       if (data?.url) {
         logger.log(`[Auth] ${provider} OAuth URL generated:`, data.url);
         session.setDebugInfo(`OAuth URL generated successfully`);
+        if (isNative) {
+          window.location.assign(data.url);
+          logger.log(`[Auth] ${provider} OAuth URL navigation started`);
+        }
+      } else if (isNative) {
+        logger.error(`[Auth] ${provider} OAuth URL missing on native platform`);
+        session.setError(t.authUnexpectedError || `Failed to sign in with ${provider}.`);
+        session.setDebugInfo('OAuth URL was not returned by Supabase');
+        if (session.oauthTimeoutRef.current) clearTimeout(session.oauthTimeoutRef.current);
+        endAuthFlow();
+        session.setLoadingProvider(null);
       }
     } catch (err) {
       logger.error(`[Auth] Unexpected error during ${provider} sign-in:`, err);
@@ -102,55 +116,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
     }
   };
 
-  // Native Google Sign-In for Android (no browser redirect)
-  const handleNativeGoogleSignIn = async () => {
-    if (!supabase) {
-      session.setError(t.authSupabaseNotConfigured);
-      return;
-    }
-
-    if (!canStartAuthFlow()) {
-      session.setError(t.authTooManyAttempts);
-      return;
-    }
-
-    startAuthFlow();
-    session.setLoadingProvider('google');
-    session.setError(null);
-    session.setDebugInfo(null);
-
-    try {
-      const result = await authenticateWithGoogleNative();
-
-      if (result.success && result.user) {
-        endAuthFlow();
-        session.tryComplete(result.user, 'nativeGoogleSignIn');
-      } else if (result.error === 'cancelled') {
-        endAuthFlow();
-        session.setLoadingProvider(null);
-      } else {
-        logger.error('[Auth] Native sign-in failed:', result.error);
-        endAuthFlow();
-        session.setLoadingProvider(null);
-        session.setError(t.authGoogleSignInFailed || 'Google Sign-In failed. Please try again.');
-        session.setDebugInfo(result.error || null);
-      }
-    } catch (err) {
-      logger.error('[Auth] Native Google sign-in error:', err);
-      endAuthFlow();
-      session.setLoadingProvider(null);
-      session.setError(t.authGoogleSignInFailed || 'Google Sign-In failed. Please try again.');
-      session.setDebugInfo(err instanceof Error ? err.message : null);
-    }
-  };
-
-  const handleGoogleSignIn = () => {
-    if (isNative) {
-      void handleNativeGoogleSignIn();
-    } else {
-      void handleOAuthSignIn('google');
-    }
-  };
+  const handleGoogleSignIn = () => void handleOAuthSignIn('google');
   const handleAppleSignIn = () => void handleOAuthSignIn('apple');
   const handleFacebookSignIn = () => void handleOAuthSignIn('facebook');
 

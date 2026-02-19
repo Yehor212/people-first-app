@@ -3,7 +3,7 @@
  * On web, we redirect to the Play Store page instead.
  */
 
-import type { ReviewPlugin } from './ReviewPlugin';
+import type { ReviewPlugin } from './reviewTypes';
 import { logger } from '@/lib/logger';
 
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.zenflow.app';

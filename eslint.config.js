@@ -58,6 +58,20 @@ export default tseslint.config(
       }],
     },
   },
+  // Enforce feature module public API boundaries outside feature folders
+  {
+    files: ["src/components/**/*.{ts,tsx}", "src/hooks/**/*.{ts,tsx}", "src/pages/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["error", {
+        patterns: [
+          {
+            group: ["@/features/*/*"],
+            message: "Import from feature barrels only (e.g. '@/features/journal').",
+          },
+        ],
+      }],
+    },
+  },
   // Allow direct localStorage in wrapper implementations, diagnostics, and tests
   {
     files: [
@@ -67,6 +81,8 @@ export default tseslint.config(
       "src/components/StorageErrorBanner.tsx",
       "src/components/ErrorBoundary.tsx",
       "**/__tests__/**",
+      "test/**",
+      "e2e/**",
     ],
     rules: {
       "no-restricted-globals": "off",

@@ -181,24 +181,6 @@ export function UserProgressBar({
           )}
         </div>
       </div>
-
-      {/* Add keyframe animations to global styles if not present */}
-      <style>{`
-        @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-        }
-        @keyframes shimmer {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        .animate-gradient {
-          animation: gradient 3s ease infinite;
-        }
-        .animate-shimmer {
-          animation: shimmer 2s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }

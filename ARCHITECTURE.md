@@ -1,4 +1,4 @@
-# ZenFlow Architecture & Coding Standards
+﻿# ZenFlow Architecture & Coding Standards
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
@@ -563,7 +563,7 @@ On PR to main:
 | TD-05 | ~~CRITICAL~~ → DONE | ~~Web Locks API bypass in auth (causes AbortError on reload)~~ | **Fixed 2026-02-16**: Replaced no-op lock bypass with `resilientNavigatorLock` — tries `navigator.locks` first (cross-tab coordination), catches `AbortError` during OAuth redirect, falls back to in-memory serialization. Uses existing `isAbortError()` from validation.ts. | src/lib/supabaseClient.ts |
 | TD-07 | ~~HIGH~~ → DONE | ~~Direct `localStorage` calls~~ | **Fixed 2026-02-16**: Central `SK` registry (src/lib/storageKeys.ts) + safeJson accessors + ESLint `no-restricted-globals` rule. 199 raw calls → 0 across 50+ files. | src/lib/storageKeys.ts |
 | TD-08 | ~~HIGH~~ → DONE | ~~translations.ts monolith (all languages in one file)~~ | **Fixed 2026-02-16**: Split 19,879-line monolith into per-language files. `types.ts` (2,280L), 8 language files in `languages/` (~2,200L each), `index.ts` (37L assembler), `translations.ts` (3L re-export). Zero import changes needed. | src/i18n/ |
-| TD-09 | ~~HIGH~~ → MEDIUM | Low test coverage | **Phase 5 done 2026-02-17**: 1731 → **2089 tests** (+358). Added 12 new files: moodInsights (30), progressStories (33), weeklyInsights (30), seasonalEvents (35), randomQuests (40), adhdHooks (70), smartReminders (23), emotionConstants (37), breathingPatterns (17), mindfulPrompts (15), journalPrompts (15), motivationalMessages (13). **76 test files total**. Remaining: ~66 untested modules (mostly Supabase/Capacitor-dependent). | src/**/__tests__/ |
+| TD-09 | ~~HIGH~~ → MEDIUM | Low test coverage | **Phase 6 done 2026-02-19**: 2089 → **2313 tests** (+224). Phase 6 added 23 files: weatherMoodConfig (27), treatConstants (15), habitTemplates (11), demoData (14), adConfig (18), journalTemplates (8), journalStorage, journalExport, journalImport (12), migrations (9), supabaseSharedHelpers (6), useThrottledCallback (6), useScrollLock (6), useBackHandler (5), useDateTracking (5), useEmotionSync (3), useDemoMode (6), useReminderMigration (5), useAppUpdateCheck (5), useWeeklyReportTrigger (6), useMoodHandlers (5), useFocusHandlers (5), useGratitudeHandlers (5). **99 test files total**. Remaining: ~57 untested modules (Supabase/Capacitor-dependent). | src/**/__tests__/ |
 | TD-11 | ~~HIGH~~ → DONE | ~~CI pipeline missing lint + typecheck~~ | **Fixed 2026-02-16**: Added `eslint --quiet` + `tsc --noEmit` steps to deploy.yml. Still missing: `playwright`, `npm audit`. | .github/workflows/deploy.yml |
 | TD-15 | ~~MEDIUM~~ → DONE | useInnerWorld.ts monolith | ~~780+ lines~~ → **336 lines** (extracted innerWorldHelpers.ts + useRestMode.ts) | src/hooks/useInnerWorld.ts |
 | TD-16 | LOW | Prop drilling in HomeTab (~30 props) | Handlers + inner world values passed as props | src/components/tabs/HomeTab.tsx |
@@ -692,3 +692,69 @@ On PR to main:
 6. `grep -rn '\.catch.*=> {}' src/ | wc -l` — track decrease from 34
 7. `find src -name "*.tsx" -exec wc -l {} + | sort -rn | head -20` — god component progress
 8. `grep -rl 'memo(' src/ --include="*.tsx" | wc -l` — memo adoption
+
+---
+
+### Audit Addendum (Codex 5.3)
+
+- Date: 2026-02-18
+- Author: Codex 5.3
+- Scope: End-to-end repository remediation (Android-first)
+- Audit result:
+  - CRITICAL: CSP mismatch, lint gate scope mismatch, failing test baseline - FIXED
+  - HIGH: Android DND policy risk, Edge Function auth/logging inconsistency, plugin cycle risk - FIXED
+  - PASS (with evidence): Android debug build, Android unit tests, TypeScript check, lint, full tests, production build, i18n key consistency, secret tracking hygiene
+- Today (2026-02-18): Codex 5.3 completed Android-first remediation, re-ran all quality gates, and attached evidence artifacts/checklists.
+
+Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.
+2026-02-18 | Codex 5.3 | E2E remediation completed (Android-first). Evidence bundle: artifacts/audit/* + Android/CI/test/build logs.
+
+---
+
+### Constitution Update (Codex 5.3)
+
+- Date: 2026-02-18
+- Scope: Constitution-level alignment after Android-first E2E remediation
+- Status: Effective immediately for all future PRs and releases
+
+#### What Was Completed
+
+- Android policy hardening:
+  - DND write path moved to read-only behavior.
+  - `android.permission.ACCESS_NOTIFICATION_POLICY` removed.
+  - `android:dataExtractionRules` configured with `android/app/src/main/res/xml/data_extraction_rules.xml`.
+- Security hardening in Supabase functions:
+  - Shared helpers standardized in `supabase/functions/_shared/auth.ts`, `supabase/functions/_shared/redaction.ts`, `supabase/functions/_shared/http.ts`.
+  - Unauthorized/public error responses normalized to safe payloads.
+  - Weekly digest schema access aligned to `habit_completions` and `moods`.
+- Quality baseline hardening:
+  - ESLint warnings reduced from 52 to 0 (`eslint-before.json` -> `eslint-after.json`).
+  - TypeScript, tests, web build, Android build/tests/lint, and release bundle verified.
+- CI hardening:
+  - `.github/workflows/deploy.yml` now enforces strict lint (`--max-warnings=0`) and mandatory Android gate before deploy.
+
+#### Mandatory Release Gates (Android-first)
+
+1. `npm run lint` and `npx eslint . --max-warnings=0`
+2. `npm run typecheck`
+3. `npm test`
+4. `npm run build`
+5. `npm run build:android`
+6. `cd android; .\gradlew.bat assembleDebug --console=plain`
+7. `cd android; .\gradlew.bat testDebugUnitTest --console=plain`
+8. `cd android; .\gradlew.bat lintDebug --console=plain`
+9. `cd android; .\gradlew.bat bundleRelease --console=plain`
+
+#### Team and User Impact
+
+- For the team:
+  - Release confidence increased via strict, repeatable, evidence-backed gates.
+  - CI now blocks regressions on Android and lint quality debt.
+- For users:
+  - Safer Android behavior (no app-driven system DND mutation).
+  - Lower risk of sensitive data leakage in backend error surfaces.
+  - Better release stability due to stronger test/build enforcement.
+
+#### Enforcement Rule
+
+Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.

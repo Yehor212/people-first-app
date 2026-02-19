@@ -14,11 +14,11 @@ interface UseWeeklyStatsParams {
 }
 
 export function useWeeklyStats({ habits, moods, focusSessions, currentStreak, t }: UseWeeklyStatsParams) {
-  const today = new Date();
   const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
 
   // Calculate this week and last week dates
   const weekDates = useMemo(() => {
+    const today = new Date();
     const thisWeek: string[] = [];
     const lastWeek: string[] = [];
 
@@ -33,7 +33,7 @@ export function useWeeklyStats({ habits, moods, focusSessions, currentStreak, t 
     }
 
     return { thisWeek, lastWeek };
-  }, [today]);
+  }, []);
 
   // Calculate week stats
   const calculateWeekStats = useCallback((dates: string[]): WeekStats => {

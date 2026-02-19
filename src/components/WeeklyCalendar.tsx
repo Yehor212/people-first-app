@@ -18,9 +18,7 @@ const moodColors: Record<string, string> = {
 
 export const WeeklyCalendar = memo(function WeeklyCalendar({ moods, habits }: WeeklyCalendarProps) {
   const { t } = useLanguage();
-  
-  const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
-  
+
   // Use Map for O(1) mood lookups instead of O(n) find()
   const moodsByDate = useMemo(() =>
     new Map(moods.map(m => [m.date, m])),
@@ -40,6 +38,7 @@ export const WeeklyCalendar = memo(function WeeklyCalendar({ moods, habits }: We
   const weekDays = useMemo(() => {
     const today = new Date();
     const todayStr = getToday();
+    const dayNames = [t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat];
     const days = [];
 
     for (let i = 6; i >= 0; i--) {
@@ -62,7 +61,7 @@ export const WeeklyCalendar = memo(function WeeklyCalendar({ moods, habits }: We
     }
 
     return days;
-  }, [moodsByDate, habitCompletionsByDate, dayNames]);
+  }, [moodsByDate, habitCompletionsByDate, t.sun, t.mon, t.tue, t.wed, t.thu, t.fri, t.sat]);
 
   return (
     <div className="bg-card rounded-2xl p-3 sm:p-6 zen-shadow-card animate-fade-in">

@@ -20,7 +20,7 @@ export function AboutSection() {
   const [updateCheckStatus, setUpdateCheckStatus] = useState<'idle' | 'checking' | 'available' | 'latest' | 'error'>('idle');
   const [updateState, setUpdateState] = useState<UpdateState | null>(null);
 
-  const { isDemoMode, toggleDemoMode } = useDemoMode();
+  const { toggleDemoMode } = useDemoMode();
   const versionTapCount = useRef(0);
   const versionTapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 

@@ -4,26 +4,19 @@ import {
   getEmotionColor,
   getEmotionColorWithAlpha,
   getEmotionBgClass,
-  SECONDARY_EMOTIONS,
   getSecondaryEmotion,
   emotionToMoodType,
-  MOOD_TO_EMOTION_MAP,
-  EMOTION_WHEEL_POSITIONS,
   EMOTION_ORDER,
   EMOTION_EMOJIS,
-  INTENSITY_EMOJIS,
-  EMOTION_TRANSLATIONS,
   getEmotionTranslations,
   QUICK_EMOTIONS,
-  EMOTION_XP,
-  EMOTION_GRADIENTS,
   EMOTION_HEX_COLORS,
   EMOTION_SCORES,
   getEmotionScore,
   getEmotionLabels,
   getEmotionGuide,
 } from '../emotionConstants';
-import type { PrimaryEmotion, EmotionIntensity, MoodType } from '@/types';
+import type { PrimaryEmotion, EmotionIntensity } from '@/types';
 
 const ALL_EMOTIONS: PrimaryEmotion[] = [
   'joy', 'trust', 'fear', 'surprise', 'sadness', 'disgust', 'anger', 'anticipation',

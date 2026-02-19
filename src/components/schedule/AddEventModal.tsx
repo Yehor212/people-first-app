@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { parseLocalDate, getToday, formatDate } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
 import { ParticleBackground } from '@/components/stats';
-import { EVENT_PRESETS, EVENT_COLORS, getEventColor, getEventGradient, HOURS } from './constants';
+import { EVENT_PRESETS, getEventColor, getEventGradient, HOURS } from './constants';
 
 // Premium Add Event Modal
 export function AddEventModal({

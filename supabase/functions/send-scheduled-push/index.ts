@@ -1,6 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 import webpush from "npm:web-push@3.6.7";
+import { isAuthorizedRequest, secureCompare } from "../_shared/auth.ts";
+import { createJsonResponse, createNoContentResponse } from "../_shared/http.ts";
+import { redactError, redactUserRef } from "../_shared/redaction.ts";
 
 type ReminderType = "mood" | "habit" | "focus";
 
@@ -12,36 +15,6 @@ const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT");
 const FCM_PROJECT_ID = Deno.env.get("FCM_PROJECT_ID");
 const FCM_SERVICE_ACCOUNT_B64 = Deno.env.get("FCM_SERVICE_ACCOUNT_B64");
 const CRON_SECRET = Deno.env.get("CRON_SECRET"); // Secret for cron job authentication
-
-// P0 Fix: Constant-time comparison to prevent timing attacks
-function secureCompare(a: string | null | undefined, b: string | null | undefined): boolean {
-  if (!a || !b) return false;
-  if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return result === 0;
-}
-
-// Allowed origins for CORS (production only - no http://localhost)
-const ALLOWED_ORIGINS = [
-  "https://yehor212.github.io",
-  "capacitor://localhost", // Required for mobile app
-];
-
-const getCorsHeaders = (origin: string | null) => {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
-    "X-XSS-Protection": "1; mode=block",
-    "Referrer-Policy": "strict-origin-when-cross-origin"
-  };
-};
 
 const toMinutes = (time: string) => {
   const [hours, minutes] = time.split(":").map(Number);
@@ -186,20 +159,13 @@ const sendFcmNotifications = async (
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin");
-  const corsHeaders = getCorsHeaders(origin);
-
-  const jsonResponse = (payload: unknown, status = 200) =>
-    new Response(JSON.stringify(payload), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
 
   try {
     if (req.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: corsHeaders });
+      return createNoContentResponse(origin);
     }
     if (req.method !== "POST") {
-      return jsonResponse({ error: "Method not allowed" }, 405);
+      return createJsonResponse(origin, 405, { error: "Method not allowed" });
     }
 
     // ============================================
@@ -211,7 +177,7 @@ Deno.serve(async (req) => {
     // P1 Diagnostics: Log request details (NO secrets!)
     console.log("[ScheduledPush] Request received", {
       hasAuthHeader: !!authHeader,
-      authHeaderPrefix: authHeader ? authHeader.substring(0, 10) + "..." : null,
+      hasBearerPrefix: authHeader?.startsWith("Bearer ") ?? false,
       hasCronSecret: !!cronSecretHeader,
       hasCronSecretEnv: !!CRON_SECRET,
       userAgent: req.headers.get("User-Agent"),
@@ -220,16 +186,19 @@ Deno.serve(async (req) => {
     });
 
     // P0 Fix: Use secure comparison to prevent timing attacks
-    const isAuthorized =
-      (CRON_SECRET && secureCompare(cronSecretHeader, CRON_SECRET)) ||
-      secureCompare(authHeader, `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`);
+    const isAuthorized = isAuthorizedRequest({
+      authHeader,
+      cronSecretHeader,
+      serviceRoleKey: SUPABASE_SERVICE_ROLE_KEY,
+      cronSecret: CRON_SECRET,
+    });
 
     if (!isAuthorized) {
       console.warn("[ScheduledPush] Unauthorized request - details:", {
         cronSecretMatch: CRON_SECRET ? secureCompare(cronSecretHeader, CRON_SECRET) : "no_env",
         authHeaderMatch: authHeader?.startsWith("Bearer ") ? "has_bearer" : "no_bearer",
       });
-      return jsonResponse({ error: "Unauthorized" }, 401);
+      return createJsonResponse(origin, 401, { error: "Unauthorized" });
     }
 
     console.log("[ScheduledPush] Authorized successfully");
@@ -242,7 +211,7 @@ Deno.serve(async (req) => {
       .eq("enabled", true);
 
     if (error) {
-      return jsonResponse({ error: "Failed to load settings" }, 500);
+      return createJsonResponse(origin, 500, { error: "Failed to load settings" });
     }
 
   const fcmAccessToken = await getFcmAccessToken();
@@ -285,7 +254,7 @@ Deno.serve(async (req) => {
         continue; // Skip - already sent
       }
       if (logError) {
-        console.error(`[ScheduledPush] Failed to log push for ${item.user_id}:`, logError);
+        console.error(`[ScheduledPush] Failed to log push for ${redactUserRef(item.user_id)}:`, logError);
         continue;
       }
 
@@ -330,8 +299,12 @@ Deno.serve(async (req) => {
     }
   }
 
-    return jsonResponse({ ok: true });
+    return createJsonResponse(origin, 200, { ok: true });
   } catch (err) {
-    return jsonResponse({ error: String(err) }, 500);
+    console.error("[ScheduledPush] Error", err);
+    return createJsonResponse(origin, 500, {
+      error: "Internal error",
+      requestId: redactError(err),
+    });
   }
 });

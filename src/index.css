@@ -2794,6 +2794,105 @@ body.mood-bad .mood-particle {
   animation: breathing-circle 4s ease-in-out infinite;
 }
 
+/* Hyperfocus breathing animation */
+@keyframes breathing {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.6;
+  }
+}
+
+.breathing-circle {
+  width: 150px;
+  height: 150px;
+  animation: breathing 8s ease-in-out infinite;
+}
+
+@media (min-width: 360px) {
+  .breathing-circle {
+    width: 200px;
+    height: 200px;
+  }
+}
+
+/* Welcome tutorial slide animations */
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.1); }
+  35% { transform: scale(0.95); }
+  45% { transform: scale(1.05); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes zap {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  25% { transform: scale(1.2) rotate(-5deg); opacity: 0.8; }
+  50% { transform: scale(0.9) rotate(5deg); opacity: 1; }
+  75% { transform: scale(1.1) rotate(-3deg); opacity: 0.9; }
+}
+
+@keyframes color-shift {
+  0%, 100% {
+    filter: hue-rotate(0deg);
+    transform: scale(1);
+  }
+  25% {
+    filter: hue-rotate(60deg);
+    transform: scale(1.05);
+  }
+  50% {
+    filter: hue-rotate(120deg);
+    transform: scale(1);
+  }
+  75% {
+    filter: hue-rotate(180deg);
+    transform: scale(1.05);
+  }
+}
+
+.animate-heartbeat {
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
+
+.animate-zap {
+  animation: zap 2s ease-in-out infinite;
+}
+
+.animate-color-shift {
+  animation: color-shift 4s ease-in-out infinite;
+}
+
+/* UserProgressBar animations */
+@keyframes gradient {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-gradient {
+  animation: gradient 3s ease infinite;
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out infinite;
+}
+
 /* ============================================
    ADHD DAY CLOCK ANIMATIONS
    ============================================ */

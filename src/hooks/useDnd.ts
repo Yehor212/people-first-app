@@ -71,30 +71,17 @@ export async function getDndStatus(): Promise<DndStatusResult> {
  * Requires notification policy access
  */
 export async function setDndEnabled(enabled: boolean): Promise<boolean> {
-  if (!isNative) return false;
-
-  try {
-    const result = await DndPlugin.setDnd({ enabled });
-    return result.success;
-  } catch (error) {
-    logger.error('[DND] Failed to set DND:', error);
-    return false;
-  }
+  void enabled;
+  logger.warn('[DND] Read-only mode: setDnd is disabled');
+  return false;
 }
 
 /**
  * Open system settings to grant DND policy access
  */
 export async function requestDndPolicyAccess(): Promise<boolean> {
-  if (!isNative) return false;
-
-  try {
-    await DndPlugin.requestPolicyAccess();
-    return true;
-  } catch (error) {
-    logger.error('[DND] Failed to open policy settings:', error);
-    return false;
-  }
+  logger.warn('[DND] Read-only mode: policy access request is disabled');
+  return false;
 }
 
 /**
@@ -141,7 +128,7 @@ export function useDnd(): UseDndReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [isNative]);
+  }, []);
 
   // Initial check on mount
   useEffect(() => {
@@ -166,7 +153,7 @@ export function useDnd(): UseDndReturn {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isNative, refresh]);
+  }, [refresh]);
 
   return {
     isDndActive,

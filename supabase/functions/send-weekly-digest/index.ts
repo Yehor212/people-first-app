@@ -15,30 +15,14 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
+import { isAuthorizedRequest } from "../_shared/auth.ts";
+import { createJsonResponse, createNoContentResponse } from "../_shared/http.ts";
+import { redactEmail, redactUserRef, redactError } from "../_shared/redaction.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const CRON_SECRET = Deno.env.get("CRON_SECRET"); // Secret for cron job authentication
-
-// Allowed origins for CORS (production only - no http://localhost)
-const ALLOWED_ORIGINS = [
-  "https://yehor212.github.io",
-  "capacitor://localhost", // Required for mobile app
-];
-
-const getCorsHeaders = (origin: string | null) => {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
-    "X-XSS-Protection": "1; mode=block",
-    "Referrer-Policy": "strict-origin-when-cross-origin"
-  };
-};
 
 // ============================================
 // TYPES
@@ -99,64 +83,102 @@ async function getSubscribedUsers(supabase: ReturnType<typeof createClient>): Pr
 async function getUserWeeklyStats(
   supabase: ReturnType<typeof createClient>,
   userId: string
-): Promise<UserDigestData['weeklyStats']> {
+): Promise<{ weeklyStats: UserDigestData['weeklyStats']; topHabits: string[] }> {
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
   const weekAgoStr = oneWeekAgo.toISOString();
+  const weekAgoDate = weekAgoStr.slice(0, 10);
 
-  // Get habits completed this week
-  const { data: habits } = await supabase
+  // Load active habits
+  const { data: habits, error: habitsError } = await supabase
     .from('habits')
-    .select('id, name, completion_dates')
-    .eq('user_id', userId);
+    .select('id, name')
+    .eq('user_id', userId)
+    .eq('is_archived', false);
+
+  if (habitsError) {
+    throw new Error('Failed to load habits');
+  }
 
   let habitsCompleted = 0;
+  const completionByHabitId = new Map<string, number>();
   const topHabits: string[] = [];
+  const habitIds = (habits || []).map((habit: { id: string }) => habit.id);
 
-  if (habits) {
-    habits.forEach((habit: { completion_dates?: string[]; name: string }) => {
-      const completions = (habit.completion_dates || [])
-        .filter((d: string) => new Date(d) >= oneWeekAgo);
-      if (completions.length > 0) {
-        habitsCompleted += completions.length;
-        if (completions.length >= 5) {
-          topHabits.push(habit.name);
-        }
-      }
-    });
+  if (habitIds.length > 0) {
+    const { data: completions, error: completionsError } = await supabase
+      .from('habit_completions')
+      .select('habit_id, count, date')
+      .eq('user_id', userId)
+      .gte('date', weekAgoDate);
+
+    if (completionsError) {
+      throw new Error('Failed to load habit completions');
+    }
+
+    for (const completion of completions || []) {
+      const count = Math.max(1, completion.count || 1);
+      habitsCompleted += count;
+      completionByHabitId.set(
+        completion.habit_id,
+        (completionByHabitId.get(completion.habit_id) || 0) + count,
+      );
+    }
+  }
+
+  for (const habit of habits || []) {
+    const total = completionByHabitId.get(habit.id) || 0;
+    if (total >= 5) {
+      topHabits.push(habit.name);
+    }
   }
 
   // Get focus sessions this week
-  const { data: focusSessions } = await supabase
+  const { data: focusSessions, error: focusError } = await supabase
     .from('focus_sessions')
     .select('duration')
     .eq('user_id', userId)
     .gte('created_at', weekAgoStr);
 
+  if (focusError) {
+    throw new Error('Failed to load focus sessions');
+  }
+
   const focusMinutes = (focusSessions || [])
     .reduce((sum: number, s: { duration: number }) => sum + (s.duration || 0), 0);
 
   // Get moods logged this week
-  const { data: moods } = await supabase
-    .from('mood_entries')
+  const { data: moods, error: moodsError } = await supabase
+    .from('moods')
     .select('id')
     .eq('user_id', userId)
-    .gte('created_at', weekAgoStr);
+    .gte('date', weekAgoDate);
+
+  if (moodsError) {
+    throw new Error('Failed to load moods');
+  }
 
   // Get leaderboard data
-  const { data: leaderboard } = await supabase
+  const { data: leaderboard, error: leaderboardError } = await supabase
     .from('leaderboards')
     .select('weekly_xp, current_streak')
     .eq('user_id', userId)
     .single();
 
+  if (leaderboardError) {
+    throw new Error('Failed to load leaderboard');
+  }
+
   return {
-    habitsCompleted,
-    habitsTotal: (habits || []).length * 7,
-    focusMinutes,
-    moodsLogged: (moods || []).length,
-    currentStreak: leaderboard?.current_streak || 0,
-    xpEarned: leaderboard?.weekly_xp || 0
+    weeklyStats: {
+      habitsCompleted,
+      habitsTotal: (habits || []).length * 7,
+      focusMinutes,
+      moodsLogged: (moods || []).length,
+      currentStreak: leaderboard?.current_streak || 0,
+      xpEarned: leaderboard?.weekly_xp || 0,
+    },
+    topHabits,
   };
 }
 
@@ -305,21 +327,14 @@ function escapeHtml(text: string): string {
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin");
-  const corsHeaders = getCorsHeaders(origin);
-
-  const jsonResponse = (status: number, payload: Record<string, unknown>) =>
-    new Response(JSON.stringify(payload), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return createNoContentResponse(origin);
   }
 
   if (req.method !== "POST") {
-    return jsonResponse(405, { error: "Method not allowed" });
+    return createJsonResponse(origin, 405, { error: "Method not allowed" });
   }
 
   // ============================================
@@ -329,19 +344,22 @@ Deno.serve(async (req) => {
   const cronSecretHeader = req.headers.get("X-Cron-Secret");
 
   // Allow if: valid cron secret OR service role key
-  const isAuthorized =
-    (CRON_SECRET && cronSecretHeader === CRON_SECRET) ||
-    (authHeader === `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`);
+  const isAuthorized = isAuthorizedRequest({
+    authHeader,
+    cronSecretHeader,
+    serviceRoleKey: SUPABASE_SERVICE_ROLE_KEY,
+    cronSecret: CRON_SECRET,
+  });
 
   if (!isAuthorized) {
     console.warn("[WeeklyDigest] Unauthorized request attempt");
-    return jsonResponse(401, { error: "Unauthorized" });
+    return createJsonResponse(origin, 401, { error: "Unauthorized" });
   }
 
   // Check configuration
   if (!RESEND_API_KEY) {
     console.error("[WeeklyDigest] RESEND_API_KEY not configured");
-    return jsonResponse(500, { error: "Email service not configured" });
+    return createJsonResponse(origin, 500, { error: "Email service not configured" });
   }
 
   try {
@@ -354,7 +372,7 @@ Deno.serve(async (req) => {
     console.log(`[WeeklyDigest] Found ${users.length} subscribed users`);
 
     if (users.length === 0) {
-      return jsonResponse(200, { success: true, sent: 0, message: "No subscribed users" });
+      return createJsonResponse(origin, 200, { success: true, sent: 0, message: "No subscribed users" });
     }
 
     let sentCount = 0;
@@ -364,8 +382,7 @@ Deno.serve(async (req) => {
     for (const user of users.slice(0, 4)) {
       try {
         // Get user stats
-        const weeklyStats = await getUserWeeklyStats(supabase, user.id);
-        const topHabits: string[] = []; // Simplified - could be enhanced
+        const { weeklyStats, topHabits } = await getUserWeeklyStats(supabase, user.id);
 
         const digestData: UserDigestData = {
           userId: user.id,
@@ -396,23 +413,25 @@ Deno.serve(async (req) => {
 
         if (resendResponse.ok) {
           sentCount++;
-          console.log(`[WeeklyDigest] Sent to ${user.email}`);
+          console.log(`[WeeklyDigest] Sent to ${redactUserRef(user.id)} (${redactEmail(user.email)})`);
         } else {
           const errorText = await resendResponse.text();
-          errors.push(`${user.email}: ${errorText}`);
-          console.error(`[WeeklyDigest] Failed for ${user.email}:`, errorText);
+          const userRef = redactUserRef(user.id);
+          errors.push(`${userRef}: send_failed`);
+          console.error(`[WeeklyDigest] Failed for ${userRef}:`, errorText);
         }
 
         // Rate limiting - wait 1 second between emails
         await new Promise(resolve => setTimeout(resolve, 1000));
 
       } catch (userError) {
-        errors.push(`${user.email}: ${userError}`);
-        console.error(`[WeeklyDigest] Error for ${user.email}:`, userError);
+        const userRef = redactUserRef(user.id);
+        errors.push(`${userRef}: processing_failed`);
+        console.error(`[WeeklyDigest] Error for ${userRef}:`, userError);
       }
     }
 
-    return jsonResponse(200, {
+    return createJsonResponse(origin, 200, {
       success: true,
       sent: sentCount,
       total: users.length,
@@ -421,9 +440,9 @@ Deno.serve(async (req) => {
 
   } catch (error) {
     console.error("[WeeklyDigest] Error:", error);
-    return jsonResponse(500, {
+    return createJsonResponse(origin, 500, {
       error: "Internal error",
-      details: error instanceof Error ? error.message : "Unknown error"
+      requestId: redactError(error),
     });
   }
 });

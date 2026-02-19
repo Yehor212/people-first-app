@@ -145,22 +145,21 @@ describe('handleAuthCallback', () => {
 
   // ── PKCE code exchange ──
 
-  it('calls exchangeCodeForSession with valid code', async () => {
+  it('calls exchangeCodeForSession with normalized code', async () => {
     const mockSupabase = createMockSupabase();
-    await handleAuthCallback(mockSupabase, 'https://example.com?code=validCode123');
+    await handleAuthCallback(mockSupabase, 'https://example.com?code=%20validCode123%20');
     expect(mockSupabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('validCode123');
   });
 
-  it('throws on invalid code format (special characters)', async () => {
+  it('accepts code with special characters and forwards it', async () => {
     const mockSupabase = createMockSupabase();
-    await expect(
-      handleAuthCallback(mockSupabase, 'https://example.com?code=invalid<code>')
-    ).rejects.toThrow('Invalid authorization code');
+    await handleAuthCallback(mockSupabase, 'https://example.com?code=invalid%3Ccode%3E');
+    expect(mockSupabase.auth.exchangeCodeForSession).toHaveBeenCalledWith('invalid<code>');
   });
 
-  it('throws on code exceeding 256 characters', async () => {
+  it('throws on code exceeding 2048 characters', async () => {
     const mockSupabase = createMockSupabase();
-    const longCode = 'a'.repeat(257);
+    const longCode = 'a'.repeat(2049);
     await expect(
       handleAuthCallback(mockSupabase, `https://example.com?code=${longCode}`)
     ).rejects.toThrow('Invalid authorization code');

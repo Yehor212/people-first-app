@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { isNative } from '@/lib/platform';
-import { authenticateWithGoogleNative } from '@/lib/nativeGoogleAuth';
 import { removePushToken } from '@/lib/pushNotifications';
 import { offlineQueue } from '@/lib/offlineQueue';
 import { stopAutoSync } from '@/storage/cloudSync';
@@ -49,31 +48,27 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
     }
     setIsSigningIn(true);
     try {
-      if (isNative) {
-        logger.log('[AccountSection] Starting native Google sign-in...');
-        const result = await authenticateWithGoogleNative();
-        if (result.success) {
-          logger.log('[AccountSection] Native sign-in successful');
-        } else if (result.error === 'cancelled') {
-          logger.log('[AccountSection] User cancelled sign-in');
-        } else {
-          logger.error('[AccountSection] Native sign-in failed:', result.error);
+      const redirectUrl = getAuthRedirectUrl();
+      logger.log('[AccountSection] Starting Google sign-in with redirect:', redirectUrl);
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl,
+          skipBrowserRedirect: isNative,
+          queryParams: { prompt: 'select_account' },
+        },
+      });
+      if (error) {
+        logger.error('[AccountSection] Google sign-in error:', error);
+        setAuthStatus(t.authError);
+      } else if (isNative) {
+        if (!data?.url) {
+          logger.error('[AccountSection] Google sign-in returned no OAuth URL on native');
           setAuthStatus(t.authGoogleSignInFailed || 'Google Sign-In failed.');
+          return;
         }
-      } else {
-        const redirectUrl = getAuthRedirectUrl();
-        logger.log('[AccountSection] Starting Google sign-in with redirect:', redirectUrl);
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'google',
-          options: {
-            redirectTo: redirectUrl,
-            queryParams: { prompt: 'select_account' },
-          },
-        });
-        if (error) {
-          logger.error('[AccountSection] Google sign-in error:', error);
-          setAuthStatus(t.authError);
-        }
+        window.location.assign(data.url);
+        logger.log('[AccountSection] Google OAuth URL navigation started');
       }
     } catch (err) {
       logger.error('[AccountSection] Sign-in error:', err);

@@ -92,33 +92,6 @@ export function HyperfocusBackground({ showBreathingAnimation, t }: HyperfocusBa
           </div>
         </div>
       )}
-
-      {/* Breathing Animation CSS */}
-      <style>{`
-        @keyframes breathing {
-          0%, 100% {
-            transform: scale(1);
-            opacity: 0.3;
-          }
-          50% {
-            transform: scale(1.5);
-            opacity: 0.6;
-          }
-        }
-
-        .breathing-circle {
-          width: 150px;
-          height: 150px;
-          animation: breathing 8s ease-in-out infinite;
-        }
-
-        @media (min-width: 360px) {
-          .breathing-circle {
-            width: 200px;
-            height: 200px;
-          }
-        }
-      `}</style>
     </>
   );
 }

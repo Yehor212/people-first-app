@@ -1,6 +1,17 @@
 {
   "extends": "./tsconfig.app.json",
-  "include": ["src", "eslint.config.js", "vite.config.ts", "vite-plugin-version.ts"],
+  "include": [
+    "src",
+    "test/**/*.ts",
+    "e2e/**/*.ts",
+    "eslint.config.js",
+    "vite.config.ts",
+    "vite-plugin-version.ts",
+    "capacitor.config.ts",
+    "playwright.config.ts",
+    "tailwind.config.ts",
+    "vitest.config.ts"
+  ],
   "compilerOptions": {
     "noEmit": true
   }

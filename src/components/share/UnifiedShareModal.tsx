@@ -100,7 +100,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
     const title = getShareTitle(props, tRecord);
     const text = getShareText(props, tRecord, language);
     void share(title, text);
-  }, [mode, share, language, t, props]);
+  }, [props, share, language, tRecord]);
 
   const handleCopy = useCallback(() => {
     void copy();

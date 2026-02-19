@@ -7,7 +7,7 @@ import { shouldShowStreakMessage } from '@/lib/motivationalMessages';
 import { safeParseInt } from '@/lib/validation';
 import { SK } from '@/lib/storageKeys';
 import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
-import { getEntryCount } from '@/features/journal/journalStorage';
+import { getEntryCount } from '@/features/journal';
 import { logger } from '@/lib/logger';
 
 interface StatsOverviewProps {

@@ -19,6 +19,8 @@ vi.mock('@/lib/logger', () => ({
 let mockIsNative = false;
 let mockIsDndActiveResult = { active: false };
 let mockGetDndStatusResult: any = { available: false };
+const mockSetDnd = vi.fn(() => Promise.resolve({ success: true }));
+const mockRequestPolicyAccess = vi.fn(() => Promise.resolve());
 
 // Mock platform
 vi.mock('@/lib/platform', () => ({
@@ -34,6 +36,8 @@ vi.mock('@/plugins/DndPlugin', () => ({
   default: {
     isDndActive: vi.fn(() => Promise.resolve(mockIsDndActiveResult)),
     getDndStatus: vi.fn(() => Promise.resolve(mockGetDndStatusResult)),
+    setDnd: mockSetDnd,
+    requestPolicyAccess: mockRequestPolicyAccess,
   },
 }));
 
@@ -283,5 +287,27 @@ describe('getDndStatus helper', () => {
     const result = await getDndStatus();
 
     expect(result).toEqual({ available: false });
+  });
+});
+
+describe('read-only write helpers', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('setDndEnabled returns false without calling plugin setDnd', async () => {
+    const { setDndEnabled } = await import('../useDnd');
+    const result = await setDndEnabled(true);
+
+    expect(result).toBe(false);
+    expect(mockSetDnd).not.toHaveBeenCalled();
+  });
+
+  it('requestDndPolicyAccess returns false without opening settings', async () => {
+    const { requestDndPolicyAccess } = await import('../useDnd');
+    const result = await requestDndPolicyAccess();
+
+    expect(result).toBe(false);
+    expect(mockRequestPolicyAccess).not.toHaveBeenCalled();
   });
 });

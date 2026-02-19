@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAppStore, useUIStore, useUserDataStore, getModalToggle } from '@/stores';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { logger } from '@/lib/logger';
@@ -7,6 +7,7 @@ import { handleAuthCallback, notifyAuthComplete, setPendingAuthUrl } from '@/lib
 import { isNative } from '@/lib/platform';
 import { supabase } from '@/lib/supabaseClient';
 import { decodeInviteData } from '@/lib/friendChallenge';
+import { endAuthFlow } from '@/lib/authGuard';
 
 const setShowChallengeModal = getModalToggle('showChallengeModal');
 
@@ -20,48 +21,102 @@ const setShowChallengeModal = getModalToggle('showChallengeModal');
 export function useDeepLinkHandler(): void {
   const { isFeatureVisible } = useFeatureFlags();
   const setAuthBypassFlag = useAppStore(s => s.setAuthBypassFlag);
+  const setHasValidSession = useAppStore(s => s.setHasValidSession);
+  const setWebOAuthError = useAppStore(s => s.setWebOAuthError);
   const setUserName = useUserDataStore(s => s.setUserName);
   const setUserNameCustom = useUserDataStore(s => s.setUserNameCustom);
   const setGoogleAuthChecked = useUserDataStore(s => s.setGoogleAuthChecked);
   const setChallengeInvite = useUIStore(s => s.setChallengeInvite);
+  const handledAuthKeysRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isNative) return;
 
     let removeListener = () => {};
 
-    const handleAuthUrl = async (url: string) => {
-      // Check if URL is auth callback
-      if (!url.includes('login-callback')) return;
+    const waitForSession = async (attempts = 20, delayMs = 400) => {
+      if (!supabase) return null;
+      for (let attempt = 0; attempt < attempts; attempt += 1) {
+        const { data } = await supabase.auth.getSession();
+        if (data.session?.user) return data.session;
+        if (attempt < attempts - 1) {
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+      }
+      return null;
+    };
 
-      logger.log('[Index] Auth URL received:', url);
+    const getAuthDedupeKey = (url: string): string => {
+      try {
+        const parsed = new URL(url);
+        const hash = new URLSearchParams(parsed.hash.replace(/^#/, ''));
+        const code = parsed.searchParams.get('code') || hash.get('code') || '';
+        const state = parsed.searchParams.get('state') || hash.get('state') || '';
+        const hasToken = (hash.get('access_token') && hash.get('refresh_token')) ? '1' : '0';
+        const error = parsed.searchParams.get('error') || hash.get('error') || '';
+        return `${parsed.protocol}//${parsed.host}${parsed.pathname}|code=${code}|state=${state}|token=${hasToken}|error=${error}`;
+      } catch {
+        return url;
+      }
+    };
+
+    const handleAuthUrl = async (url: string, source: 'launch' | 'appUrlOpen' | 'appState' = 'appUrlOpen'): Promise<boolean> => {
+      // Check if URL is auth callback
+      if (!url.includes('login-callback')) return false;
+
+      const dedupeKey = getAuthDedupeKey(url);
+      if (handledAuthKeysRef.current.has(dedupeKey)) {
+        logger.log('[Index] Duplicate auth URL skipped:', source);
+        return true;
+      }
+      handledAuthKeysRef.current.add(dedupeKey);
+      if (handledAuthKeysRef.current.size > 50) {
+        handledAuthKeysRef.current.clear();
+        handledAuthKeysRef.current.add(dedupeKey);
+      }
+
+      logger.log('[Index] Auth URL received from', source, url);
 
       // If supabase not ready, store for later
       if (!supabase) {
         logger.log('[Index] Supabase not ready, storing pending URL');
         setPendingAuthUrl(url);
-        return;
+        return true;
       }
 
+      let callbackError: unknown = null;
       try {
         await handleAuthCallback(supabase, url);
-
-        const { data } = await supabase.auth.getSession();
-        if (data.session?.user) {
-          const metadata = data.session.user.user_metadata;
-          const name = metadata?.full_name || metadata?.name || data.session.user.email?.split('@')[0] || 'Friend';
-
-          // Don't log email (PII)
-          logger.log('[Auth] OAuth callback successful');
-          setAuthBypassFlag(true);
-          notifyAuthComplete();
-          setUserName(name);
-          setUserNameCustom(false);
-          setGoogleAuthChecked(true);
-        }
       } catch (error) {
+        callbackError = error;
         logger.error('[Index] Failed to handle auth callback:', error);
       }
+
+      const session = await waitForSession();
+      if (session?.user) {
+        const metadata = session.user.user_metadata;
+        const name = metadata?.full_name || metadata?.name || session.user.email?.split('@')[0] || 'Friend';
+
+        logger.log('[Auth] OAuth callback session established');
+        setAuthBypassFlag(true);
+        setHasValidSession(true);
+        setWebOAuthError(null);
+        notifyAuthComplete();
+        setUserName(name);
+        setUserNameCustom(false);
+        setGoogleAuthChecked(true);
+        endAuthFlow();
+        return true;
+      }
+
+      logger.error('[Auth] Callback processed but no session established');
+      if (callbackError instanceof Error) {
+        setWebOAuthError(callbackError.message || 'Google sign-in failed. Please try again.');
+      } else {
+        setWebOAuthError('Google sign-in did not complete. Please try again.');
+      }
+      endAuthFlow();
+      return true;
     };
 
     // Handle challenge deep links
@@ -104,7 +159,7 @@ export function useDeepLinkHandler(): void {
           logger.log('[Index] Launch URL found:', launch.url);
           // Try challenge URL first, then auth URL
           if (!handleChallengeUrl(launch.url)) {
-            await handleAuthUrl(launch.url);
+            await handleAuthUrl(launch.url, 'launch');
           }
         }
       } catch (error) {
@@ -117,11 +172,27 @@ export function useDeepLinkHandler(): void {
           logger.log('[Index] appUrlOpen event:', event.url);
           // Try challenge URL first, then auth URL
           if (!handleChallengeUrl(event.url)) {
-            void handleAuthUrl(event.url);
+            void handleAuthUrl(event.url, 'appUrlOpen');
           }
         }
       });
-      removeListener = () => listener.remove();
+
+      const stateListener = await App.addListener('appStateChange', ({ isActive }) => {
+        if (!isActive) return;
+
+        void App.getLaunchUrl()
+          .then((launch) => {
+            if (launch?.url && launch.url.includes('login-callback')) {
+              void handleAuthUrl(launch.url, 'appState');
+            }
+          })
+          .catch((error) => logger.error('[Index] Failed to read launch URL on resume:', error));
+      });
+
+      removeListener = () => {
+        void listener.remove();
+        void stateListener.remove();
+      };
     };
 
     void setup();

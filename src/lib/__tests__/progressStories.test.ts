@@ -9,7 +9,6 @@ import {
   getCurrentWeekRange,
   generateWeeklyStory,
   hasEnoughDataForStory,
-  type StorySlide,
 } from '../progressStories';
 
 // ============================================

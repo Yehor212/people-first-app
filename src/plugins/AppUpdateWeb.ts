@@ -3,7 +3,7 @@
  * On web, in-app updates are not supported (PWA updates handled separately).
  */
 
-import type { AppUpdatePlugin, AppUpdateInfo } from './AppUpdatePlugin';
+import type { AppUpdatePlugin, AppUpdateInfo } from './appUpdateTypes';
 import { logger } from '@/lib/logger';
 
 export class AppUpdateWeb implements AppUpdatePlugin {

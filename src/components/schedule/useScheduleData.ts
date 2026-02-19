@@ -221,7 +221,7 @@ export function useScheduleData(
       left: Math.max(0, scrollPosition),
       behavior: 'smooth'
     });
-  }, [getDateIndex]);
+  }, [daySelectorRef, getDateIndex]);
 
   const scrollTimelineToDate = useCallback((date: string, centerOnCurrentHour = false) => {
     if (!timelineRef.current) return;
@@ -247,7 +247,7 @@ export function useScheduleData(
     setTimeout(() => {
       isScrollingProgrammatically.current = false;
     }, 500);
-  }, [getDateIndex]);
+  }, [timelineRef, getDateIndex]);
 
   // Initial scroll to today
   useEffect(() => {

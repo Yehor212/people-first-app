@@ -11,7 +11,7 @@ import type {
   DndStatusResult,
   PolicyAccessResult,
   SetDndResult,
-} from './DndPlugin';
+} from './dndTypes';
 
 export class DndWeb implements DndPluginInterface {
   async isDndActive(): Promise<DndCheckResult> {

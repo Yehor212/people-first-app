@@ -36,7 +36,7 @@ export function useScreenSecurity(journalOpen: boolean) {
         void ScreenSecurity.disable();
       }).catch(err => logger.warn('[Journal]', 'Screen security disable failed:', err));
     };
-  }, [isNative, enabled, journalOpen]);
+  }, [enabled, journalOpen]);
 
   const setEnabled = useCallback(async (value: boolean) => {
     setEnabledState(value);
@@ -46,7 +46,7 @@ export function useScreenSecurity(journalOpen: boolean) {
       const { default: ScreenSecurity } = await import('@/plugins/ScreenSecurityPlugin');
       await ScreenSecurity.disable();
     }
-  }, [isNative]);
+  }, []);
 
   return { enabled, setEnabled, isNative };
 }

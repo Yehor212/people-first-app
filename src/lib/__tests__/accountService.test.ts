@@ -33,7 +33,7 @@ const mockMaybeSingle = vi.fn();
 const mockEq = vi.fn(() => ({ maybeSingle: mockMaybeSingle }));
 const mockSelect = vi.fn(() => ({ eq: mockEq }));
 const mockUpsert = vi.fn();
-const mockFrom = vi.fn((table: string) => ({
+const mockFrom = vi.fn((_table: string) => ({
   select: mockSelect,
   eq: mockEq,
   upsert: mockUpsert,

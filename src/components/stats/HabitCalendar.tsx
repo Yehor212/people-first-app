@@ -62,7 +62,7 @@ const levelColors = {
 
 export function HabitCalendar({ habits, className }: HabitCalendarProps) {
   const { t } = useLanguage();
-  const today = new Date();
+  const today = useMemo(() => new Date(), []);
   const todayStr = formatDate(today);
 
   const [selectedYear, setSelectedYear] = useState(today.getFullYear());
@@ -92,9 +92,8 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
     // Days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const dateStr = `${monthKey}-${String(day).padStart(2, '0')}`;
-      const date = new Date(selectedYear, selectedMonth, day);
       const isToday = dateStr === todayStr;
-      const isFuture = date > today;
+      const isFuture = dateStr > todayStr;
 
       // Calculate completion for this day
       const completedHabits: string[] = [];
@@ -121,7 +120,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
     }
 
     return days;
-  }, [selectedYear, selectedMonth, habits, todayStr, today]);
+  }, [selectedYear, selectedMonth, habits, todayStr]);
 
   // Calculate month stats
   const monthStats = useMemo(() => {

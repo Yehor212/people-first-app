@@ -6,66 +6,14 @@
  */
 
 import { registerPlugin } from '@capacitor/core';
-
-// ============================================
-// TYPES
-// ============================================
-
-export interface DndCheckResult {
-  active: boolean;
-  filter?: number;
-  filterName?: 'all' | 'priority' | 'none' | 'alarms' | 'unknown';
-  error?: string;
-}
-
-export interface DndStatusResult {
-  available: boolean;
-  filter?: number;
-  filterName?: 'all' | 'priority' | 'none' | 'alarms' | 'unknown';
-  allowAll?: boolean;
-  priorityOnly?: boolean;
-  alarmsOnly?: boolean;
-  totalSilence?: boolean;
-  error?: string;
-}
-
-export interface PolicyAccessResult {
-  granted: boolean;
-}
-
-export interface SetDndResult {
-  success: boolean;
-  error?: string;
-}
-
-export interface DndPluginInterface {
-  /**
-   * Check if Do Not Disturb mode is currently active
-   */
-  isDndActive(): Promise<DndCheckResult>;
-
-  /**
-   * Get detailed DND status information
-   */
-  getDndStatus(): Promise<DndStatusResult>;
-
-  /**
-   * Check if app has notification policy access
-   * (Required for modifying DND settings)
-   */
-  hasNotificationPolicyAccess(): Promise<PolicyAccessResult>;
-
-  /**
-   * Set Do Not Disturb mode on or off
-   * Requires notification policy access
-   */
-  setDnd(options: { enabled: boolean }): Promise<SetDndResult>;
-
-  /**
-   * Open system settings for notification policy access
-   */
-  requestPolicyAccess(): Promise<void>;
-}
+import type { DndPluginInterface } from './dndTypes';
+export type {
+  DndPluginInterface,
+  DndCheckResult,
+  DndStatusResult,
+  PolicyAccessResult,
+  SetDndResult,
+} from './dndTypes';
 
 // ============================================
 // PLUGIN REGISTRATION

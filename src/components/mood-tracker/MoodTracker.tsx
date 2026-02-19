@@ -6,7 +6,7 @@
 
 import { useState, useMemo, useRef } from 'react';
 import type { MoodType, MoodEntry } from '@/types';
-import { getToday, generateId } from '@/lib/utils';
+import { generateId } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { triggerFlyingEmoji } from '@/components/FlyingMoodEmoji';

@@ -15,7 +15,6 @@ vi.mock('@/lib/validation', () => ({
 import {
   generateWeeklyInsights,
   hasEnoughDataForWeeklyInsights,
-  type WeeklyInsightsData,
 } from '../weeklyInsights';
 
 // ============================================

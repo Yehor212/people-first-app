@@ -1,6 +1,8 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
 import webpush from "npm:web-push@3.6.7";
+import { extractBearerToken } from "../_shared/auth.ts";
+import { createJsonResponse, createNoContentResponse } from "../_shared/http.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -9,25 +11,6 @@ const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY");
 const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT");
 const FCM_PROJECT_ID = Deno.env.get("FCM_PROJECT_ID");
 const FCM_SERVICE_ACCOUNT_B64 = Deno.env.get("FCM_SERVICE_ACCOUNT_B64");
-
-// Allowed origins for CORS (production only - no http://localhost)
-const ALLOWED_ORIGINS = [
-  "https://yehor212.github.io",
-  "capacitor://localhost", // Required for mobile app
-];
-
-const getCorsHeaders = (origin: string | null) => {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
-    "X-XSS-Protection": "1; mode=block",
-    "Referrer-Policy": "strict-origin-when-cross-origin"
-  };
-};
 
 const pemToArrayBuffer = (pem: string) => {
   const base64 = pem
@@ -116,30 +99,22 @@ const sendFcmNotifications = async (
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin");
-  const corsHeaders = getCorsHeaders(origin);
-
-  const jsonResponse = (status: number, payload: Record<string, unknown>) =>
-    new Response(JSON.stringify(payload), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
 
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return createNoContentResponse(origin);
   }
   if (req.method !== "POST") {
-    return jsonResponse(405, { error: "Method not allowed" });
+    return createJsonResponse(origin, 405, { error: "Method not allowed" });
   }
 
   try {
-    const authHeader = req.headers.get("Authorization") || "";
-    const token = authHeader.replace("Bearer ", "");
-    if (!token) return jsonResponse(401, { error: "Unauthorized" });
+    const token = extractBearerToken(req.headers.get("Authorization"));
+    if (!token) return createJsonResponse(origin, 401, { error: "Unauthorized" });
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     const { data, error } = await supabase.auth.getUser(token);
     if (error || !data?.user) {
-      return jsonResponse(401, { error: "Unauthorized" });
+      return createJsonResponse(origin, 401, { error: "Unauthorized" });
     }
 
     const { data: subs, error: subsError } = await supabase
@@ -148,7 +123,7 @@ Deno.serve(async (req) => {
       .eq("user_id", data.user.id);
 
     if (subsError) {
-      return jsonResponse(500, { error: "Failed to load subscriptions" });
+      return createJsonResponse(origin, 500, { error: "Failed to load subscriptions" });
     }
 
     const { data: deviceTokens, error: tokenError } = await supabase
@@ -157,7 +132,7 @@ Deno.serve(async (req) => {
       .eq("user_id", data.user.id);
 
     if (tokenError) {
-      return jsonResponse(500, { error: "Failed to load device tokens" });
+      return createJsonResponse(origin, 500, { error: "Failed to load device tokens" });
     }
 
     const payload = await req.json().catch(() => ({}));
@@ -193,12 +168,12 @@ Deno.serve(async (req) => {
     }
 
     if (sent === 0) {
-      return jsonResponse(404, { error: "No subscriptions" });
+      return createJsonResponse(origin, 404, { error: "No subscriptions" });
     }
 
-    return jsonResponse(200, { sent });
+    return createJsonResponse(origin, 200, { sent });
   } catch (err) {
     console.error("send-push-test failed", err);
-    return jsonResponse(500, { error: "Internal error" });
+    return createJsonResponse(origin, 500, { error: "Internal error" });
   }
 });

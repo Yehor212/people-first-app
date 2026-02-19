@@ -2,10 +2,7 @@ package com.zenflow.app;
 
 import android.app.NotificationManager;
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Build;
-import android.provider.Settings;
 import android.util.Log;
 
 import com.getcapacitor.JSObject;
@@ -139,95 +136,22 @@ public class DndPlugin extends Plugin {
     }
 
     /**
-     * Set Do Not Disturb mode on or off.
-     * Requires NOTIFICATION_POLICY access (user must grant in system settings).
+     * Read-only mode: setting Do Not Disturb is disabled.
      */
     @PluginMethod
     public void setDnd(PluginCall call) {
         JSObject result = new JSObject();
-        boolean enabled = call.getBoolean("enabled", true);
-
-        try {
-            Context context = getContext();
-            NotificationManager notificationManager =
-                (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-
-            if (notificationManager == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-                result.put("success", false);
-                result.put("error", "Not supported");
-                call.resolve(result);
-                return;
-            }
-
-            if (!notificationManager.isNotificationPolicyAccessGranted()) {
-                result.put("success", false);
-                result.put("error", "Permission not granted");
-                call.resolve(result);
-                return;
-            }
-
-            int filter = enabled
-                ? NotificationManager.INTERRUPTION_FILTER_PRIORITY
-                : NotificationManager.INTERRUPTION_FILTER_ALL;
-            notificationManager.setInterruptionFilter(filter);
-            result.put("success", true);
-        } catch (Exception e) {
-            Log.e(TAG, "Error setting DND", e);
-            result.put("success", false);
-            result.put("error", e.getMessage());
-        }
-
+        result.put("success", false);
+        result.put("error", "Read-only mode: DND modification is disabled");
         call.resolve(result);
     }
 
     /**
-     * Open system notification policy access settings.
-     * Uses a 3-level fallback chain for maximum device compatibility.
+     * Read-only mode: policy access request flow is disabled.
      */
     @PluginMethod
     public void requestPolicyAccess(PluginCall call) {
-        android.app.Activity activity = getActivity();
-        if (activity == null) {
-            call.reject("Activity not available");
-            return;
-        }
-
-        // Attempt 1: Direct notification policy access settings
-        try {
-            Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
-            activity.startActivity(intent);
-            call.resolve();
-            return;
-        } catch (Exception e) {
-            Log.w(TAG, "ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS failed: " + e.getMessage());
-        }
-
-        // Attempt 2: App-specific notification settings (API 26+)
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                Intent intent = new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-                intent.putExtra(Settings.EXTRA_APP_PACKAGE, getContext().getPackageName());
-                activity.startActivity(intent);
-                call.resolve();
-                return;
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "ACTION_APP_NOTIFICATION_SETTINGS failed: " + e.getMessage());
-        }
-
-        // Attempt 3: App details settings (works on all versions)
-        try {
-            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
-            intent.setData(Uri.parse("package:" + getContext().getPackageName()));
-            activity.startActivity(intent);
-            call.resolve();
-            return;
-        } catch (Exception e) {
-            Log.w(TAG, "ACTION_APPLICATION_DETAILS_SETTINGS failed: " + e.getMessage());
-        }
-
-        // All fallbacks failed
-        call.reject("Could not open any settings screen");
+        call.reject("Read-only mode: DND policy access flow is disabled");
     }
 
     /**

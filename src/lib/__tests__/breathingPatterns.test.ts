@@ -5,7 +5,7 @@ import {
   getTotalDuration,
   formatDuration,
 } from '../breathingPatterns';
-import type { BreathingPattern, BreathingPhase } from '../breathingPatterns';
+import type { BreathingPattern } from '../breathingPatterns';
 
 // ============================================
 // BREATHING_PATTERNS

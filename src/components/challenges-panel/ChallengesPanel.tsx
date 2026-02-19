@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Trophy, Target, Lock, CheckCircle2, Plus, X, Share2 } from 'lucide-react';
+import { Trophy, Target, CheckCircle2, Plus, X } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getLocale } from '@/lib/timeUtils';
 import { Challenge, Badge } from '@/types';
 import { challengeTemplates, createChallengeFromTemplate } from '@/lib/challenges';
 import { getBadgeById, getRarityColor } from '@/lib/badges';

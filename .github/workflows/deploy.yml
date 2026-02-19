@@ -31,7 +31,7 @@ jobs:
         run: npm ci
 
       - name: Lint
-        run: npx eslint src/ --quiet
+        run: npx eslint . --max-warnings=0
 
       - name: Type check
         run: npx tsc --noEmit
@@ -54,8 +54,44 @@ jobs:
         with:
           path: dist
 
+  android-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Android assembleDebug
+        run: cd android && ./gradlew assembleDebug --console=plain
+
+      - name: Android testDebugUnitTest
+        run: cd android && ./gradlew testDebugUnitTest --console=plain
+
+      - name: Android lintDebug
+        run: cd android && ./gradlew lintDebug --console=plain
+
+      - name: Upload Android lint report
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-lint-report
+          path: android/app/build/reports/lint-results-debug.html
+
   deploy:
-    needs: build
+    needs: [build, android-gate]
     runs-on: ubuntu-latest
     environment:
       name: github-pages

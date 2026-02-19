@@ -73,12 +73,12 @@ export const handleAuthCallback = async (supabaseClient: SupabaseClient, url: st
   // Try PKCE flow first - exchange code for session (most secure)
   const code = searchParams.get("code") || hashParams.get("code");
   if (code) {
-    // Validate code format (should be alphanumeric)
-    if (!/^[A-Za-z0-9_-]+$/.test(code) || code.length > 256) {
+    const normalizedCode = code.trim();
+    if (normalizedCode.length === 0 || normalizedCode.length > 2048) {
       throw new Error('Invalid authorization code');
     }
 
-    const { data, error } = await supabaseClient.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabaseClient.auth.exchangeCodeForSession(normalizedCode);
 
     if (error) {
       logger.error('[Auth] exchangeCodeForSession error:', error.message);

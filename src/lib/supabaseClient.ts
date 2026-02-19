@@ -3,7 +3,6 @@ import { isNative } from '@/lib/platform';
 import { Database } from '@/types/supabase';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
-import { isAbortError } from '@/lib/validation';
 import { SUPABASE_URL, SUPABASE_ANON_KEY, IS_DEV } from '@/lib/env';
 
 /**
@@ -97,55 +96,6 @@ const shouldDetectSessionInUrl = (): boolean => {
   return !isNative;
 };
 
-// ─── Resilient lock for Supabase auth ───
-// Primary: navigator.locks (cross-tab coordination for token refresh)
-// Fallback: in-memory queue (when Web Locks unavailable or AbortError during OAuth redirect reload)
-const pendingLocks = new Map<string, Promise<unknown>>();
-
-async function resilientNavigatorLock<T>(
-  name: string,
-  acquireTimeout: number,
-  fn: () => Promise<T>,
-): Promise<T> {
-  // 1. Try Web Locks API (cross-tab coordination)
-  if (typeof navigator !== 'undefined' && navigator?.locks?.request) {
-    try {
-      const controller = new AbortController();
-      const tid = setTimeout(() => controller.abort(), acquireTimeout);
-      const result = await navigator.locks.request(
-        name,
-        { signal: controller.signal },
-        async () => { clearTimeout(tid); return await fn(); },
-      );
-      return result as T;
-    } catch (err) {
-      if (isAbortError(err)) {
-        // Expected during OAuth redirect page reload — fall through to in-memory lock
-        logger.warn('[Auth] Web Locks AbortError (redirect), falling back to in-memory lock');
-      } else {
-        logger.warn('[Auth] Web Locks failed, falling back to in-memory lock:', err);
-      }
-    }
-  }
-
-  // 2. In-memory fallback: serialize auth ops within this tab
-  const prev = pendingLocks.get(name);
-  if (prev) {
-    try { await prev; } catch { /* previous holder may have thrown */ }
-  }
-
-  let releaseLock!: () => void;
-  const gate = new Promise<void>(r => { releaseLock = r; });
-  pendingLocks.set(name, gate);
-
-  try {
-    return await fn();
-  } finally {
-    pendingLocks.delete(name);
-    releaseLock();
-  }
-}
-
 // Export null if not configured - app works in local-only mode
 export const supabase: SupabaseClient<Database> | null =
   SUPABASE_URL && SUPABASE_ANON_KEY
@@ -156,7 +106,6 @@ export const supabase: SupabaseClient<Database> | null =
           detectSessionInUrl: shouldDetectSessionInUrl(),
           storage: getAuthStorage(),
           flowType: 'pkce',
-          lock: resilientNavigatorLock,
         },
       })
     : null;

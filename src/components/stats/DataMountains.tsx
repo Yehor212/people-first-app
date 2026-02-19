@@ -140,9 +140,11 @@ export function DataMountains({
   const { t: _t } = useLanguage();
 
   // Filter out invalid data points that could cause NaN in path calculations
-  const safeData = (data && Array.isArray(data))
-    ? data.filter(d => d && typeof d.value === 'number' && !isNaN(d.value))
-    : [];
+  const safeData = useMemo(() => (
+    (data && Array.isArray(data))
+      ? data.filter(d => d && typeof d.value === 'number' && !isNaN(d.value))
+      : []
+  ), [data]);
 
   const maxValue = providedMax || Math.max(...safeData.map(d => d.value), 1);
 

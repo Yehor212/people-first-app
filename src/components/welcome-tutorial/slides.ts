@@ -3,6 +3,7 @@
  */
 
 import { Sparkles, Brain, Target, Heart, Timer, Zap, Clock, Palette, BookOpen } from 'lucide-react';
+import type { Translations } from '@/i18n/translations';
 
 export interface SlideConfig {
   id: string;
@@ -89,7 +90,7 @@ export function getSlides(): SlideConfig[] {
 }
 
 // Tutorial content with translations
-export function getSlideContent(id: string, t: Record<string, string>): SlideContent {
+export function getSlideContent(id: string, t: Translations): SlideContent {
   const content: Record<string, SlideContent> = {
     welcome: {
       title: t.tutorialWelcomeTitle || 'Welcome to ZenFlow',
@@ -165,52 +166,3 @@ export function getSlideContent(id: string, t: Record<string, string>): SlideCon
   return content[id] || { title: '', subtitle: '', description: '' };
 }
 
-/** CSS animations used by the tutorial slides */
-export const tutorialAnimationStyles = `
-  @keyframes heartbeat {
-    0%, 100% { transform: scale(1); }
-    25% { transform: scale(1.1); }
-    35% { transform: scale(0.95); }
-    45% { transform: scale(1.05); }
-  }
-  @keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-  }
-  @keyframes zap {
-    0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
-    25% { transform: scale(1.2) rotate(-5deg); opacity: 0.8; }
-    50% { transform: scale(0.9) rotate(5deg); opacity: 1; }
-    75% { transform: scale(1.1) rotate(-3deg); opacity: 0.9; }
-  }
-  .animate-heartbeat {
-    animation: heartbeat 1.5s ease-in-out infinite;
-  }
-  .animate-spin-slow {
-    animation: spin-slow 8s linear infinite;
-  }
-  .animate-zap {
-    animation: zap 2s ease-in-out infinite;
-  }
-  @keyframes color-shift {
-    0%, 100% {
-      filter: hue-rotate(0deg);
-      transform: scale(1);
-    }
-    25% {
-      filter: hue-rotate(60deg);
-      transform: scale(1.05);
-    }
-    50% {
-      filter: hue-rotate(120deg);
-      transform: scale(1);
-    }
-    75% {
-      filter: hue-rotate(180deg);
-      transform: scale(1.05);
-    }
-  }
-  .animate-color-shift {
-    animation: color-shift 4s ease-in-out infinite;
-  }
-`;

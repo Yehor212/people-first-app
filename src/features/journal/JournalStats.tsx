@@ -42,7 +42,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     okay: ts.moodOkay || 'Okay',
     bad: ts.moodBad || 'Bad',
     terrible: ts.moodTerrible || 'Terrible',
-  }), [language, ts]);
+  }), [ts]);
 
   const dayNames = useMemo(() => {
     const formatter = new Intl.DateTimeFormat(language, { weekday: 'short' });

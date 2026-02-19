@@ -199,6 +199,7 @@ export function JournalEntryEditor({
   // Voice dictation + audio recording hooks
   const voice = useJournalVoice(language);
   const recorder = useAudioRecorder();
+  const { audioData, isRecording, duration, mimeType, reset: resetRecorder } = recorder;
   const wasListeningRef = useRef(false);
 
   // Initial values for isDirty check
@@ -388,27 +389,27 @@ export function JournalEntryEditor({
 
   // Handle completed audio recording — store and add to audioIds
   useEffect(() => {
-    if (recorder.audioData && !recorder.isRecording) {
+    if (audioData && !isRecording) {
       let cancelled = false;
       const storeRecording = async () => {
         try {
-          const data = recorder.audioData;
+          const data = audioData;
           if (!data) return;
-          const audio = await onAddAudio(data, recorder.duration, recorder.mimeType, entryId);
+          const audio = await onAddAudio(data, duration, mimeType, entryId);
           if (cancelled) return;
           setAudioIds(prev => [...prev, audio.id]);
           setAudioRecordings(prev => [...prev, audio]);
-          recorder.reset();
+          resetRecorder();
           setShowRecordingOverlay(false);
         } catch {
           if (cancelled) return;
-          recorder.reset();
+          resetRecorder();
         }
       };
       void storeRecording();
       return () => { cancelled = true; };
     }
-  }, [recorder.audioData, recorder.isRecording, onAddAudio, entryId, recorder.duration, recorder.mimeType, recorder.reset]);
+  }, [audioData, isRecording, onAddAudio, entryId, duration, mimeType, resetRecorder]);
 
   // Android back button (priority order)
   useEffect(() => {

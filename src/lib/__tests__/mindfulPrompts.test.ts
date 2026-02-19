@@ -7,7 +7,7 @@ import {
   getPostFocusPrompts,
   getRandomPostFocusPrompt,
 } from '../mindfulPrompts';
-import type { MindfulMomentType, MindfulPrompt } from '../mindfulPrompts';
+import type { MindfulMomentType } from '../mindfulPrompts';
 
 const ALL_TYPES: MindfulMomentType[] = ['checkin', 'breathing', 'gratitude', 'body', 'affirmation'];
 

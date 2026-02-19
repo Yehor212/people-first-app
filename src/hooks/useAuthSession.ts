@@ -12,6 +12,7 @@ import { syncWithCloud, startAutoSync, stopAutoSync } from '@/storage/cloudSync'
 import { joinPresence, leavePresence } from '@/lib/presenceService';
 import { migrateExistingUser } from '@/lib/cloudSyncSettings';
 import { logger } from '@/lib/logger';
+import { endAuthFlow } from '@/lib/authGuard';
 
 /**
  * Manages Supabase auth session lifecycle:
@@ -160,13 +161,22 @@ export function useAuthSession(isLoading: boolean): void {
 
             logger.log('[Auth] Pending auth processed successfully');
             setAuthBypassFlag(true);
+            setHasValidSession(true);
+            setWebOAuthError(null);
             notifyAuthComplete();
             setUserName(name);
             setUserNameCustom(false);
             setGoogleAuthChecked(true);
+            endAuthFlow();
+          } else {
+            logger.error('[Index] Pending auth callback had no session');
+            setWebOAuthError('Google sign-in did not complete. Please try again.');
+            endAuthFlow();
           }
         } catch (error) {
           logger.error('[Index] Failed to process pending auth:', error);
+          setWebOAuthError(error instanceof Error ? error.message : 'Google sign-in failed. Please try again.');
+          endAuthFlow();
         }
       })();
     }

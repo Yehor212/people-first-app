@@ -21,7 +21,7 @@ import {
   formatTimeRemaining,
   shouldShowUrgentPrompt,
 } from '../adhdHooks';
-import type { ComboState, MysteryBox } from '../adhdHooks';
+import type { MysteryBox } from '../adhdHooks';
 
 // ─── Setup ──────────────────────────────────────────────────────
 

@@ -29,7 +29,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
     timeLeft, isRunning, isBreak,
     showReflection, reflectionValue, setReflectionValue,
     showHyperfocus, setShowHyperfocus,
-    totalMinutesToday, progress, focusDuration, breakDuration, presets,
+    totalMinutesToday, progress, presets,
     throttledToggle, throttledReset, handlePresetSelect,
     handleSaveReflection, handleHyperfocusComplete,
     handleFocusInputBlur, handleBreakInputBlur,

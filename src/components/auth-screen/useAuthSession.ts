@@ -104,7 +104,7 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
       window.removeEventListener(AUTH_COMPLETE_EVENT, handleAuthComplete);
       if (oauthTimeoutRef.current) clearTimeout(oauthTimeoutRef.current);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   // Check session when app resumes from OAuth browser
   useEffect(() => {
@@ -135,10 +135,14 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
             clearTimeout(oauthTimeoutRef.current);
             oauthTimeoutRef.current = null;
           }
+          endAuthFlow();
         }
       } catch (err) {
         logger.error('[Auth] Error checking session on resume:', err);
-        if (isMounted && !hasCompletedRef.current) setLoadingProvider(null);
+        if (isMounted && !hasCompletedRef.current) {
+          setLoadingProvider(null);
+          endAuthFlow();
+        }
       }
     };
 
@@ -170,7 +174,7 @@ export function useAuthSession({ onComplete, webOAuthError, onClearError }: UseA
       isMounted = false;
       window.removeEventListener('focus', handleFocus);
     };
-  }, [loadingProvider]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadingProvider]);
 
   return {
     loadingProvider, setLoadingProvider,

@@ -61,7 +61,7 @@ export function useQuickActions(): UseQuickActionsReturn {
     return () => {
       cleanupFn?.();
     };
-  }, [isAndroid]);
+  }, []);
 
   // Register action callback
   useEffect(() => {
@@ -87,7 +87,7 @@ export function useQuickActions(): UseQuickActionsReturn {
         actionCallback(action);
       }
     });
-  }, [isAndroid, actionCallback]);
+  }, [actionCallback]);
 
   /**
    * Toggle quick actions notification
@@ -106,7 +106,7 @@ export function useQuickActions(): UseQuickActionsReturn {
     } catch (error) {
       logger.error('[useQuickActions] Toggle failed:', error);
     }
-  }, [isAndroid]);
+  }, []);
 
   /**
    * Register callback for quick action taps

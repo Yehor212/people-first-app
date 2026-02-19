@@ -374,9 +374,7 @@ describe('silentSync', () => {
 
     // Simulate failures by having the orchestrator callback reject
     // but catch the error ourselves so we can still track dispatch events
-    let callCount = 0;
     mockOrchestratorSync.mockImplementation(async (_type: any, callback: any) => {
-      callCount++;
       // Execute the real callback path by simulating what it does:
       // - incrementing consecutiveSyncFailures (module-level state)
       // - dispatching sync-failure event

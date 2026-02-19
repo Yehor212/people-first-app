@@ -128,7 +128,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     const streaks = new Map<string, number>();
     habits.forEach(habit => { streaks.set(habit.id, getHabitStreak(habit)); });
     return streaks;
-  }, [habits, today]);
+  }, [habits]);
 
   // Handle habit toggle with celebrations + debounce
   const handleHabitToggle = useCallback((habit: Habit) => {

@@ -14,30 +14,13 @@
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.6";
+import { extractBearerToken } from "../_shared/auth.ts";
+import { createJsonResponse, createNoContentResponse } from "../_shared/http.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
 const ADMIN_EMAIL = Deno.env.get("ADMIN_EMAIL") || "zenflowtrack@gmail.com";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-// Allowed origins for CORS (production only - no http://localhost)
-const ALLOWED_ORIGINS = [
-  "https://yehor212.github.io",
-  "capacitor://localhost", // Required for mobile app
-];
-
-const getCorsHeaders = (origin: string | null) => {
-  const allowedOrigin = origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "X-Content-Type-Options": "nosniff",
-    "X-Frame-Options": "DENY",
-    "X-XSS-Protection": "1; mode=block",
-    "Referrer-Policy": "strict-origin-when-cross-origin"
-  };
-};
 
 interface FeedbackPayload {
   category: string;
@@ -55,33 +38,26 @@ interface FeedbackPayload {
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin");
-  const corsHeaders = getCorsHeaders(origin);
-
-  const jsonResponse = (status: number, payload: Record<string, unknown>) =>
-    new Response(JSON.stringify(payload), {
-      status,
-      headers: { ...corsHeaders, "Content-Type": "application/json" }
-    });
 
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: corsHeaders });
+    return createNoContentResponse(origin);
   }
 
   if (req.method !== "POST") {
-    return jsonResponse(405, { error: "Method not allowed" });
+    return createJsonResponse(origin, 405, { error: "Method not allowed" });
   }
 
   // ============================================
   // AUTHENTICATION: Require valid JWT token
   // ============================================
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
+  const token = extractBearerToken(authHeader);
+  if (!token) {
     console.warn("[FeedbackEmail] Missing authorization header");
-    return jsonResponse(401, { error: "Unauthorized" });
+    return createJsonResponse(origin, 401, { error: "Unauthorized" });
   }
 
-  const token = authHeader.replace("Bearer ", "");
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: { persistSession: false },
     global: { headers: { Authorization: `Bearer ${token}` } }
@@ -90,16 +66,13 @@ Deno.serve(async (req) => {
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) {
     console.warn("[FeedbackEmail] Invalid token:", authError?.message);
-    return jsonResponse(401, { error: "Invalid token" });
+    return createJsonResponse(origin, 401, { error: "Invalid token" });
   }
 
   // Check if Resend is configured
   if (!RESEND_API_KEY) {
     console.error("[FeedbackEmail] RESEND_API_KEY not configured");
-    return jsonResponse(500, {
-      error: "Email service not configured",
-      details: "RESEND_API_KEY secret is required"
-    });
+    return createJsonResponse(origin, 500, { error: "Email service not configured" });
   }
 
   try {
@@ -107,7 +80,7 @@ Deno.serve(async (req) => {
     const { category, message, email, device_info, app_version } = body;
 
     if (!message) {
-      return jsonResponse(400, { error: "Message is required" });
+      return createJsonResponse(origin, 400, { error: "Message is required" });
     }
 
     // Format category for display
@@ -188,26 +161,22 @@ Deno.serve(async (req) => {
     if (!resendResponse.ok) {
       const errorText = await resendResponse.text();
       console.error("[FeedbackEmail] Resend API error:", errorText);
-      return jsonResponse(500, {
-        error: "Failed to send email",
-        details: errorText
+      return createJsonResponse(origin, 500, {
+        error: "Failed to send email"
       });
     }
 
     const result = await resendResponse.json();
     console.log("[FeedbackEmail] Email sent successfully:", result.id);
 
-    return jsonResponse(200, {
+    return createJsonResponse(origin, 200, {
       success: true,
       emailId: result.id
     });
 
   } catch (error) {
     console.error("[FeedbackEmail] Error:", error);
-    return jsonResponse(500, {
-      error: "Internal error",
-      details: error instanceof Error ? error.message : "Unknown error"
-    });
+    return createJsonResponse(origin, 500, { error: "Internal error" });
   }
 });
 

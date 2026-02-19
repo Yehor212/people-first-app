@@ -203,7 +203,7 @@ export function useGamification() {
       }
     }
     prevLevelRef.current = userLevel.level;
-  }, [userLevel.level]);
+  }, [userLevel.level, userLevel.title]);
 
   return {
     stats,

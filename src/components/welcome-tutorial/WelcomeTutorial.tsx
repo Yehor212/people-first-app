@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { getSlides, getSlideContent, tutorialAnimationStyles } from './slides';
+import { getSlides, getSlideContent } from './slides';
 
 interface WelcomeTutorialProps {
   onComplete: () => void;
@@ -271,9 +271,6 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
           </button>
         </div>
       </div>
-
-      {/* Animations CSS */}
-      <style>{tutorialAnimationStyles}</style>
     </div>
   );
 }

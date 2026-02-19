@@ -4,19 +4,8 @@
  */
 
 import { registerPlugin } from '@capacitor/core';
-
-export interface ReviewPlugin {
-  /**
-   * Request an in-app review from the user.
-   * Note: Google Play may not always show the review dialog (rate limiting, etc.)
-   */
-  requestReview(): Promise<void>;
-
-  /**
-   * Check if in-app review is supported on this platform.
-   */
-  isSupported(): Promise<{ supported: boolean }>;
-}
+import type { ReviewPlugin } from './reviewTypes';
+export type { ReviewPlugin } from './reviewTypes';
 
 const Review = registerPlugin<ReviewPlugin>('Review', {
   web: () => import('./ReviewWeb').then(m => new m.ReviewWeb()),

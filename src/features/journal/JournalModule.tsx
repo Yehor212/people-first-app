@@ -142,12 +142,12 @@ export function JournalModule() {
       security.lock();
       return true;
     });
-  }, [moduleState, journal.view, journal.goBack, resetStep, showPasswordSettings, security]);
+  }, [moduleState, resetStep, showPasswordSettings, journal, security]);
 
   // Security touch on interaction
   useEffect(() => {
     if (moduleState === 'open') security.touch();
-  }, [moduleState, journal.view, security]);
+  }, [moduleState, security]);
 
   const handleOpen = () => {
     setModuleState('open');
@@ -184,7 +184,7 @@ export function JournalModule() {
         }
       }
     }
-  }, [journal, streak, hasTodayEntry, ts]);
+  }, [journal, streak, hasTodayEntry]);
 
   const handleDeleteEntry = useCallback(async (id: string) => {
     // Find the entry before deleting for undo
@@ -196,7 +196,7 @@ export function JournalModule() {
     if (!entry) return;
 
     deletedEntryRef.current = { id, data: entry };
-  }, [journal, ts]);
+  }, [journal]);
 
   const maskEmail = (email: string) => {
     const [local, domain] = email.split('@');

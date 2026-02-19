@@ -5,7 +5,6 @@ import {
   refreshFriendsData,
   shareFriendCode,
   removeFriend,
-  getFriendsSortedByActivity,
   type Friend,
   type MyProfile,
 } from '@/storage/friendsSync';
