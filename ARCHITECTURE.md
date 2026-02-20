@@ -2,26 +2,27 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-16 (TD-20 Phase 6 — 33 components + 3 hooks + 3 hook-only resolved, DayClock deleted)
+> Last updated: 2026-02-19 (TD-09 Phase 7 — 2458 tests, constitution audit)
 
 ---
 
-## Codebase Metrics (as of 2026-02-16)
+## Codebase Metrics (as of 2026-02-19)
 
 | Metric | Value | Command |
 |--------|-------|---------|
-| Source files | 420 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
-| Test files | 25 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
-| Total LOC | ~59,000 | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
-| Tests passing | 543/543 | `npx vitest --run` |
+| Source files | 610 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
+| Test files | 114 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
+| Total LOC | ~56,000 (TSX only) | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
+| Tests passing | 2458/2458 | `npx vitest --run` |
 | ESLint errors | 0 | `npx eslint src/ --quiet` |
-| ESLint warnings | 21 | `npx eslint src/` |
+| ESLint warnings | 0 | `npx eslint . --max-warnings=0` |
 | TypeScript errors | 0 | `npx tsc --noEmit` |
-| God components (>400L) | 0 remaining (33 components + 3 hooks resolved, 1 dead code deleted, 3 out-of-scope) | See [Known Technical Debt](#known-technical-debt) |
+| God components (>400L) | 2 contexts (AICoachContext 458L, EmotionThemeContext 404L) + 33 components + 3 hooks resolved, 1 dead code deleted, 3 journal out-of-scope | See [Known Technical Debt](#known-technical-debt) |
 | Direct localStorage calls | 0 (was 199) | Enforced by ESLint `no-restricted-globals` rule. All access via `SK` + `safeJson`. |
 | Silent .catch(() => {}) | 0 | `grep -rn '\.catch.*=> {}' src/ \| wc -l` |
 | React.memo components | 12 / 80+ | `grep -rl 'memo(' src/ --include="*.tsx" \| wc -l` |
 | lazy() imports | 6 | `grep -rn 'lazy(' src/ \| wc -l` |
+| exhaustive-deps suppressions | 15 across 13 files (all intentional) | `grep -rn 'eslint-disable.*exhaustive-deps' src/ \| wc -l` |
 
 > Update these metrics after each major refactor phase. Compare deltas to track progress.
 
@@ -85,7 +86,7 @@ src/
     useHydrateGamification.ts   # Bridge: registers gamification hooks into store
     index.ts                    # Barrel export
 
-  hooks/                        # Custom hooks (40 files)
+  hooks/                        # Custom hooks (47 files)
     # Lifecycle hooks (extracted from Index.tsx)
     useAppLifecycle.ts          # App init, splash, loading
     useDateTracking.ts          # Midnight detection, date sync
@@ -153,7 +154,10 @@ src/
   lib/                          # Utilities & platform services
   storage/                      # Dexie DB, cloud sync, realtime
   i18n/
-    translations.ts             # 19,879-line monolith (all 8 languages)
+    types.ts                    # Shared translation types (2,280L)
+    languages/                  # 8 per-language files (~2,200L each): ar, de, en, es, fr, he, ja, uk
+    index.ts                    # Assembler (37L)
+    translations.ts             # Re-export barrel (3L)
   plugins/                      # Custom Capacitor plugins
 ```
 
@@ -489,11 +493,11 @@ Hooks are registered via `useHydrateGamification({ awardXp, earnTreats, plantSee
 
 ### Current State
 
-All translations live in a single 19,879-line file: `src/i18n/translations.ts`. Not yet split into per-language JSON files.
+Split into per-language files (TD-08, 2026-02-16): `src/i18n/types.ts` (2,280L shared types), 8 language files in `src/i18n/languages/` (~2,200L each), `src/i18n/index.ts` (37L assembler), `src/i18n/translations.ts` (3L re-export barrel).
 
 ### Rules
 
-1. **Target:** One JSON file per language: `src/i18n/locales/{lang}.json`
+1. **Structure:** `types.ts` (shared interface) + `languages/{lang}.ts` (one per language) + `index.ts` (assembler) + `translations.ts` (re-export).
 2. **No hardcoded user-facing strings.** Everything goes through `t()`.
 3. **Supported languages (8):** en, uk, es, de, fr, ja, ar, he
 4. **RTL support:** ar, he (Arabic, Hebrew)
@@ -551,7 +555,7 @@ On PR to main:
 |----|----------|-------------|--------|-------|--------|
 | TD-01 | ~~CRITICAL~~ → LOW | Index.tsx god component | 2,800 lines, 46 useState, 29 useEffect | **374 lines**, 4 useState, 4 useEffect, 43 imports | Under 400-line limit. AuthGate, useSettingsHandlers, useReminderMigration, useEmotionSync extracted. |
 | TD-02 | ~~CRITICAL~~ → LOW | No state management | All prop drilling | **4 Zustand stores** + bridge hooks. Tab components still receive handler props. | Feature handlers not yet in stores. |
-| TD-06 | ~~HIGH~~ → **DONE** | exhaustive-deps eslint suppressions | **41** across 28 files | **17 remaining** across 14 files (all legitimate mount-only/cleanup/ref patterns). 1 bug fixed: `JournalEntryEditor` prompts now update on language change (`ts` added to useMemo deps). | Audited all suppressions; only intentional patterns remain. |
+| TD-06 | ~~HIGH~~ → **DONE** | exhaustive-deps eslint suppressions | **41** across 28 files | **15 remaining** across 13 files (all legitimate mount-only/cleanup/ref patterns). Codex 5.3 fixed several (2026-02-18). 1 bug fixed: `JournalEntryEditor` prompts now update on language change (`ts` added to useMemo deps). | Audited all suppressions; only intentional patterns remain. |
 | TD-10 | ~~HIGH~~ → DONE | ~~No runtime validation~~ | **Fixed 2026-02-16**: Created `src/lib/schemas.ts` with 9 Zod runtime schemas + `validateArray`/`validateObject` helpers. Added `itemSchema`/`objectSchema` params to `useIndexedDB` — eliminated 7 unvalidated `as T` casts. Wired schemas into `useHydrateUserData` (7 calls), `useInnerWorld`, `useGamification`. Replaced 6 ad-hoc validators in `realtimeSync.ts` with Zod `safeParse()`. Fixed 2 bugs: `'abandoned'→'aborted'` focus status, `emotion` string→object. All schemas use `.passthrough()` + `.default()` for forward/backward compat. 25 new tests (568 total). | src/lib/schemas.ts |
 
 ### Open
@@ -560,12 +564,12 @@ On PR to main:
 |----|----------|-------------|-------------------|------|
 | TD-03 | ~~CRITICAL~~ → DONE | ~~Non-atomic IndexedDB writes (read-modify-write race)~~ | **Fixed 2026-02-16**: Wrapped `clear()` + `bulkPut()` in `table.db.transaction('rw', table, ...)` for atomic array writes. Single `put()` calls (settings) were already atomic. Follows existing pattern from `clearLocalUserData()` in db.ts. | src/hooks/useIndexedDB.ts |
 | TD-04 | ~~CRITICAL~~ → DONE | ~~CSP `unsafe-inline` for scripts and styles~~ | **Fixed 2026-02-16**: Removed `'unsafe-inline'` from both `script-src` and `style-src`. Moved 3 runtime `@keyframes` to index.css, externalized version check to `version-check.js` (Vite plugin). CSSOM property assignments (`style.cssText`, `setProperty`) are CSP-safe. | index.html, vite-plugin-version.ts, src/index.css |
-| TD-05 | ~~CRITICAL~~ → DONE | ~~Web Locks API bypass in auth (causes AbortError on reload)~~ | **Fixed 2026-02-16**: Replaced no-op lock bypass with `resilientNavigatorLock` — tries `navigator.locks` first (cross-tab coordination), catches `AbortError` during OAuth redirect, falls back to in-memory serialization. Uses existing `isAbortError()` from validation.ts. | src/lib/supabaseClient.ts |
+| TD-05 | ~~CRITICAL~~ → DONE | ~~Web Locks API bypass in auth (causes AbortError on reload)~~ | **Fixed 2026-02-16**, **updated 2026-02-18 by Codex 5.3**: Lock disabled entirely (`lock` option removed from Supabase config). The original `resilientNavigatorLock` was removed — Supabase GoTrue handles tab coordination internally. Dead code (48L) cleaned up 2026-02-19. | src/lib/supabaseClient.ts |
 | TD-07 | ~~HIGH~~ → DONE | ~~Direct `localStorage` calls~~ | **Fixed 2026-02-16**: Central `SK` registry (src/lib/storageKeys.ts) + safeJson accessors + ESLint `no-restricted-globals` rule. 199 raw calls → 0 across 50+ files. | src/lib/storageKeys.ts |
 | TD-08 | ~~HIGH~~ → DONE | ~~translations.ts monolith (all languages in one file)~~ | **Fixed 2026-02-16**: Split 19,879-line monolith into per-language files. `types.ts` (2,280L), 8 language files in `languages/` (~2,200L each), `index.ts` (37L assembler), `translations.ts` (3L re-export). Zero import changes needed. | src/i18n/ |
 | TD-09 | ~~HIGH~~ → LOW | Low test coverage | **Phase 7 done 2026-02-19**: 2313 → **2458 tests** (+145). Phase 7 added 15 files: useFocusTimerConfig (8), useRestMode (8), useSettingsHandlers (8), useOnboardingEffects (6), useChallengeHandlers (7), useHabitHandlers (10), useDerivedData (8), analytics (13), deepLinks (14), versionCheck (12), lazyWithRetry (8), constants (13), innerWorldConstants (11), appInitializer (8), haptics (11). **114 test files total**. Remaining: ~59 untested modules (mostly Capacitor/Supabase/audio-dependent). | src/**/__tests__/ |
-| TD-11 | ~~HIGH~~ → DONE | ~~CI pipeline missing lint + typecheck~~ | **Fixed 2026-02-16**: Added `eslint --quiet` + `tsc --noEmit` steps to deploy.yml. Still missing: `playwright`, `npm audit`. | .github/workflows/deploy.yml |
-| TD-15 | ~~MEDIUM~~ → DONE | useInnerWorld.ts monolith | ~~780+ lines~~ → **336 lines** (extracted innerWorldHelpers.ts + useRestMode.ts) | src/hooks/useInnerWorld.ts |
+| TD-11 | ~~HIGH~~ → DONE | ~~CI pipeline missing lint + typecheck~~ | **Fixed 2026-02-16**, **hardened 2026-02-18 by Codex 5.3**: `npx eslint . --max-warnings=0` + `tsc --noEmit` + mandatory Android gate before deploy. Still missing: `playwright`, `npm audit`. | .github/workflows/deploy.yml |
+| TD-15 | ~~MEDIUM~~ → DONE | useInnerWorld.ts monolith | ~~780+ lines~~ → **338 lines** (extracted innerWorldHelpers.ts + useRestMode.ts) | src/hooks/useInnerWorld.ts |
 | TD-16 | LOW | Prop drilling in HomeTab (~30 props) | Handlers + inner world values passed as props | src/components/tabs/HomeTab.tsx |
 | TD-17 | ~~HIGH~~ → DONE | ~~Silent `.catch(() => {})` swallowing errors~~ | **Fixed 2026-02-16**: All 34 instances replaced with `logger.warn`/`logger.error` across 20 files. Categorized by risk: fire-and-forget (warn), data ops (error), with-fallback (warn + fallback). | Various |
 | TD-18 | ~~HIGH~~ → DONE | ~~Memory leaks: uncleaned setTimeout in contexts~~ | **Fixed 2026-02-16**: MoodThemeContext — added useRef + clearTimeout cleanup (EmotionThemeContext already correct). | src/contexts/MoodThemeContext.tsx |
@@ -671,7 +675,7 @@ On PR to main:
 | Step | Required (§15) | Actual (deploy.yml) | Status |
 |------|---------------|---------------------|--------|
 | npm ci | Yes | Yes | PASS |
-| npx eslint src/ --quiet | Yes | Yes (added 2026-02-16) | PASS |
+| npx eslint . --max-warnings=0 | Yes | Yes (strict mode added 2026-02-18 by Codex 5.3) | PASS |
 | npx tsc --noEmit | Yes | Yes (added 2026-02-16) | PASS |
 | npm test | Yes | Yes | PASS |
 | npm run build | Yes | Yes | PASS |
@@ -689,7 +693,7 @@ On PR to main:
 3. `npx vitest --run` — all tests pass
 4. `npm run build` — succeeds
 5. `grep -rn 'localStorage\.' src/ | wc -l` — **0** (enforced by ESLint, was 199)
-6. `grep -rn '\.catch.*=> {}' src/ | wc -l` — track decrease from 34
+6. `grep -rn '\.catch.*=> {}' src/ | wc -l` — **0** (was 34, all fixed)
 7. `find src -name "*.tsx" -exec wc -l {} + | sort -rn | head -20` — god component progress
 8. `grep -rl 'memo(' src/ --include="*.tsx" | wc -l` — memo adoption
 
@@ -700,14 +704,18 @@ On PR to main:
 - Date: 2026-02-18
 - Author: Codex 5.3
 - Scope: End-to-end repository remediation (Android-first)
-- Audit result:
-  - CRITICAL: CSP mismatch, lint gate scope mismatch, failing test baseline - FIXED
-  - HIGH: Android DND policy risk, Edge Function auth/logging inconsistency, plugin cycle risk - FIXED
-  - PASS (with evidence): Android debug build, Android unit tests, TypeScript check, lint, full tests, production build, i18n key consistency, secret tracking hygiene
-- Today (2026-02-18): Codex 5.3 completed Android-first remediation, re-ran all quality gates, and attached evidence artifacts/checklists.
-
-Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.
-2026-02-18 | Codex 5.3 | E2E remediation completed (Android-first). Evidence bundle: artifacts/audit/* + Android/CI/test/build logs.
+- Verified changes (audited 2026-02-19 by Claude Opus 4.6 — 68 files reviewed):
+  - Android DND plugin gutted to read-only (DndPlugin.java, useDnd.ts, DndPlugin.ts) — CORRECT
+  - Auth flow unified to `skipBrowserRedirect` OAuth (useAuthHandlers, useAccountAuth) — CORRECT
+  - Supabase Edge Functions: shared helpers extracted to `_shared/` (auth.ts, http.ts, redaction.ts) — CORRECT
+  - Weekly digest: fixed table names (`moods` not `mood_entries`, `habit_completions` not `habits.completion_dates`) — CORRECT
+  - CI: `--max-warnings=0` + android-gate job — CORRECT
+  - ESLint: feature barrel enforcement (`no-restricted-imports` for `@/features/*/*`) — CORRECT
+  - CSS consolidation: inline styles → index.css — CORRECT
+  - ~15 exhaustive-deps fixes across components — CORRECT
+  - Plugin type extraction (dndTypes.ts, appUpdateTypes.ts, reviewTypes.ts) — CORRECT
+  - 1 issue found and fixed: dead `resilientNavigatorLock` code (48L) left in supabaseClient.ts after lock removal
+- NOTE: Codex claimed "Evidence bundle: artifacts/audit/*" but this directory does not exist in the repo
 
 ---
 
@@ -728,7 +736,7 @@ Every PASS must include evidence: command output, file path, or test checklist. 
   - Unauthorized/public error responses normalized to safe payloads.
   - Weekly digest schema access aligned to `habit_completions` and `moods`.
 - Quality baseline hardening:
-  - ESLint warnings reduced from 52 to 0 (`eslint-before.json` -> `eslint-after.json`).
+  - ESLint warnings reduced from 52 to 0 (via exhaustive-deps fixes, unused var cleanup, etc.).
   - TypeScript, tests, web build, Android build/tests/lint, and release bundle verified.
 - CI hardening:
   - `.github/workflows/deploy.yml` now enforces strict lint (`--max-warnings=0`) and mandatory Android gate before deploy.
