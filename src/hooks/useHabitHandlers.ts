@@ -11,6 +11,7 @@ import { recordHabitForChallenge } from '@/lib/comebackChallenge';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { SK } from '@/lib/storageKeys';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
+import { analytics } from '@/lib/analytics';
 import type { Habit } from '@/types';
 
 interface UseHabitHandlersParams {
@@ -87,6 +88,7 @@ export function useHabitHandlers({
           triggerXpPopup(treatResult.earned, 'habit');
           void haptics.habitToggled();
           trackTimeOfDayCompletion();
+          analytics.habitCompleted(habit.name);
         }
 
         const existingDates = habit.completedDates || [];
@@ -110,6 +112,7 @@ export function useHabitHandlers({
         void haptics.habitCompleted();
         setConfettiBurst({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
         trackTimeOfDayCompletion();
+        analytics.habitCompleted(habit.name);
         plantSeed('habit');
         waterPlants('habit');
 

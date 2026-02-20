@@ -4,6 +4,7 @@ import { getToday, generateId } from '@/lib/utils';
 import { triggerSync } from '@/storage/cloudSync';
 import { haptics } from '@/lib/haptics';
 import { logger } from '@/lib/logger';
+import { analytics } from '@/lib/analytics';
 import type { MoodEntry } from '@/types';
 
 interface UseMoodHandlersParams {
@@ -20,6 +21,7 @@ export function useMoodHandlers({ updateChallengeProgress }: UseMoodHandlersPara
   const handleAddMood = (entry: MoodEntry) => {
     setMoods(prev => [...prev, entry]);
     rewardUser('mood', { treats: 5, treatReason: 'Logged mood', haptic: haptics.moodSaved, seedExtra: entry.mood });
+    analytics.moodTracked(entry.mood);
     updateChallengeProgress();
   };
 
@@ -34,6 +36,7 @@ export function useMoodHandlers({ updateChallengeProgress }: UseMoodHandlersPara
 
     setMoods(prev => [...prev, entry]);
     rewardUser('mood', { treats: 5, treatReason: 'Quick mood', haptic: haptics.moodSaved, skipPopup: true, seedExtra: mood });
+    analytics.moodTracked(mood);
 
     logger.log('Quick mood logged from notification:', mood);
   }, [rewardUser, setMoods]);

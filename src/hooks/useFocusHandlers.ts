@@ -5,6 +5,7 @@ import { haptics } from '@/lib/haptics';
 import { queueFocusSessionSync } from '@/lib/offlineQueueHandlers';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { logger } from '@/lib/logger';
+import { analytics } from '@/lib/analytics';
 import type { FocusSession } from '@/types';
 
 interface UseFocusHandlersParams {
@@ -31,6 +32,7 @@ export function useFocusHandlers({
 
     const focusTreats = Math.round(session.duration * 0.5);
     rewardUser('focus', { treats: focusTreats, treatReason: `Focus ${session.duration}min`, haptic: haptics.focusCompleted });
+    analytics.focusSessionCompleted(session.duration);
 
     queueFocusSessionSync(session).catch((err) => {
       logger.warn('[Index] Failed to queue focus session sync:', err);

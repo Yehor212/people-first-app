@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-19 (TD-09 Phase 7 — 2458 tests, constitution audit)
+> Last updated: 2026-02-19 (2460 tests, constitution audit + senior dev review)
 
 ---
 
@@ -10,10 +10,10 @@
 
 | Metric | Value | Command |
 |--------|-------|---------|
-| Source files | 610 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
+| Source files | 609 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
 | Test files | 114 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
 | Total LOC | ~56,000 (TSX only) | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
-| Tests passing | 2458/2458 | `npx vitest --run` |
+| Tests passing | 2460/2460 | `npx vitest --run` |
 | ESLint errors | 0 | `npx eslint src/ --quiet` |
 | ESLint warnings | 0 | `npx eslint . --max-warnings=0` |
 | TypeScript errors | 0 | `npx tsc --noEmit` |
@@ -86,7 +86,7 @@ src/
     useHydrateGamification.ts   # Bridge: registers gamification hooks into store
     index.ts                    # Barrel export
 
-  hooks/                        # Custom hooks (47 files)
+  hooks/                        # Custom hooks (48 files)
     # Lifecycle hooks (extracted from Index.tsx)
     useAppLifecycle.ts          # App init, splash, loading
     useDateTracking.ts          # Midnight detection, date sync
@@ -115,7 +115,7 @@ src/
     useInnerWorld.ts            # Garden, creatures, rest mode (542 lines, dead code removed)
     useIndexedDB.ts             # Generic IndexedDB persistence hook
     useSwipeNavigation.ts       # Mobile tab swipe
-    useSessionTimeout.ts        # Auto-logout after inactivity
+    useSessionTimeout.ts        # Auto-logout after inactivity (web only, 24h; disabled on native)
     useScrollLock.ts            # Lock scroll when modal open
     # ... 20+ more domain/utility hooks
 
@@ -567,7 +567,7 @@ On PR to main:
 | TD-05 | ~~CRITICAL~~ → DONE | ~~Web Locks API bypass in auth (causes AbortError on reload)~~ | **Fixed 2026-02-16**, **updated 2026-02-18 by Codex 5.3**: Lock disabled entirely (`lock` option removed from Supabase config). The original `resilientNavigatorLock` was removed — Supabase GoTrue handles tab coordination internally. Dead code (48L) cleaned up 2026-02-19. | src/lib/supabaseClient.ts |
 | TD-07 | ~~HIGH~~ → DONE | ~~Direct `localStorage` calls~~ | **Fixed 2026-02-16**: Central `SK` registry (src/lib/storageKeys.ts) + safeJson accessors + ESLint `no-restricted-globals` rule. 199 raw calls → 0 across 50+ files. | src/lib/storageKeys.ts |
 | TD-08 | ~~HIGH~~ → DONE | ~~translations.ts monolith (all languages in one file)~~ | **Fixed 2026-02-16**: Split 19,879-line monolith into per-language files. `types.ts` (2,280L), 8 language files in `languages/` (~2,200L each), `index.ts` (37L assembler), `translations.ts` (3L re-export). Zero import changes needed. | src/i18n/ |
-| TD-09 | ~~HIGH~~ → LOW | Low test coverage | **Phase 7 done 2026-02-19**: 2313 → **2458 tests** (+145). Phase 7 added 15 files: useFocusTimerConfig (8), useRestMode (8), useSettingsHandlers (8), useOnboardingEffects (6), useChallengeHandlers (7), useHabitHandlers (10), useDerivedData (8), analytics (13), deepLinks (14), versionCheck (12), lazyWithRetry (8), constants (13), innerWorldConstants (11), appInitializer (8), haptics (11). **114 test files total**. Remaining: ~59 untested modules (mostly Capacitor/Supabase/audio-dependent). | src/**/__tests__/ |
+| TD-09 | ~~HIGH~~ → LOW | Low test coverage | **Phase 7 done 2026-02-19**: 2313 → **2460 tests** (+147). Phase 7 added 15 files + useSessionTimeout (21 tests incl. native platform skip, offline queue flush). **114 test files total**. Remaining: ~59 untested modules (mostly Capacitor/Supabase/audio-dependent). | src/**/__tests__/ |
 | TD-11 | ~~HIGH~~ → DONE | ~~CI pipeline missing lint + typecheck~~ | **Fixed 2026-02-16**, **hardened 2026-02-18 by Codex 5.3**: `npx eslint . --max-warnings=0` + `tsc --noEmit` + mandatory Android gate before deploy. Still missing: `playwright`, `npm audit`. | .github/workflows/deploy.yml |
 | TD-15 | ~~MEDIUM~~ → DONE | useInnerWorld.ts monolith | ~~780+ lines~~ → **338 lines** (extracted innerWorldHelpers.ts + useRestMode.ts) | src/hooks/useInnerWorld.ts |
 | TD-16 | LOW | Prop drilling in HomeTab (~30 props) | Handlers + inner world values passed as props | src/components/tabs/HomeTab.tsx |
@@ -706,7 +706,7 @@ On PR to main:
 - Scope: End-to-end repository remediation (Android-first)
 - Verified changes (audited 2026-02-19 by Claude Opus 4.6 — 68 files reviewed):
   - Android DND plugin gutted to read-only (DndPlugin.java, useDnd.ts, DndPlugin.ts) — CORRECT
-  - Auth flow unified to `skipBrowserRedirect` OAuth (useAuthHandlers, useAccountAuth) — CORRECT
+  - Auth flow: hybrid — native uses `authenticateWithGoogleNative()` (native account picker, no browser); web uses standard PKCE OAuth (useAuthHandlers, useAccountAuth) — UPDATED 2026-02-19
   - Supabase Edge Functions: shared helpers extracted to `_shared/` (auth.ts, http.ts, redaction.ts) — CORRECT
   - Weekly digest: fixed table names (`moods` not `mood_entries`, `habit_completions` not `habits.completion_dates`) — CORRECT
   - CI: `--max-warnings=0` + android-gate job — CORRECT
@@ -739,7 +739,7 @@ On PR to main:
   - ESLint warnings reduced from 52 to 0 (via exhaustive-deps fixes, unused var cleanup, etc.).
   - TypeScript, tests, web build, Android build/tests/lint, and release bundle verified.
 - CI hardening:
-  - `.github/workflows/deploy.yml` now enforces strict lint (`--max-warnings=0`) and mandatory Android gate before deploy.
+  - `.github/workflows/deploy.yml` now enforces strict lint (`--max-warnings=0`). Android gate runs as informational check (`continue-on-error: true`, does not block web deploy).
 
 #### Mandatory Release Gates (Android-first)
 

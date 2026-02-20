@@ -4,6 +4,7 @@ import { isNative } from '@/lib/platform';
 import { canStartAuthFlow, startAuthFlow, endAuthFlow } from '@/lib/authGuard';
 import { authenticateWithGoogleNative } from '@/lib/nativeGoogleAuth';
 import { logger } from '@/lib/logger';
+import { analytics } from '@/lib/analytics';
 import { PHONE_REGEX } from './types';
 import type { useAuthSession } from './useAuthSession';
 
@@ -134,6 +135,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
         const result = await authenticateWithGoogleNative();
 
         if (result.success && result.user) {
+          analytics.signIn();
           session.tryComplete(
             { name: result.user.name, email: result.user.email },
             'nativeGoogleAuth'
@@ -233,6 +235,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
         const phone = data.session.user.phone || session.phoneNumber.trim();
         const metadata = data.session.user.user_metadata || {};
         const name = metadata.full_name || metadata.name || phone;
+        analytics.signIn();
         session.tryComplete({ name, email: data.session.user.email || '' }, 'phoneOtp');
       }
     } catch (err) {

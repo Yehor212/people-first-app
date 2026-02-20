@@ -11,6 +11,7 @@ import {
   getXpForAction,
 } from '@/lib/gamification';
 import { addFriendActivity, loadMyProfile, updateMyLevel } from '@/storage/friendsSync';
+import { analytics } from '@/lib/analytics';
 
 interface GamificationState {
   totalXp: number;
@@ -139,6 +140,7 @@ export function useGamification() {
       if (!initialLoadRef.current && isRealChange && achievementsToShow.length > 0) {
         const profile = loadMyProfile();
         achievementsToShow.forEach((achievement) => {
+          analytics.achievementUnlocked(achievement.id);
           // Track for friends activity feed
           if (profile) {
             const isStreak = achievement.id.startsWith('streak_');
