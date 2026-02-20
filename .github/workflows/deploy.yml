@@ -91,7 +91,7 @@ jobs:
           path: android/app/build/reports/lint-results-debug.html
 
   deploy:
-    needs: [build, android-gate]
+    needs: [build]  # android-gate runs in parallel as informational check, does not block web deploy
     runs-on: ubuntu-latest
     environment:
       name: github-pages
