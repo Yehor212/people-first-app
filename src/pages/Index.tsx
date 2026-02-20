@@ -302,6 +302,7 @@ export function Index() {
             safeFocusSessions={focusSessions}
             safeGratitudeEntries={gratitudeEntries}
             todayAllEvents={todayAllEvents}
+            innerWorld={innerWorld}
             handleAddScheduleEvent={handleAddScheduleEvent}
             handleDeleteScheduleEvent={handleDeleteScheduleEvent}
             handleCompleteFocusSession={handleCompleteFocusSession}

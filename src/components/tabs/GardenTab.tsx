@@ -11,7 +11,8 @@ import { haptics } from '@/lib/haptics';
 import { getCurrentGardenAtmosphere, getCompanionBehaviorForAtmosphere } from '@/lib/gardenAtmosphere';
 import { motionPresets } from '@/lib/animationUtils';
 import { PersonStanding, Flower2, Moon, Zap, Palette } from 'lucide-react';
-import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ScheduleEvent } from '@/types';
+import { GardenCanvas } from '@/components/GardenCanvas';
+import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ScheduleEvent, InnerWorld } from '@/types';
 
 const ScheduleTimeline = lazyWithRetry(() => import('@/components/ScheduleTimeline').then(m => ({ default: m.ScheduleTimeline })), 'ScheduleTimeline');
 const JournalModule = lazyWithRetry(() => import('@/features/journal').then(m => ({ default: m.JournalModule })), 'JournalModule');
@@ -29,6 +30,7 @@ interface GardenTabProps {
   safeFocusSessions: FocusSession[];
   safeGratitudeEntries: GratitudeEntry[];
   todayAllEvents: ScheduleEvent[];
+  innerWorld: InnerWorld;
   handleAddScheduleEvent: (event: Omit<ScheduleEvent, 'id'>) => void;
   handleDeleteScheduleEvent: (id: string) => void;
   handleCompleteFocusSession: (session: FocusSession) => void;
@@ -37,7 +39,7 @@ interface GardenTabProps {
 
 export function GardenTab({
   safeMoods, safeHabits, safeFocusSessions, safeGratitudeEntries,
-  todayAllEvents, handleAddScheduleEvent, handleDeleteScheduleEvent,
+  todayAllEvents, innerWorld, handleAddScheduleEvent, handleDeleteScheduleEvent,
   handleCompleteFocusSession, earnTreats: _earnTreats,
 }: GardenTabProps) {
   const { isFeatureVisible } = useFeatureFlags();
@@ -79,6 +81,9 @@ export function GardenTab({
           onOpenQuests={isFeatureVisible('quests') ? () => setShowQuestsPanel(true) : undefined}
           onOpenFriends={() => setShowFriendsPanel(true)}
         />
+
+        {/* Garden World visualization (IA Blueprint Phase 5) */}
+        <GardenCanvas world={innerWorld} atmosphere={atmosphere} />
 
         {/* Garden atmosphere indicator (IA Blueprint Phase 4) */}
         {atmosphere !== 'default' && atmosphereIcons[atmosphere] && (() => {

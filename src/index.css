@@ -3996,6 +3996,15 @@ input::-moz-focus-inner {
   animation: zen-pulse 2s ease-in-out infinite;
 }
 
+/* Garden breathe — gentle idle pulse for garden plants */
+@keyframes garden-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+.animate-garden-breathe {
+  animation: garden-breathe 4s ease-in-out infinite;
+}
+
 /* Icon wobble — replaces FM rotate: [0, 15, -15, 0] loops */
 @keyframes zen-wobble {
   0%, 100% { transform: rotate(0deg) scale(1); }
