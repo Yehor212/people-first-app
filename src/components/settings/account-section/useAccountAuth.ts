@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { isNative } from '@/lib/platform';
+import { authenticateWithGoogleNative } from '@/lib/nativeGoogleAuth';
+import { authStateManager } from '@/lib/authStateManager';
+import { resetAuthGuard } from '@/lib/authGuard';
 import { removePushToken } from '@/lib/pushNotifications';
 import { offlineQueue } from '@/lib/offlineQueue';
 import { stopAutoSync } from '@/storage/cloudSync';
@@ -48,27 +51,35 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
     }
     setIsSigningIn(true);
     try {
+      // Native Android: use native account picker (no browser redirect)
+      if (isNative) {
+        logger.log('[AccountSection] Starting native Google sign-in');
+        const result = await authenticateWithGoogleNative();
+        if (result.success) {
+          setAuthStatus(null);
+        } else if (result.error !== 'cancelled') {
+          setAuthStatus(result.error || t.authGoogleSignInFailed || 'Google Sign-In failed.');
+        }
+        return;
+      }
+
+      // Web: existing OAuth redirect flow
       const redirectUrl = getAuthRedirectUrl();
       logger.log('[AccountSection] Starting Google sign-in with redirect:', redirectUrl);
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: redirectUrl,
-          skipBrowserRedirect: isNative,
           queryParams: { prompt: 'select_account' },
         },
       });
       if (error) {
         logger.error('[AccountSection] Google sign-in error:', error);
         setAuthStatus(t.authError);
-      } else if (isNative) {
-        if (!data?.url) {
-          logger.error('[AccountSection] Google sign-in returned no OAuth URL on native');
-          setAuthStatus(t.authGoogleSignInFailed || 'Google Sign-In failed.');
-          return;
-        }
-        window.location.assign(data.url);
-        logger.log('[AccountSection] Google OAuth URL navigation started');
+      }
+      // Web redirects automatically via Supabase SDK
+      if (data?.url) {
+        logger.log('[AccountSection] Google OAuth URL generated');
       }
     } catch (err) {
       logger.error('[AccountSection] Sign-in error:', err);
@@ -101,6 +112,8 @@ export function useAccountAuth({ onNameChange, t }: UseAccountAuthOptions) {
       triggerDataRefresh();
       await removePushToken();
       await supabase.auth.signOut();
+      authStateManager.reset();
+      resetAuthGuard();
       onNameChange('Friend');
       setAuthStatus(t.authSignedOut);
     } finally {

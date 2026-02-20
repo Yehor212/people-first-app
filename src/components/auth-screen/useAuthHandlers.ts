@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { getAuthRedirectUrl } from '@/lib/authRedirect';
 import { isNative } from '@/lib/platform';
 import { canStartAuthFlow, startAuthFlow, endAuthFlow } from '@/lib/authGuard';
+import { authenticateWithGoogleNative } from '@/lib/nativeGoogleAuth';
 import { logger } from '@/lib/logger';
 import { PHONE_REGEX } from './types';
 import type { useAuthSession } from './useAuthSession';
@@ -116,7 +117,47 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
     }
   };
 
-  const handleGoogleSignIn = () => void handleOAuthSignIn('google');
+  const handleGoogleSignIn = async () => {
+    // Native Android: use native account picker (no browser redirect)
+    if (isNative) {
+      if (!canStartAuthFlow()) {
+        session.setError(t.authTooManyAttempts);
+        logger.warn('[Auth] Native Google auth blocked by guard');
+        return;
+      }
+      startAuthFlow();
+      session.setLoadingProvider('google');
+      session.setError(null);
+      session.setDebugInfo(null);
+
+      try {
+        const result = await authenticateWithGoogleNative();
+
+        if (result.success && result.user) {
+          session.tryComplete(
+            { name: result.user.name, email: result.user.email },
+            'nativeGoogleAuth'
+          );
+        } else if (result.error === 'cancelled') {
+          session.setLoadingProvider(null);
+        } else {
+          session.setError(result.error || t.authUnexpectedError);
+          session.setDebugInfo(`Native auth error: ${result.error}`);
+        }
+      } catch (err) {
+        logger.error('[Auth] Native Google auth exception:', err);
+        session.setError(t.authUnexpectedError);
+        session.setDebugInfo(`Exception: ${err instanceof Error ? err.message : String(err)}`);
+      } finally {
+        endAuthFlow();
+        session.setLoadingProvider(null);
+      }
+      return;
+    }
+
+    // Web: keep existing OAuth redirect flow
+    void handleOAuthSignIn('google');
+  };
   const handleAppleSignIn = () => void handleOAuthSignIn('apple');
   const handleFacebookSignIn = () => void handleOAuthSignIn('facebook');
 
