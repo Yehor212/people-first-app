@@ -100,7 +100,7 @@ export function Index() {
     plantSeed, waterPlants, attractCreature, feedCreatures,
     earnTreats,
     isRestMode, activateRestMode, deactivateRestMode,
-    canActivateRestMode, daysUntilRestAvailable,
+    canActivateRestMode,
   } = useInnerWorld();
 
   // Register gamification hooks into Zustand store (bridge pattern)
@@ -189,7 +189,7 @@ export function Index() {
   // Derived data (schedule events, CTA system, widget data)
   const {
     allScheduleEvents, todayAllEvents,
-    habitsDueToday, completedTodayCount, currentPrimaryCTA,
+    completedTodayCount, currentPrimaryCTA,
     todayFocusMinutes, lastBadgeName, widgetStreak,
   } = useDerivedData({ restDays: innerWorld.restDays || [] }, badges);
 
@@ -270,20 +270,14 @@ export function Index() {
           <HomeTab
             safeMoods={moods}
             safeHabits={habits}
-            safeFocusSessions={focusSessions}
             safeGratitudeEntries={gratitudeEntries}
-            restDays={innerWorld.restDays}
             currentActiveStreak={innerWorld.currentActiveStreak}
             isRestMode={isRestMode}
             activateRestMode={activateRestMode}
             deactivateRestMode={deactivateRestMode}
             canActivateRestMode={canActivateRestMode}
-            daysUntilRestAvailable={daysUntilRestAvailable}
             completedTodayCount={completedTodayCount}
-            habitsDueToday={habitsDueToday}
-            todayFocusMinutes={todayFocusMinutes}
             currentPrimaryCTA={currentPrimaryCTA}
-            userLevel={userLevel.level}
             handleAddMood={handleAddMood}
             handleToggleHabit={handleToggleHabit}
             handleAdjustHabit={handleAdjustHabit}

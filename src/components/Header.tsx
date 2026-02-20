@@ -1,18 +1,19 @@
 import { memo, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Leaf, Trophy, ListTodo, Sparkles, Users } from 'lucide-react';
+import { Leaf, Trophy, ListTodo, Sparkles, Users, Flame } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SyncStatusIndicatorCompact } from '@/components/SyncStatusIndicator';
 
 interface HeaderProps {
   userName?: string;
+  streak?: number;
   onOpenChallenges?: () => void;
   onOpenTasks?: () => void;
   onOpenQuests?: () => void;
   onOpenFriends?: () => void;
 }
 
-export const Header = memo(function Header({ userName = 'Friend', onOpenChallenges, onOpenTasks, onOpenQuests, onOpenFriends }: HeaderProps) {
+export const Header = memo(function Header({ userName = 'Friend', streak, onOpenChallenges, onOpenTasks, onOpenQuests, onOpenFriends }: HeaderProps) {
   const { t, language } = useLanguage();
 
   const greeting = useMemo(() => {
@@ -56,12 +57,20 @@ export const Header = memo(function Header({ userName = 'Friend', onOpenChalleng
         </div>
       </div>
 
-      {/* Greeting */}
+      {/* Greeting + compact streak */}
       <div className="mb-3">
         <h1 className="text-xl font-bold text-foreground">
-          {greeting}, {userName}! 👋
+          {greeting}, {userName}
         </h1>
-        <p className="text-muted-foreground text-xs capitalize">{formattedDate}</p>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className="text-muted-foreground text-xs capitalize">{formattedDate}</p>
+          {streak != null && streak > 0 && (
+            <div className="flex items-center gap-1 text-xs font-medium text-orange-500">
+              <Flame className="w-3 h-3" />
+              <span>{streak} {t.daysInRow}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Quick Actions Bar - compact but accessible */}

@@ -5,17 +5,16 @@ import { PullToRefresh } from '@/components/PullToRefresh';
 import { InstallBanner } from '@/components/InstallBanner';
 import { SessionExpiredBanner } from '@/components/SessionExpiredBanner';
 import { DayProgressIndicator } from '@/components/OnboardingOverlay';
-import { StreakBanner } from '@/components/StreakBanner';
-import { QuickStatsRow } from '@/components/ui/stat-card';
-import { UrgencyAlert } from '@/components/UrgencyAlert';
+import { TodayFocusCard } from '@/components/TodayFocusCard';
 import { RestModeCard } from '@/components/RestModeCard';
 import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
 import { SkeletonCard, SkeletonList } from '@/components/ui/skeleton';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { useAppStore, useUIStore, useUserDataStore, getModalToggle } from '@/stores';
-import type { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
+import { safeLocalStorageGet } from '@/lib/safeJson';
+import { SK } from '@/lib/storageKeys';
+import type { MoodEntry, Habit, GratitudeEntry } from '@/types';
 
 const EmotionWheel = lazyWithRetry(() => import('@/components/mindfulness/EmotionWheel').then(m => ({ default: m.EmotionWheel })), 'EmotionWheel');
 const HabitTracker = lazyWithRetry(() => import('@/components/HabitTracker').then(m => ({ default: m.HabitTracker })), 'HabitTracker');
@@ -25,28 +24,24 @@ const setShowChallenges = getModalToggle('showChallenges');
 const setShowTasksPanel = getModalToggle('showTasksPanel');
 const setShowQuestsPanel = getModalToggle('showQuestsPanel');
 
+type HomeLayout = 'mood' | 'habits' | 'focus';
+
 interface HomeTabProps {
-  // Data arrays (safe-guarded)
+  // Data arrays
   safeMoods: MoodEntry[];
   safeHabits: Habit[];
-  safeFocusSessions: FocusSession[];
   safeGratitudeEntries: GratitudeEntry[];
 
   // Inner World
-  restDays: string[];
   currentActiveStreak: number;
   isRestMode: boolean;
   activateRestMode: () => void;
   deactivateRestMode: () => void;
   canActivateRestMode: boolean;
-  daysUntilRestAvailable: number;
 
   // Derived values
   completedTodayCount: number;
-  habitsDueToday: Habit[];
-  todayFocusMinutes: number;
   currentPrimaryCTA: 'mood' | 'habits' | 'focus' | 'gratitude' | 'complete';
-  userLevel: number;
 
   // Handlers
   handleAddMood: (entry: MoodEntry) => void;
@@ -67,16 +62,15 @@ interface HomeTabProps {
 }
 
 export function HomeTab({
-  safeMoods, safeHabits, safeFocusSessions, safeGratitudeEntries,
-  restDays, currentActiveStreak, isRestMode, activateRestMode, deactivateRestMode,
-  canActivateRestMode, daysUntilRestAvailable,
-  completedTodayCount, habitsDueToday, todayFocusMinutes, currentPrimaryCTA, userLevel,
+  safeMoods, safeHabits, safeGratitudeEntries,
+  currentActiveStreak, isRestMode, activateRestMode, deactivateRestMode,
+  canActivateRestMode,
+  completedTodayCount, currentPrimaryCTA,
   handleAddMood, handleToggleHabit, handleAdjustHabit, handleAddHabit,
   handleUpdateHabit, handleDeleteHabit, handleAddGratitude, handleJournalPromptUsed,
   handleOpenChallenge, handlePullToRefresh,
   moodRef, habitsRef, gratitudeRef,
 }: HomeTabProps) {
-  const { t } = useLanguage();
   const { isFeatureVisible } = useFeatureFlags();
   const userName = useUserDataStore(s => s.userName);
   const hasValidSession = useAppStore(s => s.hasValidSession);
@@ -85,12 +79,53 @@ export function HomeTab({
   const setSettingsOpenSection = useAppStore(s => s.setSettingsOpenSection);
   const journalPromptText = useUIStore(s => s.journalPromptText);
 
+  // Home screen layout preference (mood-first by default)
+  const homeLayout = safeLocalStorageGet<HomeLayout>(SK.HOME_LAYOUT, 'mood');
+
+  const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>) => {
+    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  // Mood Tracker block — min-h prevents CLS when skeleton → component swap
+  const moodBlock = (
+    <div ref={moodRef} className="min-h-[200px]">
+      <ModalErrorBoundary fallbackTitle="Mood Tracker Error" fallbackBody="Unable to load mood tracker. Try refreshing.">
+        <Suspense fallback={<SkeletonCard />}>
+          <EmotionWheel
+            entries={safeMoods}
+            onAddEntry={handleAddMood}
+          />
+        </Suspense>
+      </ModalErrorBoundary>
+    </div>
+  );
+
+  // Habit Tracker block — min-h prevents CLS (header + ~2 habit rows)
+  const habitBlock = (
+    <div ref={habitsRef} className="min-h-[180px]">
+      <ModalErrorBoundary fallbackTitle="Habit Tracker Error" fallbackBody="Unable to load habit tracker. Try refreshing.">
+        <Suspense fallback={<SkeletonList />}>
+          <HabitTracker
+            habits={safeHabits}
+            onToggleHabit={handleToggleHabit}
+            onAdjustHabit={handleAdjustHabit}
+            onAddHabit={handleAddHabit}
+            onUpdateHabit={handleUpdateHabit}
+            onDeleteHabit={handleDeleteHabit}
+            onOpenChallenge={handleOpenChallenge}
+          />
+        </Suspense>
+      </ModalErrorBoundary>
+    </div>
+  );
+
   return (
     <div className="animate-tab-enter">
       <PullToRefresh onRefresh={handlePullToRefresh}>
         <InstallBanner />
         <Header
           userName={userName}
+          streak={currentActiveStreak}
           onOpenChallenges={isFeatureVisible('challenges') ? () => setShowChallenges(true) : undefined}
           onOpenTasks={isFeatureVisible('tasks') ? () => setShowTasksPanel(true) : undefined}
           onOpenQuests={isFeatureVisible('quests') ? () => setShowQuestsPanel(true) : undefined}
@@ -104,36 +139,15 @@ export function HomeTab({
         <div className="space-y-3">
           <DayProgressIndicator />
 
-          <StreakBanner
-            moods={safeMoods}
-            habits={safeHabits}
-            focusSessions={safeFocusSessions}
-            gratitudeEntries={safeGratitudeEntries}
-            restDays={restDays}
-            onRestMode={activateRestMode}
-            isRestMode={isRestMode}
+          <TodayFocusCard
+            currentPrimaryCTA={currentPrimaryCTA}
+            onScrollToMood={() => scrollToRef(moodRef)}
+            onScrollToHabits={() => scrollToRef(habitsRef)}
+            onScrollToGratitude={() => scrollToRef(gratitudeRef)}
             canActivateRestMode={canActivateRestMode}
-            daysUntilRestAvailable={daysUntilRestAvailable}
-          />
-
-          <QuickStatsRow
-            habitsCompleted={completedTodayCount}
-            habitsTotal={habitsDueToday.length}
-            focusMinutes={isFeatureVisible('focusTimer') ? todayFocusMinutes : undefined}
-            level={userLevel}
-            labels={{
-              habits: t.habits,
-              focus: t.focus,
-              level: t.level || 'Level',
-            }}
-          />
-
-          <UrgencyAlert
-            habits={habitsDueToday}
-            currentStreak={currentActiveStreak}
-            onHabitClick={() => {
-              habitsRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }}
+            onRestMode={activateRestMode}
+            completedTodayCount={completedTodayCount}
+            isRestMode={isRestMode}
           />
 
           {isRestMode ? (
@@ -145,38 +159,16 @@ export function HomeTab({
             <AllCompleteCelebration streak={currentActiveStreak} />
           ) : (
             <>
-              {/* Mood Tracker */}
-              <div ref={moodRef}>
-                <ModalErrorBoundary fallbackTitle="Mood Tracker Error" fallbackBody="Unable to load mood tracker. Try refreshing.">
-                  <Suspense fallback={<SkeletonCard />}>
-                    <EmotionWheel
-                      entries={safeMoods}
-                      onAddEntry={handleAddMood}
-                    />
-                  </Suspense>
-                </ModalErrorBoundary>
-              </div>
-
-              {/* Habit Tracker */}
-              <div ref={habitsRef}>
-                <ModalErrorBoundary fallbackTitle="Habit Tracker Error" fallbackBody="Unable to load habit tracker. Try refreshing.">
-                  <Suspense fallback={<SkeletonList />}>
-                    <HabitTracker
-                      habits={safeHabits}
-                      onToggleHabit={handleToggleHabit}
-                      onAdjustHabit={handleAdjustHabit}
-                      onAddHabit={handleAddHabit}
-                      onUpdateHabit={handleUpdateHabit}
-                      onDeleteHabit={handleDeleteHabit}
-                      onOpenChallenge={handleOpenChallenge}
-                    />
-                  </Suspense>
-                </ModalErrorBoundary>
-              </div>
+              {/* Primary content — order based on user preference */}
+              {homeLayout === 'habits' ? (
+                <>{habitBlock}{moodBlock}</>
+              ) : (
+                <>{moodBlock}{habitBlock}</>
+              )}
 
               {/* Gratitude Journal */}
               {isFeatureVisible('gratitudeJournal') && (
-                <div ref={gratitudeRef}>
+                <div ref={gratitudeRef} className="min-h-[120px]">
                   <LazyErrorBoundary componentName="Gratitude Journal">
                     <Suspense fallback={<SkeletonCard />}>
                       <GratitudeJournal
