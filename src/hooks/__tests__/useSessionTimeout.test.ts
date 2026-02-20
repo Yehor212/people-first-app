@@ -1,6 +1,6 @@
 /**
  * useSessionTimeout Hook Tests
- * Tests idle timeout, user activity detection, and cleanup
+ * Tests idle timeout (web only), activity detection, native skip, and cleanup
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -34,6 +34,14 @@ vi.mock('@/lib/offlineQueue', () => ({
   },
 }));
 
+// Default: web platform (isNative = false)
+const mockIsNative = vi.fn(() => false);
+vi.mock('@/lib/platform', () => ({
+  get isNative() {
+    return mockIsNative();
+  },
+}));
+
 // Mock window.location.reload
 const mockReload = vi.fn();
 Object.defineProperty(window, 'location', {
@@ -41,10 +49,13 @@ Object.defineProperty(window, 'location', {
   writable: true,
 });
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 describe('useSessionTimeout', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
+    mockIsNative.mockReturnValue(false); // default to web
   });
 
   afterEach(() => {
@@ -53,7 +64,7 @@ describe('useSessionTimeout', () => {
   });
 
   describe('initialization', () => {
-    it('sets up activity listeners when enabled', () => {
+    it('sets up activity listeners when enabled on web', () => {
       const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
 
       renderHook(() => useSessionTimeout(true));
@@ -82,13 +93,35 @@ describe('useSessionTimeout', () => {
     });
   });
 
-  describe('timeout behavior', () => {
-    it('signs out after 15 minutes of inactivity', async () => {
+  describe('native platform', () => {
+    it('does not set up listeners on native (session managed by Supabase)', () => {
+      mockIsNative.mockReturnValue(true);
+      const addEventListenerSpy = vi.spyOn(document, 'addEventListener');
+
       renderHook(() => useSessionTimeout(true));
 
-      // Advance time by 15 minutes
+      expect(addEventListenerSpy).not.toHaveBeenCalledWith('mousedown', expect.any(Function), expect.anything());
+    });
+
+    it('does not sign out on native even after long inactivity', () => {
+      mockIsNative.mockReturnValue(true);
+
+      renderHook(() => useSessionTimeout(true));
+
+      act(() => {
+        vi.advanceTimersByTime(30 * DAY_MS);
+      });
+
+      expect(mockSignOut).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('timeout behavior (web)', () => {
+    it('signs out after 24 hours of inactivity', async () => {
+      renderHook(() => useSessionTimeout(true));
+
       await act(async () => {
-        vi.advanceTimersByTime(15 * 60 * 1000);
+        vi.advanceTimersByTime(DAY_MS);
         await Promise.resolve();
       });
 
@@ -99,9 +132,9 @@ describe('useSessionTimeout', () => {
     it('does not sign out before timeout', () => {
       renderHook(() => useSessionTimeout(true));
 
-      // Advance time by 14 minutes
+      // Advance time by 23 hours
       act(() => {
-        vi.advanceTimersByTime(14 * 60 * 1000);
+        vi.advanceTimersByTime(23 * 60 * 60 * 1000);
       });
 
       expect(mockSignOut).not.toHaveBeenCalled();
@@ -112,9 +145,9 @@ describe('useSessionTimeout', () => {
     it('resets timer on mousedown', async () => {
       renderHook(() => useSessionTimeout(true));
 
-      // Advance 10 minutes
+      // Advance 12 hours
       act(() => {
-        vi.advanceTimersByTime(10 * 60 * 1000);
+        vi.advanceTimersByTime(12 * 60 * 60 * 1000);
       });
 
       // Simulate activity
@@ -122,17 +155,17 @@ describe('useSessionTimeout', () => {
         document.dispatchEvent(new MouseEvent('mousedown'));
       });
 
-      // Advance another 10 minutes (would be 20 total, but timer was reset)
+      // Advance another 12 hours (would be 24h total, but timer was reset)
       act(() => {
-        vi.advanceTimersByTime(10 * 60 * 1000);
+        vi.advanceTimersByTime(12 * 60 * 60 * 1000);
       });
 
       // Should not have signed out yet (timer was reset)
       expect(mockSignOut).not.toHaveBeenCalled();
 
-      // Advance remaining 5 minutes to trigger timeout
+      // Advance remaining 12 hours to trigger timeout
       await act(async () => {
-        vi.advanceTimersByTime(5 * 60 * 1000);
+        vi.advanceTimersByTime(12 * 60 * 60 * 1000);
         await Promise.resolve();
       });
 
@@ -143,7 +176,7 @@ describe('useSessionTimeout', () => {
       renderHook(() => useSessionTimeout(true));
 
       act(() => {
-        vi.advanceTimersByTime(10 * 60 * 1000);
+        vi.advanceTimersByTime(12 * 60 * 60 * 1000);
       });
 
       act(() => {
@@ -151,7 +184,7 @@ describe('useSessionTimeout', () => {
       });
 
       act(() => {
-        vi.advanceTimersByTime(10 * 60 * 1000);
+        vi.advanceTimersByTime(12 * 60 * 60 * 1000);
       });
 
       expect(mockSignOut).not.toHaveBeenCalled();
@@ -161,7 +194,7 @@ describe('useSessionTimeout', () => {
       renderHook(() => useSessionTimeout(true));
 
       act(() => {
-        vi.advanceTimersByTime(10 * 60 * 1000);
+        vi.advanceTimersByTime(12 * 60 * 60 * 1000);
       });
 
       act(() => {
@@ -169,7 +202,7 @@ describe('useSessionTimeout', () => {
       });
 
       act(() => {
-        vi.advanceTimersByTime(10 * 60 * 1000);
+        vi.advanceTimersByTime(12 * 60 * 60 * 1000);
       });
 
       expect(mockSignOut).not.toHaveBeenCalled();
@@ -179,7 +212,7 @@ describe('useSessionTimeout', () => {
       renderHook(() => useSessionTimeout(true));
 
       act(() => {
-        vi.advanceTimersByTime(10 * 60 * 1000);
+        vi.advanceTimersByTime(12 * 60 * 60 * 1000);
       });
 
       act(() => {
@@ -187,7 +220,7 @@ describe('useSessionTimeout', () => {
       });
 
       act(() => {
-        vi.advanceTimersByTime(10 * 60 * 1000);
+        vi.advanceTimersByTime(12 * 60 * 60 * 1000);
       });
 
       expect(mockSignOut).not.toHaveBeenCalled();
@@ -197,7 +230,7 @@ describe('useSessionTimeout', () => {
       renderHook(() => useSessionTimeout(true));
 
       act(() => {
-        vi.advanceTimersByTime(10 * 60 * 1000);
+        vi.advanceTimersByTime(12 * 60 * 60 * 1000);
       });
 
       act(() => {
@@ -205,7 +238,7 @@ describe('useSessionTimeout', () => {
       });
 
       act(() => {
-        vi.advanceTimersByTime(10 * 60 * 1000);
+        vi.advanceTimersByTime(12 * 60 * 60 * 1000);
       });
 
       expect(mockSignOut).not.toHaveBeenCalled();
@@ -219,7 +252,7 @@ describe('useSessionTimeout', () => {
       renderHook(() => useSessionTimeout(true));
 
       await act(async () => {
-        vi.advanceTimersByTime(15 * 60 * 1000);
+        vi.advanceTimersByTime(DAY_MS);
         await Promise.resolve();
       });
 
@@ -233,7 +266,7 @@ describe('useSessionTimeout', () => {
       renderHook(() => useSessionTimeout(true));
 
       await act(async () => {
-        vi.advanceTimersByTime(15 * 60 * 1000);
+        vi.advanceTimersByTime(DAY_MS);
         await Promise.resolve();
       });
 
@@ -248,7 +281,7 @@ describe('useSessionTimeout', () => {
       renderHook(() => useSessionTimeout(true));
 
       await act(async () => {
-        vi.advanceTimersByTime(15 * 60 * 1000);
+        vi.advanceTimersByTime(DAY_MS);
         await Promise.resolve();
       });
 
@@ -264,7 +297,7 @@ describe('useSessionTimeout', () => {
 
       await act(async () => {
         // Trigger timeout
-        vi.advanceTimersByTime(15 * 60 * 1000);
+        vi.advanceTimersByTime(DAY_MS);
         await Promise.resolve();
         // Advance past queue flush timeout (10 seconds)
         vi.advanceTimersByTime(10 * 1000);
@@ -304,13 +337,13 @@ describe('useSessionTimeout', () => {
       const { unmount } = renderHook(() => useSessionTimeout(true));
 
       act(() => {
-        vi.advanceTimersByTime(5 * 60 * 1000);
+        vi.advanceTimersByTime(6 * 60 * 60 * 1000); // 6 hours
       });
 
       unmount();
 
       act(() => {
-        vi.advanceTimersByTime(15 * 60 * 1000);
+        vi.advanceTimersByTime(DAY_MS);
       });
 
       expect(mockSignOut).not.toHaveBeenCalled();

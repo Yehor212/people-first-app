@@ -2,26 +2,29 @@
  * Session Timeout Hook
  *
  * Automatically signs out the user after a period of inactivity.
- * This is a security measure for shared devices.
+ * This is a security measure for shared devices (web only).
  *
- * Default timeout: 15 minutes of inactivity
+ * - Native (Android/iOS): disabled — personal device, session managed by Supabase refresh token (90 days)
+ * - Web: 24 hours of inactivity triggers sign-out
  *
- * Now flushes offline queue before reload to prevent data loss.
+ * Flushes offline queue before sign-out to prevent data loss.
  */
 
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { isNative } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import { offlineQueue } from '@/lib/offlineQueue';
 
-const IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+const WEB_IDLE_TIMEOUT = 24 * 60 * 60 * 1000; // 24 hours
 const QUEUE_FLUSH_TIMEOUT = 10000; // 10 seconds max to flush queue
 
 export function useSessionTimeout(enabled: boolean = true) {
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
-    if (!enabled || !supabase) return;
+    // Disabled on native — personal device, no idle logout needed
+    if (!enabled || !supabase || isNative) return;
 
     const resetTimer = () => {
       if (timeoutRef.current) {
@@ -56,7 +59,7 @@ export function useSessionTimeout(enabled: boolean = true) {
         } catch (error) {
           logger.error('[SessionTimeout] Error signing out:', error);
         }
-      }, IDLE_TIMEOUT);
+      }, WEB_IDLE_TIMEOUT);
     };
 
     // Events that indicate user activity
