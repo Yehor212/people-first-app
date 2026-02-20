@@ -20,10 +20,10 @@
     --background: 45 20% 96%;
     --foreground: 160 25% 15%;
 
-    --card: 45 25% 99%;
+    --card: 45 15% 97%;
     --card-foreground: 160 25% 15%;
 
-    --popover: 45 20% 99%;
+    --popover: 45 15% 97%;
     --popover-foreground: 160 25% 15%;
 
     --primary: 158 45% 38%;
@@ -41,8 +41,8 @@
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 45 25% 75%;
-    --input: 45 25% 75%;
+    --border: 45 15% 88%;
+    --input: 45 15% 88%;
     --ring: 158 45% 38%;
 
     --radius: 1rem;
@@ -55,7 +55,7 @@
     --zen-gradient-hero: linear-gradient(180deg, hsl(45 20% 98%) 0%, hsl(158 25% 92%) 100%);
     
     --zen-shadow-soft: 0 4px 20px -4px hsl(158 45% 42% / 0.08);
-    --zen-shadow-card: 0 2px 12px -2px hsl(160 25% 15% / 0.04);
+    --zen-shadow-card: 0 2px 12px -2px hsl(160 25% 15% / 0.06);
     --zen-shadow-glow: 0 0 30px hsl(158 45% 42% / 0.1);
     --zen-shadow-hover: 0 8px 30px -6px hsl(158 45% 42% / 0.12);
 
@@ -65,6 +65,11 @@
     --surface-raised: 45 20% 92%;
     --surface-elevated: 45 15% 88%;
     --surface-overlay: 45 15% 85%;
+
+    /* Frosted Glass Surface — for bottom sheets, sticky headers, floating cards */
+    --surface-glass: hsl(45 20% 98% / 0.7);
+    --surface-glass-border: hsl(45 25% 90% / 0.5);
+    --surface-glass-blur: 20px;
 
     /* Extended Shadow Levels */
     --zen-shadow-xs: 0 1px 2px -1px hsl(160 25% 15% / 0.05);
@@ -330,6 +335,11 @@
     --surface-elevated: 160 10% 14%;
     --surface-overlay: 160 8% 16%;
 
+    /* Frosted Glass Surface — dark */
+    --surface-glass: hsl(160 12% 8% / 0.75);
+    --surface-glass-border: hsl(160 12% 20% / 0.4);
+    --surface-glass-blur: 20px;
+
     /* Dark mode extended shadows */
     --zen-shadow-xs: 0 1px 2px -1px hsl(0 0% 0% / 0.2);
     --zen-shadow-sm: 0 2px 8px -2px hsl(0 0% 0% / 0.3);
@@ -504,6 +514,11 @@
     /* OLED surface elevation */
     --surface-base: 0 0% 5%;
     --surface-raised: 0 0% 7%;
+
+    /* Frosted Glass Surface — OLED */
+    --surface-glass: hsl(0 0% 3% / 0.8);
+    --surface-glass-border: hsl(0 0% 15% / 0.3);
+    --surface-glass-blur: 16px;
     --surface-elevated: 0 0% 9%;
     --surface-overlay: 0 0% 11%;
 

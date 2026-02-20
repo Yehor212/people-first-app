@@ -42,6 +42,7 @@ export const SK = {
   TIME_CHALLENGES: 'zenflow_time_challenges',
   ACTIVE_POWERUPS: 'zenflow_active_powerups',
   DOPAMINE_SETTINGS: 'zenflow_dopamine_settings',
+  HOME_LAYOUT: 'zenflow_home_layout',
   BADGES: 'zenflow_badges',
   SPECIAL_BADGES: 'zenflow-special-badges',
   DAILY_SURPRISE_SEEN: 'zenflow-daily-surprise-seen',

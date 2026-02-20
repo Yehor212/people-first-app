@@ -36,6 +36,31 @@ export const motionPresets = {
   },
 } as const;
 
+/**
+ * ZenFlow Motion Tokens — standardized spring physics
+ * Use these instead of ad-hoc { type: 'spring', stiffness: X, damping: Y }
+ *
+ * Usage:
+ *   <motion.div transition={zenMotion.snappy}>
+ *   <motion.div transition={zenMotion.gentle}>
+ */
+export const zenMotion = {
+  /** Quick response — buttons, toggles, checkboxes (150-200ms feel) */
+  snappy: { type: 'spring' as const, stiffness: 400, damping: 30 },
+
+  /** Smooth entrance — cards, modals, panels (200-300ms feel) */
+  gentle: { type: 'spring' as const, stiffness: 260, damping: 25 },
+
+  /** Celebration — achievements, completions (bouncy, 400-800ms feel) */
+  bouncy: { type: 'spring' as const, stiffness: 300, damping: 15 },
+
+  /** Exit — always fast, linear (modals closing, toasts dismissing) */
+  exit: { duration: 0.15, ease: 'easeIn' as const },
+
+  /** Ambient — breathing, floating loops (slow, infinite) */
+  breathing: { duration: 3, ease: 'easeInOut' as const, repeat: Infinity, repeatType: 'reverse' as const },
+} as const;
+
 interface DopamineSettings {
   intensity: 'minimal' | 'normal' | 'adhd';
   animations: boolean;

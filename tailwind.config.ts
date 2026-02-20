@@ -91,6 +91,7 @@ export default {
         'surface-raised': 'hsl(var(--surface-raised))',
         'surface-elevated': 'hsl(var(--surface-elevated))',
         'surface-overlay': 'hsl(var(--surface-overlay))',
+        'surface-glass': 'var(--surface-glass)',
       },
       keyframes: {
         "accordion-down": {
