@@ -3,12 +3,16 @@
  * Pure component, 0 useState.
  */
 
+import { useMemo } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { Heart, Target, PlayCircle } from 'lucide-react';
 import { ZenScoreHub, EmotionGalaxy } from '@/components/stats';
 import { WeeklyInsightsCard } from '@/components/WeeklyInsightsCard';
 import { InsightsPanel } from '@/components/InsightsPanel';
 import { hapticTap } from '@/lib/haptics';
+import { computeIdentityClusters } from '@/lib/identityClusters';
+import { computeGrowthRings, getGrowthRingsSummary } from '@/lib/growthRings';
+import { getToday } from '@/lib/utils';
 import type { RingType } from '@/components/stats';
 import type { UseStatsPageDataReturn } from './useStatsPageData';
 
@@ -23,6 +27,7 @@ interface OverviewTabProps {
   habits: Habit[];
   completedFocusSessions: FocusSession[];
   gratitudeEntries: GratitudeEntry[];
+  restDays?: string[];
   onQuickAction?: (action: 'logMood' | 'startFocus') => void;
   onShowStory: () => void;
   onRingClick: (ringId: RingType) => void;
@@ -31,9 +36,31 @@ interface OverviewTabProps {
 
 export function OverviewTab({
   premiumStats, stats, ringWeeklyData, emotionGalaxyData, todayMoods, canShowStory,
-  moods, habits, completedFocusSessions, gratitudeEntries,
+  moods, habits, completedFocusSessions, gratitudeEntries, restDays = [],
   onQuickAction, onShowStory, onRingClick, t,
 }: OverviewTabProps) {
+  // Identity clusters — group habits by identity (IA Blueprint Phase 2)
+  const identityClusters = useMemo(
+    () => computeIdentityClusters(habits),
+    [habits]
+  );
+
+  // Growth rings — never-resetting growth visualization (IA Blueprint Phase 2.3)
+  const growthRingsData = useMemo(() => {
+    const activeDates = habits.flatMap(h => h.completedDates || []);
+    const uniqueActive = [...new Set(activeDates)];
+    // Use earliest mood date or 30 days ago as start
+    const earliest = moods.length > 0
+      ? moods.reduce((min, m) => m.date < min ? m.date : min, moods[0].date)
+      : getToday();
+    return computeGrowthRings(uniqueActive, restDays, earliest);
+  }, [habits, moods, restDays]);
+
+  const growthSummary = useMemo(
+    () => getGrowthRingsSummary(growthRingsData),
+    [growthRingsData]
+  );
+
   return (
     <>
       <ZenScoreHub
@@ -80,6 +107,60 @@ export function OverviewTab({
           </button>
         )}
       </div>
+
+      {/* Growth Rings — never-resetting growth (IA Blueprint Phase 2.3) */}
+      <div className="rounded-2xl bg-card zen-shadow-card p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            🌳 {t.growthRings || 'Growth Rings'}
+          </h3>
+          <span className="text-xs text-muted-foreground">{growthSummary.totalRings}</span>
+        </div>
+        {/* Visual ring bar */}
+        <div className="flex gap-px h-6 rounded-lg overflow-hidden">
+          {growthRingsData.rings.slice(-30).map((ring, i) => (
+            <div
+              key={i}
+              className={`flex-1 ${
+                ring.type === 'active' ? 'bg-emerald-500 dark:bg-emerald-400' :
+                ring.type === 'rest' ? 'bg-blue-300 dark:bg-blue-500' :
+                'bg-muted'
+              }`}
+              style={{ opacity: ring.density }}
+              title={`${ring.date}: ${ring.type}`}
+            />
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">{growthSummary.weekSummary}</p>
+      </div>
+
+      {/* Identity Clusters — who you're becoming (IA Blueprint Phase 2) */}
+      {identityClusters.length > 0 && (
+        <div className="rounded-2xl bg-card zen-shadow-card p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-foreground">
+            🌟 {t.identityMap || 'Who I Am'}
+          </h3>
+          <div className="space-y-2">
+            {identityClusters.map(cluster => (
+              <div key={cluster.name} className="flex items-center gap-3">
+                <span className="text-lg">{cluster.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-foreground truncate">{cluster.name}</span>
+                    <span className="text-xs text-muted-foreground">{cluster.alignmentPercent}%</span>
+                  </div>
+                  <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-1">
+                    <div
+                      className="h-full bg-primary rounded-full transition-all"
+                      style={{ width: `${cluster.alignmentPercent}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Weekly Insights */}
       <WeeklyInsightsCard

@@ -23,6 +23,7 @@ import {
   checkAchievements,
   UserStats,
 } from '@/lib/gamification';
+import { getDecorationForAchievement } from '@/lib/achievementDecorations';
 import { Trophy, Star, Lock, TrendingUp } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Language } from '@/i18n/translations';
@@ -224,6 +225,19 @@ export const AchievementsPanel = memo(function AchievementsPanel({ stats, unlock
                 </div>
               )}
 
+              {/* Garden decoration info (IA Blueprint Phase 4) */}
+              {selectedAchievement && unlockedAchievements.includes(selectedAchievement.id) && (() => {
+                const deco = getDecorationForAchievement(selectedAchievement.id);
+                return deco ? (
+                  <div className="pt-4 text-center">
+                    <Badge variant="outline" className="text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-700">
+                      🌿 Unlocks: {deco.name} ({deco.rarity})
+                    </Badge>
+                    <p className="text-xs text-muted-foreground mt-1">{deco.description}</p>
+                  </div>
+                ) : null;
+              })()}
+
               {selectedAchievement?.unlockedAt && (
                 <p className="text-xs text-muted-foreground pt-4">
                   {interpolate(t.unlockedOn || 'Unlocked on {date}', {
@@ -288,6 +302,16 @@ function AchievementCard({ achievement, isUnlocked, progress, onClick, hiddenTex
             +{achievement.points} {t.xp || 'XP'}
           </Badge>
         )}
+
+        {/* Garden decoration unlocked by this achievement (IA Blueprint Phase 4) */}
+        {isUnlocked && (() => {
+          const deco = getDecorationForAchievement(achievement.id);
+          return deco ? (
+            <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
+              🌿 {deco.name}
+            </p>
+          ) : null;
+        })()}
       </div>
     </Card>
   );

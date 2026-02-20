@@ -1,4 +1,4 @@
-import { Suspense, useCallback } from 'react';
+import { Suspense, useCallback, useMemo } from 'react';
 import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { Header } from '@/components/Header';
 import { MoodInsights } from '@/components/MoodInsights';
@@ -7,6 +7,7 @@ import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { useUIStore, useUserDataStore, useGamificationStore, getModalToggle } from '@/stores';
 import { haptics } from '@/lib/haptics';
+import { getCurrentGardenAtmosphere, getCompanionBehaviorForAtmosphere } from '@/lib/gardenAtmosphere';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ScheduleEvent } from '@/types';
 
 const ScheduleTimeline = lazyWithRetry(() => import('@/components/ScheduleTimeline').then(m => ({ default: m.ScheduleTimeline })), 'ScheduleTimeline');
@@ -46,6 +47,25 @@ export function GardenTab({
     document.getElementById('journal-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, []);
 
+  // Garden atmosphere from current schedule events (IA Blueprint Phase 4)
+  const atmosphere = useMemo(
+    () => getCurrentGardenAtmosphere(todayAllEvents),
+    [todayAllEvents]
+  );
+  // Companion behavior derived from atmosphere — ready for companion UI component
+  const _companionBehavior = useMemo(
+    () => getCompanionBehaviorForAtmosphere(atmosphere),
+    [atmosphere]
+  );
+
+  const atmosphereLabels: Record<string, { icon: string; label: string }> = {
+    focused: { icon: '🧘', label: 'Focus mode — garden is quiet' },
+    social: { icon: '🦋', label: 'Social time — garden is lively' },
+    restful: { icon: '🌙', label: 'Rest time — garden is peaceful' },
+    energetic: { icon: '⚡', label: 'Active time — garden is energized' },
+    creative: { icon: '🎨', label: 'Creative time — garden is inspired' },
+  };
+
   return (
     <div className="animate-tab-enter">
       <div className="space-y-4">
@@ -56,6 +76,16 @@ export function GardenTab({
           onOpenQuests={isFeatureVisible('quests') ? () => setShowQuestsPanel(true) : undefined}
           onOpenFriends={() => setShowFriendsPanel(true)}
         />
+
+        {/* Garden atmosphere indicator (IA Blueprint Phase 4) */}
+        {atmosphere !== 'default' && atmosphereLabels[atmosphere] && (
+          <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-4 py-2.5 flex items-center gap-2">
+            <span>{atmosphereLabels[atmosphere].icon}</span>
+            <span className="text-sm text-emerald-700 dark:text-emerald-300">
+              {atmosphereLabels[atmosphere].label}
+            </span>
+          </div>
+        )}
 
         {/* Schedule Timeline — min-h prevents CLS on lazy load */}
         <div className="min-h-[200px]">

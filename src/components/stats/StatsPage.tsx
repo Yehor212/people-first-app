@@ -140,6 +140,7 @@ export const StatsPage = memo(function StatsPage({
           habits={habits}
           completedFocusSessions={completedFocusSessions}
           gratitudeEntries={gratitudeEntries}
+          restDays={restDays}
           onQuickAction={onQuickAction}
           onShowStory={() => setActiveModal('story')}
           onRingClick={(ringId) => setSelectedRing(ringId)}

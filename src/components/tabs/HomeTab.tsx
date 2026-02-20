@@ -14,7 +14,8 @@ import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { useAppStore, useUIStore, useUserDataStore, getModalToggle } from '@/stores';
 import { safeLocalStorageGet } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
-import type { MoodEntry, Habit, GratitudeEntry } from '@/types';
+import { useReflectionPrompts } from '@/hooks/useReflectionPrompts';
+import type { MoodEntry, Habit, GratitudeEntry, FocusSession } from '@/types';
 
 const EmotionWheel = lazyWithRetry(() => import('@/components/mindfulness/EmotionWheel').then(m => ({ default: m.EmotionWheel })), 'EmotionWheel');
 const HabitTracker = lazyWithRetry(() => import('@/components/HabitTracker').then(m => ({ default: m.HabitTracker })), 'HabitTracker');
@@ -30,6 +31,7 @@ interface HomeTabProps {
   // Data arrays
   safeMoods: MoodEntry[];
   safeHabits: Habit[];
+  safeFocusSessions: FocusSession[];
   safeGratitudeEntries: GratitudeEntry[];
 
   // Inner World
@@ -62,7 +64,7 @@ interface HomeTabProps {
 }
 
 export function HomeTab({
-  safeMoods, safeHabits, safeGratitudeEntries,
+  safeMoods, safeHabits, safeFocusSessions, safeGratitudeEntries,
   currentActiveStreak, isRestMode, activateRestMode, deactivateRestMode,
   canActivateRestMode,
   completedTodayCount, currentPrimaryCTA,
@@ -81,6 +83,9 @@ export function HomeTab({
 
   // Home screen layout preference (mood-first by default)
   const homeLayout = safeLocalStorageGet<HomeLayout>(SK.HOME_LAYOUT, 'mood');
+
+  // Contextual reflection prompts (IA Blueprint Phase 3)
+  const reflectionPrompts = useReflectionPrompts(safeMoods, safeHabits, safeFocusSessions, safeGratitudeEntries);
 
   const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>) => {
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -149,6 +154,16 @@ export function HomeTab({
             completedTodayCount={completedTodayCount}
             isRestMode={isRestMode}
           />
+
+          {/* Contextual reflection prompt (IA Blueprint Phase 3) */}
+          {reflectionPrompts.length > 0 && !isRestMode && (
+            <div className="rounded-2xl bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800/50 p-4">
+              <p className="text-sm text-violet-700 dark:text-violet-300 leading-relaxed">
+                {reflectionPrompts[0].depth === 'nano' ? '✨' : '💭'}{' '}
+                {reflectionPrompts[0].text}
+              </p>
+            </div>
+          )}
 
           {isRestMode ? (
             <RestModeCard

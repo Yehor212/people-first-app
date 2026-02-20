@@ -328,6 +328,15 @@ export function useInnerWorld() {
     plantSeed('rest');
   }, [plantSeed]);
 
+  // Wrapped activateRestMode: also plants a rest flower on success
+  const activateRestModeWithFlower = useCallback(() => {
+    const result = activateRestMode();
+    if (result.success) {
+      plantRestFlower();
+    }
+    return result;
+  }, [activateRestMode, plantRestFlower]);
+
   return {
     world,
     isLoading,
@@ -340,11 +349,10 @@ export function useInnerWorld() {
     waterPlants,
     attractCreature,
     feedCreatures,
-    plantRestFlower,
 
     // Rest mode
     isRestMode,
-    activateRestMode,
+    activateRestMode: activateRestModeWithFlower,
     deactivateRestMode,
     canActivateRestMode: restModeStatus.canActivate,
     daysUntilRestAvailable: restModeStatus.daysUntilAvailable,

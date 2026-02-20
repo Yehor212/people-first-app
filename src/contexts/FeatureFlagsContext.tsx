@@ -2,7 +2,8 @@
  * Feature Flags Context
  *
  * Allows users to enable/disable app modules through Settings.
- * Works alongside the progressive unlock system from onboardingFlow.ts.
+ * Works alongside the progressive unlock system from onboardingFlow.ts
+ * AND the behavioral Garden Gate system (IA Blueprint Phase 5).
  *
  * Core features (mood, habits) are always enabled.
  * Other features can be toggled by the user after being unlocked.
@@ -10,8 +11,10 @@
 
 import { createContext, useContext, ReactNode, useMemo, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { isFeatureUnlocked, FeatureId } from '@/lib/onboardingFlow';
+import { isFeatureUnlocked, FeatureId, computeGardenGateStage, getFeaturesForGardenStage } from '@/lib/onboardingFlow';
 import { SK } from '@/lib/storageKeys';
+import { useUserDataStore } from '@/stores';
+import { getToday } from '@/lib/utils';
 
 // All toggleable features
 export type ToggleableFeature =
@@ -69,6 +72,30 @@ const FEATURE_TO_ONBOARDING: Partial<Record<ToggleableFeature, FeatureId>> = {
 export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
   const [flags, setFlags] = useLocalStorage<FeatureFlags>(SK.FEATURE_FLAGS, DEFAULT_FLAGS);
 
+  // Garden Gate stats from user data (IA Blueprint Phase 5)
+  const habits = useUserDataStore(s => s.habits);
+  const focusSessions = useUserDataStore(s => s.focusSessions);
+  const moods = useUserDataStore(s => s.moods);
+
+  // Compute garden gate features from behavioral stats
+  const gardenGateFeatures = useMemo(() => {
+    const today = getToday();
+    const habitsCompleted = habits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0);
+    const focusSessionsCompleted = focusSessions.length;
+    // Approximate daysActive from unique mood dates
+    const uniqueDates = new Set(moods.map(m => m.date || today));
+    const daysActive = uniqueDates.size;
+
+    const stage = computeGardenGateStage({
+      habitsCompleted,
+      focusSessionsCompleted,
+      journalEntries: 0, // Journal entries not in store — blooming requires calendar-based unlock
+      daysActive,
+    });
+
+    return getFeaturesForGardenStage(stage);
+  }, [habits, focusSessions, moods]);
+
   // Set a single feature flag
   const setFlag = useCallback((feature: ToggleableFeature, enabled: boolean) => {
     setFlags(prev => ({
@@ -82,7 +109,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
     return flags[feature] ?? true;
   }, [flags]);
 
-  // Check if feature should be visible (unlocked by onboarding AND enabled by user)
+  // Check if feature should be visible (unlocked by onboarding OR garden gate, AND enabled by user)
   const isFeatureVisible = useCallback((feature: ToggleableFeature): boolean => {
     // Check user toggle first
     if (!isFeatureEnabled(feature)) {
@@ -92,12 +119,15 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
     // Check if feature has onboarding unlock requirement
     const onboardingFeature = FEATURE_TO_ONBOARDING[feature];
     if (onboardingFeature) {
-      return isFeatureUnlocked(onboardingFeature);
+      // Calendar-based unlock OR behavioral garden gate unlock
+      if (isFeatureUnlocked(onboardingFeature)) return true;
+      if (gardenGateFeatures.includes(onboardingFeature)) return true;
+      return false;
     }
 
     // Features without onboarding requirements are always unlocked
     return true;
-  }, [isFeatureEnabled]);
+  }, [isFeatureEnabled, gardenGateFeatures]);
 
   // Reset all flags to defaults
   const resetFlags = useCallback(() => {

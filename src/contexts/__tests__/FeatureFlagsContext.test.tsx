@@ -20,10 +20,20 @@ vi.mock('@/hooks/useLocalStorage', () => ({
 
 vi.mock('@/lib/onboardingFlow', () => ({
   isFeatureUnlocked: vi.fn(() => true),
+  computeGardenGateStage: vi.fn(() => 'seed'),
+  getFeaturesForGardenStage: vi.fn(() => ['mood', 'habits']),
 }));
 
 vi.mock('@/lib/storageKeys', () => ({
   SK: { FEATURE_FLAGS: 'zenflow-feature-flags' },
+}));
+
+vi.mock('@/stores', () => ({
+  useUserDataStore: vi.fn((selector: (s: any) => any) => selector({ habits: [], focusSessions: [], moods: [] })),
+}));
+
+vi.mock('@/lib/utils', () => ({
+  getToday: vi.fn(() => '2026-02-19'),
 }));
 
 import {

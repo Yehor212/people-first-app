@@ -270,6 +270,7 @@ export function Index() {
           <HomeTab
             safeMoods={moods}
             safeHabits={habits}
+            safeFocusSessions={focusSessions}
             safeGratitudeEntries={gratitudeEntries}
             currentActiveStreak={innerWorld.currentActiveStreak}
             isRestMode={isRestMode}
