@@ -59,6 +59,7 @@ pnpm-lock.yaml
 !.vscode/extensions.json
 .idea
 .DS_Store
+.claude.bak/
 Thumbs.db
 *.suo
 *.ntvs*
