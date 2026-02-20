@@ -139,6 +139,7 @@ export function MoodInputView({
             aria-label={t.addNote || 'Add a note about your mood'}
             className="w-full p-4 bg-secondary rounded-lg text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
             rows={2}
+            onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
           />
           <button
             onClick={onSubmit}

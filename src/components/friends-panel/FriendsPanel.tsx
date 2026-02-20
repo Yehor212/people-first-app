@@ -146,8 +146,9 @@ export function FriendsPanel({
                         form.setAddError(null);
                       }}
                       placeholder="ZF-XXXXXXXX"
-                      className="font-mono text-center"
+                      className={cn("font-mono text-center", form.addError && "input-error")}
                       maxLength={11}
+                      onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
                     />
                     <Button
                       variant="ghost"

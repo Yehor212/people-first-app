@@ -2,28 +2,20 @@ import { motion } from 'framer-motion';
 import { X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { zenMotion } from '@/lib/animationUtils';
 import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
 
-// Star particle for cosmic background (shared with FocusTimer)
+// CSS-driven cosmic star — replaces FM repeat: Infinity loop for 60fps
 export function CosmicStar({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
   return (
-    <motion.div
+    <div
       className="absolute rounded-full bg-white"
       style={{
         left: `${x}%`,
         top: `${y}%`,
         width: size,
         height: size,
-      }}
-      animate={{
-        opacity: [0.2, 0.8, 0.2],
-        scale: [1, 1.3, 1],
-      }}
-      transition={{
-        duration: 2 + Math.random() * 2,
-        delay,
-        repeat: Infinity,
-        ease: 'easeInOut',
+        animation: `zen-star-twinkle ${2 + delay}s ease-in-out ${delay}s infinite`,
       }}
     />
   );
@@ -65,7 +57,7 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
         className="w-full max-w-xs sm:max-w-sm relative overflow-hidden rounded-2xl"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', damping: 20 }}
+        transition={zenMotion.gentle}
       >
         {/* Premium background - Theme-aware */}
         <div className="absolute inset-0 bg-gradient-to-b from-indigo-50 via-purple-50 to-slate-100 dark:bg-none" />

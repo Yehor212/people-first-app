@@ -11,30 +11,36 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
   return (
     <motion.div
       key="loading"
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background overflow-hidden"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background overflow-hidden will-change-transform"
       animate={{
         opacity: loadingFadeOut ? 0 : 1,
         scale: loadingFadeOut ? 1.02 : 1,
       }}
       transition={{ duration: 0.5, ease: 'easeInOut' }}
     >
-      {/* Aurora ambient layer 1 */}
+      {/* Aurora ambient layer 1 — CSS-driven for battery savings */}
       {!prefersReducedMotion && (
-        <motion.div
+        <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 60% 50% at 50% 30%, hsl(var(--primary) / 0.10) 0%, transparent 70%)' }}
-          animate={{ opacity: [0.4, 0.8, 0.4] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          style={{
+            background: 'radial-gradient(ellipse 60% 50% at 50% 30%, hsl(var(--primary) / 0.10) 0%, transparent 70%)',
+            animation: 'zen-glow-breathe 4s ease-in-out infinite',
+            '--zen-glow-min': '0.4',
+            '--zen-glow-max': '0.8',
+          } as React.CSSProperties}
         />
       )}
 
-      {/* Aurora ambient layer 2 */}
+      {/* Aurora ambient layer 2 — CSS-driven */}
       {!prefersReducedMotion && (
-        <motion.div
+        <div
           className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse 50% 40% at 50% 70%, hsl(var(--accent) / 0.05) 0%, transparent 70%)' }}
-          animate={{ opacity: [0.3, 0.6, 0.3] }}
-          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+          style={{
+            background: 'radial-gradient(ellipse 50% 40% at 50% 70%, hsl(var(--accent) / 0.05) 0%, transparent 70%)',
+            animation: 'zen-glow-breathe 5s ease-in-out 1.5s infinite',
+            '--zen-glow-min': '0.3',
+            '--zen-glow-max': '0.6',
+          } as React.CSSProperties}
         />
       )}
 
@@ -50,20 +56,22 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         </>
       )}
 
-      {/* Glow ring behind logo */}
-      <motion.div
+      {/* Glow ring behind logo — CSS-driven pulse for battery savings */}
+      <div
         className="absolute rounded-full"
         style={{
           width: 120, height: 120,
           background: 'radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)',
           filter: 'blur(10px)',
-        }}
-        initial={prefersReducedMotion ? { scale: 1, opacity: 0.15 } : { scale: 0, opacity: 0 }}
-        animate={prefersReducedMotion
-          ? { scale: 1, opacity: 0.15 }
-          : { scale: [1, 1.15, 1], opacity: [0.15, 0.25, 0.15] }
-        }
-        transition={prefersReducedMotion ? {} : { delay: 0.3, duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+          ...(prefersReducedMotion
+            ? { opacity: 0.15 }
+            : {
+                animation: 'zen-pulse 3s ease-in-out 0.3s infinite, zen-glow-breathe 3s ease-in-out 0.3s infinite',
+                '--zen-pulse-scale': '1.15',
+                '--zen-glow-min': '0.15',
+                '--zen-glow-max': '0.25',
+              }),
+        } as React.CSSProperties}
       />
 
       {/* Logo SVG */}
@@ -123,7 +131,7 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         {subtitle}
       </motion.p>
 
-      {/* Progress dots */}
+      {/* Progress dots — CSS-driven loop for battery savings */}
       <motion.div
         className="flex items-center gap-2 mt-8"
         initial={prefersReducedMotion ? {} : { opacity: 0 }}
@@ -131,19 +139,12 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         transition={prefersReducedMotion ? {} : { delay: 1.0 }}
       >
         {[0, 1, 2].map((i) => (
-          <motion.div
+          <div
             key={i}
             className="w-1.5 h-1.5 rounded-full bg-primary/40"
-            animate={prefersReducedMotion ? {} : {
-              y: [0, -6, 0],
-              opacity: [0.4, 1, 0.4],
-            }}
-            transition={prefersReducedMotion ? {} : {
-              duration: 0.8,
-              repeat: Infinity,
-              delay: i * 0.15,
-              ease: 'easeInOut',
-            }}
+            style={!prefersReducedMotion ? {
+              animation: `zen-loading-dot 0.8s ease-in-out ${i * 0.15}s infinite`,
+            } : undefined}
           />
         ))}
       </motion.div>

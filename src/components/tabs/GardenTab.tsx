@@ -52,7 +52,8 @@ export function GardenTab({
           onOpenFriends={() => setShowFriendsPanel(true)}
         />
 
-        {/* Schedule Timeline */}
+        {/* Schedule Timeline — min-h prevents CLS on lazy load */}
+        <div className="min-h-[200px]">
         <LazyErrorBoundary componentName="Schedule Timeline">
           <Suspense fallback={<SkeletonList />}>
             <ScheduleTimeline
@@ -62,16 +63,20 @@ export function GardenTab({
             />
           </Suspense>
         </LazyErrorBoundary>
+        </div>
 
-        {/* Diary */}
+        {/* Diary — min-h prevents CLS */}
+        <div className="min-h-[160px]">
         <LazyErrorBoundary componentName="Journal">
           <Suspense fallback={<SkeletonCard />}>
             <JournalModule />
           </Suspense>
         </LazyErrorBoundary>
+        </div>
 
         {/* Breathing Exercise */}
         {isFeatureVisible('breathingExercise') && (
+          <div className="min-h-[100px]">
           <LazyErrorBoundary componentName="Breathing Exercise">
             <Suspense fallback={<SkeletonCard lines={1} />}>
               <BreathingExercise
@@ -84,10 +89,12 @@ export function GardenTab({
               />
             </Suspense>
           </LazyErrorBoundary>
+          </div>
         )}
 
-        {/* Focus Timer */}
+        {/* Focus Timer — min-h prevents CLS */}
         {isFeatureVisible('focusTimer') && (
+          <div className="min-h-[200px]">
           <ModalErrorBoundary fallbackTitle="Focus Timer Error" fallbackBody="Unable to load focus timer. Try refreshing.">
             <Suspense fallback={<SkeletonCard />}>
               <FocusTimer
@@ -98,6 +105,7 @@ export function GardenTab({
               />
             </Suspense>
           </ModalErrorBoundary>
+          </div>
         )}
 
         {/* Insights */}

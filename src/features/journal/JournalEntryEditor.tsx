@@ -650,6 +650,7 @@ export function JournalEntryEditor({
             'placeholder:text-muted-foreground/40',
           )}
           maxLength={100}
+          onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
         />
 
         {/* Writing prompts (new entries only) */}
@@ -812,6 +813,7 @@ export function JournalEntryEditor({
             'text-sm text-foreground leading-relaxed',
             'placeholder:text-muted-foreground/40',
           )}
+          onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
         />
 
         {/* Word count + char count + reading time + auto-save indicator */}

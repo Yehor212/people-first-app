@@ -5,6 +5,7 @@ import { canStartAuthFlow, startAuthFlow, endAuthFlow } from '@/lib/authGuard';
 import { authenticateWithGoogleNative } from '@/lib/nativeGoogleAuth';
 import { logger } from '@/lib/logger';
 import { analytics } from '@/lib/analytics';
+import { hapticError } from '@/lib/haptics';
 import { PHONE_REGEX } from './types';
 import type { useAuthSession } from './useAuthSession';
 
@@ -177,6 +178,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
     const normalized = session.phoneNumber.trim();
     if (!PHONE_REGEX.test(normalized)) {
       session.setError('Enter a valid phone number with country code (e.g. +1234567890)');
+      void hapticError();
       return;
     }
 
@@ -211,6 +213,7 @@ export function useAuthHandlers(session: Session, t: Record<string, string>) {
     const code = session.otpCode.trim();
     if (code.length !== 6 || !/^\d{6}$/.test(code)) {
       session.setError('Enter a 6-digit code');
+      void hapticError();
       return;
     }
 

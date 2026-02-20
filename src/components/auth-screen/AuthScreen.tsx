@@ -1,6 +1,7 @@
 import { Leaf, Loader2, AlertCircle, Phone, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { cn } from '@/lib/utils';
 import type { AuthScreenProps } from './types';
 import { SHOW_APPLE_AUTH, SHOW_FACEBOOK_AUTH, SHOW_PHONE_AUTH } from './types';
 import { useAuthSession } from './useAuthSession';
@@ -153,10 +154,13 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
             <input
               type="tel"
               value={session.phoneNumber}
-              onChange={e => session.setPhoneNumber(e.target.value)}
+              onChange={e => { session.setPhoneNumber(e.target.value); session.setError(null); }}
               placeholder="+1234567890"
               autoFocus
-              className="w-full px-4 py-3.5 rounded-xl text-base bg-muted/50 border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/50"
+              className={cn(
+                "w-full px-4 py-3.5 rounded-xl text-base bg-muted/50 border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/50",
+                session.error && "input-error"
+              )}
             />
             <button
               onClick={() => void handlers.handleSendOtp()}
@@ -192,10 +196,13 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
               inputMode="numeric"
               maxLength={6}
               value={session.otpCode}
-              onChange={e => session.setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              onChange={e => { session.setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6)); session.setError(null); }}
               placeholder="000000"
               autoFocus
-              className="w-full px-4 py-3.5 rounded-xl text-center text-2xl tracking-[0.5em] font-mono bg-muted/50 border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/30"
+              className={cn(
+                "w-full px-4 py-3.5 rounded-xl text-center text-2xl tracking-[0.5em] font-mono bg-muted/50 border border-border/50 focus:outline-none focus:ring-2 focus:ring-primary/30 placeholder:text-muted-foreground/30",
+                session.error && "input-error"
+              )}
             />
             <button
               onClick={() => void handlers.handleVerifyOtp()}
