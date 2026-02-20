@@ -275,12 +275,12 @@ describe('computeIdentityClusters', () => {
     expect(result[0].verb).toBe('I am Athlete');
   });
 
-  it('falls back to the default 🎯 icon when no habit has identityIcon', () => {
+  it('falls back to the default Target icon when no habit has identityIcon', () => {
     const habits = [
       makeHabit('h1', 'Run', { identityCluster: 'Athlete' }),
     ];
     const result = computeIdentityClusters(habits);
-    expect(result[0].icon).toBe('🎯');
+    expect(result[0].icon).toBe('Target');
   });
 
   it('skips habits without identityVerb to find the first one that does have it', () => {

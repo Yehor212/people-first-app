@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent } from '@/types';
+import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent, MicroReflection } from '@/types';
 import { defaultReminderSettings } from '@/lib/reminders';
 
 // Setter type matching useIndexedDB's return
@@ -21,6 +21,7 @@ export interface RegisteredSetters {
   setOnboardingComplete: Setter<boolean>;
   setNotificationPermissionChecked: Setter<boolean>;
   setGoogleAuthChecked: Setter<boolean>;
+  setMicroReflections: Setter<MicroReflection[]>;
 }
 
 export interface UserDataState {
@@ -34,6 +35,7 @@ export interface UserDataState {
   reminders: ReminderSettings;
   privacy: PrivacySettings;
   scheduleEvents: ScheduleEvent[];
+  microReflections: MicroReflection[];
   userName: string;
   userNameCustom: boolean;
   hasSelectedLanguage: boolean;
@@ -57,6 +59,7 @@ interface UserDataActions {
   setReminders: Setter<ReminderSettings>;
   setPrivacy: Setter<PrivacySettings>;
   setScheduleEvents: Setter<ScheduleEvent[]>;
+  setMicroReflections: Setter<MicroReflection[]>;
   setUserName: Setter<string>;
   setUserNameCustom: Setter<boolean>;
   setHasSelectedLanguage: Setter<boolean>;
@@ -99,6 +102,7 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
   reminders: defaultReminderSettings,
   privacy: { noTracking: false, analytics: false, consentShown: false },
   scheduleEvents: [],
+  microReflections: [],
   userName: 'Friend',
   userNameCustom: false,
   hasSelectedLanguage: false,
@@ -117,6 +121,7 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
   setReminders: createFieldAction<ReminderSettings>('reminders', 'setReminders', set, get),
   setPrivacy: createFieldAction<PrivacySettings>('privacy', 'setPrivacy', set, get),
   setScheduleEvents: createFieldAction<ScheduleEvent[]>('scheduleEvents', 'setScheduleEvents', set, get),
+  setMicroReflections: createFieldAction<MicroReflection[]>('microReflections', 'setMicroReflections', set, get),
   setUserName: createFieldAction<string>('userName', 'setUserName', set, get),
   setUserNameCustom: createFieldAction<boolean>('userNameCustom', 'setUserNameCustom', set, get),
   setHasSelectedLanguage: createFieldAction<boolean>('hasSelectedLanguage', 'setHasSelectedLanguage', set, get),
@@ -134,5 +139,6 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
     ...(data.focusSessions !== undefined && { focusSessions: Array.isArray(data.focusSessions) ? data.focusSessions : [] }),
     ...(data.gratitudeEntries !== undefined && { gratitudeEntries: Array.isArray(data.gratitudeEntries) ? data.gratitudeEntries : [] }),
     ...(data.scheduleEvents !== undefined && { scheduleEvents: Array.isArray(data.scheduleEvents) ? data.scheduleEvents : [] }),
+    ...(data.microReflections !== undefined && { microReflections: Array.isArray(data.microReflections) ? data.microReflections : [] }),
   }),
 }));

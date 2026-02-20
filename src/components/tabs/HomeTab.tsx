@@ -1,4 +1,5 @@
-import { Suspense } from 'react';
+import { Suspense, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { Header } from '@/components/Header';
 import { PullToRefresh } from '@/components/PullToRefresh';
@@ -10,11 +11,16 @@ import { RestModeCard } from '@/components/RestModeCard';
 import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
 import { SkeletonCard, SkeletonList } from '@/components/ui/skeleton';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
+import { TreePine } from 'lucide-react';
+import { ReflectionPromptCard } from '@/components/ReflectionPromptCard';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { useAppStore, useUIStore, useUserDataStore, getModalToggle } from '@/stores';
 import { safeLocalStorageGet } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
 import { useReflectionPrompts } from '@/hooks/useReflectionPrompts';
+import { computeGrowthRings, getGrowthRingsSummary } from '@/lib/growthRings';
+import { motionPresets } from '@/lib/animationUtils';
+import { getToday } from '@/lib/utils';
 import type { MoodEntry, Habit, GratitudeEntry, FocusSession } from '@/types';
 
 const EmotionWheel = lazyWithRetry(() => import('@/components/mindfulness/EmotionWheel').then(m => ({ default: m.EmotionWheel })), 'EmotionWheel');
@@ -87,6 +93,17 @@ export function HomeTab({
   // Contextual reflection prompts (IA Blueprint Phase 3)
   const reflectionPrompts = useReflectionPrompts(safeMoods, safeHabits, safeFocusSessions, safeGratitudeEntries);
 
+  // Growth Rings — never-resetting growth visualization (IA Blueprint Phase 2.3)
+  const growthSummary = useMemo(() => {
+    const activeDates = safeHabits.flatMap(h => h.completedDates || []);
+    const uniqueActive = [...new Set(activeDates)];
+    const earliest = safeMoods.length > 0
+      ? safeMoods.reduce((min, m) => m.date < min ? m.date : min, safeMoods[0].date)
+      : getToday();
+    const data = computeGrowthRings(uniqueActive, [], earliest);
+    return getGrowthRingsSummary(data);
+  }, [safeHabits, safeMoods]);
+
   const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>) => {
     ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
@@ -155,14 +172,23 @@ export function HomeTab({
             isRestMode={isRestMode}
           />
 
+          {/* Growth Rings — permanent growth (IA Blueprint Phase 2.3) */}
+          <motion.div
+            {...motionPresets.slideUp}
+            className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card px-4 py-3 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2">
+              <TreePine className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-sm font-medium text-foreground">
+                {growthSummary.totalRings}
+              </span>
+            </div>
+            <span className="text-xs text-muted-foreground">{growthSummary.weekSummary}</span>
+          </motion.div>
+
           {/* Contextual reflection prompt (IA Blueprint Phase 3) */}
           {reflectionPrompts.length > 0 && !isRestMode && (
-            <div className="rounded-2xl bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800/50 p-4">
-              <p className="text-sm text-violet-700 dark:text-violet-300 leading-relaxed">
-                {reflectionPrompts[0].depth === 'nano' ? '✨' : '💭'}{' '}
-                {reflectionPrompts[0].text}
-              </p>
-            </div>
+            <ReflectionPromptCard prompt={reflectionPrompts[0]} />
           )}
 
           {isRestMode ? (

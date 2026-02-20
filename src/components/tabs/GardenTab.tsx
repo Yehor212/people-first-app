@@ -1,4 +1,5 @@
 import { Suspense, useCallback, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { Header } from '@/components/Header';
 import { MoodInsights } from '@/components/MoodInsights';
@@ -8,6 +9,8 @@ import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { useUIStore, useUserDataStore, useGamificationStore, getModalToggle } from '@/stores';
 import { haptics } from '@/lib/haptics';
 import { getCurrentGardenAtmosphere, getCompanionBehaviorForAtmosphere } from '@/lib/gardenAtmosphere';
+import { motionPresets } from '@/lib/animationUtils';
+import { PersonStanding, Flower2, Moon, Zap, Palette } from 'lucide-react';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ScheduleEvent } from '@/types';
 
 const ScheduleTimeline = lazyWithRetry(() => import('@/components/ScheduleTimeline').then(m => ({ default: m.ScheduleTimeline })), 'ScheduleTimeline');
@@ -58,12 +61,12 @@ export function GardenTab({
     [atmosphere]
   );
 
-  const atmosphereLabels: Record<string, { icon: string; label: string }> = {
-    focused: { icon: '🧘', label: 'Focus mode — garden is quiet' },
-    social: { icon: '🦋', label: 'Social time — garden is lively' },
-    restful: { icon: '🌙', label: 'Rest time — garden is peaceful' },
-    energetic: { icon: '⚡', label: 'Active time — garden is energized' },
-    creative: { icon: '🎨', label: 'Creative time — garden is inspired' },
+  const atmosphereIcons: Record<string, { Icon: typeof PersonStanding; label: string; color: string }> = {
+    focused: { Icon: PersonStanding, label: 'Focus mode — garden is quiet', color: 'text-blue-500' },
+    social: { Icon: Flower2, label: 'Social time — garden is lively', color: 'text-pink-500' },
+    restful: { Icon: Moon, label: 'Rest time — garden is peaceful', color: 'text-indigo-400' },
+    energetic: { Icon: Zap, label: 'Active time — garden is energized', color: 'text-amber-500' },
+    creative: { Icon: Palette, label: 'Creative time — garden is inspired', color: 'text-purple-500' },
   };
 
   return (
@@ -78,14 +81,17 @@ export function GardenTab({
         />
 
         {/* Garden atmosphere indicator (IA Blueprint Phase 4) */}
-        {atmosphere !== 'default' && atmosphereLabels[atmosphere] && (
-          <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-4 py-2.5 flex items-center gap-2">
-            <span>{atmosphereLabels[atmosphere].icon}</span>
-            <span className="text-sm text-emerald-700 dark:text-emerald-300">
-              {atmosphereLabels[atmosphere].label}
-            </span>
-          </div>
-        )}
+        {atmosphere !== 'default' && atmosphereIcons[atmosphere] && (() => {
+          const { Icon, label, color } = atmosphereIcons[atmosphere];
+          return (
+            <motion.div {...motionPresets.fadeIn} className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/50 px-4 py-2.5 flex items-center gap-2">
+              <Icon className={`w-4 h-4 ${color}`} />
+              <span className="text-sm text-emerald-700 dark:text-emerald-300">
+                {label}
+              </span>
+            </motion.div>
+          );
+        })()}
 
         {/* Schedule Timeline — min-h prevents CLS on lazy load */}
         <div className="min-h-[200px]">

@@ -305,7 +305,7 @@ export const gamificationStateSchema = z.object({
 const reflectionDepth = z.enum(['nano', 'micro', 'deep']);
 const reflectionTrigger = z.enum([
   'mood_joy_streak', 'all_habits_complete', 'focus_reflection',
-  'evening_checkin', 'weekly_review', 'streak_rest', 'manual',
+  'evening_checkin', 'weekly_review', 'streak_rest', 'daily_mindfulness', 'manual',
 ]);
 
 /** MicroReflection — lightweight reflection record */

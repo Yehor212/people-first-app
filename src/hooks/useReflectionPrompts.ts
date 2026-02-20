@@ -26,7 +26,7 @@ export interface ReflectionPrompt {
 function hasRecentMoodStreak(moods: MoodEntry[], emotion: string, count: number): boolean {
   const sorted = [...moods].sort((a, b) => b.timestamp - a.timestamp);
   const recent = sorted.slice(0, count);
-  return recent.length >= count && recent.every(m => m.emotion === emotion);
+  return recent.length >= count && recent.every(m => m.emotion?.primary === emotion);
 }
 
 /**
@@ -100,6 +100,24 @@ export function useReflectionPrompts(
         text: 'This week in 3 words:',
         depth: 'nano',
         priority: 50,
+      });
+    }
+
+    // --- Daily mindfulness (fallback — always available when no context triggers fire) ---
+    if (prompts.length === 0) {
+      const dailyPrompts = [
+        'What are you grateful for right now?',
+        'Take a deep breath. How do you feel?',
+        'What small win can you celebrate today?',
+        'One thing you want to focus on today:',
+        'What would make today great?',
+      ];
+      const dayIndex = new Date().getDate() % dailyPrompts.length;
+      prompts.push({
+        trigger: 'daily_mindfulness',
+        text: dailyPrompts[dayIndex],
+        depth: 'nano',
+        priority: 10,
       });
     }
 

@@ -2,18 +2,18 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-19 (2460 tests, constitution audit + senior dev review)
+> Last updated: 2026-02-20 (2632 tests, Waves A-G complete + UI surface polish)
 
 ---
 
-## Codebase Metrics (as of 2026-02-19)
+## Codebase Metrics (as of 2026-02-20)
 
 | Metric | Value | Command |
 |--------|-------|---------|
-| Source files | 609 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
-| Test files | 114 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
-| Total LOC | ~56,000 (TSX only) | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
-| Tests passing | 2460/2460 | `npx vitest --run` |
+| Source files | 618 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
+| Test files | 119 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
+| Total LOC | ~57,000 (TSX only) | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
+| Tests passing | 2632/2632 | `npx vitest --run` |
 | ESLint errors | 0 | `npx eslint src/ --quiet` |
 | ESLint warnings | 0 | `npx eslint . --max-warnings=0` |
 | TypeScript errors | 0 | `npx tsc --noEmit` |
@@ -33,19 +33,21 @@
 1. [Tech Stack](#tech-stack)
 2. [Folder Structure](#folder-structure)
 3. [Feature Module Pattern](#feature-module-pattern)
-4. [State Management](#state-management)
-5. [Data Flow](#data-flow)
-6. [Storage Rules](#storage-rules)
-7. [Error Handling](#error-handling)
-8. [Validation](#validation)
-9. [Component Rules](#component-rules)
-10. [Naming Conventions](#naming-conventions)
-11. [Testing](#testing)
-12. [Performance](#performance)
-13. [Security](#security)
-14. [i18n](#i18n)
-15. [Git & CI/CD](#git--cicd)
-16. [Known Technical Debt](#known-technical-debt)
+4. [IA Blueprint (Waves A-G)](#ia-blueprint-waves-a-g)
+5. [State Management](#state-management)
+6. [Data Flow](#data-flow)
+7. [Storage Rules](#storage-rules)
+8. [UI Design Constraints](#ui-design-constraints)
+9. [Error Handling](#error-handling)
+10. [Validation](#validation)
+11. [Component Rules](#component-rules)
+12. [Naming Conventions](#naming-conventions)
+13. [Testing](#testing)
+14. [Performance & Motion](#performance--motion)
+15. [Security](#security)
+16. [i18n](#i18n)
+17. [Git & CI/CD](#git--cicd)
+18. [Known Technical Debt](#known-technical-debt)
 
 ---
 
@@ -82,7 +84,7 @@ src/
     userDataStore.ts            # Moods, habits, focus sessions, gratitude (with array validation)
     uiStore.ts                  # Modals, confetti, focus minutes, getModalToggle utility
     gamificationStore.ts        # XP/treats bridge to useGamification hook
-    useHydrateUserData.ts       # Bridge: IndexedDB → Zustand (14 useIndexedDB calls)
+    useHydrateUserData.ts       # Bridge: IndexedDB → Zustand (15 useIndexedDB calls)
     useHydrateGamification.ts   # Bridge: registers gamification hooks into store
     index.ts                    # Barrel export
 
@@ -108,8 +110,9 @@ src/
     # Derived data
     useDerivedData.ts           # 14 useMemos: schedule events, CTA system, widget data
     useDeepLinkHandler.ts       # Auth + challenge deep links
-    useHabitForm.ts             # Habit creation/edit form state + handlers (extracted from HabitTracker)
+    useHabitForm.ts             # Habit creation/edit form state + handlers (incl. identity fields)
     useFocusTimer.ts            # Timer state machine + persistence + handlers (extracted from FocusTimer)
+    useReflectionPrompts.ts     # Contextual micro-reflection prompt engine (6 triggers)
     # Domain hooks
     useGamification.ts          # XP, levels, treats, achievements
     useInnerWorld.ts            # Garden, creatures, rest mode (542 lines, dead code removed)
@@ -131,7 +134,9 @@ src/
     AuthGate.tsx                # 7 initialization gates (splash, language, auth, tutorial, onboarding, notifications)
     SplashScreen.tsx            # Premium loading animation
     ErrorBoundary.tsx           # LazyErrorBoundary + ModalErrorBoundary
-    HabitCreationForm.tsx       # Form JSX for habit creation/editing (extracted from HabitTracker)
+    HabitCreationForm.tsx       # Form JSX for habit creation/editing (incl. Identity Mapping section)
+    ReflectionPromptCard.tsx    # Interactive micro-reflection card (nano/micro input + journal link)
+    IdentityIconPicker.tsx      # Curated lucide-react icon selector for identity clusters (20 icons)
     FocusReflectionModal.tsx    # Post-focus reflection modal (extracted from FocusTimer)
     challenges/                 # Challenge sub-components (extracted from ChallengeModal)
       ChallengeCard.tsx         # Single challenge card (presentational)
@@ -225,6 +230,90 @@ src/features/mood/
 
 ---
 
+## IA Blueprint (Waves A-G)
+
+> Implemented 2026-02-19 to 2026-02-20 (commits 01543ef → eaf14d0 + Wave G polish).
+> Source spec: `IA_STRATEGY_BLUEPRINT.md` in repo root.
+
+### Overview
+
+Waves A-G replaced the punitive streak-based engagement model with an **identity-driven growth system**. The system has four interconnected pillars:
+
+| Pillar | Purpose | Key Libs/Hooks |
+|--------|---------|---------------|
+| **Identity Clusters** | Group habits by who the user is becoming ("I am an athlete") | `computeIdentityClusters()` in `src/lib/identityClusters.ts` |
+| **Growth Rings** | Never-resetting visualization of consistency over time | `computeGrowthRings()` in `src/lib/growthRings.ts` |
+| **Micro-Reflections** | Contextual prompts with lightweight input (nano/micro depth) | `useReflectionPrompts()` in `src/hooks/useReflectionPrompts.ts` |
+| **Garden Atmosphere** | Dynamic environment responding to user activity patterns | `getCurrentGardenAtmosphere()` in `src/lib/gardenAtmosphere.ts` |
+
+### Data Models (added to `src/types/index.ts`)
+
+**Identity fields on Habit:**
+```typescript
+identityCluster?: string;   // e.g., "Athlete", "Learner"
+identityVerb?: string;      // e.g., "I train because strength is freedom"
+identityIcon?: string;      // Lucide icon name (e.g., "Dumbbell"), NOT emoji
+```
+
+**MicroReflection** (persisted to IndexedDB via settings table):
+```typescript
+interface MicroReflection {
+  id: string;
+  text: string;
+  depth: 'nano' | 'micro';
+  trigger: ReflectionTrigger;  // 6 triggers: daily_mindfulness, mood_joy_streak, etc.
+  date: string;
+  timestamp: number;
+  linkedMoodId?: string;
+  linkedHabitIds?: string[];
+  linkedFocusSessionId?: string;
+}
+```
+
+**PlantType extensions:** `story`, `air_plant`, `rest_flower` (for garden ecosystem).
+
+**TreatsWallet + TreatTransaction:** Reward economy types.
+
+**InnerWorld.activeEffects:** `wind` effect driven by garden atmosphere.
+
+### Persistence
+
+MicroReflections use the **settings table pattern** (same as `scheduleEvents`): stored in `db.settings` via key `'zenflow-micro-reflections'`, bridged through `useHydrateUserData`, no Dexie version bump required. Schema validated by `microReflectionSchema` in `src/lib/schemas.ts`.
+
+### Identity Icon Storage Pattern
+
+Identity icons are stored as **string names** (e.g., `'Brain'`, `'Dumbbell'`), NOT as emoji characters or JSX. The `IdentityIcon` component (`src/components/IdentityIconPicker.tsx`) maps names to lucide-react components at render time. Fallback: `Target` icon.
+
+```
+User selects icon → store "Dumbbell" in habit.identityIcon
+Render time → <IdentityIcon name="Dumbbell" /> → lucide Dumbbell component
+```
+
+### Reflection Prompt Triggers
+
+`useReflectionPrompts()` fires prompts based on 6 contextual triggers:
+
+| Trigger | Condition |
+|---------|-----------|
+| `daily_mindfulness` | Once per day, general prompt |
+| `mood_joy_streak` | 3+ consecutive days of `primary === 'joy'` |
+| `habit_streak_milestone` | 7/14/30/60/100-day streak reached |
+| `focus_session_complete` | After completing a focus session |
+| `garden_new_plant` | After planting a new seed |
+| `evening_reflection` | After 6 PM local time |
+
+### UI Rendering
+
+| Feature | Location | Component |
+|---------|----------|-----------|
+| Growth Rings (30-day bar) | HomeTab, OverviewTab | Inline `motion.div` with `surface-glass` |
+| Identity Clusters (progress bars) | OverviewTab | Inline section with `IdentityIcon` |
+| Reflection Prompt (interactive) | HomeTab | `ReflectionPromptCard.tsx` |
+| Garden Atmosphere | GardenTab | Lucide icon + label |
+| Identity Mapping (habit form) | HabitCreationForm | Cluster input + verb input + `IdentityIconPicker` |
+
+---
+
 ## State Management
 
 ### Current Architecture: Bridge Pattern
@@ -233,7 +322,7 @@ User data lives in **IndexedDB** (via Dexie + `useIndexedDB` hook) and is bridge
 
 | Layer | Tool | Scope | Example |
 |-------|------|-------|---------|
-| **Persistence** | Dexie (IndexedDB) | Source of truth | Moods, habits, focus sessions |
+| **Persistence** | Dexie (IndexedDB) | Source of truth | Moods, habits, focus sessions, micro-reflections |
 | **Global client state** | Zustand | In-memory mirror + app state | Auth, active tab, modals, user data |
 | **Local UI state** | useState | Single component | Form input, local toggle |
 
@@ -241,7 +330,7 @@ User data lives in **IndexedDB** (via Dexie + `useIndexedDB` hook) and is bridge
 
 ```
 IndexedDB (Dexie)
-  ↕ useIndexedDB hooks (14 calls in useHydrateUserData)
+  ↕ useIndexedDB hooks (15 calls in useHydrateUserData)
 Zustand userDataStore
   ← _hydrateFromDB() syncs values + validates arrays
   ← _registerSetters() registers IndexedDB write functions
@@ -325,6 +414,57 @@ Hooks are registered via `useHydrateGamification({ awardXp, earnTreats, plantSee
 3. **NEVER use `localStorage` directly.** Use `SK.*` keys + `safeJson` accessors (`storageGetRaw`, `safeLocalStorageSet`, etc.). ESLint `no-restricted-globals` enforces this.
 4. **Atomic writes**: When updating IndexedDB, persist FIRST, then update React state on success.
 5. **Cloud sync is async and non-blocking.** Local-first: the app must work fully offline.
+
+---
+
+## UI Design Constraints
+
+> These are **hard rules** enforced across all UI components. Violations must be fixed before merge.
+
+### Icons: lucide-react ONLY
+
+**Absolutely NO system emojis** in rendered UI components. All icons MUST use `lucide-react`.
+
+| Context | Pattern | Example |
+|---------|---------|---------|
+| Inline icon | `<IconName className="w-4 h-4" />` | `<TreePine className="w-4 h-4 text-emerald-600" />` |
+| Identity icon (stored) | `<IdentityIcon name={storedName} />` | Renders stored string → lucide component |
+| Habit emoji icons | `habitIcons` array in `useHabitForm.ts` | These are **data** emojis for user selection, not UI chrome |
+
+**Exception:** `habitIcons` in `useHabitForm.ts` uses emojis because users **select** them as habit identifiers (e.g., 💧 for water). These are user-facing data tokens, not UI decoration.
+
+### Surface Glass
+
+Premium feature cards MUST use frosted glass styling:
+
+```
+bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)]
+```
+
+**CSS vars** (defined in `src/index.css` for light, dark, and OLED themes):
+- `--surface-glass` — translucent background color
+- `--surface-glass-blur` — blur radius (8-12px)
+- `--surface-glass-border` — subtle border color
+
+**Tailwind utility:** `bg-surface-glass` (registered in `tailwind.config.ts:94`)
+
+**Where to apply:** Growth Rings, Identity Map, Reflection Prompt, any new "premium insight" card.
+
+**Where NOT to apply:** Standard cards (habits, mood tracker, settings) — these use `bg-card`.
+
+### CLS Guards
+
+Every `lazy()`-loaded component container MUST have a `min-h-[Xpx]` class to prevent Cumulative Layout Shift:
+
+```tsx
+<div className="min-h-[200px]">
+  <Suspense fallback={<Skeleton />}>
+    <LazyComponent />
+  </Suspense>
+</div>
+```
+
+Current guards: HomeTab (3 sections: 200px, 180px, 120px), GardenTab (4 sections: 200px, 160px, 100px, 200px).
 
 ---
 
@@ -456,9 +596,9 @@ Hooks are registered via `useHydrateGamification({ awardXp, earnTreats, plantSee
 
 ---
 
-## Performance
+## Performance & Motion
 
-### Rules
+### General Rules
 
 1. **React.memo** only when measured. Don't prematurely optimize.
 2. **useMemo/useCallback** for expensive computations and stable references passed to children.
@@ -469,6 +609,43 @@ Hooks are registered via `useHydrateGamification({ awardXp, earnTreats, plantSee
 4. **Image optimization:** Use WebP, lazy loading, proper sizing.
 5. **Bundle splitting:** Each feature module = separate chunk.
 6. **No eslint-disable for exhaustive-deps.** Fix the dependency array or restructure the effect.
+
+### Motion Budget (zenMotion tokens)
+
+All framer-motion animations MUST use standardized presets from `src/lib/animationUtils.ts`. No ad-hoc spring configs.
+
+**Motion presets** (spread onto `motion.div`):
+
+| Preset | Use case | Duration feel |
+|--------|----------|--------------|
+| `motionPresets.fadeIn` | Ambient reveals | 200ms ease |
+| `motionPresets.slideUp` | Card entrances | 300ms ease-out |
+| `motionPresets.scaleIn` | Success states, badges | 200ms ease-out |
+| `motionPresets.modalEnter` | Modal/sheet appearance | Spring (damping 25) |
+
+**Spring tokens** (pass as `transition` prop):
+
+| Token | Use case | Physics |
+|-------|----------|---------|
+| `zenMotion.snappy` | Buttons, toggles, checkboxes | stiffness: 400, damping: 30 |
+| `zenMotion.gentle` | Cards, modals, panels | stiffness: 260, damping: 25 |
+| `zenMotion.bouncy` | Celebrations, achievements | stiffness: 300, damping: 15 |
+| `zenMotion.exit` | Closing, dismissing | 150ms ease-in |
+| `zenMotion.breathing` | Infinite ambient loops | 3s ease-in-out, reverse |
+
+### Animation Respect
+
+All animations MUST respect user preferences:
+- `shouldAnimate()` checks both user's dopamine settings AND `prefers-reduced-motion` media query
+- CSS infinite loops (`@keyframes float`, `pulse-soft`, etc.) live in `src/index.css` — never inline
+- CSS `@keyframes` for infinite/ambient loops; framer-motion for interactive/entrance animations
+
+### 60fps Android Guarantee
+
+- No JS-driven infinite animations (use CSS `@keyframes` in `index.css`)
+- Spring physics via framer-motion (GPU-composited `transform` + `opacity`)
+- Entrance animations: `slideUp`/`fadeIn` only — no complex multi-property transitions
+- `will-change` is NOT manually set (framer-motion handles compositor hints)
 
 ---
 
@@ -567,7 +744,7 @@ On PR to main:
 | TD-05 | ~~CRITICAL~~ → DONE | ~~Web Locks API bypass in auth (causes AbortError on reload)~~ | **Fixed 2026-02-16**, **updated 2026-02-18 by Codex 5.3**: Lock disabled entirely (`lock` option removed from Supabase config). The original `resilientNavigatorLock` was removed — Supabase GoTrue handles tab coordination internally. Dead code (48L) cleaned up 2026-02-19. | src/lib/supabaseClient.ts |
 | TD-07 | ~~HIGH~~ → DONE | ~~Direct `localStorage` calls~~ | **Fixed 2026-02-16**: Central `SK` registry (src/lib/storageKeys.ts) + safeJson accessors + ESLint `no-restricted-globals` rule. 199 raw calls → 0 across 50+ files. | src/lib/storageKeys.ts |
 | TD-08 | ~~HIGH~~ → DONE | ~~translations.ts monolith (all languages in one file)~~ | **Fixed 2026-02-16**: Split 19,879-line monolith into per-language files. `types.ts` (2,280L), 8 language files in `languages/` (~2,200L each), `index.ts` (37L assembler), `translations.ts` (3L re-export). Zero import changes needed. | src/i18n/ |
-| TD-09 | ~~HIGH~~ → LOW | Low test coverage | **Phase 7 done 2026-02-19**: 2313 → **2460 tests** (+147). Phase 7 added 15 files + useSessionTimeout (21 tests incl. native platform skip, offline queue flush). **114 test files total**. Remaining: ~59 untested modules (mostly Capacitor/Supabase/audio-dependent). | src/**/__tests__/ |
+| TD-09 | ~~HIGH~~ → LOW | Low test coverage | **Phase 7 done 2026-02-19**: 2313 → 2460 tests. **Waves A-G (2026-02-20)**: 2460 → **2632 tests** (+172). **119 test files total**. Remaining: ~59 untested modules (mostly Capacitor/Supabase/audio-dependent). | src/**/__tests__/ |
 | TD-11 | ~~HIGH~~ → DONE | ~~CI pipeline missing lint + typecheck~~ | **Fixed 2026-02-16**, **hardened 2026-02-18 by Codex 5.3**: `npx eslint . --max-warnings=0` + `tsc --noEmit` + mandatory Android gate before deploy. Still missing: `playwright`, `npm audit`. | .github/workflows/deploy.yml |
 | TD-15 | ~~MEDIUM~~ → DONE | useInnerWorld.ts monolith | ~~780+ lines~~ → **338 lines** (extracted innerWorldHelpers.ts + useRestMode.ts) | src/hooks/useInnerWorld.ts |
 | TD-16 | LOW | Prop drilling in HomeTab (~30 props) | Handlers + inner world values passed as props | src/components/tabs/HomeTab.tsx |
@@ -766,3 +943,64 @@ On PR to main:
 #### Enforcement Rule
 
 Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.
+
+---
+
+### IA Blueprint Waves A-G (2026-02-20)
+
+- Date: 2026-02-19 to 2026-02-20
+- Author: Claude Opus 4.6
+- Scope: Identity Architecture redesign — 6 implementation waves + 1 UI polish wave
+- Commits: 01543ef → eaf14d0 (Waves A-F), Wave G (UI surface polish + GAP 7)
+
+#### What Was Completed
+
+**Data Engine (Waves A-F):**
+- Identity fields on Habit type (`identityCluster`, `identityVerb`, `identityIcon`)
+- `computeIdentityClusters()` + `computeGrowthRings()` + `getGrowthRingsSummary()` pure libs with tests
+- `useReflectionPrompts()` hook (6 contextual triggers)
+- `getCurrentGardenAtmosphere()` lib for dynamic garden environment
+- `PlantType` extensions (`story`, `air_plant`, `rest_flower`)
+- `TreatsWallet` + `TreatTransaction` reward economy types
+- `MicroReflection` type + Zod schema
+- `zenMotion` tokens + `motionPresets` + `shouldAnimate()` in `animationUtils.ts`
+- `--surface-glass` CSS vars (light/dark/OLED) + `bg-surface-glass` Tailwind utility
+- CLS guards (`min-h-[Xpx]`) on all lazy-loaded tab sections
+
+**UI Surface Polish (Wave G):**
+- Fixed `hasRecentMoodStreak` bug (compared `EmotionData` object to string — always false)
+- Replaced all system emojis with lucide-react in HomeTab, OverviewTab, GardenTab
+- Created `ReflectionPromptCard.tsx` — interactive nano/micro input with "expand to journal"
+- Created `IdentityIconPicker.tsx` — 20 curated lucide icons stored as string names
+- MicroReflection persistence (IndexedDB settings table → Zustand bridge)
+- `motionPresets.slideUp`/`fadeIn` entrance animations on all new cards
+- `bg-surface-glass` applied to Growth Rings, Identity Map, Reflection Prompt cards
+- Identity Mapping section in HabitCreationForm (cluster input with autocomplete, verb, icon picker)
+- Identity cluster fallback icon changed from emoji `🎯` to lucide `Target`
+
+#### Files Created
+- `src/components/ReflectionPromptCard.tsx` (134 LOC)
+- `src/components/IdentityIconPicker.tsx` (93 LOC)
+
+#### Files Modified (key changes)
+- `src/types/index.ts` — identity fields, PlantType, MicroReflection, TreatsWallet
+- `src/hooks/useReflectionPrompts.ts` — bug fix + 6 trigger engine
+- `src/hooks/useHabitForm.ts` — identity state + handlers
+- `src/components/habit-creation-form/HabitCreationForm.tsx` — Identity Mapping section
+- `src/components/tabs/HomeTab.tsx` — lucide icons, animations, glass, ReflectionPromptCard
+- `src/components/stats/OverviewTab.tsx` — lucide icons, animations, glass, IdentityIcon
+- `src/components/tabs/GardenTab.tsx` — lucide icons, animations
+- `src/stores/userDataStore.ts` — microReflections field + setter
+- `src/stores/useHydrateUserData.ts` — 15th useIndexedDB call for microReflections
+- `src/storage/db.ts` — `zenflow-micro-reflections` in USER_SETTINGS_KEYS
+- `src/lib/schemas.ts` — `daily_mindfulness` trigger + `microReflectionSchema`
+- `src/lib/identityClusters.ts` — fallback icon `'🎯'` → `'Target'`
+- `src/lib/animationUtils.ts` — zenMotion tokens + motionPresets
+- `src/index.css` — surface-glass CSS vars, CLS animations
+
+#### Verification
+- `npx tsc --noEmit` — 0 errors
+- `npx eslint . --max-warnings=0` — 0 warnings
+- `npx vitest --run` — 2632/2632 pass
+- `npm run build` — success
+- Emoji audit (`grep` for Unicode ranges in tabs/stats) — 0 system emojis in UI components

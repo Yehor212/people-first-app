@@ -78,7 +78,7 @@ export function computeIdentityClusters(habits: Habit[]): IdentityCluster[] {
 
     clusters.push({
       name: clusterName,
-      icon: firstWithMeta?.identityIcon || '🎯',
+      icon: firstWithMeta?.identityIcon || 'Target',
       verb: firstWithMeta?.identityVerb || `I am ${clusterName}`,
       habits: clusterHabits,
       completedToday,

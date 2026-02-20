@@ -4,13 +4,16 @@
  */
 
 import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
-import { Heart, Target, PlayCircle } from 'lucide-react';
+import { Heart, Target, PlayCircle, TreePine, Star } from 'lucide-react';
+import { motionPresets } from '@/lib/animationUtils';
 import { ZenScoreHub, EmotionGalaxy } from '@/components/stats';
 import { WeeklyInsightsCard } from '@/components/WeeklyInsightsCard';
 import { InsightsPanel } from '@/components/InsightsPanel';
 import { hapticTap } from '@/lib/haptics';
 import { computeIdentityClusters } from '@/lib/identityClusters';
+import { IdentityIcon } from '@/components/IdentityIconPicker';
 import { computeGrowthRings, getGrowthRingsSummary } from '@/lib/growthRings';
 import { getToday } from '@/lib/utils';
 import type { RingType } from '@/components/stats';
@@ -109,10 +112,10 @@ export function OverviewTab({
       </div>
 
       {/* Growth Rings — never-resetting growth (IA Blueprint Phase 2.3) */}
-      <div className="rounded-2xl bg-card zen-shadow-card p-4 space-y-3">
+      <motion.div {...motionPresets.slideUp} className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            🌳 {t.growthRings || 'Growth Rings'}
+            <TreePine className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> {t.growthRings || 'Growth Rings'}
           </h3>
           <span className="text-xs text-muted-foreground">{growthSummary.totalRings}</span>
         </div>
@@ -132,18 +135,18 @@ export function OverviewTab({
           ))}
         </div>
         <p className="text-xs text-muted-foreground">{growthSummary.weekSummary}</p>
-      </div>
+      </motion.div>
 
       {/* Identity Clusters — who you're becoming (IA Blueprint Phase 2) */}
       {identityClusters.length > 0 && (
-        <div className="rounded-2xl bg-card zen-shadow-card p-4 space-y-3">
-          <h3 className="text-sm font-semibold text-foreground">
-            🌟 {t.identityMap || 'Who I Am'}
+        <motion.div {...motionPresets.slideUp} className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Star className="w-4 h-4 text-amber-500" /> {t.identityMap || 'Who I Am'}
           </h3>
           <div className="space-y-2">
             {identityClusters.map(cluster => (
               <div key={cluster.name} className="flex items-center gap-3">
-                <span className="text-lg">{cluster.icon}</span>
+                <IdentityIcon name={cluster.icon} className="w-5 h-5 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-foreground truncate">{cluster.name}</span>
@@ -159,7 +162,7 @@ export function OverviewTab({
               </div>
             ))}
           </div>
-        </div>
+        </motion.div>
       )}
 
       {/* Weekly Insights */}

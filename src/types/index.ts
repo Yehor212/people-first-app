@@ -519,6 +519,7 @@ export type ReflectionTrigger =
   | 'evening_checkin'      // Evening prompt
   | 'weekly_review'        // Weekly summary
   | 'streak_rest'          // After streak break / rest mode
+  | 'daily_mindfulness'    // Fallback daily prompt when no context triggers fire
   | 'manual';              // User opened journal directly
 
 /** Lightweight reflection record (not a full journal entry) */

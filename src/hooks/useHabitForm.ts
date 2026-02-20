@@ -55,6 +55,11 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
   const [dailyTarget, setDailyTarget] = useState(1);
   const [reminders, setReminders] = useState<HabitReminder[]>([]);
 
+  // Identity cluster (IA Blueprint Phase 2)
+  const [identityCluster, setIdentityCluster] = useState('');
+  const [identityVerb, setIdentityVerb] = useState('');
+  const [identityIcon, setIdentityIcon] = useState('');
+
   // Frequency & duration
   const [frequency, setFrequency] = useState<HabitFrequency>('daily');
   const [customDays, setCustomDays] = useState<number[]>([1, 2, 3, 4, 5]);
@@ -70,6 +75,9 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setSelectedCategory('health');
     setDailyTarget(1);
     setReminders([]);
+    setIdentityCluster('');
+    setIdentityVerb('');
+    setIdentityIcon('');
     setFrequency('daily');
     setCustomDays([1, 2, 3, 4, 5]);
     setRequiresDuration(false);
@@ -89,6 +97,9 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setSelectedCategory(habit.category || 'health');
     setDailyTarget(habit.dailyTarget ?? habit.targetCount ?? 1);
     setReminders(habit.reminders || []);
+    setIdentityCluster(habit.identityCluster || '');
+    setIdentityVerb(habit.identityVerb || '');
+    setIdentityIcon(habit.identityIcon || '');
     setFrequency(habit.frequency || 'daily');
     setCustomDays(habit.customDays || [1, 2, 3, 4, 5]);
     setRequiresDuration(habit.requiresDuration || false);
@@ -102,6 +113,13 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     if (!newHabitName.trim()) return;
 
     const today = getToday();
+
+    // Identity fields — only include when user filled them
+    const identityFields = {
+      ...(identityCluster.trim() && { identityCluster: identityCluster.trim() }),
+      ...(identityVerb.trim() && { identityVerb: identityVerb.trim() }),
+      ...(identityIcon && { identityIcon }),
+    };
 
     if (editingHabit && onUpdateHabit) {
       const updatedHabit: Habit = {
@@ -117,7 +135,13 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
         ...(requiresDuration && { requiresDuration: true, targetDuration }),
         ...(selectedType === 'multiple' && { dailyTarget }),
         ...(selectedType === 'reduce' && { targetCount: dailyTarget }),
+        ...identityFields,
       };
+      // Clear identity fields if user removed them
+      if (!identityCluster.trim()) delete updatedHabit.identityCluster;
+      if (!identityVerb.trim()) delete updatedHabit.identityVerb;
+      if (!identityIcon) delete updatedHabit.identityIcon;
+
       onUpdateHabit(updatedHabit);
     } else {
       const habit: Habit = {
@@ -136,6 +160,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
         ...(selectedType === 'multiple' && { dailyTarget, completionsByDate: {} }),
         ...(selectedType === 'continuous' && { startDate: today, failedDates: [] }),
         ...(selectedType === 'reduce' && { progressByDate: {}, targetCount: dailyTarget }),
+        ...identityFields,
       };
       onAddHabit(habit);
       void hapticTap();
@@ -146,6 +171,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     newHabitName, editingHabit, onUpdateHabit, onAddHabit, resetForm,
     selectedIcon, selectedColor, selectedType, selectedCategory,
     reminders, frequency, customDays, requiresDuration, targetDuration, dailyTarget,
+    identityCluster, identityVerb, identityIcon,
   ]);
 
   // Pre-fill form from template
@@ -193,10 +219,12 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     isAdding, showCustomForm, editingHabit,
     newHabitName, selectedIcon, selectedColor, selectedType, selectedCategory,
     dailyTarget, reminders, frequency, customDays, requiresDuration, targetDuration,
+    identityCluster, identityVerb, identityIcon,
     // Setters
     setIsAdding, setShowCustomForm,
     setNewHabitName, setSelectedIcon, setSelectedColor,
     setSelectedType, setSelectedCategory, setDailyTarget,
+    setIdentityCluster, setIdentityVerb, setIdentityIcon,
     setFrequency, setCustomDays, setRequiresDuration, setTargetDuration,
     // Actions
     resetForm, handleEditHabit, handleAddHabit, handleQuickAdd,
