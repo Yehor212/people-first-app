@@ -42,12 +42,13 @@ import { getChallenges, getBadges } from '@/lib/challengeStorage';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { analytics } from '@/lib/analytics';
 
 export function Index() {
   const { t, isRTL } = useLanguage();
   const { isFeatureVisible } = useFeatureFlags();
 
-  // Security: Auto-logout after 15 minutes of inactivity (when supabase is configured)
+  // Security: Auto-logout after 24h inactivity on web (disabled on native)
   useSessionTimeout(!!supabase);
 
   // Navigation state from Zustand (replaces useState + useEffect for settings clearing)
@@ -127,6 +128,11 @@ export function Index() {
   const setReminders = useUserDataStore(s => s.setReminders);
   const privacy = useUserDataStore(s => s.privacy);
   const setPrivacy = useUserDataStore(s => s.setPrivacy);
+
+  // Initialize analytics when privacy settings change (or on first load)
+  useEffect(() => {
+    analytics.init(privacy);
+  }, [privacy]);
 
   // Loading handling (IndexedDB fields from store + InnerWorld from hook)
   const isLoadingUserData = useUserDataStore(s => s.isLoading);
