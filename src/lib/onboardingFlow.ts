@@ -389,3 +389,107 @@ export function markWelcomeSeen(): void {
   };
   saveOnboardingState(updatedState);
 }
+
+// ============================================
+// GARDEN STAGE GATING (IA Blueprint Phase 5.2)
+// ============================================
+// Narrative-driven progressive disclosure:
+//   Seed → Sprout → Growing → Blooming → Flourishing
+// Behavioral, not calendar-based. Fast users unlock faster.
+
+export type GardenGateStage = 'seed' | 'sprout' | 'growing' | 'blooming' | 'flourishing';
+
+interface GardenGateConfig {
+  stage: GardenGateStage;
+  features: FeatureId[];
+  unlockCondition: string; // human-readable
+}
+
+const GARDEN_GATE_STAGES: GardenGateConfig[] = [
+  {
+    stage: 'seed',
+    features: ['mood', 'habits'],
+    unlockCondition: 'App install',
+  },
+  {
+    stage: 'sprout',
+    features: ['focusTimer'],
+    unlockCondition: 'First 3 habits completed',
+  },
+  {
+    stage: 'growing',
+    features: ['companion'],
+    unlockCondition: 'First focus session + 5 habits',
+  },
+  {
+    stage: 'blooming',
+    features: ['challenges', 'quests'],
+    unlockCondition: '3 journal entries + 7-day activity',
+  },
+  {
+    stage: 'flourishing',
+    features: ['tasks', 'xp'],
+    unlockCondition: '14-day veteran',
+  },
+];
+
+/**
+ * Compute which garden gate stage the user is at, based on actual activity.
+ */
+export function computeGardenGateStage(stats: {
+  habitsCompleted: number;
+  focusSessionsCompleted: number;
+  journalEntries: number;
+  daysActive: number;
+}): GardenGateStage {
+  if (stats.daysActive >= 14) return 'flourishing';
+  if (stats.journalEntries >= 3 && stats.daysActive >= 7) return 'blooming';
+  if (stats.focusSessionsCompleted >= 1 && stats.habitsCompleted >= 5) return 'growing';
+  if (stats.habitsCompleted >= 3) return 'sprout';
+  return 'seed';
+}
+
+/**
+ * Returns features that should be unlocked at the given garden stage.
+ */
+export function getFeaturesForGardenStage(stage: GardenGateStage): FeatureId[] {
+  const stageOrder: GardenGateStage[] = ['seed', 'sprout', 'growing', 'blooming', 'flourishing'];
+  const stageIdx = stageOrder.indexOf(stage);
+
+  const features: FeatureId[] = [];
+  for (const config of GARDEN_GATE_STAGES) {
+    if (stageOrder.indexOf(config.stage) <= stageIdx) {
+      features.push(...config.features);
+    }
+  }
+  return features;
+}
+
+/**
+ * Get garden gate stage info for UI (companion narration, etc.)
+ */
+export function getGardenGateInfo(stage: GardenGateStage): {
+  icon: string;
+  companionMessage: string;
+  nextStage?: GardenGateStage;
+  nextCondition?: string;
+} {
+  const stageOrder: GardenGateStage[] = ['seed', 'sprout', 'growing', 'blooming', 'flourishing'];
+  const idx = stageOrder.indexOf(stage);
+  const nextConfig = GARDEN_GATE_STAGES[idx + 1];
+
+  const messages: Record<GardenGateStage, { icon: string; msg: string }> = {
+    seed: { icon: '🌱', msg: "Welcome! Let's plant our first seed together." },
+    sprout: { icon: '🌿', msg: 'Your garden is sprouting! Time to focus on growth.' },
+    growing: { icon: '🌳', msg: 'Our garden is growing! I want to hear your stories.' },
+    blooming: { icon: '🌸', msg: "We're blooming! Ready for some challenges?" },
+    flourishing: { icon: '🏡', msg: 'Our garden is a world now. Every detail is yours to shape.' },
+  };
+
+  return {
+    icon: messages[stage].icon,
+    companionMessage: messages[stage].msg,
+    nextStage: nextConfig?.stage,
+    nextCondition: nextConfig?.unlockCondition,
+  };
+}

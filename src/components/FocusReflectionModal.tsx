@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { X, Sparkles } from 'lucide-react';
+import { X, Sparkles, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { zenMotion } from '@/lib/animationUtils';
@@ -35,9 +35,10 @@ interface FocusReflectionModalProps {
   onSelectValue: (value: number) => void;
   onSave: (value: number | null) => void;
   onDismiss: () => void;
+  onExpandToJournal?: () => void; // IA Blueprint Phase 3: Focus → Journal expansion
 }
 
-export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, onDismiss }: FocusReflectionModalProps) {
+export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, onDismiss, onExpandToJournal }: FocusReflectionModalProps) {
   const { t } = useLanguage();
 
   return (
@@ -139,6 +140,17 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
               {t.focusReflectionSave}
             </motion.button>
           </div>
+
+          {/* Focus → Journal expansion (IA Blueprint Phase 3) */}
+          {onExpandToJournal && (
+            <button
+              onClick={() => { onSave(reflectionValue); onExpandToJournal(); }}
+              className="w-full mt-3 py-2.5 rounded-xl text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors flex items-center justify-center gap-2"
+            >
+              <PenLine className="w-4 h-4" />
+              {t.focusExpandToJournal || 'Write about it in your journal'}
+            </button>
+          )}
 
           {/* Opt-in rewarded ad — earn bonus treats after focus */}
           <div className="mt-4">

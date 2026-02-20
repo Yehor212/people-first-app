@@ -165,6 +165,10 @@ export const runtimeHabitSchema = z.object({
   targetCount: z.number().optional(),
   dailyTarget: z.number().optional(),
   completionsByDate: z.record(z.string(), z.number()).optional(),
+  // Identity cluster (IA Blueprint Phase 2)
+  identityCluster: z.string().optional(),
+  identityVerb: z.string().optional(),
+  identityIcon: z.string().optional(),
 }).passthrough();
 
 // ============================================
@@ -272,6 +276,10 @@ export const innerWorldSchema = z.object({
   longestActiveStreak: z.number(),
   currentActiveStreak: z.number(),
   lastActiveDate: z.string(),
+  // Active temporary effects (IA Blueprint Phase 4)
+  activeEffects: z.object({
+    wind: z.object({ until: z.number() }).optional(),
+  }).optional(),
 }).passthrough();
 
 // ============================================
@@ -288,4 +296,28 @@ export const gamificationStateSchema = z.object({
   achievementProgress: z.record(z.string(), z.number()),
   lastClaimedReward: z.string().optional(),
   shownAchievementToasts: z.array(z.string()).optional(),
+}).passthrough();
+
+// ============================================
+// MICRO REFLECTION (IA Blueprint Phase 3)
+// ============================================
+
+const reflectionDepth = z.enum(['nano', 'micro', 'deep']);
+const reflectionTrigger = z.enum([
+  'mood_joy_streak', 'all_habits_complete', 'focus_reflection',
+  'evening_checkin', 'weekly_review', 'streak_rest', 'manual',
+]);
+
+/** MicroReflection — lightweight reflection record */
+export const microReflectionSchema = z.object({
+  id: z.string().min(1),
+  text: z.string().min(1),
+  depth: reflectionDepth,
+  trigger: reflectionTrigger,
+  date: dateString,
+  timestamp: z.number(),
+  linkedMoodId: z.string().optional(),
+  linkedHabitIds: z.array(z.string()).optional(),
+  linkedFocusSessionId: z.string().optional(),
+  expandedToJournalId: z.string().optional(),
 }).passthrough();

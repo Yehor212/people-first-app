@@ -9,6 +9,7 @@ import {
   UserStats,
   calculateLevel,
   getXpForAction,
+  XpAction,
 } from '@/lib/gamification';
 import { addFriendActivity, loadMyProfile, updateMyLevel } from '@/storage/friendsSync';
 import { analytics } from '@/lib/analytics';
@@ -174,7 +175,7 @@ export function useGamification() {
 
   // Award XP for actions
   const awardXp = useCallback(
-    (action: 'mood' | 'habit' | 'focus' | 'gratitude' | 'streak') => {
+    (action: XpAction) => {
       const xp = getXpForAction(action);
       setGamificationState((prev) => ({
         ...prev,

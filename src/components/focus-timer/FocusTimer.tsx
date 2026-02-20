@@ -17,9 +17,10 @@ interface FocusTimerProps {
   onCompleteSession: (session: FocusSession) => void;
   onMinuteUpdate?: (minutes: number) => void;
   isPrimaryCTA?: boolean;
+  onExpandToJournal?: () => void; // IA Blueprint Phase 3: Focus → Journal
 }
 
-export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrimaryCTA = false }: FocusTimerProps) {
+export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession, onMinuteUpdate, isPrimaryCTA = false, onExpandToJournal }: FocusTimerProps) {
   const { t } = useLanguage();
 
   const {
@@ -187,6 +188,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
           onSelectValue={setReflectionValue}
           onSave={handleSaveReflection}
           onDismiss={() => handleSaveReflection(null)}
+          onExpandToJournal={onExpandToJournal}
         />
       )}
 

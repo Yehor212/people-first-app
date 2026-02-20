@@ -142,6 +142,12 @@ export const haptics = {
   // Gratitude
   gratitudeSaved: hapticSuccess,
 
+  // Journal
+  journalSaved: hapticSuccess,
+
+  // Breathing
+  breathingComplete: hapticSuccess,
+
   // Achievements & XP
   xpGained: hapticTap,
   achievementUnlocked: hapticHeavy,

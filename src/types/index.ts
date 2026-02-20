@@ -117,6 +117,11 @@ export interface Habit {
   // For multiple daily habits
   dailyTarget?: number;        // Сколько раз в день нужно выполнить
   completionsByDate?: Record<string, number>; // Сколько раз выполнено в этот день
+
+  // Identity cluster (IA Blueprint Phase 2)
+  identityCluster?: string;    // User-defined cluster name ("The Mindful Me")
+  identityVerb?: string;       // Identity statement ("I am a meditator")
+  identityIcon?: string;       // Emoji representing this identity
 }
 
 export interface GratitudeEntry {
@@ -261,7 +266,7 @@ export interface ScheduleEvent {
 // TREATS SYSTEM - Unified reward currency
 // ============================================
 
-export type TreatSource = 'mood' | 'habit' | 'focus' | 'gratitude' | 'breathing' | 'streak_bonus' | 'daily_reward' | 'mindful' | 'ad';
+export type TreatSource = 'mood' | 'habit' | 'focus' | 'gratitude' | 'breathing' | 'journal' | 'streak_bonus' | 'daily_reward' | 'mindful' | 'ad';
 
 export interface TreatTransaction {
   id: string;
@@ -285,7 +290,7 @@ export interface TreatsWallet {
 
 export type Season = 'spring' | 'summer' | 'autumn' | 'winter';
 
-export type PlantType = 'flower' | 'tree' | 'crystal' | 'mushroom';
+export type PlantType = 'flower' | 'tree' | 'crystal' | 'mushroom' | 'story' | 'air_plant' | 'rest_flower';
 export type CreatureType = 'butterfly' | 'bird' | 'firefly' | 'spirit';
 
 export type PlantStage = 'seed' | 'sprout' | 'growing' | 'blooming' | 'magnificent';
@@ -301,7 +306,7 @@ export interface GardenPlant {
   lastWateredAt: number;            // Last activity timestamp
   growthPoints: number;             // Accumulated growth
   position: { x: number; y: number }; // Position in garden (0-100)
-  sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude';
+  sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude' | 'journal' | 'breathing' | 'rest';
   isSpecial?: boolean;              // Seasonal or rare
   variant?: string;                 // Visual variant
 }
@@ -320,7 +325,7 @@ export interface GardenCreature {
 }
 
 // Companion mascot - lives in the garden
-export type CompanionMood = 'sleeping' | 'calm' | 'happy' | 'excited' | 'celebrating' | 'supportive';
+export type CompanionMood = 'sleeping' | 'calm' | 'happy' | 'excited' | 'celebrating' | 'supportive' | 'reading' | 'meditating';
 export type CompanionType = 'fox' | 'cat' | 'owl' | 'rabbit' | 'dragon';
 
 export interface Companion {
@@ -407,6 +412,11 @@ export interface InnerWorld {
 
   // Rest mode - days when user took a break but keeps streak
   restDays: string[]; // YYYY-MM-DD format
+
+  // Active temporary effects (IA Blueprint Phase 4)
+  activeEffects?: {
+    wind?: { until: number };       // Breathing → garden wind (expires after 2h)
+  };
 }
 
 // ============ Insights Engine Types ============
@@ -492,6 +502,37 @@ export interface EnergyPatternMetadata {
   pattern: string;              // Description of pattern
   correlation: number;          // Correlation coefficient
   recommendation: string;       // What to do about it
+}
+
+// ============================================
+// REFLECTION ENGINE (IA Blueprint Phase 3)
+// ============================================
+
+/** Depth level for reflection inputs */
+export type ReflectionDepth = 'nano' | 'micro' | 'deep';
+
+/** Trigger context that prompted the reflection */
+export type ReflectionTrigger =
+  | 'mood_joy_streak'      // 3+ days of positive mood
+  | 'all_habits_complete'  // All habits done today
+  | 'focus_reflection'     // After focus session
+  | 'evening_checkin'      // Evening prompt
+  | 'weekly_review'        // Weekly summary
+  | 'streak_rest'          // After streak break / rest mode
+  | 'manual';              // User opened journal directly
+
+/** Lightweight reflection record (not a full journal entry) */
+export interface MicroReflection {
+  id: string;
+  text: string;                        // 1 word to 2 sentences
+  depth: ReflectionDepth;
+  trigger: ReflectionTrigger;
+  date: string;                        // YYYY-MM-DD
+  timestamp: number;
+  linkedMoodId?: string;               // If prompted by mood
+  linkedHabitIds?: string[];           // If prompted by habit completion
+  linkedFocusSessionId?: string;       // If prompted by focus reflection
+  expandedToJournalId?: string;        // If user expanded to full entry
 }
 
 // ====== Onboarding System Types ======

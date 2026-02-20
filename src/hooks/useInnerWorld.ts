@@ -71,18 +71,23 @@ export function useInnerWorld() {
       const daysDiff = Math.floor((todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
 
       if (daysDiff > 1) {
-        // User was away - set supportive mode
-        setWorld(prev => ({
-          ...prev,
-          companion: {
-            ...prev.companion,
-            mood: 'supportive',
-          },
-          pendingGrowth: {
-            ...prev.pendingGrowth,
-            companionMissedYou: true,
-          },
-        }));
+        // User was away - set supportive mode + auto-forage (IA Blueprint Phase 6)
+        setWorld(prev => {
+          // Companion auto-forages if unfed for 2+ days (guilt-free hunger)
+          const shouldAutoForage = daysDiff >= 2 && prev.companion.fullness < 30;
+          return {
+            ...prev,
+            companion: {
+              ...prev.companion,
+              mood: 'supportive',
+              fullness: shouldAutoForage ? 50 : prev.companion.fullness,
+            },
+            pendingGrowth: {
+              ...prev.pendingGrowth,
+              companionMissedYou: true,
+            },
+          };
+        });
       }
     }
   }, [isLoading, world.lastActiveDate, setWorld]);
@@ -117,13 +122,16 @@ export function useInnerWorld() {
   // Plant a new plant from an activity
   // Use functional update to prevent race conditions with stale world state
   const plantSeed = useCallback((
-    sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude',
+    sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude' | 'journal' | 'breathing' | 'rest',
     mood?: MoodType
   ) => {
     const plantType: PlantType =
       sourceActivity === 'mood' ? 'flower' :
       sourceActivity === 'habit' ? 'tree' :
-      sourceActivity === 'focus' ? 'crystal' : 'mushroom';
+      sourceActivity === 'focus' ? 'crystal' :
+      sourceActivity === 'journal' ? 'story' :
+      sourceActivity === 'breathing' ? 'air_plant' :
+      sourceActivity === 'rest' ? 'rest_flower' : 'mushroom';
 
     const color = mood ? MOOD_COLORS[mood] : '#22c55e';
     const plantId = generateId();
@@ -193,7 +201,7 @@ export function useInnerWorld() {
 
   // Water plants (called when doing activities)
   // Use functional update to prevent race conditions
-  const waterPlants = useCallback((sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude') => {
+  const waterPlants = useCallback((sourceActivity: 'mood' | 'habit' | 'focus' | 'gratitude' | 'journal' | 'breathing' | 'rest') => {
     const now = Date.now();
     setWorld(prev => ({
       ...prev,
@@ -315,6 +323,11 @@ export function useInnerWorld() {
     return result;
   }, [setWorld]);
 
+  // Plant a rest flower when rest mode is activated (IA Blueprint Phase 6.3)
+  const plantRestFlower = useCallback(() => {
+    plantSeed('rest');
+  }, [plantSeed]);
+
   return {
     world,
     isLoading,
@@ -327,6 +340,7 @@ export function useInnerWorld() {
     waterPlants,
     attractCreature,
     feedCreatures,
+    plantRestFlower,
 
     // Rest mode
     isRestMode,

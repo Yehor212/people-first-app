@@ -1,13 +1,12 @@
-import { Suspense } from 'react';
+import { Suspense, useCallback } from 'react';
 import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { Header } from '@/components/Header';
 import { MoodInsights } from '@/components/MoodInsights';
 import { SkeletonCard, SkeletonList } from '@/components/ui/skeleton';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
-import { useUIStore, useUserDataStore, getModalToggle } from '@/stores';
-import { triggerXpPopup } from '@/components/XpPopup';
-import { triggerSync } from '@/storage/cloudSync';
+import { useUIStore, useUserDataStore, useGamificationStore, getModalToggle } from '@/stores';
+import { haptics } from '@/lib/haptics';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ScheduleEvent } from '@/types';
 
 const ScheduleTimeline = lazyWithRetry(() => import('@/components/ScheduleTimeline').then(m => ({ default: m.ScheduleTimeline })), 'ScheduleTimeline');
@@ -35,11 +34,17 @@ interface GardenTabProps {
 export function GardenTab({
   safeMoods, safeHabits, safeFocusSessions, safeGratitudeEntries,
   todayAllEvents, handleAddScheduleEvent, handleDeleteScheduleEvent,
-  handleCompleteFocusSession, earnTreats,
+  handleCompleteFocusSession, earnTreats: _earnTreats,
 }: GardenTabProps) {
   const { isFeatureVisible } = useFeatureFlags();
   const userName = useUserDataStore(s => s.userName);
   const setCurrentFocusMinutes = useUIStore(s => s.setCurrentFocusMinutes);
+  const rewardUser = useGamificationStore(s => s.rewardUser);
+
+  // Focus → Journal expansion: scroll journal into view (IA Blueprint Phase 3)
+  const handleExpandToJournal = useCallback(() => {
+    document.getElementById('journal-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, []);
 
   return (
     <div className="animate-tab-enter">
@@ -66,7 +71,7 @@ export function GardenTab({
         </div>
 
         {/* Diary — min-h prevents CLS */}
-        <div className="min-h-[160px]">
+        <div id="journal-section" className="min-h-[160px]">
         <LazyErrorBoundary componentName="Journal">
           <Suspense fallback={<SkeletonCard />}>
             <JournalModule />
@@ -82,9 +87,11 @@ export function GardenTab({
               <BreathingExercise
                 compact
                 onComplete={(pattern) => {
-                  const treatResult = earnTreats('breathing', 5, `Breathing: ${pattern.name}`);
-                  triggerXpPopup(treatResult.earned, 'breathing');
-                  triggerSync();
+                  rewardUser('breathing', {
+                    treats: 5,
+                    treatReason: `Breathing: ${pattern.name}`,
+                    haptic: haptics.breathingComplete,
+                  });
                 }}
               />
             </Suspense>
@@ -102,6 +109,7 @@ export function GardenTab({
                 onCompleteSession={handleCompleteFocusSession}
                 onMinuteUpdate={setCurrentFocusMinutes}
                 isPrimaryCTA={true}
+                onExpandToJournal={handleExpandToJournal}
               />
             </Suspense>
           </ModalErrorBoundary>

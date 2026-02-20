@@ -274,13 +274,17 @@ export function calculateLevel(xp: number): UserLevel {
   return { level, xp, nextLevelXp, title };
 }
 
-export function getXpForAction(action: 'mood' | 'habit' | 'focus' | 'gratitude' | 'streak'): number {
-  const xpMap = {
+export type XpAction = 'mood' | 'habit' | 'focus' | 'gratitude' | 'streak' | 'journal' | 'breathing';
+
+export function getXpForAction(action: XpAction): number {
+  const xpMap: Record<XpAction, number> = {
     mood: 5,
     habit: 10,
     focus: 15,
     gratitude: 8,
     streak: 20,
+    journal: 20,
+    breathing: 15,
   };
   return xpMap[action];
 }

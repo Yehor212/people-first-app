@@ -24,6 +24,8 @@ import { StickerRenderer } from './StickerRenderer';
 import { useJournalReminder, getDaysSinceLastEntry } from './useJournalReminder';
 import { useScreenSecurity } from './useScreenSecurity';
 import { ParticleBackground } from '@/components/stats/ParticleBackground';
+import { useGamificationStore } from '@/stores';
+import { haptics } from '@/lib/haptics';
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
 const LazyJournalStats = lazy(() =>
@@ -35,6 +37,7 @@ type ModuleState = 'card' | 'open';
 export function JournalModule() {
   const { t, isRTL } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const rewardUser = useGamificationStore(s => s.rewardUser);
   const [moduleState, setModuleState] = useState<ModuleState>('card');
   const [entryCount, setEntryCount] = useState(0);
   const [showPasswordSettings, setShowPasswordSettings] = useState(false);
@@ -175,6 +178,9 @@ export function JournalModule() {
     try { const { triggerSync } = await import('@/storage/cloudSync'); triggerSync(); } catch { /* non-critical */ }
     // Streak milestone celebration (only for new entries on today's date)
     if (isNew) {
+      // Award XP, treats, plant story flower (IA Blueprint Wave A)
+      rewardUser('journal', { treats: 10, treatReason: 'Journal entry', haptic: haptics.journalSaved });
+
       const entryDate = data.date || getToday();
       if (entryDate === getToday() && !hasTodayEntry) {
         const newStreak = streak + 1;
@@ -184,7 +190,7 @@ export function JournalModule() {
         }
       }
     }
-  }, [journal, streak, hasTodayEntry]);
+  }, [journal, streak, hasTodayEntry, rewardUser]);
 
   const handleDeleteEntry = useCallback(async (id: string) => {
     // Find the entry before deleting for undo
