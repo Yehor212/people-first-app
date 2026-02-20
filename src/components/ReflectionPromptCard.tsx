@@ -46,12 +46,12 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
     };
 
     setMicroReflections((prev) => [...prev, reflection]);
-    void haptics.tap();
+    void haptics.light();
     setSubmitted(true);
   }, [text, prompt, setMicroReflections]);
 
   const handleExpandToJournal = useCallback(() => {
-    void haptics.tap();
+    void haptics.light();
     setActiveTab('garden');
     // After tab switch, scroll to journal section
     requestAnimationFrame(() => {
