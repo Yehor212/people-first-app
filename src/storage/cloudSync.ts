@@ -111,8 +111,8 @@ const doSyncWithCloud = async (
       throw new Error("Sync operation aborted due to timeout");
     }
 
-    const { data } = await supabase.auth.getUser();
-    const user = data?.user;
+    const { data: { session } } = await supabase.auth.getSession();
+    const user = session?.user;
 
     if (!user) {
       throw new Error("Not authenticated.");

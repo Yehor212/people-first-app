@@ -41,6 +41,18 @@ export function useAuthSession(isLoading: boolean): void {
   const hadSignOutRef = useRef(false);
   const lastSessionExpiredRef = useRef<number>(0);
 
+  // Refs for values used inside effects to prevent listener re-subscription
+  const googleAuthCheckedRef = useRef(googleAuthChecked);
+  googleAuthCheckedRef.current = googleAuthChecked;
+  const isLoadingUserDataRef = useRef(isLoadingUserData);
+  isLoadingUserDataRef.current = isLoadingUserData;
+  const isLoadingRef = useRef(isLoading);
+  isLoadingRef.current = isLoading;
+  const userNameCustomRef = useRef(userNameCustom);
+  userNameCustomRef.current = userNameCustom;
+  const userNameRef = useRef(userName);
+  userNameRef.current = userName;
+
   // Check Supabase session on mount - restore auth state if session exists
   useEffect(() => {
     let active = true;
@@ -55,7 +67,7 @@ export function useAuthSession(isLoading: boolean): void {
 
         // If session exists but googleAuthChecked is false, restore it
         // This prevents the login loop after OAuth redirect
-        if (sessionExists && !googleAuthChecked && !isLoadingUserData) {
+        if (sessionExists && !googleAuthCheckedRef.current && !isLoadingUserDataRef.current) {
           logger.log('[Index] Session exists but auth not checked - restoring state');
           setGoogleAuthChecked(true);
         }
@@ -80,7 +92,7 @@ export function useAuthSession(isLoading: boolean): void {
       active = false;
       subscription?.unsubscribe();
     };
-  }, [googleAuthChecked, isLoadingUserData, setGoogleAuthChecked, setHasValidSession]);
+  }, [setGoogleAuthChecked, setHasValidSession]);
 
   // Web OAuth callback detection — runs ONCE on mount
   // Detects ?code= or ?error= in URL (from Supabase PKCE redirect)
@@ -189,11 +201,11 @@ export function useAuthSession(isLoading: boolean): void {
 
   // Cloud sync on auth change
   useEffect(() => {
-    if (!supabase || isLoading) return;
+    if (!supabase) return;
     let active = true;
 
     const syncIfNeeded = async (userId?: string | null) => {
-      if (!active || !userId) return;
+      if (!active || !userId || isLoadingRef.current) return;
       if (lastSyncedUserIdRef.current === userId) return;
 
       // Use 'replace' if: (a) sign-out happened, or (b) different user was synced before
@@ -243,34 +255,41 @@ export function useAuthSession(isLoading: boolean): void {
       stopAutoSync();
       leavePresence().catch(err => logger.warn('[Auth]', 'Presence leave failed:', err));
     };
-  }, [isLoading]);
+  }, []); // mount-only — isLoading tracked via ref
 
-  // Sync user name from Supabase metadata
+  // Sync user name from Supabase metadata (uses cached session, no network call)
   useEffect(() => {
-    if (userNameCustom || !supabase) return;
+    if (!supabase) return;
     let active = true;
 
-    const syncName = async () => {
-      const { data } = await supabase.auth.getUser();
-      const metadata = data.user?.user_metadata as { full_name?: string; name?: string } | undefined;
+    // Initial sync from cached session
+    const syncNameFromSession = async () => {
+      if (userNameCustomRef.current) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!active || !session?.user) return;
+      const metadata = session.user.user_metadata as { full_name?: string; name?: string } | undefined;
       const candidate = metadata?.full_name || metadata?.name;
-      if (!active || !candidate) return;
-      if (candidate !== userName) {
+      if (candidate && candidate !== userNameRef.current) {
         setUserName(candidate);
       }
     };
+    void syncNameFromSession();
 
-    void syncName();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      void syncName();
+    // Listen: use session directly from callback (no network call)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active || !session?.user || userNameCustomRef.current) return;
+      const metadata = session.user.user_metadata as { full_name?: string; name?: string } | undefined;
+      const candidate = metadata?.full_name || metadata?.name;
+      if (candidate && candidate !== userNameRef.current) {
+        setUserName(candidate);
+      }
     });
 
     return () => {
       active = false;
       subscription?.unsubscribe();
     };
-  }, [userNameCustom, userName, setUserName]);
+  }, [setUserName]);
 
   // Session expired handler - listens for 401 errors from API/sync
   // Verify actual session state before resetting auth

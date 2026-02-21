@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // ─── Mocks (must be hoisted before imports) ──────────────────────────────────
 
 const mockGetUser = vi.fn();
+const mockGetSession = vi.fn();
 const mockSelect = vi.fn();
 const mockEq = vi.fn();
 const mockMaybeSingle = vi.fn();
@@ -79,8 +80,9 @@ function createMockSupabase() {
     upsert: mockUpsert,
   }));
   mockGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+  mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'user-1' } } } });
   return {
-    auth: { getUser: mockGetUser },
+    auth: { getUser: mockGetUser, getSession: mockGetSession },
     from: mockFrom,
   };
 }
@@ -152,7 +154,7 @@ describe('syncWithCloud', () => {
 
   it('throws when user is not authenticated', async () => {
     mockSupabase = createMockSupabase();
-    mockGetUser.mockResolvedValue({ data: { user: null } });
+    mockGetSession.mockResolvedValue({ data: { session: null } });
 
     await expect(syncWithCloud()).rejects.toThrow('Not authenticated.');
   });
@@ -335,7 +337,7 @@ describe('silentSync', () => {
 
     // syncWithCloud('merge') was invoked inside the callback
     expect(mockExportBackup).toHaveBeenCalled();
-    expect(mockGetUser).toHaveBeenCalled();
+    expect(mockGetSession).toHaveBeenCalled();
   });
 
   it('callback re-throws non-abort errors for orchestrator retry', async () => {

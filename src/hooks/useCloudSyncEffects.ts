@@ -99,11 +99,12 @@ export function useCloudSyncEffects({
       if (!supabase) return;
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
 
         if (!active) return;
 
-        if (user) {
+        if (session?.user) {
+          const user = session.user;
           // Sync challenges
           const { challenges: syncedChallenges } = await syncChallengesWithCloud(user.id);
           if (active && syncedChallenges) {

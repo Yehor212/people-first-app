@@ -57,8 +57,9 @@ let syncInnerWorldPromise: Promise<InnerWorld> | null = null;
 export async function pushInnerWorldToCloud(world: InnerWorld): Promise<void> {
   if (!supabase) return;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return;
+  const user = session.user;
 
   try {
     const { error } = await supabase
@@ -88,8 +89,9 @@ export async function pushInnerWorldToCloud(world: InnerWorld): Promise<void> {
 export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
   if (!supabase) return null;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return null;
+  const user = session.user;
 
   try {
     const { data, error } = await supabase

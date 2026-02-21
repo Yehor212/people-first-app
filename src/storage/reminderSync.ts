@@ -16,15 +16,16 @@ export const syncReminderSettings = async (
   // Use orchestrator for queue-based sync
   await syncOrchestrator.sync('reminders', async () => {
     const {
-      data: { user },
+      data: { session },
       error: authError
-    } = await supabase.auth.getUser();
+    } = await supabase.auth.getSession();
 
-    if (authError || !user) {
+    if (authError || !session?.user) {
       // Silently skip if not authenticated - not an error condition
       logger.log('[ReminderSync] Not authenticated, skipping sync');
       return;
     }
+    const user = session.user;
 
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
 

@@ -329,8 +329,9 @@ export function isCloudSyncAvailable(): boolean {
 async function syncMyProfileToCloud(profile: MyProfile): Promise<void> {
   if (!supabase) return;
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user) return;
+  const user = session.user;
 
   try {
     // Using a generic profiles approach - in production, you'd have a proper table

@@ -34,16 +34,35 @@ export function useDeepLinkHandler(): void {
 
     let removeListener = () => {};
 
-    const waitForSession = async (attempts = 20, delayMs = 400) => {
-      if (!supabase) return null;
-      for (let attempt = 0; attempt < attempts; attempt += 1) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session?.user) return data.session;
-        if (attempt < attempts - 1) {
-          await new Promise(resolve => setTimeout(resolve, delayMs));
-        }
-      }
-      return null;
+    // Event-based session wait: 1 cache check + onAuthStateChange listener + 15s timeout
+    // Replaces polling loop (was 20 × getSession() at 400ms intervals)
+    const waitForSession = (): Promise<import('@supabase/supabase-js').Session | null> => {
+      return new Promise((resolve) => {
+        if (!supabase) { resolve(null); return; }
+
+        let settled = false;
+
+        const trySettle = (session: import('@supabase/supabase-js').Session | null) => {
+          if (settled) return;
+          settled = true;
+          resolve(session);
+        };
+
+        // 1. Check if session already exists (local cache, no network call)
+        supabase.auth.getSession().then(({ data }) => {
+          if (data.session?.user) trySettle(data.session);
+        }).catch(() => trySettle(null));
+
+        // 2. Listen for auth state change (fires when code exchange completes)
+        supabase.auth.onAuthStateChange((event, session) => {
+          if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+            trySettle(session);
+          }
+        });
+
+        // 3. Timeout after 15s
+        setTimeout(() => trySettle(null), 15_000);
+      });
     };
 
     const getAuthDedupeKey = (url: string): string => {
