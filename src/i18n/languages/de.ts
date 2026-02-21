@@ -1228,6 +1228,7 @@ export const de: Translations = {
 
   // Garden / My World
   myWorld: 'Meine Welt',
+  diary: 'Tagebuch',
   plants: 'Pflanzen',
   creatures: 'Kreaturen',
   level: 'Stufe',

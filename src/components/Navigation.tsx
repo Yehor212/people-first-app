@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Home, Settings, Sparkles, BarChart3 } from 'lucide-react';
+import { Home, Settings, BookOpen, BarChart3 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { haptics } from '@/lib/haptics';
 
@@ -27,7 +27,7 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
 
   const tabs = [
     { id: 'home' as TabType, icon: Home, label: t.home },
-    { id: 'garden' as TabType, icon: Sparkles, label: t.myWorld },
+    { id: 'garden' as TabType, icon: BookOpen, label: t.diary },
     { id: 'stats' as TabType, icon: BarChart3, label: t.stats },
     { id: 'settings' as TabType, icon: Settings, label: t.settings },
   ];

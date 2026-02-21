@@ -11,6 +11,7 @@ const hebrewOverrides: Partial<Translations> = {
   stats: 'סטטיסטיקות',
   settings: 'הגדרות',
   myWorld: 'העולם שלי',
+  diary: 'יומן',
 
   // Stats Overview
   streakDays: 'ימים רצופים',

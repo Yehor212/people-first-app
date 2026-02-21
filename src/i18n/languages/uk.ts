@@ -1227,6 +1227,7 @@ export const uk: Translations = {
 
   // Garden / My World
   myWorld: 'Мій світ',
+  diary: 'Щоденник',
   plants: 'Рослин',
   creatures: 'Істот',
   level: 'Рівень',

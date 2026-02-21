@@ -1227,6 +1227,7 @@ export const ja: Translations = {
 
   // Garden / My World
   myWorld: 'マイワールド',
+  diary: '日記',
   plants: '植物',
   creatures: '生き物',
   level: 'レベル',

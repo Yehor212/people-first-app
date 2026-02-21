@@ -11,6 +11,7 @@ const arabicOverrides: Partial<Translations> = {
   stats: 'الإحصائيات',
   settings: 'الإعدادات',
   myWorld: 'عالمي',
+  diary: 'يوميات',
 
   // Stats Overview
   streakDays: 'أيام متتالية',
