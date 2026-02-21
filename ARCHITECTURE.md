@@ -953,6 +953,26 @@ On PR to main:
 
 ---
 
+### Audit Addendum (Onboarding Stuck Screen Fix)
+
+- Date: 2026-02-21
+- Author: Claude Opus 4.6
+- Scope: End-to-end onboarding gate fix — iOS Safari web users stuck on "Choose Features" screen
+- Root causes:
+  1. **CRITICAL: Buttons invisible on small viewports** — `OnboardingFlow.tsx` used `overflow-hidden` (vs WelcomeTutorial's `overflow-y-auto`). Content ~700px exceeded iPhone SE available height ~550px. `justify-content: center` + `overflow-hidden` clipped buttons off-screen.
+  2. **HIGH: `transitionLockRef` deadlock** — Set to `true` on first click, never reset on success. If component didn't unmount (slow IndexedDB), buttons permanently dead.
+  3. **HIGH: No synchronous bypass for onboarding/tutorial gates** — Auth gate had `authBypassFlag` (synchronous appStore), but onboarding/tutorial only used IndexedDB-backed flags. iOS Safari private mode could lose flags on refresh.
+- Changes:
+  - **Patch 1** — `overflow-hidden` → `overflow-y-auto`, `screen-centered` → `justify-start` with padding, `max-h-[400px]` → `max-h-[45vh]`, safe-area bottom padding on buttons.
+  - **Patch 2** — `transitionLockRef` safety timeout (2s auto-reset). Removed `onTouchEnd` + `e.preventDefault()` dual handlers (modern iOS Safari doesn't need them with viewport meta tag).
+  - **Patch 3** — Added `tutorialBypassFlag` + `onboardingBypassFlag` to `appStore.ts` (synchronous Zustand, no IndexedDB). Gate checks now: `!onboardingComplete && !onboardingBypassFlag`.
+  - **Patch 4** — Direct `safeLocalStorageSet()` writes in `handleOnboardingComplete` and tutorial handlers, before Zustand setter. Keys match `useHydrateUserData` exactly.
+- Net impact: Buttons always visible/reachable on any viewport. No deadlock possible (2s safety reset). Triple persistence guarantee (bypass flag + localStorage + IndexedDB).
+- Verification: `tsc --noEmit` 0 errors, `eslint --max-warnings=0` 0 warnings, `vitest --run` 2656/2656 pass (+6 new), `npm run build` success.
+- Other gates audited: LanguageSelector (OK), WelcomeTutorial (OK, bypass flag added), NotificationPermission (OK, auto-completes on web).
+
+---
+
 ### Constitution Update (Codex 5.3)
 
 - Date: 2026-02-18

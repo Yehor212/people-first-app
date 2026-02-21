@@ -23,6 +23,10 @@ interface AppState {
   isProcessingWebOAuth: boolean;
   webOAuthError: string | null;
   hasValidSession: boolean | null; // null = checking
+
+  // Gate bypass flags (synchronous — survive until page refresh)
+  tutorialBypassFlag: boolean;
+  onboardingBypassFlag: boolean;
 }
 
 interface AppActions {
@@ -35,6 +39,8 @@ interface AppActions {
   setIsProcessingWebOAuth: (value: boolean) => void;
   setWebOAuthError: (error: string | null) => void;
   setHasValidSession: (value: boolean | null) => void;
+  setTutorialBypassFlag: (value: boolean) => void;
+  setOnboardingBypassFlag: (value: boolean) => void;
   resetAuthState: () => void;
 }
 
@@ -50,6 +56,8 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   loadingFadeOut: false,
   currentDate: '',
   authBypassFlag: false,
+  tutorialBypassFlag: false,
+  onboardingBypassFlag: false,
   isProcessingWebOAuth: false,
   webOAuthError: null,
   hasValidSession: null,
@@ -68,6 +76,8 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   setIsProcessingWebOAuth: (isProcessingWebOAuth) => set({ isProcessingWebOAuth }),
   setWebOAuthError: (webOAuthError) => set({ webOAuthError }),
   setHasValidSession: (hasValidSession) => set({ hasValidSession }),
+  setTutorialBypassFlag: (tutorialBypassFlag) => set({ tutorialBypassFlag }),
+  setOnboardingBypassFlag: (onboardingBypassFlag) => set({ onboardingBypassFlag }),
   resetAuthState: () => set({
     hasValidSession: false,
     authBypassFlag: false,

@@ -68,6 +68,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [clickAttempts, setClickAttempts] = useState(0);
   const completionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const animatingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lockResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Fallback: If user clicks multiple times and nothing happens, force complete
   useEffect(() => {
@@ -89,6 +90,9 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       }
       if (animatingTimerRef.current) {
         clearTimeout(animatingTimerRef.current);
+      }
+      if (lockResetTimeoutRef.current) {
+        clearTimeout(lockResetTimeoutRef.current);
       }
     };
   }, [clickAttempts, onComplete, selectedModules]);
@@ -193,9 +197,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }
     transitionLockRef.current = true;
 
+    // Safety: reset lock after 2s in case component doesn't unmount
+    if (lockResetTimeoutRef.current) clearTimeout(lockResetTimeoutRef.current);
+    lockResetTimeoutRef.current = setTimeout(() => { transitionLockRef.current = false; }, 2000);
+
     try {
       logger.log('[OnboardingFlow] Setting flags for all modules...');
-      // Enable all modules by default when skipping
       modules.forEach(m => setFlag(m.id, true));
       logger.log('[OnboardingFlow] Calling onComplete with skipped=true');
       onComplete({ skipped: true, modules: modules.map(m => m.id) });
@@ -203,6 +210,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     } catch (error) {
       logger.error('[OnboardingFlow] Error in handleSkip:', error);
       transitionLockRef.current = false;
+      if (lockResetTimeoutRef.current) clearTimeout(lockResetTimeoutRef.current);
     }
   };
 
@@ -216,9 +224,12 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }
     transitionLockRef.current = true;
 
+    // Safety: reset lock after 2s in case component doesn't unmount
+    if (lockResetTimeoutRef.current) clearTimeout(lockResetTimeoutRef.current);
+    lockResetTimeoutRef.current = setTimeout(() => { transitionLockRef.current = false; }, 2000);
+
     try {
       logger.log('[OnboardingFlow] Setting flags for selected modules:', selectedModules);
-      // Save module preferences to feature flags
       modules.forEach(m => {
         setFlag(m.id, selectedModules.includes(m.id));
       });
@@ -229,14 +240,15 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     } catch (error) {
       logger.error('[OnboardingFlow] Error in handleComplete:', error);
       transitionLockRef.current = false;
+      if (lockResetTimeoutRef.current) clearTimeout(lockResetTimeoutRef.current);
     }
   };
 
   return (
-    <div className="screen-overlay bg-gradient-to-br from-background via-primary/5 to-accent/5 overflow-hidden">
+    <div className="screen-overlay bg-gradient-to-br from-background via-primary/5 to-accent/5 overflow-y-auto">
       <FloatingParticles />
 
-      <div className="screen-centered px-3 sm:px-4">
+      <div className="flex-1 flex flex-col items-center justify-start pt-6 sm:pt-10 px-3 sm:px-4 pb-4">
         <div className="w-full max-w-md relative z-10">
 
           {/* Header */}
@@ -254,7 +266,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
           {/* Modules Grid */}
           <div className="bg-card/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xl shadow-primary/10 border border-primary/10">
-            <div className="grid grid-cols-2 gap-3 max-h-[400px] overflow-y-auto pe-1">
+            <div className="grid grid-cols-2 gap-3 max-h-[45vh] overflow-y-auto pe-1">
               {modules.map((module, index) => {
                 const isSelected = selectedModules.includes(module.id);
                 const isAnimating = animatingModule === module.id;
@@ -321,16 +333,11 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           </p>
 
           {/* Actions */}
-          <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
+          <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6" style={{ paddingBottom: 'calc(0.5rem + var(--safe-bottom))' }}>
             <button
               type="button"
               onClick={() => {
                 logger.log('[OnboardingFlow] Skip button clicked');
-                handleSkip();
-              }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                logger.log('[OnboardingFlow] Skip button touched');
                 handleSkip();
               }}
               className="flex-1 py-3 sm:py-4 bg-secondary/50 backdrop-blur-sm text-secondary-foreground rounded-xl sm:rounded-2xl font-semibold hover:bg-secondary transition-colors text-sm sm:text-base active:scale-95"
@@ -341,11 +348,6 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
               type="button"
               onClick={() => {
                 logger.log('[OnboardingFlow] Start button clicked');
-                handleComplete();
-              }}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                logger.log('[OnboardingFlow] Start button touched');
                 handleComplete();
               }}
               className="flex-1 py-3 sm:py-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-xl sm:rounded-2xl font-semibold hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/30 text-sm sm:text-base active:scale-95"

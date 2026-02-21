@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { useAppStore, useUserDataStore } from '@/stores';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
+import { safeLocalStorageSet } from '@/lib/safeJson';
 import { SplashScreen } from '@/components/SplashScreen';
 import { LanguageSelector } from '@/components/LanguageSelector';
 import { AuthScreen } from '@/components/AuthScreen';
@@ -35,6 +36,12 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
   const webOAuthError = useAppStore(s => s.webOAuthError);
   const setWebOAuthError = useAppStore(s => s.setWebOAuthError);
   const hasValidSession = useAppStore(s => s.hasValidSession);
+
+  // Gate bypass flags (synchronous — survive until page refresh)
+  const tutorialBypassFlag = useAppStore(s => s.tutorialBypassFlag);
+  const setTutorialBypassFlag = useAppStore(s => s.setTutorialBypassFlag);
+  const onboardingBypassFlag = useAppStore(s => s.onboardingBypassFlag);
+  const setOnboardingBypassFlag = useAppStore(s => s.setOnboardingBypassFlag);
 
   // User data gate state
   const hasSelectedLanguage = useUserDataStore(s => s.hasSelectedLanguage);
@@ -72,6 +79,11 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
     modules?: string[];
   }) => {
     logger.log('[AuthGate] handleOnboardingComplete called', result);
+    // CRITICAL: Set synchronous bypass flag FIRST (immediate UI update)
+    setOnboardingBypassFlag(true);
+    // Direct localStorage write (survives page refresh even if IndexedDB fails)
+    safeLocalStorageSet('zenflow-onboarding-complete', true);
+    // Zustand + IndexedDB persistence (normal async path)
     try {
       setOnboardingComplete(true);
     } catch (error) {
@@ -146,16 +158,24 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
     );
   }
 
-  if (!tutorialComplete) {
+  if (!tutorialComplete && !tutorialBypassFlag) {
     return (
       <WelcomeTutorial
-        onComplete={() => setTutorialComplete(true)}
-        onSkip={() => setTutorialComplete(true)}
+        onComplete={() => {
+          setTutorialBypassFlag(true);
+          safeLocalStorageSet('zenflow-tutorial-complete', true);
+          setTutorialComplete(true);
+        }}
+        onSkip={() => {
+          setTutorialBypassFlag(true);
+          safeLocalStorageSet('zenflow-tutorial-complete', true);
+          setTutorialComplete(true);
+        }}
       />
     );
   }
 
-  if (!onboardingComplete) {
+  if (!onboardingComplete && !onboardingBypassFlag) {
     return <OnboardingFlow onComplete={handleOnboardingComplete} />;
   }
 

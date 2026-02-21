@@ -213,6 +213,42 @@ describe('setHasValidSession', () => {
   });
 });
 
+// ─── Gate bypass flags ──────────────────────────────────────
+
+describe('setTutorialBypassFlag', () => {
+  it('defaults to false', () => {
+    expect(useAppStore.getState().tutorialBypassFlag).toBe(false);
+  });
+
+  it('sets to true', () => {
+    useAppStore.getState().setTutorialBypassFlag(true);
+    expect(useAppStore.getState().tutorialBypassFlag).toBe(true);
+  });
+
+  it('sets back to false', () => {
+    useAppStore.getState().setTutorialBypassFlag(true);
+    useAppStore.getState().setTutorialBypassFlag(false);
+    expect(useAppStore.getState().tutorialBypassFlag).toBe(false);
+  });
+});
+
+describe('setOnboardingBypassFlag', () => {
+  it('defaults to false', () => {
+    expect(useAppStore.getState().onboardingBypassFlag).toBe(false);
+  });
+
+  it('sets to true', () => {
+    useAppStore.getState().setOnboardingBypassFlag(true);
+    expect(useAppStore.getState().onboardingBypassFlag).toBe(true);
+  });
+
+  it('sets back to false', () => {
+    useAppStore.getState().setOnboardingBypassFlag(true);
+    useAppStore.getState().setOnboardingBypassFlag(false);
+    expect(useAppStore.getState().onboardingBypassFlag).toBe(false);
+  });
+});
+
 // ─── resetAuthState ──────────────────────────────────────────
 
 describe('resetAuthState', () => {
