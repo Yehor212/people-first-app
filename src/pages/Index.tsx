@@ -42,11 +42,9 @@ import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges } from '@/lib/challengeStorage';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { FocusMiniPlayer } from '@/components/FocusMiniPlayer';
-import { FloatingNav } from '@/components/FloatingNav';
 import { CanvasFAB } from '@/components/CanvasFAB';
 import { CanvasHeader } from '@/components/CanvasHeader';
-import { HabitsOverlay } from '@/components/overlays/HabitsOverlay';
-import { FocusBreathingOverlay } from '@/components/overlays/FocusBreathingOverlay';
+import { MindMapTab } from '@/components/tabs/MindMapTab';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { analytics } from '@/lib/analytics';
@@ -54,7 +52,7 @@ import { haptics } from '@/lib/haptics';
 
 export function Index() {
   const { t, isRTL } = useLanguage();
-  const { isFeatureVisible: _isFeatureVisible } = useFeatureFlags();
+  const { isFeatureVisible } = useFeatureFlags();
 
   // Security: Auto-logout after 24h inactivity on web (disabled on native)
   useSessionTimeout(!!supabase);
@@ -72,11 +70,7 @@ export function Index() {
     };
   }, []);
 
-  // Overlay state for Edge Handle panels
-  const [habitsOverlayOpen, setHabitsOverlayOpen] = useState(false);
-  const [focusOverlayOpen, setFocusOverlayOpen] = useState(false);
-
-  // Swipe navigation for mobile tab switching (disabled on home tab — canvas handles its own gestures)
+  // Swipe navigation for mobile tab switching (disabled on mindmap tab — canvas handles its own gestures)
   const SWIPE_TABS: TabType[] = ['home', 'garden', 'stats', 'settings'];
   const { containerProps: swipeProps, containerRef: swipeContainerRef } = useSwipeNavigation({
     activeTab,
@@ -85,7 +79,7 @@ export function Index() {
     threshold: 50,
     velocityThreshold: 0.3,
     isRTL,
-    enabled: activeTab !== 'home',
+    enabled: activeTab !== 'mindmap',
   });
 
   // Extracted lifecycle hooks (from Step 1 decomposition)
@@ -113,8 +107,8 @@ export function Index() {
     isLoading: isLoadingInnerWorld,
     plantSeed, waterPlants, attractCreature, feedCreatures,
     earnTreats,
-    isRestMode: _isRestMode, activateRestMode: _activateRestMode, deactivateRestMode: _deactivateRestMode,
-    canActivateRestMode: _canActivateRestMode,
+    isRestMode, activateRestMode, deactivateRestMode,
+    canActivateRestMode,
   } = useInnerWorld();
 
   // Register gamification hooks into Zustand store (bridge pattern)
@@ -157,7 +151,7 @@ export function Index() {
   useAuthSession(isLoading);
 
   // Challenge/feature unlock handlers (used by mood/habit/focus/gratitude handlers)
-  const { checkForFeatureUnlocks, updateChallengeProgress, handleOpenChallenge: _handleOpenChallenge } = useChallengeHandlers({
+  const { checkForFeatureUnlocks, updateChallengeProgress, handleOpenChallenge } = useChallengeHandlers({
     safeMoods: moods,
     safeHabits: habits,
     safeFocusSessions: focusSessions,
@@ -168,8 +162,8 @@ export function Index() {
   });
 
   // Feature handlers (extracted from Index.tsx body)
-  const { handleAddMood: _handleAddMood, handleQuickMood } = useMoodHandlers({ updateChallengeProgress });
-  const { handleToggleHabit, handleAdjustHabit: _handleAdjustHabit, handleAddHabit: _handleAddHabit, handleUpdateHabit: _handleUpdateHabit, handleDeleteHabit: _handleDeleteHabit } = useHabitHandlers({
+  const { handleAddMood, handleQuickMood } = useMoodHandlers({ updateChallengeProgress });
+  const { handleToggleHabit, handleAdjustHabit, handleAddHabit, handleUpdateHabit, handleDeleteHabit } = useHabitHandlers({
     awardXp,
     earnTreats,
     plantSeed,
@@ -177,12 +171,12 @@ export function Index() {
     updateChallengeProgress,
     checkForFeatureUnlocks,
   });
-  const { handleCompleteFocusSession, handleMindfulMomentComplete } = useFocusHandlers({
+  const { handleCompleteFocusSession: _handleCompleteFocusSession, handleMindfulMomentComplete } = useFocusHandlers({
     earnTreats,
     updateChallengeProgress,
     checkForFeatureUnlocks,
   });
-  const { handleAddGratitude: _handleAddGratitude, handleJournalPromptUsed: _handleJournalPromptUsed } = useGratitudeHandlers({
+  const { handleAddGratitude, handleJournalPromptUsed } = useGratitudeHandlers({
     earnTreats,
     attractCreature,
     feedCreatures,
@@ -204,7 +198,7 @@ export function Index() {
   // Derived data (schedule events, CTA system, widget data)
   const {
     allScheduleEvents, todayAllEvents,
-    completedTodayCount: _completedTodayCount, currentPrimaryCTA: _currentPrimaryCTA,
+    completedTodayCount, currentPrimaryCTA,
     todayFocusMinutes, lastBadgeName, widgetStreak,
   } = useDerivedData({ restDays: innerWorld.restDays || [] }, badges);
 
@@ -214,7 +208,7 @@ export function Index() {
   useWidgetSync(widgetStreak, habits, todayFocusMinutes, lastBadgeName, isWidgetDataLoading);
 
   // Settings/data management handlers
-  const { handleResetData, handleNameChange, handlePullToRefresh: _handlePullToRefresh,
+  const { handleResetData, handleNameChange, handlePullToRefresh,
           handleAddScheduleEvent: _handleAddScheduleEvent, handleDeleteScheduleEvent: _handleDeleteScheduleEvent } = useSettingsHandlers(allScheduleEvents);
 
   // Emotion theme sync, onboarding, re-engagement, update check (extracted to hooks)
@@ -267,12 +261,12 @@ export function Index() {
         <main
           id="main-content"
           role="main"
-          className={activeTab === 'home' ? 'relative min-h-screen' : 'max-w-lg mx-auto px-4 py-6'}
-          style={activeTab !== 'home' ? { paddingBottom: focusMiniPlayerActive ? 'calc(var(--nav-height) + var(--safe-bottom) + 3.5rem)' : 'calc(var(--nav-height) + var(--safe-bottom))' } : undefined}
+          className={activeTab === 'mindmap' ? 'relative min-h-screen' : 'max-w-lg mx-auto px-4 py-6'}
+          style={activeTab !== 'mindmap' ? { paddingBottom: focusMiniPlayerActive ? 'calc(var(--nav-height) + var(--safe-bottom) + 3.5rem)' : 'calc(var(--nav-height) + var(--safe-bottom))' } : undefined}
         >
         {/* Global Schedule Bar - visible on all tabs when events exist */}
         {/* v1.4.0: Use todayAllEvents to include both manual and habit-generated events */}
-        {todayAllEvents.length > 0 && activeTab !== 'settings' && activeTab !== 'home' && (
+        {todayAllEvents.length > 0 && activeTab !== 'settings' && activeTab !== 'mindmap' && (
           <div className="mb-4">
             <GlobalScheduleBar
               events={todayAllEvents}
@@ -283,6 +277,35 @@ export function Index() {
 
         {activeTab === 'home' && (
           <HomeTab
+            safeMoods={moods}
+            safeHabits={habits}
+            safeFocusSessions={focusSessions}
+            safeGratitudeEntries={gratitudeEntries}
+            currentActiveStreak={innerWorld.currentActiveStreak}
+            isRestMode={isRestMode}
+            activateRestMode={activateRestMode}
+            deactivateRestMode={deactivateRestMode}
+            canActivateRestMode={canActivateRestMode}
+            completedTodayCount={completedTodayCount}
+            currentPrimaryCTA={currentPrimaryCTA}
+            handleAddMood={handleAddMood}
+            handleToggleHabit={handleToggleHabit}
+            handleAdjustHabit={handleAdjustHabit}
+            handleAddHabit={handleAddHabit}
+            handleUpdateHabit={handleUpdateHabit}
+            handleDeleteHabit={handleDeleteHabit}
+            handleAddGratitude={handleAddGratitude}
+            handleJournalPromptUsed={handleJournalPromptUsed}
+            handleOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
+            handlePullToRefresh={handlePullToRefresh}
+            moodRef={moodRef}
+            habitsRef={habitsRef}
+            gratitudeRef={gratitudeRef}
+          />
+        )}
+
+        {activeTab === 'mindmap' && (
+          <MindMapTab
             safeMoods={moods}
             safeHabits={habits}
             handleToggleHabit={handleToggleHabit}
@@ -338,8 +361,8 @@ export function Index() {
         </main>
       </div>
 
-      {/* Canvas overlays — home tab only */}
-      {activeTab === 'home' && (
+      {/* Canvas overlays — mindmap tab only */}
+      {activeTab === 'mindmap' && (
         <>
           <CanvasHeader
             streak={innerWorld.currentActiveStreak}
@@ -348,9 +371,7 @@ export function Index() {
           <CanvasFAB
             onLogMood={() => {
               void haptics.buttonPress();
-              setHabitsOverlayOpen(false);
-              setFocusOverlayOpen(false);
-              setActiveTab('garden');
+              setActiveTab('home');
             }}
             onAddTask={() => {
               void haptics.buttonPress();
@@ -363,33 +384,8 @@ export function Index() {
         </>
       )}
 
-      {/* Edge overlays */}
-      <HabitsOverlay
-        open={habitsOverlayOpen}
-        habits={habits}
-        onToggleHabit={handleToggleHabit}
-        onClose={() => setHabitsOverlayOpen(false)}
-      />
-      <FocusBreathingOverlay
-        open={focusOverlayOpen}
-        focusSessions={focusSessions}
-        onCompleteFocusSession={handleCompleteFocusSession}
-        onMinuteUpdate={useUIStore.getState().setCurrentFocusMinutes}
-        onBreathingComplete={(pattern) => {
-          earnTreats('breathing', 5, `Breathing: ${pattern.name}`);
-        }}
-        onClose={() => setFocusOverlayOpen(false)}
-      />
-
-      <FocusMiniPlayer onNavigateToTimer={() => setFocusOverlayOpen(true)} />
-      {activeTab === 'home' ? (
-        <FloatingNav
-          onOpenHabits={() => setHabitsOverlayOpen(true)}
-          onOpenFocus={() => setFocusOverlayOpen(true)}
-        />
-      ) : (
-        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
-      )}
+      <FocusMiniPlayer onNavigateToTimer={() => setActiveTab('garden')} />
+      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
       <ModalLayer
         challenges={challenges}

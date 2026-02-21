@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-20 (2632 tests, Waves A-G complete + UI surface polish)
+> Last updated: 2026-02-20 (2650 tests, Waves A-G complete + Mind Map tab separation)
 
 ---
 
@@ -13,7 +13,7 @@
 | Source files | 618 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
 | Test files | 119 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
 | Total LOC | ~57,000 (TSX only) | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
-| Tests passing | 2632/2632 | `npx vitest --run` |
+| Tests passing | 2650/2650 | `npx vitest --run` |
 | ESLint errors | 0 | `npx eslint src/ --quiet` |
 | ESLint warnings | 0 | `npx eslint . --max-warnings=0` |
 | TypeScript errors | 0 | `npx tsc --noEmit` |
@@ -77,7 +77,7 @@
 ```
 src/
   pages/
-    Index.tsx                   # 374-line orchestrator: hooks → tabs (was 2,800 → 652 → 374)
+    Index.tsx                   # 407-line orchestrator: hooks → tabs (was 2,800 → 652 → 407)
 
   stores/                       # Zustand stores + bridge hooks
     appStore.ts                 # Auth, initialization, active tab
@@ -123,8 +123,9 @@ src/
     # ... 20+ more domain/utility hooks
 
   components/
-    tabs/                       # Tab content components (extracted from Index.tsx JSX)
-      HomeTab.tsx               # ~200 lines — mood, habits, gratitude, streak
+    tabs/                       # Tab content components (6 files, extracted from Index.tsx JSX)
+      HomeTab.tsx               # ~231 lines — scrollable: mood, habits, gratitude, streak, growth rings, reflection
+      MindMapTab.tsx            # ~26 lines — thin wrapper for MindMapCanvas (experimental, testing phase)
       GardenTab.tsx             # ~115 lines — schedule, journal, breathing, focus
       StatsTab.tsx              # ~45 lines — stats page wrapper
       AchievementsTab.tsx       # ~34 lines — achievements + leaderboard
@@ -314,7 +315,15 @@ Render time → <IdentityIcon name="Dumbbell" /> → lucide Dumbbell component
 
 ### Mind Map Canvas & Navigation (2026-02-20)
 
-The Home tab uses an **Infinite 2D Mind Map Canvas** instead of a linear scrollable page.
+The Mind Map Canvas lives in a **dedicated "Map" tab** (`MindMapTab.tsx`) — separate from the scrollable Home tab. It is an **experimental feature in testing phase**.
+
+**TabType** (defined in `appStore.ts`): `'home' | 'garden' | 'stats' | 'achievements' | 'settings' | 'mindmap'`
+
+**Navigation** (`Navigation.tsx`): 5 visible tabs — Home | Map | Diary | Stats | Settings. Standard bottom bar shown on ALL tabs (including Mind Map). `achievements` is accessible via modals, not the nav bar.
+
+**Home tab** (`HomeTab.tsx`, ~231 lines): Full scrollable layout — Header, EmotionWheel (lazy), HabitTracker (lazy), GratitudeJournal (lazy), GrowthRings, ReflectionPrompts, TodayFocusCard, RestMode/AllCompleteCelebration. Receives 20+ props from Index.tsx.
+
+**Mind Map tab** (`MindMapTab.tsx`, ~26 lines): Thin wrapper rendering `MindMapCanvas` full-bleed. Canvas overlays (`CanvasHeader` + `CanvasFAB`) shown only when `activeTab === 'mindmap'`.
 
 **Canvas Architecture:**
 - Dark infinite canvas (`#0D1117` background) with `<motion.div drag>` for pan + wheel/pinch for zoom
@@ -322,14 +331,8 @@ The Home tab uses an **Infinite 2D Mind Map Canvas** instead of a linear scrolla
 - Three node levels: RootNode ("Я", 80×80 circle) → ClusterPill (identity clusters, 140×44 pill) → HabitPill (habits, 120×36 pill)
 - SVG cubic Bezier edges with `<linearGradient>` strokes in `CanvasEdges.tsx`
 - Completion pulse via `<animateMotion>` (Habit → Cluster → Root, 0.8s)
-
-**Navigation Paradigm:**
-- **Home tab**: Bottom navigation is a **Floating Pill** (`FloatingNav.tsx`) — 3 buttons: MAP / HABITS / FOCUS
-  - MAP: Shows the mind map canvas (default)
-  - HABITS: Opens `HabitsOverlay` bottom sheet
-  - FOCUS: Opens `FocusBreathingOverlay` bottom sheet
-- **Other tabs**: Standard bottom `Navigation.tsx` bar (Diary, Stats, Settings)
-- **Viewport overlays** (fixed, NOT inside canvas): `CanvasHeader.tsx` (top), `FloatingNav.tsx` (bottom-center), `CanvasFAB.tsx` (bottom-right)
+- Swipe navigation disabled on mindmap tab (canvas handles its own gestures)
+- `<main>` uses full-bleed (`relative min-h-screen`) for mindmap, standard layout for other tabs
 
 **Canvas files** (`src/components/canvas/`):
 | File | Purpose |
@@ -340,6 +343,13 @@ The Home tab uses an **Infinite 2D Mind Map Canvas** instead of a linear scrolla
 | `ClusterPill.tsx` | Identity cluster pill (glassmorphic, colored border) |
 | `HabitPill.tsx` | Habit pill (outline-only, toggleable) |
 | `CanvasEdges.tsx` | SVG cubic Bezier with gradient strokes + pulse animation |
+
+**Supporting UI** (in `src/components/`, NOT in canvas/):
+| File | Purpose |
+|------|---------|
+| `CanvasHeader.tsx` | Top overlay — streak + mood indicator (mindmap tab only) |
+| `CanvasFAB.tsx` | Bottom-right FAB — log mood, add task, recenter, zoom (mindmap tab only) |
+| `FloatingNav.tsx` | Alternative nav pill (currently unused — kept for future iterations) |
 
 ---
 
@@ -759,7 +769,7 @@ On PR to main:
 
 | ID | Severity | Description | Before | After | Status |
 |----|----------|-------------|--------|-------|--------|
-| TD-01 | ~~CRITICAL~~ → LOW | Index.tsx god component | 2,800 lines, 46 useState, 29 useEffect | **374 lines**, 4 useState, 4 useEffect, 43 imports | Under 400-line limit. AuthGate, useSettingsHandlers, useReminderMigration, useEmotionSync extracted. |
+| TD-01 | ~~CRITICAL~~ → LOW | Index.tsx god component | 2,800 lines, 46 useState, 29 useEffect | **407 lines**, 4 useState, 4 useEffect, 47 imports | Slightly over 400-line limit (MindMapTab integration added canvas overlays). AuthGate, useSettingsHandlers, useReminderMigration, useEmotionSync extracted. |
 | TD-02 | ~~CRITICAL~~ → LOW | No state management | All prop drilling | **4 Zustand stores** + bridge hooks. Tab components still receive handler props. | Feature handlers not yet in stores. |
 | TD-06 | ~~HIGH~~ → **DONE** | exhaustive-deps eslint suppressions | **41** across 28 files | **15 remaining** across 13 files (all legitimate mount-only/cleanup/ref patterns). Codex 5.3 fixed several (2026-02-18). 1 bug fixed: `JournalEntryEditor` prompts now update on language change (`ts` added to useMemo deps). | Audited all suppressions; only intentional patterns remain. |
 | TD-10 | ~~HIGH~~ → DONE | ~~No runtime validation~~ | **Fixed 2026-02-16**: Created `src/lib/schemas.ts` with 9 Zod runtime schemas + `validateArray`/`validateObject` helpers. Added `itemSchema`/`objectSchema` params to `useIndexedDB` — eliminated 7 unvalidated `as T` casts. Wired schemas into `useHydrateUserData` (7 calls), `useInnerWorld`, `useGamification`. Replaced 6 ad-hoc validators in `realtimeSync.ts` with Zod `safeParse()`. Fixed 2 bugs: `'abandoned'→'aborted'` focus status, `emotion` string→object. All schemas use `.passthrough()` + `.default()` for forward/backward compat. 25 new tests (568 total). | src/lib/schemas.ts |
@@ -773,7 +783,7 @@ On PR to main:
 | TD-05 | ~~CRITICAL~~ → DONE | ~~Web Locks API bypass in auth (causes AbortError on reload)~~ | **Fixed 2026-02-16**, **updated 2026-02-18 by Codex 5.3**: Lock disabled entirely (`lock` option removed from Supabase config). The original `resilientNavigatorLock` was removed — Supabase GoTrue handles tab coordination internally. Dead code (48L) cleaned up 2026-02-19. | src/lib/supabaseClient.ts |
 | TD-07 | ~~HIGH~~ → DONE | ~~Direct `localStorage` calls~~ | **Fixed 2026-02-16**: Central `SK` registry (src/lib/storageKeys.ts) + safeJson accessors + ESLint `no-restricted-globals` rule. 199 raw calls → 0 across 50+ files. | src/lib/storageKeys.ts |
 | TD-08 | ~~HIGH~~ → DONE | ~~translations.ts monolith (all languages in one file)~~ | **Fixed 2026-02-16**: Split 19,879-line monolith into per-language files. `types.ts` (2,280L), 8 language files in `languages/` (~2,200L each), `index.ts` (37L assembler), `translations.ts` (3L re-export). Zero import changes needed. | src/i18n/ |
-| TD-09 | ~~HIGH~~ → LOW | Low test coverage | **Phase 7 done 2026-02-19**: 2313 → 2460 tests. **Waves A-G (2026-02-20)**: 2460 → **2632 tests** (+172). **119 test files total**. Remaining: ~59 untested modules (mostly Capacitor/Supabase/audio-dependent). | src/**/__tests__/ |
+| TD-09 | ~~HIGH~~ → LOW | Low test coverage | **Phase 7 done 2026-02-19**: 2313 → 2460 tests. **Waves A-G (2026-02-20)**: 2460 → 2632 → **2650 tests**. **121 test files total**. Remaining: ~59 untested modules (mostly Capacitor/Supabase/audio-dependent). | src/**/__tests__/ |
 | TD-11 | ~~HIGH~~ → DONE | ~~CI pipeline missing lint + typecheck~~ | **Fixed 2026-02-16**, **hardened 2026-02-18 by Codex 5.3**: `npx eslint . --max-warnings=0` + `tsc --noEmit` + mandatory Android gate before deploy. Still missing: `playwright`, `npm audit`. | .github/workflows/deploy.yml |
 | TD-15 | ~~MEDIUM~~ → DONE | useInnerWorld.ts monolith | ~~780+ lines~~ → **338 lines** (extracted innerWorldHelpers.ts + useRestMode.ts) | src/hooks/useInnerWorld.ts |
 | TD-16 | LOW | Prop drilling in HomeTab (~30 props) | Handlers + inner world values passed as props | src/components/tabs/HomeTab.tsx |
@@ -1030,6 +1040,6 @@ Every PASS must include evidence: command output, file path, or test checklist. 
 #### Verification
 - `npx tsc --noEmit` — 0 errors
 - `npx eslint . --max-warnings=0` — 0 warnings
-- `npx vitest --run` — 2632/2632 pass
+- `npx vitest --run` — 2650/2650 pass (121 test files)
 - `npm run build` — success
 - Emoji audit (`grep` for Unicode ranges in tabs/stats) — 0 system emojis in UI components
