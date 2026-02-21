@@ -351,27 +351,33 @@ test.describe('Full Navigation', () => {
     // App has 5 tabs: home, map, garden/diary, stats, settings
     expect(tabCount).toBe(5);
 
-    // Click each tab and verify it becomes the active (aria-selected) tab
+    // Map tab (index 1) hides standard Navigation when active,
+    // so test all other tabs first, then test map last with special handling.
+    const MAP_TAB_INDEX = 1;
+
     for (let i = 0; i < tabCount; i++) {
+      if (i === MAP_TAB_INDEX) continue;
+
       const tab = tabs.nth(i);
       await tab.click();
 
-      // Wait for the tab to become selected
       await expect(tab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
 
-      // Verify that other tabs are deselected
       for (let j = 0; j < tabCount; j++) {
         if (j !== i) {
           await expect(tabs.nth(j)).toHaveAttribute('aria-selected', 'false');
         }
       }
 
-      // Give the content area a moment to render
       await page.waitForTimeout(500);
-
-      // The page should not show an error state
       await expect(page.locator('text=Something went wrong')).not.toBeVisible();
     }
+
+    // Map tab: clicking hides Navigation, shows canvas + floating overlays
+    await tabs.nth(MAP_TAB_INDEX).click();
+    await page.waitForTimeout(500);
+    await expect(tabList).not.toBeVisible({ timeout: 5000 });
+    await expect(page.locator('text=Something went wrong')).not.toBeVisible();
   });
 });
 
