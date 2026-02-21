@@ -24,7 +24,7 @@ import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { supabase } from '@/lib/supabaseClient';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
+import type { MindMapCanvasRef } from '@/components/canvas/MindMapCanvas';
 
 import { ModalLayer } from '@/components/ModalLayer';
 import { Navigation } from '@/components/Navigation';
@@ -42,10 +42,11 @@ import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges } from '@/lib/challengeStorage';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { FocusMiniPlayer } from '@/components/FocusMiniPlayer';
-import { EdgeHandle } from '@/components/canvas/EdgeHandle';
+import { FloatingNav } from '@/components/FloatingNav';
+import { CanvasFAB } from '@/components/CanvasFAB';
+import { CanvasHeader } from '@/components/CanvasHeader';
 import { HabitsOverlay } from '@/components/overlays/HabitsOverlay';
 import { FocusBreathingOverlay } from '@/components/overlays/FocusBreathingOverlay';
-import { HomeFAB } from '@/components/HomeFAB';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { analytics } from '@/lib/analytics';
@@ -63,6 +64,7 @@ export function Index() {
   const setActiveTab = useAppStore(s => s.setActiveTab);
   const settingsOpenSection = useAppStore(s => s.settingsOpenSection);
   const quickActionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const canvasRef = useRef<MindMapCanvasRef>(null);
 
   useEffect(() => {
     return () => {
@@ -265,12 +267,12 @@ export function Index() {
         <main
           id="main-content"
           role="main"
-          className="max-w-lg mx-auto px-4 py-6"
-          style={{ paddingBottom: focusMiniPlayerActive ? 'calc(var(--nav-height) + var(--safe-bottom) + 3.5rem)' : 'calc(var(--nav-height) + var(--safe-bottom))' }}
+          className={activeTab === 'home' ? 'relative min-h-screen' : 'max-w-lg mx-auto px-4 py-6'}
+          style={activeTab !== 'home' ? { paddingBottom: focusMiniPlayerActive ? 'calc(var(--nav-height) + var(--safe-bottom) + 3.5rem)' : 'calc(var(--nav-height) + var(--safe-bottom))' } : undefined}
         >
         {/* Global Schedule Bar - visible on all tabs when events exist */}
         {/* v1.4.0: Use todayAllEvents to include both manual and habit-generated events */}
-        {todayAllEvents.length > 0 && activeTab !== 'settings' && (
+        {todayAllEvents.length > 0 && activeTab !== 'settings' && activeTab !== 'home' && (
           <div className="mb-4">
             <GlobalScheduleBar
               events={todayAllEvents}
@@ -283,9 +285,8 @@ export function Index() {
           <HomeTab
             safeMoods={moods}
             safeHabits={habits}
-            currentActiveStreak={innerWorld.currentActiveStreak}
-            todayAllEvents={todayAllEvents}
             handleToggleHabit={handleToggleHabit}
+            canvasRef={canvasRef}
           />
         )}
 
@@ -337,30 +338,29 @@ export function Index() {
         </main>
       </div>
 
-      {/* Edge Handles — visible on home tab only */}
+      {/* Canvas overlays — home tab only */}
       {activeTab === 'home' && (
         <>
-          <EdgeHandle side="left" icon={ChevronRight} label={t.habits} onActivate={() => setHabitsOverlayOpen(true)} />
-          <EdgeHandle side="right" icon={ChevronLeft} label={t.focus} onActivate={() => setFocusOverlayOpen(true)} />
+          <CanvasHeader
+            streak={innerWorld.currentActiveStreak}
+            latestMood={moods.length > 0 ? moods[moods.length - 1].mood : null}
+          />
+          <CanvasFAB
+            onLogMood={() => {
+              void haptics.buttonPress();
+              setHabitsOverlayOpen(false);
+              setFocusOverlayOpen(false);
+              setActiveTab('garden');
+            }}
+            onAddTask={() => {
+              void haptics.buttonPress();
+              useUIStore.getState().openModal('showTasksPanel');
+            }}
+            onRecenter={() => canvasRef.current?.recenter()}
+            onZoomIn={() => canvasRef.current?.zoomIn()}
+            onZoomOut={() => canvasRef.current?.zoomOut()}
+          />
         </>
-      )}
-
-      {/* HomeFAB — visible on home tab only */}
-      {activeTab === 'home' && (
-        <HomeFAB
-          onLogMood={() => {
-            void haptics.buttonPress();
-            setHabitsOverlayOpen(false);
-            setFocusOverlayOpen(false);
-            // Navigate to mood entry — open the mood overlay via the EmotionWheel
-            // For now navigate to garden diary tab (mood will be refactored in future)
-            setActiveTab('garden');
-          }}
-          onAddTask={() => {
-            void haptics.buttonPress();
-            useUIStore.getState().openModal('showTasksPanel');
-          }}
-        />
       )}
 
       {/* Edge overlays */}
@@ -382,7 +382,14 @@ export function Index() {
       />
 
       <FocusMiniPlayer onNavigateToTimer={() => setFocusOverlayOpen(true)} />
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+      {activeTab === 'home' ? (
+        <FloatingNav
+          onOpenHabits={() => setHabitsOverlayOpen(true)}
+          onOpenFocus={() => setFocusOverlayOpen(true)}
+        />
+      ) : (
+        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+      )}
 
       <ModalLayer
         challenges={challenges}

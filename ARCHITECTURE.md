@@ -312,6 +312,35 @@ Render time → <IdentityIcon name="Dumbbell" /> → lucide Dumbbell component
 | Garden Atmosphere | GardenTab | Lucide icon + label |
 | Identity Mapping (habit form) | HabitCreationForm | Cluster input + verb input + `IdentityIconPicker` |
 
+### Mind Map Canvas & Navigation (2026-02-20)
+
+The Home tab uses an **Infinite 2D Mind Map Canvas** instead of a linear scrollable page.
+
+**Canvas Architecture:**
+- Dark infinite canvas (`#0D1117` background) with `<motion.div drag>` for pan + wheel/pinch for zoom
+- Layout: `computeMindMapLayout()` in `src/components/canvas/mindMapLayout.ts` — organic radial positions with deterministic jitter (`stableHash(name)`)
+- Three node levels: RootNode ("Я", 80×80 circle) → ClusterPill (identity clusters, 140×44 pill) → HabitPill (habits, 120×36 pill)
+- SVG cubic Bezier edges with `<linearGradient>` strokes in `CanvasEdges.tsx`
+- Completion pulse via `<animateMotion>` (Habit → Cluster → Root, 0.8s)
+
+**Navigation Paradigm:**
+- **Home tab**: Bottom navigation is a **Floating Pill** (`FloatingNav.tsx`) — 3 buttons: MAP / HABITS / FOCUS
+  - MAP: Shows the mind map canvas (default)
+  - HABITS: Opens `HabitsOverlay` bottom sheet
+  - FOCUS: Opens `FocusBreathingOverlay` bottom sheet
+- **Other tabs**: Standard bottom `Navigation.tsx` bar (Diary, Stats, Settings)
+- **Viewport overlays** (fixed, NOT inside canvas): `CanvasHeader.tsx` (top), `FloatingNav.tsx` (bottom-center), `CanvasFAB.tsx` (bottom-right)
+
+**Canvas files** (`src/components/canvas/`):
+| File | Purpose |
+|------|---------|
+| `mindMapLayout.ts` | Layout algorithm (pure function, radial + jitter) |
+| `MindMapCanvas.tsx` | Main wrapper (framer-motion drag, zoom, renders all layers) |
+| `RootNode.tsx` | Central "Я" node with radial gradient + mood glow |
+| `ClusterPill.tsx` | Identity cluster pill (glassmorphic, colored border) |
+| `HabitPill.tsx` | Habit pill (outline-only, toggleable) |
+| `CanvasEdges.tsx` | SVG cubic Bezier with gradient strokes + pulse animation |
+
 ---
 
 ## State Management

@@ -1229,6 +1229,8 @@ export const es: Translations = {
   // Garden / My World
   myWorld: 'Mi mundo',
   diary: 'Diario',
+  map: 'Mapa',
+  restNeeded: 'Descanso necesario',
   plants: 'Plantas',
   creatures: 'Criaturas',
   level: 'Nivel',

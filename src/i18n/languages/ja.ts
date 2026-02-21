@@ -1228,6 +1228,8 @@ export const ja: Translations = {
   // Garden / My World
   myWorld: 'マイワールド',
   diary: '日記',
+  map: 'マップ',
+  restNeeded: '休息が必要',
   plants: '植物',
   creatures: '生き物',
   level: 'レベル',

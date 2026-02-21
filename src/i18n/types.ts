@@ -1316,6 +1316,8 @@ export interface Translations {
   // Garden / My World tab
   myWorld: string;
   diary: string;
+  map: string;
+  restNeeded: string;
   plants: string;
   creatures: string;
   level: string;

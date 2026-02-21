@@ -1228,6 +1228,8 @@ export const uk: Translations = {
   // Garden / My World
   myWorld: 'Мій світ',
   diary: 'Щоденник',
+  map: 'Карта',
+  restNeeded: 'Потрібен відпочинок',
   plants: 'Рослин',
   creatures: 'Істот',
   level: 'Рівень',
