@@ -92,7 +92,7 @@ src/
     # Lifecycle hooks (extracted from Index.tsx)
     useAppLifecycle.ts          # App init, splash, loading
     useDateTracking.ts          # Midnight detection, date sync
-    useAuthSession.ts           # Supabase session, OAuth, sync
+    useAuthSession.ts           # Supabase session, OAuth, sync (stable listener deps via refs, cached getSession())
     useNotificationSetup.ts     # FCM, local reminders, channels
     useOnboardingEffects.ts     # Progressive onboarding, re-engagement
     useCloudSyncEffects.ts      # Cloud sync, realtime subscriptions
@@ -109,7 +109,7 @@ src/
     useChallengeHandlers.ts     # updateChallengeProgress, feature unlock
     # Derived data
     useDerivedData.ts           # 14 useMemos: schedule events, CTA system, widget data
-    useDeepLinkHandler.ts       # Auth + challenge deep links
+    useDeepLinkHandler.ts       # Auth + challenge deep links (event-based session wait, no polling)
     useHabitForm.ts             # Habit creation/edit form state + handlers (incl. identity fields)
     useFocusTimer.ts            # Timer state machine + persistence + handlers (extracted from FocusTimer)
     useReflectionPrompts.ts     # Contextual micro-reflection prompt engine (6 triggers)
@@ -933,6 +933,23 @@ On PR to main:
   - Plugin type extraction (dndTypes.ts, appUpdateTypes.ts, reviewTypes.ts) — CORRECT
   - 1 issue found and fixed: dead `resilientNavigatorLock` code (48L) left in supabaseClient.ts after lock removal
 - NOTE: Codex claimed "Evidence bundle: artifacts/audit/*" but this directory does not exist in the repo
+
+---
+
+### Audit Addendum (Auth Excessive Polling Fix)
+
+- Date: 2026-02-21
+- Author: Claude Opus 4.6
+- Scope: End-to-end Supabase auth polling elimination
+- Problem: 5+ `GET /auth/v1/user` calls/second observed in Supabase dashboard for some users
+- Root cause: 18 `getUser()` call sites (each a network round-trip), 9 concurrent `onAuthStateChange` listeners with unstable dependency arrays causing re-subscription loops, and a 20-iteration polling loop during native OAuth
+- Changes:
+  - **Patch A** — 12 `getUser()` → `getSession()` in sync/storage files (cloudSync, tasksCloudSync ×6, innerWorldCloudSync ×2, reminderSync, friendsSync, useCloudSyncEffects). `getSession()` reads from local cache (0ms vs ~100-300ms network). Kept `getUser()` in 5 sites that need fresh server validation (apiClient ×2, supabaseClient ×1, useAccountSync ×2).
+  - **Patch B** — Fixed 3 listener dependency arrays in `useAuthSession.ts` using `useRef` pattern: `googleAuthChecked`/`isLoadingUserData`/`isLoading`/`userName`/`userNameCustom` tracked via refs instead of deps. Eliminates 3 re-subscription cycles during login. Listener 4 (name sync) rewritten to use `getSession()` + callback session data instead of `getUser()`.
+  - **Patch C** — Replaced `waitForSession()` 20×400ms polling loop in `useDeepLinkHandler.ts` with event-based approach: 1 cache check + `onAuthStateChange` listener + 15s timeout.
+- Net impact: ~8+ `getUser()` network calls on login → 0 (only apiClient/accountSync remain). 0 listener re-subscriptions during login. Session detected instantly on native OAuth (was up to 8s polling).
+- Verification: `tsc --noEmit` 0 errors, `eslint --max-warnings=0` 0 warnings, `vitest --run` 2650/2650 pass, `npm run build` success.
+- Test fix: Updated `cloudSync.test.ts` mocks from `getUser()` to `getSession()` (15 tests affected).
 
 ---
 
