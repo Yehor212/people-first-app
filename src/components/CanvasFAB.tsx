@@ -41,7 +41,7 @@ export function CanvasFAB({
 
   return (
     <div
-      className="fixed z-40 flex flex-col items-center gap-3"
+      className="fixed z-50 flex flex-col items-center gap-3"
       style={{
         bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)',
         right: '1rem',

@@ -380,6 +380,11 @@ const arabicOverrides: Partial<Translations> = {
   categorySelfCare: 'العناية الذاتية',
   categoryOther: 'أخرى',
 
+  // Mind Map Canvas
+  uncategorizedHabits: 'عاداتي',
+  uncategorizedVerb: 'أبني عاداتي',
+  addFirstGoal: 'أنشئ هدفك الأول',
+
   // Stats Page
   statistics: 'الإحصائيات',
   monthlyOverview: 'نظرة شهرية',

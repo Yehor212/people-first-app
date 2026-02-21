@@ -371,6 +371,11 @@ export const uk: Translations = {
   categorySelfCare: 'Турбота про себе',
   categoryOther: 'Інше',
 
+  // Mind Map Canvas
+  uncategorizedHabits: 'Мої звички',
+  uncategorizedVerb: 'Я формую звички',
+  addFirstGoal: 'Створіть першу ціль',
+
   statistics: 'Статистика',
   monthlyOverview: 'Огляд місяця',
   statsRange: 'Період',

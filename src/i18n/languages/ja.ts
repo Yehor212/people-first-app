@@ -371,6 +371,11 @@ export const ja: Translations = {
   categorySelfCare: 'セルフケア',
   categoryOther: 'その他',
 
+  // Mind Map Canvas
+  uncategorizedHabits: 'マイ習慣',
+  uncategorizedVerb: '習慣を作っています',
+  addFirstGoal: '最初の目標を作成',
+
   statistics: '統計',
   monthlyOverview: '月間概要',
   statsRange: '期間',

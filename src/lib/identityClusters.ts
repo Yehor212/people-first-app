@@ -8,6 +8,9 @@
 import type { Habit } from '@/types';
 import { getToday } from './utils';
 
+/** Sentinel ID for uncategorized habits — resolved to i18n text in the UI layer */
+export const UNCATEGORIZED_CLUSTER_ID = '__uncategorized__';
+
 export interface IdentityCluster {
   name: string;
   icon: string;
@@ -51,8 +54,8 @@ export function computeIdentityClusters(habits: Habit[]): IdentityCluster[] {
   const clusters: IdentityCluster[] = [];
 
   for (const [clusterName, clusterHabits] of clusterMap) {
-    // Skip uncategorized cluster in the identity view
-    if (!clusterName) continue;
+    // Uncategorized habits get a fallback cluster so they appear on the canvas
+    const displayName = clusterName || UNCATEGORIZED_CLUSTER_ID;
 
     const completedToday = clusterHabits.filter(h =>
       h.completedDates?.includes(today)
@@ -77,9 +80,9 @@ export function computeIdentityClusters(habits: Habit[]): IdentityCluster[] {
     const firstWithMeta = clusterHabits.find(h => h.identityVerb);
 
     clusters.push({
-      name: clusterName,
-      icon: firstWithMeta?.identityIcon || 'Target',
-      verb: firstWithMeta?.identityVerb || `I am ${clusterName}`,
+      name: displayName,
+      icon: firstWithMeta?.identityIcon || (clusterName ? 'Target' : 'Sparkles'),
+      verb: firstWithMeta?.identityVerb || (clusterName ? `I am ${clusterName}` : UNCATEGORIZED_CLUSTER_ID),
       habits: clusterHabits,
       completedToday,
       totalToday,

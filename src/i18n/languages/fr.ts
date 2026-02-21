@@ -372,6 +372,11 @@ export const fr: Translations = {
   categorySelfCare: 'Soin personnel',
   categoryOther: 'Autre',
 
+  // Mind Map Canvas
+  uncategorizedHabits: 'Mes habitudes',
+  uncategorizedVerb: 'Je construis des habitudes',
+  addFirstGoal: 'Créez votre premier objectif',
+
   statistics: 'Statistiques',
   monthlyOverview: 'Aperçu mensuel',
   statsRange: 'Période',

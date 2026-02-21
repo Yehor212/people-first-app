@@ -45,6 +45,7 @@ import { FocusMiniPlayer } from '@/components/FocusMiniPlayer';
 import { CanvasFAB } from '@/components/CanvasFAB';
 import { CanvasHeader } from '@/components/CanvasHeader';
 import { MindMapTab } from '@/components/tabs/MindMapTab';
+import { FloatingNav } from '@/components/FloatingNav';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { analytics } from '@/lib/analytics';
@@ -261,7 +262,7 @@ export function Index() {
         <main
           id="main-content"
           role="main"
-          className={activeTab === 'mindmap' ? 'relative min-h-screen' : 'max-w-lg mx-auto px-4 py-6'}
+          className={activeTab === 'mindmap' ? 'relative h-screen overflow-hidden' : 'max-w-lg mx-auto px-4 py-6'}
           style={activeTab !== 'mindmap' ? { paddingBottom: focusMiniPlayerActive ? 'calc(var(--nav-height) + var(--safe-bottom) + 3.5rem)' : 'calc(var(--nav-height) + var(--safe-bottom))' } : undefined}
         >
         {/* Global Schedule Bar - visible on all tabs when events exist */}
@@ -381,11 +382,36 @@ export function Index() {
             onZoomIn={() => canvasRef.current?.zoomIn()}
             onZoomOut={() => canvasRef.current?.zoomOut()}
           />
+          <FloatingNav
+            onOpenHabits={() => {
+              void haptics.buttonPress();
+              useUIStore.getState().openModal('showTasksPanel');
+            }}
+            onOpenFocus={() => {
+              void haptics.buttonPress();
+              setActiveTab('garden');
+            }}
+          />
+          {habits.length === 0 && (
+            <div
+              className="fixed z-50 animate-pulse"
+              style={{
+                bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)',
+                right: '1rem',
+              }}
+            >
+              <div className="bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-emerald-500/50 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg max-w-[200px]">
+                {t.addFirstGoal}
+              </div>
+            </div>
+          )}
         </>
       )}
 
       <FocusMiniPlayer onNavigateToTimer={() => setActiveTab('garden')} />
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+      {activeTab !== 'mindmap' && (
+        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+      )}
 
       <ModalLayer
         challenges={challenges}

@@ -386,6 +386,11 @@ export interface Translations {
   categorySelfCare: string;
   categoryOther: string;
 
+  // Mind Map Canvas
+  uncategorizedHabits: string;
+  uncategorizedVerb: string;
+  addFirstGoal: string;
+
   // Stats page
   statistics: string;
   monthlyOverview: string;

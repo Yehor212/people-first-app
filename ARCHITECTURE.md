@@ -319,11 +319,11 @@ The Mind Map Canvas lives in a **dedicated "Map" tab** (`MindMapTab.tsx`) — se
 
 **TabType** (defined in `appStore.ts`): `'home' | 'garden' | 'stats' | 'achievements' | 'settings' | 'mindmap'`
 
-**Navigation** (`Navigation.tsx`): 5 visible tabs — Home | Map | Diary | Stats | Settings. Standard bottom bar shown on ALL tabs (including Mind Map). `achievements` is accessible via modals, not the nav bar.
+**Navigation** (`Navigation.tsx`): 5 visible tabs — Home | Map | Diary | Stats | Settings. Standard bottom bar **hidden on Mind Map tab** (replaced by `FloatingNav`). `achievements` is accessible via modals, not the nav bar.
 
 **Home tab** (`HomeTab.tsx`, ~231 lines): Full scrollable layout — Header, EmotionWheel (lazy), HabitTracker (lazy), GratitudeJournal (lazy), GrowthRings, ReflectionPrompts, TodayFocusCard, RestMode/AllCompleteCelebration. Receives 20+ props from Index.tsx.
 
-**Mind Map tab** (`MindMapTab.tsx`, ~26 lines): Thin wrapper rendering `MindMapCanvas` full-bleed. Canvas overlays (`CanvasHeader` + `CanvasFAB`) shown only when `activeTab === 'mindmap'`.
+**Mind Map tab** (`MindMapTab.tsx`, ~26 lines): Thin wrapper rendering `MindMapCanvas` full-bleed. Canvas overlays (`CanvasHeader` + `CanvasFAB` + `FloatingNav`) shown only when `activeTab === 'mindmap'`. Container sealed with `h-screen overflow-hidden`.
 
 **Canvas Architecture:**
 - Dark infinite canvas (`#0D1117` background) with `<motion.div drag>` for pan + wheel/pinch for zoom
@@ -332,7 +332,8 @@ The Mind Map Canvas lives in a **dedicated "Map" tab** (`MindMapTab.tsx`) — se
 - SVG cubic Bezier edges with `<linearGradient>` strokes in `CanvasEdges.tsx`
 - Completion pulse via `<animateMotion>` (Habit → Cluster → Root, 0.8s)
 - Swipe navigation disabled on mindmap tab (canvas handles its own gestures)
-- `<main>` uses full-bleed (`relative min-h-screen`) for mindmap, standard layout for other tabs
+- `<main>` uses sealed full-bleed (`relative h-screen overflow-hidden`) for mindmap, standard layout for other tabs
+- `computeIdentityClusters()` includes uncategorized habits in a fallback "My Habits" cluster
 
 **Canvas files** (`src/components/canvas/`):
 | File | Purpose |
@@ -349,7 +350,7 @@ The Mind Map Canvas lives in a **dedicated "Map" tab** (`MindMapTab.tsx`) — se
 |------|---------|
 | `CanvasHeader.tsx` | Top overlay — streak + mood indicator (mindmap tab only) |
 | `CanvasFAB.tsx` | Bottom-right FAB — log mood, add task, recenter, zoom (mindmap tab only) |
-| `FloatingNav.tsx` | Alternative nav pill (currently unused — kept for future iterations) |
+| `FloatingNav.tsx` | Bottom-center nav pill — MAP / HABITS / FOCUS (mindmap tab only, replaces Navigation) |
 
 ---
 

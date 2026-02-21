@@ -14,6 +14,7 @@ vi.mock('@/lib/utils', () => ({
 import {
   computeIdentityClusters,
   computeOverallAlignment,
+  UNCATEGORIZED_CLUSTER_ID,
 } from '../identityClusters';
 
 // ============================================
@@ -66,15 +67,19 @@ describe('computeIdentityClusters', () => {
   });
 
   // ──────────────────────────────────────────
-  // 1. Returns empty array when no habits have identityCluster
+  // 1. Uncategorized habits go into sentinel fallback cluster
   // ──────────────────────────────────────────
-  it('returns empty array when no habits have identityCluster', () => {
+  it('groups uncategorized habits into sentinel fallback cluster', () => {
     const habits = [
       makeHabit('h1', 'Drink water'),
       makeHabit('h2', 'Read'),
     ];
     const result = computeIdentityClusters(habits);
-    expect(result).toEqual([]);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe(UNCATEGORIZED_CLUSTER_ID);
+    expect(result[0].icon).toBe('Sparkles');
+    expect(result[0].verb).toBe(UNCATEGORIZED_CLUSTER_ID);
+    expect(result[0].habits).toHaveLength(2);
   });
 
   it('returns empty array for an empty habits list', () => {
@@ -82,12 +87,13 @@ describe('computeIdentityClusters', () => {
     expect(result).toEqual([]);
   });
 
-  it('skips habits whose identityCluster is an empty string', () => {
+  it('groups empty-string identityCluster into sentinel fallback cluster', () => {
     const habits = [
       makeHabit('h1', 'Drink water', { identityCluster: '' }),
     ];
     const result = computeIdentityClusters(habits);
-    expect(result).toEqual([]);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe(UNCATEGORIZED_CLUSTER_ID);
   });
 
   // ──────────────────────────────────────────
@@ -300,17 +306,21 @@ describe('computeIdentityClusters', () => {
   });
 
   // ──────────────────────────────────────────
-  // Extra: habits without cluster are excluded
+  // Extra: uncategorized habits go into separate fallback cluster
   // ──────────────────────────────────────────
-  it('excludes uncategorized habits (no identityCluster) from all clusters', () => {
+  it('puts uncategorized habits into sentinel cluster separate from named clusters', () => {
     const habits = [
       makeHabit('h1', 'Meditate', { identityCluster: 'Mindful Me' }),
-      makeHabit('h2', 'Drink water'),   // no cluster
+      makeHabit('h2', 'Drink water'),   // no cluster → sentinel
     ];
     const result = computeIdentityClusters(habits);
-    expect(result).toHaveLength(1);
-    expect(result[0].name).toBe('Mindful Me');
-    expect(result[0].habits.some(h => h.id === 'h2')).toBe(false);
+    expect(result).toHaveLength(2);
+    const named = result.find(c => c.name === 'Mindful Me');
+    expect(named).toBeDefined();
+    expect(named?.habits.some(h => h.id === 'h2')).toBe(false);
+    const fallback = result.find(c => c.name === UNCATEGORIZED_CLUSTER_ID);
+    expect(fallback).toBeDefined();
+    expect(fallback?.habits[0].id).toBe('h2');
   });
 });
 

@@ -851,6 +851,11 @@ const hebrewOverrides: Partial<Translations> = {
   categorySelfCare: 'טיפול עצמי',
   categoryOther: 'אחר',
 
+  // Mind Map Canvas
+  uncategorizedHabits: 'ההרגלים שלי',
+  uncategorizedVerb: 'אני בונה הרגלים',
+  addFirstGoal: 'צור את המטרה הראשונה',
+
   // Install & Updates
   installApp: 'התקן אפליקציה',
   installAppDescription: 'התקן את ZenFlow להפעלה מהירה וגישה אופליין.',

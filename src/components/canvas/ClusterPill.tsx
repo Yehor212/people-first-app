@@ -6,7 +6,9 @@
  */
 
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { IdentityIcon } from '@/components/IdentityIconPicker';
+import { UNCATEGORIZED_CLUSTER_ID } from '@/lib/identityClusters';
 import type { MindMapClusterNode } from './mindMapLayout';
 
 interface ClusterPillProps {
@@ -16,6 +18,11 @@ interface ClusterPillProps {
 }
 
 export function ClusterPill({ node, canvasCenter, index }: ClusterPillProps) {
+  const { t } = useLanguage();
+  const displayName = node.cluster.name === UNCATEGORIZED_CLUSTER_ID
+    ? t.uncategorizedHabits
+    : node.cluster.name;
+
   return (
     <div
       className={cn(
@@ -44,7 +51,7 @@ export function ClusterPill({ node, canvasCenter, index }: ClusterPillProps) {
     >
       <IdentityIcon name={node.cluster.icon} className="w-4 h-4 shrink-0 text-white/70" />
       <span className="text-xs font-medium text-white/90 truncate">
-        {node.cluster.name}
+        {displayName}
       </span>
     </div>
   );
