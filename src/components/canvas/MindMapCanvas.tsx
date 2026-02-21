@@ -50,6 +50,14 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
     const { width: cw, height: ch } = layout.canvasSize;
     const canvasCenter = useMemo(() => ({ x: cw / 2, y: ch / 2 }), [cw, ch]);
 
+    // Daily completion ratio for progress ring
+    const completionPercent = useMemo(() => {
+      const total = habits.length;
+      if (total === 0) return 0;
+      const done = habits.filter(h => h.completedDates?.includes(today)).length;
+      return done / total;
+    }, [habits, today]);
+
     // ── Imperative API ──
 
     useImperativeHandle(ref, () => ({
@@ -157,28 +165,30 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
           />
 
           {/* Habit pills (behind clusters for z-order) */}
-          {layout.clusters.flatMap(cluster =>
-            cluster.habits.map(habit => (
+          {layout.clusters.flatMap((cluster, ci) =>
+            cluster.habits.map((habit, hi) => (
               <HabitPill
                 key={habit.id}
                 node={habit}
                 canvasCenter={canvasCenter}
                 onToggle={() => handleHabitToggle(habit.habit.id)}
+                animDelay={ci * 80 + hi * 60 + 40}
               />
             )),
           )}
 
           {/* Cluster pills */}
-          {layout.clusters.map(cluster => (
+          {layout.clusters.map((cluster, i) => (
             <ClusterPill
               key={cluster.id}
               node={cluster}
               canvasCenter={canvasCenter}
+              index={i}
             />
           ))}
 
           {/* Root node (on top) */}
-          <RootNode latestMood={latestMood} canvasCenter={canvasCenter} />
+          <RootNode latestMood={latestMood} canvasCenter={canvasCenter} completionPercent={completionPercent} />
         </motion.div>
       </div>
     );

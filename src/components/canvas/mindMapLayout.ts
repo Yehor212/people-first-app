@@ -60,12 +60,14 @@ export interface MindMapHabitNode extends MindMapNode {
   habit: Habit;
   completed: boolean;
   parentColor: string;
+  parentColorHex: string;
 }
 
 export interface MindMapClusterNode extends MindMapNode {
   cluster: IdentityCluster;
   habits: MindMapHabitNode[];
   color: string;
+  colorHex: string;
 }
 
 export interface MindMapLayout {
@@ -141,6 +143,7 @@ export function computeMindMapLayout(
         habit,
         completed: habit.completedDates?.includes(today) ?? false,
         parentColor: color,
+        parentColorHex: COLOR_HEX_MAP[color] || '#ffffff',
       };
     });
 
@@ -153,6 +156,7 @@ export function computeMindMapLayout(
       cluster,
       habits: habitNodes,
       color,
+      colorHex: COLOR_HEX_MAP[color] || '#ffffff',
     };
   });
 

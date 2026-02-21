@@ -4005,6 +4005,27 @@ input::-moz-focus-inner {
   animation: garden-breathe 4s ease-in-out infinite;
 }
 
+/* === Mind Map Canvas Premium Styles === */
+
+/* Orb breathe — slower, deeper glow pulse */
+@keyframes orb-breathe {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(255,255,255,0.08), 0 0 80px rgba(255,255,255,0.04); }
+  50% { transform: scale(1.05); box-shadow: 0 0 60px rgba(255,255,255,0.15), 0 0 120px rgba(255,255,255,0.06); }
+}
+.animate-orb-breathe {
+  animation: orb-breathe 5s ease-in-out infinite;
+}
+
+/* Node pop-in entrance */
+@keyframes canvas-pop-in {
+  0% { opacity: 0; transform: scale(0.6); }
+  70% { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-canvas-pop-in {
+  animation: canvas-pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
 /* Icon wobble — replaces FM rotate: [0, 15, -15, 0] loops */
 @keyframes zen-wobble {
   0%, 100% { transform: rotate(0deg) scale(1); }

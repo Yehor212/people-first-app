@@ -1,13 +1,15 @@
 /**
- * RootNode — Central "Я" circle on the Mind Map Canvas.
+ * RootNode — "The Orb" — Central node on the Mind Map Canvas.
  *
- * 80×80 circle with radial gradient, mood-colored border, and deep glow.
- * Uses CSS animate-garden-breathe for subtle idle pulse.
+ * 80×80 core with conic-gradient SVG progress ring showing daily habit
+ * completion %. Uses CSS animate-orb-breathe for glow pulse.
+ * OrbLottie ambient animation renders behind the core.
  */
 
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ROOT_SIZE } from './mindMapLayout';
+import { OrbLottie } from './OrbLottie';
 import type { MoodType } from '@/types';
 
 const MOOD_BORDER: Record<MoodType, string> = {
@@ -18,18 +20,32 @@ const MOOD_BORDER: Record<MoodType, string> = {
   terrible: 'border-red-400',
 };
 
+const MOOD_RING_COLOR: Record<MoodType, string> = {
+  great: '#34d399',
+  good: '#38bdf8',
+  okay: '#fbbf24',
+  bad: '#fb923c',
+  terrible: '#f87171',
+};
+
+// SVG circle circumference for r=40: 2 * PI * 40 = 251.327
+const RING_CIRCUMFERENCE = 251.327;
+
 interface RootNodeProps {
   latestMood: MoodType | null;
   canvasCenter: { x: number; y: number };
+  completionPercent: number; // 0–1
 }
 
-export function RootNode({ latestMood, canvasCenter }: RootNodeProps) {
+export function RootNode({ latestMood, canvasCenter, completionPercent }: RootNodeProps) {
   const { t } = useLanguage();
   const borderColor = latestMood ? MOOD_BORDER[latestMood] : 'border-white/20';
+  const ringColor = latestMood ? MOOD_RING_COLOR[latestMood] : 'rgba(255,255,255,0.3)';
+  const filled = completionPercent * RING_CIRCUMFERENCE;
 
   return (
     <div
-      className="absolute animate-garden-breathe"
+      className="absolute"
       style={{
         left: canvasCenter.x - ROOT_SIZE.width / 2,
         top: canvasCenter.y - ROOT_SIZE.height / 2,
@@ -37,16 +53,46 @@ export function RootNode({ latestMood, canvasCenter }: RootNodeProps) {
         height: ROOT_SIZE.height,
       }}
     >
+      {/* Lottie ambient glow (behind everything) */}
+      <OrbLottie />
+
+      {/* SVG progress ring */}
+      <svg
+        viewBox="0 0 100 100"
+        className="absolute inset-[-12px] pointer-events-none"
+        style={{ width: 'calc(100% + 24px)', height: 'calc(100% + 24px)' }}
+      >
+        {/* Track ring */}
+        <circle
+          cx="50" cy="50" r="40"
+          fill="none"
+          stroke="rgba(255,255,255,0.08)"
+          strokeWidth="2.5"
+        />
+        {/* Progress arc */}
+        <circle
+          cx="50" cy="50" r="40"
+          fill="none"
+          stroke={ringColor}
+          strokeWidth="2.5"
+          strokeLinecap="round"
+          strokeDasharray={`${filled} ${RING_CIRCUMFERENCE}`}
+          transform="rotate(-90 50 50)"
+          className="transition-all duration-700 ease-out"
+          style={{ opacity: completionPercent > 0 ? 0.7 : 0 }}
+        />
+      </svg>
+
+      {/* Core orb */}
       <div
         className={cn(
-          'w-full h-full rounded-full',
+          'w-full h-full rounded-full animate-orb-breathe',
           'border-2', borderColor,
           'flex items-center justify-center',
           'text-white text-xl font-bold',
         )}
         style={{
-          background: 'radial-gradient(circle, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 60%, transparent 100%)',
-          boxShadow: '0 0 40px rgba(255,255,255,0.1), 0 0 80px rgba(255,255,255,0.05)',
+          background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 60%, transparent 100%)',
         }}
       >
         {t.you || 'Me'}

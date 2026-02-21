@@ -1,8 +1,8 @@
 /**
- * HabitPill — Level 2 outline-only pill node for individual habits.
+ * HabitPill — Level 2 pill node for individual habits.
  *
- * 120×36 transparent pill with white/20 border (incomplete) or
- * emerald border + tint (complete). Toggles on tap with haptics.
+ * Deep glassmorphism with completion state styling.
+ * Hover glow matches parent cluster color. PopIn entrance animation.
  */
 
 import { Check } from 'lucide-react';
@@ -15,9 +15,10 @@ interface HabitPillProps {
   node: MindMapHabitNode;
   canvasCenter: { x: number; y: number };
   onToggle: () => void;
+  animDelay: number;
 }
 
-export function HabitPill({ node, canvasCenter, onToggle }: HabitPillProps) {
+export function HabitPill({ node, canvasCenter, onToggle, animDelay }: HabitPillProps) {
   return (
     <button
       onClick={() => {
@@ -26,19 +27,29 @@ export function HabitPill({ node, canvasCenter, onToggle }: HabitPillProps) {
       }}
       className={cn(
         'absolute rounded-full',
+        'backdrop-blur-md',
         'border',
         node.completed
-          ? 'border-emerald-400/60 bg-emerald-500/10'
-          : 'border-white/20',
+          ? 'bg-emerald-900/40 border-emerald-400/40'
+          : 'bg-slate-800/70 border-white/10',
         'flex items-center gap-1.5 px-2.5',
+        'animate-canvas-pop-in',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400',
-        'transition-colors duration-200',
+        'transition-shadow duration-300',
       )}
       style={{
         left: canvasCenter.x + node.x - node.pill.width / 2,
         top: canvasCenter.y + node.y - node.pill.height / 2,
         width: node.pill.width,
         height: node.pill.height,
+        animationDelay: `${animDelay}ms`,
+      }}
+      onPointerEnter={(e) => {
+        const color = node.completed ? '#34d39940' : `${node.parentColorHex}30`;
+        (e.currentTarget as HTMLElement).style.boxShadow = `0 0 16px ${color}`;
+      }}
+      onPointerLeave={(e) => {
+        (e.currentTarget as HTMLElement).style.boxShadow = '';
       }}
       aria-label={`${node.habit.name}${node.completed ? ' (done)' : ''}`}
     >
