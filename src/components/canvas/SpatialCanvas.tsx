@@ -7,10 +7,12 @@
  */
 
 import { useMemo, useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValueEvent } from 'framer-motion';
+import { Crosshair } from 'lucide-react';
 import { cn, getToday } from '@/lib/utils';
 import { computeIdentityClusters } from '@/lib/identityClusters';
 import { getCurrentSeason } from '@/lib/seasonHelper';
+import { haptics } from '@/lib/haptics';
 import { useCanvasCamera } from './useCanvasCamera';
 import { computeCanvasLayout } from './canvasLayout';
 import { CentralOrb } from './CentralOrb';
@@ -46,8 +48,19 @@ interface SpatialCanvasProps {
 }
 
 export function SpatialCanvas({ habits, latestMood, atmosphere, onHabitToggle }: SpatialCanvasProps) {
-  const { x, y, scale, handlers } = useCanvasCamera();
+  const { x, y, scale, handlers, resetCamera } = useCanvasCamera();
   const [recentlyCompleted, setRecentlyCompleted] = useState<string[]>([]);
+  const [cameraOffset, setCameraOffset] = useState(false);
+
+  // Track whether camera has moved from default position
+  useMotionValueEvent(x, 'change', (vx) => {
+    const isOffset = Math.abs(vx) > 5 || Math.abs(y.get()) > 5 || Math.abs(scale.get() - 1) > 0.05;
+    setCameraOffset(isOffset);
+  });
+  useMotionValueEvent(scale, 'change', (vs) => {
+    const isOffset = Math.abs(x.get()) > 5 || Math.abs(y.get()) > 5 || Math.abs(vs - 1) > 0.05;
+    setCameraOffset(isOffset);
+  });
 
   const today = getToday();
   const season = getCurrentSeason();
@@ -76,10 +89,10 @@ export function SpatialCanvas({ habits, latestMood, atmosphere, onHabitToggle }:
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-2xl',
+        'relative overflow-hidden',
         'bg-gradient-to-br',
         gradientClass,
-        'min-h-[calc(100dvh-12rem)]',
+        'min-h-[calc(100dvh-10rem)]',
       )}
       style={{ touchAction: 'none', willChange: 'transform' }}
       {...handlers}
@@ -126,6 +139,28 @@ export function SpatialCanvas({ habits, latestMood, atmosphere, onHabitToggle }:
         {/* Central Orb (on top) */}
         <CentralOrb latestMood={latestMood} />
       </motion.div>
+
+      {/* Recenter button — visible when camera is offset */}
+      {cameraOffset && (
+        <button
+          onClick={() => {
+            void haptics.buttonPress();
+            resetCamera();
+            setCameraOffset(false);
+          }}
+          className={cn(
+            'absolute bottom-4 right-4 z-10',
+            'w-10 h-10 rounded-full',
+            'bg-surface-glass backdrop-blur-[var(--surface-glass-blur)]',
+            'border border-[var(--surface-glass-border)] zen-shadow-soft',
+            'flex items-center justify-center',
+            'transition-opacity duration-200 hover:opacity-90 active:scale-95',
+          )}
+          aria-label="Recenter"
+        >
+          <Crosshair className="w-5 h-5 text-muted-foreground" />
+        </button>
+      )}
     </div>
   );
 }

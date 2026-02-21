@@ -23,7 +23,7 @@ export function HabitNode({ habit, x, y, radius, completed, onToggle }: HabitNod
   return (
     <button
       onClick={() => {
-        void haptics.success();
+        void haptics.habitCompleted();
         onToggle();
       }}
       className="absolute focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-full"

@@ -26,7 +26,7 @@ export function HomeFAB({ onLogMood, onAddTask }: HomeFABProps) {
   };
 
   const handleAction = (action: () => void) => {
-    void haptics.selection();
+    void haptics.buttonPress();
     setExpanded(false);
     action();
   };

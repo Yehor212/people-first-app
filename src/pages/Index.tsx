@@ -349,7 +349,7 @@ export function Index() {
       {activeTab === 'home' && (
         <HomeFAB
           onLogMood={() => {
-            void haptics.selection();
+            void haptics.buttonPress();
             setHabitsOverlayOpen(false);
             setFocusOverlayOpen(false);
             // Navigate to mood entry — open the mood overlay via the EmotionWheel
@@ -357,7 +357,7 @@ export function Index() {
             setActiveTab('garden');
           }}
           onAddTask={() => {
-            void haptics.selection();
+            void haptics.buttonPress();
             useUIStore.getState().openModal('showTasksPanel');
           }}
         />

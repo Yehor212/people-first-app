@@ -13,7 +13,7 @@ export function EdgeHandle({ side, icon: Icon, label, onActivate }: EdgeHandlePr
   return (
     <button
       onClick={() => {
-        void haptics.selection();
+        void haptics.buttonPress();
         onActivate();
       }}
       aria-label={label}

@@ -76,7 +76,7 @@ export function HabitsOverlay({ open, habits, onToggleHabit, onClose }: HabitsOv
                   <button
                     key={habit.id}
                     onClick={() => {
-                      void haptics.success();
+                      void haptics.habitCompleted();
                       onToggleHabit(habit.id, today);
                     }}
                     className={cn(

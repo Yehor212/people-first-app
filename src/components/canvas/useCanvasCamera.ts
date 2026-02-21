@@ -97,6 +97,54 @@ export function useCanvasCamera(options?: CameraOptions) {
     isPanningRef.current = false;
   }, []);
 
+  // ── Mouse handlers (desktop web support) ──
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    // Edge zone guard — same as touch
+    if (e.clientX < EDGE_ZONE || e.clientX > window.innerWidth - EDGE_ZONE) return;
+    // Only left button
+    if (e.button !== 0) return;
+
+    panStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      camX: x.get(),
+      camY: y.get(),
+    };
+    isPanningRef.current = true;
+    e.stopPropagation();
+  }, [x, y]);
+
+  const onMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!isPanningRef.current || !panStartRef.current) return;
+    const dx = e.clientX - panStartRef.current.x;
+    const dy = e.clientY - panStartRef.current.y;
+    x.set(panStartRef.current.camX + dx);
+    y.set(panStartRef.current.camY + dy);
+    e.stopPropagation();
+  }, [x, y]);
+
+  const onMouseUp = useCallback(() => {
+    panStartRef.current = null;
+    isPanningRef.current = false;
+  }, []);
+
+  const onWheel = useCallback((e: React.WheelEvent) => {
+    e.stopPropagation();
+    const zoomFactor = e.deltaY > 0 ? 0.95 : 1.05;
+    let newScale = scale.get() * zoomFactor;
+
+    if (newScale <= minScale) {
+      newScale = minScale;
+      if (scale.get() > minScale) void haptics.light();
+    } else if (newScale >= maxScale) {
+      newScale = maxScale;
+      if (scale.get() < maxScale) void haptics.light();
+    }
+
+    scale.set(newScale);
+  }, [scale, minScale, maxScale]);
+
   const resetCamera = useCallback(() => {
     x.set(0);
     y.set(0);
@@ -107,7 +155,11 @@ export function useCanvasCamera(options?: CameraOptions) {
     x,
     y,
     scale,
-    handlers: { onTouchStart, onTouchMove, onTouchEnd },
+    handlers: {
+      onTouchStart, onTouchMove, onTouchEnd,
+      onMouseDown, onMouseMove, onMouseUp, onMouseLeave: onMouseUp,
+      onWheel,
+    },
     resetCamera,
   };
 }
