@@ -394,7 +394,7 @@ export function Index() {
           />
           {habits.length === 0 && (
             <div
-              className="fixed z-50 animate-pulse"
+              className="fixed z-50 animate-pulse pointer-events-none"
               style={{
                 bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)',
                 right: '1rem',

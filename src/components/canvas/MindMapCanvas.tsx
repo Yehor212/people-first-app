@@ -10,7 +10,7 @@ import {
   forwardRef, useCallback, useImperativeHandle,
   useMemo, useRef, useState,
 } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useMotionValue } from 'framer-motion';
 import { computeIdentityClusters } from '@/lib/identityClusters';
 import { getToday } from '@/lib/utils';
 import { computeMindMapLayout } from './mindMapLayout';
@@ -42,7 +42,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
     const layout = useMemo(() => computeMindMapLayout(clusters, today), [clusters, today]);
 
     const [recentlyCompleted, setRecentlyCompleted] = useState<string[]>([]);
-    const [zoom, setZoom] = useState(1);
+    const zoom = useMotionValue(1);
 
     // Drag reset key — incrementing forces framer-motion to reset drag position
     const [dragKey, setDragKey] = useState(0);
@@ -63,19 +63,19 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
     useImperativeHandle(ref, () => ({
       recenter: () => {
         setDragKey(k => k + 1); // Reset drag position
-        setZoom(1);
+        zoom.set(1);
       },
-      zoomIn: () => setZoom(z => Math.min(MAX_ZOOM, z * 1.2)),
-      zoomOut: () => setZoom(z => Math.max(MIN_ZOOM, z / 1.2)),
-    }), []);
+      zoomIn: () => zoom.set(Math.min(MAX_ZOOM, zoom.get() * 1.2)),
+      zoomOut: () => zoom.set(Math.max(MIN_ZOOM, zoom.get() / 1.2)),
+    }), [zoom]);
 
     // ── Wheel zoom ──
 
     const handleWheel = useCallback((e: React.WheelEvent) => {
       e.stopPropagation();
       const factor = e.deltaY > 0 ? 0.95 : 1.05;
-      setZoom(z => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, z * factor)));
-    }, []);
+      zoom.set(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom.get() * factor)));
+    }, [zoom]);
 
     // ── Pinch zoom (two-finger touch) ──
 
@@ -87,7 +87,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         pinchRef.current = {
           dist: Math.sqrt(dx * dx + dy * dy),
-          zoom,
+          zoom: zoom.get(),
         };
       }
     }, [zoom]);
@@ -99,9 +99,9 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
         const dist = Math.sqrt(dx * dx + dy * dy);
         const ratio = dist / pinchRef.current.dist;
         const next = pinchRef.current.zoom * ratio;
-        setZoom(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next)));
+        zoom.set(Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, next)));
       }
-    }, []);
+    }, [zoom]);
 
     const handleTouchEnd = useCallback(() => {
       pinchRef.current = null;

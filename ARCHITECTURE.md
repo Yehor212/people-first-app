@@ -327,18 +327,18 @@ The Mind Map Canvas lives in a **dedicated "Map" tab** (`MindMapTab.tsx`) — se
 
 **Canvas Architecture:**
 - Dark infinite canvas (`#0D1117` background) with `<motion.div drag>` for pan + wheel/pinch for zoom
-- Layout: `computeMindMapLayout()` in `src/components/canvas/mindMapLayout.ts` — organic radial positions with deterministic jitter (`stableHash(name)`)
-- Three node levels: RootNode ("Я", 80×80 circle) → ClusterPill (identity clusters, 140×44 pill) → HabitPill (habits, 120×36 pill)
-- SVG cubic Bezier edges with `<linearGradient>` strokes in `CanvasEdges.tsx`
+- Layout: `computeMindMapLayout()` in `src/components/canvas/mindMapLayout.ts` — strict trigonometric radial layout (no randomness). R_c=300px clusters, R_h=180px habits, 3-ring overlap guard (160/210/260) for >5 habits per cluster
+- Three node levels: RootNode ("Я", 80×80 circle) → ClusterPill (identity clusters, 160×44 pill) → HabitPill (habits, 120×36 pill)
+- SVG cubic Bezier edges (tension 0.5 radial S-curves) with `<linearGradient>` strokes in `CanvasEdges.tsx`
 - Completion pulse via `<animateMotion>` (Habit → Cluster → Root, 0.8s)
 - Swipe navigation disabled on mindmap tab (canvas handles its own gestures)
 - `<main>` uses sealed full-bleed (`relative h-screen overflow-hidden`) for mindmap, standard layout for other tabs
-- `computeIdentityClusters()` includes uncategorized habits in a fallback "My Habits" cluster
+- `computeIdentityClusters()` includes uncategorized habits in a sentinel fallback cluster (`UNCATEGORIZED_CLUSTER_ID`), resolved to i18n text in `ClusterPill.tsx`
 
 **Canvas files** (`src/components/canvas/`):
 | File | Purpose |
 |------|---------|
-| `mindMapLayout.ts` | Layout algorithm (pure function, radial + jitter) |
+| `mindMapLayout.ts` | Layout algorithm (pure function, strict trigonometric radial) |
 | `MindMapCanvas.tsx` | Main wrapper (framer-motion drag, zoom, renders all layers) |
 | `RootNode.tsx` | Central "Я" node with radial gradient + mood glow |
 | `ClusterPill.tsx` | Identity cluster pill (glassmorphic, colored border) |

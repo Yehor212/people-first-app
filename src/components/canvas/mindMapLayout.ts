@@ -1,9 +1,13 @@
 /**
- * mindMapLayout — Organic radial layout for the Mind Map Canvas.
+ * mindMapLayout — Strict trigonometric radial layout for the Mind Map Canvas.
  *
- * Pure function: clusters orbit root at 280px with deterministic jitter,
- * habits fan outward from their cluster in a 144° sector.
- * No randomness — stableHash(name) produces repeatable organic offsets.
+ * Pure function: clusters orbit root at R_c=300px, habits fan outward from
+ * their cluster at R_h=180px. No randomness — deterministic positions only.
+ *
+ * Layout rules:
+ *   Root: (0, 0)
+ *   Clusters: R_c=300, evenly spaced from top (-PI/2); single cluster at -PI/6
+ *   Habits: R_h=180 from their cluster, fanned outward; >5 habits 3-ring stagger 160/210/260
  */
 
 import type { Habit } from '@/types';
@@ -12,9 +16,11 @@ import type { IdentityCluster } from '@/lib/identityClusters';
 // ── Pill dimensions ──
 
 export const ROOT_SIZE = { width: 80, height: 80 };
-export const CLUSTER_ORBIT = 280;
-export const CLUSTER_PILL = { width: 140, height: 44 };
-export const HABIT_ORBIT = 120;
+export const CLUSTER_ORBIT = 300;
+export const CLUSTER_PILL = { width: 160, height: 44 };
+export const HABIT_ORBIT = 180;
+export const HABIT_ORBIT_BASE = 160;
+export const HABIT_ORBIT_STEP = 50;
 export const HABIT_PILL = { width: 120, height: 36 };
 
 // ── Color rotation (8 Tailwind border classes, cycling) ──
@@ -76,16 +82,6 @@ export interface MindMapLayout {
   canvasSize: { width: number; height: number };
 }
 
-// ── Deterministic hash → 0..1 ──
-
-function stableHash(str: string): number {
-  let h = 0;
-  for (let i = 0; i < str.length; i++) {
-    h = ((h << 5) - h + str.charCodeAt(i)) | 0;
-  }
-  return (Math.abs(h) % 1000) / 1000;
-}
-
 // ── Layout computation ──
 
 export function computeMindMapLayout(
@@ -103,36 +99,36 @@ export function computeMindMapLayout(
   const N = clusters.length;
 
   const clusterNodes: MindMapClusterNode[] = clusters.map((cluster, i) => {
-    // Base angle: evenly spaced, starting at top (-PI/2)
-    const baseAngle = N > 0 ? (2 * Math.PI * i) / N - Math.PI / 2 : 0;
+    // Cluster angle: single cluster at -PI/6 (upper-right), multiple evenly from top
+    const angle = N === 1
+      ? -Math.PI / 6
+      : (2 * Math.PI * i) / N - Math.PI / 2;
 
-    // Deterministic jitter for organic feel
-    const hash1 = stableHash(cluster.name);
-    const hash2 = stableHash(cluster.name + 'r');
-    const angleJitter = (hash1 - 0.5) * 0.3;  // ±0.15 radians (~8.5°)
-    const radiusJitter = (hash2 - 0.5) * 60;   // ±30px
-
-    const angle = baseAngle + angleJitter;
-    const radius = CLUSTER_ORBIT + radiusJitter;
-    const cx = Math.cos(angle) * radius;
-    const cy = Math.sin(angle) * radius;
+    const cx = Math.cos(angle) * CLUSTER_ORBIT;
+    const cy = Math.sin(angle) * CLUSTER_ORBIT;
 
     const color = CLUSTER_COLORS[i % CLUSTER_COLORS.length];
 
-    // Habit sub-layout: fan outward from cluster in a 144° sector
+    // ── Habit fan layout ──
     const M = cluster.habits.length;
-    const habitSpread = Math.PI * 0.8; // 144°
-    const habitStartAngle = angle - habitSpread / 2;
+    // Fan spread: min(144°, (M-1)*0.35 rad) — narrows for few habits
+    const spread = M > 1
+      ? Math.min(Math.PI * 0.8, (M - 1) * 0.35)
+      : 0;
 
     const habitNodes: MindMapHabitNode[] = cluster.habits.map((habit, j) => {
+      // Habit angle: fan centered on cluster's radial angle
       const habitAngle = M > 1
-        ? habitStartAngle + (habitSpread * j) / (M - 1)
+        ? angle - spread / 2 + (spread * j) / (M - 1)
         : angle; // single habit goes straight out
 
-      const hHash = stableHash(habit.id || habit.name);
-      const hJitter = (hHash - 0.5) * 20; // ±10px
-      const hx = cx + Math.cos(habitAngle) * (HABIT_ORBIT + hJitter);
-      const hy = cy + Math.sin(habitAngle) * (HABIT_ORBIT + hJitter);
+      // Overlap guard: 3-ring stagger for >5 habits (160/210/260)
+      const radius = M > 5
+        ? HABIT_ORBIT_BASE + (j % 3) * HABIT_ORBIT_STEP
+        : HABIT_ORBIT;
+
+      const hx = cx + Math.cos(habitAngle) * radius;
+      const hy = cy + Math.sin(habitAngle) * radius;
 
       return {
         id: `habit-${habit.id}`,
@@ -170,7 +166,7 @@ export function computeMindMapLayout(
     Math.abs(Math.min(...allY)) + pad,
     Math.abs(Math.max(...allY)) + pad,
   );
-  const size = Math.max(maxExtent * 2, 800); // Minimum 800px
+  const size = Math.max(maxExtent * 2, 800);
 
   return {
     root,

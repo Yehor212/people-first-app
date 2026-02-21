@@ -37,7 +37,9 @@ function getHabitEffort(habit: Habit): 'low' | 'medium' | 'high' {
   return 'low';
 }
 
-// ── Cubic Bezier path (S-curve with two control points) ──
+// ── Cubic Bezier path (radial S-curve, tension 0.5) ──
+
+const BEZIER_TENSION = 0.5;
 
 function cubicBezierPath(
   x1: number, y1: number,
@@ -45,21 +47,21 @@ function cubicBezierPath(
 ): string {
   const dx = x2 - x1;
   const dy = y2 - y1;
-  // Perpendicular normal
-  const nx = -dy;
-  const ny = dx;
-  const len = Math.sqrt(nx * nx + ny * ny) || 1;
-  // 15% of segment length as offset magnitude
-  const offset = len * 0.15;
-  const ux = (nx / len) * offset;
-  const uy = (ny / len) * offset;
+  const dist = Math.sqrt(dx * dx + dy * dy) || 1;
 
-  // Control point 1: 1/3 along + perpendicular offset
-  const cp1x = x1 + dx * 0.33 + ux;
-  const cp1y = y1 + dy * 0.33 + uy;
-  // Control point 2: 2/3 along - perpendicular offset (S-curve)
-  const cp2x = x1 + dx * 0.67 - ux;
-  const cp2y = y1 + dy * 0.67 - uy;
+  // Perpendicular unit normal
+  const nx = -dy / dist;
+  const ny = dx / dist;
+
+  // S-curve offset: tension × 30% of segment length
+  const offset = dist * BEZIER_TENSION * 0.3;
+
+  // cp1: 1/3 along, pushed perpendicular (+)
+  const cp1x = x1 + dx / 3 + nx * offset;
+  const cp1y = y1 + dy / 3 + ny * offset;
+  // cp2: 2/3 along, pushed perpendicular (−) → S-shape
+  const cp2x = x1 + (2 * dx) / 3 - nx * offset;
+  const cp2y = y1 + (2 * dy) / 3 - ny * offset;
 
   return `M ${x1},${y1} C ${cp1x},${cp1y} ${cp2x},${cp2y} ${x2},${y2}`;
 }
