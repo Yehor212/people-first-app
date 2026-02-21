@@ -262,8 +262,8 @@ export function Index() {
         <main
           id="main-content"
           role="main"
-          className={activeTab === 'mindmap' ? 'relative h-screen overflow-hidden' : 'max-w-lg mx-auto px-4 py-6'}
-          style={activeTab !== 'mindmap' ? { paddingBottom: focusMiniPlayerActive ? 'calc(var(--nav-height) + var(--safe-bottom) + 3.5rem)' : 'calc(var(--nav-height) + var(--safe-bottom))' } : undefined}
+          className={activeTab === 'mindmap' ? 'relative h-screen overflow-hidden' : 'mx-auto px-4 py-6'}
+          style={activeTab === 'mindmap' ? undefined : { maxWidth: 'var(--container-max-width)', paddingBottom: focusMiniPlayerActive ? 'calc(var(--nav-height) + var(--safe-bottom) + 3.5rem)' : 'calc(var(--nav-height) + var(--safe-bottom))' }}
         >
         {/* Global Schedule Bar - visible on all tabs when events exist */}
         {/* v1.4.0: Use todayAllEvents to include both manual and habit-generated events */}

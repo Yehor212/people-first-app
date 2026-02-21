@@ -46,6 +46,23 @@ export function DataSection({
   useBackHandler(imp.showImportConfirm, () => imp.handleImportCancel());
   useScrollLock(showResetConfirm || imp.showImportConfirm);
 
+  // Escape key: dismiss import confirm or reset confirm
+  useEffect(() => {
+    if (!showResetConfirm && !imp.showImportConfirm) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (imp.showImportConfirm) {
+          imp.handleImportCancel();
+        } else {
+          setShowResetConfirm(false);
+        }
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [showResetConfirm, imp]);
+
   // Auto-clear dataStatus after 3 seconds
   useEffect(() => {
     if (!dataStatus) return;

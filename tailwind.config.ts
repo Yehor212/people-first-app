@@ -86,6 +86,15 @@ export default {
         'zen-glow': 'var(--zen-shadow-glow)',
         'zen-hover': 'var(--zen-shadow-hover)',
       },
+      height: {
+        screen: ['100vh', '100dvh'],
+      },
+      minHeight: {
+        screen: ['100vh', '100dvh'],
+      },
+      maxHeight: {
+        screen: ['100vh', '100dvh'],
+      },
       backgroundColor: {
         'surface': 'hsl(var(--surface-base))',
         'surface-raised': 'hsl(var(--surface-raised))',

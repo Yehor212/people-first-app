@@ -129,7 +129,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
     return (
       <div
         className="absolute inset-0 overflow-hidden"
-        style={{ background: '#0D1117', touchAction: 'none' }}
+        style={{ background: '#0D1117', touchAction: 'none', overscrollBehavior: 'none' }}
         onWheel={handleWheel}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

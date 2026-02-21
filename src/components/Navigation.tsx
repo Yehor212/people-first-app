@@ -42,7 +42,7 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
       role="navigation"
       aria-label={t.mainNavigation || 'Main navigation'}
     >
-      <div className="max-w-lg mx-auto px-4">
+      <div className="mx-auto px-4" style={{ maxWidth: 'var(--container-max-width)' }}>
         <div className="flex justify-between py-2" role="tablist">
           {tabs.map((tab) => (
             <button

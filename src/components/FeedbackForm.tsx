@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,16 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   const { t } = useLanguage();
   useBackHandler(open, () => onOpenChange(false));
   useScrollLock(open);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); onOpenChange(false); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open, onOpenChange]);
+
   const [category, setCategory] = useState<FeedbackCategory>('bug');
   const [message, setMessage] = useState('');
   const [email, setEmail] = useState('');

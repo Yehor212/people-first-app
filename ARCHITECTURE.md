@@ -1081,3 +1081,49 @@ Every PASS must include evidence: command output, file path, or test checklist. 
 - `npx vitest --run` — 2650/2650 pass (121 test files)
 - `npm run build` — success
 - Emoji audit (`grep` for Unicode ranges in tabs/stats) — 0 system emojis in UI components
+
+---
+
+### UX Standards Audit & Fix (2026-02-21)
+
+- Date: 2026-02-21
+- Author: Claude Opus 4.6
+- Scope: Production-critical UX audit — viewport height, desktop layout, escape hatches, scrollbar styling
+
+#### What Was Completed
+
+**Wave 1 — Global `100vh` Search & Destroy:**
+- Tailwind config override: `h-screen`/`min-h-screen`/`max-h-screen` now emit `100vh; 100dvh` progressive enhancement (fixes 10 instances across Index.tsx, AuthGate, AuthScreen, LanguageSelector, WidgetSettings, ErrorBoundary)
+- `dialog.tsx`: `max-h-[calc(100vh-4rem)]` → `max-h-[calc(100dvh-4rem)]`
+- `MindMapCanvas.tsx`: Added `overscrollBehavior: 'none'` to prevent iOS rubber-banding
+
+**Wave 2 — Desktop / Laptop Layout:**
+- Responsive `--container-max-width`: `32rem` (mobile) → `42rem` (≥768px) via CSS media query
+- `Index.tsx` + `Navigation.tsx`: Hard-coded `max-w-lg` replaced with `var(--container-max-width)`
+- Global scrollbar styling: Firefox `scrollbar-width: thin` + WebKit `::-webkit-scrollbar` (6px, themed)
+
+**Wave 3 — Global Escape Hatch:**
+- Created `useModalA11y` composite hook (Escape + focus trap + Android back in one call)
+- Fixed `ConfirmDialog` dead end (Celebrations.tsx): Added Escape key, `useBackHandler`, and backdrop click dismiss
+- Added Escape key listeners to 12 high-priority overlays: FocusBreathingOverlay, HabitsOverlay, BreathingExercise, FeedbackForm, DailyRewards, SpinWheel, ChallengeModal, TasksPanel, QuestsPanel, AccountSection, DataSection, ScheduleTimeline
+
+#### UX Standards (Mandatory)
+
+These standards are effective immediately for all new code and PRs:
+
+1. **Viewport Height**: `h-screen`/`min-h-screen` now emit `100dvh` via `tailwind.config.ts`. NEVER use raw `100vh` in inline styles — use `100dvh` with `100vh` fallback. The `index.css` body/`#root` already have triple fallback (`100vh` → `100dvh` → `-webkit-fill-available`).
+
+2. **Safe Areas**: All bottom-anchored containers must include `var(--safe-bottom)` padding. All `position: fixed` overlays must use the `.screen-overlay` utility class (includes safe area insets) or equivalent `fixed inset-0` with explicit safe-area padding.
+
+3. **Escape Paths — Zero Dead Ends**: Every modal, overlay, and bottom sheet MUST provide:
+   - (a) A visible close affordance (X button, Cancel button, or swipe-to-dismiss)
+   - (b) Escape key handler (`useEffect` keydown listener or `useModalKeyboard`)
+   - (c) `useBackHandler` for Android hardware back button
+   - For new modals, use `useModalA11y(isOpen, onClose)` which wires both (b) and (c) in one call.
+   - Backdrop click dismiss is recommended but not mandatory for destructive dialogs.
+
+4. **Desktop Adaptation**: Use `var(--container-max-width)` CSS variable for main content width. NEVER hard-code `max-w-lg` in layout containers. The variable auto-widens from 512px (mobile) to 672px (≥768px tablet/desktop).
+
+5. **Overscroll Behavior**: `overscrollBehavior: 'none'` is REQUIRED on all canvas, pan, and infinite-scroll surfaces to prevent iOS rubber-banding.
+
+6. **Scrollbar Styling**: Global thin scrollbars are applied via `index.css` (Firefox + WebKit). No per-component scrollbar CSS needed.

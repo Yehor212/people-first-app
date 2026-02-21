@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, Check } from 'lucide-react';
 import { cn, getToday } from '@/lib/utils';
@@ -22,6 +23,15 @@ export function HabitsOverlay({ open, habits, onToggleHabit, onClose }: HabitsOv
 
   useBackHandler(open, onClose);
   useScrollLock(open);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open, onClose]);
 
   return (
     <AnimatePresence>

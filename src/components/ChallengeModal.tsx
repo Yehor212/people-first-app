@@ -58,6 +58,26 @@ export const ChallengeModal = memo(function ChallengeModal({
     setMode('list');
   });
 
+  // Escape key: navigate sub-views back, or close the modal
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (mode === 'details' || mode === 'join' || mode === 'create') {
+          setSelectedChallenge(null);
+          setNewlyCreatedChallenge(null);
+          setPendingInvite(undefined);
+          setMode('list');
+        } else {
+          onOpenChange(false);
+        }
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [open, mode, onOpenChange]);
+
   // Reset state when modal opens/closes
   useEffect(() => {
     if (open) {

@@ -27,6 +27,15 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
   useBackHandler(!!onClose, onClose ?? (() => {}));
   useScrollLock(!!onClose);
 
+  // Escape key: close panel
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); onClose?.(); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   const [dailyQuest, setDailyQuest] = useState<Quest | null>(null);
   const [weeklyQuest, setWeeklyQuest] = useState<Quest | null>(null);
   const [bonusQuest, setBonusQuest] = useState<Quest | null>(null);

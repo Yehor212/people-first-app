@@ -673,6 +673,25 @@
     min-height: -webkit-fill-available;
   }
 
+  /* ===== RESPONSIVE CONTAINER WIDTH ===== */
+  @media (min-width: 768px) {
+    :root {
+      --container-max-width: 42rem;   /* 672px — tablets & desktop */
+    }
+  }
+
+  /* ===== SCROLLBAR STYLING ===== */
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  /* WebKit (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+
   /* ===== ACCESSIBILITY: Focus Visible ===== */
   /* Visible focus ring for keyboard navigation */
   :focus-visible {

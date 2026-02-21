@@ -3,7 +3,7 @@
  * Luck-based reward system with spinning animation
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -32,6 +32,15 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
   const { t } = useLanguage();
   useScrollLock(true);
   useBackHandler(true, onClose);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [prize, setPrize] = useState<SpinWheelPrize | null>(null);

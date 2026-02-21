@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { Cloud, CheckCircle, Loader2, Mail } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -24,6 +24,16 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
 
   useBackHandler(del.showDeleteConfirm, () => del.setShowDeleteConfirm(false));
   useScrollLock(del.showDeleteConfirm);
+
+  // Escape key: dismiss delete confirmation
+  useEffect(() => {
+    if (!del.showDeleteConfirm) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); del.setShowDeleteConfirm(false); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [del]);
 
   const baseUrl = BASE_URL;
   const deleteAccountHref = `${baseUrl}delete-account.html`;

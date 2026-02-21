@@ -4,6 +4,7 @@
  * This file: ~180L, 0 useState, delegates state to 2 custom hooks.
  */
 
+import { useEffect } from 'react';
 import { Plus, Zap, Clock, Calendar, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -30,6 +31,22 @@ export function TasksPanel({ onClose, onAwardXp, onEarnTreats }: TasksPanelProps
   useBackHandler(!!onClose && !taskForm.form.show, onClose ?? (() => {}));
   useBackHandler(taskForm.form.show, taskForm.hideForm);
   useScrollLock(!!onClose);
+
+  // Escape key: dismiss add form first, then close panel
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (taskForm.form.show) {
+          taskForm.hideForm();
+        } else {
+          onClose?.();
+        }
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [taskForm, onClose]);
 
   return (
     <div role="dialog" aria-modal="true" aria-labelledby="tasks-panel-title" className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto">

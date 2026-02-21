@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -25,12 +25,21 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
 
   const stars = useMemo(() => generateStars(20), []);
 
-  const closeModal = () => {
+  const closeModal = useCallback(() => {
     engine.reset();
     setIsOpen(false);
-  };
+  }, [engine]);
 
   useBackHandler(isOpen, closeModal);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); closeModal(); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, closeModal]);
 
   // Compact card
   if (compact && !isOpen) {

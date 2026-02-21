@@ -4,7 +4,7 @@
  * This file: ~390L, 2 useState, delegates data to useScheduleData hook.
  */
 
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Home, Sparkles, Calendar } from 'lucide-react';
 import { getToday } from '@/lib/utils';
@@ -32,6 +32,23 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
   useBackHandler(showAddModal, () => setShowAddModal(false));
   useBackHandler(selectedEvent !== null, () => setSelectedEvent(null));
   useScrollLock(showAddModal || selectedEvent !== null);
+
+  // Escape key: close modals (event details first, then add modal)
+  useEffect(() => {
+    if (!showAddModal && selectedEvent === null) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (selectedEvent !== null) {
+          setSelectedEvent(null);
+        } else {
+          setShowAddModal(false);
+        }
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [showAddModal, selectedEvent]);
 
   const {
     currentTime,

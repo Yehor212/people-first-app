@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { EmojiOrIcon } from '@/components/icons';
 import { useDopamineSettings } from './DopamineSettings';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 /**
  * Streak Celebration - Duolingo-style fire animation
@@ -281,9 +282,24 @@ export function ConfirmDialog({
   onCancel,
   variant = 'default'
 }: ConfirmDialogProps) {
+  const stableOnCancel = useCallback(() => onCancel(), [onCancel]);
+  useBackHandler(true, stableOnCancel);
+
+  // Escape key to dismiss
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onCancel]);
+
   return (
-    <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
-      <div className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl animate-scale-in">
+    <div
+      className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in"
+      onClick={onCancel}
+    >
+      <div role="dialog" aria-modal="true" className="bg-card rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
         <h3 className="text-lg font-bold text-foreground mb-2">{title}</h3>
         <p className="text-muted-foreground mb-6">{message}</p>
         <div className="flex gap-3">

@@ -28,6 +28,15 @@ export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
   const { t } = useLanguage();
   useBackHandler(true, onClose);
   useScrollLock(true);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   const [rewards, setRewards] = useState<DailyLoginReward[]>(getDailyLoginRewards());
   const [currentDay, setCurrentDay] = useState(1);
   const [loginStreak, setLoginStreak] = useState(0);
