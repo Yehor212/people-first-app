@@ -328,7 +328,7 @@ test.describe('Focus Timer', () => {
  * Full Navigation
  *
  * Verifies that clicking each tab in the bottom navigation switches the
- * active content area. The navigation has 4 tabs: home, garden/world,
+ * active content area. The navigation has 5 tabs: home, map, garden/diary,
  * stats, settings. Each tab is a <button role="tab"> with aria-selected.
  */
 test.describe('Full Navigation', () => {
@@ -454,8 +454,8 @@ test.describe('Empty States', () => {
     await expect(page.locator('body')).toBeVisible();
     await expect(page.locator('text=Something went wrong')).not.toBeVisible();
 
-    // Navigate to the stats tab
-    const statsTab = page.locator('button[role="tab"]').nth(2);
+    // Navigate to the stats tab (index 3: home=0, map=1, garden=2, stats=3, settings=4)
+    const statsTab = page.locator('button[role="tab"]').nth(3);
     await statsTab.click();
     await expect(statsTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
 
@@ -467,8 +467,8 @@ test.describe('Empty States', () => {
     await expect(page.locator('body')).toBeVisible();
     await expect(page.locator('text=Something went wrong')).not.toBeVisible();
 
-    // Navigate to settings tab
-    const settingsTab = page.locator('button[role="tab"]').nth(3);
+    // Navigate to settings tab (index 4)
+    const settingsTab = page.locator('button[role="tab"]').nth(4);
     await settingsTab.click();
     await expect(settingsTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
     await page.waitForTimeout(1000);
@@ -502,8 +502,8 @@ test.describe('Settings', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    // Navigate to the settings tab (4th tab, index 3)
-    const settingsTab = page.locator('button[role="tab"]').nth(3);
+    // Navigate to the settings tab (5th tab, index 4: home=0, map=1, garden=2, stats=3, settings=4)
+    const settingsTab = page.locator('button[role="tab"]').nth(4);
     await expect(settingsTab).toBeVisible({ timeout: 10000 });
     await settingsTab.click();
     await expect(settingsTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
