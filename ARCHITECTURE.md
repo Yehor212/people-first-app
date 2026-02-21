@@ -22,7 +22,7 @@
 | Silent .catch(() => {}) | 0 | `grep -rn '\.catch.*=> {}' src/ \| wc -l` |
 | React.memo components | 12 / 80+ | `grep -rl 'memo(' src/ --include="*.tsx" \| wc -l` |
 | lazy() imports | 6 | `grep -rn 'lazy(' src/ \| wc -l` |
-| exhaustive-deps suppressions | 15 across 13 files (all intentional) | `grep -rn 'eslint-disable.*exhaustive-deps' src/ \| wc -l` |
+| exhaustive-deps suppressions | 17 across 15 files (all intentional) | `grep -rn 'eslint-disable.*exhaustive-deps' src/ \| wc -l` |
 
 > Update these metrics after each major refactor phase. Compare deltas to track progress.
 
@@ -771,7 +771,7 @@ On PR to main:
 |----|----------|-------------|--------|-------|--------|
 | TD-01 | ~~CRITICAL~~ → LOW | Index.tsx god component | 2,800 lines, 46 useState, 29 useEffect | **407 lines**, 4 useState, 4 useEffect, 47 imports | Slightly over 400-line limit (MindMapTab integration added canvas overlays). AuthGate, useSettingsHandlers, useReminderMigration, useEmotionSync extracted. |
 | TD-02 | ~~CRITICAL~~ → LOW | No state management | All prop drilling | **4 Zustand stores** + bridge hooks. Tab components still receive handler props. | Feature handlers not yet in stores. |
-| TD-06 | ~~HIGH~~ → **DONE** | exhaustive-deps eslint suppressions | **41** across 28 files | **15 remaining** across 13 files (all legitimate mount-only/cleanup/ref patterns). Codex 5.3 fixed several (2026-02-18). 1 bug fixed: `JournalEntryEditor` prompts now update on language change (`ts` added to useMemo deps). | Audited all suppressions; only intentional patterns remain. |
+| TD-06 | ~~HIGH~~ → **DONE** | exhaustive-deps eslint suppressions | **41** across 28 files | **17 remaining** across 15 files (all legitimate mount-only/cleanup/ref patterns). +2 from useReflectionPrompts, UserProgressBar added post-IA Blueprint. Codex 5.3 fixed several (2026-02-18). 1 bug fixed: `JournalEntryEditor` prompts now update on language change (`ts` added to useMemo deps). | Audited all suppressions; only intentional patterns remain. |
 | TD-10 | ~~HIGH~~ → DONE | ~~No runtime validation~~ | **Fixed 2026-02-16**: Created `src/lib/schemas.ts` with 9 Zod runtime schemas + `validateArray`/`validateObject` helpers. Added `itemSchema`/`objectSchema` params to `useIndexedDB` — eliminated 7 unvalidated `as T` casts. Wired schemas into `useHydrateUserData` (7 calls), `useInnerWorld`, `useGamification`. Replaced 6 ad-hoc validators in `realtimeSync.ts` with Zod `safeParse()`. Fixed 2 bugs: `'abandoned'→'aborted'` focus status, `emotion` string→object. All schemas use `.passthrough()` + `.default()` for forward/backward compat. 25 new tests (568 total). | src/lib/schemas.ts |
 
 ### Open

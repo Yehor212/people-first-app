@@ -346,8 +346,8 @@ test.describe('Full Navigation', () => {
     const tabs = tabList.locator('button[role="tab"]');
     const tabCount = await tabs.count();
 
-    // App has 4 tabs: home, garden/world, stats, settings
-    expect(tabCount).toBe(4);
+    // App has 5 tabs: home, map, garden/diary, stats, settings
+    expect(tabCount).toBe(5);
 
     // Click each tab and verify it becomes the active (aria-selected) tab
     for (let i = 0; i < tabCount; i++) {
