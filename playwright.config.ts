@@ -32,9 +32,10 @@ export default defineConfig({
     }] : []),
   ],
 
-  /* Run local dev server before starting tests */
+  /* In CI: serve built dist/ via vite preview (env vars already baked in by Build step).
+     Locally: use vite dev server (reads .env.local). */
   webServer: {
-    command: 'npm run dev',
+    command: process.env.CI ? 'npm run preview' : 'npm run dev',
     url: 'http://localhost:8080/people-first-app/',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
