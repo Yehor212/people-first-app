@@ -13,6 +13,7 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { isNative } from '@/lib/platform';
 import { getCurrentChannelId } from '@/lib/notificationSounds';
 
+import { useUIStore, setFocusControls } from '@/stores';
 import { DEFAULT_FOCUS_MINUTES, loadTimerState, createFocusSession } from './focusTimerTypes';
 import type { TimerState, UseFocusTimerOptions } from './focusTimerTypes';
 import { useFocusTimerConfig } from './useFocusTimerConfig';
@@ -276,6 +277,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
           setIsBreak(true);
           setTimeLeft(breakDuration);
           lastMinuteRef.current = 0;
+          useUIStore.getState().setFocusTimerBridge({ endTime: null, isRunning: false, isBreak: true, label });
 
           if (onMinuteUpdate) {
             onMinuteUpdate(0);
@@ -285,6 +287,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
           setIsRunning(false);
           setIsBreak(false);
           setTimeLeft(focusDuration);
+          useUIStore.getState().clearFocusTimerBridge();
         }
         storageRemove(SK.TIMER_STATE);
       }
@@ -322,6 +325,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
         focusStartRef.current = null;
       }
       setIsRunning(false);
+      useUIStore.getState().setFocusTimerBridge({ endTime: null, isRunning: false, isBreak, label });
       void haptics.focusPaused();
       return;
     }
@@ -335,6 +339,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
       void haptics.focusStarted();
     }
     setIsRunning(true);
+    useUIStore.getState().setFocusTimerBridge({ endTime: endTimeRef.current, isRunning: true, isBreak, label });
   };
 
   const resetTimer = () => {
@@ -354,6 +359,7 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
     setTimeLeft(focusDuration);
     storageRemove(SK.TIMER_STATE);
     saveTimerState();
+    useUIStore.getState().clearFocusTimerBridge();
   };
 
   const throttledToggle = useThrottledCallback(toggleTimer, 800);
@@ -377,6 +383,20 @@ export function useFocusTimer({ sessions, onCompleteSession, onMinuteUpdate }: U
   useBackHandler(showReflection, () => handleSaveReflection(null));
   useScrollLock(showReflection);
   useBackHandler(showHyperfocus, () => setShowHyperfocus(false));
+
+  // Register focus controls for global mini-player bridge
+  useEffect(() => {
+    setFocusControls({ toggle: throttledToggle, reset: throttledReset });
+    // Sync initial state if timer was running from localStorage restore
+    if (isRunning && endTimeRef.current) {
+      useUIStore.getState().setFocusTimerBridge({
+        endTime: endTimeRef.current, isRunning: true, isBreak, label,
+      });
+    }
+    return () => {
+      setFocusControls(null);
+    };
+  }, [throttledToggle, throttledReset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     // Config

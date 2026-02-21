@@ -46,6 +46,12 @@ interface UIState {
 
   // Focus timer (real-time minutes, UI-only)
   currentFocusMinutes: number | undefined;
+
+  // Focus mini-player bridge (synced from useFocusTimer on state transitions)
+  focusEndTime: number | null;
+  focusIsRunning: boolean;
+  focusIsBreak: boolean;
+  focusLabel: string;
 }
 
 interface UIActions {
@@ -62,6 +68,8 @@ interface UIActions {
   setWelcomeBackData: (data: UIState['welcomeBackData']) => void;
   setJournalPromptText: (text: string | undefined) => void;
   setCurrentFocusMinutes: (minutes: number | undefined) => void;
+  setFocusTimerBridge: (state: { endTime: number | null; isRunning: boolean; isBreak: boolean; label: string }) => void;
+  clearFocusTimerBridge: () => void;
 }
 
 // Priority order for Android back button (matches original Index.tsx logic)
@@ -97,6 +105,10 @@ export const useUIStore = create<UIState & UIActions>((set, get) => ({
   updateState: null,
   journalPromptText: undefined,
   currentFocusMinutes: undefined,
+  focusEndTime: null,
+  focusIsRunning: false,
+  focusIsBreak: false,
+  focusLabel: '',
 
   openModal: (name) => set({ [name]: true }),
   closeModal: (name) => set({ [name]: false }),
@@ -121,7 +133,25 @@ export const useUIStore = create<UIState & UIActions>((set, get) => ({
   setWelcomeBackData: (welcomeBackData) => set({ welcomeBackData }),
   setJournalPromptText: (journalPromptText) => set({ journalPromptText }),
   setCurrentFocusMinutes: (currentFocusMinutes) => set({ currentFocusMinutes }),
+  setFocusTimerBridge: ({ endTime, isRunning, isBreak, label }) => set({
+    focusEndTime: endTime,
+    focusIsRunning: isRunning,
+    focusIsBreak: isBreak,
+    focusLabel: label,
+  }),
+  clearFocusTimerBridge: () => set({
+    focusEndTime: null,
+    focusIsRunning: false,
+    focusIsBreak: false,
+    focusLabel: '',
+    currentFocusMinutes: undefined,
+  }),
 }));
+
+// Focus control callbacks — module-level refs (non-reactive, no Zustand re-renders)
+let _focusControls: { toggle: () => void; reset: () => void } | null = null;
+export const getFocusControls = () => _focusControls;
+export const setFocusControls = (c: typeof _focusControls) => { _focusControls = c; };
 
 /**
  * Creates a stable toggle function for a modal: (value: boolean) => void.

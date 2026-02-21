@@ -40,6 +40,7 @@ import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges } from '@/lib/challengeStorage';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
+import { FocusMiniPlayer } from '@/components/FocusMiniPlayer';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { analytics } from '@/lib/analytics';
@@ -109,6 +110,7 @@ export function Index() {
 
   // Current focus minutes (real-time) from UI store
   const currentFocusMinutes = useUIStore(s => s.currentFocusMinutes);
+  const focusMiniPlayerActive = useUIStore(s => s.focusIsRunning || s.focusEndTime !== null);
 
   const [challenges, setChallenges] = useState(() => getChallenges());
   const [badges, setBadges] = useState(() => getBadges());
@@ -253,7 +255,7 @@ export function Index() {
           id="main-content"
           role="main"
           className="max-w-lg mx-auto px-4 py-6"
-          style={{ paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom))' }}
+          style={{ paddingBottom: focusMiniPlayerActive ? 'calc(var(--nav-height) + var(--safe-bottom) + 3.5rem)' : 'calc(var(--nav-height) + var(--safe-bottom))' }}
         >
         {/* Global Schedule Bar - visible on all tabs when events exist */}
         {/* v1.4.0: Use todayAllEvents to include both manual and habit-generated events */}
@@ -354,6 +356,7 @@ export function Index() {
         </main>
       </div>
 
+      <FocusMiniPlayer onNavigateToTimer={() => setActiveTab('garden')} />
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
       <ModalLayer
