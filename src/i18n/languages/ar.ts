@@ -384,6 +384,7 @@ const arabicOverrides: Partial<Translations> = {
   uncategorizedHabits: 'عاداتي',
   uncategorizedVerb: 'أبني عاداتي',
   addFirstGoal: 'أنشئ هدفك الأول',
+  tapToBegin: 'انقر على "أنا" للبدء',
 
   // Stats Page
   statistics: 'الإحصائيات',

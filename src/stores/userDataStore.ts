@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent, MicroReflection } from '@/types';
+import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent, MicroReflection, CanvasGoal } from '@/types';
 import { defaultReminderSettings } from '@/lib/reminders';
 
 // Setter type matching useIndexedDB's return
@@ -22,6 +22,7 @@ export interface RegisteredSetters {
   setNotificationPermissionChecked: Setter<boolean>;
   setGoogleAuthChecked: Setter<boolean>;
   setMicroReflections: Setter<MicroReflection[]>;
+  setCanvasGoals: Setter<CanvasGoal[]>;
 }
 
 export interface UserDataState {
@@ -36,6 +37,7 @@ export interface UserDataState {
   privacy: PrivacySettings;
   scheduleEvents: ScheduleEvent[];
   microReflections: MicroReflection[];
+  canvasGoals: CanvasGoal[];
   userName: string;
   userNameCustom: boolean;
   hasSelectedLanguage: boolean;
@@ -60,6 +62,7 @@ interface UserDataActions {
   setPrivacy: Setter<PrivacySettings>;
   setScheduleEvents: Setter<ScheduleEvent[]>;
   setMicroReflections: Setter<MicroReflection[]>;
+  setCanvasGoals: Setter<CanvasGoal[]>;
   setUserName: Setter<string>;
   setUserNameCustom: Setter<boolean>;
   setHasSelectedLanguage: Setter<boolean>;
@@ -103,6 +106,7 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
   privacy: { noTracking: false, analytics: false, consentShown: false },
   scheduleEvents: [],
   microReflections: [],
+  canvasGoals: [],
   userName: 'Friend',
   userNameCustom: false,
   hasSelectedLanguage: false,
@@ -122,6 +126,7 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
   setPrivacy: createFieldAction<PrivacySettings>('privacy', 'setPrivacy', set, get),
   setScheduleEvents: createFieldAction<ScheduleEvent[]>('scheduleEvents', 'setScheduleEvents', set, get),
   setMicroReflections: createFieldAction<MicroReflection[]>('microReflections', 'setMicroReflections', set, get),
+  setCanvasGoals: createFieldAction<CanvasGoal[]>('canvasGoals', 'setCanvasGoals', set, get),
   setUserName: createFieldAction<string>('userName', 'setUserName', set, get),
   setUserNameCustom: createFieldAction<boolean>('userNameCustom', 'setUserNameCustom', set, get),
   setHasSelectedLanguage: createFieldAction<boolean>('hasSelectedLanguage', 'setHasSelectedLanguage', set, get),
@@ -140,5 +145,6 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
     ...(data.gratitudeEntries !== undefined && { gratitudeEntries: Array.isArray(data.gratitudeEntries) ? data.gratitudeEntries : [] }),
     ...(data.scheduleEvents !== undefined && { scheduleEvents: Array.isArray(data.scheduleEvents) ? data.scheduleEvents : [] }),
     ...(data.microReflections !== undefined && { microReflections: Array.isArray(data.microReflections) ? data.microReflections : [] }),
+    ...(data.canvasGoals !== undefined && { canvasGoals: Array.isArray(data.canvasGoals) ? data.canvasGoals : [] }),
   }),
 }));

@@ -3,7 +3,7 @@ import { useIndexedDB } from '@/hooks/useIndexedDB';
 import { db } from '@/storage/db';
 import { defaultReminderSettings } from '@/lib/reminders';
 import { useUserDataStore, type RegisteredSetters } from './userDataStore';
-import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent, MicroReflection } from '@/types';
+import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent, MicroReflection, CanvasGoal } from '@/types';
 import {
   runtimeMoodEntrySchema,
   runtimeHabitSchema,
@@ -13,6 +13,7 @@ import {
   privacySettingsSchema,
   scheduleEventSchema,
   microReflectionSchema,
+  canvasGoalSchema,
 } from '@/lib/schemas';
 
 /**
@@ -134,11 +135,20 @@ export function useHydrateUserData(): void {
     itemSchema: microReflectionSchema,
   });
 
+  const [canvasGoals, setCanvasGoals, isLoadingCanvasGoals] = useIndexedDB<CanvasGoal[]>({
+    table: db.settings,
+    localStorageKey: 'zenflow-canvas-goals',
+    initialValue: [],
+    idField: 'key',
+    itemSchema: canvasGoalSchema,
+  });
+
   // ── Register IndexedDB setters (once, via stable refs) ──
 
   const settersRef = useRef<RegisteredSetters>({
     setMoods, setHabits, setFocusSessions, setGratitudeEntries,
     setReminders, setPrivacy, setScheduleEvents, setMicroReflections,
+    setCanvasGoals,
     setUserName, setUserNameCustom, setHasSelectedLanguage,
     setTutorialComplete, setOnboardingComplete,
     setNotificationPermissionChecked, setGoogleAuthChecked,
@@ -147,6 +157,7 @@ export function useHydrateUserData(): void {
   settersRef.current = {
     setMoods, setHabits, setFocusSessions, setGratitudeEntries,
     setReminders, setPrivacy, setScheduleEvents, setMicroReflections,
+    setCanvasGoals,
     setUserName, setUserNameCustom, setHasSelectedLanguage,
     setTutorialComplete, setOnboardingComplete,
     setNotificationPermissionChecked, setGoogleAuthChecked,
@@ -163,6 +174,7 @@ export function useHydrateUserData(): void {
       setPrivacy: (v) => settersRef.current.setPrivacy(v),
       setScheduleEvents: (v) => settersRef.current.setScheduleEvents(v),
       setMicroReflections: (v) => settersRef.current.setMicroReflections(v),
+      setCanvasGoals: (v) => settersRef.current.setCanvasGoals(v),
       setUserName: (v) => settersRef.current.setUserName(v),
       setUserNameCustom: (v) => settersRef.current.setUserNameCustom(v),
       setHasSelectedLanguage: (v) => settersRef.current.setHasSelectedLanguage(v),
@@ -181,12 +193,13 @@ export function useHydrateUserData(): void {
     isLoadingMoods || isLoadingHabits || isLoadingFocus || isLoadingGratitude ||
     isLoadingReminders || isLoadingTutorial || isLoadingOnboarding ||
     isLoadingPrivacy || isLoadingNotificationPermission || isLoadingGoogleAuth ||
-    isLoadingSchedule || isLoadingMicroReflections;
+    isLoadingSchedule || isLoadingMicroReflections || isLoadingCanvasGoals;
 
   useLayoutEffect(() => {
     useUserDataStore.getState()._hydrateFromDB({
       moods, habits, focusSessions, gratitudeEntries,
       reminders, privacy, scheduleEvents, microReflections,
+      canvasGoals,
       userName, userNameCustom, hasSelectedLanguage,
       tutorialComplete, onboardingComplete,
       notificationPermissionChecked, googleAuthChecked,
@@ -195,6 +208,7 @@ export function useHydrateUserData(): void {
   }, [
     moods, habits, focusSessions, gratitudeEntries,
     reminders, privacy, scheduleEvents, microReflections,
+    canvasGoals,
     userName, userNameCustom, hasSelectedLanguage,
     tutorialComplete, onboardingComplete,
     notificationPermissionChecked, googleAuthChecked,

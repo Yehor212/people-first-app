@@ -390,6 +390,7 @@ export interface Translations {
   uncategorizedHabits: string;
   uncategorizedVerb: string;
   addFirstGoal: string;
+  tapToBegin: string;
 
   // Stats page
   statistics: string;

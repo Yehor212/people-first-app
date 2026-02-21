@@ -50,6 +50,10 @@ import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
+import { generateId, getToday } from '@/lib/utils';
+import { saveEntry } from '@/features/journal';
+import { createGoal, toggleGoalCompletion, deleteGoal } from '@/lib/canvasGoals';
+import type { MoodType } from '@/types';
 
 export function Index() {
   const { t, isRTL } = useLanguage();
@@ -63,11 +67,13 @@ export function Index() {
   const setActiveTab = useAppStore(s => s.setActiveTab);
   const settingsOpenSection = useAppStore(s => s.settingsOpenSection);
   const quickActionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const splitTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const canvasRef = useRef<MindMapCanvasRef>(null);
 
   useEffect(() => {
     return () => {
       if (quickActionTimeoutRef.current) clearTimeout(quickActionTimeoutRef.current);
+      if (splitTimeoutRef.current) clearTimeout(splitTimeoutRef.current);
     };
   }, []);
 
@@ -138,6 +144,12 @@ export function Index() {
   const setReminders = useUserDataStore(s => s.setReminders);
   const privacy = useUserDataStore(s => s.privacy);
   const setPrivacy = useUserDataStore(s => s.setPrivacy);
+  const canvasGoals = useUserDataStore(s => s.canvasGoals);
+  const setCanvasGoals = useUserDataStore(s => s.setCanvasGoals);
+
+  // Canvas interaction mode
+  const canvasMode = useUIStore(s => s.canvasMode);
+  const setCanvasMode = useUIStore(s => s.setCanvasMode);
 
   // Initialize analytics when privacy settings change (or on first load)
   useEffect(() => {
@@ -228,6 +240,88 @@ export function Index() {
   // Deep link listener (auth + challenge URLs, extracted to hook)
   useDeepLinkHandler();
 
+  // ── Canvas mode handlers ──
+
+  const handleRootTap = useCallback(() => {
+    if (canvasMode === 'idle') {
+      setCanvasMode('split');
+      // Auto-collapse after 5s
+      if (splitTimeoutRef.current) clearTimeout(splitTimeoutRef.current);
+      splitTimeoutRef.current = setTimeout(() => setCanvasMode('idle'), 5000);
+    } else {
+      setCanvasMode('idle');
+      if (splitTimeoutRef.current) clearTimeout(splitTimeoutRef.current);
+    }
+  }, [canvasMode, setCanvasMode]);
+
+  const handleCanvasBackgroundTap = useCallback(() => {
+    if (canvasMode !== 'idle') {
+      setCanvasMode('idle');
+      if (splitTimeoutRef.current) clearTimeout(splitTimeoutRef.current);
+    }
+  }, [canvasMode, setCanvasMode]);
+
+  const handleEmotionSelect = useCallback(() => {
+    if (splitTimeoutRef.current) clearTimeout(splitTimeoutRef.current);
+    setCanvasMode('emotion-flow');
+  }, [setCanvasMode]);
+
+  const handleGoalSelect = useCallback(() => {
+    if (splitTimeoutRef.current) clearTimeout(splitTimeoutRef.current);
+    setCanvasMode('goal-flow');
+  }, [setCanvasMode]);
+
+  const handleEmotionSave = useCallback((mood: MoodType, text?: string) => {
+    const today = getToday();
+    const entry = {
+      id: generateId(),
+      mood,
+      note: text || undefined,
+      date: today,
+      timestamp: Date.now(),
+    };
+    handleAddMood(entry);
+
+    // If user wrote a reflection, save it as a journal entry too
+    if (text && text.trim().length > 0) {
+      void saveEntry({
+        date: today,
+        title: '',
+        content: text.trim(),
+        mood,
+        stickers: [],
+        photoIds: [],
+        tags: ['canvas-emotion'],
+      });
+    }
+
+    setCanvasMode('idle');
+  }, [handleAddMood, setCanvasMode]);
+
+  const handleEmotionCancel = useCallback(() => {
+    setCanvasMode('idle');
+  }, [setCanvasMode]);
+
+  // ── Goal tree handlers ──
+
+  const handleGoalCreate = useCallback((title: string, parentId: string | null) => {
+    const newGoal = createGoal(title, parentId, canvasGoals);
+    setCanvasGoals([...canvasGoals, newGoal]);
+    setCanvasMode('idle');
+  }, [canvasGoals, setCanvasGoals, setCanvasMode]);
+
+  const handleGoalToggle = useCallback((goalId: string) => {
+    setCanvasGoals(toggleGoalCompletion(goalId, canvasGoals));
+  }, [canvasGoals, setCanvasGoals]);
+
+  const handleGoalDelete = useCallback((goalId: string) => {
+    setCanvasGoals(deleteGoal(goalId, canvasGoals));
+  }, [canvasGoals, setCanvasGoals]);
+
+  const handleGoalCancel = useCallback(() => {
+    setCanvasMode('idle');
+  }, [setCanvasMode]);
+
   return (
     <AuthGate isLoading={isLoading}>
     <AdProvider
@@ -308,8 +402,18 @@ export function Index() {
         {activeTab === 'mindmap' && (
           <MindMapTab
             safeMoods={moods}
-            safeHabits={habits}
-            handleToggleHabit={handleToggleHabit}
+            canvasGoals={canvasGoals}
+            canvasMode={canvasMode}
+            onRootTap={handleRootTap}
+            onCanvasBackgroundTap={handleCanvasBackgroundTap}
+            onEmotionSelect={handleEmotionSelect}
+            onGoalSelect={handleGoalSelect}
+            onEmotionSave={handleEmotionSave}
+            onEmotionCancel={handleEmotionCancel}
+            onGoalCreate={handleGoalCreate}
+            onGoalToggle={handleGoalToggle}
+            onGoalDelete={handleGoalDelete}
+            onGoalCancel={handleGoalCancel}
             canvasRef={canvasRef}
           />
         )}
@@ -370,14 +474,6 @@ export function Index() {
             latestMood={moods.length > 0 ? moods[moods.length - 1].mood : null}
           />
           <CanvasFAB
-            onLogMood={() => {
-              void haptics.buttonPress();
-              setActiveTab('home');
-            }}
-            onAddTask={() => {
-              void haptics.buttonPress();
-              useUIStore.getState().openModal('showTasksPanel');
-            }}
             onRecenter={() => canvasRef.current?.recenter()}
             onZoomIn={() => canvasRef.current?.zoomIn()}
             onZoomOut={() => canvasRef.current?.zoomOut()}
@@ -392,16 +488,17 @@ export function Index() {
               setActiveTab('garden');
             }}
           />
-          {habits.length === 0 && (
+          {canvasGoals.length === 0 && moods.length === 0 && canvasMode === 'idle' && (
             <div
               className="fixed z-50 animate-pulse pointer-events-none"
               style={{
                 bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)',
-                right: '1rem',
+                left: '50%',
+                transform: 'translateX(-50%)',
               }}
             >
-              <div className="bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-emerald-500/50 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg max-w-[200px]">
-                {t.addFirstGoal}
+              <div className="bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-white/20 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg max-w-[200px] text-center">
+                {t.tapToBegin || 'Tap "Я" to begin'}
               </div>
             </div>
           )}

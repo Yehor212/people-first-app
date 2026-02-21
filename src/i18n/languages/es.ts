@@ -376,6 +376,7 @@ export const es: Translations = {
   uncategorizedHabits: 'Mis hábitos',
   uncategorizedVerb: 'Estoy creando hábitos',
   addFirstGoal: 'Crea tu primera meta',
+  tapToBegin: 'Toca "Yo" para empezar',
 
   statistics: 'Estadísticas',
   monthlyOverview: 'Resumen mensual',

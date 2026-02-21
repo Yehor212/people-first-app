@@ -1,16 +1,21 @@
 /**
  * RootNode — "The Orb" — Central node on the Mind Map Canvas.
  *
- * 80×80 core with conic-gradient SVG progress ring showing daily habit
+ * 80×80 core with conic-gradient SVG progress ring showing goal
  * completion %. Uses CSS animate-orb-breathe for glow pulse.
  * OrbLottie ambient animation renders behind the core.
+ *
+ * Tap → triggers onTap callback (split mode). Pulses faster in split mode.
  */
 
+import { useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { haptics } from '@/lib/haptics';
 import { ROOT_SIZE } from './mindMapLayout';
 import { OrbLottie } from './OrbLottie';
 import type { MoodType } from '@/types';
+import type { CanvasMode } from '@/stores/uiStore';
 
 const MOOD_BORDER: Record<MoodType, string> = {
   great: 'border-emerald-400',
@@ -35,17 +40,26 @@ interface RootNodeProps {
   latestMood: MoodType | null;
   canvasCenter: { x: number; y: number };
   completionPercent: number; // 0–1
+  canvasMode: CanvasMode;
+  onTap: () => void;
 }
 
-export function RootNode({ latestMood, canvasCenter, completionPercent }: RootNodeProps) {
+export function RootNode({ latestMood, canvasCenter, completionPercent, canvasMode, onTap }: RootNodeProps) {
   const { t } = useLanguage();
   const borderColor = latestMood ? MOOD_BORDER[latestMood] : 'border-white/20';
   const ringColor = latestMood ? MOOD_RING_COLOR[latestMood] : 'rgba(255,255,255,0.3)';
   const filled = completionPercent * RING_CIRCUMFERENCE;
+  const isSplit = canvasMode === 'split';
+
+  const handleTap = useCallback((e: React.PointerEvent) => {
+    e.stopPropagation();
+    void haptics.light();
+    onTap();
+  }, [onTap]);
 
   return (
     <div
-      className="absolute"
+      className="absolute z-10"
       style={{
         left: canvasCenter.x - ROOT_SIZE.width / 2,
         top: canvasCenter.y - ROOT_SIZE.height / 2,
@@ -83,20 +97,25 @@ export function RootNode({ latestMood, canvasCenter, completionPercent }: RootNo
         />
       </svg>
 
-      {/* Core orb */}
-      <div
+      {/* Core orb — tappable */}
+      <button
+        type="button"
+        onPointerUp={handleTap}
         className={cn(
-          'w-full h-full rounded-full animate-orb-breathe',
+          'w-full h-full rounded-full',
+          isSplit ? 'animate-pulse' : 'animate-orb-breathe',
           'border-2', borderColor,
           'flex items-center justify-center',
           'text-white text-xl font-bold',
+          'cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-0',
         )}
         style={{
           background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 60%, transparent 100%)',
         }}
+        aria-label={t.you || 'Me'}
       >
         {t.you || 'Me'}
-      </div>
+      </button>
     </div>
   );
 }

@@ -419,6 +419,22 @@ export interface InnerWorld {
   };
 }
 
+// ============================================
+// CANVAS GOALS — Interactive Goal Tree on Mind Map
+// ============================================
+
+export interface CanvasGoal {
+  id: string;
+  title: string;
+  description?: string;
+  icon?: string;               // lucide icon name (e.g. 'Target', 'Book')
+  completed: boolean;
+  parentId: string | null;     // null = root-level goal
+  createdAt: number;
+  completedAt?: number;
+  order: number;               // sibling ordering
+}
+
 // ============ Insights Engine Types ============
 
 export type InsightType =

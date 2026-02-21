@@ -10,7 +10,12 @@ export type ModalName =
   | 'showQuestsPanel' | 'showFriendsPanel' | 'showWelcomeOverlay'
   | 'showWelcomeBack' | 'showMindfulMoment';
 
+export type CanvasMode = 'idle' | 'split' | 'emotion-flow' | 'goal-flow';
+
 interface UIState {
+  // Canvas interaction mode
+  canvasMode: CanvasMode;
+
   // Modal booleans
   showWeeklyReport: boolean;
   showWidgetSettings: boolean;
@@ -70,6 +75,7 @@ interface UIActions {
   setCurrentFocusMinutes: (minutes: number | undefined) => void;
   setFocusTimerBridge: (state: { endTime: number | null; isRunning: boolean; isBreak: boolean; label: string }) => void;
   clearFocusTimerBridge: () => void;
+  setCanvasMode: (mode: CanvasMode) => void;
 }
 
 // Priority order for Android back button (matches original Index.tsx logic)
@@ -96,6 +102,8 @@ const MODAL_DEFAULTS: Record<ModalName, boolean> = {
 
 export const useUIStore = create<UIState & UIActions>((set, get) => ({
   ...MODAL_DEFAULTS,
+
+  canvasMode: 'idle' as CanvasMode,
 
   challengeInvite: undefined,
   challengeHabit: undefined,
@@ -146,6 +154,7 @@ export const useUIStore = create<UIState & UIActions>((set, get) => ({
     focusLabel: '',
     currentFocusMinutes: undefined,
   }),
+  setCanvasMode: (canvasMode) => set({ canvasMode }),
 }));
 
 // Focus control callbacks — module-level refs (non-reactive, no Zustand re-renders)

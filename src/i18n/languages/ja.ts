@@ -375,6 +375,7 @@ export const ja: Translations = {
   uncategorizedHabits: 'マイ習慣',
   uncategorizedVerb: '習慣を作っています',
   addFirstGoal: '最初の目標を作成',
+  tapToBegin: '「私」をタップして始める',
 
   statistics: '統計',
   monthlyOverview: '月間概要',

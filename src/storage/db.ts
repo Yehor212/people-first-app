@@ -113,7 +113,7 @@ const USER_SETTINGS_KEYS = [
   'zenflow-username', 'zenflow-username-custom',
   'zenflow-reminders', 'zenflow-schedule-events',
   'zenflow-special-badges', 'zenflow-last-weekly-report',
-  'zenflow-micro-reflections',
+  'zenflow-micro-reflections', 'zenflow-canvas-goals',
 ];
 
 /**

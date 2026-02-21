@@ -1,0 +1,147 @@
+/**
+ * GoalInput — Inline text input that appears at the edge endpoint
+ * when creating a new goal (root or subtask).
+ *
+ * Glassmorphic mini-panel with single text input and submit/cancel.
+ * Uses useModalA11y for Escape + Android back.
+ */
+
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { haptics } from '@/lib/haptics';
+import { zenMotion } from '@/lib/animationUtils';
+import { useModalA11y } from '@/hooks/useModalA11y';
+
+interface GoalInputProps {
+  isVisible: boolean;
+  /** Canvas-absolute X center position */
+  anchorX: number;
+  /** Canvas-absolute Y position */
+  anchorY: number;
+  placeholder?: string;
+  onSubmit: (title: string) => void;
+  onCancel: () => void;
+}
+
+const INPUT_WIDTH = 220;
+
+export function GoalInput({
+  isVisible, anchorX, anchorY,
+  placeholder = "What's your goal?",
+  onSubmit, onCancel,
+}: GoalInputProps) {
+  const [value, setValue] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Reset + auto-focus when shown
+  useEffect(() => {
+    if (isVisible) {
+      setValue('');
+      setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isVisible]);
+
+  const { modalProps } = useModalA11y(isVisible, onCancel);
+
+  const handleSubmit = useCallback(() => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    void haptics.buttonPress();
+    onSubmit(trimmed);
+  }, [value, onSubmit]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSubmit();
+    }
+  }, [handleSubmit]);
+
+  const handleCancel = useCallback(() => {
+    void haptics.light();
+    onCancel();
+  }, [onCancel]);
+
+  return (
+    <AnimatePresence>
+      {isVisible && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.85, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.85, y: 10 }}
+          transition={zenMotion.gentle}
+          className="absolute z-30"
+          style={{
+            left: anchorX - INPUT_WIDTH / 2,
+            top: anchorY - 10,
+            width: INPUT_WIDTH,
+          }}
+          {...modalProps}
+        >
+          <div
+            className={cn(
+              'rounded-xl p-3',
+              'border border-white/10',
+              'shadow-zen-lg',
+            )}
+            style={{
+              background: 'var(--surface-glass)',
+              backdropFilter: 'blur(var(--surface-glass-blur, 20px))',
+              WebkitBackdropFilter: 'blur(var(--surface-glass-blur, 20px))',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              ref={inputRef}
+              type="text"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={placeholder}
+              maxLength={100}
+              className={cn(
+                'w-full rounded-lg px-3 py-2 mb-2',
+                'bg-white/5 border border-white/10',
+                'text-white text-sm placeholder:text-white/30',
+                'focus:outline-none focus:ring-1 focus:ring-white/20',
+              )}
+            />
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSubmit}
+                disabled={!value.trim()}
+                className={cn(
+                  'flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-sm font-medium',
+                  value.trim()
+                    ? 'bg-emerald-500/80 text-white hover:bg-emerald-500'
+                    : 'bg-white/5 text-white/30 cursor-not-allowed',
+                  'transition-colors',
+                )}
+                aria-label="Create goal"
+              >
+                <Check className="w-3.5 h-3.5" />
+                Create
+              </button>
+              <button
+                type="button"
+                onClick={handleCancel}
+                className={cn(
+                  'p-1.5 rounded-lg',
+                  'text-white/40 hover:text-white/70 hover:bg-white/10',
+                  'transition-colors',
+                )}
+                aria-label="Cancel"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}

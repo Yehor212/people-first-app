@@ -376,6 +376,7 @@ export const de: Translations = {
   uncategorizedHabits: 'Meine Gewohnheiten',
   uncategorizedVerb: 'Ich baue Gewohnheiten auf',
   addFirstGoal: 'Erstelle dein erstes Ziel',
+  tapToBegin: 'Tippe auf „Ich" um zu starten',
 
   statistics: 'Statistiken',
   monthlyOverview: 'Monatsübersicht',

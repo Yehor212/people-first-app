@@ -321,3 +321,15 @@ export const microReflectionSchema = z.object({
   linkedFocusSessionId: z.string().optional(),
   expandedToJournalId: z.string().optional(),
 }).passthrough();
+
+export const canvasGoalSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().optional(),
+  icon: z.string().optional(),
+  completed: z.boolean(),
+  parentId: z.string().nullable(),
+  createdAt: z.number(),
+  completedAt: z.number().optional(),
+  order: z.number(),
+}).passthrough();

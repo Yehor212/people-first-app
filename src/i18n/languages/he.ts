@@ -855,6 +855,7 @@ const hebrewOverrides: Partial<Translations> = {
   uncategorizedHabits: 'ההרגלים שלי',
   uncategorizedVerb: 'אני בונה הרגלים',
   addFirstGoal: 'צור את המטרה הראשונה',
+  tapToBegin: 'הקש על "אני" כדי להתחיל',
 
   // Install & Updates
   installApp: 'התקן אפליקציה',

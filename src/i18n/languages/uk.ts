@@ -375,6 +375,7 @@ export const uk: Translations = {
   uncategorizedHabits: 'Мої звички',
   uncategorizedVerb: 'Я формую звички',
   addFirstGoal: 'Створіть першу ціль',
+  tapToBegin: 'Натисніть «Я» щоб почати',
 
   statistics: 'Статистика',
   monthlyOverview: 'Огляд місяця',

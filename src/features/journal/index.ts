@@ -1,2 +1,2 @@
 export { JournalModule } from './JournalModule';
-export { getEntryCount } from './journalStorage';
+export { getEntryCount, saveEntry } from './journalStorage';
