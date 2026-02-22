@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useTransform, type MotionValue } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
@@ -50,9 +50,11 @@ interface GoalNodeProps {
   y: number;
   progressPercent: number; // 0–1
   onTap: (goalId: string) => void;
+  zoom: MotionValue<number>;
 }
 
-export function GoalNode({ goal, x, y, progressPercent, onTap }: GoalNodeProps) {
+export function GoalNode({ goal, x, y, progressPercent, onTap, zoom }: GoalNodeProps) {
+  const textOpacity = useTransform(zoom, [0.5, 0.65, 0.8], [0, 0, 1]);
   const filled = progressPercent * RING_PERIMETER;
   const isComplete = goal.completed || progressPercent >= 1;
   const rColor = ringColor(progressPercent);
@@ -155,26 +157,31 @@ export function GoalNode({ goal, x, y, progressPercent, onTap }: GoalNodeProps) 
           'transition-colors duration-200',
         )}
         style={{
-          background: 'var(--surface-glass)',
-          backdropFilter: 'blur(var(--surface-glass-blur, 20px))',
-          WebkitBackdropFilter: 'blur(var(--surface-glass-blur, 20px))',
+          background: 'rgba(15, 20, 30, 0.8)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          boxShadow: isComplete
+            ? '0 0 20px rgba(52,211,153,0.3), 0 8px 32px rgba(0,0,0,0.5)'
+            : '0 0 15px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.5)',
         }}
         aria-label={`Goal: ${goal.title}${isComplete ? ' (completed)' : ''}`}
         role="button"
       >
-        {isComplete ? (
-          <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-        ) : GoalIcon ? (
-          <GoalIcon className="w-3.5 h-3.5 text-white/60 flex-shrink-0" />
-        ) : null}
-        <span
-          className={cn(
-            'text-xs font-medium truncate',
-            isComplete ? 'text-emerald-300 line-through' : 'text-white',
-          )}
-        >
-          {goal.title}
-        </span>
+        <motion.span style={{ opacity: textOpacity }} className="flex items-center gap-1.5 truncate">
+          {isComplete ? (
+            <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+          ) : GoalIcon ? (
+            <GoalIcon className="w-3.5 h-3.5 text-white/60 flex-shrink-0" />
+          ) : null}
+          <span
+            className={cn(
+              'text-xs font-medium truncate',
+              isComplete ? 'text-emerald-300 line-through' : 'text-white',
+            )}
+          >
+            {goal.title}
+          </span>
+        </motion.span>
       </button>
     </motion.div>
   );

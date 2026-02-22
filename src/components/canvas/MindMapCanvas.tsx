@@ -12,20 +12,21 @@
  */
 
 import {
-  forwardRef, useCallback, useImperativeHandle,
+  forwardRef, useCallback, useEffect, useImperativeHandle,
   useMemo, useRef, useState,
 } from 'react';
-import { motion, useMotionValue } from 'framer-motion';
+import { motion, useMotionValue, animate } from 'framer-motion';
 import { RootNode } from './RootNode';
 import { AuxPills } from './AuxPills';
 import { GrowingEdge, getEdgeEndY } from './GrowingEdge';
 import { EmotionPanel } from './EmotionPanel';
 import { GoalTreeEdges } from './GoalTreeEdges';
 import { GoalNode } from './GoalNode';
-import { GoalActionMenu } from './GoalActionMenu';
+import { GoalActionSheet } from './GoalActionSheet';
 import { GoalInput } from './GoalInput';
 import { computeGoalTreeLayout } from './goalTreeLayout';
 import { isBranchGoal } from '@/lib/canvasGoals';
+import { zenMotion } from '@/lib/animationUtils';
 import { useKeyboardShift } from '@/hooks/useKeyboardShift';
 import type { MoodType, CanvasGoal } from '@/types';
 import type { CanvasMode } from '@/stores/uiStore';
@@ -49,6 +50,7 @@ interface MindMapCanvasProps {
   onGoalCreate: (title: string, parentId: string | null, icon?: string) => void;
   onGoalToggle: (goalId: string) => void;
   onGoalDelete: (goalId: string) => void;
+  onGoalUpdateIcon: (goalId: string, icon: string | undefined) => void;
   onGoalCancel: () => void;
 }
 
@@ -67,9 +69,14 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
     onRootTap, onCanvasBackgroundTap,
     onEmotionSelect, onGoalSelect,
     onEmotionSave, onEmotionCancel,
-    onGoalCreate, onGoalToggle, onGoalDelete, onGoalCancel,
+    onGoalCreate, onGoalToggle, onGoalDelete, onGoalUpdateIcon, onGoalCancel,
   }, ref) {
     const zoom = useMotionValue(1);
+    const autoPanX = useMotionValue(0);
+    const autoPanY = useMotionValue(0);
+
+    // Pending auto-pan flag — set true before goal creation, consumed by effect
+    const pendingAutoPanRef = useRef(false);
 
     // Drag reset key — incrementing forces framer-motion to reset drag position
     const [dragKey, setDragKey] = useState(0);
@@ -111,16 +118,44 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
       y: canvasCenter.y + Math.sin(GOAL_INPUT_ANGLE) * GOAL_INPUT_DISTANCE,
     }), [canvasCenter]);
 
+    // ── Auto-pan to newly created goals ──
+    useEffect(() => {
+      if (!pendingAutoPanRef.current || goalLayout.nodes.length === 0) return;
+      pendingAutoPanRef.current = false;
+      const newest = goalLayout.nodes.reduce((a, b) =>
+        a.goal.createdAt > b.goal.createdAt ? a : b,
+      );
+      const z = zoom.get();
+      const targetX = (CANVAS_SIZE / 2 - newest.x) * z;
+      const targetY = (CANVAS_SIZE / 2 - newest.y) * z;
+      animate(autoPanX, targetX, zenMotion.gentle);
+      animate(autoPanY, targetY, zenMotion.gentle);
+    }, [goalLayout, zoom, autoPanX, autoPanY]);
+
+    // ── Auto-pan when BottomSheet opens/closes ──
+    const sheetPanApplied = useRef(false);
+    useEffect(() => {
+      if (activeGoalMenuId && !sheetPanApplied.current) {
+        sheetPanApplied.current = true;
+        animate(autoPanY, autoPanY.get() - 120, zenMotion.gentle);
+      } else if (!activeGoalMenuId && sheetPanApplied.current) {
+        sheetPanApplied.current = false;
+        animate(autoPanY, autoPanY.get() + 120, zenMotion.gentle);
+      }
+    }, [activeGoalMenuId, autoPanY]);
+
     // ── Imperative API ──
 
     useImperativeHandle(ref, () => ({
       recenter: () => {
         setDragKey(k => k + 1);
         zoom.set(1);
+        animate(autoPanX, 0, zenMotion.gentle);
+        animate(autoPanY, 0, zenMotion.gentle);
       },
       zoomIn: () => zoom.set(Math.min(MAX_ZOOM, zoom.get() * 1.2)),
       zoomOut: () => zoom.set(Math.max(MIN_ZOOM, zoom.get() / 1.2)),
-    }), [zoom]);
+    }), [zoom, autoPanX, autoPanY]);
 
     // ── Wheel zoom ──
 
@@ -248,6 +283,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
     }, [onGoalDelete]);
 
     const handleGoalFlowSubmit = useCallback((title: string, icon?: string) => {
+      pendingAutoPanRef.current = true;
       onGoalCreate(title, null, icon);
     }, [onGoalCreate]);
 
@@ -257,6 +293,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
 
     const handleSubtaskSubmit = useCallback((title: string, icon?: string) => {
       if (!subtaskInput) return;
+      pendingAutoPanRef.current = true;
       onGoalCreate(title, subtaskInput.parentId, icon);
       setSubtaskInput(null);
     }, [subtaskInput, onGoalCreate]);
@@ -269,6 +306,10 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
       setActiveGoalMenuId(null);
     }, []);
 
+    const handleGoalUpdateIcon = useCallback((goalId: string, icon: string | undefined) => {
+      onGoalUpdateIcon(goalId, icon);
+    }, [onGoalUpdateIcon]);
+
     // Edge endpoint Y for emotion panel positioning
     const edgeEndY = getEdgeEndY(canvasCenter.y);
 
@@ -276,10 +317,6 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
     const activeGoal = activeGoalMenuId
       ? canvasGoals.find(g => g.id === activeGoalMenuId) ?? null
       : null;
-    const activeGoalNode = activeGoalMenuId
-      ? goalLayout.nodes.find(n => n.goal.id === activeGoalMenuId)
-      : null;
-
     return (
       <div
         className="absolute inset-0 overflow-hidden"
@@ -291,143 +328,147 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
       >
-        <motion.div
-          key={dragKey}
-          drag={!isInputActive}
-          dragConstraints={{
-            left: -half,
-            right: half,
-            top: -half,
-            bottom: half,
-          }}
-          dragElastic={0.1}
-          dragTransition={{ bounceStiffness: 300, bounceDamping: 30 }}
-          onDragStart={() => {
-            // Dismiss action menu as soon as user begins panning
-            if (activeGoalMenuId) setActiveGoalMenuId(null);
-          }}
-          className="relative will-change-transform"
-          style={{
-            width: CANVAS_SIZE,
-            height: CANVAS_SIZE,
-            left: `calc(50% - ${half}px)`,
-            top: `calc(50% - ${half}px)`,
-            scale: zoom,
-            // Keyboard shift: pan canvas upward when keyboard is visible
-            y: keyboardOffset > 0 ? -keyboardOffset / 2 : 0,
-            transition: 'transform 0.2s ease-out',
-          }}
-        >
-          {/* Goal tree edges (SVG Bezier curves from parent → child) */}
-          <GoalTreeEdges nodes={goalLayout.nodes} canvasSize={CANVAS_SIZE} />
+        {/* Auto-pan wrapper — programmatic pan via MotionValues, zero React re-renders */}
+        <motion.div style={{ x: autoPanX, y: autoPanY }} className="absolute inset-0">
+          <motion.div
+            key={dragKey}
+            drag={!isInputActive}
+            dragConstraints={{
+              left: -half,
+              right: half,
+              top: -half,
+              bottom: half,
+            }}
+            dragElastic={0.1}
+            dragTransition={{ bounceStiffness: 300, bounceDamping: 30 }}
+            onDragStart={() => {
+              // Dismiss action menu as soon as user begins panning
+              if (activeGoalMenuId) setActiveGoalMenuId(null);
+            }}
+            className="relative will-change-transform"
+            style={{
+              width: CANVAS_SIZE,
+              height: CANVAS_SIZE,
+              left: `calc(50% - ${half}px)`,
+              top: `calc(50% - ${half}px)`,
+              scale: zoom,
+              // Keyboard shift: pan canvas upward when keyboard is visible
+              y: keyboardOffset > 0 ? -keyboardOffset / 2 : 0,
+              transition: 'transform 0.2s ease-out',
+            }}
+          >
+            {/* Goal tree edges (SVG Bezier curves from parent → child) */}
+            <GoalTreeEdges nodes={goalLayout.nodes} canvasSize={CANVAS_SIZE} />
 
-          {/* Goal tree nodes */}
-          {goalLayout.nodes.map(node => (
-            <GoalNode
-              key={node.goal.id}
-              goal={node.goal}
-              x={node.x}
-              y={node.y}
-              progressPercent={node.progressPercent}
-              onTap={handleGoalNodeTap}
-            />
-          ))}
-
-          {/* Goal action menu (shown when a goal node is tapped) */}
-          <GoalActionMenu
-            goal={activeGoal}
-            isBranch={activeGoalMenuId ? isBranchGoal(activeGoalMenuId, canvasGoals) : false}
-            anchorX={activeGoalNode?.x ?? 0}
-            anchorY={activeGoalNode?.y ?? 0}
-            onAddSubtask={handleAddSubtask}
-            onToggleComplete={handleGoalToggle}
-            onDelete={handleGoalDelete}
-            onDismiss={handleGoalMenuDismiss}
-          />
-
-          {/* Subtask creation input (from GoalActionMenu → "+" ) */}
-          <GoalInput
-            isVisible={subtaskInput !== null}
-            anchorX={subtaskInput?.x ?? 0}
-            anchorY={subtaskInput?.y ?? 0}
-            placeholder="Add subtask..."
-            onSubmit={handleSubtaskSubmit}
-            onCancel={handleSubtaskCancel}
-          />
-
-          {/* Goal-flow: growing edge from Root outward + input for root goal */}
-          {isGoalFlow && (
-            <svg
-              className="absolute inset-0 pointer-events-none z-0"
-              width={CANVAS_SIZE}
-              height={CANVAS_SIZE}
-              viewBox={`0 0 ${CANVAS_SIZE} ${CANVAS_SIZE}`}
-            >
-              <defs>
-                <linearGradient
-                  id="goal-flow-grad"
-                  x1={canvasCenter.x} y1={canvasCenter.y}
-                  x2={goalInputTarget.x} y2={goalInputTarget.y}
-                  gradientUnits="userSpaceOnUse"
-                >
-                  <stop offset="0%" stopColor="rgba(255,255,255,0.3)" />
-                  <stop offset="100%" stopColor="rgba(52,211,153,0.5)" />
-                </linearGradient>
-              </defs>
-              <line
-                x1={canvasCenter.x}
-                y1={canvasCenter.y}
-                x2={goalInputTarget.x}
-                y2={goalInputTarget.y}
-                stroke="url(#goal-flow-grad)"
-                strokeWidth={2}
-                strokeLinecap="round"
-                className="animate-pulse"
+            {/* Goal tree nodes */}
+            {goalLayout.nodes.map(node => (
+              <GoalNode
+                key={node.goal.id}
+                goal={node.goal}
+                x={node.x}
+                y={node.y}
+                progressPercent={node.progressPercent}
+                onTap={handleGoalNodeTap}
+                zoom={zoom}
               />
-            </svg>
-          )}
-          <GoalInput
-            isVisible={isGoalFlow}
-            anchorX={goalInputTarget.x}
-            anchorY={goalInputTarget.y}
-            placeholder="What's your goal?"
-            onSubmit={handleGoalFlowSubmit}
-            onCancel={handleGoalFlowCancel}
-          />
+            ))}
 
-          {/* Growing edge (emotion flow: Root → panel) */}
-          <GrowingEdge
-            canvasCenter={canvasCenter}
-            isVisible={isEmotionFlow}
-            selectedMood={emotionFlowMood}
-          />
+            {/* Subtask creation input */}
+            <GoalInput
+              isVisible={subtaskInput !== null}
+              anchorX={subtaskInput?.x ?? 0}
+              anchorY={subtaskInput?.y ?? 0}
+              placeholder="Add subtask..."
+              onSubmit={handleSubtaskSubmit}
+              onCancel={handleSubtaskCancel}
+            />
 
-          {/* Emotion panel (anchored at edge endpoint) */}
-          <EmotionPanel
-            isVisible={isEmotionFlow}
-            anchorX={canvasCenter.x}
-            anchorY={edgeEndY}
-            onSave={handleEmotionSave}
-            onCancel={handleEmotionCancel}
-          />
+            {/* Goal-flow: growing edge from Root outward + input for root goal */}
+            {isGoalFlow && (
+              <svg
+                className="absolute inset-0 pointer-events-none z-0"
+                width={CANVAS_SIZE}
+                height={CANVAS_SIZE}
+                viewBox={`0 0 ${CANVAS_SIZE} ${CANVAS_SIZE}`}
+              >
+                <defs>
+                  <linearGradient
+                    id="goal-flow-grad"
+                    x1={canvasCenter.x} y1={canvasCenter.y}
+                    x2={goalInputTarget.x} y2={goalInputTarget.y}
+                    gradientUnits="userSpaceOnUse"
+                  >
+                    <stop offset="0%" stopColor="rgba(255,255,255,0.3)" />
+                    <stop offset="100%" stopColor="rgba(52,211,153,0.5)" />
+                  </linearGradient>
+                </defs>
+                <line
+                  x1={canvasCenter.x}
+                  y1={canvasCenter.y}
+                  x2={goalInputTarget.x}
+                  y2={goalInputTarget.y}
+                  stroke="url(#goal-flow-grad)"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  className="animate-pulse"
+                />
+              </svg>
+            )}
+            <GoalInput
+              isVisible={isGoalFlow}
+              anchorX={goalInputTarget.x}
+              anchorY={goalInputTarget.y}
+              placeholder="What's your goal?"
+              onSubmit={handleGoalFlowSubmit}
+              onCancel={handleGoalFlowCancel}
+            />
 
-          {/* AuxPills (split mode: Emotions + Goals) */}
-          <AuxPills
-            canvasCenter={canvasCenter}
-            canvasMode={canvasMode}
-            onEmotionSelect={onEmotionSelect}
-            onGoalSelect={onGoalSelect}
-          />
+            {/* Growing edge (emotion flow: Root → panel) */}
+            <GrowingEdge
+              canvasCenter={canvasCenter}
+              isVisible={isEmotionFlow}
+              selectedMood={emotionFlowMood}
+            />
 
-          {/* Root node (on top) */}
-          <RootNode
-            latestMood={latestMood}
-            canvasCenter={canvasCenter}
-            completionPercent={completionPercent}
-            canvasMode={canvasMode}
-            onTap={onRootTap}
-          />
+            {/* Emotion panel (anchored at edge endpoint) */}
+            <EmotionPanel
+              isVisible={isEmotionFlow}
+              anchorX={canvasCenter.x}
+              anchorY={edgeEndY}
+              onSave={handleEmotionSave}
+              onCancel={handleEmotionCancel}
+            />
+
+            {/* AuxPills (split mode: Emotions + Goals) */}
+            <AuxPills
+              canvasCenter={canvasCenter}
+              canvasMode={canvasMode}
+              onEmotionSelect={onEmotionSelect}
+              onGoalSelect={onGoalSelect}
+              zoom={zoom}
+            />
+
+            {/* Root node (on top) */}
+            <RootNode
+              latestMood={latestMood}
+              canvasCenter={canvasCenter}
+              completionPercent={completionPercent}
+              canvasMode={canvasMode}
+              onTap={onRootTap}
+            />
+          </motion.div>
         </motion.div>
+
+        {/* GoalActionSheet — fixed BottomSheet, outside transform containers */}
+        <GoalActionSheet
+          goal={activeGoal}
+          isBranch={activeGoalMenuId ? isBranchGoal(activeGoalMenuId, canvasGoals) : false}
+          onAddSubtask={handleAddSubtask}
+          onToggleComplete={handleGoalToggle}
+          onDelete={handleGoalDelete}
+          onUpdateIcon={handleGoalUpdateIcon}
+          onDismiss={handleGoalMenuDismiss}
+        />
       </div>
     );
   },

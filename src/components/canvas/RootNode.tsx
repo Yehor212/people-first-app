@@ -109,7 +109,8 @@ export function RootNode({ latestMood, canvasCenter, completionPercent, canvasMo
           'cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-0',
         )}
         style={{
-          background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.03) 60%, transparent 100%)',
+          background: 'radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 50%, rgba(15,20,30,0.8) 100%)',
+          boxShadow: `0 0 40px ${ringColor}30, 0 0 80px ${ringColor}15, 0 10px 40px rgba(0,0,0,0.5)`,
         }}
         aria-label={t.you || 'Me'}
       >

@@ -52,7 +52,7 @@ import { analytics } from '@/lib/analytics';
 import { haptics } from '@/lib/haptics';
 import { generateId, getToday } from '@/lib/utils';
 import { saveEntry } from '@/features/journal';
-import { createGoal, toggleGoalCompletion, deleteGoal } from '@/lib/canvasGoals';
+import { createGoal, toggleGoalCompletion, deleteGoal, updateGoalIcon } from '@/lib/canvasGoals';
 import type { MoodType } from '@/types';
 
 export function Index() {
@@ -318,6 +318,10 @@ export function Index() {
     setCanvasGoals(deleteGoal(goalId, canvasGoals));
   }, [canvasGoals, setCanvasGoals]);
 
+  const handleGoalUpdateIcon = useCallback((goalId: string, icon: string | undefined) => {
+    setCanvasGoals(updateGoalIcon(goalId, icon, canvasGoals));
+  }, [canvasGoals, setCanvasGoals]);
+
   const handleGoalCancel = useCallback(() => {
     setCanvasMode('idle');
   }, [setCanvasMode]);
@@ -413,6 +417,7 @@ export function Index() {
             onGoalCreate={handleGoalCreate}
             onGoalToggle={handleGoalToggle}
             onGoalDelete={handleGoalDelete}
+            onGoalUpdateIcon={handleGoalUpdateIcon}
             onGoalCancel={handleGoalCancel}
             canvasRef={canvasRef}
           />

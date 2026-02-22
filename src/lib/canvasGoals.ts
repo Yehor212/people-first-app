@@ -88,6 +88,17 @@ export function deleteGoal(
 }
 
 /**
+ * Update a goal's icon.
+ */
+export function updateGoalIcon(
+  goalId: string,
+  icon: string | undefined,
+  goals: CanvasGoal[],
+): CanvasGoal[] {
+  return goals.map(g => g.id === goalId ? { ...g, icon } : g);
+}
+
+/**
  * Check if a goal has reached 100% progress (all children completed recursively).
  * Returns true only for branch goals (goals with children) where every descendant leaf is done.
  */

@@ -10,7 +10,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useTransform, type MotionValue } from 'framer-motion';
 import { Heart, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
@@ -22,6 +22,7 @@ interface AuxPillsProps {
   canvasMode: CanvasMode;
   onEmotionSelect: () => void;
   onGoalSelect: () => void;
+  zoom: MotionValue<number>;
 }
 
 const PILL_OFFSET = 100; // px from center
@@ -32,8 +33,9 @@ const pillSpring = {
   damping: 25,
 };
 
-export function AuxPills({ canvasCenter, canvasMode, onEmotionSelect, onGoalSelect }: AuxPillsProps) {
+export function AuxPills({ canvasCenter, canvasMode, onEmotionSelect, onGoalSelect, zoom }: AuxPillsProps) {
   const isVisible = canvasMode === 'split';
+  const textOpacity = useTransform(zoom, [0.5, 0.65, 0.8], [0, 0, 1]);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear timeout on mode change or unmount
@@ -81,7 +83,7 @@ export function AuxPills({ canvasCenter, canvasMode, onEmotionSelect, onGoalSele
             aria-label="Emotions"
           >
             <Heart className="w-4 h-4 text-rose-400" />
-            <span>Эмоции</span>
+            <motion.span style={{ opacity: textOpacity }}>Эмоции</motion.span>
           </motion.button>
 
           {/* Right pill: Goals */}
@@ -104,7 +106,7 @@ export function AuxPills({ canvasCenter, canvasMode, onEmotionSelect, onGoalSele
             aria-label="Goals"
           >
             <Target className="w-4 h-4 text-emerald-400" />
-            <span>Цели</span>
+            <motion.span style={{ opacity: textOpacity }}>Цели</motion.span>
           </motion.button>
         </>
       )}

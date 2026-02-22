@@ -4028,8 +4028,8 @@ input::-moz-focus-inner {
 
 /* Orb breathe — slower, deeper glow pulse */
 @keyframes orb-breathe {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(255,255,255,0.08), 0 0 80px rgba(255,255,255,0.04); }
-  50% { transform: scale(1.05); box-shadow: 0 0 60px rgba(255,255,255,0.15), 0 0 120px rgba(255,255,255,0.06); }
+  0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(52,211,153,0.15), 0 8px 32px rgba(0,0,0,0.5); }
+  50% { transform: scale(1.05); box-shadow: 0 0 60px rgba(52,211,153,0.25), 0 12px 48px rgba(0,0,0,0.6); }
 }
 .animate-orb-breathe {
   animation: orb-breathe 5s ease-in-out infinite;
