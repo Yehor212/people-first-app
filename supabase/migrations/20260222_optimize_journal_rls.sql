@@ -12,11 +12,12 @@
 -- PART A: Journal tables (public schema)
 -- ============================================================
 
--- journal_entries: 4 old → 1 optimized
+-- journal_entries: drop ALL old policies → 1 optimized
 DROP POLICY IF EXISTS "Users can view own journal entries" ON public.journal_entries;
 DROP POLICY IF EXISTS "Users can insert own journal entries" ON public.journal_entries;
 DROP POLICY IF EXISTS "Users can update own journal entries" ON public.journal_entries;
 DROP POLICY IF EXISTS "Users can delete own journal entries" ON public.journal_entries;
+DROP POLICY IF EXISTS "Users can manage their own journal entries" ON public.journal_entries;
 DROP POLICY IF EXISTS "journal_entries_all" ON public.journal_entries;
 
 CREATE POLICY "journal_entries_all" ON public.journal_entries FOR ALL
