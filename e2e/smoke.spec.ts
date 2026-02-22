@@ -330,7 +330,7 @@ test.describe('Focus Timer', () => {
  * Full Navigation
  *
  * Verifies that clicking each tab in the bottom navigation switches the
- * active content area. The navigation has 5 tabs: home, map, garden/diary,
+ * active content area. The navigation has 4 tabs: home, garden/diary,
  * stats, settings. Each tab is a <button role="tab"> with aria-selected.
  */
 test.describe('Full Navigation', () => {
@@ -348,16 +348,10 @@ test.describe('Full Navigation', () => {
     const tabs = tabList.locator('button[role="tab"]');
     const tabCount = await tabs.count();
 
-    // App has 5 tabs: home, map, garden/diary, stats, settings
-    expect(tabCount).toBe(5);
-
-    // Map tab (index 1) hides standard Navigation when active,
-    // so test all other tabs first, then test map last with special handling.
-    const MAP_TAB_INDEX = 1;
+    // App has 4 tabs: home, garden/diary, stats, settings
+    expect(tabCount).toBe(4);
 
     for (let i = 0; i < tabCount; i++) {
-      if (i === MAP_TAB_INDEX) continue;
-
       const tab = tabs.nth(i);
       await tab.click();
 
@@ -372,12 +366,6 @@ test.describe('Full Navigation', () => {
       await page.waitForTimeout(500);
       await expect(page.locator('text=Something went wrong')).not.toBeVisible();
     }
-
-    // Map tab: clicking hides Navigation, shows canvas + floating overlays
-    await tabs.nth(MAP_TAB_INDEX).click();
-    await page.waitForTimeout(500);
-    await expect(tabList).not.toBeVisible({ timeout: 5000 });
-    await expect(page.locator('text=Something went wrong')).not.toBeVisible();
   });
 });
 
@@ -462,8 +450,8 @@ test.describe('Empty States', () => {
     await expect(page.locator('body')).toBeVisible();
     await expect(page.locator('text=Something went wrong')).not.toBeVisible();
 
-    // Navigate to the stats tab (index 3: home=0, map=1, garden=2, stats=3, settings=4)
-    const statsTab = page.locator('button[role="tab"]').nth(3);
+    // Navigate to the stats tab (index 2: home=0, garden=1, stats=2, settings=3)
+    const statsTab = page.locator('button[role="tab"]').nth(2);
     await statsTab.click();
     await expect(statsTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
 
@@ -475,8 +463,8 @@ test.describe('Empty States', () => {
     await expect(page.locator('body')).toBeVisible();
     await expect(page.locator('text=Something went wrong')).not.toBeVisible();
 
-    // Navigate to settings tab (index 4)
-    const settingsTab = page.locator('button[role="tab"]').nth(4);
+    // Navigate to settings tab (index 3)
+    const settingsTab = page.locator('button[role="tab"]').nth(3);
     await settingsTab.click();
     await expect(settingsTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
     await page.waitForTimeout(1000);
@@ -510,8 +498,8 @@ test.describe('Settings', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    // Navigate to the settings tab (5th tab, index 4: home=0, map=1, garden=2, stats=3, settings=4)
-    const settingsTab = page.locator('button[role="tab"]').nth(4);
+    // Navigate to the settings tab (4th tab, index 3: home=0, garden=1, stats=2, settings=3)
+    const settingsTab = page.locator('button[role="tab"]').nth(3);
     await expect(settingsTab).toBeVisible({ timeout: 10000 });
     await settingsTab.click();
     await expect(settingsTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
