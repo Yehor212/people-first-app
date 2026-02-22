@@ -1,9 +1,19 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 
 vi.mock('../utils', () => ({
   getToday: vi.fn(() => '2026-02-17'),
   formatDate: vi.fn((d: Date) => d.toISOString().split('T')[0]),
 }));
+
+// Pin Date.now() to match the mocked getToday — prevents drift as
+// real calendar advances and test entries fall outside the 7-day window.
+beforeAll(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-02-17T12:00:00Z'));
+});
+afterAll(() => {
+  vi.useRealTimers();
+});
 
 import {
   WEATHER_MOOD_REGISTRY,
