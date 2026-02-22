@@ -24,8 +24,6 @@ import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { supabase } from '@/lib/supabaseClient';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
-import type { MindMapCanvasRef } from '@/components/canvas/MindMapCanvas';
-
 import { ModalLayer } from '@/components/ModalLayer';
 import { Navigation } from '@/components/Navigation';
 import { OverlayLayer } from '@/components/OverlayLayer';
@@ -42,18 +40,9 @@ import { useInnerWorld } from '@/hooks/useInnerWorld';
 import { getChallenges, getBadges } from '@/lib/challengeStorage';
 import { GlobalScheduleBar } from '@/components/GlobalScheduleBar';
 import { FocusMiniPlayer } from '@/components/FocusMiniPlayer';
-import { CanvasFAB } from '@/components/CanvasFAB';
-import { CanvasHeader } from '@/components/CanvasHeader';
-import { MindMapTab } from '@/components/tabs/MindMapTab';
-import { FloatingNav } from '@/components/FloatingNav';
 import { useSessionTimeout } from '@/hooks/useSessionTimeout';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { analytics } from '@/lib/analytics';
-import { haptics } from '@/lib/haptics';
-import { generateId, getToday } from '@/lib/utils';
-import { saveEntry } from '@/features/journal';
-import { createGoal, toggleGoalCompletion, deleteGoal, updateGoalIcon } from '@/lib/canvasGoals';
-import type { MoodType } from '@/types';
 
 export function Index() {
   const { t, isRTL } = useLanguage();
@@ -67,13 +56,10 @@ export function Index() {
   const setActiveTab = useAppStore(s => s.setActiveTab);
   const settingsOpenSection = useAppStore(s => s.settingsOpenSection);
   const quickActionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const splitTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const canvasRef = useRef<MindMapCanvasRef>(null);
 
   useEffect(() => {
     return () => {
       if (quickActionTimeoutRef.current) clearTimeout(quickActionTimeoutRef.current);
-      if (splitTimeoutRef.current) clearTimeout(splitTimeoutRef.current);
     };
   }, []);
 
@@ -86,7 +72,7 @@ export function Index() {
     threshold: 50,
     velocityThreshold: 0.3,
     isRTL,
-    enabled: activeTab !== 'mindmap',
+    enabled: true,
   });
 
   // Extracted lifecycle hooks (from Step 1 decomposition)
@@ -144,13 +130,6 @@ export function Index() {
   const setReminders = useUserDataStore(s => s.setReminders);
   const privacy = useUserDataStore(s => s.privacy);
   const setPrivacy = useUserDataStore(s => s.setPrivacy);
-  const canvasGoals = useUserDataStore(s => s.canvasGoals);
-  const setCanvasGoals = useUserDataStore(s => s.setCanvasGoals);
-
-  // Canvas interaction mode
-  const canvasMode = useUIStore(s => s.canvasMode);
-  const setCanvasMode = useUIStore(s => s.setCanvasMode);
-
   // Initialize analytics when privacy settings change (or on first load)
   useEffect(() => {
     analytics.init(privacy);
@@ -184,7 +163,7 @@ export function Index() {
     updateChallengeProgress,
     checkForFeatureUnlocks,
   });
-  const { handleCompleteFocusSession: _handleCompleteFocusSession, handleMindfulMomentComplete } = useFocusHandlers({
+  const { handleCompleteFocusSession, handleMindfulMomentComplete } = useFocusHandlers({
     earnTreats,
     updateChallengeProgress,
     checkForFeatureUnlocks,
@@ -222,7 +201,7 @@ export function Index() {
 
   // Settings/data management handlers
   const { handleResetData, handleNameChange, handlePullToRefresh,
-          handleAddScheduleEvent: _handleAddScheduleEvent, handleDeleteScheduleEvent: _handleDeleteScheduleEvent } = useSettingsHandlers(allScheduleEvents);
+          handleAddScheduleEvent, handleDeleteScheduleEvent } = useSettingsHandlers(allScheduleEvents);
 
   // Emotion theme sync, onboarding, re-engagement, update check (extracted to hooks)
   useEmotionSync();
@@ -239,92 +218,6 @@ export function Index() {
 
   // Deep link listener (auth + challenge URLs, extracted to hook)
   useDeepLinkHandler();
-
-  // ── Canvas mode handlers ──
-
-  const handleRootTap = useCallback(() => {
-    if (canvasMode === 'idle') {
-      setCanvasMode('split');
-      // Auto-collapse after 5s
-      if (splitTimeoutRef.current) clearTimeout(splitTimeoutRef.current);
-      splitTimeoutRef.current = setTimeout(() => setCanvasMode('idle'), 5000);
-    } else {
-      setCanvasMode('idle');
-      if (splitTimeoutRef.current) clearTimeout(splitTimeoutRef.current);
-    }
-  }, [canvasMode, setCanvasMode]);
-
-  const handleCanvasBackgroundTap = useCallback(() => {
-    if (canvasMode !== 'idle') {
-      setCanvasMode('idle');
-      if (splitTimeoutRef.current) clearTimeout(splitTimeoutRef.current);
-    }
-  }, [canvasMode, setCanvasMode]);
-
-  const handleEmotionSelect = useCallback(() => {
-    if (splitTimeoutRef.current) clearTimeout(splitTimeoutRef.current);
-    setCanvasMode('emotion-flow');
-  }, [setCanvasMode]);
-
-  const handleGoalSelect = useCallback(() => {
-    if (splitTimeoutRef.current) clearTimeout(splitTimeoutRef.current);
-    setCanvasMode('goal-flow');
-  }, [setCanvasMode]);
-
-  const handleEmotionSave = useCallback((mood: MoodType, text?: string) => {
-    const today = getToday();
-    const entry = {
-      id: generateId(),
-      mood,
-      note: text || undefined,
-      date: today,
-      timestamp: Date.now(),
-    };
-    handleAddMood(entry);
-
-    // If user wrote a reflection, save it as a journal entry too
-    if (text && text.trim().length > 0) {
-      void saveEntry({
-        date: today,
-        title: '',
-        content: text.trim(),
-        mood,
-        stickers: [],
-        photoIds: [],
-        tags: ['canvas-emotion'],
-      });
-    }
-
-    setCanvasMode('idle');
-  }, [handleAddMood, setCanvasMode]);
-
-  const handleEmotionCancel = useCallback(() => {
-    setCanvasMode('idle');
-  }, [setCanvasMode]);
-
-  // ── Goal tree handlers ──
-
-  const handleGoalCreate = useCallback((title: string, parentId: string | null, icon?: string) => {
-    const newGoal = createGoal(title, parentId, canvasGoals, icon);
-    setCanvasGoals([...canvasGoals, newGoal]);
-    setCanvasMode('idle');
-  }, [canvasGoals, setCanvasGoals, setCanvasMode]);
-
-  const handleGoalToggle = useCallback((goalId: string) => {
-    setCanvasGoals(toggleGoalCompletion(goalId, canvasGoals));
-  }, [canvasGoals, setCanvasGoals]);
-
-  const handleGoalDelete = useCallback((goalId: string) => {
-    setCanvasGoals(deleteGoal(goalId, canvasGoals));
-  }, [canvasGoals, setCanvasGoals]);
-
-  const handleGoalUpdateIcon = useCallback((goalId: string, icon: string | undefined) => {
-    setCanvasGoals(updateGoalIcon(goalId, icon, canvasGoals));
-  }, [canvasGoals, setCanvasGoals]);
-
-  const handleGoalCancel = useCallback(() => {
-    setCanvasMode('idle');
-  }, [setCanvasMode]);
 
   return (
     <AuthGate isLoading={isLoading}>
@@ -360,12 +253,12 @@ export function Index() {
         <main
           id="main-content"
           role="main"
-          className={activeTab === 'mindmap' ? 'relative h-screen overflow-hidden' : 'mx-auto px-4 py-6'}
-          style={activeTab === 'mindmap' ? undefined : { maxWidth: 'var(--container-max-width)', paddingBottom: focusMiniPlayerActive ? 'calc(var(--nav-height) + var(--safe-bottom) + 3.5rem)' : 'calc(var(--nav-height) + var(--safe-bottom))' }}
+          className="mx-auto px-4 py-6"
+          style={{ maxWidth: 'var(--container-max-width)', paddingBottom: focusMiniPlayerActive ? 'calc(var(--nav-height) + var(--safe-bottom) + 3.5rem)' : 'calc(var(--nav-height) + var(--safe-bottom))' }}
         >
         {/* Global Schedule Bar - visible on all tabs when events exist */}
         {/* v1.4.0: Use todayAllEvents to include both manual and habit-generated events */}
-        {todayAllEvents.length > 0 && activeTab !== 'settings' && activeTab !== 'mindmap' && (
+        {todayAllEvents.length > 0 && activeTab !== 'settings' && (
           <div className="mb-4">
             <GlobalScheduleBar
               events={todayAllEvents}
@@ -403,28 +296,17 @@ export function Index() {
           />
         )}
 
-        {activeTab === 'mindmap' && (
-          <MindMapTab
-            safeMoods={moods}
-            canvasGoals={canvasGoals}
-            canvasMode={canvasMode}
-            onRootTap={handleRootTap}
-            onCanvasBackgroundTap={handleCanvasBackgroundTap}
-            onEmotionSelect={handleEmotionSelect}
-            onGoalSelect={handleGoalSelect}
-            onEmotionSave={handleEmotionSave}
-            onEmotionCancel={handleEmotionCancel}
-            onGoalCreate={handleGoalCreate}
-            onGoalToggle={handleGoalToggle}
-            onGoalDelete={handleGoalDelete}
-            onGoalUpdateIcon={handleGoalUpdateIcon}
-            onGoalCancel={handleGoalCancel}
-            canvasRef={canvasRef}
-          />
-        )}
-
         {activeTab === 'garden' && (
-          <GardenTab />
+          <GardenTab
+            safeMoods={moods}
+            safeHabits={habits}
+            safeFocusSessions={focusSessions}
+            safeGratitudeEntries={gratitudeEntries}
+            todayAllEvents={todayAllEvents}
+            handleAddScheduleEvent={handleAddScheduleEvent}
+            handleDeleteScheduleEvent={handleDeleteScheduleEvent}
+            handleCompleteFocusSession={handleCompleteFocusSession}
+          />
         )}
 
         {activeTab === 'stats' && (
@@ -471,49 +353,8 @@ export function Index() {
         </main>
       </div>
 
-      {/* Canvas overlays — mindmap tab only */}
-      {activeTab === 'mindmap' && (
-        <>
-          <CanvasHeader
-            streak={innerWorld.currentActiveStreak}
-            latestMood={moods.length > 0 ? moods[moods.length - 1].mood : null}
-          />
-          <CanvasFAB
-            onRecenter={() => canvasRef.current?.recenter()}
-            onZoomIn={() => canvasRef.current?.zoomIn()}
-            onZoomOut={() => canvasRef.current?.zoomOut()}
-          />
-          <FloatingNav
-            onOpenHabits={() => {
-              void haptics.buttonPress();
-              useUIStore.getState().openModal('showTasksPanel');
-            }}
-            onOpenFocus={() => {
-              void haptics.buttonPress();
-              setActiveTab('garden');
-            }}
-          />
-          {canvasGoals.length === 0 && moods.length === 0 && canvasMode === 'idle' && (
-            <div
-              className="fixed z-50 animate-pulse pointer-events-none"
-              style={{
-                bottom: 'calc(env(safe-area-inset-bottom, 0px) + 6rem)',
-                left: '50%',
-                transform: 'translateX(-50%)',
-              }}
-            >
-              <div className="bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-white/20 text-white text-sm px-4 py-2.5 rounded-xl shadow-lg max-w-[200px] text-center">
-                {t.tapToBegin || 'Tap "Я" to begin'}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-
       <FocusMiniPlayer onNavigateToTimer={() => setActiveTab('garden')} />
-      {activeTab !== 'mindmap' && (
-        <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
-      )}
+      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
       <ModalLayer
         challenges={challenges}
