@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Sparkles, History, RefreshCw, CheckCircle, ExternalLink, MessageSquare, ChevronRight } from 'lucide-react';
+import { Sparkles, History, RefreshCw, CheckCircle, ExternalLink, MessageSquare, ChevronRight, Shield, FileText, Scale } from 'lucide-react';
 import { isNative } from '@/lib/platform';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { logger } from '@/lib/logger';
@@ -8,6 +8,7 @@ import { checkForAppUpdate, openGooglePlayStore, UpdateState } from '@/lib/appUp
 import { APP_VERSION } from '@/lib/appVersion';
 import { FeedbackForm } from '@/components/FeedbackForm';
 import { ChangelogPanel } from '@/components/ChangelogPanel';
+import { LegalModal } from '@/components/LegalModal';
 import { useDemoMode } from '@/hooks/useDemoMode';
 import { useScrollLock } from '@/hooks/useScrollLock';
 
@@ -16,7 +17,9 @@ export function AboutSection() {
 
   const [showFeedback, setShowFeedback] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
-  useScrollLock(showFeedback || showChangelog);
+  const [showLegal, setShowLegal] = useState(false);
+  const [legalTab, setLegalTab] = useState<'privacy' | 'terms' | 'licenses'>('privacy');
+  useScrollLock(showFeedback || showChangelog || showLegal);
   const [updateCheckStatus, setUpdateCheckStatus] = useState<'idle' | 'checking' | 'available' | 'latest' | 'error'>('idle');
   const [updateState, setUpdateState] = useState<UpdateState | null>(null);
 
@@ -155,11 +158,45 @@ export function AboutSection() {
             {/* Feedback Button */}
             <button
               onClick={() => setShowFeedback(true)}
-              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted transition-colors"
+              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted transition-colors min-h-[48px]"
             >
               <div className="flex items-center gap-3">
                 <MessageSquare className="w-5 h-5 text-primary" />
                 <span className="font-medium">{t.sendFeedback}</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+
+            {/* Legal Buttons */}
+            <button
+              onClick={() => { setLegalTab('privacy'); setShowLegal(true); }}
+              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted transition-colors min-h-[48px]"
+            >
+              <div className="flex items-center gap-3">
+                <Shield className="w-5 h-5 text-primary" />
+                <span className="font-medium">{t.privacyPolicy}</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+
+            <button
+              onClick={() => { setLegalTab('terms'); setShowLegal(true); }}
+              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted transition-colors min-h-[48px]"
+            >
+              <div className="flex items-center gap-3">
+                <FileText className="w-5 h-5 text-primary" />
+                <span className="font-medium">{t.termsOfService}</span>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+
+            <button
+              onClick={() => { setLegalTab('licenses'); setShowLegal(true); }}
+              className="w-full flex items-center justify-between py-3 px-4 bg-secondary rounded-xl hover:bg-muted transition-colors min-h-[48px]"
+            >
+              <div className="flex items-center gap-3">
+                <Scale className="w-5 h-5 text-primary" />
+                <span className="font-medium">{t.openSourceLicenses}</span>
               </div>
               <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </button>
@@ -172,6 +209,7 @@ export function AboutSection() {
       {showChangelog && (
         <ChangelogPanel onClose={() => setShowChangelog(false)} />
       )}
+      <LegalModal open={showLegal} onOpenChange={setShowLegal} initialTab={legalTab} />
     </>
   );
 }

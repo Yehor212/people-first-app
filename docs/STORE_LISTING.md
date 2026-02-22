@@ -1,76 +1,163 @@
-# Store Listing Draft
+# Store Listing — ASO Optimized (2026-02-22)
 
-## App name
-ZenFlow
+---
 
-## Short description (80 chars)
-Privacy-first wellness tracker with reminders, habits, focus, and gratitude.
+## Google Play Store (EN)
 
-## Full description
-ZenFlow helps you build gentle routines with mood check-ins, habits, focus sessions,
-and gratitude. Everything works offline-first, and your data stays on your device by
-default. Enable cloud sync if you want to keep data across devices.
+### Title (30 chars)
+ZenFlow: Habit & Mood Tracker
 
-Key features:
-- Mood check-ins and trends
-- Habits with flexible types
-- Focus timer and reflection
-- Gratitude journal
-- Local reminders
-- Export and import your data
+### Short Description (80 chars)
+Build habits, track mood, focus deeply & journal gratitude. Offline-first wellness.
 
-## Keywords
-wellness, habits, mood, focus, gratitude, offline
+### Full Description
 
-## Support
+ZenFlow is your all-in-one wellness app for building healthy habits, tracking your mood, staying focused, and practicing daily gratitude. Everything works offline — your data stays on your device, and cloud sync is optional.
+
+Whether you want to build a morning routine, track how you feel each day, or simply focus better at work, ZenFlow makes self-improvement gentle and rewarding.
+
+KEY FEATURES
+
+Mood Tracker
+Record your daily mood with 5 levels and detailed emotion tagging. Discover mood patterns and trends over time with beautiful charts and a mood calendar.
+
+Habit Tracker
+Create habits with 6 flexible types: daily, weekly, frequency, reduction, continuous, and scheduled. Track streaks, set reminders, and watch your consistency grow.
+
+Focus Timer
+Pomodoro-style timer with 7 ambient sounds (rain, ocean, cafe, fireplace). Hyperfocus mode for deep work sessions. Reflection prompts after each session.
+
+Gratitude Journal
+Three quick-entry templates to build a gratitude practice. Memory jar feature and gratitude streak tracking.
+
+Digital Journal
+Rich-text entries with photo attachments and stickers. Biometric lock for privacy. Export to PDF and CSV.
+
+Inner World Garden
+A virtual garden that grows with your daily activity. Plant flowers, trees, crystals, and mushrooms. Collect butterflies, birds, and fireflies as companions.
+
+Gamification
+17+ achievements from Common to Legendary. 10-level progression system. Daily and weekly quests. Friend challenges with leaderboards.
+
+Identity-Driven Growth
+Map habits to your identity ("I am an athlete"). Growth rings visualize your consistency. Micro-reflections help you connect actions to values.
+
+PRIVACY & DATA
+
+Privacy-first: no tracking, no ads by default. Your data is stored locally on your device. Optional cloud sync through Supabase with end-to-end Row Level Security.
+
+Delete your account and all data anytime from Settings.
+
+8 LANGUAGES
+English, Ukrainian, Spanish, German, French, Japanese, Arabic (RTL), Hebrew (RTL)
+
+ADHD-Friendly Design
+Customizable dopamine rewards, gentle reminders, and satisfying animations designed for neurodivergent users.
+
+Download ZenFlow today and start your wellness journey.
+
+### Keywords
+wellness, habits, mood, focus, gratitude, offline, meditation, mindfulness, self-care, journal
+
+### Support
 - Email: egorsamraev@gmail.com
 - Privacy policy: https://yehor212.github.io/people-first-app/privacy.html
 - Terms of service: https://yehor212.github.io/people-first-app/terms.html
 - Delete account: https://yehor212.github.io/people-first-app/delete-account.html
 
-## Screenshots needed
-- iPhone 6.7" / 6.5" / 5.5"
-- iPad (if supported)
-- Android phone 16:9
-- Feature graphic (Play Store)
+---
+
+## Apple App Store (EN) — Future
+
+### Title (30 chars)
+ZenFlow: Daily Wellness
+
+### Subtitle (30 chars)
+Habits, Mood, Focus & Journal
+
+### Keywords (100 chars, no repeats)
+wellness,habit,mood,tracker,focus,timer,gratitude,journal,mindfulness,offline,meditation,self-care
 
 ---
 
-# Store Listing (RU)
+## Screenshot Guidelines (3-Second Rule)
 
-## Название приложения
-ZenFlow
+### Screenshot 1 — Hero (Home Screen)
+- Show: Mood check-in card + habit streaks + daily progress ring
+- Caption: "Track everything in one place"
+- Style: Light theme, emerald accent, real data (not placeholder)
 
-## Короткое описание (80 символов)
-Приватный трекер благополучия: привычки, фокус, настроение и благодарности.
+### Screenshot 2 — Inner World
+- Show: Garden with growing plants, butterflies, companion pet
+- Caption: "Watch your habits grow"
+- Style: Dark/OLED theme for contrast, lush garden state
 
-## Полное описание
-ZenFlow помогает мягко выстраивать привычки и заботиться о себе: короткие чек‑ины настроения,
-привычки, фокус‑сессии и журнал благодарностей. Приложение работает офлайн, данные остаются
-на устройстве, а облачную синхронизацию можно включить по желанию.
+### Screenshot 3 — Stats & Insights
+- Show: Mood trend chart + habit completion rate + weekly report
+- Caption: "Understand your patterns"
+- Style: Light theme, colorful charts
 
-Ключевые возможности:
-- Ежедневные отметки настроения и тренды
-- Привычки с гибкими типами
-- Таймер фокуса и короткая рефлексия
-- Журнал благодарностей
-- Локальные напоминания
-- Экспорт и импорт данных
+### Screenshot 4 — Focus Timer
+- Show: Active focus session with ambient sound, timer counting
+- Caption: "Deep focus, zero distractions"
+- Style: Dark theme, calm atmosphere
 
-## Ключевые слова
-самочувствие, привычки, настроение, фокус, благодарность, офлайн
+### Design Notes
+- Device frame: Pixel 8 Pro (Google Play), iPhone 15 Pro (App Store)
+- Background: Subtle gradient (#f0fdf4 → #ecfdf5 light, #0a0a0a → #052e16 dark)
+- Font: Nunito Sans Bold for captions (matches app font)
+- No more than 5 words per caption
+- Feature graphic (1024x500): Emerald gradient + app icon + tagline "Your Wellness Journey"
 
-## Поддержка
+---
+
+## Google Play Store (RU)
+
+### Название (30 символов)
+ZenFlow: Привычки и Настроение
+
+### Короткое описание (80 символов)
+Трекер привычек, настроения, фокуса и благодарностей. Работает офлайн. Приватно.
+
+### Полное описание
+
+ZenFlow — ваш персональный центр благополучия: трекер привычек, дневник настроения, таймер фокуса и журнал благодарностей в одном приложении. Все работает офлайн — данные остаются на устройстве, облачная синхронизация опциональна.
+
+КЛЮЧЕВЫЕ ВОЗМОЖНОСТИ
+
+Трекер настроения
+Записывайте настроение ежедневно с 5 уровнями и детальными тегами эмоций. Анализируйте паттерны и тренды настроения с красивыми графиками и календарем.
+
+Трекер привычек
+6 гибких типов привычек: ежедневные, еженедельные, по частоте, на снижение, непрерывные, по расписанию. Отслеживание серий, напоминания и визуализация прогресса.
+
+Таймер фокуса
+Помодоро-таймер с 7 звуками окружения (дождь, океан, кафе, камин). Режим гиперфокуса для глубокой работы. Рефлексия после каждой сессии.
+
+Журнал благодарностей
+3 шаблона для быстрых записей. Банка воспоминаний и отслеживание серий благодарностей.
+
+Внутренний мир — Сад
+Виртуальный сад, растущий вместе с вашей активностью. Выращивайте цветы, деревья, кристаллы. Собирайте бабочек, птиц и светлячков.
+
+Геймификация
+17+ достижений от обычных до легендарных. 10 уровней прогресса. Ежедневные и еженедельные квесты. Челленджи с друзьями и таблицы лидеров.
+
+ПРИВАТНОСТЬ
+Никакого отслеживания, никакой рекламы. Данные хранятся локально. Удаление аккаунта и данных в любой момент из настроек.
+
+8 языков: английский, украинский, испанский, немецкий, французский, японский, арабский, иврит.
+
+Скачайте ZenFlow сегодня и начните путь к благополучию.
+
+### Ключевые слова
+благополучие, привычки, настроение, фокус, благодарность, офлайн, медитация, самочувствие
+
+### Поддержка
 - Email: egorsamraev@gmail.com
 - Политика конфиденциальности: https://yehor212.github.io/people-first-app/privacy.html
 - Условия использования: https://yehor212.github.io/people-first-app/terms.html
 - Удаление аккаунта: https://yehor212.github.io/people-first-app/delete-account.html
-
-## Скриншоты
-- iPhone 6.7" / 6.5" / 5.5"
-- iPad (если поддерживается)
-- Android phone 16:9
-- Feature graphic (Play Store)
 
 ---
 

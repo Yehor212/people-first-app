@@ -256,6 +256,28 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
         <p className="text-center text-xs text-muted-foreground mt-4">
           {t.authPrivacyNote}
         </p>
+
+        {/* Legal Consent Footer */}
+        <p className="text-center text-xs text-muted-foreground/70 mt-2">
+          {t.legalAgreePrefix}{' '}
+          <a
+            href="https://yehor212.github.io/people-first-app/privacy.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            {t.privacyPolicy}
+          </a>{' '}
+          {t.legalAnd}{' '}
+          <a
+            href="https://yehor212.github.io/people-first-app/terms.html"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline hover:text-foreground transition-colors"
+          >
+            {t.termsOfService}
+          </a>
+        </p>
       </div>
     </div>
   );

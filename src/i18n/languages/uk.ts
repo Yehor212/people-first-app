@@ -491,6 +491,13 @@ export const uk: Translations = {
   privacyAnalyticsHint: 'Допомагає покращувати додаток. Можна вимкнути.',
   privacyPolicy: 'Політика конфіденційності',
   termsOfService: 'Умови користування',
+  openSourceLicenses: 'Ліцензії відкритого коду',
+  legalPrivacyDescription: 'Дізнайтеся, як ZenFlow збирає, використовує та захищає ваші персональні дані. Ваша конфіденційність — наш пріоритет.',
+  legalTermsDescription: 'Ознайомтеся з умовами використання ZenFlow.',
+  legalLicensesDescription: 'ZenFlow створено з використанням наступного відкритого програмного забезпечення:',
+  legalOpenInBrowser: 'Відкрити у браузері',
+  legalAgreePrefix: 'Продовжуючи, ви погоджуєтесь з',
+  legalAnd: 'та',
 
   // v1.2.0 Appearance
   appearance: 'Зовнішній вигляд',

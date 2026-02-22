@@ -503,6 +503,13 @@ const arabicOverrides: Partial<Translations> = {
   privacyAnalyticsHint: 'تساعد على تحسين التطبيق. يمكن إيقافها.',
   privacyPolicy: 'سياسة الخصوصية',
   termsOfService: 'شروط الاستخدام',
+  openSourceLicenses: 'تراخيص المصدر المفتوح',
+  legalPrivacyDescription: 'تعرف على كيفية جمع ZenFlow لبياناتك الشخصية واستخدامها وحمايتها. خصوصيتك هي أولويتنا.',
+  legalTermsDescription: 'اقرأ الشروط والأحكام التي تحكم استخدامك لـ ZenFlow.',
+  legalLicensesDescription: 'تم بناء ZenFlow باستخدام البرامج مفتوحة المصدر التالية:',
+  legalOpenInBrowser: 'فتح في المتصفح',
+  legalAgreePrefix: 'بالمتابعة، أنت توافق على',
+  legalAnd: 'و',
 
   // Appearance
   appearance: 'المظهر',

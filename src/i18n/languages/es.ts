@@ -492,6 +492,13 @@ export const es: Translations = {
   privacyAnalyticsHint: 'Ayuda a mejorar la app. Puedes desactivarlo.',
   privacyPolicy: 'Politica de privacidad',
   termsOfService: 'Terminos del servicio',
+  openSourceLicenses: 'Licencias de codigo abierto',
+  legalPrivacyDescription: 'Descubre como ZenFlow recopila, usa y protege tus datos personales. Tu privacidad es nuestra prioridad.',
+  legalTermsDescription: 'Lee los terminos y condiciones que rigen el uso de ZenFlow.',
+  legalLicensesDescription: 'ZenFlow esta construido con el siguiente software de codigo abierto:',
+  legalOpenInBrowser: 'Abrir en navegador',
+  legalAgreePrefix: 'Al continuar, aceptas nuestra',
+  legalAnd: 'y',
 
   // v1.2.0 Appearance
   appearance: 'Apariencia',

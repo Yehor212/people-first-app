@@ -491,6 +491,13 @@ export const ja: Translations = {
   privacyAnalyticsHint: 'アプリ改善に役立ちます。オフにできます。',
   privacyPolicy: 'プライバシーポリシー',
   termsOfService: '利用規約',
+  openSourceLicenses: 'オープンソースライセンス',
+  legalPrivacyDescription: 'ZenFlowがお客様の個人データをどのように収集、使用、保護するかをご確認ください。',
+  legalTermsDescription: 'ZenFlowの利用を規定する利用規約をお読みください。',
+  legalLicensesDescription: 'ZenFlowは以下のオープンソースソフトウェアで構築されています：',
+  legalOpenInBrowser: 'ブラウザで開く',
+  legalAgreePrefix: '続行することで、',
+  legalAnd: 'および',
 
   // v1.2.0 Appearance
   appearance: '外観',

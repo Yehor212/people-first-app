@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-20 (2650 tests, Waves A-G complete + Mind Map tab separation)
+> Last updated: 2026-02-22 (2650 tests, Waves A-G complete + Mind Map tab separation + Store Readiness Audit)
 
 ---
 
@@ -1191,3 +1191,66 @@ vary by density — at 2x, this is 96×96px; at 3x, this is 144×144px).
 
 **Why**: Material Design mandates 48dp minimum for touch targets. Undersized targets
 cause mis-taps, especially on mid-range phones with lower digitizer precision.
+
+---
+
+### Comprehensive Audit & Store Readiness (2026-02-22)
+
+- Date: 2026-02-22
+- Author: Claude Opus 4.6
+- Scope: End-to-end security audit, store compliance, ASO optimization, CI/CD hardening
+
+#### What Was Completed
+
+**Phase 1 — Security:**
+- `jspdf` upgraded from `^4.0.0` to `^4.2.0` — fixes 3 HIGH CVE (PDF Injection, Object Injection, DoS via GIF)
+- `npm audit fix` applied — reduced total vulnerabilities from 28 to 24 (remaining are dev-only: esbuild, minimatch, workbox-build)
+- Dev server restricted to `localhost` in `vite.config.ts` — prevents external network access to dev server (was `::`)
+- `npm audit --audit-level=high` step added to CI pipeline (`.github/workflows/deploy.yml`, `continue-on-error: true`)
+
+**Phase 2 — Store Compliance (Legal Screens):**
+- Created `src/components/LegalModal.tsx` — in-app modal with 3 tabs: Privacy Policy, Terms of Service, Open Source Licenses
+- Uses `useModalA11y` for Escape + Android back handler (per Rule 3)
+- All touch targets meet 48dp minimum (per Rule 4)
+- Integrated into `src/components/settings/AboutSection.tsx` — 3 new buttons (Shield, FileText, Scale icons)
+- Legal consent footer added to `src/components/auth-screen/AuthScreen.tsx` — "By continuing, you agree to our Privacy Policy and Terms of Service" with links
+- 7 new i18n keys added to all 8 languages: `openSourceLicenses`, `legalPrivacyDescription`, `legalTermsDescription`, `legalLicensesDescription`, `legalOpenInBrowser`, `legalAgreePrefix`, `legalAnd`
+
+**Phase 3 — ASO Optimization:**
+- `docs/STORE_LISTING.md` rewritten with Intent Clusters approach
+- Google Play EN: Title (30 chars), Short Description (80 chars), Full Description (keyword density 2-3%)
+- Google Play RU: Полное описание с ключевыми словами
+- Apple App Store metadata prepared (Title, Subtitle, Keywords 100 chars)
+- Screenshot guidelines with 3-Second Rule for designer
+
+**Phase 4 — CI/CD & Tracking:**
+- `tests.json` created — structured tracking of all quality gates, security status, and store readiness
+- Security audit step added to GitHub Actions (informational, non-blocking)
+
+**Phase 5 — Claude Code Hooks:**
+- `.claude/settings.json` created with:
+  - `PreToolUse` hook: blocks writes to `.env*`, `android/keystore/*`, `supabase/functions/_shared/auth.ts`
+  - `PostToolUse` hook: logs TypeScript file modifications
+  - `Stop` hook: reminder to run `npm run check:all` before completing tasks
+
+#### Files Created
+- `src/components/LegalModal.tsx` (139 LOC)
+- `tests.json` (structured quality tracking)
+- `.claude/settings.json` (security hooks)
+
+#### Files Modified
+- `package.json` — jspdf version bump
+- `vite.config.ts` — dev server localhost restriction
+- `.github/workflows/deploy.yml` — npm audit CI step
+- `src/components/settings/AboutSection.tsx` — legal buttons
+- `src/components/auth-screen/AuthScreen.tsx` — legal consent footer
+- `src/i18n/types.ts` — 7 new translation keys
+- `src/i18n/languages/*.ts` (×8) — translations for all languages
+- `docs/STORE_LISTING.md` — ASO-optimized metadata
+- `ARCHITECTURE.md` — this audit addendum
+
+#### Verification
+- `npx tsc --noEmit` — 0 errors
+- `npx eslint . --max-warnings=0` — 0 warnings
+- `npx vitest run` — 2650/2650 pass
+- `npm run build` — success

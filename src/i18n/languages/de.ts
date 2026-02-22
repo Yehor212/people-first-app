@@ -492,6 +492,13 @@ export const de: Translations = {
   privacyAnalyticsHint: 'Hilft, die App zu verbessern. Du kannst es deaktivieren.',
   privacyPolicy: 'Datenschutzerklaerung',
   termsOfService: 'Nutzungsbedingungen',
+  openSourceLicenses: 'Open-Source-Lizenzen',
+  legalPrivacyDescription: 'Erfahre, wie ZenFlow deine persoenlichen Daten erhebt, verwendet und schuetzt. Deine Privatsphaere hat Prioritaet.',
+  legalTermsDescription: 'Lies die Nutzungsbedingungen fuer die Verwendung von ZenFlow.',
+  legalLicensesDescription: 'ZenFlow wurde mit folgender Open-Source-Software erstellt:',
+  legalOpenInBrowser: 'Im Browser oeffnen',
+  legalAgreePrefix: 'Mit der Fortsetzung stimmst du unserer',
+  legalAnd: 'und',
 
   // v1.2.0 Appearance
   appearance: 'Darstellung',

@@ -1,0 +1,90 @@
+{
+  "last_audit": "2026-02-22",
+  "version": "1.7.2",
+  "quality_gates": {
+    "typescript": {
+      "command": "npx tsc --noEmit",
+      "errors": 0,
+      "status": "pass"
+    },
+    "eslint": {
+      "command": "npx eslint . --max-warnings=0",
+      "errors": 0,
+      "warnings": 0,
+      "status": "pass"
+    },
+    "unit_tests": {
+      "command": "npx vitest run",
+      "total": 2650,
+      "passed": 2650,
+      "failed": 0,
+      "test_files": 121,
+      "status": "pass"
+    },
+    "e2e_tests": {
+      "command": "npx playwright test --project=chromium",
+      "spec_file": "e2e/smoke.spec.ts",
+      "status": "pass"
+    },
+    "build": {
+      "command": "npm run build",
+      "status": "pass"
+    },
+    "i18n": {
+      "command": "npm run i18n:check",
+      "languages": 8,
+      "status": "pass"
+    }
+  },
+  "security": {
+    "npm_audit": {
+      "command": "npm audit",
+      "high": 19,
+      "moderate": 5,
+      "low": 0,
+      "note": "All remaining high-severity are in dev dependencies (esbuild, minimatch, workbox-build). No production runtime impact.",
+      "status": "reviewed"
+    },
+    "csp": {
+      "location": "index.html",
+      "unsafe_eval": false,
+      "unsafe_inline_script": false,
+      "unsafe_inline_style": true,
+      "note": "unsafe-inline for styles required by Tailwind CSS. Scripts are clean.",
+      "status": "pass"
+    },
+    "rls": {
+      "tables_covered": 25,
+      "status": "pass"
+    },
+    "input_validation": {
+      "framework": "Zod + DOMPurify",
+      "schemas": 9,
+      "status": "pass"
+    },
+    "auth": {
+      "flow": "PKCE OAuth + Google Native",
+      "session_storage": "Supabase SDK (localStorage)",
+      "status": "pass"
+    }
+  },
+  "store_readiness": {
+    "google_play": {
+      "target_sdk": 35,
+      "min_sdk": 26,
+      "signing": true,
+      "proguard": true,
+      "privacy_policy": true,
+      "terms_of_service": true,
+      "account_deletion": true,
+      "in_app_legal_screens": true,
+      "aso_optimized": true,
+      "status": "ready"
+    },
+    "apple_app_store": {
+      "ios_project": false,
+      "status": "not_started",
+      "note": "No ios/ directory exists. Requires Xcode setup."
+    }
+  }
+}

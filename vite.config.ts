@@ -21,11 +21,11 @@ export default defineConfig(({ mode }) => {
   return {
   base,
   server: {
-    host: "::",
+    host: "localhost",
     port: 8080,
   },
   preview: {
-    host: "::",
+    host: "localhost",
     port: 8080,
   },
   define: {

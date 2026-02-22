@@ -643,6 +643,13 @@ export interface Translations {
   privacyAnalyticsHint: string;
   privacyPolicy: string;
   termsOfService: string;
+  openSourceLicenses: string;
+  legalPrivacyDescription: string;
+  legalTermsDescription: string;
+  legalLicensesDescription: string;
+  legalOpenInBrowser: string;
+  legalAgreePrefix: string;
+  legalAnd: string;
 
   // v1.2.0 Appearance
   appearance: string;

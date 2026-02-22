@@ -464,6 +464,13 @@ const hebrewOverrides: Partial<Translations> = {
   privacyAnalyticsHint: 'עוזרת לשפר את האפליקציה. ניתן לכבות.',
   privacyPolicy: 'מדיניות פרטיות',
   termsOfService: 'תנאי שימוש',
+  openSourceLicenses: 'רישיונות קוד פתוח',
+  legalPrivacyDescription: 'למד כיצד ZenFlow אוסף, משתמש ומגן על הנתונים האישיים שלך. הפרטיות שלך היא העדיפות שלנו.',
+  legalTermsDescription: 'קרא את התנאים וההגבלות המסדירים את השימוש שלך ב-ZenFlow.',
+  legalLicensesDescription: 'ZenFlow נבנה באמצעות תוכנות הקוד הפתוח הבאות:',
+  legalOpenInBrowser: 'פתח בדפדפן',
+  legalAgreePrefix: 'בהמשך, אתה מסכים ל',
+  legalAnd: 'ו',
 
   // Appearance
   appearance: 'מראה',
