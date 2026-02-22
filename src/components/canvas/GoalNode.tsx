@@ -24,9 +24,9 @@ const CompletionBurstLottie = lazy(() =>
   import('./CompletionBurstLottie').then(m => ({ default: m.CompletionBurstLottie })),
 );
 
-// Pill dimensions
+// Pill dimensions (PILL_H ≥ 48 for 48dp touch target compliance)
 const PILL_W = 130;
-const PILL_H = 40;
+const PILL_H = 48;
 
 // Progress ring dimensions (slightly larger than pill)
 const RING_W = PILL_W + 16;
@@ -54,7 +54,7 @@ interface GoalNodeProps {
 }
 
 export function GoalNode({ goal, x, y, progressPercent, onTap, zoom }: GoalNodeProps) {
-  const textOpacity = useTransform(zoom, [0.5, 0.65, 0.8], [0, 0, 1]);
+  const textOpacity = useTransform(zoom, [0.65, 0.85], [0, 1]);
   const filled = progressPercent * RING_PERIMETER;
   const isComplete = goal.completed || progressPercent >= 1;
   const rColor = ringColor(progressPercent);

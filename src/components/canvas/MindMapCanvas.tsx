@@ -56,7 +56,7 @@ interface MindMapCanvasProps {
 
 // Fixed canvas size
 const CANVAS_SIZE = 800;
-const MIN_ZOOM = 0.5;
+const MIN_ZOOM = 0.65;
 const MAX_ZOOM = 2.5;
 
 // Goal flow: target point for root goal input (right of Root)
@@ -77,6 +77,9 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
 
     // Pending auto-pan flag — set true before goal creation, consumed by effect
     const pendingAutoPanRef = useRef(false);
+
+    // Canvas container ref — used for performance degradation during drag
+    const canvasContainerRef = useRef<HTMLDivElement>(null);
 
     // Drag reset key — incrementing forces framer-motion to reset drag position
     const [dragKey, setDragKey] = useState(0);
@@ -119,6 +122,8 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
     }), [canvasCenter]);
 
     // ── Auto-pan to newly created goals ──
+    // When keyboard is visible (batch subtask entry), shift target upward
+    // so the new node isn't hidden behind the virtual keyboard.
     useEffect(() => {
       if (!pendingAutoPanRef.current || goalLayout.nodes.length === 0) return;
       pendingAutoPanRef.current = false;
@@ -127,10 +132,12 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
       );
       const z = zoom.get();
       const targetX = (CANVAS_SIZE / 2 - newest.x) * z;
-      const targetY = (CANVAS_SIZE / 2 - newest.y) * z;
+      // Extra upward shift when keyboard is visible (batch entry mode)
+      const kbShift = keyboardOffset > 0 ? keyboardOffset / 2 : 0;
+      const targetY = (CANVAS_SIZE / 2 - newest.y) * z - kbShift;
       animate(autoPanX, targetX, zenMotion.gentle);
       animate(autoPanY, targetY, zenMotion.gentle);
-    }, [goalLayout, zoom, autoPanX, autoPanY]);
+    }, [goalLayout, zoom, autoPanX, autoPanY, keyboardOffset]);
 
     // ── Auto-pan when BottomSheet opens/closes ──
     const sheetPanApplied = useRef(false);
@@ -295,7 +302,8 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
       if (!subtaskInput) return;
       pendingAutoPanRef.current = true;
       onGoalCreate(title, subtaskInput.parentId, icon);
-      setSubtaskInput(null);
+      // Keep input open for batch entry — user can add more subtasks
+      // without re-tapping the parent node. Cancel button closes it.
     }, [subtaskInput, onGoalCreate]);
 
     const handleSubtaskCancel = useCallback(() => {
@@ -319,6 +327,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
       : null;
     return (
       <div
+        ref={canvasContainerRef}
         className="absolute inset-0 overflow-hidden"
         style={{ background: '#0D1117', touchAction: 'none', overscrollBehavior: 'none' }}
         onWheel={handleWheel}
@@ -344,6 +353,11 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
             onDragStart={() => {
               // Dismiss action menu as soon as user begins panning
               if (activeGoalMenuId) setActiveGoalMenuId(null);
+              // Performance degradation: disable blur/animations during drag
+              canvasContainerRef.current?.classList.add('canvas-drag-active');
+            }}
+            onDragEnd={() => {
+              canvasContainerRef.current?.classList.remove('canvas-drag-active');
             }}
             className="relative will-change-transform"
             style={{

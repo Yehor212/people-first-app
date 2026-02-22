@@ -3,6 +3,7 @@ import { X, Sparkles, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { zenMotion } from '@/lib/animationUtils';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
 
 // CSS-driven cosmic star — replaces FM repeat: Infinity loop for 60fps
@@ -40,6 +41,7 @@ interface FocusReflectionModalProps {
 
 export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, onDismiss, onExpandToJournal }: FocusReflectionModalProps) {
   const { t } = useLanguage();
+  useModalA11y(true, onDismiss);
 
   return (
     <motion.div

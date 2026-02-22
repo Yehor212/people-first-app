@@ -65,6 +65,10 @@ export function GoalInput({
     if (!trimmed) return;
     void haptics.buttonPress();
     onSubmit(trimmed, selectedIcon);
+    // Self-reset for batch entry: clear value and refocus for next input
+    setValue('');
+    setSelectedIcon(undefined);
+    setTimeout(() => inputRef.current?.focus(), 50);
   }, [value, selectedIcon, onSubmit]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -124,7 +128,7 @@ export function GoalInput({
                     type="button"
                     onClick={() => handleIconTap(key)}
                     className={cn(
-                      'p-1.5 rounded-lg transition-all',
+                      'p-2 rounded-lg transition-all',
                       isSelected
                         ? 'bg-white/15 ring-1 ring-white/30 text-white'
                         : 'text-white/30 hover:text-white/60 hover:bg-white/5',
@@ -160,7 +164,7 @@ export function GoalInput({
                 onClick={handleSubmit}
                 disabled={!value.trim()}
                 className={cn(
-                  'flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-sm font-medium',
+                  'flex-1 flex items-center justify-center gap-1 py-2.5 rounded-lg text-sm font-medium',
                   value.trim()
                     ? 'bg-emerald-500/80 text-white hover:bg-emerald-500'
                     : 'bg-white/5 text-white/30 cursor-not-allowed',
@@ -175,7 +179,7 @@ export function GoalInput({
                 type="button"
                 onClick={handleCancel}
                 className={cn(
-                  'p-1.5 rounded-lg',
+                  'p-2.5 rounded-lg',
                   'text-white/40 hover:text-white/70 hover:bg-white/10',
                   'transition-colors',
                 )}

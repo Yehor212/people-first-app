@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Bell, X } from 'lucide-react';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { isNative } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { SK } from '@/lib/storageKeys';
 import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 
@@ -16,6 +17,14 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
   const { t } = useLanguage();
   const [showPrompt, setShowPrompt] = useState(false);
   useScrollLock(showPrompt);
+
+  const handleDeny = useCallback(() => {
+    storageSetRaw(SK.NOTIFICATION_PERMISSION_ASKED, 'true');
+    setShowPrompt(false);
+    onComplete();
+  }, [onComplete]);
+
+  useModalA11y(showPrompt, handleDeny);
 
   useEffect(() => {
     void checkPermission();
@@ -68,12 +77,6 @@ export function NotificationPermission({ onComplete }: NotificationPermissionPro
       setShowPrompt(false);
       onComplete();
     }
-  };
-
-  const handleDeny = () => {
-    storageSetRaw(SK.NOTIFICATION_PERMISSION_ASKED, 'true');
-    setShowPrompt(false);
-    onComplete();
   };
 
   if (!showPrompt) {

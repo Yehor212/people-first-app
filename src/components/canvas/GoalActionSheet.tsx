@@ -51,7 +51,7 @@ function ActionRow({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        'w-full flex items-center gap-3 px-5 py-3.5',
+        'w-full flex items-center gap-3 px-5 py-4',
         'text-sm font-medium transition-colors',
         disabled
           ? 'text-white/20 cursor-not-allowed'
@@ -154,7 +154,7 @@ export function GoalActionSheet({
                     type="button"
                     onClick={() => handleIconTap(key)}
                     className={cn(
-                      'p-2 rounded-lg transition-all',
+                      'p-3 rounded-lg transition-all',
                       isSelected
                         ? 'bg-white/15 ring-1 ring-white/30 text-white'
                         : 'text-white/30 active:text-white/60 active:bg-white/5',

@@ -35,7 +35,7 @@ const pillSpring = {
 
 export function AuxPills({ canvasCenter, canvasMode, onEmotionSelect, onGoalSelect, zoom }: AuxPillsProps) {
   const isVisible = canvasMode === 'split';
-  const textOpacity = useTransform(zoom, [0.5, 0.65, 0.8], [0, 0, 1]);
+  const textOpacity = useTransform(zoom, [0.65, 0.85], [0, 1]);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Clear timeout on mode change or unmount
@@ -72,7 +72,7 @@ export function AuxPills({ canvasCenter, canvasMode, onEmotionSelect, onGoalSele
             transition={pillSpring}
             onPointerUp={handleEmotionTap}
             className={cn(
-              'absolute flex items-center gap-2 px-4 py-2 rounded-full',
+              'absolute flex items-center gap-2 px-4 py-3 rounded-full',
               'bg-white/5 backdrop-blur-md',
               'border border-white/10',
               'text-white text-sm font-medium',
@@ -95,7 +95,7 @@ export function AuxPills({ canvasCenter, canvasMode, onEmotionSelect, onGoalSele
             transition={pillSpring}
             onPointerUp={handleGoalTap}
             className={cn(
-              'absolute flex items-center gap-2 px-4 py-2 rounded-full',
+              'absolute flex items-center gap-2 px-4 py-3 rounded-full',
               'bg-white/5 backdrop-blur-md',
               'border border-white/10',
               'text-white text-sm font-medium',

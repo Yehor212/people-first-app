@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { parseLocalDate, getToday, formatDate } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { ParticleBackground } from '@/components/stats';
 import { EVENT_PRESETS, getEventColor, getEventGradient, HOURS } from './constants';
 
@@ -22,6 +23,7 @@ export function AddEventModal({
   onAdd: (event: Omit<ScheduleEvent, 'id'>) => void;
 }) {
   const { t, language } = useLanguage();
+  useModalA11y(true, onClose);
   const [selectedPreset, setSelectedPreset] = useState(EVENT_PRESETS[0]);
   const [eventDate, setEventDate] = useState(initialDate);
   const [time, setTime] = useState({ startHour: 9, startMinute: 0, endHour: 10, endMinute: 0 });

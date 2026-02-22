@@ -1127,3 +1127,67 @@ These standards are effective immediately for all new code and PRs:
 5. **Overscroll Behavior**: `overscrollBehavior: 'none'` is REQUIRED on all canvas, pan, and infinite-scroll surfaces to prevent iOS rubber-banding.
 
 6. **Scrollbar Styling**: Global thin scrollbars are applied via `index.css` (Firefox + WebKit). No per-component scrollbar CSS needed.
+
+---
+
+### Android-First UX & Performance Standards (2026-02-21)
+
+- Date: 2026-02-21
+- Author: Claude Opus 4.6
+- Scope: Mandatory rules for canvas performance, contextual menus, and modal back-button handling
+
+#### Rule 1: Performance Degradation During Drag
+
+All `backdrop-filter`, `box-shadow` animations, SVG filter effects, and CSS
+animations on canvas elements MUST be suspended during active drag gestures.
+
+**Implementation pattern**:
+- `onDragStart` → add `.is-dragging` CSS class to canvas container
+- `.is-dragging` CSS overrides: `backdrop-filter: none`, `animation-play-state: paused`
+- `onDragEnd` → remove `.is-dragging`, restore full visual fidelity
+
+**Why**: `backdrop-filter: blur()` forces per-frame GPU texture reads on Mali/Adreno.
+Combined with animated box-shadows and SVG `feGaussianBlur`, this can drop below
+30fps on mid-range Android (Mali-G57, Snapdragon 680).
+
+#### Rule 2: Contextual Menus — BottomSheet Only, No Floating Popovers
+
+All contextual menus / action menus on mobile MUST use a fixed BottomSheet pattern
+(`position: fixed; bottom: 0`), never floating `absolute`/`relative` popovers.
+
+**Requirements**:
+- Rendered OUTSIDE any CSS `transform` container (fixed positioning breaks inside transforms)
+- Uses `useModalA11y` for Escape + Android back + focus trap
+- Touch targets ≥ 48dp height per action row
+- `paddingBottom: env(safe-area-inset-bottom)` for notch devices
+
+**Why**: Floating popovers clip on small screens, compete with virtual keyboard,
+and lack predictable position. BottomSheets are the established Android pattern
+(Material Design BottomSheetDialog equivalent).
+
+#### Rule 3: Hardware Back Intercept — Mandatory for All Modals/Overlays
+
+Every component that renders a modal, overlay, sheet, or full-screen takeover
+MUST call `useModalA11y(isVisible, onDismiss)` or `useBackHandler(isVisible, onDismiss)`.
+
+**Checklist before merging any modal PR**:
+- [ ] `useModalA11y` or `useBackHandler` is called with correct `isVisible` + `onDismiss`
+- [ ] Android hardware back dismisses the modal (test on device or emulator)
+- [ ] Escape key dismisses the modal (web fallback)
+- [ ] Nested modals use LIFO order (inner modal closes first)
+
+**Why**: Without back handler registration, Android hardware back triggers Capacitor's
+default behavior (app exit / navigation back), leaving the modal open underneath.
+
+#### Rule 4: Touch Targets — 48dp Minimum
+
+All interactive elements MUST have a minimum touch target of 48×48dp (CSS pixels
+vary by density — at 2x, this is 96×96px; at 3x, this is 144×144px).
+
+**Implementation pattern**:
+- Visual element can be smaller than 48dp, but the tappable area must meet the minimum
+- Use transparent padding, `::after` pseudo-elements, or explicit `min-h-[48px] min-w-[48px]`
+- Canvas elements at zoom < 1.0x shrink proportionally — either clamp minimum zoom or expand hit areas inversely
+
+**Why**: Material Design mandates 48dp minimum for touch targets. Undersized targets
+cause mis-taps, especially on mid-range phones with lower digitizer precision.

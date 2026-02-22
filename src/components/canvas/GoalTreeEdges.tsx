@@ -65,7 +65,7 @@ export function GoalTreeEdges({ nodes, canvasSize }: GoalTreeEdgesProps) {
 
   return (
     <svg
-      className="absolute inset-0 pointer-events-none z-0"
+      className="absolute inset-0 pointer-events-none z-0 goal-tree-edges"
       width={canvasSize}
       height={canvasSize}
       viewBox={`0 0 ${canvasSize} ${canvasSize}`}
