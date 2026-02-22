@@ -1254,3 +1254,69 @@ cause mis-taps, especially on mid-range phones with lower digitizer precision.
 - `npx eslint . --max-warnings=0` — 0 warnings
 - `npx vitest run` — 2650/2650 pass
 - `npm run build` — success
+
+---
+
+### Journal RLS Performance Optimization (2026-02-22)
+
+- Date: 2026-02-22
+- Author: Claude Opus 4.6
+- Scope: Supabase Performance Advisor — journal table RLS policy optimization
+
+#### Problem
+
+Supabase Performance Advisor flagged two issues on production:
+
+1. **Multiple Permissive Policies**: Each journal table had 4 separate PERMISSIVE policies (SELECT/INSERT/UPDATE/DELETE). PostgreSQL evaluates these via OR, creating unnecessary query planner overhead.
+2. **Auth RLS Initialization Plan**: All 16 policies used `auth.uid()` directly instead of `(select auth.uid())`. Without the subquery wrapper, Postgres calls the function **per row** instead of caching it once per statement.
+
+Root cause: Journal tables were created in `20260215_journal_cloud_sync.sql` — 11 days AFTER the RLS optimization migration `20260204_optimize_rls_policies.sql` — and did not inherit the correct pattern.
+
+#### Changes
+
+Migration: `supabase/migrations/20260222_optimize_journal_rls.sql`
+
+- **DROP** 16 old per-action policies (4 tables × 4 policies each)
+- **CREATE** 4 new `FOR ALL` policies with `(select auth.uid())` subquery:
+  - `journal_entries_all` on `public.journal_entries`
+  - `journal_photos_all` on `public.journal_photos`
+  - `journal_audio_all` on `public.journal_audio`
+  - `journal_embeddings_all` on `public.journal_embeddings`
+
+Pattern matches existing optimized policies (`moods_all`, `habits_all`, etc.) from `20260204_optimize_rls_policies.sql`.
+
+#### Why This Works
+
+1. `FOR ALL` replaces 4 per-action policies with 1 — eliminates OR evaluation overhead
+2. `(select auth.uid())` wraps the function in a scalar subquery — Postgres caches result once per statement, not per row
+3. `USING` + `WITH CHECK` on `FOR ALL` covers both read and write paths
+
+#### Affected Tables
+
+| Table | Old Policies | New Policy | Pattern |
+|-------|-------------|------------|---------|
+| `journal_entries` | 4 (SELECT/INSERT/UPDATE/DELETE) | `journal_entries_all` FOR ALL | `user_id = (select auth.uid())` |
+| `journal_photos` | 4 (SELECT/INSERT/UPDATE/DELETE) | `journal_photos_all` FOR ALL | `user_id = (select auth.uid())` |
+| `journal_audio` | 4 (SELECT/INSERT/UPDATE/DELETE) | `journal_audio_all` FOR ALL | `user_id = (select auth.uid())` |
+| `journal_embeddings` | 4 (SELECT/INSERT/UPDATE/DELETE) | `journal_embeddings_all` FOR ALL | `user_id = (select auth.uid())` |
+
+#### Risk Assessment
+
+- **Downtime**: Zero — `DROP POLICY IF EXISTS` + `CREATE POLICY` inside `BEGIN`/`COMMIT` is atomic
+- **Data loss**: Impossible — RLS policies are metadata, not data
+- **Access breakage**: None — `FOR ALL` with same `user_id = (select auth.uid())` logic is functionally identical
+- **Rollback**: Re-run the original `20260215_journal_cloud_sync.sql` policies section
+
+#### Verification (post-execution in Supabase Dashboard)
+
+```sql
+SELECT tablename, policyname, permissive, cmd
+FROM pg_policies
+WHERE schemaname = 'public'
+  AND tablename IN ('journal_entries', 'journal_photos', 'journal_audio', 'journal_embeddings')
+ORDER BY tablename;
+```
+
+Expected: 4 rows, all `PERMISSIVE` / `ALL` command type.
+
+Functional test: Journal → create/read/update/delete entry with photo/audio — all operations unchanged.
