@@ -45,14 +45,12 @@ export function AuxPills({ canvasCenter, canvasMode, onEmotionSelect, onGoalSele
     };
   }, [canvasMode]);
 
-  const handleEmotionTap = useCallback((e: React.PointerEvent) => {
-    e.stopPropagation();
+  const handleEmotionTap = useCallback(() => {
     void haptics.buttonPress();
     onEmotionSelect();
   }, [onEmotionSelect]);
 
-  const handleGoalTap = useCallback((e: React.PointerEvent) => {
-    e.stopPropagation();
+  const handleGoalTap = useCallback(() => {
     void haptics.buttonPress();
     onGoalSelect();
   }, [onGoalSelect]);

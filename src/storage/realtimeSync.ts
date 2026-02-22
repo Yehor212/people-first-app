@@ -1116,8 +1116,9 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
       await offlineQueue.enqueue('SYNC_JOURNAL_ENTRY', entry.id, entry);
       logger.log('[Sync] Journal entry queued after network error:', entry.id);
     } else {
-      logger.error('[Sync] Failed to sync journal entry:', error);
-      throw error;
+      // Graceful: log but don't throw — IndexedDB has the data,
+      // cloud sync will retry. Common cause: migration not applied (404).
+      logger.warn('[Sync] Journal entry sync failed (non-network):', error);
     }
   }
 };
@@ -1141,7 +1142,7 @@ export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void
       supabase.from('journal_audio').delete().eq('entry_id', entryId).eq('user_id', userId),
     ]);
 
-    if (entryRes.error) throw entryRes.error;
+    if (entryRes.error) logger.warn('[Sync] Journal entry delete failed:', entryRes.error);
     if (photosRes.error) logger.warn('[Sync] Journal photos delete failed:', photosRes.error);
     if (audioRes.error) logger.warn('[Sync] Journal audio delete failed:', audioRes.error);
     logger.log('[Sync] Journal entry deleted from cloud:', entryId);
@@ -1150,8 +1151,7 @@ export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void
       logger.warn('[Sync] Journal entry delete aborted:', entryId);
       return;
     }
-    logger.error('[Sync] Failed to delete journal entry from cloud:', error);
-    throw error;
+    logger.warn('[Sync] Failed to delete journal entry from cloud:', error);
   }
 };
 

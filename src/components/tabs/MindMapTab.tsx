@@ -14,7 +14,7 @@ interface MindMapTabProps {
   onGoalSelect: () => void;
   onEmotionSave: (mood: MoodType, text?: string) => void;
   onEmotionCancel: () => void;
-  onGoalCreate: (title: string, parentId: string | null) => void;
+  onGoalCreate: (title: string, parentId: string | null, icon?: string) => void;
   onGoalToggle: (goalId: string) => void;
   onGoalDelete: (goalId: string) => void;
   onGoalCancel: () => void;

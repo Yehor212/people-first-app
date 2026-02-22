@@ -304,8 +304,8 @@ export function Index() {
 
   // ── Goal tree handlers ──
 
-  const handleGoalCreate = useCallback((title: string, parentId: string | null) => {
-    const newGoal = createGoal(title, parentId, canvasGoals);
+  const handleGoalCreate = useCallback((title: string, parentId: string | null, icon?: string) => {
+    const newGoal = createGoal(title, parentId, canvasGoals, icon);
     setCanvasGoals([...canvasGoals, newGoal]);
     setCanvasMode('idle');
   }, [canvasGoals, setCanvasGoals, setCanvasMode]);

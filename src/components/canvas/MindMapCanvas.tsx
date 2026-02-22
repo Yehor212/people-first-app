@@ -46,7 +46,7 @@ interface MindMapCanvasProps {
   onGoalSelect: () => void;
   onEmotionSave: (mood: MoodType, text?: string) => void;
   onEmotionCancel: () => void;
-  onGoalCreate: (title: string, parentId: string | null) => void;
+  onGoalCreate: (title: string, parentId: string | null, icon?: string) => void;
   onGoalToggle: (goalId: string) => void;
   onGoalDelete: (goalId: string) => void;
   onGoalCancel: () => void;
@@ -175,6 +175,12 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
       dragStartPos.current = null;
       // Only fire if it was a tap (not a drag)
       if (dist < 5) {
+        // Skip taps on interactive children — they handle themselves.
+        // Letting pointer events bubble freely prevents Framer-motion
+        // drag state corruption ("sticky mouse" bug).
+        const target = e.target as HTMLElement;
+        if (target.closest('button, input, [role="dialog"]')) return;
+
         // Dismiss local menus/inputs first
         if (activeGoalMenuId) {
           setActiveGoalMenuId(null);
@@ -241,17 +247,17 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
       onGoalDelete(goalId);
     }, [onGoalDelete]);
 
-    const handleGoalFlowSubmit = useCallback((title: string) => {
-      onGoalCreate(title, null);
+    const handleGoalFlowSubmit = useCallback((title: string, icon?: string) => {
+      onGoalCreate(title, null, icon);
     }, [onGoalCreate]);
 
     const handleGoalFlowCancel = useCallback(() => {
       onGoalCancel();
     }, [onGoalCancel]);
 
-    const handleSubtaskSubmit = useCallback((title: string) => {
+    const handleSubtaskSubmit = useCallback((title: string, icon?: string) => {
       if (!subtaskInput) return;
-      onGoalCreate(title, subtaskInput.parentId);
+      onGoalCreate(title, subtaskInput.parentId, icon);
       setSubtaskInput(null);
     }, [subtaskInput, onGoalCreate]);
 

@@ -4,6 +4,9 @@
  * Each edge runs from parentX,parentY → x,y with an S-curve.
  * Gradient: white/20 → emerald for completed edges, white/20 → white/10 for incomplete.
  * Completed edges glow brighter. Incomplete edges are dashed.
+ *
+ * Energy pulses: glowing dots travel along each curve via SVG <animateMotion>.
+ * Zero JS overhead — animation is GPU-composited by the browser SVG engine.
  */
 
 import type { GoalTreeNode } from './goalTreeLayout';
@@ -68,6 +71,15 @@ export function GoalTreeEdges({ nodes, canvasSize }: GoalTreeEdgesProps) {
       viewBox={`0 0 ${canvasSize} ${canvasSize}`}
     >
       <defs>
+        {/* Glow filter for energy pulse dots */}
+        <filter id="pulse-glow" x="-100%" y="-100%" width="300%" height="300%">
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+
         {edges.map(edge => (
           <linearGradient
             key={`ggrad-${edge.id}`}
@@ -90,9 +102,11 @@ export function GoalTreeEdges({ nodes, canvasSize }: GoalTreeEdgesProps) {
         ))}
       </defs>
 
+      {/* Edge paths — with id for animateMotion reference */}
       {edges.map(edge => (
         <path
           key={edge.id}
+          id={`path-${edge.id}`}
           d={edge.d}
           fill="none"
           stroke={`url(#ggrad-${edge.id})`}
@@ -101,6 +115,42 @@ export function GoalTreeEdges({ nodes, canvasSize }: GoalTreeEdgesProps) {
           strokeDasharray={edge.completed ? undefined : '6 4'}
           style={{ opacity: edge.completed ? 0.8 : 0.4 }}
         />
+      ))}
+
+      {/* Energy pulse dots — travel along each edge path */}
+      {edges.map((edge, idx) => (
+        <circle
+          key={`pulse-${edge.id}`}
+          r={edge.completed ? 2.5 : 1.5}
+          fill={edge.completed ? 'rgba(52,211,153,0.8)' : 'rgba(255,255,255,0.3)'}
+          filter={edge.completed ? 'url(#pulse-glow)' : undefined}
+        >
+          <animateMotion
+            dur={edge.completed ? '2.5s' : '4s'}
+            repeatCount="indefinite"
+            begin={`${(idx * 0.7) % 3}s`}
+          >
+            <mpath href={`#path-${edge.id}`} />
+          </animateMotion>
+        </circle>
+      ))}
+
+      {/* Second pulse dot on completed edges (offset phase) */}
+      {edges.filter(e => e.completed).map((edge, idx) => (
+        <circle
+          key={`pulse2-${edge.id}`}
+          r={2}
+          fill="rgba(52,211,153,0.5)"
+          filter="url(#pulse-glow)"
+        >
+          <animateMotion
+            dur="2.5s"
+            repeatCount="indefinite"
+            begin={`${1.25 + (idx * 0.5) % 2}s`}
+          >
+            <mpath href={`#path-${edge.id}`} />
+          </animateMotion>
+        </circle>
       ))}
     </svg>
   );

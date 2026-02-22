@@ -51,8 +51,7 @@ export function RootNode({ latestMood, canvasCenter, completionPercent, canvasMo
   const filled = completionPercent * RING_CIRCUMFERENCE;
   const isSplit = canvasMode === 'split';
 
-  const handleTap = useCallback((e: React.PointerEvent) => {
-    e.stopPropagation();
+  const handleTap = useCallback(() => {
     void haptics.light();
     onTap();
   }, [onTap]);

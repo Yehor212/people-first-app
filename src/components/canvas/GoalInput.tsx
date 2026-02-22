@@ -2,17 +2,30 @@
  * GoalInput — Inline text input that appears at the edge endpoint
  * when creating a new goal (root or subtask).
  *
- * Glassmorphic mini-panel with single text input and submit/cancel.
+ * Glassmorphic mini-panel with icon picker, text input, and submit/cancel.
  * Uses useModalA11y for Escape + Android back.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, X } from 'lucide-react';
+import { Check, X, Target, BookOpen, Heart, Zap, Star, Flame } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
 import { zenMotion } from '@/lib/animationUtils';
 import { useModalA11y } from '@/hooks/useModalA11y';
+
+/** Available goal icons — shared with GoalNode for rendering */
+export const GOAL_ICON_MAP: Record<string, LucideIcon> = {
+  Target,
+  BookOpen,
+  Heart,
+  Zap,
+  Star,
+  Flame,
+};
+
+const ICON_KEYS = Object.keys(GOAL_ICON_MAP);
 
 interface GoalInputProps {
   isVisible: boolean;
@@ -21,7 +34,7 @@ interface GoalInputProps {
   /** Canvas-absolute Y position */
   anchorY: number;
   placeholder?: string;
-  onSubmit: (title: string) => void;
+  onSubmit: (title: string, icon?: string) => void;
   onCancel: () => void;
 }
 
@@ -33,12 +46,14 @@ export function GoalInput({
   onSubmit, onCancel,
 }: GoalInputProps) {
   const [value, setValue] = useState('');
+  const [selectedIcon, setSelectedIcon] = useState<string | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Reset + auto-focus when shown
   useEffect(() => {
     if (isVisible) {
       setValue('');
+      setSelectedIcon(undefined);
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isVisible]);
@@ -49,8 +64,8 @@ export function GoalInput({
     const trimmed = value.trim();
     if (!trimmed) return;
     void haptics.buttonPress();
-    onSubmit(trimmed);
-  }, [value, onSubmit]);
+    onSubmit(trimmed, selectedIcon);
+  }, [value, selectedIcon, onSubmit]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -63,6 +78,11 @@ export function GoalInput({
     void haptics.light();
     onCancel();
   }, [onCancel]);
+
+  const handleIconTap = useCallback((key: string) => {
+    void haptics.light();
+    setSelectedIcon(prev => prev === key ? undefined : key);
+  }, []);
 
   return (
     <AnimatePresence>
@@ -93,6 +113,31 @@ export function GoalInput({
             }}
             onClick={(e) => e.stopPropagation()}
           >
+            {/* Icon picker row */}
+            <div className="flex items-center justify-center gap-1.5 mb-2">
+              {ICON_KEYS.map(key => {
+                const Icon = GOAL_ICON_MAP[key];
+                const isSelected = selectedIcon === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleIconTap(key)}
+                    className={cn(
+                      'p-1.5 rounded-lg transition-all',
+                      isSelected
+                        ? 'bg-white/15 ring-1 ring-white/30 text-white'
+                        : 'text-white/30 hover:text-white/60 hover:bg-white/5',
+                    )}
+                    aria-label={`Icon: ${key}`}
+                    aria-pressed={isSelected}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </button>
+                );
+              })}
+            </div>
+
             <input
               ref={inputRef}
               type="text"

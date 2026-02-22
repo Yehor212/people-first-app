@@ -5,18 +5,24 @@
  * - Glassmorphic pill (--surface-glass) with border
  * - SVG progress ring that fills based on progressPercent
  * - Completed state: checkmark overlay, muted opacity
- * - One-shot completion burst: CSS particle ring fires ONLY on the <1 → ≥1 transition
+ * - One-shot Lottie burst on the <1 → ≥1 transition
  * - Tap → opens GoalActionMenu (via onTap callback)
  * - Pop-in animation via framer-motion
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
 import { zenMotion } from '@/lib/animationUtils';
+import { GOAL_ICON_MAP } from './GoalInput';
 import type { CanvasGoal } from '@/types';
+
+// Lazy-load Lottie burst to isolate lottie-react chunk
+const CompletionBurstLottie = lazy(() =>
+  import('./CompletionBurstLottie').then(m => ({ default: m.CompletionBurstLottie })),
+);
 
 // Pill dimensions
 const PILL_W = 130;
@@ -38,17 +44,6 @@ function ringColor(percent: number): string {
   return 'rgba(255,255,255,0.25)';        // dim white — low progress
 }
 
-// Particle burst: 8 dots radiating outward in a ring
-const PARTICLE_COUNT = 8;
-const PARTICLES = Array.from({ length: PARTICLE_COUNT }, (_, i) => {
-  const angle = (2 * Math.PI * i) / PARTICLE_COUNT;
-  return {
-    id: i,
-    dx: Math.cos(angle) * 30,
-    dy: Math.sin(angle) * 30,
-  };
-});
-
 interface GoalNodeProps {
   goal: CanvasGoal;
   x: number;
@@ -61,6 +56,7 @@ export function GoalNode({ goal, x, y, progressPercent, onTap }: GoalNodeProps) 
   const filled = progressPercent * RING_PERIMETER;
   const isComplete = goal.completed || progressPercent >= 1;
   const rColor = ringColor(progressPercent);
+  const GoalIcon = goal.icon ? GOAL_ICON_MAP[goal.icon] ?? null : null;
 
   // ── One-shot burst detection ──
   // Track previous progress to detect the <1 → ≥1 transition
@@ -75,14 +71,13 @@ export function GoalNode({ goal, x, y, progressPercent, onTap }: GoalNodeProps) 
     if (prev < 1 && progressPercent >= 1) {
       setShowBurst(true);
       void haptics.buttonPress();
-      // Auto-dismiss after animation duration
+      // Auto-dismiss after animation duration (1.2s)
       const timer = setTimeout(() => setShowBurst(false), 1200);
       return () => clearTimeout(timer);
     }
   }, [progressPercent]);
 
-  const handleTap = useCallback((e: React.PointerEvent) => {
-    e.stopPropagation();
+  const handleTap = useCallback(() => {
     void haptics.light();
     onTap(goal.id);
   }, [goal.id, onTap]);
@@ -137,36 +132,11 @@ export function GoalNode({ goal, x, y, progressPercent, onTap }: GoalNodeProps) 
         )}
       </svg>
 
-      {/* One-shot completion burst — 8 emerald particles + glow ring */}
+      {/* One-shot Lottie completion burst */}
       {showBurst && (
-        <div className="absolute inset-0 pointer-events-none">
-          {/* Central glow pulse */}
-          <motion.div
-            className="absolute inset-[-16px] rounded-full"
-            initial={{ scale: 0.6, opacity: 0.7 }}
-            animate={{ scale: 1.6, opacity: 0 }}
-            transition={{ duration: 1.2, ease: 'easeOut' }}
-            style={{
-              background: 'radial-gradient(circle, rgba(52,211,153,0.4) 0%, transparent 70%)',
-            }}
-          />
-          {/* Particle dots */}
-          {PARTICLES.map(p => (
-            <motion.div
-              key={p.id}
-              className="absolute rounded-full bg-emerald-400"
-              style={{
-                width: 5,
-                height: 5,
-                left: PILL_W / 2 - 2.5,
-                top: PILL_H / 2 - 2.5,
-              }}
-              initial={{ x: 0, y: 0, opacity: 1, scale: 1 }}
-              animate={{ x: p.dx, y: p.dy, opacity: 0, scale: 0.3 }}
-              transition={{ duration: 0.8, ease: 'easeOut' }}
-            />
-          ))}
-        </div>
+        <Suspense fallback={null}>
+          <CompletionBurstLottie onComplete={() => setShowBurst(false)} />
+        </Suspense>
       )}
 
       {/* Pill body — tappable */}
@@ -192,9 +162,11 @@ export function GoalNode({ goal, x, y, progressPercent, onTap }: GoalNodeProps) 
         aria-label={`Goal: ${goal.title}${isComplete ? ' (completed)' : ''}`}
         role="button"
       >
-        {isComplete && (
+        {isComplete ? (
           <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
-        )}
+        ) : GoalIcon ? (
+          <GoalIcon className="w-3.5 h-3.5 text-white/60 flex-shrink-0" />
+        ) : null}
         <span
           className={cn(
             'text-xs font-medium truncate',
