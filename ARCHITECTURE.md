@@ -1268,7 +1268,7 @@ cause mis-taps, especially on mid-range phones with lower digitizer precision.
 Supabase Performance Advisor flagged two issues on production:
 
 1. **Multiple Permissive Policies**: Each journal table had 4 separate PERMISSIVE policies (SELECT/INSERT/UPDATE/DELETE). PostgreSQL evaluates these via OR, creating unnecessary query planner overhead.
-2. **Auth RLS Initialization Plan**: All 16 policies used `auth.uid()` directly instead of `(select auth.uid())`. Without the subquery wrapper, Postgres calls the function **per row** instead of caching it once per statement.
+2. **Auth RLS Initialization Plan**: All 12 policies (3 production tables) used `auth.uid()` directly instead of `(select auth.uid())`. Without the subquery wrapper, Postgres calls the function **per row** instead of caching it once per statement.
 
 Root cause: Journal tables were created in `20260215_journal_cloud_sync.sql` — 11 days AFTER the RLS optimization migration `20260204_optimize_rls_policies.sql` — and did not inherit the correct pattern.
 
@@ -1276,12 +1276,12 @@ Root cause: Journal tables were created in `20260215_journal_cloud_sync.sql` —
 
 Migration: `supabase/migrations/20260222_optimize_journal_rls.sql`
 
-- **DROP** 16 old per-action policies (4 tables × 4 policies each)
-- **CREATE** 4 new `FOR ALL` policies with `(select auth.uid())` subquery:
+- **DROP** 12 old per-action policies (3 tables × 4 policies each)
+- **CREATE** 3 new `FOR ALL` policies with `(select auth.uid())` subquery:
   - `journal_entries_all` on `public.journal_entries`
   - `journal_photos_all` on `public.journal_photos`
   - `journal_audio_all` on `public.journal_audio`
-  - `journal_embeddings_all` on `public.journal_embeddings`
+- **SKIPPED**: `journal_embeddings` — table does not exist on production (pgvector migration not executed)
 
 Pattern matches existing optimized policies (`moods_all`, `habits_all`, etc.) from `20260204_optimize_rls_policies.sql`.
 
@@ -1298,7 +1298,7 @@ Pattern matches existing optimized policies (`moods_all`, `habits_all`, etc.) fr
 | `journal_entries` | 4 (SELECT/INSERT/UPDATE/DELETE) | `journal_entries_all` FOR ALL | `user_id = (select auth.uid())` |
 | `journal_photos` | 4 (SELECT/INSERT/UPDATE/DELETE) | `journal_photos_all` FOR ALL | `user_id = (select auth.uid())` |
 | `journal_audio` | 4 (SELECT/INSERT/UPDATE/DELETE) | `journal_audio_all` FOR ALL | `user_id = (select auth.uid())` |
-| `journal_embeddings` | 4 (SELECT/INSERT/UPDATE/DELETE) | `journal_embeddings_all` FOR ALL | `user_id = (select auth.uid())` |
+| `journal_embeddings` | — | — | SKIPPED — table not on production |
 
 #### Risk Assessment
 
@@ -1313,7 +1313,7 @@ Pattern matches existing optimized policies (`moods_all`, `habits_all`, etc.) fr
 SELECT tablename, policyname, permissive, cmd
 FROM pg_policies
 WHERE schemaname = 'public'
-  AND tablename IN ('journal_entries', 'journal_photos', 'journal_audio', 'journal_embeddings')
+  AND tablename IN ('journal_entries', 'journal_photos', 'journal_audio')
 ORDER BY tablename;
 ```
 

@@ -43,16 +43,7 @@ CREATE POLICY "journal_audio_all" ON public.journal_audio FOR ALL
   USING (user_id = (select auth.uid()))
   WITH CHECK (user_id = (select auth.uid()));
 
--- ============================================================
--- journal_embeddings: DROP 4 old policies, CREATE 1 optimized
--- ============================================================
-DROP POLICY IF EXISTS "Users can read own embeddings" ON public.journal_embeddings;
-DROP POLICY IF EXISTS "Users can insert own embeddings" ON public.journal_embeddings;
-DROP POLICY IF EXISTS "Users can update own embeddings" ON public.journal_embeddings;
-DROP POLICY IF EXISTS "Users can delete own embeddings" ON public.journal_embeddings;
-
-CREATE POLICY "journal_embeddings_all" ON public.journal_embeddings FOR ALL
-  USING (user_id = (select auth.uid()))
-  WITH CHECK (user_id = (select auth.uid()));
+-- NOTE: journal_embeddings skipped — table does not exist on production
+-- (pgvector migration 20260215_pgvector_journal.sql was not executed)
 
 COMMIT;
