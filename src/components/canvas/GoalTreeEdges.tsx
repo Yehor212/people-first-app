@@ -9,6 +9,7 @@
  * Zero JS overhead — animation is GPU-composited by the browser SVG engine.
  */
 
+import { memo } from 'react';
 import type { GoalTreeNode } from './goalTreeLayout';
 
 // ── Bezier S-curve (same math as CanvasEdges) ──
@@ -50,7 +51,7 @@ interface GoalTreeEdgesProps {
   canvasSize: number;
 }
 
-export function GoalTreeEdges({ nodes, canvasSize }: GoalTreeEdgesProps) {
+export const GoalTreeEdges = memo(function GoalTreeEdges({ nodes, canvasSize }: GoalTreeEdgesProps) {
   if (nodes.length === 0) return null;
 
   const edges: GoalEdge[] = nodes.map(node => ({
@@ -154,4 +155,4 @@ export function GoalTreeEdges({ nodes, canvasSize }: GoalTreeEdgesProps) {
       ))}
     </svg>
   );
-}
+});

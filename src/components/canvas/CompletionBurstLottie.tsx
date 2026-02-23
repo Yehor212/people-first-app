@@ -5,8 +5,10 @@
  * Plays once and calls onComplete when finished.
  * Absolutely positioned, pointer-events: none.
  *
- * Replace src/assets/animations/goal-complete.json with a premium
- * Lottie from LottieFiles for a different burst effect.
+ * TODO: Replace src/assets/animations/goal-complete.json with a premium confetti burst.
+ * Requirements: <50KB, 60fps, ~1s duration, no expressions (CSP: no unsafe-eval).
+ * Sources: LottieFiles.com search "confetti", "celebration", "success burst".
+ * Drop the .json file into src/assets/animations/ — it is dynamically imported.
  */
 
 import Lottie from 'lottie-react';

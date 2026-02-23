@@ -327,6 +327,8 @@ export const canvasGoalSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   icon: z.string().optional(),
+  emoji: z.string().optional(),
+  color: z.string().optional(),
   completed: z.boolean(),
   parentId: z.string().nullable(),
   createdAt: z.number(),

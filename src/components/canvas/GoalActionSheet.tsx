@@ -17,7 +17,11 @@ import { haptics } from '@/lib/haptics';
 import { zenMotion } from '@/lib/animationUtils';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { GOAL_ICON_MAP } from './GoalInput';
+import { GOAL_COLORS } from './GoalNode';
 import type { CanvasGoal } from '@/types';
+
+const CURATED_EMOJIS = ['🎯', '📚', '💪', '🏃', '💡', '🎨', '🎵', '❤️', '⭐', '🔥', '🌱', '🧘'];
+const COLOR_KEYS = Object.keys(GOAL_COLORS);
 
 const ICON_KEYS = Object.keys(GOAL_ICON_MAP);
 
@@ -29,6 +33,8 @@ interface GoalActionSheetProps {
   onToggleComplete: (goalId: string) => void;
   onDelete: (goalId: string) => void;
   onUpdateIcon: (goalId: string, icon: string | undefined) => void;
+  onUpdateEmoji: (goalId: string, emoji: string | undefined) => void;
+  onUpdateColor: (goalId: string, color: string | undefined) => void;
   onDismiss: () => void;
 }
 
@@ -69,6 +75,7 @@ function ActionRow({
 export function GoalActionSheet({
   goal, isBranch,
   onAddSubtask, onToggleComplete, onDelete, onUpdateIcon,
+  onUpdateEmoji, onUpdateColor,
   onDismiss,
 }: GoalActionSheetProps) {
   const isVisible = goal !== null;
@@ -100,6 +107,20 @@ export function GoalActionSheet({
     const newIcon = goal.icon === key ? undefined : key;
     onUpdateIcon(goal.id, newIcon);
   }, [goal, onUpdateIcon]);
+
+  const handleEmojiTap = useCallback((emoji: string) => {
+    if (!goal) return;
+    void haptics.light();
+    const newEmoji = goal.emoji === emoji ? undefined : emoji;
+    onUpdateEmoji(goal.id, newEmoji);
+  }, [goal, onUpdateEmoji]);
+
+  const handleColorTap = useCallback((color: string) => {
+    if (!goal) return;
+    void haptics.light();
+    const newColor = goal.color === color ? undefined : color;
+    onUpdateColor(goal.id, newColor);
+  }, [goal, onUpdateColor]);
 
   return (
     <AnimatePresence>
@@ -164,6 +185,53 @@ export function GoalActionSheet({
                   >
                     <Icon className="w-5 h-5" />
                   </button>
+                );
+              })}
+            </div>
+
+            {/* Emoji picker row */}
+            <div className="flex items-center gap-2 px-5 pb-3 flex-wrap">
+              {CURATED_EMOJIS.map(emoji => {
+                const isSelected = goal.emoji === emoji;
+                return (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => handleEmojiTap(emoji)}
+                    className={cn(
+                      'w-9 h-9 rounded-lg flex items-center justify-center transition-all text-base',
+                      isSelected
+                        ? 'bg-white/15 ring-1 ring-white/30'
+                        : 'active:bg-white/5',
+                    )}
+                    aria-label={`Emoji: ${emoji}`}
+                    aria-pressed={isSelected}
+                  >
+                    {emoji}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Color swatch row */}
+            <div className="flex items-center gap-2 px-5 pb-4">
+              {COLOR_KEYS.map(key => {
+                const isSelected = goal.color === key;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleColorTap(key)}
+                    className={cn(
+                      'w-7 h-7 rounded-full transition-all flex-shrink-0',
+                      isSelected
+                        ? 'ring-2 ring-white/60 ring-offset-2 ring-offset-[rgba(15,20,30,0.95)]'
+                        : 'ring-1 ring-white/10',
+                    )}
+                    style={{ background: GOAL_COLORS[key] }}
+                    aria-label={`Color: ${key}`}
+                    aria-pressed={isSelected}
+                  />
                 );
               })}
             </div>

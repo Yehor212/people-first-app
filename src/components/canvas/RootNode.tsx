@@ -8,7 +8,7 @@
  * Tap → triggers onTap callback (split mode). Pulses faster in split mode.
  */
 
-import { useCallback } from 'react';
+import { memo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { haptics } from '@/lib/haptics';
@@ -44,7 +44,7 @@ interface RootNodeProps {
   onTap: () => void;
 }
 
-export function RootNode({ latestMood, canvasCenter, completionPercent, canvasMode, onTap }: RootNodeProps) {
+export const RootNode = memo(function RootNode({ latestMood, canvasCenter, completionPercent, canvasMode, onTap }: RootNodeProps) {
   const { t } = useLanguage();
   const borderColor = latestMood ? MOOD_BORDER[latestMood] : 'border-white/20';
   const ringColor = latestMood ? MOOD_RING_COLOR[latestMood] : 'rgba(255,255,255,0.3)';
@@ -118,4 +118,4 @@ export function RootNode({ latestMood, canvasCenter, completionPercent, canvasMo
       </button>
     </div>
   );
-}
+});

@@ -34,6 +34,8 @@ import { GardenTab } from '@/components/tabs/GardenTab';
 import { StatsTab } from '@/components/tabs/StatsTab';
 import { AchievementsTab } from '@/components/tabs/AchievementsTab';
 import { SettingsTab } from '@/components/tabs/SettingsTab';
+import { MindMapTab } from '@/components/tabs/MindMapTab';
+import { useCanvasHandlers } from '@/hooks/useCanvasHandlers';
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
 import { useInnerWorld } from '@/hooks/useInnerWorld';
@@ -72,7 +74,7 @@ export function Index() {
     threshold: 50,
     velocityThreshold: 0.3,
     isRTL,
-    enabled: true,
+    enabled: activeTab !== 'mindmap',
   });
 
   // Extracted lifecycle hooks (from Step 1 decomposition)
@@ -155,6 +157,18 @@ export function Index() {
 
   // Feature handlers (extracted from Index.tsx body)
   const { handleAddMood, handleQuickMood } = useMoodHandlers({ updateChallengeProgress });
+
+  // Canvas / Mind Map (feature-flagged)
+  const CANVAS_ENABLED = true; // Kill-switch for mindmap tab rollout
+  const {
+    canvasGoals, canvasMode, canvasRef,
+    onRootTap, onCanvasBackgroundTap,
+    onEmotionSelect, onGoalSelect,
+    onEmotionSave, onEmotionCancel,
+    onGoalCreate, onGoalToggle, onGoalDelete,
+    onGoalUpdateIcon, onGoalUpdateEmoji, onGoalUpdateColor,
+    onGoalCancel,
+  } = useCanvasHandlers({ handleAddMood });
   const { handleToggleHabit, handleAdjustHabit, handleAddHabit, handleUpdateHabit, handleDeleteHabit } = useHabitHandlers({
     awardXp,
     earnTreats,
@@ -258,7 +272,7 @@ export function Index() {
         >
         {/* Global Schedule Bar - visible on all tabs when events exist */}
         {/* v1.4.0: Use todayAllEvents to include both manual and habit-generated events */}
-        {todayAllEvents.length > 0 && activeTab !== 'settings' && (
+        {todayAllEvents.length > 0 && activeTab !== 'settings' && activeTab !== 'mindmap' && (
           <div className="mb-4">
             <GlobalScheduleBar
               events={todayAllEvents}
@@ -353,8 +367,33 @@ export function Index() {
         </main>
       </div>
 
+      {/* MindMapTab — full-bleed canvas, outside swipe container */}
+      {activeTab === 'mindmap' && CANVAS_ENABLED && (
+        <div className="fixed inset-0 z-30">
+          <MindMapTab
+            safeMoods={moods}
+            canvasGoals={canvasGoals}
+            canvasMode={canvasMode}
+            onRootTap={onRootTap}
+            onCanvasBackgroundTap={onCanvasBackgroundTap}
+            onEmotionSelect={onEmotionSelect}
+            onGoalSelect={onGoalSelect}
+            onEmotionSave={onEmotionSave}
+            onEmotionCancel={onEmotionCancel}
+            onGoalCreate={onGoalCreate}
+            onGoalToggle={onGoalToggle}
+            onGoalDelete={onGoalDelete}
+            onGoalUpdateIcon={onGoalUpdateIcon}
+            onGoalUpdateEmoji={onGoalUpdateEmoji}
+            onGoalUpdateColor={onGoalUpdateColor}
+            onGoalCancel={onGoalCancel}
+            canvasRef={canvasRef}
+          />
+        </div>
+      )}
+
       <FocusMiniPlayer onNavigateToTimer={() => setActiveTab('garden')} />
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
+      <Navigation activeTab={activeTab} onTabChange={setActiveTab} canvasEnabled={CANVAS_ENABLED} />
 
       <ModalLayer
         challenges={challenges}

@@ -51,6 +51,8 @@ interface MindMapCanvasProps {
   onGoalToggle: (goalId: string) => void;
   onGoalDelete: (goalId: string) => void;
   onGoalUpdateIcon: (goalId: string, icon: string | undefined) => void;
+  onGoalUpdateEmoji: (goalId: string, emoji: string | undefined) => void;
+  onGoalUpdateColor: (goalId: string, color: string | undefined) => void;
   onGoalCancel: () => void;
 }
 
@@ -69,7 +71,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
     onRootTap, onCanvasBackgroundTap,
     onEmotionSelect, onGoalSelect,
     onEmotionSave, onEmotionCancel,
-    onGoalCreate, onGoalToggle, onGoalDelete, onGoalUpdateIcon, onGoalCancel,
+    onGoalCreate, onGoalToggle, onGoalDelete, onGoalUpdateIcon, onGoalUpdateEmoji, onGoalUpdateColor, onGoalCancel,
   }, ref) {
     const zoom = useMotionValue(1);
     const autoPanX = useMotionValue(0);
@@ -318,6 +320,14 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
       onGoalUpdateIcon(goalId, icon);
     }, [onGoalUpdateIcon]);
 
+    const handleGoalUpdateEmoji = useCallback((goalId: string, emoji: string | undefined) => {
+      onGoalUpdateEmoji(goalId, emoji);
+    }, [onGoalUpdateEmoji]);
+
+    const handleGoalUpdateColor = useCallback((goalId: string, color: string | undefined) => {
+      onGoalUpdateColor(goalId, color);
+    }, [onGoalUpdateColor]);
+
     // Edge endpoint Y for emotion panel positioning
     const edgeEndY = getEdgeEndY(canvasCenter.y);
 
@@ -481,6 +491,8 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
           onToggleComplete={handleGoalToggle}
           onDelete={handleGoalDelete}
           onUpdateIcon={handleGoalUpdateIcon}
+          onUpdateEmoji={handleGoalUpdateEmoji}
+          onUpdateColor={handleGoalUpdateColor}
           onDismiss={handleGoalMenuDismiss}
         />
       </div>

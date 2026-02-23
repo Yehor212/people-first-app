@@ -48,6 +48,10 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Coverage report
+        run: npx vitest run --coverage
+        continue-on-error: true
+
       - name: Build
         env:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}

@@ -428,6 +428,8 @@ export interface CanvasGoal {
   title: string;
   description?: string;
   icon?: string;               // lucide icon name (e.g. 'Target', 'Book')
+  emoji?: string;              // user-chosen emoji (e.g. '🎯', '📚')
+  color?: string;              // preset color key (e.g. 'emerald', 'rose', 'amber')
   completed: boolean;
   parentId: string | null;     // null = root-level goal
   createdAt: number;

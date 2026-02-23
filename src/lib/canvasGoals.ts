@@ -99,6 +99,28 @@ export function updateGoalIcon(
 }
 
 /**
+ * Update a goal's emoji.
+ */
+export function updateGoalEmoji(
+  goalId: string,
+  emoji: string | undefined,
+  goals: CanvasGoal[],
+): CanvasGoal[] {
+  return goals.map(g => g.id === goalId ? { ...g, emoji } : g);
+}
+
+/**
+ * Update a goal's color preset.
+ */
+export function updateGoalColor(
+  goalId: string,
+  color: string | undefined,
+  goals: CanvasGoal[],
+): CanvasGoal[] {
+  return goals.map(g => g.id === goalId ? { ...g, color } : g);
+}
+
+/**
  * Check if a goal has reached 100% progress (all children completed recursively).
  * Returns true only for branch goals (goals with children) where every descendant leaf is done.
  */

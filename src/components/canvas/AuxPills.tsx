@@ -9,7 +9,7 @@
  * Auto-collapse: 5s timeout → back to idle
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence, useTransform, type MotionValue } from 'framer-motion';
 import { Heart, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -33,7 +33,7 @@ const pillSpring = {
   damping: 25,
 };
 
-export function AuxPills({ canvasCenter, canvasMode, onEmotionSelect, onGoalSelect, zoom }: AuxPillsProps) {
+export const AuxPills = memo(function AuxPills({ canvasCenter, canvasMode, onEmotionSelect, onGoalSelect, zoom }: AuxPillsProps) {
   const isVisible = canvasMode === 'split';
   const textOpacity = useTransform(zoom, [0.65, 0.85], [0, 1]);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -112,4 +112,4 @@ export function AuxPills({ canvasCenter, canvasMode, onEmotionSelect, onGoalSele
       )}
     </AnimatePresence>
   );
-}
+});

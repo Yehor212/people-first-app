@@ -4047,9 +4047,11 @@ input::-moz-focus-inner {
   animation-play-state: paused !important;
 }
 
-/* Disable backdrop-filter blur (forces per-frame GPU texture reads) */
+/* Disable backdrop-filter blur (forces per-frame GPU texture reads).
+   Covers: inline styles (GoalNode), Tailwind classes (AuxPills backdrop-blur-md),
+   and any future backdrop-blur-* usage within the canvas container. */
 .canvas-drag-active [style*="backdrop-filter"],
-.canvas-drag-active .backdrop-blur-sm {
+.canvas-drag-active [class*="backdrop-blur"] {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }

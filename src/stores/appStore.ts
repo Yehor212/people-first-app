@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type TabType = 'home' | 'garden' | 'stats' | 'achievements' | 'settings';
+export type TabType = 'home' | 'garden' | 'stats' | 'achievements' | 'settings' | 'mindmap';
 
 export interface InitializationState {
   isInitializing: boolean;

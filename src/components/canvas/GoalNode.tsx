@@ -10,7 +10,7 @@
  * - Pop-in animation via framer-motion
  */
 
-import { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
 import { motion, useTransform, type MotionValue } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,18 @@ import type { CanvasGoal } from '@/types';
 const CompletionBurstLottie = lazy(() =>
   import('./CompletionBurstLottie').then(m => ({ default: m.CompletionBurstLottie })),
 );
+
+/** Preset color palette for goal customization. Key = stored in CanvasGoal.color */
+export const GOAL_COLORS: Record<string, string> = {
+  emerald: '#34d399',
+  sky:     '#38bdf8',
+  amber:   '#fbbf24',
+  rose:    '#fb7185',
+  violet:  '#a78bfa',
+  orange:  '#fb923c',
+  pink:    '#f472b6',
+  cyan:    '#22d3ee',
+};
 
 // Pill dimensions (PILL_H ≥ 48 for 48dp touch target compliance)
 const PILL_W = 130;
@@ -37,9 +49,10 @@ const RY = RING_H / 2;
 // Approximate ellipse perimeter (Ramanujan's formula) for stroke-dasharray
 const RING_PERIMETER = Math.PI * (3 * (RX + RY) - Math.sqrt((3 * RX + RY) * (RX + 3 * RY)));
 
-/** Progress ring color based on completion percentage */
-function ringColor(percent: number): string {
+/** Progress ring color based on completion percentage and optional goal color */
+function ringColor(percent: number, goalColor?: string): string {
   if (percent >= 1) return '#34d399';     // emerald-400 — fully complete
+  if (goalColor && GOAL_COLORS[goalColor]) return GOAL_COLORS[goalColor];
   if (percent >= 0.5) return '#fbbf24';   // amber-400 — halfway
   return 'rgba(255,255,255,0.25)';        // dim white — low progress
 }
@@ -53,11 +66,11 @@ interface GoalNodeProps {
   zoom: MotionValue<number>;
 }
 
-export function GoalNode({ goal, x, y, progressPercent, onTap, zoom }: GoalNodeProps) {
+export const GoalNode = memo(function GoalNode({ goal, x, y, progressPercent, onTap, zoom }: GoalNodeProps) {
   const textOpacity = useTransform(zoom, [0.65, 0.85], [0, 1]);
   const filled = progressPercent * RING_PERIMETER;
   const isComplete = goal.completed || progressPercent >= 1;
-  const rColor = ringColor(progressPercent);
+  const rColor = ringColor(progressPercent, goal.color);
   const GoalIcon = goal.icon ? GOAL_ICON_MAP[goal.icon] ?? null : null;
 
   // ── One-shot burst detection ──
@@ -151,7 +164,7 @@ export function GoalNode({ goal, x, y, progressPercent, onTap, zoom }: GoalNodeP
           'border',
           isComplete
             ? 'border-emerald-400/50 opacity-70'
-            : 'border-white/10',
+            : !goal.color ? 'border-white/10' : '',
           'cursor-pointer',
           'focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-0',
           'transition-colors duration-200',
@@ -160,9 +173,12 @@ export function GoalNode({ goal, x, y, progressPercent, onTap, zoom }: GoalNodeP
           background: 'rgba(15, 20, 30, 0.8)',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
+          ...((!isComplete && goal.color) ? { borderColor: rColor + '80' } : {}),
           boxShadow: isComplete
             ? '0 0 20px rgba(52,211,153,0.3), 0 8px 32px rgba(0,0,0,0.5)'
-            : '0 0 15px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.5)',
+            : goal.color
+              ? `0 0 15px ${rColor}25, 0 8px 32px rgba(0,0,0,0.5)`
+              : '0 0 15px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.5)',
         }}
         aria-label={`Goal: ${goal.title}${isComplete ? ' (completed)' : ''}`}
         role="button"
@@ -170,6 +186,8 @@ export function GoalNode({ goal, x, y, progressPercent, onTap, zoom }: GoalNodeP
         <motion.span style={{ opacity: textOpacity }} className="flex items-center gap-1.5 truncate">
           {isComplete ? (
             <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+          ) : goal.emoji ? (
+            <span className="text-sm flex-shrink-0 leading-none" role="img" aria-label="goal emoji">{goal.emoji}</span>
           ) : GoalIcon ? (
             <GoalIcon className="w-3.5 h-3.5 text-white/60 flex-shrink-0" />
           ) : null}
@@ -185,4 +203,15 @@ export function GoalNode({ goal, x, y, progressPercent, onTap, zoom }: GoalNodeP
       </button>
     </motion.div>
   );
-}
+}, (prev, next) =>
+  prev.goal.id === next.goal.id &&
+  prev.goal.completed === next.goal.completed &&
+  prev.goal.icon === next.goal.icon &&
+  prev.goal.emoji === next.goal.emoji &&
+  prev.goal.color === next.goal.color &&
+  prev.goal.title === next.goal.title &&
+  prev.x === next.x &&
+  prev.y === next.y &&
+  prev.progressPercent === next.progressPercent &&
+  prev.onTap === next.onTap,
+);

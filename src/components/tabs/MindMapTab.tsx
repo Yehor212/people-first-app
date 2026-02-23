@@ -18,6 +18,8 @@ interface MindMapTabProps {
   onGoalToggle: (goalId: string) => void;
   onGoalDelete: (goalId: string) => void;
   onGoalUpdateIcon: (goalId: string, icon: string | undefined) => void;
+  onGoalUpdateEmoji: (goalId: string, emoji: string | undefined) => void;
+  onGoalUpdateColor: (goalId: string, color: string | undefined) => void;
   onGoalCancel: () => void;
   canvasRef: RefObject<MindMapCanvasRef | null>;
 }
@@ -27,7 +29,7 @@ export function MindMapTab({
   onRootTap, onCanvasBackgroundTap,
   onEmotionSelect, onGoalSelect,
   onEmotionSave, onEmotionCancel,
-  onGoalCreate, onGoalToggle, onGoalDelete, onGoalUpdateIcon, onGoalCancel,
+  onGoalCreate, onGoalToggle, onGoalDelete, onGoalUpdateIcon, onGoalUpdateEmoji, onGoalUpdateColor, onGoalCancel,
   canvasRef,
 }: MindMapTabProps) {
   const latestMood = safeMoods.length > 0 ? safeMoods[safeMoods.length - 1].mood : null;
@@ -48,6 +50,8 @@ export function MindMapTab({
       onGoalToggle={onGoalToggle}
       onGoalDelete={onGoalDelete}
       onGoalUpdateIcon={onGoalUpdateIcon}
+      onGoalUpdateEmoji={onGoalUpdateEmoji}
+      onGoalUpdateColor={onGoalUpdateColor}
       onGoalCancel={onGoalCancel}
     />
   );
