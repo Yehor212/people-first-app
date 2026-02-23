@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-22 (2650 tests, Waves A-G complete + Mind Map tab separation + Store Readiness Audit)
+> Last updated: 2026-02-23 (2656 tests, Waves A-G complete + Mind Map tab integration + Store Readiness Audit)
 
 ---
 
@@ -13,7 +13,7 @@
 | Source files | 618 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
 | Test files | 119 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
 | Total LOC | ~57,000 (TSX only) | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
-| Tests passing | 2650/2650 | `npx vitest --run` |
+| Tests passing | 2656/2656 | `npx vitest --run` |
 | ESLint errors | 0 | `npx eslint src/ --quiet` |
 | ESLint warnings | 0 | `npx eslint . --max-warnings=0` |
 | TypeScript errors | 0 | `npx tsc --noEmit` |
@@ -88,7 +88,7 @@ src/
     useHydrateGamification.ts   # Bridge: registers gamification hooks into store
     index.ts                    # Barrel export
 
-  hooks/                        # Custom hooks (48 files)
+  hooks/                        # Custom hooks (49 files)
     # Lifecycle hooks (extracted from Index.tsx)
     useAppLifecycle.ts          # App init, splash, loading
     useDateTracking.ts          # Midnight detection, date sync
@@ -107,6 +107,7 @@ src/
     useFocusHandlers.ts         # handleCompleteFocusSession
     useGratitudeHandlers.ts     # handleAddGratitude
     useChallengeHandlers.ts     # updateChallengeProgress, feature unlock
+    useCanvasHandlers.ts        # Canvas goal CRUD + mode switching (MindMap tab)
     # Derived data
     useDerivedData.ts           # 14 useMemos: schedule events, CTA system, widget data
     useDeepLinkHandler.ts       # Auth + challenge deep links (event-based session wait, no polling)
@@ -313,44 +314,57 @@ Render time → <IdentityIcon name="Dumbbell" /> → lucide Dumbbell component
 | Garden Atmosphere | GardenTab | Lucide icon + label |
 | Identity Mapping (habit form) | HabitCreationForm | Cluster input + verb input + `IdentityIconPicker` |
 
-### Mind Map Canvas & Navigation (2026-02-20)
+### Mind Map Canvas & Navigation (2026-02-22)
 
-The Mind Map Canvas lives in a **dedicated "Map" tab** (`MindMapTab.tsx`) — separate from the scrollable Home tab. It is an **experimental feature in testing phase**.
+The Mind Map Canvas lives in a **dedicated "Map" tab** (`MindMapTab.tsx`) — separate from the scrollable Home tab. Integrated into production with a `CANVAS_ENABLED` kill-switch in `Index.tsx` (defaults to `true`).
 
 **TabType** (defined in `appStore.ts`): `'home' | 'garden' | 'stats' | 'achievements' | 'settings' | 'mindmap'`
 
-**Navigation** (`Navigation.tsx`): 5 visible tabs — Home | Map | Diary | Stats | Settings. Standard bottom bar **hidden on Mind Map tab** (replaced by `FloatingNav`). `achievements` is accessible via modals, not the nav bar.
+**Navigation** (`Navigation.tsx`): 5 visible tabs — Home | Map | Diary | Stats | Settings. The Map tab is conditionally included via `canvasEnabled` prop (wired to `CANVAS_ENABLED` in Index.tsx). `achievements` is accessible via modals, not the nav bar.
 
 **Home tab** (`HomeTab.tsx`, ~231 lines): Full scrollable layout — Header, EmotionWheel (lazy), HabitTracker (lazy), GratitudeJournal (lazy), GrowthRings, ReflectionPrompts, TodayFocusCard, RestMode/AllCompleteCelebration. Receives 20+ props from Index.tsx.
 
-**Mind Map tab** (`MindMapTab.tsx`, ~26 lines): Thin wrapper rendering `MindMapCanvas` full-bleed. Canvas overlays (`CanvasHeader` + `CanvasFAB` + `FloatingNav`) shown only when `activeTab === 'mindmap'`. Container sealed with `h-screen overflow-hidden`.
+**Mind Map tab** (`MindMapTab.tsx`, ~26 lines): Thin wrapper rendering `MindMapCanvas` full-bleed. Rendered as a `fixed inset-0 z-30` overlay OUTSIDE `<main>` in Index.tsx (prevents canvas from being constrained by scrollable layout). Container sealed with `h-screen overflow-hidden`.
+
+**Canvas handlers** (`useCanvasHandlers.ts`): Extracted hook following `useMoodHandlers`/`useHabitHandlers` pattern. Gets `canvasGoals` + `setCanvasGoals` from `userDataStore`, `canvasMode` + `setCanvasMode` from `uiStore`. Uses pure functions from `canvasGoals.ts` for CRUD. Accepts `handleAddMood` as parameter for emotion-save flow.
+
+**Swipe conflict resolution**: Double protection — (1) `SWIPE_TABS` array excludes `'mindmap'`, (2) `useSwipeNavigation({ enabled: activeTab !== 'mindmap' })`. Canvas handles its own pan/zoom gestures via framer-motion.
+
+**Performance**: Tabs use `{activeTab === 'x' && <Tab />}` pattern — inactive tabs are UNMOUNTED from the DOM. When user navigates away from mindmap, the entire MindMapCanvas (including OrbLottie) is destroyed. No wasted resources.
 
 **Canvas Architecture:**
 - Dark infinite canvas (`#0D1117` background) with `<motion.div drag>` for pan + wheel/pinch for zoom
-- Layout: `computeMindMapLayout()` in `src/components/canvas/mindMapLayout.ts` — strict trigonometric radial layout (no randomness). R_c=300px clusters, R_h=180px habits, 3-ring overlap guard (160/210/260) for >5 habits per cluster
-- Three node levels: RootNode ("Я", 80×80 circle) → ClusterPill (identity clusters, 160×44 pill) → HabitPill (habits, 120×36 pill)
-- SVG cubic Bezier edges (tension 0.5 radial S-curves) with `<linearGradient>` strokes in `CanvasEdges.tsx`
-- Completion pulse via `<animateMotion>` (Habit → Cluster → Root, 0.8s)
-- Swipe navigation disabled on mindmap tab (canvas handles its own gestures)
-- `<main>` uses sealed full-bleed (`relative h-screen overflow-hidden`) for mindmap, standard layout for other tabs
-- `computeIdentityClusters()` includes uncategorized habits in a sentinel fallback cluster (`UNCATEGORIZED_CLUSTER_ID`), resolved to i18n text in `ClusterPill.tsx`
+- Layout: `computeGoalTreeLayout()` in `goalTreeLayout.ts` — goal tree with ring-based radial placement
+- Two node levels: RootNode ("Я", 80×80 circle, Lottie orb) → GoalNode (goal cards with emoji/color/icon customization)
+- SVG growing edges with spring animation in `GrowingEdge.tsx`
+- Goal nodes support: emoji picker (12 curated emojis), color picker (8 presets from `GOAL_COLORS`), icon display, completion toggle
+- `GoalActionSheet.tsx` — bottom sheet for goal actions (complete/delete/emoji/color), rendered outside transform container
+- `.canvas-drag-active` CSS class disables `backdrop-filter` during drag (per Android performance Rule 1)
+- `computeIdentityClusters()` includes uncategorized habits in a sentinel fallback cluster (`UNCATEGORIZED_CLUSTER_ID`)
 
 **Canvas files** (`src/components/canvas/`):
 | File | Purpose |
 |------|---------|
-| `mindMapLayout.ts` | Layout algorithm (pure function, strict trigonometric radial) |
 | `MindMapCanvas.tsx` | Main wrapper (framer-motion drag, zoom, renders all layers) |
 | `RootNode.tsx` | Central "Я" node with radial gradient + mood glow |
-| `ClusterPill.tsx` | Identity cluster pill (glassmorphic, colored border) |
-| `HabitPill.tsx` | Habit pill (outline-only, toggleable) |
-| `CanvasEdges.tsx` | SVG cubic Bezier with gradient strokes + pulse animation |
+| `OrbLottie.tsx` | Lottie animation for root node orb |
+| `GoalNode.tsx` | Goal card node (React.memo, emoji/color/icon rendering, `GOAL_COLORS` export) |
+| `GoalActionSheet.tsx` | Bottom sheet — complete/delete/emoji picker/color swatches |
+| `GoalInput.tsx` | Inline input for creating new goals |
+| `GoalTreeEdges.tsx` | SVG edge layer for goal tree connections |
+| `GrowingEdge.tsx` | Animated SVG edge with spring physics |
+| `EmotionPanel.tsx` | Emotion selection overlay for canvas mood logging |
+| `AuxPills.tsx` | Auxiliary info pills on canvas |
+| `CompletionBurstLottie.tsx` | Completion celebration animation (TODO: premium Lottie replacement) |
+| `mindMapLayout.ts` | Legacy layout algorithm (identity clusters, radial trigonometric) |
+| `goalTreeLayout.ts` | Goal tree layout algorithm |
 
 **Supporting UI** (in `src/components/`, NOT in canvas/):
 | File | Purpose |
 |------|---------|
 | `CanvasHeader.tsx` | Top overlay — streak + mood indicator (mindmap tab only) |
 | `CanvasFAB.tsx` | Bottom-right FAB — log mood, add task, recenter, zoom (mindmap tab only) |
-| `FloatingNav.tsx` | Bottom-center nav pill — MAP / HABITS / FOCUS (mindmap tab only, replaces Navigation) |
+| `FloatingNav.tsx` | Bottom-center nav pill — MAP / HABITS / FOCUS (mindmap tab only) |
 
 ---
 

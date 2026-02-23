@@ -26,6 +26,8 @@ test.beforeEach(async ({ page }) => {
     }));
     // Prevent re-engagement welcome back modal
     localStorage.setItem('zenflow_last_active', new Date().toISOString().split('T')[0]);
+    // Prevent weekly report modal from auto-showing (triggers on Mondays)
+    localStorage.setItem('zenflow-last-weekly-report', new Date().toISOString());
   });
 });
 
@@ -330,7 +332,7 @@ test.describe('Focus Timer', () => {
  * Full Navigation
  *
  * Verifies that clicking each tab in the bottom navigation switches the
- * active content area. The navigation has 4 tabs: home, garden/diary,
+ * active content area. The navigation has 5 tabs: home, map, garden/diary,
  * stats, settings. Each tab is a <button role="tab"> with aria-selected.
  */
 test.describe('Full Navigation', () => {
@@ -348,8 +350,8 @@ test.describe('Full Navigation', () => {
     const tabs = tabList.locator('button[role="tab"]');
     const tabCount = await tabs.count();
 
-    // App has 4 tabs: home, garden/diary, stats, settings
-    expect(tabCount).toBe(4);
+    // App has 5 tabs: home, map, garden/diary, stats, settings
+    expect(tabCount).toBe(5);
 
     for (let i = 0; i < tabCount; i++) {
       const tab = tabs.nth(i);
@@ -436,6 +438,7 @@ test.describe('Empty States', () => {
       localStorage.setItem('zenflow-onboarding-complete', JSON.stringify(true));
       localStorage.setItem('zenflow-notification-permission-checked', JSON.stringify(true));
       localStorage.setItem('zenflow-privacy', JSON.stringify({ noTracking: false, analytics: false, consentShown: true }));
+      localStorage.setItem('zenflow-last-weekly-report', new Date().toISOString());
     });
 
     // Reload the page to start fresh
@@ -450,8 +453,8 @@ test.describe('Empty States', () => {
     await expect(page.locator('body')).toBeVisible();
     await expect(page.locator('text=Something went wrong')).not.toBeVisible();
 
-    // Navigate to the stats tab (index 2: home=0, garden=1, stats=2, settings=3)
-    const statsTab = page.locator('button[role="tab"]').nth(2);
+    // Navigate to the stats tab (index 3: home=0, map=1, garden=2, stats=3, settings=4)
+    const statsTab = page.locator('button[role="tab"]').nth(3);
     await statsTab.click();
     await expect(statsTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
 
@@ -463,8 +466,8 @@ test.describe('Empty States', () => {
     await expect(page.locator('body')).toBeVisible();
     await expect(page.locator('text=Something went wrong')).not.toBeVisible();
 
-    // Navigate to settings tab (index 3)
-    const settingsTab = page.locator('button[role="tab"]').nth(3);
+    // Navigate to settings tab (index 4)
+    const settingsTab = page.locator('button[role="tab"]').nth(4);
     await settingsTab.click();
     await expect(settingsTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
     await page.waitForTimeout(1000);
@@ -498,8 +501,8 @@ test.describe('Settings', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    // Navigate to the settings tab (4th tab, index 3: home=0, garden=1, stats=2, settings=3)
-    const settingsTab = page.locator('button[role="tab"]').nth(3);
+    // Navigate to the settings tab (5th tab, index 4: home=0, map=1, garden=2, stats=3, settings=4)
+    const settingsTab = page.locator('button[role="tab"]').nth(4);
     await expect(settingsTab).toBeVisible({ timeout: 10000 });
     await settingsTab.click();
     await expect(settingsTab).toHaveAttribute('aria-selected', 'true', { timeout: 10000 });
