@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { useState, useRef, useEffect, type ComponentType } from 'react';
 
 interface SplashScreenProps {
   loadingFadeOut: boolean;
@@ -7,6 +8,33 @@ interface SplashScreenProps {
 
 export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Dynamic Lottie loading — avoids pulling lottie chunk (~165KB) into main bundle.
+  // In Capacitor all JS is local, so dynamic import resolves in ~50ms.
+  const [lottieReady, setLottieReady] = useState(false);
+  const lottieRef = useRef<{ Comp: ComponentType<any>; data: object } | null>(null);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    Promise.all([
+      import('lottie-react'),
+      import('@/assets/animations/zen-loader.json'),
+    ]).then(([lottie, anim]) => {
+      if (mountedRef.current) {
+        lottieRef.current = { Comp: lottie.default, data: anim.default };
+        setLottieReady(true);
+      }
+    }).catch(() => {});
+
+    return () => { mountedRef.current = false; };
+  }, []);
+
+  // Extract for JSX (component names must be uppercase)
+  const LottiePlayer = lottieReady ? lottieRef.current?.Comp : null;
+  const lottieData = lottieReady ? lottieRef.current?.data : null;
 
   return (
     <motion.div
@@ -131,22 +159,31 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         {subtitle}
       </motion.p>
 
-      {/* Progress dots — CSS-driven loop for battery savings */}
+      {/* Loading indicator — premium Lottie with dots fallback */}
       <motion.div
-        className="flex items-center gap-2 mt-8"
+        className="mt-8 flex items-center justify-center"
+        style={{ minHeight: 120 }}
         initial={prefersReducedMotion ? {} : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={prefersReducedMotion ? {} : { delay: 1.0 }}
       >
-        {[0, 1, 2].map((i) => (
-          <div
-            key={i}
-            className="w-1.5 h-1.5 rounded-full bg-primary/40"
-            style={!prefersReducedMotion ? {
-              animation: `zen-loading-dot 0.8s ease-in-out ${i * 0.15}s infinite`,
-            } : undefined}
-          />
-        ))}
+        {LottiePlayer && lottieData ? (
+          <div className="pointer-events-none" style={{ width: 120, height: 120 }} aria-hidden="true">
+            <LottiePlayer animationData={lottieData} loop autoplay style={{ width: '100%', height: '100%' }} />
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-primary/40"
+                style={!prefersReducedMotion ? {
+                  animation: `zen-loading-dot 0.8s ease-in-out ${i * 0.15}s infinite`,
+                } : undefined}
+              />
+            ))}
+          </div>
+        )}
       </motion.div>
     </motion.div>
   );
