@@ -131,35 +131,16 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         {subtitle}
       </motion.p>
 
-      {/* Zen Infinity Draw — premium SVG loader with ambient glow integration */}
+      {/* Zen Infinity Draw — premium SVG loader, no background element */}
       <motion.div
-        className="mt-8 relative flex items-center justify-center"
-        style={{ minHeight: 100 }}
+        className="mt-8 flex items-center justify-center"
+        style={{ minHeight: 130 }}
         initial={prefersReducedMotion ? {} : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={prefersReducedMotion ? {} : { delay: 1.0 }}
         aria-hidden="true"
       >
-        {/* Ambient glow — connects infinity to aurora background */}
-        <div
-          className="absolute zen-ring-animated"
-          style={{
-            width: 240, height: 120,
-            top: '50%', left: '50%',
-            transform: 'translate(-50%, -50%)',
-            borderRadius: '50%',
-            background: 'radial-gradient(ellipse, hsl(var(--primary) / 0.12) 0%, transparent 70%)',
-            filter: 'blur(20px)',
-            ...(prefersReducedMotion
-              ? { opacity: 0.3 }
-              : {
-                  animation: 'zen-glow-breathe 4s ease-in-out infinite',
-                  '--zen-glow-min': '0.25',
-                  '--zen-glow-max': '0.55',
-                }),
-          } as React.CSSProperties}
-        />
-        <svg width="200" height="100" viewBox="0 0 100 50" className="relative pointer-events-none">
+        <svg width="260" height="130" viewBox="0 0 100 50" overflow="visible" className="pointer-events-none">
           <defs>
             <linearGradient id="zen-inf-grad" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#059669" />
@@ -173,11 +154,11 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
             } : undefined}
             className="zen-ring-animated"
           >
-            {/* Ultra-wide atmospheric bloom */}
+            {/* Atmospheric bloom — widest, softest */}
             <path
               d="M20,25 C20,10 45,10 50,25 C55,40 80,40 80,25 C80,10 55,10 50,25 C45,40 20,40 20,25"
-              fill="none" stroke="url(#zen-inf-grad)" strokeWidth="14" strokeLinecap="round"
-              opacity="0.12"
+              fill="none" stroke="url(#zen-inf-grad)" strokeWidth="18" strokeLinecap="round"
+              opacity="0.10"
               style={!prefersReducedMotion ? {
                 strokeDasharray: 200, strokeDashoffset: 200,
                 animation: 'zen-infinity-draw 2.5s ease-in-out infinite',
@@ -187,8 +168,8 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
             {/* Medium glow layer */}
             <path
               d="M20,25 C20,10 45,10 50,25 C55,40 80,40 80,25 C80,10 55,10 50,25 C45,40 20,40 20,25"
-              fill="none" stroke="url(#zen-inf-grad)" strokeWidth="8" strokeLinecap="round"
-              opacity="0.35"
+              fill="none" stroke="url(#zen-inf-grad)" strokeWidth="10" strokeLinecap="round"
+              opacity="0.30"
               style={!prefersReducedMotion ? {
                 strokeDasharray: 200, strokeDashoffset: 200,
                 animation: 'zen-infinity-draw 2.5s ease-in-out infinite',
@@ -198,7 +179,7 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
             {/* Main crisp line */}
             <path
               d="M20,25 C20,10 45,10 50,25 C55,40 80,40 80,25 C80,10 55,10 50,25 C45,40 20,40 20,25"
-              fill="none" stroke="url(#zen-inf-grad)" strokeWidth="4" strokeLinecap="round"
+              fill="none" stroke="url(#zen-inf-grad)" strokeWidth="5" strokeLinecap="round"
               style={!prefersReducedMotion ? {
                 strokeDasharray: 200, strokeDashoffset: 200,
                 animation: 'zen-infinity-draw 2.5s ease-in-out infinite',
