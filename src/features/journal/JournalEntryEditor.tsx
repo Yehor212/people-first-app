@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, Sparkles, X, Calendar, Shuffle, Mic, MicOff, Circle, Square, LayoutTemplate } from 'lucide-react';
+import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, Sparkles, X, Calendar, Shuffle, Mic, MicOff, Circle, Square, LayoutTemplate, Palette, Flame, Focus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -7,7 +7,7 @@ import { useScrollLock } from '@/hooks/useScrollLock';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 import { createFocusTrap, announceSuccess } from '@/lib/a11y';
 import { hapticSuccess } from '@/lib/haptics';
-import type { JournalEntry, JournalPhoto, JournalAudio } from './types';
+import type { JournalEntry, JournalPhoto, JournalAudio, DiaryThemeName, DiaryFontName } from './types';
 import type { MoodType } from '@/types';
 import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY, countWords } from './types';
 import { JournalStickerPicker } from './JournalStickerPicker';
@@ -22,6 +22,18 @@ import { logger } from '@/lib/logger';
 import { SK } from '@/lib/storageKeys';
 import { safeLocalStorageSet, safeJsonParse, storageGetRaw, storageRemove } from '@/lib/safeJson';
 import { JournalHabitSection } from './JournalHabitSection';
+import { useDiaryTheme } from './useDiaryTheme';
+import { DiaryCanvas } from './DiaryCanvas';
+import { BurnThoughtWidget } from './BurnThoughtWidget';
+import { SpotlightOverlay } from './SpotlightOverlay';
+import { DIARY_THEMES, DIARY_FONTS, DIARY_THEME_NAMES, DIARY_FONT_NAMES } from './types';
+
+// Local aliases to avoid name collision with the hook's `theme` state
+const DIARY_THEMES_LOCAL = DIARY_THEMES;
+const DIARY_FONTS_LOCAL = DIARY_FONTS;
+const DIARY_THEME_NAMES_LOCAL = DIARY_THEME_NAMES;
+const DIARY_FONT_NAMES_LOCAL = DIARY_FONT_NAMES;
+const FONT_LABELS_LOCAL: Record<string, string> = { caveat: 'Handwriting', cormorant: 'Serif', outfit: 'Sans' };
 
 const MOOD_OPTIONS: { mood: MoodType; emoji: string }[] = [
   { mood: 'great', emoji: '\u{1F604}' },
@@ -138,6 +150,8 @@ interface JournalEntryEditorProps {
     tags: string[];
     date?: string;
     habitSnapshot?: { habitId: string; habitName: string; habitIcon: string; completed: boolean }[];
+    theme?: DiaryThemeName;
+    font?: DiaryFontName;
   }) => Promise<void>;
   onAddPhoto: (file: File, entryId: string) => Promise<JournalPhoto>;
   onRemovePhoto: (photoId: string, entryId: string) => Promise<void>;
@@ -193,6 +207,12 @@ export function JournalEntryEditor({
   const [draftAvailable, setDraftAvailable] = useState<DraftData | null>(null);
   const [promptsHidden, setPromptsHidden] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState(0);
+
+  // ── Diary premium features ──
+  const diaryTheme = useDiaryTheme(entry?.theme || 'dark', entry?.font || 'caveat');
+  const [showStylePanel, setShowStylePanel] = useState(false);
+  const [showBurnWidget, setShowBurnWidget] = useState(false);
+  const [spotlightActive, setSpotlightActive] = useState(false);
 
   const entryId = entry?.id || '__draft__';
 
@@ -318,6 +338,8 @@ export function JournalEntryEditor({
         tags,
         date,
         habitSnapshot: habitSnapshot.length > 0 ? habitSnapshot : undefined,
+        theme: diaryTheme.theme,
+        font: diaryTheme.font,
       });
       void clearDraft(draftKey);
       announceSuccess(ts.journalEntrySaved || 'Entry saved');
@@ -331,7 +353,7 @@ export function JournalEntryEditor({
     } catch {
       setSaving(false);
     }
-  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot]);
+  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font]);
 
   const handleSaveAndClose = useCallback(async () => {
     setShowUnsavedDialog(false);
@@ -512,6 +534,7 @@ export function JournalEntryEditor({
     setShowPhotos(false);
     setShowMood(false);
     setShowTags(false);
+    setShowStylePanel(false);
   };
 
   const handlePromptTap = (prompt: string) => {
@@ -519,11 +542,21 @@ export function JournalEntryEditor({
     setPromptsHidden(true);
   };
 
+  // Scoped CSS vars for diary theme (no body mutation — isolated to this overlay)
+  const diaryStyle = useMemo(() => ({
+    ...diaryTheme.themeVars,
+    backgroundColor: diaryTheme.themeVars['--diary-bg'],
+    color: diaryTheme.themeVars['--diary-text'],
+  } as React.CSSProperties), [diaryTheme.themeVars]);
+
   return (
-    <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] bg-background md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up">
-      <div className="w-full h-full flex flex-col md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:bg-background md:shadow-2xl md:border md:border-border/20 md:overflow-hidden">
+    <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up" style={diaryStyle}>
+      {/* Canvas decorative background */}
+      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive />
+
+      <div className="w-full h-full flex flex-col md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:shadow-2xl md:border md:border-border/20 md:overflow-hidden relative z-10">
       {/* Header — frosted glass */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/80 backdrop-blur-xl">
+      <div className="flex items-center justify-between px-4 py-3 border-b backdrop-blur-xl" style={{ borderColor: 'var(--diary-border, hsl(var(--border) / 0.3))', backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 80%, transparent)' }}>
         <button
           onClick={handleBack}
           className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -802,6 +835,13 @@ export function JournalEntryEditor({
           </div>
         )}
 
+        {/* Burn-a-thought widget (inline, above textarea) */}
+        <AnimatePresence>
+          {showBurnWidget && (
+            <BurnThoughtWidget onClose={() => setShowBurnWidget(false)} />
+          )}
+        </AnimatePresence>
+
         {/* Content textarea */}
         <textarea
           ref={textareaRef}
@@ -810,9 +850,10 @@ export function JournalEntryEditor({
           placeholder={ts.journalEntryPlaceholder || "What's on your mind?"}
           className={cn(
             'w-full min-h-[200px] bg-transparent border-none outline-none resize-none',
-            'text-sm text-foreground leading-relaxed',
+            'text-sm leading-relaxed',
             'placeholder:text-muted-foreground/40',
           )}
+          style={{ fontFamily: diaryTheme.fontFamily, color: 'var(--diary-text, hsl(var(--foreground)))' }}
           onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
         />
 
@@ -951,6 +992,32 @@ export function JournalEntryEditor({
             <span className="text-[10px] text-muted-foreground/60">{ts.journalTemplateButton || 'Template'}</span>
           </button>
         )}
+
+        {/* Style button (theme/font picker) */}
+        <button
+          onClick={() => { closeAllPickers(); setShowStylePanel(!showStylePanel); }}
+          className={cn(
+            'flex-1 py-1 rounded-lg transition-colors',
+            'min-h-[44px] flex flex-col items-center justify-center gap-0.5',
+            showStylePanel ? 'bg-primary/10' : 'hover:bg-muted/50',
+          )}
+        >
+          <Palette className="w-5 h-5" style={{ color: showStylePanel ? 'var(--diary-accent, hsl(var(--primary)))' : undefined }} />
+          <span className="text-[10px] text-muted-foreground/60">{ts.journalStyleButton || 'Style'}</span>
+        </button>
+
+        {/* Burn-a-thought button */}
+        <button
+          onClick={() => setShowBurnWidget(!showBurnWidget)}
+          className={cn(
+            'flex-1 py-1 rounded-lg transition-colors',
+            'min-h-[44px] flex flex-col items-center justify-center gap-0.5',
+            showBurnWidget ? 'bg-orange-500/10' : 'hover:bg-muted/50',
+          )}
+        >
+          <Flame className={cn('w-5 h-5', showBurnWidget ? 'text-orange-500' : 'text-muted-foreground')} />
+          <span className="text-[10px] text-muted-foreground/60">{ts.journalBurnButton || 'Burn'}</span>
+        </button>
       </div>
 
       {/* Inline mood picker */}
@@ -994,6 +1061,89 @@ export function JournalEntryEditor({
               {ts.journalAdd || 'Add'}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Style panel (theme/font pickers + spotlight toggle) */}
+      {showStylePanel && (
+        <div className="border-t px-4 py-3 pb-[env(safe-area-inset-bottom)]" style={{ borderColor: 'var(--diary-border, hsl(var(--border) / 0.2))', backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 95%, transparent)' }}>
+          <div className="flex items-start gap-4">
+            {/* Theme grid */}
+            <div className="flex-1">
+              <span className="text-[10px] font-medium mb-1.5 block" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
+                {ts.journalThemeLabel || 'Theme'}
+              </span>
+              <div className="grid grid-cols-6 gap-1.5">
+                {DIARY_THEME_NAMES_LOCAL.map(name => {
+                  const theme = DIARY_THEMES_LOCAL[name];
+                  const isActive = name === diaryTheme.theme;
+                  return (
+                    <button
+                      key={name}
+                      onClick={() => diaryTheme.setTheme(name)}
+                      className="flex flex-col items-center gap-0.5"
+                      aria-label={`Theme: ${name}`}
+                      onMouseDown={e => e.preventDefault()}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-full border-2 flex items-center justify-center"
+                        style={{
+                          backgroundColor: theme['--diary-bg'],
+                          borderColor: isActive ? theme['--diary-accent'] : theme['--diary-border'],
+                        }}
+                      >
+                        {isActive && <Check className="w-3 h-3" style={{ color: theme['--diary-accent'] }} />}
+                      </div>
+                      <span className="text-[8px] capitalize" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
+                        {name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Font list */}
+            <div>
+              <span className="text-[10px] font-medium mb-1.5 block" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
+                {ts.journalFontLabel || 'Font'}
+              </span>
+              <div className="flex flex-col gap-1">
+                {DIARY_FONT_NAMES_LOCAL.map(name => {
+                  const isActive = name === diaryTheme.font;
+                  return (
+                    <button
+                      key={name}
+                      onClick={() => diaryTheme.setFont(name)}
+                      className={cn('text-xs px-2 py-1 rounded-md transition-colors text-start', isActive ? 'bg-primary/10 font-medium' : 'hover:bg-muted/50')}
+                      style={{ fontFamily: DIARY_FONTS_LOCAL[name].family, color: 'var(--diary-text, hsl(var(--foreground)))' }}
+                      onMouseDown={e => e.preventDefault()}
+                    >
+                      {FONT_LABELS_LOCAL[name]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Spotlight toggle */}
+            <div>
+              <span className="text-[10px] font-medium mb-1.5 block" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
+                Focus
+              </span>
+              <button
+                onClick={() => setSpotlightActive(!spotlightActive)}
+                className={cn(
+                  'w-9 h-9 rounded-lg flex items-center justify-center transition-colors',
+                  spotlightActive ? 'bg-primary/15' : 'hover:bg-muted/50',
+                )}
+                aria-label="Toggle spotlight focus mode"
+                onMouseDown={e => e.preventDefault()}
+              >
+                <Focus className="w-4 h-4" style={{ color: spotlightActive ? 'var(--diary-accent, hsl(var(--primary)))' : 'var(--diary-muted, hsl(var(--muted-foreground)))' }} />
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1167,6 +1317,9 @@ export function JournalEntryEditor({
         </div>
       )}
       </div>
+
+      {/* Spotlight focus overlay */}
+      <SpotlightOverlay isActive={spotlightActive} textareaRef={textareaRef} />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import type { DiaryThemeName, DiaryFontName, DiaryThemeConfig } from '../types';
-import { DIARY_THEMES, DIARY_FONTS } from '../types';
+import type { DiaryThemeName, DiaryFontName, DiaryThemeConfig } from './types';
+import { DIARY_THEMES, DIARY_FONTS } from './types';
 
 interface DiaryThemeState {
   theme: DiaryThemeName;

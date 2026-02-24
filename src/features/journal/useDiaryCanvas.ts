@@ -8,7 +8,7 @@
 
 import { useEffect, useRef } from 'react';
 import { shouldAnimate } from '@/lib/animationUtils';
-import { isCanvasPaused } from '../canvasPause';
+import { isCanvasPaused } from '@/lib/canvasPause';
 
 // ── Particle type ──
 

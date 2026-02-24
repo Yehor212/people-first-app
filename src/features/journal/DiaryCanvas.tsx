@@ -1,13 +1,10 @@
 /**
- * DiaryCanvas — Decorative background canvas layer.
- *
- * Renders wavy borders + floating particles behind the editor.
- * Fixed positioning, NEVER resizes for keyboard.
- * All animation cleanup managed by useDiaryCanvas hook.
+ * DiaryCanvas — Decorative canvas layer (wavy borders + floating particles).
+ * Renders as a fixed layer behind the editor. Never resizes for keyboard.
  */
 
 import { useRef } from 'react';
-import { useDiaryCanvas } from '../hooks/useDiaryCanvas';
+import { useDiaryCanvas } from './useDiaryCanvas';
 
 interface DiaryCanvasProps {
   accentColor: string;

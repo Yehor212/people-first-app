@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
-import { Lock, ChevronRight, X, Settings, Loader2, CheckCircle2, Mail, PenLine, Download, Upload, BarChart3, Sparkles } from 'lucide-react';
+import { Lock, ChevronRight, X, Settings, Loader2, CheckCircle2, Mail, PenLine, Download, Upload, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -24,7 +24,7 @@ import { StickerRenderer } from './StickerRenderer';
 import { useJournalReminder, getDaysSinceLastEntry } from './useJournalReminder';
 import { useScreenSecurity } from './useScreenSecurity';
 import { ParticleBackground } from '@/components/stats/ParticleBackground';
-import { useGamificationStore, useUIStore } from '@/stores';
+import { useGamificationStore } from '@/stores';
 import { haptics } from '@/lib/haptics';
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
@@ -281,12 +281,9 @@ export function JournalModule() {
     return () => subscription.unsubscribe();
   }, [resetStep, security]);
 
-  const openDiary = useUIStore(s => s.openModal);
-
   // ── Card View (collapsed in garden tab) ──
   if (moduleState === 'card') {
     return (
-      <>
       <motion.button
         whileTap={{ scale: 0.97 }}
         transition={{ type: 'spring', stiffness: 400, damping: 25 }}
@@ -365,31 +362,6 @@ export function JournalModule() {
         </div>
 
       </motion.button>
-
-      {/* Premium diary — immersive writing mode */}
-      <button
-        onClick={() => openDiary('showDiary')}
-        className={cn(
-          'w-full mt-2 rounded-xl px-4 py-3 flex items-center gap-3',
-          'bg-gradient-to-r from-indigo-500/10 to-purple-500/10',
-          'border border-indigo-500/15 dark:border-indigo-500/10',
-          'transition-all duration-200 active:scale-[0.98]',
-        )}
-      >
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-indigo-500/15">
-          <Sparkles className="w-4 h-4 text-indigo-500" />
-        </div>
-        <div className="text-start flex-1">
-          <span className="text-sm font-medium text-foreground">
-            {ts.diaryPremiumEntry || 'Immersive Mode'}
-          </span>
-          <span className="block text-[10px] text-muted-foreground">
-            {ts.diaryPremiumHint || 'Fullscreen writing with themes & canvas'}
-          </span>
-        </div>
-        <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
-      </button>
-      </>
     );
   }
 

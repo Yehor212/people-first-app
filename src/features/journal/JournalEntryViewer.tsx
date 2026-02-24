@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { JournalEntry, JournalAudio } from './types';
-import { countWords } from './types';
+import { countWords, DIARY_THEMES, DIARY_FONTS } from './types';
 import type { MoodType, PrimaryEmotion } from '@/types';
 import { JournalPhotoGallery } from './JournalPhotoGallery';
 import { JournalAudioPlayer } from './JournalAudioPlayer';
@@ -163,6 +163,15 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
 
   const wordCount = useMemo(() => countWords(entry.content), [entry.content]);
 
+  // Diary theme/font for themed entries
+  const themeStyle = useMemo(() => {
+    if (!entry.theme) return undefined;
+    const vars = DIARY_THEMES[entry.theme];
+    return { ...vars, backgroundColor: vars['--diary-bg'], color: vars['--diary-text'] } as React.CSSProperties;
+  }, [entry.theme]);
+
+  const fontFamily = entry.font ? DIARY_FONTS[entry.font].family : undefined;
+
   const handleShare = async () => {
     const text = [entry.title, entry.content].filter(Boolean).join('\n\n');
     if (!text) return;
@@ -178,9 +187,9 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
   };
 
   return (
-    <>
+    <div style={themeStyle} className="flex flex-col flex-1 min-h-0">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/30 bg-background/80 backdrop-blur-xl">
+      <div className="flex items-center justify-between px-4 py-3 border-b backdrop-blur-xl" style={{ borderColor: themeStyle ? 'var(--diary-border)' : undefined, backgroundColor: themeStyle ? 'color-mix(in srgb, var(--diary-bg) 80%, transparent)' : undefined }}>
         <button
           onClick={onBack}
           className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -307,7 +316,7 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
 
           {/* Content */}
           {entry.content && (
-            <div className="text-[15px] leading-7 text-foreground/90">
+            <div className="text-[15px] leading-7 text-foreground/90" style={{ fontFamily }}>
               {renderContent(entry.content)}
             </div>
           )}
@@ -331,6 +340,6 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
           )}
         </div>
       </motion.div>
-    </>
+    </div>
   );
 }

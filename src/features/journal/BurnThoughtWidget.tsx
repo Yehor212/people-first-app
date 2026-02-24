@@ -1,23 +1,16 @@
 /**
- * BurnThoughtWidget — Interactive "burn a worry" widget.
+ * BurnThoughtWidget — Inline "burn a worry" section for the journal editor.
  *
- * Renders as an overlay at the placeholder's position.
- * Reads initial state from widgetStates sidecar.
- * On "Burn": Canvas fire particle animation → marks burned in sidecar.
- * Memory-safe: rAF cleaned up on unmount.
+ * Renders as an inline collapsible section (not absolute-positioned).
+ * Canvas fire particle animation on "Burn". Memory-safe rAF cleanup.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Flame, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { zenMotion, shouldAnimate } from '@/lib/animationUtils';
-import type { WidgetState } from '../types';
 
 interface BurnThoughtWidgetProps {
-  widgetId: string;
-  initialState: Extract<WidgetState, { type: 'burn' }> | undefined;
-  position: { top: number; left: number; width: number };
-  onStateChange: (id: string, state: WidgetState) => void;
   onClose: () => void;
 }
 
@@ -44,11 +37,9 @@ function initFireParticles(w: number, h: number): FireParticle[] {
   }));
 }
 
-export function BurnThoughtWidget({
-  widgetId, initialState, position, onStateChange, onClose,
-}: BurnThoughtWidgetProps) {
-  const [text, setText] = useState(initialState?.text || '');
-  const [burned, setBurned] = useState(initialState?.burned || false);
+export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
+  const [text, setText] = useState('');
+  const [burned, setBurned] = useState(false);
   const [burning, setBurning] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
@@ -61,7 +52,6 @@ export function BurnThoughtWidget({
     // Reduced motion: skip fire animation, mark burned immediately
     if (!shouldAnimate()) {
       setBurned(true);
-      onStateChange(widgetId, { type: 'burn', text, burned: true });
       return;
     }
 
@@ -107,44 +97,32 @@ export function BurnThoughtWidget({
       } else {
         setBurned(true);
         setBurning(false);
-        onStateChange(widgetId, { type: 'burn', text, burned: true });
       }
     }
 
     rafRef.current = requestAnimationFrame(frame);
-  }, [text, burning, widgetId, onStateChange]);
+  }, [text, burning]);
 
   // ── Cleanup rAF ──
   useEffect(() => {
     return () => cancelAnimationFrame(rafRef.current);
   }, []);
 
-  // ── Sync text changes to sidecar ──
-  const handleTextChange = useCallback((value: string) => {
-    setText(value);
-    onStateChange(widgetId, { type: 'burn', text: value, burned: false });
-  }, [widgetId, onStateChange]);
-
   return (
     <motion.div
-      className="absolute rounded-xl overflow-hidden"
+      className="rounded-xl overflow-hidden mx-1 mb-3"
       style={{
-        top: position.top,
-        left: position.left,
-        width: position.width,
-        minHeight: 140,
-        backgroundColor: 'color-mix(in srgb, var(--diary-bg) 95%, transparent)',
-        border: '1px solid var(--diary-border)',
-        pointerEvents: 'auto',
-        zIndex: 10,
+        backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--card))) 95%, transparent)',
+        border: '1px solid var(--diary-border, hsl(var(--border) / 0.3))',
       }}
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
       transition={zenMotion.gentle}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2">
-        <div className="flex items-center gap-2" style={{ color: 'var(--diary-accent)' }}>
+        <div className="flex items-center gap-2" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }}>
           <Flame className="w-4 h-4" />
           <span className="text-sm font-medium">
             {burned ? 'Released' : 'Burn a thought'}
@@ -153,7 +131,7 @@ export function BurnThoughtWidget({
         <button
           onClick={onClose}
           className="w-7 h-7 flex items-center justify-center rounded-full"
-          style={{ color: 'var(--diary-muted)' }}
+          style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}
           aria-label="Close widget"
         >
           <X className="w-3.5 h-3.5" />
@@ -163,7 +141,7 @@ export function BurnThoughtWidget({
       {/* Body */}
       <div className="relative px-3 pb-3">
         {burned ? (
-          <p className="text-sm py-4 text-center" style={{ color: 'var(--diary-muted)' }}>
+          <p className="text-sm py-4 text-center" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
             Your thought has been released.
           </p>
         ) : burning ? (
@@ -178,13 +156,13 @@ export function BurnThoughtWidget({
           <>
             <textarea
               value={text}
-              onChange={(e) => handleTextChange(e.target.value)}
+              onChange={(e) => setText(e.target.value)}
               placeholder="Write what worries you..."
               className="w-full rounded-lg px-3 py-2 text-sm outline-none resize-none"
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--diary-accent) 5%, transparent)',
-                color: 'var(--diary-text)',
-                border: '1px solid var(--diary-border)',
+                backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 5%, transparent)',
+                color: 'var(--diary-text, hsl(var(--foreground)))',
+                border: '1px solid var(--diary-border, hsl(var(--border) / 0.3))',
                 minHeight: 60,
               }}
               rows={2}
@@ -194,8 +172,8 @@ export function BurnThoughtWidget({
               disabled={!text.trim()}
               className="mt-2 w-full py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2 min-h-[44px]"
               style={{
-                backgroundColor: text.trim() ? 'var(--diary-accent)' : 'var(--diary-border)',
-                color: text.trim() ? '#fff' : 'var(--diary-muted)',
+                backgroundColor: text.trim() ? 'var(--diary-accent, hsl(var(--primary)))' : 'var(--diary-border, hsl(var(--border)))',
+                color: text.trim() ? '#fff' : 'var(--diary-muted, hsl(var(--muted-foreground)))',
               }}
             >
               <Flame className="w-4 h-4" />

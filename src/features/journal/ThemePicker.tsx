@@ -6,8 +6,8 @@
 import { Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { zenMotion } from '@/lib/animationUtils';
-import type { DiaryThemeName } from '../types';
-import { DIARY_THEME_NAMES, DIARY_THEMES } from '../types';
+import type { DiaryThemeName } from './types';
+import { DIARY_THEME_NAMES, DIARY_THEMES } from './types';
 
 const THEME_LABELS: Record<DiaryThemeName, string> = {
   light: 'Light',
@@ -31,9 +31,9 @@ export function ThemePicker({ currentTheme, onSelect, onClose }: ThemePickerProp
       role="listbox"
       aria-label="Theme selection"
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--diary-bg) 90%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 90%, transparent)',
         backdropFilter: 'blur(16px)',
-        border: '1px solid var(--diary-border)',
+        border: '1px solid var(--diary-border, hsl(var(--border)))',
         minWidth: 180,
         zIndex: 25,
       }}
@@ -57,7 +57,7 @@ export function ThemePicker({ currentTheme, onSelect, onClose }: ThemePickerProp
               onClick={() => { onSelect(name); onClose(); }}
               className="flex flex-col items-center gap-1.5 p-2 rounded-lg transition-colors min-h-[48px]"
               style={{
-                backgroundColor: isActive ? 'color-mix(in srgb, var(--diary-accent) 12%, transparent)' : 'transparent',
+                backgroundColor: isActive ? 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 12%, transparent)' : 'transparent',
               }}
               aria-label={`Theme: ${THEME_LABELS[name]}`}
               onMouseDown={(e) => e.preventDefault()}
@@ -72,7 +72,7 @@ export function ThemePicker({ currentTheme, onSelect, onClose }: ThemePickerProp
               >
                 {isActive && <Check className="w-3.5 h-3.5" style={{ color: theme['--diary-accent'] }} />}
               </div>
-              <span className="text-[10px]" style={{ color: 'var(--diary-muted)' }}>
+              <span className="text-[10px]" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
                 {THEME_LABELS[name]}
               </span>
             </button>

@@ -6,8 +6,8 @@
 import { Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { zenMotion } from '@/lib/animationUtils';
-import type { DiaryFontName } from '../types';
-import { DIARY_FONT_NAMES, DIARY_FONTS } from '../types';
+import type { DiaryFontName } from './types';
+import { DIARY_FONT_NAMES, DIARY_FONTS } from './types';
 
 const FONT_LABELS: Record<DiaryFontName, string> = {
   caveat: 'Handwriting',
@@ -28,9 +28,9 @@ export function FontPicker({ currentFont, onSelect, onClose }: FontPickerProps) 
       role="listbox"
       aria-label="Font selection"
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--diary-bg) 90%, transparent)',
+        backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 90%, transparent)',
         backdropFilter: 'blur(16px)',
-        border: '1px solid var(--diary-border)',
+        border: '1px solid var(--diary-border, hsl(var(--border)))',
         minWidth: 200,
         zIndex: 25,
       }}
@@ -52,8 +52,8 @@ export function FontPicker({ currentFont, onSelect, onClose }: FontPickerProps) 
             onClick={() => { onSelect(name); onClose(); }}
             className="w-full flex items-center gap-3 px-4 py-3 transition-colors min-h-[48px]"
             style={{
-              color: 'var(--diary-text)',
-              backgroundColor: isActive ? 'color-mix(in srgb, var(--diary-accent) 12%, transparent)' : 'transparent',
+              color: 'var(--diary-text, hsl(var(--foreground)))',
+              backgroundColor: isActive ? 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 12%, transparent)' : 'transparent',
             }}
             onMouseDown={(e) => e.preventDefault()}
           >
@@ -62,7 +62,7 @@ export function FontPicker({ currentFont, onSelect, onClose }: FontPickerProps) 
             >
               {FONT_LABELS[name]}
             </span>
-            {isActive && <Check className="w-4 h-4 ml-auto" style={{ color: 'var(--diary-accent)' }} />}
+            {isActive && <Check className="w-4 h-4 ml-auto" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />}
           </button>
         );
       })}
