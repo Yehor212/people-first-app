@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import { useState, useRef, useEffect, type ComponentType } from 'react';
 
 interface SplashScreenProps {
   loadingFadeOut: boolean;
@@ -8,33 +7,6 @@ interface SplashScreenProps {
 
 export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
   const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // Dynamic Lottie loading — avoids pulling lottie chunk (~165KB) into main bundle.
-  // In Capacitor all JS is local, so dynamic import resolves in ~50ms.
-  const [lottieReady, setLottieReady] = useState(false);
-  const lottieRef = useRef<{ Comp: ComponentType<any>; data: object } | null>(null);
-  const mountedRef = useRef(true);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    Promise.all([
-      import('lottie-react'),
-      import('@/assets/animations/zen-loader.json'),
-    ]).then(([lottie, anim]) => {
-      if (mountedRef.current) {
-        lottieRef.current = { Comp: lottie.default, data: anim.default };
-        setLottieReady(true);
-      }
-    }).catch(() => {});
-
-    return () => { mountedRef.current = false; };
-  }, []);
-
-  // Extract for JSX (component names must be uppercase)
-  const LottiePlayer = lottieReady ? lottieRef.current?.Comp : null;
-  const lottieData = lottieReady ? lottieRef.current?.data : null;
 
   return (
     <motion.div
@@ -159,7 +131,7 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         {subtitle}
       </motion.p>
 
-      {/* Loading indicator — premium Lottie with dots fallback */}
+      {/* Zen Glow Ring — premium SVG loader with gradient strokes + neon glow */}
       <motion.div
         className="mt-8 flex items-center justify-center"
         style={{ minHeight: 120 }}
@@ -167,23 +139,57 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         animate={{ opacity: 1 }}
         transition={prefersReducedMotion ? {} : { delay: 1.0 }}
       >
-        {LottiePlayer && lottieData ? (
-          <div className="pointer-events-none" style={{ width: 120, height: 120 }} aria-hidden="true">
-            <LottiePlayer animationData={lottieData} loop autoplay style={{ width: '100%', height: '100%' }} />
-          </div>
-        ) : (
-          <div className="flex items-center gap-2">
-            {[0, 1, 2].map((i) => (
-              <div
-                key={i}
-                className="w-1.5 h-1.5 rounded-full bg-primary/40"
-                style={!prefersReducedMotion ? {
-                  animation: `zen-loading-dot 0.8s ease-in-out ${i * 0.15}s infinite`,
-                } : undefined}
-              />
-            ))}
-          </div>
-        )}
+        <svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true" className="pointer-events-none">
+          <defs>
+            <linearGradient id="zen-ring-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="120" y2="120">
+              <stop offset="0%" stopColor="#1a6b52" />
+              <stop offset="40%" stopColor="#2a9d6e" />
+              <stop offset="70%" stopColor="#34d399" />
+              <stop offset="100%" stopColor="#2dd4bf" />
+            </linearGradient>
+          </defs>
+
+          {/* Outer glow ring — pulsing neon drop-shadow */}
+          <circle cx="60" cy="60" r="48" fill="none"
+            stroke="url(#zen-ring-grad)" strokeWidth="3" strokeLinecap="round"
+            opacity="0.5"
+            style={!prefersReducedMotion ? {
+              animation: 'zen-ring-rotate 2s linear infinite, zen-ring-dash 2.5s cubic-bezier(0.35,0,0.25,1) infinite, zen-ring-glow 3s cubic-bezier(0.4,0,0.6,1) infinite',
+              transformOrigin: 'center',
+            } : { strokeDasharray: '150 301.6' }}
+            className="zen-ring-animated"
+          />
+
+          {/* Main ring — crisp gradient stroke */}
+          <circle cx="60" cy="60" r="48" fill="none"
+            stroke="url(#zen-ring-grad)" strokeWidth="2" strokeLinecap="round"
+            style={!prefersReducedMotion ? {
+              animation: 'zen-ring-rotate 2s linear infinite, zen-ring-dash 2.5s cubic-bezier(0.35,0,0.25,1) infinite',
+              transformOrigin: 'center',
+            } : { strokeDasharray: '150 301.6' }}
+            className="zen-ring-animated"
+          />
+
+          {/* Inner counter-rotating ring — adds depth */}
+          <circle cx="60" cy="60" r="36" fill="none"
+            stroke="url(#zen-ring-grad)" strokeWidth="1.5" strokeLinecap="round"
+            opacity="0.35"
+            style={!prefersReducedMotion ? {
+              animation: 'zen-ring-rotate-reverse 3s linear infinite, zen-ring-dash-inner 3s cubic-bezier(0.35,0,0.25,1) infinite',
+              transformOrigin: 'center',
+            } : { strokeDasharray: '80 226.2' }}
+            className="zen-ring-animated"
+          />
+
+          {/* Center breathing dot — bouncy overshoot easing */}
+          <circle cx="60" cy="60" r="4" fill="#3dbd80"
+            style={!prefersReducedMotion ? {
+              animation: 'zen-ring-center 2.5s cubic-bezier(0.68,-0.55,0.265,1.55) infinite',
+              transformOrigin: 'center',
+            } : undefined}
+            className="zen-ring-animated"
+          />
+        </svg>
       </motion.div>
     </motion.div>
   );
