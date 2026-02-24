@@ -131,51 +131,92 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         {subtitle}
       </motion.p>
 
-      {/* Zen Infinity Draw — premium SVG loader with gradient stroke + neon glow */}
+      {/* Zen Liquid Orb — organic morphing loader, matches bokeh/aurora aesthetic */}
       <motion.div
-        className="mt-8 flex items-center justify-center"
-        style={{ minHeight: 70 }}
+        className="mt-8 relative flex items-center justify-center"
+        style={{ width: 100, height: 100 }}
         initial={prefersReducedMotion ? {} : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={prefersReducedMotion ? {} : { delay: 1.0 }}
+        aria-hidden="true"
       >
-        <svg width="140" height="70" viewBox="0 0 100 50" aria-hidden="true" className="pointer-events-none">
-          <defs>
-            <linearGradient id="zen-infinity-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#1a6b52" />
-              <stop offset="50%" stopColor="#2a9d6e" />
-              <stop offset="100%" stopColor="#2dd4bf" />
-            </linearGradient>
-          </defs>
-          <g
-            style={!prefersReducedMotion ? {
-              animation: 'zen-infinity-glow 3s ease-in-out infinite',
-            } : undefined}
-            className="zen-ring-animated"
-          >
-            {/* Glow bloom layer — wider stroke, transparent */}
-            <path
-              d="M20,25 C20,10 45,10 50,25 C55,40 80,40 80,25 C80,10 55,10 50,25 C45,40 20,40 20,25"
-              fill="none" stroke="url(#zen-infinity-grad)" strokeWidth="6" strokeLinecap="round"
-              opacity="0.4"
-              style={!prefersReducedMotion ? {
-                strokeDasharray: 200, strokeDashoffset: 200,
-                animation: 'zen-infinity-draw 2.5s ease-in-out infinite',
-              } : undefined}
-              className="zen-ring-animated"
-            />
-            {/* Main crisp line */}
-            <path
-              d="M20,25 C20,10 45,10 50,25 C55,40 80,40 80,25 C80,10 55,10 50,25 C45,40 20,40 20,25"
-              fill="none" stroke="url(#zen-infinity-grad)" strokeWidth="3" strokeLinecap="round"
-              style={!prefersReducedMotion ? {
-                strokeDasharray: 200, strokeDashoffset: 200,
-                animation: 'zen-infinity-draw 2.5s ease-in-out infinite',
-              } : undefined}
-              className="zen-ring-animated"
-            />
-          </g>
-        </svg>
+        {/* Layer 0: Outer ambient glow — static shape, only opacity breathes */}
+        <div
+          className="absolute inset-0 rounded-full zen-ring-animated"
+          style={{
+            background: 'radial-gradient(circle, hsl(var(--primary) / 0.12) 0%, hsl(var(--primary) / 0.04) 50%, transparent 70%)',
+            filter: 'blur(16px)',
+            ...(prefersReducedMotion
+              ? { opacity: 0.5 }
+              : {
+                  animation: 'zen-glow-breathe 4s ease-in-out infinite',
+                  '--zen-glow-min': '0.4',
+                  '--zen-glow-max': '0.8',
+                }),
+          } as React.CSSProperties}
+        />
+        {/* Layer 1: Main body — gradient fill, morphing */}
+        <div
+          className="absolute zen-ring-animated"
+          style={{
+            top: 22, right: 22, bottom: 22, left: 22,
+            background: 'radial-gradient(circle at 35% 35%, hsl(var(--primary) / 0.30), hsl(var(--primary) / 0.12) 60%, hsl(var(--primary) / 0.04) 100%)',
+            filter: 'blur(1px)',
+            willChange: 'transform',
+            ...(prefersReducedMotion
+              ? { borderRadius: '50%', opacity: 0.7 }
+              : {
+                  animation: 'zen-liquid-morph 7s ease-in-out infinite, zen-glow-breathe 3s ease-in-out infinite',
+                  '--zen-glow-min': '0.6',
+                  '--zen-glow-max': '1',
+                }),
+          } as React.CSSProperties}
+        />
+        {/* Layer 2: Inner highlight — "lit from above" */}
+        <div
+          className="absolute zen-ring-animated"
+          style={{
+            top: 33, right: 36, bottom: 39, left: 36,
+            background: 'radial-gradient(circle at 40% 30%, hsl(var(--primary) / 0.22), transparent 70%)',
+            filter: 'blur(3px)',
+            willChange: 'transform',
+            ...(prefersReducedMotion
+              ? { borderRadius: '50%', opacity: 0.5 }
+              : {
+                  animation: 'zen-liquid-morph 5s ease-in-out -2s infinite, zen-glow-breathe 3.5s ease-in-out -1s infinite',
+                  '--zen-glow-min': '0.3',
+                  '--zen-glow-max': '0.7',
+                }),
+          } as React.CSSProperties}
+        />
+        {/* Layer 3: Accent warmth — warm-cool color interplay */}
+        <div
+          className="absolute zen-ring-animated"
+          style={{
+            top: 48, right: 38, bottom: 36, left: 46,
+            background: 'radial-gradient(circle, hsl(var(--accent) / 0.15), transparent 70%)',
+            filter: 'blur(4px)',
+            willChange: 'transform',
+            ...(prefersReducedMotion
+              ? { borderRadius: '50%', opacity: 0.3 }
+              : {
+                  animation: 'zen-liquid-morph 11s ease-in-out -4s infinite, zen-glow-breathe 5s ease-in-out -2s infinite',
+                  '--zen-glow-min': '0.2',
+                  '--zen-glow-max': '0.5',
+                }),
+          } as React.CSSProperties}
+        />
+        {/* Layer 4: Center luminous point */}
+        <div
+          className="absolute rounded-full"
+          style={{
+            width: 6, height: 6,
+            top: '50%', left: '50%',
+            marginTop: -3, marginLeft: -3,
+            background: 'hsl(var(--primary) / 0.35)',
+            boxShadow: '0 0 8px hsl(var(--primary) / 0.25)',
+          }}
+        />
       </motion.div>
     </motion.div>
   );
