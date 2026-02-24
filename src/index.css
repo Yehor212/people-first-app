@@ -3175,25 +3175,24 @@ body.reduce-motion .zen-loader-ring {
   animation: none !important;
 }
 
-/* Zen Liquid Orb — organic morphing blob loader for SplashScreen.
-   Asymmetric stops (27%/58%/81%) + prime durations (5s/7s/11s) →
-   LCM = 385s before visual repeat. */
-@keyframes zen-liquid-morph {
+/* Zen Infinity Draw — premium SVG loader for SplashScreen.
+   Gradient stroke-dashoffset draw + pulsing neon drop-shadow glow.
+   Vivid emerald palette for strong contrast on light backgrounds. */
+@keyframes zen-infinity-draw {
+  0%   { stroke-dashoffset: 200; }
+  50%  { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -200; }
+}
+
+@keyframes zen-infinity-glow {
   0%, 100% {
-    border-radius: 60% 40% 55% 45% / 55% 45% 60% 40%;
-    transform: scale(1) rotate(0deg);
+    filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.5))
+            drop-shadow(0 0 14px rgba(16, 185, 129, 0.2));
   }
-  27% {
-    border-radius: 40% 60% 45% 55% / 60% 40% 45% 55%;
-    transform: scale(1.04) rotate(2deg);
-  }
-  58% {
-    border-radius: 55% 45% 40% 60% / 45% 55% 55% 45%;
-    transform: scale(0.97) rotate(-1.5deg);
-  }
-  81% {
-    border-radius: 45% 55% 60% 40% / 50% 50% 45% 55%;
-    transform: scale(1.02) rotate(0.5deg);
+  50% {
+    filter: drop-shadow(0 0 12px rgba(52, 211, 153, 0.8))
+            drop-shadow(0 0 28px rgba(16, 185, 129, 0.45))
+            drop-shadow(0 0 48px rgba(16, 185, 129, 0.15));
   }
 }
 
