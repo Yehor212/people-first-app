@@ -2209,4 +2209,18 @@ export const en: Translations = {
   journalMinRead: 'min read',
   journalQuickMood: 'How are you?',
   journalQuickMoodSaved: 'Mood saved',
+  // Premium Diary (Immersive Mode)
+  diaryPremiumEntry: 'Immersive Mode',
+  diaryPremiumHint: 'Fullscreen writing with themes & canvas',
+  diaryBurnThought: 'Burn a thought',
+  diaryBurnButton: 'Burn it',
+  diaryBurnReleased: 'Your thought has been released.',
+  diaryBurnPlaceholder: 'Write what worries you...',
+  diaryFocusMode: 'Focus mode',
+  diaryThemeLight: 'Light',
+  diaryThemeDark: 'Dark',
+  diaryThemeSepia: 'Sepia',
+  diaryThemeForest: 'Forest',
+  diaryThemeOcean: 'Ocean',
+  diaryThemeSunset: 'Sunset',
 };

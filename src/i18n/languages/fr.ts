@@ -2210,4 +2210,18 @@ export const fr: Translations = {
   journalMinRead: 'min de lecture',
   journalQuickMood: 'Comment vas-tu?',
   journalQuickMoodSaved: 'Humeur enregistrée',
+  // Premium Diary (Immersive Mode)
+  diaryPremiumEntry: 'Mode immersif',
+  diaryPremiumHint: 'Écriture plein écran avec thèmes et toile',
+  diaryBurnThought: 'Brûler une pensée',
+  diaryBurnButton: 'Brûler',
+  diaryBurnReleased: 'Votre pensée a été libérée.',
+  diaryBurnPlaceholder: 'Écrivez ce qui vous préoccupe...',
+  diaryFocusMode: 'Mode focus',
+  diaryThemeLight: 'Clair',
+  diaryThemeDark: 'Sombre',
+  diaryThemeSepia: 'Sépia',
+  diaryThemeForest: 'Forêt',
+  diaryThemeOcean: 'Océan',
+  diaryThemeSunset: 'Coucher de soleil',
 };

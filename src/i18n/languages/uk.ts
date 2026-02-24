@@ -2209,4 +2209,18 @@ export const uk: Translations = {
   journalMinRead: 'хв читання',
   journalQuickMood: 'Як справи?',
   journalQuickMoodSaved: 'Настрій збережено',
+  // Premium Diary (Immersive Mode)
+  diaryPremiumEntry: 'Режим занурення',
+  diaryPremiumHint: 'Повноекранне письмо з темами та полотном',
+  diaryBurnThought: 'Спалити думку',
+  diaryBurnButton: 'Спалити',
+  diaryBurnReleased: 'Вашу думку відпущено.',
+  diaryBurnPlaceholder: 'Напишіть, що вас турбує...',
+  diaryFocusMode: 'Режим фокусу',
+  diaryThemeLight: 'Світла',
+  diaryThemeDark: 'Темна',
+  diaryThemeSepia: 'Сепія',
+  diaryThemeForest: 'Ліс',
+  diaryThemeOcean: 'Океан',
+  diaryThemeSunset: 'Захід',
 };

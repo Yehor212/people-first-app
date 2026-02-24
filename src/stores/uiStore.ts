@@ -8,7 +8,7 @@ export type ModalName =
   | 'showWeeklyReport' | 'showWidgetSettings' | 'showChallenges'
   | 'showChallengeModal' | 'showTimeHelper' | 'showTasksPanel'
   | 'showQuestsPanel' | 'showFriendsPanel' | 'showWelcomeOverlay'
-  | 'showWelcomeBack' | 'showMindfulMoment';
+  | 'showWelcomeBack' | 'showMindfulMoment' | 'showDiary';
 
 export type CanvasMode = 'idle' | 'split' | 'emotion-flow' | 'goal-flow';
 
@@ -28,6 +28,7 @@ interface UIState {
   showWelcomeOverlay: boolean;
   showWelcomeBack: boolean;
   showMindfulMoment: boolean;
+  showDiary: boolean;
 
   // Modal data
   challengeInvite: ChallengeInvite | undefined;
@@ -83,7 +84,7 @@ const MODAL_CLOSE_PRIORITY: ModalName[] = [
   'showFriendsPanel', 'showTasksPanel', 'showQuestsPanel',
   'showChallenges', 'showChallengeModal', 'showWidgetSettings',
   'showWeeklyReport', 'showTimeHelper', 'showMindfulMoment',
-  'showWelcomeBack', 'showWelcomeOverlay',
+  'showWelcomeBack', 'showWelcomeOverlay', 'showDiary',
 ];
 
 const MODAL_DEFAULTS: Record<ModalName, boolean> = {
@@ -98,6 +99,7 @@ const MODAL_DEFAULTS: Record<ModalName, boolean> = {
   showWelcomeOverlay: false,
   showWelcomeBack: false,
   showMindfulMoment: false,
+  showDiary: false,
 };
 
 export const useUIStore = create<UIState & UIActions>((set, get) => ({
@@ -188,4 +190,4 @@ export const selectAnyModalOpen = (state: UIState): boolean =>
   state.showWeeklyReport || state.showWidgetSettings || state.showChallenges ||
   state.showChallengeModal || state.showTimeHelper || state.showTasksPanel ||
   state.showQuestsPanel || state.showFriendsPanel || state.showWelcomeOverlay ||
-  state.showWelcomeBack || state.showMindfulMoment;
+  state.showWelcomeBack || state.showMindfulMoment || state.showDiary;

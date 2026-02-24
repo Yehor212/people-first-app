@@ -2293,4 +2293,19 @@ export interface Translations {
   journalMinRead: string;
   journalQuickMood: string;
   journalQuickMoodSaved: string;
+
+  // Premium Diary (Immersive Mode)
+  diaryPremiumEntry: string;
+  diaryPremiumHint: string;
+  diaryBurnThought: string;
+  diaryBurnButton: string;
+  diaryBurnReleased: string;
+  diaryBurnPlaceholder: string;
+  diaryFocusMode: string;
+  diaryThemeLight: string;
+  diaryThemeDark: string;
+  diaryThemeSepia: string;
+  diaryThemeForest: string;
+  diaryThemeOcean: string;
+  diaryThemeSunset: string;
 }

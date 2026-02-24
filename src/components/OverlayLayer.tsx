@@ -8,6 +8,7 @@ import { FeatureUnlock } from '@/components/FeatureUnlock';
 import { WelcomeBackModal } from '@/components/WelcomeBackModal';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { StorageErrorBanner } from '@/components/StorageErrorBanner';
+import { FullscreenDiary } from '@/features/diary';
 import { MoodEntry } from '@/types';
 import { generateId, getToday } from '@/lib/utils';
 import { triggerSync } from '@/storage/cloudSync';
@@ -19,6 +20,7 @@ interface OverlayLayerProps {
 
 const setShowWelcomeOverlay = getModalToggle('showWelcomeOverlay');
 const setShowWelcomeBack = getModalToggle('showWelcomeBack');
+const setShowDiary = getModalToggle('showDiary');
 
 export function OverlayLayer({ awardXp, earnTreats }: OverlayLayerProps) {
   const confettiBurst = useUIStore(s => s.confettiBurst);
@@ -30,6 +32,7 @@ export function OverlayLayer({ awardXp, earnTreats }: OverlayLayerProps) {
   const welcomeBackData = useUIStore(s => s.welcomeBackData);
   const updateState = useUIStore(s => s.updateState);
   const setUpdateState = useUIStore(s => s.setUpdateState);
+  const showDiary = useUIStore(s => s.showDiary);
 
   const privacy = useUserDataStore(s => s.privacy);
   const setPrivacy = useUserDataStore(s => s.setPrivacy);
@@ -106,6 +109,9 @@ export function OverlayLayer({ awardXp, earnTreats }: OverlayLayerProps) {
           }}
         />
       )}
+
+      {/* Premium Fullscreen Diary */}
+      <FullscreenDiary isOpen={showDiary} onClose={() => setShowDiary(false)} />
 
       {/* Offline banner - shows when user loses connection */}
       <OfflineBanner />

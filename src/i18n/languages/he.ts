@@ -2241,6 +2241,20 @@ const hebrewOverrides: Partial<Translations> = {
   journalMinRead: 'דקות קריאה',
   journalQuickMood: 'מה שלומך?',
   journalQuickMoodSaved: 'מצב הרוח נשמר',
+  // Premium Diary (Immersive Mode)
+  diaryPremiumEntry: 'מצב טבילה',
+  diaryPremiumHint: 'כתיבה במסך מלא עם ערכות נושא וקנבס',
+  diaryBurnThought: 'שרוף מחשבה',
+  diaryBurnButton: 'שרוף',
+  diaryBurnReleased: 'המחשבה שלך שוחררה.',
+  diaryBurnPlaceholder: 'כתוב מה מדאיג אותך...',
+  diaryFocusMode: 'מצב ריכוז',
+  diaryThemeLight: 'בהיר',
+  diaryThemeDark: 'כהה',
+  diaryThemeSepia: 'ספיה',
+  diaryThemeForest: 'יער',
+  diaryThemeOcean: 'אוקיינוס',
+  diaryThemeSunset: 'שקיעה',
 };
 
 export const he: Translations = { ...en, ...hebrewOverrides };

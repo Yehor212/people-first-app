@@ -2209,4 +2209,18 @@ export const ja: Translations = {
   journalMinRead: '分で読めます',
   journalQuickMood: '調子はどう？',
   journalQuickMoodSaved: '気分を保存しました',
+  // Premium Diary (Immersive Mode)
+  diaryPremiumEntry: '没入モード',
+  diaryPremiumHint: 'テーマとキャンバス付きフルスクリーン',
+  diaryBurnThought: '考えを燃やす',
+  diaryBurnButton: '燃やす',
+  diaryBurnReleased: 'あなたの考えは解放されました。',
+  diaryBurnPlaceholder: '心配事を書いてください...',
+  diaryFocusMode: '集中モード',
+  diaryThemeLight: 'ライト',
+  diaryThemeDark: 'ダーク',
+  diaryThemeSepia: 'セピア',
+  diaryThemeForest: 'フォレスト',
+  diaryThemeOcean: 'オーシャン',
+  diaryThemeSunset: 'サンセット',
 };

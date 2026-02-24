@@ -2174,6 +2174,20 @@ const arabicOverrides: Partial<Translations> = {
   journalMinRead: 'دقيقة قراءة',
   journalQuickMood: 'كيف حالك؟',
   journalQuickMoodSaved: 'تم حفظ المزاج',
+  // Premium Diary (Immersive Mode)
+  diaryPremiumEntry: 'الوضع الغامر',
+  diaryPremiumHint: 'كتابة بملء الشاشة مع سمات ولوحة',
+  diaryBurnThought: 'احرق فكرة',
+  diaryBurnButton: 'احرق',
+  diaryBurnReleased: 'تم تحرير فكرتك.',
+  diaryBurnPlaceholder: 'اكتب ما يقلقك...',
+  diaryFocusMode: 'وضع التركيز',
+  diaryThemeLight: 'فاتح',
+  diaryThemeDark: 'داكن',
+  diaryThemeSepia: 'بني داكن',
+  diaryThemeForest: 'غابة',
+  diaryThemeOcean: 'محيط',
+  diaryThemeSunset: 'غروب',
 };
 
 export const ar: Translations = { ...en, ...arabicOverrides };
