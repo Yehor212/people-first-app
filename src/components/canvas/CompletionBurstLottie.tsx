@@ -1,7 +1,7 @@
 /**
  * CompletionBurstLottie — One-shot Lottie burst for goal completion.
  *
- * Lazy-loads goal-complete.json (same pattern as OrbLottie).
+ * Uses LazyLottiePlayer to lazy-load goal-complete.json.
  * Plays once and calls onComplete when finished.
  * Absolutely positioned, pointer-events: none.
  *
@@ -11,32 +11,22 @@
  * Drop the .json file into src/assets/animations/ — it is dynamically imported.
  */
 
-import Lottie from 'lottie-react';
-import { useEffect, useState } from 'react';
+import { LazyLottiePlayer } from '@/components/LazyLottiePlayer';
 
 interface CompletionBurstLottieProps {
   onComplete?: () => void;
 }
 
 export function CompletionBurstLottie({ onComplete }: CompletionBurstLottieProps) {
-  const [animData, setAnimData] = useState<object | null>(null);
-
-  useEffect(() => {
-    import('@/assets/animations/goal-complete.json')
-      .then(m => setAnimData(m.default))
-      .catch(() => {}); // graceful — falls back to nothing
-  }, []);
-
-  if (!animData) return null;
-
   return (
     <div className="absolute inset-[-24px] pointer-events-none">
-      <Lottie
-        animationData={animData}
+      <LazyLottiePlayer
+        animationImport={() => import('@/assets/animations/goal-complete.json')}
         loop={false}
-        autoplay
         onComplete={onComplete}
-        style={{ width: '100%', height: '100%' }}
+        width="100%"
+        height="100%"
+        fallback={null}
       />
     </div>
   );

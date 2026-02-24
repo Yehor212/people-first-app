@@ -9,6 +9,7 @@ import { ChallengeModal } from '@/components/ChallengeModal';
 import { WhatsNewModal } from '@/components/WhatsNewModal';
 import { MindfulMoment } from '@/components/MindfulMoment';
 import { SkeletonList, SkeletonSection } from '@/components/ui/skeleton';
+import { PremiumLoader } from '@/components/PremiumLoader';
 import { getChallenges, getBadges, addChallenge } from '@/lib/challengeStorage';
 import { triggerSync } from '@/storage/cloudSync';
 import type { Challenge, Badge } from '@/types';
@@ -105,7 +106,7 @@ export function ModalLayer({
       {/* Widget Settings Modal */}
       {showWidgetSettings && (
         <LazyErrorBoundary componentName="Widget Settings">
-          <Suspense fallback={<div className="fixed inset-0 z-50 bg-background flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+          <Suspense fallback={<div className="fixed inset-0 z-50 bg-background flex items-center justify-center"><PremiumLoader size="lg" /></div>}>
             <div className="fixed inset-0 z-50 bg-background">
               <WidgetSettings onBack={() => setShowWidgetSettings(false)} />
             </div>

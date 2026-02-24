@@ -701,6 +701,58 @@ All animations MUST respect user preferences:
 - Entrance animations: `slideUp`/`fadeIn` only — no complex multi-property transitions
 - `will-change` is NOT manually set (framer-motion handles compositor hints)
 
+### PremiumLoader (page/section loading)
+
+`src/components/PremiumLoader.tsx` — breathing concentric rings, replaces basic CSS spinners.
+
+| Size | Diameter | Use case |
+|------|----------|----------|
+| `sm` | 24px | Inline loading (SuspenseFallback InlineSpinner) |
+| `md` | 48px | Section loading (AuthGate secondary) |
+| `lg` | 96px | Full-page loading (AuthGate, ModalLayer, SuspenseFallback PageSpinner) |
+
+- Uses CSS `@keyframes zen-loader-breathe` in `index.css` (not JS — 60fps Android rule)
+- `shouldAnimate()` check — static rings when disabled
+- `body.reduce-motion .zen-loader-ring { animation: none }` override
+- **NOT for button states** — buttons keep `Loader2 animate-spin` (correct inline UX)
+
+### LazyLottiePlayer (reusable Lottie wrapper)
+
+`src/components/LazyLottiePlayer.tsx` — eliminates repeated dynamic-import boilerplate.
+
+```typescript
+<LazyLottiePlayer
+  animationImport={() => import('@/assets/animations/file.json')}
+  loop width={160} height={160}
+  fallback={null}
+/>
+```
+
+- `lottie-react` imported statically (already in separate Vite `lottie` chunk)
+- JSON data dynamic-imported (zero main-bundle cost)
+- `shouldAnimate()` check — renders `fallback` when disabled
+- `mountedRef` cleanup prevents state updates after unmount
+- Wrapper div uses `pointer-events-none` (standard for overlay animations)
+
+**Consumers**: `CompletionBurstLottie`, animation slot components in `src/components/animations/`.
+**NOT migrated** (custom logic): `OrbLottie`, `FireAnimation`, `ActiveBreathingView`.
+
+### Animation Slots (EmptyState)
+
+`EmptyState.tsx` accepts optional `animationSlot?: React.ReactNode` rendered above the icon.
+
+Thin wrapper components in `src/components/animations/`:
+
+| Component | Asset | Type |
+|-----------|-------|------|
+| `EmptyDiaryAnimation` | `empty-diary.json` | Loop (empty diary state) |
+| `EmptyStatsAnimation` | `empty-stats.json` | Loop (empty stats state) |
+| `AllHabitsDoneAnimation` | `all-habits-done.json` | Loop (celebration) |
+| `GoalReachedAnimation` | `goal-complete.json` | Single-shot (success burst) |
+
+**Lottie JSON requirements**: <40KB, 60fps, 2-3s loop, no expressions (CSP: no unsafe-eval).
+Stub JSONs ship as minimal breathing circles — replace with premium assets from LottieFiles.com.
+
 ---
 
 ## Security

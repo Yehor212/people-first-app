@@ -7,6 +7,7 @@
  */
 
 import { cn } from '@/lib/utils';
+import { PremiumLoader } from '@/components/PremiumLoader';
 
 interface SuspenseFallbackProps {
   /** Height of the skeleton (Tailwind class like 'h-24' or pixel value) */
@@ -44,8 +45,7 @@ export function PageSpinner() {
       role="status"
       aria-label="Loading"
     >
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary" aria-hidden="true" />
-      <span className="sr-only">Loading...</span>
+      <PremiumLoader size="lg" />
     </div>
   );
 }
@@ -55,13 +55,8 @@ export function PageSpinner() {
  */
 export function InlineSpinner({ className }: { className?: string }) {
   return (
-    <div
-      className={cn('flex items-center justify-center p-4', className)}
-      role="status"
-      aria-label="Loading"
-    >
-      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" aria-hidden="true" />
-      <span className="sr-only">Loading...</span>
+    <div className={cn('flex items-center justify-center p-4', className)}>
+      <PremiumLoader size="sm" />
     </div>
   );
 }

@@ -3161,6 +3161,20 @@ body.reduce-motion .animate-slide-up {
   opacity: 1 !important;
 }
 
+/* PremiumLoader breathing rings (CSS-driven for 60fps on Android) */
+@keyframes zen-loader-breathe {
+  0%, 100% { transform: scale(0.85); opacity: 0.4; }
+  50%      { transform: scale(1.15); opacity: 1; }
+}
+
+.zen-loader-ring {
+  animation: zen-loader-breathe 2s ease-in-out infinite;
+}
+
+body.reduce-motion .zen-loader-ring {
+  animation: none !important;
+}
+
 /* ========================================
    MOBILE INPUT IMPROVEMENTS
    ======================================== */

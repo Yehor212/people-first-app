@@ -8,6 +8,7 @@ import { LanguageSelector } from '@/components/LanguageSelector';
 import { AuthScreen } from '@/components/AuthScreen';
 import { WelcomeTutorial } from '@/components/WelcomeTutorial';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
+import { PremiumLoader } from '@/components/PremiumLoader';
 import { NotificationPermission } from '@/components/NotificationPermission';
 
 interface AuthGateProps {
@@ -126,7 +127,7 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <PremiumLoader size="lg" />
       </div>
     );
   }
@@ -142,7 +143,7 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
       return (
         <div className="min-h-screen zen-gradient-hero flex items-center justify-center p-4">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4" />
+            <PremiumLoader size="md" className="mx-auto mb-4" />
             <p className="text-muted-foreground">{t.authSigningIn}</p>
           </div>
         </div>

@@ -28,6 +28,8 @@ interface EmptyStateProps {
   highlight?: boolean;
   /** Size variant */
   size?: 'compact' | 'default' | 'large';
+  /** Optional animated illustration rendered above the icon */
+  animationSlot?: React.ReactNode;
   /** Additional class names */
   className?: string;
 }
@@ -62,12 +64,20 @@ export function EmptyState({
   secondaryAction,
   highlight = false,
   size = 'default',
+  animationSlot,
   className,
 }: EmptyStateProps) {
   const sizes = sizeClasses[size];
 
   return (
     <div className={cn("text-center", sizes.container, className)}>
+      {/* Optional animated illustration above the icon */}
+      {animationSlot && (
+        <div className="mx-auto mb-2 flex items-center justify-center">
+          {animationSlot}
+        </div>
+      )}
+
       <div className={cn(
         "mx-auto mb-4 bg-primary/10 dark:bg-primary/20 rounded-2xl flex items-center justify-center",
         sizes.icon
