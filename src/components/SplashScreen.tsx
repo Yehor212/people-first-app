@@ -131,64 +131,50 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         {subtitle}
       </motion.p>
 
-      {/* Zen Glow Ring — premium SVG loader with gradient strokes + neon glow */}
+      {/* Zen Infinity Draw — premium SVG loader with gradient stroke + neon glow */}
       <motion.div
         className="mt-8 flex items-center justify-center"
-        style={{ minHeight: 120 }}
+        style={{ minHeight: 70 }}
         initial={prefersReducedMotion ? {} : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={prefersReducedMotion ? {} : { delay: 1.0 }}
       >
-        <svg viewBox="0 0 120 120" width="120" height="120" aria-hidden="true" className="pointer-events-none">
+        <svg width="140" height="70" viewBox="0 0 100 50" aria-hidden="true" className="pointer-events-none">
           <defs>
-            <linearGradient id="zen-ring-grad" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="120" y2="120">
+            <linearGradient id="zen-infinity-grad" x1="0%" y1="0%" x2="100%" y2="0%">
               <stop offset="0%" stopColor="#1a6b52" />
-              <stop offset="40%" stopColor="#2a9d6e" />
-              <stop offset="70%" stopColor="#34d399" />
+              <stop offset="50%" stopColor="#2a9d6e" />
               <stop offset="100%" stopColor="#2dd4bf" />
             </linearGradient>
           </defs>
-
-          {/* Outer glow ring — pulsing neon drop-shadow */}
-          <circle cx="60" cy="60" r="48" fill="none"
-            stroke="url(#zen-ring-grad)" strokeWidth="3" strokeLinecap="round"
-            opacity="0.5"
+          <g
             style={!prefersReducedMotion ? {
-              animation: 'zen-ring-rotate 2s linear infinite, zen-ring-dash 2.5s cubic-bezier(0.35,0,0.25,1) infinite, zen-ring-glow 3s cubic-bezier(0.4,0,0.6,1) infinite',
-              transformOrigin: 'center',
-            } : { strokeDasharray: '150 301.6' }}
-            className="zen-ring-animated"
-          />
-
-          {/* Main ring — crisp gradient stroke */}
-          <circle cx="60" cy="60" r="48" fill="none"
-            stroke="url(#zen-ring-grad)" strokeWidth="2" strokeLinecap="round"
-            style={!prefersReducedMotion ? {
-              animation: 'zen-ring-rotate 2s linear infinite, zen-ring-dash 2.5s cubic-bezier(0.35,0,0.25,1) infinite',
-              transformOrigin: 'center',
-            } : { strokeDasharray: '150 301.6' }}
-            className="zen-ring-animated"
-          />
-
-          {/* Inner counter-rotating ring — adds depth */}
-          <circle cx="60" cy="60" r="36" fill="none"
-            stroke="url(#zen-ring-grad)" strokeWidth="1.5" strokeLinecap="round"
-            opacity="0.35"
-            style={!prefersReducedMotion ? {
-              animation: 'zen-ring-rotate-reverse 3s linear infinite, zen-ring-dash-inner 3s cubic-bezier(0.35,0,0.25,1) infinite',
-              transformOrigin: 'center',
-            } : { strokeDasharray: '80 226.2' }}
-            className="zen-ring-animated"
-          />
-
-          {/* Center breathing dot — bouncy overshoot easing */}
-          <circle cx="60" cy="60" r="4" fill="#3dbd80"
-            style={!prefersReducedMotion ? {
-              animation: 'zen-ring-center 2.5s cubic-bezier(0.68,-0.55,0.265,1.55) infinite',
-              transformOrigin: 'center',
+              animation: 'zen-infinity-glow 3s ease-in-out infinite',
             } : undefined}
             className="zen-ring-animated"
-          />
+          >
+            {/* Glow bloom layer — wider stroke, transparent */}
+            <path
+              d="M20,25 C20,10 45,10 50,25 C55,40 80,40 80,25 C80,10 55,10 50,25 C45,40 20,40 20,25"
+              fill="none" stroke="url(#zen-infinity-grad)" strokeWidth="6" strokeLinecap="round"
+              opacity="0.4"
+              style={!prefersReducedMotion ? {
+                strokeDasharray: 200, strokeDashoffset: 200,
+                animation: 'zen-infinity-draw 2.5s ease-in-out infinite',
+              } : undefined}
+              className="zen-ring-animated"
+            />
+            {/* Main crisp line */}
+            <path
+              d="M20,25 C20,10 45,10 50,25 C55,40 80,40 80,25 C80,10 55,10 50,25 C45,40 20,40 20,25"
+              fill="none" stroke="url(#zen-infinity-grad)" strokeWidth="3" strokeLinecap="round"
+              style={!prefersReducedMotion ? {
+                strokeDasharray: 200, strokeDashoffset: 200,
+                animation: 'zen-infinity-draw 2.5s ease-in-out infinite',
+              } : undefined}
+              className="zen-ring-animated"
+            />
+          </g>
         </svg>
       </motion.div>
     </motion.div>

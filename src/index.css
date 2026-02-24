@@ -3175,44 +3175,25 @@ body.reduce-motion .zen-loader-ring {
   animation: none !important;
 }
 
-/* Zen Glow Ring — premium SVG loader for SplashScreen
-   Dual-ring spinner with gradient strokes, neon drop-shadow glow,
-   Material-style dash chase, and bouncy center dot. */
-@keyframes zen-ring-rotate {
-  100% { transform: rotate(360deg); }
+/* Zen Infinity Draw — premium SVG loader for SplashScreen
+   Infinity symbol (∞) with gradient stroke-dashoffset draw animation
+   and pulsing triple-layer neon drop-shadow glow. */
+@keyframes zen-infinity-draw {
+  0%   { stroke-dashoffset: 200; }
+  50%  { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -200; }
 }
 
-@keyframes zen-ring-rotate-reverse {
-  100% { transform: rotate(-360deg); }
-}
-
-@keyframes zen-ring-dash {
-  0%   { stroke-dasharray: 1 301.6;   stroke-dashoffset: 0; }
-  50%  { stroke-dasharray: 180 301.6; stroke-dashoffset: -60; }
-  100% { stroke-dasharray: 1 301.6;   stroke-dashoffset: -301.6; }
-}
-
-@keyframes zen-ring-dash-inner {
-  0%   { stroke-dasharray: 1 226.2;   stroke-dashoffset: 0; }
-  50%  { stroke-dasharray: 100 226.2; stroke-dashoffset: -30; }
-  100% { stroke-dasharray: 1 226.2;   stroke-dashoffset: -226.2; }
-}
-
-@keyframes zen-ring-glow {
+@keyframes zen-infinity-glow {
   0%, 100% {
     filter: drop-shadow(0 0 4px rgba(42, 157, 110, 0.3))
             drop-shadow(0 0 8px rgba(42, 157, 110, 0.15));
   }
   50% {
-    filter: drop-shadow(0 0 6px rgba(61, 189, 128, 0.6))
-            drop-shadow(0 0 16px rgba(42, 157, 110, 0.4))
-            drop-shadow(0 0 30px rgba(42, 157, 110, 0.15));
+    filter: drop-shadow(0 0 8px rgba(61, 189, 128, 0.6))
+            drop-shadow(0 0 20px rgba(42, 157, 110, 0.4))
+            drop-shadow(0 0 36px rgba(42, 157, 110, 0.15));
   }
-}
-
-@keyframes zen-ring-center {
-  0%, 100% { transform: scale(0.85); opacity: 0.6; }
-  50%      { transform: scale(1.15); opacity: 1; }
 }
 
 body.reduce-motion .zen-ring-animated {
