@@ -4,6 +4,9 @@
  * Memory-safe: all rAF + event listeners cleaned up in useEffect return.
  * Canvas is fixed at initial viewport size — NEVER resizes for keyboard.
  * shouldAnimate() guard — static fallback when reduced motion enabled.
+ *
+ * PERFORMANCE GATE: Pauses rAF loop when user is typing (keydown on textarea).
+ * Resumes 2 seconds after the last keystroke. This saves GPU while the user writes.
  */
 
 import { useEffect, useRef } from 'react';
@@ -120,6 +123,8 @@ export function useDiaryCanvas(
 ): void {
   const particlesRef = useRef<Particle[]>([]);
   const rafRef = useRef(0);
+  const typingPausedRef = useRef(false);
+  const typingTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -141,10 +146,26 @@ export function useDiaryCanvas(
     particlesRef.current = initParticles(40, w, h);
     let alive = true;
 
+    // ── Typing-pause performance gate ──
+    // Pause rAF while user types, resume 2s after last keystroke
+    const RESUME_DELAY = 2000;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only pause for printable keys / deletion — ignore modifiers, arrows, etc.
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key.length === 1 || e.key === 'Backspace' || e.key === 'Delete' || e.key === 'Enter') {
+        typingPausedRef.current = true;
+        if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = setTimeout(() => { typingPausedRef.current = false; }, RESUME_DELAY);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, { passive: true });
+
     function frame(time: number) {
       if (!alive || !ctx) return;
-      // Skip drawing when image manipulation is active (save GPU cycles)
-      if (!isCanvasPaused()) {
+      // Skip drawing when typing or image manipulation is active (save GPU)
+      if (!isCanvasPaused() && !typingPausedRef.current) {
         ctx.clearRect(0, 0, w, h);
         drawWavyBorder(ctx, w, h, time, accentColor);
         updateAndDrawParticles(ctx, particlesRef.current, w, h, time, accentColor);
@@ -157,6 +178,8 @@ export function useDiaryCanvas(
     return () => {
       alive = false;
       cancelAnimationFrame(rafRef.current);
+      document.removeEventListener('keydown', handleKeyDown);
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     };
   }, [canvasRef, accentColor, isActive]);
 }

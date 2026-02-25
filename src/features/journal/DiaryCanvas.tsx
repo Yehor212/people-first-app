@@ -1,6 +1,7 @@
 /**
  * DiaryCanvas — Decorative canvas layer (wavy borders + floating particles).
  * Renders as a fixed layer behind the editor. Never resizes for keyboard.
+ * Pauses rAF during typing (resumes 2s after last keystroke).
  */
 
 import { useRef } from 'react';

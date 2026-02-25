@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, Sparkles, X, Calendar, Shuffle, Mic, MicOff, Circle, Square, LayoutTemplate, Palette, Flame, Focus } from 'lucide-react';
+import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, X, Calendar, Shuffle, Mic, MicOff, Circle, Square, LayoutTemplate, Palette, Flame, Focus, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getToday } from '@/lib/utils';
+import { zenMotion } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
@@ -213,6 +214,9 @@ export function JournalEntryEditor({
   const [showStylePanel, setShowStylePanel] = useState(false);
   const [showBurnWidget, setShowBurnWidget] = useState(false);
   const [spotlightActive, setSpotlightActive] = useState(false);
+  const [showActionSheet, setShowActionSheet] = useState(false);
+  const [toolbarHidden, setToolbarHidden] = useState(false);
+  const lastScrollTopRef = useRef(0);
 
   const entryId = entry?.id || '__draft__';
 
@@ -535,12 +539,48 @@ export function JournalEntryEditor({
     setShowMood(false);
     setShowTags(false);
     setShowStylePanel(false);
+    setShowActionSheet(false);
+  };
+
+  const handleActionItem = (action: () => void) => {
+    setShowActionSheet(false);
+    closeAllPickers();
+    action();
   };
 
   const handlePromptTap = (prompt: string) => {
     setTitle(prompt);
     setPromptsHidden(true);
   };
+
+  // ── Scroll-to-hide toolbar ──
+  const scrollThreshold = 12;
+  const handleContentScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    const el = e.currentTarget;
+    const delta = el.scrollTop - lastScrollTopRef.current;
+    lastScrollTopRef.current = el.scrollTop;
+    if (delta > scrollThreshold && el.scrollTop > 60) {
+      setToolbarHidden(true);
+    } else if (delta < -scrollThreshold) {
+      setToolbarHidden(false);
+    }
+  }, []);
+
+  // Force-show toolbar when keyboard is open or any picker is active
+  const anyPickerOpen = showActionSheet || showMood || showTags || showStylePanel || showStickers || showPhotos;
+  const effectiveToolbarHidden = toolbarHidden && !anyPickerOpen;
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      if (vv.height < window.innerHeight * 0.75) {
+        setToolbarHidden(false);
+      }
+    };
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, []);
 
   // Scoped CSS vars for diary theme (no body mutation — isolated to this overlay)
   const diaryStyle = useMemo(() => ({
@@ -551,19 +591,20 @@ export function JournalEntryEditor({
 
   return (
     <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up" style={diaryStyle}>
-      {/* Canvas decorative background */}
+      {/* Canvas decorative background — pauses during typing, resumes 2s after */}
       <DiaryCanvas accentColor={diaryTheme.accentColor} isActive />
 
       <div className="w-full h-full flex flex-col md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:shadow-2xl md:border md:border-border/20 md:overflow-hidden relative z-10">
       {/* Header — frosted glass */}
-      <div className="flex items-center justify-between px-4 py-3 border-b backdrop-blur-xl" style={{ borderColor: 'var(--diary-border, hsl(var(--border) / 0.3))', backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 80%, transparent)' }}>
-        <button
+      <div className="flex items-center justify-between px-4 py-3 backdrop-blur-2xl backdrop-saturate-150" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 72%, transparent)', borderBottom: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 12%, transparent)', boxShadow: '0 1px 0 color-mix(in srgb, var(--diary-text, hsl(var(--foreground))) 4%, transparent), 0 8px 32px -8px rgba(0,0,0,0.12)' }}>
+        <motion.button
+          whileTap={{ scale: 0.92 }}
           onClick={handleBack}
           className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label={ts.back || 'Back'}
         >
           <ArrowLeft className="w-5 h-5 text-foreground" />
-        </button>
+        </motion.button>
 
         <div className="relative">
           <button
@@ -584,15 +625,27 @@ export function JournalEntryEditor({
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={() => { closeAllPickers(); setShowStylePanel(!showStylePanel); }}
+            className={cn(
+              'p-2 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors',
+              showStylePanel ? 'bg-primary/10' : 'hover:bg-muted/50',
+            )}
+            aria-label={ts.journalStyleButton || 'Style'}
+          >
+            <Palette className="w-4 h-4" style={{ color: showStylePanel ? 'var(--diary-accent, hsl(var(--primary)))' : 'var(--diary-muted, hsl(var(--muted-foreground)))' }} />
+          </motion.button>
           {entry && onDelete && (
-            <button
+            <motion.button
+              whileTap={{ scale: 0.92 }}
               onClick={() => setShowDeleteConfirm(true)}
               className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label={ts.delete || 'Delete'}
             >
               <Trash2 className="w-4 h-4" />
-            </button>
+            </motion.button>
           )}
           <motion.button
             whileTap={saveSuccess ? {} : { scale: 0.95 }}
@@ -670,7 +723,7 @@ export function JournalEntryEditor({
       </AnimatePresence>
 
       {/* Content area */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
+      <div className="flex-1 overflow-y-auto px-6 pt-8 pb-16 space-y-4" onScroll={handleContentScroll}>
         {/* Title */}
         <input
           type="text"
@@ -679,8 +732,8 @@ export function JournalEntryEditor({
           placeholder={ts.journalEntryTitle || 'Title (optional)'}
           autoFocus={!entry}
           className={cn(
-            'w-full text-lg font-semibold bg-transparent border-none outline-none',
-            'placeholder:text-muted-foreground/40',
+            'w-full text-2xl font-bold tracking-tight bg-transparent border-none outline-none',
+            'placeholder:text-muted-foreground/30',
           )}
           maxLength={100}
           onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
@@ -690,7 +743,7 @@ export function JournalEntryEditor({
         {!entry && !content && !title && !promptsHidden && !draftAvailable && (
           <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest flex items-center gap-1.5">
+              <span className="text-[11px] font-semibold uppercase tracking-[0.15em] flex items-center gap-1.5" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground) / 0.5))' }}>
                 <span className="text-xs">{'\u{270F}\uFE0F'}</span>
                 {ts.journalWritingPrompts || 'Writing prompts'}
               </span>
@@ -717,6 +770,7 @@ export function JournalEntryEditor({
                   key={`${promptSeed}-${i}`}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
+                  whileTap={{ scale: 0.97 }}
                   transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 25 }}
                   onClick={() => handlePromptTap(prompt)}
                   className={cn(
@@ -849,8 +903,8 @@ export function JournalEntryEditor({
           onChange={e => setContent(e.target.value)}
           placeholder={ts.journalEntryPlaceholder || "What's on your mind?"}
           className={cn(
-            'w-full min-h-[200px] bg-transparent border-none outline-none resize-none',
-            'text-sm leading-relaxed',
+            'w-full min-h-[260px] bg-transparent border-none outline-none resize-none',
+            'text-[15px] leading-[1.85]',
             'placeholder:text-muted-foreground/40',
           )}
           style={{ fontFamily: diaryTheme.fontFamily, color: 'var(--diary-text, hsl(var(--foreground)))' }}
@@ -858,7 +912,7 @@ export function JournalEntryEditor({
         />
 
         {/* Word count + char count + reading time + auto-save indicator */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3 pt-2">
           {wordCount > 0 && (
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-muted-foreground/60">
@@ -896,50 +950,29 @@ export function JournalEntryEditor({
         />
       </div>
 
+      {/* Toolbar zone — slides off-screen when scrolling down */}
+      <motion.div
+        animate={{ y: effectiveToolbarHidden ? '100%' : 0 }}
+        transition={zenMotion.snappy}
+        className="relative z-10"
+      >
+
       {/* Gradient fade above toolbar */}
-      <div className="h-6 bg-gradient-to-t from-background via-background/80 to-transparent -mt-6 relative z-[2] pointer-events-none" />
+      <div className="h-8 -mt-8 relative z-[2] pointer-events-none" style={{ background: 'linear-gradient(to top, var(--diary-bg, hsl(var(--background))), color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 60%, transparent), transparent)' }} />
 
-      {/* Bottom toolbar */}
+      {/* Minimal toolbar — 2 buttons: Voice + Add */}
       <div className={cn(
-        'border-t border-border/30 bg-background/95 backdrop-blur-xl px-4 py-1.5',
-        'flex items-center gap-1',
-        'pb-[max(0.375rem,env(safe-area-inset-bottom))]',
-      )}>
-        <button
-          onClick={() => { closeAllPickers(); setShowStickers(true); }}
-          disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
-          className={cn(
-            'flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors',
-            'disabled:opacity-40',
-            'min-h-[44px] flex flex-col items-center justify-center gap-0.5',
-          )}
-        >
-          <Smile className="w-5 h-5 text-muted-foreground" />
-          <span className="text-[10px] text-muted-foreground/60">{ts.journalToolbarSticker || 'Sticker'}</span>
-        </button>
-
-        <button
-          onClick={() => { closeAllPickers(); setShowPhotos(true); }}
-          disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
-          className={cn(
-            'flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors',
-            'disabled:opacity-40',
-            'min-h-[44px] flex flex-col items-center justify-center gap-0.5',
-          )}
-        >
-          <Camera className="w-5 h-5 text-muted-foreground" />
-          <span className="text-[10px] text-muted-foreground/60">{ts.journalToolbarPhoto || 'Photo'}</span>
-        </button>
-
-        {/* Dictation button */}
-        <button
+        'backdrop-blur-2xl backdrop-saturate-150 px-4 py-2',
+        'flex items-center justify-between',
+        'pb-[max(0.5rem,env(safe-area-inset-bottom))]',
+      )} style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 75%, transparent)', borderTop: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)', boxShadow: '0 -1px 0 color-mix(in srgb, var(--diary-text, hsl(var(--foreground))) 3%, transparent), 0 -8px 32px -8px rgba(0,0,0,0.08)' }}>
+        <motion.button
+          whileTap={{ scale: 0.95 }}
           onClick={handleToggleDictation}
           className={cn(
-            'flex-1 py-1 rounded-lg transition-colors',
-            'min-h-[44px] flex flex-col items-center justify-center gap-0.5',
-            voice.isListening
-              ? 'bg-red-500/10'
-              : 'hover:bg-muted/50',
+            'py-2 px-4 rounded-xl transition-colors',
+            'min-h-[44px] flex items-center gap-2',
+            voice.isListening ? 'bg-red-500/10' : 'hover:bg-muted/50',
           )}
         >
           {voice.isListening ? (
@@ -947,132 +980,254 @@ export function JournalEntryEditor({
           ) : (
             <Mic className="w-5 h-5 text-muted-foreground" />
           )}
-          <span className={cn('text-[10px]', voice.isListening ? 'text-red-500' : 'text-muted-foreground/60')}>
+          <span className={cn('text-sm', voice.isListening ? 'text-red-500' : 'text-muted-foreground/60')}>
             {voice.isListening ? (ts.journalDictateStop || 'Stop') : (ts.journalToolbarVoice || 'Voice')}
           </span>
-        </button>
+        </motion.button>
 
-        {/* Audio recording button */}
-        <button
-          onClick={handleStartRecording}
-          disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={() => { if (showActionSheet) { setShowActionSheet(false); } else { closeAllPickers(); setShowActionSheet(true); } }}
           className={cn(
-            'flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors',
-            'disabled:opacity-40',
-            'min-h-[44px] flex flex-col items-center justify-center gap-0.5',
+            'w-11 h-11 rounded-full flex items-center justify-center',
+            showActionSheet ? 'bg-primary/15' : 'bg-muted/50 hover:bg-muted',
           )}
+          aria-label={ts.journalActionSheetTitle || 'Add to Entry'}
         >
-          <Circle className="w-5 h-5 text-muted-foreground" />
-          <span className="text-[10px] text-muted-foreground/60">{ts.journalToolbarRecord || 'Record'}</span>
-        </button>
-
-        <button
-          onClick={() => { closeAllPickers(); setShowMood(!showMood); }}
-          className="flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors min-h-[44px] flex flex-col items-center justify-center gap-0.5"
-        >
-          <span className="text-base leading-none">{mood ? MOOD_OPTIONS.find(m => m.mood === mood)?.emoji : '\u{1F3AD}'}</span>
-          <span className="text-[10px] text-muted-foreground/60">{ts.journalToolbarMood || 'Mood'}</span>
-        </button>
-
-        <button
-          onClick={() => { closeAllPickers(); setShowTags(!showTags); }}
-          className="flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors min-h-[44px] flex flex-col items-center justify-center gap-0.5"
-        >
-          <Hash className="w-5 h-5 text-muted-foreground" />
-          <span className="text-[10px] text-muted-foreground/60">{ts.journalToolbarTags || 'Tags'}</span>
-        </button>
-
-        {/* Templates button — only for new entries (progressive disclosure) */}
-        {!entry && (
-          <button
-            onClick={() => { closeAllPickers(); setShowTemplatePicker(true); }}
-            className="flex-1 py-1 rounded-lg hover:bg-muted/50 transition-colors min-h-[44px] flex flex-col items-center justify-center gap-0.5"
-          >
-            <LayoutTemplate className="w-5 h-5 text-muted-foreground" />
-            <span className="text-[10px] text-muted-foreground/60">{ts.journalTemplateButton || 'Template'}</span>
-          </button>
-        )}
-
-        {/* Style button (theme/font picker) */}
-        <button
-          onClick={() => { closeAllPickers(); setShowStylePanel(!showStylePanel); }}
-          className={cn(
-            'flex-1 py-1 rounded-lg transition-colors',
-            'min-h-[44px] flex flex-col items-center justify-center gap-0.5',
-            showStylePanel ? 'bg-primary/10' : 'hover:bg-muted/50',
-          )}
-        >
-          <Palette className="w-5 h-5" style={{ color: showStylePanel ? 'var(--diary-accent, hsl(var(--primary)))' : undefined }} />
-          <span className="text-[10px] text-muted-foreground/60">{ts.journalStyleButton || 'Style'}</span>
-        </button>
-
-        {/* Burn-a-thought button */}
-        <button
-          onClick={() => setShowBurnWidget(!showBurnWidget)}
-          className={cn(
-            'flex-1 py-1 rounded-lg transition-colors',
-            'min-h-[44px] flex flex-col items-center justify-center gap-0.5',
-            showBurnWidget ? 'bg-orange-500/10' : 'hover:bg-muted/50',
-          )}
-        >
-          <Flame className={cn('w-5 h-5', showBurnWidget ? 'text-orange-500' : 'text-muted-foreground')} />
-          <span className="text-[10px] text-muted-foreground/60">{ts.journalBurnButton || 'Burn'}</span>
-        </button>
+          <motion.div animate={{ rotate: showActionSheet ? 45 : 0 }} transition={zenMotion.snappy}>
+            <Plus className="w-5 h-5" style={{ color: showActionSheet ? 'var(--diary-accent, hsl(var(--primary)))' : undefined }} />
+          </motion.div>
+        </motion.button>
       </div>
 
+      {/* Action sheet — grouped feature menu (bottom sheet) */}
+      <AnimatePresence>
+        {showActionSheet && (
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={zenMotion.sheet}
+            className="rounded-t-2xl backdrop-blur-2xl backdrop-saturate-150 px-5 pb-5"
+            style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))', backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 80%, transparent)', borderTop: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 10%, transparent)', boxShadow: 'inset 0 1px 0 color-mix(in srgb, var(--diary-text, hsl(var(--foreground))) 5%, transparent)' }}
+          >
+            {/* Drag handle pill */}
+            <div className="flex justify-center pt-3 pb-3">
+              <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 40%, transparent)' }} />
+            </div>
+
+            {/* CAPTURE group */}
+            <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block" style={{ color: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 80%, transparent)' }}>
+              {ts.journalActionCapture || 'Capture'}
+            </span>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => handleActionItem(() => setShowPhotos(true))}
+                disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
+                className="flex items-center gap-3.5 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px] disabled:opacity-40"
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                  <Camera className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
+                </div>
+                <span className="text-sm text-foreground">{ts.journalToolbarPhoto || 'Photo'}</span>
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => handleActionItem(() => handleStartRecording())}
+                disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
+                className="flex items-center gap-3.5 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px] disabled:opacity-40"
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                  <Circle className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
+                </div>
+                <span className="text-sm text-foreground">{ts.journalToolbarRecord || 'Record'}</span>
+              </motion.button>
+            </div>
+
+            {/* REFLECT group */}
+            <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block" style={{ color: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 80%, transparent)' }}>
+              {ts.journalActionReflect || 'Reflect'}
+            </span>
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => handleActionItem(() => setShowMood(true))}
+                className="flex items-center gap-2 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px]"
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                  <span className="text-base leading-none">{mood ? MOOD_OPTIONS.find(m => m.mood === mood)?.emoji : '\u{1F3AD}'}</span>
+                </div>
+                <span className="text-sm text-foreground">{ts.journalToolbarMood || 'Mood'}</span>
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => handleActionItem(() => setShowStickers(true))}
+                disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
+                className="flex items-center gap-2 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px] disabled:opacity-40"
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                  <Smile className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
+                </div>
+                <span className="text-sm text-foreground">{ts.journalToolbarSticker || 'Sticker'}</span>
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => handleActionItem(() => setShowTags(true))}
+                className="flex items-center gap-2 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px]"
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                  <Hash className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
+                </div>
+                <span className="text-sm text-foreground">{ts.journalToolbarTags || 'Tags'}</span>
+              </motion.button>
+            </div>
+
+            {/* MINDFUL group */}
+            <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block" style={{ color: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 80%, transparent)' }}>
+              {ts.journalActionMindful || 'Mindful'}
+            </span>
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => { setShowActionSheet(false); setShowBurnWidget(!showBurnWidget); }}
+                className={cn(
+                  'flex items-center gap-3.5 px-3 py-3 rounded-xl transition-colors min-h-[48px]',
+                  showBurnWidget ? 'bg-orange-500/10' : 'hover:bg-muted/50',
+                )}
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: showBurnWidget ? 'rgba(249,115,22,0.12)' : 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                  <Flame className={cn('w-[22px] h-[22px]', showBurnWidget ? 'text-orange-500' : '')} style={showBurnWidget ? undefined : { color: 'var(--diary-accent, hsl(var(--primary)))' }} />
+                </div>
+                <span className="text-sm text-foreground">{ts.journalBurnTitle || 'Burn a thought'}</span>
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.96 }}
+                onClick={() => { setShowActionSheet(false); setSpotlightActive(!spotlightActive); }}
+                className={cn(
+                  'flex items-center gap-3.5 px-3 py-3 rounded-xl transition-colors min-h-[48px]',
+                  spotlightActive ? 'bg-primary/10' : 'hover:bg-muted/50',
+                )}
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: spotlightActive ? 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 15%, transparent)' : 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                  <Focus className={cn('w-[22px] h-[22px]', spotlightActive ? 'text-primary' : '')} style={spotlightActive ? undefined : { color: 'var(--diary-accent, hsl(var(--primary)))' }} />
+                </div>
+                <span className="text-sm text-foreground">{ts.journalFocusLabel || 'Focus'}</span>
+              </motion.button>
+            </div>
+
+            {/* ORGANIZE group (Template — new entries only) */}
+            {!entry && (
+              <>
+                <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block" style={{ color: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 80%, transparent)' }}>
+                  {ts.journalActionOrganize || 'Organize'}
+                </span>
+                <div className="grid grid-cols-1 gap-2">
+                  <motion.button
+                    whileTap={{ scale: 0.96 }}
+                    onClick={() => handleActionItem(() => setShowTemplatePicker(true))}
+                    className="flex items-center gap-3.5 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px]"
+                  >
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                      <LayoutTemplate className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
+                    </div>
+                    <span className="text-sm text-foreground">{ts.journalTemplateButton || 'Template'}</span>
+                  </motion.button>
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Inline mood picker */}
-      {showMood && (
-        <div className="border-t border-border/20 bg-background/95 backdrop-blur-xl px-4 py-3 flex items-center justify-center gap-3 pb-[env(safe-area-inset-bottom)]">
-          {MOOD_OPTIONS.map(opt => (
-            <motion.button
-              key={opt.mood}
-              whileTap={{ scale: 0.85 }}
-              onClick={() => { setMood(mood === opt.mood ? undefined : opt.mood); setShowMood(false); }}
-              className={cn(
-                'p-2.5 rounded-xl transition-all min-w-[52px] min-h-[52px] flex items-center justify-center',
-                mood === opt.mood
-                  ? 'bg-primary/15 ring-2 ring-primary/30 shadow-lg animate-scale-bounce'
-                  : 'hover:bg-muted/50 hover:shadow-sm',
-              )}
-            >
-              <StickerRenderer emoji={opt.emoji} size="sm" />
-            </motion.button>
-          ))}
-        </div>
-      )}
+      <AnimatePresence>
+        {showMood && (
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={zenMotion.sheet}
+            className="rounded-t-2xl backdrop-blur-2xl backdrop-saturate-150 px-4 pb-3 flex flex-col items-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 80%, transparent)', borderTop: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 10%, transparent)' }}
+          >
+            <div className="flex justify-center pt-2.5 pb-2.5">
+              <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 40%, transparent)' }} />
+            </div>
+            <div className="flex items-center justify-center gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              {MOOD_OPTIONS.map(opt => (
+                <motion.button
+                  key={opt.mood}
+                  whileTap={{ scale: 0.85 }}
+                  onClick={() => { setMood(mood === opt.mood ? undefined : opt.mood); setShowMood(false); }}
+                  className={cn(
+                    'p-2.5 rounded-xl transition-all min-w-[52px] min-h-[52px] flex items-center justify-center',
+                    mood === opt.mood
+                      ? 'bg-primary/15 ring-2 ring-primary/30 shadow-lg animate-scale-bounce'
+                      : 'hover:bg-muted/50 hover:shadow-sm',
+                  )}
+                >
+                  <StickerRenderer emoji={opt.emoji} size="sm" />
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Inline tag input */}
-      {showTags && (
-        <div className="border-t border-border/20 bg-background px-4 py-2 pb-[env(safe-area-inset-bottom)]">
-          <form onSubmit={e => { e.preventDefault(); handleAddTag(); }} className="flex gap-2">
-            <input
-              type="text"
-              value={tagInput}
-              onChange={e => setTagInput(e.target.value)}
-              placeholder={ts.journalTagPlaceholder || 'Add tag...'}
-              className="flex-1 px-3 py-2.5 rounded-lg bg-muted/50 border border-border/30 text-sm outline-none min-h-[44px]"
-              autoFocus
-              maxLength={30}
-            />
-            <button
-              type="submit"
-              className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium min-h-[44px]"
-            >
-              {ts.journalAdd || 'Add'}
-            </button>
-          </form>
-        </div>
-      )}
+      <AnimatePresence>
+        {showTags && (
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={zenMotion.sheet}
+            className="rounded-t-2xl backdrop-blur-2xl backdrop-saturate-150 px-4 pb-2" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 80%, transparent)', borderTop: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 10%, transparent)' }}
+          >
+            <div className="flex justify-center pt-2.5 pb-2">
+              <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 40%, transparent)' }} />
+            </div>
+            <form onSubmit={e => { e.preventDefault(); handleAddTag(); }} className="flex gap-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={e => setTagInput(e.target.value)}
+                placeholder={ts.journalTagPlaceholder || 'Add tag...'}
+                className="flex-1 px-3 py-2.5 rounded-lg bg-muted/50 border border-border/30 text-sm outline-none min-h-[44px]"
+                autoFocus
+                maxLength={30}
+              />
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                type="submit"
+                className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium min-h-[44px]"
+              >
+                {ts.journalAdd || 'Add'}
+              </motion.button>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* Style panel (theme/font pickers + spotlight toggle) */}
-      {showStylePanel && (
-        <div className="border-t px-4 py-3 pb-[env(safe-area-inset-bottom)]" style={{ borderColor: 'var(--diary-border, hsl(var(--border) / 0.2))', backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 95%, transparent)' }}>
-          <div className="flex items-start gap-4">
-            {/* Theme grid */}
-            <div className="flex-1">
-              <span className="text-[10px] font-medium mb-1.5 block" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
-                {ts.journalThemeLabel || 'Theme'}
-              </span>
+      {/* Style panel (theme/font pickers) */}
+      <AnimatePresence>
+        {showStylePanel && (
+          <motion.div
+            initial={{ y: '100%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: '100%', opacity: 0 }}
+            transition={zenMotion.sheet}
+            className="rounded-t-2xl backdrop-blur-2xl backdrop-saturate-150 px-4 pb-3" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 80%, transparent)', borderTop: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 10%, transparent)' }}
+          >
+            <div className="flex justify-center pt-2.5 pb-2.5">
+              <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 40%, transparent)' }} />
+            </div>
+            <div className="flex items-start gap-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              {/* Theme grid */}
+              <div className="flex-1">
+                <span className="text-[10px] font-medium mb-1.5 block" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
+                  {ts.journalThemeLabel || 'Theme'}
+                </span>
               <div className="grid grid-cols-6 gap-1.5">
                 {DIARY_THEME_NAMES_LOCAL.map(name => {
                   const theme = DIARY_THEMES_LOCAL[name];
@@ -1126,26 +1281,13 @@ export function JournalEntryEditor({
               </div>
             </div>
 
-            {/* Spotlight toggle */}
-            <div>
-              <span className="text-[10px] font-medium mb-1.5 block" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
-                Focus
-              </span>
-              <button
-                onClick={() => setSpotlightActive(!spotlightActive)}
-                className={cn(
-                  'w-9 h-9 rounded-lg flex items-center justify-center transition-colors',
-                  spotlightActive ? 'bg-primary/15' : 'hover:bg-muted/50',
-                )}
-                aria-label="Toggle spotlight focus mode"
-                onMouseDown={e => e.preventDefault()}
-              >
-                <Focus className="w-4 h-4" style={{ color: spotlightActive ? 'var(--diary-accent, hsl(var(--primary)))' : 'var(--diary-muted, hsl(var(--muted-foreground)))' }} />
-              </button>
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      </motion.div>
+      {/* END toolbar zone */}
 
       {/* Sub-pickers */}
       {showStickers && (
@@ -1192,13 +1334,15 @@ export function JournalEntryEditor({
             role="dialog"
             aria-modal="true"
             aria-label="Recording"
-            className="fixed inset-0 z-[70] bg-black/60 flex items-center justify-center"
+            className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-center justify-center"
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-card rounded-2xl p-6 max-w-[280px] mx-4 shadow-xl text-center"
+              initial={{ opacity: 0, scale: 0.92, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.92, y: 20 }}
+              transition={zenMotion.gentle}
+              className="rounded-2xl p-6 max-w-[280px] mx-4 text-center backdrop-blur-2xl backdrop-saturate-150"
+              style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--card))) 80%, transparent)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
             >
               {/* Pulsing circle */}
               <div className="flex justify-center mb-4">
@@ -1242,11 +1386,13 @@ export function JournalEntryEditor({
 
       {/* Delete confirmation */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center animate-fade-in" onClick={() => setShowDeleteConfirm(false)}>
+        <div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-center justify-center animate-fade-in" onClick={() => setShowDeleteConfirm(false)}>
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-card rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl"
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={zenMotion.gentle}
+            className="rounded-2xl p-5 max-w-[300px] mx-4 backdrop-blur-2xl backdrop-saturate-150"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--card))) 80%, transparent)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
             onClick={e => e.stopPropagation()}
           >
             <h3 className="text-base font-semibold text-foreground mb-2">
@@ -1275,11 +1421,13 @@ export function JournalEntryEditor({
 
       {/* Unsaved changes dialog */}
       {showUnsavedDialog && (
-        <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center animate-fade-in" onClick={() => setShowUnsavedDialog(false)}>
+        <div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-center justify-center animate-fade-in" onClick={() => setShowUnsavedDialog(false)}>
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-card rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl"
+            initial={{ opacity: 0, scale: 0.92, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={zenMotion.gentle}
+            className="rounded-2xl p-5 max-w-[300px] mx-4 backdrop-blur-2xl backdrop-saturate-150"
+            style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--card))) 80%, transparent)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
             onClick={e => e.stopPropagation()}
           >
             <h3 className="text-base font-semibold text-foreground mb-2">

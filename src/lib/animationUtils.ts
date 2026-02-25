@@ -51,6 +51,9 @@ export const zenMotion = {
   /** Smooth entrance — cards, modals, panels (200-300ms feel) */
   gentle: { type: 'spring' as const, stiffness: 260, damping: 25 },
 
+  /** Bottom sheet slide — heavier, more physical feel */
+  sheet: { type: 'spring' as const, stiffness: 300, damping: 28 },
+
   /** Celebration — achievements, completions (bouncy, 400-800ms feel) */
   bouncy: { type: 'spring' as const, stiffness: 300, damping: 15 },
 
