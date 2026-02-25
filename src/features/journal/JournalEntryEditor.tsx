@@ -27,14 +27,11 @@ import { useDiaryTheme } from './useDiaryTheme';
 import { DiaryCanvas } from './DiaryCanvas';
 import { BurnThoughtWidget } from './BurnThoughtWidget';
 import { SpotlightOverlay } from './SpotlightOverlay';
-import { DIARY_THEMES, DIARY_FONTS, DIARY_THEME_NAMES, DIARY_FONT_NAMES } from './types';
+import { DIARY_FONTS, DIARY_FONT_NAMES } from './types';
 
 // Local aliases to avoid name collision with the hook's `theme` state
-const DIARY_THEMES_LOCAL = DIARY_THEMES;
 const DIARY_FONTS_LOCAL = DIARY_FONTS;
-const DIARY_THEME_NAMES_LOCAL = DIARY_THEME_NAMES;
 const DIARY_FONT_NAMES_LOCAL = DIARY_FONT_NAMES;
-const FONT_LABELS_LOCAL: Record<string, string> = { caveat: 'Handwriting', cormorant: 'Serif', outfit: 'Sans' };
 
 const ATMOSPHERE_THEMES = [
   { name: 'dark' as const, i18nKey: 'diaryThemeCosmos', label: 'Cosmos', activeBg: 'bg-purple-500/15', activeText: 'text-purple-400', activeBorder: 'border-purple-500/30' },
@@ -218,11 +215,11 @@ export function JournalEntryEditor({
 
   // ── Diary premium features ──
   const diaryTheme = useDiaryTheme(entry?.theme || 'dark', entry?.font || 'caveat');
-  const [showStylePanel, setShowStylePanel] = useState(false);
+  const [, setShowStylePanel] = useState(false);
   const [showBurnWidget, setShowBurnWidget] = useState(false);
   const [spotlightActive, setSpotlightActive] = useState(false);
-  const [showActionSheet, setShowActionSheet] = useState(false);
-  const [toolbarHidden, setToolbarHidden] = useState(false);
+  const [, setShowActionSheet] = useState(false);
+  const [, setToolbarHidden] = useState(false);
   const [wavyBordersEnabled, setWavyBordersEnabled] = useState(true);
   const lastScrollTopRef = useRef(0);
 
@@ -550,12 +547,6 @@ export function JournalEntryEditor({
     setShowActionSheet(false);
   };
 
-  const handleActionItem = (action: () => void) => {
-    setShowActionSheet(false);
-    closeAllPickers();
-    action();
-  };
-
   const handlePromptTap = (prompt: string) => {
     setTitle(prompt);
     setPromptsHidden(true);
@@ -574,9 +565,7 @@ export function JournalEntryEditor({
     }
   }, []);
 
-  // Force-show toolbar when keyboard is open or any picker is active
-  const anyPickerOpen = showActionSheet || showMood || showTags || showStylePanel || showStickers || showPhotos;
-  const effectiveToolbarHidden = toolbarHidden && !anyPickerOpen;
+
 
   useEffect(() => {
     const vv = window.visualViewport;
@@ -596,15 +585,6 @@ export function JournalEntryEditor({
     backgroundColor: diaryTheme.themeVars['--diary-bg'],
     color: diaryTheme.themeVars['--diary-text'],
   } as React.CSSProperties), [diaryTheme.themeVars]);
-
-  // Semi-transparent diary bg for glass surfaces (header, toolbar, sheets)
-  const glassBg = useMemo(() => {
-    const bg = diaryTheme.themeVars['--diary-bg'];
-    const m = bg.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-    if (!m) return 'rgba(0,0,0,0.92)';
-    return `rgba(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)},0.92)`;
-  }, [diaryTheme.themeVars]);
-  const diaryBorder = diaryTheme.themeVars['--diary-border'];
 
   return (
     <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] flex flex-col h-screen overflow-hidden text-slate-50" style={diaryStyle}>
