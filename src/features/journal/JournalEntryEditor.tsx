@@ -26,7 +26,9 @@ import { JournalHabitSection } from './JournalHabitSection';
 import { useDiaryTheme } from './useDiaryTheme';
 import { DiaryCanvas } from './DiaryCanvas';
 import { BurnThoughtWidget } from './BurnThoughtWidget';
+import { BreathingExercise } from '@/components/breathing-exercise/BreathingExercise';
 import { SpotlightOverlay } from './SpotlightOverlay';
+import { FloatingMediaLayer } from './FloatingMediaLayer';
 import { DIARY_FONTS, DIARY_FONT_NAMES } from './types';
 
 // Local aliases to avoid name collision with the hook's `theme` state
@@ -46,6 +48,13 @@ const MOOD_OPTIONS: { mood: MoodType; emoji: string }[] = [
   { mood: 'okay', emoji: '\u{1F610}' },
   { mood: 'bad', emoji: '\u{1F614}' },
   { mood: 'terrible', emoji: '\u{1F622}' },
+];
+
+const INK_COLORS = [
+  { hex: '#ffffff', label: 'White' },
+  { hex: '#34d399', label: 'Emerald' },
+  { hex: '#fbbf24', label: 'Gold' },
+  { hex: '#fb7185', label: 'Rose' },
 ];
 
 const DEFAULT_PROMPTS = [
@@ -157,6 +166,9 @@ interface JournalEntryEditorProps {
     habitSnapshot?: { habitId: string; habitName: string; habitIcon: string; completed: boolean }[];
     theme?: DiaryThemeName;
     font?: DiaryFontName;
+    inkColor?: string;
+    paperTexture?: 'clean' | 'dots';
+    photoLayout?: Record<string, { x: number; y: number; width: number }>;
   }) => Promise<void>;
   onAddPhoto: (file: File, entryId: string) => Promise<JournalPhoto>;
   onRemovePhoto: (photoId: string, entryId: string) => Promise<void>;
@@ -185,6 +197,8 @@ export function JournalEntryEditor({
   const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const focusTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const editorOverlayRef = useRef<HTMLDivElement>(null);
+  const contentAreaRef = useRef<HTMLDivElement>(null);
+  const scrollYRef = useRef(0);
   const draftKey = getDraftKey(entry?.id || null);
 
   const [title, setTitle] = useState(entry?.title || '');
@@ -221,6 +235,10 @@ export function JournalEntryEditor({
   const [, setShowActionSheet] = useState(false);
   const [, setToolbarHidden] = useState(false);
   const [wavyBordersEnabled, setWavyBordersEnabled] = useState(true);
+  const [showBreathe, setShowBreathe] = useState(false);
+  const [inkColor, setInkColor] = useState(entry?.inkColor || '#ffffff');
+  const [paperTexture, setPaperTexture] = useState<'clean' | 'dots'>(entry?.paperTexture || 'clean');
+  const [photoLayout, setPhotoLayout] = useState<Record<string, { x: number; y: number; width: number }>>(entry?.photoLayout || {});
   const lastScrollTopRef = useRef(0);
 
   const entryId = entry?.id || '__draft__';
@@ -349,6 +367,9 @@ export function JournalEntryEditor({
         habitSnapshot: habitSnapshot.length > 0 ? habitSnapshot : undefined,
         theme: diaryTheme.theme,
         font: diaryTheme.font,
+        inkColor: inkColor !== '#ffffff' ? inkColor : undefined,
+        paperTexture: paperTexture !== 'clean' ? paperTexture : undefined,
+        photoLayout: Object.keys(photoLayout).length > 0 ? photoLayout : undefined,
       });
       void clearDraft(draftKey);
       announceSuccess(ts.journalEntrySaved || 'Entry saved');
@@ -362,7 +383,7 @@ export function JournalEntryEditor({
     } catch {
       setSaving(false);
     }
-  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font]);
+  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, photoLayout]);
 
   const handleSaveAndClose = useCallback(async () => {
     setShowUnsavedDialog(false);
@@ -558,6 +579,7 @@ export function JournalEntryEditor({
     const el = e.currentTarget;
     const delta = el.scrollTop - lastScrollTopRef.current;
     lastScrollTopRef.current = el.scrollTop;
+    scrollYRef.current = el.scrollTop;
     if (delta > scrollThreshold && el.scrollTop > 60) {
       setToolbarHidden(true);
     } else if (delta < -scrollThreshold) {
@@ -589,10 +611,10 @@ export function JournalEntryEditor({
   return (
     <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] flex flex-col h-screen overflow-hidden text-slate-50" style={diaryStyle}>
       {/* Canvas decorative background */}
-      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={wavyBordersEnabled} />
+      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={wavyBordersEnabled} theme={diaryTheme.theme} scrollY={scrollYRef} />
 
       {/* ═══ GLASS TOOLBAR ═══ */}
-      <div className="relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 bg-slate-900/70 backdrop-blur-xl border-b border-white/[0.08] shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+      <div className="relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] bg-slate-900/60 backdrop-blur-2xl border-b border-white/5 shadow-[0_10px_60px_rgba(0,0,0,0.6)]">
         {/* ROW 1: Navigation & Atmosphere */}
         <div className="flex items-center justify-between gap-3">
           {/* LEFT: Back + Title */}
@@ -785,6 +807,35 @@ export function JournalEntryEditor({
             </motion.button>
           </div>
 
+          {/* Ink & Texture capsule */}
+          <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+            {INK_COLORS.map(c => (
+              <motion.button
+                key={c.hex}
+                whileTap={{ scale: 0.85 }}
+                onClick={() => setInkColor(c.hex)}
+                className={cn(
+                  'w-7 h-7 rounded-full border-2 transition-all',
+                  inkColor === c.hex ? 'border-white/60 scale-110' : 'border-white/10',
+                )}
+                style={{ background: c.hex }}
+                aria-label={c.label}
+              />
+            ))}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setPaperTexture(paperTexture === 'clean' ? 'dots' : 'clean')}
+              className={cn(
+                'px-3 py-2 rounded-lg text-sm font-medium border transition-all',
+                paperTexture === 'dots'
+                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+              )}
+            >
+              ✏️ {paperTexture === 'dots' ? 'Dots' : 'Clean'}
+            </motion.button>
+          </div>
+
           {/* Media capsule */}
           <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
             <motion.button
@@ -845,7 +896,13 @@ export function JournalEntryEditor({
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400/50 border border-transparent transition-all flex items-center gap-2 cursor-default"
+              onClick={() => setShowBreathe(!showBreathe)}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2',
+                showBreathe
+                  ? 'bg-teal-500/15 text-teal-400 border-teal-500/30'
+                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+              )}
             >
               🧘 {ts.diaryBreathe || 'Breathe'}
             </motion.button>
@@ -854,8 +911,27 @@ export function JournalEntryEditor({
       </div>
 
       {/* ═══ CONTENT AREA ═══ */}
-      <div className="flex-1 relative overflow-hidden">
-        <div className="absolute inset-0 overflow-y-auto pt-8 pb-32 px-10 z-10" onScroll={handleContentScroll}>
+      <div ref={contentAreaRef} className="flex-1 relative overflow-hidden">
+        {/* Floating photos layer (above content, pointer-events-none container) */}
+        {Object.keys(photoLayout).length > 0 && (
+          <FloatingMediaLayer
+            entryId={entryId}
+            photoIds={photoIds}
+            layout={photoLayout}
+            onLayoutChange={setPhotoLayout}
+            onReturnToGallery={(photoId) => {
+              const next = { ...photoLayout };
+              delete next[photoId];
+              setPhotoLayout(next);
+            }}
+            containerRef={contentAreaRef}
+          />
+        )}
+        <div
+          className="absolute inset-0 overflow-y-auto pt-8 pb-32 px-10 z-10"
+          onScroll={handleContentScroll}
+          style={paperTexture === 'dots' ? { backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '24px 24px' } : undefined}
+        >
           <div className="max-w-4xl mx-auto space-y-4">
 
       {/* Draft restore banner */}
@@ -978,12 +1054,18 @@ export function JournalEntryEditor({
           </div>
         )}
 
-        {/* Photos */}
-        {photoIds.length > 0 && (
+        {/* Photos (gallery shows only non-floating photos) */}
+        {photoIds.filter(id => !photoLayout[id]).length > 0 && (
           <JournalPhotoGallery
             entryId={entryId}
-            photoIds={photoIds}
+            photoIds={photoIds.filter(id => !photoLayout[id])}
             onRemovePhoto={handleRemovePhoto}
+            onFloatPhoto={(photoId) => {
+              setPhotoLayout(prev => ({
+                ...prev,
+                [photoId]: { x: 50, y: 50, width: 200 },
+              }));
+            }}
             editable
           />
         )}
@@ -1090,6 +1172,21 @@ export function JournalEntryEditor({
           )}
         </AnimatePresence>
 
+        {/* Breathing exercise widget (inline, above textarea) */}
+        <AnimatePresence>
+          {showBreathe && (
+            <motion.div
+              className="my-6"
+              initial={{ opacity: 0, y: -16, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.97 }}
+              transition={zenMotion.gentle}
+            >
+              <BreathingExercise compact onComplete={() => setShowBreathe(false)} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Content textarea */}
         <textarea
           ref={textareaRef}
@@ -1097,7 +1194,7 @@ export function JournalEntryEditor({
           onChange={e => setContent(e.target.value)}
           placeholder={ts.journalEntryPlaceholder || "What's on your mind?"}
           className="w-full min-h-[260px] bg-transparent border-none outline-none resize-none text-[18px] leading-[1.8] text-slate-100 placeholder:text-slate-500/40"
-          style={{ fontFamily: diaryTheme.fontFamily, color: 'var(--diary-text, hsl(var(--foreground)))' }}
+          style={{ fontFamily: diaryTheme.fontFamily, color: inkColor !== '#ffffff' ? inkColor : 'var(--diary-text, hsl(var(--foreground)))' }}
           onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
         />
 

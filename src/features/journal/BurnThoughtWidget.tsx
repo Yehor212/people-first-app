@@ -3,6 +3,7 @@
  *
  * Renders as an inline collapsible section (not absolute-positioned).
  * Canvas fire particle animation on "Burn". Memory-safe rAF cleanup.
+ * Text blurs/fades via framer-motion while fire plays. Haptic feedback.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -46,11 +47,15 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
   const [burning, setBurning] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // ── Fire animation ──
 
   const startBurn = useCallback(() => {
     if (!text.trim() || burning) return;
+
+    // Haptic feedback
+    navigator.vibrate?.([100, 50, 200]);
 
     // Reduced motion: skip fire animation, mark burned immediately
     if (!shouldAnimate()) {
@@ -70,7 +75,7 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
     const h = canvas.height;
     const particles = initFireParticles(w, h);
     const startTime = performance.now();
-    const DURATION = 2000;
+    const DURATION = 2500;
 
     function frame(now: number) {
       if (!ctx) return;
@@ -106,9 +111,20 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
     rafRef.current = requestAnimationFrame(frame);
   }, [text, burning]);
 
+  // ── Auto-close after burned ──
+  useEffect(() => {
+    if (burned) {
+      closeTimerRef.current = setTimeout(onClose, 2000);
+    }
+    return () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); };
+  }, [burned, onClose]);
+
   // ── Cleanup rAF ──
   useEffect(() => {
-    return () => cancelAnimationFrame(rafRef.current);
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
   }, []);
 
   return (
@@ -140,37 +156,55 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
       {/* Body */}
       <div className="relative px-4 pb-4">
         {burned ? (
-          <p className="text-sm py-4 text-center text-red-300/60">
+          <motion.p
+            className="text-sm py-4 text-center text-red-300/60"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={zenMotion.gentle}
+          >
             {ts.journalBurnReleasedMessage || 'Your thought has been released.'}
-          </p>
-        ) : burning ? (
-          <canvas
-            ref={canvasRef}
-            width={280}
-            height={120}
-            className="w-full rounded-xl"
-            aria-hidden="true"
-          />
+          </motion.p>
         ) : (
-          <>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              placeholder={ts.journalBurnPlaceholder || 'Write what worries you...'}
-              className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none resize-none bg-transparent text-red-300 border border-red-500/30 placeholder:text-red-400/40"
-              style={{ minHeight: 64 }}
-              rows={2}
-            />
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={startBurn}
-              disabled={!text.trim()}
-              className={`mt-2.5 w-full py-2.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2 min-h-[44px] ${text.trim() ? 'bg-red-500/20 text-red-300 border border-red-500/40' : 'bg-white/5 text-slate-500 border border-white/10'}`}
+          <div className="relative">
+            {/* Text area — blurs and fades when burning */}
+            <motion.div
+              animate={burning ? { filter: 'blur(16px)', scale: 1.1, opacity: 0 } : { filter: 'blur(0px)', scale: 1, opacity: 1 }}
+              transition={{ duration: 2.5, ease: 'easeOut' }}
             >
-              <Flame className="w-4 h-4" />
-              {ts.journalBurnAction || 'Burn it'}
-            </motion.button>
-          </>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={ts.journalBurnPlaceholder || 'Write what worries you...'}
+                className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none resize-none bg-transparent text-red-300 border border-red-500/30 placeholder:text-red-400/40"
+                style={{ minHeight: 64 }}
+                rows={2}
+                disabled={burning}
+              />
+              {!burning && (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={startBurn}
+                  disabled={!text.trim()}
+                  className={`mt-2.5 w-full py-2.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2 min-h-[44px] ${text.trim() ? 'bg-red-500/20 text-red-300 border border-red-500/40' : 'bg-white/5 text-slate-500 border border-white/10'}`}
+                >
+                  <Flame className="w-4 h-4" />
+                  {ts.journalBurnAction || 'Burn it'}
+                </motion.button>
+              )}
+            </motion.div>
+
+            {/* Fire canvas — overlays the blurring text */}
+            {burning && (
+              <canvas
+                ref={canvasRef}
+                width={280}
+                height={120}
+                className="absolute inset-0 w-full h-full rounded-xl"
+                style={{ zIndex: 10 }}
+                aria-hidden="true"
+              />
+            )}
+          </div>
         )}
       </div>
     </motion.div>

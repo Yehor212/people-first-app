@@ -13,6 +13,7 @@ interface JournalPhotoGalleryProps {
   entryId: string;
   photoIds: string[];
   onRemovePhoto?: (photoId: string) => void;
+  onFloatPhoto?: (photoId: string) => void;
   editable?: boolean;
 }
 
@@ -20,6 +21,7 @@ export function JournalPhotoGallery({
   entryId,
   photoIds,
   onRemovePhoto,
+  onFloatPhoto,
   editable = false,
 }: JournalPhotoGalleryProps) {
   const { t } = useLanguage();
@@ -78,6 +80,15 @@ export function JournalPhotoGallery({
                 aria-label={ts.delete || 'Remove'}
               >
                 <X className="w-3.5 h-3.5 text-white" />
+              </button>
+            )}
+            {editable && onFloatPhoto && (
+              <button
+                onClick={() => onFloatPhoto(photo.id)}
+                className="absolute -bottom-1 -end-1 w-6 h-6 bg-emerald-500/80 rounded-full flex items-center justify-center shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label="Float photo"
+              >
+                <span className="text-[10px]">↗</span>
               </button>
             )}
           </div>

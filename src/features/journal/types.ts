@@ -15,7 +15,7 @@ export interface DiaryThemeConfig {
 
 export const DIARY_THEMES: Record<DiaryThemeName, DiaryThemeConfig> = {
   light:  { '--diary-bg': '#FFFEF5', '--diary-text': '#2D2D2D', '--diary-accent': '#4A7C59', '--diary-muted': '#999999', '--diary-border': 'rgba(0,0,0,0.08)' },
-  dark:   { '--diary-bg': '#0f172a', '--diary-text': '#f1f5f9', '--diary-accent': '#2dd4bf', '--diary-muted': '#94a3b8', '--diary-border': 'rgba(255,255,255,0.06)' },
+  dark:   { '--diary-bg': '#020611', '--diary-text': '#f1f5f9', '--diary-accent': '#2dd4bf', '--diary-muted': '#94a3b8', '--diary-border': 'rgba(255,255,255,0.06)' },
   sepia:  { '--diary-bg': '#F4ECD8', '--diary-text': '#5B4636', '--diary-accent': '#8B6914', '--diary-muted': '#9E8B6E', '--diary-border': 'rgba(91,70,54,0.12)' },
   forest: { '--diary-bg': '#1B2D1B', '--diary-text': '#D4E7D4', '--diary-accent': '#6EBF8B', '--diary-muted': '#7A9E7A', '--diary-border': 'rgba(212,231,212,0.08)' },
   ocean:  { '--diary-bg': '#0F1B2D', '--diary-text': '#B8D4E3', '--diary-accent': '#4AA3DF', '--diary-muted': '#6B8FA3', '--diary-border': 'rgba(184,212,227,0.08)' },
@@ -46,6 +46,9 @@ export interface JournalEntry {
   habitSnapshot?: { habitId: string; habitName: string; habitIcon: string; completed: boolean }[];
   theme?: DiaryThemeName;  // diary theme (optional, undefined = app default)
   font?: DiaryFontName;    // diary font (optional, undefined = app default)
+  inkColor?: string;       // text color hex (optional, undefined = theme default)
+  paperTexture?: 'clean' | 'dots'; // paper texture (optional, undefined = clean)
+  photoLayout?: Record<string, { x: number; y: number; width: number }>; // free-form photo positions
   createdAt: number;
   updatedAt: number;
 }
