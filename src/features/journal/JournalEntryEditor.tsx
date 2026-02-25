@@ -8,9 +8,9 @@ import { useScrollLock } from '@/hooks/useScrollLock';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 import { createFocusTrap, announceSuccess } from '@/lib/a11y';
 import { hapticSuccess } from '@/lib/haptics';
-import type { JournalEntry, JournalPhoto, JournalAudio, DiaryThemeName, DiaryFontName } from './types';
+import type { JournalEntry, JournalPhoto, JournalAudio, DiaryThemeName, DiaryFontName, FontSizeName } from './types';
 import type { MoodType } from '@/types';
-import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY, countWords } from './types';
+import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY, countWordsHtml, FONT_SIZES } from './types';
 import { JournalStickerPicker } from './JournalStickerPicker';
 import { JournalPhotoPicker } from './JournalPhotoPicker';
 import { JournalPhotoGallery } from './JournalPhotoGallery';
@@ -29,6 +29,8 @@ import { BurnThoughtWidget } from './BurnThoughtWidget';
 import { DiaryBreatheWidget } from './DiaryBreatheWidget';
 import { SpotlightOverlay } from './SpotlightOverlay';
 import { FloatingMediaLayer } from './FloatingMediaLayer';
+import { DiaryFormatToolbar } from './DiaryFormatToolbar';
+import { sanitizeRichContent } from '@/lib/sanitize';
 import { DIARY_FONTS, DIARY_FONT_NAMES } from './types';
 
 // Local aliases to avoid name collision with the hook's `theme` state
@@ -168,6 +170,7 @@ interface JournalEntryEditorProps {
     font?: DiaryFontName;
     inkColor?: string;
     paperTexture?: 'clean' | 'dots';
+    fontSize?: FontSizeName;
     photoLayout?: Record<string, { x: number; y: number; width: number }>;
   }) => Promise<void>;
   onAddPhoto: (file: File, entryId: string) => Promise<JournalPhoto>;
@@ -191,7 +194,7 @@ export function JournalEntryEditor({
   const { t, language } = useLanguage();
   useScrollLock(true);
   const ts = t as unknown as Record<string, string>;
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
   const draftTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const navigationTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -224,7 +227,6 @@ export function JournalEntryEditor({
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [showRecordingOverlay, setShowRecordingOverlay] = useState(false);
   const [draftAvailable, setDraftAvailable] = useState<DraftData | null>(null);
-  const [promptsHidden, setPromptsHidden] = useState(false);
   const [draftSavedAt, setDraftSavedAt] = useState(0);
 
   // ── Diary premium features ──
@@ -238,6 +240,8 @@ export function JournalEntryEditor({
   const [showBreathe, setShowBreathe] = useState(false);
   const [inkColor, setInkColor] = useState(entry?.inkColor || '#ffffff');
   const [paperTexture, setPaperTexture] = useState<'clean' | 'dots'>(entry?.paperTexture || 'clean');
+  const [fontSize, setFontSize] = useState<FontSizeName>(entry?.fontSize || 'medium');
+  const [showPromptsDropdown, setShowPromptsDropdown] = useState(false);
   const [photoLayout, setPhotoLayout] = useState<Record<string, { x: number; y: number; width: number }>>(entry?.photoLayout || {});
   const lastScrollTopRef = useRef(0);
 
@@ -270,7 +274,7 @@ export function JournalEntryEditor({
       JSON.stringify(tags) !== init.tags;
   }, [title, content, stickers, photoIds, audioIds, mood, tags]);
 
-  const wordCount = useMemo(() => countWords(content), [content]);
+  const wordCount = useMemo(() => countWordsHtml(content), [content]);
 
   const [promptSeed, setPromptSeed] = useState(0);
   const randomPrompts = useMemo(() => {
@@ -320,13 +324,17 @@ export function JournalEntryEditor({
     return () => clearTimeout(timer);
   }, [draftSavedAt]);
 
-  // Auto-grow textarea
+  // Initialize contenteditable with existing content on mount
+  const editorInitRef = useRef(false);
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.max(200, textareaRef.current.scrollHeight)}px`;
+    if (editorRef.current && !editorInitRef.current) {
+      editorInitRef.current = true;
+      if (content) {
+        editorRef.current.innerHTML = sanitizeRichContent(content);
+      }
     }
-  }, [content]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
+  }, []);
 
   // Title auto-focuses for new entries via autoFocus prop on the input.
   // No additional textarea focus needed — user starts with the title.
@@ -369,6 +377,7 @@ export function JournalEntryEditor({
         font: diaryTheme.font,
         inkColor: inkColor !== '#ffffff' ? inkColor : undefined,
         paperTexture: paperTexture !== 'clean' ? paperTexture : undefined,
+        fontSize: fontSize !== 'medium' ? fontSize : undefined,
         photoLayout: Object.keys(photoLayout).length > 0 ? photoLayout : undefined,
       });
       void clearDraft(draftKey);
@@ -383,7 +392,7 @@ export function JournalEntryEditor({
     } catch {
       setSaving(false);
     }
-  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, photoLayout]);
+  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, fontSize, photoLayout]);
 
   const handleSaveAndClose = useCallback(async () => {
     setShowUnsavedDialog(false);
@@ -570,8 +579,19 @@ export function JournalEntryEditor({
 
   const handlePromptTap = (prompt: string) => {
     setTitle(prompt);
-    setPromptsHidden(true);
+    setShowPromptsDropdown(false);
   };
+
+  const handleEditorInput = useCallback(() => {
+    const el = editorRef.current;
+    if (!el) return;
+    const html = sanitizeRichContent(el.innerHTML);
+    setContent(html);
+  }, []);
+
+  const cycleFontSize = useCallback(() => {
+    setFontSize(s => s === 'small' ? 'medium' : s === 'medium' ? 'large' : 'small');
+  }, []);
 
   // ── Scroll-to-hide toolbar ──
   const scrollThreshold = 12;
@@ -731,7 +751,7 @@ export function JournalEntryEditor({
 
         {/* ROW 2: Tools & Game Changers */}
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none -mx-1.5 px-1.5">
-          {/* Fonts capsule */}
+          {/* Fonts + Size capsule */}
           <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
             {DIARY_FONT_NAMES_LOCAL.map(name => {
               const isActive = name === diaryTheme.font;
@@ -753,7 +773,36 @@ export function JournalEntryEditor({
                 </motion.button>
               );
             })}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={cycleFontSize}
+              className="px-3 py-2 rounded-lg text-sm font-medium border border-transparent text-slate-400 hover:bg-white/10 hover:text-slate-50 transition-all"
+              aria-label="Font size"
+            >
+              A{fontSize === 'small' ? '⁻' : fontSize === 'large' ? '⁺' : ''}
+            </motion.button>
           </div>
+
+          {/* Format capsule (WYSIWYG) */}
+          <DiaryFormatToolbar editorRef={editorRef} />
+
+          {/* Prompts button (new entries only) */}
+          {!entry && (
+            <div className="relative flex-shrink-0">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowPromptsDropdown(!showPromptsDropdown)}
+                className={cn(
+                  'px-3 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-1.5',
+                  showPromptsDropdown
+                    ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                    : 'bg-black/30 text-slate-400 border-white/5 hover:bg-white/10 hover:text-slate-50',
+                )}
+              >
+                💡 {ts.journalWritingPrompts ? ts.journalWritingPrompts.split(' ')[0] : 'Prompts'}
+              </motion.button>
+            </div>
+          )}
 
           {/* Features capsule */}
           <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
@@ -835,6 +884,54 @@ export function JournalEntryEditor({
             </motion.button>
           </div>
         </div>
+
+        {/* Prompts dropdown */}
+        <AnimatePresence>
+          {showPromptsDropdown && (
+            <motion.div
+              className="mx-4 mt-2 p-3 rounded-xl bg-slate-900/95 backdrop-blur-xl border border-white/10 shadow-2xl space-y-1.5"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={zenMotion.gentle}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500 flex items-center gap-1.5">
+                  {'\u{270F}\uFE0F'} {ts.journalWritingPrompts || 'Writing prompts'}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPromptSeed(s => s + 1)}
+                    className="p-1.5 rounded-lg hover:bg-white/10 min-w-[36px] min-h-[36px] flex items-center justify-center"
+                    aria-label="Shuffle prompts"
+                  >
+                    <Shuffle className="w-3 h-3 text-slate-500" />
+                  </button>
+                  <button
+                    onClick={() => setShowPromptsDropdown(false)}
+                    className="p-1 rounded hover:bg-white/10 min-w-[36px] min-h-[36px] flex items-center justify-center"
+                    aria-label={ts.close || 'Close'}
+                  >
+                    <X className="w-3 h-3 text-slate-500" />
+                  </button>
+                </div>
+              </div>
+              {randomPrompts.map((prompt, i) => (
+                <motion.button
+                  key={`${promptSeed}-${i}`}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  whileTap={{ scale: 0.97 }}
+                  transition={{ delay: i * 0.04, type: 'spring', stiffness: 300, damping: 25 }}
+                  onClick={() => handlePromptTap(prompt)}
+                  className="block w-full text-start text-xs px-3 py-2.5 rounded-xl min-h-[40px] text-slate-300 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  {prompt}
+                </motion.button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ═══ CONTENT AREA ═══ */}
@@ -855,11 +952,16 @@ export function JournalEntryEditor({
           />
         )}
         <div
-          className="absolute inset-0 overflow-y-auto pt-[140px] pb-[160px] px-10 z-10"
+          className="absolute inset-0 overflow-y-auto pt-[140px] pb-[160px] px-4 z-10"
           onScroll={handleContentScroll}
-          style={paperTexture === 'dots' ? { backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '24px 24px' } : undefined}
         >
-          <div className="max-w-4xl mx-auto space-y-4">
+          <div
+            className="max-w-4xl mx-auto rounded-2xl border border-white/[0.08] backdrop-blur-sm shadow-[0_0_60px_rgba(0,0,0,0.4)] p-8 min-h-[60vh] space-y-4"
+            style={{
+              backgroundColor: `color-mix(in srgb, var(--diary-bg, #020611) 90%, transparent)`,
+              ...(paperTexture === 'dots' ? { backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '24px 24px' } : {}),
+            }}
+          >
 
       {/* Draft restore banner */}
       <AnimatePresence>
@@ -904,56 +1006,6 @@ export function JournalEntryEditor({
           maxLength={100}
           onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
         />
-
-        {/* Writing prompts (new entries only) */}
-        {!entry && !content && !title && !promptsHidden && !draftAvailable && (
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-[0.15em] flex items-center gap-1.5" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground) / 0.5))' }}>
-                <span className="text-xs">{'\u{270F}\uFE0F'}</span>
-                {ts.journalWritingPrompts || 'Writing prompts'}
-              </span>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setPromptSeed(s => s + 1)}
-                  className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                  aria-label="Shuffle prompts"
-                >
-                  <Shuffle className="w-3 h-3 text-muted-foreground/50" />
-                </button>
-                <button
-                  onClick={() => setPromptsHidden(true)}
-                  className="p-1 rounded hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-                  aria-label={ts.close || 'Close'}
-                >
-                  <X className="w-3 h-3 text-muted-foreground/50" />
-                </button>
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              {randomPrompts.map((prompt, i) => (
-                <motion.button
-                  key={`${promptSeed}-${i}`}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  whileTap={{ scale: 0.97 }}
-                  transition={{ delay: i * 0.06, type: 'spring', stiffness: 300, damping: 25 }}
-                  onClick={() => handlePromptTap(prompt)}
-                  className={cn(
-                    'block w-full text-start text-xs px-3.5 py-2.5 rounded-xl min-h-[40px]',
-                    'bg-card/60 backdrop-blur-sm',
-                    'border border-border/15',
-                    'text-muted-foreground/80 hover:text-foreground',
-                    'hover:bg-card/80 hover:border-primary/20 hover:shadow-sm',
-                    'transition-all duration-200',
-                  )}
-                >
-                  {prompt}
-                </motion.button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Mood display */}
         {mood && (
@@ -1114,15 +1166,16 @@ export function JournalEntryEditor({
           )}
         </AnimatePresence>
 
-        {/* Content textarea */}
-        <textarea
-          ref={textareaRef}
-          value={content}
-          onChange={e => setContent(e.target.value)}
-          placeholder={ts.journalEntryPlaceholder || "What's on your mind?"}
-          className="w-full min-h-[260px] bg-transparent border-none outline-none resize-none text-[18px] leading-[1.8] text-slate-100 placeholder:text-slate-500/40"
-          style={{ fontFamily: diaryTheme.fontFamily, color: inkColor !== '#ffffff' ? inkColor : 'var(--diary-text, hsl(var(--foreground)))' }}
+        {/* Content editor (contenteditable WYSIWYG) */}
+        <div
+          ref={editorRef}
+          contentEditable
+          suppressContentEditableWarning
+          className="w-full min-h-[260px] bg-transparent border-none outline-none resize-none text-slate-100 [&_blockquote]:border-l-2 [&_blockquote]:border-white/20 [&_blockquote]:pl-3 [&_blockquote]:italic [&_code]:bg-white/10 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:text-slate-500/40 empty:before:pointer-events-none"
+          style={{ fontSize: FONT_SIZES[fontSize], lineHeight: 1.8, fontFamily: diaryTheme.fontFamily, color: inkColor !== '#ffffff' ? inkColor : 'var(--diary-text, hsl(var(--foreground)))' }}
+          onInput={handleEditorInput}
           onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
+          data-placeholder={ts.journalEntryPlaceholder || "What's on your mind?"}
         />
 
         {/* Word count + char count + reading time + auto-save indicator */}
@@ -1265,14 +1318,13 @@ export function JournalEntryEditor({
           onSelect={(templateContent, _templateId) => {
             if (templateContent) {
               setContent(templateContent);
-              setPromptsHidden(true);
             }
             setShowTemplatePicker(false);
-            focusTimeoutRef.current = setTimeout(() => textareaRef.current?.focus(), 100);
+            focusTimeoutRef.current = setTimeout(() => editorRef.current?.focus(), 100);
           }}
           onClose={() => {
             setShowTemplatePicker(false);
-            focusTimeoutRef.current = setTimeout(() => textareaRef.current?.focus(), 100);
+            focusTimeoutRef.current = setTimeout(() => editorRef.current?.focus(), 100);
           }}
         />
       )}
@@ -1419,7 +1471,7 @@ export function JournalEntryEditor({
       )}
 
       {/* Spotlight focus overlay */}
-      <SpotlightOverlay isActive={spotlightActive} textareaRef={textareaRef} />
+      <SpotlightOverlay isActive={spotlightActive} textareaRef={editorRef} />
     </div>
   );
 }

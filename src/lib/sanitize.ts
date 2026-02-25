@@ -39,3 +39,12 @@ export const sanitizeString = (input: string): string => {
 export const sanitizeUserName = (name: string): string => {
   return sanitizeString(name).slice(0, 100);
 };
+
+/** Sanitize rich HTML content for contenteditable — allows formatting tags only. */
+export const sanitizeRichContent = (html: string): string => {
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['b', 'strong', 'i', 'em', 'u', 'del', 's', 'blockquote', 'code', 'a', 'br', 'div', 'p', 'span'],
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
+    ALLOW_DATA_ATTR: false,
+  });
+};

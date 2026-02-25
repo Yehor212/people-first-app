@@ -12,7 +12,7 @@ import { zenMotion } from '@/lib/animationUtils';
 
 interface SpotlightOverlayProps {
   isActive: boolean;
-  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  textareaRef: React.RefObject<HTMLElement | null>;
 }
 
 export function SpotlightOverlay({ isActive, textareaRef }: SpotlightOverlayProps) {

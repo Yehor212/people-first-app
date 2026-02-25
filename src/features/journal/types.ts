@@ -48,6 +48,7 @@ export interface JournalEntry {
   font?: DiaryFontName;    // diary font (optional, undefined = app default)
   inkColor?: string;       // text color hex (optional, undefined = theme default)
   paperTexture?: 'clean' | 'dots'; // paper texture (optional, undefined = clean)
+  fontSize?: 'small' | 'medium' | 'large'; // editor font size preference
   photoLayout?: Record<string, { x: number; y: number; width: number }>; // free-form photo positions
   createdAt: number;
   updatedAt: number;
@@ -97,3 +98,13 @@ export function countWords(text: string): number {
   if (!text || !text.trim()) return 0;
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
+
+/** Count words in HTML content (strips tags first). */
+export function countWordsHtml(html: string): number {
+  if (!html) return 0;
+  const text = html.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ');
+  return countWords(text);
+}
+
+export const FONT_SIZES = { small: 15, medium: 18, large: 22 } as const;
+export type FontSizeName = keyof typeof FONT_SIZES;

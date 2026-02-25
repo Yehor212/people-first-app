@@ -114,7 +114,7 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
   // ── Auto-close after burned ──
   useEffect(() => {
     if (burned) {
-      closeTimerRef.current = setTimeout(onClose, 2500);
+      closeTimerRef.current = setTimeout(onClose, 1000);
     }
     return () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); };
   }, [burned, onClose]);
@@ -129,14 +129,16 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
 
   return (
     <motion.div
-      className="my-8 p-6 border border-dashed rounded-2xl bg-red-500/5 relative"
+      className="my-8 p-6 border border-dashed rounded-2xl bg-red-500/5 relative overflow-hidden"
       style={{ borderColor: 'rgba(239, 68, 68, 0.5)' }}
       initial={{ opacity: 0, y: -16, scale: 0.97 }}
-      animate={burning
-        ? { opacity: 1, y: 0, scale: 1, borderColor: ['rgba(239,68,68,0.5)', 'rgba(249,115,22,0.5)', 'rgba(156,163,175,0.3)'] }
-        : { opacity: 1, y: 0, scale: 1, borderColor: 'rgba(239,68,68,0.5)' }}
+      animate={burned
+        ? { opacity: 0, height: 0, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }
+        : burning
+          ? { opacity: 1, y: 0, scale: 1, borderColor: ['rgba(239,68,68,0.5)', 'rgba(249,115,22,0.5)', 'rgba(156,163,175,0.3)'] }
+          : { opacity: 1, y: 0, scale: 1, borderColor: 'rgba(239,68,68,0.5)' }}
       exit={{ opacity: 0, y: -16, scale: 0.97 }}
-      transition={burning ? { duration: 2.5, ease: 'easeOut' } : zenMotion.gentle}
+      transition={burned ? { duration: 0.8, ease: 'easeInOut' } : burning ? { duration: 2.5, ease: 'easeOut' } : zenMotion.gentle}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5">
