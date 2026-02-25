@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, X, Calendar, Shuffle, Mic, MicOff, Circle, Square, LayoutTemplate, Palette, Flame, Focus, Plus } from 'lucide-react';
+import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, X, Calendar, Shuffle, Mic, MicOff, Circle, Square, LayoutTemplate, Palette, Flame, Focus, Plus, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getToday } from '@/lib/utils';
 import { zenMotion } from '@/lib/animationUtils';
@@ -35,6 +35,13 @@ const DIARY_FONTS_LOCAL = DIARY_FONTS;
 const DIARY_THEME_NAMES_LOCAL = DIARY_THEME_NAMES;
 const DIARY_FONT_NAMES_LOCAL = DIARY_FONT_NAMES;
 const FONT_LABELS_LOCAL: Record<string, string> = { caveat: 'Handwriting', cormorant: 'Serif', outfit: 'Sans' };
+
+const ATMOSPHERE_THEMES = [
+  { name: 'dark' as const, i18nKey: 'diaryThemeCosmos', label: 'Cosmos', activeBg: 'bg-purple-500/15', activeText: 'text-purple-400', activeBorder: 'border-purple-500/30' },
+  { name: 'ocean' as const, i18nKey: 'diaryThemeOcean', label: 'Ocean', activeBg: 'bg-cyan-500/15', activeText: 'text-cyan-400', activeBorder: 'border-cyan-500/30' },
+  { name: 'forest' as const, i18nKey: 'diaryThemeForest', label: 'Forest', activeBg: 'bg-emerald-500/15', activeText: 'text-emerald-400', activeBorder: 'border-emerald-500/30' },
+  { name: 'sunset' as const, i18nKey: 'diaryThemeSunset', label: 'Sunset', activeBg: 'bg-orange-500/15', activeText: 'text-orange-400', activeBorder: 'border-orange-500/30' },
+];
 
 const MOOD_OPTIONS: { mood: MoodType; emoji: string }[] = [
   { mood: 'great', emoji: '\u{1F604}' },
@@ -216,6 +223,7 @@ export function JournalEntryEditor({
   const [spotlightActive, setSpotlightActive] = useState(false);
   const [showActionSheet, setShowActionSheet] = useState(false);
   const [toolbarHidden, setToolbarHidden] = useState(false);
+  const [wavyBordersEnabled, setWavyBordersEnabled] = useState(true);
   const lastScrollTopRef = useRef(0);
 
   const entryId = entry?.id || '__draft__';
@@ -599,106 +607,276 @@ export function JournalEntryEditor({
   const diaryBorder = diaryTheme.themeVars['--diary-border'];
 
   return (
-    <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up" style={diaryStyle}>
-      {/* Canvas decorative background — pauses during typing, resumes 2s after */}
-      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive />
+    <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] flex flex-col h-screen overflow-hidden text-slate-50" style={diaryStyle}>
+      {/* Canvas decorative background */}
+      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={wavyBordersEnabled} />
 
-      <div className="w-full h-full flex flex-col md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:shadow-2xl md:border md:border-border/20 md:overflow-hidden relative z-10">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 backdrop-blur-md border-b" style={{ backgroundColor: glassBg, borderColor: diaryBorder }}>
-        <motion.button
-          whileTap={{ scale: 0.92 }}
-          onClick={handleBack}
-          className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-          aria-label={ts.back || 'Back'}
-        >
-          <ArrowLeft className="w-5 h-5" style={{ color: 'var(--diary-text)' }} />
-        </motion.button>
-
-        <div className="relative">
-          <button
-            onClick={() => dateInputRef.current?.showPicker?.()}
-            className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted/50 transition-colors"
-            style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}
-          >
-            <Calendar className="w-3 h-3" />
-            {new Date(date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-          </button>
-          <input
-            ref={dateInputRef}
-            type="date"
-            value={date}
-            max={getToday()}
-            onChange={e => { if (e.target.value) setDate(e.target.value); }}
-            className="sr-only"
-            tabIndex={-1}
-          />
-        </div>
-
-        <div className="flex items-center gap-1">
-          <motion.button
-            whileTap={{ scale: 0.92 }}
-            onClick={() => { closeAllPickers(); setShowStylePanel(!showStylePanel); }}
-            className={cn(
-              'p-2 rounded-lg min-w-[44px] min-h-[44px] flex items-center justify-center transition-colors',
-              showStylePanel ? 'bg-primary/10' : 'hover:bg-muted/50',
-            )}
-            aria-label={ts.journalStyleButton || 'Style'}
-          >
-            <Palette className="w-4 h-4" style={{ color: showStylePanel ? 'var(--diary-accent, hsl(var(--primary)))' : 'var(--diary-muted, hsl(var(--muted-foreground)))' }} />
-          </motion.button>
-          {entry && onDelete && (
+      {/* ═══ GLASS TOOLBAR ═══ */}
+      <div className="relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 bg-slate-900/70 backdrop-blur-xl border-b border-white/[0.08] shadow-[0_10px_40px_rgba(0,0,0,0.5)]">
+        {/* ROW 1: Navigation & Atmosphere */}
+        <div className="flex items-center justify-between gap-3">
+          {/* LEFT: Back + Title */}
+          <div className="flex items-center gap-3 min-w-0">
             <motion.button
               whileTap={{ scale: 0.92 }}
-              onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
-              aria-label={ts.delete || 'Delete'}
+              onClick={handleBack}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-slate-400 hover:bg-white/10 hover:text-slate-50 transition-all min-h-[44px]"
+              aria-label={ts.back || 'Back'}
             >
-              <Trash2 className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4" />
+              <span className="text-sm">Map</span>
             </motion.button>
-          )}
-          <motion.button
-            whileTap={saveSuccess ? {} : { scale: 0.95 }}
-            onClick={saveSuccess ? undefined : handleSave}
-            disabled={!saveSuccess && (saving || !hasContent)}
-            className={cn(
-              'flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium min-h-[44px]',
-              saveSuccess
-                ? 'bg-gradient-to-r from-emerald-500 to-emerald-500/90'
-                : 'bg-gradient-to-r from-primary to-primary/90',
-              'text-primary-foreground',
-              saveSuccess
-                ? 'shadow-[0_2px_14px_rgba(16,185,129,0.3)]'
-                : 'shadow-[0_2px_10px_rgba(var(--primary-rgb,99,102,241),0.2)]',
-              'disabled:opacity-40 disabled:shadow-none transition-all',
+            <div className="min-w-0">
+              <div className="text-sm font-bold tracking-tight truncate" style={{ color: diaryTheme.accentColor, fontFamily: "'Outfit', sans-serif" }}>
+                {title || ts.diaryTimeCapsule || 'TIME CAPSULE'}
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => dateInputRef.current?.showPicker?.()}
+                  className="text-[11px] flex items-center gap-1 text-slate-500 hover:text-slate-300 transition-colors"
+                >
+                  <Calendar className="w-3 h-3" />
+                  {new Date(date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                </button>
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  value={date}
+                  max={getToday()}
+                  onChange={e => { if (e.target.value) setDate(e.target.value); }}
+                  className="sr-only"
+                  tabIndex={-1}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT: Atmosphere capsule + Actions */}
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5">
+              <span className="text-[10px] uppercase tracking-widest text-slate-500 px-1.5 hidden sm:block">
+                {ts.diaryAtmosphere || 'ATMOSPHERE'}
+              </span>
+              {ATMOSPHERE_THEMES.map(at => {
+                const isActive = at.name === diaryTheme.theme;
+                return (
+                  <motion.button
+                    key={at.name}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => diaryTheme.setTheme(at.name)}
+                    className={cn(
+                      'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
+                      isActive
+                        ? `${at.activeBg} ${at.activeText} ${at.activeBorder}`
+                        : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+                    )}
+                  >
+                    {ts[at.i18nKey] || at.label}
+                  </motion.button>
+                );
+              })}
+              <div className="w-px h-6 bg-white/10" />
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setWavyBordersEnabled(v => !v)}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-xs border transition-all',
+                  wavyBordersEnabled
+                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                    : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10',
+                )}
+              >
+                〰️
+              </motion.button>
+            </div>
+
+            {entry && onDelete && (
+              <motion.button
+                whileTap={{ scale: 0.92 }}
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2 rounded-lg hover:bg-white/10 text-slate-400 hover:text-red-400 transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"
+                aria-label={ts.delete || 'Delete'}
+              >
+                <Trash2 className="w-4 h-4" />
+              </motion.button>
             )}
-          >
-            <AnimatePresence mode="wait">
-              {saveSuccess ? (
-                <motion.span
-                  key="success"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: [0, 1.2, 1] }}
-                  transition={{ duration: 0.4, ease: 'easeOut' }}
-                  className="flex items-center"
-                >
-                  <Check className="w-5 h-5" />
-                </motion.span>
-              ) : (
-                <motion.span
-                  key="save"
-                  exit={{ scale: 0.8, opacity: 0 }}
-                  transition={{ duration: 0.1 }}
-                  className="flex items-center gap-1"
-                >
-                  <Check className="w-4 h-4" />
-                  {ts.journalSave || 'Save'}
-                </motion.span>
+
+            <motion.button
+              whileTap={saveSuccess ? {} : { scale: 0.95 }}
+              onClick={saveSuccess ? undefined : handleSave}
+              disabled={!saveSuccess && (saving || !hasContent)}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium min-h-[44px] transition-all',
+                saveSuccess
+                  ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                  : 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25',
+                'disabled:opacity-40',
               )}
-            </AnimatePresence>
-          </motion.button>
+            >
+              <AnimatePresence mode="wait">
+                {saveSuccess ? (
+                  <motion.span
+                    key="success"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: [0, 1.2, 1] }}
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
+                    className="flex items-center"
+                  >
+                    <Check className="w-5 h-5" />
+                  </motion.span>
+                ) : (
+                  <motion.span
+                    key="save"
+                    exit={{ scale: 0.8, opacity: 0 }}
+                    transition={{ duration: 0.1 }}
+                    className="flex items-center gap-1"
+                  >
+                    <Check className="w-4 h-4" />
+                    {ts.journalSave || 'Save'}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
+        </div>
+
+        {/* ROW 2: Tools & Game Changers */}
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none -mx-1.5 px-1.5">
+          {/* Fonts capsule */}
+          <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+            {DIARY_FONT_NAMES_LOCAL.map(name => {
+              const isActive = name === diaryTheme.font;
+              const label = name === 'outfit' ? (ts.diaryFontSans || 'Sans') : name === 'cormorant' ? (ts.diaryFontSerif || 'Serif') : (ts.diaryFontHandwriting || 'Hand');
+              return (
+                <motion.button
+                  key={name}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => diaryTheme.setFont(name)}
+                  className={cn(
+                    'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-1.5',
+                    isActive
+                      ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                      : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+                  )}
+                  style={{ fontFamily: DIARY_FONTS_LOCAL[name].family }}
+                >
+                  Aa <span className="text-[11px]">{label}</span>
+                </motion.button>
+              );
+            })}
+          </div>
+
+          {/* Features capsule */}
+          <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+            {MOOD_OPTIONS.map(opt => (
+              <motion.button
+                key={opt.mood}
+                whileTap={{ scale: 0.85 }}
+                onClick={() => setMood(mood === opt.mood ? undefined : opt.mood)}
+                className={cn(
+                  'w-9 h-9 rounded-lg flex items-center justify-center transition-all',
+                  mood === opt.mood
+                    ? 'bg-emerald-500/15 ring-1 ring-emerald-500/30'
+                    : 'hover:bg-white/10',
+                )}
+              >
+                <span className="text-base">{opt.emoji}</span>
+              </motion.button>
+            ))}
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowTags(!showTags)}
+              className={cn(
+                'px-3 py-2 rounded-lg text-sm font-medium border transition-all',
+                showTags
+                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+              )}
+            >
+              #
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowStickers(true)}
+              disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
+              className="px-3 py-2 rounded-lg text-sm border border-transparent bg-transparent text-slate-400 hover:bg-white/10 transition-all disabled:opacity-40"
+            >
+              ⭐
+            </motion.button>
+          </div>
+
+          {/* Media capsule */}
+          <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowPhotos(true)}
+              disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 border border-transparent hover:bg-white/10 hover:text-slate-50 transition-all flex items-center gap-2 disabled:opacity-40"
+            >
+              📸 {ts.diarySnapshot || 'Photo'}
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => handleStartRecording()}
+              disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 border border-transparent hover:bg-white/10 hover:text-slate-50 transition-all flex items-center gap-2 disabled:opacity-40"
+            >
+              🎤 {ts.diaryRecord || 'Record'}
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={handleToggleDictation}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2',
+                voice.isListening
+                  ? 'bg-red-500/15 text-red-400 border-red-500/30'
+                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+              )}
+            >
+              🎙️ {voice.isListening ? (ts.journalDictateStop || 'Stop') : (ts.diaryVoice || 'Voice')}
+            </motion.button>
+          </div>
+
+          {/* Game Changers capsule */}
+          <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)] flex-shrink-0">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setSpotlightActive(!spotlightActive)}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2',
+                spotlightActive
+                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+              )}
+            >
+              🔦 {ts.diaryFocusRay || 'Focus'}
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowBurnWidget(!showBurnWidget)}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2',
+                showBurnWidget
+                  ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
+                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+              )}
+            >
+              🔥 {ts.journalBurnTitle ? ts.journalBurnTitle.split(' ')[0] : 'Burn'}
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400/50 border border-transparent transition-all flex items-center gap-2 cursor-default"
+            >
+              🧘 {ts.diaryBreathe || 'Breathe'}
+            </motion.button>
+          </div>
         </div>
       </div>
+
+      {/* ═══ CONTENT AREA ═══ */}
+      <div className="flex-1 relative overflow-hidden">
+        <div className="absolute inset-0 overflow-y-auto pt-8 pb-32 px-10 z-10" onScroll={handleContentScroll}>
+          <div className="max-w-4xl mx-auto space-y-4">
 
       {/* Draft restore banner */}
       <AnimatePresence>
@@ -732,8 +910,6 @@ export function JournalEntryEditor({
         )}
       </AnimatePresence>
 
-      {/* Content area */}
-      <div className="flex-1 overflow-y-auto px-6 pt-8 pb-16 space-y-4" onScroll={handleContentScroll}>
         {/* Title */}
         <input
           type="text"
@@ -741,10 +917,7 @@ export function JournalEntryEditor({
           onChange={e => setTitle(e.target.value)}
           placeholder={ts.journalEntryTitle || 'Title (optional)'}
           autoFocus={!entry}
-          className={cn(
-            'w-full text-2xl font-bold tracking-tight bg-transparent border-none outline-none',
-            'placeholder:text-muted-foreground/30',
-          )}
+          className="w-full text-2xl font-bold tracking-tight bg-transparent border-none outline-none placeholder:text-slate-500/40"
           maxLength={100}
           onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
         />
@@ -899,6 +1072,37 @@ export function JournalEntryEditor({
           </div>
         )}
 
+        {/* Inline tag input */}
+        <AnimatePresence>
+          {showTags && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
+            >
+              <form onSubmit={e => { e.preventDefault(); handleAddTag(); }} className="flex gap-2">
+                <input
+                  type="text"
+                  value={tagInput}
+                  onChange={e => setTagInput(e.target.value)}
+                  placeholder={ts.journalTagPlaceholder || 'Add tag...'}
+                  className="flex-1 px-3 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm text-slate-200 outline-none placeholder:text-slate-500 min-h-[44px]"
+                  autoFocus
+                  maxLength={30}
+                />
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  type="submit"
+                  className="px-4 py-2.5 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-sm font-medium min-h-[44px]"
+                >
+                  {ts.journalAdd || 'Add'}
+                </motion.button>
+              </form>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Burn-a-thought widget (inline, above textarea) */}
         <AnimatePresence>
           {showBurnWidget && (
@@ -912,11 +1116,7 @@ export function JournalEntryEditor({
           value={content}
           onChange={e => setContent(e.target.value)}
           placeholder={ts.journalEntryPlaceholder || "What's on your mind?"}
-          className={cn(
-            'w-full min-h-[260px] bg-transparent border-none outline-none resize-none',
-            'text-[15px] leading-[1.85]',
-            'placeholder:text-muted-foreground/40',
-          )}
+          className="w-full min-h-[260px] bg-transparent border-none outline-none resize-none text-[18px] leading-[1.8] text-slate-100 placeholder:text-slate-500/40"
           style={{ fontFamily: diaryTheme.fontFamily, color: 'var(--diary-text, hsl(var(--foreground)))' }}
           onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
         />
@@ -958,352 +1158,11 @@ export function JournalEntryEditor({
           snapshot={habitSnapshot}
           onSnapshotChange={setHabitSnapshot}
         />
+
+          </div>
+        </div>
       </div>
-
-      {/* Toolbar zone — slides off-screen when scrolling down */}
-      <motion.div
-        animate={{ y: effectiveToolbarHidden ? '100%' : 0 }}
-        transition={zenMotion.snappy}
-        className="relative z-10"
-      >
-
-      {/* Gradient fade above toolbar */}
-      <div className="h-8 -mt-8 relative z-[2] pointer-events-none" style={{ background: 'linear-gradient(to top, var(--diary-bg), transparent)' }} />
-
-      {/* Minimal toolbar — 2 buttons: Voice + Add */}
-      <div
-        className={cn(
-          'backdrop-blur-md border-t px-4 py-2',
-          'flex items-center justify-between',
-          'pb-[max(0.5rem,env(safe-area-inset-bottom))]',
-        )}
-        style={{ backgroundColor: glassBg, borderColor: diaryBorder }}
-      >
-        <motion.button
-          whileTap={{ scale: 0.95 }}
-          onClick={handleToggleDictation}
-          className={cn(
-            'py-2 px-4 rounded-xl transition-colors',
-            'min-h-[44px] flex items-center gap-2',
-            voice.isListening ? 'bg-red-500/10' : 'hover:bg-muted/50',
-          )}
-        >
-          {voice.isListening ? (
-            <MicOff className="w-5 h-5 text-red-500" />
-          ) : (
-            <Mic className="w-5 h-5" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }} />
-          )}
-          <span className={cn('text-sm', voice.isListening && 'text-red-500')} style={voice.isListening ? undefined : { color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
-            {voice.isListening ? (ts.journalDictateStop || 'Stop') : (ts.journalToolbarVoice || 'Voice')}
-          </span>
-        </motion.button>
-
-        <motion.button
-          whileTap={{ scale: 0.9 }}
-          onClick={() => { if (showActionSheet) { setShowActionSheet(false); } else { closeAllPickers(); setShowActionSheet(true); } }}
-          className={cn(
-            'w-11 h-11 rounded-full flex items-center justify-center',
-            showActionSheet ? 'bg-primary/15' : 'bg-muted/50 hover:bg-muted',
-          )}
-          aria-label={ts.journalActionSheetTitle || 'Add to Entry'}
-        >
-          <motion.div animate={{ rotate: showActionSheet ? 45 : 0 }} transition={zenMotion.snappy}>
-            <Plus className="w-5 h-5" style={{ color: showActionSheet ? 'var(--diary-accent, hsl(var(--primary)))' : undefined }} />
-          </motion.div>
-        </motion.button>
-      </div>
-
-      {/* Action sheet — grouped feature menu (bottom sheet) */}
-      <AnimatePresence>
-        {showActionSheet && (
-          <motion.div
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={zenMotion.sheet}
-            className="rounded-t-2xl backdrop-blur-md border-t px-5 pb-5"
-            style={{ backgroundColor: glassBg, borderColor: diaryBorder, paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
-          >
-            {/* Drag handle pill */}
-            <div className="flex justify-center pt-3 pb-3">
-              <div className="w-9 h-1 rounded-full bg-muted-foreground/30" />
-            </div>
-
-            {/* CAPTURE group */}
-            <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block text-muted-foreground/50">
-              {ts.journalActionCapture || 'Capture'}
-            </span>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={() => handleActionItem(() => setShowPhotos(true))}
-                disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
-                className="flex items-center gap-3.5 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px] disabled:opacity-40"
-              >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10">
-                  <Camera className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
-                </div>
-                <span className="text-sm text-foreground">{ts.journalToolbarPhoto || 'Photo'}</span>
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={() => handleActionItem(() => handleStartRecording())}
-                disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
-                className="flex items-center gap-3.5 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px] disabled:opacity-40"
-              >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10">
-                  <Circle className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
-                </div>
-                <span className="text-sm text-foreground">{ts.journalToolbarRecord || 'Record'}</span>
-              </motion.button>
-            </div>
-
-            {/* REFLECT group */}
-            <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block text-muted-foreground/50">
-              {ts.journalActionReflect || 'Reflect'}
-            </span>
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={() => handleActionItem(() => setShowMood(true))}
-                className="flex items-center gap-2 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px]"
-              >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10">
-                  <span className="text-base leading-none">{mood ? MOOD_OPTIONS.find(m => m.mood === mood)?.emoji : '\u{1F3AD}'}</span>
-                </div>
-                <span className="text-sm text-foreground">{ts.journalToolbarMood || 'Mood'}</span>
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={() => handleActionItem(() => setShowStickers(true))}
-                disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
-                className="flex items-center gap-2 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px] disabled:opacity-40"
-              >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10">
-                  <Smile className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
-                </div>
-                <span className="text-sm text-foreground">{ts.journalToolbarSticker || 'Sticker'}</span>
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={() => handleActionItem(() => setShowTags(true))}
-                className="flex items-center gap-2 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px]"
-              >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10">
-                  <Hash className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
-                </div>
-                <span className="text-sm text-foreground">{ts.journalToolbarTags || 'Tags'}</span>
-              </motion.button>
-            </div>
-
-            {/* MINDFUL group */}
-            <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block text-muted-foreground/50">
-              {ts.journalActionMindful || 'Mindful'}
-            </span>
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={() => { setShowActionSheet(false); setShowBurnWidget(!showBurnWidget); }}
-                className={cn(
-                  'flex items-center gap-3.5 px-3 py-3 rounded-xl transition-colors min-h-[48px]',
-                  showBurnWidget ? 'bg-orange-500/10' : 'hover:bg-muted/50',
-                )}
-              >
-                <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center', showBurnWidget ? 'bg-orange-500/12' : 'bg-primary/10')}>
-                  <Flame className={cn('w-[22px] h-[22px]', showBurnWidget ? 'text-orange-500' : '')} style={showBurnWidget ? undefined : { color: 'var(--diary-accent, hsl(var(--primary)))' }} />
-                </div>
-                <span className="text-sm text-foreground">{ts.journalBurnTitle || 'Burn a thought'}</span>
-              </motion.button>
-              <motion.button
-                whileTap={{ scale: 0.96 }}
-                onClick={() => { setShowActionSheet(false); setSpotlightActive(!spotlightActive); }}
-                className={cn(
-                  'flex items-center gap-3.5 px-3 py-3 rounded-xl transition-colors min-h-[48px]',
-                  spotlightActive ? 'bg-primary/10' : 'hover:bg-muted/50',
-                )}
-              >
-                <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center', spotlightActive ? 'bg-primary/15' : 'bg-primary/10')}>
-                  <Focus className={cn('w-[22px] h-[22px]', spotlightActive ? 'text-primary' : '')} style={spotlightActive ? undefined : { color: 'var(--diary-accent, hsl(var(--primary)))' }} />
-                </div>
-                <span className="text-sm text-foreground">{ts.journalFocusLabel || 'Focus'}</span>
-              </motion.button>
-            </div>
-
-            {/* ORGANIZE group (Template — new entries only) */}
-            {!entry && (
-              <>
-                <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block text-muted-foreground/50">
-                  {ts.journalActionOrganize || 'Organize'}
-                </span>
-                <div className="grid grid-cols-1 gap-2">
-                  <motion.button
-                    whileTap={{ scale: 0.96 }}
-                    onClick={() => handleActionItem(() => setShowTemplatePicker(true))}
-                    className="flex items-center gap-3.5 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px]"
-                  >
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10">
-                      <LayoutTemplate className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
-                    </div>
-                    <span className="text-sm text-foreground">{ts.journalTemplateButton || 'Template'}</span>
-                  </motion.button>
-                </div>
-              </>
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Inline mood picker */}
-      <AnimatePresence>
-        {showMood && (
-          <motion.div
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={zenMotion.sheet}
-            className="rounded-t-2xl backdrop-blur-md border-t px-4 pb-3 flex flex-col items-center"
-            style={{ backgroundColor: glassBg, borderColor: diaryBorder }}
-          >
-            <div className="flex justify-center pt-2.5 pb-2.5">
-              <div className="w-9 h-1 rounded-full bg-muted-foreground/30" />
-            </div>
-            <div className="flex items-center justify-center gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-              {MOOD_OPTIONS.map(opt => (
-                <motion.button
-                  key={opt.mood}
-                  whileTap={{ scale: 0.85 }}
-                  onClick={() => { setMood(mood === opt.mood ? undefined : opt.mood); setShowMood(false); }}
-                  className={cn(
-                    'p-2.5 rounded-xl transition-all min-w-[52px] min-h-[52px] flex items-center justify-center',
-                    mood === opt.mood
-                      ? 'bg-primary/15 ring-2 ring-primary/30 shadow-lg animate-scale-bounce'
-                      : 'hover:bg-muted/50 hover:shadow-sm',
-                  )}
-                >
-                  <StickerRenderer emoji={opt.emoji} size="sm" />
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Inline tag input */}
-      <AnimatePresence>
-        {showTags && (
-          <motion.div
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={zenMotion.sheet}
-            className="rounded-t-2xl backdrop-blur-md border-t px-4 pb-2"
-            style={{ backgroundColor: glassBg, borderColor: diaryBorder }}
-          >
-            <div className="flex justify-center pt-2.5 pb-2">
-              <div className="w-9 h-1 rounded-full bg-muted-foreground/30" />
-            </div>
-            <form onSubmit={e => { e.preventDefault(); handleAddTag(); }} className="flex gap-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={e => setTagInput(e.target.value)}
-                placeholder={ts.journalTagPlaceholder || 'Add tag...'}
-                className="flex-1 px-3 py-2.5 rounded-lg bg-muted/50 border border-border/30 text-sm outline-none min-h-[44px]"
-                autoFocus
-                maxLength={30}
-              />
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                type="submit"
-                className="px-4 py-2.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium min-h-[44px]"
-              >
-                {ts.journalAdd || 'Add'}
-              </motion.button>
-            </form>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Style panel (theme/font pickers) */}
-      <AnimatePresence>
-        {showStylePanel && (
-          <motion.div
-            initial={{ y: '100%', opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: '100%', opacity: 0 }}
-            transition={zenMotion.sheet}
-            className="rounded-t-2xl backdrop-blur-md border-t px-4 pb-3"
-            style={{ backgroundColor: glassBg, borderColor: diaryBorder }}
-          >
-            <div className="flex justify-center pt-2.5 pb-2.5">
-              <div className="w-9 h-1 rounded-full bg-muted-foreground/30" />
-            </div>
-            <div className="flex items-start gap-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-              {/* Theme grid */}
-              <div className="flex-1">
-                <span className="text-[10px] font-medium mb-1.5 block" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
-                  {ts.journalThemeLabel || 'Theme'}
-                </span>
-              <div className="grid grid-cols-6 gap-1.5">
-                {DIARY_THEME_NAMES_LOCAL.map(name => {
-                  const theme = DIARY_THEMES_LOCAL[name];
-                  const isActive = name === diaryTheme.theme;
-                  return (
-                    <button
-                      key={name}
-                      onClick={() => diaryTheme.setTheme(name)}
-                      className="flex flex-col items-center gap-0.5"
-                      aria-label={`Theme: ${name}`}
-                      onMouseDown={e => e.preventDefault()}
-                    >
-                      <div
-                        className="w-7 h-7 rounded-full border-2 flex items-center justify-center"
-                        style={{
-                          backgroundColor: theme['--diary-bg'],
-                          borderColor: isActive ? theme['--diary-accent'] : theme['--diary-border'],
-                        }}
-                      >
-                        {isActive && <Check className="w-3 h-3" style={{ color: theme['--diary-accent'] }} />}
-                      </div>
-                      <span className="text-[8px] capitalize" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
-                        {name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Font list */}
-            <div>
-              <span className="text-[10px] font-medium mb-1.5 block" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
-                {ts.journalFontLabel || 'Font'}
-              </span>
-              <div className="flex flex-col gap-1">
-                {DIARY_FONT_NAMES_LOCAL.map(name => {
-                  const isActive = name === diaryTheme.font;
-                  return (
-                    <button
-                      key={name}
-                      onClick={() => diaryTheme.setFont(name)}
-                      className={cn('text-xs px-2 py-1 rounded-md transition-colors text-start', isActive ? 'bg-primary/10 font-medium' : 'hover:bg-muted/50')}
-                      style={{ fontFamily: DIARY_FONTS_LOCAL[name].family, color: 'var(--diary-text, hsl(var(--foreground)))' }}
-                      onMouseDown={e => e.preventDefault()}
-                    >
-                      {FONT_LABELS_LOCAL[name]}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      </motion.div>
-      {/* END toolbar zone */}
+      {/* END content area */}
 
       {/* Sub-pickers */}
       {showStickers && (
@@ -1480,7 +1339,6 @@ export function JournalEntryEditor({
           </motion.div>
         </div>
       )}
-      </div>
 
       {/* Spotlight focus overlay */}
       <SpotlightOverlay isActive={spotlightActive} textareaRef={textareaRef} />

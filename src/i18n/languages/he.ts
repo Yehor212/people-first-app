@@ -2270,6 +2270,21 @@ const hebrewOverrides: Partial<Translations> = {
   diaryThemeForest: 'יער',
   diaryThemeOcean: 'אוקיינוס',
   diaryThemeSunset: 'שקיעה',
+  diaryAtmosphere: 'אווירה',
+  diaryThemeCosmos: 'קוסמוס',
+  diaryWavyBorder: 'גלים',
+  diaryFontSans: 'Sans',
+  diaryFontSerif: 'Serif',
+  diaryFontHandwriting: 'כתב יד',
+  diarySnapshot: 'תמונה',
+  diaryRecord: 'הקלטה',
+  diaryFocusRay: 'מיקוד',
+  diaryBreathe: 'נשימה',
+  diaryTimeCapsule: 'קפסולת זמן',
+  diaryVoice: 'קול',
+  diaryFeatures: 'תכונות',
+  diaryMedia: 'מדיה',
+  diaryGameChangers: 'כלים',
 };
 
 export const he: Translations = { ...en, ...hebrewOverrides };

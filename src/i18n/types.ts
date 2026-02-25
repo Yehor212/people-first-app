@@ -2323,4 +2323,19 @@ export interface Translations {
   diaryThemeForest: string;
   diaryThemeOcean: string;
   diaryThemeSunset: string;
+  diaryAtmosphere: string;
+  diaryThemeCosmos: string;
+  diaryWavyBorder: string;
+  diaryFontSans: string;
+  diaryFontSerif: string;
+  diaryFontHandwriting: string;
+  diarySnapshot: string;
+  diaryRecord: string;
+  diaryFocusRay: string;
+  diaryBreathe: string;
+  diaryTimeCapsule: string;
+  diaryVoice: string;
+  diaryFeatures: string;
+  diaryMedia: string;
+  diaryGameChangers: string;
 }

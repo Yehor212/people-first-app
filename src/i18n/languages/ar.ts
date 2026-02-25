@@ -2203,6 +2203,21 @@ const arabicOverrides: Partial<Translations> = {
   diaryThemeForest: 'غابة',
   diaryThemeOcean: 'محيط',
   diaryThemeSunset: 'غروب',
+  diaryAtmosphere: 'الأجواء',
+  diaryThemeCosmos: 'الكون',
+  diaryWavyBorder: 'أمواج',
+  diaryFontSans: 'Sans',
+  diaryFontSerif: 'Serif',
+  diaryFontHandwriting: 'خط يدوي',
+  diarySnapshot: 'صورة',
+  diaryRecord: 'تسجيل',
+  diaryFocusRay: 'تركيز',
+  diaryBreathe: 'تنفس',
+  diaryTimeCapsule: 'كبسولة الزمن',
+  diaryVoice: 'صوت',
+  diaryFeatures: 'الميزات',
+  diaryMedia: 'الوسائط',
+  diaryGameChangers: 'أدوات',
 };
 
 export const ar: Translations = { ...en, ...arabicOverrides };

@@ -113,11 +113,7 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
 
   return (
     <motion.div
-      className="rounded-2xl overflow-hidden mx-1 mb-3"
-      style={{
-        backgroundColor: 'var(--diary-bg, hsl(var(--card)))',
-        border: '1px solid var(--diary-border, hsl(var(--border) / 0.3))',
-      }}
+      className="my-8 p-6 border border-dashed border-red-500/50 rounded-2xl bg-red-500/5 relative"
       initial={{ opacity: 0, y: -16, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: -16, scale: 0.97 }}
@@ -125,7 +121,7 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5">
-        <div className="flex items-center gap-2" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }}>
+        <div className="flex items-center gap-2 text-red-400">
           <Flame className="w-4 h-4" />
           <span className="text-sm font-medium">
             {burned ? (ts.journalBurnReleased || 'Released') : (ts.journalBurnTitle || 'Burn a thought')}
@@ -135,17 +131,16 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
           whileTap={{ scale: 0.92 }}
           onClick={onClose}
           className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full"
-          style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}
           aria-label={ts.close || 'Close'}
         >
-          <X className="w-3.5 h-3.5" />
+          <X className="w-3.5 h-3.5 text-red-400/60" />
         </motion.button>
       </div>
 
       {/* Body */}
       <div className="relative px-4 pb-4">
         {burned ? (
-          <p className="text-sm py-4 text-center" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
+          <p className="text-sm py-4 text-center text-red-300/60">
             {ts.journalBurnReleasedMessage || 'Your thought has been released.'}
           </p>
         ) : burning ? (
@@ -162,24 +157,15 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={ts.journalBurnPlaceholder || 'Write what worries you...'}
-              className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none resize-none"
-              style={{
-                backgroundColor: 'var(--diary-bg, hsl(var(--card)))',
-                color: 'var(--diary-text, hsl(var(--foreground)))',
-                border: '1px solid var(--diary-border, hsl(var(--border) / 0.3))',
-                minHeight: 64,
-              }}
+              className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none resize-none bg-transparent text-red-300 border border-red-500/30 placeholder:text-red-400/40"
+              style={{ minHeight: 64 }}
               rows={2}
             />
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={startBurn}
               disabled={!text.trim()}
-              className="mt-2.5 w-full py-2.5 rounded-xl text-sm font-medium transition-colors flex items-center justify-center gap-2 min-h-[44px]"
-              style={{
-                backgroundColor: text.trim() ? 'var(--diary-accent, hsl(var(--primary)))' : 'var(--diary-border, hsl(var(--border)))',
-                color: text.trim() ? '#fff' : 'var(--diary-muted, hsl(var(--muted-foreground)))',
-              }}
+              className={`mt-2.5 w-full py-2.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2 min-h-[44px] ${text.trim() ? 'bg-red-500/20 text-red-300 border border-red-500/40' : 'bg-white/5 text-slate-500 border border-white/10'}`}
             >
               <Flame className="w-4 h-4" />
               {ts.journalBurnAction || 'Burn it'}
