@@ -1,5 +1,9 @@
 /**
- * useDiaryCanvas — rAF-driven wavy borders + theme-specific particle system.
+ * useDiaryCanvas — rAF-driven Wavy Frame Engine with theme-specific particles.
+ *
+ * Renders TWO frame zones (top ~120px, bottom ~140px) on a single full-screen canvas.
+ * Each frame has: sinusoidal-clipped gradient fill → glowing wave line → constrained particles.
+ * The middle of the canvas is transparent so --diary-bg shows through.
  *
  * Memory-safe: all rAF + event listeners cleaned up in useEffect return.
  * Canvas is fixed at initial viewport size — NEVER resizes for keyboard.
@@ -8,24 +12,54 @@
  * PERFORMANCE GATE: Pauses rAF loop when user is typing (keydown on textarea).
  * Resumes 2 seconds after the last keystroke. This saves GPU while the user writes.
  *
- * THEME-SPECIFIC PARTICLES:
+ * THEME-SPECIFIC PARTICLES (constrained inside frame zones):
  *   dark/cosmos  — twinkling stars (opacity oscillation)
  *   ocean        — bubbles (sine-wave drift upward, size pulse)
  *   forest       — fireflies (Brownian motion, warm hue)
  *   sunset       — embers (rise + sway, orange-red fade)
  *   light/sepia  — generic soft floaters
  *
- * DEPTH LAYERS (back to front):
- *   Layer 0 — Dot grid (32px spacing, 3% opacity, subtle scroll parallax)
- *   Layer 1 — Parallax dust (60 static stars, per-star depth factor)
- *   Layer 2 — Wavy borders
- *   Layer 3 — Theme-specific particles
+ * FRAME RENDERING (per frame zone):
+ *   1. Clip to sinusoidal boundary → fill with theme gradient
+ *   2. Stroke glowing sinusoidal wave line (shadowBlur: 15)
+ *   3. Render theme particles inside the frame
  */
 
 import { useEffect, useRef } from 'react';
 import { shouldAnimate } from '@/lib/animationUtils';
 import { isCanvasPaused } from '@/lib/canvasPause';
 import type { DiaryThemeName } from './types';
+
+// ── Constants ──
+
+const TOP_FRAME_HEIGHT = 120;
+const BOTTOM_FRAME_HEIGHT = 140;
+const WAVE_AMPLITUDE = 10;
+const WAVE_FREQUENCY = 0.008;
+const WAVE_SPEED = 0.0005;
+const WAVE_STEP = 2;
+const GLOW_LINE_WIDTH = 2.5;
+const GLOW_SHADOW_BLUR = 15;
+
+// ── Theme maps ──
+
+const THEME_GRADIENTS: Record<DiaryThemeName, { from: string; to: string }> = {
+  dark:   { from: '#020617', to: '#0f172a' },
+  ocean:  { from: '#082f49', to: '#0F1B2D' },
+  forest: { from: '#064e3b', to: '#1B2D1B' },
+  sunset: { from: '#2D1B1B', to: '#1a0f0f' },
+  light:  { from: '#FFFEF5', to: '#F5F0E0' },
+  sepia:  { from: '#F4ECD8', to: '#E8DCC0' },
+};
+
+const THEME_WAVE_COLORS: Record<DiaryThemeName, string> = {
+  dark:   'rgba(139, 92, 246, 0.8)',
+  ocean:  'rgba(6, 182, 212, 0.8)',
+  forest: 'rgba(16, 185, 129, 0.8)',
+  sunset: 'rgba(232, 131, 74, 0.8)',
+  light:  'rgba(120, 120, 90, 0.35)',
+  sepia:  'rgba(139, 105, 20, 0.45)',
+};
 
 // ── Particle type ──
 
@@ -39,22 +73,12 @@ interface Particle {
   phase: number;
 }
 
-// ── Dust star (static parallax layer) ──
-
-interface DustStar {
-  x: number;
-  y: number;
-  size: number;
-  opacity: number;
-  parallaxFactor: number;
-}
-
 // ── Theme particle configs ──
 
 interface ParticleConfig {
   count: number;
-  init: (w: number, h: number) => Particle;
-  move: (p: Particle, t: number, w: number, h: number) => void;
+  init: (w: number, yMin: number, yMax: number) => Particle;
+  move: (p: Particle, t: number, w: number, yMin: number, yMax: number) => void;
   color: (p: Particle, t: number, accent: string) => string;
 }
 
@@ -64,24 +88,23 @@ function getParticleConfig(theme: DiaryThemeName): ParticleConfig {
       // Cosmos — twinkling stars with opacity oscillation
       return {
         count: 50,
-        init: (w, h) => ({
+        init: (w, yMin, yMax) => ({
           x: Math.random() * w,
-          y: Math.random() * h,
+          y: yMin + Math.random() * (yMax - yMin),
           size: 1 + Math.random() * 3,
           speedX: (Math.random() - 0.5) * 0.1,
-          speedY: (Math.random() - 0.5) * 0.1,
+          speedY: -0.05 - Math.random() * 0.1,
           opacity: 0.1 + Math.random() * 0.3,
           phase: Math.random() * Math.PI * 2,
         }),
-        move: (p, t, w, h) => {
+        move: (p, t, w, yMin, yMax) => {
           p.x += p.speedX;
           p.y += p.speedY;
-          // Twinkle: oscillate opacity
           p.opacity = 0.05 + Math.abs(Math.sin(t * 0.001 + p.phase)) * 0.35;
           if (p.x < -5) p.x = w + 5;
           if (p.x > w + 5) p.x = -5;
-          if (p.y < -5) p.y = h + 5;
-          if (p.y > h + 5) p.y = -5;
+          if (p.y < yMin - 5) p.y = yMax + 5;
+          if (p.y > yMax + 5) p.y = yMin - 5;
         },
         color: (p, _t, accent) => hexToRgba(accent, p.opacity),
       };
@@ -90,21 +113,20 @@ function getParticleConfig(theme: DiaryThemeName): ParticleConfig {
       // Bubbles — sine-wave horizontal drift, float upward, size pulse
       return {
         count: 35,
-        init: (w, h) => ({
+        init: (w, yMin, yMax) => ({
           x: Math.random() * w,
-          y: Math.random() * h,
+          y: yMin + Math.random() * (yMax - yMin),
           size: 2 + Math.random() * 5,
           speedX: 0,
           speedY: -0.15 - Math.random() * 0.25,
           opacity: 0.06 + Math.random() * 0.12,
           phase: Math.random() * Math.PI * 2,
         }),
-        move: (p, t, w, h) => {
+        move: (p, t, w, yMin, yMax) => {
           p.x += Math.sin(t * 0.0008 + p.phase) * 0.4;
           p.y += p.speedY;
-          // Size pulse
           p.size = (2 + Math.random() * 3) * (1 + Math.sin(t * 0.002 + p.phase) * 0.15);
-          if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
+          if (p.y < yMin - 10) { p.y = yMax + 10; p.x = Math.random() * w; }
           if (p.x < -10) p.x = w + 10;
           if (p.x > w + 10) p.x = -10;
         },
@@ -115,33 +137,29 @@ function getParticleConfig(theme: DiaryThemeName): ParticleConfig {
       // Fireflies — Brownian motion, warm glow
       return {
         count: 30,
-        init: (w, h) => ({
+        init: (w, yMin, yMax) => ({
           x: Math.random() * w,
-          y: Math.random() * h,
+          y: yMin + Math.random() * (yMax - yMin),
           size: 2 + Math.random() * 3,
           speedX: (Math.random() - 0.5) * 0.3,
           speedY: (Math.random() - 0.5) * 0.3,
           opacity: 0.08 + Math.random() * 0.15,
           phase: Math.random() * Math.PI * 2,
         }),
-        move: (p, t, w, h) => {
-          // Brownian: random velocity change each frame
+        move: (p, t, w, yMin, yMax) => {
           p.speedX += (Math.random() - 0.5) * 0.08;
           p.speedY += (Math.random() - 0.5) * 0.08;
-          // Dampen to prevent runaway
           p.speedX *= 0.97;
           p.speedY *= 0.97;
           p.x += p.speedX;
           p.y += p.speedY;
-          // Glow pulse
           p.opacity = 0.05 + Math.abs(Math.sin(t * 0.0015 + p.phase)) * 0.2;
           if (p.x < -10) p.x = w + 10;
           if (p.x > w + 10) p.x = -10;
-          if (p.y < -10) p.y = h + 10;
-          if (p.y > h + 10) p.y = -10;
+          if (p.y < yMin - 10) p.y = yMax + 10;
+          if (p.y > yMax + 10) p.y = yMin - 10;
         },
         color: (p, t) => {
-          // Warm yellow-green hue for fireflies
           const hue = 80 + Math.sin(t * 0.001 + p.phase) * 30;
           return `hsla(${hue}, 80%, 60%, ${p.opacity})`;
         },
@@ -151,27 +169,25 @@ function getParticleConfig(theme: DiaryThemeName): ParticleConfig {
       // Embers — rise upward with horizontal sway, orange-red, fade at top
       return {
         count: 40,
-        init: (w, h) => ({
+        init: (w, yMin, yMax) => ({
           x: Math.random() * w,
-          y: h * 0.5 + Math.random() * h * 0.5,
+          y: yMin + (yMax - yMin) * 0.5 + Math.random() * (yMax - yMin) * 0.5,
           size: 2 + Math.random() * 4,
           speedX: (Math.random() - 0.5) * 0.4,
           speedY: -0.2 - Math.random() * 0.4,
           opacity: 0.1 + Math.random() * 0.2,
           phase: Math.random() * Math.PI * 2,
         }),
-        move: (p, t, w, h) => {
+        move: (p, t, w, yMin, yMax) => {
           p.x += p.speedX + Math.sin(t * 0.001 + p.phase) * 0.3;
           p.y += p.speedY;
-          // Fade as particle rises
-          const heightRatio = p.y / h;
+          const heightRatio = (p.y - yMin) / (yMax - yMin);
           p.opacity = Math.max(0.02, heightRatio * 0.25);
-          if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; p.opacity = 0.2; }
+          if (p.y < yMin - 10) { p.y = yMax + 10; p.x = Math.random() * w; p.opacity = 0.2; }
           if (p.x < -10) p.x = w + 10;
           if (p.x > w + 10) p.x = -10;
         },
         color: (p, t) => {
-          // Orange to red gradient
           const hue = 15 + Math.sin(t * 0.001 + p.phase) * 15;
           return `hsla(${hue}, 90%, 55%, ${p.opacity})`;
         },
@@ -181,19 +197,19 @@ function getParticleConfig(theme: DiaryThemeName): ParticleConfig {
       // Light/sepia — subtle generic floaters
       return {
         count: 25,
-        init: (w, h) => ({
+        init: (w, yMin, yMax) => ({
           x: Math.random() * w,
-          y: Math.random() * h,
+          y: yMin + Math.random() * (yMax - yMin),
           size: 2 + Math.random() * 3,
           speedX: (Math.random() - 0.5) * 0.2,
           speedY: -0.1 - Math.random() * 0.15,
           opacity: 0.05 + Math.random() * 0.08,
           phase: Math.random() * Math.PI * 2,
         }),
-        move: (p, t, w, h) => {
+        move: (p, t, w, yMin, yMax) => {
           p.x += p.speedX + Math.sin(t * 0.001 + p.phase) * 0.1;
           p.y += p.speedY;
-          if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
+          if (p.y < yMin - 10) { p.y = yMax + 10; p.x = Math.random() * w; }
           if (p.x < -10) p.x = w + 10;
           if (p.x > w + 10) p.x = -10;
         },
@@ -210,83 +226,119 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${parseInt(match[1], 16)}, ${parseInt(match[2], 16)}, ${parseInt(match[3], 16)}, ${alpha})`;
 }
 
-// ── Depth Layer 0: Dot Grid ──
+// ── Wave path builder ──
 
-function drawGrid(
+interface WavePath { xs: number[]; ys: number[] }
+
+function buildWavePath(w: number, baseY: number, time: number): WavePath {
+  const xs: number[] = [];
+  const ys: number[] = [];
+  for (let x = 0; x <= w; x += WAVE_STEP) {
+    xs.push(x);
+    ys.push(baseY + Math.sin(x * WAVE_FREQUENCY + time) * WAVE_AMPLITUDE);
+  }
+  return { xs, ys };
+}
+
+// ── Frame gradient fill (clipped to sinusoidal boundary) ──
+
+function drawFrameGradient(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
-  scrollY: number,
-  accentColor: string,
-) {
-  const spacing = 32;
-  const dotSize = 1;
-  const offsetY = (scrollY * 0.03) % spacing; // very subtle parallax
-  ctx.fillStyle = hexToRgba(accentColor, 0.03);
-  for (let x = spacing; x < w; x += spacing) {
-    for (let y = -spacing + offsetY; y < h + spacing; y += spacing) {
-      ctx.fillRect(x - dotSize / 2, y - dotSize / 2, dotSize, dotSize);
+  frame: 'top' | 'bottom',
+  wave: WavePath,
+  theme: DiaryThemeName,
+): void {
+  const { from, to } = THEME_GRADIENTS[theme];
+  const isTop = frame === 'top';
+
+  ctx.save();
+  ctx.beginPath();
+
+  if (isTop) {
+    // Rectangle top + sinusoidal bottom edge
+    ctx.moveTo(0, 0);
+    ctx.lineTo(w, 0);
+    // Walk sinusoidal edge right-to-left
+    for (let i = wave.xs.length - 1; i >= 0; i--) {
+      ctx.lineTo(wave.xs[i], wave.ys[i]);
     }
+  } else {
+    // Sinusoidal top edge + rectangle bottom
+    ctx.moveTo(wave.xs[0], wave.ys[0]);
+    for (let i = 1; i < wave.xs.length; i++) {
+      ctx.lineTo(wave.xs[i], wave.ys[i]);
+    }
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
   }
+
+  ctx.closePath();
+  ctx.clip();
+
+  // Gradient fill inside clip
+  const grad = isTop
+    ? ctx.createLinearGradient(0, 0, 0, TOP_FRAME_HEIGHT + WAVE_AMPLITUDE)
+    : ctx.createLinearGradient(0, h - BOTTOM_FRAME_HEIGHT - WAVE_AMPLITUDE, 0, h);
+  grad.addColorStop(0, from);
+  grad.addColorStop(1, to);
+  ctx.fillStyle = grad;
+
+  if (isTop) {
+    ctx.fillRect(0, 0, w, TOP_FRAME_HEIGHT + WAVE_AMPLITUDE + 1);
+  } else {
+    ctx.fillRect(0, h - BOTTOM_FRAME_HEIGHT - WAVE_AMPLITUDE - 1, w, BOTTOM_FRAME_HEIGHT + WAVE_AMPLITUDE + 2);
+  }
+
+  ctx.restore();
 }
 
-// ── Depth Layer 1: Parallax Dust ──
+// ── Glowing wave line ──
 
-function drawParallaxDust(
+function drawGlowLine(
   ctx: CanvasRenderingContext2D,
-  stars: DustStar[],
-  scrollY: number,
-  h: number,
-) {
-  for (const s of stars) {
-    const renderY = ((s.y + scrollY * s.parallaxFactor) % (h + 20)) - 10;
-    ctx.fillStyle = `rgba(255, 255, 255, ${s.opacity})`;
-    ctx.fillRect(s.x - s.size / 2, renderY - s.size / 2, s.size, s.size);
+  wave: WavePath,
+  theme: DiaryThemeName,
+): void {
+  const color = THEME_WAVE_COLORS[theme];
+
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = GLOW_LINE_WIDTH;
+  ctx.shadowBlur = GLOW_SHADOW_BLUR;
+  ctx.shadowColor = color;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  ctx.beginPath();
+  ctx.moveTo(wave.xs[0], wave.ys[0]);
+  for (let i = 1; i < wave.xs.length; i++) {
+    ctx.lineTo(wave.xs[i], wave.ys[i]);
   }
+  ctx.stroke();
+  ctx.restore();
 }
 
-function drawWavyBorder(
+// ── Frame particles ──
+
+function drawFrameParticles(
   ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
+  particles: Particle[],
+  config: ParticleConfig,
   time: number,
-  color: string,
-) {
-  const t = time * 0.001;
-  ctx.strokeStyle = hexToRgba(color, 0.06);
-  ctx.lineWidth = 1.5;
-
-  // Top wave
-  ctx.beginPath();
-  for (let x = 0; x <= w; x += 3) {
-    const y = 16 + Math.sin(x * 0.012 + t) * 6 + Math.sin(x * 0.024 + t * 1.5) * 3;
-    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  w: number,
+  yMin: number,
+  yMax: number,
+  accentColor: string,
+): void {
+  for (const p of particles) {
+    config.move(p, time, w, yMin, yMax);
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = config.color(p, time, accentColor);
+    ctx.fill();
   }
-  ctx.stroke();
-
-  // Bottom wave
-  ctx.beginPath();
-  for (let x = 0; x <= w; x += 3) {
-    const y = h - 16 + Math.sin(x * 0.012 + t + 2) * 6 + Math.sin(x * 0.024 + t * 1.3) * 3;
-    if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  // Left wave
-  ctx.beginPath();
-  for (let y = 0; y <= h; y += 3) {
-    const x = 16 + Math.sin(y * 0.012 + t * 0.8) * 5 + Math.sin(y * 0.024 + t * 1.2) * 2.5;
-    if (y === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
-
-  // Right wave
-  ctx.beginPath();
-  for (let y = 0; y <= h; y += 3) {
-    const x = w - 16 + Math.sin(y * 0.012 + t * 0.9) * 5 + Math.sin(y * 0.024 + t * 1.1) * 2.5;
-    if (y === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-  }
-  ctx.stroke();
 }
 
 // ── Hook ──
@@ -296,10 +348,9 @@ export function useDiaryCanvas(
   accentColor: string,
   isActive: boolean,
   theme: DiaryThemeName = 'dark',
-  scrollYRef?: React.RefObject<number>,
 ): void {
-  const particlesRef = useRef<Particle[]>([]);
-  const dustRef = useRef<DustStar[]>([]);
+  const topParticlesRef = useRef<Particle[]>([]);
+  const bottomParticlesRef = useRef<Particle[]>([]);
   const rafRef = useRef(0);
   const typingPausedRef = useRef(false);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -321,18 +372,21 @@ export function useDiaryCanvas(
     canvas.style.height = `${h}px`;
     ctx.scale(dpr, dpr);
 
-    // Theme-specific particle config
-    const config = getParticleConfig(theme);
-    particlesRef.current = Array.from({ length: config.count }, () => config.init(w, h));
+    // Frame boundaries
+    const topYMin = 0;
+    const topYMax = TOP_FRAME_HEIGHT + WAVE_AMPLITUDE;
+    const bottomYMin = h - BOTTOM_FRAME_HEIGHT - WAVE_AMPLITUDE;
+    const bottomYMax = h;
 
-    // Parallax dust stars — static positions, depth varies per star
-    dustRef.current = Array.from({ length: 60 }, () => ({
-      x: Math.random() * w,
-      y: Math.random() * h,
-      size: 0.5 + Math.random() * 1.5,
-      opacity: 0.02 + Math.random() * 0.06,
-      parallaxFactor: 0.05 + Math.random() * 0.1,
-    }));
+    // Guard: if screen too small for both frames, skip
+    if (topYMax + 50 > bottomYMin) return;
+
+    // Theme-specific particle config — split between top and bottom frames
+    const config = getParticleConfig(theme);
+    const topCount = Math.floor(config.count / 2);
+    const bottomCount = Math.ceil(config.count / 2);
+    topParticlesRef.current = Array.from({ length: topCount }, () => config.init(w, topYMin, topYMax));
+    bottomParticlesRef.current = Array.from({ length: bottomCount }, () => config.init(w, bottomYMin, bottomYMax));
 
     let alive = true;
 
@@ -353,27 +407,23 @@ export function useDiaryCanvas(
     function frame(time: number) {
       if (!alive || !ctx) return;
       if (!isCanvasPaused() && !typingPausedRef.current) {
-        const scrollY = scrollYRef?.current ?? 0;
+        const t = time * WAVE_SPEED;
 
         ctx.clearRect(0, 0, w, h);
 
-        // Layer 0: Dot grid (subtle scroll parallax)
-        drawGrid(ctx, w, h, scrollY, accentColor);
+        // Pre-compute wave paths (reused for clip + glow)
+        const topWave = buildWavePath(w, TOP_FRAME_HEIGHT, t);
+        const bottomWave = buildWavePath(w, h - BOTTOM_FRAME_HEIGHT, t);
 
-        // Layer 1: Parallax dust (per-star depth factor)
-        drawParallaxDust(ctx, dustRef.current, scrollY, h);
+        // ── TOP FRAME ──
+        drawFrameGradient(ctx, w, h, 'top', topWave, theme);
+        drawGlowLine(ctx, topWave, theme);
+        drawFrameParticles(ctx, topParticlesRef.current, config, time, w, topYMin, topYMax, accentColor);
 
-        // Layer 2: Wavy borders
-        drawWavyBorder(ctx, w, h, time, accentColor);
-
-        // Layer 3: Theme-specific particles
-        for (const p of particlesRef.current) {
-          config.move(p, time, w, h);
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = config.color(p, time, accentColor);
-          ctx.fill();
-        }
+        // ── BOTTOM FRAME ──
+        drawFrameGradient(ctx, w, h, 'bottom', bottomWave, theme);
+        drawGlowLine(ctx, bottomWave, theme);
+        drawFrameParticles(ctx, bottomParticlesRef.current, config, time, w, bottomYMin, bottomYMax, accentColor);
       }
       rafRef.current = requestAnimationFrame(frame);
     }
@@ -386,5 +436,5 @@ export function useDiaryCanvas(
       document.removeEventListener('keydown', handleKeyDown);
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     };
-  }, [canvasRef, accentColor, isActive, theme, scrollYRef]);
+  }, [canvasRef, accentColor, isActive, theme]);
 }

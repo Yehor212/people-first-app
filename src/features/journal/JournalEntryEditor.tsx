@@ -26,7 +26,7 @@ import { JournalHabitSection } from './JournalHabitSection';
 import { useDiaryTheme } from './useDiaryTheme';
 import { DiaryCanvas } from './DiaryCanvas';
 import { BurnThoughtWidget } from './BurnThoughtWidget';
-import { BreathingExercise } from '@/components/breathing-exercise/BreathingExercise';
+import { DiaryBreatheWidget } from './DiaryBreatheWidget';
 import { SpotlightOverlay } from './SpotlightOverlay';
 import { FloatingMediaLayer } from './FloatingMediaLayer';
 import { DIARY_FONTS, DIARY_FONT_NAMES } from './types';
@@ -611,7 +611,7 @@ export function JournalEntryEditor({
   return (
     <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] flex flex-col h-screen overflow-hidden text-slate-50" style={diaryStyle}>
       {/* Canvas decorative background */}
-      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={wavyBordersEnabled} theme={diaryTheme.theme} scrollY={scrollYRef} />
+      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={wavyBordersEnabled} theme={diaryTheme.theme} />
 
       {/* ═══ GLASS TOOLBAR ═══ */}
       <div className="relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] bg-slate-900/60 backdrop-blur-2xl border-b border-white/5 shadow-[0_10px_60px_rgba(0,0,0,0.6)]">
@@ -677,19 +677,6 @@ export function JournalEntryEditor({
                   </motion.button>
                 );
               })}
-              <div className="w-px h-6 bg-white/10" />
-              <motion.button
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setWavyBordersEnabled(v => !v)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs border transition-all',
-                  wavyBordersEnabled
-                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                    : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10',
-                )}
-              >
-                〰️
-              </motion.button>
             </div>
 
             {entry && onDelete && (
@@ -807,7 +794,7 @@ export function JournalEntryEditor({
             </motion.button>
           </div>
 
-          {/* Ink & Texture capsule */}
+          {/* Ink capsule (Texture moved to bottom toolbar) */}
           <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
             {INK_COLORS.map(c => (
               <motion.button
@@ -822,30 +809,10 @@ export function JournalEntryEditor({
                 aria-label={c.label}
               />
             ))}
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setPaperTexture(paperTexture === 'clean' ? 'dots' : 'clean')}
-              className={cn(
-                'px-3 py-2 rounded-lg text-sm font-medium border transition-all',
-                paperTexture === 'dots'
-                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
-              )}
-            >
-              ✏️ {paperTexture === 'dots' ? 'Dots' : 'Clean'}
-            </motion.button>
           </div>
 
-          {/* Media capsule */}
+          {/* Media capsule (Record + Voice — Photo moved to bottom toolbar) */}
           <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowPhotos(true)}
-              disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
-              className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 border border-transparent hover:bg-white/10 hover:text-slate-50 transition-all flex items-center gap-2 disabled:opacity-40"
-            >
-              📸 {ts.diarySnapshot || 'Photo'}
-            </motion.button>
             <motion.button
               whileTap={{ scale: 0.95 }}
               onClick={() => handleStartRecording()}
@@ -865,46 +832,6 @@ export function JournalEntryEditor({
               )}
             >
               🎙️ {voice.isListening ? (ts.journalDictateStop || 'Stop') : (ts.diaryVoice || 'Voice')}
-            </motion.button>
-          </div>
-
-          {/* Game Changers capsule */}
-          <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-emerald-500/30 shadow-[0_0_15px_rgba(16,185,129,0.1)] flex-shrink-0">
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setSpotlightActive(!spotlightActive)}
-              className={cn(
-                'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2',
-                spotlightActive
-                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
-              )}
-            >
-              🔦 {ts.diaryFocusRay || 'Focus'}
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowBurnWidget(!showBurnWidget)}
-              className={cn(
-                'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2',
-                showBurnWidget
-                  ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
-                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
-              )}
-            >
-              🔥 {ts.journalBurnTitle ? ts.journalBurnTitle.split(' ')[0] : 'Burn'}
-            </motion.button>
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowBreathe(!showBreathe)}
-              className={cn(
-                'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2',
-                showBreathe
-                  ? 'bg-teal-500/15 text-teal-400 border-teal-500/30'
-                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
-              )}
-            >
-              🧘 {ts.diaryBreathe || 'Breathe'}
             </motion.button>
           </div>
         </div>
@@ -928,7 +855,7 @@ export function JournalEntryEditor({
           />
         )}
         <div
-          className="absolute inset-0 overflow-y-auto pt-8 pb-32 px-10 z-10"
+          className="absolute inset-0 overflow-y-auto pt-[140px] pb-[160px] px-10 z-10"
           onScroll={handleContentScroll}
           style={paperTexture === 'dots' ? { backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '24px 24px' } : undefined}
         >
@@ -1182,7 +1109,7 @@ export function JournalEntryEditor({
               exit={{ opacity: 0, y: -16, scale: 0.97 }}
               transition={zenMotion.gentle}
             >
-              <BreathingExercise compact onComplete={() => setShowBreathe(false)} />
+              <DiaryBreatheWidget />
             </motion.div>
           )}
         </AnimatePresence>
@@ -1240,6 +1167,80 @@ export function JournalEntryEditor({
         </div>
       </div>
       {/* END content area */}
+
+      {/* ═══ BOTTOM GLASS TOOLBAR (Magic) ═══ */}
+      <div className="relative z-50 flex-shrink-0 w-full px-6 py-3 pb-[max(0.75rem,var(--safe-bottom))] bg-slate-900/60 backdrop-blur-2xl border-t border-white/5 shadow-[0_-10px_60px_rgba(0,0,0,0.6)]">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none -mx-1.5 px-1.5">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setSpotlightActive(!spotlightActive)}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              spotlightActive
+                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+            )}
+          >
+            🔦 {ts.diaryFocusRay || 'Focus'}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowBurnWidget(!showBurnWidget)}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              showBurnWidget
+                ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
+                : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+            )}
+          >
+            🔥 {ts.journalBurnTitle ? ts.journalBurnTitle.split(' ')[0] : 'Burn'}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowBreathe(!showBreathe)}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              showBreathe
+                ? 'bg-teal-500/15 text-teal-400 border-teal-500/30'
+                : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+            )}
+          >
+            🧘 {ts.diaryBreathe || 'Breathe'}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowPhotos(true)}
+            disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
+            className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 border border-transparent hover:bg-white/10 hover:text-slate-50 transition-all flex items-center gap-2 flex-shrink-0 disabled:opacity-40"
+          >
+            📸 {ts.diarySnapshot || 'Photo'}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setWavyBordersEnabled(!wavyBordersEnabled)}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              wavyBordersEnabled
+                ? 'bg-purple-500/15 text-purple-400 border-purple-500/30'
+                : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+            )}
+          >
+            〰️ {ts.diaryWavyFrames || 'Frames'}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setPaperTexture(paperTexture === 'clean' ? 'dots' : 'clean')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              paperTexture === 'dots'
+                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+            )}
+          >
+            ⏺ {ts.diaryTexture || 'Texture'}
+          </motion.button>
+        </div>
+      </div>
 
       {/* Sub-pickers */}
       {showStickers && (

@@ -114,7 +114,7 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
   // ── Auto-close after burned ──
   useEffect(() => {
     if (burned) {
-      closeTimerRef.current = setTimeout(onClose, 2000);
+      closeTimerRef.current = setTimeout(onClose, 2500);
     }
     return () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); };
   }, [burned, onClose]);
@@ -129,11 +129,14 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
 
   return (
     <motion.div
-      className="my-8 p-6 border border-dashed border-red-500/50 rounded-2xl bg-red-500/5 relative"
+      className="my-8 p-6 border border-dashed rounded-2xl bg-red-500/5 relative"
+      style={{ borderColor: 'rgba(239, 68, 68, 0.5)' }}
       initial={{ opacity: 0, y: -16, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
+      animate={burning
+        ? { opacity: 1, y: 0, scale: 1, borderColor: ['rgba(239,68,68,0.5)', 'rgba(249,115,22,0.5)', 'rgba(156,163,175,0.3)'] }
+        : { opacity: 1, y: 0, scale: 1, borderColor: 'rgba(239,68,68,0.5)' }}
       exit={{ opacity: 0, y: -16, scale: 0.97 }}
-      transition={zenMotion.gentle}
+      transition={burning ? { duration: 2.5, ease: 'easeOut' } : zenMotion.gentle}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5">
@@ -168,7 +171,7 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
           <div className="relative">
             {/* Text area — blurs and fades when burning */}
             <motion.div
-              animate={burning ? { filter: 'blur(16px)', scale: 1.1, opacity: 0 } : { filter: 'blur(0px)', scale: 1, opacity: 1 }}
+              animate={burning ? { filter: 'blur(20px)', y: -50, opacity: 0 } : { filter: 'blur(0px)', y: 0, opacity: 1 }}
               transition={{ duration: 2.5, ease: 'easeOut' }}
             >
               <textarea

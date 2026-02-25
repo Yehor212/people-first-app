@@ -50,7 +50,7 @@ export function SpotlightOverlay({ isActive, textareaRef }: SpotlightOverlayProp
 
     if (isActive && isFocused) {
       textarea.style.position = 'relative';
-      textarea.style.zIndex = '20';
+      textarea.style.zIndex = '210';
     } else {
       textarea.style.position = '';
       textarea.style.zIndex = '';
@@ -98,12 +98,12 @@ export function SpotlightOverlay({ isActive, textareaRef }: SpotlightOverlayProp
           ref={overlayRef}
           className="fixed inset-0 pointer-events-none"
           style={{
-            zIndex: 15,
+            zIndex: 200,
             backgroundColor: 'rgba(0, 0, 0, 0.85)',
             '--mx': '50%',
             '--my': '50%',
-            WebkitMaskImage: 'radial-gradient(circle 140px at var(--mx) var(--my), transparent 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,1) 100%)',
-            maskImage: 'radial-gradient(circle 140px at var(--mx) var(--my), transparent 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,1) 100%)',
+            WebkitMaskImage: 'radial-gradient(circle 120px at var(--mx) var(--my), transparent 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,1) 100%)',
+            maskImage: 'radial-gradient(circle 120px at var(--mx) var(--my), transparent 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,1) 100%)',
           } as React.CSSProperties}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}

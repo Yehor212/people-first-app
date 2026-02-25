@@ -1,5 +1,5 @@
 /**
- * DiaryCanvas — Decorative canvas layer (dot grid + parallax dust + wavy borders + theme particles).
+ * DiaryCanvas — Decorative canvas layer (wavy frame zones + theme particles).
  * Renders as a fixed layer behind the editor. Never resizes for keyboard.
  * Pauses rAF during typing (resumes 2s after last keystroke).
  */
@@ -12,12 +12,11 @@ interface DiaryCanvasProps {
   accentColor: string;
   isActive: boolean;
   theme?: DiaryThemeName;
-  scrollY?: React.RefObject<number>;
 }
 
-export function DiaryCanvas({ accentColor, isActive, theme = 'dark', scrollY }: DiaryCanvasProps) {
+export function DiaryCanvas({ accentColor, isActive, theme = 'dark' }: DiaryCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  useDiaryCanvas(canvasRef, accentColor, isActive, theme, scrollY);
+  useDiaryCanvas(canvasRef, accentColor, isActive, theme);
 
   return (
     <canvas
