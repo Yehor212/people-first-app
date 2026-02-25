@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Check, Smile, Camera, Hash, Trash2, X, Calendar, Shuffle, Mic, MicOff, Circle, Square, LayoutTemplate, Palette, Flame, Focus, Plus, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Trash2, X, Calendar, Shuffle, Square, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getToday } from '@/lib/utils';
 import { zenMotion } from '@/lib/animationUtils';
