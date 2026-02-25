@@ -2254,4 +2254,6 @@ export const fr: Translations = {
   diaryFeatures: 'Fonctions',
   diaryMedia: 'Médias',
   diaryGameChangers: 'Outils',
+  diaryFormatHint: 'Sélectionnez du texte pour le formater (gras, italique, etc.)',
+  diaryFormatLinkPrompt: "Entrez l'URL :",
 };

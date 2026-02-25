@@ -2253,4 +2253,6 @@ export const en: Translations = {
   diaryFeatures: 'Features',
   diaryMedia: 'Media',
   diaryGameChangers: 'Game Changers',
+  diaryFormatHint: 'Select text to format (bold, italic, etc.)',
+  diaryFormatLinkPrompt: 'Enter URL:',
 };

@@ -2338,4 +2338,6 @@ export interface Translations {
   diaryFeatures: string;
   diaryMedia: string;
   diaryGameChangers: string;
+  diaryFormatHint: string;
+  diaryFormatLinkPrompt: string;
 }

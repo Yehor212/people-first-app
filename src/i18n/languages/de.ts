@@ -2254,4 +2254,6 @@ export const de: Translations = {
   diaryFeatures: 'Funktionen',
   diaryMedia: 'Medien',
   diaryGameChangers: 'Werkzeuge',
+  diaryFormatHint: 'Text markieren zum Formatieren (fett, kursiv usw.)',
+  diaryFormatLinkPrompt: 'URL eingeben:',
 };

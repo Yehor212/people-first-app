@@ -2253,4 +2253,6 @@ export const uk: Translations = {
   diaryFeatures: 'Функції',
   diaryMedia: 'Медіа',
   diaryGameChangers: 'Інструменти',
+  diaryFormatHint: 'Виділіть текст для форматування (жирний, курсив тощо)',
+  diaryFormatLinkPrompt: 'Введіть URL:',
 };

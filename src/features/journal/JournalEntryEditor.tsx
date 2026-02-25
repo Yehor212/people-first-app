@@ -21,7 +21,7 @@ import { useJournalVoice } from './useJournalVoice';
 import { useAudioRecorder } from './useAudioRecorder';
 import { logger } from '@/lib/logger';
 import { SK } from '@/lib/storageKeys';
-import { safeLocalStorageSet, safeJsonParse, storageGetRaw, storageRemove } from '@/lib/safeJson';
+import { safeLocalStorageSet, safeJsonParse, storageGetRaw, storageSetRaw, storageRemove } from '@/lib/safeJson';
 import { JournalHabitSection } from './JournalHabitSection';
 import { useDiaryTheme } from './useDiaryTheme';
 import { DiaryCanvas } from './DiaryCanvas';
@@ -30,6 +30,7 @@ import { DiaryBreatheWidget } from './DiaryBreatheWidget';
 import { SpotlightOverlay } from './SpotlightOverlay';
 import { FloatingMediaLayer } from './FloatingMediaLayer';
 import { DiaryFormatToolbar } from './DiaryFormatToolbar';
+import { DiaryFormatHint } from './DiaryFormatHint';
 import { sanitizeRichContent } from '@/lib/sanitize';
 import { DIARY_FONTS, DIARY_FONT_NAMES } from './types';
 
@@ -201,6 +202,7 @@ export function JournalEntryEditor({
   const focusTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
   const editorOverlayRef = useRef<HTMLDivElement>(null);
   const contentAreaRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const scrollYRef = useRef(0);
   const draftKey = getDraftKey(entry?.id || null);
 
@@ -242,6 +244,7 @@ export function JournalEntryEditor({
   const [paperTexture, setPaperTexture] = useState<'clean' | 'dots'>(entry?.paperTexture || 'clean');
   const [fontSize, setFontSize] = useState<FontSizeName>(entry?.fontSize || 'medium');
   const [showPromptsDropdown, setShowPromptsDropdown] = useState(false);
+  const [formatHintDismissed, setFormatHintDismissed] = useState(() => !!storageGetRaw(SK.DIARY_FORMAT_HINT_SEEN));
   const [photoLayout, setPhotoLayout] = useState<Record<string, { x: number; y: number; width: number }>>(entry?.photoLayout || {});
   const lastScrollTopRef = useRef(0);
 
@@ -783,9 +786,6 @@ export function JournalEntryEditor({
             </motion.button>
           </div>
 
-          {/* Format capsule (WYSIWYG) */}
-          <DiaryFormatToolbar editorRef={editorRef} />
-
           {/* Prompts button (new entries only) */}
           {!entry && (
             <div className="relative flex-shrink-0">
@@ -952,6 +952,7 @@ export function JournalEntryEditor({
           />
         )}
         <div
+          ref={scrollAreaRef}
           className="absolute inset-0 overflow-y-auto pt-[140px] pb-[160px] px-4 z-10"
           onScroll={handleContentScroll}
         >
@@ -1163,6 +1164,16 @@ export function JournalEntryEditor({
             >
               <DiaryBreatheWidget />
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Format hint (onboarding — shown once) */}
+        <AnimatePresence>
+          {!formatHintDismissed && (
+            <DiaryFormatHint onDismiss={() => {
+              setFormatHintDismissed(true);
+              storageSetRaw(SK.DIARY_FORMAT_HINT_SEEN, '1');
+            }} />
           )}
         </AnimatePresence>
 
@@ -1472,6 +1483,9 @@ export function JournalEntryEditor({
 
       {/* Spotlight focus overlay */}
       <SpotlightOverlay isActive={spotlightActive} textareaRef={editorRef} />
+
+      {/* Floating format toolbar (Telegram-style — appears on text selection) */}
+      <DiaryFormatToolbar editorRef={editorRef} scrollContainerRef={scrollAreaRef} />
     </div>
   );
 }

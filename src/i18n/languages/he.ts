@@ -2285,6 +2285,8 @@ const hebrewOverrides: Partial<Translations> = {
   diaryFeatures: 'תכונות',
   diaryMedia: 'מדיה',
   diaryGameChangers: 'כלים',
+  diaryFormatHint: 'בחר טקסט כדי לעצב אותו (מודגש, נטוי וכו׳)',
+  diaryFormatLinkPrompt: 'הזן כתובת URL:',
 };
 
 export const he: Translations = { ...en, ...hebrewOverrides };

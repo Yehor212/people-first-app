@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-23 (2656 tests, Waves A-G complete + Mind Map tab integration + Store Readiness Audit)
+> Last updated: 2026-02-25 (2656 tests, Waves A-G complete + Mind Map tab integration + Store Readiness Audit + Diary WYSIWYG editor overhaul)
 
 ---
 
@@ -150,7 +150,7 @@ src/
     # ... 50+ feature components
 
   features/                     # Feature modules (only journal migrated)
-    journal/                    # Self-contained: JournalModule, Calendar, Editor, Sticker
+    journal/                    # Self-contained: JournalModule, Calendar, Editor, Sticker, FormatToolbar
 
   contexts/                     # React contexts
     LanguageContext.tsx          # i18n with 8 languages
@@ -760,7 +760,7 @@ Stub JSONs ship as minimal breathing circles — replace with premium assets fro
 ### Rules
 
 1. **CSP policy:** No `unsafe-inline`, no `unsafe-eval`. Use nonces for inline scripts.
-2. **No `dangerouslySetInnerHTML`** without DOMPurify sanitization.
+2. **No `dangerouslySetInnerHTML` or raw `contentEditable` HTML** without DOMPurify sanitization. Journal editor uses `sanitizeRichContent()` from `src/lib/sanitize.ts` (allowlist: `b`, `strong`, `i`, `em`, `u`, `del`, `s`, `blockquote`, `code`, `a`, `br`, `div`, `p`, `span`).
 3. **Supabase RLS:** Every table MUST have RLS enabled with proper policies.
 4. **RLS performance:** Use `(select auth.uid())` not `auth.uid()` in policies.
 5. **No secrets in client code.** Supabase anon key is public by design — all other keys go server-side.
@@ -945,7 +945,7 @@ On PR to main:
 
 | File | Lines | Notes |
 |------|-------|-------|
-| features/journal/JournalEntryEditor.tsx | **1,170** | Separate feature module |
+| features/journal/JournalEntryEditor.tsx | **1,477** | Separate feature module — WYSIWYG contenteditable editor |
 | features/journal/JournalModule.tsx | **1,060** | Separate feature module |
 | features/journal/JournalEntryList.tsx | **513** | Separate feature module |
 
@@ -1378,3 +1378,43 @@ ORDER BY policyname;
 ```
 
 After executing: click **"Reset suggestions"** in Performance Advisor, wait 30s, click **"Refresh"**.
+
+---
+
+### Diary Editor Overhaul — WYSIWYG + Paper Sheet (2026-02-25)
+
+- Date: 2026-02-25
+- Author: Claude Opus 4.6
+- Scope: Diary editor UX — 5 improvements
+
+#### Changes
+
+1. **WYSIWYG Editor**: Replaced `<textarea>` with `<div contentEditable>`. Rich text formatting via `document.execCommand`. New `DiaryFormatToolbar.tsx` component with 7 actions: bold, italic, underline, strikethrough, blockquote, code, link. HTML sanitized via `sanitizeRichContent()` in `src/lib/sanitize.ts` (DOMPurify allowlist).
+
+2. **Paper Sheet Design**: Editor content wrapped in a floating "paper page" with `rounded-2xl`, `backdrop-blur-sm`, `shadow-[0_0_60px]`, `border-white/[0.08]`, `min-h-[60vh]`. Cosmic canvas visible in margins around the sheet.
+
+3. **Font Size Control**: Cycle button (Small 15px → Medium 18px → Large 22px) persisted per entry via `fontSize` field on `JournalEntry` type. Constants in `types.ts`: `FONT_SIZES`, `FontSizeName`.
+
+4. **Prompts Dropdown**: Moved writing prompts from inline content area (~300px) to a dropdown triggered from toolbar button. AnimatePresence panel with shuffle/close.
+
+5. **Burn Card Collapse**: `BurnThoughtWidget` now animates full container collapse (opacity→0, height→0, margins→0) over 0.8s via framer-motion `animate` prop.
+
+#### New Files
+
+| File | Purpose |
+|------|---------|
+| `src/features/journal/DiaryFormatToolbar.tsx` | WYSIWYG formatting toolbar (B/I/U/S/Quote/Code/Link) |
+
+#### Modified Files
+
+| File | Changes |
+|------|---------|
+| `src/features/journal/JournalEntryEditor.tsx` | contenteditable swap, paper sheet, font size, prompts dropdown |
+| `src/features/journal/BurnThoughtWidget.tsx` | Animated collapse on burned state |
+| `src/features/journal/SpotlightOverlay.tsx` | Accept `HTMLElement` ref (was `HTMLTextAreaElement`) |
+| `src/features/journal/types.ts` | `fontSize` field, `countWordsHtml()`, `FONT_SIZES`, `FontSizeName` |
+| `src/lib/sanitize.ts` | `sanitizeRichContent()` — DOMPurify with formatting tag allowlist |
+
+#### Verification
+- `npx tsc --noEmit` — 0 errors
+- `npm run build` — success

@@ -2218,6 +2218,8 @@ const arabicOverrides: Partial<Translations> = {
   diaryFeatures: 'الميزات',
   diaryMedia: 'الوسائط',
   diaryGameChangers: 'أدوات',
+  diaryFormatHint: 'حدد النص لتنسيقه (غامق، مائل، إلخ)',
+  diaryFormatLinkPrompt: 'أدخل الرابط:',
 };
 
 export const ar: Translations = { ...en, ...arabicOverrides };

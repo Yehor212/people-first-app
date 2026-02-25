@@ -2254,4 +2254,6 @@ export const es: Translations = {
   diaryFeatures: 'Funciones',
   diaryMedia: 'Medios',
   diaryGameChangers: 'Herramientas',
+  diaryFormatHint: 'Selecciona texto para formatearlo (negrita, cursiva, etc.)',
+  diaryFormatLinkPrompt: 'Introduce la URL:',
 };

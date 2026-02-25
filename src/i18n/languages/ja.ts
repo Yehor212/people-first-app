@@ -2253,4 +2253,6 @@ export const ja: Translations = {
   diaryFeatures: '機能',
   diaryMedia: 'メディア',
   diaryGameChangers: 'ツール',
+  diaryFormatHint: 'テキストを選択して書式設定（太字、斜体など）',
+  diaryFormatLinkPrompt: 'URLを入力:',
 };
