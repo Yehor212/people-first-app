@@ -64,8 +64,8 @@ export function SpotlightOverlay({ isActive, textareaRef }: SpotlightOverlayProp
     <AnimatePresence>
       {isActive && isFocused && (
         <motion.div
-          className="fixed inset-0 pointer-events-none backdrop-blur-[2px]"
-          style={{ zIndex: 15, backgroundColor: 'rgba(0, 0, 0, 0.35)' }}
+          className="fixed inset-0 pointer-events-none"
+          style={{ zIndex: 15, backgroundColor: 'rgba(0, 0, 0, 0.5)' }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}

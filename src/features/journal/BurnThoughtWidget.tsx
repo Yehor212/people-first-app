@@ -39,7 +39,8 @@ function initFireParticles(w: number, h: number): FireParticle[] {
 }
 
 export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
-  const { ts } = useLanguage();
+  const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   const [text, setText] = useState('');
   const [burned, setBurned] = useState(false);
   const [burning, setBurning] = useState(false);
@@ -112,11 +113,10 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
 
   return (
     <motion.div
-      className="rounded-2xl overflow-hidden mx-1 mb-3 backdrop-blur-xl backdrop-saturate-150"
+      className="rounded-2xl overflow-hidden mx-1 mb-3"
       style={{
-        backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--card))) 80%, transparent)',
-        border: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 12%, transparent)',
-        boxShadow: 'inset 0 1px 0 color-mix(in srgb, var(--diary-text, hsl(var(--foreground))) 4%, transparent), 0 4px 16px -4px rgba(0,0,0,0.1)',
+        backgroundColor: 'var(--diary-bg, hsl(var(--card)))',
+        border: '1px solid var(--diary-border, hsl(var(--border) / 0.3))',
       }}
       initial={{ opacity: 0, y: -16, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -164,9 +164,9 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
               placeholder={ts.journalBurnPlaceholder || 'Write what worries you...'}
               className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none resize-none"
               style={{
-                backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 5%, transparent)',
+                backgroundColor: 'var(--diary-bg, hsl(var(--card)))',
                 color: 'var(--diary-text, hsl(var(--foreground)))',
-                border: '1px solid color-mix(in srgb, var(--diary-border, hsl(var(--border))) 50%, transparent)',
+                border: '1px solid var(--diary-border, hsl(var(--border) / 0.3))',
                 minHeight: 64,
               }}
               rows={2}

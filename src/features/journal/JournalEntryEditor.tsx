@@ -595,8 +595,8 @@ export function JournalEntryEditor({
       <DiaryCanvas accentColor={diaryTheme.accentColor} isActive />
 
       <div className="w-full h-full flex flex-col md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:shadow-2xl md:border md:border-border/20 md:overflow-hidden relative z-10">
-      {/* Header — frosted glass */}
-      <div className="flex items-center justify-between px-4 py-3 backdrop-blur-2xl backdrop-saturate-150" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 72%, transparent)', borderBottom: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 12%, transparent)', boxShadow: '0 1px 0 color-mix(in srgb, var(--diary-text, hsl(var(--foreground))) 4%, transparent), 0 8px 32px -8px rgba(0,0,0,0.12)' }}>
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/20 bg-background/95 backdrop-blur-xl">
         <motion.button
           whileTap={{ scale: 0.92 }}
           onClick={handleBack}
@@ -958,14 +958,14 @@ export function JournalEntryEditor({
       >
 
       {/* Gradient fade above toolbar */}
-      <div className="h-8 -mt-8 relative z-[2] pointer-events-none" style={{ background: 'linear-gradient(to top, var(--diary-bg, hsl(var(--background))), color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 60%, transparent), transparent)' }} />
+      <div className="h-8 -mt-8 relative z-[2] pointer-events-none bg-gradient-to-t from-background via-background/80 to-transparent" />
 
       {/* Minimal toolbar — 2 buttons: Voice + Add */}
       <div className={cn(
-        'backdrop-blur-2xl backdrop-saturate-150 px-4 py-2',
+        'border-t border-border/30 bg-background/95 backdrop-blur-xl px-4 py-2',
         'flex items-center justify-between',
         'pb-[max(0.5rem,env(safe-area-inset-bottom))]',
-      )} style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 75%, transparent)', borderTop: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)', boxShadow: '0 -1px 0 color-mix(in srgb, var(--diary-text, hsl(var(--foreground))) 3%, transparent), 0 -8px 32px -8px rgba(0,0,0,0.08)' }}>
+      )}>
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={handleToggleDictation}
@@ -1008,16 +1008,16 @@ export function JournalEntryEditor({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={zenMotion.sheet}
-            className="rounded-t-2xl backdrop-blur-2xl backdrop-saturate-150 px-5 pb-5"
-            style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))', backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 80%, transparent)', borderTop: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 10%, transparent)', boxShadow: 'inset 0 1px 0 color-mix(in srgb, var(--diary-text, hsl(var(--foreground))) 5%, transparent)' }}
+            className="rounded-t-2xl border-t border-border/20 bg-background/95 backdrop-blur-xl px-5 pb-5"
+            style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
           >
             {/* Drag handle pill */}
             <div className="flex justify-center pt-3 pb-3">
-              <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 40%, transparent)' }} />
+              <div className="w-9 h-1 rounded-full bg-muted-foreground/30" />
             </div>
 
             {/* CAPTURE group */}
-            <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block" style={{ color: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 80%, transparent)' }}>
+            <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block text-muted-foreground/50">
               {ts.journalActionCapture || 'Capture'}
             </span>
             <div className="grid grid-cols-2 gap-2 mb-4">
@@ -1027,7 +1027,7 @@ export function JournalEntryEditor({
                 disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
                 className="flex items-center gap-3.5 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px] disabled:opacity-40"
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10">
                   <Camera className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
                 </div>
                 <span className="text-sm text-foreground">{ts.journalToolbarPhoto || 'Photo'}</span>
@@ -1038,7 +1038,7 @@ export function JournalEntryEditor({
                 disabled={audioIds.length >= MAX_AUDIO_PER_ENTRY}
                 className="flex items-center gap-3.5 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px] disabled:opacity-40"
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10">
                   <Circle className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
                 </div>
                 <span className="text-sm text-foreground">{ts.journalToolbarRecord || 'Record'}</span>
@@ -1046,7 +1046,7 @@ export function JournalEntryEditor({
             </div>
 
             {/* REFLECT group */}
-            <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block" style={{ color: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 80%, transparent)' }}>
+            <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block text-muted-foreground/50">
               {ts.journalActionReflect || 'Reflect'}
             </span>
             <div className="grid grid-cols-3 gap-2 mb-4">
@@ -1055,7 +1055,7 @@ export function JournalEntryEditor({
                 onClick={() => handleActionItem(() => setShowMood(true))}
                 className="flex items-center gap-2 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px]"
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10">
                   <span className="text-base leading-none">{mood ? MOOD_OPTIONS.find(m => m.mood === mood)?.emoji : '\u{1F3AD}'}</span>
                 </div>
                 <span className="text-sm text-foreground">{ts.journalToolbarMood || 'Mood'}</span>
@@ -1066,7 +1066,7 @@ export function JournalEntryEditor({
                 disabled={stickers.length >= MAX_STICKERS_PER_ENTRY}
                 className="flex items-center gap-2 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px] disabled:opacity-40"
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10">
                   <Smile className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
                 </div>
                 <span className="text-sm text-foreground">{ts.journalToolbarSticker || 'Sticker'}</span>
@@ -1076,7 +1076,7 @@ export function JournalEntryEditor({
                 onClick={() => handleActionItem(() => setShowTags(true))}
                 className="flex items-center gap-2 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px]"
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10">
                   <Hash className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
                 </div>
                 <span className="text-sm text-foreground">{ts.journalToolbarTags || 'Tags'}</span>
@@ -1084,7 +1084,7 @@ export function JournalEntryEditor({
             </div>
 
             {/* MINDFUL group */}
-            <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block" style={{ color: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 80%, transparent)' }}>
+            <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block text-muted-foreground/50">
               {ts.journalActionMindful || 'Mindful'}
             </span>
             <div className="grid grid-cols-2 gap-2 mb-4">
@@ -1096,7 +1096,7 @@ export function JournalEntryEditor({
                   showBurnWidget ? 'bg-orange-500/10' : 'hover:bg-muted/50',
                 )}
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: showBurnWidget ? 'rgba(249,115,22,0.12)' : 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center', showBurnWidget ? 'bg-orange-500/12' : 'bg-primary/10')}>
                   <Flame className={cn('w-[22px] h-[22px]', showBurnWidget ? 'text-orange-500' : '')} style={showBurnWidget ? undefined : { color: 'var(--diary-accent, hsl(var(--primary)))' }} />
                 </div>
                 <span className="text-sm text-foreground">{ts.journalBurnTitle || 'Burn a thought'}</span>
@@ -1109,7 +1109,7 @@ export function JournalEntryEditor({
                   spotlightActive ? 'bg-primary/10' : 'hover:bg-muted/50',
                 )}
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: spotlightActive ? 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 15%, transparent)' : 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center', spotlightActive ? 'bg-primary/15' : 'bg-primary/10')}>
                   <Focus className={cn('w-[22px] h-[22px]', spotlightActive ? 'text-primary' : '')} style={spotlightActive ? undefined : { color: 'var(--diary-accent, hsl(var(--primary)))' }} />
                 </div>
                 <span className="text-sm text-foreground">{ts.journalFocusLabel || 'Focus'}</span>
@@ -1119,7 +1119,7 @@ export function JournalEntryEditor({
             {/* ORGANIZE group (Template — new entries only) */}
             {!entry && (
               <>
-                <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block" style={{ color: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 80%, transparent)' }}>
+                <span className="text-[11px] font-medium uppercase tracking-[0.12em] mb-2 block text-muted-foreground/50">
                   {ts.journalActionOrganize || 'Organize'}
                 </span>
                 <div className="grid grid-cols-1 gap-2">
@@ -1128,7 +1128,7 @@ export function JournalEntryEditor({
                     onClick={() => handleActionItem(() => setShowTemplatePicker(true))}
                     className="flex items-center gap-3.5 px-3 py-3 rounded-xl hover:bg-muted/50 transition-colors min-h-[48px]"
                   >
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 8%, transparent)' }}>
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10">
                       <LayoutTemplate className="w-[22px] h-[22px]" style={{ color: 'var(--diary-accent, hsl(var(--primary)))' }} />
                     </div>
                     <span className="text-sm text-foreground">{ts.journalTemplateButton || 'Template'}</span>
@@ -1148,10 +1148,10 @@ export function JournalEntryEditor({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={zenMotion.sheet}
-            className="rounded-t-2xl backdrop-blur-2xl backdrop-saturate-150 px-4 pb-3 flex flex-col items-center" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 80%, transparent)', borderTop: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 10%, transparent)' }}
+            className="rounded-t-2xl border-t border-border/20 bg-background/95 backdrop-blur-xl px-4 pb-3 flex flex-col items-center"
           >
             <div className="flex justify-center pt-2.5 pb-2.5">
-              <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 40%, transparent)' }} />
+              <div className="w-9 h-1 rounded-full bg-muted-foreground/30" />
             </div>
             <div className="flex items-center justify-center gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               {MOOD_OPTIONS.map(opt => (
@@ -1182,10 +1182,10 @@ export function JournalEntryEditor({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={zenMotion.sheet}
-            className="rounded-t-2xl backdrop-blur-2xl backdrop-saturate-150 px-4 pb-2" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 80%, transparent)', borderTop: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 10%, transparent)' }}
+            className="rounded-t-2xl border-t border-border/20 bg-background/95 backdrop-blur-xl px-4 pb-2"
           >
             <div className="flex justify-center pt-2.5 pb-2">
-              <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 40%, transparent)' }} />
+              <div className="w-9 h-1 rounded-full bg-muted-foreground/30" />
             </div>
             <form onSubmit={e => { e.preventDefault(); handleAddTag(); }} className="flex gap-2 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
               <input
@@ -1217,10 +1217,10 @@ export function JournalEntryEditor({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={zenMotion.sheet}
-            className="rounded-t-2xl backdrop-blur-2xl backdrop-saturate-150 px-4 pb-3" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--background))) 80%, transparent)', borderTop: '1px solid color-mix(in srgb, var(--diary-accent, hsl(var(--primary))) 10%, transparent)' }}
+            className="rounded-t-2xl border-t border-border/20 bg-background/95 backdrop-blur-xl px-4 pb-3"
           >
             <div className="flex justify-center pt-2.5 pb-2.5">
-              <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'color-mix(in srgb, var(--diary-muted, hsl(var(--muted-foreground))) 40%, transparent)' }} />
+              <div className="w-9 h-1 rounded-full bg-muted-foreground/30" />
             </div>
             <div className="flex items-start gap-4 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
               {/* Theme grid */}
@@ -1334,15 +1334,14 @@ export function JournalEntryEditor({
             role="dialog"
             aria-modal="true"
             aria-label="Recording"
-            className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-center justify-center"
+            className="fixed inset-0 z-[70] bg-black/60 flex items-center justify-center"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.92, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
               transition={zenMotion.gentle}
-              className="rounded-2xl p-6 max-w-[280px] mx-4 text-center backdrop-blur-2xl backdrop-saturate-150"
-              style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--card))) 80%, transparent)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
+              className="bg-card rounded-2xl p-6 max-w-[280px] mx-4 text-center shadow-xl"
             >
               {/* Pulsing circle */}
               <div className="flex justify-center mb-4">
@@ -1386,13 +1385,12 @@ export function JournalEntryEditor({
 
       {/* Delete confirmation */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-center justify-center animate-fade-in" onClick={() => setShowDeleteConfirm(false)}>
+        <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center animate-fade-in" onClick={() => setShowDeleteConfirm(false)}>
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={zenMotion.gentle}
-            className="rounded-2xl p-5 max-w-[300px] mx-4 backdrop-blur-2xl backdrop-saturate-150"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--card))) 80%, transparent)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
+            className="bg-card rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl"
             onClick={e => e.stopPropagation()}
           >
             <h3 className="text-base font-semibold text-foreground mb-2">
@@ -1421,13 +1419,12 @@ export function JournalEntryEditor({
 
       {/* Unsaved changes dialog */}
       {showUnsavedDialog && (
-        <div className="fixed inset-0 z-[70] bg-black/40 backdrop-blur-sm flex items-center justify-center animate-fade-in" onClick={() => setShowUnsavedDialog(false)}>
+        <div className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center animate-fade-in" onClick={() => setShowUnsavedDialog(false)}>
           <motion.div
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={zenMotion.gentle}
-            className="rounded-2xl p-5 max-w-[300px] mx-4 backdrop-blur-2xl backdrop-saturate-150"
-            style={{ backgroundColor: 'color-mix(in srgb, var(--diary-bg, hsl(var(--card))) 80%, transparent)', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)' }}
+            className="bg-card rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl"
             onClick={e => e.stopPropagation()}
           >
             <h3 className="text-base font-semibold text-foreground mb-2">
