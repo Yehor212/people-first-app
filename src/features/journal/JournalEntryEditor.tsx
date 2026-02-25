@@ -589,6 +589,15 @@ export function JournalEntryEditor({
     color: diaryTheme.themeVars['--diary-text'],
   } as React.CSSProperties), [diaryTheme.themeVars]);
 
+  // Semi-transparent diary bg for glass surfaces (header, toolbar, sheets)
+  const glassBg = useMemo(() => {
+    const bg = diaryTheme.themeVars['--diary-bg'];
+    const m = bg.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+    if (!m) return 'rgba(0,0,0,0.92)';
+    return `rgba(${parseInt(m[1],16)},${parseInt(m[2],16)},${parseInt(m[3],16)},0.92)`;
+  }, [diaryTheme.themeVars]);
+  const diaryBorder = diaryTheme.themeVars['--diary-border'];
+
   return (
     <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] md:bg-background/80 md:backdrop-blur-sm flex items-start justify-center animate-slide-up" style={diaryStyle}>
       {/* Canvas decorative background — pauses during typing, resumes 2s after */}
@@ -596,20 +605,21 @@ export function JournalEntryEditor({
 
       <div className="w-full h-full flex flex-col md:max-w-2xl md:my-4 md:h-[calc(100%-2rem)] md:rounded-2xl md:shadow-2xl md:border md:border-border/20 md:overflow-hidden relative z-10">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/20 bg-background/95 backdrop-blur-xl">
+      <div className="flex items-center justify-between px-4 py-3 backdrop-blur-md border-b" style={{ backgroundColor: glassBg, borderColor: diaryBorder }}>
         <motion.button
           whileTap={{ scale: 0.92 }}
           onClick={handleBack}
           className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label={ts.back || 'Back'}
         >
-          <ArrowLeft className="w-5 h-5 text-foreground" />
+          <ArrowLeft className="w-5 h-5" style={{ color: 'var(--diary-text)' }} />
         </motion.button>
 
         <div className="relative">
           <button
             onClick={() => dateInputRef.current?.showPicker?.()}
-            className="text-xs text-muted-foreground flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted/50 transition-colors"
+            className="text-xs flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-muted/50 transition-colors"
+            style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}
           >
             <Calendar className="w-3 h-3" />
             {new Date(date + 'T00:00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
@@ -958,14 +968,17 @@ export function JournalEntryEditor({
       >
 
       {/* Gradient fade above toolbar */}
-      <div className="h-8 -mt-8 relative z-[2] pointer-events-none bg-gradient-to-t from-background via-background/80 to-transparent" />
+      <div className="h-8 -mt-8 relative z-[2] pointer-events-none" style={{ background: 'linear-gradient(to top, var(--diary-bg), transparent)' }} />
 
       {/* Minimal toolbar — 2 buttons: Voice + Add */}
-      <div className={cn(
-        'border-t border-border/30 bg-background/95 backdrop-blur-xl px-4 py-2',
-        'flex items-center justify-between',
-        'pb-[max(0.5rem,env(safe-area-inset-bottom))]',
-      )}>
+      <div
+        className={cn(
+          'backdrop-blur-md border-t px-4 py-2',
+          'flex items-center justify-between',
+          'pb-[max(0.5rem,env(safe-area-inset-bottom))]',
+        )}
+        style={{ backgroundColor: glassBg, borderColor: diaryBorder }}
+      >
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={handleToggleDictation}
@@ -978,9 +991,9 @@ export function JournalEntryEditor({
           {voice.isListening ? (
             <MicOff className="w-5 h-5 text-red-500" />
           ) : (
-            <Mic className="w-5 h-5 text-muted-foreground" />
+            <Mic className="w-5 h-5" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }} />
           )}
-          <span className={cn('text-sm', voice.isListening ? 'text-red-500' : 'text-muted-foreground/60')}>
+          <span className={cn('text-sm', voice.isListening && 'text-red-500')} style={voice.isListening ? undefined : { color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
             {voice.isListening ? (ts.journalDictateStop || 'Stop') : (ts.journalToolbarVoice || 'Voice')}
           </span>
         </motion.button>
@@ -1008,8 +1021,8 @@ export function JournalEntryEditor({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={zenMotion.sheet}
-            className="rounded-t-2xl border-t border-border/20 bg-background/95 backdrop-blur-xl px-5 pb-5"
-            style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+            className="rounded-t-2xl backdrop-blur-md border-t px-5 pb-5"
+            style={{ backgroundColor: glassBg, borderColor: diaryBorder, paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
           >
             {/* Drag handle pill */}
             <div className="flex justify-center pt-3 pb-3">
@@ -1148,7 +1161,8 @@ export function JournalEntryEditor({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={zenMotion.sheet}
-            className="rounded-t-2xl border-t border-border/20 bg-background/95 backdrop-blur-xl px-4 pb-3 flex flex-col items-center"
+            className="rounded-t-2xl backdrop-blur-md border-t px-4 pb-3 flex flex-col items-center"
+            style={{ backgroundColor: glassBg, borderColor: diaryBorder }}
           >
             <div className="flex justify-center pt-2.5 pb-2.5">
               <div className="w-9 h-1 rounded-full bg-muted-foreground/30" />
@@ -1182,7 +1196,8 @@ export function JournalEntryEditor({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={zenMotion.sheet}
-            className="rounded-t-2xl border-t border-border/20 bg-background/95 backdrop-blur-xl px-4 pb-2"
+            className="rounded-t-2xl backdrop-blur-md border-t px-4 pb-2"
+            style={{ backgroundColor: glassBg, borderColor: diaryBorder }}
           >
             <div className="flex justify-center pt-2.5 pb-2">
               <div className="w-9 h-1 rounded-full bg-muted-foreground/30" />
@@ -1217,7 +1232,8 @@ export function JournalEntryEditor({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={zenMotion.sheet}
-            className="rounded-t-2xl border-t border-border/20 bg-background/95 backdrop-blur-xl px-4 pb-3"
+            className="rounded-t-2xl backdrop-blur-md border-t px-4 pb-3"
+            style={{ backgroundColor: glassBg, borderColor: diaryBorder }}
           >
             <div className="flex justify-center pt-2.5 pb-2.5">
               <div className="w-9 h-1 rounded-full bg-muted-foreground/30" />
@@ -1341,7 +1357,8 @@ export function JournalEntryEditor({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
               transition={zenMotion.gentle}
-              className="bg-card rounded-2xl p-6 max-w-[280px] mx-4 text-center shadow-xl"
+              className="rounded-2xl p-6 max-w-[280px] mx-4 text-center shadow-xl"
+              style={{ backgroundColor: 'var(--diary-bg, hsl(var(--card)))', border: '1px solid var(--diary-border, hsl(var(--border) / 0.3))' }}
             >
               {/* Pulsing circle */}
               <div className="flex justify-center mb-4">
@@ -1356,13 +1373,13 @@ export function JournalEntryEditor({
                 </motion.div>
               </div>
 
-              <p className="text-sm font-semibold text-foreground mb-1">
+              <p className="text-sm font-semibold mb-1" style={{ color: 'var(--diary-text, hsl(var(--foreground)))' }}>
                 {ts.journalRecording || 'Recording'}
               </p>
-              <p className="text-2xl font-mono font-bold text-foreground tabular-nums mb-4">
+              <p className="text-2xl font-mono font-bold tabular-nums mb-4" style={{ color: 'var(--diary-text, hsl(var(--foreground)))' }}>
                 {formatRecordingTime(recorder.duration)}
               </p>
-              <p className="text-[10px] text-muted-foreground/60 mb-4">
+              <p className="text-[10px] mb-4" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
                 {ts.journalAudioMaxDuration || 'Max 5 minutes'}
               </p>
 
@@ -1390,13 +1407,14 @@ export function JournalEntryEditor({
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={zenMotion.gentle}
-            className="bg-card rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl"
+            className="rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl"
+            style={{ backgroundColor: 'var(--diary-bg, hsl(var(--card)))', border: '1px solid var(--diary-border, hsl(var(--border) / 0.3))' }}
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold text-foreground mb-2">
+            <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--diary-text, hsl(var(--foreground)))' }}>
               {ts.journalDeleteEntry || 'Delete Entry?'}
             </h3>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm mb-4" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
               {ts.journalDeleteConfirm || 'This action cannot be undone.'}
             </p>
             <div className="flex gap-2">
@@ -1424,13 +1442,14 @@ export function JournalEntryEditor({
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={zenMotion.gentle}
-            className="bg-card rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl"
+            className="rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl"
+            style={{ backgroundColor: 'var(--diary-bg, hsl(var(--card)))', border: '1px solid var(--diary-border, hsl(var(--border) / 0.3))' }}
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold text-foreground mb-2">
+            <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--diary-text, hsl(var(--foreground)))' }}>
               {ts.journalDiscardTitle || 'Unsaved Changes'}
             </h3>
-            <p className="text-sm text-muted-foreground mb-4">
+            <p className="text-sm mb-4" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
               {ts.journalDiscardMessage || 'You have unsaved changes.'}
             </p>
             <div className="flex flex-col gap-2">
