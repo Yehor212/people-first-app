@@ -428,7 +428,7 @@ export function JournalEntryEditor({
     } catch {
       setSaving(false);
     }
-  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, fontSize, photoLayout]);
+  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, fontSize, photoLayout]);
 
   const handleSaveAndClose = useCallback(async () => {
     setShowUnsavedDialog(false);
