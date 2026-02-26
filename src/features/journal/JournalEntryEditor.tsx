@@ -173,6 +173,7 @@ interface JournalEntryEditorProps {
     font?: DiaryFontName;
     inkColor?: string;
     paperTexture?: 'clean' | 'dots';
+    paperColor?: PaperColor;
     fontSize?: FontSizeName;
     photoLayout?: Record<string, { x: number; y: number; width: number }>;
   }) => Promise<void>;
@@ -406,7 +407,7 @@ export function JournalEntryEditor({
     } catch {
       setSaving(false);
     }
-  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, fontSize, photoLayout]);
+  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, fontSize, photoLayout]);
 
   const handleSaveAndClose = useCallback(async () => {
     setShowUnsavedDialog(false);
