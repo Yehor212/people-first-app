@@ -31,6 +31,10 @@ export const DIARY_FONTS: Record<DiaryFontName, { family: string; url: string }>
 export const DIARY_THEME_NAMES: DiaryThemeName[] = ['light', 'dark', 'sepia', 'forest', 'ocean', 'sunset'];
 export const DIARY_FONT_NAMES: DiaryFontName[] = ['caveat', 'cormorant', 'outfit'];
 
+// ── Background Intensity (canvas ambient engine) ──
+
+export type BackgroundIntensity = 'full' | 'dim' | 'off';
+
 // ── Paper Color (editor sheet background) ──
 
 export type PaperColor = 'white' | 'dark' | 'milky';
@@ -59,6 +63,7 @@ export interface JournalEntry {
   inkColor?: string;       // text color hex (optional, undefined = theme default)
   paperTexture?: 'clean' | 'dots'; // paper texture (optional, undefined = clean)
   paperColor?: PaperColor;   // editor sheet color (optional, undefined = dark)
+  bgIntensity?: BackgroundIntensity; // canvas background (optional, undefined = full)
   fontSize?: 'small' | 'medium' | 'large'; // editor font size preference
   photoLayout?: Record<string, { x: number; y: number; width: number }>; // free-form photo positions
   createdAt: number;

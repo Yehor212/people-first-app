@@ -79,6 +79,9 @@ export function PrivacyShield({ isActive, editorRef }: PrivacyShieldProps) {
     if (!caret) return;
 
     const { node, offset } = caret;
+
+    // Only process if caret is inside our editor
+    if (!editor.contains(node)) return;
     const text = node.textContent || '';
     const [wordStart, wordEnd] = getWordBounds(text, offset);
 

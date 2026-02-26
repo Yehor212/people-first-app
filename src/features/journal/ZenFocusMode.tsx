@@ -8,6 +8,9 @@
  * - On manual scroll, dimming pauses so user can read freely
  * - On next input/caret change, dimming resumes
  *
+ * On activation: editor is re-focused so the caret returns from the toolbar button.
+ * Handles bare text nodes (single paragraph with no block wrappers).
+ *
  * This is a headless component — it manipulates the editorRef's children directly
  * via CSS classes for 60fps performance (no React re-renders on caret movement).
  */
@@ -23,14 +26,18 @@ const ZEN_DIMMED_CLASS = 'zen-dimmed';
 
 /**
  * Walk up from a node to find the direct child of the editor container.
+ * Handles both HTMLElement children and Text nodes that are direct children.
  * Returns null if node is not inside the editor.
  */
 function findParentParagraph(node: Node | null, editor: HTMLElement | null): HTMLElement | null {
   if (!node || !editor) return null;
   let current: Node | null = node;
   while (current && current !== editor) {
-    if (current.parentNode === editor && current instanceof HTMLElement) {
-      return current;
+    if (current.parentNode === editor) {
+      // Direct child of editor — could be Text node or HTMLElement
+      if (current instanceof HTMLElement) return current;
+      // For bare text nodes, there's no block wrapper = single paragraph
+      return null;
     }
     current = current.parentNode;
   }
@@ -41,6 +48,7 @@ export function ZenFocusMode({ isActive, editorRef }: ZenFocusModeProps) {
   const isScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const lastParagraphRef = useRef<HTMLElement | null>(null);
+  const prevActiveRef = useRef(false);
 
   /** Apply dimming to all paragraphs except the active one */
   const applyDimming = useCallback((activeParagraph: HTMLElement | null) => {
@@ -48,6 +56,15 @@ export function ZenFocusMode({ isActive, editorRef }: ZenFocusModeProps) {
     if (!editor) return;
 
     const children = editor.children;
+    if (children.length <= 1) {
+      // Single paragraph or empty — nothing to dim, clear any existing dimming
+      for (let i = 0; i < children.length; i++) {
+        (children[i] as HTMLElement).classList.remove(ZEN_DIMMED_CLASS);
+      }
+      lastParagraphRef.current = null;
+      return;
+    }
+
     for (let i = 0; i < children.length; i++) {
       const child = children[i] as HTMLElement;
       if (child === activeParagraph) {
@@ -73,14 +90,43 @@ export function ZenFocusMode({ isActive, editorRef }: ZenFocusModeProps) {
   /** Find active paragraph from current selection and apply dimming */
   const updateFocus = useCallback(() => {
     if (!isActive || isScrollingRef.current) return;
+    const editor = editorRef.current;
+    if (!editor) return;
+
     const sel = window.getSelection();
     if (!sel?.rangeCount) return;
+
     const node = sel.getRangeAt(0).startContainer;
-    const paragraph = findParentParagraph(node, editorRef.current);
+
+    // Make sure the selection is actually inside our editor
+    if (!editor.contains(node)) return;
+
+    const paragraph = findParentParagraph(node, editor);
     if (paragraph && paragraph !== lastParagraphRef.current) {
       applyDimming(paragraph);
+    } else if (!paragraph) {
+      // Bare text node or single paragraph — clear dimming
+      clearDimming();
     }
-  }, [isActive, editorRef, applyDimming]);
+  }, [isActive, editorRef, applyDimming, clearDimming]);
+
+  // ── Re-focus editor when focus mode is activated ──
+  useEffect(() => {
+    if (isActive && !prevActiveRef.current) {
+      // Transition from inactive → active: re-focus the editor
+      const editor = editorRef.current;
+      if (editor) {
+        requestAnimationFrame(() => {
+          editor.focus();
+          // Give the editor a moment to settle, then apply dimming
+          requestAnimationFrame(() => {
+            updateFocus();
+          });
+        });
+      }
+    }
+    prevActiveRef.current = isActive;
+  }, [isActive, editorRef, updateFocus]);
 
   // ── Selection & input tracking ──
   useEffect(() => {
@@ -115,8 +161,8 @@ export function ZenFocusMode({ isActive, editorRef }: ZenFocusModeProps) {
     document.addEventListener('selectionchange', onSelectionChange);
     editor?.addEventListener('input', onInput);
 
-    // Initial apply
-    updateFocus();
+    // Initial apply (delayed to let focus settle)
+    requestAnimationFrame(() => updateFocus());
 
     return () => {
       document.removeEventListener('selectionchange', onSelectionChange);

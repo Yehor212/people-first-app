@@ -4,6 +4,9 @@
  * Renders as an inline collapsible section (not absolute-positioned).
  * Canvas fire particle animation on "Burn". Memory-safe rAF cleanup.
  * Text blurs/fades via framer-motion while fire plays. Haptic feedback.
+ *
+ * After burn: Telegram-style smooth collapse —
+ *   brief "Released" glow → content fades up → card collapses to zero height.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -45,6 +48,7 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
   const [text, setText] = useState('');
   const [burned, setBurned] = useState(false);
   const [burning, setBurning] = useState(false);
+  const [collapsing, setCollapsing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef(0);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -111,13 +115,16 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
     rafRef.current = requestAnimationFrame(frame);
   }, [text, burning]);
 
-  // ── Auto-close after burned ──
+  // ── Telegram-style collapse: burned → brief pause → collapse → close ──
   useEffect(() => {
-    if (burned) {
-      closeTimerRef.current = setTimeout(onClose, 1000);
+    if (burned && !collapsing) {
+      // Brief 400ms pause showing "Released", then start collapse
+      closeTimerRef.current = setTimeout(() => {
+        setCollapsing(true);
+      }, 400);
     }
     return () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); };
-  }, [burned, onClose]);
+  }, [burned, collapsing]);
 
   // ── Cleanup rAF ──
   useEffect(() => {
@@ -127,18 +134,60 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
     };
   }, []);
 
+  // Determine animation states
+  const getAnimateProps = () => {
+    if (collapsing) {
+      return {
+        opacity: 0,
+        height: 0,
+        scaleY: 0.92,
+        y: -8,
+        marginTop: 0,
+        marginBottom: 0,
+        paddingTop: 0,
+        paddingBottom: 0,
+      };
+    }
+    if (burned) {
+      // Brief "Released" state — soft glow pulse
+      return { opacity: 1, y: 0, scale: 1, borderColor: 'rgba(156,163,175,0.2)' };
+    }
+    if (burning) {
+      return {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        borderColor: ['rgba(239,68,68,0.5)', 'rgba(249,115,22,0.5)', 'rgba(156,163,175,0.3)'],
+      };
+    }
+    return { opacity: 1, y: 0, scale: 1, borderColor: 'rgba(239,68,68,0.5)' };
+  };
+
+  const getTransition = () => {
+    if (collapsing) {
+      // Telegram-style: fast start, smooth landing
+      return { duration: 0.55, ease: [0.32, 0.72, 0, 1] as const };
+    }
+    if (burned) {
+      return { duration: 0.3, ease: 'easeOut' as const };
+    }
+    if (burning) {
+      return { duration: 2.5, ease: 'easeOut' as const };
+    }
+    return zenMotion.gentle;
+  };
+
   return (
     <motion.div
       className="my-8 p-6 border border-dashed rounded-2xl bg-red-500/5 relative overflow-hidden"
       style={{ borderColor: 'rgba(239, 68, 68, 0.5)' }}
       initial={{ opacity: 0, y: -16, scale: 0.97 }}
-      animate={burned
-        ? { opacity: 0, height: 0, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }
-        : burning
-          ? { opacity: 1, y: 0, scale: 1, borderColor: ['rgba(239,68,68,0.5)', 'rgba(249,115,22,0.5)', 'rgba(156,163,175,0.3)'] }
-          : { opacity: 1, y: 0, scale: 1, borderColor: 'rgba(239,68,68,0.5)' }}
-      exit={{ opacity: 0, y: -16, scale: 0.97 }}
-      transition={burned ? { duration: 0.8, ease: 'easeInOut' } : burning ? { duration: 2.5, ease: 'easeOut' } : zenMotion.gentle}
+      animate={getAnimateProps()}
+      exit={{ opacity: 0, height: 0, scaleY: 0.92, y: -8, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
+      transition={getTransition()}
+      onAnimationComplete={() => {
+        if (collapsing) onClose();
+      }}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2.5">
@@ -148,14 +197,16 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
             {burned ? (ts.journalBurnReleased || 'Released') : (ts.journalBurnTitle || 'Burn a thought')}
           </span>
         </div>
-        <motion.button
-          whileTap={{ scale: 0.92 }}
-          onClick={onClose}
-          className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full"
-          aria-label={ts.close || 'Close'}
-        >
-          <X className="w-3.5 h-3.5 text-red-400/60" />
-        </motion.button>
+        {!burned && !burning && (
+          <motion.button
+            whileTap={{ scale: 0.92 }}
+            onClick={onClose}
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full"
+            aria-label={ts.close || 'Close'}
+          >
+            <X className="w-3.5 h-3.5 text-red-400/60" />
+          </motion.button>
+        )}
       </div>
 
       {/* Body */}
@@ -164,8 +215,8 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
           <motion.p
             className="text-sm py-4 text-center text-red-300/60"
             initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={zenMotion.gentle}
+            animate={collapsing ? { opacity: 0, y: -12 } : { opacity: 1, scale: 1 }}
+            transition={collapsing ? { duration: 0.25 } : zenMotion.gentle}
           >
             {ts.journalBurnReleasedMessage || 'Your thought has been released.'}
           </motion.p>

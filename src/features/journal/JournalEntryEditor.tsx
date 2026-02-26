@@ -9,7 +9,7 @@ import { usePanicGesture } from '@/hooks/usePanicGesture';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 import { createFocusTrap, announceSuccess } from '@/lib/a11y';
 import { hapticSuccess } from '@/lib/haptics';
-import type { JournalEntry, JournalPhoto, JournalAudio, DiaryThemeName, DiaryFontName, FontSizeName, PaperColor } from './types';
+import type { JournalEntry, JournalPhoto, JournalAudio, DiaryThemeName, DiaryFontName, FontSizeName, PaperColor, BackgroundIntensity } from './types';
 import type { MoodType } from '@/types';
 import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY, countWordsHtml, FONT_SIZES, PAPER_COLORS } from './types';
 import { JournalStickerPicker } from './JournalStickerPicker';
@@ -174,6 +174,7 @@ interface JournalEntryEditorProps {
     inkColor?: string;
     paperTexture?: 'clean' | 'dots';
     paperColor?: PaperColor;
+    bgIntensity?: BackgroundIntensity;
     fontSize?: FontSizeName;
     photoLayout?: Record<string, { x: number; y: number; width: number }>;
   }) => Promise<void>;
@@ -244,7 +245,7 @@ export function JournalEntryEditor({
   const [zenFocusActive, setZenFocusActive] = useState(false);
   const [, setShowActionSheet] = useState(false);
   const [, setToolbarHidden] = useState(false);
-  const [wavyBordersEnabled, setWavyBordersEnabled] = useState(true);
+  const [bgIntensity, setBgIntensity] = useState<BackgroundIntensity>(entry?.bgIntensity || 'full');
   const [showBreathe, setShowBreathe] = useState(false);
   const [showHabits, setShowHabits] = useState(false);
   const [privacyShieldActive, setPrivacyShieldActive] = useState(false);
@@ -392,6 +393,7 @@ export function JournalEntryEditor({
         inkColor: inkColor !== '#ffffff' ? inkColor : undefined,
         paperTexture: paperTexture !== 'clean' ? paperTexture : undefined,
         paperColor: paperColor !== 'dark' ? paperColor : undefined,
+        bgIntensity: bgIntensity !== 'full' ? bgIntensity : undefined,
         fontSize: fontSize !== 'medium' ? fontSize : undefined,
         photoLayout: Object.keys(photoLayout).length > 0 ? photoLayout : undefined,
       });
@@ -407,7 +409,7 @@ export function JournalEntryEditor({
     } catch {
       setSaving(false);
     }
-  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, fontSize, photoLayout]);
+  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, fontSize, photoLayout]);
 
   const handleSaveAndClose = useCallback(async () => {
     setShowUnsavedDialog(false);
@@ -660,10 +662,10 @@ export function JournalEntryEditor({
   return (
     <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] flex flex-col h-screen overflow-hidden text-slate-50" style={diaryStyle}>
       {/* Canvas decorative background */}
-      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={wavyBordersEnabled} theme={diaryTheme.theme} />
+      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={bgIntensity !== 'off'} theme={diaryTheme.theme} intensity={bgIntensity} />
 
       {/* ═══ GLASS TOOLBAR ═══ */}
-      <div className="relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] bg-slate-900/60 backdrop-blur-2xl border-b border-white/5 shadow-[0_10px_60px_rgba(0,0,0,0.6)]">
+      <div className="relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)]" style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(2, 6, 23, 0.85))', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         {/* ROW 1: Navigation & Atmosphere */}
         <div className="flex items-center justify-between gap-3">
           {/* LEFT: Back + Title */}
@@ -823,7 +825,7 @@ export function JournalEntryEditor({
               className="px-3 py-2 rounded-lg text-sm font-medium border border-transparent text-slate-400 hover:bg-white/10 hover:text-slate-50 transition-all"
               aria-label="Font size"
             >
-              A{fontSize === 'small' ? '⁻' : fontSize === 'large' ? '⁺' : ''}
+              A<span className="text-[10px] ml-0.5 opacity-60">{FONT_SIZES[fontSize]}</span>
             </motion.button>
           </div>
 
@@ -1016,7 +1018,7 @@ export function JournalEntryEditor({
           onScroll={handleContentScroll}
         >
           <div
-            className="max-w-4xl mx-auto rounded-2xl border shadow-[0_0_80px_rgba(0,0,0,0.5)] p-8 min-h-[60dvh] space-y-4"
+            className={cn('max-w-4xl mx-auto rounded-2xl border shadow-[0_0_80px_rgba(0,0,0,0.5)] p-8 min-h-[60dvh] space-y-4', zenFocusActive && 'zen-focus-active')}
             style={{
               backgroundColor: paperColors.bg,
               color: paperColors.text,
@@ -1310,7 +1312,7 @@ export function JournalEntryEditor({
       {/* END content area */}
 
       {/* ═══ BOTTOM GLASS TOOLBAR (Magic) ═══ */}
-      <div className="relative z-50 flex-shrink-0 w-full px-6 py-3 pb-[max(0.75rem,var(--safe-bottom))] bg-slate-900/60 backdrop-blur-2xl border-t border-white/5 shadow-[0_-10px_60px_rgba(0,0,0,0.6)]">
+      <div className="relative z-50 flex-shrink-0 w-full px-6 py-3 pb-[max(0.75rem,var(--safe-bottom))] backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)]" style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(2, 6, 23, 0.85))', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none -mx-1.5 px-1.5">
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -1375,15 +1377,17 @@ export function JournalEntryEditor({
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setWavyBordersEnabled(!wavyBordersEnabled)}
+            onClick={() => setBgIntensity(prev => prev === 'full' ? 'dim' : prev === 'dim' ? 'off' : 'full')}
             className={cn(
               'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
-              wavyBordersEnabled
+              bgIntensity === 'full'
                 ? 'bg-purple-500/15 text-purple-400 border-purple-500/30'
-                : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+                : bgIntensity === 'dim'
+                  ? 'bg-slate-500/15 text-slate-300 border-slate-500/30'
+                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
             )}
           >
-            〰️ {ts.diaryWavyFrames || 'Frames'}
+            {bgIntensity === 'full' ? '🌌' : bgIntensity === 'dim' ? '🌑' : '⊘'} BG
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}

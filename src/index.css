@@ -4168,15 +4168,23 @@ body.reduce-motion .diary-animated {
   transition: opacity 0.3s ease, filter 0.3s ease;
 }
 
+.zen-focus-active {
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.15), 0 0 20px rgba(52, 211, 153, 0.08);
+  transition: box-shadow 0.3s ease;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    Privacy Shield — text masking for public writing
    ═══════════════════════════════════════════════════════════════ */
 
-.privacy-blurred > * {
-  filter: blur(8px);
-  transition: filter 0.15s ease;
+.privacy-blurred {
+  color: transparent !important;
+  text-shadow: 0 0 10px rgba(200, 200, 220, 0.6);
+  caret-color: #e2e8f0;
+  transition: color 0.15s ease, text-shadow 0.15s ease;
 }
 
 .privacy-visible {
-  filter: none !important;
+  color: #e2e8f0 !important;
+  text-shadow: none !important;
 }
