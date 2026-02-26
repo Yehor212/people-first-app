@@ -68,7 +68,7 @@ function FlyingEmojiItem({ emoji, onComplete }: { emoji: FlyingEmoji; onComplete
   return (
     <div
       className={cn(
-        "fixed pointer-events-none z-[99] text-4xl", // Reduced from z-[10002] to fit z-index system
+        "fixed pointer-events-none z-[90] text-4xl",
         "transition-all duration-600 ease-out",
         stage === 'start' && "scale-100 opacity-100",
         stage === 'fly' && "scale-75 opacity-90",

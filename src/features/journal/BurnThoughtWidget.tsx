@@ -173,7 +173,7 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
           <div className="relative">
             {/* Text area — blurs and fades when burning */}
             <motion.div
-              animate={burning ? { filter: 'blur(20px)', y: -50, opacity: 0 } : { filter: 'blur(0px)', y: 0, opacity: 1 }}
+              animate={burning ? { scale: 0.9, y: -50, opacity: 0 } : { scale: 1, y: 0, opacity: 1 }}
               transition={{ duration: 2.5, ease: 'easeOut' }}
             >
               <textarea

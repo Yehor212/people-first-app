@@ -53,7 +53,7 @@ function XpPopupItem({ event, onComplete }: { event: XpEvent; onComplete: () => 
   return (
     <div
       className={cn(
-        "fixed pointer-events-none z-[10000] flex flex-col items-center gap-1",
+        "fixed pointer-events-none z-[300] flex flex-col items-center gap-1",
         "transition-all duration-500 ease-out",
         stage === 'enter' && "opacity-0 scale-50",
         stage === 'float' && "opacity-100 scale-100",
@@ -201,7 +201,7 @@ export function ConfettiBurst({ x, y }: { x: number; y: number }) {
   if (particles.length === 0) return null;
 
   return createPortal(
-    <div className="fixed inset-0 pointer-events-none z-[10001]">
+    <div className="fixed inset-0 pointer-events-none z-[301]">
       {particles.map(p => (
         <div
           key={p.id}

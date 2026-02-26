@@ -87,7 +87,7 @@ export function OfflineBanner() {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: -100, opacity: 0 }}
         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-        className={`fixed top-0 left-0 right-0 z-[999] px-4 py-2 safe-area-top ${
+        className={`fixed top-0 left-0 right-0 z-[250] px-4 py-2 safe-area-top ${
           dataDropWarning ? 'bg-red-500' : 'bg-amber-500'
         } text-white shadow-lg`}
         role="alert"

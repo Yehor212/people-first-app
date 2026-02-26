@@ -85,7 +85,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
 
   // --- JSX ---
   return (
-    <div className="fixed inset-0 bg-slate-100 dark:bg-black z-[100]">
+    <div className="fixed inset-0 bg-slate-100 dark:bg-black z-[110]">
       <HyperfocusBackground showBreathingAnimation={timer.showBreathingAnimation} t={tRecord} />
 
       {/* Close Button */}

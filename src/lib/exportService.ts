@@ -8,7 +8,6 @@
  * All exports respect user privacy and contain only their own data.
  */
 
-import { jsPDF } from 'jspdf';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { formatDate } from './utils';
 import { logger } from './logger';
@@ -220,14 +219,15 @@ interface _PDFSection {
 /**
  * Generate a PDF progress report
  */
-export const exportProgressReportPDF = (data: {
+export const exportProgressReportPDF = async (data: {
   moods: MoodEntry[];
   habits: Habit[];
   focusSessions: FocusSession[];
   gratitudeEntries: GratitudeEntry[];
   userName?: string;
   dateRange?: { start: string; end: string };
-}): void => {
+}): Promise<void> => {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
@@ -364,14 +364,15 @@ export const exportProgressReportPDF = (data: {
 /**
  * Export weekly summary as PDF
  */
-export const exportWeeklySummaryPDF = (data: {
+export const exportWeeklySummaryPDF = async (data: {
   moods: MoodEntry[];
   habits: Habit[];
   focusSessions: FocusSession[];
   gratitudeEntries: GratitudeEntry[];
   weekStart: string;
   weekEnd: string;
-}): void => {
+}): Promise<void> => {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;

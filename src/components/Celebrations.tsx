@@ -33,7 +33,7 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm",
+        "fixed inset-0 z-[220] flex items-center justify-center bg-black/40 backdrop-blur-sm",
         showAnimations && "transition-opacity duration-300",
         show ? "opacity-100" : "opacity-0"
       )}
@@ -167,7 +167,7 @@ export function AllHabitsComplete({ onClose }: AllHabitsCompleteProps) {
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm",
+        "fixed inset-0 z-[220] flex items-center justify-center bg-black/50 backdrop-blur-sm",
         showAnimations && "transition-opacity duration-300",
         show ? "opacity-100" : "opacity-0"
       )}

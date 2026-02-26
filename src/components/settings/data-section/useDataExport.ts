@@ -78,10 +78,10 @@ export function useDataExport({ setDataStatus, t, moods, habits, focusSessions, 
     }
   };
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     setIsExportingPDF(true);
     try {
-      exportProgressReportPDF({ moods, habits, focusSessions, gratitudeEntries, userName });
+      await exportProgressReportPDF({ moods, habits, focusSessions, gratitudeEntries, userName });
     } catch (e) {
       logger.error('[Settings] PDF export error:', e);
     } finally {

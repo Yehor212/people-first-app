@@ -32,7 +32,7 @@ export function ConfettiBurst({ x, y, onComplete }: ConfettiBurstProps) {
   }, [onComplete]);
 
   return createPortal(
-    <div className="fixed inset-0 pointer-events-none z-[200]" aria-hidden="true">
+    <div className="fixed inset-0 pointer-events-none z-[210]" aria-hidden="true">
       {particles.map((p) => (
         <div
           key={p.id}

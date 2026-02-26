@@ -202,7 +202,7 @@ export function DiaryFormatToolbar({ editorRef, scrollContainerRef }: DiaryForma
                 whileTap={{ scale: 0.9 }}
                 onClick={() => execFormat(action.cmd)}
                 className={cn(
-                  'w-8 h-8 rounded-lg flex items-center justify-center text-xs transition-all',
+                  'w-10 h-10 rounded-lg flex items-center justify-center text-xs transition-all',
                   action.style,
                   isActive
                     ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30'

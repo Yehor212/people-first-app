@@ -30,7 +30,7 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
   return (
     <div
       className={cn(
-        "fixed inset-0 z-[200] flex items-center justify-center p-4 transition-all duration-300",
+        "fixed inset-0 z-[220] flex items-center justify-center p-4 transition-all duration-300",
         isVisible ? "bg-black/50 backdrop-blur-md" : "bg-black/0"
       )}
       onClick={handleClose}
