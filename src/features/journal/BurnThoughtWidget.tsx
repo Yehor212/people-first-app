@@ -2,11 +2,16 @@
  * BurnThoughtWidget — Inline "burn a worry" section for the journal editor.
  *
  * Renders as an inline collapsible section (not absolute-positioned).
- * Canvas fire particle animation on "Burn". Memory-safe rAF cleanup.
- * Text blurs/fades via framer-motion while fire plays. Haptic feedback.
+ * Cinematic disintegration animation on "Burn":
+ *   - Grid-based particles cover the content area
+ *   - Bottom-to-top burn wave sweeps through, activating particles
+ *   - Particles scatter upward with fire glow (additive blend)
+ *   - Text blurs/fades fast via framer-motion while particles take over
  *
  * After burn: Telegram-style smooth collapse —
  *   brief "Released" glow → content fades up → card collapses to zero height.
+ *
+ * Memory-safe rAF cleanup. Haptic feedback. Respects reduced motion.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
@@ -19,27 +24,70 @@ interface BurnThoughtWidgetProps {
   onClose: () => void;
 }
 
-// ── Fire particle system ──
+// ── Disintegration particle system ──
 
-interface FireParticle {
+interface DisintegrationParticle {
   x: number; y: number;
+  originX: number; originY: number;
   vx: number; vy: number;
-  life: number; maxLife: number;
   size: number;
-  hue: number; // 0-40 for orange/red
+  rotation: number;
+  rotationSpeed: number;
+  hue: number;        // 0-50 (red→orange→yellow)
+  saturation: number;
+  lightness: number;
+  life: number;       // 0..1
+  maxLife: number;
+  delay: number;      // activation delay for burn-wave sweep (seconds)
+  active: boolean;
+  hasShadow: boolean; // tier 1 (glow) vs tier 2 (no glow)
 }
 
-function initFireParticles(w: number, h: number): FireParticle[] {
-  return Array.from({ length: 60 }, () => ({
-    x: w * 0.3 + Math.random() * w * 0.4,
-    y: h * 0.8 + Math.random() * h * 0.2,
-    vx: (Math.random() - 0.5) * 2,
-    vy: -1.5 - Math.random() * 3,
-    life: 1,
-    maxLife: 0.6 + Math.random() * 0.4,
-    size: 3 + Math.random() * 5,
-    hue: Math.random() * 40,
-  }));
+const MAX_PARTICLES = 300;
+const GRID_STEP = 6;
+const BURN_DURATION = 2500;
+
+function initDisintegrationParticles(w: number, h: number): DisintegrationParticle[] {
+  const particles: DisintegrationParticle[] = [];
+  const cols = Math.floor(w / GRID_STEP);
+  const rows = Math.floor(h / GRID_STEP);
+
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      if (particles.length >= MAX_PARTICLES) break;
+      // ~30% spawn probability per cell
+      if (Math.random() > 0.30) continue;
+
+      const x = col * GRID_STEP + Math.random() * GRID_STEP;
+      const y = row * GRID_STEP + Math.random() * GRID_STEP;
+
+      // Burn wave delay: bottom rows activate first (delay≈0), top rows last (delay≈1.2s)
+      const normalizedRow = row / Math.max(rows - 1, 1); // 0 (top) to 1 (bottom)
+      const burnDelay = (1 - normalizedRow) * 1.2 + Math.random() * 0.3;
+
+      const isTier1 = Math.random() < 0.6; // 60% fragment (glow), 40% ash (no glow)
+
+      particles.push({
+        x, y,
+        originX: x, originY: y,
+        vx: 0, vy: 0,
+        size: isTier1 ? (2 + Math.random() * 2.5) : (1 + Math.random() * 1),
+        rotation: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.15,
+        hue: Math.random() * 50,
+        saturation: 85 + Math.random() * 15,
+        lightness: isTier1 ? (45 + Math.random() * 25) : (30 + Math.random() * 20),
+        life: 1.0,
+        maxLife: 0.5 + Math.random() * 0.5,
+        delay: burnDelay,
+        active: false,
+        hasShadow: isTier1,
+      });
+    }
+    if (particles.length >= MAX_PARTICLES) break;
+  }
+
+  return particles;
 }
 
 export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
@@ -50,10 +98,11 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
   const [burning, setBurning] = useState(false);
   const [collapsing, setCollapsing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // ── Fire animation ──
+  // ── Disintegration animation ──
 
   const startBurn = useCallback(() => {
     if (!text.trim() || burning) return;
@@ -61,7 +110,7 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
     // Haptic feedback
     navigator.vibrate?.([100, 50, 200]);
 
-    // Reduced motion: skip fire animation, mark burned immediately
+    // Reduced motion: skip animation, mark burned immediately
     if (!shouldAnimate()) {
       setBurned(true);
       return;
@@ -70,38 +119,126 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
     setBurning(true);
 
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    const container = containerRef.current;
+    if (!canvas || !container) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const w = canvas.width;
-    const h = canvas.height;
-    const particles = initFireParticles(w, h);
+    // Dynamic canvas sizing (DPR-aware, cap at 2)
+    const rect = container.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = rect.width;
+    const h = rect.height;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+    ctx.scale(dpr, dpr);
+
+    const particles = initDisintegrationParticles(w, h);
     const startTime = performance.now();
-    const DURATION = 2500;
 
     function frame(now: number) {
       if (!ctx) return;
       const elapsed = now - startTime;
-      const progress = Math.min(1, elapsed / DURATION);
+      const progress = Math.min(1, elapsed / BURN_DURATION);
+      const elapsedSec = elapsed / 1000;
 
       ctx.clearRect(0, 0, w, h);
 
-      for (const p of particles) {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy -= 0.02; // accelerate upward
-        p.life = Math.max(0, 1 - (elapsed / DURATION) * (1 / p.maxLife));
+      // ── Pass 1: Charring overlay (darkens as burn progresses) ──
+      const charProgress = Math.min(1, elapsed / (BURN_DURATION * 0.7));
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = `rgba(2, 6, 17, ${charProgress * 0.85})`;
+      ctx.fillRect(0, 0, w, h);
 
-        if (p.life <= 0) continue;
-
-        ctx.globalAlpha = p.life * 0.8;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
-        ctx.fillStyle = `hsl(${p.hue}, 100%, ${50 + p.life * 30}%)`;
-        ctx.fill();
+      // ── Pass 2: Burn wavefront glow line (first 60% of animation) ──
+      if (progress < 0.6) {
+        const waveY = h * (1 - progress / 0.6); // bottom → top
+        const grad = ctx.createLinearGradient(0, waveY - 15, 0, waveY + 15);
+        grad.addColorStop(0, 'rgba(251, 146, 60, 0)');
+        grad.addColorStop(0.3, 'rgba(251, 146, 60, 0.6)');
+        grad.addColorStop(0.5, 'rgba(249, 115, 22, 0.9)');
+        grad.addColorStop(0.7, 'rgba(251, 146, 60, 0.6)');
+        grad.addColorStop(1, 'rgba(251, 146, 60, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, waveY - 15, w, 30);
       }
+
+      // ── Pass 3: Particles (two-tier, additive blend) ──
+      ctx.globalCompositeOperation = 'lighter';
+
+      // Separate into glow and non-glow for batched rendering
+      for (let tier = 0; tier < 2; tier++) {
+        const renderGlow = tier === 1;
+
+        if (renderGlow) {
+          // Set shadow once for entire glow tier
+          ctx.shadowColor = 'rgba(249, 115, 22, 0.5)';
+        }
+
+        for (const p of particles) {
+          if (p.hasShadow !== renderGlow) continue;
+
+          // Activate on delay
+          if (!p.active) {
+            if (elapsedSec >= p.delay) {
+              p.active = true;
+              // Ignition burst
+              p.vx = (Math.random() - 0.5) * 3;
+              p.vy = -2 - Math.random() * 4;
+            } else {
+              continue;
+            }
+          }
+
+          // Life decay
+          const timeSinceActive = elapsedSec - p.delay;
+          const lifespan = p.maxLife * (BURN_DURATION / 1000);
+          p.life = Math.max(0, 1 - timeSinceActive / lifespan);
+          if (p.life <= 0) { p.active = false; continue; }
+
+          // Physics: turbulence + upward fire bias + drag
+          const turbX = Math.sin(now * 0.003 + p.originX * 0.1) * 0.4;
+          const turbY = Math.cos(now * 0.004 + p.originY * 0.1) * 0.2;
+          p.vx += turbX * 0.016;
+          p.vy += (-0.8 - Math.random() * 0.4 + turbY) * 0.016;
+          p.vx *= 0.98;
+          p.vy *= 0.98;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rotation += p.rotationSpeed;
+
+          // Render
+          const alpha = p.life * p.life; // quadratic fade
+          if (alpha < 0.01) continue;
+
+          ctx.globalAlpha = alpha;
+          if (renderGlow) {
+            ctx.shadowBlur = (2 + p.size) * p.life;
+          }
+
+          // Color shifts: bright → dark as life fades
+          const lifetimeHue = p.hue * p.life;
+          const lifetimeLightness = p.lightness * (0.3 + p.life * 0.7);
+
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation);
+          const halfSize = p.size * (0.5 + p.life * 0.5);
+          ctx.fillStyle = `hsl(${lifetimeHue}, ${p.saturation}%, ${lifetimeLightness}%)`;
+          ctx.fillRect(-halfSize, -halfSize, halfSize * 2, halfSize * 2);
+          ctx.restore();
+        }
+
+        if (renderGlow) {
+          ctx.shadowBlur = 0;
+          ctx.shadowColor = 'transparent';
+        }
+      }
+
+      ctx.globalCompositeOperation = 'source-over';
       ctx.globalAlpha = 1;
 
       if (progress < 1) {
@@ -221,11 +358,11 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
             {ts.journalBurnReleasedMessage || 'Your thought has been released.'}
           </motion.p>
         ) : (
-          <div className="relative">
-            {/* Text area — blurs and fades when burning */}
+          <div ref={containerRef} className="relative">
+            {/* Text area — blurs and fades fast when burning */}
             <motion.div
-              animate={burning ? { scale: 0.9, y: -50, opacity: 0 } : { scale: 1, y: 0, opacity: 1 }}
-              transition={{ duration: 2.5, ease: 'easeOut' }}
+              animate={burning ? { opacity: 0, filter: 'blur(3px)' } : { opacity: 1, filter: 'blur(0px)' }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
             >
               <textarea
                 value={text}
@@ -249,12 +386,10 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
               )}
             </motion.div>
 
-            {/* Fire canvas — overlays the blurring text */}
+            {/* Disintegration canvas — overlays the content area */}
             {burning && (
               <canvas
                 ref={canvasRef}
-                width={280}
-                height={120}
                 className="absolute inset-0 w-full h-full rounded-xl"
                 style={{ zIndex: 10 }}
                 aria-hidden="true"

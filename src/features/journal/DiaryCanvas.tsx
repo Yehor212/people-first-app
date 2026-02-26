@@ -1,6 +1,7 @@
 /**
  * DiaryCanvas — Decorative canvas layer (theme particles + radial vignette).
  * Renders as a fixed layer behind the editor. Never resizes for keyboard.
+ * Z-depth parallax + scroll kinetic + touch repulsion.
  * Pauses rAF during typing (resumes 2s after last keystroke).
  */
 
@@ -13,11 +14,12 @@ interface DiaryCanvasProps {
   isActive: boolean;
   theme?: DiaryThemeName;
   intensity?: BackgroundIntensity;
+  scrollContainerRef?: React.RefObject<HTMLElement | null>;
 }
 
-export function DiaryCanvas({ accentColor, isActive, theme = 'dark', intensity = 'full' }: DiaryCanvasProps) {
+export function DiaryCanvas({ accentColor, isActive, theme = 'dark', intensity = 'full', scrollContainerRef }: DiaryCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  useDiaryCanvas(canvasRef, accentColor, isActive, theme, intensity);
+  useDiaryCanvas(canvasRef, accentColor, isActive, theme, intensity, scrollContainerRef);
 
   return (
     <canvas

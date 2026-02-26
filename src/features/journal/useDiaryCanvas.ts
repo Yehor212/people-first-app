@@ -1,32 +1,32 @@
 /**
  * useDiaryCanvas — rAF-driven Full-Background Ambient Engine.
  *
- * Renders a living atmospheric background across the ENTIRE viewport:
- * radial vignette → scattered theme particles.
- * The paper sheet (editor) floats on top with its own opaque background.
+ * Cinematic atmospheric background across the ENTIRE viewport:
+ * radial vignette → Z-depth parallax particles → scroll kinetic → touch repulsion.
  *
- * Memory-safe: all rAF + event listeners cleaned up in useEffect return.
- * Canvas is fixed at initial viewport size — NEVER resizes for keyboard.
- * shouldAnimate() guard — static fallback when reduced motion enabled.
+ * Z-DEPTH PARALLAX:
+ *   Each particle has z (0.1 far → 1.0 near).
+ *   Size, opacity, speed all scale by z — creates true depth perception.
+ *   Near particles are large, bright, fast. Far ones are tiny, dim, slow.
  *
- * PERFORMANCE GATE: Pauses rAF loop when user is typing (keydown).
- * Resumes 2 seconds after the last keystroke. This saves GPU while the user writes.
+ * SCROLL KINETIC RESPONSE:
+ *   When user scrolls diary content, particles shift with parallax depth.
+ *   Near particles rush past, far particles barely move.
  *
- * INTENSITY MODES:
- *   full — all particles at normal opacity
- *   dim  — halved particle count, 50% max opacity
- *   off  — solid background only (no rAF loop)
+ * TOUCH REPULSION:
+ *   Touch/mouse pushes particles away within 100px radius.
+ *   Force scales by z — near particles react more.
  *
- * THEME-SPECIFIC PARTICLES (scattered across full viewport):
- *   dark/cosmos  — twinkling stars (opacity oscillation)
- *   ocean        — bubbles (sine-wave drift upward, size pulse)
- *   forest       — fireflies (Brownian motion, warm hue)
- *   sunset       — embers (rise + sway, orange-red fade)
+ * THEME-SPECIFIC PARTICLES:
+ *   dark/cosmos  — twinkling stars (10% cyan/purple tint), nebula overlay
+ *   ocean        — bubbles (y-based sine-wave drift, size pulse)
+ *   forest       — fireflies (Brownian motion, sharp flicker)
+ *   sunset       — embers (diagonal drift, orange-red fade)
  *   light/sepia  — generic soft floaters
  *
- * PER FRAME:
- *   1. Clear → fill with radial vignette gradient
- *   2. Render theme particles across the full viewport
+ * PERFORMANCE:
+ *   Typing-pause gate (2s resume). Scroll un-pauses canvas.
+ *   Particle counts: 30-70. Z-math is trivial per frame.
  */
 
 import { useEffect, useRef } from 'react';
@@ -45,16 +45,21 @@ const THEME_GRADIENTS: Record<DiaryThemeName, { center: string; edge: string }> 
   sepia:  { center: '#F4ECD8', edge: '#E0D5B8' },
 };
 
-// ── Particle type ──
+// ── Particle type (with z-depth) ──
 
 interface Particle {
   x: number;
   y: number;
+  z: number;          // 0.1 (far) → 1.0 (near) — parallax depth
+  baseSize: number;   // size before z-scaling
+  baseAlpha: number;  // opacity before z-scaling
+  startX: number;     // original X (for sunset diagonal drift)
   size: number;
   speedX: number;
   speedY: number;
   opacity: number;
   phase: number;
+  tint: number;       // 0 = accent, 1 = cyan, 2 = purple (space theme)
 }
 
 // ── Theme particle configs ──
@@ -70,76 +75,118 @@ function getParticleConfig(theme: DiaryThemeName, intensity: BackgroundIntensity
   const dimFactor = intensity === 'dim' ? 0.5 : 1;
 
   switch (theme) {
-    case 'dark':
-      // Cosmos — twinkling stars with opacity oscillation
+    case 'dark': {
+      // Cosmos — twinkling stars with z-depth parallax, 10% colored tints
       return {
         count: Math.round(70 * dimFactor),
-        init: (w, h) => ({
-          x: Math.random() * w,
-          y: Math.random() * h,
-          size: 1 + Math.random() * 2.5,
-          speedX: (Math.random() - 0.5) * 0.08,
-          speedY: -0.03 - Math.random() * 0.06,
-          opacity: (0.05 + Math.random() * 0.25) * dimFactor,
-          phase: Math.random() * Math.PI * 2,
-        }),
+        init: (w, h) => {
+          const z = 0.1 + Math.random() * 0.9;
+          const baseAlpha = (0.05 + Math.random() * 0.25) * dimFactor;
+          // 10% cyan, 10% purple, 80% accent
+          const tintRoll = Math.random();
+          const tint = tintRoll < 0.1 ? 1 : tintRoll < 0.2 ? 2 : 0;
+          return {
+            x: Math.random() * w,
+            y: Math.random() * h,
+            z,
+            baseSize: 1 + Math.random() * 2.5,
+            baseAlpha,
+            startX: 0,
+            size: (1 + Math.random() * 2.5) * z,
+            speedX: (Math.random() - 0.5) * 0.08 * z,
+            speedY: (-0.03 - Math.random() * 0.06) * z,
+            opacity: baseAlpha * z,
+            phase: Math.random() * Math.PI * 2,
+            tint,
+          };
+        },
         move: (p, t, w, h) => {
           p.x += p.speedX;
           p.y += p.speedY;
-          p.opacity = (0.03 + Math.abs(Math.sin(t * 0.001 + p.phase)) * 0.3) * dimFactor;
+          p.opacity = (0.03 + Math.abs(Math.sin(t * 0.001 + p.phase)) * 0.3) * dimFactor * p.z;
+          p.size = p.baseSize * p.z;
           if (p.x < -5) p.x = w + 5;
           if (p.x > w + 5) p.x = -5;
           if (p.y < -5) p.y = h + 5;
           if (p.y > h + 5) p.y = -5;
         },
-        color: (p, _t, accent) => hexToRgba(accent, p.opacity),
+        color: (p, _t, accent) => {
+          if (p.tint === 1) return hexToRgba('#A5F3FC', p.opacity); // cyan
+          if (p.tint === 2) return hexToRgba('#D8B4FE', p.opacity); // purple
+          return hexToRgba(accent, p.opacity);
+        },
       };
+    }
 
-    case 'ocean':
-      // Bubbles — sine-wave horizontal drift, float upward, size pulse
+    case 'ocean': {
+      // Bubbles — y-based sine-wave drift, float upward, size pulse, z-depth
       return {
         count: Math.round(50 * dimFactor),
-        init: (w, h) => ({
-          x: Math.random() * w,
-          y: Math.random() * h,
-          size: 2 + Math.random() * 4,
-          speedX: 0,
-          speedY: -0.12 - Math.random() * 0.2,
-          opacity: (0.04 + Math.random() * 0.1) * dimFactor,
-          phase: Math.random() * Math.PI * 2,
-        }),
+        init: (w, h) => {
+          const z = 0.1 + Math.random() * 0.9;
+          const baseAlpha = (0.04 + Math.random() * 0.1) * dimFactor;
+          return {
+            x: Math.random() * w,
+            y: Math.random() * h,
+            z,
+            baseSize: 2 + Math.random() * 4,
+            baseAlpha,
+            startX: 0,
+            size: (2 + Math.random() * 4) * z,
+            speedX: 0,
+            speedY: (-0.12 - Math.random() * 0.2) * z,
+            opacity: baseAlpha * z,
+            phase: Math.random() * Math.PI * 2,
+            tint: 0,
+          };
+        },
         move: (p, t, w, h) => {
-          p.x += Math.sin(t * 0.0008 + p.phase) * 0.35;
+          // Sine-wave based on Y position (spec: y * 0.05 + time), scaled by z
+          p.x += Math.sin(p.y * 0.05 + t * 0.001 + p.phase) * 3 * p.z * 0.016;
           p.y += p.speedY;
-          p.size = (2 + Math.random() * 2.5) * (1 + Math.sin(t * 0.002 + p.phase) * 0.12);
+          p.size = p.baseSize * p.z * (1 + Math.sin(t * 0.002 + p.phase) * 0.12);
           if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
           if (p.x < -10) p.x = w + 10;
           if (p.x > w + 10) p.x = -10;
         },
         color: (p, _t, accent) => hexToRgba(accent, p.opacity),
       };
+    }
 
-    case 'forest':
-      // Fireflies — Brownian motion, warm glow
+    case 'forest': {
+      // Fireflies — Brownian motion, sharp flicker, warm glow, z-depth
       return {
         count: Math.round(45 * dimFactor),
-        init: (w, h) => ({
-          x: Math.random() * w,
-          y: Math.random() * h,
-          size: 2 + Math.random() * 3,
-          speedX: (Math.random() - 0.5) * 0.25,
-          speedY: (Math.random() - 0.5) * 0.25,
-          opacity: (0.06 + Math.random() * 0.12) * dimFactor,
-          phase: Math.random() * Math.PI * 2,
-        }),
+        init: (w, h) => {
+          const z = 0.1 + Math.random() * 0.9;
+          const baseAlpha = (0.06 + Math.random() * 0.12) * dimFactor;
+          return {
+            x: Math.random() * w,
+            y: Math.random() * h,
+            z,
+            baseSize: 2 + Math.random() * 3,
+            baseAlpha,
+            startX: 0,
+            size: (2 + Math.random() * 3) * z,
+            speedX: (Math.random() - 0.5) * 0.25 * z,
+            speedY: (Math.random() - 0.5) * 0.25 * z,
+            opacity: baseAlpha * z,
+            phase: Math.random() * Math.PI * 2,
+            tint: 0,
+          };
+        },
         move: (p, t, w, h) => {
-          p.speedX += (Math.random() - 0.5) * 0.06;
-          p.speedY += (Math.random() - 0.5) * 0.06;
+          // Brownian motion scaled by z
+          p.speedX += (Math.random() - 0.5) * 0.06 * p.z;
+          p.speedY += (Math.random() - 0.5) * 0.06 * p.z;
           p.speedX *= 0.97;
           p.speedY *= 0.97;
           p.x += p.speedX;
           p.y += p.speedY;
-          p.opacity = (0.04 + Math.abs(Math.sin(t * 0.0015 + p.phase)) * 0.16) * dimFactor;
+          p.size = p.baseSize * p.z;
+          // Sharp flicker: pow(sin) for harder on/off transitions (3x faster than before)
+          const flicker = Math.pow(Math.abs(Math.sin(t * 0.005 + p.phase)), 3);
+          p.opacity = (0.04 + flicker * 0.2) * dimFactor * p.z;
           if (p.x < -10) p.x = w + 10;
           if (p.x > w + 10) p.x = -10;
           if (p.y < -10) p.y = h + 10;
@@ -150,57 +197,84 @@ function getParticleConfig(theme: DiaryThemeName, intensity: BackgroundIntensity
           return `hsla(${hue}, 80%, 60%, ${p.opacity})`;
         },
       };
+    }
 
-    case 'sunset':
-      // Embers — rise upward with horizontal sway, orange-red, fade at top
+    case 'sunset': {
+      // Embers — diagonal drift left-to-right, rise slowly, orange-red, z-depth
       return {
         count: Math.round(55 * dimFactor),
-        init: (w, h) => ({
-          x: Math.random() * w,
-          y: h * 0.4 + Math.random() * h * 0.6,
-          size: 2 + Math.random() * 3.5,
-          speedX: (Math.random() - 0.5) * 0.35,
-          speedY: -0.15 - Math.random() * 0.3,
-          opacity: (0.08 + Math.random() * 0.18) * dimFactor,
-          phase: Math.random() * Math.PI * 2,
-        }),
+        init: (w, h) => {
+          const z = 0.1 + Math.random() * 0.9;
+          const baseAlpha = (0.08 + Math.random() * 0.18) * dimFactor;
+          const startX = Math.random() * w;
+          return {
+            x: startX,
+            y: h * 0.4 + Math.random() * h * 0.6,
+            z,
+            baseSize: 2 + Math.random() * 3.5,
+            baseAlpha,
+            startX,
+            size: (2 + Math.random() * 3.5) * z,
+            speedX: 0,
+            speedY: (-0.15 - Math.random() * 0.3) * z,
+            opacity: baseAlpha * z,
+            phase: Math.random() * Math.PI * 2,
+            tint: 0,
+          };
+        },
         move: (p, t, w, h) => {
-          p.x += p.speedX + Math.sin(t * 0.001 + p.phase) * 0.25;
-          p.y += p.speedY;
-          const heightRatio = p.y / h;
-          p.opacity = Math.max(0.02, heightRatio * 0.22) * dimFactor;
-          if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; p.opacity = 0.18 * dimFactor; }
-          if (p.x < -10) p.x = w + 10;
-          if (p.x > w + 10) p.x = -10;
+          // Diagonal drift: x based on time * z (near particles drift faster)
+          p.x = ((p.startX + t * 0.03 * p.z) % (w + 20)) - 10;
+          p.y += p.speedY * 0.5;
+          p.size = p.baseSize * p.z;
+          const heightRatio = Math.max(0, p.y / h);
+          p.opacity = Math.max(0.02, heightRatio * 0.22) * dimFactor * p.z;
+          if (p.y < -10) {
+            p.y = h + 10;
+            p.startX = Math.random() * w;
+            p.opacity = 0.18 * dimFactor * p.z;
+          }
         },
         color: (p, t) => {
           const hue = 15 + Math.sin(t * 0.001 + p.phase) * 15;
           return `hsla(${hue}, 90%, 55%, ${p.opacity})`;
         },
       };
+    }
 
-    default:
-      // Light/sepia — subtle generic floaters
+    default: {
+      // Light/sepia — subtle generic floaters with z-depth
       return {
         count: Math.round(30 * dimFactor),
-        init: (w, h) => ({
-          x: Math.random() * w,
-          y: Math.random() * h,
-          size: 2 + Math.random() * 2.5,
-          speedX: (Math.random() - 0.5) * 0.15,
-          speedY: -0.08 - Math.random() * 0.1,
-          opacity: (0.04 + Math.random() * 0.06) * dimFactor,
-          phase: Math.random() * Math.PI * 2,
-        }),
+        init: (w, h) => {
+          const z = 0.1 + Math.random() * 0.9;
+          const baseAlpha = (0.04 + Math.random() * 0.06) * dimFactor;
+          return {
+            x: Math.random() * w,
+            y: Math.random() * h,
+            z,
+            baseSize: 2 + Math.random() * 2.5,
+            baseAlpha,
+            startX: 0,
+            size: (2 + Math.random() * 2.5) * z,
+            speedX: (Math.random() - 0.5) * 0.15 * z,
+            speedY: (-0.08 - Math.random() * 0.1) * z,
+            opacity: baseAlpha * z,
+            phase: Math.random() * Math.PI * 2,
+            tint: 0,
+          };
+        },
         move: (p, t, w, h) => {
-          p.x += p.speedX + Math.sin(t * 0.001 + p.phase) * 0.08;
+          p.x += p.speedX + Math.sin(t * 0.001 + p.phase) * 0.08 * p.z;
           p.y += p.speedY;
+          p.size = p.baseSize * p.z;
           if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
           if (p.x < -10) p.x = w + 10;
           if (p.x > w + 10) p.x = -10;
         },
         color: (p, _t, accent) => hexToRgba(accent, p.opacity),
       };
+    }
   }
 }
 
@@ -212,7 +286,7 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${parseInt(match[1], 16)}, ${parseInt(match[2], 16)}, ${parseInt(match[3], 16)}, ${alpha})`;
 }
 
-// ── Full-background radial vignette ──
+// ── Full-background radial vignette + optional nebula overlay ──
 
 function drawBackground(
   ctx: CanvasRenderingContext2D,
@@ -226,9 +300,18 @@ function drawBackground(
   grad.addColorStop(1, edge);
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, w, h);
+
+  // Space theme: subtle purple nebula glow in center
+  if (theme === 'dark') {
+    const nebula = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.4);
+    nebula.addColorStop(0, 'rgba(139, 92, 246, 0.05)');
+    nebula.addColorStop(1, 'rgba(139, 92, 246, 0)');
+    ctx.fillStyle = nebula;
+    ctx.fillRect(0, 0, w, h);
+  }
 }
 
-// ── Particles (full viewport) ──
+// ── Particles (full viewport, z-depth rendering) ──
 
 function drawParticles(
   ctx: CanvasRenderingContext2D,
@@ -238,9 +321,31 @@ function drawParticles(
   w: number,
   h: number,
   accentColor: string,
+  scrollDelta: number,
+  touchPos: { x: number; y: number } | null,
 ): void {
   for (const p of particles) {
+    // Apply scroll parallax (before theme move)
+    if (scrollDelta !== 0) {
+      p.y += scrollDelta * p.z * 0.15;
+    }
+
+    // Theme-specific movement
     config.move(p, time, w, h);
+
+    // Touch/mouse repulsion
+    if (touchPos) {
+      const dx = p.x - touchPos.x;
+      const dy = p.y - touchPos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < 100 && dist > 0) {
+        const force = (1 - dist / 100) * 2 * p.z;
+        p.x += (dx / dist) * force;
+        p.y += (dy / dist) * force;
+      }
+    }
+
+    // Render with z-depth alpha
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
     ctx.fillStyle = config.color(p, time, accentColor);
@@ -256,11 +361,14 @@ export function useDiaryCanvas(
   isActive: boolean,
   theme: DiaryThemeName = 'dark',
   intensity: BackgroundIntensity = 'full',
+  scrollContainerRef?: React.RefObject<HTMLElement | null>,
 ): void {
   const particlesRef = useRef<Particle[]>([]);
   const rafRef = useRef(0);
   const typingPausedRef = useRef(false);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const scrollDeltaRef = useRef(0);
+  const touchPosRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -270,7 +378,7 @@ export function useDiaryCanvas(
     if (!ctx) return;
 
     // Size canvas to full viewport ONCE — never resize for keyboard
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = window.innerWidth;
     const h = window.innerHeight;
     canvas.width = w * dpr;
@@ -305,14 +413,50 @@ export function useDiaryCanvas(
 
     document.addEventListener('keydown', handleKeyDown, { passive: true });
 
+    // ── Scroll kinetic response ──
+    const scrollEl = scrollContainerRef?.current;
+    let lastScrollTop = scrollEl?.scrollTop ?? 0;
+
+    const handleScroll = () => {
+      const top = scrollEl?.scrollTop ?? 0;
+      scrollDeltaRef.current += top - lastScrollTop;
+      lastScrollTop = top;
+      // Un-pause canvas on scroll (user wants visual feedback)
+      typingPausedRef.current = false;
+      if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
+    };
+
+    scrollEl?.addEventListener('scroll', handleScroll, { passive: true });
+
+    // ── Touch/mouse repulsion ──
+    const handleTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (touch) touchPosRef.current = { x: touch.clientX, y: touch.clientY };
+    };
+    const handleMouseMove = (e: MouseEvent) => {
+      touchPosRef.current = { x: e.clientX, y: e.clientY };
+    };
+    const handleTouchEnd = () => { touchPosRef.current = null; };
+    const handleMouseLeave = () => { touchPosRef.current = null; };
+
+    document.addEventListener('touchmove', handleTouchMove, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('mousemove', handleMouseMove, { passive: true });
+    document.addEventListener('mouseleave', handleMouseLeave);
+
     function frame(time: number) {
       if (!alive || !ctx) return;
       if (!isCanvasPaused() && !typingPausedRef.current) {
-        // 1. Full-background radial vignette
+        // 1. Full-background radial vignette (+ nebula for space)
         drawBackground(ctx, w, h, theme);
 
-        // 2. Scattered particles across entire viewport
-        drawParticles(ctx, particlesRef.current, config, time, w, h, accentColor);
+        // 2. Particles with z-depth parallax, scroll kinetic, touch repulsion
+        const scrollDelta = scrollDeltaRef.current;
+        drawParticles(ctx, particlesRef.current, config, time, w, h, accentColor, scrollDelta, touchPosRef.current);
+
+        // Decay scroll delta (smooth momentum)
+        scrollDeltaRef.current *= 0.85;
+        if (Math.abs(scrollDeltaRef.current) < 0.1) scrollDeltaRef.current = 0;
       }
       rafRef.current = requestAnimationFrame(frame);
     }
@@ -323,7 +467,12 @@ export function useDiaryCanvas(
       alive = false;
       cancelAnimationFrame(rafRef.current);
       document.removeEventListener('keydown', handleKeyDown);
+      scrollEl?.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseleave', handleMouseLeave);
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     };
-  }, [canvasRef, accentColor, isActive, theme, intensity]);
+  }, [canvasRef, accentColor, isActive, theme, intensity, scrollContainerRef]);
 }

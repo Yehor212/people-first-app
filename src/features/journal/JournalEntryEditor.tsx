@@ -91,6 +91,15 @@ interface DraftData {
   mood?: MoodType;
   tags: string[];
   savedAt: number;
+  // Customizations (optional for backward compat with old drafts)
+  theme?: DiaryThemeName;
+  font?: DiaryFontName;
+  inkColor?: string;
+  paperTexture?: 'clean' | 'dots';
+  paperColor?: PaperColor;
+  bgIntensity?: BackgroundIntensity;
+  fontSize?: FontSizeName;
+  photoLayout?: Record<string, { x: number; y: number; width: number }>;
 }
 
 function formatRecordingTime(sec: number): string {
@@ -318,12 +327,18 @@ export function JournalEntryEditor({
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
       if (title || content || stickers.length > 0 || mood || tags.length > 0 || audioIds.length > 0) {
-        void saveDraft(draftKey, { title, content, stickers, photoIds, audioIds, mood, tags, savedAt: Date.now() });
+        void saveDraft(draftKey, {
+          title, content, stickers, photoIds, audioIds, mood, tags,
+          theme: diaryTheme.theme, font: diaryTheme.font,
+          inkColor, paperTexture, paperColor, bgIntensity, fontSize, photoLayout,
+          savedAt: Date.now(),
+        });
         setDraftSavedAt(Date.now());
       }
     }, 3000);
     return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
-  }, [title, content, stickers, photoIds, audioIds, mood, tags, draftKey]);
+  }, [title, content, stickers, photoIds, audioIds, mood, tags, draftKey,
+      diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, fontSize, photoLayout]);
 
   useEffect(() => {
     return () => {
@@ -510,6 +525,15 @@ export function JournalEntryEditor({
     if (draftAvailable.audioIds) setAudioIds(draftAvailable.audioIds);
     setMood(draftAvailable.mood);
     setTags(draftAvailable.tags);
+    // Restore customizations (if present in draft)
+    if (draftAvailable.theme) diaryTheme.setTheme(draftAvailable.theme);
+    if (draftAvailable.font) diaryTheme.setFont(draftAvailable.font);
+    if (draftAvailable.inkColor) setInkColor(draftAvailable.inkColor);
+    if (draftAvailable.paperTexture) setPaperTexture(draftAvailable.paperTexture);
+    if (draftAvailable.paperColor) setPaperColor(draftAvailable.paperColor);
+    if (draftAvailable.bgIntensity) setBgIntensity(draftAvailable.bgIntensity);
+    if (draftAvailable.fontSize) setFontSize(draftAvailable.fontSize);
+    if (draftAvailable.photoLayout) setPhotoLayout(draftAvailable.photoLayout);
     setDraftAvailable(null);
   };
 
@@ -662,7 +686,7 @@ export function JournalEntryEditor({
   return (
     <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] flex flex-col h-screen overflow-hidden text-slate-50" style={diaryStyle}>
       {/* Canvas decorative background */}
-      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={bgIntensity !== 'off'} theme={diaryTheme.theme} intensity={bgIntensity} />
+      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={bgIntensity !== 'off'} theme={diaryTheme.theme} intensity={bgIntensity} scrollContainerRef={scrollAreaRef} />
 
       {/* ═══ GLASS TOOLBAR ═══ */}
       <div className="relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)]" style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(2, 6, 23, 0.85))', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
