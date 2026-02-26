@@ -32,7 +32,7 @@
 import { useEffect, useRef } from 'react';
 import { shouldAnimate } from '@/lib/animationUtils';
 import { isCanvasPaused } from '@/lib/canvasPause';
-import type { DiaryThemeName, BackgroundIntensity } from './types';
+import type { DiaryThemeName, BackgroundIntensity, ParticleSpeed } from './types';
 
 // ── Theme maps ──
 
@@ -323,6 +323,7 @@ function drawParticles(
   accentColor: string,
   scrollDelta: number,
   touchPos: { x: number; y: number } | null,
+  isDrift = false,
 ): void {
   for (const p of particles) {
     // Apply scroll parallax (before theme move)
@@ -330,8 +331,10 @@ function drawParticles(
       p.y += scrollDelta * p.z * 0.15;
     }
 
-    // Theme-specific movement
-    config.move(p, time, w, h);
+    // Theme-specific movement (skipped in drift mode — handled in frame loop)
+    if (!isDrift) {
+      config.move(p, time, w, h);
+    }
 
     // Touch/mouse repulsion
     if (touchPos) {
@@ -361,6 +364,7 @@ export function useDiaryCanvas(
   isActive: boolean,
   theme: DiaryThemeName = 'dark',
   intensity: BackgroundIntensity = 'full',
+  particleSpeed: ParticleSpeed = 'slow',
   scrollContainerRef?: React.RefObject<HTMLElement | null>,
 ): void {
   const particlesRef = useRef<Particle[]>([]);
@@ -387,8 +391,8 @@ export function useDiaryCanvas(
     canvas.style.height = `${h}px`;
     ctx.scale(dpr, dpr);
 
-    // "off" mode: draw static background once, no rAF loop
-    if (intensity === 'off') {
+    // "off" mode OR particleSpeed === 'off': draw static background once, no rAF loop
+    if (intensity === 'off' || particleSpeed === 'off') {
       drawBackground(ctx, w, h, theme);
       return;
     }
@@ -397,7 +401,19 @@ export function useDiaryCanvas(
     const config = getParticleConfig(theme, intensity);
     particlesRef.current = Array.from({ length: config.count }, () => config.init(w, h));
 
+    // Drift mode: assign delta-time base speeds (0.01-0.05 px/ms per axis)
+    const isDrift = particleSpeed === 'drift';
+    if (isDrift) {
+      for (const p of particlesRef.current) {
+        const baseSpeed = 0.01 + Math.random() * 0.04; // 0.01-0.05 px/ms
+        const angle = Math.random() * Math.PI * 2;
+        p.speedX = Math.cos(angle) * baseSpeed;
+        p.speedY = Math.sin(angle) * baseSpeed;
+      }
+    }
+
     let alive = true;
+    let lastFrameTime = 0;
 
     // ── Typing-pause performance gate ──
     const RESUME_DELAY = 2000;
@@ -447,16 +463,35 @@ export function useDiaryCanvas(
     function frame(time: number) {
       if (!alive || !ctx) return;
       if (!isCanvasPaused() && !typingPausedRef.current) {
+        // Delta-time for drift mode (ms)
+        const dt = lastFrameTime ? time - lastFrameTime : 16;
+        lastFrameTime = time;
+
+        // Drift mode: override particle positions with delta-time movement
+        if (isDrift) {
+          for (const p of particlesRef.current) {
+            p.x += p.speedX * dt * p.z;
+            p.y += p.speedY * dt * p.z;
+            // Wrap around edges
+            if (p.x < -10) p.x = w + 10;
+            if (p.x > w + 10) p.x = -10;
+            if (p.y < -10) p.y = h + 10;
+            if (p.y > h + 10) p.y = -10;
+          }
+        }
+
         // 1. Full-background radial vignette (+ nebula for space)
         drawBackground(ctx, w, h, theme);
 
         // 2. Particles with z-depth parallax, scroll kinetic, touch repulsion
         const scrollDelta = scrollDeltaRef.current;
-        drawParticles(ctx, particlesRef.current, config, time, w, h, accentColor, scrollDelta, touchPosRef.current);
+        drawParticles(ctx, particlesRef.current, config, time, w, h, accentColor, scrollDelta, touchPosRef.current, isDrift);
 
         // Decay scroll delta (smooth momentum)
         scrollDeltaRef.current *= 0.85;
         if (Math.abs(scrollDeltaRef.current) < 0.1) scrollDeltaRef.current = 0;
+      } else {
+        lastFrameTime = 0; // reset dt tracking when paused
       }
       rafRef.current = requestAnimationFrame(frame);
     }
@@ -474,5 +509,5 @@ export function useDiaryCanvas(
       document.removeEventListener('mouseleave', handleMouseLeave);
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     };
-  }, [canvasRef, accentColor, isActive, theme, intensity, scrollContainerRef]);
+  }, [canvasRef, accentColor, isActive, theme, intensity, particleSpeed, scrollContainerRef]);
 }

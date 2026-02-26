@@ -9,7 +9,7 @@ import { usePanicGesture } from '@/hooks/usePanicGesture';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 import { createFocusTrap, announceSuccess } from '@/lib/a11y';
 import { hapticSuccess } from '@/lib/haptics';
-import type { JournalEntry, JournalPhoto, JournalAudio, DiaryThemeName, DiaryFontName, FontSizeName, PaperColor, BackgroundIntensity } from './types';
+import type { JournalEntry, JournalPhoto, JournalAudio, DiaryThemeName, DiaryFontName, FontSizeName, PaperColor, BackgroundIntensity, ParticleSpeed } from './types';
 import type { MoodType } from '@/types';
 import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY, countWordsHtml, FONT_SIZES, PAPER_COLORS } from './types';
 import { JournalStickerPicker } from './JournalStickerPicker';
@@ -98,6 +98,7 @@ interface DraftData {
   paperTexture?: 'clean' | 'dots';
   paperColor?: PaperColor;
   bgIntensity?: BackgroundIntensity;
+  particleSpeed?: ParticleSpeed;
   fontSize?: FontSizeName;
   photoLayout?: Record<string, { x: number; y: number; width: number }>;
 }
@@ -184,6 +185,7 @@ interface JournalEntryEditorProps {
     paperTexture?: 'clean' | 'dots';
     paperColor?: PaperColor;
     bgIntensity?: BackgroundIntensity;
+    particleSpeed?: ParticleSpeed;
     fontSize?: FontSizeName;
     photoLayout?: Record<string, { x: number; y: number; width: number }>;
   }) => Promise<void>;
@@ -255,6 +257,7 @@ export function JournalEntryEditor({
   const [, setShowActionSheet] = useState(false);
   const [, setToolbarHidden] = useState(false);
   const [bgIntensity, setBgIntensity] = useState<BackgroundIntensity>(entry?.bgIntensity || 'full');
+  const [particleSpeed, setParticleSpeed] = useState<ParticleSpeed>(entry?.particleSpeed || 'slow');
   const [showBreathe, setShowBreathe] = useState(false);
   const [showHabits, setShowHabits] = useState(false);
   const [privacyShieldActive, setPrivacyShieldActive] = useState(false);
@@ -330,7 +333,7 @@ export function JournalEntryEditor({
         void saveDraft(draftKey, {
           title, content, stickers, photoIds, audioIds, mood, tags,
           theme: diaryTheme.theme, font: diaryTheme.font,
-          inkColor, paperTexture, paperColor, bgIntensity, fontSize, photoLayout,
+          inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, fontSize, photoLayout,
           savedAt: Date.now(),
         });
         setDraftSavedAt(Date.now());
@@ -338,7 +341,7 @@ export function JournalEntryEditor({
     }, 3000);
     return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
   }, [title, content, stickers, photoIds, audioIds, mood, tags, draftKey,
-      diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, fontSize, photoLayout]);
+      diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, fontSize, photoLayout]);
 
   useEffect(() => {
     return () => {
@@ -409,6 +412,7 @@ export function JournalEntryEditor({
         paperTexture: paperTexture !== 'clean' ? paperTexture : undefined,
         paperColor: paperColor !== 'dark' ? paperColor : undefined,
         bgIntensity: bgIntensity !== 'full' ? bgIntensity : undefined,
+        particleSpeed: particleSpeed !== 'slow' ? particleSpeed : undefined,
         fontSize: fontSize !== 'medium' ? fontSize : undefined,
         photoLayout: Object.keys(photoLayout).length > 0 ? photoLayout : undefined,
       });
@@ -532,6 +536,7 @@ export function JournalEntryEditor({
     if (draftAvailable.paperTexture) setPaperTexture(draftAvailable.paperTexture);
     if (draftAvailable.paperColor) setPaperColor(draftAvailable.paperColor);
     if (draftAvailable.bgIntensity) setBgIntensity(draftAvailable.bgIntensity);
+    if (draftAvailable.particleSpeed) setParticleSpeed(draftAvailable.particleSpeed);
     if (draftAvailable.fontSize) setFontSize(draftAvailable.fontSize);
     if (draftAvailable.photoLayout) setPhotoLayout(draftAvailable.photoLayout);
     setDraftAvailable(null);
@@ -686,7 +691,7 @@ export function JournalEntryEditor({
   return (
     <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] flex flex-col h-screen overflow-hidden text-slate-50" style={diaryStyle}>
       {/* Canvas decorative background */}
-      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={bgIntensity !== 'off'} theme={diaryTheme.theme} intensity={bgIntensity} scrollContainerRef={scrollAreaRef} />
+      <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={bgIntensity !== 'off'} theme={diaryTheme.theme} intensity={bgIntensity} particleSpeed={particleSpeed} scrollContainerRef={scrollAreaRef} />
 
       {/* ═══ GLASS TOOLBAR ═══ */}
       <div className="relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)]" style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(2, 6, 23, 0.85))', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
@@ -1412,6 +1417,20 @@ export function JournalEntryEditor({
             )}
           >
             {bgIntensity === 'full' ? '🌌' : bgIntensity === 'dim' ? '🌑' : '⊘'} BG
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setParticleSpeed(prev => prev === 'slow' ? 'drift' : prev === 'drift' ? 'off' : 'slow')}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              particleSpeed === 'drift'
+                ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
+                : particleSpeed === 'slow'
+                  ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+            )}
+          >
+            {particleSpeed === 'slow' ? '🐌' : particleSpeed === 'drift' ? '🌊' : '⊘'} {ts.diaryParticleSpeed || 'Speed'}
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}

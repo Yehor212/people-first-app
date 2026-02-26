@@ -35,6 +35,10 @@ export const DIARY_FONT_NAMES: DiaryFontName[] = ['caveat', 'cormorant', 'outfit
 
 export type BackgroundIntensity = 'full' | 'dim' | 'off';
 
+// ── Particle Speed (canvas ambient engine) ──
+
+export type ParticleSpeed = 'off' | 'slow' | 'drift';
+
 // ── Paper Color (editor sheet background) ──
 
 export type PaperColor = 'white' | 'dark' | 'milky';
@@ -64,6 +68,7 @@ export interface JournalEntry {
   paperTexture?: 'clean' | 'dots'; // paper texture (optional, undefined = clean)
   paperColor?: PaperColor;   // editor sheet color (optional, undefined = dark)
   bgIntensity?: BackgroundIntensity; // canvas background (optional, undefined = full)
+  particleSpeed?: ParticleSpeed; // particle movement speed (optional, undefined = slow)
   fontSize?: 'small' | 'medium' | 'large'; // editor font size preference
   photoLayout?: Record<string, { x: number; y: number; width: number }>; // free-form photo positions
   createdAt: number;

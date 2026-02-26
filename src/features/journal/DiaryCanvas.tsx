@@ -7,19 +7,20 @@
 
 import { useRef } from 'react';
 import { useDiaryCanvas } from './useDiaryCanvas';
-import type { DiaryThemeName, BackgroundIntensity } from './types';
+import type { DiaryThemeName, BackgroundIntensity, ParticleSpeed } from './types';
 
 interface DiaryCanvasProps {
   accentColor: string;
   isActive: boolean;
   theme?: DiaryThemeName;
   intensity?: BackgroundIntensity;
+  particleSpeed?: ParticleSpeed;
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
 }
 
-export function DiaryCanvas({ accentColor, isActive, theme = 'dark', intensity = 'full', scrollContainerRef }: DiaryCanvasProps) {
+export function DiaryCanvas({ accentColor, isActive, theme = 'dark', intensity = 'full', particleSpeed = 'slow', scrollContainerRef }: DiaryCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  useDiaryCanvas(canvasRef, accentColor, isActive, theme, intensity, scrollContainerRef);
+  useDiaryCanvas(canvasRef, accentColor, isActive, theme, intensity, particleSpeed, scrollContainerRef);
 
   return (
     <canvas
