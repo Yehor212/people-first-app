@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { PremiumLoader } from './PremiumLoader';
 
 interface SplashScreenProps {
   loadingFadeOut: boolean;
@@ -131,90 +132,15 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
         {subtitle}
       </motion.p>
 
-      {/* Zen Infinity Draw — premium SVG loader, no background element */}
+      {/* Zen Infinity Draw — premium SVG loader */}
       <motion.div
         className="mt-8 flex items-center justify-center"
         style={{ minHeight: 130 }}
         initial={prefersReducedMotion ? {} : { opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={prefersReducedMotion ? {} : { delay: 1.0 }}
-        aria-hidden="true"
       >
-        <svg width="260" height="130" viewBox="0 0 100 50" overflow="visible" className="pointer-events-none">
-          <defs>
-            <linearGradient id="zen-inf-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#047857" />
-              <stop offset="25%" stopColor="#059669" />
-              <stop offset="50%" stopColor="#10b981" />
-              <stop offset="75%" stopColor="#34d399" />
-              <stop offset="100%" stopColor="#6ee7b7" />
-            </linearGradient>
-            <linearGradient id="zen-inf-hi" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="#6ee7b7" />
-              <stop offset="50%" stopColor="#a7f3d0" />
-              <stop offset="100%" stopColor="#d1fae5" />
-            </linearGradient>
-            <filter id="zen-inf-blur" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" />
-            </filter>
-            <filter id="zen-inf-blur-sm" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="1.5" />
-            </filter>
-          </defs>
-
-          {/* Static glow foundation — always visible, Gaussian-blurred, no animation */}
-          <path
-            d="M20,25 C20,10 45,10 50,25 C55,40 80,40 80,25 C80,10 55,10 50,25 C45,40 20,40 20,25"
-            fill="none" stroke="url(#zen-inf-grad)" strokeWidth="16" strokeLinecap="round"
-            opacity="0.12" filter="url(#zen-inf-blur)"
-          />
-          <path
-            d="M20,25 C20,10 45,10 50,25 C55,40 80,40 80,25 C80,10 55,10 50,25 C45,40 20,40 20,25"
-            fill="none" stroke="url(#zen-inf-grad)" strokeWidth="8" strokeLinecap="round"
-            opacity="0.20" filter="url(#zen-inf-blur-sm)"
-          />
-
-          {/* Animated draw group — crisp lines with CSS neon glow */}
-          <g
-            style={!prefersReducedMotion ? {
-              animation: 'zen-infinity-glow 3s ease-in-out infinite',
-            } : undefined}
-            className="zen-ring-animated"
-          >
-            {/* Animated glow following the draw */}
-            <path
-              d="M20,25 C20,10 45,10 50,25 C55,40 80,40 80,25 C80,10 55,10 50,25 C45,40 20,40 20,25"
-              fill="none" stroke="url(#zen-inf-grad)" strokeWidth="8" strokeLinecap="round"
-              opacity="0.30"
-              style={!prefersReducedMotion ? {
-                strokeDasharray: 200, strokeDashoffset: 200,
-                animation: 'zen-infinity-draw 2.5s ease-in-out infinite',
-              } : undefined}
-              className="zen-ring-animated"
-            />
-            {/* Main crisp line */}
-            <path
-              d="M20,25 C20,10 45,10 50,25 C55,40 80,40 80,25 C80,10 55,10 50,25 C45,40 20,40 20,25"
-              fill="none" stroke="url(#zen-inf-grad)" strokeWidth="5" strokeLinecap="round"
-              style={!prefersReducedMotion ? {
-                strokeDasharray: 200, strokeDashoffset: 200,
-                animation: 'zen-infinity-draw 2.5s ease-in-out infinite',
-              } : undefined}
-              className="zen-ring-animated"
-            />
-            {/* Specular highlight — glass-tube shine */}
-            <path
-              d="M20,25 C20,10 45,10 50,25 C55,40 80,40 80,25 C80,10 55,10 50,25 C45,40 20,40 20,25"
-              fill="none" stroke="url(#zen-inf-hi)" strokeWidth="1.5" strokeLinecap="round"
-              opacity="0.50"
-              style={!prefersReducedMotion ? {
-                strokeDasharray: 200, strokeDashoffset: 200,
-                animation: 'zen-infinity-draw 2.5s ease-in-out infinite',
-              } : undefined}
-              className="zen-ring-animated"
-            />
-          </g>
-        </svg>
+        <PremiumLoader size="xl" label="Loading" />
       </motion.div>
     </motion.div>
   );

@@ -14,8 +14,8 @@ import { cn } from '@/lib/utils';
 import { shouldAnimate } from '@/lib/animationUtils';
 
 interface PremiumLoaderProps {
-  /** Size variant: sm (48×24), md (96×48), lg (192×96) */
-  size?: 'sm' | 'md' | 'lg';
+  /** Size variant: sm (48×24), md (96×48), lg (192×96), xl (260×130) */
+  size?: 'sm' | 'md' | 'lg' | 'xl';
   /** Additional CSS classes */
   className?: string;
   /** Accessible label (default: "Loading") */
@@ -26,6 +26,7 @@ const sizeConfig = {
   sm: { w: 48, h: 24 },
   md: { w: 96, h: 48 },
   lg: { w: 192, h: 96 },
+  xl: { w: 260, h: 130 },
 } as const;
 
 /** Mathematically symmetric lemniscate — smooth tangents at center crossover */
@@ -61,42 +62,46 @@ export function PremiumLoader({
         aria-hidden="true"
       >
         <defs>
-          {/* Pink → Purple → Blue gradient */}
+          {/* Rich 5-stop pink → rose → purple → indigo → blue gradient */}
           <linearGradient id={gradId} x1="0%" y1="50%" x2="100%" y2="50%">
             <stop offset="0%" stopColor="#f472b6" />
+            <stop offset="25%" stopColor="#e879f9" />
             <stop offset="50%" stopColor="#a855f7" />
+            <stop offset="75%" stopColor="#818cf8" />
             <stop offset="100%" stopColor="#3b82f6" />
           </linearGradient>
 
-          {/* Lighter specular highlight gradient */}
+          {/* 5-stop specular highlight — lighter, glass-tube shine */}
           <linearGradient id={hiId} x1="0%" y1="50%" x2="100%" y2="50%">
             <stop offset="0%" stopColor="#f9a8d4" />
+            <stop offset="25%" stopColor="#f0abfc" />
             <stop offset="50%" stopColor="#c084fc" />
+            <stop offset="75%" stopColor="#a5b4fc" />
             <stop offset="100%" stopColor="#93c5fd" />
           </linearGradient>
 
           {/* Gaussian blurs for glow layers */}
           <filter id={blurId} x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" />
+            <feGaussianBlur stdDeviation="4" />
           </filter>
           <filter id={blurSmId} x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="1.5" />
           </filter>
         </defs>
 
-        {/* Layer 1: Static glow foundation — always visible, blurred */}
+        {/* Layer 1: Deep glow foundation — fat, blurred, always visible */}
         <path
           d={INFINITY_PATH}
           fill="none"
           stroke={`url(#${gradId})`}
-          strokeWidth="12"
+          strokeWidth="16"
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity="0.12"
+          opacity="0.14"
           filter={`url(#${blurId})`}
         />
 
-        {/* Layer 2: Static mid-glow — tighter blur */}
+        {/* Layer 2: Mid-glow bed — tighter blur */}
         <path
           d={INFINITY_PATH}
           fill="none"
@@ -104,13 +109,13 @@ export function PremiumLoader({
           strokeWidth="8"
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity="0.18"
+          opacity="0.22"
           filter={`url(#${blurSmId})`}
         />
 
-        {/* Animated draw group — neon glow pulse */}
+        {/* Animated draw group — neon glow pulse (3s polyrhythm) */}
         <g className={animate ? 'infinity-glow' : undefined}>
-          {/* Animated glow trail */}
+          {/* Animated glow trail — soft neon following the draw */}
           <path
             d={INFINITY_PATH}
             fill="none"
@@ -118,13 +123,13 @@ export function PremiumLoader({
             strokeWidth="8"
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity="0.30"
+            opacity="0.35"
             filter={`url(#${blurSmId})`}
             className={animate ? 'infinity-draw-line' : undefined}
             style={!animate ? { strokeDasharray: '105 60' } : undefined}
           />
 
-          {/* Main crisp line — 4px as per spec */}
+          {/* Main crisp line — 4px core stroke */}
           <path
             d={INFINITY_PATH}
             fill="none"
@@ -136,7 +141,7 @@ export function PremiumLoader({
             style={!animate ? { strokeDasharray: '105 60' } : undefined}
           />
 
-          {/* Specular highlight — glass-tube shine */}
+          {/* Specular highlight — glass-tube shine, brighter */}
           <path
             d={INFINITY_PATH}
             fill="none"
@@ -144,7 +149,7 @@ export function PremiumLoader({
             strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity="0.50"
+            opacity="0.60"
             className={animate ? 'infinity-draw-line' : undefined}
             style={!animate ? { strokeDasharray: '105 60' } : undefined}
           />

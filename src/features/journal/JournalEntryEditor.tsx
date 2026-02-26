@@ -9,9 +9,9 @@ import { usePanicGesture } from '@/hooks/usePanicGesture';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 import { createFocusTrap, announceSuccess } from '@/lib/a11y';
 import { hapticSuccess } from '@/lib/haptics';
-import type { JournalEntry, JournalPhoto, JournalAudio, DiaryThemeName, DiaryFontName, FontSizeName } from './types';
+import type { JournalEntry, JournalPhoto, JournalAudio, DiaryThemeName, DiaryFontName, FontSizeName, PaperColor } from './types';
 import type { MoodType } from '@/types';
-import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY, countWordsHtml, FONT_SIZES } from './types';
+import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY, countWordsHtml, FONT_SIZES, PAPER_COLORS } from './types';
 import { JournalStickerPicker } from './JournalStickerPicker';
 import { JournalPhotoPicker } from './JournalPhotoPicker';
 import { JournalPhotoGallery } from './JournalPhotoGallery';
@@ -250,6 +250,8 @@ export function JournalEntryEditor({
   const [panicLocked, setPanicLocked] = useState(false);
   const [inkColor, setInkColor] = useState(entry?.inkColor || '#ffffff');
   const [paperTexture, setPaperTexture] = useState<'clean' | 'dots'>(entry?.paperTexture || 'clean');
+  const [paperColor, setPaperColor] = useState<PaperColor>(entry?.paperColor || 'dark');
+  const paperColors = PAPER_COLORS[paperColor];
   const [fontSize, setFontSize] = useState<FontSizeName>(entry?.fontSize || 'medium');
   const [showPromptsDropdown, setShowPromptsDropdown] = useState(false);
   const [formatHintDismissed, setFormatHintDismissed] = useState(() => !!storageGetRaw(SK.DIARY_FORMAT_HINT_SEEN));
@@ -388,6 +390,7 @@ export function JournalEntryEditor({
         font: diaryTheme.font,
         inkColor: inkColor !== '#ffffff' ? inkColor : undefined,
         paperTexture: paperTexture !== 'clean' ? paperTexture : undefined,
+        paperColor: paperColor !== 'dark' ? paperColor : undefined,
         fontSize: fontSize !== 'medium' ? fontSize : undefined,
         photoLayout: Object.keys(photoLayout).length > 0 ? photoLayout : undefined,
       });
@@ -592,6 +595,20 @@ export function JournalEntryEditor({
     setTitle(prompt);
     setShowPromptsDropdown(false);
   };
+
+  // Click-outside to close prompts dropdown
+  const promptsDropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!showPromptsDropdown) return;
+    const handler = (e: PointerEvent) => {
+      if (promptsDropdownRef.current && !promptsDropdownRef.current.contains(e.target as Node)) {
+        setShowPromptsDropdown(false);
+      }
+    };
+    // Delay to avoid catching the opening click
+    const timer = setTimeout(() => document.addEventListener('pointerdown', handler), 50);
+    return () => { clearTimeout(timer); document.removeEventListener('pointerdown', handler); };
+  }, [showPromptsDropdown]);
 
   const handleEditorInput = useCallback(() => {
     const el = editorRef.current;
@@ -866,7 +883,24 @@ export function JournalEntryEditor({
             </motion.button>
           </div>
 
-          {/* Ink capsule (Texture moved to bottom toolbar) */}
+          {/* Paper color capsule */}
+          <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+            {(['dark', 'milky', 'white'] as PaperColor[]).map(pc => (
+              <motion.button
+                key={pc}
+                whileTap={{ scale: 0.85 }}
+                onClick={() => setPaperColor(pc)}
+                className={cn(
+                  'w-7 h-7 rounded-full border-2 transition-all',
+                  paperColor === pc ? 'border-white/60 scale-110' : 'border-white/10',
+                )}
+                style={{ background: PAPER_COLORS[pc].bg }}
+                aria-label={PAPER_COLORS[pc].label}
+              />
+            ))}
+          </div>
+
+          {/* Ink capsule */}
           <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
             {INK_COLORS.map(c => (
               <motion.button
@@ -912,6 +946,7 @@ export function JournalEntryEditor({
         <AnimatePresence>
           {showPromptsDropdown && (
             <motion.div
+              ref={promptsDropdownRef}
               className="mx-4 mt-2 p-3 rounded-xl bg-slate-900/95 backdrop-blur-xl border border-white/10 shadow-2xl space-y-1.5"
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
@@ -980,10 +1015,15 @@ export function JournalEntryEditor({
           onScroll={handleContentScroll}
         >
           <div
-            className="max-w-4xl mx-auto rounded-2xl border border-white/[0.08] backdrop-blur-sm shadow-[0_0_60px_rgba(0,0,0,0.4)] p-8 min-h-[60dvh] space-y-4"
+            className="max-w-4xl mx-auto rounded-2xl border shadow-[0_0_80px_rgba(0,0,0,0.5)] p-8 min-h-[60dvh] space-y-4"
             style={{
-              backgroundColor: `color-mix(in srgb, var(--diary-bg, #020611) 90%, transparent)`,
-              ...(paperTexture === 'dots' ? { backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '24px 24px' } : {}),
+              backgroundColor: paperColors.bg,
+              color: paperColors.text,
+              borderColor: paperColors.border,
+              ...(paperTexture === 'dots' ? {
+                backgroundImage: `radial-gradient(circle, ${paperColor === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} 1px, transparent 1px)`,
+                backgroundSize: '24px 24px',
+              } : {}),
             }}
           >
 
@@ -1026,7 +1066,8 @@ export function JournalEntryEditor({
           onChange={e => setTitle(e.target.value)}
           placeholder={ts.journalEntryTitle || 'Title (optional)'}
           autoFocus={!entry}
-          className="w-full text-2xl font-bold tracking-tight bg-transparent border-none outline-none placeholder:text-slate-500/40"
+          className="w-full text-2xl font-bold tracking-tight bg-transparent border-none outline-none"
+          style={{ color: paperColors.text, fontFamily: diaryTheme.fontFamily }}
           maxLength={100}
           onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
         />
@@ -1224,8 +1265,8 @@ export function JournalEntryEditor({
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          className="w-full min-h-[260px] bg-transparent border-none outline-none resize-none text-slate-100 [&_blockquote]:border-l-2 [&_blockquote]:border-white/20 [&_blockquote]:pl-3 [&_blockquote]:italic [&_code]:bg-white/10 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:text-slate-500/40 empty:before:pointer-events-none"
-          style={{ fontSize: FONT_SIZES[fontSize], lineHeight: 1.8, fontFamily: diaryTheme.fontFamily, color: inkColor !== '#ffffff' ? inkColor : 'var(--diary-text, hsl(var(--foreground)))' }}
+          className="w-full min-h-[260px] bg-transparent border-none outline-none resize-none [&_blockquote]:border-l-2 [&_blockquote]:border-current/20 [&_blockquote]:pl-3 [&_blockquote]:italic [&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 empty:before:pointer-events-none"
+          style={{ fontSize: FONT_SIZES[fontSize], lineHeight: 1.8, fontFamily: diaryTheme.fontFamily, color: inkColor !== '#ffffff' ? inkColor : paperColors.text }}
           onInput={handleEditorInput}
           onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
           data-placeholder={ts.journalEntryPlaceholder || "What's on your mind?"}
@@ -1234,15 +1275,15 @@ export function JournalEntryEditor({
         {/* Word count + char count + reading time + auto-save indicator */}
         <div className="flex items-center gap-3 pt-2">
           {wordCount > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] text-muted-foreground/60">
+            <div className="flex items-center gap-2" style={{ color: paperColors.muted }}>
+              <span className="text-[10px] opacity-60">
                 {wordCount} {ts.journalWords || 'words'}
               </span>
-              <span className="text-[10px] text-muted-foreground/40">
+              <span className="text-[10px] opacity-40">
                 {content.length} {ts.journalChars || 'chars'}
               </span>
               {wordCount >= 50 && (
-                <span className="text-[10px] text-muted-foreground/40">
+                <span className="text-[10px] opacity-40">
                   ~{Math.ceil(wordCount / 200)} {ts.journalMinRead || 'min read'}
                 </span>
               )}

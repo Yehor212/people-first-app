@@ -1,28 +1,28 @@
 /**
- * useDiaryCanvas — rAF-driven Wavy Frame Engine with theme-specific particles.
+ * useDiaryCanvas — rAF-driven Full-Background Ambient Engine.
  *
- * Renders TWO frame zones (top ~120px, bottom ~140px) on a single full-screen canvas.
- * Each frame has: sinusoidal-clipped gradient fill → glowing wave line → constrained particles.
- * The middle of the canvas is transparent so --diary-bg shows through.
+ * Renders a living atmospheric background across the ENTIRE viewport:
+ * radial vignette → scattered theme particles → ambient glow waves.
+ * The paper sheet (editor) floats on top with its own opaque background.
  *
  * Memory-safe: all rAF + event listeners cleaned up in useEffect return.
  * Canvas is fixed at initial viewport size — NEVER resizes for keyboard.
  * shouldAnimate() guard — static fallback when reduced motion enabled.
  *
- * PERFORMANCE GATE: Pauses rAF loop when user is typing (keydown on textarea).
+ * PERFORMANCE GATE: Pauses rAF loop when user is typing (keydown).
  * Resumes 2 seconds after the last keystroke. This saves GPU while the user writes.
  *
- * THEME-SPECIFIC PARTICLES (constrained inside frame zones):
+ * THEME-SPECIFIC PARTICLES (scattered across full viewport):
  *   dark/cosmos  — twinkling stars (opacity oscillation)
  *   ocean        — bubbles (sine-wave drift upward, size pulse)
  *   forest       — fireflies (Brownian motion, warm hue)
  *   sunset       — embers (rise + sway, orange-red fade)
  *   light/sepia  — generic soft floaters
  *
- * FRAME RENDERING (per frame zone):
- *   1. Clip to sinusoidal boundary → fill with theme gradient
- *   2. Stroke glowing sinusoidal wave line (shadowBlur: 15)
- *   3. Render theme particles inside the frame
+ * PER FRAME:
+ *   1. Clear → fill with radial vignette gradient
+ *   2. Render theme particles across the full viewport
+ *   3. Draw 3 ambient glow wave lines at different Y positions
  */
 
 import { useEffect, useRef } from 'react';
@@ -32,33 +32,36 @@ import type { DiaryThemeName } from './types';
 
 // ── Constants ──
 
-const TOP_FRAME_HEIGHT = 120;
-const BOTTOM_FRAME_HEIGHT = 140;
-const WAVE_AMPLITUDE = 10;
+const WAVE_AMPLITUDE = 7;
 const WAVE_FREQUENCY = 0.008;
 const WAVE_SPEED = 0.0005;
-const WAVE_STEP = 2;
-const GLOW_LINE_WIDTH = 2.5;
-const GLOW_SHADOW_BLUR = 15;
+const WAVE_STEP = 3;
+const GLOW_LINE_WIDTH = 1.8;
+const GLOW_SHADOW_BLUR = 12;
+
+// Wave Y positions as fraction of viewport height
+const WAVE_POSITIONS = [0.20, 0.55, 0.82];
+// Speed multipliers for polyrhythmic movement
+const WAVE_SPEED_MULT = [1.0, 0.7, 1.3];
 
 // ── Theme maps ──
 
-const THEME_GRADIENTS: Record<DiaryThemeName, { from: string; to: string }> = {
-  dark:   { from: '#020617', to: '#0f172a' },
-  ocean:  { from: '#082f49', to: '#0F1B2D' },
-  forest: { from: '#064e3b', to: '#1B2D1B' },
-  sunset: { from: '#2D1B1B', to: '#1a0f0f' },
-  light:  { from: '#FFFEF5', to: '#F5F0E0' },
-  sepia:  { from: '#F4ECD8', to: '#E8DCC0' },
+const THEME_GRADIENTS: Record<DiaryThemeName, { center: string; edge: string }> = {
+  dark:   { center: '#0f172a', edge: '#020617' },
+  ocean:  { center: '#0c2d48', edge: '#071a2c' },
+  forest: { center: '#143d2b', edge: '#0a1f15' },
+  sunset: { center: '#2a1515', edge: '#150a0a' },
+  light:  { center: '#FFFEF5', edge: '#F0EBD8' },
+  sepia:  { center: '#F4ECD8', edge: '#E0D5B8' },
 };
 
 const THEME_WAVE_COLORS: Record<DiaryThemeName, string> = {
-  dark:   'rgba(139, 92, 246, 0.8)',
-  ocean:  'rgba(6, 182, 212, 0.8)',
-  forest: 'rgba(16, 185, 129, 0.8)',
-  sunset: 'rgba(232, 131, 74, 0.8)',
-  light:  'rgba(120, 120, 90, 0.35)',
-  sepia:  'rgba(139, 105, 20, 0.45)',
+  dark:   'rgba(139, 92, 246, 0.6)',
+  ocean:  'rgba(6, 182, 212, 0.6)',
+  forest: 'rgba(16, 185, 129, 0.6)',
+  sunset: 'rgba(232, 131, 74, 0.6)',
+  light:  'rgba(120, 120, 90, 0.20)',
+  sepia:  'rgba(139, 105, 20, 0.25)',
 };
 
 // ── Particle type ──
@@ -77,8 +80,8 @@ interface Particle {
 
 interface ParticleConfig {
   count: number;
-  init: (w: number, yMin: number, yMax: number) => Particle;
-  move: (p: Particle, t: number, w: number, yMin: number, yMax: number) => void;
+  init: (w: number, h: number) => Particle;
+  move: (p: Particle, t: number, w: number, h: number) => void;
   color: (p: Particle, t: number, accent: string) => string;
 }
 
@@ -87,24 +90,24 @@ function getParticleConfig(theme: DiaryThemeName): ParticleConfig {
     case 'dark':
       // Cosmos — twinkling stars with opacity oscillation
       return {
-        count: 50,
-        init: (w, yMin, yMax) => ({
+        count: 70,
+        init: (w, h) => ({
           x: Math.random() * w,
-          y: yMin + Math.random() * (yMax - yMin),
-          size: 1 + Math.random() * 3,
-          speedX: (Math.random() - 0.5) * 0.1,
-          speedY: -0.05 - Math.random() * 0.1,
-          opacity: 0.1 + Math.random() * 0.3,
+          y: Math.random() * h,
+          size: 1 + Math.random() * 2.5,
+          speedX: (Math.random() - 0.5) * 0.08,
+          speedY: -0.03 - Math.random() * 0.06,
+          opacity: 0.05 + Math.random() * 0.25,
           phase: Math.random() * Math.PI * 2,
         }),
-        move: (p, t, w, yMin, yMax) => {
+        move: (p, t, w, h) => {
           p.x += p.speedX;
           p.y += p.speedY;
-          p.opacity = 0.05 + Math.abs(Math.sin(t * 0.001 + p.phase)) * 0.35;
+          p.opacity = 0.03 + Math.abs(Math.sin(t * 0.001 + p.phase)) * 0.3;
           if (p.x < -5) p.x = w + 5;
           if (p.x > w + 5) p.x = -5;
-          if (p.y < yMin - 5) p.y = yMax + 5;
-          if (p.y > yMax + 5) p.y = yMin - 5;
+          if (p.y < -5) p.y = h + 5;
+          if (p.y > h + 5) p.y = -5;
         },
         color: (p, _t, accent) => hexToRgba(accent, p.opacity),
       };
@@ -112,21 +115,21 @@ function getParticleConfig(theme: DiaryThemeName): ParticleConfig {
     case 'ocean':
       // Bubbles — sine-wave horizontal drift, float upward, size pulse
       return {
-        count: 35,
-        init: (w, yMin, yMax) => ({
+        count: 50,
+        init: (w, h) => ({
           x: Math.random() * w,
-          y: yMin + Math.random() * (yMax - yMin),
-          size: 2 + Math.random() * 5,
+          y: Math.random() * h,
+          size: 2 + Math.random() * 4,
           speedX: 0,
-          speedY: -0.15 - Math.random() * 0.25,
-          opacity: 0.06 + Math.random() * 0.12,
+          speedY: -0.12 - Math.random() * 0.2,
+          opacity: 0.04 + Math.random() * 0.1,
           phase: Math.random() * Math.PI * 2,
         }),
-        move: (p, t, w, yMin, yMax) => {
-          p.x += Math.sin(t * 0.0008 + p.phase) * 0.4;
+        move: (p, t, w, h) => {
+          p.x += Math.sin(t * 0.0008 + p.phase) * 0.35;
           p.y += p.speedY;
-          p.size = (2 + Math.random() * 3) * (1 + Math.sin(t * 0.002 + p.phase) * 0.15);
-          if (p.y < yMin - 10) { p.y = yMax + 10; p.x = Math.random() * w; }
+          p.size = (2 + Math.random() * 2.5) * (1 + Math.sin(t * 0.002 + p.phase) * 0.12);
+          if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
           if (p.x < -10) p.x = w + 10;
           if (p.x > w + 10) p.x = -10;
         },
@@ -136,28 +139,28 @@ function getParticleConfig(theme: DiaryThemeName): ParticleConfig {
     case 'forest':
       // Fireflies — Brownian motion, warm glow
       return {
-        count: 30,
-        init: (w, yMin, yMax) => ({
+        count: 45,
+        init: (w, h) => ({
           x: Math.random() * w,
-          y: yMin + Math.random() * (yMax - yMin),
+          y: Math.random() * h,
           size: 2 + Math.random() * 3,
-          speedX: (Math.random() - 0.5) * 0.3,
-          speedY: (Math.random() - 0.5) * 0.3,
-          opacity: 0.08 + Math.random() * 0.15,
+          speedX: (Math.random() - 0.5) * 0.25,
+          speedY: (Math.random() - 0.5) * 0.25,
+          opacity: 0.06 + Math.random() * 0.12,
           phase: Math.random() * Math.PI * 2,
         }),
-        move: (p, t, w, yMin, yMax) => {
-          p.speedX += (Math.random() - 0.5) * 0.08;
-          p.speedY += (Math.random() - 0.5) * 0.08;
+        move: (p, t, w, h) => {
+          p.speedX += (Math.random() - 0.5) * 0.06;
+          p.speedY += (Math.random() - 0.5) * 0.06;
           p.speedX *= 0.97;
           p.speedY *= 0.97;
           p.x += p.speedX;
           p.y += p.speedY;
-          p.opacity = 0.05 + Math.abs(Math.sin(t * 0.0015 + p.phase)) * 0.2;
+          p.opacity = 0.04 + Math.abs(Math.sin(t * 0.0015 + p.phase)) * 0.16;
           if (p.x < -10) p.x = w + 10;
           if (p.x > w + 10) p.x = -10;
-          if (p.y < yMin - 10) p.y = yMax + 10;
-          if (p.y > yMax + 10) p.y = yMin - 10;
+          if (p.y < -10) p.y = h + 10;
+          if (p.y > h + 10) p.y = -10;
         },
         color: (p, t) => {
           const hue = 80 + Math.sin(t * 0.001 + p.phase) * 30;
@@ -168,22 +171,22 @@ function getParticleConfig(theme: DiaryThemeName): ParticleConfig {
     case 'sunset':
       // Embers — rise upward with horizontal sway, orange-red, fade at top
       return {
-        count: 40,
-        init: (w, yMin, yMax) => ({
+        count: 55,
+        init: (w, h) => ({
           x: Math.random() * w,
-          y: yMin + (yMax - yMin) * 0.5 + Math.random() * (yMax - yMin) * 0.5,
-          size: 2 + Math.random() * 4,
-          speedX: (Math.random() - 0.5) * 0.4,
-          speedY: -0.2 - Math.random() * 0.4,
-          opacity: 0.1 + Math.random() * 0.2,
+          y: h * 0.4 + Math.random() * h * 0.6,
+          size: 2 + Math.random() * 3.5,
+          speedX: (Math.random() - 0.5) * 0.35,
+          speedY: -0.15 - Math.random() * 0.3,
+          opacity: 0.08 + Math.random() * 0.18,
           phase: Math.random() * Math.PI * 2,
         }),
-        move: (p, t, w, yMin, yMax) => {
-          p.x += p.speedX + Math.sin(t * 0.001 + p.phase) * 0.3;
+        move: (p, t, w, h) => {
+          p.x += p.speedX + Math.sin(t * 0.001 + p.phase) * 0.25;
           p.y += p.speedY;
-          const heightRatio = (p.y - yMin) / (yMax - yMin);
-          p.opacity = Math.max(0.02, heightRatio * 0.25);
-          if (p.y < yMin - 10) { p.y = yMax + 10; p.x = Math.random() * w; p.opacity = 0.2; }
+          const heightRatio = p.y / h;
+          p.opacity = Math.max(0.02, heightRatio * 0.22);
+          if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; p.opacity = 0.18; }
           if (p.x < -10) p.x = w + 10;
           if (p.x > w + 10) p.x = -10;
         },
@@ -196,20 +199,20 @@ function getParticleConfig(theme: DiaryThemeName): ParticleConfig {
     default:
       // Light/sepia — subtle generic floaters
       return {
-        count: 25,
-        init: (w, yMin, yMax) => ({
+        count: 30,
+        init: (w, h) => ({
           x: Math.random() * w,
-          y: yMin + Math.random() * (yMax - yMin),
-          size: 2 + Math.random() * 3,
-          speedX: (Math.random() - 0.5) * 0.2,
-          speedY: -0.1 - Math.random() * 0.15,
-          opacity: 0.05 + Math.random() * 0.08,
+          y: Math.random() * h,
+          size: 2 + Math.random() * 2.5,
+          speedX: (Math.random() - 0.5) * 0.15,
+          speedY: -0.08 - Math.random() * 0.1,
+          opacity: 0.04 + Math.random() * 0.06,
           phase: Math.random() * Math.PI * 2,
         }),
-        move: (p, t, w, yMin, yMax) => {
-          p.x += p.speedX + Math.sin(t * 0.001 + p.phase) * 0.1;
+        move: (p, t, w, h) => {
+          p.x += p.speedX + Math.sin(t * 0.001 + p.phase) * 0.08;
           p.y += p.speedY;
-          if (p.y < yMin - 10) { p.y = yMax + 10; p.x = Math.random() * w; }
+          if (p.y < -10) { p.y = h + 10; p.x = Math.random() * w; }
           if (p.x < -10) p.x = w + 10;
           if (p.x > w + 10) p.x = -10;
         },
@@ -226,114 +229,69 @@ function hexToRgba(hex: string, alpha: number): string {
   return `rgba(${parseInt(match[1], 16)}, ${parseInt(match[2], 16)}, ${parseInt(match[3], 16)}, ${alpha})`;
 }
 
-// ── Wave path builder ──
+// ── Full-background radial vignette ──
 
-interface WavePath { xs: number[]; ys: number[] }
-
-function buildWavePath(w: number, baseY: number, time: number): WavePath {
-  const xs: number[] = [];
-  const ys: number[] = [];
-  for (let x = 0; x <= w; x += WAVE_STEP) {
-    xs.push(x);
-    ys.push(baseY + Math.sin(x * WAVE_FREQUENCY + time) * WAVE_AMPLITUDE);
-  }
-  return { xs, ys };
-}
-
-// ── Frame gradient fill (clipped to sinusoidal boundary) ──
-
-function drawFrameGradient(
+function drawBackground(
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
-  frame: 'top' | 'bottom',
-  wave: WavePath,
   theme: DiaryThemeName,
 ): void {
-  const { from, to } = THEME_GRADIENTS[theme];
-  const isTop = frame === 'top';
-
-  ctx.save();
-  ctx.beginPath();
-
-  if (isTop) {
-    // Rectangle top + sinusoidal bottom edge
-    ctx.moveTo(0, 0);
-    ctx.lineTo(w, 0);
-    // Walk sinusoidal edge right-to-left
-    for (let i = wave.xs.length - 1; i >= 0; i--) {
-      ctx.lineTo(wave.xs[i], wave.ys[i]);
-    }
-  } else {
-    // Sinusoidal top edge + rectangle bottom
-    ctx.moveTo(wave.xs[0], wave.ys[0]);
-    for (let i = 1; i < wave.xs.length; i++) {
-      ctx.lineTo(wave.xs[i], wave.ys[i]);
-    }
-    ctx.lineTo(w, h);
-    ctx.lineTo(0, h);
-  }
-
-  ctx.closePath();
-  ctx.clip();
-
-  // Gradient fill inside clip
-  const grad = isTop
-    ? ctx.createLinearGradient(0, 0, 0, TOP_FRAME_HEIGHT + WAVE_AMPLITUDE)
-    : ctx.createLinearGradient(0, h - BOTTOM_FRAME_HEIGHT - WAVE_AMPLITUDE, 0, h);
-  grad.addColorStop(0, from);
-  grad.addColorStop(1, to);
+  const { center, edge } = THEME_GRADIENTS[theme];
+  const grad = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, Math.max(w, h) * 0.7);
+  grad.addColorStop(0, center);
+  grad.addColorStop(1, edge);
   ctx.fillStyle = grad;
-
-  if (isTop) {
-    ctx.fillRect(0, 0, w, TOP_FRAME_HEIGHT + WAVE_AMPLITUDE + 1);
-  } else {
-    ctx.fillRect(0, h - BOTTOM_FRAME_HEIGHT - WAVE_AMPLITUDE - 1, w, BOTTOM_FRAME_HEIGHT + WAVE_AMPLITUDE + 2);
-  }
-
-  ctx.restore();
+  ctx.fillRect(0, 0, w, h);
 }
 
-// ── Glowing wave line ──
+// ── Ambient glow wave lines ──
 
-function drawGlowLine(
+function drawAmbientWaves(
   ctx: CanvasRenderingContext2D,
-  wave: WavePath,
+  w: number,
+  h: number,
+  time: number,
   theme: DiaryThemeName,
 ): void {
   const color = THEME_WAVE_COLORS[theme];
 
-  ctx.save();
-  ctx.strokeStyle = color;
-  ctx.lineWidth = GLOW_LINE_WIDTH;
-  ctx.shadowBlur = GLOW_SHADOW_BLUR;
-  ctx.shadowColor = color;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
+  for (let i = 0; i < WAVE_POSITIONS.length; i++) {
+    const baseY = h * WAVE_POSITIONS[i];
+    const t = time * WAVE_SPEED_MULT[i];
 
-  ctx.beginPath();
-  ctx.moveTo(wave.xs[0], wave.ys[0]);
-  for (let i = 1; i < wave.xs.length; i++) {
-    ctx.lineTo(wave.xs[i], wave.ys[i]);
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = GLOW_LINE_WIDTH;
+    ctx.shadowBlur = GLOW_SHADOW_BLUR;
+    ctx.shadowColor = color;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    ctx.beginPath();
+    for (let x = 0; x <= w; x += WAVE_STEP) {
+      const y = baseY + Math.sin(x * WAVE_FREQUENCY + t) * WAVE_AMPLITUDE;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
   }
-  ctx.stroke();
-  ctx.restore();
 }
 
-// ── Frame particles ──
+// ── Particles (full viewport) ──
 
-function drawFrameParticles(
+function drawParticles(
   ctx: CanvasRenderingContext2D,
   particles: Particle[],
   config: ParticleConfig,
   time: number,
   w: number,
-  yMin: number,
-  yMax: number,
+  h: number,
   accentColor: string,
 ): void {
   for (const p of particles) {
-    config.move(p, time, w, yMin, yMax);
+    config.move(p, time, w, h);
     ctx.beginPath();
     ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
     ctx.fillStyle = config.color(p, time, accentColor);
@@ -349,8 +307,7 @@ export function useDiaryCanvas(
   isActive: boolean,
   theme: DiaryThemeName = 'dark',
 ): void {
-  const topParticlesRef = useRef<Particle[]>([]);
-  const bottomParticlesRef = useRef<Particle[]>([]);
+  const particlesRef = useRef<Particle[]>([]);
   const rafRef = useRef(0);
   const typingPausedRef = useRef(false);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout>>();
@@ -372,21 +329,9 @@ export function useDiaryCanvas(
     canvas.style.height = `${h}px`;
     ctx.scale(dpr, dpr);
 
-    // Frame boundaries
-    const topYMin = 0;
-    const topYMax = TOP_FRAME_HEIGHT + WAVE_AMPLITUDE;
-    const bottomYMin = h - BOTTOM_FRAME_HEIGHT - WAVE_AMPLITUDE;
-    const bottomYMax = h;
-
-    // Guard: if screen too small for both frames, skip
-    if (topYMax + 50 > bottomYMin) return;
-
-    // Theme-specific particle config — split between top and bottom frames
+    // Theme-specific particle config — full viewport
     const config = getParticleConfig(theme);
-    const topCount = Math.floor(config.count / 2);
-    const bottomCount = Math.ceil(config.count / 2);
-    topParticlesRef.current = Array.from({ length: topCount }, () => config.init(w, topYMin, topYMax));
-    bottomParticlesRef.current = Array.from({ length: bottomCount }, () => config.init(w, bottomYMin, bottomYMax));
+    particlesRef.current = Array.from({ length: config.count }, () => config.init(w, h));
 
     let alive = true;
 
@@ -409,21 +354,14 @@ export function useDiaryCanvas(
       if (!isCanvasPaused() && !typingPausedRef.current) {
         const t = time * WAVE_SPEED;
 
-        ctx.clearRect(0, 0, w, h);
+        // 1. Full-background radial vignette
+        drawBackground(ctx, w, h, theme);
 
-        // Pre-compute wave paths (reused for clip + glow)
-        const topWave = buildWavePath(w, TOP_FRAME_HEIGHT, t);
-        const bottomWave = buildWavePath(w, h - BOTTOM_FRAME_HEIGHT, t);
+        // 2. Scattered particles across entire viewport
+        drawParticles(ctx, particlesRef.current, config, time, w, h, accentColor);
 
-        // ── TOP FRAME ──
-        drawFrameGradient(ctx, w, h, 'top', topWave, theme);
-        drawGlowLine(ctx, topWave, theme);
-        drawFrameParticles(ctx, topParticlesRef.current, config, time, w, topYMin, topYMax, accentColor);
-
-        // ── BOTTOM FRAME ──
-        drawFrameGradient(ctx, w, h, 'bottom', bottomWave, theme);
-        drawGlowLine(ctx, bottomWave, theme);
-        drawFrameParticles(ctx, bottomParticlesRef.current, config, time, w, bottomYMin, bottomYMax, accentColor);
+        // 3. Ambient glow wave lines at 20%, 55%, 82% of viewport
+        drawAmbientWaves(ctx, w, h, t, theme);
       }
       rafRef.current = requestAnimationFrame(frame);
     }

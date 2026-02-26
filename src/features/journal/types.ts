@@ -31,6 +31,16 @@ export const DIARY_FONTS: Record<DiaryFontName, { family: string; url: string }>
 export const DIARY_THEME_NAMES: DiaryThemeName[] = ['light', 'dark', 'sepia', 'forest', 'ocean', 'sunset'];
 export const DIARY_FONT_NAMES: DiaryFontName[] = ['caveat', 'cormorant', 'outfit'];
 
+// ── Paper Color (editor sheet background) ──
+
+export type PaperColor = 'white' | 'dark' | 'milky';
+
+export const PAPER_COLORS: Record<PaperColor, { bg: string; text: string; muted: string; border: string; label: string }> = {
+  white: { bg: '#FFFFFF', text: '#1a1a2e', muted: '#6b7280', border: 'rgba(0,0,0,0.08)', label: 'White' },
+  dark:  { bg: '#0D0D14', text: '#e2e8f0', muted: '#94a3b8', border: 'rgba(255,255,255,0.06)', label: 'Dark' },
+  milky: { bg: '#FFFEF5', text: '#2D2D2D', muted: '#999999', border: 'rgba(0,0,0,0.06)', label: 'Paper' },
+};
+
 /** A single journal/diary entry */
 export interface JournalEntry {
   id: string;
@@ -48,6 +58,7 @@ export interface JournalEntry {
   font?: DiaryFontName;    // diary font (optional, undefined = app default)
   inkColor?: string;       // text color hex (optional, undefined = theme default)
   paperTexture?: 'clean' | 'dots'; // paper texture (optional, undefined = clean)
+  paperColor?: PaperColor;   // editor sheet color (optional, undefined = dark)
   fontSize?: 'small' | 'medium' | 'large'; // editor font size preference
   photoLayout?: Record<string, { x: number; y: number; width: number }>; // free-form photo positions
   createdAt: number;
