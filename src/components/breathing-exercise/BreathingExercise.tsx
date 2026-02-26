@@ -1,10 +1,10 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { BREATHING_PATTERNS, type BreathingPattern } from '@/lib/breathingPatterns';
 import type { BreathingExerciseProps } from './types';
 import { generateStars } from './types';
@@ -30,16 +30,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
     setIsOpen(false);
   }, [engine]);
 
-  useBackHandler(isOpen, closeModal);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); closeModal(); }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [isOpen, closeModal]);
+  useModalA11y(isOpen, closeModal);
 
   // Compact card
   if (compact && !isOpen) {

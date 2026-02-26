@@ -2249,6 +2249,8 @@ export const fr: Translations = {
   diaryRecord: 'Enregistrer',
   diaryFocusRay: 'Focus',
   diaryBreathe: 'Respirer',
+  diaryPrivacyShield: 'Confidentialité',
+  journalUnlockBiometric: 'Déverrouiller',
   diaryTimeCapsule: 'Capsule temporelle',
   diaryVoice: 'Voix',
   diaryFeatures: 'Fonctions',

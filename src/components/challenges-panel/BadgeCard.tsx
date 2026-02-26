@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Lock, Share2 } from 'lucide-react';
 import { Badge } from '@/types';
 import { getLocale } from '@/lib/timeUtils';
@@ -13,7 +14,7 @@ interface BadgeCardProps {
   virtual?: boolean;
 }
 
-export function BadgeCard({ badge, language, t, onShare, virtual = false }: BadgeCardProps) {
+export const BadgeCard = memo(function BadgeCard({ badge, language, t, onShare, virtual = false }: BadgeCardProps) {
   return (
     <div
       className={`relative bg-secondary rounded-2xl p-4 zen-shadow-card transition-all ${virtual ? 'h-full ' : ''}${
@@ -56,4 +57,4 @@ export function BadgeCard({ badge, language, t, onShare, virtual = false }: Badg
       </div>
     </div>
   );
-}
+});

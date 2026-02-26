@@ -2248,6 +2248,8 @@ export const ja: Translations = {
   diaryRecord: '録音',
   diaryFocusRay: '集中',
   diaryBreathe: '呼吸',
+  diaryPrivacyShield: 'プライバシー',
+  journalUnlockBiometric: 'ロック解除',
   diaryTimeCapsule: 'タイムカプセル',
   diaryVoice: '音声',
   diaryFeatures: '機能',

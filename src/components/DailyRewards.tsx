@@ -3,7 +3,7 @@
  * ADHD-optimized daily check-in with escalating rewards
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { Gift, Sparkles, Check, Lock, Zap, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,7 @@ import { safeLocalStorageGet, safeLocalStorageSet, storageGetRaw, storageSetRaw 
 import { safeParseInt } from '@/lib/validation';
 import { SK } from '@/lib/storageKeys';
 import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import {
   getDailyLoginRewards,
@@ -26,16 +26,8 @@ interface DailyRewardsProps {
 
 export function DailyRewards({ onClose, onClaimReward }: DailyRewardsProps) {
   const { t } = useLanguage();
-  useBackHandler(true, onClose);
+  useModalA11y(true, onClose);
   useScrollLock(true);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
 
   const [rewards, setRewards] = useState<DailyLoginReward[]>(getDailyLoginRewards());
   const [currentDay, setCurrentDay] = useState(1);

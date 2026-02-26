@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Zap, Clock, Star, Trash2, CheckCircle2, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PrioritizedTask } from './types';
@@ -10,7 +11,7 @@ interface TaskCardProps {
   t: Record<string, string>;
 }
 
-export function TaskCard({ task, index, onToggle, onDelete, t }: TaskCardProps) {
+export const TaskCard = memo(function TaskCard({ task, index, onToggle, onDelete, t }: TaskCardProps) {
   const isTopThree = index !== undefined && index < 3;
 
   return (
@@ -96,4 +97,4 @@ export function TaskCard({ task, index, onToggle, onDelete, t }: TaskCardProps) 
       </div>
     </div>
   );
-}
+});

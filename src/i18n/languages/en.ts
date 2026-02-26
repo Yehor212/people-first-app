@@ -2248,6 +2248,8 @@ export const en: Translations = {
   diaryRecord: 'Record',
   diaryFocusRay: 'Focus',
   diaryBreathe: 'Breathe',
+  diaryPrivacyShield: 'Privacy',
+  journalUnlockBiometric: 'Unlock',
   diaryTimeCapsule: 'Time Capsule',
   diaryVoice: 'Voice',
   diaryFeatures: 'Features',

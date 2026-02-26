@@ -3,12 +3,12 @@
  * Luck-based reward system with spinning animation
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { getSpinWheelPrizes, spinWheel, SpinWheelPrize } from '@/lib/adhdHooks';
 
 interface SpinWheelProps {
@@ -31,15 +31,7 @@ const COLORS = [
 export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
   const { t } = useLanguage();
   useScrollLock(true);
-  useBackHandler(true, onClose);
-
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose(); }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
+  useModalA11y(true, onClose);
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);

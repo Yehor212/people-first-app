@@ -5,7 +5,7 @@
  * and expandable details
  */
 
-import { useState } from 'react';
+import { memo, useState } from 'react';
 import type { Insight } from '@/types';
 import { ChevronDown, ChevronUp, Lightbulb, TrendingUp, Clock, Tag } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -14,7 +14,7 @@ interface InsightCardProps {
   insight: Insight;
 }
 
-export function InsightCard({ insight }: InsightCardProps) {
+export const InsightCard = memo(function InsightCard({ insight }: InsightCardProps) {
   const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -214,4 +214,4 @@ export function InsightCard({ insight }: InsightCardProps) {
       )}
     </div>
   );
-}
+});

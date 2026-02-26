@@ -2333,6 +2333,8 @@ export interface Translations {
   diaryRecord: string;
   diaryFocusRay: string;
   diaryBreathe: string;
+  diaryPrivacyShield: string;
+  journalUnlockBiometric: string;
   diaryTimeCapsule: string;
   diaryVoice: string;
   diaryFeatures: string;

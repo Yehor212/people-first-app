@@ -4,6 +4,7 @@
  * Enhanced with Nature Energy theme glow effects and animated fire streaks
  */
 
+import { memo } from 'react';
 import { Habit } from '@/types';
 import { cn, getToday, parseLocalDate } from '@/lib/utils';
 import { Check, Trash2, Users, Pencil } from 'lucide-react';
@@ -27,7 +28,7 @@ interface CompactHabitCardProps {
   className?: string;
 }
 
-export function CompactHabitCard({
+export const CompactHabitCard = memo(function CompactHabitCard({
   habit,
   onToggle,
   onAdjust,
@@ -397,4 +398,4 @@ export function CompactHabitCard({
       </div>
     </motion.div>
   );
-}
+});

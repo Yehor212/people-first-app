@@ -1,8 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useIndexedDB } from './useIndexedDB';
 import { db } from '@/storage/db';
 import { gamificationStateSchema } from '@/lib/schemas';
-import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import {
   AchievementId,
   checkAchievements,
@@ -13,6 +12,7 @@ import {
 } from '@/lib/gamification';
 import { addFriendActivity, loadMyProfile, updateMyLevel } from '@/storage/friendsSync';
 import { analytics } from '@/lib/analytics';
+import { useUserDataStore } from '@/stores/userDataStore';
 
 interface GamificationState {
   totalXp: number;
@@ -38,44 +38,11 @@ export function useGamification() {
     objectSchema: gamificationStateSchema,
   });
 
-  const [moods, setMoods] = useState<MoodEntry[]>([]);
-  const [habits, setHabits] = useState<Habit[]>([]);
-  const [focusSessions, setFocusSessions] = useState<FocusSession[]>([]);
-  const [gratitudeEntries, setGratitudeEntries] = useState<GratitudeEntry[]>([]);
-
-  // Track mounted state to prevent setState after unmount
-  const isMountedRef = useRef(true);
-
-  // Load all data for stats
-  useEffect(() => {
-    isMountedRef.current = true;
-
-    const loadData = async () => {
-      const [moodsData, habitsData, focusData, gratitudeData] = await Promise.all([
-        db.moods.toArray(),
-        db.habits.toArray(),
-        db.focusSessions.toArray(),
-        db.gratitudeEntries.toArray(),
-      ]);
-
-      // Check if component is still mounted before updating state
-      if (!isMountedRef.current) return;
-
-      setMoods(moodsData);
-      setHabits(habitsData);
-      setFocusSessions(focusData);
-      setGratitudeEntries(gratitudeData);
-    };
-
-    void loadData();
-
-    // Refresh periodically
-    const interval = setInterval(loadData, 5000);
-    return () => {
-      isMountedRef.current = false;
-      clearInterval(interval);
-    };
-  }, []);
+  // Subscribe to Zustand store instead of polling DB every 5s
+  const moods = useUserDataStore(s => s.moods);
+  const habits = useUserDataStore(s => s.habits);
+  const focusSessions = useUserDataStore(s => s.focusSessions);
+  const gratitudeEntries = useUserDataStore(s => s.gratitudeEntries);
 
   const stats: UserStats = {
     moods,

@@ -2248,6 +2248,8 @@ export const uk: Translations = {
   diaryRecord: 'Запис',
   diaryFocusRay: 'Фокус',
   diaryBreathe: 'Дихання',
+  diaryPrivacyShield: 'Приватність',
+  journalUnlockBiometric: 'Розблокувати',
   diaryTimeCapsule: 'Капсула часу',
   diaryVoice: 'Голос',
   diaryFeatures: 'Функції',

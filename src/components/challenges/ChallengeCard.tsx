@@ -1,9 +1,10 @@
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Challenge, getChallengeProgress, getDaysRemaining } from '@/lib/friendChallenge';
 
-export function ChallengeCard({
+export const ChallengeCard = memo(function ChallengeCard({
   challenge,
   onClick,
   t,
@@ -101,4 +102,4 @@ export function ChallengeCard({
       </div>
     </motion.button>
   );
-}
+});

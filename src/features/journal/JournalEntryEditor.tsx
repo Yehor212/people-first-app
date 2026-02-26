@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { ArrowLeft, Check, Trash2, X, Calendar, Shuffle, Square, Sparkles } from 'lucide-react';
+import { ArrowLeft, Check, Trash2, X, Calendar, Shuffle, Square, Sparkles, Eye, EyeOff, Fingerprint } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getToday } from '@/lib/utils';
 import { zenMotion } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { usePanicGesture } from '@/hooks/usePanicGesture';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 import { createFocusTrap, announceSuccess } from '@/lib/a11y';
 import { hapticSuccess } from '@/lib/haptics';
@@ -27,7 +28,8 @@ import { useDiaryTheme } from './useDiaryTheme';
 import { DiaryCanvas } from './DiaryCanvas';
 import { BurnThoughtWidget } from './BurnThoughtWidget';
 import { DiaryBreatheWidget } from './DiaryBreatheWidget';
-import { SpotlightOverlay } from './SpotlightOverlay';
+import { ZenFocusMode } from './ZenFocusMode';
+import { PrivacyShield } from './PrivacyShield';
 import { FloatingMediaLayer } from './FloatingMediaLayer';
 import { DiaryFormatToolbar } from './DiaryFormatToolbar';
 import { DiaryFormatHint } from './DiaryFormatHint';
@@ -194,6 +196,8 @@ export function JournalEntryEditor({
 }: JournalEntryEditorProps) {
   const { t, language } = useLanguage();
   useScrollLock(true);
+  const handlePanic = useCallback(() => setPanicLocked(true), []);
+  usePanicGesture(true, handlePanic);
   const ts = t as unknown as Record<string, string>;
   const editorRef = useRef<HTMLDivElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -216,6 +220,7 @@ export function JournalEntryEditor({
   const [mood, setMood] = useState<MoodType | undefined>(entry?.mood);
   const [tags, setTags] = useState<string[]>(entry?.tags || []);
   const [habitSnapshot, setHabitSnapshot] = useState<{ habitId: string; habitName: string; habitIcon: string; completed: boolean }[]>(entry?.habitSnapshot || []);
+  const completedHabitCount = useMemo(() => habitSnapshot.filter(s => s.completed).length, [habitSnapshot]);
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -235,11 +240,14 @@ export function JournalEntryEditor({
   const diaryTheme = useDiaryTheme(entry?.theme || 'dark', entry?.font || 'caveat');
   const [, setShowStylePanel] = useState(false);
   const [showBurnWidget, setShowBurnWidget] = useState(false);
-  const [spotlightActive, setSpotlightActive] = useState(false);
+  const [zenFocusActive, setZenFocusActive] = useState(false);
   const [, setShowActionSheet] = useState(false);
   const [, setToolbarHidden] = useState(false);
   const [wavyBordersEnabled, setWavyBordersEnabled] = useState(true);
   const [showBreathe, setShowBreathe] = useState(false);
+  const [showHabits, setShowHabits] = useState(false);
+  const [privacyShieldActive, setPrivacyShieldActive] = useState(false);
+  const [panicLocked, setPanicLocked] = useState(false);
   const [inkColor, setInkColor] = useState(entry?.inkColor || '#ffffff');
   const [paperTexture, setPaperTexture] = useState<'clean' | 'dots'>(entry?.paperTexture || 'clean');
   const [fontSize, setFontSize] = useState<FontSizeName>(entry?.fontSize || 'medium');
@@ -713,6 +721,21 @@ export function JournalEntryEditor({
               </motion.button>
             )}
 
+            {/* Privacy Shield toggle */}
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              onClick={() => setPrivacyShieldActive(!privacyShieldActive)}
+              className={cn(
+                'p-2 rounded-lg transition-all min-w-[44px] min-h-[44px] flex items-center justify-center',
+                privacyShieldActive
+                  ? 'bg-violet-500/15 text-violet-400'
+                  : 'hover:bg-white/10 text-slate-400',
+              )}
+              aria-label={ts.diaryPrivacyShield || 'Privacy'}
+            >
+              {privacyShieldActive ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </motion.button>
+
             <motion.button
               whileTap={saveSuccess ? {} : { scale: 0.95 }}
               onClick={saveSuccess ? undefined : handleSave}
@@ -1167,6 +1190,25 @@ export function JournalEntryEditor({
           )}
         </AnimatePresence>
 
+        {/* Habit tracker (toggled from bottom toolbar) */}
+        <AnimatePresence>
+          {showHabits && (
+            <motion.div
+              className="my-6"
+              initial={{ opacity: 0, y: -16, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -16, scale: 0.97 }}
+              transition={zenMotion.gentle}
+            >
+              <JournalHabitSection
+                date={date}
+                snapshot={habitSnapshot}
+                onSnapshotChange={setHabitSnapshot}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Format hint (onboarding — shown once) */}
         <AnimatePresence>
           {!formatHintDismissed && (
@@ -1220,13 +1262,6 @@ export function JournalEntryEditor({
           </AnimatePresence>
         </div>
 
-        {/* Habit tracker section */}
-        <JournalHabitSection
-          date={date}
-          snapshot={habitSnapshot}
-          onSnapshotChange={setHabitSnapshot}
-        />
-
           </div>
         </div>
       </div>
@@ -1237,15 +1272,15 @@ export function JournalEntryEditor({
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none -mx-1.5 px-1.5">
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setSpotlightActive(!spotlightActive)}
+            onClick={() => setZenFocusActive(!zenFocusActive)}
             className={cn(
               'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
-              spotlightActive
+              zenFocusActive
                 ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                 : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
             )}
           >
-            🔦 {ts.diaryFocusRay || 'Focus'}
+            ✍️ {ts.diaryFocusRay || 'Focus'}
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -1270,6 +1305,23 @@ export function JournalEntryEditor({
             )}
           >
             🧘 {ts.diaryBreathe || 'Breathe'}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setShowHabits(!showHabits)}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              showHabits
+                ? 'bg-green-500/15 text-green-400 border-green-500/30'
+                : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+            )}
+          >
+            ✅ {ts.journalHabitsSection || 'Habits'}
+            {completedHabitCount > 0 && (
+              <span className="text-[10px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full leading-none">
+                {completedHabitCount}/{habitSnapshot.length}
+              </span>
+            )}
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -1481,8 +1533,34 @@ export function JournalEntryEditor({
         </div>
       )}
 
-      {/* Spotlight focus overlay */}
-      <SpotlightOverlay isActive={spotlightActive} textareaRef={editorRef} />
+      {/* Zen Focus — paragraph dimming + typewriter scroll */}
+      <ZenFocusMode isActive={zenFocusActive} editorRef={editorRef} />
+
+      {/* Privacy Shield — blur text except current word */}
+      <PrivacyShield isActive={privacyShieldActive} editorRef={editorRef} />
+
+      {/* Panic Lock — glassmorphism overlay with biometric unlock */}
+      <AnimatePresence>
+        {panicLocked && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[300] flex flex-col items-center justify-center gap-6"
+            style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', backgroundColor: 'rgba(2, 6, 17, 0.8)' }}
+          >
+            <DiaryBreatheWidget />
+            <button
+              onClick={() => setPanicLocked(false)}
+              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-white/10 border border-white/20 text-white/80 text-sm font-medium backdrop-blur-sm active:scale-95 transition-transform"
+            >
+              <Fingerprint className="w-5 h-5" />
+              {ts.journalUnlockBiometric || 'Unlock'}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Floating format toolbar (Telegram-style — appears on text selection) */}
       <DiaryFormatToolbar editorRef={editorRef} scrollContainerRef={scrollAreaRef} />

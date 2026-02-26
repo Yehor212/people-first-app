@@ -2249,6 +2249,8 @@ export const de: Translations = {
   diaryRecord: 'Aufnahme',
   diaryFocusRay: 'Fokus',
   diaryBreathe: 'Atmen',
+  diaryPrivacyShield: 'Privatsphäre',
+  journalUnlockBiometric: 'Entsperren',
   diaryTimeCapsule: 'Zeitkapsel',
   diaryVoice: 'Stimme',
   diaryFeatures: 'Funktionen',

@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { Check, X, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,7 +15,7 @@ interface PremiumGoalCardProps {
   t: Record<string, string>;
 }
 
-export function PremiumGoalCard({ goal, progress, onComplete, onDelete, t }: PremiumGoalCardProps) {
+export const PremiumGoalCard = memo(function PremiumGoalCard({ goal, progress, onComplete, onDelete, t }: PremiumGoalCardProps) {
   const theme = GOAL_THEMES[goal.type];
   const Icon = theme.icon;
   const isComplete = progress.percent >= 100 || goal.status === 'completed';
@@ -145,4 +146,4 @@ export function PremiumGoalCard({ goal, progress, onComplete, onDelete, t }: Pre
       </div>
     </motion.div>
   );
-}
+});

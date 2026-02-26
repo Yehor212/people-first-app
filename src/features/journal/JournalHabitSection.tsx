@@ -30,7 +30,7 @@ interface JournalHabitSectionProps {
 export function JournalHabitSection({ date, snapshot, onSnapshotChange }: JournalHabitSectionProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
-  const [collapsed, setCollapsed] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
   const [habits, setHabits] = useState<Habit[]>([]);
   const onSnapshotChangeRef = useRef(onSnapshotChange);
   onSnapshotChangeRef.current = onSnapshotChange;

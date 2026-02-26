@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,7 @@ import { MessageSquare, Bug, Lightbulb, HelpCircle, Send, Loader2, X } from 'luc
 import { APP_VERSION } from '@/lib/appVersion';
 import { platform } from '@/lib/platform';
 import { logger } from '@/lib/logger';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
@@ -22,17 +22,9 @@ type FeedbackCategory = 'bug' | 'feature' | 'other';
 
 export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
   const { t } = useLanguage();
-  useBackHandler(open, () => onOpenChange(false));
+  const closeFeedback = useCallback(() => onOpenChange(false), [onOpenChange]);
+  useModalA11y(open, closeFeedback);
   useScrollLock(open);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onOpenChange(false); }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [open, onOpenChange]);
 
   const [category, setCategory] = useState<FeedbackCategory>('bug');
   const [message, setMessage] = useState('');

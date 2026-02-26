@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { EmojiOrIcon } from '@/components/icons';
 import { useDopamineSettings } from './DopamineSettings';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useModalA11y } from '@/hooks/useModalA11y';
 
 /**
  * Streak Celebration - Duolingo-style fire animation
@@ -283,16 +283,7 @@ export function ConfirmDialog({
   variant = 'default'
 }: ConfirmDialogProps) {
   const stableOnCancel = useCallback(() => onCancel(), [onCancel]);
-  useBackHandler(true, stableOnCancel);
-
-  // Escape key to dismiss
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onCancel(); }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onCancel]);
+  useModalA11y(true, stableOnCancel);
 
   return (
     <div

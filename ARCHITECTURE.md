@@ -2,15 +2,15 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-25 (2656 tests, Waves A-G complete + Mind Map tab integration + Store Readiness Audit + Diary WYSIWYG editor overhaul)
+> Last updated: 2026-02-25 (2656 tests, Waves A-G complete + Mind Map tab integration + Store Readiness Audit + Diary WYSIWYG editor overhaul + Zen Focus/Privacy Shield/Panic Gesture)
 
 ---
 
-## Codebase Metrics (as of 2026-02-20)
+## Codebase Metrics (as of 2026-02-25)
 
 | Metric | Value | Command |
 |--------|-------|---------|
-| Source files | 618 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
+| Source files | 662 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
 | Test files | 119 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
 | Total LOC | ~57,000 (TSX only) | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
 | Tests passing | 2656/2656 | `npx vitest --run` |
@@ -88,7 +88,7 @@ src/
     useHydrateGamification.ts   # Bridge: registers gamification hooks into store
     index.ts                    # Barrel export
 
-  hooks/                        # Custom hooks (49 files)
+  hooks/                        # Custom hooks (52 files)
     # Lifecycle hooks (extracted from Index.tsx)
     useAppLifecycle.ts          # App init, splash, loading
     useDateTracking.ts          # Midnight detection, date sync
@@ -150,7 +150,7 @@ src/
     # ... 50+ feature components
 
   features/                     # Feature modules (only journal migrated)
-    journal/                    # Self-contained: JournalModule, Calendar, Editor, Sticker, FormatToolbar
+    journal/                    # Self-contained: JournalModule, Calendar, Editor, Sticker, FormatToolbar, ZenFocusMode, PrivacyShield
 
   contexts/                     # React contexts
     LanguageContext.tsx          # i18n with 8 languages
@@ -1411,9 +1411,73 @@ After executing: click **"Reset suggestions"** in Performance Advisor, wait 30s,
 |------|---------|
 | `src/features/journal/JournalEntryEditor.tsx` | contenteditable swap, paper sheet, font size, prompts dropdown |
 | `src/features/journal/BurnThoughtWidget.tsx` | Animated collapse on burned state |
-| `src/features/journal/SpotlightOverlay.tsx` | Accept `HTMLElement` ref (was `HTMLTextAreaElement`) |
+| `src/features/journal/ZenFocusMode.tsx` | **NEW** — Headless paragraph dimming + typewriter scroll (replaces SpotlightOverlay) |
+| `src/features/journal/PrivacyShield.tsx` | **NEW** — Headless text blur/masking for privacy |
+| `src/features/journal/DiaryBreatheWidget.tsx` | Dynamic phase text (i18n), haptic ticks, corrected 3.5/1/3.5s timings |
+| `src/features/journal/JournalHabitSection.tsx` | Default expanded; habits now toolbar-toggled |
+| `src/hooks/usePanicGesture.ts` | **NEW** — 3-finger swipe down → panic lock |
 | `src/features/journal/types.ts` | `fontSize` field, `countWordsHtml()`, `FONT_SIZES`, `FontSizeName` |
 | `src/lib/sanitize.ts` | `sanitizeRichContent()` — DOMPurify with formatting tag allowlist |
+
+#### Verification
+- `npx tsc --noEmit` — 0 errors
+- `npm run build` — success
+
+---
+
+### Diary Zen Focus, Privacy Shield, Habits Toolbar (2026-02-25)
+
+- Date: 2026-02-25
+- Author: Claude Opus 4.6
+- Scope: Diary editor — 3 new features + 1 refactor
+
+#### Changes
+
+1. **ZenFocusMode** (headless component, replaces SpotlightOverlay):
+   - Paragraph dimming: current paragraph 100%, others 30% opacity + blur(2px)
+   - Typewriter auto-scroll: current paragraph stays centered in viewport
+   - Smart exit: scroll = reading (dimming off), input = writing (dimming on)
+   - CSS class `.zen-dimmed` in `index.css`
+
+2. **DiaryBreatheWidget** (upgraded):
+   - Dynamic phase text: ВДОХ → ЗАТРИМКА → ВИДИХ (uses existing i18n keys `breatheIn`, `hold`, `breatheOut`)
+   - Haptic feedback: `hapticTap()` at inhale peak (3.5s) and exhale end (8.0s)
+   - Background `bg-emerald-500/15`, corrected timings [0, 0.4375, 0.5625, 1], glow up to 50px
+
+3. **PrivacyShield** (headless component):
+   - Blur all text (8px), reveal only current word
+   - Toggle via Eye/EyeOff button in header toolbar
+   - CSS classes `.privacy-blurred`, `.privacy-visible` in `index.css`
+   - Note: CSS-based masking only (not encryption)
+
+4. **Panic Gesture** (`usePanicGesture` hook):
+   - 3-finger swipe down → glassmorphism overlay (z-300, backdrop-blur 20px)
+   - Shows DiaryBreatheWidget as neutral screen content
+   - Fingerprint unlock button to dismiss
+
+5. **Habits in toolbar**:
+   - Removed `JournalHabitSection` from content area
+   - Added ✅ button in bottom toolbar (between Breathe and Photo)
+   - Badge shows completion count (e.g., 3/7)
+   - Section renders in widget zone when toggled, default expanded
+
+#### New Files
+
+| File | Purpose |
+|------|---------|
+| `src/features/journal/ZenFocusMode.tsx` | Headless paragraph dimming + typewriter scroll |
+| `src/features/journal/PrivacyShield.tsx` | Headless text blur/masking |
+| `src/hooks/usePanicGesture.ts` | 3-finger swipe down detection |
+
+#### Deleted Files
+
+| File | Reason |
+|------|--------|
+| `src/features/journal/SpotlightOverlay.tsx` | Replaced by ZenFocusMode |
+
+#### Bottom Toolbar (7 buttons)
+
+`✍️ Focus` → `🔥 Burn` → `🧘 Breathe` → `✅ Habits` → `📸 Photo` → `〰️ Frames` → `⏺ Texture`
 
 #### Verification
 - `npx tsc --noEmit` — 0 errors

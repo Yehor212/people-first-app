@@ -2280,6 +2280,8 @@ const hebrewOverrides: Partial<Translations> = {
   diaryRecord: 'הקלטה',
   diaryFocusRay: 'מיקוד',
   diaryBreathe: 'נשימה',
+  diaryPrivacyShield: 'פרטיות',
+  journalUnlockBiometric: 'בטל נעילה',
   diaryTimeCapsule: 'קפסולת זמן',
   diaryVoice: 'קול',
   diaryFeatures: 'תכונות',

@@ -3,6 +3,7 @@
  * Extracted from QuestsPanel.tsx for TD-20 decomposition
  */
 
+import { memo } from 'react';
 import { Sparkles, Trophy, Star } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { cn } from '@/lib/utils';
@@ -27,7 +28,7 @@ interface QuestCardProps {
   getQuestTypeLabel: (type: 'daily' | 'weekly' | 'bonus') => string;
 }
 
-export function QuestCard({ quest, t, getQuestTypeLabel }: QuestCardProps) {
+export const QuestCard = memo(function QuestCard({ quest, t, getQuestTypeLabel }: QuestCardProps) {
   if (!quest) {
     return (
       <EmptyState
@@ -165,4 +166,4 @@ export function QuestCard({ quest, t, getQuestTypeLabel }: QuestCardProps) {
       )}
     </div>
   );
-}
+});

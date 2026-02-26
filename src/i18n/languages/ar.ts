@@ -2213,6 +2213,8 @@ const arabicOverrides: Partial<Translations> = {
   diaryRecord: 'تسجيل',
   diaryFocusRay: 'تركيز',
   diaryBreathe: 'تنفس',
+  diaryPrivacyShield: 'الخصوصية',
+  journalUnlockBiometric: 'فتح القفل',
   diaryTimeCapsule: 'كبسولة الزمن',
   diaryVoice: 'صوت',
   diaryFeatures: 'الميزات',
