@@ -62,7 +62,7 @@ function showExitToast(message: string) {
     border-radius: 24px;
     font-size: 14px;
     font-weight: 500;
-    z-index: 10000;
+    z-index: 310;
     animation: toast-slide-up 0.3s ease-out;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   `;

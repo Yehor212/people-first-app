@@ -135,7 +135,7 @@ export function JournalPhotoGallery({
               src={fullData || lightboxPhoto.thumbnail}
               alt=""
               className={cn(
-                'max-w-[95vw] max-h-[90vh] object-contain rounded-lg',
+                'max-w-[95vw] max-h-[90dvh] object-contain rounded-lg',
                 !fullData && 'blur-sm',
               )}
               onClick={e => e.stopPropagation()}

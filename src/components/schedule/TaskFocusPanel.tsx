@@ -111,9 +111,10 @@ export function TaskFocusPanel({ tasks, t }: { tasks: Task[]; t: Translations })
               {/* Progress overlay */}
               {isActive && progress > 0 && (
                 <motion.div
-                  className="absolute inset-y-0 left-0 bg-black/30"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress}%` }}
+                  className="absolute inset-y-0 left-0 right-0 bg-black/30"
+                  style={{ transformOrigin: 'left center' }}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: progress / 100 }}
                   transition={{ duration: 1 }}
                 />
               )}

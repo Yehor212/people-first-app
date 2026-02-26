@@ -143,6 +143,7 @@
      * 220    : Celebrations (streak, mood, full-screen)
      * 250    : System banners (offline, update prompt)
      * 300-301: XP popups (always on top, pointer-events-none)
+     * 310    : System exit toast (android back handler)
      */
     --z-dropdown: 40;
     --z-sticky: 50;
@@ -1043,7 +1044,7 @@
 
   /* Button press effect */
   .btn-press {
-    transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+    transition: transform 0.1s ease-in-out;
   }
 
   .btn-press:active {
@@ -1802,7 +1803,7 @@
   text-shadow: 0 0 10px #fbbf24, 0 2px 4px rgba(0,0,0,0.3);
   animation: xp-popup 1.2s ease-out forwards;
   pointer-events: none;
-  z-index: 1000;
+  z-index: 300;
 }
 
 /* Streak increase flame */
@@ -2385,7 +2386,7 @@ header,
 main,
 aside,
 footer {
-  transition: background-color 0.5s ease-out, border-color 0.5s ease-out, box-shadow 0.5s ease-out;
+  transition: background-color 0.5s ease-out, border-color 0.5s ease-out;
 }
 
 /* Mood-based background overlay */
@@ -2792,7 +2793,7 @@ body.mood-bad .animate-float {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 80;
   background: hsl(var(--mood-primary-hue) var(--mood-saturation) 50% / 0);
   transition: background 0.3s ease-out;
 }

@@ -33,21 +33,21 @@ export function CanvasFAB({ onRecenter, onZoomIn, onZoomOut }: CanvasFABProps) {
       )}>
         <button
           onClick={() => { void haptics.buttonPress(); onRecenter(); }}
-          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
           aria-label="Recenter"
         >
           <Crosshair className="w-4 h-4 text-white/50" />
         </button>
         <button
           onClick={() => { void haptics.buttonPress(); onZoomIn(); }}
-          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
           aria-label="Zoom in"
         >
           <ZoomIn className="w-4 h-4 text-white/50" />
         </button>
         <button
           onClick={() => { void haptics.buttonPress(); onZoomOut(); }}
-          className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
+          className="w-10 h-10 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors"
           aria-label="Zoom out"
         >
           <ZoomOut className="w-4 h-4 text-white/50" />

@@ -41,7 +41,7 @@ export function JournalTemplatePicker({ onSelect, onClose }: JournalTemplatePick
           <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
         </div>
 
-        <div className="bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[70vh] overflow-y-auto">
+        <div className="bg-card p-4 pb-[max(1rem,env(safe-area-inset-bottom))] max-h-[70dvh] overflow-y-auto">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-base font-semibold text-foreground">
               {ts.journalTemplates || 'Templates'}

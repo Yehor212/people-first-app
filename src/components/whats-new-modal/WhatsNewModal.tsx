@@ -130,7 +130,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
         </div>
 
         {/* Content */}
-        <div className="px-6 py-4 max-h-[60vh] overflow-y-auto">
+        <div className="px-6 py-4 max-h-[60dvh] overflow-y-auto">
           <div className="space-y-4">
             {changes.map((change, index) => (
               <div

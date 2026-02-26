@@ -112,7 +112,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in"
+        className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in"
         onClick={() => onOpenChange(false)}
       />
 
@@ -121,7 +121,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="share-dialog-title"
-        className="fixed bottom-0 start-0 end-0 z-[110] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)]"
+        className="fixed bottom-0 start-0 end-0 z-[70] rounded-t-[2rem] bg-background max-h-[90dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)]"
       >
         {/* Header */}
         <div className="px-6 pt-5 pb-3 text-center relative">

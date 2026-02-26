@@ -163,7 +163,7 @@ export function RingDetailSheet({
         </div>
 
         {/* Content */}
-        <div className="px-6 py-5 space-y-6 max-h-[55vh] overflow-y-auto bg-card">
+        <div className="px-6 py-5 space-y-6 max-h-[55dvh] overflow-y-auto bg-card">
           {/* Premium Chart Card */}
           <motion.div
             className="bg-muted/40 rounded-2xl p-5 backdrop-blur-sm"

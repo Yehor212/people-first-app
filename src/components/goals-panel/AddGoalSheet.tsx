@@ -96,7 +96,7 @@ export function AddGoalSheet({ open, onOpenChange, habits, onAdd, t }: AddGoalSh
         </div>
 
         {/* Form */}
-        <div className="px-6 py-5 space-y-5 overflow-y-auto max-h-[60vh]">
+        <div className="px-6 py-5 space-y-5 overflow-y-auto max-h-[60dvh]">
           {/* Goal Type */}
           <div>
             <label className="text-sm font-semibold text-foreground mb-3 block">

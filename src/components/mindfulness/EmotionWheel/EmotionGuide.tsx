@@ -37,7 +37,7 @@ export function EmotionGuide({ onSelectEmotion }: EmotionGuideProps) {
       </p>
 
       {/* Emotion cards */}
-      <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pe-1 -me-1 overscroll-contain touch-pan-y">
+      <div className="space-y-2.5 max-h-[60dvh] overflow-y-auto pe-1 -me-1 overscroll-contain touch-pan-y">
         {EMOTION_ORDER.map((emotion, index) => {
           const entry = guide.emotions[emotion];
           const color = getEmotionColor(emotion, 'moderate');

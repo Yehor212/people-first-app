@@ -266,7 +266,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
           {/* Modules Grid */}
           <div className="bg-card/95 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-4 sm:p-5 shadow-2xl shadow-primary/10 border border-primary/10">
-            <div className="grid grid-cols-2 gap-3 max-h-[45vh] overflow-y-auto pe-1">
+            <div className="grid grid-cols-2 gap-3 max-h-[45dvh] overflow-y-auto pe-1">
               {modules.map((module, index) => {
                 const isSelected = selectedModules.includes(module.id);
                 const isAnimating = animatingModule === module.id;

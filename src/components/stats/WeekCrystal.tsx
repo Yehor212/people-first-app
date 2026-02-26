@@ -244,9 +244,9 @@ export function WeekCrystal({
         <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden">
           <motion.div
             className="h-full rounded-full"
-            style={{ backgroundColor: theme.glow }}
-            initial={{ width: 0 }}
-            animate={{ width: `${score}%` }}
+            style={{ width: '100%', transformOrigin: 'left center', backgroundColor: theme.glow }}
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: score / 100 }}
             transition={{ duration: 1, delay: 0.5 }}
           />
         </div>

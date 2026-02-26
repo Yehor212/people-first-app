@@ -317,8 +317,9 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
                 <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
                   <motion.div
                     className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${selectedDay.completionRate * 100}%` }}
+                    style={{ width: '100%', transformOrigin: 'left center' }}
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: selectedDay.completionRate }}
                   />
                 </div>
                 <span className="text-sm font-bold text-emerald-500">

@@ -957,7 +957,7 @@ export function JournalEntryEditor({
           onScroll={handleContentScroll}
         >
           <div
-            className="max-w-4xl mx-auto rounded-2xl border border-white/[0.08] backdrop-blur-sm shadow-[0_0_60px_rgba(0,0,0,0.4)] p-8 min-h-[60vh] space-y-4"
+            className="max-w-4xl mx-auto rounded-2xl border border-white/[0.08] backdrop-blur-sm shadow-[0_0_60px_rgba(0,0,0,0.4)] p-8 min-h-[60dvh] space-y-4"
             style={{
               backgroundColor: `color-mix(in srgb, var(--diary-bg, #020611) 90%, transparent)`,
               ...(paperTexture === 'dots' ? { backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.05) 1px, transparent 1px)', backgroundSize: '24px 24px' } : {}),

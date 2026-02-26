@@ -194,7 +194,7 @@ export const AchievementsPanel = memo(function AchievementsPanel({ stats, unlock
 
       {/* Achievement Detail Dialog */}
       <Dialog open={!!selectedAchievement} onOpenChange={() => setSelectedAchievement(null)}>
-        <DialogContent className="max-h-[80vh] overflow-y-auto mx-4 sm:mx-auto">
+        <DialogContent className="max-h-[80dvh] overflow-y-auto mx-4 sm:mx-auto">
           <DialogHeader>
             <div className={`text-6xl mb-4 text-center ${selectedAchievement && getBadgeGlow(selectedAchievement.rarity)}`}>
               {selectedAchievement?.icon}

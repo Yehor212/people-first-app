@@ -92,10 +92,10 @@ export function ChallengeCard({
         <div className="h-2.5 bg-slate-200/60 dark:bg-white/10 rounded-full overflow-hidden">
           <motion.div
             className={cn('h-full rounded-full', statusConfig.progressBg)}
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: progress / 100 }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
-            style={{ boxShadow: `0 0 8px ${statusConfig.glow}` }}
+            style={{ width: '100%', transformOrigin: 'left center', boxShadow: `0 0 8px ${statusConfig.glow}` }}
           />
         </div>
       </div>

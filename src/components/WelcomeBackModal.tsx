@@ -195,8 +195,9 @@ export function WelcomeBackModal({
               <div className="h-2 bg-violet-500/10 rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-gradient-to-r from-violet-500 to-purple-500"
-                  initial={{ width: 0 }}
-                  animate={{ width: '0%' }}
+                  style={{ width: '100%', transformOrigin: 'left center' }}
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 0 }}
                 />
               </div>
               <p className="text-xs text-muted-foreground text-center">

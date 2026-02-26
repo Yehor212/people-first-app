@@ -30,7 +30,7 @@ export function ConsentBanner({ onConsent }: ConsentBannerProps) {
         paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom))'
       }}
     >
-      <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 shadow-2xl animate-scale-in max-h-[80vh] overflow-y-auto">
+      <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 shadow-2xl animate-scale-in max-h-[80dvh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-primary/10 rounded-xl">
             <Shield className="w-6 h-6 text-primary" />

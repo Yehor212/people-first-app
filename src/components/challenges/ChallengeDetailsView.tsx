@@ -154,10 +154,10 @@ export function ChallengeDetailsView({
         <div className="h-3 bg-slate-200/60 dark:bg-white/10 rounded-full overflow-hidden mb-3">
           <motion.div
             className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: progress / 100 }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
-            style={{ boxShadow: '0 0 12px rgba(16, 185, 129, 0.5)' }}
+            style={{ width: '100%', transformOrigin: 'left center', boxShadow: '0 0 12px rgba(16, 185, 129, 0.5)' }}
           />
         </div>
 

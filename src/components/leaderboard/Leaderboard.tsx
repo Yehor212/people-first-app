@@ -169,7 +169,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
           id={`leaderboard-${activeTab}`}
           role="tabpanel"
           aria-label={`${tabs.find(tb => tb.type === activeTab)?.label} leaderboard`}
-          className="space-y-2 overflow-y-auto max-h-[45vh] pb-4"
+          className="space-y-2 overflow-y-auto max-h-[45dvh] pb-4"
         >
           {data.isLoading ? (
             <div className="py-4">
