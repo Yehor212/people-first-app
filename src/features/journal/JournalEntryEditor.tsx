@@ -1047,7 +1047,7 @@ export function JournalEntryEditor({
           onScroll={handleContentScroll}
         >
           <div
-            className={cn('max-w-4xl mx-auto rounded-2xl border shadow-[0_0_80px_rgba(0,0,0,0.5)] p-8 min-h-[60dvh] space-y-4', zenFocusActive && 'zen-focus-active')}
+            className={cn('max-w-4xl mx-auto rounded-2xl border shadow-[0_0_80px_rgba(0,0,0,0.5)] p-4 sm:p-6 md:p-8 min-h-[60dvh] space-y-4', zenFocusActive && 'zen-focus-active')}
             style={{
               backgroundColor: paperColors.bg,
               color: paperColors.text,
@@ -1345,21 +1345,17 @@ export function JournalEntryEditor({
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none -mx-1.5 px-1.5">
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setZenFocusActive(!zenFocusActive)}
-            className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
-              zenFocusActive
-                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
-            )}
+            onClick={() => setShowPhotos(true)}
+            disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
+            className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 border border-transparent hover:bg-white/10 hover:text-slate-50 transition-all flex items-center gap-2 flex-shrink-0 disabled:opacity-40 min-h-[44px]"
           >
-            ✍️ {ts.diaryFocusRay || 'Focus'}
+            📸 {ts.diarySnapshot || 'Photo'}
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowBurnWidget(!showBurnWidget)}
             className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]',
               showBurnWidget
                 ? 'bg-orange-500/15 text-orange-400 border-orange-500/30'
                 : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
@@ -1371,7 +1367,7 @@ export function JournalEntryEditor({
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowBreathe(!showBreathe)}
             className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]',
               showBreathe
                 ? 'bg-teal-500/15 text-teal-400 border-teal-500/30'
                 : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
@@ -1381,9 +1377,21 @@ export function JournalEntryEditor({
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
+            onClick={() => setZenFocusActive(!zenFocusActive)}
+            className={cn(
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]',
+              zenFocusActive
+                ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+            )}
+          >
+            ✍️ {ts.diaryFocusRay || 'Focus'}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
             onClick={() => setShowHabits(!showHabits)}
             className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]',
               showHabits
                 ? 'bg-green-500/15 text-green-400 border-green-500/30'
                 : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
@@ -1398,17 +1406,9 @@ export function JournalEntryEditor({
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowPhotos(true)}
-            disabled={photoIds.length >= MAX_PHOTOS_PER_ENTRY}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-slate-400 border border-transparent hover:bg-white/10 hover:text-slate-50 transition-all flex items-center gap-2 flex-shrink-0 disabled:opacity-40"
-          >
-            📸 {ts.diarySnapshot || 'Photo'}
-          </motion.button>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
             onClick={() => setBgIntensity(prev => prev === 'full' ? 'dim' : prev === 'dim' ? 'off' : 'full')}
             className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]',
               bgIntensity === 'full'
                 ? 'bg-purple-500/15 text-purple-400 border-purple-500/30'
                 : bgIntensity === 'dim'
@@ -1422,7 +1422,7 @@ export function JournalEntryEditor({
             whileTap={{ scale: 0.95 }}
             onClick={() => setParticleSpeed(prev => prev === 'slow' ? 'drift' : prev === 'drift' ? 'off' : 'slow')}
             className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]',
               particleSpeed === 'drift'
                 ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
                 : particleSpeed === 'slow'
@@ -1436,7 +1436,7 @@ export function JournalEntryEditor({
             whileTap={{ scale: 0.95 }}
             onClick={() => setPaperTexture(paperTexture === 'clean' ? 'dots' : 'clean')}
             className={cn(
-              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0',
+              'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]',
               paperTexture === 'dots'
                 ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                 : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',

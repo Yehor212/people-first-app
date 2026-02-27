@@ -1,25 +1,23 @@
 /**
  * BurnThoughtWidget — Inline "burn a worry" section for the journal editor.
  *
- * Telegram-style bitmap disintegration:
- *   STATE MACHINE: IDLE → CAPTURING → SHATTERING → CLEANUP
+ * "Ember Rise" dissolution:
+ *   STATE MACHINE: IDLE → DISSOLVING → RELEASED → COLLAPSING → closed
  *
- *   CAPTURING: html2canvas captures the content DOM as bitmap.
- *   SHATTERING: Bitmap is split into pixel-block particles using getImageData.
- *     Each particle carries the REAL color from the original content.
- *     Background pixels (low luminance) fade 3× faster.
- *     Physics: gravity, turbulence, alpha decay over 800ms.
- *   CLEANUP: "Released" pause → Telegram-style height collapse → onClose().
- *   FALLBACK_FADE: If capture fails or reduced motion — instant burn.
+ *   DISSOLVING: Text fades opacity 1→0 over 600ms while warm ember particles
+ *     spawn continuously for 800ms and float UPWARD with gentle drift.
+ *     No html2canvas — zero main-thread freeze.
+ *   RELEASED: "Released" text with gentle scale-in (400ms pause).
+ *   COLLAPSING: Telegram-style height collapse → onClose().
+ *   FALLBACK: shouldAnimate() false → instant RELEASED (no animation).
  *
- * Memory-safe: canvas + particle array destroyed in CLEANUP.
- * Haptic feedback. Respects prefers-reduced-motion.
+ * Memory-safe: canvas + particle array destroyed in cleanup.
+ * Haptic feedback. Respects in-app Dopamine toggle only.
  */
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Flame, X } from 'lucide-react';
 import { motion } from 'framer-motion';
-import html2canvas from 'html2canvas';
 import { zenMotion, shouldAnimate } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -27,75 +25,59 @@ interface BurnThoughtWidgetProps {
   onClose: () => void;
 }
 
-// ── Shatter particle (bitmap-sampled) ──
+// ── Ember particle ──────────────────────────────────────────────
 
-interface ShatterParticle {
+interface Ember {
   x: number; y: number;
   vx: number; vy: number;
-  r: number; g: number; b: number;
-  alpha: number;    // current fade 1→0
-  size: number;     // block size px
-  phase: number;    // turbulence sine offset
-  isBg: boolean;    // background pixel → fades 3× faster
+  size: number;
+  alpha: number;
+  decay: number;
+  color: string;
+  glow: boolean;
+  rotation: number;
+  rotSpeed: number;
+  life: number;
+  maxLife: number;
+  spawnTime: number;
+  phase: number;
 }
 
-const SHATTER_DURATION = 800; // ms
+// Warm color palette — ember/incense tones
+const EMBER_COLORS = [
+  '#ff6b35',  // deep orange
+  '#ff8c42',  // amber
+  '#ffa62b',  // gold
+  '#ffcf56',  // bright gold
+  '#fff5e0',  // white-hot
+  '#ef4444',  // red
+  '#f97316',  // orange
+];
 
-/**
- * Sample bitmap pixels into block-averaged particles.
- * Skip transparent blocks. Tag dark blocks as background (fade faster).
- */
-function createParticlesFromBitmap(
-  imageData: ImageData,
-  w: number,
-  h: number,
-): ShatterParticle[] {
-  const { data } = imageData;
-  const area = w * h;
-  const blockSize = area > 200 * 200 ? 4 : 3;
-  const particles: ShatterParticle[] = [];
+const TOTAL_DURATION = 1500;    // ms total animation
+const SPAWN_WINDOW  = 800;      // ms — embers spawn during first 800ms
+const TEXT_FADE_MS  = 600;      // ms — text opacity 1→0
+const MAX_PARTICLES = 400;
 
-  for (let by = 0; by < h; by += blockSize) {
-    for (let bx = 0; bx < w; bx += blockSize) {
-      let rSum = 0, gSum = 0, bSum = 0, aSum = 0, count = 0;
-
-      // Average color within block
-      for (let py = by; py < Math.min(by + blockSize, h); py++) {
-        for (let px = bx; px < Math.min(bx + blockSize, w); px++) {
-          const idx = (py * w + px) * 4;
-          rSum += data[idx];
-          gSum += data[idx + 1];
-          bSum += data[idx + 2];
-          aSum += data[idx + 3];
-          count++;
-        }
-      }
-
-      const avgAlpha = aSum / count;
-      if (avgAlpha < 10) continue; // skip transparent
-
-      const r = Math.round(rSum / count);
-      const g = Math.round(gSum / count);
-      const b = Math.round(bSum / count);
-
-      // Luminance check: dark pixels are background → fade faster
-      const luminance = 0.299 * r + 0.587 * g + 0.114 * b;
-      const isBg = luminance < 30;
-
-      particles.push({
-        x: bx, y: by,
-        vx: (Math.random() - 0.5) * 200,       // px/s random burst
-        vy: -50 - Math.random() * 100,           // upward kick px/s
-        r, g, b,
-        alpha: 1,
-        size: blockSize,
-        phase: Math.random() * Math.PI * 2,
-        isBg,
-      });
-    }
-  }
-
-  return particles;
+function spawnEmber(areaW: number, areaH: number, now: number): Ember {
+  const maxLife = 600 + Math.random() * 600; // 600-1200ms
+  return {
+    x: Math.random() * areaW,
+    y: areaH * (0.3 + Math.random() * 0.7), // bottom-heavy bias
+    vx: (Math.random() - 0.5) * 30,
+    vy: -40 - Math.random() * 60,            // upward: -40 to -100 px/s
+    size: 1 + Math.random() * 4,             // 1-5px radius
+    alpha: 1,
+    decay: 1 / maxLife,
+    color: EMBER_COLORS[Math.floor(Math.random() * EMBER_COLORS.length)],
+    glow: Math.random() < 0.15,              // 15% glow particles
+    rotation: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 2,
+    life: 0,
+    maxLife,
+    spawnTime: now,
+    phase: Math.random() * Math.PI * 2,
+  };
 }
 
 export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
@@ -104,19 +86,18 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
   const [text, setText] = useState('');
   const [burned, setBurned] = useState(false);
   const [burning, setBurning] = useState(false);
-  const [shattering, setShattering] = useState(false);
   const [collapsing, setCollapsing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // ── Bitmap disintegration ──
+  // ── Ember Rise animation ──
 
-  const startBurn = useCallback(async () => {
+  const startBurn = useCallback(() => {
     if (!text.trim() || burning) return;
 
-    // Haptic feedback (spec pattern)
+    // Haptic feedback
     navigator.vibrate?.([10, 30, 10]);
 
     // Reduced motion: skip animation entirely
@@ -130,94 +111,124 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
     const container = containerRef.current;
     if (!container) { setBurned(true); return; }
 
-    try {
-      // ── CAPTURING: bitmap snapshot of DOM content ──
-      const bitmap = await html2canvas(container, {
-        backgroundColor: null,
-        scale: 1,
-        logging: false,
-        useCORS: true,
-      });
+    const canvas = canvasRef.current;
+    if (!canvas) { setBurned(true); setBurning(false); return; }
 
-      const canvas = canvasRef.current;
-      if (!canvas) { setBurned(true); setBurning(false); return; }
+    const ctx = canvas.getContext('2d');
+    if (!ctx) { setBurned(true); setBurning(false); return; }
 
-      const ctx = canvas.getContext('2d');
-      if (!ctx) { setBurned(true); setBurning(false); return; }
+    // Size canvas to container (no html2canvas — zero freeze!)
+    const rect = container.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.round(rect.width * dpr);
+    const h = Math.round(rect.height * dpr);
+    canvas.width = w;
+    canvas.height = h;
+    canvas.style.width = `${rect.width}px`;
+    canvas.style.height = `${rect.height}px`;
+    ctx.scale(dpr, dpr);
 
-      // Size overlay canvas to match container
-      const w = bitmap.width;
-      const h = bitmap.height;
-      canvas.width = w;
-      canvas.height = h;
-      canvas.style.width = `${container.offsetWidth}px`;
-      canvas.style.height = `${container.offsetHeight}px`;
+    const areaW = rect.width;
+    const areaH = rect.height;
 
-      // Extract pixel data from bitmap
-      const bitmapCtx = bitmap.getContext('2d');
-      if (!bitmapCtx) { setBurned(true); setBurning(false); return; }
-      const imageData = bitmapCtx.getImageData(0, 0, w, h);
+    // Particle pool
+    const embers: Ember[] = [];
+    let lastTime = performance.now();
+    const startTime = lastTime;
+    let spawnAccum = 0; // fractional spawn accumulator
 
-      // ── SHATTERING: create particles from real pixels ──
-      const particles = createParticlesFromBitmap(imageData, w, h);
-      setShattering(true);
+    function frame(now: number) {
+      if (!ctx) return;
+      const dt = Math.min((now - lastTime) / 1000, 0.05); // cap at 50ms to avoid spiral
+      const elapsed = now - startTime;
+      lastTime = now;
 
-      let lastTime = performance.now();
-      const startTime = lastTime;
+      ctx.clearRect(0, 0, areaW, areaH);
 
-      function frame(now: number) {
-        if (!ctx) return;
-        const dt = (now - lastTime) / 1000; // seconds
-        const elapsed = now - startTime;
-        lastTime = now;
+      // ── Spawn phase: first 800ms ──
+      if (elapsed < SPAWN_WINDOW && embers.length < MAX_PARTICLES) {
+        // ~0.5 embers per ms = ~30 per frame at 60fps
+        spawnAccum += dt * 500;
+        const toSpawn = Math.min(
+          Math.floor(spawnAccum),
+          MAX_PARTICLES - embers.length,
+        );
+        for (let i = 0; i < toSpawn; i++) {
+          embers.push(spawnEmber(areaW, areaH, now));
+        }
+        spawnAccum -= toSpawn;
+      }
 
-        ctx.clearRect(0, 0, w, h);
+      // ── Update & render ──
+      let alive = 0;
+      for (let i = 0; i < embers.length; i++) {
+        const p = embers[i];
+        if (p.alpha <= 0) continue;
 
-        let alive = 0;
-        for (const p of particles) {
-          if (p.alpha <= 0) continue;
+        // Lifetime progress
+        p.life += dt * 1000;
+        if (p.life >= p.maxLife) { p.alpha = 0; continue; }
 
-          // Gravity pulls down
-          p.vy += 400 * dt;
+        // Anti-gravity: gentle upward deceleration
+        p.vy -= 60 * dt;
 
-          // Turbulence (sine wobble on X)
-          p.vx += Math.sin(elapsed * 0.005 + p.phase) * 50 * dt;
+        // Wind wobble
+        p.vx += Math.sin(now * 0.003 + p.phase) * 15 * dt;
 
-          // Move
-          p.x += p.vx * dt;
-          p.y += p.vy * dt;
+        // Move
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
 
-          // Alpha decay
-          const fadeRate = p.isBg ? 3 : 1; // bg pixels fade 3× faster
-          p.alpha -= (dt / (SHATTER_DURATION / 1000)) * fadeRate;
-          if (p.alpha <= 0) { p.alpha = 0; continue; }
+        // Rotation
+        p.rotation += p.rotSpeed * dt;
 
-          alive++;
+        // Alpha fade based on individual lifetime
+        p.alpha = Math.max(0, 1 - (p.life / p.maxLife));
 
-          // Render pixel block
-          ctx.globalAlpha = p.alpha;
-          ctx.fillStyle = `rgb(${p.r},${p.g},${p.b})`;
-          ctx.fillRect(Math.round(p.x), Math.round(p.y), p.size, p.size);
+        // Very subtle shrink
+        p.size *= (1 - 0.002 * (dt * 60));
+
+        if (p.alpha <= 0.01 || p.size < 0.3) { p.alpha = 0; continue; }
+
+        alive++;
+
+        // ── Render glow halo ──
+        if (p.glow) {
+          ctx.globalAlpha = p.alpha * 0.25;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
+          ctx.fill();
         }
 
-        ctx.globalAlpha = 1;
+        // ── Render core ember ──
+        ctx.globalAlpha = p.alpha;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
-        if (alive > 0 && elapsed < SHATTER_DURATION * 1.5) {
-          rafRef.current = requestAnimationFrame(frame);
-        } else {
-          // ── CLEANUP ──
-          setShattering(false);
-          setBurning(false);
-          setBurned(true);
-        }
+      ctx.globalAlpha = 1;
+
+      // End condition: past total duration AND no alive particles
+      if (elapsed > TOTAL_DURATION && alive === 0) {
+        setBurning(false);
+        setBurned(true);
+        return;
+      }
+
+      // Hard timeout safety (3s max)
+      if (elapsed > 3000) {
+        setBurning(false);
+        setBurned(true);
+        return;
       }
 
       rafRef.current = requestAnimationFrame(frame);
-    } catch {
-      // ── FALLBACK_FADE: capture failed ──
-      setBurning(false);
-      setBurned(true);
     }
+
+    rafRef.current = requestAnimationFrame(frame);
   }, [text, burning]);
 
   // ── Telegram-style collapse: burned → brief pause → collapse → close ──
@@ -324,8 +335,11 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
           </motion.p>
         ) : (
           <div ref={containerRef} className="relative">
-            {/* Content — hidden (visibility) during shattering, keeps height */}
-            <div style={shattering ? { visibility: 'hidden' as const } : undefined}>
+            {/* Content — opacity fade during burning (text dissolves while embers rise) */}
+            <motion.div
+              animate={{ opacity: burning ? 0 : 1 }}
+              transition={{ duration: TEXT_FADE_MS / 1000, ease: 'easeOut' }}
+            >
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -346,14 +360,14 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
                   {ts.journalBurnAction || 'Burn it'}
                 </motion.button>
               )}
-            </div>
+            </motion.div>
 
-            {/* Shatter canvas — overlays content, pointer-events: none */}
-            {(burning || shattering) && (
+            {/* Ember canvas — overlays content, pointer-events: none */}
+            {burning && (
               <canvas
                 ref={canvasRef}
                 className="absolute inset-0 w-full h-full rounded-xl gpu-layer"
-                style={{ zIndex: 1000, pointerEvents: 'none' }}
+                style={{ zIndex: 2, pointerEvents: 'none' }}
                 aria-hidden="true"
               />
             )}

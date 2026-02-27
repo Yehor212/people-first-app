@@ -29,6 +29,8 @@ const FORMAT_ACTIONS = [
 
 const VIEWPORT_PADDING = 12;
 const ARROW_OFFSET = 8;
+const TOP_SAFE_ZONE = 150;    // top glass toolbar height + safe margin
+const BOTTOM_SAFE_ZONE = 80;  // bottom glass toolbar height + safe margin
 
 export function DiaryFormatToolbar({ editorRef, scrollContainerRef }: DiaryFormatToolbarProps) {
   const { t } = useLanguage();
@@ -126,15 +128,15 @@ export function DiaryFormatToolbar({ editorRef, scrollContainerRef }: DiaryForma
     const tbH = toolbarRef.current.offsetHeight;
     const tbW = toolbarRef.current.offsetWidth;
 
-    // Prefer above selection
+    // Prefer above selection, but respect top glass toolbar
     let top = selectionRect.top - tbH - ARROW_OFFSET;
-    if (top < VIEWPORT_PADDING) {
-      // Flip below
+    if (top < TOP_SAFE_ZONE) {
+      // Flip below selection
       top = selectionRect.bottom + ARROW_OFFSET;
     }
-    // Clamp bottom
-    if (top + tbH > window.innerHeight - VIEWPORT_PADDING) {
-      top = window.innerHeight - tbH - VIEWPORT_PADDING;
+    // Clamp: do not overlap bottom glass toolbar
+    if (top + tbH > window.innerHeight - BOTTOM_SAFE_ZONE) {
+      top = window.innerHeight - tbH - BOTTOM_SAFE_ZONE;
     }
 
     // Center horizontally on selection
