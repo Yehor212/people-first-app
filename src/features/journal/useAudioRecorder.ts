@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { MAX_AUDIO_DURATION_SEC } from './types';
 import { logger } from '@/lib/logger';
 
@@ -135,5 +135,7 @@ export function useAudioRecorder() {
     };
   }, []);
 
-  return { isRecording, duration, audioData, mimeType, isSupported, error, start, stop, reset };
+  return useMemo(() => ({
+    isRecording, duration, audioData, mimeType, isSupported, error, start, stop, reset,
+  }), [isRecording, duration, audioData, mimeType, isSupported, error, start, stop, reset]);
 }

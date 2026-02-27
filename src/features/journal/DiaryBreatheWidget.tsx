@@ -6,14 +6,14 @@
  * Scale 1.0→1.6, emerald glow pulse. Never stops while visible.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticTap } from '@/lib/haptics';
 
 type Phase = 'in' | 'hold' | 'out';
 
-export function DiaryBreatheWidget() {
+export const DiaryBreatheWidget = memo(function DiaryBreatheWidget() {
   const { t } = useLanguage();
   const [phase, setPhase] = useState<Phase>('in');
   const prevPhaseRef = useRef<Phase>('in');
@@ -70,4 +70,4 @@ export function DiaryBreatheWidget() {
       </motion.span>
     </motion.div>
   );
-}
+});

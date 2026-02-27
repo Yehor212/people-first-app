@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 
 /** BCP-47 locale map for Speech Recognition */
 const LOCALE_MAP: Record<string, string> = {
@@ -143,5 +143,7 @@ export function useJournalVoice(language: string) {
     };
   }, []);
 
-  return { isListening, transcript, isSupported, error, start, stop };
+  return useMemo(() => ({
+    isListening, transcript, isSupported, error, start, stop,
+  }), [isListening, transcript, isSupported, error, start, stop]);
 }

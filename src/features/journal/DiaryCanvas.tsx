@@ -5,7 +5,7 @@
  * Pauses rAF during typing (resumes 2s after last keystroke).
  */
 
-import { useRef } from 'react';
+import { useRef, memo } from 'react';
 import { useDiaryCanvas } from './useDiaryCanvas';
 import type { DiaryThemeName, BackgroundIntensity, ParticleSpeed } from './types';
 
@@ -18,7 +18,7 @@ interface DiaryCanvasProps {
   scrollContainerRef?: React.RefObject<HTMLElement | null>;
 }
 
-export function DiaryCanvas({ accentColor, isActive, theme = 'dark', intensity = 'full', particleSpeed = 'slow', scrollContainerRef }: DiaryCanvasProps) {
+export const DiaryCanvas = memo(function DiaryCanvas({ accentColor, isActive, theme = 'dark', intensity = 'full', particleSpeed = 'slow', scrollContainerRef }: DiaryCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useDiaryCanvas(canvasRef, accentColor, isActive, theme, intensity, particleSpeed, scrollContainerRef);
 
@@ -30,4 +30,4 @@ export function DiaryCanvas({ accentColor, isActive, theme = 'dark', intensity =
       aria-hidden="true"
     />
   );
-}
+});

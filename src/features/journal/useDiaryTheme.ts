@@ -56,5 +56,5 @@ export function useDiaryTheme(
     accentColor,
     setTheme,
     setFont,
-  }), [theme, font, themeVars, fontFamily, accentColor]);
+  }), [theme, font]);
 }

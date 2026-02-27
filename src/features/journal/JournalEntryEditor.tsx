@@ -226,6 +226,8 @@ export function JournalEntryEditor({
   const [title, setTitle] = useState(entry?.title || '');
   const [date, setDate] = useState(entry?.date || getToday());
   const [content, setContent] = useState(entry?.content || '');
+  const contentRef = useRef(entry?.content || '');
+  const contentSyncRef = useRef<ReturnType<typeof setTimeout>>();
   const [stickers, setStickers] = useState<string[]>(entry?.stickers || []);
   const [photoIds, setPhotoIds] = useState<string[]>(entry?.photoIds || []);
   const [audioIds, setAudioIds] = useState<string[]>(entry?.audioIds || []);
@@ -329,9 +331,9 @@ export function JournalEntryEditor({
   useEffect(() => {
     if (draftTimerRef.current) clearTimeout(draftTimerRef.current);
     draftTimerRef.current = setTimeout(() => {
-      if (title || content || stickers.length > 0 || mood || tags.length > 0 || audioIds.length > 0) {
+      if (title || contentRef.current || stickers.length > 0 || mood || tags.length > 0 || audioIds.length > 0) {
         void saveDraft(draftKey, {
-          title, content, stickers, photoIds, audioIds, mood, tags,
+          title, content: contentRef.current, stickers, photoIds, audioIds, mood, tags,
           theme: diaryTheme.theme, font: diaryTheme.font,
           inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, fontSize, photoLayout,
           savedAt: Date.now(),
@@ -340,13 +342,14 @@ export function JournalEntryEditor({
       }
     }, 3000);
     return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
-  }, [title, content, stickers, photoIds, audioIds, mood, tags, draftKey,
+  }, [title, stickers, photoIds, audioIds, mood, tags, draftKey,
       diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, fontSize, photoLayout]);
 
   useEffect(() => {
     return () => {
       if (navigationTimeoutRef.current) clearTimeout(navigationTimeoutRef.current);
       if (focusTimeoutRef.current) clearTimeout(focusTimeoutRef.current);
+      if (contentSyncRef.current) clearTimeout(contentSyncRef.current);
     };
   }, []);
 
@@ -398,7 +401,7 @@ export function JournalEntryEditor({
     try {
       await onSave({
         title: title.trim(),
-        content: content.trim(),
+        content: contentRef.current.trim(),
         stickers,
         photoIds,
         audioIds: audioIds.length > 0 ? audioIds : undefined,
@@ -428,7 +431,7 @@ export function JournalEntryEditor({
     } catch {
       setSaving(false);
     }
-  }, [title, content, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, fontSize, photoLayout]);
+  }, [title, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, fontSize, photoLayout]);
 
   const handleSaveAndClose = useCallback(async () => {
     setShowUnsavedDialog(false);
@@ -478,7 +481,9 @@ export function JournalEntryEditor({
     if (wasListeningRef.current && !voice.isListening && voice.transcript) {
       setContent(prev => {
         const separator = prev && !prev.endsWith('\n') && !prev.endsWith(' ') ? ' ' : '';
-        return prev + separator + voice.transcript;
+        const next = prev + separator + voice.transcript;
+        contentRef.current = next;
+        return next;
       });
     }
     wasListeningRef.current = voice.isListening;
@@ -523,6 +528,7 @@ export function JournalEntryEditor({
   const handleRestoreDraft = () => {
     if (!draftAvailable) return;
     setTitle(draftAvailable.title);
+    contentRef.current = draftAvailable.content;
     setContent(draftAvailable.content);
     setStickers(draftAvailable.stickers);
     setPhotoIds(draftAvailable.photoIds);
@@ -562,10 +568,24 @@ export function JournalEntryEditor({
     setPhotoIds(prev => [...prev, photo.id]);
   };
 
-  const handleRemovePhoto = async (photoId: string) => {
+  const handleRemovePhoto = useCallback(async (photoId: string) => {
     await onRemovePhoto(photoId, entryId);
     setPhotoIds(prev => prev.filter(id => id !== photoId));
-  };
+  }, [onRemovePhoto, entryId]);
+
+  const handleReturnToGallery = useCallback((photoId: string) => {
+    setPhotoLayout(prev => {
+      const next = { ...prev };
+      delete next[photoId];
+      return next;
+    });
+  }, []);
+
+  const handleFloatPhoto = useCallback((photoId: string) => {
+    setPhotoLayout(prev => ({ ...prev, [photoId]: { x: 50, y: 50, width: 200 } }));
+  }, []);
+
+  const handleCloseBurn = useCallback(() => setShowBurnWidget(false), []);
 
   const handleAddTag = () => {
     const tag = tagInput.trim().replace(/[^a-zA-Z\u0430-\u044f\u0410-\u042f\u0451\u0401\u0456\u0406\u0457\u0407\u0454\u0404\u0491\u04900-9_-]/g, '');
@@ -642,7 +662,10 @@ export function JournalEntryEditor({
     const el = editorRef.current;
     if (!el) return;
     const html = sanitizeRichContent(el.innerHTML);
-    setContent(html);
+    contentRef.current = html;
+    // Debounce React state sync (wordCount, isDirty) — typing stays lag-free
+    if (contentSyncRef.current) clearTimeout(contentSyncRef.current);
+    contentSyncRef.current = setTimeout(() => setContent(html), 300);
   }, []);
 
   const cycleFontSize = useCallback(() => {
@@ -1098,11 +1121,7 @@ export function JournalEntryEditor({
             photoIds={photoIds}
             layout={photoLayout}
             onLayoutChange={setPhotoLayout}
-            onReturnToGallery={(photoId) => {
-              const next = { ...photoLayout };
-              delete next[photoId];
-              setPhotoLayout(next);
-            }}
+            onReturnToGallery={handleReturnToGallery}
             containerRef={contentAreaRef}
           />
         )}
@@ -1117,6 +1136,7 @@ export function JournalEntryEditor({
               backgroundColor: paperColors.bg,
               color: paperColors.text,
               borderColor: paperColors.border,
+              contain: 'layout style paint',
               ...(paperTexture === 'dots' ? {
                 backgroundImage: `radial-gradient(circle, ${paperColor === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} 1px, transparent 1px)`,
                 backgroundSize: '24px 24px',
@@ -1201,12 +1221,7 @@ export function JournalEntryEditor({
             entryId={entryId}
             photoIds={photoIds.filter(id => !photoLayout[id])}
             onRemovePhoto={handleRemovePhoto}
-            onFloatPhoto={(photoId) => {
-              setPhotoLayout(prev => ({
-                ...prev,
-                [photoId]: { x: 50, y: 50, width: 200 },
-              }));
-            }}
+            onFloatPhoto={handleFloatPhoto}
             editable
           />
         )}
@@ -1309,7 +1324,7 @@ export function JournalEntryEditor({
         {/* Burn-a-thought widget (inline, above textarea) */}
         <AnimatePresence>
           {showBurnWidget && (
-            <BurnThoughtWidget onClose={() => setShowBurnWidget(false)} />
+            <BurnThoughtWidget onClose={handleCloseBurn} />
           )}
         </AnimatePresence>
 
@@ -1494,6 +1509,7 @@ export function JournalEntryEditor({
         <JournalTemplatePicker
           onSelect={(templateContent, _templateId) => {
             if (templateContent) {
+              contentRef.current = templateContent;
               setContent(templateContent);
             }
             setShowTemplatePicker(false);

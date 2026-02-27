@@ -15,7 +15,7 @@
  * Haptic feedback. Respects in-app Dopamine toggle only.
  */
 
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, memo } from 'react';
 import { Flame, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { zenMotion, shouldAnimate } from '@/lib/animationUtils';
@@ -80,7 +80,7 @@ function spawnEmber(areaW: number, areaH: number, now: number): Ember {
   };
 }
 
-export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
+export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [text, setText] = useState('');
@@ -376,4 +376,4 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
       </div>
     </motion.div>
   );
-}
+});

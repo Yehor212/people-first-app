@@ -6,7 +6,7 @@
  * Hides when selection is cleared or moves outside the editor.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -32,7 +32,7 @@ const ARROW_OFFSET = 8;
 const TOP_SAFE_ZONE = 150;    // top glass toolbar height + safe margin
 const BOTTOM_SAFE_ZONE = 80;  // bottom glass toolbar height + safe margin
 
-export function DiaryFormatToolbar({ editorRef, scrollContainerRef }: DiaryFormatToolbarProps) {
+export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({ editorRef, scrollContainerRef }: DiaryFormatToolbarProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
@@ -220,4 +220,4 @@ export function DiaryFormatToolbar({ editorRef, scrollContainerRef }: DiaryForma
       )}
     </AnimatePresence>
   );
-}
+});

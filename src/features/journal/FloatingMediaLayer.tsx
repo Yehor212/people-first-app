@@ -8,7 +8,7 @@
  * Z-INDEX: 20 (above content z-5, below toolbar z-30)
  */
 
-import { useRef, useCallback, useState, useEffect } from 'react';
+import { useRef, useCallback, useState, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import type { JournalPhoto } from './types';
@@ -29,7 +29,7 @@ interface FloatingMediaLayerProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
 }
 
-function FloatingPhoto({
+const FloatingPhoto = memo(function FloatingPhoto({
   photo,
   position,
   onPositionChange,
@@ -134,9 +134,9 @@ function FloatingPhoto({
       />
     </motion.div>
   );
-}
+});
 
-export function FloatingMediaLayer({
+export const FloatingMediaLayer = memo(function FloatingMediaLayer({
   entryId,
   photoIds,
   layout,
@@ -180,4 +180,4 @@ export function FloatingMediaLayer({
       })}
     </div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, memo } from 'react';
 import { Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
@@ -14,7 +14,7 @@ function formatTime(sec: number): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-export function JournalAudioPlayer({ src, duration }: JournalAudioPlayerProps) {
+export const JournalAudioPlayer = memo(function JournalAudioPlayer({ src, duration }: JournalAudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -93,4 +93,4 @@ export function JournalAudioPlayer({ src, duration }: JournalAudioPlayerProps) {
       </span>
     </div>
   );
-}
+});

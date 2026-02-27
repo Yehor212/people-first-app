@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { X, Trash2, ZoomIn } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -17,7 +17,7 @@ interface JournalPhotoGalleryProps {
   editable?: boolean;
 }
 
-export function JournalPhotoGallery({
+export const JournalPhotoGallery = memo(function JournalPhotoGallery({
   entryId,
   photoIds,
   onRemovePhoto,
@@ -145,4 +145,4 @@ export function JournalPhotoGallery({
       </AnimatePresence>
     </>
   );
-}
+});

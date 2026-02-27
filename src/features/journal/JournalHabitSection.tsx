@@ -5,7 +5,7 @@
  * Reads from Dexie habits table.
  */
 
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { ChevronDown, ChevronUp, CheckCircle2, Circle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -27,7 +27,7 @@ interface JournalHabitSectionProps {
   onSnapshotChange: (snapshot: HabitSnapshot[]) => void;
 }
 
-export function JournalHabitSection({ date, snapshot, onSnapshotChange }: JournalHabitSectionProps) {
+export const JournalHabitSection = memo(function JournalHabitSection({ date, snapshot, onSnapshotChange }: JournalHabitSectionProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [collapsed, setCollapsed] = useState(false);
@@ -125,4 +125,4 @@ export function JournalHabitSection({ date, snapshot, onSnapshotChange }: Journa
       </AnimatePresence>
     </div>
   );
-}
+});
