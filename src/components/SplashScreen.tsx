@@ -7,8 +7,6 @@ interface SplashScreenProps {
 }
 
 export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
-  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
   return (
     <motion.div
       key="loading"
@@ -20,42 +18,34 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
       transition={{ duration: 0.5, ease: 'easeInOut' }}
     >
       {/* Aurora ambient layer 1 — CSS-driven for battery savings */}
-      {!prefersReducedMotion && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse 60% 50% at 50% 30%, hsl(var(--primary) / 0.10) 0%, transparent 70%)',
-            animation: 'zen-glow-breathe 4s ease-in-out infinite',
-            '--zen-glow-min': '0.4',
-            '--zen-glow-max': '0.8',
-          } as React.CSSProperties}
-        />
-      )}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 60% 50% at 50% 30%, hsl(var(--primary) / 0.10) 0%, transparent 70%)',
+          animation: 'zen-glow-breathe 4s ease-in-out infinite',
+          '--zen-glow-min': '0.4',
+          '--zen-glow-max': '0.8',
+        } as React.CSSProperties}
+      />
 
       {/* Aurora ambient layer 2 — CSS-driven */}
-      {!prefersReducedMotion && (
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(ellipse 50% 40% at 50% 70%, hsl(var(--accent) / 0.05) 0%, transparent 70%)',
-            animation: 'zen-glow-breathe 5s ease-in-out 1.5s infinite',
-            '--zen-glow-min': '0.3',
-            '--zen-glow-max': '0.6',
-          } as React.CSSProperties}
-        />
-      )}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'radial-gradient(ellipse 50% 40% at 50% 70%, hsl(var(--accent) / 0.05) 0%, transparent 70%)',
+          animation: 'zen-glow-breathe 5s ease-in-out 1.5s infinite',
+          '--zen-glow-min': '0.3',
+          '--zen-glow-max': '0.6',
+        } as React.CSSProperties}
+      />
 
       {/* Floating bokeh orbs */}
-      {!prefersReducedMotion && (
-        <>
-          <div className="absolute w-24 h-24 rounded-full bg-primary/[0.05] blur-[20px] animate-float" style={{ top: '20%', left: '15%', animationDuration: '6s' }} />
-          <div className="absolute w-16 h-16 rounded-full bg-primary/[0.07] blur-[20px] animate-float" style={{ top: '15%', right: '20%', animationDuration: '7s', animationDelay: '-2s' }} />
-          <div className="absolute w-20 h-20 rounded-full bg-primary/[0.04] blur-[20px] animate-float" style={{ bottom: '25%', left: '20%', animationDuration: '5s', animationDelay: '-1s' }} />
-          <div className="absolute w-14 h-14 rounded-full bg-primary/[0.06] blur-[20px] animate-float" style={{ bottom: '20%', right: '15%', animationDuration: '8s', animationDelay: '-3s' }} />
-          <div className="absolute w-10 h-10 rounded-full bg-primary/[0.08] blur-[20px] animate-float" style={{ top: '45%', left: '10%', animationDuration: '6.5s', animationDelay: '-4s' }} />
-          <div className="absolute w-12 h-12 rounded-full bg-primary/[0.05] blur-[20px] animate-float" style={{ top: '40%', right: '10%', animationDuration: '7.5s', animationDelay: '-2.5s' }} />
-        </>
-      )}
+      <div className="absolute w-24 h-24 rounded-full bg-primary/[0.05] blur-[20px] animate-float" style={{ top: '20%', left: '15%', animationDuration: '6s' }} />
+      <div className="absolute w-16 h-16 rounded-full bg-primary/[0.07] blur-[20px] animate-float" style={{ top: '15%', right: '20%', animationDuration: '7s', animationDelay: '-2s' }} />
+      <div className="absolute w-20 h-20 rounded-full bg-primary/[0.04] blur-[20px] animate-float" style={{ bottom: '25%', left: '20%', animationDuration: '5s', animationDelay: '-1s' }} />
+      <div className="absolute w-14 h-14 rounded-full bg-primary/[0.06] blur-[20px] animate-float" style={{ bottom: '20%', right: '15%', animationDuration: '8s', animationDelay: '-3s' }} />
+      <div className="absolute w-10 h-10 rounded-full bg-primary/[0.08] blur-[20px] animate-float" style={{ top: '45%', left: '10%', animationDuration: '6.5s', animationDelay: '-4s' }} />
+      <div className="absolute w-12 h-12 rounded-full bg-primary/[0.05] blur-[20px] animate-float" style={{ top: '40%', right: '10%', animationDuration: '7.5s', animationDelay: '-2.5s' }} />
 
       {/* Glow ring behind logo — CSS-driven pulse for battery savings */}
       <div
@@ -64,23 +54,19 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
           width: 120, height: 120,
           background: 'radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)',
           filter: 'blur(10px)',
-          ...(prefersReducedMotion
-            ? { opacity: 0.15 }
-            : {
-                animation: 'zen-pulse 3s ease-in-out 0.3s infinite, zen-glow-breathe 3s ease-in-out 0.3s infinite',
-                '--zen-pulse-scale': '1.15',
-                '--zen-glow-min': '0.15',
-                '--zen-glow-max': '0.25',
-              }),
+          animation: 'zen-pulse 3s ease-in-out 0.3s infinite, zen-glow-breathe 3s ease-in-out 0.3s infinite',
+          '--zen-pulse-scale': '1.15',
+          '--zen-glow-min': '0.15',
+          '--zen-glow-max': '0.25',
         } as React.CSSProperties}
       />
 
       {/* Logo SVG */}
       <motion.div
         className="mb-6 relative"
-        initial={prefersReducedMotion ? {} : { scale: 0, rotate: -15 }}
+        initial={{ scale: 0, rotate: -15 }}
         animate={{ scale: 1, rotate: 0 }}
-        transition={prefersReducedMotion ? {} : { type: 'spring', stiffness: 180, damping: 14, delay: 0.1 }}
+        transition={{ type: 'spring', stiffness: 180, damping: 14, delay: 0.1 }}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="80" height="80" className="drop-shadow-lg" role="img" aria-label="ZenFlow">
           <defs>
@@ -115,9 +101,9 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
       {/* Brand name */}
       <motion.h1
         className="text-3xl font-bold text-foreground tracking-[0.15em]"
-        initial={prefersReducedMotion ? {} : { opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={prefersReducedMotion ? {} : { delay: 0.5, duration: 0.5, ease: 'easeOut' }}
+        transition={{ delay: 0.5, duration: 0.5, ease: 'easeOut' }}
       >
         ZenFlow
       </motion.h1>
@@ -125,9 +111,9 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
       {/* Localized subtitle */}
       <motion.p
         className="text-sm text-muted-foreground mt-3"
-        initial={prefersReducedMotion ? {} : { opacity: 0 }}
+        initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={prefersReducedMotion ? {} : { delay: 0.8, duration: 0.5 }}
+        transition={{ delay: 0.8, duration: 0.5 }}
       >
         {subtitle}
       </motion.p>
@@ -136,9 +122,9 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
       <motion.div
         className="mt-8 flex items-center justify-center"
         style={{ minHeight: 130 }}
-        initial={prefersReducedMotion ? {} : { opacity: 0 }}
+        initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={prefersReducedMotion ? {} : { delay: 1.0 }}
+        transition={{ delay: 1.0 }}
       >
         <PremiumLoader size="xl" label="Loading" />
       </motion.div>

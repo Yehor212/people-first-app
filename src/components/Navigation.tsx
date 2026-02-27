@@ -38,7 +38,7 @@ export function Navigation({ activeTab, onTabChange, canvasEnabled }: Navigation
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-lg border-t border-border z-50"
+      className="fixed bottom-0 left-0 right-0 bg-card/80 backdrop-blur-lg border-t border-border z-50 gpu-layer"
       style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       role="navigation"
       aria-label={t.mainNavigation || 'Main navigation'}

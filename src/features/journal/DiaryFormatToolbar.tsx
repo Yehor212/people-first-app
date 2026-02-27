@@ -190,7 +190,7 @@ export function DiaryFormatToolbar({ editorRef, scrollContainerRef }: DiaryForma
           exit={{ opacity: 0, scale: 0.85, y: 8 }}
           transition={zenMotion.snappy}
           style={getPosition()}
-          className="flex items-center gap-1 bg-slate-900/90 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+          className="flex items-center gap-1 bg-slate-900/90 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] gpu-layer"
           onPointerDown={(e) => e.preventDefault()}
         >
           {FORMAT_ACTIONS.map(action => {

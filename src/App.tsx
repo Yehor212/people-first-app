@@ -1,4 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
+import { MotionConfig } from "framer-motion";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -21,55 +22,54 @@ const queryClient = new QueryClient();
 // Preload DOMPurify in the background to speed up share card sanitization
 void preloadShareCardAssets();
 
-// Controls reduce-motion class on body based on Dopamine Settings
-function ReduceMotionController() {
+/**
+ * AnimationGate — single point of control for ALL animation layers.
+ * Only the in-app Dopamine toggle decides; OS prefers-reduced-motion is ignored
+ * so iOS users always get full visual fidelity.
+ */
+function AnimationGate({ children }: { children: ReactNode }) {
   const dopamine = useDopamineSettings();
 
   useEffect(() => {
-    // Check user preference AND system preference
-    const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const shouldReduce = !dopamine.animations || prefersReducedMotion;
-
-    if (shouldReduce) {
-      document.body.classList.add('reduce-motion');
+    if (dopamine.animations) {
+      document.body.classList.remove('reduce-motion');
     } else {
-      document.body.classList.remove('reduce-motion');
+      document.body.classList.add('reduce-motion');
     }
-
-    // Cleanup on unmount
-    return () => {
-      document.body.classList.remove('reduce-motion');
-    };
+    return () => document.body.classList.remove('reduce-motion');
   }, [dopamine.animations]);
 
-  return null;
+  return (
+    <MotionConfig reducedMotion={dopamine.animations ? 'never' : 'always'}>
+      {children}
+    </MotionConfig>
+  );
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <LanguageProvider>
-      <FeatureFlagsProvider>
-        <EmotionThemeProvider>
-          <AICoachProvider>
-            <XpPopupProvider>
-              <FlyingEmojiProvider>
-                <ErrorBoundary>
-                  <TooltipProvider>
-                    <ReduceMotionController />
-
-
-                    <DatabaseRecoveryDialog />
-                    <UpdateRequiredDialog />
-                    <Index />
-                  </TooltipProvider>
-                </ErrorBoundary>
-              </FlyingEmojiProvider>
-            </XpPopupProvider>
-          </AICoachProvider>
-        </EmotionThemeProvider>
-      </FeatureFlagsProvider>
-    </LanguageProvider>
-  </QueryClientProvider>
+  <AnimationGate>
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <FeatureFlagsProvider>
+          <EmotionThemeProvider>
+            <AICoachProvider>
+              <XpPopupProvider>
+                <FlyingEmojiProvider>
+                  <ErrorBoundary>
+                    <TooltipProvider>
+                      <DatabaseRecoveryDialog />
+                      <UpdateRequiredDialog />
+                      <Index />
+                    </TooltipProvider>
+                  </ErrorBoundary>
+                </FlyingEmojiProvider>
+              </XpPopupProvider>
+            </AICoachProvider>
+          </EmotionThemeProvider>
+        </FeatureFlagsProvider>
+      </LanguageProvider>
+    </QueryClientProvider>
+  </AnimationGate>
 );
 
 export default App;

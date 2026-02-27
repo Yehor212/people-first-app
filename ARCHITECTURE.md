@@ -687,19 +687,27 @@ All framer-motion animations MUST use standardized presets from `src/lib/animati
 | `zenMotion.exit` | Closing, dismissing | 150ms ease-in |
 | `zenMotion.breathing` | Infinite ambient loops | 3s ease-in-out, reverse |
 
-### Animation Respect
+### Animation Respect (Visual Fidelity First)
 
-All animations MUST respect user preferences:
-- `shouldAnimate()` checks both user's dopamine settings AND `prefers-reduced-motion` media query
+All animations are controlled **solely** by the in-app Dopamine Settings toggle:
+- `shouldAnimate()` checks **only** `getDopamineSettings().animations` — OS `prefers-reduced-motion` is intentionally ignored
+- `AnimationGate` in `App.tsx` wraps the entire app in `<MotionConfig reducedMotion={...}>`:
+  - `animations: true` → `reducedMotion="never"` (forces framer-motion to always animate, even on iOS)
+  - `animations: false` → `reducedMotion="always"` + `body.reduce-motion` class kills CSS animations
+- CSS `@media (prefers-reduced-motion: reduce)` block is **removed** — the `body.reduce-motion` class is the sole CSS gate
 - CSS infinite loops (`@keyframes float`, `pulse-soft`, etc.) live in `src/index.css` — never inline
 - CSS `@keyframes` for infinite/ambient loops; framer-motion for interactive/entrance animations
 
-### 60fps Android Guarantee
+### 60fps Mobile Guarantee
 
 - No JS-driven infinite animations (use CSS `@keyframes` in `index.css`)
 - Spring physics via framer-motion (GPU-composited `transform` + `opacity`)
 - Entrance animations: `slideUp`/`fadeIn` only — no complex multi-property transitions
-- `will-change` is NOT manually set (framer-motion handles compositor hints)
+- `.gpu-layer` utility class (in `index.css`) promotes heavy layers to GPU compositor:
+  - `transform: translateZ(0)` + `will-change: transform, opacity` + `backface-visibility: hidden`
+  - Applied to: Navigation bar, DiaryFormatToolbar, FloatingMediaLayer, BurnThoughtWidget canvas
+  - Apply **sparingly** — only on elements with `backdrop-filter` or heavy rAF animation
+- Canvas DPR capped at `Math.min(devicePixelRatio, 2)` in `useDiaryCanvas.ts` (prevents iPhone Pro 3x overheating)
 
 ### PremiumLoader (page/section loading)
 

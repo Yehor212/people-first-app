@@ -102,7 +102,7 @@ describe('getDopamineSettings', () => {
 // shouldAnimate
 // ============================================================
 describe('shouldAnimate', () => {
-  it('returns true when animations enabled and no reduced motion', () => {
+  it('returns true when animations enabled', () => {
     expect(shouldAnimate()).toBe(true);
   });
 
@@ -111,14 +111,9 @@ describe('shouldAnimate', () => {
     expect(shouldAnimate()).toBe(false);
   });
 
-  it('returns false when prefers-reduced-motion is set', () => {
+  it('ignores OS prefers-reduced-motion (visual fidelity first)', () => {
     mockMatchMedia.mockReturnValue({ matches: true });
-    expect(shouldAnimate()).toBe(false);
-  });
-
-  it('checks matchMedia with correct media query', () => {
-    shouldAnimate();
-    expect(mockMatchMedia).toHaveBeenCalledWith('(prefers-reduced-motion: reduce)');
+    expect(shouldAnimate()).toBe(true);
   });
 });
 
@@ -208,10 +203,10 @@ describe('applyReduceMotionClass', () => {
     expect(document.body.classList.contains('reduce-motion')).toBe(true);
   });
 
-  it('adds reduce-motion class when prefers-reduced-motion matches', () => {
+  it('ignores OS prefers-reduced-motion for reduce-motion class', () => {
     mockMatchMedia.mockReturnValue({ matches: true });
     applyReduceMotionClass();
-    expect(document.body.classList.contains('reduce-motion')).toBe(true);
+    expect(document.body.classList.contains('reduce-motion')).toBe(false);
   });
 });
 

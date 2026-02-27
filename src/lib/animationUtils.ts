@@ -99,25 +99,11 @@ export function getDopamineSettings(): DopamineSettings {
 
 /**
  * Check if animations should be shown
- * Respects both user preference and system prefers-reduced-motion
+ * Only respects in-app Dopamine Settings toggle — OS prefers-reduced-motion is ignored
+ * so iOS users get full visual fidelity by default (they can use the in-app toggle).
  */
 export function shouldAnimate(): boolean {
-  const settings = getDopamineSettings();
-
-  // Check user preference first
-  if (!settings.animations) {
-    return false;
-  }
-
-  // Check system preference
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) {
-      return false;
-    }
-  }
-
-  return true;
+  return getDopamineSettings().animations;
 }
 
 /**

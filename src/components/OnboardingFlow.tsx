@@ -24,13 +24,6 @@ interface ModuleItem {
 
 // Floating particles component
 function FloatingParticles() {
-  const prefersReducedMotion = typeof window !== 'undefined'
-    && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-
-  if (prefersReducedMotion) {
-    return null;
-  }
-
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">
       {Array.from({ length: 20 }).map((_, i) => (

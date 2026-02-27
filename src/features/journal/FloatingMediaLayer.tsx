@@ -99,7 +99,7 @@ function FloatingPhoto({
       dragConstraints={containerRef}
       dragElastic={0.1}
       onDragEnd={handleDragEnd}
-      className="absolute pointer-events-auto cursor-grab active:cursor-grabbing group"
+      className="absolute pointer-events-auto cursor-grab active:cursor-grabbing group gpu-layer"
       style={{
         left: `${position.x}%`,
         top: `${position.y}%`,

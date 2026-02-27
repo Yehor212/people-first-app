@@ -352,7 +352,7 @@ export function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
             {(burning || shattering) && (
               <canvas
                 ref={canvasRef}
-                className="absolute inset-0 w-full h-full rounded-xl"
+                className="absolute inset-0 w-full h-full rounded-xl gpu-layer"
                 style={{ zIndex: 1000, pointerEvents: 'none' }}
                 aria-hidden="true"
               />
