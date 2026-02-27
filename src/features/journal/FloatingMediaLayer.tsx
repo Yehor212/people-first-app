@@ -47,18 +47,19 @@ function FloatingPhoto({
   const [liveWidth, setLiveWidth] = useState(position.width);
   const aspectRatio = photo.width && photo.height ? photo.width / photo.height : 4 / 3;
 
-  const handleDragEnd = useCallback((_: unknown, info: { point: { x: number; y: number } }) => {
+  const handleDragEnd = useCallback((_: unknown, info: { offset: { x: number; y: number } }) => {
     const container = containerRef.current;
     if (!container) return;
     const rect = container.getBoundingClientRect();
-    const xPct = ((info.point.x - rect.left) / rect.width) * 100;
-    const yPct = ((info.point.y - rect.top) / rect.height) * 100;
+    // Convert drag offset (px) to percentage of container
+    const dxPct = (info.offset.x / rect.width) * 100;
+    const dyPct = (info.offset.y / rect.height) * 100;
     onPositionChange({
-      x: Math.max(5, Math.min(95, xPct)),
-      y: Math.max(5, Math.min(95, yPct)),
+      x: Math.max(5, Math.min(95, position.x + dxPct)),
+      y: Math.max(5, Math.min(95, position.y + dyPct)),
       width: liveWidth,
     });
-  }, [containerRef, onPositionChange, liveWidth]);
+  }, [containerRef, onPositionChange, liveWidth, position]);
 
   const handleResizeStart = useCallback((e: React.PointerEvent) => {
     e.stopPropagation();
@@ -94,19 +95,19 @@ function FloatingPhoto({
   return (
     <motion.div
       drag={!isResizing}
-      dragMomentum
-      dragTransition={{ power: 0.2, timeConstant: 200 }}
+      dragMomentum={false}
       dragConstraints={containerRef}
-      dragElastic={0.1}
+      dragElastic={0}
       onDragEnd={handleDragEnd}
       className="absolute pointer-events-auto cursor-grab active:cursor-grabbing group gpu-layer"
       style={{
         left: `${position.x}%`,
         top: `${position.y}%`,
-        transform: 'translate(-50%, -50%)',
         width: liveWidth,
         height: displayHeight,
         touchAction: 'none',
+        marginLeft: -(liveWidth / 2),
+        marginTop: -(displayHeight / 2),
       }}
       whileTap={isResizing ? undefined : { scale: 0.98 }}
     >
