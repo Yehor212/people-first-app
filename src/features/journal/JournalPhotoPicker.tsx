@@ -27,6 +27,7 @@ export function JournalPhotoPicker({
   const cameraRef = useRef<HTMLInputElement>(null);
   const galleryRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   // capture="environment" only opens a real camera on native mobile (Android/iOS).
   // On desktop web it silently falls back to file picker — identical to gallery button.
   const [hasCamera, setHasCamera] = useState(false);
@@ -41,11 +42,13 @@ export function JournalPhotoPicker({
     const file = e.target.files?.[0];
     if (!file) return;
     setLoading(true);
+    setError(null);
     try {
       await onSelectFile(file);
       onClose();
     } catch (err) {
       logger.error('[JournalPhotoPicker] Photo upload failed:', err);
+      setError(ts.journalPhotoError || 'Failed to add photo. Try again.');
     } finally {
       setLoading(false);
       e.target.value = '';
@@ -84,6 +87,10 @@ export function JournalPhotoPicker({
               <X className="w-4 h-4 text-muted-foreground" />
             </button>
           </div>
+
+          {error && (
+            <p className="text-sm text-red-400 text-center py-2">{error}</p>
+          )}
 
           {loading ? (
             <div className="flex items-center justify-center py-8">
