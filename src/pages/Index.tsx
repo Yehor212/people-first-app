@@ -66,6 +66,10 @@ export function Index() {
     };
   }, []);
 
+  // Feature flags (must be before any usage)
+  const CANVAS_ENABLED = false; // Kill-switch for mindmap tab rollout
+  const HABIT_HUB_ENABLED = true; // Habit Hub replaces the Map tab
+
   // Swipe navigation for mobile tab switching (disabled on mindmap tab — canvas handles its own gestures)
   const SWIPE_TABS: TabType[] = ['home', ...(HABIT_HUB_ENABLED ? ['mindmap' as TabType] : []), 'garden', 'stats', 'settings'];
   const { containerProps: swipeProps, containerRef: swipeContainerRef } = useSwipeNavigation({
@@ -160,8 +164,6 @@ export function Index() {
   const { handleAddMood, handleQuickMood } = useMoodHandlers({ updateChallengeProgress });
 
   // Canvas / Mind Map (feature-flagged)
-  const CANVAS_ENABLED = false; // Kill-switch for mindmap tab rollout
-  const HABIT_HUB_ENABLED = true; // Habit Hub replaces the Map tab
   const {
     canvasGoals, canvasMode, canvasRef,
     onRootTap, onCanvasBackgroundTap,

@@ -980,10 +980,8 @@ export const uk: Translations = {
   skipped: 'Пропущено',
   streakHistory: 'Історія серій',
   bestStreak: 'Найкраща серія',
-  currentStreak: 'Поточна серія',
   weekdayFrequency: 'Частота по днях',
   habitHistory: 'Історія',
-  noHabitsYet: 'Звичок поки немає. Додайте першу!',
   lastBadge: 'Останній бейдж',
   done: 'готово',
 

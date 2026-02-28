@@ -1171,10 +1171,8 @@ const hebrewOverrides: Partial<Translations> = {
   skipped: 'דולג',
   streakHistory: 'היסטוריית רצפים',
   bestStreak: 'הרצף הטוב ביותר',
-  currentStreak: 'הרצף הנוכחי',
   weekdayFrequency: 'תדירות יומית',
   habitHistory: 'היסטוריה',
-  noHabitsYet: 'אין הרגלים עדיין. הוסף את הראשון!',
   lastBadge: 'תג אחרון',
 
   // Dopamine Dashboard

@@ -981,10 +981,8 @@ export const es: Translations = {
   skipped: 'Omitido',
   streakHistory: 'Historial de Rachas',
   bestStreak: 'Mejor Racha',
-  currentStreak: 'Racha Actual',
   weekdayFrequency: 'Frecuencia Semanal',
   habitHistory: 'Historial',
-  noHabitsYet: '¡Aún no hay hábitos. Añade el primero!',
   lastBadge: 'Última Insignia',
   done: 'hecho',
 

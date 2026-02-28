@@ -980,10 +980,8 @@ export const ja: Translations = {
   skipped: 'スキップ済み',
   streakHistory: '連続記録の履歴',
   bestStreak: '最高連続記録',
-  currentStreak: '現在の連続記録',
   weekdayFrequency: '曜日別頻度',
   habitHistory: '履歴',
-  noHabitsYet: 'まだ習慣がありません。最初の習慣を追加しましょう！',
   lastBadge: '最新バッジ',
   done: '完了',
 

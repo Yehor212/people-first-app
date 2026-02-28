@@ -980,10 +980,8 @@ export const en: Translations = {
   skipped: 'Skipped',
   streakHistory: 'Streak History',
   bestStreak: 'Best Streak',
-  currentStreak: 'Current Streak',
   weekdayFrequency: 'Weekday Frequency',
   habitHistory: 'History',
-  noHabitsYet: 'No habits yet. Add your first one!',
   lastBadge: 'Latest Badge',
   done: 'done',
 

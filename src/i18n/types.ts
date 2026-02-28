@@ -1010,10 +1010,8 @@ export interface Translations {
   skipped: string;
   streakHistory: string;
   bestStreak: string;
-  currentStreak: string;
   weekdayFrequency: string;
   habitHistory: string;
-  noHabitsYet: string;
   lastBadge: string;
   done: string;
 

@@ -867,10 +867,8 @@ const arabicOverrides: Partial<Translations> = {
   skipped: 'تم التخطي',
   streakHistory: 'سجل السلاسل',
   bestStreak: 'أفضل سلسلة',
-  currentStreak: 'السلسلة الحالية',
   weekdayFrequency: 'التكرار الأسبوعي',
   habitHistory: 'السجل',
-  noHabitsYet: 'لا توجد عادات بعد. أضف أول عادة!',
   lastBadge: 'آخر شارة',
   done: 'تم',
 

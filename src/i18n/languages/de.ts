@@ -981,10 +981,8 @@ export const de: Translations = {
   skipped: 'Übersprungen',
   streakHistory: 'Serienhistorie',
   bestStreak: 'Beste Serie',
-  currentStreak: 'Aktuelle Serie',
   weekdayFrequency: 'Wochentag-Häufigkeit',
   habitHistory: 'Verlauf',
-  noHabitsYet: 'Noch keine Gewohnheiten. Füge deine erste hinzu!',
   lastBadge: 'Letztes Abzeichen',
   done: 'erledigt',
 
