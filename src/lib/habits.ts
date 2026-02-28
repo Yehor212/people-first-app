@@ -7,7 +7,9 @@ export function normalizeHabit(habit: Habit): Habit {
     frequency: habit.frequency || 'daily',
     progressByDate: habit.progressByDate || {},
     completedDates: habit.completedDates || [],
-    reminders: habit.reminders || []
+    reminders: habit.reminders || [],
+    isArchived: habit.isArchived ?? false,
+    skippedDates: habit.skippedDates || [],
   };
 }
 

@@ -1,0 +1,47 @@
+/**
+ * HabitHubTab — Thin wrapper for the Habit Hub tab (replaces MindMapTab).
+ * Pattern: GardenTab.tsx — receives data from Index.tsx, delegates to HabitHubList.
+ */
+
+import type { Habit } from '@/types';
+import { HabitHubList } from './HabitHubList';
+
+interface HabitHubTabProps {
+  habits: Habit[];
+  onToggleHabit: (habitId: string, date: string) => void;
+  onAddHabit: (habit: Omit<Habit, 'id' | 'createdAt' | 'completedDates'>) => void;
+  onDeleteHabit: (habitId: string) => void;
+  onUpdateHabit: (habit: Habit) => void;
+  onArchiveHabit: (habitId: string) => void;
+  onUnarchiveHabit: (habitId: string) => void;
+  onSkipHabit: (habitId: string, date: string) => void;
+  onUnskipHabit: (habitId: string, date: string) => void;
+}
+
+export function HabitHubTab({
+  habits,
+  onToggleHabit,
+  onAddHabit,
+  onDeleteHabit,
+  onUpdateHabit,
+  onArchiveHabit,
+  onUnarchiveHabit,
+  onSkipHabit,
+  onUnskipHabit,
+}: HabitHubTabProps) {
+  return (
+    <div className="animate-tab-enter px-4 pt-2">
+      <HabitHubList
+        habits={habits}
+        onToggleHabit={onToggleHabit}
+        onAddHabit={onAddHabit}
+        onDeleteHabit={onDeleteHabit}
+        onUpdateHabit={onUpdateHabit}
+        onArchiveHabit={onArchiveHabit}
+        onUnarchiveHabit={onUnarchiveHabit}
+        onSkipHabit={onSkipHabit}
+        onUnskipHabit={onUnskipHabit}
+      />
+    </div>
+  );
+}

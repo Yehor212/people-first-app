@@ -205,6 +205,42 @@ export function useHabitHandlers({
     triggerSync();
   };
 
+  // ── Loop-style Habit Hub actions ──────────────────────────────────────────
+
+  const handleArchiveHabit = (habitId: string) => {
+    setHabits(prev => prev.map(h =>
+      h.id === habitId ? { ...h, isArchived: true, updatedAt: new Date().toISOString() } : h,
+    ));
+    triggerSync();
+  };
+
+  const handleUnarchiveHabit = (habitId: string) => {
+    setHabits(prev => prev.map(h =>
+      h.id === habitId ? { ...h, isArchived: false, updatedAt: new Date().toISOString() } : h,
+    ));
+    triggerSync();
+  };
+
+  const handleSkipHabit = (habitId: string, date: string) => {
+    setHabits(prev => prev.map(h => {
+      if (h.id !== habitId) return h;
+      const existing = h.skippedDates || [];
+      if (existing.includes(date)) return h; // no duplicates
+      return { ...h, skippedDates: [...existing, date], updatedAt: new Date().toISOString() };
+    }));
+    triggerSync();
+  };
+
+  const handleUnskipHabit = (habitId: string, date: string) => {
+    setHabits(prev => prev.map(h => {
+      if (h.id !== habitId) return h;
+      const existing = h.skippedDates || [];
+      if (!existing.includes(date)) return h;
+      return { ...h, skippedDates: existing.filter(d => d !== date), updatedAt: new Date().toISOString() };
+    }));
+    triggerSync();
+  };
+
   // Habit localization: update habit names when language changes
   const safeHabitsLength = Array.isArray(habits) ? habits.length : 0;
   useEffect(() => {
@@ -236,6 +272,10 @@ export function useHabitHandlers({
     handleAddHabit,
     handleUpdateHabit,
     handleDeleteHabit,
+    handleArchiveHabit,
+    handleUnarchiveHabit,
+    handleSkipHabit,
+    handleUnskipHabit,
     processingTimeoutRef,
   };
 }

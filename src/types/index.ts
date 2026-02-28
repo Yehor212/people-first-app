@@ -122,6 +122,12 @@ export interface Habit {
   identityCluster?: string;    // User-defined cluster name ("The Mindful Me")
   identityVerb?: string;       // Identity statement ("I am a meditator")
   identityIcon?: string;       // Emoji representing this identity
+
+  // Loop-style analytics (Habit Hub)
+  isArchived?: boolean;            // Soft-delete: hidden from active list, data preserved
+  skippedDates?: string[];         // YYYY-MM-DD — intentional skip, preserves streak
+  frequencyNumerator?: number;     // e.g. 3 in "3 times per week"
+  frequencyDenominator?: number;   // e.g. 7 in "3 times per week"
 }
 
 export interface GratitudeEntry {

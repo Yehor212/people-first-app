@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Home, Settings, BookOpen, BarChart3, Compass } from 'lucide-react';
+import { Home, Settings, BookOpen, BarChart3, Compass, Repeat } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { haptics } from '@/lib/haptics';
 
@@ -10,9 +10,10 @@ interface NavigationProps {
   activeTab: TabType;
   onTabChange: (tab: TabType) => void;
   canvasEnabled?: boolean;
+  habitHubEnabled?: boolean;
 }
 
-export function Navigation({ activeTab, onTabChange, canvasEnabled }: NavigationProps) {
+export function Navigation({ activeTab, onTabChange, canvasEnabled, habitHubEnabled }: NavigationProps) {
   const { t } = useLanguage();
   const [keyboardOpen, setKeyboardOpen] = useState(false);
 
@@ -28,7 +29,11 @@ export function Navigation({ activeTab, onTabChange, canvasEnabled }: Navigation
 
   const tabs = [
     { id: 'home' as TabType, icon: Home, label: t.home },
-    ...(canvasEnabled ? [{ id: 'mindmap' as TabType, icon: Compass, label: t.map || 'Map' }] : []),
+    ...(habitHubEnabled
+      ? [{ id: 'mindmap' as TabType, icon: Repeat, label: (t as Record<string, string>).habitHub || 'Habits' }]
+      : canvasEnabled
+        ? [{ id: 'mindmap' as TabType, icon: Compass, label: t.map || 'Map' }]
+        : []),
     { id: 'garden' as TabType, icon: BookOpen, label: t.diary },
     { id: 'stats' as TabType, icon: BarChart3, label: t.stats },
     { id: 'settings' as TabType, icon: Settings, label: t.settings },

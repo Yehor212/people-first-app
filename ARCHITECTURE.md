@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-25 (2656 tests, Waves A-G complete + Mind Map tab integration + Store Readiness Audit + Diary WYSIWYG editor overhaul + Zen Focus/Privacy Shield/Panic Gesture)
+> Last updated: 2026-02-27 (2656 tests, Waves A-G complete + Habit Hub (Loop-style analytics) replaces Mind Map + Store Readiness Audit + Diary WYSIWYG editor overhaul + Zen Focus/Privacy Shield/Panic Gesture)
 
 ---
 
@@ -103,7 +103,8 @@ src/
     useEmotionSync.ts           # Sync emotion theme with current mood
     # Feature handlers (extracted from Index.tsx)
     useMoodHandlers.ts          # handleAddMood, handleQuickMood
-    useHabitHandlers.ts         # handleToggleHabit, CRUD (~180 lines, most complex)
+    useHabitHandlers.ts         # handleToggleHabit, CRUD, archive/skip (~280 lines, most complex)
+    useHabitHub.ts              # Derived data for Habit Hub tab (scores, today/other/archived split)
     useFocusHandlers.ts         # handleCompleteFocusSession
     useGratitudeHandlers.ts     # handleAddGratitude
     useChallengeHandlers.ts     # updateChallengeProgress, feature unlock
@@ -126,7 +127,7 @@ src/
   components/
     tabs/                       # Tab content components (6 files, extracted from Index.tsx JSX)
       HomeTab.tsx               # ~231 lines — scrollable: mood, habits, gratitude, streak, growth rings, reflection
-      MindMapTab.tsx            # ~26 lines — thin wrapper for MindMapCanvas (experimental, testing phase)
+      MindMapTab.tsx            # ~26 lines — thin wrapper for MindMapCanvas (DISABLED: CANVAS_ENABLED=false)
       GardenTab.tsx             # ~115 lines — schedule, journal, breathing, focus
       StatsTab.tsx              # ~45 lines — stats page wrapper
       AchievementsTab.tsx       # ~34 lines — achievements + leaderboard
@@ -342,7 +343,21 @@ The Mind Map Canvas lives in a **dedicated "Map" tab** (`MindMapTab.tsx`) — se
 - `.canvas-drag-active` CSS class disables `backdrop-filter` during drag (per Android performance Rule 1)
 - `computeIdentityClusters()` includes uncategorized habits in a sentinel fallback cluster (`UNCATEGORIZED_CLUSTER_ID`)
 
-**Canvas files** (`src/components/canvas/`):
+**Habit Hub** (`src/components/habit-hub/`) — Loop Habit Tracker-style analytics (replaces Mind Map tab via `HABIT_HUB_ENABLED`):
+| File | Purpose |
+|------|---------|
+| `HabitHubTab.tsx` | Thin wrapper (pattern: GardenTab) — receives props from Index.tsx |
+| `HabitHubList.tsx` | Main scrollable list — Overall Score, Today, Other, Archived sections |
+| `HabitHubCard.tsx` | Individual habit card — icon, name, score badge, streak fire, checkmark toggle |
+| `HabitDetailSheet.tsx` | Radix bottom sheet — full analytics: score ring, heatmap, frequency chart, streak timeline, actions |
+| `HabitHeatmapGrid.tsx` | GitHub-style 7×26 contribution grid (182 days), cell states: done/skipped/missed |
+| `HabitFrequencyChart.tsx` | Recharts BarChart — completions by day of week (Mon-Sun) |
+| `HabitStreakTimeline.tsx` | Top 5 historical streaks with AnimatedFire for current |
+| `index.ts` | Barrel export |
+
+Supporting: `src/lib/habitScore.ts` (Loop exponential smoothing score + streak + frequency), `src/hooks/useHabitHub.ts` (derived data layer).
+
+**Canvas files** (`src/components/canvas/`) — **DISABLED** (`CANVAS_ENABLED = false`), code preserved:
 | File | Purpose |
 |------|---------|
 | `MindMapCanvas.tsx` | Main wrapper (framer-motion drag, zoom, renders all layers) |
@@ -1201,6 +1216,13 @@ These standards are effective immediately for all new code and PRs:
 5. **Overscroll Behavior**: `overscrollBehavior: 'none'` is REQUIRED on all canvas, pan, and infinite-scroll surfaces to prevent iOS rubber-banding.
 
 6. **Scrollbar Styling**: Global thin scrollbars are applied via `index.css` (Firefox + WebKit). No per-component scrollbar CSS needed.
+
+7. **Desktop Input Parity (Omni-Platform Mandate, 2026-02-27)**: Desktop Web is a first-class citizen alongside iOS Safari and Android Native. Every interactive custom element (`role="button"`, `role="checkbox"`, clickable `<div>`) MUST have:
+   - `tabIndex={0}` for keyboard focus
+   - `onKeyDown` handler for Enter/Space activation
+   - Hover states (`onMouseEnter`/`onMouseLeave`) where contextual info exists (tooltips, previews)
+   - `title` attribute or `aria-label` for assistive technology
+   - Pre-flight mental simulation: test against iPhone 15 (notch), Samsung Galaxy (back button), Desktop Chrome (mouse+keyboard) before merging.
 
 ---
 

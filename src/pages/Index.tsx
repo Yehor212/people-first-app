@@ -35,6 +35,7 @@ import { StatsTab } from '@/components/tabs/StatsTab';
 import { AchievementsTab } from '@/components/tabs/AchievementsTab';
 import { SettingsTab } from '@/components/tabs/SettingsTab';
 import { MindMapTab } from '@/components/tabs/MindMapTab';
+import { HabitHubTab } from '@/components/habit-hub';
 import { useCanvasHandlers } from '@/hooks/useCanvasHandlers';
 import { useGamification } from '@/hooks/useGamification';
 import { useWidgetSync } from '@/hooks/useWidgetSync';
@@ -66,7 +67,7 @@ export function Index() {
   }, []);
 
   // Swipe navigation for mobile tab switching (disabled on mindmap tab — canvas handles its own gestures)
-  const SWIPE_TABS: TabType[] = ['home', 'garden', 'stats', 'settings'];
+  const SWIPE_TABS: TabType[] = ['home', ...(HABIT_HUB_ENABLED ? ['mindmap' as TabType] : []), 'garden', 'stats', 'settings'];
   const { containerProps: swipeProps, containerRef: swipeContainerRef } = useSwipeNavigation({
     activeTab,
     onTabChange: (tab: TabType) => setActiveTab(tab),
@@ -74,7 +75,7 @@ export function Index() {
     threshold: 50,
     velocityThreshold: 0.3,
     isRTL,
-    enabled: activeTab !== 'mindmap',
+    enabled: HABIT_HUB_ENABLED || activeTab !== 'mindmap',
   });
 
   // Extracted lifecycle hooks (from Step 1 decomposition)
@@ -159,7 +160,8 @@ export function Index() {
   const { handleAddMood, handleQuickMood } = useMoodHandlers({ updateChallengeProgress });
 
   // Canvas / Mind Map (feature-flagged)
-  const CANVAS_ENABLED = true; // Kill-switch for mindmap tab rollout
+  const CANVAS_ENABLED = false; // Kill-switch for mindmap tab rollout
+  const HABIT_HUB_ENABLED = true; // Habit Hub replaces the Map tab
   const {
     canvasGoals, canvasMode, canvasRef,
     onRootTap, onCanvasBackgroundTap,
@@ -169,7 +171,7 @@ export function Index() {
     onGoalUpdateIcon, onGoalUpdateEmoji, onGoalUpdateColor,
     onGoalCancel,
   } = useCanvasHandlers({ handleAddMood });
-  const { handleToggleHabit, handleAdjustHabit, handleAddHabit, handleUpdateHabit, handleDeleteHabit } = useHabitHandlers({
+  const { handleToggleHabit, handleAdjustHabit, handleAddHabit, handleUpdateHabit, handleDeleteHabit, handleArchiveHabit, handleUnarchiveHabit, handleSkipHabit, handleUnskipHabit } = useHabitHandlers({
     awardXp,
     earnTreats,
     plantSeed,
@@ -364,6 +366,20 @@ export function Index() {
             initialOpenSection={settingsOpenSection}
           />
         )}
+
+        {activeTab === 'mindmap' && HABIT_HUB_ENABLED && (
+          <HabitHubTab
+            habits={habits}
+            onToggleHabit={handleToggleHabit}
+            onAddHabit={handleAddHabit}
+            onDeleteHabit={handleDeleteHabit}
+            onUpdateHabit={handleUpdateHabit}
+            onArchiveHabit={handleArchiveHabit}
+            onUnarchiveHabit={handleUnarchiveHabit}
+            onSkipHabit={handleSkipHabit}
+            onUnskipHabit={handleUnskipHabit}
+          />
+        )}
         </main>
       </div>
 
@@ -393,7 +409,7 @@ export function Index() {
       )}
 
       <FocusMiniPlayer onNavigateToTimer={() => setActiveTab('garden')} />
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} canvasEnabled={CANVAS_ENABLED} />
+      <Navigation activeTab={activeTab} onTabChange={setActiveTab} canvasEnabled={CANVAS_ENABLED} habitHubEnabled={HABIT_HUB_ENABLED} />
 
       <ModalLayer
         challenges={challenges}

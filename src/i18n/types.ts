@@ -999,6 +999,21 @@ export interface Translations {
   widgetLarge: string;
   widgetNoData: string;
   todayHabits: string;
+  habitHub: string;
+  habitScore: string;
+  overallScore: string;
+  otherHabits: string;
+  archivedHabits: string;
+  archiveHabit: string;
+  unarchiveHabit: string;
+  skipToday: string;
+  skipped: string;
+  streakHistory: string;
+  bestStreak: string;
+  currentStreak: string;
+  weekdayFrequency: string;
+  habitHistory: string;
+  noHabitsYet: string;
   lastBadge: string;
   done: string;
 
