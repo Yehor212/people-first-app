@@ -32,9 +32,9 @@ interface HabitHubListProps {
 export function HabitHubList({
   habits,
   onToggleHabit,
-  onAddHabit,
+  onAddHabit: _onAddHabit,
   onDeleteHabit,
-  onUpdateHabit,
+  onUpdateHabit: _onUpdateHabit,
   onArchiveHabit,
   onUnarchiveHabit,
   onSkipHabit,
@@ -44,7 +44,6 @@ export function HabitHubList({
   const ts = t as unknown as Record<string, string>;
   const [showOther, setShowOther] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
 
   const {
     todayHabits,
@@ -189,7 +188,7 @@ export function HabitHubList({
       >
         <motion.button
           whileTap={{ scale: 0.9 }}
-          onClick={() => setShowAddForm(true)}
+          onClick={() => { /* TODO: wire add-habit form */ }}
           className={cn(
             'w-14 h-14 rounded-2xl flex items-center justify-center',
             'bg-primary shadow-zen-lg shadow-primary/20',
