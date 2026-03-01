@@ -383,26 +383,24 @@ test.describe('Offline Behavior', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
-    // Go offline via the browser context
+    // Go offline: block network + fire the browser "offline" event
     await context.setOffline(true);
+    await page.evaluate(() => window.dispatchEvent(new Event('offline')));
 
-    // The OfflineBanner listens to the browser "offline" event
-    // and renders a banner with role="alert". Wait for it to appear.
-    // Use a generous timeout because the component uses AnimatePresence.
+    // OfflineBanner listens to "offline" and renders with data-testid.
+    // Generous timeout because AnimatePresence animates entry.
     const offlineBanner = page.locator('[data-testid="offline-banner"]');
     await expect(offlineBanner).toBeVisible({ timeout: 10000 });
 
-    // Verify the banner contains expected text (multilingual regex)
+    // Verify the banner contains text
     const bannerText = await offlineBanner.textContent();
     expect(bannerText).toBeTruthy();
 
-    // Go back online
+    // Go back online: restore network + fire "online" event
     await context.setOffline(false);
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
 
-    // After going back online, the banner should eventually disappear
-    // (the component sets isOnline=true and hides itself)
-    // Note: the banner may linger briefly due to animation, so we
-    // wait with a timeout rather than asserting immediate disappearance.
+    // Banner should disappear (may linger briefly due to animation)
     await expect(offlineBanner).not.toBeVisible({ timeout: 10000 });
   });
 });
