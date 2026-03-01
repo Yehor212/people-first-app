@@ -96,6 +96,9 @@ export const safeLocalStorageSet = (key: string, value: unknown): boolean => {
       key,
       error: error instanceof Error ? error.message : 'Unknown error',
     });
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      notifyStorageFull(key);
+    }
     return false;
   }
 };
@@ -160,7 +163,11 @@ export function storageGetRaw(key: string, fallback = ''): string {
 export function storageSetRaw(key: string, value: string): void {
   try {
     localStorage.setItem(key, value);
-  } catch { /* quota or security error */ }
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+      notifyStorageFull(key);
+    }
+  }
 }
 
 /** Safe localStorage remove. */
@@ -168,6 +175,20 @@ export function storageRemove(key: string): void {
   try {
     localStorage.removeItem(key);
   } catch { /* ignore */ }
+}
+
+// ─── Quota exceeded notification (picked up by OfflineBanner) ───
+
+let _quotaNotified = false;
+function notifyStorageFull(key: string) {
+  logger.error('[Storage] QuotaExceededError writing key:', key);
+  if (_quotaNotified) return; // fire once per session
+  _quotaNotified = true;
+  window.dispatchEvent(
+    new CustomEvent('zenflow:offline-data-dropped', {
+      detail: { message: 'Storage full — some changes may not be saved' },
+    }),
+  );
 }
 
 export default {

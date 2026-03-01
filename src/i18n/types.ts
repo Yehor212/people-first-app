@@ -524,6 +524,8 @@ export interface Translations {
   reminderDays: string;
   selectedHabits: string;
   noHabitsYet: string;
+  noHabitsInCategory: string;
+  showAll: string;
   reminderMoodTitle: string;
   reminderMoodBody: string;
   reminderHabitTitle: string;

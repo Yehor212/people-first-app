@@ -638,6 +638,8 @@ export const uk: Translations = {
   reminderDays: 'Дні тижня',
   selectedHabits: 'Звички для нагадування',
   noHabitsYet: 'Поки немає звичок.',
+  noHabitsInCategory: 'Немає звичок у цій категорії',
+  showAll: 'Показати все',
   reminderMoodTitle: 'Гей, як справи? 💭',
   reminderMoodBody: '30 секунд — і мозок скаже дякую! Як настрій?',
   reminderHabitTitle: 'Час для звички! ✨',

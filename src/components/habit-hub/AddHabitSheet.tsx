@@ -176,6 +176,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                   value={newHabitName}
                   onChange={(e) => setNewHabitName(e.target.value)}
                   placeholder={ts.habitNamePlaceholder || 'Enter habit name...'}
+                  aria-label={ts.habitName || 'Habit name'}
                   autoFocus
                   className={cn(
                     'w-full px-4 py-3 rounded-xl text-sm text-slate-100',
@@ -196,6 +197,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   placeholder={ts.questionPromptPlaceholder || 'e.g. Did you exercise today?'}
+                  aria-label={ts.questionPrompt || 'Question Prompt'}
                   className={cn(
                     'w-full px-4 py-2.5 rounded-xl text-xs text-slate-300',
                     'bg-white/[0.03] border border-white/[0.06] transition-colors',

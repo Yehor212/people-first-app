@@ -1900,6 +1900,8 @@ const arabicOverrides: Partial<Translations> = {
   reminderDays: 'أيام التذكير',
   selectedHabits: 'العادات المختارة',
   noHabitsYet: 'لا عادات بعد',
+  noHabitsInCategory: 'لا عادات في هذه الفئة',
+  showAll: 'عرض الكل',
   reminderMoodTitle: 'كيف حالك؟',
   reminderMoodBody: 'سجل مزاجك',
   reminderHabitTitle: 'وقت العادات!',

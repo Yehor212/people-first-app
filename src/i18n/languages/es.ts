@@ -639,6 +639,8 @@ export const es: Translations = {
   reminderDays: 'Días de la semana',
   selectedHabits: 'Hábitos a recordar',
   noHabitsYet: 'Sin hábitos aún.',
+  noHabitsInCategory: 'No hay hábitos en esta categoría',
+  showAll: 'Mostrar todo',
   reminderMoodTitle: '¡Hola! ¿Cómo estás? 💭',
   reminderMoodBody: '30 segundos para agradecer a tu cerebro. ¿Cómo te sientes?',
   reminderHabitTitle: '¡Hora del mini hábito! ✨',

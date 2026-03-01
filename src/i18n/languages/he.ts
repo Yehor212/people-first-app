@@ -889,6 +889,8 @@ const hebrewOverrides: Partial<Translations> = {
   reminderDays: 'ימים בשבוע',
   selectedHabits: 'הרגלים לתזכורת',
   noHabitsYet: 'אין הרגלים עדיין.',
+  noHabitsInCategory: 'אין הרגלים בקטגוריה זו',
+  showAll: 'הצג הכל',
   reminderMoodTitle: 'היי, צ\'ק-אין מהיר! 💭',
   reminderMoodBody: '30 שניות להודות למוח שלך. איך מרגישים?',
   reminderHabitTitle: 'זמן הרגל קטן! ✨',

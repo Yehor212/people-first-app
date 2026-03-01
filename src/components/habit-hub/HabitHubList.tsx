@@ -156,9 +156,9 @@ export function HabitHubList({
         </button>
         {showSortMenu && (
           <>
-            <div className="fixed inset-0 z-30" onClick={() => setShowSortMenu(false)} />
+            <div className="fixed inset-0 z-[56]" onClick={() => setShowSortMenu(false)} />
             <div className={cn(
-              'absolute right-0 top-6 z-40 min-w-[120px] rounded-xl overflow-hidden',
+              'absolute right-0 top-6 z-[57] min-w-[120px] rounded-xl overflow-hidden',
               'bg-[#141a2e] border border-white/[0.08] shadow-xl',
             )}>
               {sortOptions.map((opt) => (
@@ -281,21 +281,39 @@ export function HabitHubList({
       {/* ═══ EMPTY STATE ═══ */}
       {todayHabits.length === 0 && otherHabits.length === 0 && (
         <div className="text-center py-16 px-6">
-          <div className="text-4xl mb-4">🌱</div>
-          <p className="text-slate-400 text-sm mb-6">{ts.noHabitsYet || 'No habits yet. Add your first one!'}</p>
-          <button
-            onClick={() => setShowAddForm(true)}
-            className={cn(
-              'px-6 py-3 rounded-2xl text-sm font-medium transition-all min-h-[44px]',
-              'bg-primary text-primary-foreground',
-              'shadow-zen-lg shadow-primary/20',
-              'hover:brightness-110 active:scale-[0.97]',
-              'flex items-center gap-2 mx-auto',
-            )}
-          >
-            <Plus className="w-5 h-5" />
-            {ts.addHabit || 'Add Habit'}
-          </button>
+          <div className="text-4xl mb-4">{categoryFilter !== 'all' ? '🔍' : '🌱'}</div>
+          <p className="text-slate-400 text-sm mb-6">
+            {categoryFilter !== 'all'
+              ? (ts.noHabitsInCategory || 'No habits in this category')
+              : (ts.noHabitsYet || 'No habits yet. Add your first one!')}
+          </p>
+          {categoryFilter !== 'all' ? (
+            <button
+              onClick={() => setCategoryFilter('all')}
+              className={cn(
+                'px-6 py-3 rounded-2xl text-sm font-medium transition-all min-h-[44px]',
+                'bg-white/[0.06] border border-white/[0.08] text-slate-300',
+                'hover:bg-white/[0.10] active:scale-[0.97]',
+                'flex items-center gap-2 mx-auto',
+              )}
+            >
+              {ts.showAll || 'Show All'}
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowAddForm(true)}
+              className={cn(
+                'px-6 py-3 rounded-2xl text-sm font-medium transition-all min-h-[44px]',
+                'bg-primary text-primary-foreground',
+                'shadow-zen-lg shadow-primary/20',
+                'hover:brightness-110 active:scale-[0.97]',
+                'flex items-center gap-2 mx-auto',
+              )}
+            >
+              <Plus className="w-5 h-5" />
+              {ts.addHabit || 'Add Habit'}
+            </button>
+          )}
         </div>
       )}
 

@@ -638,6 +638,8 @@ export const en: Translations = {
   reminderDays: 'Days of week',
   selectedHabits: 'Habits to remind',
   noHabitsYet: 'No habits yet.',
+  noHabitsInCategory: 'No habits in this category',
+  showAll: 'Show All',
   reminderMoodTitle: 'Hey, quick check! 💭',
   reminderMoodBody: '30 seconds to thank your brain. How are you feeling?',
   reminderHabitTitle: 'Tiny habit time! ✨',

@@ -638,6 +638,8 @@ export const ja: Translations = {
   reminderDays: '曜日',
   selectedHabits: 'リマインドする習慣',
   noHabitsYet: 'まだ習慣がありません。',
+  noHabitsInCategory: 'このカテゴリに習慣はありません',
+  showAll: 'すべて表示',
   reminderMoodTitle: '気分チェック！💭',
   reminderMoodBody: '30秒で今の気分を記録しよう。調子はどう？',
   reminderHabitTitle: '習慣の時間！✨',
