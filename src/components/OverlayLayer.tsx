@@ -6,7 +6,6 @@ import { dismissUpdate } from '@/lib/appUpdateManager';
 import { OnboardingOverlay } from '@/components/OnboardingOverlay';
 import { FeatureUnlock } from '@/components/FeatureUnlock';
 import { WelcomeBackModal } from '@/components/WelcomeBackModal';
-import { OfflineBanner } from '@/components/OfflineBanner';
 import { StorageErrorBanner } from '@/components/StorageErrorBanner';
 import { MoodEntry } from '@/types';
 import { generateId, getToday } from '@/lib/utils';
@@ -104,9 +103,6 @@ export function OverlayLayer({ awardXp, earnTreats }: OverlayLayerProps) {
           }}
         />
       )}
-
-      {/* Offline banner - shows when user loses connection */}
-      <OfflineBanner />
 
       {/* Storage error banner - shows when localStorage/IndexedDB fails */}
       <StorageErrorBanner />

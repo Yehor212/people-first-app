@@ -239,6 +239,10 @@ export function Index() {
   useDeepLinkHandler();
 
   return (
+    <>
+    {/* Offline banner outside AuthGate — visible even during loading */}
+    <OfflineBanner />
+
     <AuthGate isLoading={isLoading}>
     <AdProvider
       onEarnTreats={(amount) => earnTreats('ad', amount, 'Ad reward')}
@@ -254,9 +258,6 @@ export function Index() {
       >
         {t.skipToContent || 'Skip to main content'}
       </a>
-
-      {/* Offline status banner */}
-      <OfflineBanner />
 
       {/* Dynamic mood-based background overlay */}
       <MoodBackgroundOverlay />
@@ -432,6 +433,7 @@ export function Index() {
     </div>
     </AdProvider>
     </AuthGate>
+    </>
   );
 };
 
