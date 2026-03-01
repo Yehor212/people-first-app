@@ -27,6 +27,7 @@ import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 import { ModalLayer } from '@/components/ModalLayer';
 import { Navigation } from '@/components/Navigation';
 import { OverlayLayer } from '@/components/OverlayLayer';
+import { OfflineBanner } from '@/components/OfflineBanner';
 import { AuthGate } from '@/components/AuthGate';
 import { useDeepLinkHandler } from '@/hooks/useDeepLinkHandler';
 import { HomeTab } from '@/components/tabs/HomeTab';
@@ -253,6 +254,9 @@ export function Index() {
       >
         {t.skipToContent || 'Skip to main content'}
       </a>
+
+      {/* Offline status banner */}
+      <OfflineBanner />
 
       {/* Dynamic mood-based background overlay */}
       <MoodBackgroundOverlay />

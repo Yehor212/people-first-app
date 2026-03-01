@@ -2074,6 +2074,7 @@ export const uk: Translations = {
   journalEntryDeleted: 'Запис видалено',
   journalCompressing: 'Стиснення...',
   journalPhotoError: 'Не вдалося додати фото',
+  journalPhotoTooLarge: 'Зображення занадто велике (макс. 10 МБ)',
   journalDraftFound: 'Знайдено незбережений чернетку',
   journalRestore: 'Відновити',
   journalDiscardTitle: 'Незбережені зміни',

@@ -38,9 +38,18 @@ export function JournalPhotoPicker({
     }
   }, []);
 
+  const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE) {
+      setError(ts.journalPhotoTooLarge || 'Image too large (max 10 MB). Try a smaller image.');
+      e.target.value = '';
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {

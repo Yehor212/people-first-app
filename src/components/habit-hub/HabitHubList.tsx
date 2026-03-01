@@ -12,6 +12,7 @@ import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, ChevronDown, Archive, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { zenMotion } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useHabitHub, type HabitSortOption } from '@/hooks/useHabitHub';
@@ -281,7 +282,20 @@ export function HabitHubList({
       {todayHabits.length === 0 && otherHabits.length === 0 && (
         <div className="text-center py-16 px-6">
           <div className="text-4xl mb-4">🌱</div>
-          <p className="text-slate-400 text-sm">{ts.noHabitsYet || 'No habits yet. Add your first one!'}</p>
+          <p className="text-slate-400 text-sm mb-6">{ts.noHabitsYet || 'No habits yet. Add your first one!'}</p>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className={cn(
+              'px-6 py-3 rounded-2xl text-sm font-medium transition-all min-h-[44px]',
+              'bg-primary text-primary-foreground',
+              'shadow-zen-lg shadow-primary/20',
+              'hover:brightness-110 active:scale-[0.97]',
+              'flex items-center gap-2 mx-auto',
+            )}
+          >
+            <Plus className="w-5 h-5" />
+            {ts.addHabit || 'Add Habit'}
+          </button>
         </div>
       )}
 
@@ -311,8 +325,8 @@ export function HabitHubList({
 
       {/* ═══ FAB — Add Habit ═══ */}
       <div
-        className="fixed z-40"
-        style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))', right: '1.25rem' }}
+        className="fixed z-[55]"
+        style={{ bottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))', right: '1.25rem' }}
       >
         <motion.button
           whileTap={{ scale: 0.9 }}
@@ -342,13 +356,15 @@ export function HabitHubList({
       />
 
       {/* ═══ Add / Edit Habit Sheet ═══ */}
-      <AddHabitSheet
-        open={showAddForm}
-        onClose={() => { setShowAddForm(false); setEditingHabit(null); }}
-        onAdd={onAddHabit}
-        onUpdate={onUpdateHabit}
-        editingHabit={editingHabit}
-      />
+      <ModalErrorBoundary fallbackTitle="Add Habit Error">
+        <AddHabitSheet
+          open={showAddForm}
+          onClose={() => { setShowAddForm(false); setEditingHabit(null); }}
+          onAdd={onAddHabit}
+          onUpdate={onUpdateHabit}
+          editingHabit={editingHabit}
+        />
+      </ModalErrorBoundary>
     </div>
   );
 }

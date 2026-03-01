@@ -185,21 +185,39 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     identityCluster, identityVerb, identityIcon,
   ]);
 
-  // Pre-fill form from template
+  // Create habit immediately from template (true quick-add)
   const handleQuickAdd = useCallback((templateId: string) => {
     const template = habitTemplates.find(t => t.id === templateId);
     if (!template) return;
 
-    setNewHabitName(template.names[language] || template.names.en);
-    setSelectedIcon(template.icon);
-    // Template color: resolve to palette index
-    const colorVal = template.color;
-    setSelectedColorIndex(typeof colorVal === 'number' ? colorVal : 0);
-    setHabitType((template as any).habitType || 'boolean');
-    setFrequency({ numerator: 1, denominator: 1 });
-    setReminders([]);
-    setShowCustomForm(true);
-  }, [language]);
+    const name = template.names[language] || template.names.en;
+    const colorVal = typeof template.color === 'number' ? template.color : 0;
+    const type: LoopHabitType = (template as any).habitType || 'boolean';
+
+    const habit: Habit = {
+      id: generateId(),
+      name,
+      icon: template.icon,
+      color: colorVal,
+      position: Date.now(),
+      createdAt: Date.now(),
+      habitType: type,
+      frequency: { numerator: 1, denominator: 1 },
+      question: '',
+      description: '',
+      isArchived: false,
+      targetValue: 0,
+      targetType: 'atLeast',
+      unit: '',
+      entries: {},
+      reminders: [],
+      category: (template as any).category || 'health',
+    };
+
+    onAddHabit(habit);
+    void hapticTap();
+    resetForm();
+  }, [language, onAddHabit, resetForm]);
 
   // Reminder CRUD
   const handleAddReminder = useCallback(() => {

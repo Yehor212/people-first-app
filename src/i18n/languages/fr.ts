@@ -2075,6 +2075,7 @@ export const fr: Translations = {
   journalEntryDeleted: 'Entrée supprimée',
   journalCompressing: 'Compression...',
   journalPhotoError: 'Échec de l\'ajout de la photo',
+  journalPhotoTooLarge: 'Image trop volumineuse (max 10 Mo)',
   journalDraftFound: 'Brouillon non enregistré trouvé',
   journalRestore: 'Restaurer',
   journalDiscardTitle: 'Modifications non enregistrées',

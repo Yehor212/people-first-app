@@ -214,7 +214,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               <motion.button
                 onClick={() => { void hapticTap(); onOpenChallenge(); }}
                 aria-label={t.friendChallenges}
-                className="relative w-10 h-10 rounded-xl flex items-center justify-center bg-slate-100/60 dark:bg-foreground/10 backdrop-blur-sm border border-slate-200/60 dark:border-foreground/20 text-slate-600 dark:text-foreground/70 hover:text-slate-800 dark:hover:text-foreground hover:bg-slate-200/60 dark:hover:bg-foreground/20 transition-colors"
+                className="relative w-11 h-11 rounded-xl flex items-center justify-center bg-slate-100/60 dark:bg-foreground/10 backdrop-blur-sm border border-slate-200/60 dark:border-foreground/20 text-slate-600 dark:text-foreground/70 hover:text-slate-800 dark:hover:text-foreground hover:bg-slate-200/60 dark:hover:bg-foreground/20 transition-colors"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -237,7 +237,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
               onClick={(e) => { e.preventDefault(); form.setIsAdding(!form.isAdding); }}
               aria-label={form.isAdding ? (t.cancel || 'Cancel') : (t.addHabit || 'Add habit')}
               className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center transition-all",
+                "w-11 h-11 rounded-xl flex items-center justify-center transition-all",
                 form.isAdding ? "bg-red-500/30 border border-red-500/50 text-red-300" : "bg-gradient-to-br from-emerald-500/60 to-teal-600/60 border border-emerald-500/30 text-white"
               )}
               style={!form.isAdding ? { boxShadow: '0 0 12px rgba(16, 185, 129, 0.3)' } : {}}

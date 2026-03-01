@@ -2106,6 +2106,7 @@ const hebrewOverrides: Partial<Translations> = {
   journalEntryDeleted: 'הרשומה נמחקה',
   journalCompressing: 'דוחס...',
   journalPhotoError: 'הוספת התמונה נכשלה',
+  journalPhotoTooLarge: 'התמונה גדולה מדי (מקסימום 10 MB)',
   journalDraftFound: 'נמצא טיוטה שלא נשמרה',
   journalRestore: 'שחזר',
   journalDiscardTitle: 'שינויים שלא נשמרו',

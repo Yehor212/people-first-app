@@ -2039,6 +2039,7 @@ const arabicOverrides: Partial<Translations> = {
   journalEntryDeleted: 'تم حذف المدخل',
   journalCompressing: 'جارٍ الضغط...',
   journalPhotoError: 'فشل في إضافة الصورة',
+  journalPhotoTooLarge: 'الصورة كبيرة جدًا (الحد الأقصى 10 ميجابايت)',
   journalDraftFound: 'تم العثور على مسودة غير محفوظة',
   journalRestore: 'استعادة',
   journalDiscardTitle: 'تغييرات غير محفوظة',

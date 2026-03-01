@@ -2074,6 +2074,7 @@ export const ja: Translations = {
   journalEntryDeleted: 'エントリーが削除されました',
   journalCompressing: '圧縮中...',
   journalPhotoError: '写真の追加に失敗しました',
+  journalPhotoTooLarge: '画像が大きすぎます（最大10 MB）',
   journalDraftFound: '未保存の下書きが見つかりました',
   journalRestore: '復元',
   journalDiscardTitle: '未保存の変更',

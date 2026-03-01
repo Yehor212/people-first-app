@@ -462,10 +462,12 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                 </button>
                 <button
                   onClick={submitHabit}
+                  disabled={!newHabitName.trim()}
                   className={cn(
                     'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
                     'bg-violet-600 text-white',
                     'hover:bg-violet-500 active:scale-[0.98]',
+                    'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-violet-600',
                   )}
                 >
                   {ts.save || 'Save'}

@@ -2074,6 +2074,7 @@ export const en: Translations = {
   journalEntryDeleted: 'Entry deleted',
   journalCompressing: 'Compressing...',
   journalPhotoError: 'Failed to add photo',
+  journalPhotoTooLarge: 'Image too large (max 10 MB)',
   journalDraftFound: 'Unsaved draft found',
   journalRestore: 'Restore',
   journalDiscardTitle: 'Unsaved Changes',

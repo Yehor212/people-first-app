@@ -2156,6 +2156,7 @@ export interface Translations {
   journalEntryDeleted: string;
   journalCompressing: string;
   journalPhotoError: string;
+  journalPhotoTooLarge: string;
   journalDraftFound: string;
   journalRestore: string;
   journalDiscardTitle: string;

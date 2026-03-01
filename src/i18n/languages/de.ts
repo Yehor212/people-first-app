@@ -2075,6 +2075,7 @@ export const de: Translations = {
   journalEntryDeleted: 'Eintrag gelöscht',
   journalCompressing: 'Komprimiere...',
   journalPhotoError: 'Foto konnte nicht hinzugefügt werden',
+  journalPhotoTooLarge: 'Bild zu groß (max. 10 MB)',
   journalDraftFound: 'Ungespeicherter Entwurf gefunden',
   journalRestore: 'Wiederherstellen',
   journalDiscardTitle: 'Ungespeicherte Änderungen',

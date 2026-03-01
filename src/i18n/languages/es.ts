@@ -2075,6 +2075,7 @@ export const es: Translations = {
   journalEntryDeleted: 'Entrada eliminada',
   journalCompressing: 'Comprimiendo...',
   journalPhotoError: 'Error al añadir foto',
+  journalPhotoTooLarge: 'Imagen demasiado grande (máx. 10 MB)',
   journalDraftFound: 'Borrador no guardado encontrado',
   journalRestore: 'Restaurar',
   journalDiscardTitle: 'Cambios sin guardar',

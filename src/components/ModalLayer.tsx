@@ -3,6 +3,7 @@ import { useUIStore, useUserDataStore, useAppStore, getModalToggle } from '@/sto
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { LazyErrorBoundary } from '@/components/ErrorBoundary';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { WeeklyReport } from '@/components/WeeklyReport';
 import { TimeHelper } from '@/components/TimeHelper';
 import { ChallengeModal } from '@/components/ChallengeModal';
@@ -90,17 +91,25 @@ export function ModalLayer({
   const safeFocusSessions = useMemo(() => Array.isArray(focusSessions) ? focusSessions : [], [focusSessions]);
   const safeGratitudeEntries = useMemo(() => Array.isArray(gratitudeEntries) ? gratitudeEntries : [], [gratitudeEntries]);
 
+  // Android back button handlers for modals without built-in support
+  useBackHandler(showWeeklyReport, () => setShowWeeklyReport(false));
+  useBackHandler(showTimeHelper, () => setShowTimeHelper(false));
+  useBackHandler(showChallengeModal, () => setShowChallengeModal(false));
+  useBackHandler(showMindfulMoment, () => setShowMindfulMoment(false));
+
   return (
     <>
       {/* Weekly Report Modal */}
       {showWeeklyReport && (
-        <WeeklyReport
-          moods={safeMoods}
-          habits={safeHabits}
-          focusSessions={safeFocusSessions}
-          gratitudeEntries={safeGratitudeEntries}
-          onClose={() => setShowWeeklyReport(false)}
-        />
+        <LazyErrorBoundary componentName="Weekly Report">
+          <WeeklyReport
+            moods={safeMoods}
+            habits={safeHabits}
+            focusSessions={safeFocusSessions}
+            gratitudeEntries={safeGratitudeEntries}
+            onClose={() => setShowWeeklyReport(false)}
+          />
+        </LazyErrorBoundary>
       )}
 
       {/* Widget Settings Modal */}
@@ -134,7 +143,9 @@ export function ModalLayer({
 
       {/* Time Helper Modal */}
       {isFeatureVisible('focusTimer') && showTimeHelper && (
-        <TimeHelper onClose={() => setShowTimeHelper(false)} />
+        <LazyErrorBoundary componentName="Time Helper">
+          <TimeHelper onClose={() => setShowTimeHelper(false)} />
+        </LazyErrorBoundary>
       )}
 
       {/* Tasks Panel Modal (Progressive: Day 4) */}
@@ -186,19 +197,21 @@ export function ModalLayer({
 
       {/* Challenge Modal - for deep link invites and habit challenges */}
       {isFeatureVisible('challenges') && (
-        <ChallengeModal
-          open={showChallengeModal}
-          onOpenChange={(open) => {
-            setShowChallengeModal(open);
-            if (!open) {
-              setChallengeInvite(undefined);
-              setChallengeHabit(undefined);
-            }
-          }}
-          habit={challengeHabit}
-          initialInvite={challengeInvite}
-          username={userName}
-        />
+        <LazyErrorBoundary componentName="Challenge">
+          <ChallengeModal
+            open={showChallengeModal}
+            onOpenChange={(open) => {
+              setShowChallengeModal(open);
+              if (!open) {
+                setChallengeInvite(undefined);
+                setChallengeHabit(undefined);
+              }
+            }}
+            habit={challengeHabit}
+            initialInvite={challengeInvite}
+            username={userName}
+          />
+        </LazyErrorBoundary>
       )}
 
       {/* What's New Modal - shows after app update */}
@@ -206,13 +219,15 @@ export function ModalLayer({
 
       {/* MindfulMoment - shows after focus session completion */}
       {isFeatureVisible('focusTimer') && (
-        <MindfulMoment
-          isOpen={showMindfulMoment}
-          onClose={() => setShowMindfulMoment(false)}
-          onComplete={handleMindfulMomentComplete}
-          onViewProgress={() => setActiveTab('stats')}
-          trigger="focus"
-        />
+        <LazyErrorBoundary componentName="Mindful Moment">
+          <MindfulMoment
+            isOpen={showMindfulMoment}
+            onClose={() => setShowMindfulMoment(false)}
+            onComplete={handleMindfulMomentComplete}
+            onViewProgress={() => setActiveTab('stats')}
+            trigger="focus"
+          />
+        </LazyErrorBoundary>
       )}
     </>
   );
