@@ -103,6 +103,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
           'max-h-[85dvh] rounded-t-3xl overflow-y-auto',
           'bg-[#0a0f1a] border-t border-white/[0.06]',
           'p-0',
+          'ring-2 ring-violet-500/60', // DEBUG: visible indicator — remove after confirming
         )}
       >
         <div
