@@ -92,6 +92,7 @@ export function OfflineBanner() {
         } text-white shadow-lg`}
         role="alert"
         aria-live="polite"
+        data-testid="offline-banner"
       >
         <div className="max-w-lg mx-auto flex items-center justify-between gap-3">
           {/* Icon and message */}

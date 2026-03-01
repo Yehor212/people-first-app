@@ -389,7 +389,7 @@ test.describe('Offline Behavior', () => {
     // The OfflineBanner listens to the browser "offline" event
     // and renders a banner with role="alert". Wait for it to appear.
     // Use a generous timeout because the component uses AnimatePresence.
-    const offlineBanner = page.locator('[role="alert"]');
+    const offlineBanner = page.locator('[data-testid="offline-banner"]');
     await expect(offlineBanner).toBeVisible({ timeout: 10000 });
 
     // Verify the banner contains expected text (multilingual regex)
