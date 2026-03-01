@@ -240,34 +240,43 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
   }
 
   try {
-    // Sync habit metadata
+    // Sync habit metadata (map new local model → old cloud schema)
+    const freq = habit.frequency || { numerator: 1, denominator: 1 };
+    const cloudFrequency = freq.denominator === 1 ? 'daily' : 'weekly';
+    const cloudType = habit.habitType === 'numerical' ? 'multiple' : 'daily';
+
     const { error: habitError } = await supabase.from('habits').upsert({
       id: habit.id,
       user_id: userId,
       name: habit.name,
       icon: habit.icon,
-      color: habit.color,
-      type: habit.type,
-      frequency: habit.frequency,
-      custom_days: habit.customDays || [],
-      requires_duration: habit.requiresDuration || false,
-      target_duration: habit.targetDuration || null,
-      start_date: habit.startDate || null,
-      daily_target: habit.dailyTarget || 1,
-      target_count: habit.targetCount || null,
+      color: typeof habit.color === 'number' ? String(habit.color) : habit.color,
+      type: cloudType,
+      frequency: cloudFrequency,
+      custom_days: [],
+      requires_duration: false,
+      target_duration: null,
+      start_date: null,
+      daily_target: habit.targetValue || 1,
+      target_count: habit.targetValue || null,
       template_id: habit.templateId || null,
     }, { onConflict: 'id' });
 
     if (habitError) throw habitError;
 
-    // Sync completions
-    if (habit.completedDates && habit.completedDates.length > 0) {
-      const completions = habit.completedDates.map(date => ({
+    // Sync entries as completions (map entries → habit_completions rows)
+    const entries = habit.entries || {};
+    const completedDates = Object.entries(entries)
+      .filter(([, e]) => e.value === 2 || (habit.habitType === 'numerical' && e.value > 0))
+      .map(([date]) => date);
+
+    if (completedDates.length > 0) {
+      const completions = completedDates.map(date => ({
         user_id: userId,
         habit_id: habit.id,
         date,
-        count: habit.completionsByDate?.[date] || 1,
-        duration: habit.durationByDate?.[date] || null,
+        count: habit.habitType === 'numerical' ? Math.round((entries[date]?.value || 0) / 1000) : 1,
+        duration: null,
       }));
 
       const { error: completionError } = await supabase
@@ -657,26 +666,26 @@ export const pullFromCloud = async (): Promise<boolean> => {
       'cloud-moods'
     ) as MoodEntry[];
 
-    // Group completions and reminders by habit
-    const completionsByHabit = new Map<string, { dates: string[], byDate: Record<string, number>, durationByDate: Record<string, number> }>();
+    // Group completions by habit → convert to entries format
+    const entriesByHabit = new Map<string, Record<string, { value: number }>>();
     for (const c of completionsData) {
-      if (!completionsByHabit.has(c.habit_id)) {
-        completionsByHabit.set(c.habit_id, { dates: [], byDate: {}, durationByDate: {} });
+      let habitEntries = entriesByHabit.get(c.habit_id);
+      if (!habitEntries) {
+        habitEntries = {};
+        entriesByHabit.set(c.habit_id, habitEntries);
       }
-      const habitCompletions = completionsByHabit.get(c.habit_id);
-      habitCompletions.dates.push(c.date);
-      habitCompletions.byDate[c.date] = c.count;
-      if (c.duration) {
-        habitCompletions.durationByDate[c.date] = c.duration;
-      }
+      // If count > 1, it's numerical (value × 1000), otherwise YES_MANUAL (2)
+      habitEntries[c.date] = { value: c.count > 1 ? c.count * 1000 : 2 };
     }
 
     const remindersByHabit = new Map<string, Array<{ enabled: boolean; time: string; days: number[] }>>();
     for (const r of remindersData) {
-      if (!remindersByHabit.has(r.habit_id)) {
-        remindersByHabit.set(r.habit_id, []);
+      let reminders = remindersByHabit.get(r.habit_id);
+      if (!reminders) {
+        reminders = [];
+        remindersByHabit.set(r.habit_id, reminders);
       }
-      remindersByHabit.get(r.habit_id).push({
+      reminders.push({
         enabled: r.enabled,
         time: r.time,
         days: r.days,
@@ -686,27 +695,38 @@ export const pullFromCloud = async (): Promise<boolean> => {
     const habits: Habit[] = validateArray(
       runtimeHabitSchema,
       habitsData.map(h => {
-        const completions = completionsByHabit.get(h.id);
+        const entries = entriesByHabit.get(h.id) || {};
         const reminders = remindersByHabit.get(h.id) || [];
+        // Map old cloud type → new habitType
+        const cloudType = h.type || 'daily';
+        const habitType = (cloudType === 'multiple' || cloudType === 'reduce') ? 'numerical' : 'boolean';
+        // Map old cloud frequency → new ratio
+        const cloudFreq = h.frequency || 'daily';
+        const frequency = cloudFreq === 'weekly'
+          ? { numerator: 1, denominator: 7 }
+          : { numerator: 1, denominator: 1 };
+        // Parse color: try number, fallback to string
+        const colorRaw = h.color;
+        const color = typeof colorRaw === 'string' && /^\d+$/.test(colorRaw) ? parseInt(colorRaw, 10) : colorRaw;
+
         return {
           id: h.id,
           name: h.name,
           icon: h.icon,
-          color: h.color,
-          completedDates: completions?.dates || [],
+          color,
+          entries,
           createdAt: new Date(h.created_at).getTime(),
           templateId: h.template_id || undefined,
-          type: h.type,
+          habitType,
           reminders,
-          frequency: h.frequency,
-          customDays: h.custom_days,
-          requiresDuration: h.requires_duration,
-          targetDuration: h.target_duration || undefined,
-          startDate: h.start_date || undefined,
-          dailyTarget: h.daily_target,
-          targetCount: h.target_count || undefined,
-          completionsByDate: completions?.byDate,
-          durationByDate: completions?.durationByDate,
+          frequency,
+          question: '',
+          description: '',
+          isArchived: false,
+          position: 0,
+          targetValue: h.daily_target || h.target_count || 0,
+          targetType: cloudType === 'reduce' ? 'atMost' : 'atLeast',
+          unit: '',
         };
       }),
       'cloud-habits'

@@ -32,10 +32,12 @@ describe('DEMO_DATA.habits', () => {
       expect(typeof habit.id).toBe('string');
       expect(typeof habit.name).toBe('string');
       expect(typeof habit.icon).toBe('string');
-      expect(typeof habit.color).toBe('string');
-      expect(typeof habit.type).toBe('string');
-      expect(typeof habit.frequency).toBe('string');
-      expect(Array.isArray(habit.completedDates)).toBe(true);
+      expect(typeof habit.color).toBe('number');
+      expect(typeof habit.habitType).toBe('string');
+      expect(typeof habit.frequency).toBe('object');
+      expect(habit.frequency).toHaveProperty('numerator');
+      expect(habit.frequency).toHaveProperty('denominator');
+      expect(typeof habit.entries).toBe('object');
       expect(typeof habit.createdAt).toBe('number');
     }
   });

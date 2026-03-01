@@ -5,73 +5,48 @@ import {
   isHabitCompletedOnDate,
   getHabitCompletionTotal,
 } from '../habits';
-import { Habit } from '@/types';
-
-// ============================================
-// Helper: create a minimal Habit for testing
-// ============================================
-function makeHabit(overrides: Partial<Habit> = {}): Habit {
-  return {
-    id: 'habit-1',
-    name: 'Test Habit',
-    icon: '🧪',
-    color: '#FF0000',
-    completedDates: [],
-    createdAt: Date.now(),
-    type: 'daily',
-    frequency: 'daily',
-    reminders: [],
-    ...overrides,
-  } as Habit;
-}
+import type { Habit } from '@/types';
+import { makeTestHabit, datesToEntries, numericalEntries } from '@/test/habitFixtures';
 
 // ============================================
 // normalizeHabit
 // ============================================
 describe('normalizeHabit', () => {
-  it('returns habit with default type "daily" when type is undefined', () => {
-    const habit = makeHabit({ type: undefined } as Partial<Habit>);
+  it('returns habit with default habitType "boolean" when habitType is undefined', () => {
+    const habit = makeTestHabit({ habitType: undefined } as Partial<Habit>);
     const result = normalizeHabit(habit);
-    expect(result.type).toBe('daily');
+    expect(result.habitType).toBe('boolean');
   });
 
-  it('returns habit with default frequency "daily" when frequency is undefined', () => {
-    const habit = makeHabit({ frequency: undefined } as Partial<Habit>);
+  it('returns habit with default frequency when frequency is undefined', () => {
+    const habit = makeTestHabit({ frequency: undefined } as Partial<Habit>);
     const result = normalizeHabit(habit);
-    expect(result.frequency).toBe('daily');
+    expect(result.frequency).toEqual({ numerator: 1, denominator: 1 });
   });
 
-  it('returns habit with empty progressByDate when undefined', () => {
-    const habit = makeHabit({ progressByDate: undefined });
+  it('returns habit with empty entries when undefined', () => {
+    const habit = makeTestHabit({ entries: undefined } as Partial<Habit>);
     const result = normalizeHabit(habit);
-    expect(result.progressByDate).toEqual({});
-  });
-
-  it('returns habit with empty completedDates when undefined', () => {
-    const habit = makeHabit({ completedDates: undefined } as Partial<Habit>);
-    const result = normalizeHabit(habit);
-    expect(result.completedDates).toEqual([]);
+    expect(result.entries).toEqual({});
   });
 
   it('returns habit with empty reminders when undefined', () => {
-    const habit = makeHabit({ reminders: undefined } as Partial<Habit>);
+    const habit = makeTestHabit({ reminders: undefined } as Partial<Habit>);
     const result = normalizeHabit(habit);
     expect(result.reminders).toEqual([]);
   });
 
   it('preserves existing values when they are already set', () => {
-    const habit = makeHabit({
-      type: 'continuous',
-      frequency: 'weekly',
-      progressByDate: { '2026-01-01': 3 },
-      completedDates: ['2026-01-01'],
+    const habit = makeTestHabit({
+      habitType: 'numerical',
+      frequency: { numerator: 1, denominator: 7 },
+      entries: numericalEntries({ '2026-01-01': 3 }),
       reminders: [{ enabled: true, time: '09:00', days: [1, 2, 3] }],
     });
     const result = normalizeHabit(habit);
-    expect(result.type).toBe('continuous');
-    expect(result.frequency).toBe('weekly');
-    expect(result.progressByDate).toEqual({ '2026-01-01': 3 });
-    expect(result.completedDates).toEqual(['2026-01-01']);
+    expect(result.habitType).toBe('numerical');
+    expect(result.frequency).toEqual({ numerator: 1, denominator: 7 });
+    expect(result.entries['2026-01-01'].value).toBe(3000);
     expect(result.reminders).toHaveLength(1);
   });
 });
@@ -80,39 +55,35 @@ describe('normalizeHabit', () => {
 // getHabitCompletedDates
 // ============================================
 describe('getHabitCompletedDates', () => {
-  it('returns completedDates for a daily habit', () => {
-    const habit = makeHabit({
-      type: 'daily',
-      completedDates: ['2026-01-01', '2026-01-02'],
+  it('returns completed dates for a boolean habit', () => {
+    const habit = makeTestHabit({
+      habitType: 'boolean',
+      entries: datesToEntries(['2026-01-01', '2026-01-02']),
     });
     expect(getHabitCompletedDates(habit)).toEqual(['2026-01-01', '2026-01-02']);
   });
 
-  it('returns dates with progress === 0 for reduce habits', () => {
-    const habit = makeHabit({
-      type: 'reduce',
-      progressByDate: {
+  it('returns dates meeting target for numerical habit (atMost)', () => {
+    const habit = makeTestHabit({
+      habitType: 'numerical',
+      targetValue: 2,
+      targetType: 'atMost',
+      entries: numericalEntries({
         '2026-01-01': 0,
         '2026-01-02': 3,
-        '2026-01-03': 0,
-      },
+        '2026-01-03': 1,
+      }),
     });
     const result = getHabitCompletedDates(habit);
-    expect(result).toContain('2026-01-01');
+    // 0 → value=0 which is ENTRY.NO, not meeting target
+    // 3 → 3 > 2, not meeting atMost target
+    // 1 → 1 <= 2, meets atMost target
     expect(result).toContain('2026-01-03');
     expect(result).not.toContain('2026-01-02');
   });
 
-  it('returns empty array for reduce habit with no zero-progress dates', () => {
-    const habit = makeHabit({
-      type: 'reduce',
-      progressByDate: { '2026-01-01': 5, '2026-01-02': 2 },
-    });
-    expect(getHabitCompletedDates(habit)).toEqual([]);
-  });
-
-  it('returns empty array for daily habit with no completed dates', () => {
-    const habit = makeHabit({ type: 'daily', completedDates: [] });
+  it('returns empty array for boolean habit with no entries', () => {
+    const habit = makeTestHabit({ habitType: 'boolean', entries: {} });
     expect(getHabitCompletedDates(habit)).toEqual([]);
   });
 });
@@ -121,42 +92,47 @@ describe('getHabitCompletedDates', () => {
 // isHabitCompletedOnDate
 // ============================================
 describe('isHabitCompletedOnDate', () => {
-  it('returns true when date is in completedDates for daily habit', () => {
-    const habit = makeHabit({
-      type: 'daily',
-      completedDates: ['2026-01-15'],
+  it('returns true when entry is YES_MANUAL for boolean habit', () => {
+    const habit = makeTestHabit({
+      habitType: 'boolean',
+      entries: datesToEntries(['2026-01-15']),
     });
     expect(isHabitCompletedOnDate(habit, '2026-01-15')).toBe(true);
   });
 
-  it('returns false when date is NOT in completedDates for daily habit', () => {
-    const habit = makeHabit({
-      type: 'daily',
-      completedDates: ['2026-01-15'],
+  it('returns false when date has no entry for boolean habit', () => {
+    const habit = makeTestHabit({
+      habitType: 'boolean',
+      entries: datesToEntries(['2026-01-15']),
     });
     expect(isHabitCompletedOnDate(habit, '2026-01-16')).toBe(false);
   });
 
-  it('returns true when progressByDate[date] === 0 for reduce habit', () => {
-    const habit = makeHabit({
-      type: 'reduce',
-      progressByDate: { '2026-02-10': 0 },
+  it('returns true for numerical habit when value meets atLeast target', () => {
+    const habit = makeTestHabit({
+      habitType: 'numerical',
+      targetValue: 5,
+      targetType: 'atLeast',
+      entries: numericalEntries({ '2026-02-10': 5 }),
     });
     expect(isHabitCompletedOnDate(habit, '2026-02-10')).toBe(true);
   });
 
-  it('returns false when progressByDate[date] > 0 for reduce habit', () => {
-    const habit = makeHabit({
-      type: 'reduce',
-      progressByDate: { '2026-02-10': 5 },
+  it('returns false for numerical habit when value is below atLeast target', () => {
+    const habit = makeTestHabit({
+      habitType: 'numerical',
+      targetValue: 5,
+      targetType: 'atLeast',
+      entries: numericalEntries({ '2026-02-10': 3 }),
     });
     expect(isHabitCompletedOnDate(habit, '2026-02-10')).toBe(false);
   });
 
-  it('returns false when date has no entry in progressByDate for reduce habit', () => {
-    const habit = makeHabit({
-      type: 'reduce',
-      progressByDate: {},
+  it('returns false when date has no entry for numerical habit', () => {
+    const habit = makeTestHabit({
+      habitType: 'numerical',
+      targetValue: 5,
+      entries: {},
     });
     expect(isHabitCompletedOnDate(habit, '2026-02-10')).toBe(false);
   });
@@ -166,29 +142,32 @@ describe('isHabitCompletedOnDate', () => {
 // getHabitCompletionTotal
 // ============================================
 describe('getHabitCompletionTotal', () => {
-  it('returns count of completed dates for daily habit', () => {
-    const habit = makeHabit({
-      type: 'daily',
-      completedDates: ['2026-01-01', '2026-01-02', '2026-01-03'],
+  it('returns count of completed dates for boolean habit', () => {
+    const habit = makeTestHabit({
+      habitType: 'boolean',
+      entries: datesToEntries(['2026-01-01', '2026-01-02', '2026-01-03']),
     });
     expect(getHabitCompletionTotal(habit)).toBe(3);
   });
 
-  it('returns count of zero-progress dates for reduce habit', () => {
-    const habit = makeHabit({
-      type: 'reduce',
-      progressByDate: {
-        '2026-01-01': 0,
-        '2026-01-02': 2,
-        '2026-01-03': 0,
-        '2026-01-04': 0,
-      },
+  it('returns count of target-meeting dates for numerical habit', () => {
+    const habit = makeTestHabit({
+      habitType: 'numerical',
+      targetValue: 2,
+      targetType: 'atLeast',
+      entries: numericalEntries({
+        '2026-01-01': 2,
+        '2026-01-02': 1,
+        '2026-01-03': 3,
+        '2026-01-04': 5,
+      }),
     });
+    // 2 >= 2, 1 < 2, 3 >= 2, 5 >= 2 → 3 completed
     expect(getHabitCompletionTotal(habit)).toBe(3);
   });
 
-  it('returns 0 for a habit with no completions', () => {
-    const habit = makeHabit({ completedDates: [] });
+  it('returns 0 for a habit with no entries', () => {
+    const habit = makeTestHabit({ entries: {} });
     expect(getHabitCompletionTotal(habit)).toBe(0);
   });
 });

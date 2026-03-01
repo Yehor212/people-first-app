@@ -9,7 +9,8 @@ import { HabitHubList } from './HabitHubList';
 interface HabitHubTabProps {
   habits: Habit[];
   onToggleHabit: (habitId: string, date: string) => void;
-  onAddHabit: (habit: Omit<Habit, 'id' | 'createdAt' | 'completedDates'>) => void;
+  onAdjustHabit: (habitId: string, date: string, delta: number) => void;
+  onAddHabit: (habit: Habit) => void;
   onDeleteHabit: (habitId: string) => void;
   onUpdateHabit: (habit: Habit) => void;
   onArchiveHabit: (habitId: string) => void;
@@ -21,6 +22,7 @@ interface HabitHubTabProps {
 export function HabitHubTab({
   habits,
   onToggleHabit,
+  onAdjustHabit,
   onAddHabit,
   onDeleteHabit,
   onUpdateHabit,
@@ -34,6 +36,7 @@ export function HabitHubTab({
       <HabitHubList
         habits={habits}
         onToggleHabit={onToggleHabit}
+        onAdjustHabit={onAdjustHabit}
         onAddHabit={onAddHabit}
         onDeleteHabit={onDeleteHabit}
         onUpdateHabit={onUpdateHabit}

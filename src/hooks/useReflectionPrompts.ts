@@ -9,6 +9,7 @@
 import { useMemo } from 'react';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ReflectionTrigger, ReflectionDepth } from '@/types';
 import { getToday } from '@/lib/utils';
+import { isHabitCompletedOnDate } from '@/lib/habits';
 
 export interface ReflectionPrompt {
   trigger: ReflectionTrigger;
@@ -46,7 +47,7 @@ export function useReflectionPrompts(
 
     // Today's data
     const todayMoods = moods.filter(m => m.date === today);
-    const todayCompletedHabits = habits.filter(h => h.completedDates?.includes(today));
+    const todayCompletedHabits = habits.filter(h => isHabitCompletedOnDate(h, today));
     const todayFocusSessions = focusSessions.filter(s => s.date === today);
     const allHabitsComplete = habits.length > 0 && todayCompletedHabits.length === habits.length;
 

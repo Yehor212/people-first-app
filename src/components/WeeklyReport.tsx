@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { safeAverage } from '@/lib/validation';
+import { isHabitCompletedOnDate, getHabitCompletedDates } from '@/lib/habits';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -89,7 +90,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
 
     // Previous week stats (this is what we show in the report)
     const lastWeekHabits = habits.flatMap(h =>
-      (h.completedDates || []).filter(d => lastWeek.includes(d))
+      getHabitCompletedDates(h).filter(d => lastWeek.includes(d))
     );
     const lastWeekFocus = focusSessions
       .filter(s => lastWeek.includes(s.date))
@@ -103,7 +104,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
 
     // Week before last for comparison (to calculate improvement)
     const weekBeforeLastHabits = habits.flatMap(h =>
-      (h.completedDates || []).filter(d => weekBeforeLast.includes(d))
+      getHabitCompletedDates(h).filter(d => weekBeforeLast.includes(d))
     ).length;
 
     const improvement = weekBeforeLastHabits > 0
@@ -113,7 +114,7 @@ export function WeeklyReport({ moods, habits, focusSessions, gratitudeEntries, o
     // Find best day from previous week
     const dayStats = lastWeek.map(date => ({
       date,
-      count: habits.filter(h => h.completedDates?.includes(date)).length
+      count: habits.filter(h => isHabitCompletedOnDate(h, date)).length
     }));
     const bestDay = dayStats.reduce((max, day) => day.count > max.count ? day : max, dayStats[0]);
 

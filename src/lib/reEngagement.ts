@@ -8,6 +8,7 @@
 import { Habit } from '@/types';
 import { logger } from '@/lib/logger';
 import { getToday } from '@/lib/utils';
+import { getHabitCompletedDates } from '@/lib/habits';
 import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
 const ABSENCE_THRESHOLD_DAYS = 3;
@@ -93,7 +94,7 @@ export function calculateHabitSuccessRates(habits: Habit[]): Array<{ habit: Habi
       return { habit, successRate: 0 };
     }
 
-    const completedDays = habit.completedDates?.length || 0;
+    const completedDays = getHabitCompletedDates(habit).length;
     const successRate = (completedDays / daysToConsider) * 100;
 
     return { habit, successRate };

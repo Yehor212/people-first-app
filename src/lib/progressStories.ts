@@ -6,6 +6,7 @@
  */
 
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, Badge } from '@/types';
+import { getHabitCompletedDates } from '@/lib/habits';
 
 // ============================================
 // TYPES
@@ -201,7 +202,7 @@ function calculateHabitStats(habits: Habit[], weekStart: Date, weekEnd: Date): H
   const completionsByDay = new Map<string, number>();
 
   habits.forEach(habit => {
-    const weekCompletions = (habit.completedDates || []).filter(
+    const weekCompletions = getHabitCompletedDates(habit).filter(
       d => d >= startStr && d <= endStr
     );
     totalCompletions += weekCompletions.length;

@@ -22,6 +22,7 @@ import type {
   HabitTimingMetadata,
   MoodTagMetadata,
 } from '@/types';
+import { getHabitCompletedDates } from '@/lib/habits';
 
 /**
  * Translation strings for insights (v1.6.1)
@@ -147,14 +148,16 @@ export function analyzeMoodHabitCorrelation(
 
   // Analyze each habit
   habits.forEach(habit => {
-    if (habit.completedDates.length < MIN_HABIT_DAYS) return;
+    const completedDates = getHabitCompletedDates(habit);
+    if (completedDates.length < MIN_HABIT_DAYS) return;
 
+    const completedSet = new Set(completedDates);
     const daysWithHabit: number[] = [];
     const daysWithoutHabit: number[] = [];
 
     // Compare mood on days with and without the habit
     moodsByDate.forEach((moodValue, date) => {
-      if (habit.completedDates.includes(date)) {
+      if (completedSet.has(date)) {
         daysWithHabit.push(moodValue);
       } else {
         daysWithoutHabit.push(moodValue);
@@ -359,14 +362,15 @@ export function analyzeHabitTiming(
   });
 
   habits.forEach(habit => {
-    if (habit.completedDates.length < MIN_HABIT_DAYS) return;
+    const completedDates = getHabitCompletedDates(habit);
+    if (completedDates.length < MIN_HABIT_DAYS) return;
 
     const morningCompletions: string[] = [];
     const afternoonCompletions: string[] = [];
     const eveningCompletions: string[] = [];
 
     // Categorize by time (using mood time as proxy for habit completion time)
-    habit.completedDates.forEach(date => {
+    completedDates.forEach(date => {
       const hour = moodTimes.get(date);
       if (hour === undefined) return;
 
@@ -522,12 +526,15 @@ export function generateInsights(
   const recentMoods = moods.filter(m => m.timestamp >= ninetyDaysAgo);
   const recentSessions = focusSessions.filter(s => s.completedAt >= ninetyDaysAgo);
 
-  // Filter habit completedDates to last 90 days
+  // Filter habit entries to last 90 days
   const cutoffDate = new Date(ninetyDaysAgo).toISOString().split('T')[0];
-  const recentHabits = habits.map(h => ({
-    ...h,
-    completedDates: (h.completedDates || []).filter(d => d >= cutoffDate)
-  }));
+  const recentHabits = habits.map(h => {
+    const filteredEntries: Record<string, { value: number; notes?: string }> = {};
+    for (const [date, entry] of Object.entries(h.entries || {})) {
+      if (date >= cutoffDate) filteredEntries[date] = entry;
+    }
+    return { ...h, entries: filteredEntries };
+  });
 
   const allInsights: Insight[] = [];
 

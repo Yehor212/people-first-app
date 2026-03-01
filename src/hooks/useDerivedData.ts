@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useAppStore, useUserDataStore } from '@/stores';
 import { generateHabitScheduleEvents, mergeScheduleEvents } from '@/lib/habitScheduleSync';
 import { calculateStreak } from '@/lib/utils';
-import type { Habit } from '@/types';
+import { isHabitCompletedOnDate, getHabitCompletedDates } from '@/lib/habits';
 
 interface InnerWorldData {
   restDays: string[];
@@ -47,52 +47,18 @@ export function useDerivedData(innerWorld: InnerWorldData, badges: Array<{ id: s
     return gratitudeEntries.some(g => g.date === currentDate);
   }, [gratitudeEntries, currentDate]);
 
+  // In Loop model, all non-archived habits are "due" — frequency affects scoring, not visibility
   const habitsDueToday = useMemo(() => {
-    const todayDow = new Date().getDay();
-    return habits.filter((habit: Habit) => {
-      if (habit.frequency === 'custom' && habit.customDays) {
-        return habit.customDays.includes(todayDow);
-      }
-      if (habit.frequency === 'weekly') {
-        return todayDow === new Date(habit.createdAt).getDay();
-      }
-      return true;
-    });
+    return habits.filter(h => !h.isArchived);
   }, [habits]);
 
   const hasUncompletedHabits = useMemo(() => {
     if (habitsDueToday.length === 0) return false;
-    return habitsDueToday.some(h => {
-      const habitType = h.type || 'daily';
-      if (habitType === 'continuous') return h.failedDates?.includes(currentDate) ?? false;
-      if (habitType === 'reduce') {
-        const progress = h.progressByDate?.[currentDate];
-        return progress === undefined || progress > (h.targetCount ?? 0);
-      }
-      if (habitType === 'multiple') {
-        const completions = h.completionsByDate?.[currentDate] ?? 0;
-        return completions < (h.dailyTarget ?? 1);
-      }
-      return !h.completedDates?.includes(currentDate);
-    });
+    return habitsDueToday.some(h => !isHabitCompletedOnDate(h, currentDate));
   }, [habitsDueToday, currentDate]);
 
   const completedTodayCount = useMemo(() => {
-    return habitsDueToday.filter(h => {
-      const habitType = h.type || 'daily';
-      if (habitType === 'reduce') {
-        const progress = h.progressByDate?.[currentDate];
-        return progress !== undefined && progress <= (h.targetCount ?? 0);
-      }
-      if (habitType === 'multiple') {
-        const completions = h.completionsByDate?.[currentDate] ?? 0;
-        return completions >= (h.dailyTarget ?? 1);
-      }
-      if (habitType === 'continuous') {
-        return !(h.failedDates?.includes(currentDate));
-      }
-      return h.completedDates?.includes(currentDate);
-    }).length;
+    return habitsDueToday.filter(h => isHabitCompletedOnDate(h, currentDate)).length;
   }, [habitsDueToday, currentDate]);
 
   const currentPrimaryCTA = useMemo(() => {
@@ -123,7 +89,7 @@ export function useDerivedData(innerWorld: InnerWorldData, badges: Array<{ id: s
   const widgetStreak = useMemo(() => {
     const allActivityDates = [
       ...moods.map(m => m.date),
-      ...habits.flatMap(h => h.completedDates || []),
+      ...habits.flatMap(h => getHabitCompletedDates(h)),
       ...focusSessions.map(f => f.date),
       ...gratitudeEntries.map(g => g.date),
       ...(innerWorld.restDays || []),

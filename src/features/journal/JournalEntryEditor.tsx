@@ -564,8 +564,12 @@ export function JournalEntryEditor({
   };
 
   const handleAddPhoto = async (file: File) => {
-    const photo = await onAddPhoto(file, entryId);
-    setPhotoIds(prev => [...prev, photo.id]);
+    try {
+      const photo = await onAddPhoto(file, entryId);
+      setPhotoIds(prev => [...prev, photo.id]);
+    } catch (error) {
+      logger.error('[Journal] Photo upload failed:', error);
+    }
   };
 
   const handleRemovePhoto = useCallback(async (photoId: string) => {

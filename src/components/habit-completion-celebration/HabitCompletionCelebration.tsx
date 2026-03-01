@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { Check, Flame, Star, Zap } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,7 +10,7 @@ import { generateParticles, ParticleIcon } from './helpers';
 interface HabitCompletionCelebrationProps {
   habitName: string;
   habitIcon: string;
-  habitColor: string;
+  habitColor: number;
   xpGained?: number;
   streakDays?: number;
   isAllComplete?: boolean;
@@ -28,8 +29,11 @@ export function HabitCompletionCelebration({
   const { t } = useLanguage();
   const [phase, setPhase] = useState<'check' | 'xp' | 'streak' | 'done'>('check');
 
+  // Resolve palette index to hex for visual effects
+  const colorHex = resolveHabitColor(habitColor);
+
   // Generate particles with habit color (capped at 12 for performance)
-  const particles = useMemo(() => generateParticles(habitColor).slice(0, 12), [habitColor]);
+  const particles = useMemo(() => generateParticles(colorHex).slice(0, 12), [colorHex]);
 
   useEffect(() => {
     const timer1 = setTimeout(() => setPhase('xp'), 400);
@@ -61,10 +65,10 @@ export function HabitCompletionCelebration({
       <div
         className={cn(
           "relative flex items-center gap-3 px-5 py-3 rounded-2xl shadow-2xl transition-all duration-300",
-          habitColor,
           phase === 'check' && "animate-habit-complete-bounce scale-110",
           phase !== 'done' ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
         )}
+        style={{ backgroundColor: colorHex }}
       >
         {/* Animated checkmark */}
         <div className="relative">

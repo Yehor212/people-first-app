@@ -10,6 +10,7 @@ import {
   type UserStats,
 } from '../gamification';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
+import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
 // ============================================
 // HELPER FUNCTIONS
@@ -22,15 +23,13 @@ const createMoodEntry = (date: string, mood: 'great' | 'good' | 'okay' | 'bad' |
   timestamp: new Date(date).getTime(),
 });
 
-const createHabit = (completedDates: string[] = []): Habit => ({
-  id: 'habit_1',
-  name: 'Test Habit',
-  icon: '🎯',
-  color: 'blue',
-  completedDates,
-  createdAt: Date.now(),
-  type: 'daily',
-});
+const createHabit = (completedDates: string[] = []): Habit =>
+  makeTestHabit({
+    id: 'habit_1',
+    name: 'Test Habit',
+    icon: '🎯',
+    entries: datesToEntries(completedDates),
+  });
 
 const createFocusSession = (duration: number, date: string): FocusSession => ({
   id: `focus_${date}_${duration}`,
@@ -536,10 +535,9 @@ describe('checkAchievements - Edge Cases', () => {
     expect(updatedProgress.habit_master).toBe(60); // 30 + 30
   });
 
-  it('handles habits with undefined completedDates', () => {
+  it('handles habits with empty entries', () => {
     const stats = createEmptyStats();
     const habit = createHabit();
-    delete (habit as any).completedDates;
     stats.habits = [habit];
 
     // Should not throw

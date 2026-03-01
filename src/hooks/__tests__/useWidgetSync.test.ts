@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import type { Habit } from '@/types';
+import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
 // Mock logger
 vi.mock('@/lib/logger', () => ({
@@ -46,20 +47,18 @@ vi.mock('@/plugins/WidgetPlugin', () => ({
 
 describe('useWidgetSync', () => {
   const mockHabits: Habit[] = [
-    {
+    makeTestHabit({
       id: '1',
       name: 'Exercise',
-      frequency: 'daily',
-      completedDates: ['2024-01-15'],
-      createdAt: '2024-01-01',
-    },
-    {
+      entries: datesToEntries(['2024-01-15']),
+      createdAt: new Date('2024-01-01').getTime(),
+    }),
+    makeTestHabit({
       id: '2',
       name: 'Read',
-      frequency: 'daily',
-      completedDates: [],
-      createdAt: '2024-01-01',
-    },
+      entries: {},
+      createdAt: new Date('2024-01-01').getTime(),
+    }),
   ];
 
   beforeEach(() => {
@@ -172,13 +171,14 @@ describe('useWidgetSync', () => {
         isWeb: false,
       }));
 
-      const manyHabits: Habit[] = Array(10).fill(null).map((_, i) => ({
-        id: String(i),
-        name: `Habit ${i}`,
-        frequency: 'daily' as const,
-        completedDates: [],
-        createdAt: '2024-01-01',
-      }));
+      const manyHabits: Habit[] = Array(10).fill(null).map((_, i) =>
+        makeTestHabit({
+          id: String(i),
+          name: `Habit ${i}`,
+          entries: {},
+          createdAt: new Date('2024-01-01').getTime(),
+        }),
+      );
 
       const { useWidgetSync } = await import('../useWidgetSync');
       renderHook(() => useWidgetSync(5, manyHabits, 30, undefined, false));

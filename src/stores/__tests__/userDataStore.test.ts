@@ -17,6 +17,7 @@ vi.mock('@/lib/reminders', () => ({
 import { useUserDataStore } from '@/stores/userDataStore';
 import type { RegisteredSetters } from '@/stores/userDataStore';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ScheduleEvent } from '@/types';
+import { makeTestHabit } from '@/test/habitFixtures';
 
 const initialState = useUserDataStore.getState();
 
@@ -44,17 +45,13 @@ function makeMood(overrides: Partial<MoodEntry> = {}): MoodEntry {
 }
 
 function makeHabit(overrides: Partial<Habit> = {}): Habit {
-  return {
+  return makeTestHabit({
     id: 'h1',
     name: 'Test Habit',
     icon: 'star',
-    color: '#fff',
-    completedDates: [],
     createdAt: 1000,
-    type: 'daily',
-    reminders: [],
     ...overrides,
-  } as Habit;
+  });
 }
 
 function makeFocusSession(overrides: Partial<FocusSession> = {}): FocusSession {

@@ -137,7 +137,7 @@ export function computeMindMapLayout(
         pill: HABIT_PILL,
         type: 'habit' as const,
         habit,
-        completed: habit.completedDates?.includes(today) ?? false,
+        completed: habit.entries?.[today]?.value === 2,
         parentColor: color,
         parentColorHex: COLOR_HEX_MAP[color] || '#ffffff',
       };

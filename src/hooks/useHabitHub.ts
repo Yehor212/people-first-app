@@ -1,14 +1,17 @@
 /**
  * useHabitHub — Derived data layer for the Habit Hub tab.
  *
- * Computes scores, filters active/archived/today/other habits.
+ * Computes Loop-exact scores, filters active/archived habits.
  * All heavy computation inside useMemo — recalculates only when habits change.
  */
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Habit, HabitCategory } from '@/types';
-import { computeHabitScore, isHabitDueOnDate } from '@/lib/habitScore';
+import { computeHabitScore } from '@/lib/habitScore';
 import { formatDate } from '@/lib/utils';
+import { isHabitCompletedOnDate } from '@/lib/habits';
+
+export type HabitSortOption = 'score' | 'name' | 'status' | 'color' | 'manual';
 
 export interface UseHabitHubReturn {
   activeHabits: Habit[];
@@ -19,17 +22,29 @@ export interface UseHabitHubReturn {
   overallScore: number;
   categoryFilter: HabitCategory | 'all';
   setCategoryFilter: (c: HabitCategory | 'all') => void;
+  sortOption: HabitSortOption;
+  setSortOption: (s: HabitSortOption) => void;
   selectedHabit: Habit | null;
   setSelectedHabit: (h: Habit | null) => void;
 }
 
 export function useHabitHub(habits: Habit[]): UseHabitHubReturn {
   const [categoryFilter, setCategoryFilter] = useState<HabitCategory | 'all'>('all');
+  const [sortOption, setSortOption] = useState<HabitSortOption>('manual');
   const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
 
-  const today = useMemo(() => formatDate(new Date()), []);
+  // Live date — updates at midnight if app stays open
+  const [today, setToday] = useState(() => formatDate(new Date()));
+  useEffect(() => {
+    const check = () => {
+      const now = formatDate(new Date());
+      if (now !== today) setToday(now);
+    };
+    const id = setInterval(check, 60_000);
+    return () => clearInterval(id);
+  }, [today]);
 
-  // Split active vs archived (single pass)
+  // Split active vs archived
   const { activeHabits, archivedHabits } = useMemo(() => {
     const active: Habit[] = [];
     const archived: Habit[] = [];
@@ -43,54 +58,59 @@ export function useHabitHub(habits: Habit[]): UseHabitHubReturn {
     return { activeHabits: active, archivedHabits: archived };
   }, [habits]);
 
-  // Compute scores for all active habits (single pass, O(habits * days_per_habit))
+  // Compute scores for all habits
   const scoresMap = useMemo(() => {
     const map = new Map<string, number>();
-    for (const h of activeHabits) {
+    for (const h of [...activeHabits, ...archivedHabits]) {
       map.set(h.id, computeHabitScore(h));
     }
     return map;
-  }, [activeHabits]);
+  }, [activeHabits, archivedHabits]);
 
-  // Overall score = average of all active habit scores
+  // Overall score = average of ACTIVE habit scores
   const overallScore = useMemo(() => {
-    if (scoresMap.size === 0) return 0;
+    if (activeHabits.length === 0) return 0;
     let sum = 0;
-    scoresMap.forEach(v => { sum += v; });
-    return sum / scoresMap.size;
-  }, [scoresMap]);
+    for (const h of activeHabits) {
+      sum += scoresMap.get(h.id) ?? 0;
+    }
+    return sum / activeHabits.length;
+  }, [activeHabits, scoresMap]);
 
-  // Split today vs other, apply category filter
+  // Filter and sort — all habits show as "today" (Loop doesn't split by due date)
   const { todayHabits, otherHabits } = useMemo(() => {
     const filtered = categoryFilter === 'all'
       ? activeHabits
       : activeHabits.filter(h => h.category === categoryFilter);
 
-    const todayArr: Habit[] = [];
-    const otherArr: Habit[] = [];
-
-    for (const h of filtered) {
-      if (isHabitDueOnDate(h, today)) {
-        todayArr.push(h);
-      } else {
-        otherArr.push(h);
+    const sortFn = (a: Habit, b: Habit) => {
+      switch (sortOption) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'color':
+          return a.color - b.color;
+        case 'manual':
+          return (a.position ?? 0) - (b.position ?? 0);
+        case 'status': {
+          const aComp = isHabitCompletedOnDate(a, today) ? 1 : 0;
+          const bComp = isHabitCompletedOnDate(b, today) ? 1 : 0;
+          if (aComp !== bComp) return aComp - bComp;
+          return a.name.localeCompare(b.name);
+        }
+        case 'score':
+        default: {
+          // Incomplete first, then by score descending
+          const aComp = isHabitCompletedOnDate(a, today) ? 1 : 0;
+          const bComp = isHabitCompletedOnDate(b, today) ? 1 : 0;
+          if (aComp !== bComp) return aComp - bComp;
+          return (scoresMap.get(b.id) ?? 0) - (scoresMap.get(a.id) ?? 0);
+        }
       }
-    }
+    };
 
-    // Sort today's habits: incomplete first, then by score descending
-    const completedSet = new Set<string>();
-    for (const h of todayArr) {
-      if (h.completedDates?.includes(today)) completedSet.add(h.id);
-    }
-    todayArr.sort((a, b) => {
-      const aComplete = completedSet.has(a.id) ? 1 : 0;
-      const bComplete = completedSet.has(b.id) ? 1 : 0;
-      if (aComplete !== bComplete) return aComplete - bComplete;
-      return (scoresMap.get(b.id) ?? 0) - (scoresMap.get(a.id) ?? 0);
-    });
-
-    return { todayHabits: todayArr, otherHabits: otherArr };
-  }, [activeHabits, categoryFilter, today, scoresMap]);
+    const sorted = [...filtered].sort(sortFn);
+    return { todayHabits: sorted, otherHabits: [] as Habit[] };
+  }, [activeHabits, categoryFilter, today, scoresMap, sortOption]);
 
   return {
     activeHabits,
@@ -101,6 +121,8 @@ export function useHabitHub(habits: Habit[]): UseHabitHubReturn {
     overallScore,
     categoryFilter,
     setCategoryFilter,
+    sortOption,
+    setSortOption,
     selectedHabit,
     setSelectedHabit,
   };

@@ -161,12 +161,15 @@ describe('runtimeHabitSchema', () => {
     id: 'h1',
     name: 'Meditate',
     icon: '🧘',
-    color: '#7C3AED',
-    completedDates: ['2026-02-15', '2026-02-16'],
+    color: 8,
     createdAt: Date.now(),
-    type: 'daily' as const,
+    habitType: 'boolean' as const,
     reminders: [{ enabled: true, time: '09:00', days: [1, 2, 3, 4, 5] }],
-    frequency: 'daily' as const,
+    frequency: { numerator: 1, denominator: 1 },
+    entries: {
+      '2026-02-15': { value: 2 },
+      '2026-02-16': { value: 2 },
+    },
   };
 
   it('accepts a valid habit', () => {
@@ -174,13 +177,13 @@ describe('runtimeHabitSchema', () => {
     expect(result.success).toBe(true);
   });
 
-  it('applies defaults for old habits without type/frequency/reminders', () => {
-    const { type: _t, frequency: _f, reminders: _r, ...oldHabit } = validHabit;
+  it('applies defaults for old habits without habitType/frequency/reminders', () => {
+    const { habitType: _t, frequency: _f, reminders: _r, ...oldHabit } = validHabit;
     const result = runtimeHabitSchema.safeParse(oldHabit);
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.type).toBe('daily');
-      expect(result.data.frequency).toBe('daily');
+      expect(result.data.habitType).toBe('boolean');
+      expect(result.data.frequency).toEqual({ numerator: 1, denominator: 1 });
       expect(result.data.reminders).toEqual([]);
     }
   });

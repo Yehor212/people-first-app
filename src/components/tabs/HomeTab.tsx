@@ -95,7 +95,7 @@ export function HomeTab({
 
   // Growth Rings — never-resetting growth visualization (IA Blueprint Phase 2.3)
   const growthSummary = useMemo(() => {
-    const activeDates = safeHabits.flatMap(h => h.completedDates || []);
+    const activeDates = safeHabits.flatMap(h => Object.entries(h.entries || {}).filter(([, e]) => e.value === 2).map(([d]) => d));
     const uniqueActive = [...new Set(activeDates)];
     const earliest = safeMoods.length > 0
       ? safeMoods.reduce((min, m) => m.date < min ? m.date : min, safeMoods[0].date)

@@ -6,7 +6,8 @@
 
 import { memo } from 'react';
 import { Habit } from '@/types';
-import { cn, getToday, parseLocalDate } from '@/lib/utils';
+import { cn, getToday } from '@/lib/utils';
+import { isHabitCompletedOnDate, getNumericalValue } from '@/lib/habits';
 import { Check, Trash2, Users, Pencil } from 'lucide-react';
 import { useState, useRef, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -53,39 +54,21 @@ export const CompactHabitCard = memo(function CompactHabitCard({
     };
   }, []);
 
-  const habitType = habit.type || 'daily';
+  const habitType = habit.habitType || 'boolean';
 
-  // Calculate completion status and progress
-  const getProgress = (): { completed: boolean; progress: number; target: number } => {
-    if (habitType === 'reduce') {
-      const current = habit.progressByDate?.[today];
-      const target = habit.targetCount ?? 0;
-      return { completed: current !== undefined && current <= target, progress: current ?? 0, target };
+  // Calculate completion status and progress (entry-based model)
+  const { completed, progress, target } = useMemo(() => {
+    const isCompleted = isHabitCompletedOnDate(habit, today);
+    if (habitType === 'numerical') {
+      const current = getNumericalValue(habit, today);
+      const tgt = habit.targetValue ?? 1;
+      return { completed: isCompleted, progress: current, target: tgt };
     }
+    // Boolean
+    return { completed: isCompleted, progress: isCompleted ? 1 : 0, target: 1 };
+  }, [habit, today, habitType]);
 
-    if (habitType === 'multiple') {
-      const current = habit.completionsByDate?.[today] ?? 0;
-      const target = habit.dailyTarget ?? 1;
-      return { completed: current >= target, progress: current, target };
-    }
-
-    if (habitType === 'continuous') {
-      const failedToday = habit.failedDates?.includes(today);
-      let days = 0;
-      if (habit.startDate) {
-        const start = parseLocalDate(habit.startDate);
-        days = Math.max(0, Math.floor((Date.now() - start.getTime()) / 86400000) - (habit.failedDates?.length ?? 0));
-      }
-      return { completed: !failedToday, progress: days, target: 0 };
-    }
-
-    // Daily/Scheduled
-    const completed = habit.completedDates?.includes(today) ?? false;
-    return { completed, progress: completed ? 1 : 0, target: 1 };
-  };
-
-  const { completed, progress, target } = getProgress();
-  const progressPercent = target > 0 ? (progress / target) * 100 : completed ? 100 : 0;
+  const progressPercent = target > 0 ? Math.min((progress / target) * 100, 100) : completed ? 100 : 0;
 
   // Calculate fire intensity based on streak
   const fireIntensity = useMemo(() => {

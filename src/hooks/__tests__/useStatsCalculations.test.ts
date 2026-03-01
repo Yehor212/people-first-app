@@ -6,6 +6,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useStatsCalculations } from '../useStatsCalculations';
+import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
 // Mock dependencies
 vi.mock('@/lib/utils', () => ({
@@ -21,7 +22,14 @@ vi.mock('@/lib/utils', () => ({
 }));
 
 vi.mock('@/lib/habits', () => ({
-  getHabitCompletedDates: vi.fn((habit: any) => habit.completedDates || []),
+  getHabitCompletedDates: vi.fn((habit: any) => {
+    // v2: extract dates with YES_MANUAL entries
+    const dates: string[] = [];
+    for (const [date, entry] of Object.entries(habit.entries || {})) {
+      if ((entry as any).value === 2) dates.push(date); // ENTRY.YES_MANUAL = 2
+    }
+    return dates;
+  }),
 }));
 
 vi.mock('@/lib/emotionConstants', () => ({
@@ -103,8 +111,8 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         habits: [
-          { id: '1', name: 'Exercise', completedDates: ['2026-02-01', '2026-02-02', '2026-02-03'] },
-          { id: '2', name: 'Read', completedDates: ['2026-02-03'] },
+          makeTestHabit({ id: '1', name: 'Exercise', entries: datesToEntries(['2026-02-01', '2026-02-02', '2026-02-03']) }),
+          makeTestHabit({ id: '2', name: 'Read', entries: datesToEntries(['2026-02-03']) }),
         ],
         range: 'all' as const,
       };
@@ -209,7 +217,7 @@ describe('useStatsCalculations', () => {
           { id: '1', date: '2026-02-03', mood: 'great', tags: [] },
         ],
         habits: [
-          { id: '1', name: 'Exercise', completedDates: ['2026-02-03'] },
+          makeTestHabit({ id: '1', name: 'Exercise', entries: datesToEntries(['2026-02-03']) }),
         ],
         focusSessions: [
           { id: '1', date: '2026-02-03', duration: 60, status: 'completed' },
@@ -311,8 +319,8 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         habits: [
-          { id: '1', name: 'Exercise', completedDates: ['2026-02-03'] },
-          { id: '2', name: 'Read', completedDates: ['2026-02-03', '2026-02-02'] },
+          makeTestHabit({ id: '1', name: 'Exercise', entries: datesToEntries(['2026-02-03']) }),
+          makeTestHabit({ id: '2', name: 'Read', entries: datesToEntries(['2026-02-03', '2026-02-02']) }),
         ],
       };
 

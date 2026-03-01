@@ -7,6 +7,7 @@
 
 import type { Habit } from '@/types';
 import { getToday } from './utils';
+import { isHabitCompletedOnDate } from '@/lib/habits';
 
 /** Sentinel ID for uncategorized habits — resolved to i18n text in the UI layer */
 export const UNCATEGORIZED_CLUSTER_ID = '__uncategorized__';
@@ -58,7 +59,7 @@ export function computeIdentityClusters(habits: Habit[]): IdentityCluster[] {
     const displayName = clusterName || UNCATEGORIZED_CLUSTER_ID;
 
     const completedToday = clusterHabits.filter(h =>
-      h.completedDates?.includes(today)
+      isHabitCompletedOnDate(h,today)
     ).length;
 
     const totalToday = clusterHabits.length;
@@ -70,7 +71,7 @@ export function computeIdentityClusters(habits: Habit[]): IdentityCluster[] {
     let weeklyTotal = 0;
     for (const date of last7Days) {
       const completed = clusterHabits.filter(h =>
-        h.completedDates?.includes(date)
+        isHabitCompletedOnDate(h,date)
       ).length;
       weeklyTotal += totalToday > 0 ? completed / totalToday : 0;
     }
@@ -104,6 +105,6 @@ export function computeOverallAlignment(habits: Habit[]): number {
   if (clustered.length === 0) return 0;
 
   const today = getToday();
-  const completed = clustered.filter(h => h.completedDates?.includes(today)).length;
+  const completed = clustered.filter(h => isHabitCompletedOnDate(h,today)).length;
   return Math.round((completed / clustered.length) * 100);
 }

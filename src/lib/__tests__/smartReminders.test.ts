@@ -10,10 +10,18 @@ import {
   getBestReminderDays,
 } from '../smartReminders';
 import type { MoodEntry, Habit, FocusSession, ReminderSettings } from '@/types';
+import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
 // Mock dependencies that smartReminders imports
 vi.mock('@/lib/habits', () => ({
-  getHabitCompletedDates: (habit: Habit) => habit.completedDates || [],
+  getHabitCompletedDates: (habit: Habit) => {
+    // v2: extract dates with YES_MANUAL entries
+    const dates: string[] = [];
+    for (const [date, entry] of Object.entries(habit.entries || {})) {
+      if (entry.value === 2) dates.push(date); // ENTRY.YES_MANUAL = 2
+    }
+    return dates;
+  },
 }));
 
 vi.mock('@/lib/validation', () => ({
@@ -57,18 +65,7 @@ function makeFocusSession(overrides: Partial<FocusSession> = {}): FocusSession {
 }
 
 function makeHabit(overrides: Partial<Habit> = {}): Habit {
-  return {
-    id: 'habit-1',
-    name: 'Test Habit',
-    icon: '🧪',
-    color: '#FF0000',
-    completedDates: [],
-    createdAt: Date.now(),
-    type: 'daily',
-    frequency: 'daily',
-    reminders: [],
-    ...overrides,
-  };
+  return makeTestHabit(overrides);
 }
 
 function makeReminderSettings(overrides: Partial<ReminderSettings> = {}): ReminderSettings {
@@ -185,16 +182,16 @@ describe('analyzeFocusPatterns', () => {
 // ============================================
 
 describe('analyzeHabitPatterns', () => {
-  it('returns day patterns from habit completedDates', () => {
+  it('returns day patterns from habit entries', () => {
     // Create a habit completed on specific weekdays
     const habit = makeHabit({
-      completedDates: [
+      entries: datesToEntries([
         '2026-01-12', // Monday
         '2026-01-13', // Tuesday
         '2026-01-14', // Wednesday
         '2026-01-19', // Monday
         '2026-01-20', // Tuesday
-      ],
+      ]),
     });
     const result = analyzeHabitPatterns(habit);
     expect(result.bestDays.length).toBeGreaterThan(0);
@@ -205,9 +202,9 @@ describe('analyzeHabitPatterns', () => {
 
   it('returns consistency based on completion rate', () => {
     const habit = makeHabit({
-      completedDates: Array.from({ length: 15 }, (_, i) =>
+      entries: datesToEntries(Array.from({ length: 15 }, (_, i) =>
         `2026-01-${String(i + 1).padStart(2, '0')}`
-      ),
+      )),
     });
     const result = analyzeHabitPatterns(habit);
     // 15/30 = 50%
@@ -316,7 +313,7 @@ describe('hasEnoughDataForSmartReminders', () => {
     const moods = Array.from({ length: 3 }, (_, i) =>
       makeMoodEntry({ id: `m-${i}` })
     );
-    const habits = [makeHabit({ completedDates: ['2026-01-01', '2026-01-02'] })];
+    const habits = [makeHabit({ entries: datesToEntries(['2026-01-01', '2026-01-02']) })];
     const sessions = [makeFocusSession()];
     expect(hasEnoughDataForSmartReminders(moods, habits, sessions)).toBe(false);
   });
@@ -337,9 +334,9 @@ describe('hasEnoughDataForSmartReminders', () => {
 
   it('returns true when a habit has >= 7 completed dates', () => {
     const habit = makeHabit({
-      completedDates: Array.from({ length: 7 }, (_, i) =>
+      entries: datesToEntries(Array.from({ length: 7 }, (_, i) =>
         `2026-01-${String(i + 1).padStart(2, '0')}`
-      ),
+      )),
     });
     expect(hasEnoughDataForSmartReminders([], [habit], [])).toBe(true);
   });

@@ -10,6 +10,7 @@
 
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { formatDate } from './utils';
+import { getHabitCompletedDates, getHabitCompletionTotal } from '@/lib/habits';
 import { logger } from './logger';
 
 // ============================================
@@ -101,7 +102,7 @@ export const exportMoodsToCSV = (moods: MoodEntry[]): void => {
 export const exportHabitsToCSV = (habits: Habit[]): void => {
   const columns = [
     { key: 'name' as const, header: 'Habit Name' },
-    { key: 'type' as const, header: 'Type' },
+    { key: 'habitType' as const, header: 'Type' },
     { key: 'icon' as const, header: 'Icon' },
     { key: 'completedDates' as const, header: 'Completed Dates' },
     { key: 'createdAt' as const, header: 'Created At' },
@@ -110,7 +111,7 @@ export const exportHabitsToCSV = (habits: Habit[]): void => {
   // Transform data for export
   const exportData = habits.map(h => ({
     ...h,
-    completedDates: h.completedDates || [],
+    completedDates: getHabitCompletedDates(h),
     createdAt: new Date(h.createdAt).toISOString(),
   }));
 
@@ -177,8 +178,8 @@ export const exportAllToCSV = (data: {
   csv += arrayToCSV(
     data.habits.map(h => ({
       name: h.name,
-      type: h.type,
-      totalCompletions: h.completedDates?.length || 0,
+      type: h.habitType || 'boolean',
+      totalCompletions: getHabitCompletionTotal(h),
     })),
     [
       { key: 'name' as const, header: 'Habit Name' },
@@ -274,7 +275,7 @@ export const exportProgressReportPDF = async (data: {
 
   const totalFocusMinutes = data.focusSessions.reduce((sum, s) => sum + s.duration, 0);
   const totalHabitCompletions = data.habits.reduce(
-    (sum, h) => sum + (h.completedDates?.length || 0),
+    (sum, h) => sum + getHabitCompletionTotal(h),
     0
   );
 
@@ -320,10 +321,10 @@ export const exportProgressReportPDF = async (data: {
   y += 5;
 
   data.habits
-    .sort((a, b) => (b.completedDates?.length || 0) - (a.completedDates?.length || 0))
+    .sort((a, b) => getHabitCompletionTotal(b) - getHabitCompletionTotal(a))
     .slice(0, 10)
     .forEach(habit => {
-      const completions = habit.completedDates?.length || 0;
+      const completions = getHabitCompletionTotal(habit);
       addText(`${habit.icon || '✨'} ${habit.name || 'Habit'}: ${completions} completions`);
     });
   y += 10;
@@ -418,9 +419,9 @@ export const exportWeeklySummaryPDF = async (data: {
   // Calculate habit completions for the week
   let weeklyCompletions = 0;
   data.habits.forEach(habit => {
-    const completions = habit.completedDates?.filter(
+    const completions = getHabitCompletedDates(habit).filter(
       d => d >= data.weekStart && d <= data.weekEnd
-    ).length || 0;
+    ).length;
     weeklyCompletions += completions;
   });
   doc.text(`Habit completions: ${weeklyCompletions}`, margin, y - 9);

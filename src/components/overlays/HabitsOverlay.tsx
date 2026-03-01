@@ -81,7 +81,7 @@ export function HabitsOverlay({ open, habits, onToggleHabit, onClose }: HabitsOv
                 </p>
               )}
               {habits.map(habit => {
-                const completed = habit.completedDates?.includes(today);
+                const completed = habit.entries?.[today]?.value === 2;
                 return (
                   <button
                     key={habit.id}

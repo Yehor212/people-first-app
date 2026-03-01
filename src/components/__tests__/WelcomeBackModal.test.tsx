@@ -7,37 +7,32 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { WelcomeBackModal } from '../WelcomeBackModal';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { Habit } from '@/types';
+import { makeTestHabit } from '@/test/habitFixtures';
 
 // Mock habits for testing
 const mockHabits: Array<{ habit: Habit; successRate: number }> = [
   {
-    habit: {
+    habit: makeTestHabit({
       id: '1',
       name: 'Morning Exercise',
       icon: '🏃',
-      createdAt: Date.now(),
-      completedDates: [],
-    },
+    }),
     successRate: 85,
   },
   {
-    habit: {
+    habit: makeTestHabit({
       id: '2',
       name: 'Meditation',
       icon: '🧘',
-      createdAt: Date.now(),
-      completedDates: [],
-    },
+    }),
     successRate: 70,
   },
   {
-    habit: {
+    habit: makeTestHabit({
       id: '3',
       name: 'Reading',
       icon: '📚',
-      createdAt: Date.now(),
-      completedDates: [],
-    },
+    }),
     successRate: 60,
   },
 ];

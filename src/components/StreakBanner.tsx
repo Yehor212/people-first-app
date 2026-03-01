@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, calculateStreak } from '@/lib/utils';
+import { isHabitCompletedOnDate, getHabitCompletedDates } from '@/lib/habits';
 import { useDopamineSettings } from './DopamineSettings';
 import { UnifiedShareModal } from '@/components/share';
 
@@ -45,7 +46,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
   const streak = useMemo(() => {
     const allActivityDates = [
       ...moods.map(m => m.date),
-      ...habits.flatMap(h => h.completedDates),
+      ...habits.flatMap(h => getHabitCompletedDates(h)),
       ...focusSessions.map(f => f.date),
       ...gratitudeEntries.map(g => g.date),
       ...restDays, // Rest days count towards streak!
@@ -57,7 +58,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
   // Check today's progress
   const todayProgress = useMemo(() => {
     const hasMood = moods.some(m => m.date === today);
-    const hasHabits = habits.length === 0 || habits.some(h => h.completedDates?.includes(today));
+    const hasHabits = habits.length === 0 || habits.some(h => isHabitCompletedOnDate(h, today));
     const hasFocus = focusSessions.some(s => s.date === today);
     const hasGratitude = gratitudeEntries.some(g => g.date === today);
 

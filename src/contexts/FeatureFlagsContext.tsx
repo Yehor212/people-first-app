@@ -80,7 +80,7 @@ export function FeatureFlagsProvider({ children }: { children: ReactNode }) {
   // Compute garden gate features from behavioral stats
   const gardenGateFeatures = useMemo(() => {
     const today = getToday();
-    const habitsCompleted = habits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0);
+    const habitsCompleted = habits.reduce((sum, h) => sum + Object.values(h.entries || {}).filter(e => e.value === 2).length, 0);
     const focusSessionsCompleted = focusSessions.length;
     // Approximate daysActive from unique mood dates
     const uniqueDates = new Set(moods.map(m => m.date || today));

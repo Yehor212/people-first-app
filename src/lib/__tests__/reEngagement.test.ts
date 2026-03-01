@@ -30,21 +30,14 @@ import {
 import { storageSetRaw } from '../safeJson';
 import { SK } from '@/lib/storageKeys';
 import type { Habit } from '@/types';
+import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
 // ─── Helper ─────────────────────────────────────────────────────
 function makeHabit(overrides: Partial<Habit> = {}): Habit {
-  return {
-    id: 'habit-1',
-    name: 'Test Habit',
-    icon: '✓',
-    color: '#FF0000',
-    completedDates: [],
+  return makeTestHabit({
     createdAt: new Date('2026-02-10').getTime(),
-    type: 'daily',
-    frequency: 'daily',
-    reminders: [],
     ...overrides,
-  } as Habit;
+  });
 }
 
 beforeEach(() => {
@@ -175,7 +168,7 @@ describe('calculateHabitSuccessRates', () => {
   it('calculates success rate for a habit with completions', () => {
     const habit = makeHabit({
       createdAt: new Date('2026-02-10').getTime(), // 7 days ago
-      completedDates: ['2026-02-10', '2026-02-11', '2026-02-12'],
+      entries: datesToEntries(['2026-02-10', '2026-02-11', '2026-02-12']),
     });
     const result = calculateHabitSuccessRates([habit]);
     // 3 completions / 7 days * 100
@@ -186,7 +179,7 @@ describe('calculateHabitSuccessRates', () => {
   it('returns 0 success rate for a habit created today (0 days)', () => {
     const habit = makeHabit({
       createdAt: new Date('2026-02-17').getTime(), // today
-      completedDates: [],
+      entries: {},
     });
     const result = calculateHabitSuccessRates([habit]);
     expect(result[0].successRate).toBe(0);
@@ -195,7 +188,7 @@ describe('calculateHabitSuccessRates', () => {
   it('caps consideration period at 30 days', () => {
     const habit = makeHabit({
       createdAt: new Date('2026-01-01').getTime(), // 47 days ago
-      completedDates: ['2026-02-01', '2026-02-02', '2026-02-03'],
+      entries: datesToEntries(['2026-02-01', '2026-02-02', '2026-02-03']),
     });
     const result = calculateHabitSuccessRates([habit]);
     // Capped at 30 days: 3 / 30 * 100
@@ -206,15 +199,15 @@ describe('calculateHabitSuccessRates', () => {
     const habitHigh = makeHabit({
       id: 'high',
       createdAt: new Date('2026-02-10').getTime(),
-      completedDates: [
+      entries: datesToEntries([
         '2026-02-10', '2026-02-11', '2026-02-12',
         '2026-02-13', '2026-02-14', '2026-02-15', '2026-02-16',
-      ],
+      ]),
     });
     const habitLow = makeHabit({
       id: 'low',
       createdAt: new Date('2026-02-10').getTime(),
-      completedDates: ['2026-02-10'],
+      entries: datesToEntries(['2026-02-10']),
     });
     const result = calculateHabitSuccessRates([habitLow, habitHigh]);
     expect(result[0].habit.id).toBe('high');
@@ -222,10 +215,10 @@ describe('calculateHabitSuccessRates', () => {
     expect(result[0].successRate).toBeGreaterThan(result[1].successRate);
   });
 
-  it('handles habit with no completedDates (undefined)', () => {
+  it('handles habit with no entries (empty)', () => {
     const habit = makeHabit({
       createdAt: new Date('2026-02-10').getTime(),
-      completedDates: undefined,
+      entries: {},
     });
     const result = calculateHabitSuccessRates([habit]);
     expect(result[0].successRate).toBe(0);

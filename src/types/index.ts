@@ -66,12 +66,43 @@ export type HabitCategory =
   | 'self-care'    // Забота о себе (гигиена, отдых)
   | 'other';       // Другое
 
-export type HabitType =
-  | 'continuous'   // Бросить курить/пить - отслеживает дни без срыва
-  | 'daily'        // Зарядка, медитация - 1 раз в день
-  | 'scheduled'    // Витамины, еда - в определенное время
-  | 'multiple'     // Пить воду - несколько раз в день
-  | 'reduce';      // Сократить что-то
+// ============================================
+// LOOP HABIT TRACKER — Entry Value System
+// From iSoron/uhabits Entry.kt
+// ============================================
+
+/** Entry value constants (Loop-exact integers) */
+export const ENTRY = {
+  UNKNOWN:    -1,  // No data for this day
+  NO:          0,  // Expected but not done
+  YES_AUTO:    1,  // Auto-filled by frequency algorithm (hollow checkmark)
+  YES_MANUAL:  2,  // User performed (filled checkmark)
+  SKIP:        3,  // Not applicable (preserves & extends streak)
+} as const;
+
+export type EntryValue = -1 | 0 | 1 | 2 | 3;
+
+/** Single day's entry for a habit */
+export interface HabitEntry {
+  value: number;    // EntryValue for boolean; value×1000 for numerical
+  notes?: string;   // Per-day note
+}
+
+// ============================================
+// LOOP HABIT TRACKER — Habit Types
+// ============================================
+
+/** Loop habit types: boolean (yes/no) or numerical (measurable) */
+export type LoopHabitType = 'boolean' | 'numerical';
+
+/** Numerical habit target direction */
+export type TargetType = 'atLeast' | 'atMost';
+
+/** Frequency as ratio: "3 times per 7 days" = { numerator: 3, denominator: 7 } */
+export interface HabitFrequencyRatio {
+  numerator: number;
+  denominator: number;
+}
 
 export interface HabitReminder {
   enabled: boolean;
@@ -79,55 +110,46 @@ export interface HabitReminder {
   days: number[];    // [1,2,3,4,5] (Mon-Fri)
 }
 
-export type HabitFrequency = 'once' | 'daily' | 'weekly' | 'custom';
+// ============================================
+// HABIT INTERFACE — Loop-Faithful + ZenFlow Extensions
+// ============================================
 
 export interface Habit {
+  // === Identity ===
   id: string;
   name: string;
   icon: string;
-  color: string;
-  completedDates: string[];
-  createdAt: number;
+  color: number;              // Palette index 0-19 (NOT hex string)
+  position: number;           // Manual sort order
+  createdAt: number;          // Timestamp ms
+
+  // === Loop Core ===
+  habitType: LoopHabitType;   // 'boolean' | 'numerical'
+  frequency: HabitFrequencyRatio; // { numerator, denominator }
+  question: string;           // "Did you exercise today?"
+  description: string;        // Extended description
+  isArchived: boolean;
+
+  // === Numerical habits ===
+  targetValue: number;        // e.g. 2.0 (liters)
+  targetType: TargetType;     // 'atLeast' | 'atMost'
+  unit: string;               // "L", "km", "min"
+
+  // === Entry data (user-entered only) ===
+  entries: Record<string, HabitEntry>;  // YYYY-MM-DD → entry
+
+  // === Reminders ===
+  reminders: HabitReminder[];
+
+  // === ZenFlow Extensions (not in Loop) ===
   templateId?: string;
-
-  // Category for grouping habits
   category?: HabitCategory;
-
-  // New fields for enhanced habit system
-  type: HabitType;
-  reminders: HabitReminder[];  // Каждая привычка может иметь несколько напоминаний
-
-  // Frequency settings
-  frequency: HabitFrequency;   // Как часто выполнять привычку
-  customDays?: number[];       // Для custom: дни недели [0-6] (Sun-Sat)
-
-  // Duration settings
-  requiresDuration?: boolean;  // Требует ли привычка времени на выполнение
-  targetDuration?: number;     // Целевое время в минутах
-  durationByDate?: Record<string, number>; // Фактическое время по датам
-
-  // For continuous habits (quit smoking/drinking)
-  startDate?: string;          // Дата начала отказа
-  failedDates?: string[];      // Даты срывов
-
-  // For reduce habits
-  progressByDate?: Record<string, number>;
-  targetCount?: number;        // Целевое количество в день
-
-  // For multiple daily habits
-  dailyTarget?: number;        // Сколько раз в день нужно выполнить
-  completionsByDate?: Record<string, number>; // Сколько раз выполнено в этот день
-
-  // Identity cluster (IA Blueprint Phase 2)
-  identityCluster?: string;    // User-defined cluster name ("The Mindful Me")
-  identityVerb?: string;       // Identity statement ("I am a meditator")
+  identityCluster?: string;    // User-defined cluster name
+  identityVerb?: string;       // Identity statement
   identityIcon?: string;       // Emoji representing this identity
 
-  // Loop-style analytics (Habit Hub)
-  isArchived?: boolean;            // Soft-delete: hidden from active list, data preserved
-  skippedDates?: string[];         // YYYY-MM-DD — intentional skip, preserves streak
-  frequencyNumerator?: number;     // e.g. 3 in "3 times per week"
-  frequencyDenominator?: number;   // e.g. 7 in "3 times per week"
+  // === Metadata ===
+  updatedAt?: string;
 }
 
 export interface GratitudeEntry {

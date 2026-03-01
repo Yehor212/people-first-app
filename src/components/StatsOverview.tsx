@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, calculateStreak } from '@/lib/utils';
+import { isHabitCompletedOnDate, getHabitCompletedDates } from '@/lib/habits';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { StreakCelebration } from './StreakCelebration';
 import { shouldShowStreakMessage } from '@/lib/motivationalMessages';
@@ -35,14 +36,14 @@ export function StatsOverview({ moods, habits, focusSessions, gratitudeEntries, 
     });
   }, []);
 
-  const todayHabitsCompleted = habits.filter(h => h.completedDates.includes(today)).length;
+  const todayHabitsCompleted = habits.filter(h => isHabitCompletedOnDate(h, today)).length;
   const totalHabits = habits.length;
 
   // Calculate streak based on ANY activity (mood, habits, focus, gratitude, rest days)
   // User has until 00:00 next day to continue streak
   const allActivityDates = [
     ...moods.map(m => m.date),
-    ...habits.flatMap(h => h.completedDates),
+    ...habits.flatMap(h => getHabitCompletedDates(h)),
     ...focusSessions.map(f => f.date),
     ...gratitudeEntries.map(g => g.date),
     ...restDays, // Rest days count towards streak!

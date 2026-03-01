@@ -1,14 +1,18 @@
 /**
- * habitScore.ts — Loop Habit Tracker-style scoring & analytics.
+ * habitScore.ts — Loop-exact scoring, streaks & analytics.
  *
- * Score uses exponential smoothing:
- *   decay = 0.5 ^ (sqrt(weeklyFreq) / 13)
- *   score[i] = score[i-1] * decay + checkValue * (1 - decay)
+ * Score formula from iSoron/uhabits Score.kt + ScoreList.kt:
+ *   multiplier = 0.5 ^ (sqrt(freq) / 13)
+ *   score[i] = score[i-1] * multiplier + checkValue * (1 - multiplier)
+ *
+ * Where freq = numerator / denominator (weekly frequency equivalent).
+ * Uses rolling window of `denominator` days for percentage computation.
  *
  * Pure functions — no side effects, no React dependencies.
  */
 
-import type { Habit } from '@/types';
+import type { Habit, HabitEntry } from '@/types';
+import { ENTRY } from '@/types';
 
 // ─── Date helpers ───────────────────────────────────────────────────────────
 
@@ -39,113 +43,131 @@ function getToday(): string {
   return toDateStr(new Date());
 }
 
-// ─── Frequency helpers ──────────────────────────────────────────────────────
+// ─── Entry helpers ──────────────────────────────────────────────────────────
+
+/** Get entry value for a date, defaulting to UNKNOWN */
+function getEntryValue(entries: Record<string, HabitEntry>, dateStr: string): number {
+  return entries[dateStr]?.value ?? ENTRY.UNKNOWN;
+}
+
+// ─── Score algorithm (Loop-exact from Score.kt) ─────────────────────────────
 
 /**
- * Get expected completions per week for this habit.
- * Used as the `freq` parameter in the Loop score formula.
+ * Core EMA step from Loop's Score.compute().
  */
-export function getHabitWeeklyFrequency(habit: Habit): number {
-  // Explicit fractional frequency (Loop-style)
-  if (habit.frequencyNumerator && habit.frequencyDenominator) {
-    return (habit.frequencyNumerator / habit.frequencyDenominator) * 7;
-  }
-
-  switch (habit.frequency) {
-    case 'daily':
-      return 7;
-    case 'weekly':
-      return 1;
-    case 'custom':
-      return habit.customDays?.length ?? 7;
-    case 'once':
-      return 1;
-    default:
-      return 7;
-  }
+function computeScoreStep(
+  frequency: number,        // numerator / denominator
+  previousScore: number,    // 0.0..1.0
+  checkmarkValue: number,   // 0.0..1.0 (percentage completed)
+): number {
+  const multiplier = Math.pow(0.5, Math.sqrt(frequency) / 13.0);
+  return previousScore * multiplier + checkmarkValue * (1.0 - multiplier);
 }
 
 /**
- * Check if a habit is due on a given date (respects customDays, frequency).
- */
-export function isHabitDueOnDate(habit: Habit, dateStr: string): boolean {
-  if (habit.frequency === 'daily') return true;
-  if (habit.frequency === 'once') return true;
-
-  if (habit.frequency === 'custom' && habit.customDays) {
-    const dow = parseDate(dateStr).getDay();
-    return habit.customDays.includes(dow);
-  }
-
-  if (habit.frequency === 'weekly') {
-    // Weekly = once per week. Consider it due every day (user picks when).
-    return true;
-  }
-
-  // Fractional frequency: due on any day (user tracks numerator per denominator window)
-  if (habit.frequencyNumerator && habit.frequencyDenominator) {
-    return true;
-  }
-
-  return true;
-}
-
-// ─── Score algorithm ────────────────────────────────────────────────────────
-
-/**
- * Compute the Loop-style habit score (0–1) up to a given date.
+ * Compute Loop-exact habit score (0–1) up to a given date.
  *
- * Walks day-by-day from habit creation to `upToDate`.
- * On each scheduled day:
- *   - completed → checkValue = 1
- *   - skipped   → skip iteration (score unchanged)
- *   - missed    → checkValue = 0
+ * For each day from creation to upToDate:
+ * - Boolean: rolling window count of YES_MANUAL entries → percentage
+ * - Numerical AT_LEAST: rolling sum / target → percentage (capped at 1.0)
+ * - Numerical AT_MOST: 1 - (sum - target) / target, clamped [0, 1]
+ *
+ * Non-daily boolean habits: numerator and denominator are DOUBLED
+ * for smoother scoring (Loop's ScoreList.recompute logic).
  */
 export function computeHabitScore(habit: Habit, upToDate?: string): number {
   const endStr = upToDate || getToday();
   const end = parseDate(endStr);
-
-  const createdDate = habit.startDate
-    ? parseDate(habit.startDate)
-    : new Date(habit.createdAt);
+  const createdDate = new Date(habit.createdAt);
 
   if (end < createdDate) return 0;
 
   const totalDays = daysBetween(createdDate, end);
   if (totalDays < 0) return 0;
 
-  const weeklyFreq = getHabitWeeklyFrequency(habit);
-  const decay = Math.pow(0.5, Math.sqrt(weeklyFreq) / 13);
+  const { numerator, denominator } = habit.frequency;
+  const freq = numerator / denominator;
+  const isDaily = numerator === denominator;
 
-  const completedSet = new Set(habit.completedDates || []);
-  const skippedSet = new Set(habit.skippedDates || []);
+  // Initial score: 0.0 for boolean/atLeast, 1.0 for atMost
+  let score = (habit.habitType === 'numerical' && habit.targetType === 'atMost') ? 1.0 : 0.0;
 
-  let score = 0;
-  const cursor = new Date(createdDate);
+  // Build date array for window lookups
+  const dates: string[] = [];
+  for (let i = 0; i <= totalDays; i++) {
+    dates.push(toDateStr(addDays(createdDate, i)));
+  }
 
   for (let i = 0; i <= totalDays; i++) {
-    const dateStr = toDateStr(cursor);
+    if (habit.habitType === 'boolean') {
+      // Window size: denominator (doubled for non-daily)
+      const windowSize = isDaily ? denominator : denominator * 2;
+      const targetCount = isDaily ? numerator : numerator * 2;
 
-    if (skippedSet.has(dateStr)) {
-      // Skip — score unchanged (neither penalize nor reward)
-      cursor.setDate(cursor.getDate() + 1);
-      continue;
+      // Count YES_MANUAL in window
+      let yesCount = 0;
+      let allSkip = true;
+
+      for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
+        const wDate = dates[i - w];
+        const val = getEntryValue(habit.entries, wDate);
+        if (val === ENTRY.YES_MANUAL) {
+          yesCount++;
+          allSkip = false;
+        } else if (val !== ENTRY.SKIP) {
+          allSkip = false;
+        }
+      }
+
+      // If all entries in window are SKIP, score unchanged
+      if (allSkip && i > 0) continue;
+
+      const percentageCompleted = Math.min(1.0, yesCount / targetCount);
+      score = computeScoreStep(freq, score, percentageCompleted);
+
+    } else {
+      // Numerical habit
+      const windowSize = denominator;
+
+      // Rolling sum of values in window (value / 1000 to get real value)
+      let rollingSum = 0;
+      for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
+        const wDate = dates[i - w];
+        const val = getEntryValue(habit.entries, wDate);
+        if (val > 0) {
+          rollingSum += val / 1000;
+        }
+      }
+
+      let percentageCompleted: number;
+      if (habit.targetType === 'atMost') {
+        // AT_MOST: 100% when at or under target, linear decrease above
+        if (habit.targetValue <= 0) {
+          percentageCompleted = rollingSum === 0 ? 1.0 : 0.0;
+        } else {
+          percentageCompleted = Math.max(0, Math.min(1.0,
+            1.0 - (rollingSum - habit.targetValue) / habit.targetValue
+          ));
+        }
+      } else {
+        // AT_LEAST: percentage of target achieved
+        if (habit.targetValue <= 0) {
+          percentageCompleted = rollingSum > 0 ? 1.0 : 0.0;
+        } else {
+          percentageCompleted = Math.min(1.0, rollingSum / habit.targetValue);
+        }
+      }
+
+      score = computeScoreStep(freq, score, percentageCompleted);
     }
-
-    if (isHabitDueOnDate(habit, dateStr)) {
-      const checkValue = completedSet.has(dateStr) ? 1 : 0;
-      score = score * decay + checkValue * (1 - decay);
-    }
-
-    cursor.setDate(cursor.getDate() + 1);
   }
 
   return score;
 }
 
 /**
- * Compute score at the end of each week for chart display.
- * Returns array of { date: string, score: number } for the last N weeks.
+ * Compute score at intervals for chart display.
+ * Returns array of { date, score } for the last N weeks.
  */
 export function computeScoreHistory(
   habit: Habit,
@@ -163,7 +185,7 @@ export function computeScoreHistory(
   return points;
 }
 
-// ─── Streak computation ─────────────────────────────────────────────────────
+// ─── Streak computation (Loop-exact from StreakList.kt) ──────────────────────
 
 export interface HabitStreak {
   start: string;
@@ -172,57 +194,59 @@ export interface HabitStreak {
 }
 
 /**
+ * Check if a habit is "completed" on a given date (for streak purposes).
+ *
+ * Loop rules:
+ * - Boolean: value > 0 (YES_MANUAL, YES_AUTO, SKIP all extend streak)
+ * - Numerical AT_LEAST: value/1000 >= targetValue
+ * - Numerical AT_MOST: value !== UNKNOWN && value/1000 <= targetValue
+ */
+function isStreakDay(habit: Habit, dateStr: string): boolean {
+  const val = getEntryValue(habit.entries, dateStr);
+
+  if (habit.habitType === 'boolean') {
+    return val > 0; // YES_MANUAL(2), YES_AUTO(1), SKIP(3) all count
+  }
+
+  // Numerical
+  if (val === ENTRY.UNKNOWN) return false;
+
+  const realValue = val / 1000;
+  if (habit.targetType === 'atMost') {
+    return realValue <= habit.targetValue;
+  }
+  return realValue >= habit.targetValue;
+}
+
+/**
  * Compute all historical streaks for a habit.
- * Skipped dates do NOT break a streak but don't extend it either.
  * Returns streaks sorted by length (longest first), then by recency.
  */
 export function computeAllStreaks(habit: Habit): HabitStreak[] {
-  const completedSet = new Set(habit.completedDates || []);
-  const skippedSet = new Set(habit.skippedDates || []);
-
-  if (completedSet.size === 0) return [];
-
-  const createdDate = habit.startDate
-    ? parseDate(habit.startDate)
-    : new Date(habit.createdAt);
+  const createdDate = new Date(habit.createdAt);
   const today = new Date();
   const totalDays = daysBetween(createdDate, today);
+
+  if (totalDays < 0) return [];
 
   const streaks: HabitStreak[] = [];
   let streakStart: string | null = null;
   let streakEnd: string | null = null;
   let streakLen = 0;
 
-  const cursor = new Date(createdDate);
-
   for (let i = 0; i <= totalDays; i++) {
-    const dateStr = toDateStr(cursor);
+    const dateStr = toDateStr(addDays(createdDate, i));
 
-    // Skip non-scheduled days
-    if (!isHabitDueOnDate(habit, dateStr)) {
-      cursor.setDate(cursor.getDate() + 1);
-      continue;
-    }
-
-    // Skipped days are neutral — don't break, don't extend
-    if (skippedSet.has(dateStr)) {
-      cursor.setDate(cursor.getDate() + 1);
-      continue;
-    }
-
-    if (completedSet.has(dateStr)) {
+    if (isStreakDay(habit, dateStr)) {
       if (!streakStart) streakStart = dateStr;
       streakEnd = dateStr;
       streakLen++;
     } else {
-      // Today might not be done yet — grace period
-      const isToday = dateStr === toDateStr(today);
-      if (isToday) {
-        cursor.setDate(cursor.getDate() + 1);
-        continue;
-      }
+      // Grace period: don't break on today (might not be done yet)
+      const isToday = dateStr === getToday();
+      if (isToday) continue;
 
-      // Missed — finalize current streak
+      // Finalize current streak
       if (streakStart && streakEnd && streakLen > 0) {
         streaks.push({ start: streakStart, end: streakEnd, length: streakLen });
       }
@@ -230,8 +254,6 @@ export function computeAllStreaks(habit: Habit): HabitStreak[] {
       streakEnd = null;
       streakLen = 0;
     }
-
-    cursor.setDate(cursor.getDate() + 1);
   }
 
   // Finalize last streak
@@ -255,14 +277,13 @@ export function getCurrentStreak(habit: Habit): number {
   const streaks = computeAllStreaks(habit);
   if (streaks.length === 0) return 0;
 
-  // The most recent streak is active if its end is today or yesterday
   const today = getToday();
   const yesterday = toDateStr(addDays(new Date(), -1));
 
-  // Find the streak that ends closest to today
+  // Find the most recent streak
   const recentStreak = streaks.reduce((best, s) =>
-    s.end > best.end ? s : best
-  , streaks[0]);
+    s.end > best.end ? s : best, streaks[0]
+  );
 
   if (recentStreak.end === today || recentStreak.end === yesterday) {
     return recentStreak.length;
@@ -278,9 +299,25 @@ export function getCurrentStreak(habit: Habit): number {
  */
 export function getFrequencyByWeekday(habit: Habit): number[] {
   const counts = [0, 0, 0, 0, 0, 0, 0];
-  for (const dateStr of habit.completedDates || []) {
-    const dow = parseDate(dateStr).getDay();
-    counts[dow]++;
+  for (const [dateStr, entry] of Object.entries(habit.entries)) {
+    if (
+      entry.value === ENTRY.YES_MANUAL ||
+      (habit.habitType === 'numerical' && entry.value > 0)
+    ) {
+      const dow = parseDate(dateStr).getDay();
+      counts[dow]++;
+    }
   }
   return counts;
+}
+
+// ─── Weekly frequency helper ────────────────────────────────────────────────
+
+/**
+ * Get expected completions per week for this habit.
+ * Used as the display frequency and for analytics.
+ */
+export function getHabitWeeklyFrequency(habit: Habit): number {
+  const { numerator, denominator } = habit.frequency;
+  return (numerator / denominator) * 7;
 }

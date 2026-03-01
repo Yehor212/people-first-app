@@ -357,7 +357,7 @@ export function checkAchievements(
   }
 
   // Habit completions
-  const totalHabitCompletions = stats.habits.reduce((sum, h) => sum + (h.completedDates?.length ?? 0), 0);
+  const totalHabitCompletions = stats.habits.reduce((sum, h) => sum + Object.values(h.entries || {}).filter(e => e.value === 2).length, 0);
   if (totalHabitCompletions >= 100 && !unlockedAchievements.includes('habit_master')) {
     newAchievements.push({ ...ACHIEVEMENTS.habit_master, unlockedAt: Date.now(), progress: totalHabitCompletions });
   } else {

@@ -7,6 +7,7 @@ import { memo, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Cell } from 'recharts';
 import { cn } from '@/lib/utils';
 import { getFrequencyByWeekday } from '@/lib/habitScore';
+import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Habit } from '@/types';
 
@@ -68,7 +69,7 @@ export const HabitFrequencyChart = memo(function HabitFrequencyChart({
               {data.map((entry, index) => (
                 <Cell
                   key={index}
-                  fill={habit.color}
+                  fill={resolveHabitColor(habit.color)}
                   fillOpacity={0.3 + (entry.count / maxCount) * 0.6}
                 />
               ))}

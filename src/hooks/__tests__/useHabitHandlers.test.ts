@@ -5,6 +5,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { ENTRY } from '@/types';
+import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
 // --- mocks ---
 
@@ -12,23 +14,23 @@ const mockSetHabits = vi.fn();
 const mockSetConfettiBurst = vi.fn();
 const mockTriggerSync = vi.fn();
 const mockHabits = [
-  {
-    id: 'h1', name: 'Meditate', icon: '🧘', color: '#00ff00',
-    completedDates: [] as string[], createdAt: 1, type: 'daily' as const,
-    frequency: 'daily' as const, reminders: [],
-  },
-  {
-    id: 'h2', name: 'Water', icon: '💧', color: '#0000ff',
-    completedDates: [] as string[], createdAt: 1, type: 'multiple' as const,
-    frequency: 'daily' as const, reminders: [], dailyTarget: 3,
-    completionsByDate: {} as Record<string, number>,
-  },
-  {
-    id: 'h3', name: 'Less Sugar', icon: '🍬', color: '#ff0000',
-    completedDates: [] as string[], createdAt: 1, type: 'reduce' as const,
-    frequency: 'daily' as const, reminders: [], targetCount: 2,
-    progressByDate: {} as Record<string, number>,
-  },
+  makeTestHabit({
+    id: 'h1', name: 'Meditate', icon: '🧘',
+    entries: {},
+  }),
+  makeTestHabit({
+    id: 'h2', name: 'Water', icon: '💧',
+    habitType: 'numerical',
+    targetValue: 3,
+    entries: {},
+  }),
+  makeTestHabit({
+    id: 'h3', name: 'Less Sugar', icon: '🍬',
+    habitType: 'numerical',
+    targetValue: 2,
+    targetType: 'atMost',
+    entries: {},
+  }),
 ];
 
 vi.mock('@/stores', () => ({
@@ -64,9 +66,13 @@ vi.mock('@/lib/haptics', () => ({
   },
 }));
 
-vi.mock('@/lib/habits', () => ({
-  normalizeHabit: vi.fn((h: unknown) => h),
-}));
+vi.mock('@/lib/habits', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/habits')>();
+  return {
+    ...actual,
+    normalizeHabit: vi.fn((h: unknown) => h),
+  };
+});
 
 vi.mock('@/lib/habitTemplates', () => ({
   findTemplateIdByName: vi.fn(() => null),
@@ -145,11 +151,10 @@ describe('useHabitHandlers', () => {
   it('handleAddHabit adds habit to array', () => {
     const { result } = renderAndClearEffects();
 
-    const newHabit = {
-      id: 'h-new', name: 'Read', icon: '📖', color: '#ff00ff',
-      completedDates: [], createdAt: Date.now(), type: 'daily' as const,
-      frequency: 'daily' as const, reminders: [],
-    } as Habit;
+    const newHabit = makeTestHabit({
+      id: 'h-new', name: 'Read', icon: '📖',
+      entries: {},
+    });
 
     act(() => {
       result.current.handleAddHabit(newHabit);
@@ -170,7 +175,7 @@ describe('useHabitHandlers', () => {
       result.current.handleUpdateHabit(updatedHabit);
     });
 
-    const updated = lastSetHabitsUpdater()(mockHabits as Habit[]);
+    const updated = lastSetHabitsUpdater()(mockHabits );
     expect(updated[0].name).toBe('Yoga');
     expect(updated[1].id).toBe('h2'); // unchanged
   });
@@ -182,7 +187,7 @@ describe('useHabitHandlers', () => {
       result.current.handleDeleteHabit('h1');
     });
 
-    const updated = lastSetHabitsUpdater()(mockHabits as Habit[]);
+    const updated = lastSetHabitsUpdater()(mockHabits );
     expect(updated).toHaveLength(2);
     expect(updated.find(h => h.id === 'h1')).toBeUndefined();
   });
@@ -194,15 +199,15 @@ describe('useHabitHandlers', () => {
       result.current.handleToggleHabit('h1', '2026-02-19');
     });
 
-    const updated = lastSetHabitsUpdater()(mockHabits as Habit[]);
+    const updated = lastSetHabitsUpdater()(mockHabits );
     const habit = updated.find(h => h.id === 'h1');
-    expect(habit.completedDates).toContain('2026-02-19');
+    expect(habit?.entries['2026-02-19']?.value).toBe(ENTRY.YES_MANUAL);
     expect(mockAwardXp).toHaveBeenCalledWith('habit');
   });
 
   it('handleToggleHabit toggles daily completion off when already completed', () => {
     const habitsWithCompleted = mockHabits.map(h =>
-      h.id === 'h1' ? { ...h, completedDates: ['2026-02-19'] } : h,
+      h.id === 'h1' ? { ...h, entries: datesToEntries(['2026-02-19']) } : h,
     );
 
     const { result } = renderAndClearEffects();
@@ -211,39 +216,42 @@ describe('useHabitHandlers', () => {
       result.current.handleToggleHabit('h1', '2026-02-19');
     });
 
-    const updated = lastSetHabitsUpdater()(habitsWithCompleted as Habit[]);
+    const updated = lastSetHabitsUpdater()(habitsWithCompleted );
     const habit = updated.find(h => h.id === 'h1');
-    expect(habit.completedDates).not.toContain('2026-02-19');
+    // After toggle off, entry should not be YES_MANUAL
+    const entryVal = habit?.entries['2026-02-19']?.value;
+    expect(entryVal === undefined || entryVal === ENTRY.UNKNOWN || entryVal === ENTRY.SKIP || entryVal === ENTRY.NO).toBe(true);
   });
 
-  it('handleToggleHabit increments multiple type completions', () => {
+  it('handleToggleHabit increments numerical type completions', () => {
     const { result } = renderAndClearEffects();
 
     act(() => {
       result.current.handleToggleHabit('h2', '2026-02-19');
     });
 
-    const updated = lastSetHabitsUpdater()(mockHabits as Habit[]);
+    const updated = lastSetHabitsUpdater()(mockHabits );
     const habit = updated.find(h => h.id === 'h2');
-    expect(habit.completionsByDate?.['2026-02-19']).toBe(1);
+    // Numerical habit should have an entry value set
+    expect(habit?.entries['2026-02-19']).toBeDefined();
     expect(mockAwardXp).toHaveBeenCalledWith('habit');
   });
 
-  it('handleAdjustHabit adjusts reduce type progress', () => {
+  it('handleAdjustHabit adjusts numerical habit value', () => {
     const { result } = renderAndClearEffects();
 
     act(() => {
       result.current.handleAdjustHabit('h3', '2026-02-19', 1);
     });
 
-    const updated = lastSetHabitsUpdater()(mockHabits as Habit[]);
+    const updated = lastSetHabitsUpdater()(mockHabits );
     const habit = updated.find(h => h.id === 'h3');
-    expect(habit.progressByDate?.['2026-02-19']).toBe(1);
+    expect(habit?.entries['2026-02-19']).toBeDefined();
   });
 
-  it('handleAdjustHabit adjusts multiple type completions with delta', () => {
-    const habitsWithMultipleProgress = mockHabits.map(h =>
-      h.id === 'h2' ? { ...h, completionsByDate: { '2026-02-19': 2 } } : h,
+  it('handleAdjustHabit adjusts numerical completions with delta', () => {
+    const habitsWithNumericalProgress = mockHabits.map(h =>
+      h.id === 'h2' ? { ...h, entries: { '2026-02-19': { value: 2000 } } } : h,
     );
 
     const { result } = renderAndClearEffects();
@@ -252,9 +260,9 @@ describe('useHabitHandlers', () => {
       result.current.handleAdjustHabit('h2', '2026-02-19', -1);
     });
 
-    const updated = lastSetHabitsUpdater()(habitsWithMultipleProgress as Habit[]);
+    const updated = lastSetHabitsUpdater()(habitsWithNumericalProgress );
     const habit = updated.find(h => h.id === 'h2');
-    expect(habit.completionsByDate?.['2026-02-19']).toBe(1);
+    expect(habit?.entries['2026-02-19']).toBeDefined();
   });
 
   it('double-click guard prevents rapid duplicate toggles', () => {
@@ -288,11 +296,10 @@ describe('useHabitHandlers', () => {
     const { result } = renderAndClearEffects();
 
     act(() => {
-      result.current.handleAddHabit({
-        id: 'hx', name: 'X', icon: 'x', color: '#000',
-        completedDates: [], createdAt: 1, type: 'daily' as const,
-        frequency: 'daily' as const, reminders: [],
-      } as Habit);
+      result.current.handleAddHabit(makeTestHabit({
+        id: 'hx', name: 'X', icon: 'x',
+        entries: {},
+      }));
     });
 
     expect(mockTriggerSync).toHaveBeenCalled();

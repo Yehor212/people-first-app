@@ -8,6 +8,7 @@
 
 import { Habit, HabitReminder, ScheduleEvent } from '@/types';
 import { safeParseInt } from '@/lib/validation';
+import { resolveHabitColor } from '@/lib/habitColorUtils';
 
 /**
  * Format a date to YYYY-MM-DD string
@@ -42,42 +43,6 @@ export function shouldReminderShowOnDate(
 }
 
 /**
- * Map habit color class to hex color for schedule events
- */
-function habitColorToHex(colorClass: string): string {
-  // v1.4.0: Null check to prevent crash on undefined colorClass
-  if (!colorClass || typeof colorClass !== 'string') {
-    return '#8b5cf6'; // Default to primary purple
-  }
-
-  // Common Tailwind color mappings
-  const colorMap: Record<string, string> = {
-    'bg-primary': '#8b5cf6',
-    'bg-accent': '#06b6d4',
-    'bg-green-500': '#22c55e',
-    'bg-blue-500': '#3b82f6',
-    'bg-purple-500': '#a855f7',
-    'bg-pink-500': '#ec4899',
-    'bg-orange-500': '#f97316',
-    'bg-red-500': '#ef4444',
-    'bg-yellow-500': '#eab308',
-    'bg-teal-500': '#14b8a6',
-    'bg-indigo-500': '#6366f1',
-    'bg-cyan-500': '#06b6d4',
-  };
-
-  // Try to find a matching color
-  for (const [key, value] of Object.entries(colorMap)) {
-    if (colorClass.includes(key.replace('bg-', ''))) {
-      return value;
-    }
-  }
-
-  // Default to primary purple
-  return '#8b5cf6';
-}
-
-/**
  * Convert a single habit to schedule events for specified dates
  * Each reminder creates a separate event
  */
@@ -90,6 +55,9 @@ export function habitToScheduleEvents(
   if (!habit.reminders || habit.reminders.length === 0) {
     return events;
   }
+
+  // Resolve color from palette index
+  const colorHex = resolveHabitColor(habit.color);
 
   for (const date of dates) {
     habit.reminders.forEach((reminder, reminderIndex) => {
@@ -126,7 +94,7 @@ export function habitToScheduleEvents(
         startMinute,
         endHour,
         endMinute,
-        color: habitColorToHex(habit.color),
+        color: colorHex,
         emoji: habit.icon,
         date,
         source: 'habit',

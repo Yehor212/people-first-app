@@ -12,6 +12,7 @@ import {
 } from '@/lib/onboardingFlow';
 import { safeLocalStorageGet } from '@/lib/safeJson';
 import type { Habit, MoodEntry, FocusSession, GratitudeEntry } from '@/types';
+import { getHabitCompletedDates, isHabitCompletedOnDate } from '@/lib/habits';
 
 interface UseChallengeHandlersParams {
   safeMoods: MoodEntry[];
@@ -39,7 +40,7 @@ export function useChallengeHandlers({
   const setChallengeHabit = useUIStore(s => s.setChallengeHabit);
 
   const checkForFeatureUnlocks = useCallback(() => {
-    const habitsCompleted = safeHabits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0);
+    const habitsCompleted = safeHabits.reduce((sum, h) => sum + getHabitCompletedDates(h).length, 0);
     const focusSessionsCompleted = safeFocusSessions.length;
     const moodEntriesCount = safeMoods.length;
 
@@ -60,14 +61,14 @@ export function useChallengeHandlers({
   const updateChallengeProgress = useCallback(() => {
     const totalFocusMinutes = safeFocusSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
     const totalGratitude = safeGratitudeEntries.length;
-    const totalHabitsCompleted = safeHabits.reduce((sum, h) => sum + (h.completedDates?.length || 0), 0);
+    const totalHabitsCompleted = safeHabits.reduce((sum, h) => sum + getHabitCompletedDates(h).length, 0);
 
     // Calculate perfect days (days where ALL habits were completed)
     const habitDates = new Set<string>();
-    safeHabits.forEach(h => h.completedDates?.forEach(d => habitDates.add(d)));
+    safeHabits.forEach(h => getHabitCompletedDates(h).forEach(d => habitDates.add(d)));
     let perfectDaysCount = 0;
     habitDates.forEach(date => {
-      const allCompleted = safeHabits.every(h => h.completedDates?.includes(date));
+      const allCompleted = safeHabits.every(h => isHabitCompletedOnDate(h, date));
       if (allCompleted && safeHabits.length > 0) perfectDaysCount++;
     });
 
@@ -80,7 +81,7 @@ export function useChallengeHandlers({
       const hasMood = moodDates.has(date);
       const hasFocus = focusDates.has(date);
       const hasGratitude = gratitudeDates.has(date);
-      const allHabits = safeHabits.every(h => h.completedDates?.includes(date));
+      const allHabits = safeHabits.every(h => isHabitCompletedOnDate(h, date));
       if (hasMood && allHabits && hasFocus && hasGratitude && safeHabits.length > 0) {
         zenMasterDays++;
       }

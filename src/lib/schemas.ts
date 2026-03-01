@@ -73,8 +73,8 @@ const dateString = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 // ============================================
 
 const moodType = z.enum(['great', 'good', 'okay', 'bad', 'terrible']);
-const habitType = z.enum(['continuous', 'daily', 'scheduled', 'multiple', 'reduce']);
-const habitFrequency = z.enum(['once', 'daily', 'weekly', 'custom']);
+const loopHabitType = z.enum(['boolean', 'numerical']);
+const targetType = z.enum(['atLeast', 'atMost']);
 const focusStatus = z.enum(['completed', 'aborted']);
 const primaryEmotion = z.enum(['joy', 'trust', 'fear', 'surprise', 'sadness', 'disgust', 'anger', 'anticipation']);
 const emotionIntensity = z.enum(['mild', 'moderate', 'intense']);
@@ -138,34 +138,37 @@ export const runtimeMoodEntrySchema = z.object({
 // ============================================
 
 /**
- * Runtime schema for Habit.
- * Uses .default() for fields that old data may lack so that
- * pre-v1.4 habits without type/frequency/reminders still parse.
+ * Runtime schema for Habit (Loop-faithful entry-based model).
+ * Uses .default() for fields that old data may lack.
+ * .passthrough() preserves unknown keys from older app versions.
  */
 export const runtimeHabitSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   icon: z.string(),
-  color: z.string(),
-  completedDates: z.array(z.string()),
+  color: z.union([z.number(), z.string()]),  // number (palette index) or legacy string
   createdAt: z.number(),
-  type: habitType.default('daily'),
+  habitType: loopHabitType.default('boolean'),
   reminders: z.array(habitReminderSchema).default([]),
-  frequency: habitFrequency.default('daily'),
-  // All optional fields
+  frequency: z.object({
+    numerator: z.number(),
+    denominator: z.number(),
+  }).default({ numerator: 1, denominator: 1 }),
+  entries: z.record(z.string(), z.object({
+    value: z.number(),
+    notes: z.string().optional(),
+  })).default({}),
+  // Loop core fields
+  question: z.string().default(''),
+  description: z.string().default(''),
+  isArchived: z.boolean().default(false),
+  position: z.number().default(0),
+  targetValue: z.number().default(0),
+  targetType: targetType.default('atLeast'),
+  unit: z.string().default(''),
+  // ZenFlow extensions
   templateId: z.string().optional(),
   category: z.string().optional(),
-  customDays: z.array(z.number()).optional(),
-  requiresDuration: z.boolean().optional(),
-  targetDuration: z.number().optional(),
-  durationByDate: z.record(z.string(), z.number()).optional(),
-  startDate: z.string().optional(),
-  failedDates: z.array(z.string()).optional(),
-  progressByDate: z.record(z.string(), z.number()).optional(),
-  targetCount: z.number().optional(),
-  dailyTarget: z.number().optional(),
-  completionsByDate: z.record(z.string(), z.number()).optional(),
-  // Identity cluster (IA Blueprint Phase 2)
   identityCluster: z.string().optional(),
   identityVerb: z.string().optional(),
   identityIcon: z.string().optional(),

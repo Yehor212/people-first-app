@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, PrivacySettings, ScheduleEvent, MicroReflection, CanvasGoal } from '@/types';
 import { defaultReminderSettings } from '@/lib/reminders';
+import { needsMigration, migrateAllHabits } from '@/lib/habitMigration';
 
 // Setter type matching useIndexedDB's return
 type Setter<T> = (value: T | ((prev: T) => T)) => void;
@@ -136,15 +137,33 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
   setGoogleAuthChecked: createFieldAction<boolean>('googleAuthChecked', 'setGoogleAuthChecked', set, get),
 
   _registerSetters: (setters) => set({ _setters: setters }),
-  _hydrateFromDB: (data) => set({
-    ...data,
+  _hydrateFromDB: (data) => {
     // Defensive: ensure arrays survive corrupted cloud sync data
-    ...(data.moods !== undefined && { moods: Array.isArray(data.moods) ? data.moods : [] }),
-    ...(data.habits !== undefined && { habits: Array.isArray(data.habits) ? data.habits : [] }),
-    ...(data.focusSessions !== undefined && { focusSessions: Array.isArray(data.focusSessions) ? data.focusSessions : [] }),
-    ...(data.gratitudeEntries !== undefined && { gratitudeEntries: Array.isArray(data.gratitudeEntries) ? data.gratitudeEntries : [] }),
-    ...(data.scheduleEvents !== undefined && { scheduleEvents: Array.isArray(data.scheduleEvents) ? data.scheduleEvents : [] }),
-    ...(data.microReflections !== undefined && { microReflections: Array.isArray(data.microReflections) ? data.microReflections : [] }),
-    ...(data.canvasGoals !== undefined && { canvasGoals: Array.isArray(data.canvasGoals) ? data.canvasGoals : [] }),
-  }),
+    let habits = data.habits !== undefined
+      ? (Array.isArray(data.habits) ? data.habits : [])
+      : undefined;
+
+    // v1 → v2 migration: convert old habit format to entry-based model
+    if (habits && habits.length > 0 && needsMigration(habits)) {
+      console.info('[habitMigration] Migrating v1 habits to v2 format...');
+      habits = migrateAllHabits(habits);
+      // Persist migrated habits back to IndexedDB
+      const dbSetter = get()._setters?.setHabits;
+      if (dbSetter) {
+        dbSetter(habits);
+      }
+      console.info(`[habitMigration] Migrated ${habits.length} habits successfully.`);
+    }
+
+    set({
+      ...data,
+      ...(data.moods !== undefined && { moods: Array.isArray(data.moods) ? data.moods : [] }),
+      ...(habits !== undefined && { habits }),
+      ...(data.focusSessions !== undefined && { focusSessions: Array.isArray(data.focusSessions) ? data.focusSessions : [] }),
+      ...(data.gratitudeEntries !== undefined && { gratitudeEntries: Array.isArray(data.gratitudeEntries) ? data.gratitudeEntries : [] }),
+      ...(data.scheduleEvents !== undefined && { scheduleEvents: Array.isArray(data.scheduleEvents) ? data.scheduleEvents : [] }),
+      ...(data.microReflections !== undefined && { microReflections: Array.isArray(data.microReflections) ? data.microReflections : [] }),
+      ...(data.canvasGoals !== undefined && { canvasGoals: Array.isArray(data.canvasGoals) ? data.canvasGoals : [] }),
+    });
+  },
 }));

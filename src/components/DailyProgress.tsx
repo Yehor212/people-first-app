@@ -1,6 +1,7 @@
 import { useMemo, useEffect, useRef } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday } from '@/lib/utils';
+import { isHabitCompletedOnDate } from '@/lib/habits';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ChevronRight } from 'lucide-react';
@@ -33,7 +34,7 @@ export function DailyProgress({ moods, habits, focusSessions, gratitudeEntries, 
 
   const progress = useMemo(() => {
     const hasMood = moods.some(m => m.date === today);
-    const completedHabits = habits.filter(h => h.completedDates?.includes(today)).length;
+    const completedHabits = habits.filter(h => isHabitCompletedOnDate(h, today)).length;
     const totalHabits = habits.length;
     const todayFocus = focusSessions.filter(s => s.date === today).reduce((acc, s) => acc + s.duration, 0);
     const hasGratitude = gratitudeEntries.some(e => e.date === today);

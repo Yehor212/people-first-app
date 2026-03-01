@@ -5,6 +5,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
+import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
 // --- mocks ---
 
@@ -109,11 +110,10 @@ describe('useChallengeHandlers', () => {
       safeMoods: [{ id: 'm1', mood: 'good' as const, date: '2026-02-19', timestamp: 1 }],
       safeFocusSessions: [{ id: 'f1', duration: 30, completedAt: 1, date: '2026-02-19' }],
       safeGratitudeEntries: [{ id: 'g1', text: 'grateful', date: '2026-02-19', timestamp: 1 }],
-      safeHabits: [{
-        id: 'h1', name: 'Meditate', icon: '🧘', color: '#00ff00',
-        completedDates: ['2026-02-19'], createdAt: 1, type: 'daily' as const,
-        frequency: 'daily' as const, reminders: [],
-      }],
+      safeHabits: [makeTestHabit({
+        id: 'h1', name: 'Meditate', icon: '🧘',
+        entries: datesToEntries(['2026-02-19']),
+      })],
     };
 
     const { result } = renderHook(() => useChallengeHandlers(params));
@@ -150,11 +150,10 @@ describe('useChallengeHandlers', () => {
 
   it('handleOpenChallenge opens modal with optional habit', () => {
     const { result } = renderHook(() => useChallengeHandlers(defaultParams));
-    const testHabit = {
-      id: 'h1', name: 'Meditate', icon: '🧘', color: '#00ff00',
-      completedDates: [], createdAt: 1, type: 'daily' as const,
-      frequency: 'daily' as const, reminders: [],
-    } as Habit;
+    const testHabit = makeTestHabit({
+      id: 'h1', name: 'Meditate', icon: '🧘',
+      entries: {},
+    });
 
     act(() => {
       result.current.handleOpenChallenge(testHabit);
@@ -168,16 +167,14 @@ describe('useChallengeHandlers', () => {
     const params = {
       ...defaultParams,
       safeHabits: [
-        {
-          id: 'h1', name: 'A', icon: '🧘', color: '#ff0000',
-          completedDates: ['2026-02-18', '2026-02-19'], createdAt: 1,
-          type: 'daily' as const, frequency: 'daily' as const, reminders: [],
-        },
-        {
-          id: 'h2', name: 'B', icon: '📚', color: '#00ff00',
-          completedDates: ['2026-02-19'], createdAt: 1,
-          type: 'daily' as const, frequency: 'daily' as const, reminders: [],
-        },
+        makeTestHabit({
+          id: 'h1', name: 'A', icon: '🧘',
+          entries: datesToEntries(['2026-02-18', '2026-02-19']),
+        }),
+        makeTestHabit({
+          id: 'h2', name: 'B', icon: '📚',
+          entries: datesToEntries(['2026-02-19']),
+        }),
       ],
     };
 
@@ -204,11 +201,10 @@ describe('useChallengeHandlers', () => {
       safeGratitudeEntries: [
         { id: 'g1', text: 'test', date: '2026-02-19', timestamp: 1 },
       ],
-      safeHabits: [{
-        id: 'h1', name: 'Meditate', icon: '🧘', color: '#00ff00',
-        completedDates: ['2026-02-19'], createdAt: 1,
-        type: 'daily' as const, frequency: 'daily' as const, reminders: [],
-      }],
+      safeHabits: [makeTestHabit({
+        id: 'h1', name: 'Meditate', icon: '🧘',
+        entries: datesToEntries(['2026-02-19']),
+      })],
     };
 
     const { result } = renderHook(() => useChallengeHandlers(params));

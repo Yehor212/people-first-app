@@ -197,9 +197,25 @@ export const habitSchema = z.object({
   id: z.string().min(1).max(100),
   name: z.string().min(1).max(200),
   icon: z.string().max(10),
-  color: z.string().max(50),
-  completedDates: z.array(z.string()).max(10000),
+  color: z.number().int().min(0).max(19),
+  position: z.number().int().min(0),
   createdAt: z.number().int().positive(),
+  habitType: z.enum(['boolean', 'numerical']),
+  frequency: z.object({
+    numerator: z.number().int().min(1),
+    denominator: z.number().int().min(1),
+  }),
+  question: z.string().max(500),
+  description: z.string().max(2000),
+  isArchived: z.boolean(),
+  targetValue: z.number().min(0),
+  targetType: z.enum(['atLeast', 'atMost']),
+  unit: z.string().max(50),
+  entries: z.record(z.string(), z.object({
+    value: z.number(),
+    notes: z.string().max(1000).optional(),
+  })),
+  reminders: z.array(z.unknown()).max(100),
 });
 
 export const focusSessionSchema = z.object({

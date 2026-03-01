@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { Habit } from '@/types';
+import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
 // ============================================
 // MOCKS — must come before the module import
@@ -34,20 +35,15 @@ function makeHabit(
     identityIcon?: string;
   } = {}
 ): Habit {
-  return {
+  return makeTestHabit({
     id,
     name,
     icon: '⭐',
-    color: '#4CAF50',
-    completedDates: opts.completedDates ?? [],
-    createdAt: Date.now(),
-    type: 'daily',
-    reminders: [],
-    frequency: 'daily',
+    entries: datesToEntries(opts.completedDates ?? []),
     identityCluster: opts.identityCluster,
     identityVerb: opts.identityVerb,
     identityIcon: opts.identityIcon,
-  };
+  });
 }
 
 // ============================================

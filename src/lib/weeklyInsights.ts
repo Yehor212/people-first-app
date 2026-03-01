@@ -8,6 +8,7 @@
 
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { safeAverage } from '@/lib/validation';
+import { isHabitCompletedOnDate, getHabitCompletedDates } from '@/lib/habits';
 
 // ============================================
 // TYPES
@@ -181,7 +182,7 @@ function calculateWeeklyStats(
   let streakDays = 0;
 
   habits.forEach(habit => {
-    const weekCompletions = (habit.completedDates || []).filter(
+    const weekCompletions = getHabitCompletedDates(habit).filter(
       d => d >= startStr && d <= endStr
     );
     totalCompletions += weekCompletions.length;
@@ -191,7 +192,7 @@ function calculateWeeklyStats(
   // Calculate streak (consecutive days with at least one habit completed)
   for (const day of daysInWeek) {
     const hasCompletion = habits.some(h =>
-      h.completedDates?.includes(day)
+      isHabitCompletedOnDate(h, day)
     );
     if (hasCompletion) {
       streakDays++;
@@ -390,8 +391,8 @@ function generateRecommendations(
   // Mood-habit correlation recommendation
   if (habits.length > 0 && moods.length > 7) {
     const topHabit = habits
-      .filter(h => (h.completedDates?.length || 0) >= 5)
-      .sort((a, b) => (b.completedDates?.length || 0) - (a.completedDates?.length || 0))[0];
+      .filter(h => getHabitCompletedDates(h).length >= 5)
+      .sort((a, b) => getHabitCompletedDates(b).length - getHabitCompletedDates(a).length)[0];
 
     if (topHabit) {
       recommendations.push({
@@ -553,7 +554,7 @@ export function hasEnoughDataForWeeklyInsights(
 
   // Need at least 2 mood entries or 1 habit or 1 focus session this week
   const habitsThisWeek = habits.some(h =>
-    h.completedDates?.some(d =>
+    getHabitCompletedDates(h).some(d =>
       d >= formatDateStr(start) && d <= formatDateStr(end)
     )
   );

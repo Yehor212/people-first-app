@@ -15,6 +15,7 @@ import { Clock, Flame, AlertTriangle, Sparkles, ChevronRight, X } from 'lucide-r
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Habit } from '@/types';
 import { cn, interpolate, getToday } from '@/lib/utils';
+import { isHabitCompletedOnDate } from '@/lib/habits';
 import { SK } from '@/lib/storageKeys';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 
@@ -279,23 +280,9 @@ export function UrgencyAlert({
   const isLate = isLateInDay();
   const isVeryLateNow = isVeryLate();
 
-  // Calculate pending habits (handles all habit types correctly)
+  // Calculate pending habits (entry-based model)
   const pendingHabits = useMemo(() => {
-    return habits.filter(h => {
-      const habitType = h.type || 'daily';
-      if (habitType === 'reduce') {
-        const progress = h.progressByDate?.[today];
-        return progress === undefined || progress > (h.targetCount ?? 0);
-      }
-      if (habitType === 'multiple') {
-        const completions = h.completionsByDate?.[today] ?? 0;
-        return completions < (h.dailyTarget ?? 1);
-      }
-      if (habitType === 'continuous') {
-        return h.failedDates?.includes(today) ?? false;
-      }
-      return !(h.completedDates || []).includes(today);
-    });
+    return habits.filter(h => !h.isArchived && !isHabitCompletedOnDate(h, today));
   }, [habits, today]);
 
   // Generate alerts

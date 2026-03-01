@@ -1,6 +1,7 @@
 import { memo, useMemo } from 'react';
 import { MoodEntry, Habit } from '@/types';
 import { cn, getToday, formatDate } from '@/lib/utils';
+import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface WeeklyCalendarProps {
@@ -24,13 +25,17 @@ export const WeeklyCalendar = memo(function WeeklyCalendar({ moods, habits }: We
     new Map(moods.map(m => [m.date, m])),
   [moods]);
 
-  // Pre-compute habit completion sets for O(1) lookups
+  // Pre-compute habit completion sets for O(1) lookups (entry-based model)
   const habitCompletionsByDate = useMemo(() => {
     const map = new Map<string, number>();
     habits.forEach(habit => {
-      habit.completedDates.forEach(date => {
-        map.set(date, (map.get(date) || 0) + 1);
-      });
+      if (!habit.entries) return;
+      for (const [date, entry] of Object.entries(habit.entries)) {
+        // YES_MANUAL (2) counts as completed
+        if (entry.value === 2) {
+          map.set(date, (map.get(date) || 0) + 1);
+        }
+      }
     });
     return map;
   }, [habits]);
@@ -97,12 +102,12 @@ export const WeeklyCalendar = memo(function WeeklyCalendar({ moods, habits }: We
               {habits.slice(0, 3).map((habit) => (
                 <div
                   key={habit.id}
-                  className={cn(
-                    "w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full",
-                    habit.completedDates.includes(day.date)
-                      ? habit.color
-                      : "bg-secondary"
-                  )}
+                  className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full"
+                  style={{
+                    backgroundColor: habit.entries?.[day.date]?.value === 2
+                      ? resolveHabitColor(habit.color)
+                      : undefined,
+                  }}
                 />
               ))}
             </div>

@@ -569,21 +569,44 @@ describe('habitSchema', () => {
       id: 'habit_123',
       name: 'Morning meditation',
       icon: '🧘',
-      color: 'blue',
-      completedDates: ['2024-01-15', '2024-01-16'],
+      color: 8,
+      position: 0,
       createdAt: 1705334400000,
+      habitType: 'boolean',
+      frequency: { numerator: 1, denominator: 1 },
+      question: '',
+      description: '',
+      isArchived: false,
+      targetValue: 0,
+      targetType: 'atLeast',
+      unit: '',
+      entries: {
+        '2024-01-15': { value: 2 },
+        '2024-01-16': { value: 2 },
+      },
+      reminders: [],
     };
     expect(habitSchema.safeParse(valid).success).toBe(true);
   });
 
-  it('rejects completedDates array over 10000', () => {
+  it('rejects invalid color (non-integer or out of palette range)', () => {
     const invalid = {
       id: 'habit_123',
       name: 'Test',
       icon: '🧘',
-      color: 'blue',
-      completedDates: new Array(10001).fill('2024-01-15'),
+      color: 25,
+      position: 0,
       createdAt: 1705334400000,
+      habitType: 'boolean',
+      frequency: { numerator: 1, denominator: 1 },
+      question: '',
+      description: '',
+      isArchived: false,
+      targetValue: 0,
+      targetType: 'atLeast',
+      unit: '',
+      entries: {},
+      reminders: [],
     };
     expect(habitSchema.safeParse(invalid).success).toBe(false);
   });

@@ -45,7 +45,7 @@ export const JournalHabitSection = memo(function JournalHabitSection({ date, sna
           habitId: h.id,
           habitName: h.name,
           habitIcon: h.icon,
-          completed: h.completedDates?.includes(date) || false,
+          completed: h.entries?.[date]?.value === 2,
         }));
         onSnapshotChangeRef.current(initial);
       }

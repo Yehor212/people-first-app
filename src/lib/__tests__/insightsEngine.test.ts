@@ -12,6 +12,7 @@ import {
   analyzeMoodTags,
 } from '../insightsEngine';
 import type { MoodEntry, Habit, FocusSession } from '@/types';
+import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
 // Helper to create test data
 const createMoodEntry = (date: string, mood: string, tags: string[] = [], energy: number = 3, hour: number = 12): MoodEntry => ({
@@ -22,17 +23,13 @@ const createMoodEntry = (date: string, mood: string, tags: string[] = [], energy
   timestamp: new Date(`${date}T${hour.toString().padStart(2, '0')}:00:00`).getTime(),
 });
 
-const createHabit = (id: string, name: string, completedDates: string[]): Habit => ({
-  id,
-  name,
-  icon: '✅',
-  color: 'blue',
-  completedDates,
-  createdAt: Date.now(),
-  type: 'daily',
-  reminders: [],
-  frequency: 'daily',
-});
+const createHabit = (id: string, name: string, completedDates: string[]): Habit =>
+  makeTestHabit({
+    id,
+    name,
+    icon: '✅',
+    entries: datesToEntries(completedDates),
+  });
 
 const createFocusSession = (date: string, label: string, minutes: number, hour: number = 10): FocusSession => ({
   id: `focus-${date}-${hour}`,

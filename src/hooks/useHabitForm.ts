@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { Habit, HabitType, HabitReminder, HabitFrequency, HabitCategory } from '@/types';
-import { getToday, generateId } from '@/lib/utils';
+import type { Habit, HabitReminder, HabitCategory, LoopHabitType, TargetType, HabitFrequencyRatio } from '@/types';
+import { generateId } from '@/lib/utils';
 import { habitTemplates } from '@/lib/habitTemplates';
 import { hapticTap } from '@/lib/haptics';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -10,13 +10,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 // ============================================
 
 export const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿', '🚭', '🍷', '🇬🇧', '💪', '🧠'];
-export const habitColors = [
-  'bg-primary',
-  'bg-accent',
-  'bg-mood-good',
-  'bg-mood-okay',
-  'bg-mood-great',
-];
 
 export const habitCategories: { id: HabitCategory; icon: string; color: string }[] = [
   { id: 'health', icon: '💪', color: 'from-emerald-500 to-teal-500' },
@@ -27,6 +20,14 @@ export const habitCategories: { id: HabitCategory; icon: string; color: string }
   { id: 'finance', icon: '💰', color: 'from-green-500 to-emerald-500' },
   { id: 'self-care', icon: '🌸', color: 'from-fuchsia-500 to-pink-500' },
   { id: 'other', icon: '✨', color: 'from-slate-500 to-gray-500' },
+];
+
+/** Frequency presets */
+export const frequencyPresets: { label: string; ratio: HabitFrequencyRatio }[] = [
+  { label: 'Daily', ratio: { numerator: 1, denominator: 1 } },
+  { label: '3x / week', ratio: { numerator: 3, denominator: 7 } },
+  { label: '2x / week', ratio: { numerator: 2, denominator: 7 } },
+  { label: 'Weekly', ratio: { numerator: 1, denominator: 7 } },
 ];
 
 // ============================================
@@ -46,42 +47,48 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
 
-  // Field values
+  // Core fields
   const [newHabitName, setNewHabitName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState(habitIcons[0]);
-  const [selectedColor, setSelectedColor] = useState(habitColors[0]);
-  const [selectedType, setSelectedType] = useState<HabitType>('daily');
+  const [selectedColorIndex, setSelectedColorIndex] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState<HabitCategory>('health');
-  const [dailyTarget, setDailyTarget] = useState(1);
+
+  // Loop fields
+  const [habitType, setHabitType] = useState<LoopHabitType>('boolean');
+  const [frequency, setFrequency] = useState<HabitFrequencyRatio>({ numerator: 1, denominator: 1 });
+  const [question, setQuestion] = useState('');
+  const [description, setDescription] = useState('');
+
+  // Numerical fields
+  const [targetValue, setTargetValue] = useState(1);
+  const [targetType, setTargetType] = useState<TargetType>('atLeast');
+  const [unit, setUnit] = useState('');
+
+  // Reminders
   const [reminders, setReminders] = useState<HabitReminder[]>([]);
 
-  // Identity cluster (IA Blueprint Phase 2)
+  // Identity cluster (ZenFlow extension)
   const [identityCluster, setIdentityCluster] = useState('');
   const [identityVerb, setIdentityVerb] = useState('');
   const [identityIcon, setIdentityIcon] = useState('');
-
-  // Frequency & duration
-  const [frequency, setFrequency] = useState<HabitFrequency>('daily');
-  const [customDays, setCustomDays] = useState<number[]>([1, 2, 3, 4, 5]);
-  const [requiresDuration, setRequiresDuration] = useState(false);
-  const [targetDuration, setTargetDuration] = useState(15);
 
   // Reset form to defaults
   const resetForm = useCallback(() => {
     setNewHabitName('');
     setSelectedIcon(habitIcons[0]);
-    setSelectedColor(habitColors[0]);
-    setSelectedType('daily');
+    setSelectedColorIndex(0);
     setSelectedCategory('health');
-    setDailyTarget(1);
+    setHabitType('boolean');
+    setFrequency({ numerator: 1, denominator: 1 });
+    setQuestion('');
+    setDescription('');
+    setTargetValue(1);
+    setTargetType('atLeast');
+    setUnit('');
     setReminders([]);
     setIdentityCluster('');
     setIdentityVerb('');
     setIdentityIcon('');
-    setFrequency('daily');
-    setCustomDays([1, 2, 3, 4, 5]);
-    setRequiresDuration(false);
-    setTargetDuration(15);
     setEditingHabit(null);
     setIsAdding(false);
     setShowCustomForm(false);
@@ -92,18 +99,19 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     setEditingHabit(habit);
     setNewHabitName(habit.name);
     setSelectedIcon(habit.icon);
-    setSelectedColor(habit.color);
-    setSelectedType(habit.type || 'daily');
+    setSelectedColorIndex(habit.color);
     setSelectedCategory(habit.category || 'health');
-    setDailyTarget(habit.dailyTarget ?? habit.targetCount ?? 1);
+    setHabitType(habit.habitType || 'boolean');
+    setFrequency(habit.frequency || { numerator: 1, denominator: 1 });
+    setQuestion(habit.question || '');
+    setDescription(habit.description || '');
+    setTargetValue(habit.targetValue ?? 1);
+    setTargetType(habit.targetType || 'atLeast');
+    setUnit(habit.unit || '');
     setReminders(habit.reminders || []);
     setIdentityCluster(habit.identityCluster || '');
     setIdentityVerb(habit.identityVerb || '');
     setIdentityIcon(habit.identityIcon || '');
-    setFrequency(habit.frequency || 'daily');
-    setCustomDays(habit.customDays || [1, 2, 3, 4, 5]);
-    setRequiresDuration(habit.requiresDuration || false);
-    setTargetDuration(habit.targetDuration || 15);
     setIsAdding(true);
     setShowCustomForm(true);
   }, []);
@@ -111,8 +119,6 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
   // Submit: create or update habit
   const handleAddHabit = useCallback(() => {
     if (!newHabitName.trim()) return;
-
-    const today = getToday();
 
     // Identity fields — only include when user filled them
     const identityFields = {
@@ -126,16 +132,18 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
         ...editingHabit,
         name: newHabitName.trim(),
         icon: selectedIcon,
-        color: selectedColor,
-        type: selectedType,
+        color: selectedColorIndex,
         category: selectedCategory,
-        reminders,
+        habitType,
         frequency,
-        ...(frequency === 'custom' && { customDays }),
-        ...(requiresDuration && { requiresDuration: true, targetDuration }),
-        ...(selectedType === 'multiple' && { dailyTarget }),
-        ...(selectedType === 'reduce' && { targetCount: dailyTarget }),
+        question: question.trim(),
+        description: description.trim(),
+        targetValue: habitType === 'numerical' ? targetValue : 0,
+        targetType: habitType === 'numerical' ? targetType : 'atLeast',
+        unit: habitType === 'numerical' ? unit.trim() : '',
+        reminders,
         ...identityFields,
+        updatedAt: new Date().toISOString(),
       };
       // Clear identity fields if user removed them
       if (!identityCluster.trim()) delete updatedHabit.identityCluster;
@@ -148,18 +156,20 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
         id: generateId(),
         name: newHabitName.trim(),
         icon: selectedIcon,
-        color: selectedColor,
-        category: selectedCategory,
-        completedDates: [],
+        color: selectedColorIndex,
+        position: Date.now(), // new habits at end, will be sorted
         createdAt: Date.now(),
-        type: selectedType,
-        reminders,
+        habitType,
         frequency,
-        ...(frequency === 'custom' && { customDays }),
-        ...(requiresDuration && { requiresDuration: true, targetDuration, durationByDate: {} }),
-        ...(selectedType === 'multiple' && { dailyTarget, completionsByDate: {} }),
-        ...(selectedType === 'continuous' && { startDate: today, failedDates: [] }),
-        ...(selectedType === 'reduce' && { progressByDate: {}, targetCount: dailyTarget }),
+        question: question.trim(),
+        description: description.trim(),
+        isArchived: false,
+        targetValue: habitType === 'numerical' ? targetValue : 0,
+        targetType: habitType === 'numerical' ? targetType : 'atLeast',
+        unit: habitType === 'numerical' ? unit.trim() : '',
+        entries: {},
+        reminders,
+        category: selectedCategory,
         ...identityFields,
       };
       onAddHabit(habit);
@@ -169,8 +179,9 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     resetForm();
   }, [
     newHabitName, editingHabit, onUpdateHabit, onAddHabit, resetForm,
-    selectedIcon, selectedColor, selectedType, selectedCategory,
-    reminders, frequency, customDays, requiresDuration, targetDuration, dailyTarget,
+    selectedIcon, selectedColorIndex, selectedCategory,
+    habitType, frequency, question, description,
+    targetValue, targetType, unit, reminders,
     identityCluster, identityVerb, identityIcon,
   ]);
 
@@ -181,15 +192,12 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
 
     setNewHabitName(template.names[language] || template.names.en);
     setSelectedIcon(template.icon);
-    setSelectedColor(template.color);
-    setSelectedType(template.type);
-    if (template.type === 'multiple' && template.dailyTarget) {
-      setDailyTarget(template.dailyTarget);
-    } else {
-      setDailyTarget(1);
-    }
+    // Template color: resolve to palette index
+    const colorVal = template.color;
+    setSelectedColorIndex(typeof colorVal === 'number' ? colorVal : 0);
+    setHabitType((template as any).habitType || 'boolean');
+    setFrequency({ numerator: 1, denominator: 1 });
     setReminders([]);
-    setFrequency('daily');
     setShowCustomForm(true);
   }, [language]);
 
@@ -217,15 +225,18 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
   return {
     // State
     isAdding, showCustomForm, editingHabit,
-    newHabitName, selectedIcon, selectedColor, selectedType, selectedCategory,
-    dailyTarget, reminders, frequency, customDays, requiresDuration, targetDuration,
+    newHabitName, selectedIcon, selectedColorIndex, selectedCategory,
+    habitType, frequency, question, description,
+    targetValue, targetType, unit,
+    reminders,
     identityCluster, identityVerb, identityIcon,
     // Setters
     setIsAdding, setShowCustomForm,
-    setNewHabitName, setSelectedIcon, setSelectedColor,
-    setSelectedType, setSelectedCategory, setDailyTarget,
+    setNewHabitName, setSelectedIcon, setSelectedColorIndex,
+    setSelectedCategory,
+    setHabitType, setFrequency, setQuestion, setDescription,
+    setTargetValue, setTargetType, setUnit,
     setIdentityCluster, setIdentityVerb, setIdentityIcon,
-    setFrequency, setCustomDays, setRequiresDuration, setTargetDuration,
     // Actions
     resetForm, handleEditHabit, handleAddHabit, handleQuickAdd,
     handleAddReminder, handleRemoveReminder, handleReminderChange,

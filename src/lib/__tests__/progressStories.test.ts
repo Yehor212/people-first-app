@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { MoodEntry, MoodType, Habit, FocusSession, GratitudeEntry, Badge } from '@/types';
+import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
 // ============================================
 // TESTS — progressStories
@@ -27,16 +28,13 @@ const makeHabit = (
   name: string,
   completedDates: string[],
   icon: string = '🏃'
-): Habit => ({
+): Habit => makeTestHabit({
   id,
   name,
   icon,
-  color: '#4CAF50',
-  completedDates,
+  color: 8,
+  entries: datesToEntries(completedDates),
   createdAt: Date.now(),
-  type: 'daily',
-  reminders: [],
-  frequency: 'daily',
 });
 
 const makeFocusSession = (date: string, duration: number, status: 'completed' | 'aborted' = 'completed', label?: string): FocusSession => ({

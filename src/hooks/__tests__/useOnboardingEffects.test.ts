@@ -16,7 +16,7 @@ vi.mock('@/stores', () => ({
     sel({
       onboardingComplete: true,
       moods: [{ id: 'm1', date: '2026-02-19' }],
-      habits: [{ id: 'h1', completedDates: ['2026-02-19'] }],
+      habits: [{ id: 'h1', entries: { '2026-02-19': { value: 2 } } }],
       focusSessions: [{ id: 'f1', date: '2026-02-19' }],
     }),
   ),
@@ -157,7 +157,7 @@ describe('useOnboardingEffects', () => {
         sel({
           onboardingComplete: true,
           moods: [],
-          habits: [{ id: 'h1', completedDates: [] }],
+          habits: [{ id: 'h1', entries: {} }],
           focusSessions: [],
         }),
     );

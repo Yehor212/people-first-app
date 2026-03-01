@@ -22,8 +22,8 @@ describe('habitTemplates', () => {
       expect(typeof template.id).toBe('string');
       expect(template.id.length).toBeGreaterThan(0);
       expect(typeof template.icon).toBe('string');
-      expect(typeof template.color).toBe('string');
-      expect(typeof template.type).toBe('string');
+      expect(typeof template.color).toBe('number');
+      expect(typeof template.habitType).toBe('string');
       expect(template.names).toBeDefined();
     }
   });

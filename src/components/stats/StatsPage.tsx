@@ -191,7 +191,7 @@ export const StatsPage = memo(function StatsPage({
           title: t.myProgress || 'My Progress',
           stats: [
             { label: t.currentStreak || 'Streak', value: stats.currentStreak },
-            { label: t.habitsCompleted || 'Habits', value: habits.filter(h => h.completedDates.includes(todayKey)).length },
+            { label: t.habitsCompleted || 'Habits', value: habits.filter(h => h.entries?.[todayKey]?.value === 2).length },
             { label: t.focusMinutes || 'Focus', value: stats.totalFocusMinutes },
           ],
         }}

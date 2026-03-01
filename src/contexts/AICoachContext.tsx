@@ -173,8 +173,8 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
       })),
       habits: habits.map(h => ({
         name: h.name,
-        completedToday: h.completedDates?.includes(today) || false,
-        streak: h.completedDates?.length || 0,
+        completedToday: h.entries?.[today]?.value === 2,
+        streak: Object.values(h.entries || {}).filter(e => e.value === 2).length,
       })),
       currentStreak: innerWorld?.currentActiveStreak || 0,
       lastActiveDate: innerWorld?.lastActiveDate,

@@ -1,21 +1,24 @@
 /**
  * HabitHeatmapGrid — GitHub-style contribution grid for the last 26 weeks (182 days).
- * 7 rows (Mon-Sun) × ~26 columns (weeks). Deep Space aesthetic.
+ * 7 rows (Mon-Sun) x ~26 columns (weeks). Deep Space aesthetic.
  *
- * Cell states: Done (habit color), Skipped (muted stripe), Missed (dim), Future (hidden).
+ * Cell states: YES_MANUAL (habit color), YES_AUTO (dimmed), SKIP (stripe), NO/UNKNOWN (dim).
  */
 
 import { memo, useMemo, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { Habit } from '@/types';
+import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
+import { ENTRY } from '@/types';
+import type { Habit, HabitEntry } from '@/types';
 
 interface HabitHeatmapGridProps {
   habit: Habit;
   className?: string;
 }
 
-// ─── Date helpers (local, no library) ────────────────────────────────────────
+// ─── Date helpers ────────────────────────────────────────────────────────────
 
 function toDateStr(d: Date): string {
   const y = d.getFullYear();
@@ -29,26 +32,23 @@ function formatShortDate(dateStr: string): string {
   return `${d}.${m}.${y.slice(2)}`;
 }
 
-type CellStatus = 'done' | 'skipped' | 'missed' | 'future' | 'before';
+type CellStatus = 'yes_manual' | 'yes_auto' | 'skipped' | 'no' | 'unknown' | 'future' | 'before';
 
 interface DayCell {
   date: string;
   status: CellStatus;
-  dow: number; // 0=Sun … 6=Sat → remapped to Mon=0 … Sun=6
+  dow: number; // Mon=0 … Sun=6
 }
 
 const TOTAL_DAYS = 182; // 26 weeks
 
-function buildGrid(habit: Habit): { cells: DayCell[]; weeks: number } {
+function buildGrid(habit: Habit, entries: Record<string, HabitEntry>): { cells: DayCell[]; weeks: number } {
   const today = new Date();
   const todayStr = toDateStr(today);
-  const completedSet = new Set(habit.completedDates || []);
-  const skippedSet = new Set(habit.skippedDates || []);
-  const createdStr = habit.startDate || toDateStr(new Date(habit.createdAt));
+  const createdStr = toDateStr(new Date(habit.createdAt));
 
   const cells: DayCell[] = [];
 
-  // Walk backwards from today for TOTAL_DAYS
   for (let i = TOTAL_DAYS - 1; i >= 0; i--) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
@@ -63,18 +63,21 @@ function buildGrid(habit: Habit): { cells: DayCell[]; weeks: number } {
       status = 'future';
     } else if (dateStr < createdStr) {
       status = 'before';
-    } else if (completedSet.has(dateStr)) {
-      status = 'done';
-    } else if (skippedSet.has(dateStr)) {
-      status = 'skipped';
     } else {
-      status = 'missed';
+      const val = entries[dateStr]?.value ?? ENTRY.UNKNOWN;
+      switch (val) {
+        case ENTRY.YES_MANUAL: status = 'yes_manual'; break;
+        case ENTRY.YES_AUTO: status = 'yes_auto'; break;
+        case ENTRY.SKIP: status = 'skipped'; break;
+        case ENTRY.NO: status = 'no'; break;
+        default: status = 'unknown';
+      }
     }
 
     cells.push({ date: dateStr, status, dow });
   }
 
-  // Pad start with 'before' cells to align the grid (first cell = Monday of that week)
+  // Pad start to align the grid (first cell = Monday)
   const firstDow = cells[0]?.dow ?? 0;
   const padding: DayCell[] = [];
   for (let i = 0; i < firstDow; i++) {
@@ -97,11 +100,20 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [tooltip, setTooltip] = useState<{ date: string; status: string; x: number; y: number } | null>(null);
+  const habitColor = resolveHabitColor(habit.color);
 
-  const { cells, weeks } = useMemo(() => buildGrid(habit), [habit]);
+  // Compute entries with YES_AUTO fills for non-daily boolean habits
+  const computedEntries = useMemo(() => computeEntriesWithAuto(habit), [habit]);
+  const { cells, weeks } = useMemo(() => buildGrid(habit, computedEntries), [habit, computedEntries]);
 
   const getStatusLabel = useCallback((status: CellStatus) => {
-    return status === 'done' ? '✓' : status === 'skipped' ? (ts.skipped || 'Skipped') : '✗';
+    switch (status) {
+      case 'yes_manual': return '✓';
+      case 'yes_auto': return '✓ (auto)';
+      case 'skipped': return ts.skipped || 'Skipped';
+      case 'no': return '✗';
+      default: return '·';
+    }
   }, [ts.skipped]);
 
   const handleCellTap = useCallback((cell: DayCell, e: React.MouseEvent | React.TouchEvent) => {
@@ -148,7 +160,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
                 const cell = cells[cellIdx];
                 if (!cell) return <div key={dayIdx} className="w-3 h-3" />;
 
-                const isActionable = cell.status === 'done' || cell.status === 'missed' || cell.status === 'skipped';
+                const isActionable = cell.status !== 'before' && cell.status !== 'future';
 
                 return (
                   <div
@@ -164,16 +176,17 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
                     className={cn(
                       'w-3 h-3 rounded-[2px] transition-colors',
                       isActionable ? 'cursor-pointer' : 'cursor-default',
-                      cell.status === 'before' && 'bg-transparent',
-                      cell.status === 'future' && 'bg-transparent',
-                      cell.status === 'missed' && 'bg-white/[0.04]',
+                      (cell.status === 'before' || cell.status === 'future') && 'bg-transparent',
+                      (cell.status === 'no' || cell.status === 'unknown') && 'bg-white/[0.04]',
                     )}
                     style={
-                      cell.status === 'done'
-                        ? { backgroundColor: habit.color, opacity: 0.85 }
-                        : cell.status === 'skipped'
-                          ? { backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 2px, var(--chart-skip, #64748b) 2px, var(--chart-skip, #64748b) 3px)`, opacity: 0.4 }
-                          : undefined
+                      cell.status === 'yes_manual'
+                        ? { backgroundColor: habitColor, opacity: 0.85 }
+                        : cell.status === 'yes_auto'
+                          ? { backgroundColor: habitColor, opacity: 0.35 }
+                          : cell.status === 'skipped'
+                            ? { backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 2px, var(--chart-skip, #64748b) 2px, var(--chart-skip, #64748b) 3px)`, opacity: 0.4 }
+                            : undefined
                     }
                   />
                 );
@@ -199,7 +212,10 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
           <div className="w-2.5 h-2.5 rounded-[2px] bg-white/[0.04]" /> Miss
         </span>
         <span className="flex items-center gap-1">
-          <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: habit.color, opacity: 0.85 }} /> Done
+          <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: habitColor, opacity: 0.85 }} /> Done
+        </span>
+        <span className="flex items-center gap-1">
+          <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: habitColor, opacity: 0.35 }} /> Auto
         </span>
         <span className="flex items-center gap-1">
           <div

@@ -6,6 +6,7 @@
 
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, MoodType } from '@/types';
 import { getToday, formatDate } from './utils';
+import { getHabitCompletedDates } from '@/lib/habits';
 import { safeParseInt } from '@/lib/validation';
 
 // Mood scores for analysis
@@ -189,7 +190,7 @@ function analyzeHabitMoodCorrelation(
   let bestCorrelation = 0;
 
   habits.forEach(habit => {
-    const datesWithHabit = habit.completedDates;
+    const datesWithHabit = getHabitCompletedDates(habit);
     // Use Set for O(1) lookup instead of O(n) includes()
     const habitDatesSet = new Set(datesWithHabit);
     const datesWithoutHabit = Object.keys(moodByDate).filter(d => !habitDatesSet.has(d));
@@ -485,12 +486,15 @@ export function generateMoodInsights(
   const recentSessions = focusSessions.filter(s => s.completedAt >= ninetyDaysAgo);
   const recentGratitude = gratitudeEntries.filter(g => g.timestamp >= ninetyDaysAgo);
 
-  // Filter habit completedDates to last 90 days
+  // Filter habit entries to last 90 days
   const cutoffDate = new Date(ninetyDaysAgo).toISOString().split('T')[0];
-  const recentHabits = habits.map(h => ({
-    ...h,
-    completedDates: (h.completedDates || []).filter(d => d >= cutoffDate)
-  }));
+  const recentHabits = habits.map(h => {
+    const filteredEntries: Record<string, { value: number; notes?: string }> = {};
+    for (const [date, entry] of Object.entries(h.entries || {})) {
+      if (date >= cutoffDate) filteredEntries[date] = entry;
+    }
+    return { ...h, entries: filteredEntries };
+  });
 
   const insights: MoodInsight[] = [];
 

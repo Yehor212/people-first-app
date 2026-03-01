@@ -373,6 +373,7 @@ export function Index() {
           <HabitHubTab
             habits={habits}
             onToggleHabit={handleToggleHabit}
+            onAdjustHabit={handleAdjustHabit}
             onAddHabit={handleAddHabit}
             onDeleteHabit={handleDeleteHabit}
             onUpdateHabit={handleUpdateHabit}

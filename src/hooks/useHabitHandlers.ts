@@ -5,6 +5,7 @@ import { triggerXpPopup } from '@/components/XpPopup';
 import { triggerSync } from '@/storage/cloudSync';
 import { haptics } from '@/lib/haptics';
 import { normalizeHabit } from '@/lib/habits';
+import { getNextToggleValue, setEntryValue, toStoredValue } from '@/lib/habits';
 import { findTemplateIdByName, getHabitTemplateName } from '@/lib/habitTemplates';
 import { addFriendActivity, loadMyProfile } from '@/storage/friendsSync';
 import { recordHabitForChallenge } from '@/lib/comebackChallenge';
@@ -12,6 +13,7 @@ import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { SK } from '@/lib/storageKeys';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import { analytics } from '@/lib/analytics';
+import { ENTRY } from '@/types';
 import type { Habit } from '@/types';
 
 interface UseHabitHandlersParams {
@@ -24,8 +26,8 @@ interface UseHabitHandlersParams {
 }
 
 /**
- * Habit CRUD + toggle handlers, time-of-day tracking, habit localization.
- * Owns processingHabitsRef and processingTimeoutRef internally.
+ * Habit CRUD + entry-based toggle handlers.
+ * Toggle cycle: UNKNOWN → YES_MANUAL → SKIP → NO → UNKNOWN
  */
 export function useHabitHandlers({
   awardXp,
@@ -57,6 +59,43 @@ export function useHabitHandlers({
     safeLocalStorageSet(SK.SPECIAL_BADGES, data);
   }, []);
 
+  /** Fire side effects when a habit is completed (XP, treats, confetti, etc.) */
+  const fireCompletionEffects = useCallback((habit: Habit) => {
+    awardXp('habit');
+    const treatResult = earnTreats('habit', 10, 'Completed habit');
+    triggerXpPopup(treatResult.earned, 'habit');
+    void haptics.habitCompleted();
+    setConfettiBurst({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+    trackTimeOfDayCompletion();
+    analytics.habitCompleted(habit.name);
+    plantSeed('habit');
+    waterPlants('habit');
+
+    // Friends activity feed
+    const friendProfile = loadMyProfile();
+    if (friendProfile) {
+      addFriendActivity({
+        friendId: friendProfile.friendCode,
+        friendName: friendProfile.displayName,
+        activityType: 'habit_completed',
+        description: habit.name,
+        icon: habit.icon || '✅',
+      });
+    }
+
+    // Comeback challenge
+    const today = new Date().toISOString().slice(0, 10);
+    const challengeResult = recordHabitForChallenge(today);
+    if (challengeResult.challengeComplete) {
+      earnTreats('habit', challengeResult.bonusXp, 'Comeback Challenge Complete!');
+      triggerXpPopup(challengeResult.bonusXp, 'bonus');
+    }
+  }, [awardXp, earnTreats, plantSeed, waterPlants, setConfettiBurst, trackTimeOfDayCompletion]);
+
+  /**
+   * Toggle a boolean habit entry for a given date.
+   * Cycle: UNKNOWN → YES_MANUAL → SKIP → NO → UNKNOWN
+   */
   const handleToggleHabit = (habitId: string, date: string) => {
     // Guard against rapid double-clicks
     const processingKey = `${habitId}-${date}`;
@@ -70,81 +109,24 @@ export function useHabitHandlers({
     setHabits(prev => prev.map(habit => {
       if (habit.id !== habitId) return habit;
 
-      const habitType = habit.type || 'daily';
+      const currentValue = habit.entries?.[date]?.value ?? ENTRY.UNKNOWN;
+      const nextValue = getNextToggleValue(currentValue);
 
-      if (habitType === 'reduce') return habit;
-      if (habitType === 'continuous') return habit;
-
-      // Multiple times per day habits
-      if (habitType === 'multiple') {
-        const completionsByDate = { ...(habit.completionsByDate || {}) };
-        const current = completionsByDate[date] ?? 0;
-        const target = habit.dailyTarget ?? 1;
-
-        if (current < target) {
-          completionsByDate[date] = current + 1;
-          awardXp('habit');
-          const treatResult = earnTreats('habit', 10, 'Completed habit');
-          triggerXpPopup(treatResult.earned, 'habit');
-          void haptics.habitToggled();
-          trackTimeOfDayCompletion();
-          analytics.habitCompleted(habit.name);
-        }
-
-        const existingDates = habit.completedDates || [];
-        return {
-          ...habit,
-          completionsByDate,
-          completedDates: completionsByDate[date] >= target
-            ? [...new Set([...existingDates, date])]
-            : existingDates.filter(d => d !== date),
-          updatedAt: new Date().toISOString(),
-        };
+      // Fire effects when transitioning TO YES_MANUAL
+      if (nextValue === ENTRY.YES_MANUAL) {
+        fireCompletionEffects(habit);
+      } else {
+        void haptics.habitToggled();
       }
 
-      // Daily and scheduled habits (normal toggle)
-      const existingDates = habit.completedDates || [];
-      const completed = existingDates.includes(date);
-      if (!completed) {
-        awardXp('habit');
-        const treatResult = earnTreats('habit', 10, 'Completed habit');
-        triggerXpPopup(treatResult.earned, 'habit');
-        void haptics.habitCompleted();
-        setConfettiBurst({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-        trackTimeOfDayCompletion();
-        analytics.habitCompleted(habit.name);
-        plantSeed('habit');
-        waterPlants('habit');
-
-        // Track for friends activity feed
-        const friendProfile = loadMyProfile();
-        if (friendProfile) {
-          addFriendActivity({
-            friendId: friendProfile.friendCode,
-            friendName: friendProfile.displayName,
-            activityType: 'habit_completed',
-            description: habit.name,
-            icon: habit.icon || '✅',
-          });
-        }
-
-        // Track comeback challenge progress
-        const challengeResult = recordHabitForChallenge(date);
-        if (challengeResult.challengeComplete) {
-          earnTreats('habit', challengeResult.bonusXp, 'Comeback Challenge Complete!');
-          triggerXpPopup(challengeResult.bonusXp, 'bonus');
-        }
-      }
       return {
         ...habit,
-        completedDates: completed
-          ? existingDates.filter(d => d !== date)
-          : [...existingDates, date],
+        entries: setEntryValue(habit.entries || {}, date, nextValue),
         updatedAt: new Date().toISOString(),
       };
     }));
-    triggerSync();
 
+    triggerSync();
     updateChallengeProgress();
     checkForFeatureUnlocks();
 
@@ -156,38 +138,47 @@ export function useHabitHandlers({
     });
   };
 
-  const handleAdjustHabit = (habitId: string, date: string, delta: number) => {
+  /**
+   * Set a numerical value for a habit on a given date.
+   * realValue is the user-facing number (e.g. 2.5 liters).
+   */
+  const handleSetNumericalValue = (habitId: string, date: string, realValue: number) => {
     setHabits(prev => prev.map(habit => {
       if (habit.id !== habitId) return habit;
-      const habitType = habit.type || 'daily';
 
-      if (habitType === 'reduce') {
-        const progressByDate = { ...(habit.progressByDate || {}) };
-        const current = typeof progressByDate[date] === 'number' ? progressByDate[date] : 0;
-        progressByDate[date] = Math.max(0, current + delta);
-        return { ...habit, progressByDate };
+      const storedValue = toStoredValue(realValue);
+      const prevValue = habit.entries?.[date]?.value ?? 0;
+
+      // Fire effects if newly meeting target
+      if (habit.targetValue > 0) {
+        const prevMet = prevValue > 0 && (prevValue / 1000) >= habit.targetValue;
+        const nowMet = realValue >= habit.targetValue;
+        if (nowMet && !prevMet) {
+          fireCompletionEffects(habit);
+        }
       }
 
-      if (habitType === 'multiple') {
-        const completionsByDate = { ...(habit.completionsByDate || {}) };
-        const current = completionsByDate[date] ?? 0;
-        const target = habit.dailyTarget ?? 1;
-        const next = Math.max(0, Math.min(target, current + delta));
-        completionsByDate[date] = next;
-        const existingDates = habit.completedDates || [];
-        return {
-          ...habit,
-          completionsByDate,
-          completedDates: next >= target
-            ? [...new Set([...existingDates, date])]
-            : existingDates.filter(d => d !== date),
-          updatedAt: new Date().toISOString(),
-        };
-      }
-
-      return habit;
+      return {
+        ...habit,
+        entries: setEntryValue(habit.entries || {}, date, storedValue),
+        updatedAt: new Date().toISOString(),
+      };
     }));
     triggerSync();
+  };
+
+  /**
+   * Adjust a numerical value by delta (increment/decrement).
+   */
+  const handleAdjustHabit = (habitId: string, date: string, delta: number) => {
+    const habit = habits.find(h => h.id === habitId);
+    if (!habit) return;
+
+    const currentStored = habit.entries?.[date]?.value ?? 0;
+    const currentReal = currentStored > 0 ? currentStored / 1000 : 0;
+    const newReal = Math.max(0, currentReal + delta);
+
+    handleSetNumericalValue(habitId, date, newReal);
   };
 
   const handleAddHabit = (habit: Habit) => {
@@ -205,7 +196,7 @@ export function useHabitHandlers({
     triggerSync();
   };
 
-  // ── Loop-style Habit Hub actions ──────────────────────────────────────────
+  // ── Loop-style actions ──────────────────────────────────────────────────────
 
   const handleArchiveHabit = (habitId: string) => {
     setHabits(prev => prev.map(h =>
@@ -224,9 +215,13 @@ export function useHabitHandlers({
   const handleSkipHabit = (habitId: string, date: string) => {
     setHabits(prev => prev.map(h => {
       if (h.id !== habitId) return h;
-      const existing = h.skippedDates || [];
-      if (existing.includes(date)) return h; // no duplicates
-      return { ...h, skippedDates: [...existing, date], updatedAt: new Date().toISOString() };
+      const currentValue = h.entries?.[date]?.value ?? ENTRY.UNKNOWN;
+      if (currentValue === ENTRY.SKIP) return h;
+      return {
+        ...h,
+        entries: setEntryValue(h.entries || {}, date, ENTRY.SKIP),
+        updatedAt: new Date().toISOString(),
+      };
     }));
     triggerSync();
   };
@@ -234,9 +229,13 @@ export function useHabitHandlers({
   const handleUnskipHabit = (habitId: string, date: string) => {
     setHabits(prev => prev.map(h => {
       if (h.id !== habitId) return h;
-      const existing = h.skippedDates || [];
-      if (!existing.includes(date)) return h;
-      return { ...h, skippedDates: existing.filter(d => d !== date), updatedAt: new Date().toISOString() };
+      const currentValue = h.entries?.[date]?.value ?? ENTRY.UNKNOWN;
+      if (currentValue !== ENTRY.SKIP) return h;
+      return {
+        ...h,
+        entries: setEntryValue(h.entries || {}, date, ENTRY.UNKNOWN),
+        updatedAt: new Date().toISOString(),
+      };
     }));
     triggerSync();
   };
@@ -269,6 +268,7 @@ export function useHabitHandlers({
   return {
     handleToggleHabit,
     handleAdjustHabit,
+    handleSetNumericalValue,
     handleAddHabit,
     handleUpdateHabit,
     handleDeleteHabit,

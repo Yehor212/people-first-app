@@ -131,15 +131,15 @@ export function useAuthSession(isLoading: boolean): void {
       }
     });
 
-    // Timeout: if no SIGNED_IN event after 15 seconds, exchange likely failed
+    // Timeout: if no SIGNED_IN event after 30 seconds, exchange likely failed
     const timeout = setTimeout(() => {
       if (settled) return;
       settled = true;
-      logger.error('[Index] Web OAuth code exchange timed out after 15s');
+      logger.error('[Index] Web OAuth code exchange timed out after 30s');
       setIsProcessingWebOAuth(false);
       setWebOAuthError('Sign-in took too long. Please try again.');
       window.history.replaceState({}, '', window.location.pathname);
-    }, 15000);
+    }, 30000);
 
     return () => {
       settled = true;

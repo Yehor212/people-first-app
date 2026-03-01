@@ -79,11 +79,11 @@ export function calculateGoalProgress(
       if (goal.habitId) {
         const habit = habits.find(h => h.id === goal.habitId);
         if (habit) {
-          current = (habit.completedDates || []).filter(d => d >= periodStartStr).length;
+          current = Object.entries(habit.entries || {}).filter(([d, e]) => d >= periodStartStr && e.value === 2).length;
         }
       } else {
         current = habits.reduce((sum, h) => {
-          return sum + (h.completedDates || []).filter(d => d >= periodStartStr).length;
+          return sum + Object.entries(h.entries || {}).filter(([d, e]) => d >= periodStartStr && e.value === 2).length;
         }, 0);
       }
       break;

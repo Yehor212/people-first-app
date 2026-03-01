@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo, memo, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Habit } from '@/types';
 import { getToday, cn } from '@/lib/utils';
+import { isHabitCompletedOnDate } from '@/lib/habits';
 import { Plus, Users, Leaf, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -52,7 +53,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   const [celebrationData, setCelebrationData] = useState<{
     habitName: string;
     habitIcon: string;
-    habitColor: string;
+    habitColor: number;
     streakDays?: number;
   } | null>(null);
 
@@ -75,23 +76,11 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   const today = getToday();
   const activeChallengesCount = useMemo(() => getActiveChallenges().length, []);
 
-  // Memoized completion status map
+  // Memoized completion status map (entry-based model)
   const completionStatusMap = useMemo(() => {
     const map = new Map<string, boolean>();
     habits.forEach(habit => {
-      const habitType = habit.type || 'daily';
-      let isCompleted = false;
-      if (habitType === 'reduce') {
-        const progress = habit.progressByDate?.[today];
-        isCompleted = progress !== undefined && progress <= (habit.targetCount ?? 0);
-      } else if (habitType === 'multiple') {
-        isCompleted = (habit.completionsByDate?.[today] ?? 0) >= (habit.dailyTarget ?? 1);
-      } else if (habitType === 'continuous') {
-        isCompleted = !habit.failedDates?.includes(today);
-      } else {
-        isCompleted = habit.completedDates?.includes(today) ?? false;
-      }
-      map.set(habit.id, isCompleted);
+      map.set(habit.id, isHabitCompletedOnDate(habit, today));
     });
     return map;
   }, [habits, today]);
@@ -105,13 +94,9 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
     return completionStatusMap.get(habit.id) ?? false;
   }, [completionStatusMap]);
 
+  // In Loop model, all non-archived habits are shown — frequency affects scoring, not visibility
   const habitsDueToday = useMemo(() => {
-    const todayDow = new Date().getDay();
-    return habits.filter(habit => {
-      if (habit.frequency === 'custom' && habit.customDays) return habit.customDays.includes(todayDow);
-      if (habit.frequency === 'weekly') return todayDow === new Date(habit.createdAt).getDay();
-      return true;
-    });
+    return habits.filter(h => !h.isArchived);
   }, [habits]);
 
   const dueIds = useMemo(() => new Set(habitsDueToday.map(h => h.id)), [habitsDueToday]);

@@ -40,10 +40,15 @@ export function useWidgetSync(
         try {
           const today = formatDate(new Date());
 
-          // Calculate habits completed today
+          // Calculate habits completed today (entry-based model)
           const habitsToday = habits.filter(habit => {
-            if (!habit.completedDates) return false;
-            return habit.completedDates.includes(today);
+            const entry = habit.entries?.[today];
+            if (!entry) return false;
+            // Boolean: YES_MANUAL (2), Numerical: value >= target * 1000
+            if (habit.habitType === 'numerical') {
+              return entry.value >= (habit.targetValue || 1) * 1000;
+            }
+            return entry.value === 2;
           });
 
           // Prepare widget data
@@ -53,10 +58,13 @@ export function useWidgetSync(
             habitsTotalToday: habits.length,
             focusMinutes,
             lastBadge,
-            habits: habits.slice(0, 5).map(habit => ({
-              name: habit.name,
-              completed: habit.completedDates?.includes(today) ?? false,
-            })),
+            habits: habits.slice(0, 5).map(habit => {
+              const entry = habit.entries?.[today];
+              const completed = habit.habitType === 'numerical'
+                ? (entry?.value ?? 0) >= (habit.targetValue || 1) * 1000
+                : entry?.value === 2;
+              return { name: habit.name, completed };
+            }),
           };
 
           logger.log('[Widget] Updating widget with data:', widgetData);

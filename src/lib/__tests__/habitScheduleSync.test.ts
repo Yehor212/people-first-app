@@ -8,6 +8,7 @@ import {
   filterEventsByDate,
 } from '@/lib/habitScheduleSync';
 import type { Habit, HabitReminder, ScheduleEvent } from '@/types';
+import { makeTestHabit } from '@/test/habitFixtures';
 
 /**
  * Helper: create a minimal Habit object for testing.
@@ -15,16 +16,7 @@ import type { Habit, HabitReminder, ScheduleEvent } from '@/types';
  * the rest are filled with safe defaults.
  */
 function makeHabit(overrides: Partial<Habit> & { id: string; name: string }): Habit {
-  return {
-    icon: '🏃',
-    color: 'bg-primary',
-    completedDates: [],
-    createdAt: Date.now(),
-    type: 'daily',
-    reminders: [],
-    frequency: 'daily',
-    ...overrides,
-  };
+  return makeTestHabit(overrides);
 }
 
 /**

@@ -1,19 +1,25 @@
 /**
- * HabitDetailSheet — Bottom sheet with full analytics for a single habit.
+ * HabitDetailSheet — Bottom sheet with full Loop-style analytics for a single habit.
  * Uses Radix Sheet (existing ui/sheet.tsx). Deep Space aesthetic.
  *
- * Sections: Header → Score Ring → Heatmap → Frequency Chart → Streak Timeline → Actions.
+ * Sections: Header → Stats → Score Chart → Heatmap → Frequency → Streaks → Notes → Actions.
  */
 
-import { memo, useMemo, useCallback } from 'react';
-import { Archive, ArchiveRestore, SkipForward, Trash2 } from 'lucide-react';
+import { memo, useState, useMemo, useCallback } from 'react';
+import { Archive, ArchiveRestore, Pencil, SkipForward, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { ProgressRing } from '@/components/ui/progress-ring';
 import { computeHabitScore, getCurrentStreak } from '@/lib/habitScore';
+import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { AnimatedFire } from '@/components/compact-habit-card/AnimatedFire';
+import { HabitStatsSection } from './HabitStatsSection';
+import { HabitTargetCard } from './HabitTargetCard';
+import { HabitScoreChart } from './HabitScoreChart';
+import { HabitBarCard } from './HabitBarCard';
 import { HabitHeatmapGrid } from './HabitHeatmapGrid';
 import { HabitFrequencyChart } from './HabitFrequencyChart';
 import { HabitStreakTimeline } from './HabitStreakTimeline';
+import { HabitNotesSection } from './HabitNotesSection';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -22,6 +28,8 @@ import type { Habit } from '@/types';
 interface HabitDetailSheetProps {
   habit: Habit | null;
   onClose: () => void;
+  onEdit: (habit: Habit) => void;
+  onUpdate: (habit: Habit) => void;
   onArchive: (id: string) => void;
   onUnarchive: (id: string) => void;
   onSkip: (id: string, date: string) => void;
@@ -32,6 +40,8 @@ interface HabitDetailSheetProps {
 export const HabitDetailSheet = memo(function HabitDetailSheet({
   habit,
   onClose,
+  onEdit,
+  onUpdate,
   onArchive,
   onUnarchive,
   onSkip,
@@ -49,9 +59,11 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
   const scorePercent = Math.round(score * 100);
   const streak = useMemo(() => (habit ? getCurrentStreak(habit) : 0), [habit]);
   const isSkippedToday = useMemo(
-    () => habit?.skippedDates?.includes(today) ?? false,
+    () => habit?.entries?.[today]?.value === 3 || false,
     [habit, today],
   );
+
+  const habitColor = habit ? resolveHabitColor(habit.color) : '#8B5CF6';
 
   const handleArchiveToggle = useCallback(() => {
     if (!habit) return;
@@ -72,9 +84,16 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
     }
   }, [habit, isSkippedToday, today, onSkip, onUnskip]);
 
+  const handleNoteUpdate = useCallback((updatedHabit: Habit) => {
+    onUpdate(updatedHabit);
+  }, [onUpdate]);
+
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const handleDelete = useCallback(() => {
     if (!habit) return;
     onDelete(habit.id);
+    setShowDeleteConfirm(false);
     onClose();
   }, [habit, onDelete, onClose]);
 
@@ -97,7 +116,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
             <div className="flex items-center gap-3">
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                style={{ backgroundColor: `${habit.color}20`, color: habit.color }}
+                style={{ backgroundColor: `${habitColor}20`, color: habitColor }}
               >
                 {habit.icon}
               </div>
@@ -106,7 +125,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                   {habit.name}
                 </SheetTitle>
                 <span className="text-xs text-slate-500 capitalize">
-                  {habit.category || habit.type}
+                  {habit.category || habit.habitType}
                 </span>
               </div>
               {/* Score ring */}
@@ -140,6 +159,18 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
               )}
             </div>
 
+            {/* ═══ STATISTICS ═══ */}
+            <HabitStatsSection habit={habit} />
+
+            {/* ═══ TARGET PROGRESS (numerical only) ═══ */}
+            <HabitTargetCard habit={habit} />
+
+            {/* ═══ SCORE HISTORY LINE CHART ═══ */}
+            <HabitScoreChart habit={habit} />
+
+            {/* ═══ COMPLETION BAR CHART ═══ */}
+            <HabitBarCard habit={habit} />
+
             {/* ═══ HEATMAP ═══ */}
             <HabitHeatmapGrid habit={habit} />
 
@@ -149,8 +180,24 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
             {/* ═══ STREAK TIMELINE ═══ */}
             <HabitStreakTimeline habit={habit} />
 
+            {/* ═══ NOTES ═══ */}
+            <HabitNotesSection habit={habit} onUpdate={handleNoteUpdate} />
+
             {/* ═══ ACTIONS ═══ */}
             <div className="space-y-2 pt-2 border-t border-white/[0.06]">
+              {/* Edit habit */}
+              <button
+                onClick={() => { onEdit(habit); onClose(); }}
+                className={cn(
+                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors',
+                  'bg-white/[0.03] border border-white/[0.06]',
+                  'hover:bg-white/[0.06] active:scale-[0.98]',
+                )}
+              >
+                <Pencil className="w-4 h-4 text-violet-400" />
+                <span className="text-slate-300">{ts.editHabit || 'Edit Habit'}</span>
+              </button>
+
               {/* Skip today */}
               <button
                 onClick={handleSkipToggle}
@@ -189,19 +236,49 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 )}
               </button>
 
-              {/* Delete — danger */}
-              <button
-                onClick={handleDelete}
-                className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors',
-                  'bg-red-500/[0.05] border border-red-500/[0.1]',
-                  'hover:bg-red-500/[0.1] active:scale-[0.98]',
-                  'text-red-400',
-                )}
-              >
-                <Trash2 className="w-4 h-4" />
-                <span>{ts.deleteHabit || 'Delete Habit'}</span>
-              </button>
+              {/* Delete — danger with confirmation */}
+              {!showDeleteConfirm ? (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className={cn(
+                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors',
+                    'bg-red-500/[0.05] border border-red-500/[0.1]',
+                    'hover:bg-red-500/[0.1] active:scale-[0.98]',
+                    'text-red-400',
+                  )}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  <span>{ts.deleteHabit || 'Delete Habit'}</span>
+                </button>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs text-red-400 text-center px-2">
+                    {ts.confirmDeleteHabit || 'Are you sure? This cannot be undone.'}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className={cn(
+                        'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
+                        'bg-white/[0.05] border border-white/[0.08] text-slate-400',
+                        'hover:bg-white/[0.08]',
+                      )}
+                    >
+                      {ts.cancel || 'Cancel'}
+                    </button>
+                    <button
+                      onClick={handleDelete}
+                      className={cn(
+                        'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
+                        'bg-red-600 text-white',
+                        'hover:bg-red-500 active:scale-[0.98]',
+                      )}
+                    >
+                      {ts.delete || 'Delete'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

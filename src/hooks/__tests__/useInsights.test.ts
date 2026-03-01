@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import type { MoodEntry, Habit, FocusSession, Insight } from '@/types';
+import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
 // Mock logger
 vi.mock('@/lib/logger', () => ({
@@ -59,13 +60,12 @@ describe('useInsights', () => {
   ];
 
   const mockHabits: Habit[] = [
-    {
+    makeTestHabit({
       id: '1',
       name: 'Exercise',
-      frequency: 'daily',
-      completedDates: ['2024-01-15'],
-      createdAt: '2024-01-01',
-    },
+      entries: datesToEntries(['2024-01-15']),
+      createdAt: new Date('2024-01-01').getTime(),
+    }),
   ];
 
   const mockFocusSessions: FocusSession[] = [

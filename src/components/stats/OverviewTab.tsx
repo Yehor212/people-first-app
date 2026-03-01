@@ -50,7 +50,7 @@ export function OverviewTab({
 
   // Growth rings — never-resetting growth visualization (IA Blueprint Phase 2.3)
   const growthRingsData = useMemo(() => {
-    const activeDates = habits.flatMap(h => h.completedDates || []);
+    const activeDates = habits.flatMap(h => Object.entries(h.entries || {}).filter(([, e]) => e.value === 2).map(([d]) => d));
     const uniqueActive = [...new Set(activeDates)];
     // Use earliest mood date or 30 days ago as start
     const earliest = moods.length > 0

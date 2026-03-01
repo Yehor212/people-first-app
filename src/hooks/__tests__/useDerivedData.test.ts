@@ -13,9 +13,11 @@ const mockMoods = [
 ];
 const mockHabits = [
   {
-    id: 'h1', name: 'Meditate', icon: '🧘', color: '#00ff00',
-    completedDates: ['2026-02-19'], createdAt: Date.now(), type: 'daily' as const,
-    frequency: 'daily' as const, reminders: [],
+    id: 'h1', name: 'Meditate', icon: '🧘', color: 8,
+    entries: { '2026-02-19': { value: 2 } }, createdAt: Date.now(), habitType: 'boolean' as const,
+    frequency: { numerator: 1, denominator: 1 }, reminders: [], position: 0,
+    question: '', description: '', isArchived: false, targetValue: 0,
+    targetType: 'atLeast' as const, unit: '',
   },
 ];
 const mockFocusSessions = [
@@ -136,7 +138,7 @@ describe('useDerivedData', () => {
   it('completedTodayCount counts correctly for daily habits', () => {
     const { result } = renderHook(() => useDerivedData(defaultInnerWorld, defaultBadges));
 
-    // h1 has '2026-02-19' in completedDates → 1 completed
+    // h1 has '2026-02-19' entry with YES_MANUAL → 1 completed
     expect(result.current.completedTodayCount).toBe(1);
   });
 
