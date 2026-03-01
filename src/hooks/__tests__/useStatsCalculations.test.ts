@@ -3,7 +3,7 @@
  * Tests stats calculation logic extracted from StatsPage
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useStatsCalculations } from '../useStatsCalculations';
 import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
@@ -56,6 +56,16 @@ vi.mock('@/lib/emotionConstants', () => ({
 }));
 
 describe('useStatsCalculations', () => {
+  // Pin system time so new Date() inside the hook matches test data dates
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-02-03T12:00:00'));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const defaultProps = {
     moods: [],
     habits: [],
