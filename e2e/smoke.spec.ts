@@ -383,6 +383,11 @@ test.describe('Offline Behavior', () => {
     await page.goto('/');
     await page.waitForLoadState('networkidle');
 
+    // Wait for app to fully mount (AuthGate resolved, React useEffects registered)
+    await expect(
+      page.locator('nav, [role="navigation"]').first()
+    ).toBeVisible({ timeout: 15000 });
+
     // Go offline: block network + fire the browser "offline" event
     await context.setOffline(true);
     await page.evaluate(() => window.dispatchEvent(new Event('offline')));
