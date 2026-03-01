@@ -2,7 +2,7 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-02-27 (2656 tests, Waves A-G complete + Habit Hub (Loop-style analytics) replaces Mind Map + Store Readiness Audit + Diary WYSIWYG editor overhaul + Zen Focus/Privacy Shield/Panic Gesture)
+> Last updated: 2026-03-01 (2653 tests, Waves A-G complete + Habit Hub (Loop-style analytics) replaces Mind Map + Store Readiness Audit + Diary WYSIWYG editor overhaul + Zen Focus/Privacy Shield/Panic Gesture + UX Audit Tiers 1-3 + Habit Hub i18n/design polish)
 
 ---
 
@@ -133,7 +133,7 @@ src/
       AchievementsTab.tsx       # ~34 lines — achievements + leaderboard
       SettingsTab.tsx           # ~58 lines — settings panel wrapper
     ModalLayer.tsx              # 10 modal renders (weekly report, challenges, etc.)
-    OverlayLayer.tsx            # Confetti, consent, update, onboarding overlays
+    OverlayLayer.tsx            # Confetti, consent, update, onboarding overlays (OfflineBanner removed — now in Index.tsx outside AuthGate)
     AuthGate.tsx                # 7 initialization gates (splash, language, auth, tutorial, onboarding, notifications)
     SplashScreen.tsx            # Premium loading animation
     ErrorBoundary.tsx           # LazyErrorBoundary + ModalErrorBoundary
@@ -350,8 +350,12 @@ The Mind Map Canvas lives in a **dedicated "Map" tab** (`MindMapTab.tsx`) — se
 | `HabitHubList.tsx` | Main scrollable list — Overall Score, Today, Other, Archived sections |
 | `HabitHubCard.tsx` | Individual habit card — icon, name, score badge, streak fire, checkmark toggle |
 | `HabitDetailSheet.tsx` | Radix bottom sheet — full analytics: score ring, heatmap, frequency chart, streak timeline, actions |
+| `AddHabitSheet.tsx` | Template grid (11 presets) + custom form for habit creation/editing |
 | `HabitHeatmapGrid.tsx` | GitHub-style 7×26 contribution grid (182 days), cell states: done/skipped/missed |
-| `HabitFrequencyChart.tsx` | Recharts BarChart — completions by day of week (Mon-Sun) |
+| `HabitFrequencyChart.tsx` | Recharts BarChart — completions by day of week (localized via i18n) |
+| `HabitScoreChart.tsx` | SVG line chart — score history with 3mo/6mo/1yr/All range selector |
+| `HabitStatsSection.tsx` | 2×2 stat cards: total completions, current streak, best streak, this month |
+| `HabitNotesSection.tsx` | Notes list with inline editor (add/edit/show all) |
 | `HabitStreakTimeline.tsx` | Top 5 historical streaks with AnimatedFire for current |
 | `index.ts` | Barrel export |
 
@@ -534,6 +538,32 @@ Every `lazy()`-loaded component container MUST have a `min-h-[Xpx]` class to pre
 ```
 
 Current guards: HomeTab (3 sections: 200px, 180px, 120px), GardenTab (4 sections: 200px, 160px, 100px, 200px).
+
+### Z-Index Stack
+
+Full z-index map for overlapping UI elements (ascending order):
+
+| Element | Z-Index | File |
+|---------|---------|------|
+| Navigation bar | `z-50` | `Navigation.tsx` |
+| Habit Hub FAB | `z-[55]` | `HabitHubList.tsx` |
+| Sort dropdown backdrop | `z-[56]` | `HabitHubList.tsx` |
+| Sort dropdown menu | `z-[57]` | `HabitHubList.tsx` |
+| Sheet overlay | `z-[60]` | `ui/sheet.tsx` |
+| Sheet content | `z-[80]` | `ui/sheet.tsx` |
+| Heatmap tooltip | `z-[100]` | `HabitHeatmapGrid.tsx` |
+| Offline banner | `z-[250]` | `OfflineBanner.tsx` |
+
+### Sheet Rendering (WebView Fix)
+
+Bottom sheets use defensive CSS to prevent WebView stacking context bugs:
+- `isolate` on SheetContent (creates own stacking context, prevents `backdrop-filter` on overlay from hiding content)
+- `will-change-transform` on bottom variant (forces GPU compositing layer)
+- Inline `style` fallback for `side="bottom"`: `{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 80 }` (highest specificity, bypasses CSS class purging)
+
+### OfflineBanner Position
+
+`<OfflineBanner />` renders OUTSIDE `<AuthGate>` in `Index.tsx` (in a React Fragment wrapper). This ensures the banner is visible even during the loading/auth gate phase. NOT in `OverlayLayer.tsx`.
 
 ---
 

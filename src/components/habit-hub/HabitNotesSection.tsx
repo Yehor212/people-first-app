@@ -68,7 +68,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
         {!isEditing && (
           <button
             onClick={() => { setNoteText(getEntryNote(habit, today) ?? ''); setIsEditing(true); }}
-            className="flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 transition-colors"
+            className="flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 transition-colors min-h-[44px] min-w-[44px] justify-center"
           >
             <MessageSquarePlus className="w-3 h-3" />
             {todayHasNote ? (ts.editNote || 'Edit') : (ts.addNote || 'Add note')}
@@ -95,13 +95,13 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
           <div className="flex gap-2">
             <button
               onClick={handleCancel}
-              className="flex-1 px-3 py-1.5 rounded-lg text-xs text-slate-400 bg-white/[0.05] border border-white/[0.08]"
+              className="flex-1 px-3 py-1.5 rounded-xl text-xs text-slate-400 bg-white/[0.05] border border-white/[0.08] min-h-[44px]"
             >
               {ts.cancel || 'Cancel'}
             </button>
             <button
               onClick={handleSave}
-              className="flex-1 px-3 py-1.5 rounded-lg text-xs text-white bg-violet-600 hover:bg-violet-500"
+              className="flex-1 px-3 py-1.5 rounded-xl text-xs text-white bg-violet-600 hover:bg-violet-500 min-h-[44px]"
             >
               {ts.save || 'Save'}
             </button>
@@ -128,7 +128,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
           {sortedNotes.length > MAX_VISIBLE && !showAll && (
             <button
               onClick={() => setShowAll(true)}
-              className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-400 mx-auto"
+              className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-400 mx-auto min-h-[44px]"
             >
               <ChevronDown className="w-3 h-3" />
               {ts.showAll || `Show all (${sortedNotes.length})`}

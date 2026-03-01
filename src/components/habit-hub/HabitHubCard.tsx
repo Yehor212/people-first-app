@@ -17,6 +17,7 @@ import { hapticTap } from '@/lib/haptics';
 import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { isHabitCompletedOnDate, getNumericalValue } from '@/lib/habits';
 import { getCurrentStreak } from '@/lib/habitScore';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { AnimatedFire } from '@/components/compact-habit-card/AnimatedFire';
 import { ScoreRing } from './ScoreRing';
 import { MiniWeekRow } from './MiniWeekRow';
@@ -53,6 +54,7 @@ export const HabitHubCard = memo(function HabitHubCard({
   onSelect,
   className,
 }: HabitHubCardProps) {
+  const { t } = useLanguage();
   const today = getToday();
   const isCompleted = isHabitCompletedOnDate(habit, today);
   const streak = getCurrentStreak(habit);
@@ -77,7 +79,7 @@ export const HabitHubCard = memo(function HabitHubCard({
         'w-full rounded-2xl text-left transition-colors cursor-pointer',
         'bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm',
         'hover:bg-white/[0.06] active:scale-[0.98]',
-        isCompleted && 'bg-emerald-500/[0.04] border-emerald-500/[0.08]',
+        isCompleted && 'bg-emerald-500/[0.06] border-emerald-500/[0.12]',
         className,
       )}
       layout
@@ -153,8 +155,8 @@ export const HabitHubCard = memo(function HabitHubCard({
           streak > 0 ? (
             <div className="flex items-center gap-1">
               <AnimatedFire intensity={Math.min(streak / 7, 3)} size="sm" />
-              <span className="text-[10px] font-medium text-orange-400/70 tabular-nums">
-                {streak}d streak
+              <span className="text-xs font-medium text-orange-400/70 tabular-nums">
+                {streak}{t.dStreak}
               </span>
             </div>
           ) : null

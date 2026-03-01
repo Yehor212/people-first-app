@@ -16,8 +16,6 @@ interface HabitFrequencyChartProps {
   className?: string;
 }
 
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
 export const HabitFrequencyChart = memo(function HabitFrequencyChart({
   habit,
   className,
@@ -25,13 +23,17 @@ export const HabitFrequencyChart = memo(function HabitFrequencyChart({
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
+  const dayLabels = useMemo(() => [
+    t.daySun, t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat,
+  ], [t.daySun, t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat]);
+
   const data = useMemo(() => {
     const counts = getFrequencyByWeekday(habit);
     // Reorder to Mon-first: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
     const reordered = [counts[1], counts[2], counts[3], counts[4], counts[5], counts[6], counts[0]];
-    const labels = [DAY_LABELS[1], DAY_LABELS[2], DAY_LABELS[3], DAY_LABELS[4], DAY_LABELS[5], DAY_LABELS[6], DAY_LABELS[0]];
+    const labels = [dayLabels[1], dayLabels[2], dayLabels[3], dayLabels[4], dayLabels[5], dayLabels[6], dayLabels[0]];
     return reordered.map((count, i) => ({ day: labels[i], count }));
-  }, [habit]);
+  }, [habit, dayLabels]);
 
   const maxCount = useMemo(() => Math.max(...data.map(d => d.count), 1), [data]);
 

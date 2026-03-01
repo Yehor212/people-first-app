@@ -133,7 +133,7 @@ export function HabitHubList({
             onClick={() => setCategoryFilter(cat.id)}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all',
-              'border min-h-[32px]',
+              'border min-h-[36px]',
               categoryFilter === cat.id
                 ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
                 : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:bg-white/[0.06]',

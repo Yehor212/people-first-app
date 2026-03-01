@@ -91,14 +91,16 @@ function buildGrid(habit: Habit, entries: Record<string, HabitEntry>): { cells: 
 
 // ─── Day-of-week labels ──────────────────────────────────────────────────────
 
-const DOW_LABELS_EN = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
 export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
   habit,
   className,
 }: HabitHeatmapGridProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+
+  const dowLabels = useMemo(() => [
+    t.dayMo, t.dayTu, t.dayWe, t.dayTh, t.dayFr, t.daySa, t.daySu,
+  ], [t.dayMo, t.dayTu, t.dayWe, t.dayTh, t.dayFr, t.daySa, t.daySu]);
   const [tooltip, setTooltip] = useState<{ date: string; status: string; x: number; y: number } | null>(null);
   const habitColor = resolveHabitColor(habit.color);
 
@@ -138,10 +140,10 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
       <div className="flex gap-[3px]">
         {/* Day-of-week labels */}
         <div className="flex flex-col gap-[3px] mr-1 pt-0">
-          {DOW_LABELS_EN.map((label, i) => (
+          {dowLabels.map((label, i) => (
             <div
               key={i}
-              className="w-3 h-3 flex items-center justify-center text-[8px] text-slate-600 leading-none"
+              className="w-3 h-3 flex items-center justify-center text-[9px] text-slate-600 leading-none"
             >
               {i % 2 === 0 ? label : ''}
             </div>
@@ -209,19 +211,19 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
       {/* Legend */}
       <div className="flex items-center gap-3 mt-3 text-[10px] text-slate-600">
         <span className="flex items-center gap-1">
-          <div className="w-2.5 h-2.5 rounded-[2px] bg-white/[0.04]" /> Miss
+          <div className="w-2.5 h-2.5 rounded-[2px] bg-white/[0.04]" /> {ts.legendMiss || 'Miss'}
         </span>
         <span className="flex items-center gap-1">
-          <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: habitColor, opacity: 0.85 }} /> Done
+          <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: habitColor, opacity: 0.85 }} /> {ts.legendDone || 'Done'}
         </span>
         <span className="flex items-center gap-1">
-          <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: habitColor, opacity: 0.35 }} /> Auto
+          <div className="w-2.5 h-2.5 rounded-[2px]" style={{ backgroundColor: habitColor, opacity: 0.35 }} /> {ts.legendAuto || 'Auto'}
         </span>
         <span className="flex items-center gap-1">
           <div
             className="w-2.5 h-2.5 rounded-[2px]"
             style={{ backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 2px, #64748b 2px, #64748b 3px)`, opacity: 0.4 }}
-          /> Skip
+          /> {ts.legendSkip || 'Skip'}
         </span>
       </div>
     </div>
