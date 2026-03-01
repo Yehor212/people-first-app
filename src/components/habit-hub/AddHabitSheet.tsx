@@ -8,13 +8,13 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Sparkles, Plus, Check } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useHabitForm, habitIcons, habitCategories, frequencyPresets } from '@/hooks/useHabitForm';
-import { LOOP_PALETTE_LIGHT } from '@/lib/habitColorUtils';
+import { LOOP_PALETTE_LIGHT, resolveHabitColor } from '@/lib/habitColorUtils';
 import { habitTemplates } from '@/lib/habitTemplates';
 import type { Habit, LoopHabitType, HabitFrequencyRatio } from '@/types';
 
@@ -114,12 +114,12 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
             {showCustomForm && !isEditing && (
               <button
                 onClick={resetForm}
-                className="w-8 h-8 rounded-lg flex items-center justify-center bg-white/[0.05] border border-white/[0.08] min-h-[44px] min-w-[44px]"
+                className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.06] border border-white/[0.10] min-h-[44px] min-w-[44px] hover:bg-white/[0.10] transition-colors"
               >
-                <ChevronLeft className="w-4 h-4 text-slate-400" />
+                <ChevronLeft className="w-4 h-4 text-slate-300" />
               </button>
             )}
-            <SheetTitle className="text-lg font-semibold text-slate-100">
+            <SheetTitle className="text-lg font-bold text-slate-100 tracking-tight">
               {isEditing ? (ts.editHabit || 'Edit Habit') : (ts.addHabit || 'Add Habit')}
             </SheetTitle>
           </div>
@@ -127,41 +127,72 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
           {/* ═══ TEMPLATES GRID ═══ */}
           {!showCustomForm && !isEditing && (
             <>
-              <div>
-                <label className="text-xs font-medium text-slate-500 mb-2 block">
+              {/* Section header with sparkle + gradient line */}
+              <div className="flex items-center gap-2.5">
+                <Sparkles className="w-4 h-4 text-violet-400 flex-shrink-0" />
+                <span className="text-sm font-semibold text-slate-300">
                   {ts.quickStart || 'Quick Start'}
-                </label>
-                <div className="grid grid-cols-4 gap-2">
-                  {habitTemplates.map((tmpl) => (
+                </span>
+                <div className="flex-1 h-px bg-gradient-to-r from-violet-500/30 to-transparent" />
+              </div>
+
+              {/* Premium template grid — 3 columns, glow cards */}
+              <div className="grid grid-cols-3 gap-3">
+                {habitTemplates.map((tmpl) => {
+                  const color = resolveHabitColor(tmpl.color);
+                  return (
                     <button
                       key={tmpl.id}
                       onClick={() => handleQuickAdd(tmpl.id)}
                       className={cn(
-                        'flex flex-col items-center gap-1 p-3 rounded-xl transition-all',
-                        'bg-white/[0.03] border border-white/[0.06]',
-                        'hover:bg-white/[0.06] active:scale-95',
-                        'min-h-[44px]',
+                        'flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl transition-all',
+                        'bg-white/[0.04] border border-white/[0.08]',
+                        'hover:bg-white/[0.07] hover:scale-[1.03] active:scale-95',
+                        'min-h-[104px] relative overflow-hidden group',
                       )}
                     >
-                      <span className="text-xl">{tmpl.icon}</span>
-                      <span className="text-[10px] text-slate-400 leading-tight text-center line-clamp-1">
+                      {/* Colored glow orb — ambient background */}
+                      <div
+                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full opacity-[0.10] blur-2xl group-hover:opacity-[0.18] transition-opacity"
+                        style={{ backgroundColor: color }}
+                      />
+
+                      {/* Emoji — large with drop shadow */}
+                      <span className="text-3xl relative z-10 drop-shadow-lg">
+                        {tmpl.icon}
+                      </span>
+
+                      {/* Localized name */}
+                      <span className="text-[11px] font-medium text-slate-400 relative z-10 text-center leading-tight line-clamp-2 group-hover:text-slate-300 transition-colors">
                         {tmpl.names[language] || tmpl.names.en}
                       </span>
+
+                      {/* Bottom accent line in habit color */}
+                      <div
+                        className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full opacity-30 group-hover:opacity-50 transition-opacity"
+                        style={{ backgroundColor: color }}
+                      />
                     </button>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
 
-              {/* Divider + custom button */}
-              <div className="relative flex items-center py-1">
-                <div className="flex-1 border-t border-white/[0.06]" />
+              {/* Divider + create custom pill button */}
+              <div className="flex items-center gap-3 pt-1">
+                <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
                 <button
                   onClick={() => setShowCustomForm(true)}
-                  className="px-4 text-xs text-violet-400 hover:text-violet-300 transition-colors"
+                  className={cn(
+                    'flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-medium transition-all min-h-[44px]',
+                    'text-violet-400 hover:text-violet-300',
+                    'border border-violet-500/20 bg-violet-500/[0.06]',
+                    'hover:bg-violet-500/[0.10] hover:border-violet-500/30',
+                  )}
                 >
+                  <Plus className="w-3.5 h-3.5" />
                   {ts.createCustom || 'or create custom'}
                 </button>
-                <div className="flex-1 border-t border-white/[0.06]" />
+                <div className="flex-1 h-px bg-gradient-to-l from-transparent via-white/[0.06] to-transparent" />
               </div>
             </>
           )}
@@ -221,10 +252,10 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                       key={ic}
                       onClick={() => setSelectedIcon(ic)}
                       className={cn(
-                        'w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all',
-                        'border min-h-[44px]',
+                        'w-11 h-11 rounded-xl flex items-center justify-center text-xl transition-all',
+                        'border min-h-[44px] min-w-[44px]',
                         selectedIcon === ic
-                          ? 'bg-violet-500/20 border-violet-500/40 scale-110'
+                          ? 'bg-violet-500/20 border-violet-500/40 scale-110 shadow-[0_0_12px_rgba(139,92,246,0.3)]'
                           : 'bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.06]',
                       )}
                     >
@@ -234,7 +265,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                 </div>
               </div>
 
-              {/* Color — 4×5 palette grid */}
+              {/* Color — palette grid */}
               <div>
                 <label className="text-xs font-medium text-slate-500 mb-2 block">
                   {ts.selectColor || 'Color'}
@@ -245,14 +276,21 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                       key={idx}
                       onClick={() => setSelectedColorIndex(idx)}
                       className={cn(
-                        'w-8 h-8 rounded-full transition-all min-h-[44px] min-w-[44px] flex items-center justify-center',
+                        'w-7 h-7 rounded-full transition-all min-h-[44px] min-w-[44px] flex items-center justify-center',
                         'border',
                         selectedColorIndex === idx
-                          ? 'scale-110 ring-2 ring-white/30 border-transparent'
-                          : 'border-white/[0.06]',
+                          ? 'scale-110 border-white/40'
+                          : 'border-transparent hover:scale-105',
                       )}
-                      style={{ backgroundColor: hex }}
-                    />
+                      style={{
+                        backgroundColor: hex,
+                        boxShadow: selectedColorIndex === idx ? `0 0 14px ${hex}60` : undefined,
+                      }}
+                    >
+                      {selectedColorIndex === idx && (
+                        <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />
+                      )}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -436,10 +474,10 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
                       className={cn(
-                        'px-3 py-1.5 rounded-lg text-xs font-medium transition-all',
+                        'px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
                         'border flex items-center gap-1.5',
                         selectedCategory === cat.id
-                          ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
+                          ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg`
                           : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:bg-white/[0.06]',
                       )}
                     >
@@ -466,10 +504,11 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                   onClick={submitHabit}
                   disabled={!newHabitName.trim()}
                   className={cn(
-                    'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
-                    'bg-violet-600 text-white',
-                    'hover:bg-violet-500 active:scale-[0.98]',
-                    'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-violet-600',
+                    'flex-1 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[44px]',
+                    'bg-gradient-to-r from-violet-600 to-purple-600 text-white',
+                    'hover:from-violet-500 hover:to-purple-500 active:scale-[0.98]',
+                    'shadow-[0_0_20px_rgba(139,92,246,0.25)]',
+                    'disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none',
                   )}
                 >
                   {ts.save || 'Save'}
