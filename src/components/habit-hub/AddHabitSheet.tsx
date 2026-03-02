@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
+import { useKeyboardShift } from '@/hooks/useKeyboardShift';
 import { ChevronLeft, Sparkles, Plus, Check } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -83,6 +84,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
   }, [open, editingHabit, handleEditHabit]);
 
   useBackHandler(open, () => { resetForm(); onClose(); });
+  const keyboardOffset = useKeyboardShift(open);
 
   const handleClose = useCallback(() => {
     resetForm();
@@ -107,7 +109,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
       >
         <div
           className="px-6 pt-6 space-y-5"
-          style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
+          style={{ paddingBottom: `calc(2rem + env(safe-area-inset-bottom, 0px) + ${keyboardOffset}px)` }}
         >
           {/* ═══ HEADER ═══ */}
           <div className="flex items-center gap-3">

@@ -19,6 +19,7 @@ import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { isHabitCompletedOnDate, getNumericalValue } from '@/lib/habits';
 import { getCurrentStreak } from '@/lib/habitScore';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { frequencyPresets } from '@/hooks/useHabitForm';
 import { AnimatedFire } from '@/components/compact-habit-card/AnimatedFire';
 import { ScoreRing } from './ScoreRing';
 import { MiniWeekRow } from './MiniWeekRow';
@@ -67,6 +68,17 @@ export const HabitHubCard = memo(function HabitHubCard({
   const currentValue = isNumeric ? getNumericalValue(habit, today) : 0;
   const target = isNumeric ? (habit.targetValue || 1) : 1;
   const progress = isNumeric && target > 0 ? Math.min(currentValue / target, 1) : 0;
+
+  // Frequency label for footer (i18n-aware)
+  const freqLabel = useMemo(() => {
+    const { numerator: n, denominator: d } = habit.frequency;
+    const ts = t as unknown as Record<string, string>;
+    const preset = frequencyPresets.find(
+      p => p.ratio.numerator === n && p.ratio.denominator === d
+    );
+    if (preset) return ts[preset.i18nKey] || preset.label;
+    return `${n}× / ${d}${ts.daysAbbr || 'd'}`;
+  }, [habit.frequency, t]);
 
   const handleSelect = useCallback(() => {
     void hapticTap();
@@ -164,15 +176,20 @@ export const HabitHubCard = memo(function HabitHubCard({
             </span>
           </div>
         ) : (
-          /* Boolean: streak badge */
-          streak > 0 ? (
-            <div className="flex items-center gap-1">
-              <AnimatedFire intensity={Math.min(streak / 7, 3)} size="sm" />
-              <span className="text-xs font-medium text-orange-400/70 tabular-nums">
-                {streak}{t.dStreak}
-              </span>
-            </div>
-          ) : null
+          /* Boolean: streak badge + frequency label */
+          <div className="flex items-center justify-between">
+            {streak > 0 ? (
+              <div className="flex items-center gap-1">
+                <AnimatedFire intensity={Math.min(streak / 7, 3)} size="sm" />
+                <span className="text-xs font-medium text-orange-400/70 tabular-nums">
+                  {streak}{t.dStreak}
+                </span>
+              </div>
+            ) : <div />}
+            <span className="text-[10px] text-slate-500 tabular-nums">
+              🎯 {freqLabel}
+            </span>
+          </div>
         )}
       </div>
     </motion.div>

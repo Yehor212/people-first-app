@@ -75,8 +75,8 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
 
   // Frequency display text
   const freqText = activePresetIndex >= 0
-    ? frequencyPresets[activePresetIndex].label
-    : `${frequency.numerator}× / ${frequency.denominator} days`;
+    ? (ts[frequencyPresets[activePresetIndex].i18nKey] || frequencyPresets[activePresetIndex].label)
+    : `${frequency.numerator}× / ${frequency.denominator}${ts.daysAbbr || 'd'}`;
 
   // Custom form view
   return (
