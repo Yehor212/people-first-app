@@ -346,7 +346,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
               "px-3 py-2 rounded-xl text-xs font-medium border",
               isPrimaryCTA ? "border-violet-500/40 text-violet-300" : "border-primary text-primary"
             )}>
-              {frequency.numerator}× / {frequency.denominator}d
+              {frequency.numerator}× / {frequency.denominator}{ts.daysAbbr || 'd'}
             </span>
           )}
         </div>
@@ -399,6 +399,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
                 placeholder={ts.habitUnit || 'Unit (L, km, min...)'}
+                maxLength={20}
                 className={cn(
                   "flex-1 p-2 rounded-lg text-sm",
                   "focus:outline-none focus:ring-2",

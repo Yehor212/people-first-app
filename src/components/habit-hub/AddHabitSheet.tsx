@@ -351,6 +351,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                         value={unit}
                         onChange={(e) => setUnit(e.target.value)}
                         placeholder={ts.unitPlaceholder || 'L, km, min...'}
+                        maxLength={20}
                         className={cn(
                           'flex-1 px-3 py-2 rounded-xl text-xs text-slate-300',
                           'bg-white/[0.03] border border-white/[0.06]',

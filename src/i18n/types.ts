@@ -17,6 +17,7 @@ export interface Translations {
   // Stats overview
   streakDays: string;
   days: string;
+  daysAbbr: string;
   habitsToday: string;
   focusToday: string;
   minutes: string;

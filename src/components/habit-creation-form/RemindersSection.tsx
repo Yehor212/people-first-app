@@ -61,13 +61,13 @@ export function RemindersSection({
               />
               <div className="flex gap-1">
                 {[
-                  { day: 1, label: t.mon?.slice(0, 2) || 'Mo' },
-                  { day: 2, label: t.tue?.slice(0, 2) || 'Tu' },
-                  { day: 3, label: t.wed?.slice(0, 2) || 'We' },
-                  { day: 4, label: t.thu?.slice(0, 2) || 'Th' },
-                  { day: 5, label: t.fri?.slice(0, 2) || 'Fr' },
-                  { day: 6, label: t.sat?.slice(0, 2) || 'Sa' },
-                  { day: 0, label: t.sun?.slice(0, 2) || 'Su' },
+                  { day: 1, label: t.mon || 'Mo' },
+                  { day: 2, label: t.tue || 'Tu' },
+                  { day: 3, label: t.wed || 'We' },
+                  { day: 4, label: t.thu || 'Th' },
+                  { day: 5, label: t.fri || 'Fr' },
+                  { day: 6, label: t.sat || 'Sa' },
+                  { day: 0, label: t.sun || 'Su' },
                 ].map(({ day, label }) => (
                   <motion.button
                     key={day}

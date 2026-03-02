@@ -11,6 +11,7 @@
 
 import { memo, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { TrendingUp } from 'lucide-react';
 import { cn, getToday } from '@/lib/utils';
 import { zenMotion } from '@/lib/animationUtils';
 import { hapticTap } from '@/lib/haptics';
@@ -64,7 +65,7 @@ export const HabitHubCard = memo(function HabitHubCard({
   // Numeric habit info
   const isNumeric = habit.habitType === 'numerical';
   const currentValue = isNumeric ? getNumericalValue(habit, today) : 0;
-  const target = isNumeric ? habit.targetValue : 1;
+  const target = isNumeric ? (habit.targetValue || 1) : 1;
   const progress = isNumeric && target > 0 ? Math.min(currentValue / target, 1) : 0;
 
   const handleSelect = useCallback(() => {
@@ -114,14 +115,21 @@ export const HabitHubCard = memo(function HabitHubCard({
           {habit.name}
         </span>
 
-        {/* Score badge */}
-        <div className={cn(
-          'px-2 py-0.5 rounded-lg border text-xs font-semibold tabular-nums flex-shrink-0',
-          getScoreBg(score),
-          getScoreColor(score),
-        )}>
+        {/* Score badge — pulse on change, TrendingUp icon signals "strength metric" */}
+        <motion.div
+          key={scorePercent}
+          initial={{ scale: 1.15, opacity: 0.7 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
+          className={cn(
+            'px-2 py-0.5 rounded-lg border text-xs font-semibold tabular-nums flex-shrink-0 flex items-center gap-0.5',
+            getScoreBg(score),
+            getScoreColor(score),
+          )}
+        >
+          <TrendingUp className="w-2.5 h-2.5" />
           {scorePercent}%
-        </div>
+        </motion.div>
       </div>
 
       {/* ═══ ROW 2: MINI WEEK CALENDAR ═══ */}

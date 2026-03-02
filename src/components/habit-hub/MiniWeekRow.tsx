@@ -58,8 +58,8 @@ export const MiniWeekRow = memo(function MiniWeekRow({
   const today = getToday();
 
   const DOW_LABELS = useMemo(() => [
-    t.dayMo, t.dayTu, t.dayWe, t.dayTh, t.dayFr, t.daySa, t.daySu,
-  ], [t.dayMo, t.dayTu, t.dayWe, t.dayTh, t.dayFr, t.daySa, t.daySu]);
+    t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun,
+  ], [t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]);
   const isNumerical = habit.habitType === 'numerical';
 
   // today is an intentional invalidation signal — recompute days when date changes at midnight
@@ -96,7 +96,7 @@ export const MiniWeekRow = memo(function MiniWeekRow({
             <div
               key={`label-${date}`}
               className={cn(
-                'w-8 text-center text-[9px] leading-none',
+                'w-8 text-center text-[10px] leading-none',
                 isToday ? 'text-white/60 font-medium' : 'text-white/20',
               )}
             >
