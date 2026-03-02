@@ -179,6 +179,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         type="text"
         value={newHabitName}
         onChange={(e) => setNewHabitName(e.target.value)}
+        maxLength={100}
         placeholder={t.habitName}
         className={cn(
           "relative w-full p-3 rounded-xl mb-3 transition-all",

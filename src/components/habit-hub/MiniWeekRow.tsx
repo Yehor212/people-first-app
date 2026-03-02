@@ -97,7 +97,7 @@ export const MiniWeekRow = memo(function MiniWeekRow({
               key={`label-${date}`}
               className={cn(
                 'w-8 text-center text-[10px] leading-none',
-                isToday ? 'text-white/60 font-medium' : 'text-white/20',
+                isToday ? 'text-white/60 font-medium' : 'text-white/40',
               )}
             >
               {DOW_LABELS[dow]}

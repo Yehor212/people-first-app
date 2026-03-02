@@ -864,6 +864,7 @@ const arabicOverrides: Partial<Translations> = {
   overallScore: 'النقاط الإجمالية',
   otherHabits: 'عادات أخرى',
   archivedHabits: 'المؤرشفة',
+  editHabit: 'تعديل العادة',
   archiveHabit: 'أرشفة',
   unarchiveHabit: 'إلغاء الأرشفة',
   skipToday: 'تخطي اليوم',

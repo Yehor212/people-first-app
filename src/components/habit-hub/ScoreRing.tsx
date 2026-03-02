@@ -51,7 +51,7 @@ export const ScoreRing = memo(function ScoreRing({
         strokeDasharray={circumference}
         strokeDashoffset={offset}
         transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ transition: 'stroke-dashoffset 0.3s ease' }}
+        className="motion-safe:[transition:stroke-dashoffset_0.3s_ease]"
       />
     </svg>
   );

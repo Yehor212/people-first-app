@@ -208,6 +208,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                   type="text"
                   value={newHabitName}
                   onChange={(e) => setNewHabitName(e.target.value)}
+                  maxLength={100}
                   placeholder={ts.habitNamePlaceholder || 'Enter habit name...'}
                   aria-label={ts.habitName || 'Habit name'}
                   autoFocus
@@ -332,7 +333,8 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                       <label className="text-xs text-slate-500">{ts.dailyTarget || 'Target'}:</label>
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => setTargetValue(Math.max(0, targetValue - 1))}
+                          onClick={() => setTargetValue(Math.max(1, targetValue - 1))}
+                          aria-label={ts.decreaseTarget || 'Decrease target'}
                           className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center min-h-[44px] min-w-[44px]"
                         >
                           -
@@ -340,6 +342,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                         <span className="text-sm text-slate-200 w-8 text-center">{targetValue}</span>
                         <button
                           onClick={() => setTargetValue(targetValue + 1)}
+                          aria-label={ts.increaseTarget || 'Increase target'}
                           className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center min-h-[44px] min-w-[44px]"
                         >
                           +

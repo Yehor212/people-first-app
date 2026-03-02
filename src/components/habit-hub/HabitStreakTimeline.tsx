@@ -57,11 +57,11 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
       <div className="flex items-center gap-4 mb-3">
         <div className="flex items-center gap-1.5 text-xs text-slate-400">
           <AnimatedFire intensity={1} size="sm" />
-          <span>{ts.currentStreak || 'Current'}: <strong className="text-slate-200">{currentLen}d</strong></span>
+          <span>{ts.currentStreak || 'Current'}: <strong className="text-slate-200">{currentLen}{ts.daysAbbr || 'd'}</strong></span>
         </div>
         <div className="flex items-center gap-1.5 text-xs text-slate-400">
           <span className="text-amber-400">★</span>
-          <span>{ts.bestStreak || 'Best'}: <strong className="text-slate-200">{bestLen}d</strong></span>
+          <span>{ts.bestStreak || 'Best'}: <strong className="text-slate-200">{bestLen}{ts.daysAbbr || 'd'}</strong></span>
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
                 'text-xs font-bold tabular-nums',
                 isCurrent ? 'text-orange-400' : 'text-slate-300',
               )}>
-                {streak.length}d
+                {streak.length}{ts.daysAbbr || 'd'}
               </span>
             </div>
           );

@@ -169,7 +169,7 @@ export function HabitHubList({
             <div
               role="listbox"
               className={cn(
-                'absolute right-0 top-6 z-[57] min-w-[120px] rounded-xl overflow-hidden',
+                'absolute end-0 top-6 z-[57] min-w-[120px] rounded-xl overflow-hidden',
                 'bg-[#141a2e] border border-white/[0.08] shadow-xl',
               )}
               onKeyDown={(e) => { if (e.key === 'Escape') setShowSortMenu(false); }}
@@ -179,7 +179,7 @@ export function HabitHubList({
                   key={opt}
                   onClick={() => handleSortSelect(opt)}
                   className={cn(
-                    'w-full px-3 py-2 text-xs text-left transition-colors min-h-[44px] flex items-center',
+                    'w-full px-3 py-2 text-xs text-start transition-colors min-h-[44px] flex items-center',
                     sortOption === opt
                       ? 'text-violet-300 bg-violet-500/10'
                       : 'text-slate-400 hover:bg-white/[0.05]',
@@ -357,7 +357,7 @@ export function HabitHubList({
       {/* ═══ FAB — Add Habit ═══ */}
       <div
         className="fixed z-[55]"
-        style={{ bottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))', right: '1.25rem' }}
+        style={{ bottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))', insetInlineEnd: '1.25rem' }}
       >
         <motion.button
           whileTap={{ scale: 0.9 }}

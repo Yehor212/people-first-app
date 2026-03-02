@@ -139,7 +139,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
 
       <div className="flex gap-[3px]">
         {/* Day-of-week labels */}
-        <div className="flex flex-col gap-[3px] mr-1 pt-0">
+        <div className="flex flex-col gap-[3px] me-1 pt-0">
           {dowLabels.map((label, i) => (
             <div
               key={i}
