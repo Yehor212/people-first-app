@@ -104,6 +104,7 @@ vi.mock('@/lib/safeJson', () => ({
 // --- import under test after mocks ---
 
 import { useHabitHandlers } from '../useHabitHandlers';
+import { useUserDataStore } from '@/stores';
 import type { Habit } from '@/types';
 
 describe('useHabitHandlers', () => {
@@ -210,17 +211,30 @@ describe('useHabitHandlers', () => {
       h.id === 'h1' ? { ...h, entries: datesToEntries(['2026-02-19']) } : h,
     );
 
+    // Override store to return completed habits — handleToggleHabit reads
+    // current value from the store closure, not from the updater's `prev`.
+    vi.mocked(useUserDataStore).mockImplementation(
+      ((sel: (s: Record<string, unknown>) => unknown) =>
+        sel({ habits: habitsWithCompleted, setHabits: mockSetHabits })) as typeof useUserDataStore,
+    );
+
     const { result } = renderAndClearEffects();
 
     act(() => {
       result.current.handleToggleHabit('h1', '2026-02-19');
     });
 
-    const updated = lastSetHabitsUpdater()(habitsWithCompleted );
+    const updated = lastSetHabitsUpdater()(habitsWithCompleted);
     const habit = updated.find(h => h.id === 'h1');
     // After toggle off, entry should not be YES_MANUAL
     const entryVal = habit?.entries['2026-02-19']?.value;
     expect(entryVal === undefined || entryVal === ENTRY.UNKNOWN || entryVal === ENTRY.SKIP || entryVal === ENTRY.NO).toBe(true);
+
+    // Restore original store mock
+    vi.mocked(useUserDataStore).mockImplementation(
+      ((sel: (s: Record<string, unknown>) => unknown) =>
+        sel({ habits: mockHabits, setHabits: mockSetHabits })) as typeof useUserDataStore,
+    );
   });
 
   it('handleToggleHabit increments numerical type completions', () => {
