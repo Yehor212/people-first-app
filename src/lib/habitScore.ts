@@ -13,6 +13,7 @@
 
 import type { Habit, HabitEntry } from '@/types';
 import { ENTRY } from '@/types';
+import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
 
 // ─── Date helpers ───────────────────────────────────────────────────────────
 
@@ -283,8 +284,8 @@ export interface HabitStreak {
  * - Numerical AT_LEAST: value/1000 >= targetValue
  * - Numerical AT_MOST: value !== UNKNOWN && value/1000 <= targetValue
  */
-function isStreakDay(habit: Habit, dateStr: string): boolean {
-  const val = getEntryValue(habit.entries, dateStr);
+function isStreakDay(habit: Habit, dateStr: string, entries: Record<string, HabitEntry>): boolean {
+  const val = getEntryValue(entries, dateStr);
 
   if (habit.habitType === 'boolean') {
     return val > 0; // YES_MANUAL(2), YES_AUTO(1), SKIP(3) all count
@@ -314,6 +315,10 @@ export function computeAllStreaks(habit: Habit): HabitStreak[] {
 
   if (totalDays < 0) return [];
 
+  // For non-daily boolean habits, use computed entries (YES_AUTO fills rest days)
+  // so that streaks don't break on legitimate gap days (e.g., Tue/Thu for 3x/week)
+  const entries = computeEntriesWithAuto(habit);
+
   const streaks: HabitStreak[] = [];
   let streakStart: string | null = null;
   let streakEnd: string | null = null;
@@ -322,7 +327,7 @@ export function computeAllStreaks(habit: Habit): HabitStreak[] {
   for (let i = 0; i <= totalDays; i++) {
     const dateStr = toDateStr(addDays(createdDate, i));
 
-    if (isStreakDay(habit, dateStr)) {
+    if (isStreakDay(habit, dateStr, entries)) {
       if (!streakStart) streakStart = dateStr;
       streakEnd = dateStr;
       streakLen++;
