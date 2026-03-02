@@ -442,7 +442,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                       </button>
                       <span className="text-sm text-slate-200 w-5 text-center tabular-nums">{frequency.numerator}</span>
                       <button
-                        onClick={() => setFrequency({ ...frequency, numerator: frequency.numerator + 1 })}
+                        onClick={() => setFrequency({ ...frequency, numerator: Math.min(365, frequency.numerator + 1) })}
                         className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
                       >
                         +
@@ -458,7 +458,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                       </button>
                       <span className="text-sm text-slate-200 w-5 text-center tabular-nums">{frequency.denominator}</span>
                       <button
-                        onClick={() => setFrequency({ ...frequency, denominator: frequency.denominator + 1 })}
+                        onClick={() => setFrequency({ ...frequency, denominator: Math.min(365, frequency.denominator + 1) })}
                         className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
                       >
                         +

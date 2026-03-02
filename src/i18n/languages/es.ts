@@ -305,6 +305,8 @@ export const es: Translations = {
   undo: 'Deshacer',
   edit: 'Editar',
   editHabit: 'Editar hábito',
+  decreaseTarget: 'Reducir objetivo',
+  increaseTarget: 'Aumentar objetivo',
   habitUpdated: 'Hábito actualizado',
   saveChanges: 'Guardar cambios',
   habitCompleted: 'Hábito completado',

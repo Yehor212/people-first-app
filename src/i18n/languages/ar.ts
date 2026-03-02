@@ -865,6 +865,8 @@ const arabicOverrides: Partial<Translations> = {
   otherHabits: 'عادات أخرى',
   archivedHabits: 'المؤرشفة',
   editHabit: 'تعديل العادة',
+  decreaseTarget: 'تقليل الهدف',
+  increaseTarget: 'زيادة الهدف',
   archiveHabit: 'أرشفة',
   unarchiveHabit: 'إلغاء الأرشفة',
   skipToday: 'تخطي اليوم',

@@ -305,6 +305,8 @@ export const de: Translations = {
   undo: 'Rückgängig',
   edit: 'Bearbeiten',
   editHabit: 'Gewohnheit bearbeiten',
+  decreaseTarget: 'Ziel verringern',
+  increaseTarget: 'Ziel erhöhen',
   habitUpdated: 'Gewohnheit aktualisiert',
   saveChanges: 'Änderungen speichern',
   habitCompleted: 'Gewohnheit erledigt',

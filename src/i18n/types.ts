@@ -317,6 +317,8 @@ export interface Translations {
   undo: string;
   edit: string;
   editHabit: string;
+  decreaseTarget: string;
+  increaseTarget: string;
   habitUpdated: string;
   saveChanges: string;
   habitCompleted: string;

@@ -827,6 +827,8 @@ const hebrewOverrides: Partial<Translations> = {
   // Edit & Habits
   edit: 'עריכה',
   editHabit: 'עריכת הרגל',
+  decreaseTarget: 'הפחת יעד',
+  increaseTarget: 'הגדל יעד',
   habitUpdated: 'ההרגל עודכן',
   saveChanges: 'שמור שינויים',
   thisMonth: 'החודש',

@@ -118,7 +118,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         )}
         whileHover={{ x: -2 }}
       >
-        ← {editingHabit ? (t.cancel || 'Cancel') : (t.back || 'Back')}
+        <span className="inline-block rtl:rotate-180">←</span> {editingHabit ? (t.cancel || 'Cancel') : (t.back || 'Back')}
       </motion.button>
 
       {/* Edit mode header */}
@@ -199,6 +199,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         value={question}
         onChange={(e) => setQuestion(e.target.value)}
         placeholder={ts.habitQuestion || 'Question (e.g., "Did you exercise today?")'}
+        maxLength={200}
         className={cn(
           "relative w-full p-3 rounded-xl mb-3 transition-all",
           "focus:outline-none focus:ring-2",

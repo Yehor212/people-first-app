@@ -304,6 +304,8 @@ export const ja: Translations = {
   undo: '元に戻す',
   edit: '編集',
   editHabit: '習慣を編集',
+  decreaseTarget: '目標を減らす',
+  increaseTarget: '目標を増やす',
   habitUpdated: '習慣を更新しました',
   saveChanges: '変更を保存',
   habitCompleted: '習慣達成',

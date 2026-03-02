@@ -304,6 +304,8 @@ export const uk: Translations = {
   undo: 'Скасувати',
   edit: 'Редагувати',
   editHabit: 'Редагувати звичку',
+  decreaseTarget: 'Зменшити ціль',
+  increaseTarget: 'Збільшити ціль',
   habitUpdated: 'Звичку оновлено',
   saveChanges: 'Зберегти зміни',
   habitCompleted: 'Звичку виконано',
