@@ -1037,6 +1037,51 @@ export interface Translations {
   lastBadge: string;
   done: string;
 
+  // Habit Hub — Sort & Filter
+  sortByScore: string;
+  sortByName: string;
+  sortByStatus: string;
+  sortByColor: string;
+  sortByManual: string;
+  categoryAll: string;
+
+  // Habit Hub — Charts & Stats
+  scoreHistory: string;
+  range3mo: string;
+  range6mo: string;
+  range1yr: string;
+  rangeAll: string;
+  statsTotal: string;
+  targetProgress: string;
+  thisYear: string;
+  noStreaksYet: string;
+  now: string;
+
+  // Habit Hub — Detail Sheet Actions
+  deleteHabit: string;
+  confirmDeleteHabit: string;
+
+  // Habit Hub — Notes
+  habitNotes: string;
+  editNote: string;
+  notePrompt: string;
+  noNotes: string;
+
+  // Habit Hub — Add/Edit Form
+  quickStart: string;
+  createCustom: string;
+  questionPrompt: string;
+  questionPromptPlaceholder: string;
+  questionPromptHint: string;
+  habitTypeBoolean: string;
+  habitTypeNumerical: string;
+  dailyTarget: string;
+  atLeast: string;
+  atMost: string;
+  customFreq: string;
+  timesPer: string;
+  unit: string;
+
   // Dopamine Settings
   dopamineSettings: string;
   dopamineSettingsDesc: string;

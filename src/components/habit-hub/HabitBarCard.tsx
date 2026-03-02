@@ -32,7 +32,7 @@ function toDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function getCompletionsByWeek(habit: Habit, weeks: number): BarData[] {
+function getCompletionsByWeek(habit: Habit, weeks: number, nowLabel = 'Now'): BarData[] {
   const result: BarData[] = [];
   const today = new Date();
 
@@ -56,15 +56,14 @@ function getCompletionsByWeek(habit: Habit, weeks: number): BarData[] {
       }
     }
 
-    // Label: "W1", "W2", etc. or month/day for first week of month
-    const label = w === 0 ? 'Now' : `W-${w}`;
+    const label = w === 0 ? nowLabel : `W-${w}`;
     result.push({ label, count });
   }
 
   return result;
 }
 
-function getCompletionsByMonth(habit: Habit, months: number): BarData[] {
+function getCompletionsByMonth(habit: Habit, months: number, locale = 'en'): BarData[] {
   const result: BarData[] = [];
   const today = new Date();
 
@@ -83,8 +82,8 @@ function getCompletionsByMonth(habit: Habit, months: number): BarData[] {
       }
     }
 
-    const MONTHS_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    result.push({ label: MONTHS_SHORT[month.getMonth()], count });
+    const monthLabel = new Intl.DateTimeFormat(locale, { month: 'short' }).format(month);
+    result.push({ label: monthLabel, count });
   }
 
   return result;
@@ -94,16 +93,17 @@ const CHART_H = 100;
 const BAR_PAD = { top: 8, right: 8, bottom: 20, left: 8 };
 
 export function HabitBarCard({ habit, className }: HabitBarCardProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [interval, setInterval] = useState<BarInterval>('week');
   const color = resolveHabitColor(habit.color);
+  const nowLabel = ts.now || 'Now';
 
   const data = useMemo(() => {
     return interval === 'week'
-      ? getCompletionsByWeek(habit, 12)
-      : getCompletionsByMonth(habit, 12);
-  }, [habit, interval]);
+      ? getCompletionsByWeek(habit, 12, nowLabel)
+      : getCompletionsByMonth(habit, 12, language);
+  }, [habit, interval, nowLabel, language]);
 
   const maxCount = Math.max(1, ...data.map(d => d.count));
   const svgWidth = 320;
@@ -124,7 +124,7 @@ export function HabitBarCard({ habit, className }: HabitBarCardProps) {
               key={iv}
               onClick={() => setInterval(iv)}
               className={cn(
-                'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors',
+                'px-3 py-1.5 rounded-md text-[10px] font-medium transition-colors min-h-[36px]',
                 interval === iv
                   ? 'bg-white/[0.1] text-slate-200'
                   : 'text-slate-500 hover:text-slate-400',

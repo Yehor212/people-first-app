@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { zenMotion } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { useHabitHub, type HabitSortOption } from '@/hooks/useHabitHub';
 import { habitCategories } from '@/hooks/useHabitForm';
 import { HabitHubCard } from './HabitHubCard';
@@ -75,6 +76,9 @@ export function HabitHubList({
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
   const [showSortMenu, setShowSortMenu] = useState(false);
 
+  // P0: Android hardware back must close sort dropdown
+  useBackHandler(showSortMenu, () => setShowSortMenu(false));
+
   const {
     todayHabits,
     otherHabits,
@@ -133,7 +137,7 @@ export function HabitHubList({
             onClick={() => setCategoryFilter(cat.id)}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all',
-              'border min-h-[36px]',
+              'border min-h-[44px]',
               categoryFilter === cat.id
                 ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
                 : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:bg-white/[0.06]',
@@ -149,7 +153,7 @@ export function HabitHubList({
       <div className="relative flex justify-end">
         <button
           onClick={() => setShowSortMenu(!showSortMenu)}
-          className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-slate-400 transition-colors"
+          className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-slate-400 transition-colors min-h-[44px] min-w-[44px]"
         >
           <ArrowUpDown className="w-3 h-3" />
           <span>{sortLabels[sortOption]}</span>
@@ -166,7 +170,7 @@ export function HabitHubList({
                   key={opt}
                   onClick={() => handleSortSelect(opt)}
                   className={cn(
-                    'w-full px-3 py-2 text-xs text-left transition-colors',
+                    'w-full px-3 py-2 text-xs text-left transition-colors min-h-[44px] flex items-center',
                     sortOption === opt
                       ? 'text-violet-300 bg-violet-500/10'
                       : 'text-slate-400 hover:bg-white/[0.05]',
@@ -244,7 +248,7 @@ export function HabitHubList({
         <section>
           <button
             onClick={() => setShowArchived(prev => !prev)}
-            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-600 px-1 mb-3 w-full"
+            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-600 px-1 mb-3 w-full min-h-[44px]"
           >
             <Archive className="w-3.5 h-3.5" />
             <span>{ts.archivedHabits || 'Archived'}</span>

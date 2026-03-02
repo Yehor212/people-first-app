@@ -302,7 +302,7 @@ export function getFrequencyByWeekday(habit: Habit): number[] {
   for (const [dateStr, entry] of Object.entries(habit.entries)) {
     if (
       entry.value === ENTRY.YES_MANUAL ||
-      (habit.habitType === 'numerical' && entry.value > 0)
+      (habit.habitType === 'numerical' && entry.value > 0 && entry.value !== ENTRY.SKIP)
     ) {
       const dow = parseDate(dateStr).getDay();
       counts[dow]++;

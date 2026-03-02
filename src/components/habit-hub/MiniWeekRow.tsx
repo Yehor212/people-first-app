@@ -8,6 +8,7 @@ import { memo, useMemo, useCallback } from 'react';
 import { cn, getToday } from '@/lib/utils';
 import { getNumericalValue } from '@/lib/habits';
 import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { ENTRY } from '@/types';
 import type { Habit } from '@/types';
 import { MiniCheckmarkCell } from './MiniCheckmarkCell';
@@ -19,8 +20,7 @@ interface MiniWeekRowProps {
   onAdjust?: (habitId: string, date: string, delta: number) => void;
 }
 
-// Weekday labels (Mon-first, single letter)
-const DOW_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+// DOW_LABELS moved inside component for i18n (see useMemo below)
 
 function toDateStr(d: Date): string {
   const y = d.getFullYear();
@@ -54,7 +54,12 @@ export const MiniWeekRow = memo(function MiniWeekRow({
   onToggle,
   onAdjust,
 }: MiniWeekRowProps) {
+  const { t } = useLanguage();
   const today = getToday();
+
+  const DOW_LABELS = useMemo(() => [
+    t.dayMo, t.dayTu, t.dayWe, t.dayTh, t.dayFr, t.daySa, t.daySu,
+  ], [t.dayMo, t.dayTu, t.dayWe, t.dayTh, t.dayFr, t.daySa, t.daySu]);
   const isNumerical = habit.habitType === 'numerical';
 
   const days = useMemo(() => getLast7Days(), []);

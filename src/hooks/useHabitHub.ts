@@ -5,7 +5,7 @@
  * All heavy computation inside useMemo — recalculates only when habits change.
  */
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Habit, HabitCategory } from '@/types';
 import { computeHabitScore } from '@/lib/habitScore';
 import { formatDate } from '@/lib/utils';
@@ -31,7 +31,16 @@ export interface UseHabitHubReturn {
 export function useHabitHub(habits: Habit[]): UseHabitHubReturn {
   const [categoryFilter, setCategoryFilter] = useState<HabitCategory | 'all'>('all');
   const [sortOption, setSortOption] = useState<HabitSortOption>('manual');
-  const [selectedHabit, setSelectedHabit] = useState<Habit | null>(null);
+  // Store ID only — derive habit from array so detail sheet always shows fresh data
+  const [selectedHabitId, setSelectedHabitId] = useState<string | null>(null);
+  const selectedHabit = useMemo(
+    () => (selectedHabitId ? habits.find(h => h.id === selectedHabitId) ?? null : null),
+    [habits, selectedHabitId],
+  );
+  const setSelectedHabit = useCallback(
+    (h: Habit | null) => setSelectedHabitId(h?.id ?? null),
+    [],
+  );
 
   // Live date — updates at midnight if app stays open
   const [today, setToday] = useState(() => formatDate(new Date()));
@@ -109,6 +118,7 @@ export function useHabitHub(habits: Habit[]): UseHabitHubReturn {
     };
 
     const sorted = [...filtered].sort(sortFn);
+    // Loop pattern: all active habits show as "Today". Reserved for future non-daily filtering.
     return { todayHabits: sorted, otherHabits: [] as Habit[] };
   }, [activeHabits, categoryFilter, today, scoresMap, sortOption]);
 

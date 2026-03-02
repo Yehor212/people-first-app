@@ -69,8 +69,8 @@ export function calculateStreak(dates: string[]): number {
   
   let streak = 1;
   for (let i = 1; i < sortedDates.length; i++) {
-    const current = new Date(sortedDates[i - 1]);
-    const prev = new Date(sortedDates[i]);
+    const current = parseLocalDate(sortedDates[i - 1]);
+    const prev = parseLocalDate(sortedDates[i]);
     const diffDays = Math.floor((current.getTime() - prev.getTime()) / 86400000);
     
     if (diffDays === 1) {

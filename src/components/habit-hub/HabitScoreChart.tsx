@@ -87,7 +87,7 @@ export function HabitScoreChart({ habit }: HabitScoreChartProps) {
               key={r}
               onClick={() => setRange(r)}
               className={cn(
-                'px-2 py-0.5 rounded-md text-[10px] font-medium transition-colors',
+                'px-3 py-1.5 rounded-md text-[10px] font-medium transition-colors min-h-[36px]',
                 range === r
                   ? 'bg-white/[0.1] text-slate-200'
                   : 'text-slate-500 hover:text-slate-400',

@@ -75,10 +75,15 @@ export const HabitHubCard = memo(function HabitHubCard({
   return (
     <motion.div
       onClick={handleSelect}
+      onKeyDown={(e: React.KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelect(); } }}
+      tabIndex={0}
+      role="button"
+      aria-label={habit.name}
       className={cn(
         'w-full rounded-2xl text-left transition-colors cursor-pointer',
         'bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm',
         'hover:bg-white/[0.06] active:scale-[0.98]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
         isCompleted && 'bg-emerald-500/[0.06] border-emerald-500/[0.12]',
         className,
       )}

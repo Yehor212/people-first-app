@@ -43,7 +43,7 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
         <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
           {ts.streakHistory || 'Streaks'}
         </h4>
-        <p className="text-xs text-slate-600 py-4 text-center">No streaks yet</p>
+        <p className="text-xs text-slate-600 py-4 text-center">{ts.noStreaksYet || 'No streaks yet'}</p>
       </div>
     );
   }

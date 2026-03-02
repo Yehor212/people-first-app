@@ -23,6 +23,7 @@ import { HabitNotesSection } from './HabitNotesSection';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
+import { ENTRY } from '@/types';
 import type { Habit } from '@/types';
 
 interface HabitDetailSheetProps {
@@ -59,7 +60,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
   const scorePercent = Math.round(score * 100);
   const streak = useMemo(() => (habit ? getCurrentStreak(habit) : 0), [habit]);
   const isSkippedToday = useMemo(
-    () => habit?.entries?.[today]?.value === 3 || false,
+    () => habit?.entries?.[today]?.value === ENTRY.SKIP || false,
     [habit, today],
   );
 

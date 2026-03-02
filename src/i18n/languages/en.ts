@@ -1007,6 +1007,51 @@ export const en: Translations = {
   lastBadge: 'Latest Badge',
   done: 'done',
 
+  // Habit Hub — Sort & Filter
+  sortByScore: 'Score',
+  sortByName: 'Name',
+  sortByStatus: 'Status',
+  sortByColor: 'Color',
+  sortByManual: 'Manual',
+  categoryAll: 'All',
+
+  // Habit Hub — Charts & Stats
+  scoreHistory: 'Score History',
+  range3mo: '3mo',
+  range6mo: '6mo',
+  range1yr: '1yr',
+  rangeAll: 'All',
+  statsTotal: 'Total',
+  targetProgress: 'Target Progress',
+  thisYear: 'Year',
+  noStreaksYet: 'No streaks yet',
+  now: 'Now',
+
+  // Habit Hub — Detail Sheet
+  deleteHabit: 'Delete Habit',
+  confirmDeleteHabit: 'Are you sure? This cannot be undone.',
+
+  // Habit Hub — Notes
+  habitNotes: 'Notes',
+  editNote: 'Edit',
+  notePrompt: 'How did it go today?',
+  noNotes: 'No notes yet',
+
+  // Habit Hub — Add/Edit Form
+  quickStart: 'Quick Start',
+  createCustom: 'or create custom',
+  questionPrompt: 'Question Prompt',
+  questionPromptPlaceholder: 'e.g. Did you exercise today?',
+  questionPromptHint: 'Optional — phrased as a daily check-in question',
+  habitTypeBoolean: 'Yes / No',
+  habitTypeNumerical: 'Measurable',
+  dailyTarget: 'Target',
+  atLeast: 'At Least',
+  atMost: 'At Most',
+  customFreq: 'Custom',
+  timesPer: 'times per',
+  unit: 'Unit',
+
   dopamineSettings: 'Dopamine Dashboard',
   dopamineSettingsDesc: 'Customize your feedback experience',
   dopamineIntensity: 'Intensity Level',
