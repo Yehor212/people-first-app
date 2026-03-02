@@ -24,14 +24,14 @@ export const generateSecureId = (prefix: string): string => {
 
 // Dangerous patterns that could indicate XSS attempts
 const DANGEROUS_PATTERNS = [
-  /javascript:/gi,
-  /data:/gi,
-  /vbscript:/gi,
-  /on\w+\s*=/gi, // onclick=, onerror=, etc.
-  /<script/gi,
-  /eval\s*\(/gi,
-  /expression\s*\(/gi,
-  /url\s*\(/gi,
+  /javascript:/i,
+  /data:/i,
+  /vbscript:/i,
+  /on\w+\s*=/i, // onclick=, onerror=, etc.
+  /<script/i,
+  /eval\s*\(/i,
+  /expression\s*\(/i,
+  /url\s*\(/i,
 ];
 
 // Check if string contains dangerous patterns

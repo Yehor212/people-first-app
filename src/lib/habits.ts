@@ -75,12 +75,14 @@ export function isHabitCompletedOnDate(habit: Habit, date: string): boolean {
   }
 
   // Numerical: completed if meets target
-  if (val <= 0) return false;
-  const realValue = val / 1000;
+  if (val === ENTRY.UNKNOWN) return false;
   if (habit.targetType === 'atMost') {
-    return realValue <= habit.targetValue;
+    if (val === ENTRY.NO) return true; // 0 = ideal outcome for "at most" habits
+    if (val <= 0) return false;
+    return (val / 1000) <= habit.targetValue;
   }
-  return realValue >= habit.targetValue;
+  if (val <= 0) return false;
+  return (val / 1000) >= habit.targetValue;
 }
 
 /** Get all dates where the habit was completed (YES_MANUAL for boolean) */

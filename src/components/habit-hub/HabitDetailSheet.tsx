@@ -9,8 +9,10 @@ import { memo, useState, useMemo, useCallback } from 'react';
 import { Archive, ArchiveRestore, Pencil, SkipForward, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { ProgressRing } from '@/components/ui/progress-ring';
-import { computeHabitScore, getCurrentStreak } from '@/lib/habitScore';
+import { computeHabitScore, computeAllStreaks, type HabitStreak } from '@/lib/habitScore';
+import { getHabitCompletedDates } from '@/lib/habits';
 import { resolveHabitColor } from '@/lib/habitColorUtils';
+import { hapticTap } from '@/lib/haptics';
 import { AnimatedFire } from '@/components/compact-habit-card/AnimatedFire';
 import { HabitStatsSection } from './HabitStatsSection';
 import { HabitTargetCard } from './HabitTargetCard';
@@ -54,11 +56,34 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
   const today = getToday();
 
   // P0: Android back button must close sheet, not navigate away
-  useBackHandler(!!habit, onClose);
+  // Delete confirmation gets its own handler so back dismisses it instead of the whole sheet
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  useBackHandler(showDeleteConfirm, () => setShowDeleteConfirm(false));
+  useBackHandler(!!habit && !showDeleteConfirm, onClose);
 
-  const score = useMemo(() => (habit ? computeHabitScore(habit) : 0), [habit]);
+  // Compute all derived data once — passed down to child components to avoid redundant computation
+  const derived = useMemo(() => {
+    if (!habit) return { score: 0, streak: 0, allStreaks: [] as HabitStreak[], completedDates: [] as string[] };
+    const allStreaks = computeAllStreaks(habit);
+    const todayStr = getToday();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
+    // Derive current streak from allStreaks (same logic as getCurrentStreak)
+    let streak = 0;
+    if (allStreaks.length > 0) {
+      const recent = allStreaks.reduce((best, s) => s.end > best.end ? s : best, allStreaks[0]);
+      if (recent.end === todayStr || recent.end === yesterdayStr) streak = recent.length;
+    }
+    return {
+      score: computeHabitScore(habit),
+      streak,
+      allStreaks,
+      completedDates: getHabitCompletedDates(habit),
+    };
+  }, [habit]);
+  const { score, streak, allStreaks, completedDates } = derived;
   const scorePercent = Math.round(score * 100);
-  const streak = useMemo(() => (habit ? getCurrentStreak(habit) : 0), [habit]);
   const isSkippedToday = useMemo(
     () => habit?.entries?.[today]?.value === ENTRY.SKIP || false,
     [habit, today],
@@ -68,6 +93,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
 
   const handleArchiveToggle = useCallback(() => {
     if (!habit) return;
+    void hapticTap();
     if (habit.isArchived) {
       onUnarchive(habit.id);
     } else {
@@ -78,6 +104,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
 
   const handleSkipToggle = useCallback(() => {
     if (!habit) return;
+    void hapticTap();
     if (isSkippedToday) {
       onUnskip(habit.id, today);
     } else {
@@ -89,10 +116,9 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
     onUpdate(updatedHabit);
   }, [onUpdate]);
 
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
   const handleDelete = useCallback(() => {
     if (!habit) return;
+    void hapticTap();
     onDelete(habit.id);
     setShowDeleteConfirm(false);
     onClose();
@@ -161,7 +187,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
             </div>
 
             {/* ═══ STATISTICS ═══ */}
-            <HabitStatsSection habit={habit} />
+            <HabitStatsSection currentStreak={streak} allStreaks={allStreaks} completedDates={completedDates} />
 
             {/* ═══ TARGET PROGRESS (numerical only) ═══ */}
             <HabitTargetCard habit={habit} />
@@ -179,7 +205,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
             <HabitFrequencyChart habit={habit} />
 
             {/* ═══ STREAK TIMELINE ═══ */}
-            <HabitStreakTimeline habit={habit} />
+            <HabitStreakTimeline allStreaks={allStreaks} currentStreak={streak} />
 
             {/* ═══ NOTES ═══ */}
             <HabitNotesSection habit={habit} onUpdate={handleNoteUpdate} />
@@ -190,9 +216,10 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
               <button
                 onClick={() => { onEdit(habit); onClose(); }}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors',
+                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
                   'bg-white/[0.03] border border-white/[0.06]',
                   'hover:bg-white/[0.06] active:scale-[0.98]',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
                 )}
               >
                 <Pencil className="w-4 h-4 text-violet-400" />
@@ -203,9 +230,10 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
               <button
                 onClick={handleSkipToggle}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors',
+                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
                   'bg-white/[0.03] border border-white/[0.06]',
                   'hover:bg-white/[0.06] active:scale-[0.98]',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
                   isSkippedToday && 'bg-blue-500/[0.08] border-blue-500/[0.15] text-blue-400',
                 )}
               >
@@ -219,9 +247,10 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
               <button
                 onClick={handleArchiveToggle}
                 className={cn(
-                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors',
+                  'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
                   'bg-white/[0.03] border border-white/[0.06]',
                   'hover:bg-white/[0.06] active:scale-[0.98]',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
                 )}
               >
                 {habit.isArchived ? (
@@ -245,6 +274,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                     'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors',
                     'bg-red-500/[0.05] border border-red-500/[0.1]',
                     'hover:bg-red-500/[0.1] active:scale-[0.98]',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50',
                     'text-red-400',
                   )}
                 >
@@ -263,6 +293,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                         'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
                         'bg-white/[0.05] border border-white/[0.08] text-slate-400',
                         'hover:bg-white/[0.08]',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
                       )}
                     >
                       {ts.cancel || 'Cancel'}
@@ -273,6 +304,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                         'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
                         'bg-red-600 text-white',
                         'hover:bg-red-500 active:scale-[0.98]',
+                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50',
                       )}
                     >
                       {ts.delete || 'Delete'}

@@ -22,12 +22,12 @@ export const habitCategories: { id: HabitCategory; icon: string; color: string }
   { id: 'other', icon: '✨', color: 'from-slate-500 to-gray-500' },
 ];
 
-/** Frequency presets */
-export const frequencyPresets: { label: string; ratio: HabitFrequencyRatio }[] = [
-  { label: 'Daily', ratio: { numerator: 1, denominator: 1 } },
-  { label: '3x / week', ratio: { numerator: 3, denominator: 7 } },
-  { label: '2x / week', ratio: { numerator: 2, denominator: 7 } },
-  { label: 'Weekly', ratio: { numerator: 1, denominator: 7 } },
+/** Frequency presets — i18nKey resolved at render time via ts[key] */
+export const frequencyPresets: { label: string; i18nKey: string; ratio: HabitFrequencyRatio }[] = [
+  { label: 'Daily', i18nKey: 'habitFrequencyDaily', ratio: { numerator: 1, denominator: 1 } },
+  { label: '3x / week', i18nKey: 'habitFrequency3xWeek', ratio: { numerator: 3, denominator: 7 } },
+  { label: '2x / week', i18nKey: 'habitFrequency2xWeek', ratio: { numerator: 2, denominator: 7 } },
+  { label: 'Weekly', i18nKey: 'habitFrequencyWeekly', ratio: { numerator: 1, denominator: 7 } },
 ];
 
 // ============================================

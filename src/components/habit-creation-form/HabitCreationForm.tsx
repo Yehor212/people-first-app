@@ -337,7 +337,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              {preset.label}
+              {ts[preset.i18nKey] || preset.label}
             </motion.button>
           ))}
           {/* Custom frequency indicator */}

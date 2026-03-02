@@ -5,7 +5,7 @@
  * All heavy computation inside useMemo — recalculates only when habits change.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { Habit, HabitCategory } from '@/types';
 import { computeHabitScore } from '@/lib/habitScore';
 import { formatDate } from '@/lib/utils';
@@ -67,11 +67,26 @@ export function useHabitHub(habits: Habit[]): UseHabitHubReturn {
     return { activeHabits: active, archivedHabits: archived };
   }, [habits]);
 
-  // Compute scores for all habits
+  // Compute scores with per-habit memoization cache — only recompute habits that changed
+  const scoreCacheRef = useRef(new Map<string, { updatedAt: string; score: number }>());
   const scoresMap = useMemo(() => {
+    const cache = scoreCacheRef.current;
     const map = new Map<string, number>();
+    const activeIds = new Set<string>();
     for (const h of [...activeHabits, ...archivedHabits]) {
-      map.set(h.id, computeHabitScore(h));
+      activeIds.add(h.id);
+      const cached = cache.get(h.id);
+      if (cached && cached.updatedAt === h.updatedAt) {
+        map.set(h.id, cached.score);
+      } else {
+        const score = computeHabitScore(h);
+        cache.set(h.id, { updatedAt: h.updatedAt || '', score });
+        map.set(h.id, score);
+      }
+    }
+    // Clean up deleted habits from cache
+    for (const id of cache.keys()) {
+      if (!activeIds.has(id)) cache.delete(id);
     }
     return map;
   }, [activeHabits, archivedHabits]);

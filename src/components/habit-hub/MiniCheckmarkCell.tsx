@@ -15,6 +15,7 @@
 
 import { memo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { ENTRY } from '@/types';
 
 interface MiniCheckmarkCellProps {
@@ -36,6 +37,9 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
   numericDisplay,
   onTap,
 }: MiniCheckmarkCellProps) {
+  const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -61,6 +65,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
         className={cn(
           'w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all',
           'text-[10px] font-semibold tabular-nums',
+          'hover:brightness-125',
           isToday && 'ring-1 ring-white/30',
         )}
         style={{
@@ -81,9 +86,10 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
       tabIndex={isToday ? 0 : -1}
       role="checkbox"
       aria-checked={isCompleted}
-      aria-label={`${date}: ${isCompleted ? 'done' : isSkipped ? 'skipped' : isNo ? 'not done' : 'no data'}`}
+      aria-label={`${date}: ${isCompleted ? (ts.done || 'done') : isSkipped ? (ts.skipped || 'skipped') : isNo ? (ts.notDone || 'not done') : (ts.noData || 'no data')}`}
       className={cn(
         'w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer transition-all',
+        'hover:brightness-125',
         isToday && 'ring-1 ring-white/30',
       )}
       style={{

@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react';
-import { MoodEntry, Habit } from '@/types';
+import { MoodEntry, Habit, ENTRY } from '@/types';
 import { cn, getToday, formatDate } from '@/lib/utils';
 import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -31,8 +31,7 @@ export const WeeklyCalendar = memo(function WeeklyCalendar({ moods, habits }: We
     habits.forEach(habit => {
       if (!habit.entries) return;
       for (const [date, entry] of Object.entries(habit.entries)) {
-        // YES_MANUAL (2) counts as completed
-        if (entry.value === 2) {
+        if (entry.value === ENTRY.YES_MANUAL) {
           map.set(date, (map.get(date) || 0) + 1);
         }
       }
@@ -104,7 +103,7 @@ export const WeeklyCalendar = memo(function WeeklyCalendar({ moods, habits }: We
                   key={habit.id}
                   className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full"
                   style={{
-                    backgroundColor: habit.entries?.[day.date]?.value === 2
+                    backgroundColor: habit.entries?.[day.date]?.value === ENTRY.YES_MANUAL
                       ? resolveHabitColor(habit.color)
                       : undefined,
                   }}

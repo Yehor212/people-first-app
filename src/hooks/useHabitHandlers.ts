@@ -37,13 +37,14 @@ export function useHabitHandlers({
   updateChallengeProgress,
   checkForFeatureUnlocks,
 }: UseHabitHandlersParams) {
-  const { language } = useLanguage();
+  const { t, language } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   const habits = useUserDataStore(s => s.habits);
   const setHabits = useUserDataStore(s => s.setHabits);
   const setConfettiBurst = useUIStore(s => s.setConfettiBurst);
 
   const processingHabitsRef = useRef<Set<string>>(new Set());
-  const processingTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const processingTimeoutsRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
 
   // Track early bird / night owl for special badges
   const trackTimeOfDayCompletion = useCallback(() => {
@@ -62,7 +63,7 @@ export function useHabitHandlers({
   /** Fire side effects when a habit is completed (XP, treats, confetti, etc.) */
   const fireCompletionEffects = useCallback((habit: Habit) => {
     awardXp('habit');
-    const treatResult = earnTreats('habit', 10, 'Completed habit');
+    const treatResult = earnTreats('habit', 10, ts.completedHabitReason || 'Completed habit');
     triggerXpPopup(treatResult.earned, 'habit');
     void haptics.habitCompleted();
     setConfettiBurst({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
@@ -87,44 +88,49 @@ export function useHabitHandlers({
     const today = new Date().toISOString().slice(0, 10);
     const challengeResult = recordHabitForChallenge(today);
     if (challengeResult.challengeComplete) {
-      earnTreats('habit', challengeResult.bonusXp, 'Comeback Challenge Complete!');
+      earnTreats('habit', challengeResult.bonusXp, ts.comebackChallengeComplete || 'Comeback Challenge Complete!');
       triggerXpPopup(challengeResult.bonusXp, 'bonus');
     }
-  }, [awardXp, earnTreats, plantSeed, waterPlants, setConfettiBurst, trackTimeOfDayCompletion]);
+  }, [awardXp, earnTreats, plantSeed, waterPlants, setConfettiBurst, trackTimeOfDayCompletion, ts]);
 
   /**
    * Toggle a boolean habit entry for a given date.
    * Cycle: UNKNOWN → YES_MANUAL → SKIP → NO → UNKNOWN
    */
-  const handleToggleHabit = (habitId: string, date: string) => {
-    // Guard against rapid double-clicks
+  const handleToggleHabit = useCallback((habitId: string, date: string) => {
+    // Guard against rapid double-clicks (per-habit-date key)
     const processingKey = `${habitId}-${date}`;
     if (processingHabitsRef.current.has(processingKey)) return;
     processingHabitsRef.current.add(processingKey);
 
-    processingTimeoutRef.current = setTimeout(() => {
+    const prevTimeout = processingTimeoutsRef.current.get(processingKey);
+    if (prevTimeout) clearTimeout(prevTimeout);
+    processingTimeoutsRef.current.set(processingKey, setTimeout(() => {
       processingHabitsRef.current.delete(processingKey);
-    }, 500);
+      processingTimeoutsRef.current.delete(processingKey);
+    }, 500));
 
-    setHabits(prev => prev.map(habit => {
-      if (habit.id !== habitId) return habit;
+    // Read current value BEFORE state update to determine side effects
+    const habit = habits.find(h => h.id === habitId);
+    const currentValue = habit?.entries?.[date]?.value ?? ENTRY.UNKNOWN;
+    const nextValue = getNextToggleValue(currentValue);
 
-      const currentValue = habit.entries?.[date]?.value ?? ENTRY.UNKNOWN;
-      const nextValue = getNextToggleValue(currentValue);
-
-      // Fire effects when transitioning TO YES_MANUAL
-      if (nextValue === ENTRY.YES_MANUAL) {
-        fireCompletionEffects(habit);
-      } else {
-        void haptics.habitToggled();
-      }
-
+    // Pure state updater — no side effects inside
+    setHabits(prev => prev.map(h => {
+      if (h.id !== habitId) return h;
       return {
-        ...habit,
-        entries: setEntryValue(habit.entries || {}, date, nextValue),
+        ...h,
+        entries: setEntryValue(h.entries || {}, date, nextValue),
         updatedAt: new Date().toISOString(),
       };
     }));
+
+    // Side effects OUTSIDE updater (safe from React 18 double-invoke)
+    if (nextValue === ENTRY.YES_MANUAL && habit) {
+      fireCompletionEffects(habit);
+    } else {
+      void haptics.habitToggled();
+    }
 
     triggerSync();
     updateChallengeProgress();
@@ -133,53 +139,71 @@ export function useHabitHandlers({
     const completedQuests = updateAllQuestsProgress({ type: 'habit_completed', value: 1 });
     completedQuests.forEach(quest => {
       const xpReward = quest.reward.xp;
-      earnTreats('habit', xpReward, `Quest: ${quest.title}`);
+      earnTreats('habit', xpReward, `${ts.questPrefix || 'Quest'}: ${quest.title}`);
       triggerXpPopup(xpReward, 'bonus');
     });
-  };
+  }, [habits, setHabits, fireCompletionEffects, earnTreats, updateChallengeProgress, checkForFeatureUnlocks, ts]);
 
   /**
    * Set a numerical value for a habit on a given date.
    * realValue is the user-facing number (e.g. 2.5 liters).
    */
-  const handleSetNumericalValue = (habitId: string, date: string, realValue: number) => {
-    setHabits(prev => prev.map(habit => {
-      if (habit.id !== habitId) return habit;
+  const handleSetNumericalValue = useCallback((habitId: string, date: string, realValue: number) => {
+    // Read current state BEFORE update for completion detection
+    const habit = habits.find(h => h.id === habitId);
+    const prevValue = habit?.entries?.[date]?.value ?? 0;
 
-      const storedValue = toStoredValue(realValue);
-      const prevValue = habit.entries?.[date]?.value ?? 0;
+    const storedValue = toStoredValue(realValue);
 
-      // Fire effects if newly meeting target
-      if (habit.targetValue > 0) {
-        const prevMet = prevValue > 0 && (prevValue / 1000) >= habit.targetValue;
-        const nowMet = realValue >= habit.targetValue;
-        if (nowMet && !prevMet) {
-          fireCompletionEffects(habit);
-        }
-      }
-
+    // Pure state updater — no side effects
+    setHabits(prev => prev.map(h => {
+      if (h.id !== habitId) return h;
       return {
-        ...habit,
-        entries: setEntryValue(habit.entries || {}, date, storedValue),
+        ...h,
+        entries: setEntryValue(h.entries || {}, date, storedValue),
         updatedAt: new Date().toISOString(),
       };
     }));
+
+    // Fire completion effects OUTSIDE updater if newly meeting target
+    if (habit && habit.targetValue > 0) {
+      const isAtMost = habit.targetType === 'atMost';
+      const prevMet = prevValue > 0 && (isAtMost
+        ? (prevValue / 1000) <= habit.targetValue
+        : (prevValue / 1000) >= habit.targetValue);
+      const nowMet = isAtMost
+        ? realValue <= habit.targetValue
+        : realValue >= habit.targetValue;
+      if (nowMet && !prevMet) {
+        fireCompletionEffects(habit);
+      }
+    }
+
     triggerSync();
-  };
+  }, [habits, setHabits, fireCompletionEffects]);
 
   /**
    * Adjust a numerical value by delta (increment/decrement).
+   * Uses updater pattern to avoid stale closure on rapid taps.
    */
-  const handleAdjustHabit = (habitId: string, date: string, delta: number) => {
-    const habit = habits.find(h => h.id === habitId);
-    if (!habit) return;
+  const handleAdjustHabit = useCallback((habitId: string, date: string, delta: number) => {
+    setHabits(prev => {
+      const habit = prev.find(h => h.id === habitId);
+      if (!habit) return prev;
 
-    const currentStored = habit.entries?.[date]?.value ?? 0;
-    const currentReal = currentStored > 0 ? currentStored / 1000 : 0;
-    const newReal = Math.max(0, currentReal + delta);
+      const currentStored = habit.entries?.[date]?.value ?? 0;
+      const currentReal = currentStored > 0 ? currentStored / 1000 : 0;
+      const newReal = Math.max(0, currentReal + delta);
+      const storedValue = toStoredValue(newReal);
 
-    handleSetNumericalValue(habitId, date, newReal);
-  };
+      return prev.map(h => h.id !== habitId ? h : {
+        ...h,
+        entries: setEntryValue(h.entries || {}, date, storedValue),
+        updatedAt: new Date().toISOString(),
+      });
+    });
+    triggerSync();
+  }, [setHabits]);
 
   const handleAddHabit = (habit: Habit) => {
     setHabits(prev => [...prev, habit]);
@@ -276,6 +300,6 @@ export function useHabitHandlers({
     handleUnarchiveHabit,
     handleSkipHabit,
     handleUnskipHabit,
-    processingTimeoutRef,
+    processingTimeoutsRef,
   };
 }

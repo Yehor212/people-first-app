@@ -135,9 +135,11 @@ export function HabitHubList({
           <button
             key={cat.id}
             onClick={() => setCategoryFilter(cat.id)}
+            aria-pressed={categoryFilter === cat.id}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all',
               'border min-h-[44px]',
+              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
               categoryFilter === cat.id
                 ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
                 : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:bg-white/[0.06]',
@@ -153,18 +155,25 @@ export function HabitHubList({
       <div className="relative flex justify-end">
         <button
           onClick={() => setShowSortMenu(!showSortMenu)}
-          className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-slate-400 transition-colors min-h-[44px] min-w-[44px]"
+          onKeyDown={(e) => { if (e.key === 'Escape' && showSortMenu) { e.stopPropagation(); setShowSortMenu(false); } }}
+          aria-expanded={showSortMenu}
+          aria-haspopup="listbox"
+          className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-slate-400 transition-colors min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50"
         >
           <ArrowUpDown className="w-3 h-3" />
           <span>{sortLabels[sortOption]}</span>
         </button>
         {showSortMenu && (
           <>
-            <div className="fixed inset-0 z-[56]" onClick={() => setShowSortMenu(false)} />
-            <div className={cn(
-              'absolute right-0 top-6 z-[57] min-w-[120px] rounded-xl overflow-hidden',
-              'bg-[#141a2e] border border-white/[0.08] shadow-xl',
-            )}>
+            <div className="fixed inset-0 z-[56]" onClick={() => setShowSortMenu(false)} onKeyDown={(e) => { if (e.key === 'Escape') setShowSortMenu(false); }} />
+            <div
+              role="listbox"
+              className={cn(
+                'absolute right-0 top-6 z-[57] min-w-[120px] rounded-xl overflow-hidden',
+                'bg-[#141a2e] border border-white/[0.08] shadow-xl',
+              )}
+              onKeyDown={(e) => { if (e.key === 'Escape') setShowSortMenu(false); }}
+            >
               {sortOptions.map((opt) => (
                 <button
                   key={opt}
@@ -210,7 +219,7 @@ export function HabitHubList({
         <section>
           <button
             onClick={() => setShowOther(prev => !prev)}
-            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500 px-1 mb-3 w-full"
+            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500 px-1 mb-3 w-full min-h-[44px]"
           >
             <span>{ts.otherHabits || 'Other Habits'}</span>
             <span className="text-slate-600">({otherHabits.length})</span>
@@ -352,10 +361,12 @@ export function HabitHubList({
       >
         <motion.button
           whileTap={{ scale: 0.9 }}
+          whileHover={{ scale: 1.05 }}
           onClick={() => setShowAddForm(true)}
           className={cn(
             'w-14 h-14 rounded-2xl flex items-center justify-center',
             'bg-primary shadow-zen-lg shadow-primary/20',
+            'hover:shadow-primary/40',
             'text-primary-foreground',
           )}
           aria-label={ts.addHabit || 'Add habit'}
@@ -378,7 +389,7 @@ export function HabitHubList({
       />
 
       {/* ═══ Add / Edit Habit Sheet ═══ */}
-      <ModalErrorBoundary fallbackTitle="Add Habit Error">
+      <ModalErrorBoundary fallbackTitle={ts.addHabitError || 'Add Habit Error'}>
         <AddHabitSheet
           open={showAddForm}
           onClose={() => { setShowAddForm(false); setEditingHabit(null); }}

@@ -76,6 +76,9 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
   const today = getToday();
   const activeChallengesCount = useMemo(() => getActiveChallenges().length, []);
 
+  // Stable callback for celebration completion (avoids re-creating on every render)
+  const handleCelebrationComplete = useCallback(() => setCelebrationData(null), []);
+
   // Memoized completion status map (entry-based model)
   const completionStatusMap = useMemo(() => {
     const map = new Map<string, boolean>();
@@ -278,7 +281,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             <div className="flex gap-1.5 mb-4 overflow-x-auto pb-1 scrollbar-hide">
               <motion.button
                 onClick={() => setCategoryFilter('all')}
-                className={cn("px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all", categoryFilter === 'all' ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:bg-muted")}
+                className={cn("px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all min-h-[44px]", categoryFilter === 'all' ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:bg-muted")}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
@@ -291,7 +294,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                   <motion.button
                     key={id}
                     onClick={() => setCategoryFilter(id)}
-                    className={cn("px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1", categoryFilter === id ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:bg-muted")}
+                    className={cn("px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1 min-h-[44px]", categoryFilter === id ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:bg-muted")}
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
@@ -344,7 +347,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
           habitColor={celebrationData.habitColor}
           xpGained={10}
           streakDays={celebrationData.streakDays}
-          onComplete={() => setCelebrationData(null)}
+          onComplete={handleCelebrationComplete}
         />
       )}
       {showAllComplete && (

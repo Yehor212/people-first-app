@@ -5,7 +5,7 @@
  * Deep Space aesthetic.
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { MessageSquarePlus, ChevronDown } from 'lucide-react';
 import { cn, getToday } from '@/lib/utils';
 import { getEntryNote, getDatesWithNotes } from '@/lib/habits';
@@ -20,14 +20,26 @@ interface HabitNotesSectionProps {
 const MAX_VISIBLE = 5;
 
 export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const today = getToday();
+  const formatNoteDate = (dateStr: string) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Intl.DateTimeFormat(language, { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(y, m - 1, d));
+  };
 
   const todayNote = getEntryNote(habit, today) ?? '';
   const [isEditing, setIsEditing] = useState(false);
   const [noteText, setNoteText] = useState(todayNote);
   const [showAll, setShowAll] = useState(false);
+
+  // Sync noteText when switching between habits (useState initial only runs on mount).
+  // Intentionally depends on habit.id (not full habit object) — only reset when switching habits.
+  useEffect(() => {
+    setNoteText(getEntryNote(habit, today) ?? '');
+    setIsEditing(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [habit.id, today]);
 
   const sortedNotes = useMemo(() => getDatesWithNotes(habit), [habit]);
 
@@ -85,6 +97,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
             placeholder={ts.notePrompt || 'How did it go today?'}
             autoFocus
             rows={2}
+            maxLength={1000}
             className={cn(
               'w-full px-3 py-2 rounded-xl text-sm text-slate-100 resize-none',
               'bg-white/[0.05] border border-white/[0.08]',
@@ -92,6 +105,9 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
               'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
             )}
           />
+          {noteText.length > 800 && (
+            <p className="text-[10px] text-slate-600 text-right">{noteText.length}/1000</p>
+          )}
           <div className="flex gap-2">
             <button
               onClick={handleCancel}
@@ -120,7 +136,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
                 'bg-white/[0.02] border border-white/[0.04]',
               )}
             >
-              <span className="text-slate-500 tabular-nums">{date}</span>
+              <span className="text-slate-500 tabular-nums">{formatNoteDate(date)}</span>
               <p className="text-slate-300 mt-0.5 leading-relaxed">{notes}</p>
             </div>
           ))}

@@ -32,7 +32,7 @@ function toDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function getCompletionsByWeek(habit: Habit, weeks: number, nowLabel = 'Now'): BarData[] {
+function getCompletionsByWeek(habit: Habit, weeks: number, nowLabel = 'Now', weekAbbr = 'W'): BarData[] {
   const result: BarData[] = [];
   const today = new Date();
 
@@ -56,7 +56,7 @@ function getCompletionsByWeek(habit: Habit, weeks: number, nowLabel = 'Now'): Ba
       }
     }
 
-    const label = w === 0 ? nowLabel : `W-${w}`;
+    const label = w === 0 ? nowLabel : `${weekAbbr}-${w}`;
     result.push({ label, count });
   }
 
@@ -95,15 +95,16 @@ const BAR_PAD = { top: 8, right: 8, bottom: 20, left: 8 };
 export function HabitBarCard({ habit, className }: HabitBarCardProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
-  const [interval, setInterval] = useState<BarInterval>('week');
+  const [barInterval, setBarInterval] = useState<BarInterval>('week');
   const color = resolveHabitColor(habit.color);
   const nowLabel = ts.now || 'Now';
+  const weekAbbrLabel = ts.weekAbbr || 'W';
 
   const data = useMemo(() => {
-    return interval === 'week'
-      ? getCompletionsByWeek(habit, 12, nowLabel)
+    return barInterval === 'week'
+      ? getCompletionsByWeek(habit, 12, nowLabel, weekAbbrLabel)
       : getCompletionsByMonth(habit, 12, language);
-  }, [habit, interval, nowLabel, language]);
+  }, [habit, barInterval, nowLabel, weekAbbrLabel, language]);
 
   const maxCount = Math.max(1, ...data.map(d => d.count));
   const svgWidth = 320;
@@ -122,10 +123,10 @@ export function HabitBarCard({ habit, className }: HabitBarCardProps) {
           {(['week', 'month'] as const).map((iv) => (
             <button
               key={iv}
-              onClick={() => setInterval(iv)}
+              onClick={() => setBarInterval(iv)}
               className={cn(
-                'px-3 py-1.5 rounded-md text-[10px] font-medium transition-colors min-h-[36px]',
-                interval === iv
+                'px-3 py-1.5 rounded-md text-[10px] font-medium transition-colors min-h-[44px]',
+                barInterval === iv
                   ? 'bg-white/[0.1] text-slate-200'
                   : 'text-slate-500 hover:text-slate-400',
               )}

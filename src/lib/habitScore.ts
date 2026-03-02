@@ -78,7 +78,11 @@ function computeScoreStep(
 export function computeHabitScore(habit: Habit, upToDate?: string): number {
   const endStr = upToDate || getToday();
   const end = parseDate(endStr);
-  const createdDate = new Date(habit.createdAt);
+  // Normalize createdAt timestamp to midnight — createdAt has time-of-day
+  // but end is always midnight, so without normalization end < createdDate
+  // for habits created today after midnight → score = 0
+  const rawCreated = new Date(habit.createdAt);
+  const createdDate = new Date(rawCreated.getFullYear(), rawCreated.getMonth(), rawCreated.getDate());
 
   if (end < createdDate) return 0;
 
@@ -86,7 +90,8 @@ export function computeHabitScore(habit: Habit, upToDate?: string): number {
   if (totalDays < 0) return 0;
 
   const { numerator, denominator } = habit.frequency;
-  const freq = numerator / denominator;
+  const safeDenominator = Math.max(1, denominator);
+  const freq = numerator / safeDenominator;
   const isDaily = numerator === denominator;
 
   // Initial score: 0.0 for boolean/atLeast, 1.0 for atMost
@@ -101,8 +106,8 @@ export function computeHabitScore(habit: Habit, upToDate?: string): number {
   for (let i = 0; i <= totalDays; i++) {
     if (habit.habitType === 'boolean') {
       // Window size: denominator (doubled for non-daily)
-      const windowSize = isDaily ? denominator : denominator * 2;
-      const targetCount = isDaily ? numerator : numerator * 2;
+      const windowSize = isDaily ? safeDenominator : safeDenominator * 2;
+      const targetCount = Math.max(1, isDaily ? numerator : numerator * 2);
 
       // Count YES_MANUAL in window
       let yesCount = 0;
@@ -127,14 +132,14 @@ export function computeHabitScore(habit: Habit, upToDate?: string): number {
 
     } else {
       // Numerical habit
-      const windowSize = denominator;
+      const windowSize = safeDenominator;
 
       // Rolling sum of values in window (value / 1000 to get real value)
       let rollingSum = 0;
       for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
         const wDate = dates[i - w];
         const val = getEntryValue(habit.entries, wDate);
-        if (val > 0) {
+        if (val > 0 && val !== ENTRY.SKIP) {
           rollingSum += val / 1000;
         }
       }
@@ -166,23 +171,100 @@ export function computeHabitScore(habit: Habit, upToDate?: string): number {
 }
 
 /**
- * Compute score at intervals for chart display.
- * Returns array of { date, score } for the last N weeks.
+ * Compute score at weekly intervals for chart display — single-pass incremental.
+ *
+ * Instead of calling computeHabitScore() K times (O(N²×K) for large histories),
+ * runs a single EMA pass from creation to today and samples at each target week.
+ * Complexity: O(N × windowSize) — same as one computeHabitScore call.
  */
 export function computeScoreHistory(
   habit: Habit,
   weeks: number = 12,
 ): Array<{ date: string; score: number }> {
   const today = new Date();
-  const points: Array<{ date: string; score: number }> = [];
 
+  // Build target sample dates
+  const sampleDates = new Map<string, number>();
+  const resultDates: string[] = [];
   for (let w = weeks - 1; w >= 0; w--) {
-    const weekEnd = addDays(today, -w * 7);
-    const dateStr = toDateStr(weekEnd);
-    points.push({ date: dateStr, score: computeHabitScore(habit, dateStr) });
+    const dateStr = toDateStr(addDays(today, -w * 7));
+    sampleDates.set(dateStr, resultDates.length);
+    resultDates.push(dateStr);
   }
 
-  return points;
+  const rawCreated = new Date(habit.createdAt);
+  const createdDate = new Date(rawCreated.getFullYear(), rawCreated.getMonth(), rawCreated.getDate());
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+  if (todayMidnight < createdDate) {
+    return resultDates.map(date => ({ date, score: 0 }));
+  }
+
+  const totalDays = daysBetween(createdDate, todayMidnight);
+  if (totalDays < 0) {
+    return resultDates.map(date => ({ date, score: 0 }));
+  }
+
+  const { numerator, denominator } = habit.frequency;
+  const safeDenominator = Math.max(1, denominator);
+  const freq = numerator / safeDenominator;
+  const isDaily = numerator === denominator;
+
+  let score = (habit.habitType === 'numerical' && habit.targetType === 'atMost') ? 1.0 : 0.0;
+  const scores = new Array<number>(resultDates.length).fill(0);
+
+  // Build date array for window lookups
+  const dates: string[] = [];
+  for (let i = 0; i <= totalDays; i++) {
+    dates.push(toDateStr(addDays(createdDate, i)));
+  }
+
+  // Single pass — identical scoring logic to computeHabitScore
+  for (let i = 0; i <= totalDays; i++) {
+    if (habit.habitType === 'boolean') {
+      const windowSize = isDaily ? safeDenominator : safeDenominator * 2;
+      const targetCount = Math.max(1, isDaily ? numerator : numerator * 2);
+
+      let yesCount = 0;
+      let allSkip = true;
+      for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
+        const val = getEntryValue(habit.entries, dates[i - w]);
+        if (val === ENTRY.YES_MANUAL) { yesCount++; allSkip = false; }
+        else if (val !== ENTRY.SKIP) { allSkip = false; }
+      }
+
+      if (!(allSkip && i > 0)) {
+        score = computeScoreStep(freq, score, Math.min(1.0, yesCount / targetCount));
+      }
+    } else {
+      const windowSize = safeDenominator;
+      let rollingSum = 0;
+      for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
+        const val = getEntryValue(habit.entries, dates[i - w]);
+        if (val > 0 && val !== ENTRY.SKIP) { rollingSum += val / 1000; }
+      }
+
+      let pct: number;
+      if (habit.targetType === 'atMost') {
+        pct = habit.targetValue <= 0
+          ? (rollingSum === 0 ? 1.0 : 0.0)
+          : Math.max(0, Math.min(1.0, 1.0 - (rollingSum - habit.targetValue) / habit.targetValue));
+      } else {
+        pct = habit.targetValue <= 0
+          ? (rollingSum > 0 ? 1.0 : 0.0)
+          : Math.min(1.0, rollingSum / habit.targetValue);
+      }
+      score = computeScoreStep(freq, score, pct);
+    }
+
+    // Sample score at this date if it's a target week endpoint
+    const sampleIdx = sampleDates.get(dates[i]);
+    if (sampleIdx !== undefined) {
+      scores[sampleIdx] = score;
+    }
+  }
+
+  return resultDates.map((date, idx) => ({ date, score: scores[idx] }));
 }
 
 // ─── Streak computation (Loop-exact from StreakList.kt) ──────────────────────
@@ -210,6 +292,7 @@ function isStreakDay(habit: Habit, dateStr: string): boolean {
 
   // Numerical
   if (val === ENTRY.UNKNOWN) return false;
+  if (val === ENTRY.SKIP) return true; // SKIP always extends streak
 
   const realValue = val / 1000;
   if (habit.targetType === 'atMost') {
@@ -223,8 +306,10 @@ function isStreakDay(habit: Habit, dateStr: string): boolean {
  * Returns streaks sorted by length (longest first), then by recency.
  */
 export function computeAllStreaks(habit: Habit): HabitStreak[] {
-  const createdDate = new Date(habit.createdAt);
-  const today = new Date();
+  const rawCreated = new Date(habit.createdAt);
+  const createdDate = new Date(rawCreated.getFullYear(), rawCreated.getMonth(), rawCreated.getDate());
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const totalDays = daysBetween(createdDate, today);
 
   if (totalDays < 0) return [];
@@ -319,5 +404,5 @@ export function getFrequencyByWeekday(habit: Habit): number[] {
  */
 export function getHabitWeeklyFrequency(habit: Habit): number {
   const { numerator, denominator } = habit.frequency;
-  return (numerator / denominator) * 7;
+  return (numerator / Math.max(1, denominator)) * 7;
 }

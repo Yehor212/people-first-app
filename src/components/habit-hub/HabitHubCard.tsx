@@ -9,7 +9,7 @@
  * Deep Space aesthetic. 44px WCAG touch targets on cells.
  */
 
-import { memo, useCallback } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { cn, getToday } from '@/lib/utils';
 import { zenMotion } from '@/lib/animationUtils';
@@ -57,7 +57,7 @@ export const HabitHubCard = memo(function HabitHubCard({
   const { t } = useLanguage();
   const today = getToday();
   const isCompleted = isHabitCompletedOnDate(habit, today);
-  const streak = getCurrentStreak(habit);
+  const streak = useMemo(() => getCurrentStreak(habit), [habit]);
   const scorePercent = Math.round(score * 100);
   const habitColor = resolveHabitColor(habit.color);
 

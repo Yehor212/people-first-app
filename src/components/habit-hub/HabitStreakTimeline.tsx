@@ -5,37 +5,36 @@
 
 import { memo, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { computeAllStreaks, getCurrentStreak, type HabitStreak } from '@/lib/habitScore';
+import type { HabitStreak } from '@/lib/habitScore';
 import { AnimatedFire } from '@/components/compact-habit-card/AnimatedFire';
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { Habit } from '@/types';
-
 interface HabitStreakTimelineProps {
-  habit: Habit;
+  /** Pre-computed from parent to avoid redundant computation */
+  allStreaks: HabitStreak[];
+  currentStreak: number;
   className?: string;
 }
 
-function formatDateRange(start: string, end: string): string {
+function formatDateRange(start: string, end: string, locale: string): string {
   const fmt = (s: string) => {
-    const [, m, d] = s.split('-');
-    return `${d}.${m}`;
+    const [y, m, d] = s.split('-').map(Number);
+    return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short' }).format(new Date(y, m - 1, d));
   };
   return start === end ? fmt(start) : `${fmt(start)} – ${fmt(end)}`;
 }
 
 export const HabitStreakTimeline = memo(function HabitStreakTimeline({
-  habit,
+  allStreaks,
+  currentStreak,
   className,
 }: HabitStreakTimelineProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
   const { streaks, currentLen, bestLen } = useMemo(() => {
-    const all = computeAllStreaks(habit);
-    const current = getCurrentStreak(habit);
-    const best = all.length > 0 ? all[0].length : 0;
-    return { streaks: all.slice(0, 5), currentLen: current, bestLen: best };
-  }, [habit]);
+    const best = allStreaks.length > 0 ? allStreaks[0].length : 0;
+    return { streaks: allStreaks.slice(0, 5), currentLen: currentStreak, bestLen: best };
+  }, [allStreaks, currentStreak]);
 
   if (streaks.length === 0) {
     return (
@@ -96,7 +95,7 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
 
               {/* Date range */}
               <span className="flex-1 text-xs text-slate-400 font-mono">
-                {formatDateRange(streak.start, streak.end)}
+                {formatDateRange(streak.start, streak.end, language)}
               </span>
 
               {/* Length */}

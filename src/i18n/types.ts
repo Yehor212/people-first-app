@@ -243,6 +243,8 @@ export interface Translations {
   habitFrequency: string;
   habitFrequencyOnce: string;
   habitFrequencyDaily: string;
+  habitFrequency3xWeek: string;
+  habitFrequency2xWeek: string;
   habitFrequencyWeekly: string;
   habitFrequencyCustom: string;
   habitFrequencySelectDays: string;
@@ -1081,6 +1083,34 @@ export interface Translations {
   customFreq: string;
   timesPer: string;
   unit: string;
+
+  // HabitCreationForm additional keys
+  habitQuestion: string;
+  habitTypeBooleanDesc: string;
+  habitTypeNumericalDesc: string;
+  habitTarget: string;
+  habitUnit: string;
+  habitDescription: string;
+  habitDescriptionPlaceholder: string;
+  identityMapping: string;
+  identityMappingHint: string;
+  identityCluster: string;
+  identityClusterPlaceholder: string;
+  identityVerb: string;
+  identityVerbPlaceholder: string;
+  identityIcon: string;
+
+  // Habit audit — accessibility & i18n completeness
+  done: string;
+  notDone: string;
+  noData: string;
+  auto: string;
+  weekAbbr: string;
+  unitPlaceholder: string;
+  addHabitError: string;
+  completedHabitReason: string;
+  comebackChallengeComplete: string;
+  questPrefix: string;
 
   // Dopamine Settings
   dopamineSettings: string;

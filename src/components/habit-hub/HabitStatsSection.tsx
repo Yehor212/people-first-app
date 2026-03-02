@@ -6,25 +6,22 @@
 
 import { useMemo } from 'react';
 import { Hash, Flame, Trophy, CalendarDays } from 'lucide-react';
-import { computeAllStreaks, getCurrentStreak } from '@/lib/habitScore';
-import { getHabitCompletedDates } from '@/lib/habits';
+import type { HabitStreak } from '@/lib/habitScore';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import type { Habit } from '@/types';
-
 interface HabitStatsSectionProps {
-  habit: Habit;
+  /** Pre-computed from parent to avoid redundant computation */
+  currentStreak: number;
+  allStreaks: HabitStreak[];
+  completedDates: string[];
 }
 
-export function HabitStatsSection({ habit }: HabitStatsSectionProps) {
+export function HabitStatsSection({ currentStreak, allStreaks, completedDates }: HabitStatsSectionProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
   const stats = useMemo(() => {
-    const completedDates = getHabitCompletedDates(habit);
     const total = completedDates.length;
-    const currentStreak = getCurrentStreak(habit);
-    const allStreaks = computeAllStreaks(habit);
     const bestStreak = allStreaks.length > 0
       ? Math.max(...allStreaks.map(s => s.length))
       : 0;
@@ -36,7 +33,7 @@ export function HabitStatsSection({ habit }: HabitStatsSectionProps) {
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
 
     return { total, currentStreak, bestStreak, thisMonth, daysInMonth };
-  }, [habit]);
+  }, [completedDates, allStreaks, currentStreak]);
 
   const cells = [
     {

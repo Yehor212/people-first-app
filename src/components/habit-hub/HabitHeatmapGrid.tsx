@@ -27,9 +27,9 @@ function toDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function formatShortDate(dateStr: string): string {
-  const [y, m, d] = dateStr.split('-');
-  return `${d}.${m}.${y.slice(2)}`;
+function formatShortDate(dateStr: string, locale: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: '2-digit' }).format(new Date(y, m - 1, d));
 }
 
 type CellStatus = 'yes_manual' | 'yes_auto' | 'skipped' | 'no' | 'unknown' | 'future' | 'before';
@@ -95,7 +95,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
   habit,
   className,
 }: HabitHeatmapGridProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
 
   const dowLabels = useMemo(() => [
@@ -111,25 +111,25 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
   const getStatusLabel = useCallback((status: CellStatus) => {
     switch (status) {
       case 'yes_manual': return '✓';
-      case 'yes_auto': return '✓ (auto)';
+      case 'yes_auto': return `✓ (${ts.auto || 'auto'})`;
       case 'skipped': return ts.skipped || 'Skipped';
       case 'no': return '✗';
       default: return '·';
     }
-  }, [ts.skipped]);
+  }, [ts.skipped, ts.auto]);
 
   const handleCellTap = useCallback((cell: DayCell, e: React.MouseEvent | React.TouchEvent) => {
     if (cell.status === 'before' || cell.status === 'future') return;
     const rect = (e.target as HTMLElement).getBoundingClientRect();
-    setTooltip({ date: formatShortDate(cell.date), status: getStatusLabel(cell.status), x: rect.left, y: rect.top - 32 });
+    setTooltip({ date: formatShortDate(cell.date, language), status: getStatusLabel(cell.status), x: rect.left, y: rect.top - 32 });
     setTimeout(() => setTooltip(null), 2000);
-  }, [getStatusLabel]);
+  }, [getStatusLabel, language]);
 
   const handleCellHover = useCallback((cell: DayCell, e: React.MouseEvent) => {
     if (cell.status === 'before' || cell.status === 'future') return;
     const rect = (e.target as HTMLElement).getBoundingClientRect();
-    setTooltip({ date: formatShortDate(cell.date), status: getStatusLabel(cell.status), x: rect.left, y: rect.top - 32 });
-  }, [getStatusLabel]);
+    setTooltip({ date: formatShortDate(cell.date, language), status: getStatusLabel(cell.status), x: rect.left, y: rect.top - 32 });
+  }, [getStatusLabel, language]);
 
   return (
     <div className={cn('relative', className)}>
@@ -172,12 +172,12 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
                     onMouseLeave={() => setTooltip(null)}
                     title={
                       isActionable
-                        ? `${formatShortDate(cell.date)} · ${getStatusLabel(cell.status)}`
+                        ? `${formatShortDate(cell.date, language)} · ${getStatusLabel(cell.status)}`
                         : undefined
                     }
                     className={cn(
                       'w-3 h-3 rounded-[2px] transition-colors',
-                      isActionable ? 'cursor-pointer' : 'cursor-default',
+                      isActionable ? 'cursor-pointer hover:brightness-150' : 'cursor-default',
                       (cell.status === 'before' || cell.status === 'future') && 'bg-transparent',
                       (cell.status === 'no' || cell.status === 'unknown') && 'bg-white/[0.04]',
                     )}

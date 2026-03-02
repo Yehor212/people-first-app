@@ -350,7 +350,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                         type="text"
                         value={unit}
                         onChange={(e) => setUnit(e.target.value)}
-                        placeholder="L, km, min..."
+                        placeholder={ts.unitPlaceholder || 'L, km, min...'}
                         className={cn(
                           'flex-1 px-3 py-2 rounded-xl text-xs text-slate-300',
                           'bg-white/[0.03] border border-white/[0.06]',
@@ -407,7 +407,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                           : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06]',
                       )}
                     >
-                      {preset.label}
+                      {ts[preset.i18nKey] || preset.label}
                     </button>
                   ))}
                   <button
@@ -420,7 +420,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                         : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06]',
                     )}
                   >
-                    {ts.custom || 'Custom'}
+                    {ts.customFreq || 'Custom'}
                   </button>
                 </div>
 
