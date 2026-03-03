@@ -206,9 +206,6 @@ export interface Translations {
   color: string;
   addHabit: string;
   addFirstHabit: string;
-  startHabitJourney: string;
-  createFirstHabit: string;
-  viewAllHabits: string;
   completedTimes: string;
   habitNameHint: string;
   habitType: string;

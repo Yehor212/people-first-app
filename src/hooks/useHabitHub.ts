@@ -68,7 +68,8 @@ export function useHabitHub(habits: Habit[]): UseHabitHubReturn {
   }, [habits]);
 
   // Compute scores with per-habit memoization cache — only recompute habits that changed
-  const scoreCacheRef = useRef(new Map<string, { updatedAt: string; score: number }>());
+  // Cache key includes `today` so scores refresh at midnight (new day = different EMA result)
+  const scoreCacheRef = useRef(new Map<string, { updatedAt: string; date: string; score: number }>());
   const scoresMap = useMemo(() => {
     const cache = scoreCacheRef.current;
     const map = new Map<string, number>();
@@ -76,11 +77,11 @@ export function useHabitHub(habits: Habit[]): UseHabitHubReturn {
     for (const h of [...activeHabits, ...archivedHabits]) {
       activeIds.add(h.id);
       const cached = cache.get(h.id);
-      if (cached && cached.updatedAt === h.updatedAt) {
+      if (cached && cached.updatedAt === h.updatedAt && cached.date === today) {
         map.set(h.id, cached.score);
       } else {
         const score = computeHabitScore(h);
-        cache.set(h.id, { updatedAt: h.updatedAt || '', score });
+        cache.set(h.id, { updatedAt: h.updatedAt || '', date: today, score });
         map.set(h.id, score);
       }
     }
@@ -89,7 +90,7 @@ export function useHabitHub(habits: Habit[]): UseHabitHubReturn {
       if (!activeIds.has(id)) cache.delete(id);
     }
     return map;
-  }, [activeHabits, archivedHabits]);
+  }, [activeHabits, archivedHabits, today]);
 
   // Overall score = average of ACTIVE habit scores
   const overallScore = useMemo(() => {

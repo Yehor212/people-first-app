@@ -8,7 +8,7 @@
  * Deep Space aesthetic with glassmorphism.
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, ChevronDown, Archive, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -54,9 +54,6 @@ interface HabitHubListProps {
   onUnarchiveHabit: (habitId: string) => void;
   onSkipHabit: (habitId: string, date: string) => void;
   onUnskipHabit: (habitId: string, date: string) => void;
-  /** One-shot deep-link: auto-open detail sheet for this habit ID, then call onPendingConsumed */
-  pendingHabitId?: string | null;
-  onPendingConsumed?: () => void;
 }
 
 export function HabitHubList({
@@ -70,8 +67,6 @@ export function HabitHubList({
   onUnarchiveHabit,
   onSkipHabit,
   onUnskipHabit,
-  pendingHabitId,
-  onPendingConsumed,
 }: HabitHubListProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -97,15 +92,6 @@ export function HabitHubList({
     selectedHabit,
     setSelectedHabit,
   } = useHabitHub(habits);
-
-  // Deep-link: Tab controller passes pendingHabitId → auto-open detail sheet (one-shot)
-  useEffect(() => {
-    if (pendingHabitId) {
-      const habit = habits.find(h => h.id === pendingHabitId);
-      if (habit) setSelectedHabit(habit);
-      onPendingConsumed?.();
-    }
-  }, [pendingHabitId, habits, setSelectedHabit, onPendingConsumed]);
 
   const handleSelect = useCallback((habit: Habit) => {
     setSelectedHabit(habit);
@@ -237,7 +223,7 @@ export function HabitHubList({
           >
             <span>{ts.otherHabits || 'Other Habits'}</span>
             <span className="text-slate-600">({otherHabits.length})</span>
-            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform ml-auto', showOther && 'rotate-180')} />
+            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform ms-auto', showOther && 'rotate-180')} />
           </button>
           <AnimatePresence>
             {showOther && (
@@ -276,7 +262,7 @@ export function HabitHubList({
             <Archive className="w-3.5 h-3.5" />
             <span>{ts.archivedHabits || 'Archived'}</span>
             <span className="text-slate-700">({archivedHabits.length})</span>
-            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform ml-auto', showArchived && 'rotate-180')} />
+            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform ms-auto', showArchived && 'rotate-180')} />
           </button>
           <AnimatePresence>
             {showArchived && (

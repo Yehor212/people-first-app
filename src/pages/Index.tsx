@@ -87,14 +87,17 @@ export function Index() {
 
   // Section refs for navigation
   const moodRef = useRef<HTMLDivElement>(null);
-  const habitsRef = useRef<HTMLDivElement>(null);
   const focusRef = useRef<HTMLDivElement>(null);
   const gratitudeRef = useRef<HTMLDivElement>(null);
 
   const handleNavigateToSection = useCallback((section: 'mood' | 'habits' | 'focus' | 'gratitude') => {
-    const refs = { mood: moodRef, habits: habitsRef, focus: focusRef, gratitude: gratitudeRef };
+    if (section === 'habits') {
+      setActiveTab('mindmap');
+      return;
+    }
+    const refs = { mood: moodRef, focus: focusRef, gratitude: gratitudeRef };
     refs[section]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, []);
+  }, [setActiveTab]);
 
 
   // Gamification system
@@ -302,13 +305,10 @@ export function Index() {
             completedTodayCount={completedTodayCount}
             currentPrimaryCTA={currentPrimaryCTA}
             handleAddMood={handleAddMood}
-            handleToggleHabit={handleToggleHabit}
-            handleAdjustHabit={handleAdjustHabit}
             handleAddGratitude={handleAddGratitude}
             handleJournalPromptUsed={handleJournalPromptUsed}
             handlePullToRefresh={handlePullToRefresh}
             moodRef={moodRef}
-            habitsRef={habitsRef}
             gratitudeRef={gratitudeRef}
           />
         )}

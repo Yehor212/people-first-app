@@ -119,14 +119,16 @@ export function getHabitCompletionTotal(habit: Habit): number {
 
 /**
  * Get the next entry value in the toggle cycle.
- * Loop cycle: UNKNOWN → YES_MANUAL → SKIP → NO → UNKNOWN
+ * Binary toggle: UNKNOWN ↔ YES_MANUAL.
+ * SKIP/NO states are only settable via HabitDetailSheet (not via tap cycle).
+ * Tapping a SKIP or NO cell marks it as done (YES_MANUAL).
  */
 export function getNextToggleValue(currentValue: number): EntryValue {
   switch (currentValue) {
     case ENTRY.UNKNOWN: return ENTRY.YES_MANUAL;
-    case ENTRY.YES_MANUAL: return ENTRY.SKIP;
-    case ENTRY.SKIP: return ENTRY.NO;
-    case ENTRY.NO: return ENTRY.UNKNOWN;
+    case ENTRY.YES_MANUAL: return ENTRY.UNKNOWN;
+    case ENTRY.SKIP: return ENTRY.YES_MANUAL;
+    case ENTRY.NO: return ENTRY.YES_MANUAL;
     default: return ENTRY.YES_MANUAL;
   }
 }

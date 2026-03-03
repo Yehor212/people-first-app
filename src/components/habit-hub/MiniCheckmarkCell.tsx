@@ -10,7 +10,7 @@
  *   UNKNOWN(-1):   empty dot
  *
  * Touch target: 32px visible + 6px padding = 44px hit area.
- * Toggle cycle: UNKNOWN → YES_MANUAL → SKIP → NO → UNKNOWN
+ * Toggle cycle: UNKNOWN ↔ YES_MANUAL (binary; SKIP/NO via detail sheet)
  */
 
 import { memo, useCallback } from 'react';

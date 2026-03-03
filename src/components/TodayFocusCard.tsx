@@ -16,7 +16,7 @@ type PrimaryCTA = 'mood' | 'habits' | 'focus' | 'gratitude' | 'complete';
 interface TodayFocusCardProps {
   currentPrimaryCTA: PrimaryCTA;
   onScrollToMood?: () => void;
-  onScrollToHabits?: () => void;
+  onNavigateToHabits?: () => void;
   onScrollToGratitude?: () => void;
   canActivateRestMode?: boolean;
   onRestMode?: () => void;
@@ -54,7 +54,7 @@ const CTA_CONFIG = {
 export const TodayFocusCard = memo(function TodayFocusCard({
   currentPrimaryCTA,
   onScrollToMood,
-  onScrollToHabits,
+  onNavigateToHabits,
   onScrollToGratitude,
   canActivateRestMode,
   onRestMode,
@@ -83,7 +83,7 @@ export const TodayFocusCard = memo(function TodayFocusCard({
 
   const handleAction = () => {
     if (currentPrimaryCTA === 'mood') onScrollToMood?.();
-    else if (currentPrimaryCTA === 'habits') onScrollToHabits?.();
+    else if (currentPrimaryCTA === 'habits') onNavigateToHabits?.();
     else if (currentPrimaryCTA === 'gratitude') onScrollToGratitude?.();
   };
 

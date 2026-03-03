@@ -27,7 +27,7 @@ interface UseHabitHandlersParams {
 
 /**
  * Habit CRUD + entry-based toggle handlers.
- * Toggle cycle: UNKNOWN → YES_MANUAL → SKIP → NO → UNKNOWN
+ * Toggle cycle: UNKNOWN ↔ YES_MANUAL (binary; SKIP/NO via detail sheet)
  */
 export function useHabitHandlers({
   awardXp,
@@ -95,7 +95,7 @@ export function useHabitHandlers({
 
   /**
    * Toggle a boolean habit entry for a given date.
-   * Cycle: UNKNOWN → YES_MANUAL → SKIP → NO → UNKNOWN
+   * Cycle: UNKNOWN ↔ YES_MANUAL (binary; SKIP/NO via detail sheet)
    */
   const handleToggleHabit = useCallback((habitId: string, date: string) => {
     // Guard against rapid double-clicks (per-habit-date key)

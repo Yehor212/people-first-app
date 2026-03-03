@@ -15,8 +15,6 @@ import { TreePine } from 'lucide-react';
 import { ReflectionPromptCard } from '@/components/ReflectionPromptCard';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { useAppStore, useUIStore, useUserDataStore, getModalToggle } from '@/stores';
-import { safeLocalStorageGet } from '@/lib/safeJson';
-import { SK } from '@/lib/storageKeys';
 import { useReflectionPrompts } from '@/hooks/useReflectionPrompts';
 import { computeGrowthRings, getGrowthRingsSummary } from '@/lib/growthRings';
 import { motionPresets } from '@/lib/animationUtils';
@@ -24,14 +22,11 @@ import { getToday } from '@/lib/utils';
 import type { MoodEntry, Habit, GratitudeEntry, FocusSession } from '@/types';
 
 const EmotionWheel = lazyWithRetry(() => import('@/components/mindfulness/EmotionWheel').then(m => ({ default: m.EmotionWheel })), 'EmotionWheel');
-import { HabitHomeSnapshot } from '@/components/dashboard/HabitHomeSnapshot';
 const GratitudeJournal = lazyWithRetry(() => import('@/components/GratitudeJournal').then(m => ({ default: m.GratitudeJournal })), 'GratitudeJournal');
 
 const setShowChallenges = getModalToggle('showChallenges');
 const setShowTasksPanel = getModalToggle('showTasksPanel');
 const setShowQuestsPanel = getModalToggle('showQuestsPanel');
-
-type HomeLayout = 'mood' | 'habits' | 'focus';
 
 interface HomeTabProps {
   // Data arrays
@@ -53,15 +48,12 @@ interface HomeTabProps {
 
   // Handlers
   handleAddMood: (entry: MoodEntry) => void;
-  handleToggleHabit: (habitId: string, date: string) => void;
-  handleAdjustHabit: (habitId: string, date: string, delta: number) => void;
   handleAddGratitude: (entry: GratitudeEntry) => void;
   handleJournalPromptUsed: () => void;
   handlePullToRefresh: () => Promise<void>;
 
   // Refs
   moodRef: React.RefObject<HTMLDivElement | null>;
-  habitsRef: React.RefObject<HTMLDivElement | null>;
   gratitudeRef: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -70,10 +62,10 @@ export function HomeTab({
   currentActiveStreak, isRestMode, activateRestMode, deactivateRestMode,
   canActivateRestMode,
   completedTodayCount, currentPrimaryCTA,
-  handleAddMood, handleToggleHabit, handleAdjustHabit,
+  handleAddMood,
   handleAddGratitude, handleJournalPromptUsed,
   handlePullToRefresh,
-  moodRef, habitsRef, gratitudeRef,
+  moodRef, gratitudeRef,
 }: HomeTabProps) {
   const { isFeatureVisible } = useFeatureFlags();
   const userName = useUserDataStore(s => s.userName);
@@ -82,9 +74,6 @@ export function HomeTab({
   const setActiveTab = useAppStore(s => s.setActiveTab);
   const setSettingsOpenSection = useAppStore(s => s.setSettingsOpenSection);
   const journalPromptText = useUIStore(s => s.journalPromptText);
-
-  // Home screen layout preference (mood-first by default)
-  const homeLayout = safeLocalStorageGet<HomeLayout>(SK.HOME_LAYOUT, 'mood');
 
   // Contextual reflection prompts (IA Blueprint Phase 3)
   const reflectionPrompts = useReflectionPrompts(safeMoods, safeHabits, safeFocusSessions, safeGratitudeEntries);
@@ -118,23 +107,6 @@ export function HomeTab({
     </div>
   );
 
-  // Habit snapshot — compact Loop-faithful cards (replaces legacy HabitTracker)
-  const setPendingHabitDetailId = useAppStore(s => s.setPendingHabitDetailId);
-  const habitBlock = (
-    <div ref={habitsRef} className="min-h-[120px]">
-      <HabitHomeSnapshot
-        habits={safeHabits}
-        onToggle={handleToggleHabit}
-        onAdjust={handleAdjustHabit}
-        onSelectHabit={(habit) => {
-          setPendingHabitDetailId(habit.id);
-          setActiveTab('mindmap');
-        }}
-        onNavigateToHub={() => setActiveTab('mindmap')}
-      />
-    </div>
-  );
-
   return (
     <div className="animate-tab-enter">
       <PullToRefresh onRefresh={handlePullToRefresh}>
@@ -158,7 +130,7 @@ export function HomeTab({
           <TodayFocusCard
             currentPrimaryCTA={currentPrimaryCTA}
             onScrollToMood={() => scrollToRef(moodRef)}
-            onScrollToHabits={() => scrollToRef(habitsRef)}
+            onNavigateToHabits={() => setActiveTab('mindmap')}
             onScrollToGratitude={() => scrollToRef(gratitudeRef)}
             canActivateRestMode={canActivateRestMode}
             onRestMode={activateRestMode}
@@ -195,11 +167,7 @@ export function HomeTab({
           ) : (
             <>
               {/* Primary content — order based on user preference */}
-              {homeLayout === 'habits' ? (
-                <>{habitBlock}{moodBlock}</>
-              ) : (
-                <>{moodBlock}{habitBlock}</>
-              )}
+              {moodBlock}
 
               {/* Gratitude Journal */}
               {isFeatureVisible('gratitudeJournal') && (

@@ -28,8 +28,6 @@ interface AppState {
   tutorialBypassFlag: boolean;
   onboardingBypassFlag: boolean;
 
-  // Cross-tab deep link: Home → HabitHub (one-shot signal)
-  pendingHabitDetailId: string | null;
 }
 
 interface AppActions {
@@ -44,7 +42,6 @@ interface AppActions {
   setHasValidSession: (value: boolean | null) => void;
   setTutorialBypassFlag: (value: boolean) => void;
   setOnboardingBypassFlag: (value: boolean) => void;
-  setPendingHabitDetailId: (id: string | null) => void;
   resetAuthState: () => void;
 }
 
@@ -65,7 +62,6 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   isProcessingWebOAuth: false,
   webOAuthError: null,
   hasValidSession: null,
-  pendingHabitDetailId: null,
 
   // Actions
   setActiveTab: (tab) => set((state) => ({
@@ -83,7 +79,6 @@ export const useAppStore = create<AppState & AppActions>((set) => ({
   setHasValidSession: (hasValidSession) => set({ hasValidSession }),
   setTutorialBypassFlag: (tutorialBypassFlag) => set({ tutorialBypassFlag }),
   setOnboardingBypassFlag: (onboardingBypassFlag) => set({ onboardingBypassFlag }),
-  setPendingHabitDetailId: (pendingHabitDetailId) => set({ pendingHabitDetailId }),
   resetAuthState: () => set({
     hasValidSession: false,
     authBypassFlag: false,
