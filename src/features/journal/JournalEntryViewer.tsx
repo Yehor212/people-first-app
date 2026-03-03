@@ -256,6 +256,10 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         className="flex-1 overflow-y-auto relative z-[1]"
       >
+        {/* Paper texture overlay */}
+        {paperTextureStyle && (
+          <div className="absolute inset-0 z-0 pointer-events-none" style={paperTextureStyle} />
+        )}
         {/* Hero mood header */}
         {entry.mood && (
           <div className={cn(
