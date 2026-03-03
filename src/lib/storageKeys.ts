@@ -69,6 +69,7 @@ export const SK = {
   JOURNAL_CALENDAR_MODE: 'journal-calendar-mode',
   JOURNAL_LEGEND_SEEN: 'journal-legend-seen',
   JOURNAL_RECENT_STICKERS: 'journal-recent-stickers',
+  JOURNAL_STICKER_PACKS: 'journal-sticker-packs',
 
   // ─── Audio ───
   AUDIO_MUTED: 'zenflow-audio-muted',

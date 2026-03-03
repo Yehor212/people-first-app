@@ -27,19 +27,28 @@ const MOOD_GRADIENT: Record<string, string> = {
 };
 
 const MOOD_BG: Record<string, string> = {
-  great: 'from-green-500/5 to-transparent',
-  good: 'from-emerald-500/5 to-transparent',
-  okay: 'from-amber-500/5 to-transparent',
-  bad: 'from-orange-500/5 to-transparent',
-  terrible: 'from-red-500/5 to-transparent',
+  great: 'from-green-500/8 via-green-500/3 to-transparent',
+  good: 'from-emerald-500/8 via-emerald-500/3 to-transparent',
+  okay: 'from-amber-500/8 via-amber-500/3 to-transparent',
+  bad: 'from-orange-500/8 via-orange-500/3 to-transparent',
+  terrible: 'from-red-500/8 via-red-500/3 to-transparent',
 };
 
 const MOOD_GLOW: Record<string, string> = {
-  great: '0 0 20px rgba(74,222,128,0.08)',
-  good: '0 0 20px rgba(52,211,153,0.08)',
-  okay: '0 0 20px rgba(251,191,36,0.08)',
-  bad: '0 0 20px rgba(251,146,60,0.08)',
-  terrible: '0 0 20px rgba(248,113,113,0.08)',
+  great: '0 0 24px rgba(74,222,128,0.10)',
+  good: '0 0 24px rgba(52,211,153,0.10)',
+  okay: '0 0 24px rgba(251,191,36,0.10)',
+  bad: '0 0 24px rgba(251,146,60,0.10)',
+  terrible: '0 0 24px rgba(248,113,113,0.10)',
+};
+
+/** Mood-specific ring for the emoji circle */
+const MOOD_RING: Record<string, string> = {
+  great: 'ring-green-400/40 bg-green-400/10',
+  good: 'ring-emerald-400/40 bg-emerald-400/10',
+  okay: 'ring-amber-400/40 bg-amber-400/10',
+  bad: 'ring-orange-400/40 bg-orange-400/10',
+  terrible: 'ring-red-400/40 bg-red-400/10',
 };
 
 const DEFAULT_BG = 'from-primary/3 to-transparent';
@@ -217,6 +226,7 @@ export const JournalEntryCard = memo(function JournalEntryCard({
   const time = new Date(entry.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const relativeTime = useMemo(() => getRelativeTime(entry.createdAt, ts), [entry.createdAt, ts]);
   const wordCount = countWords(entry.content);
+  const hasPhoto = entry.photoIds.length > 0;
 
   // Load first photo thumbnail
   const [thumbnail, setThumbnail] = useState<string | null>(null);
@@ -231,11 +241,12 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
   // Combine base shadow with mood glow
   const cardShadow = entry.mood && MOOD_GLOW[entry.mood]
-    ? `0 2px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.06), ${MOOD_GLOW[entry.mood]}`
-    : '0 2px 16px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.06)';
+    ? `0 2px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.06), ${MOOD_GLOW[entry.mood]}`
+    : '0 2px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.06)';
 
   return (
     <motion.div
+      ref={cardRef}
       onClick={handleCardClick}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
@@ -254,45 +265,71 @@ export const JournalEntryCard = memo(function JournalEntryCard({
     >
       {/* Gradient overlay (always shown — mood or default) */}
       <div className={cn(
-        'absolute inset-0 bg-gradient-to-r opacity-100 pointer-events-none',
+        'absolute inset-0 bg-gradient-to-br opacity-100 pointer-events-none',
         entry.mood ? MOOD_BG[entry.mood] : DEFAULT_BG,
       )} />
 
+      {/* Hero photo banner (when photo exists) */}
+      {!privateMode && hasPhoto && thumbnail && (
+        <div className="relative h-28 overflow-hidden">
+          <img
+            src={thumbnail}
+            alt=""
+            className="w-full h-full object-cover"
+            loading="lazy"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-card/90 via-card/30 to-transparent" />
+          {/* Photo count badge */}
+          {entry.photoIds.length > 1 && (
+            <span className="absolute top-2 end-2 text-[10px] text-white/90 bg-black/40 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
+              {'\u{1F4F7}'} {entry.photoIds.length}
+            </span>
+          )}
+          {/* Time badge on photo */}
+          <span className="absolute top-2 start-2 flex items-center gap-0.5 text-[10px] text-white/80 bg-black/30 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
+            <Clock className="w-2.5 h-2.5" />
+            {time}
+          </span>
+        </div>
+      )}
+
       <div className="flex">
-        {/* Accent bar (always shown — mood or default) */}
-        <div className={cn(
-          'w-1.5 flex-shrink-0 bg-gradient-to-b rounded-s-2xl',
-          entry.mood ? (MOOD_GRADIENT[entry.mood] || 'from-primary/60 to-primary/30') : DEFAULT_ACCENT,
-        )} />
+        {/* Accent bar (only when no hero photo) */}
+        {!(hasPhoto && thumbnail && !privateMode) && (
+          <div className={cn(
+            'w-1.5 flex-shrink-0 bg-gradient-to-b rounded-s-2xl',
+            entry.mood ? (MOOD_GRADIENT[entry.mood] || 'from-primary/60 to-primary/30') : DEFAULT_ACCENT,
+          )} />
+        )}
 
         <div className="flex-1 p-3.5 relative z-[1]">
           <div className="flex items-start gap-3">
-            {/* Photo thumbnail (hidden in private mode) */}
-            {!privateMode && (thumbnail ? (
-              <div className="w-12 h-12 rounded-xl overflow-hidden flex-shrink-0 bg-muted/30 ring-1 ring-border/10">
-                <img
-                  src={thumbnail}
-                  alt=""
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
+            {/* Mood emoji circle — prominent Daylio-style */}
+            {entry.mood ? (
+              <div className={cn(
+                'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ring-2',
+                MOOD_RING[entry.mood],
+              )}>
+                <StickerRenderer emoji={MOOD_STICKER[entry.mood]} size="sm" />
               </div>
-            ) : entry.photoIds.length > 0 ? (
-              <div className="w-12 h-12 rounded-xl flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center">
-                <ImageIcon className="w-5 h-5 text-muted-foreground/40" />
-              </div>
-            ) : null)}
+            ) : (
+              /* Photo placeholder (no hero) or bookmark icon */
+              !privateMode && !thumbnail && hasPhoto ? (
+                <div className="w-10 h-10 rounded-full flex-shrink-0 bg-muted/30 ring-1 ring-border/10 flex items-center justify-center">
+                  <ImageIcon className="w-4 h-4 text-muted-foreground/40" />
+                </div>
+              ) : (
+                <div className="w-10 h-10 rounded-full flex-shrink-0 bg-primary/5 ring-1 ring-primary/10 flex items-center justify-center">
+                  <Bookmark className="w-4 h-4 text-primary/40" />
+                </div>
+              )
+            )}
 
             {/* Main content */}
             <div className="flex-1 min-w-0">
-              {/* Title row with mood + relative time */}
+              {/* Title + relative time */}
               <div className="flex items-center gap-2 mb-0.5">
-                {entry.mood ? (
-                  <StickerRenderer emoji={MOOD_STICKER[entry.mood]} size="xs" />
-                ) : !entry.title && (
-                  <Bookmark className="w-3.5 h-3.5 text-muted-foreground/40 flex-shrink-0" />
-                )}
-                <h4 className="text-sm font-semibold text-foreground truncate">
+                <h4 className="text-sm font-semibold text-foreground truncate flex-1">
                   {entry.title ? highlightText(entry.title) : time}
                 </h4>
                 <span className="text-[10px] text-muted-foreground/50 flex-shrink-0">{relativeTime}</span>
@@ -300,27 +337,22 @@ export const JournalEntryCard = memo(function JournalEntryCard({
 
               {/* Content preview (hidden in private mode) */}
               {!privateMode && preview && (
-                <p className="text-xs text-muted-foreground/80 line-clamp-2 leading-relaxed">
+                <p className="text-xs text-muted-foreground/70 line-clamp-2 leading-relaxed">
                   {highlightText(preview)}
                 </p>
               )}
 
-              {/* Meta row: stickers + photo count + tags + word count (hidden in private mode) */}
+              {/* Meta row: stickers + audio + tags + word count (hidden in private mode) */}
               {!privateMode && <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                 {entry.stickers.length > 0 && (
                   <div className="flex -space-x-0.5 items-center">
-                    {entry.stickers.slice(0, 4).map((s, i) => (
+                    {entry.stickers.slice(0, 5).map((s, i) => (
                       <StickerRenderer key={i} emoji={s} size="xs" />
                     ))}
-                    {entry.stickers.length > 4 && (
-                      <span className="text-[10px] text-muted-foreground/60 ms-1">+{entry.stickers.length - 4}</span>
+                    {entry.stickers.length > 5 && (
+                      <span className="text-[10px] text-muted-foreground/60 ms-1">+{entry.stickers.length - 5}</span>
                     )}
                   </div>
-                )}
-                {entry.photoIds.length > 1 && (
-                  <span className="text-[10px] text-muted-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded-md">
-                    {'\u{1F4F7}'} {entry.photoIds.length}
-                  </span>
                 )}
                 {entry.audioIds && entry.audioIds.length > 0 && (
                   <span className="text-[10px] text-muted-foreground/70 bg-muted/40 px-1.5 py-0.5 rounded-md flex items-center gap-0.5">
@@ -336,19 +368,21 @@ export const JournalEntryCard = memo(function JournalEntryCard({
                   <span className="text-[10px] text-muted-foreground/50">+{entry.tags.length - 2}</span>
                 )}
                 {wordCount > 0 && (
-                  <span className="text-[10px] text-muted-foreground/40 ms-auto">
+                  <span className="text-[10px] text-muted-foreground/40 ms-auto tabular-nums">
                     {wordCount}w
                   </span>
                 )}
               </div>}
             </div>
 
-            {/* Time + delete */}
+            {/* Time (only when no hero photo) + delete */}
             <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-              <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/60">
-                <Clock className="w-2.5 h-2.5" />
-                {time}
-              </span>
+              {!(hasPhoto && thumbnail && !privateMode) && (
+                <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground/60">
+                  <Clock className="w-2.5 h-2.5" />
+                  {time}
+                </span>
+              )}
               <button
                 onClick={(e) => { e.stopPropagation(); void hapticTap(); onDelete(); }}
                 className="p-2.5 -m-1 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-destructive/10 text-muted-foreground/40 hover:text-destructive transition-all min-w-[44px] min-h-[44px] flex items-center justify-center"

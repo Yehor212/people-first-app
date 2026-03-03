@@ -5,14 +5,15 @@
  * to avoid TDZ errors. Use lazyWithRetry() or React.lazy() from the parent.
  */
 
-import { useMemo } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ArrowLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { PieChart, Pie, Cell, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { JournalEntry } from './types';
 import { countWords } from './types';
+import { StickerRenderer } from './StickerRenderer';
 import type { MoodType } from '@/types';
 
 const MOOD_COLORS: Record<MoodType, string> = {
@@ -27,6 +28,14 @@ const MOOD_SCORE: Record<MoodType, number> = {
   terrible: 1, bad: 2, okay: 3, good: 4, great: 5,
 };
 
+const MOOD_PIXEL_BG: Record<MoodType, string> = {
+  great: 'bg-green-400',
+  good: 'bg-emerald-400',
+  okay: 'bg-amber-400',
+  bad: 'bg-orange-400',
+  terrible: 'bg-red-400',
+};
+
 interface JournalStatsProps {
   entries: JournalEntry[];
   onBack: () => void;
@@ -35,6 +44,7 @@ interface JournalStatsProps {
 export function JournalStats({ entries, onBack }: JournalStatsProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
+  const [pixelYear, setPixelYear] = useState(() => new Date().getFullYear());
 
   const moodLabels = useMemo<Record<MoodType, string>>(() => ({
     great: ts.moodGreat || 'Great',
@@ -184,6 +194,83 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     return entries.reduce((sum, e) => sum + countWords(e.content), 0);
   }, [entries]);
 
+  // Most used stickers
+  const topStickers = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const e of entries) {
+      for (const s of e.stickers) {
+        counts.set(s, (counts.get(s) || 0) + 1);
+      }
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([sticker, count]) => ({ sticker, count }));
+  }, [entries]);
+
+  // Year in Pixels — build month×day grid with mood colors
+  const pixelData = useMemo(() => {
+    // Map date → mood for selected year
+    const moodByDate = new Map<string, MoodType>();
+    for (const e of entries) {
+      if (e.mood && e.date.startsWith(String(pixelYear))) {
+        // If multiple entries same day, keep the latest
+        if (!moodByDate.has(e.date) || e.createdAt > (entries.find(x => x.date === e.date && x.id !== e.id)?.createdAt ?? 0)) {
+          moodByDate.set(e.date, e.mood);
+        }
+      }
+    }
+
+    // Has-entry-without-mood set
+    const entryWithoutMood = new Set<string>();
+    for (const e of entries) {
+      if (!e.mood && e.date.startsWith(String(pixelYear))) {
+        entryWithoutMood.add(e.date);
+      }
+    }
+
+    // Build 12 months of day cells
+    const months: Array<{
+      month: number;
+      label: string;
+      days: Array<{ date: string; mood?: MoodType; hasEntry: boolean; isFuture: boolean }>;
+    }> = [];
+
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const monthFormatter = new Intl.DateTimeFormat(language, { month: 'short' });
+
+    for (let m = 0; m < 12; m++) {
+      const daysInMonth = new Date(pixelYear, m + 1, 0).getDate();
+      const days: typeof months[0]['days'] = [];
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dateStr = `${pixelYear}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        const isFuture = dateStr > todayStr;
+        days.push({
+          date: dateStr,
+          mood: moodByDate.get(dateStr),
+          hasEntry: moodByDate.has(dateStr) || entryWithoutMood.has(dateStr),
+          isFuture,
+        });
+      }
+
+      months.push({
+        month: m,
+        label: monthFormatter.format(new Date(pixelYear, m, 1)),
+        days,
+      });
+    }
+
+    // Stats for the year
+    const totalDaysWithMood = moodByDate.size;
+    const totalDaysWithEntry = moodByDate.size + entryWithoutMood.size;
+
+    return { months, totalDaysWithMood, totalDaysWithEntry };
+  }, [entries, pixelYear, language]);
+
+  const currentYear = new Date().getFullYear();
+
   return (
     <>
       {/* Header */}
@@ -231,6 +318,95 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                   <p className="text-lg font-bold text-foreground mt-0.5">{card.value}</p>
                 </motion.div>
               ))}
+            </div>
+
+            {/* Year in Pixels — mood mosaic */}
+            <div className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20">
+              {/* Header with year navigation */}
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest">
+                  {ts.journalStatsYearInPixels || 'Year in Pixels'}
+                </h3>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => setPixelYear(y => y - 1)}
+                    className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                    aria-label={ts.previous || 'Previous'}
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                  <span className="text-xs font-semibold text-foreground tabular-nums min-w-[40px] text-center">
+                    {pixelYear}
+                  </span>
+                  <button
+                    onClick={() => setPixelYear(y => Math.min(y + 1, currentYear))}
+                    disabled={pixelYear >= currentYear}
+                    className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-30 min-w-[32px] min-h-[32px] flex items-center justify-center"
+                    aria-label={ts.next || 'Next'}
+                  >
+                    <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Pixel grid — 12 months × up to 31 days */}
+              <div className="overflow-x-auto scrollbar-hide -mx-1 px-1">
+                <div className="grid gap-[3px]" style={{ gridTemplateColumns: `auto repeat(31, 1fr)` }}>
+                  {pixelData.months.map(monthData => (
+                    <div key={monthData.month} className="contents">
+                      {/* Month label */}
+                      <div className="flex items-center pe-1.5 h-[14px]">
+                        <span className="text-[9px] text-muted-foreground/60 capitalize leading-none whitespace-nowrap">
+                          {monthData.label}
+                        </span>
+                      </div>
+                      {/* Day cells */}
+                      {Array.from({ length: 31 }, (_, dayIdx) => {
+                        const dayData = monthData.days[dayIdx];
+                        if (!dayData) {
+                          // Empty cell for months with <31 days
+                          return <div key={dayIdx} className="w-full aspect-square" />;
+                        }
+                        return (
+                          <div
+                            key={dayIdx}
+                            className={cn(
+                              'w-full aspect-square rounded-[2px] transition-colors',
+                              dayData.isFuture
+                                ? 'bg-muted/20'
+                                : dayData.mood
+                                  ? MOOD_PIXEL_BG[dayData.mood]
+                                  : dayData.hasEntry
+                                    ? 'bg-primary/30'
+                                    : 'bg-muted/40',
+                            )}
+                            title={`${dayData.date}${dayData.mood ? ` — ${moodLabels[dayData.mood]}` : ''}`}
+                          />
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/10">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  {(['great', 'good', 'okay', 'bad', 'terrible'] as MoodType[]).map(mood => (
+                    <span key={mood} className="flex items-center gap-1 text-[9px] text-muted-foreground/60">
+                      <span className={cn('w-2 h-2 rounded-[1px]', MOOD_PIXEL_BG[mood])} />
+                      {moodLabels[mood]}
+                    </span>
+                  ))}
+                  <span className="flex items-center gap-1 text-[9px] text-muted-foreground/60">
+                    <span className="w-2 h-2 rounded-[1px] bg-primary/30" />
+                    {ts.journalStatsNoMood || 'No mood'}
+                  </span>
+                </div>
+                <span className="text-[9px] text-muted-foreground/40 tabular-nums flex-shrink-0">
+                  {pixelData.totalDaysWithEntry} {ts.journalStatsDays || 'days'}
+                </span>
+              </div>
             </div>
 
             {/* Mood distribution */}
@@ -351,6 +527,37 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                       >
                         #{tag} <span className="text-muted-foreground/50">{count}</span>
                       </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Most Used Stickers */}
+            {topStickers.length > 0 && (
+              <div className="p-4 rounded-xl bg-card/70 backdrop-blur-sm border border-border/20">
+                <h3 className="text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-3">
+                  {ts.journalStatsMostUsedStickers || 'Most Used Stickers'}
+                </h3>
+                <div className="space-y-2">
+                  {topStickers.map(({ sticker, count }, idx) => {
+                    const maxCount = topStickers[0].count;
+                    const widthPct = Math.max((count / maxCount) * 100, 8);
+                    return (
+                      <div key={idx} className="flex items-center gap-2.5">
+                        <StickerRenderer emoji={sticker} size="sm" />
+                        <div className="flex-1 h-5 bg-muted/20 rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${widthPct}%` }}
+                            transition={{ delay: idx * 0.05, duration: 0.4 }}
+                            className="h-full bg-primary/40 rounded-full"
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums min-w-[24px] text-end">
+                          {count}
+                        </span>
+                      </div>
                     );
                   })}
                 </div>

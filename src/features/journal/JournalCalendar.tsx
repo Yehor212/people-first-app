@@ -107,7 +107,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
           className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label={ts.previous || 'Previous week'}
         >
-          <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+          <ChevronLeft className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
         </button>
 
         <div className="flex items-center gap-2">
@@ -115,7 +115,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
           {startOffset > 0 && (
             <button
               onClick={() => { setStartOffset(0); onSelectDate(null); }}
-              className="text-[10px] font-medium text-primary px-2 py-0.5 rounded-full bg-primary/10"
+              className="text-[10px] font-medium text-primary px-3 py-2 min-h-[44px] rounded-full bg-primary/10 flex items-center justify-center"
             >
               {ts.journalCalendarToday || 'Today'}
             </button>
@@ -124,7 +124,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
             <button
               onClick={onToggleMode}
               className="p-1 rounded-md hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-              aria-label="Switch to month view"
+              aria-label={ts.journalCalendarMonthView || 'Switch to month view'}
             >
               <CalendarRange className="w-3.5 h-3.5 text-muted-foreground/60" />
             </button>
@@ -135,7 +135,7 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
               storageSetRaw(SK.JOURNAL_LEGEND_SEEN, '1');
             }}
             className="p-1 rounded-md hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
-            aria-label="Mood legend"
+            aria-label={ts.journalCalendarMoodLegend || 'Mood legend'}
           >
             <Info className="w-3 h-3 text-muted-foreground/50" />
           </button>
@@ -144,10 +144,10 @@ export function JournalCalendar({ entryDates, selectedDate, onSelectDate, onTogg
         <button
           onClick={() => setStartOffset(prev => Math.max(0, prev - 7))}
           disabled={!canGoForward}
-          className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-30 min-w-[32px] min-h-[32px] flex items-center justify-center"
+          className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-30 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label={ts.next || 'Next week'}
         >
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
         </button>
       </div>
 

@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { JournalEntry, JournalAudio } from './types';
 import { countWords, DIARY_THEMES, DIARY_FONTS } from './types';
+import { getBgPatternStyle, getPaperTextureStyle } from './diaryBgPatterns';
 import type { MoodType, PrimaryEmotion } from '@/types';
 import { JournalPhotoGallery } from './JournalPhotoGallery';
 import { JournalAudioPlayer } from './JournalAudioPlayer';
@@ -186,10 +187,27 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
     }
   };
 
+  // Atmospheric pattern for viewer
+  const bgPatternStyle = useMemo(() => {
+    if (!entry.bgPattern || entry.bgPattern === 'none') return undefined;
+    return getBgPatternStyle(entry.bgPattern);
+  }, [entry.bgPattern]);
+
+  // Paper texture for viewer
+  const paperTextureStyle = useMemo(() => {
+    if (!entry.paperTexture || entry.paperTexture === 'clean') return undefined;
+    const isDark = entry.paperColor === 'dark' || (!entry.paperColor && true); // default is dark
+    return getPaperTextureStyle(entry.paperTexture, isDark);
+  }, [entry.paperTexture, entry.paperColor]);
+
   return (
-    <div style={themeStyle} className="flex flex-col flex-1 min-h-0">
+    <div style={themeStyle} className="flex flex-col flex-1 min-h-0 relative">
+      {/* Atmospheric background pattern (Layer 1) */}
+      {bgPatternStyle && (
+        <div className="absolute inset-0 z-0 pointer-events-none" style={bgPatternStyle} />
+      )}
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b backdrop-blur-xl" style={{ borderColor: themeStyle ? 'var(--diary-border)' : undefined, backgroundColor: themeStyle ? 'color-mix(in srgb, var(--diary-bg) 80%, transparent)' : undefined }}>
+      <div className="relative z-[1] flex items-center justify-between px-4 py-3 border-b backdrop-blur-xl" style={{ borderColor: themeStyle ? 'var(--diary-border)' : undefined, backgroundColor: themeStyle ? 'color-mix(in srgb, var(--diary-bg) 80%, transparent)' : undefined }}>
         <button
           onClick={onBack}
           className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
@@ -236,7 +254,7 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className="flex-1 overflow-y-auto"
+        className="flex-1 overflow-y-auto relative z-[1]"
       >
         {/* Hero mood header */}
         {entry.mood && (

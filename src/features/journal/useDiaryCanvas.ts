@@ -37,12 +37,16 @@ import type { DiaryThemeName, BackgroundIntensity, ParticleSpeed } from './types
 // ── Theme maps ──
 
 const THEME_GRADIENTS: Record<DiaryThemeName, { center: string; edge: string }> = {
-  dark:   { center: '#0F172A', edge: '#020617' },
-  ocean:  { center: '#082F49', edge: '#0F172A' },
-  forest: { center: '#064E3B', edge: '#020617' },
-  sunset: { center: '#4C1D95', edge: '#7C2D12' },
-  light:  { center: '#FFFEF5', edge: '#F0EBD8' },
-  sepia:  { center: '#F4ECD8', edge: '#E0D5B8' },
+  dark:     { center: '#0F172A', edge: '#020617' },
+  ocean:    { center: '#082F49', edge: '#0F172A' },
+  forest:   { center: '#064E3B', edge: '#020617' },
+  sunset:   { center: '#4C1D95', edge: '#7C2D12' },
+  light:    { center: '#FFFEF5', edge: '#F0EBD8' },
+  sepia:    { center: '#F4ECD8', edge: '#E0D5B8' },
+  lavender: { center: '#2A2040', edge: '#1E1A2E' },
+  rose:     { center: '#3D2030', edge: '#2D1B24' },
+  midnight: { center: '#141B2E', edge: '#0A0E1A' },
+  cherry:   { center: '#FFF5F5', edge: '#FFE0E0' },
 };
 
 // ── Particle type (with z-depth) ──

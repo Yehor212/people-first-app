@@ -9,9 +9,10 @@ import { usePanicGesture } from '@/hooks/usePanicGesture';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
 import { createFocusTrap, announceSuccess } from '@/lib/a11y';
 import { hapticSuccess } from '@/lib/haptics';
-import type { JournalEntry, JournalPhoto, JournalAudio, DiaryThemeName, DiaryFontName, FontSizeName, PaperColor, BackgroundIntensity, ParticleSpeed } from './types';
+import type { JournalEntry, JournalPhoto, JournalAudio, DiaryThemeName, DiaryFontName, FontSizeName, PaperColor, BackgroundIntensity, ParticleSpeed, DiaryBgPattern, PaperTexture } from './types';
 import type { MoodType } from '@/types';
-import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY, countWordsHtml, FONT_SIZES, PAPER_COLORS } from './types';
+import { MAX_PHOTOS_PER_ENTRY, MAX_STICKERS_PER_ENTRY, MAX_AUDIO_PER_ENTRY, countWordsHtml, FONT_SIZES, PAPER_COLORS, PAPER_TEXTURE_NAMES } from './types';
+import { BG_PATTERN_LIST, getBgPatternStyle, getPaperTextureStyle } from './diaryBgPatterns';
 import { JournalStickerPicker } from './JournalStickerPicker';
 import { JournalPhotoPicker } from './JournalPhotoPicker';
 import { JournalPhotoGallery } from './JournalPhotoGallery';
@@ -45,14 +46,18 @@ const ATMOSPHERE_THEMES = [
   { name: 'ocean' as const, i18nKey: 'diaryThemeOcean', label: 'Ocean', activeBg: 'bg-cyan-500/15', activeText: 'text-cyan-400', activeBorder: 'border-cyan-500/30' },
   { name: 'forest' as const, i18nKey: 'diaryThemeForest', label: 'Forest', activeBg: 'bg-emerald-500/15', activeText: 'text-emerald-400', activeBorder: 'border-emerald-500/30' },
   { name: 'sunset' as const, i18nKey: 'diaryThemeSunset', label: 'Sunset', activeBg: 'bg-orange-500/15', activeText: 'text-orange-400', activeBorder: 'border-orange-500/30' },
+  { name: 'lavender' as const, i18nKey: 'diaryThemeLavender', label: 'Lavender', activeBg: 'bg-violet-500/15', activeText: 'text-violet-400', activeBorder: 'border-violet-500/30' },
+  { name: 'rose' as const, i18nKey: 'diaryThemeRose', label: 'Rose', activeBg: 'bg-pink-500/15', activeText: 'text-pink-400', activeBorder: 'border-pink-500/30' },
+  { name: 'midnight' as const, i18nKey: 'diaryThemeMidnight', label: 'Midnight', activeBg: 'bg-blue-500/15', activeText: 'text-blue-400', activeBorder: 'border-blue-500/30' },
+  { name: 'cherry' as const, i18nKey: 'diaryThemeCherry', label: 'Cherry', activeBg: 'bg-rose-500/15', activeText: 'text-rose-400', activeBorder: 'border-rose-500/30' },
 ];
 
-const MOOD_OPTIONS: { mood: MoodType; emoji: string }[] = [
-  { mood: 'great', emoji: '\u{1F604}' },
-  { mood: 'good', emoji: '\u{1F642}' },
-  { mood: 'okay', emoji: '\u{1F610}' },
-  { mood: 'bad', emoji: '\u{1F614}' },
-  { mood: 'terrible', emoji: '\u{1F622}' },
+const MOOD_OPTIONS: { mood: MoodType; emoji: string; activeBg: string; activeRing: string }[] = [
+  { mood: 'great', emoji: '\u{1F604}', activeBg: 'bg-green-500/15', activeRing: 'ring-green-400/40' },
+  { mood: 'good', emoji: '\u{1F642}', activeBg: 'bg-emerald-500/15', activeRing: 'ring-emerald-400/40' },
+  { mood: 'okay', emoji: '\u{1F610}', activeBg: 'bg-amber-500/15', activeRing: 'ring-amber-400/40' },
+  { mood: 'bad', emoji: '\u{1F614}', activeBg: 'bg-orange-500/15', activeRing: 'ring-orange-400/40' },
+  { mood: 'terrible', emoji: '\u{1F622}', activeBg: 'bg-red-500/15', activeRing: 'ring-red-400/40' },
 ];
 
 const INK_COLORS = [
@@ -95,10 +100,11 @@ interface DraftData {
   theme?: DiaryThemeName;
   font?: DiaryFontName;
   inkColor?: string;
-  paperTexture?: 'clean' | 'dots';
+  paperTexture?: PaperTexture;
   paperColor?: PaperColor;
   bgIntensity?: BackgroundIntensity;
   particleSpeed?: ParticleSpeed;
+  bgPattern?: DiaryBgPattern;
   fontSize?: FontSizeName;
   photoLayout?: Record<string, { x: number; y: number; width: number }>;
 }
@@ -182,10 +188,11 @@ interface JournalEntryEditorProps {
     theme?: DiaryThemeName;
     font?: DiaryFontName;
     inkColor?: string;
-    paperTexture?: 'clean' | 'dots';
+    paperTexture?: PaperTexture;
     paperColor?: PaperColor;
     bgIntensity?: BackgroundIntensity;
     particleSpeed?: ParticleSpeed;
+    bgPattern?: DiaryBgPattern;
     fontSize?: FontSizeName;
     photoLayout?: Record<string, { x: number; y: number; width: number }>;
   }) => Promise<void>;
@@ -267,8 +274,9 @@ export function JournalEntryEditor({
   const [privacyShieldActive, setPrivacyShieldActive] = useState(false);
   const [panicLocked, setPanicLocked] = useState(false);
   const [inkColor, setInkColor] = useState(entry?.inkColor || '#ffffff');
-  const [paperTexture, setPaperTexture] = useState<'clean' | 'dots'>(entry?.paperTexture || 'clean');
+  const [paperTexture, setPaperTexture] = useState<PaperTexture>(entry?.paperTexture || 'clean');
   const [paperColor, setPaperColor] = useState<PaperColor>(entry?.paperColor || 'dark');
+  const [bgPattern, setBgPattern] = useState<DiaryBgPattern>(entry?.bgPattern || 'none');
   const paperColors = PAPER_COLORS[paperColor];
   const [fontSize, setFontSize] = useState<FontSizeName>(entry?.fontSize || 'medium');
   const [showPromptsDropdown, setShowPromptsDropdown] = useState(false);
@@ -337,7 +345,7 @@ export function JournalEntryEditor({
         void saveDraft(draftKey, {
           title, content: contentRef.current, stickers, photoIds, audioIds, mood, tags,
           theme: diaryTheme.theme, font: diaryTheme.font,
-          inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, fontSize, photoLayout,
+          inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, bgPattern, fontSize, photoLayout,
           savedAt: Date.now(),
         });
         setDraftSavedAt(Date.now());
@@ -345,7 +353,7 @@ export function JournalEntryEditor({
     }, 3000);
     return () => { if (draftTimerRef.current) clearTimeout(draftTimerRef.current); };
   }, [title, stickers, photoIds, audioIds, mood, tags, draftKey,
-      diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, fontSize, photoLayout]);
+      diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, bgPattern, fontSize, photoLayout]);
 
   useEffect(() => {
     return () => {
@@ -418,6 +426,7 @@ export function JournalEntryEditor({
         paperColor: paperColor !== 'dark' ? paperColor : undefined,
         bgIntensity: bgIntensity !== 'full' ? bgIntensity : undefined,
         particleSpeed: particleSpeed !== 'slow' ? particleSpeed : undefined,
+        bgPattern: bgPattern !== 'none' ? bgPattern : undefined,
         fontSize: fontSize !== 'medium' ? fontSize : undefined,
         photoLayout: Object.keys(photoLayout).length > 0 ? photoLayout : undefined,
       });
@@ -433,7 +442,7 @@ export function JournalEntryEditor({
     } catch {
       setSaving(false);
     }
-  }, [title, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, fontSize, photoLayout]);
+  }, [title, stickers, photoIds, audioIds, mood, tags, date, onSave, onBack, draftKey, hasContent, ts, voice, recorder, habitSnapshot, diaryTheme.theme, diaryTheme.font, inkColor, paperTexture, paperColor, bgIntensity, particleSpeed, bgPattern, fontSize, photoLayout]);
 
   const handleSaveAndClose = useCallback(async () => {
     setShowUnsavedDialog(false);
@@ -525,7 +534,9 @@ export function JournalEntryEditor({
     if (showPhotos) return registerModalCloseCallback(() => { setShowPhotos(false); return true; });
     if (showMood) return registerModalCloseCallback(() => { setShowMood(false); return true; });
     if (showTags) return registerModalCloseCallback(() => { setShowTags(false); return true; });
-  }, [showUnsavedDialog, showDeleteConfirm, showRecordingOverlay, showTemplatePicker, showStickers, showPhotos, showMood, showTags, recorder]);
+    // Fallback: no sub-modal open → back button triggers editor back (dirty check)
+    return registerModalCloseCallback(() => { handleBack(); return true; });
+  }, [showUnsavedDialog, showDeleteConfirm, showRecordingOverlay, showTemplatePicker, showStickers, showPhotos, showMood, showTags, recorder, handleBack]);
 
   const handleRestoreDraft = () => {
     if (!draftAvailable) return;
@@ -545,6 +556,7 @@ export function JournalEntryEditor({
     if (draftAvailable.paperColor) setPaperColor(draftAvailable.paperColor);
     if (draftAvailable.bgIntensity) setBgIntensity(draftAvailable.bgIntensity);
     if (draftAvailable.particleSpeed) setParticleSpeed(draftAvailable.particleSpeed);
+    if (draftAvailable.bgPattern) setBgPattern(draftAvailable.bgPattern);
     if (draftAvailable.fontSize) setFontSize(draftAvailable.fontSize);
     if (draftAvailable.photoLayout) setPhotoLayout(draftAvailable.photoLayout);
     setDraftAvailable(null);
@@ -718,6 +730,11 @@ export function JournalEntryEditor({
       {/* Canvas decorative background */}
       <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={bgIntensity !== 'off'} theme={diaryTheme.theme} intensity={bgIntensity} particleSpeed={particleSpeed} scrollContainerRef={scrollAreaRef} />
 
+      {/* Atmospheric background pattern overlay (Layer 1 — behind paper, above canvas) */}
+      {bgPattern !== 'none' && (
+        <div className="absolute inset-0 z-[1] pointer-events-none" style={getBgPatternStyle(bgPattern)} />
+      )}
+
       {/* ═══ GLASS TOOLBAR ═══ */}
       <div className="relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)]" style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(2, 6, 23, 0.85))', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         {/* ROW 1: Navigation & Atmosphere */}
@@ -877,7 +894,7 @@ export function JournalEntryEditor({
           <div className="flex items-center gap-1.5 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
             {DIARY_FONT_NAMES_LOCAL.map(name => {
               const isActive = name === diaryTheme.font;
-              const label = name === 'outfit' ? (ts.diaryFontSans || 'Sans') : name === 'cormorant' ? (ts.diaryFontSerif || 'Serif') : (ts.diaryFontHandwriting || 'Hand');
+              const label = name === 'outfit' ? (ts.diaryFontSans || 'Sans') : name === 'cormorant' ? (ts.diaryFontSerif || 'Serif') : name === 'dancing' ? (ts.diaryFontScript || 'Script') : (ts.diaryFontHandwriting || 'Hand');
               return (
                 <motion.button
                   key={name}
@@ -931,13 +948,13 @@ export function JournalEntryEditor({
                 whileTap={{ scale: 0.85 }}
                 onClick={() => setMood(mood === opt.mood ? undefined : opt.mood)}
                 className={cn(
-                  'w-9 h-9 rounded-lg flex items-center justify-center transition-all',
+                  'w-9 h-9 rounded-full flex items-center justify-center transition-all',
                   mood === opt.mood
-                    ? 'bg-emerald-500/15 ring-1 ring-emerald-500/30'
+                    ? `${opt.activeBg} ring-2 ${opt.activeRing}`
                     : 'hover:bg-white/10',
                 )}
               >
-                <span className="text-base">{opt.emoji}</span>
+                <span className={cn('text-base transition-transform', mood === opt.mood && 'scale-110')}>{opt.emoji}</span>
               </motion.button>
             ))}
             <motion.button
@@ -1052,16 +1069,40 @@ export function JournalEntryEditor({
             </motion.button>
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={() => setPaperTexture(paperTexture === 'clean' ? 'dots' : 'clean')}
+              onClick={() => {
+                const idx = PAPER_TEXTURE_NAMES.indexOf(paperTexture);
+                setPaperTexture(PAPER_TEXTURE_NAMES[(idx + 1) % PAPER_TEXTURE_NAMES.length]);
+              }}
               className={cn(
                 'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex items-center gap-1.5',
-                paperTexture === 'dots'
+                paperTexture !== 'clean'
                   ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                   : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
               )}
             >
-              ⏺ {ts.diaryTexture || 'Texture'}
+              ⏺ {paperTexture === 'clean' ? (ts.diaryTexture || 'Texture') : paperTexture}
             </motion.button>
+          </div>
+
+          {/* Atmospheric pattern capsule */}
+          <div className="flex items-center gap-1 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
+            {BG_PATTERN_LIST.map(pat => {
+              const isActive = pat.name === bgPattern;
+              return (
+                <motion.button
+                  key={pat.name}
+                  whileTap={{ scale: 0.85 }}
+                  onClick={() => setBgPattern(pat.name)}
+                  className={cn(
+                    'w-8 h-8 rounded-lg border-2 transition-all flex-shrink-0',
+                    isActive ? 'border-white/60 scale-110 shadow-lg' : 'border-white/10 hover:border-white/25',
+                  )}
+                  style={{ background: pat.swatch }}
+                  aria-label={ts[pat.i18nKey] || pat.name}
+                  title={ts[pat.i18nKey] || pat.name}
+                />
+              );
+            })}
           </div>
         </div>
 
@@ -1143,10 +1184,7 @@ export function JournalEntryEditor({
               color: paperColors.text,
               borderColor: paperColors.border,
               contain: 'layout style paint',
-              ...(paperTexture === 'dots' ? {
-                backgroundImage: `radial-gradient(circle, ${paperColor === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'} 1px, transparent 1px)`,
-                backgroundSize: '24px 24px',
-              } : {}),
+              ...getPaperTextureStyle(paperTexture, paperColor === 'dark'),
             }}
           >
 
@@ -1499,6 +1537,7 @@ export function JournalEntryEditor({
         <JournalStickerPicker
           onSelect={handleAddSticker}
           onClose={() => setShowStickers(false)}
+          mood={mood}
         />
       )}
 

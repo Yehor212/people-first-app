@@ -2,8 +2,8 @@ import type { MoodType } from '@/types';
 
 // ── Diary Theme / Font ──
 
-export type DiaryThemeName = 'light' | 'dark' | 'sepia' | 'forest' | 'ocean' | 'sunset';
-export type DiaryFontName = 'caveat' | 'cormorant' | 'outfit';
+export type DiaryThemeName = 'light' | 'dark' | 'sepia' | 'forest' | 'ocean' | 'sunset' | 'lavender' | 'rose' | 'midnight' | 'cherry';
+export type DiaryFontName = 'caveat' | 'cormorant' | 'outfit' | 'dancing';
 
 export interface DiaryThemeConfig {
   '--diary-bg': string;
@@ -19,17 +19,42 @@ export const DIARY_THEMES: Record<DiaryThemeName, DiaryThemeConfig> = {
   sepia:  { '--diary-bg': '#F4ECD8', '--diary-text': '#5B4636', '--diary-accent': '#8B6914', '--diary-muted': '#9E8B6E', '--diary-border': 'rgba(91,70,54,0.12)' },
   forest: { '--diary-bg': '#1B2D1B', '--diary-text': '#D4E7D4', '--diary-accent': '#6EBF8B', '--diary-muted': '#7A9E7A', '--diary-border': 'rgba(212,231,212,0.08)' },
   ocean:  { '--diary-bg': '#0F1B2D', '--diary-text': '#B8D4E3', '--diary-accent': '#4AA3DF', '--diary-muted': '#6B8FA3', '--diary-border': 'rgba(184,212,227,0.08)' },
-  sunset: { '--diary-bg': '#2D1B1B', '--diary-text': '#F4D6C8', '--diary-accent': '#E8834A', '--diary-muted': '#B48D7A', '--diary-border': 'rgba(244,214,200,0.08)' },
+  sunset:   { '--diary-bg': '#2D1B1B', '--diary-text': '#F4D6C8', '--diary-accent': '#E8834A', '--diary-muted': '#B48D7A', '--diary-border': 'rgba(244,214,200,0.08)' },
+  lavender: { '--diary-bg': '#1E1A2E', '--diary-text': '#E0D4F5', '--diary-accent': '#A78BFA', '--diary-muted': '#8B7EB0', '--diary-border': 'rgba(167,139,250,0.10)' },
+  rose:     { '--diary-bg': '#2D1B24', '--diary-text': '#F5D4E0', '--diary-accent': '#F472B6', '--diary-muted': '#B07A94', '--diary-border': 'rgba(244,114,182,0.10)' },
+  midnight: { '--diary-bg': '#0A0E1A', '--diary-text': '#C8D6E5', '--diary-accent': '#60A5FA', '--diary-muted': '#6B7FA3', '--diary-border': 'rgba(96,165,250,0.08)' },
+  cherry:   { '--diary-bg': '#FFF5F5', '--diary-text': '#4A2020', '--diary-accent': '#E84393', '--diary-muted': '#9E6B6B', '--diary-border': 'rgba(232,67,147,0.12)' },
 };
 
 export const DIARY_FONTS: Record<DiaryFontName, { family: string; url: string }> = {
   caveat:    { family: "'Caveat', cursive",              url: 'https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&display=swap' },
   cormorant: { family: "'Cormorant Garamond', serif",    url: 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap' },
   outfit:    { family: "'Outfit', sans-serif",           url: 'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap' },
+  dancing:   { family: "'Dancing Script', cursive",     url: 'https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;600;700&display=swap' },
 };
 
-export const DIARY_THEME_NAMES: DiaryThemeName[] = ['light', 'dark', 'sepia', 'forest', 'ocean', 'sunset'];
-export const DIARY_FONT_NAMES: DiaryFontName[] = ['caveat', 'cormorant', 'outfit'];
+export const DIARY_THEME_NAMES: DiaryThemeName[] = ['light', 'dark', 'sepia', 'forest', 'ocean', 'sunset', 'lavender', 'rose', 'midnight', 'cherry'];
+export const DIARY_FONT_NAMES: DiaryFontName[] = ['caveat', 'cormorant', 'outfit', 'dancing'];
+
+// ── Atmospheric Background Pattern (CSS mesh gradients over canvas) ──
+
+export type DiaryBgPattern =
+  | 'none'
+  | 'sakura' | 'honey' | 'cloud' | 'matcha' | 'peach' | 'aurora'
+  | 'moonlight' | 'watercolor' | 'stardust' | 'garden' | 'cotton-candy'
+  | 'sunset-beach' | 'snowfall';
+
+export const DIARY_BG_PATTERN_NAMES: DiaryBgPattern[] = [
+  'none', 'sakura', 'honey', 'cloud', 'matcha', 'peach', 'aurora',
+  'moonlight', 'watercolor', 'stardust', 'garden', 'cotton-candy',
+  'sunset-beach', 'snowfall',
+];
+
+// ── Paper Texture (on the paper card itself) ──
+
+export type PaperTexture = 'clean' | 'dots' | 'grid' | 'lines' | 'linen' | 'craft';
+
+export const PAPER_TEXTURE_NAMES: PaperTexture[] = ['clean', 'dots', 'grid', 'lines', 'linen', 'craft'];
 
 // ── Background Intensity (canvas ambient engine) ──
 
@@ -55,7 +80,7 @@ export interface JournalEntry {
   date: string;           // "YYYY-MM-DD"
   title: string;
   content: string;
-  stickers: string[];     // emoji array, max 5
+  stickers: string[];     // emoji array, max 10
   photoIds: string[];     // JournalPhoto.id refs, max 5
   audioIds?: string[];    // JournalAudio.id refs, max 3
   mood?: MoodType;
@@ -65,7 +90,8 @@ export interface JournalEntry {
   theme?: DiaryThemeName;  // diary theme (optional, undefined = app default)
   font?: DiaryFontName;    // diary font (optional, undefined = app default)
   inkColor?: string;       // text color hex (optional, undefined = theme default)
-  paperTexture?: 'clean' | 'dots'; // paper texture (optional, undefined = clean)
+  paperTexture?: PaperTexture; // paper texture (optional, undefined = clean)
+  bgPattern?: DiaryBgPattern;  // atmospheric background pattern (optional, undefined = none)
   paperColor?: PaperColor;   // editor sheet color (optional, undefined = dark)
   bgIntensity?: BackgroundIntensity; // canvas background (optional, undefined = full)
   particleSpeed?: ParticleSpeed; // particle movement speed (optional, undefined = slow)
@@ -109,7 +135,7 @@ export interface JournalAudio {
 }
 
 export const MAX_PHOTOS_PER_ENTRY = 5;
-export const MAX_STICKERS_PER_ENTRY = 5;
+export const MAX_STICKERS_PER_ENTRY = 10;
 export const MAX_AUDIO_PER_ENTRY = 3;
 export const MAX_AUDIO_DURATION_SEC = 300; // 5 minutes
 export const JOURNAL_PASSWORD_KEY = 'journal_password';

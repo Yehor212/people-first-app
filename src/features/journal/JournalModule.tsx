@@ -5,7 +5,7 @@ import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
-import { createFocusTrap } from '@/lib/a11y';
+import { createFocusTrap, announceSuccess, announceError } from '@/lib/a11y';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabaseClient';
 import { useJournal } from './useJournal';
@@ -56,6 +56,7 @@ export function JournalModule({ onToggleHabit }: JournalModuleProps = {}) {
   const [showExportPicker, setShowExportPicker] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [importFeedback, setImportFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [hasDraft, setHasDraft] = useState(false);
   const [showRemovePasswordConfirm, setShowRemovePasswordConfirm] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -932,19 +933,41 @@ export function JournalModule({ onToggleHabit }: JournalModuleProps = {}) {
                               if (!file) return;
                               e.target.value = '';
                               setImporting(true);
+                              setImportFeedback(null);
                               try {
                                 const { importJournalBackup } = await import('./journalImport');
                                 const result = await importJournalBackup(file);
-                                if (!result.errors.length) {
-                                  void journal.refresh();
+                                void journal.refresh();
+                                if (result.errors.length > 0) {
+                                  const msg = `${ts.journalImportPartial || 'Imported with errors'}: ${result.imported} ${ts.journalImportEntries || 'entries'}, ${result.errors.length} ${ts.journalImportErrors || 'errors'}`;
+                                  setImportFeedback({ type: 'error', message: msg });
+                                  announceError(msg);
+                                } else {
+                                  const msg = `${ts.journalImportSuccess || 'Import complete'}: ${result.imported} ${ts.journalImportEntries || 'entries'}`;
+                                  setImportFeedback({ type: 'success', message: msg });
+                                  announceSuccess(msg);
                                 }
+                                setTimeout(() => setImportFeedback(null), 5000);
                               } catch {
-                                // import failed
+                                const msg = ts.journalImportFailed || 'Import failed';
+                                setImportFeedback({ type: 'error', message: msg });
+                                announceError(msg);
+                                setTimeout(() => setImportFeedback(null), 5000);
                               } finally {
                                 setImporting(false);
                               }
                             }}
                           />
+                          {importFeedback && (
+                            <p className={cn(
+                              'text-xs mt-2 px-3 py-2 rounded-lg text-center',
+                              importFeedback.type === 'success'
+                                ? 'bg-green-500/10 text-green-600 dark:text-green-400'
+                                : 'bg-destructive/10 text-destructive',
+                            )}>
+                              {importFeedback.message}
+                            </p>
+                          )}
                         </div>
 
                         <button

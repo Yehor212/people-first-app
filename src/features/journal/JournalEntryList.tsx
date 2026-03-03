@@ -9,6 +9,7 @@ import { JournalEntryCard } from './JournalEntryCard';
 import { StickerRenderer } from './StickerRenderer';
 import { searchJournalSemantic, generateAllMissingEmbeddings, type SemanticSearchResult } from '@/lib/journalAI';
 import { supabase } from '@/lib/supabaseClient';
+import { Quote } from 'lucide-react';
 
 const MOOD_EMOJIS: Record<string, string> = {
   great: '\u{1F604}',
@@ -17,6 +18,30 @@ const MOOD_EMOJIS: Record<string, string> = {
   bad: '\u{1F614}',
   terrible: '\u{1F622}',
 };
+
+/** Daily rotating quotes — keyed by i18n key for translation */
+const DAILY_QUOTES: { key: string; fallback: string; author: string }[] = [
+  { key: 'quoteJournal1', fallback: 'Fill your paper with the breathings of your heart.', author: 'William Wordsworth' },
+  { key: 'quoteJournal2', fallback: 'Journal writing is a voyage to the interior.', author: 'Christina Baldwin' },
+  { key: 'quoteJournal3', fallback: 'The act of writing is the act of discovering what you believe.', author: 'David Hare' },
+  { key: 'quoteJournal4', fallback: 'We write to taste life twice, in the moment and in retrospect.', author: 'Anaïs Nin' },
+  { key: 'quoteJournal5', fallback: 'Writing is the painting of the voice.', author: 'Voltaire' },
+  { key: 'quoteJournal6', fallback: 'Start writing, no matter what. The water does not flow until the faucet is turned on.', author: 'Louis L\'Amour' },
+  { key: 'quoteJournal7', fallback: 'In the journal I am at ease.', author: 'Anaïs Nin' },
+  { key: 'quoteJournal8', fallback: 'A personal journal is an ideal environment in which to become.', author: 'Gail Sheehy' },
+  { key: 'quoteJournal9', fallback: 'People who keep journals have life twice.', author: 'Jessamyn West' },
+  { key: 'quoteJournal10', fallback: 'The pages are still blank, but there is a miraculous feeling of the words being there.', author: 'Vladimir Nabokov' },
+  { key: 'quoteJournal11', fallback: 'Write what disturbs you, what you fear, what you have not been willing to speak about.', author: 'Natalie Goldberg' },
+  { key: 'quoteJournal12', fallback: 'One day I will find the right words, and they will be simple.', author: 'Jack Kerouac' },
+  { key: 'quoteJournal13', fallback: 'There is no greater agony than bearing an untold story inside you.', author: 'Maya Angelou' },
+  { key: 'quoteJournal14', fallback: 'Your journal is like your best friend. You don\'t have to pretend with it.', author: 'Oprah Winfrey' },
+];
+
+function getDailyQuote(): typeof DAILY_QUOTES[0] {
+  const today = new Date();
+  const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / 86400000);
+  return DAILY_QUOTES[dayOfYear % DAILY_QUOTES.length];
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -292,6 +317,22 @@ export function JournalEntryList({
           </button>
         </div>
       )}
+
+      {/* Daily inspirational quote */}
+      {(() => {
+        const quote = getDailyQuote();
+        return (
+          <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-primary/8 via-primary/4 to-transparent border border-primary/10 p-3.5">
+            <Quote className="absolute top-2 end-2 w-6 h-6 text-primary/10" />
+            <p className="text-xs text-foreground/80 italic leading-relaxed pe-6">
+              {ts[quote.key] || quote.fallback}
+            </p>
+            <p className="text-[10px] text-muted-foreground/50 mt-1.5">
+              — {quote.author}
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Writing stats mini-bar */}
       {totalCount > 0 && (
