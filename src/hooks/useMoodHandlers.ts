@@ -5,6 +5,7 @@ import { triggerSync } from '@/storage/cloudSync';
 import { haptics } from '@/lib/haptics';
 import { logger } from '@/lib/logger';
 import { analytics } from '@/lib/analytics';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import type { MoodEntry } from '@/types';
 
 interface UseMoodHandlersParams {
@@ -18,12 +19,12 @@ export function useMoodHandlers({ updateChallengeProgress }: UseMoodHandlersPara
   const setMoods = useUserDataStore(s => s.setMoods);
   const rewardUser = useGamificationStore(s => s.rewardUser);
 
-  const handleAddMood = (entry: MoodEntry) => {
+  const handleAddMood = useThrottledCallback((entry: MoodEntry) => {
     setMoods(prev => [...prev, entry]);
     rewardUser('mood', { treats: 5, treatReason: 'Logged mood', haptic: haptics.moodSaved, seedExtra: entry.mood });
     analytics.moodTracked(entry.mood);
     updateChallengeProgress();
-  };
+  }, 800);
 
   const handleQuickMood = useCallback((mood: MoodEntry['mood']) => {
     const today = getToday();

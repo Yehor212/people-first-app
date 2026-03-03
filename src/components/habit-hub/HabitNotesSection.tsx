@@ -106,7 +106,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
             )}
           />
           {noteText.length > 800 && (
-            <p className="text-[10px] text-slate-600 text-right">{noteText.length}/1000</p>
+            <p className="text-[10px] text-slate-600 text-end">{noteText.length}/1000</p>
           )}
           <div className="flex gap-2">
             <button

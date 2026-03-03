@@ -136,7 +136,7 @@ export function JournalCalendarFull({
           className="p-1.5 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label={ts.previous || 'Previous month'}
         >
-          <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+          <ChevronLeft className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
         </button>
 
         <div className="flex items-center gap-2">
@@ -164,7 +164,7 @@ export function JournalCalendarFull({
           className="p-1.5 rounded-lg hover:bg-muted/50 disabled:opacity-30 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label={ts.next || 'Next month'}
         >
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
         </button>
       </div>
 

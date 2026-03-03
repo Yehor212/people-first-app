@@ -86,7 +86,7 @@ export function FocusMiniPlayer({ onNavigateToTimer }: FocusMiniPlayerProps) {
           {/* Label area — tap to navigate to full timer */}
           <button
             onClick={onNavigateToTimer}
-            className="flex items-center gap-2 flex-1 min-w-0 text-left"
+            className="flex items-center gap-2 flex-1 min-w-0 text-start"
             aria-label={t.focus}
           >
             <Timer className={cn('w-4 h-4 shrink-0', isBreak ? 'text-indigo-400' : 'text-violet-500')} />

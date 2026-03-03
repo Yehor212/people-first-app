@@ -278,7 +278,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
           onClick={goToPrevMonth}
           aria-label={t.previousMonth}
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-5 h-5 rtl:scale-x-[-1]" />
         </motion.button>
 
         <motion.h3
@@ -298,7 +298,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
           onClick={goToNextMonth}
           aria-label={t.nextMonth}
         >
-          <ChevronRight className="w-5 h-5" />
+          <ChevronRight className="w-5 h-5 rtl:scale-x-[-1]" />
         </motion.button>
       </div>
 

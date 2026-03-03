@@ -6,6 +6,7 @@ import { queueFocusSessionSync } from '@/lib/offlineQueueHandlers';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { logger } from '@/lib/logger';
 import { analytics } from '@/lib/analytics';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import type { FocusSession } from '@/types';
 
 interface UseFocusHandlersParams {
@@ -27,7 +28,7 @@ export function useFocusHandlers({
   const rewardUser = useGamificationStore(s => s.rewardUser);
   const mindfulTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
 
-  const handleCompleteFocusSession = (session: FocusSession) => {
+  const handleCompleteFocusSession = useThrottledCallback((session: FocusSession) => {
     setFocusSessions(prev => [...prev, session]);
 
     const focusTreats = Math.round(session.duration * 0.5);
@@ -54,7 +55,7 @@ export function useFocusHandlers({
       earnTreats('focus', xpReward, `Quest: ${quest.title}`);
       triggerXpPopup(xpReward, 'bonus');
     });
-  };
+  }, 800);
 
   const handleMindfulMomentComplete = useCallback(() => {
     const treatResult = earnTreats('mindful', 1, 'Mindful Moment');

@@ -96,7 +96,7 @@ export function HabitsOverlay({ open, habits, onToggleHabit, onClose }: HabitsOv
                     )}
                   >
                     <IdentityIcon name={habit.icon || 'Target'} className="w-5 h-5 shrink-0" />
-                    <span className={cn('flex-1 text-left text-sm', completed && 'line-through text-muted-foreground')}>
+                    <span className={cn('flex-1 text-start text-sm', completed && 'line-through text-muted-foreground')}>
                       {habit.name}
                     </span>
                     {completed && <Check className="w-4 h-4 text-emerald-500 shrink-0" />}

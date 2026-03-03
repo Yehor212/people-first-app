@@ -4134,3 +4134,15 @@ body.reduce-motion .diary-animated {
   color: #e2e8f0 !important;
   text-shadow: none !important;
 }
+
+/* EventDetailsModal — CSS keyframes for glow & pulse (replaces FM repeat:Infinity) */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes event-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.5); }
+  }
+  @keyframes event-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+}

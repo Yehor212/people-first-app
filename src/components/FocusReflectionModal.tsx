@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Sparkles, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -41,6 +42,7 @@ interface FocusReflectionModalProps {
 
 export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, onDismiss, onExpandToJournal }: FocusReflectionModalProps) {
   const { t } = useLanguage();
+  const [isSaving, setIsSaving] = useState(false);
   useModalA11y(true, onDismiss);
 
   return (
@@ -133,11 +135,15 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
               {t.focusReflectionSkip}
             </motion.button>
             <motion.button
-              onClick={() => onSave(reflectionValue)}
-              className="flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium"
+              onClick={() => { if (isSaving) return; setIsSaving(true); onSave(reflectionValue); }}
+              disabled={isSaving}
+              className={cn(
+                "flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium",
+                isSaving && "opacity-50 cursor-not-allowed",
+              )}
               style={{ boxShadow: '0 0 16px hsl(var(--focus-violet) / 0.4)' }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={isSaving ? {} : { scale: 1.02 }}
+              whileTap={isSaving ? {} : { scale: 0.98 }}
             >
               {t.focusReflectionSave}
             </motion.button>
@@ -146,7 +152,8 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
           {/* Focus → Journal expansion (IA Blueprint Phase 3) */}
           {onExpandToJournal && (
             <button
-              onClick={() => { onSave(reflectionValue); onExpandToJournal(); }}
+              disabled={isSaving}
+              onClick={() => { if (isSaving) return; setIsSaving(true); onSave(reflectionValue); onExpandToJournal(); }}
               className="w-full mt-3 py-2.5 rounded-xl text-sm font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors flex items-center justify-center gap-2"
             >
               <PenLine className="w-4 h-4" />

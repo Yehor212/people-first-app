@@ -3,6 +3,7 @@ import { useGamificationStore, useUIStore, useUserDataStore } from '@/stores';
 import { triggerXpPopup } from '@/components/XpPopup';
 import { haptics } from '@/lib/haptics';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
+import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import type { GratitudeEntry } from '@/types';
 
 interface UseGratitudeHandlersParams {
@@ -25,7 +26,7 @@ export function useGratitudeHandlers({
   const rewardUser = useGamificationStore(s => s.rewardUser);
   const setJournalPromptText = useUIStore(s => s.setJournalPromptText);
 
-  const handleAddGratitude = (entry: GratitudeEntry) => {
+  const handleAddGratitude = useThrottledCallback((entry: GratitudeEntry) => {
     setGratitudeEntries(prev => [...prev, entry]);
     rewardUser('gratitude', { treats: 8, treatReason: 'Gratitude entry', haptic: haptics.gratitudeSaved });
 
@@ -41,7 +42,7 @@ export function useGratitudeHandlers({
       earnTreats('gratitude', xpReward, `Quest: ${quest.title}`);
       triggerXpPopup(xpReward, 'bonus');
     });
-  };
+  }, 800);
 
   const handleJournalPromptUsed = useCallback(() => {
     setJournalPromptText(undefined);

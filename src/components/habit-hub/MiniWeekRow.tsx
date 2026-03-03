@@ -88,7 +88,7 @@ export const MiniWeekRow = memo(function MiniWeekRow({
   return (
     <div className="flex flex-col gap-0.5">
       {/* Weekday labels */}
-      <div className="flex gap-1 justify-between px-0.5">
+      <div className="flex justify-between">
         {days.map((date) => {
           const dow = getDowIndex(date);
           const isToday = date === today;
@@ -96,7 +96,7 @@ export const MiniWeekRow = memo(function MiniWeekRow({
             <div
               key={`label-${date}`}
               className={cn(
-                'w-8 text-center text-[10px] leading-none',
+                'min-w-[44px] text-center text-[10px] leading-none',
                 isToday ? 'text-white/60 font-medium' : 'text-white/40',
               )}
             >
@@ -106,7 +106,7 @@ export const MiniWeekRow = memo(function MiniWeekRow({
         })}
       </div>
       {/* Cells */}
-      <div className="flex gap-1 justify-between">
+      <div className="flex justify-between">
         {days.map((date) => (
           <MiniCheckmarkCell
             key={date}

@@ -177,7 +177,7 @@ export function AnimatedCalendar({
             aria-label={prevMonthLabel}
             className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-4 h-4 rtl:scale-x-[-1]" />
           </button>
           <button
             onClick={() => setShowMonthSelector(!showMonthSelector)}
@@ -191,7 +191,7 @@ export function AnimatedCalendar({
             aria-label={nextMonthLabel}
             className="p-2 rounded-xl bg-secondary hover:bg-primary/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           >
-            <ChevronRight className="w-4 h-4" />
+            <ChevronRight className="w-4 h-4 rtl:scale-x-[-1]" />
           </button>
         </div>
       </div>

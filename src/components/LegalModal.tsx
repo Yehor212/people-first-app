@@ -136,7 +136,7 @@ export function LegalModal({ open, onOpenChange, initialTab = 'privacy' }: Legal
                 <button
                   key={name}
                   onClick={() => handleOpenExternal(url)}
-                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-muted/50 transition-colors text-left min-h-[48px]"
+                  className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-muted/50 transition-colors text-start min-h-[48px]"
                 >
                   <span className="text-sm font-medium text-foreground">{name}</span>
                   <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{license}</span>

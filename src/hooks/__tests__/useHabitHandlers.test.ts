@@ -11,6 +11,10 @@ import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 // --- mocks ---
 
 const mockSetHabits = vi.fn();
+const mockSetScheduleEvents = vi.fn();
+const mockSetReminders = vi.fn((updater: unknown) => {
+  if (typeof updater === 'function') updater({ habitIds: [], enabled: false, time: '08:00' });
+});
 const mockSetConfettiBurst = vi.fn();
 const mockTriggerSync = vi.fn();
 const mockHabits = [
@@ -38,6 +42,8 @@ vi.mock('@/stores', () => ({
     sel({
       habits: mockHabits,
       setHabits: mockSetHabits,
+      setScheduleEvents: mockSetScheduleEvents,
+      setReminders: mockSetReminders,
     }),
   ),
   useUIStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) =>
@@ -90,6 +96,11 @@ vi.mock('@/lib/comebackChallenge', () => ({
 
 vi.mock('@/lib/randomQuests', () => ({
   updateAllQuestsProgress: vi.fn(() => []),
+}));
+
+vi.mock('@/lib/challengeStorage', () => ({
+  getChallenges: vi.fn(() => []),
+  saveChallenges: vi.fn(),
 }));
 
 vi.mock('@/lib/storageKeys', () => ({
@@ -215,7 +226,7 @@ describe('useHabitHandlers', () => {
     // current value from the store closure, not from the updater's `prev`.
     vi.mocked(useUserDataStore).mockImplementation(
       ((sel: (s: Record<string, unknown>) => unknown) =>
-        sel({ habits: habitsWithCompleted, setHabits: mockSetHabits })) as typeof useUserDataStore,
+        sel({ habits: habitsWithCompleted, setHabits: mockSetHabits, setScheduleEvents: mockSetScheduleEvents, setReminders: mockSetReminders })) as typeof useUserDataStore,
     );
 
     const { result } = renderAndClearEffects();
@@ -230,10 +241,10 @@ describe('useHabitHandlers', () => {
     const entryVal = habit?.entries['2026-02-19']?.value;
     expect(entryVal === undefined || entryVal === ENTRY.UNKNOWN || entryVal === ENTRY.SKIP || entryVal === ENTRY.NO).toBe(true);
 
-    // Restore original store mock
+    // Restore original store mock (must include all selectors used by the hook)
     vi.mocked(useUserDataStore).mockImplementation(
       ((sel: (s: Record<string, unknown>) => unknown) =>
-        sel({ habits: mockHabits, setHabits: mockSetHabits })) as typeof useUserDataStore,
+        sel({ habits: mockHabits, setHabits: mockSetHabits, setScheduleEvents: mockSetScheduleEvents, setReminders: mockSetReminders })) as typeof useUserDataStore,
     );
   });
 

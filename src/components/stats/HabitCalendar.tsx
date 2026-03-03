@@ -178,7 +178,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
               className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label={t.calendarPrevMonth || 'Previous month'}
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-4 h-4 rtl:scale-x-[-1]" />
             </button>
             <span className="text-sm font-medium min-w-[120px] text-center">
               {monthNames[selectedMonth]} {selectedYear}
@@ -188,7 +188,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
               className="p-1.5 rounded-lg bg-muted/50 hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
               aria-label={t.calendarNextMonth || 'Next month'}
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-4 h-4 rtl:scale-x-[-1]" />
             </button>
           </div>
         </div>

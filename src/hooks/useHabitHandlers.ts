@@ -9,6 +9,7 @@ import { getNextToggleValue, setEntryValue, toStoredValue } from '@/lib/habits';
 import { findTemplateIdByName, getHabitTemplateName } from '@/lib/habitTemplates';
 import { addFriendActivity, loadMyProfile } from '@/storage/friendsSync';
 import { recordHabitForChallenge } from '@/lib/comebackChallenge';
+import { getChallenges, saveChallenges } from '@/lib/challengeStorage';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { SK } from '@/lib/storageKeys';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
@@ -41,6 +42,8 @@ export function useHabitHandlers({
   const ts = t as unknown as Record<string, string>;
   const habits = useUserDataStore(s => s.habits);
   const setHabits = useUserDataStore(s => s.setHabits);
+  const setScheduleEvents = useUserDataStore(s => s.setScheduleEvents);
+  const setReminders = useUserDataStore(s => s.setReminders);
   const setConfettiBurst = useUIStore(s => s.setConfettiBurst);
 
   const processingHabitsRef = useRef<Set<string>>(new Set());
@@ -217,6 +220,23 @@ export function useHabitHandlers({
 
   const handleDeleteHabit = (habitId: string) => {
     setHabits(prev => prev.filter(h => h.id !== habitId));
+
+    // Cascade: remove orphaned schedule events
+    setScheduleEvents(prev => prev.filter(e => e.habitId !== habitId));
+
+    // Cascade: remove habitId from reminder settings
+    setReminders(prev => ({
+      ...prev,
+      habitIds: prev.habitIds.filter(id => id !== habitId),
+    }));
+
+    // Cascade: remove challenges referencing this habit
+    const challenges = getChallenges();
+    const filtered = challenges.filter(c => c.habitId !== habitId);
+    if (filtered.length !== challenges.length) {
+      saveChallenges(filtered);
+    }
+
     triggerSync();
   };
 

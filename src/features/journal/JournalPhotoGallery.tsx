@@ -76,10 +76,12 @@ export const JournalPhotoGallery = memo(function JournalPhotoGallery({
             {editable && onRemovePhoto && (
               <button
                 onClick={() => onRemovePhoto(photo.id)}
-                className="absolute -top-1.5 -end-1.5 w-7 h-7 bg-destructive rounded-full flex items-center justify-center shadow-md"
+                className="absolute -top-3 -end-3 min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label={ts.delete || 'Remove'}
               >
-                <X className="w-3.5 h-3.5 text-white" />
+                <span className="w-7 h-7 bg-destructive rounded-full flex items-center justify-center shadow-md">
+                  <X className="w-3.5 h-3.5 text-white" />
+                </span>
               </button>
             )}
             {editable && onFloatPhoto && (

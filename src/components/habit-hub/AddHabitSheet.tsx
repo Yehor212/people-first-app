@@ -118,7 +118,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                 onClick={resetForm}
                 className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.06] border border-white/[0.10] min-h-[44px] min-w-[44px] hover:bg-white/[0.10] transition-colors"
               >
-                <ChevronLeft className="w-4 h-4 text-slate-300" />
+                <ChevronLeft className="w-4 h-4 text-slate-300 rtl:scale-x-[-1]" />
               </button>
             )}
             <SheetTitle className="text-lg font-bold text-slate-100 tracking-tight">

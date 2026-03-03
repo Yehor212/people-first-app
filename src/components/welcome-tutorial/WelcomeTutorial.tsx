@@ -250,7 +250,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
               aria-label={t.back || 'Back'}
               className="p-3 sm:p-4 bg-secondary rounded-xl hover:bg-muted transition-colors"
             >
-              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 rtl:scale-x-[-1]" />
             </button>
           )}
 

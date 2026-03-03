@@ -73,28 +73,18 @@ export function EventDetailsModal({
         <div className="relative z-10 p-5">
           <div className="text-center mb-4">
             {/* Event icon with glow */}
-            <motion.div
+            <div
               className={cn(
                 "w-20 h-20 rounded-2xl mx-auto mb-3 flex items-center justify-center text-4xl relative",
                 "bg-gradient-to-br",
                 gradient,
                 "backdrop-blur-sm border border-white/20"
               )}
-              animate={{
-                boxShadow: [
-                  '0 0 20px rgba(139, 92, 246, 0.3)',
-                  '0 0 40px rgba(139, 92, 246, 0.5)',
-                  '0 0 20px rgba(139, 92, 246, 0.3)',
-                ],
-              }}
-              transition={{ duration: 2, repeat: Infinity }}
+              style={{ animation: 'event-glow 2s ease-in-out infinite' }}
             >
-              <motion.span
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
+              <span style={{ animation: 'event-pulse 2s ease-in-out infinite' }}>
                 {event.emoji}
-              </motion.span>
+              </span>
 
               {isHabitEvent && (
                 <span className="absolute -top-1 -end-1 text-sm bg-primary rounded-full w-6 h-6 flex items-center justify-center">
@@ -106,7 +96,7 @@ export function EventDetailsModal({
                   📋
                 </span>
               )}
-            </motion.div>
+            </div>
 
             <h3 id="event-details-title" className="text-lg font-bold text-slate-800 dark:text-white">{event.title}</h3>
             <p className="text-sm text-slate-500 dark:text-white/60">
