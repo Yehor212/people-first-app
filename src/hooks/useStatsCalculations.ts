@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import { MoodEntry } from '@/types';
 import { calculateStreak, getToday, parseLocalDate } from '@/lib/utils';
 import { getHabitCompletedDates } from '@/lib/habits';
+import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
 import { getEmotionScore, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
 import type { UseStatsCalculationsProps, Stats, PremiumStats, MoodInsights } from './statsTypes';
 
@@ -61,7 +62,7 @@ export function useStatsCalculations({
     const allTimeFocusMinutes = completedMinutes + (currentFocusMinutes || 0);
 
     const totalHabitCompletions = habits.reduce((acc, habit) => {
-      const count = getHabitCompletedDates(habit).filter(
+      const count = getHabitCompletedDates(habit, computeEntriesWithAuto(habit)).filter(
         (date) => range === 'all' || rangeDates.has(date)
       ).length;
       return acc + count;
@@ -299,7 +300,7 @@ export function useStatsCalculations({
     // Habit correlation
     const habitDiffs: Array<{ id: string; name: string; diff: number }> = [];
     habits.forEach((habit) => {
-      const completedDates = new Set(getHabitCompletedDates(habit));
+      const completedDates = new Set(getHabitCompletedDates(habit, computeEntriesWithAuto(habit)));
       const withHabitMoods = filteredMoods.filter((m) => completedDates.has(m.date));
       const withoutHabitMoods = filteredMoods.filter((m) => !completedDates.has(m.date));
 

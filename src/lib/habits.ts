@@ -85,10 +85,14 @@ export function isHabitCompletedOnDate(habit: Habit, date: string): boolean {
   return (val / 1000) >= habit.targetValue;
 }
 
-/** Get all dates where the habit was completed (YES_MANUAL for boolean) */
-export function getHabitCompletedDates(habit: Habit): string[] {
+/** Get all dates where the habit was completed.
+ *  Pass `overrideEntries` (from computeEntriesWithAuto) to include YES_AUTO fills. */
+export function getHabitCompletedDates(
+  habit: Habit,
+  overrideEntries?: Record<string, HabitEntry>,
+): string[] {
   const dates: string[] = [];
-  for (const [date, entry] of Object.entries(habit.entries || {})) {
+  for (const [date, entry] of Object.entries(overrideEntries || habit.entries || {})) {
     if (habit.habitType === 'boolean') {
       if (entry.value === ENTRY.YES_MANUAL) {
         dates.push(date);

@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, formatDate } from '@/lib/utils';
 import { getHabitCompletedDates, isHabitCompletedOnDate } from '@/lib/habits';
+import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
 import { getEmotionScore, getEmotionLabels, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
 import { deriveCurrentWeather } from '@/lib/weatherMoodConfig';
 import { generateWeeklyStory, hasEnoughDataForStory, getCurrentWeekRange } from '@/lib/progressStories';
@@ -99,7 +100,7 @@ export function useStatsPageData({
   const habitCompletionMap = useMemo(() => {
     const map = new Map<string, string[]>();
     habits.forEach((habit) => {
-      getHabitCompletedDates(habit).forEach((date) => {
+      getHabitCompletedDates(habit, computeEntriesWithAuto(habit)).forEach((date) => {
         const list = map.get(date) || [];
         list.push(habit.name);
         map.set(date, list);
