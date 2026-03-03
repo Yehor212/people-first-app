@@ -95,6 +95,9 @@ export function computeHabitScore(habit: Habit, upToDate?: string): number {
   const freq = numerator / safeDenominator;
   const isDaily = numerator === denominator;
 
+  // Use computed entries (YES_AUTO fills for non-daily boolean habits)
+  const entries = computeEntriesWithAuto(habit);
+
   // Initial score: 0.0 for boolean/atLeast, 1.0 for atMost
   let score = (habit.habitType === 'numerical' && habit.targetType === 'atMost') ? 1.0 : 0.0;
 
@@ -110,14 +113,18 @@ export function computeHabitScore(habit: Habit, upToDate?: string): number {
       const windowSize = isDaily ? safeDenominator : safeDenominator * 2;
       const targetCount = Math.max(1, isDaily ? numerator : numerator * 2);
 
-      // Count YES_MANUAL in window
+      // Clamp target to available days so early history isn't penalized
+      const availableInWindow = Math.min(windowSize, i + 1);
+      const effectiveTarget = Math.min(targetCount, availableInWindow);
+
+      // Count completed entries in window (YES_MANUAL + YES_AUTO from computed entries)
       let yesCount = 0;
       let allSkip = true;
 
       for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
         const wDate = dates[i - w];
-        const val = getEntryValue(habit.entries, wDate);
-        if (val === ENTRY.YES_MANUAL) {
+        const val = getEntryValue(entries, wDate);
+        if (val === ENTRY.YES_MANUAL || val === ENTRY.YES_AUTO) {
           yesCount++;
           allSkip = false;
         } else if (val !== ENTRY.SKIP) {
@@ -128,7 +135,7 @@ export function computeHabitScore(habit: Habit, upToDate?: string): number {
       // If all entries in window are SKIP, score unchanged
       if (allSkip && i > 0) continue;
 
-      const percentageCompleted = Math.min(1.0, yesCount / targetCount);
+      const percentageCompleted = Math.min(1.0, yesCount / effectiveTarget);
       score = computeScoreStep(freq, score, percentageCompleted);
 
     } else {
@@ -139,7 +146,7 @@ export function computeHabitScore(habit: Habit, upToDate?: string): number {
       let rollingSum = 0;
       for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
         const wDate = dates[i - w];
-        const val = getEntryValue(habit.entries, wDate);
+        const val = getEntryValue(entries, wDate);
         if (val > 0 && val !== ENTRY.SKIP) {
           rollingSum += val / 1000;
         }
@@ -211,6 +218,9 @@ export function computeScoreHistory(
   const freq = numerator / safeDenominator;
   const isDaily = numerator === denominator;
 
+  // Use computed entries (YES_AUTO fills for non-daily boolean habits)
+  const entries = computeEntriesWithAuto(habit);
+
   let score = (habit.habitType === 'numerical' && habit.targetType === 'atMost') ? 1.0 : 0.0;
   const scores = new Array<number>(resultDates.length).fill(0);
 
@@ -225,23 +235,25 @@ export function computeScoreHistory(
     if (habit.habitType === 'boolean') {
       const windowSize = isDaily ? safeDenominator : safeDenominator * 2;
       const targetCount = Math.max(1, isDaily ? numerator : numerator * 2);
+      const availableInWindow = Math.min(windowSize, i + 1);
+      const effectiveTarget = Math.min(targetCount, availableInWindow);
 
       let yesCount = 0;
       let allSkip = true;
       for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
-        const val = getEntryValue(habit.entries, dates[i - w]);
-        if (val === ENTRY.YES_MANUAL) { yesCount++; allSkip = false; }
+        const val = getEntryValue(entries, dates[i - w]);
+        if (val === ENTRY.YES_MANUAL || val === ENTRY.YES_AUTO) { yesCount++; allSkip = false; }
         else if (val !== ENTRY.SKIP) { allSkip = false; }
       }
 
       if (!(allSkip && i > 0)) {
-        score = computeScoreStep(freq, score, Math.min(1.0, yesCount / targetCount));
+        score = computeScoreStep(freq, score, Math.min(1.0, yesCount / effectiveTarget));
       }
     } else {
       const windowSize = safeDenominator;
       let rollingSum = 0;
       for (let w = 0; w < windowSize && (i - w) >= 0; w++) {
-        const val = getEntryValue(habit.entries, dates[i - w]);
+        const val = getEntryValue(entries, dates[i - w]);
         if (val > 0 && val !== ENTRY.SKIP) { rollingSum += val / 1000; }
       }
 
