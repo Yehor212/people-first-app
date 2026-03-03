@@ -19,7 +19,6 @@ import { useReminderMigration } from '@/hooks/useReminderMigration';
 import { useEmotionSync } from '@/hooks/useEmotionSync';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AdProvider } from '@/contexts/AdContext';
-import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { MoodBackgroundOverlay } from '@/components/MoodBackgroundOverlay';
 import { supabase } from '@/lib/supabaseClient';
 import { useSwipeNavigation } from '@/hooks/useSwipeNavigation';
@@ -50,7 +49,6 @@ import { analytics } from '@/lib/analytics';
 
 export function Index() {
   const { t, isRTL } = useLanguage();
-  const { isFeatureVisible } = useFeatureFlags();
 
   // Security: Auto-logout after 24h inactivity on web (disabled on native)
   useSessionTimeout(!!supabase);
@@ -151,7 +149,7 @@ export function Index() {
   useAuthSession(isLoading);
 
   // Challenge/feature unlock handlers (used by mood/habit/focus/gratitude handlers)
-  const { checkForFeatureUnlocks, updateChallengeProgress, handleOpenChallenge } = useChallengeHandlers({
+  const { checkForFeatureUnlocks, updateChallengeProgress } = useChallengeHandlers({
     safeMoods: moods,
     safeHabits: habits,
     safeFocusSessions: focusSessions,
@@ -306,12 +304,8 @@ export function Index() {
             handleAddMood={handleAddMood}
             handleToggleHabit={handleToggleHabit}
             handleAdjustHabit={handleAdjustHabit}
-            handleAddHabit={handleAddHabit}
-            handleUpdateHabit={handleUpdateHabit}
-            handleDeleteHabit={handleDeleteHabit}
             handleAddGratitude={handleAddGratitude}
             handleJournalPromptUsed={handleJournalPromptUsed}
-            handleOpenChallenge={isFeatureVisible('challenges') ? handleOpenChallenge : undefined}
             handlePullToRefresh={handlePullToRefresh}
             moodRef={moodRef}
             habitsRef={habitsRef}

@@ -8,7 +8,7 @@
  * Deep Space aesthetic with glassmorphism.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, ChevronDown, Archive, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -54,6 +54,9 @@ interface HabitHubListProps {
   onUnarchiveHabit: (habitId: string) => void;
   onSkipHabit: (habitId: string, date: string) => void;
   onUnskipHabit: (habitId: string, date: string) => void;
+  /** One-shot deep-link: auto-open detail sheet for this habit ID, then call onPendingConsumed */
+  pendingHabitId?: string | null;
+  onPendingConsumed?: () => void;
 }
 
 export function HabitHubList({
@@ -67,6 +70,8 @@ export function HabitHubList({
   onUnarchiveHabit,
   onSkipHabit,
   onUnskipHabit,
+  pendingHabitId,
+  onPendingConsumed,
 }: HabitHubListProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
@@ -92,6 +97,15 @@ export function HabitHubList({
     selectedHabit,
     setSelectedHabit,
   } = useHabitHub(habits);
+
+  // Deep-link: Tab controller passes pendingHabitId → auto-open detail sheet (one-shot)
+  useEffect(() => {
+    if (pendingHabitId) {
+      const habit = habits.find(h => h.id === pendingHabitId);
+      if (habit) setSelectedHabit(habit);
+      onPendingConsumed?.();
+    }
+  }, [pendingHabitId, habits, setSelectedHabit, onPendingConsumed]);
 
   const handleSelect = useCallback((habit: Habit) => {
     setSelectedHabit(habit);

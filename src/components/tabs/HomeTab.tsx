@@ -9,7 +9,7 @@ import { DayProgressIndicator } from '@/components/OnboardingOverlay';
 import { TodayFocusCard } from '@/components/TodayFocusCard';
 import { RestModeCard } from '@/components/RestModeCard';
 import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
-import { SkeletonCard, SkeletonList } from '@/components/ui/skeleton';
+import { SkeletonCard } from '@/components/ui/skeleton';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { TreePine } from 'lucide-react';
 import { ReflectionPromptCard } from '@/components/ReflectionPromptCard';
@@ -24,7 +24,7 @@ import { getToday } from '@/lib/utils';
 import type { MoodEntry, Habit, GratitudeEntry, FocusSession } from '@/types';
 
 const EmotionWheel = lazyWithRetry(() => import('@/components/mindfulness/EmotionWheel').then(m => ({ default: m.EmotionWheel })), 'EmotionWheel');
-const HabitTracker = lazyWithRetry(() => import('@/components/HabitTracker').then(m => ({ default: m.HabitTracker })), 'HabitTracker');
+import { HabitHomeSnapshot } from '@/components/dashboard/HabitHomeSnapshot';
 const GratitudeJournal = lazyWithRetry(() => import('@/components/GratitudeJournal').then(m => ({ default: m.GratitudeJournal })), 'GratitudeJournal');
 
 const setShowChallenges = getModalToggle('showChallenges');
@@ -55,12 +55,8 @@ interface HomeTabProps {
   handleAddMood: (entry: MoodEntry) => void;
   handleToggleHabit: (habitId: string, date: string) => void;
   handleAdjustHabit: (habitId: string, date: string, delta: number) => void;
-  handleAddHabit: (habit: Habit) => void;
-  handleUpdateHabit: (habit: Habit) => void;
-  handleDeleteHabit: (habitId: string) => void;
   handleAddGratitude: (entry: GratitudeEntry) => void;
   handleJournalPromptUsed: () => void;
-  handleOpenChallenge: ((habit: Habit) => void) | undefined;
   handlePullToRefresh: () => Promise<void>;
 
   // Refs
@@ -74,9 +70,9 @@ export function HomeTab({
   currentActiveStreak, isRestMode, activateRestMode, deactivateRestMode,
   canActivateRestMode,
   completedTodayCount, currentPrimaryCTA,
-  handleAddMood, handleToggleHabit, handleAdjustHabit, handleAddHabit,
-  handleUpdateHabit, handleDeleteHabit, handleAddGratitude, handleJournalPromptUsed,
-  handleOpenChallenge, handlePullToRefresh,
+  handleAddMood, handleToggleHabit, handleAdjustHabit,
+  handleAddGratitude, handleJournalPromptUsed,
+  handlePullToRefresh,
   moodRef, habitsRef, gratitudeRef,
 }: HomeTabProps) {
   const { isFeatureVisible } = useFeatureFlags();
@@ -122,22 +118,20 @@ export function HomeTab({
     </div>
   );
 
-  // Habit Tracker block — min-h prevents CLS (header + ~2 habit rows)
+  // Habit snapshot — compact Loop-faithful cards (replaces legacy HabitTracker)
+  const setPendingHabitDetailId = useAppStore(s => s.setPendingHabitDetailId);
   const habitBlock = (
-    <div ref={habitsRef} className="min-h-[180px]">
-      <ModalErrorBoundary fallbackTitle="Habit Tracker Error" fallbackBody="Unable to load habit tracker. Try refreshing.">
-        <Suspense fallback={<SkeletonList />}>
-          <HabitTracker
-            habits={safeHabits}
-            onToggleHabit={handleToggleHabit}
-            onAdjustHabit={handleAdjustHabit}
-            onAddHabit={handleAddHabit}
-            onUpdateHabit={handleUpdateHabit}
-            onDeleteHabit={handleDeleteHabit}
-            onOpenChallenge={handleOpenChallenge}
-          />
-        </Suspense>
-      </ModalErrorBoundary>
+    <div ref={habitsRef} className="min-h-[120px]">
+      <HabitHomeSnapshot
+        habits={safeHabits}
+        onToggle={handleToggleHabit}
+        onAdjust={handleAdjustHabit}
+        onSelectHabit={(habit) => {
+          setPendingHabitDetailId(habit.id);
+          setActiveTab('mindmap');
+        }}
+        onNavigateToHub={() => setActiveTab('mindmap')}
+      />
     </div>
   );
 

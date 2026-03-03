@@ -3,6 +3,7 @@
  * Pattern: GardenTab.tsx — receives data from Index.tsx, delegates to HabitHubList.
  */
 
+import { useAppStore } from '@/stores';
 import type { Habit } from '@/types';
 import { HabitHubList } from './HabitHubList';
 
@@ -31,10 +32,16 @@ export function HabitHubTab({
   onSkipHabit,
   onUnskipHabit,
 }: HabitHubTabProps) {
+  // Deep-link: Home tab sets pendingHabitDetailId → Tab reads + passes down → clears
+  const pendingHabitId = useAppStore(s => s.pendingHabitDetailId);
+  const clearPending = useAppStore(s => s.setPendingHabitDetailId);
+
   return (
     <div className="animate-tab-enter pt-2">
       <HabitHubList
         habits={habits}
+        pendingHabitId={pendingHabitId}
+        onPendingConsumed={() => clearPending(null)}
         onToggleHabit={onToggleHabit}
         onAdjustHabit={onAdjustHabit}
         onAddHabit={onAddHabit}
