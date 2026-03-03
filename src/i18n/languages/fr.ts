@@ -1061,6 +1061,8 @@ export const fr: Translations = {
   identityVerb: 'Affirmation',
   identityVerbPlaceholder: 'ex., Je suis un méditant',
   identityIcon: 'Icône',
+  habitImpact: 'Impact des habitudes',
+  habitImpactDesc: 'Comment les habitudes affectent votre humeur',
   done: 'fait',
   notDone: 'non fait',
   noData: 'aucune donnée',

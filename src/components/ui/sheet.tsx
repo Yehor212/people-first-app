@@ -58,7 +58,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
         <SheetOverlay />
         <SheetPrimitive.Content
           ref={ref}
-          style={side === "bottom" ? { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 80 } : undefined}
+          style={side === "bottom" ? { position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 80, paddingBottom: 'env(safe-area-inset-bottom, 0px)' } : undefined}
           className={cn(
             sheetVariants({ side }),
             "relative",

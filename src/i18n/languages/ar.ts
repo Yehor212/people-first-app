@@ -926,6 +926,8 @@ const arabicOverrides: Partial<Translations> = {
   identityVerb: 'تأكيد',
   identityVerbPlaceholder: 'مثال: أنا شخص يتأمل',
   identityIcon: 'أيقونة',
+  habitImpact: 'تأثير العادات',
+  habitImpactDesc: 'كيف تؤثر العادات على مزاجك',
   done: 'تم',
   notDone: 'لم يتم',
   noData: 'لا توجد بيانات',

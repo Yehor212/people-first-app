@@ -323,6 +323,7 @@ export function Index() {
             handleAddScheduleEvent={handleAddScheduleEvent}
             handleDeleteScheduleEvent={handleDeleteScheduleEvent}
             handleCompleteFocusSession={handleCompleteFocusSession}
+            onToggleHabit={handleToggleHabit}
           />
         )}
 

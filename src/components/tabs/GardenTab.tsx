@@ -28,12 +28,13 @@ interface GardenTabProps {
   handleAddScheduleEvent: (event: Omit<ScheduleEvent, 'id'>) => void;
   handleDeleteScheduleEvent: (id: string) => void;
   handleCompleteFocusSession: (session: FocusSession) => void;
+  onToggleHabit?: (habitId: string, date: string) => void;
 }
 
 export function GardenTab({
   safeMoods, safeHabits, safeFocusSessions, safeGratitudeEntries,
   todayAllEvents, handleAddScheduleEvent, handleDeleteScheduleEvent,
-  handleCompleteFocusSession,
+  handleCompleteFocusSession, onToggleHabit,
 }: GardenTabProps) {
   const { isFeatureVisible } = useFeatureFlags();
   const userName = useUserDataStore(s => s.userName);
@@ -73,7 +74,7 @@ export function GardenTab({
         <div id="journal-section" className="min-h-[160px]">
         <LazyErrorBoundary componentName="Journal">
           <Suspense fallback={<SkeletonCard />}>
-            <JournalModule />
+            <JournalModule onToggleHabit={onToggleHabit} />
           </Suspense>
         </LazyErrorBoundary>
         </div>

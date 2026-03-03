@@ -1253,6 +1253,8 @@ const hebrewOverrides: Partial<Translations> = {
   identityVerb: 'אמירת חיזוק',
   identityVerbPlaceholder: 'לדוגמה, אני מתרגל מדיטציה',
   identityIcon: 'סמל',
+  habitImpact: 'השפעת הרגלים',
+  habitImpactDesc: 'איך הרגלים משפיעים על מצב הרוח',
   done: 'בוצע',
   notDone: 'לא בוצע',
   noData: 'אין נתונים',

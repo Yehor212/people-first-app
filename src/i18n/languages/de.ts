@@ -1062,6 +1062,8 @@ export const de: Translations = {
   identityVerb: 'Affirmation',
   identityVerbPlaceholder: 'z.B., Ich bin ein Meditierer',
   identityIcon: 'Symbol',
+  habitImpact: 'Gewohnheits-Einfluss',
+  habitImpactDesc: 'Wie Gewohnheiten deine Stimmung beeinflussen',
   done: 'erledigt',
   notDone: 'nicht erledigt',
   noData: 'keine Daten',

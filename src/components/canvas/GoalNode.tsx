@@ -158,6 +158,7 @@ export const GoalNode = memo(function GoalNode({ goal, x, y, progressPercent, on
       <button
         type="button"
         onPointerUp={handleTap}
+        onClick={handleTap}
         className={cn(
           'w-full h-full rounded-full',
           'flex items-center justify-center gap-1.5 px-3',

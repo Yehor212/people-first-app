@@ -195,6 +195,7 @@ interface JournalEntryEditorProps {
   onRemoveAudio: (audioId: string, entryId: string) => Promise<void>;
   onDelete?: () => void;
   onBack: () => void;
+  onToggleHabit?: (habitId: string, date: string) => void;
 }
 
 export function JournalEntryEditor({
@@ -206,6 +207,7 @@ export function JournalEntryEditor({
   onRemoveAudio,
   onDelete,
   onBack,
+  onToggleHabit,
 }: JournalEntryEditorProps) {
   const { t, language } = useLanguage();
   useScrollLock(true);
@@ -1361,6 +1363,7 @@ export function JournalEntryEditor({
                 date={date}
                 snapshot={habitSnapshot}
                 onSnapshotChange={setHabitSnapshot}
+                onToggleHabit={onToggleHabit}
               />
             </motion.div>
           )}

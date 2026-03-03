@@ -1061,6 +1061,8 @@ export const uk: Translations = {
   identityVerb: 'Афірмація',
   identityVerbPlaceholder: 'напр., Я медитую',
   identityIcon: 'Іконка',
+  habitImpact: 'Вплив звичок',
+  habitImpactDesc: 'Як звички впливають на настрій',
   notDone: 'не виконано',
   noData: 'немає даних',
   auto: 'авто',

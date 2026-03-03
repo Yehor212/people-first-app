@@ -34,7 +34,11 @@ const LazyJournalStats = lazy(() =>
 
 type ModuleState = 'card' | 'open';
 
-export function JournalModule() {
+interface JournalModuleProps {
+  onToggleHabit?: (habitId: string, date: string) => void;
+}
+
+export function JournalModule({ onToggleHabit }: JournalModuleProps = {}) {
   const { t, isRTL } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const rewardUser = useGamificationStore(s => s.rewardUser);
@@ -583,6 +587,7 @@ export function JournalModule() {
               onRemoveAudio={journal.removeAudio}
               onDelete={journal.activeEntryId ? () => handleDeleteEntry(journal.activeEntryId) : undefined}
               onBack={journal.goBack}
+              onToggleHabit={onToggleHabit}
             />
           )}
 

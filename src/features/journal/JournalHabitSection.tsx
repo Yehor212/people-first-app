@@ -8,7 +8,7 @@
 import { useState, useEffect, useRef, useMemo, memo } from 'react';
 import { ChevronDown, ChevronUp, CheckCircle2, Circle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { db } from '@/storage/db';
 import type { Habit } from '@/types';
@@ -25,9 +25,10 @@ interface JournalHabitSectionProps {
   date: string;
   snapshot: HabitSnapshot[];
   onSnapshotChange: (snapshot: HabitSnapshot[]) => void;
+  onToggleHabit?: (habitId: string, date: string) => void;
 }
 
-export const JournalHabitSection = memo(function JournalHabitSection({ date, snapshot, onSnapshotChange }: JournalHabitSectionProps) {
+export const JournalHabitSection = memo(function JournalHabitSection({ date, snapshot, onSnapshotChange, onToggleHabit }: JournalHabitSectionProps) {
   const { t } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const [collapsed, setCollapsed] = useState(false);
@@ -59,6 +60,11 @@ export const JournalHabitSection = memo(function JournalHabitSection({ date, sna
       s.habitId === habitId ? { ...s, completed: !s.completed } : s
     );
     onSnapshotChange(updated);
+
+    // Bidirectional sync: only for today's date
+    if (date === getToday() && onToggleHabit) {
+      onToggleHabit(habitId, date);
+    }
   };
 
   if (habits.length === 0) return null;

@@ -6,7 +6,9 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
-import { Heart, Target, PlayCircle, TreePine, Star } from 'lucide-react';
+import { Heart, Target, PlayCircle, TreePine, Star, TrendingUp } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import type { MoodInsights } from '@/hooks/statsTypes';
 import { motionPresets } from '@/lib/animationUtils';
 import { ZenScoreHub, EmotionGalaxy } from '@/components/stats';
 import { WeeklyInsightsCard } from '@/components/WeeklyInsightsCard';
@@ -31,6 +33,7 @@ interface OverviewTabProps {
   completedFocusSessions: FocusSession[];
   gratitudeEntries: GratitudeEntry[];
   restDays?: string[];
+  moodInsights?: MoodInsights;
   onQuickAction?: (action: 'logMood' | 'startFocus') => void;
   onShowStory: () => void;
   onRingClick: (ringId: RingType) => void;
@@ -40,7 +43,7 @@ interface OverviewTabProps {
 export function OverviewTab({
   premiumStats, stats, ringWeeklyData, emotionGalaxyData, todayMoods, canShowStory,
   moods, habits, completedFocusSessions, gratitudeEntries, restDays = [],
-  onQuickAction, onShowStory, onRingClick, t,
+  moodInsights, onQuickAction, onShowStory, onRingClick, t,
 }: OverviewTabProps) {
   // Identity clusters — group habits by identity (IA Blueprint Phase 2)
   const identityClusters = useMemo(
@@ -162,6 +165,29 @@ export function OverviewTab({
               </div>
             ))}
           </div>
+        </motion.div>
+      )}
+
+      {/* Habit Impact — mood-habit correlation */}
+      {moodInsights && moodInsights.habitDiffs.length > 0 && (
+        <motion.div {...motionPresets.slideUp} className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card p-4 space-y-3">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-violet-400" /> {t.habitImpact || 'Habit Impact'}
+          </h3>
+          <div className="space-y-2">
+            {moodInsights.habitDiffs.map(({ id, name, diff }) => (
+              <div key={id} className="flex items-center justify-between">
+                <span className="text-xs text-foreground truncate flex-1 min-w-0 me-2">{name}</span>
+                <span className={cn(
+                  'text-xs font-semibold tabular-nums flex-shrink-0',
+                  diff > 0 ? 'text-emerald-400' : 'text-rose-400',
+                )}>
+                  {diff > 0 ? '+' : ''}{diff.toFixed(1)}
+                </span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground">{t.habitImpactDesc || 'How habits affect your mood'}</p>
         </motion.div>
       )}
 

@@ -23,6 +23,7 @@ import { frequencyPresets } from '@/hooks/useHabitForm';
 import { AnimatedFire } from '@/components/compact-habit-card/AnimatedFire';
 import { ScoreRing } from './ScoreRing';
 import { MiniWeekRow } from './MiniWeekRow';
+import { ENTRY } from '@/types';
 import type { Habit } from '@/types';
 
 interface HabitHubCardProps {
@@ -68,6 +69,32 @@ export const HabitHubCard = memo(function HabitHubCard({
   const currentValue = isNumeric ? getNumericalValue(habit, today) : 0;
   const target = isNumeric ? (habit.targetValue || 1) : 1;
   const progress = isNumeric && target > 0 ? Math.min(currentValue / target, 1) : 0;
+
+  // Weekly progress for non-daily boolean habits (e.g. "2/3")
+  const weeklyProgress = useMemo(() => {
+    const { numerator, denominator } = habit.frequency;
+    if (numerator === denominator) return null; // daily — no badge
+    if (habit.habitType !== 'boolean') return null;
+
+    // Monday of current ISO week
+    const todayDate = new Date(today + 'T00:00:00');
+    const dow = todayDate.getDay(); // 0=Sun
+    const mondayOffset = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(todayDate);
+    monday.setDate(monday.getDate() + mondayOffset);
+
+    let count = 0;
+    for (let d = 0; d < 7; d++) {
+      const date = new Date(monday);
+      date.setDate(date.getDate() + d);
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      if (habit.entries?.[`${y}-${m}-${day}`]?.value === ENTRY.YES_MANUAL) count++;
+    }
+
+    return { done: count, target: numerator };
+  }, [habit, today]);
 
   // Frequency label for footer (i18n-aware)
   const freqLabel = useMemo(() => {
@@ -186,9 +213,20 @@ export const HabitHubCard = memo(function HabitHubCard({
                 </span>
               </div>
             ) : <div />}
-            <span className="text-[10px] text-slate-500 tabular-nums">
-              🎯 {freqLabel}
-            </span>
+            <div className="flex items-center gap-2">
+              {weeklyProgress && (
+                <span className={cn(
+                  'text-[10px] tabular-nums',
+                  weeklyProgress.done >= weeklyProgress.target
+                    ? 'text-emerald-400' : 'text-slate-500',
+                )}>
+                  {weeklyProgress.done}/{weeklyProgress.target}
+                </span>
+              )}
+              <span className="text-[10px] text-slate-500 tabular-nums">
+                🎯 {freqLabel}
+              </span>
+            </div>
           </div>
         )}
       </div>

@@ -1103,6 +1103,10 @@ export interface Translations {
   identityVerbPlaceholder: string;
   identityIcon: string;
 
+  // Habit Impact (stats)
+  habitImpact: string;
+  habitImpactDesc: string;
+
   // Habit audit — accessibility & i18n completeness
   done: string;
   notDone: string;

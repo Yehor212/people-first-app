@@ -1060,6 +1060,8 @@ export const ja: Translations = {
   identityVerb: 'アファメーション',
   identityVerbPlaceholder: '例：私は瞑想する人です',
   identityIcon: 'アイコン',
+  habitImpact: '習慣の影響',
+  habitImpactDesc: '習慣が気分にどう影響するか',
   done: '完了',
   notDone: '未完了',
   noData: 'データなし',

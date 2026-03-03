@@ -9,6 +9,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAICoach } from '@/contexts/AICoachContext';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { type Step, type GoalId, GOALS, getText } from './texts';
 
 interface AICoachOnboardingProps {
@@ -19,6 +20,7 @@ interface AICoachOnboardingProps {
 export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps) {
   const { t: _t, language } = useLanguage();
   const { saveOnboardingAnswer } = useAICoach();
+  useBackHandler(true, onSkip);
 
   const [step, setStep] = useState<Step>('intro');
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);

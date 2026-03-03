@@ -1070,6 +1070,8 @@ export const en: Translations = {
   identityVerb: 'Affirmation',
   identityVerbPlaceholder: 'e.g., I am a meditator',
   identityIcon: 'Icon',
+  habitImpact: 'Habit Impact',
+  habitImpactDesc: 'How habits affect your mood',
   done: 'done',
   notDone: 'not done',
   noData: 'no data',

@@ -68,6 +68,7 @@ export const StatsPage = memo(function StatsPage({
     filteredMoods,
     stats,
     premiumStats,
+    moodInsights,
   } = useStatsCalculations({
     moods, habits, focusSessions, gratitudeEntries,
     restDays, currentFocusMinutes, range, selectedTag, monthNames,
@@ -141,6 +142,7 @@ export const StatsPage = memo(function StatsPage({
           completedFocusSessions={completedFocusSessions}
           gratitudeEntries={gratitudeEntries}
           restDays={restDays}
+          moodInsights={moodInsights}
           onQuickAction={onQuickAction}
           onShowStory={() => setActiveModal('story')}
           onRingClick={(ringId) => setSelectedRing(ringId)}
