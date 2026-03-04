@@ -155,7 +155,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                     >
                       {/* Colored glow orb — ambient background */}
                       <div
-                        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full opacity-[0.10] blur-2xl group-hover:opacity-[0.18] transition-opacity"
+                        className="absolute top-1/2 start-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-full opacity-[0.10] blur-2xl group-hover:opacity-[0.18] transition-opacity"
                         style={{ backgroundColor: color }}
                       />
 
@@ -171,7 +171,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
 
                       {/* Bottom accent line in habit color */}
                       <div
-                        className="absolute bottom-0 left-4 right-4 h-[2px] rounded-full opacity-30 group-hover:opacity-50 transition-opacity"
+                        className="absolute bottom-0 start-4 end-4 h-[2px] rounded-full opacity-30 group-hover:opacity-50 transition-opacity"
                         style={{ backgroundColor: color }}
                       />
                     </button>
