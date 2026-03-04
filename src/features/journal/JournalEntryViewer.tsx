@@ -143,13 +143,15 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
   // Load audio recordings
   const [audioRecordings, setAudioRecordings] = useState<JournalAudio[]>([]);
   useEffect(() => {
+    let cancelled = false;
     if (entry.audioIds && entry.audioIds.length > 0) {
       import('./journalStorage').then(({ getAudioForEntry }) => {
-        getAudioForEntry(entry.id).then(setAudioRecordings).catch(err => { logger.warn('[Journal]', 'Audio load failed:', err); setAudioRecordings([]); });
+        getAudioForEntry(entry.id).then(recordings => { if (!cancelled) setAudioRecordings(recordings); }).catch(err => { logger.warn('[Journal]', 'Audio load failed:', err); if (!cancelled) setAudioRecordings([]); });
       }).catch(err => logger.warn('[Journal]', 'Audio module load failed:', err));
     } else {
       setAudioRecordings([]);
     }
+    return () => { cancelled = true; };
   }, [entry.id, entry.audioIds]);
 
   const date = new Date(entry.createdAt);
@@ -167,11 +169,11 @@ export function JournalEntryViewer({ entry, onEdit, onDelete, onBack }: JournalE
   // Diary theme/font for themed entries
   const themeStyle = useMemo(() => {
     if (!entry.theme) return undefined;
-    const vars = DIARY_THEMES[entry.theme];
+    const vars = DIARY_THEMES[entry.theme] ?? DIARY_THEMES.dark;
     return { ...vars, backgroundColor: vars['--diary-bg'], color: vars['--diary-text'] } as React.CSSProperties;
   }, [entry.theme]);
 
-  const fontFamily = entry.font ? DIARY_FONTS[entry.font].family : undefined;
+  const fontFamily = entry.font ? DIARY_FONTS[entry.font]?.family : undefined;
 
   const handleShare = async () => {
     const text = [entry.title, entry.content].filter(Boolean).join('\n\n');

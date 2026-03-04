@@ -98,8 +98,9 @@ export const JournalEntryCard = memo(function JournalEntryCard({
       const regex = new RegExp(`(${escapeRegex(searchQuery)})`, 'gi');
       const parts = text.split(regex);
       if (parts.length <= 1) return text;
+      const queryLower = searchQuery.toLowerCase();
       return parts.map((part, i) =>
-        regex.test(part)
+        part.toLowerCase().includes(queryLower)
           ? <mark key={i} className="bg-primary/20 text-foreground rounded-sm px-0.5">{part}</mark>
           : part
       );

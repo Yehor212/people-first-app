@@ -876,7 +876,7 @@ export function JournalEntryEditor({
                 <motion.button
                   key={at.name}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => diaryTheme.setTheme(at.name)}
+                  onClick={() => { diaryTheme.setTheme(at.name); setBgPattern('none'); }}
                   className={cn(
                     'px-3 py-1.5 rounded-lg text-xs font-medium border transition-all',
                     isActive
@@ -1088,19 +1088,23 @@ export function JournalEntryEditor({
           <div className="flex items-center gap-1 bg-black/30 p-1.5 rounded-xl border border-white/5 flex-shrink-0">
             {BG_PATTERN_LIST.map(pat => {
               const isActive = pat.name === bgPattern;
+              const isNone = pat.name === 'none';
               return (
                 <motion.button
                   key={pat.name}
                   whileTap={{ scale: 0.85 }}
                   onClick={() => setBgPattern(pat.name)}
                   className={cn(
-                    'w-8 h-8 rounded-lg border-2 transition-all flex-shrink-0',
+                    'w-8 h-8 rounded-lg border-2 transition-all flex-shrink-0 flex items-center justify-center',
                     isActive ? 'border-white/60 scale-110 shadow-lg' : 'border-white/10 hover:border-white/25',
+                    isNone && !isActive && 'border-dashed border-white/20',
                   )}
-                  style={{ background: pat.swatch }}
+                  style={isNone ? undefined : { background: pat.swatch }}
                   aria-label={ts[pat.i18nKey] || pat.name}
                   title={ts[pat.i18nKey] || pat.name}
-                />
+                >
+                  {isNone && <span className="text-xs text-slate-400">⊘</span>}
+                </motion.button>
               );
             })}
           </div>

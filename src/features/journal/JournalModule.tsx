@@ -5,6 +5,7 @@ import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { registerModalCloseCallback } from '@/lib/androidBackHandler';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { createFocusTrap, announceSuccess, announceError } from '@/lib/a11y';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/lib/supabaseClient';
@@ -55,6 +56,7 @@ export function JournalModule({ onToggleHabit }: JournalModuleProps = {}) {
 
   const [showExportPicker, setShowExportPicker] = useState(false);
   const [exporting, setExporting] = useState(false);
+  useBackHandler(showExportPicker, () => setShowExportPicker(false));
   const [importing, setImporting] = useState(false);
   const [importFeedback, setImportFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [hasDraft, setHasDraft] = useState(false);

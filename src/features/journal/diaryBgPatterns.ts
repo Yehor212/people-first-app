@@ -25,7 +25,7 @@ export interface BgPatternMeta {
 }
 
 export const BG_PATTERN_LIST: BgPatternMeta[] = [
-  { name: 'none',         i18nKey: 'diaryBgNone',         swatch: 'transparent',                                category: 'warm' },
+  { name: 'none',         i18nKey: 'diaryBgNone',         swatch: 'repeating-conic-gradient(#64748b33 0% 25%, transparent 0% 50%) 0 0 / 8px 8px', category: 'warm' },
   { name: 'sakura',       i18nKey: 'diaryBgSakura',       swatch: 'linear-gradient(135deg, #FFE4EC, #FFB7C5)',   category: 'pastel' },
   { name: 'honey',        i18nKey: 'diaryBgHoney',        swatch: 'linear-gradient(135deg, #FFF3D6, #F0C060)',   category: 'warm' },
   { name: 'cloud',        i18nKey: 'diaryBgCloud',        swatch: 'linear-gradient(135deg, #E8F4FD, #B8D8F0)',   category: 'cool' },
