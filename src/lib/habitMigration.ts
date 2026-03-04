@@ -81,9 +81,11 @@ export function needsMigration(habits: unknown[]): boolean {
  * Migrate a single v1 habit to v2 format.
  */
 export function migrateHabitV1toV2(old: HabitV1, index: number): Habit {
-  // If already migrated (has entries + numeric color), return as-is
+  // If already migrated (has entries + numeric color), strip leftover v1 fields and return.
+  // Without stripping, needsMigration() keeps detecting old fields → infinite hydration loop.
   if (old.entries && typeof old.color === 'number') {
-    return old as unknown as Habit;
+    const { completedDates, skippedDates, progressByDate, completionsByDate, notesByDate, type, ...clean } = old as any;
+    return clean as unknown as Habit;
   }
 
   const entries: Record<string, HabitEntry> = {};

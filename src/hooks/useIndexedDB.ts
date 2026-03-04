@@ -170,16 +170,21 @@ export function useIndexedDB<T>({
   // overwrite the correct React state — resurrecting deleted items.
   const writePendingRef = useRef(false);
 
+  // Schemas are stable across renders (defined at module level), so store in refs
+  // to prevent applyValidation → loadData → refresh effect from re-triggering on every render.
+  const itemSchemaRef = useRef(itemSchema);
+  const objectSchemaRef = useRef(objectSchema);
+
   // Apply schema validation if provided (otherwise passthrough)
   const applyValidation = useCallback((raw: unknown): T | null => {
-    if (itemSchema && Array.isArray(raw)) {
-      return validateArray(itemSchema, raw, localStorageKey) as T;
+    if (itemSchemaRef.current && Array.isArray(raw)) {
+      return validateArray(itemSchemaRef.current, raw, localStorageKey) as T;
     }
-    if (objectSchema && !Array.isArray(raw)) {
-      return validateObject(objectSchema, raw, localStorageKey) as T | null;
+    if (objectSchemaRef.current && !Array.isArray(raw)) {
+      return validateObject(objectSchemaRef.current, raw, localStorageKey) as T | null;
     }
     return raw as T;
-  }, [itemSchema, objectSchema, localStorageKey]);
+  }, [localStorageKey]);
 
   // Load data function (used both on init and refresh)
   const loadData = useCallback(async (isInitialLoad = false) => {

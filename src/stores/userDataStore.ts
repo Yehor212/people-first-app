@@ -3,6 +3,11 @@ import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ReminderSettings, 
 import { defaultReminderSettings } from '@/lib/reminders';
 import { needsMigration, migrateAllHabits } from '@/lib/habitMigration';
 
+// Module-level guard: prevents _hydrateFromDB from re-running migration in a loop.
+// The loop occurs when migration calls dbSetter → useIndexedDB setState → useLayoutEffect
+// re-fires → _hydrateFromDB → needsMigration still true (stale v1 fields) → INFINITE LOOP.
+let habitsMigrationDone = false;
+
 // Setter type matching useIndexedDB's return
 type Setter<T> = (value: T | ((prev: T) => T)) => void;
 
@@ -143,8 +148,11 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
       ? (Array.isArray(data.habits) ? data.habits : [])
       : undefined;
 
-    // v1 → v2 migration: convert old habit format to entry-based model
-    if (habits && habits.length > 0 && needsMigration(habits)) {
+    // v1 → v2 migration: convert old habit format to entry-based model.
+    // Guard with module-level flag to prevent infinite loop:
+    // _hydrateFromDB → dbSetter → useIndexedDB setState → useLayoutEffect re-fires → _hydrateFromDB again
+    if (habits && habits.length > 0 && !habitsMigrationDone && needsMigration(habits)) {
+      habitsMigrationDone = true; // One-shot guard — prevents re-entry even if stale data persists
       console.info('[habitMigration] Migrating v1 habits to v2 format...');
       habits = migrateAllHabits(habits);
       // Persist migrated habits back to IndexedDB
