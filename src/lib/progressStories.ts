@@ -207,7 +207,10 @@ function calculateHabitStats(habits: Habit[], weekStart: Date, weekEnd: Date): H
       d => d >= startStr && d <= endStr
     );
     totalCompletions += weekCompletions.length;
-    totalPossible += daysInWeek.length;
+    const freqRatio = habit.frequency.denominator > 0
+      ? habit.frequency.numerator / habit.frequency.denominator
+      : 1;
+    totalPossible += Math.round(daysInWeek.length * freqRatio);
 
     if (weekCompletions.length > topCompletions) {
       topCompletions = weekCompletions.length;
@@ -223,10 +226,15 @@ function calculateHabitStats(habits: Habit[], weekStart: Date, weekEnd: Date): H
     });
   });
 
-  // Count perfect days (all habits completed)
+  // Count perfect days (all daily habits that existed on that day completed)
   const perfectDays = daysInWeek.filter(day => {
+    const activeDaily = habits.filter(h => {
+      const created = toDateStr(new Date(h.createdAt));
+      const isDaily = h.frequency.numerator === h.frequency.denominator;
+      return created <= day && isDaily;
+    });
     const completed = completionsByDay.get(day) || 0;
-    return completed >= habits.length && habits.length > 0;
+    return activeDaily.length > 0 && completed >= activeDaily.length;
   }).length;
 
   const completionRate = totalPossible > 0 ? (totalCompletions / totalPossible) * 100 : 0;

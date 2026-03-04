@@ -109,8 +109,14 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
         return createdStr <= dateStr;
       });
       const totalHabits = activeHabits.length;
+      const expectedCompletions = activeHabits.reduce((sum, h) => {
+        const freq = h.frequency?.denominator > 0
+          ? h.frequency.numerator / h.frequency.denominator
+          : 1;
+        return sum + freq;
+      }, 0);
       const completedCount = completedHabits.length;
-      const completionRate = totalHabits > 0 ? completedCount / totalHabits : 0;
+      const completionRate = expectedCompletions > 0 ? completedCount / expectedCompletions : 0;
 
       days.push({
         date: dateStr,

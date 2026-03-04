@@ -150,6 +150,11 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
       if (!identityVerb.trim()) delete updatedHabit.identityVerb;
       if (!identityIcon) delete updatedHabit.identityIcon;
 
+      // Clear entries when habit type changes — old values are incompatible
+      if (editingHabit.habitType && editingHabit.habitType !== habitType) {
+        updatedHabit.entries = {};
+      }
+
       onUpdateHabit(updatedHabit);
     } else {
       const habit: Habit = {

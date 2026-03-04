@@ -121,14 +121,18 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
   const handleCellTap = useCallback((cell: DayCell, e: React.MouseEvent | React.TouchEvent) => {
     if (cell.status === 'before' || cell.status === 'future') return;
     const rect = (e.target as HTMLElement).getBoundingClientRect();
-    setTooltip({ date: formatShortDate(cell.date, language), status: getStatusLabel(cell.status), x: rect.left, y: rect.top - 32 });
+    const adjustedY = Math.max(40, rect.top - 32);
+    const adjustedX = Math.min(rect.left, window.innerWidth - 140);
+    setTooltip({ date: formatShortDate(cell.date, language), status: getStatusLabel(cell.status), x: adjustedX, y: adjustedY });
     setTimeout(() => setTooltip(null), 2000);
   }, [getStatusLabel, language]);
 
   const handleCellHover = useCallback((cell: DayCell, e: React.MouseEvent) => {
     if (cell.status === 'before' || cell.status === 'future') return;
     const rect = (e.target as HTMLElement).getBoundingClientRect();
-    setTooltip({ date: formatShortDate(cell.date, language), status: getStatusLabel(cell.status), x: rect.left, y: rect.top - 32 });
+    const adjustedY = Math.max(40, rect.top - 32);
+    const adjustedX = Math.min(rect.left, window.innerWidth - 140);
+    setTooltip({ date: formatShortDate(cell.date, language), status: getStatusLabel(cell.status), x: adjustedX, y: adjustedY });
   }, [getStatusLabel, language]);
 
   return (

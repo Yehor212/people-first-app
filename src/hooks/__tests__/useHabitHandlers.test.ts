@@ -70,6 +70,7 @@ vi.mock('@/lib/haptics', () => ({
     habitToggled: vi.fn(() => Promise.resolve()),
     habitCompleted: vi.fn(() => Promise.resolve()),
   },
+  hapticTap: vi.fn(() => Promise.resolve()),
 }));
 
 vi.mock('@/lib/habits', async (importOriginal) => {

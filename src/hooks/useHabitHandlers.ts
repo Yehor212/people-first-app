@@ -3,7 +3,7 @@ import { useUIStore, useUserDataStore } from '@/stores';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { triggerXpPopup } from '@/components/XpPopup';
 import { triggerSync } from '@/storage/cloudSync';
-import { haptics } from '@/lib/haptics';
+import { haptics, hapticTap } from '@/lib/haptics';
 import { normalizeHabit } from '@/lib/habits';
 import { getNextToggleValue, setEntryValue, toStoredValue } from '@/lib/habits';
 import { findTemplateIdByName, getHabitTemplateName } from '@/lib/habitTemplates';
@@ -196,6 +196,8 @@ export function useHabitHandlers({
     if (processingHabitsRef.current.has(processingKey)) return;
     processingHabitsRef.current.add(processingKey);
 
+    void hapticTap();
+
     const prevTimeout = processingTimeoutsRef.current.get(processingKey);
     if (prevTimeout) clearTimeout(prevTimeout);
     processingTimeoutsRef.current.set(processingKey, setTimeout(() => {
@@ -203,23 +205,37 @@ export function useHabitHandlers({
       processingTimeoutsRef.current.delete(processingKey);
     }, 300));
 
-    setHabits(prev => {
-      const habit = prev.find(h => h.id === habitId);
-      if (!habit) return prev;
+    // Capture current state BEFORE update for completion detection
+    const habit = habits.find(h => h.id === habitId);
+    const currentStored = habit?.entries?.[date]?.value ?? 0;
+    const currentReal = currentStored > 0 ? currentStored / 1000 : 0;
+    const newReal = Math.max(0, currentReal + delta);
 
-      const currentStored = habit.entries?.[date]?.value ?? 0;
-      const currentReal = currentStored > 0 ? currentStored / 1000 : 0;
-      const newReal = Math.max(0, currentReal + delta);
+    setHabits(prev => {
+      const h = prev.find(x => x.id === habitId);
+      if (!h) return prev;
+
       const storedValue = toStoredValue(newReal);
 
-      return prev.map(h => h.id !== habitId ? h : {
-        ...h,
-        entries: setEntryValue(h.entries || {}, date, storedValue),
+      return prev.map(x => x.id !== habitId ? x : {
+        ...x,
+        entries: setEntryValue(x.entries || {}, date, storedValue),
         updatedAt: new Date().toISOString(),
       });
     });
+
+    // Fire completion effects OUTSIDE updater if newly meeting target
+    if (habit && habit.targetValue > 0) {
+      const isAtMost = habit.targetType === 'atMost';
+      const prevMet = currentReal > 0 && (isAtMost ? currentReal <= habit.targetValue : currentReal >= habit.targetValue);
+      const nowMet = isAtMost ? newReal <= habit.targetValue : newReal >= habit.targetValue;
+      if (nowMet && !prevMet) {
+        fireCompletionEffects(habit);
+      }
+    }
+
     triggerSync();
-  }, [setHabits]);
+  }, [habits, setHabits, fireCompletionEffects]);
 
   const handleAddHabit = (habit: Habit) => {
     setHabits(prev => [...prev, habit]);

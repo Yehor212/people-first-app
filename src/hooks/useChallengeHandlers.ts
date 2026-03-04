@@ -13,6 +13,7 @@ import {
 import { safeLocalStorageGet } from '@/lib/safeJson';
 import type { Habit, MoodEntry, FocusSession, GratitudeEntry } from '@/types';
 import { getHabitCompletedDates, isHabitCompletedOnDate } from '@/lib/habits';
+import { calculateStreak } from '@/lib/utils';
 
 interface UseChallengeHandlersParams {
   safeMoods: MoodEntry[];
@@ -89,10 +90,16 @@ export function useChallengeHandlers({
 
     const specialBadgeData = safeLocalStorageGet<Record<string, number>>('zenflow-special-badges', {});
 
+    const perHabitStreaks = safeHabits.map(h => {
+      const dates = getHabitCompletedDates(h);
+      return calculateStreak(dates);
+    });
+    const maxStreak = Math.max(currentActiveStreak || 0, ...perHabitStreaks, 0);
+
     const userStats = {
       totalFocusMinutes,
       currentStreak: currentActiveStreak || 0,
-      longestStreak: currentActiveStreak || 0,
+      longestStreak: maxStreak,
       habitsCompleted: totalHabitsCompleted,
       moodEntries: safeMoods.length,
       gratitudeEntries: totalGratitude,

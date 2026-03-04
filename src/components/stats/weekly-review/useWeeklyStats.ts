@@ -69,21 +69,27 @@ export function useWeeklyStats({ habits, moods, focusSessions, currentStreak, t 
       focusMinutes += dayFocus;
 
       // Mood
+      let dayMoodTotal = 0;
+      let dayMoodCount = 0;
       const dayMoods = moods.filter(m => m.date === date);
       dayMoods.forEach(m => {
         const score = m.mood === 'great' ? 5 : m.mood === 'good' ? 4 : m.mood === 'okay' ? 3 : m.mood === 'bad' ? 2 : 1;
         moodTotal += score;
         moodCount++;
+        dayMoodTotal += score;
+        dayMoodCount++;
       });
 
-      // Perfect day check — only consider habits that existed on this day
-      const isPerfect = dayHabits === activeHabits.length && activeHabits.length > 0 && dayFocus >= 30;
+      // Perfect day check — only consider daily habits that existed on this day
+      const dailyHabits = activeHabits.filter(h => h.frequency.numerator === h.frequency.denominator);
+      const dailyCompleted = dailyHabits.filter(h => isHabitCompletedOnDate(h, date)).length;
+      const isPerfect = dailyCompleted === dailyHabits.length && dailyHabits.length > 0 && dayFocus >= 30;
       if (isPerfect) perfectDays++;
 
       // Best day calculation
       const dayScore = (dayHabits / Math.max(activeHabits.length, 1)) * 50 +
                        Math.min(dayFocus / 60, 1) * 30 +
-                       (dayMoods.length > 0 ? (moodTotal / moodCount / 5) * 20 : 0);
+                       (dayMoodCount > 0 ? (dayMoodTotal / dayMoodCount / 5) * 20 : 0);
       if (dayScore > bestDayScore) {
         bestDayScore = dayScore;
         bestDay = date;
