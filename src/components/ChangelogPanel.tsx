@@ -212,7 +212,7 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
               version={version}
               isExpanded={expandedVersions.has(version.version)}
               onToggle={() => toggleVersion(version.version)}
-              t={t as Record<string, string>}
+              t={t as unknown as Record<string, string>}
             />
           ))
         )}

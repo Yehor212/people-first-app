@@ -177,11 +177,12 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                 hsl(var(--card)) 60%)`
             }}
           />
-          <motion.div
+          <div
             className="absolute inset-0 pointer-events-none"
-            animate={{ opacity: [0.3, 0.5, 0.3] }}
-            transition={{ duration: 4, repeat: Infinity }}
-            style={{ background: `radial-gradient(circle at 70% 20%, rgba(34, 197, 94, 0.1) 0%, transparent 40%)` }}
+            style={{
+              background: 'radial-gradient(circle at 70% 20%, rgba(34, 197, 94, 0.1) 0%, transparent 40%)',
+              animation: 'nature-energy-glow 4s ease-in-out infinite',
+            }}
           />
         </>
       )}

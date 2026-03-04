@@ -109,6 +109,28 @@ export function useJournal() {
     }
   }, [activeEntryId]);
 
+  // Soft delete: remove from UI state only, return entry for undo
+  const softDeleteEntry = useCallback((id: string): JournalEntry | null => {
+    const entry = entries.find(e => e.id === id);
+    if (!entry) return null;
+    setEntries(prev => prev.filter(e => e.id !== id));
+    if (activeEntryId === id) {
+      setActiveEntryId(null);
+      setView('list');
+    }
+    return entry;
+  }, [entries, activeEntryId]);
+
+  // Commit: actually delete from storage (called after undo timeout)
+  const commitDeleteEntry = useCallback(async (id: string) => {
+    await storage.deleteEntry(id);
+  }, []);
+
+  // Restore: add entry back to UI state (on undo)
+  const restoreEntry = useCallback((entry: JournalEntry) => {
+    setEntries(prev => [entry, ...prev].sort((a, b) => b.createdAt - a.createdAt));
+  }, []);
+
   // Photo operations
   const addPhoto = useCallback(async (file: File, entryId: string): Promise<JournalPhoto> => {
     return storage.compressAndStorePhoto(file, entryId);
@@ -176,6 +198,9 @@ export function useJournal() {
     createEntry,
     updateEntry,
     deleteEntry,
+    softDeleteEntry,
+    commitDeleteEntry,
+    restoreEntry,
     addPhoto,
     removePhoto,
     getPhotos,

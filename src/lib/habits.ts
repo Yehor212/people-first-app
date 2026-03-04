@@ -94,7 +94,7 @@ export function getHabitCompletedDates(
   const dates: string[] = [];
   for (const [date, entry] of Object.entries(overrideEntries || habit.entries || {})) {
     if (habit.habitType === 'boolean') {
-      if (entry.value === ENTRY.YES_MANUAL) {
+      if (entry.value === ENTRY.YES_MANUAL || entry.value === ENTRY.YES_AUTO) {
         dates.push(date);
       }
     } else {

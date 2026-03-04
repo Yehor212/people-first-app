@@ -9,13 +9,14 @@
  * - AnimatePresence for slide-up / slide-down transitions
  */
 
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, CheckCircle, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
 import { zenMotion } from '@/lib/animationUtils';
 import { useModalA11y } from '@/hooks/useModalA11y';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { GOAL_ICON_MAP } from './GoalInput';
 import { GOAL_COLORS } from './GoalNode';
 import type { CanvasGoal } from '@/types';
@@ -79,6 +80,9 @@ export function GoalActionSheet({
   onDismiss,
 }: GoalActionSheetProps) {
   const isVisible = goal !== null;
+  const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { modalProps } = useModalA11y(isVisible, onDismiss);
 
@@ -97,7 +101,13 @@ export function GoalActionSheet({
   const handleDelete = useCallback(() => {
     if (!goal) return;
     void haptics.buttonPress();
+    setShowDeleteConfirm(true);
+  }, [goal]);
+
+  const confirmDelete = useCallback(() => {
+    if (!goal) return;
     onDelete(goal.id);
+    setShowDeleteConfirm(false);
   }, [goal, onDelete]);
 
   const handleIconTap = useCallback((key: string) => {
@@ -242,21 +252,41 @@ export function GoalActionSheet({
             {/* Action rows */}
             <ActionRow
               icon={Plus}
-              label="Add Subtask"
+              label={ts.goalAddSubtask || 'Add Subtask'}
               onClick={handleAddSubtask}
             />
             <ActionRow
               icon={CheckCircle}
-              label={goal.completed ? 'Mark Incomplete' : 'Mark Complete'}
+              label={goal.completed ? (ts.goalMarkIncomplete || 'Mark Incomplete') : (ts.goalMarkComplete || 'Mark Complete')}
               onClick={handleToggleComplete}
               disabled={isBranch}
             />
-            <ActionRow
-              icon={Trash2}
-              label="Delete"
-              onClick={handleDelete}
-              destructive
-            />
+            {showDeleteConfirm ? (
+              <div className="px-5 py-3 space-y-2">
+                <p className="text-sm text-red-300">{ts.confirmDelete || 'Delete?'}</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 py-2.5 rounded-xl bg-white/10 text-white/80 text-sm font-medium min-h-[44px]"
+                  >
+                    {ts.cancel || 'Cancel'}
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 py-2.5 rounded-xl bg-red-500/20 text-red-400 text-sm font-medium min-h-[44px]"
+                  >
+                    {ts.delete || 'Delete'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <ActionRow
+                icon={Trash2}
+                label={ts.delete || 'Delete'}
+                onClick={handleDelete}
+                destructive
+              />
+            )}
 
             {/* Bottom safe area spacer */}
             <div className="h-2" />

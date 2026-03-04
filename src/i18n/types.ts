@@ -315,6 +315,10 @@ export interface Translations {
   save: string;
   cancel: string;
   undo: string;
+  entryDeleted: string;
+  goalAddSubtask: string;
+  goalMarkComplete: string;
+  goalMarkIncomplete: string;
   edit: string;
   editHabit: string;
   decreaseTarget: string;
@@ -1438,6 +1442,15 @@ export interface Translations {
   storyTapCenter: string;
   storyTapRight: string;
   generating: string;
+  // SummarySlide labels
+  storyWeekAtGlance: string;
+  storyMood: string;
+  storyHabits: string;
+  storyFocus: string;
+  storyKeepGoingAchievements: string;
+  // Canvas GoalInput placeholders
+  goalInputPlaceholder: string;
+  addSubtaskPlaceholder: string;
 
   // Streak Celebration
   dayStreak: string;
@@ -1469,6 +1482,7 @@ export interface Translations {
   gardenStageFlourishing: string;
   gardenStageMagical: string;
   gardenStageLegendary: string;
+  gardenGrowsHint: string;
   gardenPlants: string;
   gardenGrowth: string;
   gardenPlantedAgo: string;

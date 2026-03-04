@@ -49,13 +49,17 @@ export const ChallengeModal = memo(function ChallengeModal({
   const [newlyCreatedChallenge, setNewlyCreatedChallenge] = useState<Challenge | null>(null);
   const [pendingInvite, setPendingInvite] = useState<ChallengeInvite | undefined>(undefined);
 
-  // Android back button: navigate sub-views before closing entire modal
-  useBackHandler(open && (mode === 'details' || mode === 'join' || mode === 'create'), () => {
+  // Android back button: navigate sub-views back, or close modal from list view
+  useBackHandler(open, () => {
     void hapticTap();
-    setSelectedChallenge(null);
-    setNewlyCreatedChallenge(null);
-    setPendingInvite(undefined);
-    setMode('list');
+    if (mode === 'details' || mode === 'join' || mode === 'create') {
+      setSelectedChallenge(null);
+      setNewlyCreatedChallenge(null);
+      setPendingInvite(undefined);
+      setMode('list');
+    } else {
+      onOpenChange(false);
+    }
   });
 
   // Escape key: navigate sub-views back, or close the modal

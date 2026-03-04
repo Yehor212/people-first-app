@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { HabitCategory, LoopHabitType } from '@/types';
 import { cn } from '@/lib/utils';
@@ -23,6 +23,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     return () => { if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current); };
@@ -145,11 +146,12 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         }}
       >
         {isPrimaryCTA && (
-          <motion.div
+          <div
             className="absolute inset-0 pointer-events-none"
-            style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%)' }}
-            animate={{ x: ['-100%', '100%'] }}
-            transition={{ duration: 3, repeat: Infinity, repeatDelay: 2, ease: 'linear' }}
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%)',
+              animation: 'form-shimmer 3s linear 2s infinite',
+            }}
           />
         )}
         <p className={cn("text-xs mb-2", isPrimaryCTA ? "text-slate-500 dark:text-foreground/60" : "text-muted-foreground")}>
@@ -589,11 +591,11 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
       {/* Submit Button */}
       {isPrimaryCTA ? (
         <motion.button
-          onClick={(e) => { e.preventDefault(); handleAddHabit(); }}
-          disabled={!newHabitName.trim()}
+          onClick={(e) => { e.preventDefault(); if (isSaving) return; setIsSaving(true); handleAddHabit(); }}
+          disabled={!newHabitName.trim() || isSaving}
           className={cn(
             "relative w-full py-3.5 rounded-xl font-semibold text-white transition-all overflow-hidden",
-            newHabitName.trim()
+            newHabitName.trim() && !isSaving
               ? editingHabit
                 ? "bg-gradient-to-r from-blue-500 to-indigo-500"
                 : "bg-gradient-to-r from-emerald-500 to-teal-500"
@@ -606,10 +608,9 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
           whileTap={newHabitName.trim() ? { scale: 0.98 } : {}}
         >
           {newHabitName.trim() && (
-            <motion.div
+            <div
               className={cn("absolute inset-0 rounded-xl border-2", editingHabit ? "border-indigo-400/30" : "border-emerald-400/30")}
-              animate={{ scale: [1, 1.05], opacity: [0.5, 0] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
+              style={{ animation: 'submit-pulse-ring 1.5s ease-in-out infinite' }}
             />
           )}
           <span className="relative z-10">
@@ -620,8 +621,8 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         <Button
           variant={editingHabit ? "default" : "gradient"}
           size="lg"
-          onClick={(e) => { e.preventDefault(); handleAddHabit(); }}
-          disabled={!newHabitName.trim()}
+          onClick={(e) => { e.preventDefault(); if (isSaving) return; setIsSaving(true); handleAddHabit(); }}
+          disabled={!newHabitName.trim() || isSaving}
           className="w-full"
         >
           {editingHabit ? (t.saveChanges || 'Save Changes') : t.addHabit}

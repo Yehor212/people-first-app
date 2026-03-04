@@ -6,7 +6,7 @@
  */
 
 import type { Habit } from '@/types';
-import { getToday } from './utils';
+import { getToday, formatDate } from './utils';
 import { isHabitCompletedOnDate } from '@/lib/habits';
 
 /** Sentinel ID for uncategorized habits — resolved to i18n text in the UI layer */
@@ -30,7 +30,7 @@ function getLastNDates(n: number): string[] {
   for (let i = 0; i < n; i++) {
     const d = new Date(now);
     d.setDate(d.getDate() - i);
-    dates.push(d.toISOString().split('T')[0]);
+    dates.push(formatDate(d));
   }
   return dates;
 }

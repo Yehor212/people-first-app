@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface UseHyperfocusTimerOptions {
   duration: number; // minutes
@@ -6,36 +6,51 @@ interface UseHyperfocusTimerOptions {
 }
 
 export function useHyperfocusTimer({ duration, onComplete }: UseHyperfocusTimerOptions) {
-  const [timeLeft, setTimeLeft] = useState(duration * 60);
+  const totalSeconds = duration * 60;
+  const [timeLeft, setTimeLeft] = useState(totalSeconds);
   const [isRunning, setIsRunning] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [showBreathingAnimation, setShowBreathingAnimation] = useState(false);
+  const startTimeRef = useRef<number>(0);
+  const pausedElapsedRef = useRef<number>(0);
   const autoBreakTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const autoBreakFiredRef = useRef<Set<number>>(new Set());
 
-  // Countdown timer
+  // Wall-clock-anchored countdown — resilient to background throttling
   useEffect(() => {
     if (!isRunning || isPaused) return;
 
+    startTimeRef.current = Date.now() - pausedElapsedRef.current * 1000;
+
     const interval = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          onComplete();
-          return 0;
-        }
-        return prev - 1;
-      });
+      const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
+      const remaining = Math.max(totalSeconds - elapsed, 0);
+      setTimeLeft(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(interval);
+        onComplete();
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning, isPaused, onComplete]);
+  }, [isRunning, isPaused, totalSeconds, onComplete]);
 
-  // Auto-break reminder every 25 minutes
+  // Track paused elapsed time
+  useEffect(() => {
+    if (isPaused && isRunning) {
+      pausedElapsedRef.current = totalSeconds - timeLeft;
+    }
+  }, [isPaused, isRunning, totalSeconds, timeLeft]);
+
+  // Auto-break reminder every 25 minutes (fires once per milestone)
   useEffect(() => {
     if (!isRunning || isPaused) return;
 
-    const elapsed = (duration * 60) - timeLeft;
-    if (elapsed > 0 && elapsed % (25 * 60) === 0) {
+    const elapsed = totalSeconds - timeLeft;
+    const milestone = Math.floor(elapsed / (25 * 60));
+    if (milestone > 0 && !autoBreakFiredRef.current.has(milestone)) {
+      autoBreakFiredRef.current.add(milestone);
       setShowBreathingAnimation(true);
       setIsPaused(true);
 
@@ -44,21 +59,22 @@ export function useHyperfocusTimer({ duration, onComplete }: UseHyperfocusTimerO
         setIsPaused(false);
       }, 30000);
     }
+  }, [timeLeft, totalSeconds, isRunning, isPaused]);
 
-    return () => {
-      if (autoBreakTimeoutRef.current) {
-        clearTimeout(autoBreakTimeoutRef.current);
-      }
-    };
-  }, [timeLeft, duration, isRunning, isPaused]);
+  // Cleanup auto-break timeout on unmount
+  useEffect(() => () => {
+    if (autoBreakTimeoutRef.current) {
+      clearTimeout(autoBreakTimeoutRef.current);
+    }
+  }, []);
 
-  const progress = ((duration * 60 - timeLeft) / (duration * 60)) * 100;
+  const progress = ((totalSeconds - timeLeft) / totalSeconds) * 100;
 
-  const formatTime = (seconds: number) => {
+  const formatTime = useCallback((seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
+  }, []);
 
   return {
     timeLeft,

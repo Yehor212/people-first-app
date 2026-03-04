@@ -12,6 +12,7 @@ import {
   getDaysRemaining,
   deleteChallenge,
 } from '@/lib/friendChallenge';
+import type { Translations } from '@/i18n/types';
 import { ParticipantsLeaderboard } from './ParticipantsLeaderboard';
 
 export function ChallengeDetailsView({
@@ -24,7 +25,7 @@ export function ChallengeDetailsView({
   challenge: Challenge;
   onBack: () => void;
   onDelete: () => void;
-  t: Record<string, string>;
+  t: Translations;
   username?: string;
 }) {
   const [copied, setCopied] = useState(false);
@@ -93,13 +94,13 @@ export function ChallengeDetailsView({
 
   // handleShare and handleCopyCode are throttled above (throttledShare, throttledCopyCode)
 
-  const handleDelete = () => {
+  const handleDelete = useThrottledCallback(() => {
     void hapticWarning();
     if (confirm(t.confirmDeleteChallenge || 'Delete this challenge?')) {
       deleteChallenge(challenge.id);
       onDelete();
     }
-  };
+  }, 800);
 
   return (
     <div className="space-y-6 pb-8">

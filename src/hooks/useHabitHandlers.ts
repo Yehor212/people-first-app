@@ -9,6 +9,7 @@ import { getNextToggleValue, setEntryValue, toStoredValue } from '@/lib/habits';
 import { findTemplateIdByName, getHabitTemplateName } from '@/lib/habitTemplates';
 import { addFriendActivity, loadMyProfile } from '@/storage/friendsSync';
 import { recordHabitForChallenge } from '@/lib/comebackChallenge';
+import { getToday } from '@/lib/utils';
 import { getChallenges, saveChallenges } from '@/lib/challengeStorage';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { SK } from '@/lib/storageKeys';
@@ -88,7 +89,7 @@ export function useHabitHandlers({
     }
 
     // Comeback challenge
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getToday();
     const challengeResult = recordHabitForChallenge(today);
     if (challengeResult.challengeComplete) {
       earnTreats('habit', challengeResult.bonusXp, ts.comebackChallengeComplete || 'Comeback Challenge Complete!');
@@ -285,6 +286,7 @@ export function useHabitHandlers({
   };
 
   // Habit localization: update habit names when language changes
+  // Value-based comparison (normalizeHabit always returns a new object, so !== is always true)
   const safeHabitsLength = Array.isArray(habits) ? habits.length : 0;
   useEffect(() => {
     if (safeHabitsLength === 0) return;
@@ -293,17 +295,23 @@ export function useHabitHandlers({
       const updated = prev.map(habit => {
         const normalized = normalizeHabit(habit);
         const templateId = normalized.templateId || findTemplateIdByName(normalized.name);
+
+        // Check if normalization actually changed field values (not just object identity)
+        const needsNormalization = !habit.entries || !habit.reminders
+          || habit.habitType !== normalized.habitType
+          || habit.frequency?.numerator !== normalized.frequency?.numerator
+          || habit.frequency?.denominator !== normalized.frequency?.denominator;
+
         if (!templateId) {
-          if (normalized !== habit) changed = true;
-          return normalized;
+          if (needsNormalization) { changed = true; return normalized; }
+          return habit;
         }
         const localizedName = getHabitTemplateName(templateId, language);
-        if (normalized.name !== localizedName || normalized.templateId !== templateId || normalized !== habit) {
+        if (needsNormalization || normalized.name !== localizedName || normalized.templateId !== templateId) {
           changed = true;
           return { ...normalized, name: localizedName, templateId };
         }
-        if (normalized !== habit) changed = true;
-        return normalized;
+        return habit;
       });
       return changed ? updated : prev;
     });

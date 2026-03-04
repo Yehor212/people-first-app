@@ -202,7 +202,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
       {tooltip && (
         <div
           className="fixed z-[100] px-2 py-1 rounded-lg bg-slate-800 border border-white/10 text-[10px] text-slate-200 pointer-events-none shadow-lg"
-          style={{ left: tooltip.x, top: tooltip.y }}
+          style={{ insetInlineStart: tooltip.x, top: tooltip.y }}
         >
           {tooltip.date} · {tooltip.status}
         </div>

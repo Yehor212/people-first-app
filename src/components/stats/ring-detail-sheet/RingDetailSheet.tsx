@@ -15,7 +15,7 @@ import { TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight, X } from 
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
-import { cn } from '@/lib/utils';
+import { cn, getToday } from '@/lib/utils';
 import type { RingDetailSheetProps } from './types';
 import { ringThemes } from './types';
 import { PremiumChart } from './PremiumChart';
@@ -235,7 +235,7 @@ export function RingDetailSheet({
             <div className="grid grid-cols-7 gap-2">
               {weeklyData.slice(-7).map((day, idx) => {
                 const dayOfWeek = new Date(day.date).getDay();
-                const isToday = day.date === new Date().toISOString().split('T')[0];
+                const isToday = day.date === getToday();
                 const intensity = day.value / 100;
 
                 return (

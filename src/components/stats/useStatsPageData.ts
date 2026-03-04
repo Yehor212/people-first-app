@@ -213,7 +213,7 @@ export function useStatsPageData({
       return Math.min(Math.round((mins / 60) * 100), 100);
     });
 
-    const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const avg = (arr: number[]) => arr.length === 0 ? 0 : arr.reduce((a, b) => a + b, 0) / arr.length;
 
     return {
       mood: moodData,

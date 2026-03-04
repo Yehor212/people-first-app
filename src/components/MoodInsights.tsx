@@ -57,7 +57,7 @@ function getInsightText(
   const fallback = field === 'title' ? insight.title : insight.description;
 
   // If no key or translation not found, use fallback
-  const translation = key ? (t as Record<string, string>)[key] : undefined;
+  const translation = key ? (t as unknown as Record<string, string>)[key] : undefined;
   if (!translation) return fallback;
 
   // Interpolate parameters

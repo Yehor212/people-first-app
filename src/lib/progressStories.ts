@@ -7,6 +7,7 @@
 
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, Badge } from '@/types';
 import { getHabitCompletedDates } from '@/lib/habits';
+import { formatDate as toDateStr } from '@/lib/utils';
 
 // ============================================
 // TYPES
@@ -116,8 +117,8 @@ export function getCurrentWeekRange(): { start: Date; end: Date; range: string }
  * Filter data for the current week
  */
 function filterByWeek<T extends { date: string }>(items: T[], weekStart: Date, weekEnd: Date): T[] {
-  const startStr = weekStart.toISOString().split('T')[0];
-  const endStr = weekEnd.toISOString().split('T')[0];
+  const startStr = toDateStr(weekStart);
+  const endStr = toDateStr(weekEnd);
 
   return items.filter(item => item.date >= startStr && item.date <= endStr);
 }
@@ -188,14 +189,14 @@ function calculateHabitStats(habits: Habit[], weekStart: Date, weekEnd: Date): H
   let topHabit: HabitStatsData['topHabit'] = null;
   let topCompletions = 0;
 
-  const startStr = weekStart.toISOString().split('T')[0];
-  const endStr = weekEnd.toISOString().split('T')[0];
+  const startStr = toDateStr(weekStart);
+  const endStr = toDateStr(weekEnd);
 
   // Count days in the week
   const daysInWeek: string[] = [];
   const current = new Date(weekStart);
   while (current <= weekEnd) {
-    daysInWeek.push(current.toISOString().split('T')[0]);
+    daysInWeek.push(toDateStr(current));
     current.setDate(current.getDate() + 1);
   }
 

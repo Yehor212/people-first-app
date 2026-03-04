@@ -19,6 +19,7 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
   const setUserName = useUserDataStore(s => s.setUserName);
   const setUserNameCustom = useUserDataStore(s => s.setUserNameCustom);
   const setScheduleEvents = useUserDataStore(s => s.setScheduleEvents);
+  const setCanvasGoals = useUserDataStore(s => s.setCanvasGoals);
   const setOnboardingComplete = useUserDataStore(s => s.setOnboardingComplete);
   const setHasSelectedLanguage = useUserDataStore(s => s.setHasSelectedLanguage);
   const scheduleEvents = useUserDataStore(s => s.scheduleEvents);
@@ -28,11 +29,13 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
     setHabits([]);
     setFocusSessions([]);
     setGratitudeEntries([]);
+    setScheduleEvents([]);
+    setCanvasGoals([]);
     setUserName('Friend');
     setUserNameCustom(false);
     setOnboardingComplete(false);
     setHasSelectedLanguage(false);
-  }, [setMoods, setHabits, setFocusSessions, setGratitudeEntries, setUserName, setUserNameCustom, setOnboardingComplete, setHasSelectedLanguage]);
+  }, [setMoods, setHabits, setFocusSessions, setGratitudeEntries, setScheduleEvents, setCanvasGoals, setUserName, setUserNameCustom, setOnboardingComplete, setHasSelectedLanguage]);
 
   const handleNameChange = useCallback((name: string) => {
     setUserName(name);

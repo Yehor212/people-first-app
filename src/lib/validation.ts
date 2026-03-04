@@ -98,7 +98,7 @@ export const safeParseInt = (
   max?: number
 ): number => {
   const parsed = typeof value === 'number' ? value : parseInt(value, 10);
-  if (isNaN(parsed)) return defaultValue;
+  if (isNaN(parsed) || !isFinite(parsed)) return defaultValue;
   let result = parsed;
   if (min !== undefined) result = Math.max(min, result);
   if (max !== undefined) result = Math.min(max, result);
@@ -116,7 +116,7 @@ export const safeParseFloat = (
   max?: number
 ): number => {
   const parsed = typeof value === 'number' ? value : parseFloat(value);
-  if (isNaN(parsed)) return defaultValue;
+  if (isNaN(parsed) || !isFinite(parsed)) return defaultValue;
   let result = parsed;
   if (min !== undefined) result = Math.max(min, result);
   if (max !== undefined) result = Math.min(max, result);

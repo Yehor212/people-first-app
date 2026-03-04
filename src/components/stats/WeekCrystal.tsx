@@ -9,7 +9,7 @@
 import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Minus } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface DayScore {
@@ -295,7 +295,7 @@ export function WeekCrystal({
                   {dailyScores.slice(-7).map((day, idx) => {
                     const dayOfWeek = new Date(day.date).getDay();
                     const dayTheme = getCrystalTheme(day.score);
-                    const isToday = day.date === new Date().toISOString().split('T')[0];
+                    const isToday = day.date === getToday();
 
                     return (
                       <motion.div

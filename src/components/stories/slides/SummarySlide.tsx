@@ -8,7 +8,8 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { SparklesIcon } from '@/components/icons';
-import type { StorySlide } from '@/lib/progressStories';
+import { useLanguage } from '@/contexts/LanguageContext';
+import type { StorySlide, MoodTrendData, HabitStatsData, FocusStatsData } from '@/lib/progressStories';
 
 interface SummarySlideProps {
   slide: StorySlide;
@@ -119,14 +120,24 @@ function OrbitingMetric({
 }
 
 export function SummarySlide({ slide }: SummarySlideProps) {
+  const { t } = useLanguage();
   // Generate sparkles
   const sparkles = useMemo(() => Array.from({ length: 8 }, (_, i) => i * 0.3), []);
 
-  // Metrics to display (using slide data or defaults)
+  // Extract real data from slide.data
+  const slideData = slide.data as { moodStats?: MoodTrendData; habitStats?: HabitStatsData; focusStats?: FocusStatsData } | undefined;
+  const moodValue = slideData?.moodStats ? slideData.moodStats.average.toFixed(1) : '–';
+  const habitsValue = slideData?.habitStats ? `${Math.round(slideData.habitStats.completionRate)}%` : '–';
+  const focusValue = slideData?.focusStats
+    ? (slideData.focusStats.totalMinutes >= 60
+        ? `${Math.round(slideData.focusStats.totalMinutes / 60)}h`
+        : `${slideData.focusStats.totalMinutes}m`)
+    : '–';
+
   const metrics = [
-    { icon: '😊', label: 'Mood', value: '4.2', angle: -60, color: '#a855f7' },
-    { icon: '✅', label: 'Habits', value: '87%', angle: 60, color: '#22c55e' },
-    { icon: '⏱️', label: 'Focus', value: '4h', angle: 180, color: '#3b82f6' },
+    { icon: '😊', label: t.storyMood || 'Mood', value: moodValue, angle: -60, color: '#a855f7' },
+    { icon: '✅', label: t.storyHabits || 'Habits', value: habitsValue, angle: 60, color: '#22c55e' },
+    { icon: '⏱️', label: t.storyFocus || 'Focus', value: focusValue, angle: 180, color: '#3b82f6' },
   ];
 
   return (
@@ -270,7 +281,7 @@ export function SummarySlide({ slide }: SummarySlideProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
       >
-        <p className="text-white/60 text-sm">Your week at a glance</p>
+        <p className="text-white/60 text-sm">{t.storyWeekAtGlance || 'Your week at a glance'}</p>
       </motion.div>
 
       {/* Subtitle */}

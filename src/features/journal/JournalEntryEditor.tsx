@@ -726,7 +726,7 @@ export function JournalEntryEditor({
   } as React.CSSProperties), [diaryTheme.themeVars]);
 
   return (
-    <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] flex flex-col h-screen overflow-hidden text-slate-50" style={diaryStyle}>
+    <div ref={editorOverlayRef} role="dialog" aria-modal="true" aria-label={ts.journalEntryTitle || 'Diary Entry'} className="fixed inset-0 z-[60] flex flex-col h-dvh overflow-hidden text-slate-50" style={diaryStyle}>
       {/* Canvas decorative background */}
       <DiaryCanvas accentColor={diaryTheme.accentColor} isActive={bgIntensity !== 'off'} theme={diaryTheme.theme} intensity={bgIntensity} particleSpeed={particleSpeed} scrollContainerRef={scrollAreaRef} />
 

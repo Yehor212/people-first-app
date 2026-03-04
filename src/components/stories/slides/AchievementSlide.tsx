@@ -7,6 +7,7 @@
 
 import { motion } from 'framer-motion';
 import { EmojiOrIcon, TrophyIcon } from '@/components/icons';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { StorySlide } from '@/lib/progressStories';
 import type { Badge } from '@/types';
 
@@ -137,6 +138,7 @@ function BadgePedestal({
 }
 
 export function AchievementSlide({ slide, language }: AchievementSlideProps) {
+  const { t } = useLanguage();
   const badges = (slide.data as Badge[]) || [];
   const displayBadges = badges.slice(0, 4);
 
@@ -245,7 +247,7 @@ export function AchievementSlide({ slide, language }: AchievementSlideProps) {
             <div className="w-20 h-20 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
               <TrophyIcon size="xl" />
             </div>
-            <p className="text-white/60">Keep going to unlock achievements!</p>
+            <p className="text-white/60">{t.storyKeepGoingAchievements || 'Keep going to unlock achievements!'}</p>
           </motion.div>
         )}
       </div>

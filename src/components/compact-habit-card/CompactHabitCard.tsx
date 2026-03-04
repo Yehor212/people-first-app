@@ -203,20 +203,12 @@ export const CompactHabitCard = memo(function CompactHabitCard({
                 background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(20, 184, 166, 0.08) 50%, transparent 100%)',
               }}
             />
-            {/* Shimmer effect */}
-            <motion.div
+            {/* Shimmer effect — CSS keyframe (QA_PROTOCOLS #5) */}
+            <div
               className="absolute inset-0"
               style={{
                 background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%)',
-              }}
-              animate={{
-                x: ['-100%', '100%'],
-              }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                repeatDelay: 3,
-                ease: 'linear',
+                animation: 'habit-shimmer 2s linear 3s infinite',
               }}
             />
           </motion.div>
@@ -254,21 +246,13 @@ export const CompactHabitCard = memo(function CompactHabitCard({
             whileHover={{ scale: completed ? 1.05 : 1.02 }}
             whileTap={{ scale: 0.95 }}
           >
-            {/* Inner glow for completed */}
+            {/* Inner glow for completed — CSS keyframe (QA_PROTOCOLS #5) */}
             {completed && (
-              <motion.div
+              <div
                 className="absolute inset-0 rounded-xl"
                 style={{
                   background: 'radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%)',
-                }}
-                animate={{
-                  scale: [1, 1.1, 1],
-                  opacity: [0.5, 0.8, 0.5],
-                }}
-                transition={{
-                  duration: 2,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
+                  animation: 'habit-glow-pulse 2s ease-in-out infinite',
                 }}
               />
             )}

@@ -1,5 +1,6 @@
 import { Trophy, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import type { Translations } from '@/i18n/types';
 import { Challenge, getAllChallenges } from '@/lib/friendChallenge';
 import { ChallengeCard } from './ChallengeCard';
 
@@ -10,7 +11,7 @@ export function ChallengesListView({
 }: {
   onSelectChallenge: (challenge: Challenge) => void;
   onJoinChallenge: () => void;
-  t: Record<string, string>;
+  t: Translations;
 }) {
   // Note: No useMemo - getAllChallenges reads from localStorage
   // and we need fresh data every render to reflect changes

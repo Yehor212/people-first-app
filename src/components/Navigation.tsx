@@ -30,7 +30,7 @@ export function Navigation({ activeTab, onTabChange, canvasEnabled, habitHubEnab
   const tabs = [
     { id: 'home' as TabType, icon: Home, label: t.home },
     ...(habitHubEnabled
-      ? [{ id: 'mindmap' as TabType, icon: Repeat, label: (t as Record<string, string>).habitHub || 'Habits' }]
+      ? [{ id: 'mindmap' as TabType, icon: Repeat, label: (t as unknown as Record<string, string>).habitHub || 'Habits' }]
       : canvasEnabled
         ? [{ id: 'mindmap' as TabType, icon: Compass, label: t.map || 'Map' }]
         : []),

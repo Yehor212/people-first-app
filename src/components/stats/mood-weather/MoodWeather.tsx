@@ -44,11 +44,11 @@ export function MoodWeather({ mood, emotion, className }: MoodWeatherProps) {
 
   const weatherMoodId = useMemo(() => deriveWeatherMood(mood, emotion), [mood, emotion]);
   const config = getWeatherMoodConfig(weatherMoodId);
-  const isDark = effectiveTheme === 'dark' || effectiveTheme === 'oled';
+  const isDark = effectiveTheme === 'dark';
   const palette = isDark ? config.palette.dark : config.palette.light;
 
-  const label = (t as Record<string, string>)[config.labelKey] || config.labelKey;
-  const message = (t as Record<string, string>)[config.messageKey] || '';
+  const label = (t as unknown as Record<string, string>)[config.labelKey] || config.labelKey;
+  const message = (t as unknown as Record<string, string>)[config.messageKey] || '';
 
   return (
     <motion.div

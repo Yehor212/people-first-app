@@ -44,7 +44,7 @@ export function useStatsCalculations({
       weekAgo.setHours(0, 0, 0, 0);
       filtered = filtered.filter((m) => parseLocalDate(m.date) >= weekAgo);
     } else if (range === 'month') {
-      const thisMonth = new Date().toISOString().slice(0, 7);
+      const thisMonth = getToday().slice(0, 7);
       filtered = filtered.filter((m) => m.date.startsWith(thisMonth));
     }
 

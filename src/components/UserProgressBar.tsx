@@ -102,7 +102,7 @@ export function UserProgressBar({
               {level}
             </div>
             <div>
-              <div className="text-sm font-medium text-muted-foreground">Level</div>
+              <div className="text-sm font-medium text-muted-foreground">{t.userLevel || 'Level'}</div>
               <div className="flex items-center gap-1 text-sm">
                 <Zap className="w-4 h-4 text-yellow-500" />
                 <span className="font-semibold">{animatedXp}</span>

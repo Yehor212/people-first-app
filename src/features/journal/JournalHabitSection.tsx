@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getToday } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { db } from '@/storage/db';
+import { ENTRY } from '@/types';
 import type { Habit } from '@/types';
 import { logger } from '@/lib/logger';
 
@@ -46,7 +47,7 @@ export const JournalHabitSection = memo(function JournalHabitSection({ date, sna
           habitId: h.id,
           habitName: h.name,
           habitIcon: h.icon,
-          completed: h.entries?.[date]?.value === 2,
+          completed: h.entries?.[date]?.value === ENTRY.YES_MANUAL || h.entries?.[date]?.value === ENTRY.YES_AUTO,
         }));
         onSnapshotChangeRef.current(initial);
       }

@@ -116,13 +116,15 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
     onUpdate(updatedHabit);
   }, [onUpdate]);
 
+  const [isDeleting, setIsDeleting] = useState(false);
   const handleDelete = useCallback(() => {
-    if (!habit) return;
+    if (!habit || isDeleting) return;
+    setIsDeleting(true);
     void hapticTap();
     onDelete(habit.id);
     setShowDeleteConfirm(false);
     onClose();
-  }, [habit, onDelete, onClose]);
+  }, [habit, isDeleting, onDelete, onClose]);
 
   return (
     <Sheet open={!!habit} onOpenChange={(open) => { if (!open) onClose(); }}>
@@ -300,11 +302,13 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                     </button>
                     <button
                       onClick={handleDelete}
+                      disabled={isDeleting}
                       className={cn(
                         'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
                         'bg-red-600 text-white',
                         'hover:bg-red-500 active:scale-[0.98]',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50',
+                        isDeleting && 'opacity-50 cursor-not-allowed',
                       )}
                     >
                       {ts.delete || 'Delete'}

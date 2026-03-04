@@ -84,8 +84,9 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     for (const e of entriesWithMood) {
       const d = new Date(e.createdAt);
       const weekStart = new Date(d);
-      weekStart.setDate(d.getDate() - d.getDay());
-      const key = weekStart.toISOString().split('T')[0];
+      const dow = d.getDay();
+      weekStart.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+      const key = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
       if (!weeks.has(key)) weeks.set(key, []);
       if (e.mood) weeks.get(key)?.push(MOOD_SCORE[e.mood]);
     }

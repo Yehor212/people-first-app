@@ -8,6 +8,8 @@
  * Pure functions — no React dependency.
  */
 
+import { getToday } from './utils';
+
 export interface GrowthRing {
   date: string; // YYYY-MM-DD
   type: 'active' | 'rest' | 'gap';
@@ -46,7 +48,7 @@ export function computeGrowthRings(
   restDates: string[],
   since: string,
 ): GrowthRingsData {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getToday();
   const allDates = getDateRange(since, today);
 
   const activeSet = new Set(activeDates);

@@ -4146,3 +4146,35 @@ body.reduce-motion .diary-animated {
     50% { transform: scale(1.1); }
   }
 }
+
+/* Habit animations — CSS keyframes (replaces FM repeat:Infinity per QA_PROTOCOLS #5) */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes habit-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  @keyframes habit-glow-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+  }
+  @keyframes fire-scale-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+  }
+  @keyframes fire-glow-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.3); opacity: 0.8; }
+  }
+  @keyframes form-shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+  @keyframes submit-pulse-ring {
+    0% { transform: scale(1); opacity: 0.5; }
+    100% { transform: scale(1.05); opacity: 0; }
+  }
+  @keyframes nature-energy-glow {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.5; }
+  }
+}

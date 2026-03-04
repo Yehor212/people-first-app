@@ -11,6 +11,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { logger } from '@/lib/logger';
 import { SK } from '@/lib/storageKeys';
 import { SUPABASE_URL } from '@/lib/env';
+import { getToday } from '@/lib/utils';
 
 // Constants
 const API_TIMEOUT = 30000; // 30 seconds timeout for API calls
@@ -148,7 +149,7 @@ export function AICoachProvider({ children }: AICoachProviderProps) {
   // Build context for API (async to fetch journal entries from IndexedDB)
   const buildUserContext = useCallback(async (): Promise<UserContext> => {
     const { moods, habits, innerWorld } = userDataRef.current;
-    const today = new Date().toISOString().split('T')[0];
+    const today = getToday();
 
     // Fetch recent journal entries for coach context
     let journalEntries: UserContext['journalEntries'];

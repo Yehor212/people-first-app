@@ -9,7 +9,7 @@ import { Habit } from '@/types';
 import { safeJsonParse, safeLocalStorageGet, safeLocalStorageSet } from './safeJson';
 import { SK } from '@/lib/storageKeys';
 import { generateSecureId } from './validation';
-import { parseLocalDate } from '@/lib/utils';
+import { parseLocalDate, getToday } from '@/lib/utils';
 import { logger } from './logger';
 import {
   isCloudChallengesAvailable,
@@ -88,12 +88,7 @@ function calculateEndDate(startDate: string, duration: number): string {
   return start.toISOString().split('T')[0];
 }
 
-/**
- * Get today's date as ISO string
- */
-function getToday(): string {
-  return new Date().toISOString().split('T')[0];
-}
+// getToday imported from @/lib/utils (uses local time, not UTC)
 
 /**
  * Load challenges from localStorage

@@ -114,6 +114,7 @@ const USER_SETTINGS_KEYS = [
   'zenflow-reminders', 'zenflow-schedule-events',
   'zenflow-special-badges', 'zenflow-last-weekly-report',
   'zenflow-micro-reflections', 'zenflow-canvas-goals',
+  'gamification',
 ];
 
 /**

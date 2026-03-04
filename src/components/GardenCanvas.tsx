@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motionPresets } from '@/lib/animationUtils';
-import type { InnerWorld, GardenPlant, GardenCreature, PlantType, PlantStage, CreatureType, Season } from '@/types';
+import { useLanguage } from '@/contexts/LanguageContext';
+import type { InnerWorld, GardenPlant, GardenCreature, PlantType, PlantStage, CreatureType, Season, GardenStage } from '@/types';
 import type { GardenAtmosphere } from '@/lib/gardenAtmosphere';
 
 // ── Icon Maps (lucide-react ONLY, NO emojis) ──
@@ -73,7 +74,17 @@ interface GardenCanvasProps {
   atmosphere: GardenAtmosphere;
 }
 
+const STAGE_I18N_KEYS: Record<GardenStage, string> = {
+  empty: 'gardenStageEmpty',
+  sprouting: 'gardenStageSprouting',
+  growing: 'gardenStageGrowing',
+  flourishing: 'gardenStageFlourishing',
+  magical: 'gardenStageMagical',
+  legendary: 'gardenStageLegendary',
+};
+
 export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
+  const { t } = useLanguage();
   const { plants, creatures, companion, season, gardenStage, activeEffects } = world;
 
   const isWindActive = useMemo(() => {
@@ -95,7 +106,7 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
         {/* Garden stage badge */}
         <div className="absolute top-3 right-3 z-10 rounded-full bg-background/80 backdrop-blur-sm px-2.5 py-1 border border-border/40">
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-            {gardenStage}
+            {(t as unknown as Record<string, string>)[STAGE_I18N_KEYS[gardenStage]] || gardenStage}
           </span>
         </div>
 
@@ -139,7 +150,7 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
             <div className="text-center space-y-2">
               <Sprout className="w-8 h-8 text-muted-foreground/40 mx-auto" />
               <p className="text-xs text-muted-foreground/60">
-                Your garden grows with every action
+                {t.gardenGrowsHint || 'Your garden grows with every action'}
               </p>
             </div>
           </div>

@@ -73,6 +73,7 @@ export function useDataExport({ setDataStatus, t, moods, habits, focusSessions, 
       exportAllToCSV({ moods, habits, focusSessions, gratitudeEntries });
     } catch (e) {
       logger.error('[Settings] CSV export error:', e);
+      setDataStatus(t.exportError || 'Export failed');
     } finally {
       setIsExportingCSV(false);
     }
@@ -84,6 +85,7 @@ export function useDataExport({ setDataStatus, t, moods, habits, focusSessions, 
       await exportProgressReportPDF({ moods, habits, focusSessions, gratitudeEntries, userName });
     } catch (e) {
       logger.error('[Settings] PDF export error:', e);
+      setDataStatus(t.exportError || 'Export failed');
     } finally {
       setIsExportingPDF(false);
     }

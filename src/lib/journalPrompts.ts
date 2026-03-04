@@ -4,6 +4,8 @@
  * ADHD-friendly: Short, specific prompts that reduce "blank page anxiety"
  */
 
+import { getToday } from './utils';
+
 export type PromptCategory =
   | 'gratitude'     // Being thankful
   | 'reflection'    // Self-understanding
@@ -180,7 +182,7 @@ export function getRandomPrompt(category?: PromptCategory): JournalPrompt {
 }
 
 /** Get daily prompt based on date (consistent for the day) */
-export function getDailyPrompt(date: string = new Date().toISOString().split('T')[0]): JournalPrompt {
+export function getDailyPrompt(date: string = getToday()): JournalPrompt {
   // Simple hash from date string
   let hash = 0;
   for (let i = 0; i < date.length; i++) {

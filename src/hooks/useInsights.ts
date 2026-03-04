@@ -9,6 +9,7 @@ import { useMemo, useEffect, useState } from 'react';
 import type { MoodEntry, Habit, FocusSession } from '@/types';
 import { generateInsights, type InsightTranslations } from '@/lib/insightsEngine';
 import { logger } from '@/lib/logger';
+import { getToday } from '@/lib/utils';
 import { safeLocalStorageGet, safeLocalStorageSet, storageGetRaw, storageSetRaw, storageRemove } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
 
@@ -32,12 +33,6 @@ export function useInsights({
   translations,
 }: UseInsightsOptions) {
   const [lastGeneratedDate, setLastGeneratedDate] = useState<string>('');
-
-  // Get today's date (YYYY-MM-DD)
-  const getToday = () => {
-    const now = new Date();
-    return now.toISOString().split('T')[0];
-  };
 
   // Generate insights (memoized)
   const insights = useMemo(() => {

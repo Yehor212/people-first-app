@@ -75,8 +75,19 @@ export function JournalModule({ onToggleHabit }: JournalModuleProps = {}) {
   });
   const screenSecurity = useScreenSecurity(moduleState === 'open');
 
-  // Undo delete ref
-  const deletedEntryRef = useRef<{ id: string; data: typeof journal.entries[0] } | null>(null);
+  // Undo delete state (soft-delete → 5s timer → commit)
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; entry: typeof journal.entries[0] } | null>(null);
+  const deleteTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const pendingDeleteRef = useRef(pendingDelete);
+  useEffect(() => { pendingDeleteRef.current = pendingDelete; }, [pendingDelete]);
+  useEffect(() => () => {
+    clearTimeout(deleteTimerRef.current);
+    if (pendingDeleteRef.current) {
+      journal.commitDeleteEntry(pendingDeleteRef.current.id)
+        .catch(err => logger.warn('[Journal]', 'Cleanup commitDelete failed:', err));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Streak calculation from all entry dates
   const streak = useMemo(() => {
@@ -197,17 +208,31 @@ export function JournalModule({ onToggleHabit }: JournalModuleProps = {}) {
     }
   }, [journal, streak, hasTodayEntry, rewardUser]);
 
-  const handleDeleteEntry = useCallback(async (id: string) => {
-    // Find the entry before deleting for undo
-    const entry = journal.entries.find(e => e.id === id);
-
-    // Immediately delete
-    await journal.deleteEntry(id);
-
+  const handleDeleteEntry = useCallback((id: string) => {
+    // Commit any previous pending delete first
+    if (pendingDelete) {
+      clearTimeout(deleteTimerRef.current);
+      journal.commitDeleteEntry(pendingDelete.id)
+        .catch(err => logger.warn('[Journal]', 'commitDelete failed:', err));
+    }
+    // Soft-delete: remove from UI, keep in storage for 5s
+    const entry = journal.softDeleteEntry(id);
     if (!entry) return;
+    setPendingDelete({ id, entry });
+    deleteTimerRef.current = setTimeout(() => {
+      journal.commitDeleteEntry(id)
+        .catch(err => logger.warn('[Journal]', 'commitDelete failed:', err));
+      setPendingDelete(null);
+    }, 5000);
+  }, [journal, pendingDelete]);
 
-    deletedEntryRef.current = { id, data: entry };
-  }, [journal]);
+  const handleUndoDelete = useCallback(() => {
+    if (!pendingDelete) return;
+    clearTimeout(deleteTimerRef.current);
+    journal.restoreEntry(pendingDelete.entry);
+    setPendingDelete(null);
+    void haptics.light();
+  }, [pendingDelete, journal]);
 
   const maskEmail = (email: string) => {
     const [local, domain] = email.split('@');
@@ -1052,6 +1077,28 @@ export function JournalModule({ onToggleHabit }: JournalModuleProps = {}) {
         </>
       )}
       </div>
+
+      {/* Undo delete snackbar */}
+      <AnimatePresence>
+        {pendingDelete && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed bottom-20 inset-x-4 z-[55] flex justify-center pointer-events-none"
+          >
+            <div className="bg-foreground text-background rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg max-w-sm w-full pointer-events-auto">
+              <span className="text-sm flex-1">{ts.entryDeleted || 'Entry deleted'}</span>
+              <button
+                onClick={handleUndoDelete}
+                className="text-sm font-semibold text-primary min-w-[44px] min-h-[44px] flex items-center justify-center"
+              >
+                {ts.undo || 'Undo'}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Remove password confirmation dialog */}
       {showRemovePasswordConfirm && (

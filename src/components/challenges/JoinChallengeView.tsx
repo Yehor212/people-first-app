@@ -3,6 +3,7 @@ import { UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { hapticSuccess, hapticTap, hapticWarning } from '@/lib/haptics';
+import type { Translations } from '@/i18n/types';
 import {
   Challenge,
   ChallengeInvite,
@@ -19,7 +20,7 @@ export function JoinChallengeView({
   initialInvite?: ChallengeInvite;
   onJoined: (challenge: Challenge) => void;
   onCancel: () => void;
-  t: Record<string, string>;
+  t: Translations;
 }) {
   const [code, setCode] = useState(initialInvite?.code || '');
   const [error, setError] = useState('');

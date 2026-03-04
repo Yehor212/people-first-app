@@ -11,6 +11,7 @@
  */
 
 import { nanoid } from 'nanoid';
+import { formatDate } from '@/lib/utils';
 import { safeParseInt, safeAverage } from '@/lib/validation';
 import type {
   MoodEntry,
@@ -527,7 +528,7 @@ export function generateInsights(
   const recentSessions = focusSessions.filter(s => s.completedAt >= ninetyDaysAgo);
 
   // Filter habit entries to last 90 days
-  const cutoffDate = new Date(ninetyDaysAgo).toISOString().split('T')[0];
+  const cutoffDate = formatDate(new Date(ninetyDaysAgo));
   const recentHabits = habits.map(h => {
     const filteredEntries: Record<string, { value: number; notes?: string }> = {};
     for (const [date, entry] of Object.entries(h.entries || {})) {

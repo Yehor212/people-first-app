@@ -171,7 +171,7 @@ export async function compressAndStorePhoto(
         const updated = await db.journalPhotos.get(photo.id);
         if (updated) syncJournalPhoto(updated).catch(err => logger.warn('[JournalSync]', 'Photo sync failed:', err));
       }
-    });
+    }).catch(err => logger.error('[Journal]', 'Photo upload failed:', err));
 
     // Sync photo metadata (without storagePath yet — will be updated after upload)
     syncJournalPhoto(photo).catch(err => logger.warn('[JournalSync]', 'Photo metadata sync failed:', err));
@@ -243,7 +243,7 @@ export async function storeAudio(
       const updated = await db.journalAudio.get(audio.id);
       if (updated) syncJournalAudio(updated).catch(err => logger.warn('[JournalSync]', 'Audio sync failed:', err));
     }
-  });
+  }).catch(err => logger.error('[Journal]', 'Audio upload failed:', err));
 
   // Sync audio metadata (without storagePath yet — will be updated after upload)
   syncJournalAudio(audio).catch(err => logger.warn('[JournalSync]', 'Audio metadata sync failed:', err));

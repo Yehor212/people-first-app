@@ -2,6 +2,9 @@ import {
   Target, Brain, Heart, Calendar, Flame,
 } from 'lucide-react';
 import type { Goal, GoalType, Habit, MoodEntry, FocusSession } from '@/types';
+import { formatDate } from '@/lib/utils';
+import { getHabitCompletedDates } from '@/lib/habits';
+import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
 
 export interface GoalsPanelProps {
   goals: Goal[];
@@ -65,12 +68,13 @@ export function calculateGoalProgress(
 ): { current: number; target: number; percent: number } {
   const today = new Date();
   const startOfWeek = new Date(today);
-  startOfWeek.setDate(today.getDate() - today.getDay());
+  const dow = today.getDay();
+  startOfWeek.setDate(today.getDate() - (dow === 0 ? 6 : dow - 1));
   startOfWeek.setHours(0, 0, 0, 0);
 
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const periodStart = goal.period === 'week' ? startOfWeek : startOfMonth;
-  const periodStartStr = periodStart.toISOString().split('T')[0];
+  const periodStartStr = formatDate(periodStart);
 
   let current = 0;
 
@@ -79,11 +83,13 @@ export function calculateGoalProgress(
       if (goal.habitId) {
         const habit = habits.find(h => h.id === goal.habitId);
         if (habit) {
-          current = Object.entries(habit.entries || {}).filter(([d, e]) => d >= periodStartStr && e.value === 2).length;
+          current = getHabitCompletedDates(habit, computeEntriesWithAuto(habit))
+            .filter(d => d >= periodStartStr).length;
         }
       } else {
         current = habits.reduce((sum, h) => {
-          return sum + Object.entries(h.entries || {}).filter(([d, e]) => d >= periodStartStr && e.value === 2).length;
+          return sum + getHabitCompletedDates(h, computeEntriesWithAuto(h))
+            .filter(d => d >= periodStartStr).length;
         }, 0);
       }
       break;
@@ -95,10 +101,7 @@ export function calculateGoalProgress(
       break;
     }
     case 'mood': {
-      const periodMoods = moods.filter(m => {
-        const moodDate = new Date(m.timestamp).toISOString().split('T')[0];
-        return moodDate >= periodStartStr;
-      });
+      const periodMoods = moods.filter(m => m.date >= periodStartStr);
       if (periodMoods.length > 0) {
         const moodValues: Record<string, number> = {
           terrible: 1, bad: 2, okay: 3, good: 4, great: 5

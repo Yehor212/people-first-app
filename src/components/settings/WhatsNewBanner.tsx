@@ -40,8 +40,8 @@ export function WhatsNewBanner() {
           <div key={idx} className="flex items-start gap-3">
             <div className="mt-0.5 shrink-0">{item.icon}</div>
             <div>
-              <p className="text-sm font-medium text-foreground">{(t as Record<string, string>)[item.titleKey] || item.title}</p>
-              <p className="text-xs text-muted-foreground">{(t as Record<string, string>)[item.descriptionKey] || item.description}</p>
+              <p className="text-sm font-medium text-foreground">{(t as unknown as Record<string, string>)[item.titleKey] || item.title}</p>
+              <p className="text-xs text-muted-foreground">{(t as unknown as Record<string, string>)[item.descriptionKey] || item.description}</p>
             </div>
           </div>
         ))}

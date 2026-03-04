@@ -3,7 +3,6 @@
  * Extracted from CompactHabitCard (v1.3.0 Premium Phase 8)
  */
 
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
 export function AnimatedFire({ intensity = 1, size = 'sm' }: { intensity?: number; size?: 'sm' | 'md' }) {
@@ -14,31 +13,16 @@ export function AnimatedFire({ intensity = 1, size = 'sm' }: { intensity?: numbe
   const animationDuration = Math.max(0.3, 0.6 - intensity * 0.1);
 
   return (
-    <motion.div
+    <div
       className="relative"
-      animate={{
-        scale: [1, 1.1, 1],
-      }}
-      transition={{
-        duration: animationDuration,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
+      style={{ animation: `fire-scale-pulse ${animationDuration}s ease-in-out infinite` }}
     >
-      {/* Glow layer */}
-      <motion.div
+      {/* Glow layer — CSS keyframe (QA_PROTOCOLS #5) */}
+      <div
         className="absolute inset-0 rounded-full blur-sm"
         style={{
           background: `radial-gradient(circle, rgba(249, 115, 22, ${0.3 * glowIntensity}) 0%, transparent 70%)`,
-        }}
-        animate={{
-          scale: [1, 1.3, 1],
-          opacity: [0.5, 0.8, 0.5],
-        }}
-        transition={{
-          duration: animationDuration * 1.5,
-          repeat: Infinity,
-          ease: 'easeInOut',
+          animation: `fire-glow-pulse ${animationDuration * 1.5}s ease-in-out infinite`,
         }}
       />
       {/* Fire SVG */}
@@ -73,6 +57,6 @@ export function AnimatedFire({ intensity = 1, size = 'sm' }: { intensity?: numbe
           />
         </path>
       </svg>
-    </motion.div>
+    </div>
   );
 }

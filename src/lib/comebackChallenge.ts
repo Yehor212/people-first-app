@@ -7,6 +7,7 @@
 
 import { safeLocalStorageGet, safeLocalStorageSet, storageRemove } from './safeJson';
 import { SK } from './storageKeys';
+import { getToday } from './utils';
 
 export interface ComebackChallenge {
   startDate: string;        // ISO date (YYYY-MM-DD)
@@ -30,7 +31,7 @@ export function getComebackChallenge(): ComebackChallenge | null {
  */
 export function startComebackChallenge(): ComebackChallenge {
   const challenge: ComebackChallenge = {
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: getToday(),
     targetDays: 3,
     targetHabits: 3,
     bonusXp: 100,
@@ -124,7 +125,7 @@ export function getChallengeProgress(): {
   const challenge = getComebackChallenge();
   if (!challenge || challenge.status !== 'active') return null;
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getToday();
 
   return {
     active: true,

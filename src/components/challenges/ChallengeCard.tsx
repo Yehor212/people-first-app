@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Translations } from '@/i18n/types';
 import { Challenge, getChallengeProgress, getDaysRemaining } from '@/lib/friendChallenge';
 
 export const ChallengeCard = memo(function ChallengeCard({
@@ -11,7 +12,7 @@ export const ChallengeCard = memo(function ChallengeCard({
 }: {
   challenge: Challenge;
   onClick: () => void;
-  t: Record<string, string>;
+  t: Translations;
 }) {
   const progress = getChallengeProgress(challenge);
   const daysLeft = getDaysRemaining(challenge);

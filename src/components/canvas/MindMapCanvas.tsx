@@ -28,6 +28,7 @@ import { computeGoalTreeLayout } from './goalTreeLayout';
 import { isBranchGoal } from '@/lib/canvasGoals';
 import { zenMotion } from '@/lib/animationUtils';
 import { useKeyboardShift } from '@/hooks/useKeyboardShift';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { MoodType, CanvasGoal } from '@/types';
 import type { CanvasMode } from '@/stores/uiStore';
 
@@ -73,6 +74,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
     onEmotionSave, onEmotionCancel,
     onGoalCreate, onGoalToggle, onGoalDelete, onGoalUpdateIcon, onGoalUpdateEmoji, onGoalUpdateColor, onGoalCancel,
   }, ref) {
+    const { t } = useLanguage();
     const zoom = useMotionValue(1);
     const autoPanX = useMotionValue(0);
     const autoPanY = useMotionValue(0);
@@ -402,7 +404,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
               isVisible={subtaskInput !== null}
               anchorX={subtaskInput?.x ?? 0}
               anchorY={subtaskInput?.y ?? 0}
-              placeholder="Add subtask..."
+              placeholder={t.addSubtaskPlaceholder || 'Add subtask...'}
               onSubmit={handleSubtaskSubmit}
               onCancel={handleSubtaskCancel}
             />
@@ -442,7 +444,7 @@ export const MindMapCanvas = forwardRef<MindMapCanvasRef, MindMapCanvasProps>(
               isVisible={isGoalFlow}
               anchorX={goalInputTarget.x}
               anchorY={goalInputTarget.y}
-              placeholder="What's your goal?"
+              placeholder={t.goalInputPlaceholder || "What's your goal?"}
               onSubmit={handleGoalFlowSubmit}
               onCancel={handleGoalFlowCancel}
             />

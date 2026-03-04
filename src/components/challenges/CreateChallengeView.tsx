@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { hapticSuccess, hapticTap } from '@/lib/haptics';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
 import { Habit } from '@/types';
+import type { Translations } from '@/i18n/types';
 import { Challenge, CHALLENGE_DURATIONS, createChallenge } from '@/lib/friendChallenge';
 
 export function CreateChallengeView({
@@ -16,7 +17,7 @@ export function CreateChallengeView({
   habit: Habit;
   username?: string;
   onCreated: (challenge: Challenge) => void;
-  t: Record<string, string>;
+  t: Translations;
 }) {
   const [duration, setDuration] = useState(7);
   const [isCreating, setIsCreating] = useState(false);

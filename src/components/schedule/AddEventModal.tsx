@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { X, Check, Sparkles } from 'lucide-react';
 import { ScheduleEvent } from '@/types';
@@ -23,12 +23,14 @@ export function AddEventModal({
   onAdd: (event: Omit<ScheduleEvent, 'id'>) => void;
 }) {
   const { t, language } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
   useModalA11y(true, onClose);
   const [selectedPreset, setSelectedPreset] = useState(EVENT_PRESETS[0]);
   const [eventDate, setEventDate] = useState(initialDate);
   const [time, setTime] = useState({ startHour: 9, startMinute: 0, endHour: 10, endMinute: 0 });
   const [customTitle, setCustomTitle] = useState('');
   const [note, setNote] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   const formatDateOption = (dateStr: string): string => {
     const date = parseLocalDate(dateStr);
@@ -45,8 +47,10 @@ export function AddEventModal({
     return date.toLocaleDateString(language, { weekday: 'short', day: 'numeric', month: 'short' });
   };
 
-  const handleAdd = () => {
-    const title = customTitle || (t[selectedPreset.labelKey as keyof typeof t]) || selectedPreset.id;
+  const handleAdd = useCallback(() => {
+    if (isSaving) return;
+    setIsSaving(true);
+    const title = customTitle || ts[selectedPreset.labelKey] || selectedPreset.id;
     let finalEndHour = time.endHour;
     let finalEndMinute = time.endMinute;
     const startTotal = time.startHour * 60 + time.startMinute;
@@ -67,7 +71,7 @@ export function AddEventModal({
       date: eventDate,
       note: note.trim() || undefined,
     });
-  };
+  }, [isSaving, customTitle, t, selectedPreset, time, onAdd, eventDate, note]);
 
   return (
     <motion.div
@@ -146,7 +150,7 @@ export function AddEventModal({
           {/* Event type presets - 3D cards */}
           <div className="grid grid-cols-3 gap-2 mb-4" role="group" aria-label={t.scheduleEventType || 'Event type'}>
             {EVENT_PRESETS.map((preset) => {
-              const label = (t[preset.labelKey as keyof typeof t]) || preset.id;
+              const label = ts[preset.labelKey] || preset.id;
               const isSelected = selectedPreset.id === preset.id;
               const gradient = getEventGradient(preset.colorVar);
 
