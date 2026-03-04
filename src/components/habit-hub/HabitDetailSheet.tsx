@@ -5,7 +5,7 @@
  * Sections: Header → Stats → Score Chart → Heatmap → Frequency → Streaks → Notes → Actions.
  */
 
-import { memo, useState, useMemo, useCallback } from 'react';
+import { memo, useState, useMemo, useCallback, useEffect } from 'react';
 import { Archive, ArchiveRestore, Pencil, SkipForward, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { ProgressRing } from '@/components/ui/progress-ring';
@@ -117,6 +117,15 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
   }, [onUpdate]);
 
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Reset delete UI state when a different habit is selected or sheet reopens.
+  // Radix Sheet stays mounted in DOM (open={false}), so state persists across opens.
+  // Without this reset, isDeleting=true from a previous delete permanently blocks future deletes.
+  useEffect(() => {
+    setIsDeleting(false);
+    setShowDeleteConfirm(false);
+  }, [habit?.id]);
+
   const handleDelete = useCallback(() => {
     if (!habit || isDeleting) return;
     setIsDeleting(true);
