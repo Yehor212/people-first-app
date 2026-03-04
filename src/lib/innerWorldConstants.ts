@@ -87,6 +87,27 @@ export const PLANT_EMOJIS: Record<PlantType, Record<PlantStage, string>> = {
     blooming: '🪷',
     magnificent: '✨',
   },
+  story: {
+    seed: '📖',
+    sprout: '📝',
+    growing: '📕',
+    blooming: '📗',
+    magnificent: '📚',
+  },
+  air_plant: {
+    seed: '🌬️',
+    sprout: '🍃',
+    growing: '🌿',
+    blooming: '🪻',
+    magnificent: '🌸',
+  },
+  rest_flower: {
+    seed: '😴',
+    sprout: '🌙',
+    growing: '💤',
+    blooming: '🪷',
+    magnificent: '🏵️',
+  },
 };
 
 export const CREATURE_EMOJIS: Record<CreatureType, Record<CreatureStage, string>> = {

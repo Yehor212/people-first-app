@@ -75,16 +75,16 @@ export interface FocusStatsData {
 // GRADIENTS FOR SLIDE TYPES
 // ============================================
 
-const SLIDE_GRADIENTS: Record<StorySlideType, { gradient: string; accent: string }> = {
-  intro: { gradient: 'linear-gradient(135deg, #1E293B 0%, #334155 100%)', accent: '#94A3B8' },
-  mood: { gradient: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)', accent: '#C4B5FD' },
-  habits: { gradient: 'linear-gradient(135deg, #059669 0%, #10B981 100%)', accent: '#6EE7B7' },
-  focus: { gradient: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)', accent: '#93C5FD' },
-  gratitude: { gradient: 'linear-gradient(135deg, #DB2777 0%, #EC4899 100%)', accent: '#F9A8D4' },
-  streak: { gradient: 'linear-gradient(135deg, #EA580C 0%, #F97316 100%)', accent: '#FDBA74' },
-  achievement: { gradient: 'linear-gradient(135deg, #CA8A04 0%, #EAB308 100%)', accent: '#FDE047' },
-  summary: { gradient: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)', accent: '#67E8F9' },
-  outro: { gradient: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', accent: '#A5B4FC' },
+const SLIDE_GRADIENTS: Record<StorySlideType, { gradient: string; accentColor: string }> = {
+  intro: { gradient: 'linear-gradient(135deg, #1E293B 0%, #334155 100%)', accentColor: '#94A3B8' },
+  mood: { gradient: 'linear-gradient(135deg, #7C3AED 0%, #A78BFA 100%)', accentColor: '#C4B5FD' },
+  habits: { gradient: 'linear-gradient(135deg, #059669 0%, #10B981 100%)', accentColor: '#6EE7B7' },
+  focus: { gradient: 'linear-gradient(135deg, #2563EB 0%, #3B82F6 100%)', accentColor: '#93C5FD' },
+  gratitude: { gradient: 'linear-gradient(135deg, #DB2777 0%, #EC4899 100%)', accentColor: '#F9A8D4' },
+  streak: { gradient: 'linear-gradient(135deg, #EA580C 0%, #F97316 100%)', accentColor: '#FDBA74' },
+  achievement: { gradient: 'linear-gradient(135deg, #CA8A04 0%, #EAB308 100%)', accentColor: '#FDE047' },
+  summary: { gradient: 'linear-gradient(135deg, #0891B2 0%, #06B6D4 100%)', accentColor: '#67E8F9' },
+  outro: { gradient: 'linear-gradient(135deg, #4F46E5 0%, #6366F1 100%)', accentColor: '#A5B4FC' },
 };
 
 // ============================================

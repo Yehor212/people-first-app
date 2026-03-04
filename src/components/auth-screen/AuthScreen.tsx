@@ -142,10 +142,10 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
             <div className="flex items-center gap-2 mb-1">
               <button
                 onClick={handlers.handlePhoneBack}
-                className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground"
+                className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label="Back"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-4 h-4 rtl:scale-x-[-1]" />
               </button>
               <span className="text-sm font-medium text-foreground">
                 {t.authEnterPhone || 'Enter your phone number'}
@@ -182,10 +182,10 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
             <div className="flex items-center gap-2 mb-1">
               <button
                 onClick={() => session.setPhoneStep('input')}
-                className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground"
+                className="p-1.5 rounded-lg hover:bg-muted/50 text-muted-foreground min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label="Back"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-4 h-4 rtl:scale-x-[-1]" />
               </button>
               <span className="text-sm text-muted-foreground">
                 {(t.authCodeSentTo || 'Code sent to {phone}').replace('{phone}', session.phoneNumber)}

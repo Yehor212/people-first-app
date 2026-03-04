@@ -248,7 +248,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
               <span className="text-sm font-medium">{t.audioPings || 'Audio Pings'}</span>
               <div className="flex gap-2">
                 <button
-                  onClick={playPing}
+                  onClick={playNotification}
                   className="px-3 py-2 rounded-lg bg-muted hover:bg-muted/70 transition-colors text-sm font-medium"
                   title={t.testSound}
                 >

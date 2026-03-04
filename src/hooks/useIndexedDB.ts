@@ -20,10 +20,11 @@ const INDEXEDDB_TIMEOUT_MS = 30000;
 // Helper to add timeout to promises
 // P2-3 Fix: Emit event when timeout occurs so UI can show stale data warning
 const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+  let timerId: ReturnType<typeof setTimeout> | null = null;
   return Promise.race([
     promise,
     new Promise<T>((resolve) => {
-      setTimeout(() => {
+      timerId = setTimeout(() => {
         logger.warn(`[useIndexedDB] Operation timed out after ${ms}ms, using fallback`);
         // P2-3 Fix: Emit event so UI can optionally show "data may be stale" indicator
         if (typeof window !== 'undefined') {
@@ -34,7 +35,9 @@ const withTimeout = <T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
         resolve(fallback);
       }, ms);
     })
-  ]);
+  ]).finally(() => {
+    if (timerId !== null) clearTimeout(timerId);
+  });
 };
 
 // Global initialization lock to prevent race conditions

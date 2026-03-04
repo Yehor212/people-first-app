@@ -36,6 +36,9 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
   const dnd = useHyperfocusDnd();
   const spotify = useHyperfocusSpotify({ isRunning: timer.isRunning, isPaused: timer.isPaused });
 
+  // Back handler for DND permission dialog (LIFO: takes priority over main back handler when open)
+  useBackHandler(dnd.showDndPermission, () => dnd.setShowDndPermission(false));
+
   // Calculate color based on progress (purple -> pink -> orange as time runs out)
   const progressColor = useMemo(() => {
     if (timer.progress < 70) return { from: 'hsl(var(--focus-violet))', to: 'hsl(var(--focus-purple))' };

@@ -58,7 +58,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in" onClick={() => setIsOpen(false)} />
-          <div role="dialog" aria-modal="true" aria-label={t.leaderboard || 'Leaderboard'} className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-safe">
+          <div role="dialog" aria-modal="true" aria-label={t.leaderboard || 'Leaderboard'} className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-safe">
 
         <div className="pb-4 px-6 pt-6 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-xl font-semibold">
@@ -74,7 +74,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
           </button>
         </div>
 
-        <div className="px-6 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 72px)' }}>
+        <div className="px-6 overflow-y-auto" style={{ maxHeight: 'calc(85dvh - 72px)' }}>
 
         {/* Tabs */}
         <div

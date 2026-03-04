@@ -96,6 +96,7 @@ export interface Translations {
   scheduleMeeting: string;
   scheduleNote: string;
   scheduleNotePlaceholder: string;
+  viewSchedule: string;
   addToMyWorld: string;
 
   // Mindfulness v1.5.0
@@ -277,6 +278,16 @@ export interface Translations {
   focusReflectionQuestion: string;
   focusReflectionSkip: string;
   focusReflectionSave: string;
+  focusExpandToJournal: string;
+
+  // TodayFocusCard
+  todayFocusMoodMorning: string;
+  todayFocusMoodAfternoon: string;
+  todayFocusMoodEvening: string;
+  todayFocusHabits: string;
+  todayFocusFocus: string;
+  todayFocusGratitude: string;
+  todayFocusSubtitle: string;
 
   // Breathing exercises
   breathingTitle: string;
@@ -481,6 +492,7 @@ export interface Translations {
   profile: string;
   yourName: string;
   nameSaved: string;
+  nameSavedLocally: string;
   invalidNameFormat: string;
   notifications: string;
   notificationsComingSoon: string;
@@ -613,7 +625,12 @@ export interface Translations {
   sendMagicLink: string;
   continueWithGoogle: string;
   continueWithApple: string;
+  continueWithPhone: string;
   continueWithFacebook: string;
+  authEnterPhone: string;
+  authSendCode: string;
+  authCodeSentTo: string;
+  authVerify: string;
   authSigningIn: string;
   signedInAs: string;
   signOut: string;
@@ -630,6 +647,7 @@ export interface Translations {
   deleteAccountSuccess: string;
   deleteAccountError: string;
   deleteAccountLink: string;
+  deleteConfirmWord: string;
   authEmailSent: string;
   authSignedOut: string;
   authError: string;
@@ -836,6 +854,9 @@ export interface Translations {
   shareSubtext3: string;
   shareSubtextStart: string;
   dismiss: string;
+
+  // Flash Challenge
+  hurry: string;
 
   // Challenges & Badges
   challengesTitle: string;
@@ -1112,7 +1133,6 @@ export interface Translations {
   habitImpactDesc: string;
 
   // Habit audit — accessibility & i18n completeness
-  done: string;
   notDone: string;
   noData: string;
   auto: string;
@@ -1989,6 +2009,7 @@ export interface Translations {
   nextMonth: string;
   goToPreviousPage: string;
   goToNextPage: string;
+  page: string;
   pagination: string;
   breadcrumb: string;
   toggleSidebar: string;
@@ -2287,6 +2308,7 @@ export interface Translations {
   journalWords: string;
   journalEntrySaved: string;
   journalWritingPrompts: string;
+  journalPrompt: string;
   journalPrompt1: string;
   journalPrompt2: string;
   journalPrompt3: string;

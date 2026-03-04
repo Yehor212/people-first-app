@@ -8,6 +8,7 @@
  */
 
 import * as Sentry from '@sentry/react';
+import type { Integration } from '@sentry/core';
 import { isNative, platform } from '@/lib/platform';
 import { logger } from '@/lib/logger';
 import { SENTRY_DSN, MODE, IS_DEV } from '@/lib/env';
@@ -31,7 +32,7 @@ export function initSentry(): void {
   // isNative imported from @/lib/platform
 
   // Build integrations list — replay only on web (rrweb crashes Android WebView)
-  const integrations: Sentry.Integration[] = [
+  const integrations: Integration[] = [
     Sentry.browserTracingIntegration({
       shouldCreateSpanForRequest: (url) => {
         if (url.includes('/health')) return false;

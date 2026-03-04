@@ -64,7 +64,7 @@ let blessedAudioElement: HTMLAudioElement | null = null;
 function getOrCreateBlessedElement(): HTMLAudioElement {
   if (!blessedAudioElement) {
     blessedAudioElement = new Audio();
-    blessedAudioElement.playsInline = true;
+    (blessedAudioElement as any).playsInline = true;
     blessedAudioElement.setAttribute('playsinline', '');
     blessedAudioElement.setAttribute('webkit-playsinline', '');
   }
@@ -586,7 +586,7 @@ export class AmbientSoundGenerator {
     } catch (error) {
       // Use isAbortError helper to catch all abort variants (including iOS code 20)
       if (isAbortError(error)) {
-        logger.debug('[AmbientSounds] Playback cancelled (abort)');
+        logger.log('[AmbientSounds] Playback cancelled (abort)');
         this.setStatus({ state: 'idle', soundId: null });
       } else if (myPlaybackId === this.playbackId) {
         logger.error(`[AmbientSounds] Failed to play:`, error);
@@ -1085,7 +1085,7 @@ export class AmbientSoundGenerator {
     } catch (err) {
       // Don't log abort errors as failures
       if (isAbortError(err)) {
-        logger.debug('[AmbientSounds] Resume cancelled (abort)');
+        logger.log('[AmbientSounds] Resume cancelled (abort)');
         this.setStatus({ state: 'paused' });
         this.resumeRetryCount = 0; // Reset on abort
         return;

@@ -136,7 +136,7 @@ export function MoodInsights({
         )}
       >
         {/* Background decoration */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute top-0 end-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
         {/* Dismiss button */}
         <button

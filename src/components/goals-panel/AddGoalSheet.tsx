@@ -21,10 +21,13 @@ export function AddGoalSheet({ open, onOpenChange, habits, onAdd, t }: AddGoalSh
   const [period, setPeriod] = useState<GoalPeriod>('week');
   const [target, setTarget] = useState(5);
   const [habitId, setHabitId] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useBackHandler(open, () => onOpenChange(false));
 
   const handleSubmit = () => {
+    if (isSaving) return;
+    setIsSaving(true);
     void hapticTap();
 
     const titles: Record<GoalType, string> = {
@@ -62,6 +65,7 @@ export function AddGoalSheet({ open, onOpenChange, habits, onAdd, t }: AddGoalSh
     setPeriod('week');
     setTarget(5);
     setHabitId('');
+    setIsSaving(false);
   };
 
   const getTargetPresets = (): number[] => {
@@ -79,7 +83,7 @@ export function AddGoalSheet({ open, onOpenChange, habits, onAdd, t }: AddGoalSh
   return (
     <>
       <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm motion-safe:animate-fade-in" onClick={() => onOpenChange(false)} />
-      <div role="dialog" aria-modal="true" className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)]">
+      <div role="dialog" aria-modal="true" className="fixed bottom-0 inset-x-0 z-[60] rounded-t-[2rem] bg-background max-h-[85dvh] overflow-hidden motion-safe:animate-slide-up pb-[env(safe-area-inset-bottom)]">
         <h2 className="sr-only">{t.addGoal || 'Add Goal'}</h2>
 
         {/* Header */}
@@ -123,7 +127,7 @@ export function AddGoalSheet({ open, onOpenChange, habits, onAdd, t }: AddGoalSh
                       'text-xs font-medium capitalize',
                       selected ? 'text-foreground' : 'text-muted-foreground',
                     )}>
-                      {t[`goal${goalType.charAt(0).toUpperCase() + goalType.slice(1)}`] || goalType}
+                      {(t as unknown as Record<string, string>)[`goal${goalType.charAt(0).toUpperCase() + goalType.slice(1)}`] || goalType}
                     </span>
                   </button>
                 );
@@ -204,11 +208,13 @@ export function AddGoalSheet({ open, onOpenChange, habits, onAdd, t }: AddGoalSh
           {/* Submit */}
           <motion.button
             onClick={handleSubmit}
+            disabled={isSaving}
             className={cn(
               'w-full py-4 px-5 rounded-2xl font-semibold',
               'flex items-center justify-center gap-2',
               `bg-gradient-to-r ${GOAL_THEMES[type].gradient}`,
               'text-white shadow-xl active:scale-[0.98] transition-transform',
+              isSaving && 'opacity-50',
             )}
             style={{ boxShadow: `0 8px 32px ${GOAL_THEMES[type].glowColor}` }}
             whileTap={{ scale: 0.98 }}

@@ -3,7 +3,6 @@ import { useUIStore, useUserDataStore, useAppStore, getModalToggle } from '@/sto
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { LazyErrorBoundary } from '@/components/ErrorBoundary';
-import { useBackHandler } from '@/hooks/useBackHandler';
 import { WeeklyReport } from '@/components/WeeklyReport';
 import { TimeHelper } from '@/components/TimeHelper';
 import { ChallengeModal } from '@/components/ChallengeModal';
@@ -91,11 +90,8 @@ export function ModalLayer({
   const safeFocusSessions = useMemo(() => Array.isArray(focusSessions) ? focusSessions : [], [focusSessions]);
   const safeGratitudeEntries = useMemo(() => Array.isArray(gratitudeEntries) ? gratitudeEntries : [], [gratitudeEntries]);
 
-  // Android back button handlers for modals without built-in support
-  useBackHandler(showWeeklyReport, () => setShowWeeklyReport(false));
-  useBackHandler(showTimeHelper, () => setShowTimeHelper(false));
-  useBackHandler(showChallengeModal, () => setShowChallengeModal(false));
-  useBackHandler(showMindfulMoment, () => setShowMindfulMoment(false));
+  // NOTE: useBackHandler calls removed — WeeklyReport, TimeHelper, ChallengeModal,
+  // and MindfulMoment each have their own internal useBackHandler / useModalA11y.
 
   return (
     <>

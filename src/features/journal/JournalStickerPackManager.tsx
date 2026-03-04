@@ -38,10 +38,10 @@ export function JournalStickerPackManager({
         role="dialog"
         aria-modal="true"
         className={cn(
-          'fixed bottom-0 left-0 right-0 z-[67]',
+          'fixed bottom-0 inset-x-0 z-[67]',
           'bg-card/95 backdrop-blur-xl border-t border-border/40',
           'rounded-t-2xl shadow-lg animate-slide-up',
-          'max-h-[70vh] flex flex-col',
+          'max-h-[70dvh] flex flex-col',
           'pb-[env(safe-area-inset-bottom)]',
         )}
       >

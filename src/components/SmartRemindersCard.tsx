@@ -296,7 +296,7 @@ export function SmartRemindersCard({
               suggestion={suggestion}
               onApply={() => handleApply(suggestion)}
               onDismiss={() => handleDismiss(suggestion.id)}
-              t={t}
+              t={t as unknown as Record<string, string>}
             />
           ))}
         </div>
@@ -334,12 +334,12 @@ export function SmartRemindersCard({
                 <HabitSuggestionItem
                   key={suggestion.habitId}
                   suggestion={suggestion}
-                  onApply={() => {
+                  _onApply={() => {
                     if (onApplyHabitSuggestion) {
                       onApplyHabitSuggestion(suggestion.habitId, suggestion.suggestedTime);
                     }
                   }}
-                  t={t}
+                  t={t as unknown as Record<string, string>}
                 />
               ))}
             </div>

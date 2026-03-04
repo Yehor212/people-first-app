@@ -8,6 +8,7 @@ import { logger } from '@/lib/logger';
 import { safeLocalStorageGet, safeLocalStorageSet, storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 import { safeParseInt } from '@/lib/validation';
 import { SK } from '@/lib/storageKeys';
+import { getToday } from '@/lib/utils';
 
 import {
   ComboState,
@@ -71,7 +72,7 @@ export function useADHDHooks(currentStreak: number) {
         const loginStreak = safeParseInt(storageGetRaw(SK.LOGIN_STREAK), 0, 0, 1000);
 
         // Check if should show daily rewards
-        const today = new Date().toDateString();
+        const today = getToday();
         const showDailyRewards = lastLoginDate !== today;
 
         // Generate notifications
@@ -254,7 +255,7 @@ export function useADHDHooks(currentStreak: number) {
 
   // Claim daily reward
   const claimDailyReward = useCallback(() => {
-    const today = new Date().toDateString();
+    const today = getToday();
     storageSetRaw(SK.LAST_LOGIN, today);
     setState(prev => ({
       ...prev,

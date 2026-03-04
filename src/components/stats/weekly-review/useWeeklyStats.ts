@@ -54,7 +54,7 @@ export function useWeeklyStats({ habits, moods, focusSessions, currentStreak, t 
 
       // Focus
       const dayFocus = focusSessions
-        .filter(s => s.date === date && s.completed)
+        .filter(s => s.date === date && s.completedAt)
         .reduce((sum, s) => sum + s.duration, 0);
       focusMinutes += dayFocus;
 

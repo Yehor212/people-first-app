@@ -22,8 +22,6 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
   const setCanvasGoals = useUserDataStore(s => s.setCanvasGoals);
   const setOnboardingComplete = useUserDataStore(s => s.setOnboardingComplete);
   const setHasSelectedLanguage = useUserDataStore(s => s.setHasSelectedLanguage);
-  const scheduleEvents = useUserDataStore(s => s.scheduleEvents);
-
   const handleResetData = useCallback(() => {
     setMoods([]);
     setHabits([]);
@@ -77,8 +75,8 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
       logger.warn('[Schedule] Cannot delete habit/google-generated event directly');
       return;
     }
-    setScheduleEvents(scheduleEvents.filter(e => e.id !== id));
-  }, [allScheduleEvents, scheduleEvents, setScheduleEvents]);
+    setScheduleEvents(prev => prev.filter(e => e.id !== id));
+  }, [allScheduleEvents, setScheduleEvents]);
 
   return {
     handleResetData,

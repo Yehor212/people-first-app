@@ -13,7 +13,7 @@ import { useDemoMode } from '@/hooks/useDemoMode';
 import { useScrollLock } from '@/hooks/useScrollLock';
 
 export function AboutSection() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const [showFeedback, setShowFeedback] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
@@ -135,7 +135,7 @@ export function AboutSection() {
                       )}
                     </p>
                     {updateState.releaseNotes && (
-                      <p className="text-xs text-muted-foreground text-center mb-2">{updateState.releaseNotes}</p>
+                      <p className="text-xs text-muted-foreground text-center mb-2">{typeof updateState.releaseNotes === 'string' ? updateState.releaseNotes : (updateState.releaseNotes[language] || updateState.releaseNotes['en'] || Object.values(updateState.releaseNotes)[0] || '')}</p>
                     )}
                     <button
                       onClick={handleOpenGooglePlay}

@@ -17,8 +17,3 @@ export interface ChangelogVersion {
   sections: ChangelogSection[];
 }
 
-// Virtual module declaration
-declare module 'virtual:changelog' {
-  const changelog: ChangelogVersion[];
-  export default changelog;
-}

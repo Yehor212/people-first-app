@@ -97,6 +97,7 @@ const arabicOverrides: Partial<Translations> = {
   scheduleMeeting: 'اجتماع',
   scheduleNote: 'ملاحظة (اختياري)',
   scheduleNotePlaceholder: 'أضف تفاصيل أو تذكيرات...',
+  viewSchedule: 'عرض الجدول',
   addToMyWorld: 'إضافة لعالمي',
 
   // Mindfulness v1.5.0
@@ -275,6 +276,16 @@ const arabicOverrides: Partial<Translations> = {
   focusReflectionQuestion: 'كيف كانت الجلسة؟',
   focusReflectionSkip: 'تخطي',
   focusReflectionSave: 'حفظ',
+  focusExpandToJournal: 'اكتب عن ذلك في يومياتك',
+
+  // TodayFocusCard
+  todayFocusMoodMorning: 'كيف تشعر هذا الصباح؟',
+  todayFocusMoodAfternoon: 'كيف مزاجك الآن؟',
+  todayFocusMoodEvening: 'كيف كان يومك؟',
+  todayFocusHabits: 'حان وقت تتبع عاداتك',
+  todayFocusFocus: 'هل أنت مستعد لجلسة تركيز؟',
+  todayFocusGratitude: 'على ماذا تشعر بالامتنان اليوم؟',
+  todayFocusSubtitle: 'خطوتك التالية',
 
   // Breathing
   breathingTitle: 'التنفس',
@@ -467,6 +478,7 @@ const arabicOverrides: Partial<Translations> = {
   profile: 'الملف الشخصي',
   yourName: 'اسمك',
   nameSaved: 'تم حفظ الاسم',
+  nameSavedLocally: 'تم الحفظ محلياً',
   invalidNameFormat: 'صيغة الاسم غير صالحة',
   notifications: 'الإشعارات',
   notificationsComingSoon: 'الإشعارات متاحة في التحديثات القادمة.',
@@ -670,6 +682,9 @@ const arabicOverrides: Partial<Translations> = {
   shareSubtext3: '3 أيام وبناء الزخم',
   shareSubtextStart: 'رحلتي بدأت',
   dismiss: 'إغلاق',
+
+  // Flash Challenge
+  hurry: 'أسرع!',
 
   // Challenges
   challengesTitle: 'التحديات',
@@ -1785,6 +1800,7 @@ const arabicOverrides: Partial<Translations> = {
   nextMonth: 'الشهر التالي',
   goToPreviousPage: 'الصفحة السابقة',
   goToNextPage: 'الصفحة التالية',
+  page: 'صفحة',
   pagination: 'ترقيم الصفحات',
   breadcrumb: 'مسار التنقل',
   toggleSidebar: 'تبديل الشريط الجانبي',
@@ -1892,7 +1908,12 @@ const arabicOverrides: Partial<Translations> = {
   sendMagicLink: 'إرسال رابط سحري',
   continueWithGoogle: 'المتابعة مع Google',
   continueWithApple: 'المتابعة مع Apple',
+  continueWithPhone: 'المتابعة بالهاتف',
   continueWithFacebook: 'المتابعة مع Facebook',
+  authEnterPhone: 'أدخل رقم هاتفك',
+  authSendCode: 'إرسال الرمز',
+  authCodeSentTo: 'تم إرسال الرمز إلى {phone}',
+  authVerify: 'تحقق',
   authSigningIn: 'جارٍ تسجيل الدخول...',
   signedInAs: 'مسجل كـ',
   signOut: 'تسجيل الخروج',
@@ -1909,6 +1930,7 @@ const arabicOverrides: Partial<Translations> = {
   deleteAccountSuccess: 'تم حذف الحساب',
   deleteAccountError: 'فشل حذف الحساب',
   deleteAccountLink: 'طلب حذف الحساب',
+  deleteConfirmWord: 'حذف',
   authEmailSent: 'تم إرسال البريد!',
   authSignedOut: 'تم تسجيل الخروج',
   authError: 'خطأ في المصادقة',
@@ -2153,6 +2175,7 @@ const arabicOverrides: Partial<Translations> = {
   journalWords: 'كلمات',
   journalEntrySaved: 'تم حفظ الإدخال',
   journalWritingPrompts: 'أفكار للكتابة',
+  journalPrompt: 'اقتراح',
   journalPrompt1: 'ما الذي جعلك تبتسم اليوم؟',
   journalPrompt2: 'ما الذي تحداك اليوم؟',
   journalPrompt3: 'على ماذا تشعر بالامتنان؟',

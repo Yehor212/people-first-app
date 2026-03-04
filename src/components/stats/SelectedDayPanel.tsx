@@ -8,6 +8,7 @@ import { Calendar, Heart, Brain, Target, Sparkles } from 'lucide-react';
 import { MoodEntry, Habit, GratitudeEntry } from '@/types';
 import { AnimatedEmotionEmoji } from '@/components/AnimatedEmotionEmoji';
 import { MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
+import type { Language } from '@/i18n/translations';
 import { getLocale } from '@/lib/timeUtils';
 
 interface SelectedDayData {
@@ -93,9 +94,9 @@ export function SelectedDayPanel({
                 <Calendar className="w-5 h-5 text-violet-600 dark:text-violet-300" />
               </motion.div>
               <div>
-                <p className="font-bold text-lg text-foreground">{new Date(selectedDate + 'T00:00:00').toLocaleDateString(getLocale(language), { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                <p className="font-bold text-lg text-foreground">{new Date(selectedDate + 'T00:00:00').toLocaleDateString(getLocale(language as Language), { day: 'numeric', month: 'long', year: 'numeric' })}</p>
                 <p className="text-xs text-muted-foreground">
-                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString(getLocale(language), { weekday: 'long' })}
+                  {new Date(selectedDate + 'T00:00:00').toLocaleDateString(getLocale(language as Language), { weekday: 'long' })}
                 </p>
               </div>
             </div>
@@ -333,7 +334,7 @@ export function SelectedDayPanel({
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-foreground">{entry.text}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {new Date(entry.timestamp).toLocaleTimeString(getLocale(language), { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(entry.timestamp).toLocaleTimeString(getLocale(language as Language), { hour: '2-digit', minute: '2-digit' })}
                       </p>
                     </div>
                   </div>

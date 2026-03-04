@@ -10,7 +10,7 @@
  * - Shimmer effect on use button
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Lightbulb, Shuffle, PenLine } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -37,11 +37,18 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
   const [_isShuffled, setIsShuffled] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
   const [promptKey, setPromptKey] = useState(0); // For animating prompt text change
+  const particleTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Cleanup particle timer on unmount
+  useEffect(() => {
+    return () => clearTimeout(particleTimerRef.current);
+  }, []);
 
   const handleShuffle = useCallback(() => {
     void hapticTap();
     setShowParticles(true);
-    setTimeout(() => setShowParticles(false), 600);
+    clearTimeout(particleTimerRef.current);
+    particleTimerRef.current = setTimeout(() => setShowParticles(false), 600);
     setCurrentPrompt(getRandomPrompt());
     setPromptKey(prev => prev + 1);
     setIsShuffled(true);

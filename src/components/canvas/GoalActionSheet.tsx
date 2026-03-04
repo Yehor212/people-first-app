@@ -9,7 +9,7 @@
  * - AnimatePresence for slide-up / slide-down transitions
  */
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, CheckCircle, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -84,6 +84,9 @@ export function GoalActionSheet({
   const ts = t as unknown as Record<string, string>;
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Reset delete confirmation when switching to a different goal
+  useEffect(() => { setShowDeleteConfirm(false); }, [goal?.id]);
+
   const { modalProps } = useModalA11y(isVisible, onDismiss);
 
   const handleAddSubtask = useCallback(() => {
@@ -153,7 +156,7 @@ export function GoalActionSheet({
             role="dialog"
             aria-modal="true"
             aria-label={`Goal: ${goal.title}`}
-            className="fixed bottom-0 left-0 right-0 z-[60] rounded-t-2xl overflow-hidden"
+            className="fixed bottom-0 inset-x-0 z-[60] rounded-t-2xl overflow-hidden"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}

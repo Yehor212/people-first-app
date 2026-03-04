@@ -173,7 +173,7 @@ export function ActivityHeatMap({
                   <div
                     key={i}
                     className={cn(
-                      "w-3 h-3 text-xs text-muted-foreground text-right leading-3",
+                      "w-3 h-3 text-xs text-muted-foreground text-end leading-3",
                       i % 2 === 0 ? "opacity-100" : "opacity-0"
                     )}
                   >

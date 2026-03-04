@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { X, Flame } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { getStreakMessage } from '@/lib/motivationalMessages';
 import { cn } from '@/lib/utils';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 interface StreakCelebrationProps {
   streak: number;
@@ -14,16 +15,25 @@ export function StreakCelebration({ streak, habitName, onClose }: StreakCelebrat
   const { t, language } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const message = getStreakMessage(streak, language);
+  const showTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     // Animate in
-    setTimeout(() => setIsVisible(true), 100);
+    showTimerRef.current = setTimeout(() => setIsVisible(true), 100);
+    return () => {
+      clearTimeout(showTimerRef.current);
+      clearTimeout(closeTimerRef.current);
+    };
   }, []);
 
   const handleClose = () => {
     setIsVisible(false);
-    setTimeout(onClose, 300);
+    clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(onClose, 300);
   };
+
+  useBackHandler(true, handleClose);
 
   if (!message) return null;
 

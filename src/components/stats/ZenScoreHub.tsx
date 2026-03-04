@@ -314,7 +314,7 @@ export function ZenScoreHub({
                 {animatedScore}
               </motion.span>
               <span className="text-xs text-muted-foreground mt-1">
-                {getScoreLabel(zenScore, t)}
+                {getScoreLabel(zenScore, t as unknown as Record<string, string>)}
               </span>
             </div>
           </div>

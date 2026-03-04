@@ -97,6 +97,7 @@ const hebrewOverrides: Partial<Translations> = {
   scheduleMeeting: 'פגישה',
   scheduleNote: 'הערה (אופציונלי)',
   scheduleNotePlaceholder: 'הוסף פרטים או תזכורות...',
+  viewSchedule: 'הצג לוח זמנים',
   addToMyWorld: 'הוסף לעולם שלי',
 
   // Mindfulness
@@ -290,6 +291,16 @@ const hebrewOverrides: Partial<Translations> = {
   focusReflectionQuestion: 'איך הייתה הסשן?',
   focusReflectionSkip: 'דלג',
   focusReflectionSave: 'שמור',
+  focusExpandToJournal: 'כתוב על זה ביומן שלך',
+
+  // TodayFocusCard
+  todayFocusMoodMorning: 'איך אתה מרגיש הבוקר?',
+  todayFocusMoodAfternoon: 'מה מצב הרוח שלך?',
+  todayFocusMoodEvening: 'איך היה היום שלך?',
+  todayFocusHabits: 'הגיע הזמן לסמן את ההרגלים',
+  todayFocusFocus: 'מוכן לסשן ריכוז?',
+  todayFocusGratitude: 'על מה אתה אסיר תודה היום?',
+  todayFocusSubtitle: 'הצעד הבא שלך',
 
   // Breathing
   breathingTitle: 'נשימה',
@@ -431,6 +442,7 @@ const hebrewOverrides: Partial<Translations> = {
   profile: 'פרופיל',
   yourName: 'השם שלך',
   nameSaved: 'השם נשמר',
+  nameSavedLocally: 'נשמר מקומית',
   invalidNameFormat: 'פורמט שם לא חוקי',
   notifications: 'התראות',
   notificationsComingSoon: 'התראות יהיו זמינות בעדכונים הבאים.',
@@ -981,7 +993,12 @@ const hebrewOverrides: Partial<Translations> = {
   sendMagicLink: 'שלח קישור כניסה',
   continueWithGoogle: 'המשך עם Google',
   continueWithApple: 'המשך עם Apple',
+  continueWithPhone: 'המשך עם טלפון',
   continueWithFacebook: 'המשך עם Facebook',
+  authEnterPhone: 'הזן/י את מספר הטלפון',
+  authSendCode: 'שלח קוד',
+  authCodeSentTo: 'הקוד נשלח ל-{phone}',
+  authVerify: 'אימות',
   authSigningIn: 'מתחבר...',
   signedInAs: 'מחובר/ת בתור',
   deleteAccountConfirm: 'למחוק את החשבון?',
@@ -990,6 +1007,7 @@ const hebrewOverrides: Partial<Translations> = {
   deleteAccountSuccess: 'החשבון נמחק.',
   deleteAccountError: 'מחיקת חשבון נכשלה.',
   deleteAccountLink: 'איך למחוק חשבון/נתונים',
+  deleteConfirmWord: 'מחיקה',
   authEmailSent: 'קישור כניסה נשלח לאימייל שלך.',
   authSignedOut: 'התנתקת.',
   authError: 'שליחת הקישור נכשלה.',
@@ -1052,6 +1070,10 @@ const hebrewOverrides: Partial<Translations> = {
 
   // Challenges
   dismiss: 'סגור',
+
+  // Flash Challenge
+  hurry: 'מהר!',
+
   challengesTitle: 'אתגרים ותגים',
   challengesSubtitle: 'קח/י אתגרים והרוויח/י תגים',
   activeChallenges: 'פעילים',
@@ -1943,6 +1965,7 @@ const hebrewOverrides: Partial<Translations> = {
   nextMonth: 'חודש הבא',
   goToPreviousPage: 'עבור לעמוד הקודם',
   goToNextPage: 'עבור לעמוד הבא',
+  page: 'עמוד',
   pagination: 'ניווט בעמודים',
   breadcrumb: 'נתיב',
   toggleSidebar: 'החלף סרגל צד',
@@ -2222,6 +2245,7 @@ const hebrewOverrides: Partial<Translations> = {
   journalWords: 'מילים',
   journalEntrySaved: 'הרשומה נשמרה',
   journalWritingPrompts: 'רעיונות לכתיבה',
+  journalPrompt: 'רעיון',
   journalPrompt1: 'מה גרם לך לחייך היום?',
   journalPrompt2: 'מה היה מאתגר היום?',
   journalPrompt3: 'על מה אתה אסיר תודה?',

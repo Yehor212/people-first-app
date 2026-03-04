@@ -54,12 +54,13 @@ export function LegalModal({ open, onOpenChange, initialTab = 'privacy' }: Legal
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div
         className="bg-card rounded-2xl shadow-zen-card w-full max-w-md max-h-[80dvh] flex flex-col overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="legal-modal-title"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b">

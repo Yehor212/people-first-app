@@ -306,7 +306,7 @@ export function checkAchievements(
   unlockedAchievements: AchievementId[]
 ): { newAchievements: Achievement[]; updatedProgress: Record<AchievementId, number> } {
   const newAchievements: Achievement[] = [];
-  const updatedProgress: Record<AchievementId, number> = {};
+  const updatedProgress: Record<AchievementId, number> = {} as Record<AchievementId, number>;
 
   // First time achievements
   if (stats.moods.length >= 1 && !unlockedAchievements.includes('first_mood')) {

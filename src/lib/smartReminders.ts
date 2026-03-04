@@ -297,8 +297,8 @@ export function analyzeHabitPatterns(habit: Habit): PatternAnalysis {
 
   // For habits, we don't have timestamps, so we estimate based on typical patterns
   // Morning habits: 6-9, Afternoon: 12-14, Evening: 18-21
-  const estimatedHour = habit.category === 'morning' ? 8
-    : habit.category === 'evening' ? 20
+  const estimatedHour = (habit.category as string) === 'morning' ? 8
+    : (habit.category as string) === 'evening' ? 20
     : 14;
 
   const bestDays: DayPattern[] = Array.from(dayCounts.entries())

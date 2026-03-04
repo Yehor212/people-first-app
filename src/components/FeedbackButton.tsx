@@ -12,6 +12,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { submitQuickFeedback } from '@/lib/feedbackService';
 import { platform } from '@/lib/platform';
 import { haptics } from '@/lib/haptics';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 import { logger } from '@/lib/logger';
 import { SK } from '@/lib/storageKeys';
@@ -35,6 +36,8 @@ export function FeedbackButton({
   const [type, setType] = useState<FeedbackType>('bug');
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useBackHandler(isOpen, () => setIsOpen(false));
 
   const handleOpen = () => {
     void haptics.light();
@@ -109,7 +112,7 @@ export function FeedbackButton({
 
       {/* Feedback Modal */}
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 bg-black/50">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center p-4 bg-black/50" role="dialog" aria-modal="true">
           <div
             className="w-full max-w-md bg-card rounded-2xl shadow-xl animate-slide-up"
             onClick={(e) => e.stopPropagation()}
@@ -121,7 +124,7 @@ export function FeedbackButton({
               </h2>
               <button
                 onClick={handleClose}
-                className="p-2 rounded-lg hover:bg-muted transition-colors"
+                className="p-2 rounded-lg hover:bg-muted transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
                 aria-label={t.close}
               >
                 <X className="w-5 h-5" />

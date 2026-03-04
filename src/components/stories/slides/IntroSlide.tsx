@@ -5,7 +5,7 @@
  * and cinematic title reveal. Sets the premium tone for the entire story.
  */
 
-import { motion } from 'framer-motion';
+import { motion, type Variants } from 'framer-motion';
 import { StarField } from '../elements/StarField';
 import { SparklesIcon } from '@/components/icons';
 import type { StorySlide } from '@/lib/progressStories';
@@ -32,7 +32,7 @@ const portalVariants = {
       duration: 1.5,
     },
   },
-};
+} satisfies Variants;
 
 const titleVariants = {
   hidden: {
@@ -50,7 +50,7 @@ const titleVariants = {
       ease: 'easeOut',
     },
   },
-};
+} satisfies Variants;
 
 const subtitleVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -61,7 +61,7 @@ const subtitleVariants = {
   },
 };
 
-const sparkleVariants = {
+const sparkleVariants: Variants = {
   animate: (i: number) => ({
     opacity: [0, 1, 0],
     scale: [0.5, 1.2, 0.5],

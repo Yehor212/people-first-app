@@ -114,22 +114,22 @@ export function FocusMiniPlayer({ onNavigateToTimer }: FocusMiniPlayerProps) {
           <button
             onClick={handleToggle}
             className={cn(
-              'w-9 h-9 rounded-full flex items-center justify-center transition-colors',
+              'w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center transition-colors',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
               isRunning
                 ? 'bg-secondary text-foreground hover:bg-secondary/80'
                 : 'bg-violet-500 text-white hover:bg-violet-600',
             )}
-            aria-label={isRunning ? 'Pause' : 'Play'}
+            aria-label={isRunning ? (t.pause || 'Pause') : (t.play || 'Play')}
           >
-            {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ml-0.5" />}
+            {isRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4 ms-0.5" />}
           </button>
 
           {/* Stop */}
           <button
             onClick={handleStop}
-            className="w-9 h-9 rounded-full flex items-center justify-center bg-secondary text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            aria-label="Stop"
+            className="w-9 h-9 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center bg-secondary text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            aria-label={t.stop || 'Stop'}
           >
             <Square className="w-3.5 h-3.5" />
           </button>

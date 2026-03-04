@@ -45,7 +45,7 @@ const localeMap: Record<Language, string> = {
 export const AchievementsPanel = memo(function AchievementsPanel({ stats, unlockedAchievements, onAchievementUnlock }: AchievementsPanelProps) {
   const { t, language } = useLanguage();
   const [selectedAchievement, setSelectedAchievement] = useState<Achievement | null>(null);
-  const [achievementProgress, setAchievementProgress] = useState<Record<AchievementId, number>>({});
+  const [achievementProgress, setAchievementProgress] = useState<Record<AchievementId, number>>({} as Record<AchievementId, number>);
   const clearSelectedAchievement = useCallback(() => setSelectedAchievement(null), []);
   useBackHandler(!!selectedAchievement, clearSelectedAchievement);
   const userLevel = calculateLevel(stats.totalXp);
@@ -267,6 +267,7 @@ interface AchievementCardProps {
 }
 
 function AchievementCard({ achievement, isUnlocked, progress, onClick, hiddenText, hiddenTitle }: AchievementCardProps) {
+  const { t } = useLanguage();
   const hasProgress = progress !== undefined && achievement.total;
   const progressPercentage = hasProgress ? (progress / achievement.total) * 100 : 0;
 

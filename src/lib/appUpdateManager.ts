@@ -142,7 +142,7 @@ async function checkVersionFromRemote(): Promise<RemoteVersionConfig | null> {
       return null;
     }
 
-    return data?.value as RemoteVersionConfig || null;
+    return ((data as { value?: unknown } | null)?.value as RemoteVersionConfig) ?? null;
   } catch (error) {
     logger.error('[AppUpdate] Remote version check failed:', error);
     return null;
@@ -162,12 +162,12 @@ export async function openGooglePlayStore(): Promise<boolean> {
 
       try {
         // Try to open with market:// protocol (Play Store app)
-        await App.openUrl({ url: marketUrl });
+        await (App as any).openUrl({ url: marketUrl });
         logger.log('[AppUpdate] Opened Google Play Store via market://');
         return true;
       } catch {
         // Fallback to HTTPS URL (opens in browser)
-        await App.openUrl({ url: GOOGLE_PLAY_URL });
+        await (App as any).openUrl({ url: GOOGLE_PLAY_URL });
         logger.log('[AppUpdate] Opened Google Play Store via HTTPS');
         return true;
       }

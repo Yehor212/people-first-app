@@ -95,7 +95,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={handleDismiss}>
       <div
         {...modalProps}
         aria-labelledby="whats-new-title"
@@ -103,6 +103,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
           'w-full max-w-md bg-card rounded-2xl shadow-2xl',
           'border border-border overflow-hidden'
         )}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="relative px-6 py-5 bg-gradient-to-r from-primary/10 to-primary/5 border-b border-border">

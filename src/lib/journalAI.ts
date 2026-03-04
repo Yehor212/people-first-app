@@ -26,10 +26,10 @@ export async function generateEmbeddings(entryIds: string[]): Promise<void> {
       body: { entryIds },
     });
     if (error) {
-      logger.debug('[JournalAI] Embedding generation skipped:', error.message);
+      logger.log('[JournalAI] Embedding generation skipped:', error.message);
     }
   } catch (err) {
-    logger.debug('[JournalAI] Embedding generation failed:', err);
+    logger.log('[JournalAI] Embedding generation failed:', err);
   }
 }
 

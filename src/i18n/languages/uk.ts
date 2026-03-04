@@ -87,6 +87,7 @@ export const uk: Translations = {
   scheduleMeeting: 'Зустріч',
   scheduleNote: 'Нотатка (опціонально)',
   scheduleNotePlaceholder: 'Додайте деталі або нагадування...',
+  viewSchedule: 'Переглянути розклад',
   addToMyWorld: 'Додати в Мій Світ',
 
   // Mindfulness v1.5.0
@@ -266,6 +267,16 @@ export const uk: Translations = {
   focusReflectionQuestion: 'Як пройшла сесія?',
   focusReflectionSkip: 'Пропустити',
   focusReflectionSave: 'Зберегти',
+  focusExpandToJournal: 'Написати про це в щоденнику',
+
+  // TodayFocusCard
+  todayFocusMoodMorning: 'Як ви почуваєтеся цього ранку?',
+  todayFocusMoodAfternoon: 'Як ваш настрій?',
+  todayFocusMoodEvening: 'Як пройшов ваш день?',
+  todayFocusHabits: 'Час відмітити звички',
+  todayFocusFocus: 'Готові до сесії фокусу?',
+  todayFocusGratitude: 'За що ви вдячні сьогодні?',
+  todayFocusSubtitle: 'Ваш наступний крок',
 
   // Breathing
   breathingTitle: 'Дихання',
@@ -459,6 +470,7 @@ export const uk: Translations = {
   profile: 'Профіль',
   yourName: 'Ваше ім\'я',
   nameSaved: 'Імʼя збережено',
+  nameSavedLocally: 'Збережено локально',
   invalidNameFormat: 'Невірний формат імені',
   notifications: 'Сповіщення',
   notificationsComingSoon: 'Сповіщення будуть доступні в наступних оновленнях.',
@@ -723,7 +735,12 @@ export const uk: Translations = {
   sendMagicLink: 'Надіслати посилання для входу',
   continueWithGoogle: 'Продовжити через Google',
   continueWithApple: 'Продовжити через Apple',
+  continueWithPhone: 'Продовжити через телефон',
   continueWithFacebook: 'Продовжити через Facebook',
+  authEnterPhone: 'Введіть номер телефону',
+  authSendCode: 'Надіслати код',
+  authCodeSentTo: 'Код надіслано на {phone}',
+  authVerify: 'Підтвердити',
   authSigningIn: 'Входимо...',
   signedInAs: 'Ви увійшли як',
   signOut: 'Вийти',
@@ -740,6 +757,7 @@ export const uk: Translations = {
   deleteAccountSuccess: 'Акаунт видалено.',
   deleteAccountError: 'Не вдалося видалити акаунт.',
   deleteAccountLink: 'Як видалити акаунт і дані',
+  deleteConfirmWord: 'ВИДАЛИТИ',
   authEmailSent: 'Посилання для входу надіслано на вашу пошту.',
   authSignedOut: 'Ви вийшли.',
   authError: 'Не вдалося надіслати посилання.',
@@ -810,6 +828,10 @@ export const uk: Translations = {
   shareSubtext3: 'Серія 3+ дні',
   shareSubtextStart: 'Будую звички',
   dismiss: 'Закрити',
+
+  // Flash Challenge
+  hurry: 'ШВИДШЕ!',
+
   challengesTitle: 'Виклики та нагороди',
   challengesSubtitle: 'Приймайте виклики та заробляйте бейджі',
   activeChallenges: 'Активні',
@@ -1876,6 +1898,7 @@ export const uk: Translations = {
   nextMonth: 'Наступний місяць',
   goToPreviousPage: 'Попередня сторінка',
   goToNextPage: 'Наступна сторінка',
+  page: 'Сторінка',
   pagination: 'Пагінація',
   breadcrumb: 'Навігація',
   toggleSidebar: 'Перемкнути бічну панель',
@@ -2187,6 +2210,7 @@ export const uk: Translations = {
   journalWords: 'слів',
   journalEntrySaved: 'Запис збережено',
   journalWritingPrompts: 'Підказки',
+  journalPrompt: 'Підказка',
   journalPrompt1: 'Що змусило вас посміхнутися сьогодні?',
   journalPrompt2: 'Що було складним сьогодні?',
   journalPrompt3: 'За що ви вдячні?',

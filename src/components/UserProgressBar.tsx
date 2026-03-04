@@ -3,7 +3,7 @@
  * Shows user level, XP progress, and quick stats in a compact bar
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Zap, Star, Gift, Flame, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDopamineSettings } from '@/components/DopamineSettings';
@@ -35,6 +35,7 @@ export function UserProgressBar({
   const [prevLevel, setPrevLevel] = useState(level);
 
   const progress = Math.min((animatedXp / xpToNextLevel) * 100, 100);
+  const levelUpTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Animate XP changes
   useEffect(() => {
@@ -47,6 +48,7 @@ export function UserProgressBar({
     const startXp = animatedXp;
     const diff = currentXp - startXp;
     const startTime = Date.now();
+    let rafId: number;
 
     const animate = () => {
       const elapsed = Date.now() - startTime;
@@ -56,11 +58,12 @@ export function UserProgressBar({
       setAnimatedXp(Math.round(startXp + diff * easedT));
 
       if (t < 1) {
-        requestAnimationFrame(animate);
+        rafId = requestAnimationFrame(animate);
       }
     };
 
-    requestAnimationFrame(animate);
+    rafId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafId);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: animation start value, including would cause loop
   }, [currentXp, dopamine.animations]);
 
@@ -68,9 +71,11 @@ export function UserProgressBar({
   useEffect(() => {
     if (level > prevLevel) {
       setShowLevelUp(true);
-      setTimeout(() => setShowLevelUp(false), 3000);
+      clearTimeout(levelUpTimerRef.current);
+      levelUpTimerRef.current = setTimeout(() => setShowLevelUp(false), 3000);
     }
     setPrevLevel(level);
+    return () => clearTimeout(levelUpTimerRef.current);
   }, [level, prevLevel]);
 
   return (

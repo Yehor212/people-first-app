@@ -54,7 +54,7 @@ export function ChallengeDetailsView({
   const throttledShare = useThrottledCallback(async () => {
     void hapticTap();
     setIsSharing(true);
-    const success = await shareChallenge(challenge, t);
+    const success = await shareChallenge(challenge, t as unknown as Record<string, string>);
     if (success) {
       void hapticSuccess();
     }
@@ -215,7 +215,7 @@ export function ChallengeDetailsView({
       )}
 
       {/* Participants Leaderboard - Cloud Feature */}
-      <ParticipantsLeaderboard challenge={challenge} t={t} username={username} />
+      <ParticipantsLeaderboard challenge={challenge} t={t as unknown as Record<string, string>} username={username} />
 
       {/* Challenge code - Premium */}
       <motion.div

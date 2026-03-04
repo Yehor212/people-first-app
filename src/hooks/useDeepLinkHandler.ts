@@ -54,14 +54,19 @@ export function useDeepLinkHandler(): void {
         }).catch(() => trySettle(null));
 
         // 2. Listen for auth state change (fires when code exchange completes)
-        supabase.auth.onAuthStateChange((event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
           if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session?.user) {
+            subscription?.unsubscribe();
+            clearTimeout(timeoutId);
             trySettle(session);
           }
         });
 
         // 3. Timeout after 15s
-        setTimeout(() => trySettle(null), 15_000);
+        const timeoutId = setTimeout(() => {
+          subscription?.unsubscribe();
+          trySettle(null);
+        }, 15_000);
       });
     };
 

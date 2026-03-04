@@ -208,9 +208,9 @@ export function QuickActionsBar({
               key={notification.id}
               className={cn(
                 'flex items-center gap-3 p-3 rounded-xl',
-                notification.type === 'warning'
+                (notification.type as string) === 'warning'
                   ? 'bg-yellow-500/10 dark:bg-yellow-500/20'
-                  : notification.type === 'success'
+                  : (notification.type as string) === 'success'
                   ? 'bg-green-500/10 dark:bg-green-500/20'
                   : 'bg-primary/10 dark:bg-primary/20'
               )}

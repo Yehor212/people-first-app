@@ -50,27 +50,31 @@ export function AddEventModal({
   const handleAdd = useCallback(() => {
     if (isSaving) return;
     setIsSaving(true);
-    const title = customTitle || (t as unknown as Record<string, string>)[selectedPreset.labelKey] || selectedPreset.id;
-    let finalEndHour = time.endHour;
-    let finalEndMinute = time.endMinute;
-    const startTotal = time.startHour * 60 + time.startMinute;
-    const endTotal = time.endHour * 60 + time.endMinute;
-    if (endTotal <= startTotal) {
-      finalEndHour = Math.min(time.startHour + 1, 23);
-      finalEndMinute = time.startHour >= 23 ? 59 : time.startMinute;
+    try {
+      const title = customTitle || (t as unknown as Record<string, string>)[selectedPreset.labelKey] || selectedPreset.id;
+      let finalEndHour = time.endHour;
+      let finalEndMinute = time.endMinute;
+      const startTotal = time.startHour * 60 + time.startMinute;
+      const endTotal = time.endHour * 60 + time.endMinute;
+      if (endTotal <= startTotal) {
+        finalEndHour = Math.min(time.startHour + 1, 23);
+        finalEndMinute = time.startHour >= 23 ? 59 : time.startMinute;
+      }
+      onAdd({
+        title,
+        startHour: time.startHour,
+        startMinute: time.startMinute,
+        endHour: finalEndHour,
+        endMinute: finalEndMinute,
+        colorVar: selectedPreset.colorVar,
+        color: getEventColor(selectedPreset.colorVar),
+        emoji: selectedPreset.emoji,
+        date: eventDate,
+        note: note.trim() || undefined,
+      });
+    } catch {
+      setIsSaving(false);
     }
-    onAdd({
-      title,
-      startHour: time.startHour,
-      startMinute: time.startMinute,
-      endHour: finalEndHour,
-      endMinute: finalEndMinute,
-      colorVar: selectedPreset.colorVar,
-      color: getEventColor(selectedPreset.colorVar),
-      emoji: selectedPreset.emoji,
-      date: eventDate,
-      note: note.trim() || undefined,
-    });
   }, [isSaving, customTitle, t, selectedPreset, time, onAdd, eventDate, note]);
 
   return (
@@ -260,9 +264,13 @@ export function AddEventModal({
           {/* Add button */}
           <motion.button
             onClick={handleAdd}
+            disabled={isSaving}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="w-full py-4 bg-gradient-to-r from-primary to-accent text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/30"
+            className={cn(
+              "w-full py-4 bg-gradient-to-r from-primary to-accent text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/30",
+              isSaving && "opacity-50"
+            )}
           >
             <Check className="w-5 h-5" />
             {t.addToMyWorld}

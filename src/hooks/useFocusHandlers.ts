@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useGamificationStore, useUIStore, useUserDataStore } from '@/stores';
 import { triggerXpPopup } from '@/components/XpPopup';
 import { haptics } from '@/lib/haptics';
@@ -27,6 +27,13 @@ export function useFocusHandlers({
   const setFocusSessions = useUserDataStore(s => s.setFocusSessions);
   const rewardUser = useGamificationStore(s => s.rewardUser);
   const mindfulTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  // Guarantee cleanup of mindful timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (mindfulTimeoutRef.current) clearTimeout(mindfulTimeoutRef.current);
+    };
+  }, []);
 
   const handleCompleteFocusSession = useThrottledCallback((session: FocusSession) => {
     setFocusSessions(prev => [...prev, session]);

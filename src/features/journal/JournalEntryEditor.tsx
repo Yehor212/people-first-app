@@ -747,7 +747,7 @@ export function JournalEntryEditor({
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-slate-400 hover:bg-white/10 hover:text-slate-50 transition-all min-h-[44px]"
               aria-label={ts.back || 'Back'}
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-4 h-4 rtl:scale-x-[-1]" />
               <span className="text-sm">Map</span>
             </motion.button>
             <div className="min-w-0">
@@ -918,7 +918,7 @@ export function JournalEntryEditor({
               className="px-3 py-2 rounded-lg text-sm font-medium border border-transparent text-slate-400 hover:bg-white/10 hover:text-slate-50 transition-all"
               aria-label="Font size"
             >
-              A<span className="text-[10px] ml-0.5 opacity-60">{FONT_SIZES[fontSize]}</span>
+              A<span className="text-[10px] ms-0.5 opacity-60">{FONT_SIZES[fontSize]}</span>
             </motion.button>
           </div>
 
@@ -1422,7 +1422,7 @@ export function JournalEntryEditor({
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          className="w-full min-h-[260px] bg-transparent border-none outline-none resize-none [&_blockquote]:border-l-2 [&_blockquote]:border-current/20 [&_blockquote]:pl-3 [&_blockquote]:italic [&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 empty:before:pointer-events-none"
+          className="w-full min-h-[260px] bg-transparent border-none outline-none resize-none [&_blockquote]:border-l-2 [&_blockquote]:border-current/20 [&_blockquote]:ps-3 [&_blockquote]:italic [&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 empty:before:pointer-events-none"
           style={{ fontSize: FONT_SIZES[fontSize], lineHeight: 1.8, fontFamily: diaryTheme.fontFamily, color: inkColor !== '#ffffff' ? inkColor : paperColors.text }}
           onInput={handleEditorInput}
           onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}

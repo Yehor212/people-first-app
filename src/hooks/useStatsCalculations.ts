@@ -4,7 +4,7 @@
  */
 
 import { useMemo } from 'react';
-import { MoodEntry } from '@/types';
+import { MoodEntry, PrimaryEmotion, GratitudeEntry } from '@/types';
 import { calculateStreak, getToday, parseLocalDate } from '@/lib/utils';
 import { getHabitCompletedDates } from '@/lib/habits';
 import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';

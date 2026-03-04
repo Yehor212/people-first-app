@@ -363,7 +363,7 @@ export function ComebackChallenge({
             >
               <Trophy className="w-4 h-4" />
               {t.acceptChallenge || 'Accept Challenge'}
-              <ArrowRight className="w-4 h-4" />
+              <ArrowRight className="w-4 h-4 rtl:scale-x-[-1]" />
             </motion.button>
           )}
         </motion.div>
@@ -374,7 +374,7 @@ export function ComebackChallenge({
           colors={colors}
           xpReward={challengeConfig.xpReward}
           onDismiss={handleDismiss}
-          t={t}
+          t={t as unknown as Record<string, string>}
         />
       </div>
     </motion.div>

@@ -248,11 +248,11 @@ export function ProgressStoriesViewer({
       case 'intro':
         return <IntroSlide slide={currentSlide} />;
       case 'mood':
-        return <MoodSlide slide={currentSlide} t={t} />;
+        return <MoodSlide slide={currentSlide} t={t as unknown as Record<string, string>} />;
       case 'habits':
-        return <HabitsSlide slide={currentSlide} t={t} />;
+        return <HabitsSlide slide={currentSlide} t={t as unknown as Record<string, string>} />;
       case 'focus':
-        return <FocusSlide slide={currentSlide} t={t} />;
+        return <FocusSlide slide={currentSlide} t={t as unknown as Record<string, string>} />;
       case 'streak':
         return <StreakSlide slide={currentSlide} />;
       case 'achievement':
@@ -260,7 +260,7 @@ export function ProgressStoriesViewer({
       case 'summary':
         return <SummarySlide slide={currentSlide} />;
       case 'outro':
-        return <OutroSlide slide={currentSlide} t={t} />;
+        return <OutroSlide slide={currentSlide} t={t as unknown as Record<string, string>} />;
       default:
         return <SummarySlide slide={currentSlide} />;
     }

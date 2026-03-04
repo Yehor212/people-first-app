@@ -3,7 +3,7 @@
  * ADHD-optimized daily check-in with escalating rewards
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Gift, Sparkles, Check, Lock, Zap, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';

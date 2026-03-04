@@ -281,7 +281,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
           className="p-2 rounded-lg hover:bg-muted/50 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label={ts.back || 'Back'}
         >
-          <ArrowLeft className="w-5 h-5 text-foreground" />
+          <ArrowLeft className="w-5 h-5 text-foreground rtl:scale-x-[-1]" />
         </button>
         <h2 className="text-base font-bold text-foreground">
           {ts.journalStatsTitle || 'Diary Statistics'}

@@ -62,10 +62,10 @@ export function JournalStickerPicker({ onSelect, onClose, mood }: JournalSticker
         role="dialog"
         aria-modal="true"
         className={cn(
-          'fixed bottom-0 left-0 right-0 z-[65]',
+          'fixed bottom-0 inset-x-0 z-[65]',
           'bg-card/95 backdrop-blur-xl border-t border-border/40',
           'rounded-t-2xl shadow-lg animate-slide-up',
-          'max-h-[55vh] flex flex-col',
+          'max-h-[55dvh] flex flex-col',
           'pb-[env(safe-area-inset-bottom)]',
         )}
       >

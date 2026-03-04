@@ -66,7 +66,7 @@ export function FocusBreathingOverlay({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={zenMotion.snappy}
-            className="fixed bottom-0 left-0 right-0 z-[61] max-h-[80dvh] rounded-t-[2rem] bg-card border-t border-border overflow-y-auto"
+            className="fixed bottom-0 inset-x-0 z-[61] max-h-[80dvh] rounded-t-[2rem] bg-card border-t border-border overflow-y-auto"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}
           >
             {/* Handle bar */}
@@ -79,7 +79,7 @@ export function FocusBreathingOverlay({
               <h2 className="text-lg font-semibold">{t.focus}</h2>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary"
+                className="w-8 h-8 min-w-[44px] min-h-[44px] rounded-full flex items-center justify-center hover:bg-secondary"
                 aria-label={t.close || 'Close'}
               >
                 <X className="w-4 h-4" />

@@ -3,12 +3,13 @@ import { LazyErrorBoundary } from '@/components/ErrorBoundary';
 import { AchievementsPanel } from '@/components/AchievementsPanel';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { SkeletonList } from '@/components/ui/skeleton';
+import type { UserStats, AchievementId } from '@/lib/gamification';
 
 const Leaderboard = lazyWithRetry(() => import('@/components/Leaderboard').then(m => ({ default: m.Leaderboard })), 'Leaderboard');
 
 interface AchievementsTabProps {
-  stats: Record<string, number>;
-  unlockedAchievements: string[];
+  stats: UserStats;
+  unlockedAchievements: AchievementId[];
 }
 
 export function AchievementsTab({ stats, unlockedAchievements }: AchievementsTabProps) {

@@ -212,7 +212,7 @@ export function WeeklyInsightsCard({
                 <RecommendationCard
                   key={rec.id}
                   recommendation={rec}
-                  t={t}
+                  t={t as unknown as Record<string, string>}
                   onAction={onRecommendationAction}
                   index={index}
                 />

@@ -3,7 +3,8 @@
  * Implements double-tap-to-exit functionality and proper navigation handling
  */
 
-import { App, type PluginListenerHandle } from '@capacitor/app';
+import { App } from '@capacitor/app';
+import type { PluginListenerHandle } from '@capacitor/core';
 import { isNative, isAndroid } from '@/lib/platform';
 import { logger } from './logger';
 import { SK } from './storageKeys';
@@ -191,8 +192,8 @@ function closeTopModal(): boolean {
 
   for (const selector of closeButtonSelectors) {
     const button = document.querySelector(selector);
-    if (button && button.offsetParent !== null) {
-      button.click();
+    if (button && (button as HTMLElement).offsetParent !== null) {
+      (button as HTMLElement).click();
       return true;
     }
   }

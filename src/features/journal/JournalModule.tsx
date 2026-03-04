@@ -753,7 +753,7 @@ export function JournalModule({ onToggleHabit }: JournalModuleProps = {}) {
                       role="dialog"
                       aria-modal="true"
                       aria-label={ts.journalSettings || 'Diary Settings'}
-                      className="fixed bottom-0 left-0 right-0 z-[65] animate-slide-up"
+                      className="fixed bottom-0 inset-x-0 z-[65] animate-slide-up"
                       onClick={e => e.stopPropagation()}
                     >
                       {/* Handle bar */}
@@ -1014,7 +1014,7 @@ export function JournalModule({ onToggleHabit }: JournalModuleProps = {}) {
                       role="dialog"
                       aria-modal="true"
                       aria-label={ts.journalExportFormat || 'Export Format'}
-                      className="fixed bottom-0 left-0 right-0 z-[67] animate-slide-up"
+                      className="fixed bottom-0 inset-x-0 z-[67] animate-slide-up"
                       onClick={e => e.stopPropagation()}
                     >
                       <div className="flex justify-center pt-2 pb-1 bg-card rounded-t-2xl">

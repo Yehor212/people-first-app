@@ -99,6 +99,14 @@ export function Index() {
     refs[section]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [setActiveTab]);
 
+  const handleQuickAction = useCallback((action: string) => {
+    setActiveTab('home');
+    quickActionTimeoutRef.current = setTimeout(() => {
+      if (action === 'logMood') moodRef.current?.scrollIntoView({ behavior: 'smooth' });
+      if (action === 'startFocus') focusRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, 100);
+  }, [setActiveTab]);
+
 
   // Gamification system
   const { stats, gamificationState, userLevel, awardXp } = useGamification();
@@ -335,13 +343,7 @@ export function Index() {
             safeGratitudeEntries={gratitudeEntries}
             restDays={innerWorld.restDays}
             currentFocusMinutes={currentFocusMinutes}
-            onQuickAction={(action) => {
-              setActiveTab('home');
-              quickActionTimeoutRef.current = setTimeout(() => {
-                if (action === 'logMood') moodRef.current?.scrollIntoView({ behavior: 'smooth' });
-                if (action === 'startFocus') focusRef.current?.scrollIntoView({ behavior: 'smooth' });
-              }, 100);
-            }}
+            onQuickAction={handleQuickAction}
           />
         )}
 

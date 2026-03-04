@@ -25,7 +25,7 @@ interface GamificationState {
 const INITIAL_STATE: GamificationState = {
   totalXp: 0,
   unlockedAchievements: [],
-  achievementProgress: {},
+  achievementProgress: {} as Record<AchievementId, number>,
   shownAchievementToasts: [],
 };
 
@@ -65,79 +65,64 @@ export function useGamification() {
     const isRealChange = lastDataHashRef.current !== '' && lastDataHashRef.current !== dataHash;
     lastDataHashRef.current = dataHash;
 
+    // Read current gamification state directly from store to avoid stale closure
+    const currentState = gamificationState;
+
     const { newAchievements, updatedProgress } = checkAchievements(
       stats,
-      gamificationState.unlockedAchievements
+      currentState.unlockedAchievements
     );
 
-    // Get list of achievements we've already shown toasts for
-    const shownToasts = new Set(gamificationState.shownAchievementToasts || []);
-
     if (newAchievements.length > 0) {
-      const updatedAchievements = [
-        ...gamificationState.unlockedAchievements,
-        ...newAchievements.map((a) => a.id),
-      ];
-
       const xpGained = newAchievements.reduce((sum, a) => sum + a.points, 0);
+      const newAchievementIds = newAchievements.map((a) => a.id);
 
-      // Filter achievements that haven't had their toast shown yet
-      const achievementsToShow = newAchievements.filter(a => !shownToasts.has(a.id));
+      // Use functional updater to avoid stale closure data loss
+      setGamificationState(prev => {
+        const shownToasts = new Set(prev.shownAchievementToasts || []);
+        const achievementsToShow = newAchievements.filter(a => !shownToasts.has(a.id));
 
-      // Mark all new achievements as having their toast shown
-      const updatedShownToasts = [
-        ...(gamificationState.shownAchievementToasts || []),
-        ...newAchievements.map(a => a.id),
-      ];
-
-      setGamificationState({
-        ...gamificationState,
-        totalXp: gamificationState.totalXp + xpGained,
-        unlockedAchievements: updatedAchievements,
-        achievementProgress: {
-          ...gamificationState.achievementProgress,
-          ...updatedProgress,
-        },
-        shownAchievementToasts: updatedShownToasts,
-      });
-
-      // Only show toasts if:
-      // 1. Not on initial page load
-      // 2. This is a real data change (user did something)
-      // 3. The achievement toast hasn't been shown before
-      if (!initialLoadRef.current && isRealChange && achievementsToShow.length > 0) {
-        const profile = loadMyProfile();
-        achievementsToShow.forEach((achievement) => {
-          analytics.achievementUnlocked(achievement.id);
-          // Track for friends activity feed
-          if (profile) {
-            const isStreak = achievement.id.startsWith('streak_');
-            addFriendActivity({
-              friendId: profile.friendCode,
-              friendName: profile.displayName,
-              activityType: isStreak ? 'streak_milestone' : 'achievement_unlocked',
-              description: achievement.name,
-              icon: achievement.icon || '🏆',
+        // Side effects (toasts/analytics) — schedule outside updater
+        if (!initialLoadRef.current && isRealChange && achievementsToShow.length > 0) {
+          queueMicrotask(() => {
+            const profile = loadMyProfile();
+            achievementsToShow.forEach((achievement) => {
+              analytics.achievementUnlocked(achievement.id);
+              if (profile) {
+                const isStreak = achievement.id.startsWith('streak_');
+                addFriendActivity({
+                  friendId: profile.friendCode,
+                  friendName: profile.displayName,
+                  activityType: isStreak ? 'streak_milestone' : 'achievement_unlocked',
+                  description: achievement.name,
+                  icon: achievement.icon || '🏆',
+                });
+              }
             });
-          }
-        });
-      }
-    } else {
-      // Update progress only
-      setGamificationState({
-        ...gamificationState,
-        achievementProgress: {
-          ...gamificationState.achievementProgress,
-          ...updatedProgress,
-        },
+          });
+        }
+
+        return {
+          ...prev,
+          totalXp: prev.totalXp + xpGained,
+          unlockedAchievements: [...prev.unlockedAchievements, ...newAchievementIds],
+          achievementProgress: { ...prev.achievementProgress, ...updatedProgress },
+          shownAchievementToasts: [...(prev.shownAchievementToasts || []), ...newAchievementIds],
+        };
       });
+    } else {
+      // Update progress only — functional updater prevents stale overwrites
+      setGamificationState(prev => ({
+        ...prev,
+        achievementProgress: { ...prev.achievementProgress, ...updatedProgress },
+      }));
     }
 
     // Mark initial load as complete after first run
     if (initialLoadRef.current) {
       initialLoadRef.current = false;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: including gamificationState would cause infinite loop
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- gamificationState read via functional updater (prev), not closure
   }, [moods, habits, focusSessions, gratitudeEntries]);
 
   // Award XP for actions

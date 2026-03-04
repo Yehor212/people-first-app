@@ -3,7 +3,7 @@
  * Luck-based reward system with spinning animation
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -44,6 +44,12 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
 
   // Add ref to prevent double-click race condition
   const spinLockRef = useRef(false);
+  const spinResultTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // Cleanup spin result timer on unmount
+  useEffect(() => {
+    return () => clearTimeout(spinResultTimerRef.current);
+  }, []);
 
   const handleSpin = () => {
     // Double-check with ref to prevent race conditions
@@ -66,7 +72,8 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
     setRotation(finalRotation);
 
     // Show result after spinning
-    setTimeout(() => {
+    clearTimeout(spinResultTimerRef.current);
+    spinResultTimerRef.current = setTimeout(() => {
       setIsSpinning(false);
       spinLockRef.current = false; // Release lock after animation
       setPrize(winningPrize);

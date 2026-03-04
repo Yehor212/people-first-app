@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Lock, Share2 } from 'lucide-react';
 import { Badge } from '@/types';
+import type { Language } from '@/i18n/translations';
 import { getLocale } from '@/lib/timeUtils';
 import { getRarityColor } from '@/lib/badges';
 import { EmojiOrIcon } from '@/components/icons';
@@ -46,7 +47,7 @@ export const BadgeCard = memo(function BadgeCard({ badge, language, t, onShare, 
         </p>
         {badge.unlocked && badge.unlockedDate && (
           <p className="text-xs text-primary">
-            {new Date(badge.unlockedDate).toLocaleDateString(getLocale(language))}
+            {new Date(badge.unlockedDate).toLocaleDateString(getLocale(language as Language))}
           </p>
         )}
         {!badge.unlocked && (

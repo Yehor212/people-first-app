@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
 import { zenMotion } from '@/lib/animationUtils';
 import { useModalA11y } from '@/hooks/useModalA11y';
+import { useLanguage } from '@/contexts/LanguageContext';
 import type { MoodType } from '@/types';
 
 interface EmotionPanelProps {
@@ -47,6 +48,7 @@ const SELECTED_BG: Record<MoodType, string> = {
 const PANEL_WIDTH = 280;
 
 export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: EmotionPanelProps) {
+  const { t } = useLanguage();
   const [selectedMood, setSelectedMood] = useState<MoodType | null>(null);
   const [text, setText] = useState('');
   const textRef = useRef<HTMLTextAreaElement>(null);
@@ -113,8 +115,8 @@ export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: 
             <button
               type="button"
               onClick={handleCancel}
-              className="absolute top-2 right-2 p-1.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-colors"
-              aria-label="Close"
+              className="absolute top-2 end-2 p-1.5 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
+              aria-label={t.close || 'Close'}
             >
               <X className="w-4 h-4" />
             </button>
@@ -132,7 +134,7 @@ export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: 
                     selectedMood === mood && SELECTED_BG[mood],
                     !selectedMood && 'hover:scale-110',
                   )}
-                  aria-label={label}
+                  aria-label={t[mood] || label}
                   aria-pressed={selectedMood === mood}
                 >
                   <Icon className="w-5 h-5" />
@@ -154,7 +156,7 @@ export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: 
                     ref={textRef}
                     value={text}
                     onChange={(e) => setText(e.target.value)}
-                    placeholder="What's on your mind?"
+                    placeholder={t.moodNotes || "What's on your mind?"}
                     rows={2}
                     className={cn(
                       'w-full rounded-xl px-3 py-2 mb-3',
@@ -176,7 +178,7 @@ export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: 
                         'hover:bg-emerald-500 transition-colors',
                       )}
                     >
-                      Save
+                      {t.save || 'Save'}
                     </button>
                     <button
                       type="button"
@@ -187,7 +189,7 @@ export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: 
                         'hover:bg-white/5 transition-colors',
                       )}
                     >
-                      Cancel
+                      {t.cancel || 'Cancel'}
                     </button>
                   </div>
                 </motion.div>

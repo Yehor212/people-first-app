@@ -6,7 +6,7 @@
  * Replaces standard Navigation.tsx on the home tab.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Leaf, RefreshCw, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
@@ -21,13 +21,17 @@ export function FloatingNav({ onOpenHabits, onOpenFocus }: FloatingNavProps) {
   const { t } = useLanguage();
   const [keyboardOpen, setKeyboardOpen] = useState(false);
   const [activeMode, setActiveMode] = useState<'map' | 'habits' | 'focus'>('map');
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   // Hide when software keyboard opens (same as Navigation.tsx)
   useEffect(() => {
     const threshold = window.screen.height * 0.75;
     const onResize = () => setKeyboardOpen(window.innerHeight < threshold);
     window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      clearTimeout(resetTimerRef.current);
+    };
   }, []);
 
   if (keyboardOpen) return null;
@@ -44,10 +48,12 @@ export function FloatingNav({ onOpenHabits, onOpenFocus }: FloatingNavProps) {
     if (id === 'habits') {
       onOpenHabits();
       // Reset to map after opening overlay
-      setTimeout(() => setActiveMode('map'), 300);
+      clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = setTimeout(() => setActiveMode('map'), 300);
     } else if (id === 'focus') {
       onOpenFocus();
-      setTimeout(() => setActiveMode('map'), 300);
+      clearTimeout(resetTimerRef.current);
+      resetTimerRef.current = setTimeout(() => setActiveMode('map'), 300);
     }
   };
 

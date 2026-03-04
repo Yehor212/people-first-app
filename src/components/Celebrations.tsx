@@ -1,9 +1,10 @@
-import { useEffect, useCallback, useState } from 'react';
+import { useEffect, useCallback, useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { EmojiOrIcon } from '@/components/icons';
 import { useDopamineSettings } from './DopamineSettings';
 import { useModalA11y } from '@/hooks/useModalA11y';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 /**
  * Streak Celebration - Duolingo-style fire animation
@@ -17,17 +18,23 @@ export function StreakCelebration({ streakDays, onClose }: StreakCelebrationProp
   const { t } = useLanguage();
   const dopamine = useDopamineSettings();
   const [show, setShow] = useState(false);
+  const innerTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const showAnimations = dopamine.animations;
   const showStreakFire = dopamine.streakFire && showAnimations;
+
+  useBackHandler(show, onClose);
 
   useEffect(() => {
     setShow(true);
     const timer = setTimeout(() => {
       setShow(false);
-      setTimeout(onClose, showAnimations ? 300 : 0);
+      innerTimerRef.current = setTimeout(onClose, showAnimations ? 300 : 0);
     }, showAnimations ? 3000 : 1500);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(innerTimerRef.current);
+    };
   }, [onClose, showAnimations]);
 
   return (
@@ -109,6 +116,7 @@ interface HabitCompletionProps {
 export function HabitCompletion({ habitName, onClose }: HabitCompletionProps) {
   const dopamine = useDopamineSettings();
   const [show, setShow] = useState(false);
+  const innerTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const showAnimations = dopamine.animations;
 
@@ -116,9 +124,12 @@ export function HabitCompletion({ habitName, onClose }: HabitCompletionProps) {
     setShow(true);
     const timer = setTimeout(() => {
       setShow(false);
-      setTimeout(onClose, showAnimations ? 200 : 0);
+      innerTimerRef.current = setTimeout(onClose, showAnimations ? 200 : 0);
     }, 1500);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(innerTimerRef.current);
+    };
   }, [onClose, showAnimations]);
 
   return (
@@ -149,17 +160,23 @@ export function AllHabitsComplete({ onClose }: AllHabitsCompleteProps) {
   const { t } = useLanguage();
   const dopamine = useDopamineSettings();
   const [show, setShow] = useState(false);
+  const innerTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const showAnimations = dopamine.animations;
   const showConfetti = dopamine.confetti && showAnimations;
+
+  useBackHandler(show, onClose);
 
   useEffect(() => {
     setShow(true);
     const timer = setTimeout(() => {
       setShow(false);
-      setTimeout(onClose, showAnimations ? 300 : 0);
+      innerTimerRef.current = setTimeout(onClose, showAnimations ? 300 : 0);
     }, showAnimations ? 3500 : 1500);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(innerTimerRef.current);
+    };
   }, [onClose, showAnimations]);
 
   const confettiColors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3'];
@@ -227,6 +244,7 @@ export function MoodChangedToast({ emoji, message, onClose }: MoodChangedToastPr
   const { t } = useLanguage();
   const dopamine = useDopamineSettings();
   const [show, setShow] = useState(true);
+  const innerTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const showAnimations = dopamine.animations;
 
@@ -234,10 +252,13 @@ export function MoodChangedToast({ emoji, message, onClose }: MoodChangedToastPr
     const timer = setTimeout(() => {
       setShow(false);
       if (onClose) {
-        setTimeout(onClose, showAnimations ? 200 : 0);
+        innerTimerRef.current = setTimeout(onClose, showAnimations ? 200 : 0);
       }
     }, 2000);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(innerTimerRef.current);
+    };
   }, [onClose, showAnimations]);
 
   return (

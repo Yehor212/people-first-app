@@ -104,7 +104,7 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
       {/* Atmosphere gradient background */}
       <div className={cn('relative min-h-[280px] bg-gradient-to-br', gradientClass)}>
         {/* Garden stage badge */}
-        <div className="absolute top-3 right-3 z-10 rounded-full bg-background/80 backdrop-blur-sm px-2.5 py-1 border border-border/40">
+        <div className="absolute top-3 end-3 z-10 rounded-full bg-background/80 backdrop-blur-sm px-2.5 py-1 border border-border/40">
           <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
             {(t as unknown as Record<string, string>)[STAGE_I18N_KEYS[gardenStage]] || gardenStage}
           </span>

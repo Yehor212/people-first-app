@@ -87,6 +87,7 @@ export const de: Translations = {
   scheduleMeeting: 'Meeting',
   scheduleNote: 'Notiz (optional)',
   scheduleNotePlaceholder: 'Details oder Erinnerungen hinzufügen...',
+  viewSchedule: 'Zeitplan anzeigen',
   addToMyWorld: 'Zu Meine Welt hinzufügen',
 
   // Mindfulness v1.5.0
@@ -267,6 +268,16 @@ export const de: Translations = {
   focusReflectionQuestion: 'Wie war die Session?',
   focusReflectionSkip: 'Überspringen',
   focusReflectionSave: 'Speichern',
+  focusExpandToJournal: 'Schreib darüber in deinem Tagebuch',
+
+  // TodayFocusCard
+  todayFocusMoodMorning: 'Wie fühlst du dich heute Morgen?',
+  todayFocusMoodAfternoon: 'Wie ist deine Stimmung?',
+  todayFocusMoodEvening: 'Wie war dein Tag?',
+  todayFocusHabits: 'Zeit, deine Gewohnheiten abzuhaken',
+  todayFocusFocus: 'Bereit für eine Fokus-Session?',
+  todayFocusGratitude: 'Wofür bist du heute dankbar?',
+  todayFocusSubtitle: 'Dein nächster Schritt',
 
   // Breathing
   breathingTitle: 'Atmung',
@@ -460,6 +471,7 @@ export const de: Translations = {
   profile: 'Profil',
   yourName: 'Dein Name',
   nameSaved: 'Name gespeichert',
+  nameSavedLocally: 'Lokal gespeichert',
   invalidNameFormat: 'Ungültiges Namensformat',
   notifications: 'Benachrichtigungen',
   notificationsComingSoon: 'Benachrichtigungen werden in zukünftigen Updates verfügbar sein.',
@@ -724,7 +736,12 @@ export const de: Translations = {
   sendMagicLink: 'Anmeldelink senden',
   continueWithGoogle: 'Mit Google fortfahren',
   continueWithApple: 'Mit Apple fortfahren',
+  continueWithPhone: 'Mit Telefon fortfahren',
   continueWithFacebook: 'Mit Facebook fortfahren',
+  authEnterPhone: 'Geben Sie Ihre Telefonnummer ein',
+  authSendCode: 'Code senden',
+  authCodeSentTo: 'Code gesendet an {phone}',
+  authVerify: 'Bestätigen',
   authSigningIn: 'Anmeldung...',
   signedInAs: 'Angemeldet als',
   signOut: 'Abmelden',
@@ -741,6 +758,7 @@ export const de: Translations = {
   deleteAccountSuccess: 'Konto gelöscht.',
   deleteAccountError: 'Konto konnte nicht gelöscht werden.',
   deleteAccountLink: 'Konto/Daten löschen',
+  deleteConfirmWord: 'LÖSCHEN',
   authEmailSent: 'Anmeldelink wurde an Ihre E-Mail gesendet.',
   authSignedOut: 'Abgemeldet.',
   authError: 'Link konnte nicht gesendet werden.',
@@ -811,6 +829,10 @@ export const de: Translations = {
   shareSubtext3: '3+ Tage Serie',
   shareSubtextStart: 'Gewohnheiten aufbauen',
   dismiss: 'Schließen',
+
+  // Flash Challenge
+  hurry: 'BEEIL DICH!',
+
   challengesTitle: 'Herausforderungen & Abzeichen',
   challengesSubtitle: 'Nimm Herausforderungen an und verdiene Abzeichen',
   activeChallenges: 'Aktiv',
@@ -1064,7 +1086,6 @@ export const de: Translations = {
   identityIcon: 'Symbol',
   habitImpact: 'Gewohnheits-Einfluss',
   habitImpactDesc: 'Wie Gewohnheiten deine Stimmung beeinflussen',
-  done: 'erledigt',
   notDone: 'nicht erledigt',
   noData: 'keine Daten',
   auto: 'auto',
@@ -1878,6 +1899,7 @@ export const de: Translations = {
   nextMonth: 'Nächster Monat',
   goToPreviousPage: 'Zur vorherigen Seite',
   goToNextPage: 'Zur nächsten Seite',
+  page: 'Seite',
   pagination: 'Seitennavigation',
   breadcrumb: 'Brotkrumen',
   toggleSidebar: 'Seitenleiste umschalten',
@@ -2189,6 +2211,7 @@ export const de: Translations = {
   journalWords: 'Wörter',
   journalEntrySaved: 'Eintrag gespeichert',
   journalWritingPrompts: 'Schreibanregungen',
+  journalPrompt: 'Anregung',
   journalPrompt1: 'Was hat dich heute zum Lächeln gebracht?',
   journalPrompt2: 'Was war heute herausfordernd?',
   journalPrompt3: 'Wofür bist du dankbar?',

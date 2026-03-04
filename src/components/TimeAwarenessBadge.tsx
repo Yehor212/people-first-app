@@ -111,7 +111,7 @@ export function TimeAwarenessBadge({
   // Get dynamic message
   const getMessage = () => {
     if (nextEvent && nextEvent.minutesUntil <= 30) {
-      const timeStr = formatTimeRemaining(nextEvent.minutesUntil, t);
+      const timeStr = formatTimeRemaining(nextEvent.minutesUntil, t as unknown as Record<string, string>);
       return {
         primary: `${nextEvent.emoji || '📅'} ${nextEvent.title}`,
         secondary: `${t.timeIn || 'in'} ${timeStr}`,
@@ -120,7 +120,7 @@ export function TimeAwarenessBadge({
     }
 
     if (isWorkHours && minutesUntilWorkdayEnd > 0) {
-      const timeStr = formatTimeRemaining(minutesUntilWorkdayEnd, t);
+      const timeStr = formatTimeRemaining(minutesUntilWorkdayEnd, t as unknown as Record<string, string>);
       return {
         primary: t.timeUntilEndOfDay || 'Until end of day',
         secondary: timeStr,

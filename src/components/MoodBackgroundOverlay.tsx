@@ -95,7 +95,7 @@ function SupportBanner() {
         </div>
         <button
           onClick={() => setDismissed(true)}
-          className="text-muted-foreground hover:text-foreground transition-colors p-1"
+          className="text-muted-foreground hover:text-foreground transition-colors p-1 min-w-[44px] min-h-[44px] flex items-center justify-center"
           aria-label={t.dismiss}
         >
           <span className="text-lg">&times;</span>

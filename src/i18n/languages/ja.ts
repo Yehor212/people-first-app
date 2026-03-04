@@ -87,6 +87,7 @@ export const ja: Translations = {
   scheduleMeeting: '会議',
   scheduleNote: 'メモ（任意）',
   scheduleNotePlaceholder: '詳細やリマインダーを追加...',
+  viewSchedule: 'スケジュールを見る',
   addToMyWorld: 'マイワールドに追加',
 
   // Mindfulness v1.5.0
@@ -266,6 +267,16 @@ export const ja: Translations = {
   focusReflectionQuestion: 'セッションはどうでしたか？',
   focusReflectionSkip: 'スキップ',
   focusReflectionSave: '保存',
+  focusExpandToJournal: '日記に書いてみましょう',
+
+  // TodayFocusCard
+  todayFocusMoodMorning: '今朝の気分はいかがですか？',
+  todayFocusMoodAfternoon: '今の気分はどうですか？',
+  todayFocusMoodEvening: '今日はどんな一日でしたか？',
+  todayFocusHabits: '習慣をチェックしましょう',
+  todayFocusFocus: '集中セッションの準備はできましたか？',
+  todayFocusGratitude: '今日感謝していることは何ですか？',
+  todayFocusSubtitle: '次のステップ',
 
   // Breathing
   breathingTitle: '呼吸法',
@@ -459,6 +470,7 @@ export const ja: Translations = {
   profile: 'プロフィール',
   yourName: 'あなたの名前',
   nameSaved: '名前を保存しました',
+  nameSavedLocally: 'ローカルに保存しました',
   invalidNameFormat: '無効な名前の形式',
   notifications: '通知',
   notificationsComingSoon: '通知機能は今後のアップデートで利用可能になります。',
@@ -723,7 +735,12 @@ export const ja: Translations = {
   sendMagicLink: 'マジックリンクを送信',
   continueWithGoogle: 'Googleで続ける',
   continueWithApple: 'Appleで続ける',
+  continueWithPhone: '電話番号で続ける',
   continueWithFacebook: 'Facebookで続ける',
+  authEnterPhone: '電話番号を入力してください',
+  authSendCode: 'コードを送信',
+  authCodeSentTo: '{phone}にコードを送信しました',
+  authVerify: '確認',
   authSigningIn: 'サインイン中...',
   signedInAs: 'サインイン中',
   signOut: 'サインアウト',
@@ -740,6 +757,7 @@ export const ja: Translations = {
   deleteAccountSuccess: 'アカウントを削除しました。',
   deleteAccountError: 'アカウント削除に失敗しました。',
   deleteAccountLink: 'アカウント/データ削除方法',
+  deleteConfirmWord: '削除',
   authEmailSent: 'メールにログインリンクを送信しました。',
   authSignedOut: 'サインアウトしました。',
   authError: 'リンク送信に失敗しました。',
@@ -810,6 +828,10 @@ export const ja: Translations = {
   shareSubtext3: '3日以上の連続',
   shareSubtextStart: '習慣構築中',
   dismiss: '閉じる',
+
+  // Flash Challenge
+  hurry: '急いで！',
+
   challengesTitle: 'チャレンジとバッジ',
   challengesSubtitle: 'チャレンジに挑戦してバッジを獲得',
   activeChallenges: 'アクティブ',
@@ -1876,6 +1898,7 @@ export const ja: Translations = {
   nextMonth: '翌月',
   goToPreviousPage: '前のページへ',
   goToNextPage: '次のページへ',
+  page: 'ページ',
   pagination: 'ページネーション',
   breadcrumb: 'パンくずリスト',
   toggleSidebar: 'サイドバーを切り替え',
@@ -2187,6 +2210,7 @@ export const ja: Translations = {
   journalWords: '語',
   journalEntrySaved: 'エントリーを保存しました',
   journalWritingPrompts: '書くヒント',
+  journalPrompt: 'ヒント',
   journalPrompt1: '今日、何があなたを笑顔にしましたか？',
   journalPrompt2: '今日、何が大変でしたか？',
   journalPrompt3: '何に感謝していますか？',

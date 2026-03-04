@@ -364,7 +364,7 @@ export function UrgencyAlert({
           onDismiss={() => handleDismiss(topAlert.id)}
           hoursLeft={hoursLeft}
           pendingCount={pendingHabits.length}
-          t={t}
+          t={t as unknown as Record<string, string>}
         />
       </AnimatePresence>
     </div>

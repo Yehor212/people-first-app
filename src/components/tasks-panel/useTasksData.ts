@@ -25,7 +25,7 @@ interface UseTasksDataReturn {
   consecutiveCompletions: number;
   prioritizedTasks: PrioritizedTask[];
   topThree: PrioritizedTask[];
-  categorized: { immediate: PrioritizedTask[]; short: PrioritizedTask[]; medium: PrioritizedTask[]; long: PrioritizedTask[] };
+  categorized: { immediate: PrioritizedTask[]; quick: PrioritizedTask[]; focused: PrioritizedTask[]; deep: PrioritizedTask[] };
   momentumBonus: { streakMultiplier: number; message: string };
   addTask: (task: Task) => void;
   handleToggleTask: (taskId: string) => void;

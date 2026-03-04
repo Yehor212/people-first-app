@@ -169,7 +169,7 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
                     type="text"
                     value={del.deleteConfirmInput}
                     onChange={(e) => del.setDeleteConfirmInput(e.target.value)}
-                    placeholder="DELETE"
+                    placeholder={t.deleteConfirmWord || 'DELETE'}
                     className="w-full p-2 bg-secondary rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-destructive/30"
                     autoComplete="off"
                   />
@@ -186,7 +186,7 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
                   </button>
                   <button
                     onClick={() => { void del.handleDeleteAccount(); }}
-                    disabled={del.deleteConfirmInput !== 'DELETE' || del.isDeletingAccount}
+                    disabled={del.deleteConfirmInput !== (t.deleteConfirmWord || 'DELETE') || del.isDeletingAccount}
                     className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                   >
                     {del.isDeletingAccount && <Loader2 className="w-4 h-4 motion-safe:animate-spin" aria-label={t.deleting || 'Deleting...'} />}

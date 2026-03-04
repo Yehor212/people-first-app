@@ -4,6 +4,7 @@ import { AnimatedMoodEmoji } from './AnimatedMoodEmoji';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { Sun, Cloud, Moon, MessageCircle } from 'lucide-react';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 interface MoodSelectionCelebrationProps {
   mood: MoodType;
@@ -37,6 +38,8 @@ export function MoodSelectionCelebration({
   const { t, language } = useLanguage();
   const [phase, setPhase] = useState<'jump' | 'calendar' | 'done'>('jump');
   const [showXP, setShowXP] = useState(false);
+
+  useBackHandler(true, onComplete);
 
   const _TimeIcon = timeIcons[timeOfDay];
   const today = new Date();
@@ -197,10 +200,10 @@ export function MoodSelectionCelebration({
           )}
 
           {/* Sparkles decoration */}
-          <div className="absolute top-2 right-2">
+          <div className="absolute top-2 end-2">
             <div className="text-2xl animate-bounce-gentle">✨</div>
           </div>
-          <div className="absolute top-4 left-4">
+          <div className="absolute top-4 start-4">
             <div className="text-xl animate-sparkle" style={{ animationDelay: '0.3s' }}>⭐</div>
           </div>
         </div>

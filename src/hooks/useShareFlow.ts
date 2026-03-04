@@ -73,6 +73,7 @@ export function useShareFlow({ open, generateFn, errorMessage }: UseShareFlowOpt
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastThrottleRef = useRef<Record<string, number>>({});
   const genIdRef = useRef(0);
+  const imageUrlRef = useRef<string | null>(null);
 
   // Track mounted state
   useEffect(() => {
@@ -90,9 +91,10 @@ export function useShareFlow({ open, generateFn, errorMessage }: UseShareFlowOpt
   // Auto-generate on open, reset on close
   useEffect(() => {
     if (!open) {
-      // Cleanup object URL
-      if (state.imageUrl) {
-        URL.revokeObjectURL(state.imageUrl);
+      // Cleanup object URL via ref (avoids state dependency)
+      if (imageUrlRef.current) {
+        URL.revokeObjectURL(imageUrlRef.current);
+        imageUrlRef.current = null;
       }
       // Clear any pending success timer (M6)
       if (successTimerRef.current) clearTimeout(successTimerRef.current);
@@ -107,8 +109,11 @@ export function useShareFlow({ open, generateFn, errorMessage }: UseShareFlowOpt
   }, [open]);
 
   const generate = useCallback(async () => {
-    // Revoke old URL to prevent leak on retry (H1)
-    if (state.imageUrl) URL.revokeObjectURL(state.imageUrl);
+    // Revoke old URL to prevent leak on retry (H1) — via ref, not state
+    if (imageUrlRef.current) {
+      URL.revokeObjectURL(imageUrlRef.current);
+      imageUrlRef.current = null;
+    }
     const id = ++genIdRef.current;
     dispatch({ type: 'GENERATE_START' });
     try {
@@ -116,17 +121,18 @@ export function useShareFlow({ open, generateFn, errorMessage }: UseShareFlowOpt
       // Abort if unmounted or a newer generation started (H2)
       if (!isMountedRef.current || id !== genIdRef.current) return;
       const url = URL.createObjectURL(blob);
+      imageUrlRef.current = url;
       dispatch({ type: 'GENERATE_SUCCESS', blob, url });
     } catch (error) {
       if (!isMountedRef.current || id !== genIdRef.current) return;
       logger.error('[useShareFlow] Generation failed:', error);
       dispatch({ type: 'GENERATE_ERROR', error: errorMessage });
     }
-  }, [generateFn, errorMessage, state.imageUrl]);
+  }, [generateFn, errorMessage]);
 
   const startSuccessTimer = useCallback(() => {
     if (successTimerRef.current) clearTimeout(successTimerRef.current);
-    successTimerRef.current = window.setTimeout(() => {
+    successTimerRef.current = setTimeout(() => {
       if (isMountedRef.current) dispatch({ type: 'CLEAR_SUCCESS' });
     }, 2000);
   }, []);

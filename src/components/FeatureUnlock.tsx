@@ -7,10 +7,11 @@
  * - "Try it now" CTA
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sparkles, Timer, Trophy, ListTodo, Heart, Target } from 'lucide-react';
 import type { FeatureId } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 
 interface FeatureUnlockProps {
   feature: FeatureId;
@@ -73,6 +74,8 @@ export function FeatureUnlock({ feature, onClose, onTryNow }: FeatureUnlockProps
   const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
   const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; delay: number }>>([]);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const tryNowTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const meta = FEATURE_META[feature];
   const Icon = meta.icon;
@@ -89,17 +92,26 @@ export function FeatureUnlock({ feature, onClose, onTryNow }: FeatureUnlockProps
       delay: Math.random() * 0.5,
     }));
     setParticles(newParticles);
+
+    return () => {
+      clearTimeout(closeTimerRef.current);
+      clearTimeout(tryNowTimerRef.current);
+    };
   }, []);
 
   const handleClose = () => {
     setIsVisible(false);
-    setTimeout(onClose, 300); // Wait for exit animation
+    clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(onClose, 300); // Wait for exit animation
   };
+
+  useBackHandler(true, handleClose);
 
   const handleTryNow = () => {
     handleClose();
     if (onTryNow) {
-      setTimeout(onTryNow, 400);
+      clearTimeout(tryNowTimerRef.current);
+      tryNowTimerRef.current = setTimeout(onTryNow, 400);
     }
   };
 
@@ -140,10 +152,10 @@ export function FeatureUnlock({ feature, onClose, onTryNow }: FeatureUnlockProps
               <Icon className={`w-12 h-12 ${meta.colorClass}`} />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">
-              {t[`onboarding${feature}UnlockTitle` as keyof typeof t] || '🎉 New Feature Unlocked!'}
+              {(t as unknown as Record<string, string>)[`onboarding${feature}UnlockTitle`] || '🎉 New Feature Unlocked!'}
             </h2>
             <p className="text-muted-foreground text-sm">
-              {t[`onboarding${feature}UnlockSubtitle` as keyof typeof t] || "You've made great progress!"}
+              {(t as unknown as Record<string, string>)[`onboarding${feature}UnlockSubtitle`] || "You've made great progress!"}
             </p>
           </div>
         </div>
@@ -151,7 +163,7 @@ export function FeatureUnlock({ feature, onClose, onTryNow }: FeatureUnlockProps
         {/* Description */}
         <div className="p-6">
           <p className="text-foreground mb-6 leading-relaxed">
-            {t[`onboarding${feature}Description` as keyof typeof t] ||
+            {(t as unknown as Record<string, string>)[`onboarding${feature}Description`] ||
               'This new feature will help you on your journey.'}
           </p>
 

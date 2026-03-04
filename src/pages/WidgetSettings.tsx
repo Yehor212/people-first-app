@@ -25,7 +25,7 @@ export function WidgetSettings({ onBack }: WidgetSettingsProps) {
             className="p-4 hover:bg-accent rounded-xl transition-colors active:scale-95 touch-manipulation"
             aria-label={t.back}
           >
-            <ArrowLeft className="w-6 h-6" />
+            <ArrowLeft className="w-6 h-6 rtl:scale-x-[-1]" />
           </button>
           <div>
             <h1 className="text-2xl font-bold">{t.widgetSettings}</h1>

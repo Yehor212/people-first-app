@@ -121,7 +121,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
       {/* Return to gallery button (top-right, always visible on mobile) */}
       <button
         onClick={(e) => { e.stopPropagation(); onReturn(); }}
-        className="absolute -top-3 -right-3 w-11 h-11 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity shadow-lg"
+        className="absolute -top-3 -end-3 w-11 h-11 rounded-full bg-red-500/80 text-white flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity shadow-lg"
       >
         <X className="w-4 h-4" />
       </button>
@@ -129,7 +129,7 @@ const FloatingPhoto = memo(function FloatingPhoto({
       {/* Resize handle (bottom-right corner, 44px touch target) */}
       <div
         onPointerDown={handleResizeStart}
-        className="absolute -bottom-2 -right-2 w-11 h-11 rounded-full bg-emerald-500/60 border-2 border-emerald-400/80 cursor-se-resize opacity-60 group-hover:opacity-100 transition-opacity shadow-lg"
+        className="absolute -bottom-2 -end-2 w-11 h-11 rounded-full bg-emerald-500/60 border-2 border-emerald-400/80 cursor-se-resize opacity-60 group-hover:opacity-100 transition-opacity shadow-lg"
         style={{ touchAction: 'none' }}
       />
     </motion.div>

@@ -4,6 +4,7 @@ import { ChevronDown, Plus, Edit3 } from 'lucide-react';
 import { AnimatedMoodEmoji } from '@/components/AnimatedMoodEmoji';
 import { MoodChangedToast, ConfirmDialog } from '@/components/Celebrations';
 import { cn } from '@/lib/utils';
+import type { Language } from '@/i18n/translations';
 import { getLocale } from '@/lib/timeUtils';
 import type { TimeOfDay, ConfirmChangePayload } from './types';
 import { TIME_ICONS, getTimeOfDayFromTimestamp } from './types';
@@ -120,7 +121,7 @@ export function MoodCompactView({
             const entryMood = moods.find(m => m.type === entry.mood);
             const tod = getTimeOfDayFromTimestamp(entry.timestamp);
             const TimeIcon = TIME_ICONS[tod];
-            const time = new Date(entry.timestamp).toLocaleTimeString(getLocale(language), { hour: '2-digit', minute: '2-digit' });
+            const time = new Date(entry.timestamp).toLocaleTimeString(getLocale(language as Language), { hour: '2-digit', minute: '2-digit' });
             const isEditing = editingEntryId === entry.id;
 
             return (
