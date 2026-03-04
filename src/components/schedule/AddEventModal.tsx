@@ -50,7 +50,7 @@ export function AddEventModal({
   const handleAdd = useCallback(() => {
     if (isSaving) return;
     setIsSaving(true);
-    const title = customTitle || ts[selectedPreset.labelKey] || selectedPreset.id;
+    const title = customTitle || (t as unknown as Record<string, string>)[selectedPreset.labelKey] || selectedPreset.id;
     let finalEndHour = time.endHour;
     let finalEndMinute = time.endMinute;
     const startTotal = time.startHour * 60 + time.startMinute;
