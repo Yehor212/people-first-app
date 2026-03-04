@@ -55,8 +55,8 @@ let localStorageMock: Record<string, string> = {};
 
 describe('useInsights', () => {
   const mockMoods: MoodEntry[] = [
-    { id: '1', value: 4, date: '2024-01-15', timestamp: Date.now() },
-    { id: '2', value: 3, date: '2024-01-14', timestamp: Date.now() },
+    { id: '1', mood: 'good', date: '2024-01-15', timestamp: Date.now() },
+    { id: '2', mood: 'okay', date: '2024-01-14', timestamp: Date.now() },
   ];
 
   const mockHabits: Habit[] = [
@@ -72,7 +72,8 @@ describe('useInsights', () => {
     {
       id: '1',
       duration: 25,
-      completedAt: '2024-01-15T10:00:00Z',
+      completedAt: new Date('2024-01-15T10:00:00Z').getTime(),
+      date: '2024-01-15',
       label: 'Work',
     },
   ];
@@ -81,16 +82,37 @@ describe('useInsights', () => {
     {
       id: 'insight1',
       type: 'mood-habit-correlation',
+      severity: 'tip',
       title: 'Exercise boosts your mood',
       description: 'Your mood is higher on days you exercise',
       confidence: 0.8,
+      dataPoints: 14,
+      createdAt: Date.now(),
+      metadata: {
+        type: 'mood-habit-correlation',
+        habitId: '1',
+        habitName: 'Exercise',
+        moodImprovement: 20,
+        avgMoodWith: 4.2,
+        avgMoodWithout: 3.5,
+        sampleDays: 14,
+      },
     },
     {
       id: 'insight2',
       type: 'focus-pattern',
+      severity: 'info',
       title: 'Best focus time',
       description: 'You focus best in the morning',
       confidence: 0.7,
+      dataPoints: 10,
+      createdAt: Date.now(),
+      metadata: {
+        type: 'focus-pattern',
+        avgDuration: 25,
+        successRate: 85,
+        totalSessions: 10,
+      },
     },
   ];
 
@@ -170,10 +192,10 @@ describe('useInsights', () => {
 
   describe('hasEnoughData', () => {
     it('returns true when moods >= 7', async () => {
-      const manyMoods = Array(7).fill(null).map((_, i) => ({
+      const manyMoods: MoodEntry[] = Array(7).fill(null).map((_, i) => ({
         id: String(i),
-        value: 4,
-        date: `2024-01-${i + 1}`,
+        mood: 'good' as const,
+        date: `2024-01-${String(i + 1).padStart(2, '0')}`,
         timestamp: Date.now(),
       }));
 
@@ -436,7 +458,7 @@ describe('useInsights', () => {
 
       expect(mockGenerateInsights).toHaveBeenCalledTimes(1);
 
-      const newMoods = [...mockMoods, { id: '3', value: 5, date: '2024-01-16', timestamp: Date.now() }];
+      const newMoods: MoodEntry[] = [...mockMoods, { id: '3', mood: 'great' as const, date: '2024-01-16', timestamp: Date.now() }];
       rerender({ moods: newMoods });
 
       expect(mockGenerateInsights).toHaveBeenCalledTimes(2);

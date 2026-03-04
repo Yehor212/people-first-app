@@ -9,6 +9,7 @@ import {
 } from '@/lib/habitScheduleSync';
 import type { Habit, HabitReminder, ScheduleEvent } from '@/types';
 import { makeTestHabit } from '@/test/habitFixtures';
+import { parseLocalDate } from '@/lib/utils';
 
 /**
  * Helper: create a minimal Habit object for testing.
@@ -21,11 +22,11 @@ function makeHabit(overrides: Partial<Habit> & { id: string; name: string }): Ha
 
 /**
  * Helper: get the day-of-week that `shouldReminderShowOnDate` would compute
- * for a given date string. This accounts for the fact that `new Date('YYYY-MM-DD')`
- * is parsed as UTC midnight, and `getDay()` returns the local-time day-of-week.
+ * for a given date string. Uses parseLocalDate to match the source implementation
+ * which parses "YYYY-MM-DD" as local midnight (not UTC midnight).
  */
 function dayOfWeekForDateStr(dateStr: string): number {
-  return new Date(dateStr).getDay();
+  return parseLocalDate(dateStr).getDay();
 }
 
 beforeEach(() => {

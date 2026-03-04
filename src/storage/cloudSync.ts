@@ -130,8 +130,8 @@ const doSyncWithCloud = async (
       throw new Error("Sync operation aborted due to timeout");
     }
 
-    const { data: remote, error: fetchError } = await supabase
-      .from(BACKUP_TABLE)
+    const { data: remote, error: fetchError } = await (supabase
+      .from(BACKUP_TABLE) as any)
       .select("payload, updated_at")
       .eq("user_id", user.id)
       .maybeSingle();
@@ -149,8 +149,8 @@ const doSyncWithCloud = async (
 
     if (remote?.payload) {
       const remotePayload = remote.payload;
-      const remoteData = remotePayload.data || {};
-      const localData = localBackup.data || {};
+      const remoteData = (remotePayload.data || {}) as Record<string, unknown[]>;
+      const localData = localBackup.data;
 
       // Count items for logging
       const localItemCount =
@@ -199,7 +199,7 @@ const doSyncWithCloud = async (
       throw new Error("Sync operation aborted due to timeout");
     }
 
-    const { error: upsertError } = await supabase.from(BACKUP_TABLE).upsert(
+    const { error: upsertError } = await (supabase.from(BACKUP_TABLE) as any).upsert(
       {
         user_id: user.id,
         payload: finalBackup,
@@ -271,7 +271,7 @@ export const silentSync = async () => {
       // Don't count aborts as failures - they're intentional
       if (isAbortError(error)) {
         addCategorizedBreadcrumb('sync', 'Auto-sync aborted (intentional)', {}, 'info');
-        logger.debug('[Sync] Auto-sync aborted (intentional)');
+        logger.log('[Sync] Auto-sync aborted (intentional)');
         return; // Don't throw, don't count as failure
       }
       addCategorizedBreadcrumb('sync', 'Auto-sync failed', { error: (error as Error).message }, 'error');

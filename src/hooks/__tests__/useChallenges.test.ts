@@ -11,24 +11,29 @@ import type { Challenge, Badge } from '@/types';
 const mockChallenges: Challenge[] = [
   {
     id: '1',
-    title: 'First Steps',
-    description: 'Complete 5 habits',
-    type: 'habits',
+    title: { en: 'First Steps' },
+    description: { en: 'Complete 5 habits' },
+    type: 'total',
     target: 5,
     progress: 2,
     startDate: '2024-01-01',
     endDate: '2024-01-31',
     completed: false,
+    icon: '🎯',
   },
 ];
 
 const mockBadges: Badge[] = [
   {
     id: 'badge1',
-    name: 'Starter',
-    description: 'Complete your first challenge',
+    category: 'special',
+    title: { en: 'Starter' },
+    description: { en: 'Complete your first challenge' },
     icon: 'star',
-    unlockedAt: '2024-01-10',
+    requirement: 1,
+    unlocked: true,
+    unlockedDate: '2024-01-10',
+    rarity: 'common',
   },
 ];
 
@@ -45,9 +50,9 @@ vi.mock('@/lib/challengeStorage', () => ({
   getBadges: () => mockGetBadges(),
   addChallenge: (challenge: Challenge) => mockAddChallenge(challenge),
   updateChallenge: (id: string, data: any) => mockUpdateChallenge(id, data),
-  syncChallengeProgress: (stats: any) => mockSyncChallengeProgress(stats),
-  checkSpecialBadges: (stats: any) => mockCheckSpecialBadges(stats),
-  unlockBadge: (badge: Badge) => mockUnlockBadge(badge),
+  syncChallengeProgress: (stats: any, focusMinutes: number, gratitudeCount: number) => mockSyncChallengeProgress(stats, focusMinutes, gratitudeCount),
+  checkSpecialBadges: (stats: any, habits: any) => mockCheckSpecialBadges(stats, habits),
+  unlockBadge: (badgeId: string) => mockUnlockBadge(badgeId),
 }));
 
 describe('useChallenges', () => {
@@ -98,14 +103,15 @@ describe('useChallenges', () => {
 
       const newChallenge: Challenge = {
         id: '2',
-        title: 'New Challenge',
-        description: 'Test',
+        title: { en: 'New Challenge' },
+        description: { en: 'Test' },
         type: 'focus',
         target: 10,
         progress: 0,
         startDate: '2024-01-15',
         endDate: '2024-02-15',
         completed: false,
+        icon: '🔥',
       };
 
       act(() => {
@@ -128,13 +134,13 @@ describe('useChallenges', () => {
       const { useChallenges } = await import('../useChallenges');
       const { result } = renderHook(() => useChallenges());
 
-      const stats = { habitsCompleted: 5, focusMinutes: 30 };
+      const stats = { habitsCompleted: 5, focusMinutes: 30 } as any;
 
       act(() => {
-        result.current.syncChallengeProgress(stats);
+        result.current.syncChallengeProgress(stats, 30, 5);
       });
 
-      expect(mockSyncChallengeProgress).toHaveBeenCalledWith(stats);
+      expect(mockSyncChallengeProgress).toHaveBeenCalledWith(stats, 30, 5);
     });
   });
 
@@ -150,13 +156,14 @@ describe('useChallenges', () => {
       const { useChallenges } = await import('../useChallenges');
       const { result } = renderHook(() => useChallenges());
 
-      const stats = { streak: 7, totalXp: 1000 };
+      const stats = { streak: 7, totalXp: 1000 } as any;
+      const habits: any[] = [];
 
       act(() => {
-        result.current.checkSpecialBadges(stats);
+        result.current.checkSpecialBadges(stats, habits);
       });
 
-      expect(mockCheckSpecialBadges).toHaveBeenCalledWith(stats);
+      expect(mockCheckSpecialBadges).toHaveBeenCalledWith(stats, habits);
     });
   });
 
@@ -172,18 +179,13 @@ describe('useChallenges', () => {
       const { useChallenges } = await import('../useChallenges');
       const { result } = renderHook(() => useChallenges());
 
-      const badge: Badge = {
-        id: 'new-badge',
-        name: 'Achievement',
-        description: 'Great job!',
-        icon: 'trophy',
-      };
+      const badgeId = 'new-badge';
 
       act(() => {
-        result.current.unlockBadge(badge);
+        result.current.unlockBadge(badgeId);
       });
 
-      expect(mockUnlockBadge).toHaveBeenCalledWith(badge);
+      expect(mockUnlockBadge).toHaveBeenCalledWith(badgeId);
     });
   });
 

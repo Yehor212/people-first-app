@@ -335,8 +335,8 @@ async function syncMyProfileToCloud(profile: MyProfile): Promise<void> {
 
   try {
     // Using a generic profiles approach - in production, you'd have a proper table
-    const { error } = await supabase
-      .from('user_profiles')
+    const { error } = await (supabase
+      .from('user_profiles') as any)
       .upsert({
         user_id: user.id,
         friend_code: profile.friendCode,
@@ -352,11 +352,11 @@ async function syncMyProfileToCloud(profile: MyProfile): Promise<void> {
 
     if (error) {
       // Silently fail - table might not exist yet
-      logger.debug('[FriendsSync] Profile sync skipped:', error.code);
+      logger.log('[FriendsSync] Profile sync skipped:', error.code);
     }
   } catch (error) {
     if (!isAbortError(error)) {
-      logger.debug('[FriendsSync] Profile sync failed:', error);
+      logger.log('[FriendsSync] Profile sync failed:', error);
     }
   }
 }
@@ -376,8 +376,8 @@ async function findFriendByCode(friendCode: string): Promise<{
   if (!supabase) return null;
 
   try {
-    const { data, error } = await supabase
-      .from('user_profiles')
+    const { data, error } = await (supabase
+      .from('user_profiles') as any)
       .select('user_id, display_name, avatar_emoji, current_streak, level, updated_at, status')
       .eq('friend_code', friendCode)
       .single();
@@ -395,7 +395,7 @@ async function findFriendByCode(friendCode: string): Promise<{
     };
   } catch (error) {
     if (!isAbortError(error)) {
-      logger.debug('[FriendsSync] Find friend failed:', error);
+      logger.log('[FriendsSync] Find friend failed:', error);
     }
     return null;
   }
@@ -420,8 +420,8 @@ export async function refreshFriendsData(): Promise<void> {
   try {
     const friendCodes = friends.map(f => f.friendCode);
 
-    const { data, error } = await supabase
-      .from('user_profiles')
+    const { data, error } = await (supabase
+      .from('user_profiles') as any)
       .select('user_id, friend_code, display_name, avatar_emoji, current_streak, level, updated_at, status, share_activity')
       .in('friend_code', friendCodes);
 

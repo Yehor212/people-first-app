@@ -75,9 +75,9 @@ vi.mock('@/lib/gamification', () => ({
   })),
   calculateLevel: vi.fn((xp: number) => ({
     level: Math.floor(xp / 100) + 1,
-    currentXp: xp % 100,
-    xpForNextLevel: 100,
-    progress: (xp % 100) / 100,
+    xp: xp % 100,
+    nextLevelXp: 100,
+    title: `Level ${Math.floor(xp / 100) + 1}`,
   })),
   getXpForAction: vi.fn((action: string) => {
     const xpMap: Record<string, number> = {
@@ -243,7 +243,9 @@ describe('useGamification', () => {
 
       const { result } = renderHook(() => useGamification());
 
-      expect(result.current.userLevel.progress).toBe(0.5);
+      // xp=50, nextLevelXp=100 → 50% progress
+      expect(result.current.userLevel.xp).toBe(50);
+      expect(result.current.userLevel.nextLevelXp).toBe(100);
     });
   });
 

@@ -127,9 +127,9 @@ const USER_SETTINGS_KEYS = [
 export const clearLocalUserData = async (): Promise<void> => {
   try {
     await db.transaction('rw',
-      db.moods, db.habits, db.focusSessions, db.gratitudeEntries,
+      [db.moods, db.habits, db.focusSessions, db.gratitudeEntries,
       db.journalEntries, db.journalPhotos, db.journalAudio,
-      db.offlineQueue, db.settings,
+      db.offlineQueue, db.settings],
       async () => {
         await db.moods.clear();
         await db.habits.clear();

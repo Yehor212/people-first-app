@@ -81,8 +81,8 @@ const mockGenerateWeekendChallenge = vi.fn(() => ({
   expiresAt: Date.now() + 172800000,
   completed: false,
 }));
-const mockGetStreakRiskNotification = vi.fn(() => null);
-const mockGetComebackNotification = vi.fn(() => null);
+const mockGetStreakRiskNotification = vi.fn((_streak: number, _hours: number) => null as any);
+const mockGetComebackNotification = vi.fn((_days: number) => null as any);
 
 vi.mock('@/lib/adhdHooks', () => ({
   initCombo: () => mockInitCombo(),

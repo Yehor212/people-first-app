@@ -37,6 +37,8 @@ function createMockSetters(): RegisteredSetters {
     setOnboardingComplete: vi.fn(),
     setNotificationPermissionChecked: vi.fn(),
     setGoogleAuthChecked: vi.fn(),
+    setMicroReflections: vi.fn(),
+    setCanvasGoals: vi.fn(),
   };
 }
 

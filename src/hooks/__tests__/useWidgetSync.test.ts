@@ -34,7 +34,7 @@ vi.mock('@/lib/platform', () => ({
 
 // Mock Widget plugin
 const mockIsSupported = vi.fn(() => Promise.resolve({ supported: true }));
-const mockUpdateWidget = vi.fn(() => Promise.resolve());
+const mockUpdateWidget = vi.fn((_data: any) => Promise.resolve());
 const mockGetWidgetData = vi.fn(() => Promise.resolve(null));
 
 vi.mock('@/plugins/WidgetPlugin', () => ({
@@ -185,8 +185,8 @@ describe('useWidgetSync', () => {
 
       await waitFor(() => {
         expect(mockUpdateWidget).toHaveBeenCalled();
-        const callData = mockUpdateWidget.mock.calls[0][0];
-        expect(callData.habits).toHaveLength(5);
+        const callData = mockUpdateWidget.mock.calls[0]?.[0];
+        expect(callData!.habits).toHaveLength(5);
       });
     });
 

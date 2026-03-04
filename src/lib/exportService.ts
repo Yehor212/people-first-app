@@ -90,7 +90,7 @@ export const exportMoodsToCSV = (moods: MoodEntry[]): void => {
     { key: 'tags' as const, header: 'Tags' },
   ];
 
-  const csv = arrayToCSV(moods, columns);
+  const csv = arrayToCSV(moods as unknown as Record<string, unknown>[], columns);
   const filename = `zenflow_moods_${formatDate(new Date())}.csv`;
   downloadFile(csv, filename, 'text/csv');
   logger.log('[Export] Moods exported to CSV:', moods.length, 'entries');
@@ -115,7 +115,7 @@ export const exportHabitsToCSV = (habits: Habit[]): void => {
     createdAt: new Date(h.createdAt).toISOString(),
   }));
 
-  const csv = arrayToCSV(exportData, columns);
+  const csv = arrayToCSV(exportData as unknown as Record<string, unknown>[], columns);
   const filename = `zenflow_habits_${formatDate(new Date())}.csv`;
   downloadFile(csv, filename, 'text/csv');
   logger.log('[Export] Habits exported to CSV:', habits.length, 'habits');
@@ -133,7 +133,7 @@ export const exportFocusSessionsToCSV = (sessions: FocusSession[]): void => {
     { key: 'reflection' as const, header: 'Reflection' },
   ];
 
-  const csv = arrayToCSV(sessions, columns);
+  const csv = arrayToCSV(sessions as unknown as Record<string, unknown>[], columns);
   const filename = `zenflow_focus_${formatDate(new Date())}.csv`;
   downloadFile(csv, filename, 'text/csv');
   logger.log('[Export] Focus sessions exported to CSV:', sessions.length, 'sessions');
@@ -148,7 +148,7 @@ export const exportGratitudeToCSV = (entries: GratitudeEntry[]): void => {
     { key: 'text' as const, header: 'Gratitude' },
   ];
 
-  const csv = arrayToCSV(entries, columns);
+  const csv = arrayToCSV(entries as unknown as Record<string, unknown>[], columns);
   const filename = `zenflow_gratitude_${formatDate(new Date())}.csv`;
   downloadFile(csv, filename, 'text/csv');
   logger.log('[Export] Gratitude entries exported to CSV:', entries.length, 'entries');
@@ -167,7 +167,7 @@ export const exportAllToCSV = (data: {
 
   // Moods section
   csv += '=== MOOD TRACKING ===\n';
-  csv += arrayToCSV(data.moods, [
+  csv += arrayToCSV(data.moods as unknown as Record<string, unknown>[], [
     { key: 'date' as const, header: 'Date' },
     { key: 'mood' as const, header: 'Mood' },
     { key: 'note' as const, header: 'Note' },
@@ -190,7 +190,7 @@ export const exportAllToCSV = (data: {
 
   // Focus sessions section
   csv += '\n\n=== FOCUS SESSIONS ===\n';
-  csv += arrayToCSV(data.focusSessions, [
+  csv += arrayToCSV(data.focusSessions as unknown as Record<string, unknown>[], [
     { key: 'date' as const, header: 'Date' },
     { key: 'duration' as const, header: 'Duration (min)' },
     { key: 'label' as const, header: 'Label' },
@@ -198,7 +198,7 @@ export const exportAllToCSV = (data: {
 
   // Gratitude section
   csv += '\n\n=== GRATITUDE JOURNAL ===\n';
-  csv += arrayToCSV(data.gratitudeEntries, [
+  csv += arrayToCSV(data.gratitudeEntries as unknown as Record<string, unknown>[], [
     { key: 'date' as const, header: 'Date' },
     { key: 'text' as const, header: 'Entry' },
   ]);

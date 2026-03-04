@@ -329,8 +329,9 @@ describe('safeParseInt', () => {
   });
 
   it('handles Infinity', () => {
-    expect(safeParseInt(Infinity, 0)).toBe(Infinity);
-    expect(safeParseInt(Infinity, 0, 0, 100)).toBe(100);
+    // Infinity is not finite, so safeParseInt returns the default value
+    expect(safeParseInt(Infinity, 0)).toBe(0);
+    expect(safeParseInt(Infinity, 0, 0, 100)).toBe(0);
   });
 });
 

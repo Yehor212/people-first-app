@@ -15,6 +15,7 @@ const mockSetGratitudeEntries = vi.fn();
 const mockSetUserName = vi.fn();
 const mockSetUserNameCustom = vi.fn();
 const mockSetScheduleEvents = vi.fn();
+const mockSetCanvasGoals = vi.fn();
 const mockSetOnboardingComplete = vi.fn();
 const mockSetHasSelectedLanguage = vi.fn();
 const mockScheduleEvents = [
@@ -32,6 +33,7 @@ vi.mock('@/stores', () => ({
       setUserName: mockSetUserName,
       setUserNameCustom: mockSetUserNameCustom,
       setScheduleEvents: mockSetScheduleEvents,
+      setCanvasGoals: mockSetCanvasGoals,
       setOnboardingComplete: mockSetOnboardingComplete,
       setHasSelectedLanguage: mockSetHasSelectedLanguage,
       scheduleEvents: mockScheduleEvents,
@@ -51,9 +53,9 @@ vi.mock('@/lib/habits', () => ({
   normalizeHabit: vi.fn((h: unknown) => h),
 }));
 
-const mockSyncWithCloud = vi.fn(() => Promise.resolve());
+const mockSyncWithCloud = vi.fn((_mode: unknown) => Promise.resolve());
 vi.mock('@/storage/cloudSync', () => ({
-  syncWithCloud: (...args: unknown[]) => mockSyncWithCloud(...args),
+  syncWithCloud: (mode: unknown) => mockSyncWithCloud(mode),
 }));
 
 const mockMoodsToArray = vi.fn(() => Promise.resolve([{ id: 'm1' }]));
@@ -93,6 +95,8 @@ describe('useSettingsHandlers', () => {
     expect(mockSetHabits).toHaveBeenCalledWith([]);
     expect(mockSetFocusSessions).toHaveBeenCalledWith([]);
     expect(mockSetGratitudeEntries).toHaveBeenCalledWith([]);
+    expect(mockSetScheduleEvents).toHaveBeenCalledWith([]);
+    expect(mockSetCanvasGoals).toHaveBeenCalledWith([]);
     expect(mockSetUserName).toHaveBeenCalledWith('Friend');
     expect(mockSetUserNameCustom).toHaveBeenCalledWith(false);
     expect(mockSetOnboardingComplete).toHaveBeenCalledWith(false);

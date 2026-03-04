@@ -23,6 +23,7 @@ export type SyncOperationType =
   | 'reminders'        // Reminder settings sync
   | 'challenges'       // Challenges sync
   | 'tasks'            // Tasks sync
+  | 'quests'           // Quests sync
   | 'innerWorld'       // Inner world sync
   | 'badges';          // Badges sync
 

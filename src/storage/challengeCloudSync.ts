@@ -128,8 +128,8 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
       const localChallenges = getChallenges();
 
       // 2. Pull from cloud
-      const { data: cloudChallenges, error: fetchError } = await supabase
-        .from('user_challenges')
+      const { data: cloudChallenges, error: fetchError } = await (supabase
+        .from('user_challenges') as any)
         .select('*')
         .eq('user_id', userId)
         .order('updated_at', { ascending: false })
@@ -194,8 +194,8 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
 
       // 4. Push local-only challenges to cloud
       if (toUpsert.length > 0) {
-        const { error: upsertError } = await supabase
-          .from('user_challenges')
+        const { error: upsertError } = await (supabase
+          .from('user_challenges') as any)
           .upsert(toUpsert, { onConflict: 'user_id,challenge_id' });
 
         if (upsertError) {
@@ -232,8 +232,8 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
 // Push single challenge update to cloud
 export async function pushChallengeUpdate(userId: string, challenge: Challenge): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('user_challenges')
+    const { error } = await (supabase
+      .from('user_challenges') as any)
       .upsert(challengeToSupabase(challenge, userId), {
         onConflict: 'user_id,challenge_id'
       });
@@ -261,8 +261,8 @@ export async function deleteChallengeFromCloud(userId: string, challengeId: stri
   }
 
   try {
-    const { error } = await supabase
-      .from('user_challenges')
+    const { error } = await (supabase
+      .from('user_challenges') as any)
       .delete()
       .eq('user_id', userId)
       .eq('challenge_id', challengeId);
@@ -291,8 +291,8 @@ export async function deleteBadgeFromCloud(userId: string, badgeId: string): Pro
   }
 
   try {
-    const { error } = await supabase
-      .from('user_badges')
+    const { error } = await (supabase
+      .from('user_badges') as any)
       .delete()
       .eq('user_id', userId)
       .eq('badge_id', badgeId);
@@ -326,8 +326,8 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
       const localBadges = getBadges();
 
       // 2. Pull from cloud
-      const { data: cloudBadges, error: fetchError } = await supabase
-        .from('user_badges')
+      const { data: cloudBadges, error: fetchError } = await (supabase
+        .from('user_badges') as any)
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
@@ -388,8 +388,8 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
 
       // 4. Push local-only unlocked badges to cloud
       if (toUpsert.length > 0) {
-        const { error: upsertError } = await supabase
-          .from('user_badges')
+        const { error: upsertError } = await (supabase
+          .from('user_badges') as any)
           .upsert(toUpsert, { onConflict: 'user_id,badge_id' });
 
         if (upsertError) {
@@ -426,8 +426,8 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
 // Push badge unlock to cloud
 export async function pushBadgeUnlock(userId: string, badge: Badge): Promise<boolean> {
   try {
-    const { error } = await supabase
-      .from('user_badges')
+    const { error } = await (supabase
+      .from('user_badges') as any)
       .upsert(badgeToSupabase(badge, userId), {
         onConflict: 'user_id,badge_id'
       });
@@ -474,8 +474,8 @@ export async function initializeBadgesInCloud(userId: string, badges: Badge[]): 
   try {
     const badgesToInsert = badges.map(badge => badgeToSupabase(badge, userId));
 
-    const { error } = await supabase
-      .from('user_badges')
+    const { error } = await (supabase
+      .from('user_badges') as any)
       .upsert(badgesToInsert, { onConflict: 'user_id,badge_id' });
 
     if (error) {

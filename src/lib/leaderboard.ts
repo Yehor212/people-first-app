@@ -13,6 +13,21 @@ import { logger } from './logger';
 // TYPES
 // ============================================
 
+/** DB row shape for the leaderboards table (snake_case) */
+interface LeaderboardRow {
+  id: string;
+  user_id: string;
+  display_name: string | null;
+  weekly_xp: number;
+  monthly_xp: number;
+  all_time_xp: number;
+  current_streak: number;
+  longest_streak: number;
+  opt_in: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface LeaderboardEntry {
   id: string;
   userId: string;
@@ -55,8 +70,9 @@ export async function getLeaderboard(
     streak: 'current_streak',
   }[type];
 
-  const { data, error } = await supabase
-    .from('leaderboards')
+  if (!supabase) return [];
+
+  const { data, error } = await (supabase.from('leaderboards') as any)
     .select('*')
     .eq('opt_in', true)
     .order(orderColumn, { ascending: false })
@@ -67,7 +83,8 @@ export async function getLeaderboard(
     return [];
   }
 
-  return (data || []).map((row, index) => ({
+  const rows = (data ?? []) as unknown as LeaderboardRow[];
+  return rows.map((row, index) => ({
     id: row.id,
     userId: row.user_id,
     displayName: row.display_name || 'Zen User',
@@ -89,8 +106,9 @@ export async function getUserLeaderboardEntry(): Promise<LeaderboardEntry | null
   const userId = await getCurrentUserId();
   if (!userId) return null;
 
-  const { data, error } = await supabase
-    .from('leaderboards')
+  if (!supabase) return null;
+
+  const { data, error } = await (supabase.from('leaderboards') as any)
     .select('*')
     .eq('user_id', userId)
     .single();
@@ -104,16 +122,19 @@ export async function getUserLeaderboardEntry(): Promise<LeaderboardEntry | null
     return null;
   }
 
+  if (!data) return null;
+  const row = data as unknown as LeaderboardRow;
+
   return {
-    id: data.id,
-    userId: data.user_id,
-    displayName: data.display_name || 'Zen User',
-    weeklyXp: data.weekly_xp || 0,
-    monthlyXp: data.monthly_xp || 0,
-    allTimeXp: data.all_time_xp || 0,
-    currentStreak: data.current_streak || 0,
-    longestStreak: data.longest_streak || 0,
-    optIn: data.opt_in,
+    id: row.id,
+    userId: row.user_id,
+    displayName: row.display_name || 'Zen User',
+    weeklyXp: row.weekly_xp || 0,
+    monthlyXp: row.monthly_xp || 0,
+    allTimeXp: row.all_time_xp || 0,
+    currentStreak: row.current_streak || 0,
+    longestStreak: row.longest_streak || 0,
+    optIn: row.opt_in,
     isCurrentUser: true,
   };
 }
@@ -133,6 +154,10 @@ export async function getUserRanks(): Promise<LeaderboardStats> {
     return { weeklyRank: null, monthlyRank: null, streakRank: null, totalParticipants: 0 };
   }
 
+  if (!supabase) {
+    return { weeklyRank: null, monthlyRank: null, streakRank: null, totalParticipants: 0 };
+  }
+
   // Run all 4 count queries in parallel (estimated count avoids full table scan)
   const [
     { count: total },
@@ -140,10 +165,10 @@ export async function getUserRanks(): Promise<LeaderboardStats> {
     { count: monthlyAbove },
     { count: streakAbove },
   ] = await Promise.all([
-    supabase.from('leaderboards').select('*', { count: 'estimated', head: true }).eq('opt_in', true),
-    supabase.from('leaderboards').select('*', { count: 'estimated', head: true }).eq('opt_in', true).gt('weekly_xp', userEntry.weeklyXp),
-    supabase.from('leaderboards').select('*', { count: 'estimated', head: true }).eq('opt_in', true).gt('monthly_xp', userEntry.monthlyXp),
-    supabase.from('leaderboards').select('*', { count: 'estimated', head: true }).eq('opt_in', true).gt('current_streak', userEntry.currentStreak),
+    (supabase.from('leaderboards') as any).select('*', { count: 'estimated', head: true }).eq('opt_in', true),
+    (supabase.from('leaderboards') as any).select('*', { count: 'estimated', head: true }).eq('opt_in', true).gt('weekly_xp', userEntry.weeklyXp),
+    (supabase.from('leaderboards') as any).select('*', { count: 'estimated', head: true }).eq('opt_in', true).gt('monthly_xp', userEntry.monthlyXp),
+    (supabase.from('leaderboards') as any).select('*', { count: 'estimated', head: true }).eq('opt_in', true).gt('current_streak', userEntry.currentStreak),
   ]);
 
   return {
@@ -173,8 +198,9 @@ export async function optInToLeaderboard(displayName: string): Promise<boolean> 
 
   const finalName = sanitizedName || 'Zen User';
 
-  const { error } = await supabase
-    .from('leaderboards')
+  if (!supabase) return false;
+
+  const { error } = await (supabase.from('leaderboards') as any)
     .upsert({
       user_id: userId,
       display_name: finalName,
@@ -199,8 +225,9 @@ export async function optOutOfLeaderboard(): Promise<boolean> {
   const userId = await getCurrentUserId();
   if (!userId) return false;
 
-  const { error } = await supabase
-    .from('leaderboards')
+  if (!supabase) return false;
+
+  const { error } = await (supabase.from('leaderboards') as any)
     .update({ opt_in: false })
     .eq('user_id', userId);
 
@@ -225,8 +252,9 @@ export async function updateDisplayName(displayName: string): Promise<boolean> {
     .slice(0, 20)
     .replace(/[^a-zA-Z0-9 _-]/g, '') || 'Zen User';
 
-  const { error } = await supabase
-    .from('leaderboards')
+  if (!supabase) return false;
+
+  const { error } = await (supabase.from('leaderboards') as any)
     .update({ display_name: sanitizedName })
     .eq('user_id', userId);
 
@@ -253,10 +281,11 @@ export async function addXpToLeaderboard(xpAmount: number): Promise<void> {
   // First check if entry exists
   const existing = await getUserLeaderboardEntry();
 
+  if (!supabase) return;
+
   if (existing) {
     // Update existing entry
-    const { error } = await supabase
-      .from('leaderboards')
+    const { error } = await (supabase.from('leaderboards') as any)
       .update({
         weekly_xp: existing.weeklyXp + xpAmount,
         monthly_xp: existing.monthlyXp + xpAmount,
@@ -269,8 +298,7 @@ export async function addXpToLeaderboard(xpAmount: number): Promise<void> {
     }
   } else {
     // Create new entry (not opted in by default)
-    const { error } = await supabase
-      .from('leaderboards')
+    const { error } = await (supabase.from('leaderboards') as any)
       .insert({
         user_id: userId,
         weekly_xp: xpAmount,
@@ -295,11 +323,12 @@ export async function updateLeaderboardStreak(currentStreak: number): Promise<vo
 
   const existing = await getUserLeaderboardEntry();
 
+  if (!supabase) return;
+
   if (existing) {
     const newLongest = Math.max(existing.longestStreak, currentStreak);
 
-    const { error } = await supabase
-      .from('leaderboards')
+    const { error } = await (supabase.from('leaderboards') as any)
       .update({
         current_streak: currentStreak,
         longest_streak: newLongest,
@@ -311,8 +340,7 @@ export async function updateLeaderboardStreak(currentStreak: number): Promise<vo
     }
   } else {
     // Create new entry
-    const { error } = await supabase
-      .from('leaderboards')
+    const { error } = await (supabase.from('leaderboards') as any)
       .insert({
         user_id: userId,
         current_streak: currentStreak,

@@ -24,8 +24,8 @@ const mockCheckForAppUpdate = vi.fn(() => Promise.resolve({ available: false }))
 const mockWasUpdateDismissed = vi.fn(() => false);
 
 vi.mock('@/lib/appUpdateManager', () => ({
-  checkForAppUpdate: (...args: unknown[]) => mockCheckForAppUpdate(...args),
-  wasUpdateDismissed: (...args: unknown[]) => mockWasUpdateDismissed(...args),
+  checkForAppUpdate: () => mockCheckForAppUpdate(),
+  wasUpdateDismissed: () => mockWasUpdateDismissed(),
 }));
 
 vi.mock('@/lib/logger', () => ({

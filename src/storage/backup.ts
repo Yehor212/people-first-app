@@ -232,7 +232,7 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
   );
 
   if (mode === "replace") {
-    await db.transaction("rw", db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio, async () => {
+    await db.transaction("rw", [db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio], async () => {
       await db.moods.clear();
       await db.habits.clear();
       await db.focusSessions.clear();
@@ -304,7 +304,7 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
   const journalPhotoAdds = validJournalPhotos.filter(p => !journalPhotoKeySet.has(p.id)).length;
   const journalAudioAdds = validJournalAudio.filter(a => !journalAudioKeySet.has(a.id)).length;
 
-  await db.transaction("rw", db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio, async () => {
+  await db.transaction("rw", [db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio], async () => {
     if (validMoods.valid.length) await db.moods.bulkPut(validMoods.valid);
 
     // For habits: use timestamp-based conflict resolution to prevent data loss

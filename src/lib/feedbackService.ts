@@ -27,7 +27,7 @@ export async function submitQuickFeedback(data: QuickFeedbackData): Promise<bool
 
   const { error } = await supabase
     .from('user_feedback')
-    .insert(data);
+    .insert(data as any);
 
   if (error) {
     logger.warn('[FeedbackService] Quick feedback error:', error.message);
@@ -47,7 +47,7 @@ export async function submitDetailedFeedback(data: DetailedFeedbackData): Promis
   try {
     const { error } = await supabase
       .from('feedback')
-      .insert([data]);
+      .insert([data] as any);
 
     if (error) {
       logger.error('[FeedbackService] Detailed feedback error:', {

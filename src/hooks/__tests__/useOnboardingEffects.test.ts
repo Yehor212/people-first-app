@@ -41,16 +41,16 @@ vi.mock('@/lib/onboardingFlow', () => ({
 const mockShouldShowWelcomeBack = vi.fn(() => false);
 const mockMarkWelcomeBackShown = vi.fn();
 const mockGetDaysSinceLastActive = vi.fn(() => 0);
-const mockCalculateHabitSuccessRates = vi.fn(() => []);
-const mockWasStreakBroken = vi.fn(() => false);
+const mockCalculateHabitSuccessRates = vi.fn((_habits: unknown) => [] as any[]);
+const mockWasStreakBroken = vi.fn((_streak: unknown, _days: unknown, _restDays: unknown) => false);
 const mockUpdateLastActiveDate = vi.fn();
 
 vi.mock('@/lib/reEngagement', () => ({
   shouldShowWelcomeBack: () => mockShouldShowWelcomeBack(),
   markWelcomeBackShown: () => mockMarkWelcomeBackShown(),
   getDaysSinceLastActive: () => mockGetDaysSinceLastActive(),
-  calculateHabitSuccessRates: (...args: unknown[]) => mockCalculateHabitSuccessRates(...args),
-  wasStreakBroken: (...args: unknown[]) => mockWasStreakBroken(...args),
+  calculateHabitSuccessRates: (habits: unknown) => mockCalculateHabitSuccessRates(habits),
+  wasStreakBroken: (streak: unknown, days: unknown, restDays: unknown) => mockWasStreakBroken(streak, days, restDays),
   updateLastActiveDate: () => mockUpdateLastActiveDate(),
 }));
 

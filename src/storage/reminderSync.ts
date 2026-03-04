@@ -55,7 +55,7 @@ export const syncReminderSettings = async (
       updated_at: new Date().toISOString()
     };
 
-    const { error } = await supabase.from("user_reminder_settings").upsert(payload, {
+    const { error } = await (supabase.from("user_reminder_settings") as any).upsert(payload, {
       onConflict: "user_id"
     });
 

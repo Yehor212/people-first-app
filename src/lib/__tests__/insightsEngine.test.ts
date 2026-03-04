@@ -11,15 +11,16 @@ import {
   analyzeHabitTiming,
   analyzeMoodTags,
 } from '../insightsEngine';
-import type { MoodEntry, Habit, FocusSession } from '@/types';
+import type { MoodEntry, Habit, FocusSession, MoodType, MoodHabitCorrelationMetadata, FocusPatternMetadata, HabitTimingMetadata, MoodTagMetadata } from '@/types';
 import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
 
 // Helper to create test data
-const createMoodEntry = (date: string, mood: string, tags: string[] = [], energy: number = 3, hour: number = 12): MoodEntry => ({
+let moodIdCounter = 0;
+const createMoodEntry = (date: string, mood: MoodType, tags: string[] = [], _energy: number = 3, hour: number = 12): MoodEntry => ({
+  id: `mood-${++moodIdCounter}`,
   date,
   mood,
   tags,
-  energy,
   timestamp: new Date(`${date}T${hour.toString().padStart(2, '0')}:00:00`).getTime(),
 });
 
@@ -156,8 +157,9 @@ describe('insightsEngine', () => {
       expect(exerciseInsight).toBeDefined();
 
       if (exerciseInsight) {
-        expect(exerciseInsight.metadata.type).toBe('mood-habit-correlation');
-        expect(exerciseInsight.metadata.habitName).toBe('Exercise');
+        const meta = exerciseInsight.metadata as MoodHabitCorrelationMetadata;
+        expect(meta.type).toBe('mood-habit-correlation');
+        expect(meta.habitName).toBe('Exercise');
         expect(exerciseInsight.confidence).toBeGreaterThan(0);
       }
     });
@@ -206,9 +208,10 @@ describe('insightsEngine', () => {
       expect(focusInsight).toBeDefined();
 
       if (focusInsight) {
-        expect(focusInsight.metadata.type).toBe('focus-pattern');
-        expect(focusInsight.metadata.bestLabel).toBe('Deep Work');
-        expect(focusInsight.metadata.avgDuration).toBeGreaterThan(50);
+        const meta = focusInsight.metadata as FocusPatternMetadata;
+        expect(meta.type).toBe('focus-pattern');
+        expect(meta.bestLabel).toBe('Deep Work');
+        expect(meta.avgDuration).toBeGreaterThan(50);
       }
     });
 
@@ -224,12 +227,13 @@ describe('insightsEngine', () => {
       const insights = analyzeFocusPatterns(sessions);
 
       const timeInsight = insights.find(i =>
-        i.type === 'focus-pattern' && i.metadata.type === 'focus-pattern' && i.metadata.bestTime
+        i.type === 'focus-pattern' && (i.metadata as FocusPatternMetadata).bestTime
       );
 
       if (timeInsight) {
-        expect(timeInsight.metadata.bestTime).toBeDefined();
-        expect(timeInsight.metadata.bestTime).toMatch(/^(9|10):/); // Morning time (9:00 or 10:00)
+        const meta = timeInsight.metadata as FocusPatternMetadata;
+        expect(meta.bestTime).toBeDefined();
+        expect(meta.bestTime).toMatch(/^(9|10):/); // Morning time (9:00 or 10:00)
       }
     });
   });
@@ -270,10 +274,11 @@ describe('insightsEngine', () => {
       expect(timingInsight).toBeDefined();
 
       if (timingInsight) {
-        expect(timingInsight.metadata.type).toBe('habit-timing');
-        expect(timingInsight.metadata.habitName).toBe('Morning Routine');
-        expect(timingInsight.metadata.bestTime).toBe('morning');
-        expect(timingInsight.metadata.bestTimeRate).toBeGreaterThan(50);
+        const meta = timingInsight.metadata as HabitTimingMetadata;
+        expect(meta.type).toBe('habit-timing');
+        expect(meta.habitName).toBe('Morning Routine');
+        expect(meta.bestTime).toBe('morning');
+        expect(meta.bestTimeRate).toBeGreaterThan(50);
       }
     });
   });
@@ -308,9 +313,10 @@ describe('insightsEngine', () => {
       expect(tagInsight).toBeDefined();
 
       if (tagInsight) {
-        expect(tagInsight.metadata.type).toBe('mood-tag');
-        expect(tagInsight.metadata.tag).toBe('exercise');
-        expect(tagInsight.metadata.avgMoodWith).toBeGreaterThan(tagInsight.metadata.avgMoodWithout);
+        const meta = tagInsight.metadata as MoodTagMetadata;
+        expect(meta.type).toBe('mood-tag');
+        expect(meta.tag).toBe('exercise');
+        expect(meta.avgMoodWith).toBeGreaterThan(meta.avgMoodWithout);
       }
     });
 
@@ -340,10 +346,10 @@ describe('insightsEngine', () => {
 
     it('handles missing mood values', () => {
       const moods: MoodEntry[] = Array.from({ length: 10 }, (_, i) => ({
+        id: `mood-invalid-${i}`,
         date: `2026-01-${15 + i}`,
-        mood: 'unknown' as any, // Invalid mood
+        mood: 'unknown' as MoodType, // Invalid mood
         tags: [],
-        energy: 3,
         timestamp: Date.now(),
       }));
 

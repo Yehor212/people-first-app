@@ -714,6 +714,116 @@ export interface Database {
         };
         Update: never;
       };
+      leaderboards: {
+        Row: {
+          id: string;
+          user_id: string;
+          display_name: string | null;
+          weekly_xp: number;
+          monthly_xp: number;
+          all_time_xp: number;
+          current_streak: number;
+          longest_streak: number;
+          opt_in: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          display_name?: string | null;
+          weekly_xp?: number;
+          monthly_xp?: number;
+          all_time_xp?: number;
+          current_streak?: number;
+          longest_streak?: number;
+          opt_in?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          display_name?: string | null;
+          weekly_xp?: number;
+          monthly_xp?: number;
+          all_time_xp?: number;
+          current_streak?: number;
+          longest_streak?: number;
+          opt_in?: boolean;
+          updated_at?: string;
+        };
+      };
+      friend_challenges: {
+        Row: {
+          id: string;
+          code: string;
+          creator_id: string;
+          habit_name: string;
+          habit_icon: string;
+          duration: number;
+          start_date: string;
+          end_date: string;
+          status: 'active' | 'completed' | 'expired';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          code: string;
+          creator_id: string;
+          habit_name: string;
+          habit_icon: string;
+          duration: number;
+          start_date: string;
+          end_date: string;
+          status?: 'active' | 'completed' | 'expired';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          code?: string;
+          habit_name?: string;
+          habit_icon?: string;
+          duration?: number;
+          start_date?: string;
+          end_date?: string;
+          status?: 'active' | 'completed' | 'expired';
+          updated_at?: string;
+        };
+      };
+      friend_challenge_members: {
+        Row: {
+          id: string;
+          challenge_id: string;
+          user_id: string;
+          display_name: string;
+          days_completed: number;
+          current_streak: number;
+          last_activity_date: string | null;
+          completed: boolean;
+          completed_at: string | null;
+          joined_at: string;
+        };
+        Insert: {
+          id?: string;
+          challenge_id: string;
+          user_id: string;
+          display_name?: string;
+          days_completed?: number;
+          current_streak?: number;
+          last_activity_date?: string | null;
+          completed?: boolean;
+          completed_at?: string | null;
+          joined_at?: string;
+        };
+        Update: {
+          display_name?: string;
+          days_completed?: number;
+          current_streak?: number;
+          last_activity_date?: string | null;
+          completed?: boolean;
+          completed_at?: string | null;
+        };
+      };
     };
     Functions: {
       calculate_streak: {
@@ -730,6 +840,41 @@ export interface Database {
           gratitudeEntries: number;
           totalBadges: number;
         };
+      };
+      update_member_progress: {
+        Args: {
+          p_challenge_id: string;
+          p_user_id: string;
+          p_days_completed: number;
+          p_current_streak: number;
+        };
+        Returns: {
+          id: string;
+          challenge_id: string;
+          user_id: string;
+          display_name: string;
+          days_completed: number;
+          current_streak: number;
+          last_activity_date: string | null;
+          completed: boolean;
+          completed_at: string | null;
+          joined_at: string;
+        };
+      };
+      get_challenge_leaderboard: {
+        Args: { p_challenge_id: string };
+        Returns: {
+          id: string;
+          challenge_id: string;
+          user_id: string;
+          display_name: string;
+          days_completed: number;
+          current_streak: number;
+          last_activity_date: string | null;
+          completed: boolean;
+          completed_at: string | null;
+          joined_at: string;
+        }[];
       };
     };
   };

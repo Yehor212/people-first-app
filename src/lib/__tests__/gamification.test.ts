@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   calculateLevel,
   getXpForAction,
@@ -11,6 +11,7 @@ import {
 } from '../gamification';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
+import * as utils from '../utils';
 
 // ============================================
 // HELPER FUNCTIONS
@@ -305,12 +306,20 @@ describe('checkAchievements - Streaks', () => {
   });
 
   it('unlocks consistency_king after 365 consecutive days', () => {
+    // Mock calculateStreak to return 365 directly, because the real implementation
+    // uses parseLocalDate (local midnight) which can break at DST transitions —
+    // two consecutive local midnights may be only 23h apart, causing Math.floor
+    // to compute 0 instead of 1, terminating the streak prematurely.
+    const spy = vi.spyOn(utils, 'calculateStreak').mockReturnValue(365);
+
     const stats = createEmptyStats();
     const dates = generateConsecutiveDates(365);
     stats.moods = dates.map(d => createMoodEntry(d));
 
     const { newAchievements } = checkAchievements(stats, []);
     expect(newAchievements.map(a => a.id)).toContain('consistency_king');
+
+    spy.mockRestore();
   });
 });
 

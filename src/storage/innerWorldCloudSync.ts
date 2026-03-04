@@ -62,8 +62,8 @@ export async function pushInnerWorldToCloud(world: InnerWorld): Promise<void> {
   const user = session.user;
 
   try {
-    const { error } = await supabase
-      .from('user_inner_world')
+    const { error } = await (supabase
+      .from('user_inner_world') as any)
       .upsert({
         user_id: user.id,
         world_data: world,
@@ -94,8 +94,8 @@ export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
   const user = session.user;
 
   try {
-    const { data, error } = await supabase
-      .from('user_inner_world')
+    const { data, error } = await (supabase
+      .from('user_inner_world') as any)
       .select('world_data')
       .eq('user_id', user.id)
       .single();
@@ -108,8 +108,10 @@ export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
       return null;
     }
 
+    if (!data) return null;
+
     // P2-8 Fix: Use Zod schema for comprehensive validation
-    const worldData = data?.world_data;
+    const worldData = data.world_data;
     return validateInnerWorldData(worldData);
   } catch (err) {
     logger.error('[InnerWorld] Pull error:', err);

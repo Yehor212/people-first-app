@@ -3,7 +3,7 @@
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
 import { Task } from '@/lib/taskMomentum';
-import { Quest, QuestCondition, QuestReward } from '@/lib/randomQuests';
+import { Quest, QuestCategory, QuestCondition, QuestReward } from '@/lib/randomQuests';
 import { syncOrchestrator } from '@/lib/syncOrchestrator';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
@@ -34,7 +34,7 @@ interface QuestRow {
   user_id: string;
   quest_id: string;
   type: 'daily' | 'weekly' | 'bonus';
-  category: string;
+  category: QuestCategory;
   title: string;
   description: string;
   condition: QuestCondition;
@@ -130,8 +130,8 @@ export async function pullTasksFromCloud(): Promise<Task[] | null> {
   if (!session?.user) return null; // Not authenticated - return null to keep local data
   const user = session.user;
 
-  const { data, error } = await supabase
-    .from('user_tasks')
+  const { data, error } = await (supabase
+    .from('user_tasks') as any)
     .select('*')
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
@@ -156,8 +156,8 @@ export async function pushTasksToCloud(tasks: Task[]): Promise<void> {
   // Upsert tasks
   const rows = tasks.map(task => taskToRow(task, user.id));
 
-  const { error } = await supabase
-    .from('user_tasks')
+  const { error } = await (supabase
+    .from('user_tasks') as any)
     .upsert(rows, {
       onConflict: 'user_id,task_id',
       ignoreDuplicates: false,
@@ -185,8 +185,8 @@ export async function deleteTaskFromCloud(taskId: string): Promise<void> {
   }
 
   try {
-    const { error } = await supabase
-      .from('user_tasks')
+    const { error } = await (supabase
+      .from('user_tasks') as any)
       .delete()
       .eq('user_id', user.id)
       .eq('task_id', taskId);
@@ -213,8 +213,8 @@ export async function deleteQuestFromCloud(questId: string, questType: 'daily' |
   const user = session.user;
 
   try {
-    const { error } = await supabase
-      .from('user_quests')
+    const { error } = await (supabase
+      .from('user_quests') as any)
       .delete()
       .eq('user_id', user.id)
       .eq('quest_id', questId)
@@ -317,8 +317,8 @@ export async function pullQuestsFromCloud(): Promise<QuestsState | undefined> {
   if (!session?.user) return undefined; // Not authenticated - return undefined to keep local data
   const user = session.user;
 
-  const { data, error } = await supabase
-    .from('user_quests')
+  const { data, error } = await (supabase
+    .from('user_quests') as any)
     .select('*')
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
@@ -354,8 +354,8 @@ export async function pushQuestsToCloud(quests: { daily: Quest | null; weekly: Q
 
   if (rows.length === 0) return;
 
-  const { error } = await supabase
-    .from('user_quests')
+  const { error } = await (supabase
+    .from('user_quests') as any)
     .upsert(rows, {
       onConflict: 'user_id,quest_id',
       ignoreDuplicates: false,

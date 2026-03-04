@@ -231,8 +231,8 @@ describe('progressStories', () => {
       const slides = generateWeeklyStory(moods, habits, focus, gratitude, [], 5);
       slides.forEach(slide => {
         expect(slide).toHaveProperty('gradient');
-        // SLIDE_GRADIENTS spreads { gradient, accent } onto each slide
-        expect(slide).toHaveProperty('accent');
+        // SLIDE_GRADIENTS spreads { gradient, accentColor } onto each slide
+        expect(slide).toHaveProperty('accentColor');
         expect(typeof slide.gradient).toBe('string');
       });
     });

@@ -7,6 +7,23 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import { useStatsCalculations } from '../useStatsCalculations';
 import { makeTestHabit, datesToEntries } from '@/test/habitFixtures';
+import type { MoodEntry, FocusSession, GratitudeEntry } from '@/types';
+
+/** Helper to create a MoodEntry with required fields */
+function mood(overrides: { id: string; date: string; mood: MoodEntry['mood']; tags?: string[] }): MoodEntry {
+  return { timestamp: Date.now(), ...overrides };
+}
+
+/** Helper to create a FocusSession with required fields */
+function focus(overrides: { id: string; date: string; duration: number; status?: string }): FocusSession {
+  const { status, ...rest } = overrides;
+  return { completedAt: Date.now(), status: status as FocusSession['status'], ...rest };
+}
+
+/** Helper to create a GratitudeEntry with required fields */
+function gratitude(overrides: { id: string; date: string; text: string }): GratitudeEntry {
+  return { timestamp: Date.now(), ...overrides };
+}
 
 // Mock dependencies
 vi.mock('@/lib/utils', () => ({
@@ -91,9 +108,9 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         focusSessions: [
-          { id: '1', date: '2026-02-03', duration: 25, status: 'completed' },
-          { id: '2', date: '2026-02-03', duration: 30, status: 'completed' },
-          { id: '3', date: '2026-02-02', duration: 15, status: 'aborted' }, // Should be excluded
+          focus({ id: '1', date: '2026-02-03', duration: 25, status: 'completed' }),
+          focus({ id: '2', date: '2026-02-03', duration: 30, status: 'completed' }),
+          focus({ id: '3', date: '2026-02-02', duration: 15, status: 'aborted' }), // Should be excluded
         ],
       };
 
@@ -107,7 +124,7 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         focusSessions: [
-          { id: '1', date: '2026-02-03', duration: 25, status: 'completed' },
+          focus({ id: '1', date: '2026-02-03', duration: 25, status: 'completed' }),
         ],
         currentFocusMinutes: 10,
       };
@@ -136,9 +153,9 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         moods: [
-          { id: '1', date: '2026-02-03', mood: 'great', tags: [] },
-          { id: '2', date: '2026-02-02', mood: 'good', tags: [] },
-          { id: '3', date: '2026-02-01', mood: 'okay', tags: [] },
+          mood({ id: '1', date: '2026-02-03', mood: 'great', tags: [] }),
+          mood({ id: '2', date: '2026-02-02', mood: 'good', tags: [] }),
+          mood({ id: '3', date: '2026-02-01', mood: 'okay', tags: [] }),
         ],
       };
 
@@ -153,8 +170,8 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         moods: [
-          { id: '1', date: '2026-02-03', mood: 'great', tags: [] },
-          { id: '2', date: '2026-02-02', mood: 'terrible', tags: [] },
+          mood({ id: '1', date: '2026-02-03', mood: 'great', tags: [] }),
+          mood({ id: '2', date: '2026-02-02', mood: 'terrible', tags: [] }),
         ],
       };
 
@@ -170,8 +187,8 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         moods: [
-          { id: '1', date: '2026-02-03', mood: 'great', tags: ['work'] },
-          { id: '2', date: '2026-02-02', mood: 'good', tags: ['home'] },
+          mood({ id: '1', date: '2026-02-03', mood: 'great', tags: ['work'] }),
+          mood({ id: '2', date: '2026-02-02', mood: 'good', tags: ['home'] }),
         ],
         selectedTag: 'work',
       };
@@ -186,8 +203,8 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         moods: [
-          { id: '1', date: '2026-02-03', mood: 'great', tags: ['work'] },
-          { id: '2', date: '2026-02-02', mood: 'good', tags: ['home'] },
+          mood({ id: '1', date: '2026-02-03', mood: 'great', tags: ['work'] }),
+          mood({ id: '2', date: '2026-02-02', mood: 'good', tags: ['home'] }),
         ],
         selectedTag: 'all',
       };
@@ -203,9 +220,9 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         moods: [
-          { id: '1', date: '2026-02-03', mood: 'great', tags: [] }, // 5
-          { id: '2', date: '2026-02-02', mood: 'good', tags: [] },  // 4
-          { id: '3', date: '2026-02-01', mood: 'okay', tags: [] },  // 3
+          mood({ id: '1', date: '2026-02-03', mood: 'great', tags: [] }), // 5
+          mood({ id: '2', date: '2026-02-02', mood: 'good', tags: [] }),  // 4
+          mood({ id: '3', date: '2026-02-01', mood: 'okay', tags: [] }),  // 3
         ],
       };
 
@@ -224,13 +241,13 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         moods: [
-          { id: '1', date: '2026-02-03', mood: 'great', tags: [] },
+          mood({ id: '1', date: '2026-02-03', mood: 'great', tags: [] }),
         ],
         habits: [
           makeTestHabit({ id: '1', name: 'Exercise', entries: datesToEntries(['2026-02-03']) }),
         ],
         focusSessions: [
-          { id: '1', date: '2026-02-03', duration: 60, status: 'completed' },
+          focus({ id: '1', date: '2026-02-03', duration: 60, status: 'completed' }),
         ],
       };
 
@@ -243,8 +260,8 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         moods: [
-          { id: '1', date: '2026-02-01', mood: 'bad', tags: [] },
-          { id: '2', date: '2026-02-03', mood: 'great', tags: [] }, // Latest
+          mood({ id: '1', date: '2026-02-01', mood: 'bad', tags: [] }),
+          mood({ id: '2', date: '2026-02-03', mood: 'great', tags: [] }), // Latest
         ],
       };
 
@@ -267,9 +284,9 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         moods: [
-          { id: '1', date: '2026-02-03', mood: 'great', tags: [] }, // Monday
-          { id: '2', date: '2026-02-03', mood: 'great', tags: [] }, // Monday
-          { id: '3', date: '2026-02-02', mood: 'okay', tags: [] },  // Sunday
+          mood({ id: '1', date: '2026-02-03', mood: 'great', tags: [] }), // Monday
+          mood({ id: '2', date: '2026-02-03', mood: 'great', tags: [] }), // Monday
+          mood({ id: '3', date: '2026-02-02', mood: 'okay', tags: [] }),  // Sunday
         ],
       };
 
@@ -285,9 +302,9 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         moods: [
-          { id: '1', date: '2026-02-03', mood: 'great', tags: [] },
-          { id: '2', date: '2026-02-03', mood: 'good', tags: [] },
-          { id: '3', date: '2026-02-02', mood: 'okay', tags: [] },
+          mood({ id: '1', date: '2026-02-03', mood: 'great', tags: [] }),
+          mood({ id: '2', date: '2026-02-03', mood: 'good', tags: [] }),
+          mood({ id: '3', date: '2026-02-02', mood: 'okay', tags: [] }),
         ],
       };
 
@@ -301,8 +318,8 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         focusSessions: [
-          { id: '1', date: '2026-02-03', duration: 25, status: 'completed' },
-          { id: '2', date: '2026-02-03', duration: 30, status: 'completed' },
+          focus({ id: '1', date: '2026-02-03', duration: 25, status: 'completed' }),
+          focus({ id: '2', date: '2026-02-03', duration: 30, status: 'completed' }),
         ],
       };
 
@@ -315,8 +332,8 @@ describe('useStatsCalculations', () => {
       const props = {
         ...defaultProps,
         gratitudeEntries: [
-          { id: '1', date: '2026-02-03', text: 'Grateful 1' },
-          { id: '2', date: '2026-02-03', text: 'Grateful 2' },
+          gratitude({ id: '1', date: '2026-02-03', text: 'Grateful 1' }),
+          gratitude({ id: '2', date: '2026-02-03', text: 'Grateful 2' }),
         ],
       };
 

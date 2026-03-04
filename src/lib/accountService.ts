@@ -11,8 +11,7 @@ export async function loadWeeklyDigest(userId: string): Promise<boolean | null> 
   if (!supabase) return null;
 
   try {
-    const { data, error } = await supabase
-      .from('user_settings')
+    const { data, error } = await (supabase.from('user_settings') as any)
       .select('weekly_digest_enabled')
       .eq('user_id', userId)
       .maybeSingle();
@@ -22,7 +21,7 @@ export async function loadWeeklyDigest(userId: string): Promise<boolean | null> 
       return null;
     }
 
-    return data?.weekly_digest_enabled ?? false;
+    return (data as { weekly_digest_enabled?: boolean } | null)?.weekly_digest_enabled ?? false;
   } catch (error) {
     logger.error('[AccountService] Error loading weekly digest:', error);
     return null;
@@ -34,8 +33,7 @@ export async function updateWeeklyDigest(userId: string, enabled: boolean): Prom
   if (!supabase) return false;
 
   try {
-    const { error } = await supabase
-      .from('user_settings')
+    const { error } = await (supabase.from('user_settings') as any)
       .upsert({
         user_id: userId,
         weekly_digest_enabled: enabled,

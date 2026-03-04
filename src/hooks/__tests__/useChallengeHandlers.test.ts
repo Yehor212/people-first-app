@@ -27,20 +27,20 @@ vi.mock('@/stores', () => ({
 
 const mockGetChallenges = vi.fn(() => []);
 const mockGetBadges = vi.fn(() => []);
-const mockSyncChallengeProgress = vi.fn(() => []);
+const mockSyncChallengeProgress = vi.fn((_a?: any, _b?: any, _c?: any) => [] as any[]);
 
 vi.mock('@/lib/challengeStorage', () => ({
   getChallenges: () => mockGetChallenges(),
   getBadges: () => mockGetBadges(),
-  syncChallengeProgress: (...args: unknown[]) => mockSyncChallengeProgress(...args),
+  syncChallengeProgress: (...args: any[]) => mockSyncChallengeProgress(...args),
 }));
 
-const mockCheckFeatureUnlock = vi.fn(() => ({ shouldUnlock: false }));
-const mockUnlockFeature = vi.fn();
+const mockCheckFeatureUnlock = vi.fn((_a?: any) => ({ shouldUnlock: false }));
+const mockUnlockFeature = vi.fn((_a?: any) => {});
 
 vi.mock('@/lib/onboardingFlow', () => ({
-  checkFeatureUnlock: (...args: unknown[]) => mockCheckFeatureUnlock(...args),
-  unlockFeature: (...args: unknown[]) => mockUnlockFeature(...args),
+  checkFeatureUnlock: (...args: any[]) => mockCheckFeatureUnlock(...args),
+  unlockFeature: (...args: any[]) => mockUnlockFeature(...args),
 }));
 
 vi.mock('@/lib/safeJson', () => ({
@@ -185,7 +185,8 @@ describe('useChallengeHandlers', () => {
     });
 
     // Only 2026-02-19 has both habits completed → perfectDaysCount = 1
-    const userStats = mockSyncChallengeProgress.mock.calls[0][0] as Record<string, unknown>;
+    const calls = mockSyncChallengeProgress.mock.calls as unknown[][];
+    const userStats = calls[0][0] as Record<string, unknown>;
     expect(userStats.perfectDaysCount).toBe(1);
   });
 
@@ -213,7 +214,8 @@ describe('useChallengeHandlers', () => {
       result.current.updateChallengeProgress();
     });
 
-    const userStats = mockSyncChallengeProgress.mock.calls[0][0] as Record<string, unknown>;
+    const calls = mockSyncChallengeProgress.mock.calls as unknown[][];
+    const userStats = calls[0][0] as Record<string, unknown>;
     expect(userStats.zenMasterDays).toBe(1);
   });
 });

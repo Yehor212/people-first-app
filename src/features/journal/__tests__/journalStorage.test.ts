@@ -170,7 +170,7 @@ describe('getEntriesByDate', () => {
     const mockReverse = vi.fn(() => ({ sortBy: mockSortBy }));
     const mockEquals = vi.fn(() => ({ reverse: mockReverse, sortBy: mockSortBy }));
     const mockWhere = vi.fn(() => ({ equals: mockEquals }));
-    vi.mocked(db.journalEntries.where).mockImplementation(mockWhere);
+    vi.mocked(db.journalEntries.where).mockImplementation(mockWhere as any);
 
     const result = await getEntriesByDate('2026-02-17');
 

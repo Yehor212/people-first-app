@@ -30,7 +30,7 @@ vi.mock('@/lib/platform', () => ({
 
 // Mock quickActions module
 const mockInitializeQuickActions = vi.fn(() => Promise.resolve());
-const mockToggleQuickActionsNotification = vi.fn(() => Promise.resolve(true));
+const mockToggleQuickActionsNotification = vi.fn((_enabled: boolean) => Promise.resolve(true));
 const mockSetQuickActionCallback = vi.fn();
 const mockSetupQuickActionsListener = vi.fn(() => Promise.resolve(() => {}));
 const mockGetQuickActionsSetting = vi.fn(() => mockQuickActionsSetting);
