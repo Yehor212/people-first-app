@@ -167,9 +167,18 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
                 return (
                   <div
                     key={dayIdx}
-                    onClick={(e) => handleCellTap(cell, e)}
-                    onMouseEnter={(e) => handleCellHover(cell, e)}
-                    onMouseLeave={() => setTooltip(null)}
+                    {...(isActionable
+                      ? {
+                          onClick: (e: React.MouseEvent) => handleCellTap(cell, e),
+                          onMouseEnter: (e: React.MouseEvent) => handleCellHover(cell, e),
+                          onMouseLeave: () => setTooltip(null),
+                          tabIndex: 0,
+                        }
+                      : {
+                          'aria-disabled': true,
+                          tabIndex: -1,
+                        }
+                    )}
                     title={
                       isActionable
                         ? `${formatShortDate(cell.date, language)} · ${getStatusLabel(cell.status)}`

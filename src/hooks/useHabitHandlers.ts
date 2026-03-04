@@ -191,6 +191,18 @@ export function useHabitHandlers({
    * Uses updater pattern to avoid stale closure on rapid taps.
    */
   const handleAdjustHabit = useCallback((habitId: string, date: string, delta: number) => {
+    // Guard against rapid double-taps (per-habit-date key)
+    const processingKey = `${habitId}-${date}`;
+    if (processingHabitsRef.current.has(processingKey)) return;
+    processingHabitsRef.current.add(processingKey);
+
+    const prevTimeout = processingTimeoutsRef.current.get(processingKey);
+    if (prevTimeout) clearTimeout(prevTimeout);
+    processingTimeoutsRef.current.set(processingKey, setTimeout(() => {
+      processingHabitsRef.current.delete(processingKey);
+      processingTimeoutsRef.current.delete(processingKey);
+    }, 300));
+
     setHabits(prev => {
       const habit = prev.find(h => h.id === habitId);
       if (!habit) return prev;

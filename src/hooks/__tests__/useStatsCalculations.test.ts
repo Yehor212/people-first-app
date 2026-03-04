@@ -36,6 +36,12 @@ vi.mock('@/lib/utils', () => ({
   }),
   getToday: vi.fn(() => '2026-02-03'),
   parseLocalDate: vi.fn((dateStr: string) => new Date(dateStr)),
+  formatDate: vi.fn((date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }),
 }));
 
 vi.mock('@/lib/habits', () => ({

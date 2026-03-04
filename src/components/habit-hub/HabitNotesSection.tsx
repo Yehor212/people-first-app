@@ -33,13 +33,14 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
   const [noteText, setNoteText] = useState(todayNote);
   const [showAll, setShowAll] = useState(false);
 
-  // Sync noteText when switching between habits (useState initial only runs on mount).
-  // Intentionally depends on habit.id (not full habit object) — only reset when switching habits.
+  // Sync noteText when switching between habits or when today's note changes externally.
+  // Depends on habit.id (reset on habit switch), today, and the actual note value.
+  const todayEntryNotes = habit.entries?.[today]?.notes;
   useEffect(() => {
     setNoteText(getEntryNote(habit, today) ?? '');
     setIsEditing(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [habit.id, today]);
+  }, [habit.id, today, todayEntryNotes]);
 
   const sortedNotes = useMemo(() => getDatesWithNotes(habit), [habit]);
 

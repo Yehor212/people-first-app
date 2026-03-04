@@ -103,7 +103,12 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
         }
       });
 
-      const totalHabits = habits.length;
+      // Only count habits that existed on this day (created on or before this date)
+      const activeHabits = habits.filter(h => {
+        const createdStr = formatDate(new Date(h.createdAt));
+        return createdStr <= dateStr;
+      });
+      const totalHabits = activeHabits.length;
       const completedCount = completedHabits.length;
       const completionRate = totalHabits > 0 ? completedCount / totalHabits : 0;
 
@@ -360,7 +365,11 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {habits
-                      .filter(h => !selectedDay.completedHabits.includes(h.name))
+                      .filter(h => {
+                        // Only show habits that existed on the selected day
+                        const createdStr = formatDate(new Date(h.createdAt));
+                        return createdStr <= selectedDay.date && !selectedDay.completedHabits.includes(h.name);
+                      })
                       .map((habit) => (
                         <div
                           key={habit.id}

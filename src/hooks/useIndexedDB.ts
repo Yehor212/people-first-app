@@ -163,6 +163,12 @@ export function useIndexedDB<T>({
   const initialValueRef = useRef(initialValue);
   // Track mounted state to prevent memory leaks
   const isMountedRef = useRef(true);
+  // Track pending IndexedDB writes to prevent stale reads from overwriting fresh state.
+  // When setValue fires an async write, Zustand/React state is the source of truth until
+  // the write completes. If triggerDataRefresh() fires during this window (e.g. from
+  // visibilitychange → cloud sync), loadData would read stale IndexedDB data and
+  // overwrite the correct React state — resurrecting deleted items.
+  const writePendingRef = useRef(false);
 
   // Apply schema validation if provided (otherwise passthrough)
   const applyValidation = useCallback((raw: unknown): T | null => {
@@ -351,15 +357,28 @@ export function useIndexedDB<T>({
   // Reload data when refresh is triggered
   useEffect(() => {
     if (refreshCounter > 0) {
+      // If an IndexedDB write is in progress, skip this reload.
+      // React/Zustand state is already up-to-date (setValue updates it synchronously),
+      // and reading from IndexedDB now would return stale pre-write data — resurrecting
+      // deleted items or reverting edits.
+      if (writePendingRef.current) {
+        logger.log(`[useIndexedDB] Skipping refresh for "${localStorageKey}" — write pending`);
+        return;
+      }
       void loadData(false);
     }
-  }, [refreshCounter, loadData]);
+  }, [refreshCounter, loadData, localStorageKey]);
 
   const setValue = useCallback((value: T | ((prev: T) => T)) => {
     setData(prev => {
-      const newValue = typeof value === 'function' 
-        ? (value as (prev: T) => T)(prev) 
+      const newValue = typeof value === 'function'
+        ? (value as (prev: T) => T)(prev)
         : value;
+
+      // Mark write as pending BEFORE the async operation starts.
+      // This prevents triggerDataRefresh() from reading stale IndexedDB data
+      // while the write is in flight (e.g. habit deletion + immediate tab switch).
+      writePendingRef.current = true;
 
       // Save to IndexedDB
       void (async () => {
@@ -398,6 +417,9 @@ export function useIndexedDB<T>({
               }
             }));
           }
+        } finally {
+          // Write completed (or failed) — safe to allow refreshes again.
+          writePendingRef.current = false;
         }
       })();
 

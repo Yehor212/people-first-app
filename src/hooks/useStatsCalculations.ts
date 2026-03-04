@@ -5,7 +5,7 @@
 
 import { useMemo } from 'react';
 import { MoodEntry, PrimaryEmotion, GratitudeEntry } from '@/types';
-import { calculateStreak, getToday, parseLocalDate } from '@/lib/utils';
+import { calculateStreak, formatDate, getToday, parseLocalDate } from '@/lib/utils';
 import { getHabitCompletedDates } from '@/lib/habits';
 import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
 import { getEmotionScore, MOOD_TO_EMOTION_MAP } from '@/lib/emotionConstants';
@@ -184,7 +184,38 @@ export function useStatsCalculations({
     const now = new Date();
     const actualDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const daysInRange = range === 'week' ? 7 : range === 'month' ? actualDaysInMonth : 90;
-    const totalPossibleCompletions = habits.length * daysInRange;
+
+    // Calculate range start date string for per-habit filtering
+    const rangeEnd = new Date();
+    const rangeStart = new Date();
+    if (range === 'week') {
+      rangeStart.setDate(rangeEnd.getDate() - 6);
+    } else if (range === 'month') {
+      rangeStart.setDate(1); // first of current month
+    } else {
+      rangeStart.setDate(rangeEnd.getDate() - 89); // 90-day window
+    }
+    rangeStart.setHours(0, 0, 0, 0);
+    const rangeStartStr = formatDate(rangeStart);
+    const rangeEndStr = formatDate(rangeEnd);
+
+    // Per-habit possible completions: respect creation date AND frequency ratio
+    const totalPossibleCompletions = habits.reduce((sum, h) => {
+      const createdStr = formatDate(new Date(h.createdAt));
+      // Only count days from when the habit actually existed
+      const effectiveStart = createdStr > rangeStartStr ? createdStr : rangeStartStr;
+      if (effectiveStart > rangeEndStr) return sum; // habit created after range
+      const effectiveDays =
+        Math.floor(
+          (parseLocalDate(rangeEndStr).getTime() - parseLocalDate(effectiveStart).getTime()) / 86400000
+        ) + 1;
+      // Apply frequency ratio: a 3/7 habit expects 3 completions per 7 days
+      const freqRatio = h.frequency.denominator > 0
+        ? h.frequency.numerator / h.frequency.denominator
+        : 1;
+      return sum + Math.max(0, effectiveDays) * freqRatio;
+    }, 0);
+
     const habitRate =
       totalPossibleCompletions > 0
         ? Math.min(100, (stats.totalHabitCompletions / totalPossibleCompletions) * 100)

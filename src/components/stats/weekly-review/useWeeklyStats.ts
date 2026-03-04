@@ -47,10 +47,20 @@ export function useWeeklyStats({ habits, moods, focusSessions, currentStreak, t 
     let bestDayScore = 0;
 
     dates.forEach(date => {
-      // Habits
-      const dayHabits = habits.filter(h => isHabitCompletedOnDate(h, date)).length;
+      // Habits — only count habits that existed on this date AND were scheduled
+      const activeHabits = habits.filter(h => {
+        const createdStr = formatDate(new Date(h.createdAt));
+        return createdStr <= date; // habit existed on this day
+      });
+      const dayHabits = activeHabits.filter(h => isHabitCompletedOnDate(h, date)).length;
       habitsCompleted += dayHabits;
-      totalPossible += habits.length;
+      // Apply frequency ratio: a 3/7 habit contributes 3/7 per day, not 1
+      totalPossible += activeHabits.reduce((sum, h) => {
+        const freqRatio = h.frequency.denominator > 0
+          ? h.frequency.numerator / h.frequency.denominator
+          : 1;
+        return sum + freqRatio;
+      }, 0);
 
       // Focus
       const dayFocus = focusSessions
@@ -66,12 +76,12 @@ export function useWeeklyStats({ habits, moods, focusSessions, currentStreak, t 
         moodCount++;
       });
 
-      // Perfect day check
-      const isPerfect = dayHabits === habits.length && habits.length > 0 && dayFocus >= 30;
+      // Perfect day check — only consider habits that existed on this day
+      const isPerfect = dayHabits === activeHabits.length && activeHabits.length > 0 && dayFocus >= 30;
       if (isPerfect) perfectDays++;
 
       // Best day calculation
-      const dayScore = (dayHabits / Math.max(habits.length, 1)) * 50 +
+      const dayScore = (dayHabits / Math.max(activeHabits.length, 1)) * 50 +
                        Math.min(dayFocus / 60, 1) * 30 +
                        (dayMoods.length > 0 ? (moodTotal / moodCount / 5) * 20 : 0);
       if (dayScore > bestDayScore) {
