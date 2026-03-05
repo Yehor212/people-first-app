@@ -1,18 +1,25 @@
 /**
  * BurnThoughtWidget — Inline "burn a worry" section for the journal editor.
  *
- * "Ember Rise" dissolution:
+ * "Thanos Snap" text disintegration:
  *   STATE MACHINE: IDLE → DISSOLVING → RELEASED → COLLAPSING → closed
  *
- *   DISSOLVING: Text fades opacity 1→0 over 600ms while warm ember particles
- *     spawn continuously for 800ms and float UPWARD with gentle drift.
- *     No html2canvas — zero main-thread freeze.
+ *   DISSOLVING uses text-to-pixel sampling: renders the user's text onto an
+ *   offscreen canvas via fillText(), samples pixel positions where alpha > 0,
+ *   then creates dust particles AT those positions. The text visually
+ *   "crumbles" into particles that scatter with wind + gravity.
+ *
+ *   Phase 1 (0-200ms):    Particles vibrate in place — text "trembles"
+ *   Phase 2 (200-1400ms): Progressive strip-by-strip dissolution (LTR / RTL-aware)
+ *   Phase 3 (1400-2000ms): Remaining particles fade out naturally
+ *
  *   RELEASED: "Released" text with gentle scale-in (400ms pause).
  *   COLLAPSING: Telegram-style height collapse → onClose().
  *   FALLBACK: shouldAnimate() false → instant RELEASED (no animation).
  *
- * Memory-safe: canvas + particle array destroyed in cleanup.
- * Haptic feedback. Respects in-app Dopamine toggle only.
+ * No html2canvas — fillText is GPU-accelerated, <1ms.
+ * Memory-safe: offscreen canvas + particle array destroyed in cleanup.
+ * Haptic feedback via Capacitor. Respects in-app Dopamine toggle only.
  */
 
 import { useState, useRef, useCallback, useEffect, memo } from 'react';
@@ -20,65 +27,144 @@ import { Flame, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { zenMotion, shouldAnimate } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { hapticWarning, hapticMedium, hapticSuccess } from '@/lib/haptics';
+import { announceSuccess } from '@/lib/a11y';
 
 interface BurnThoughtWidgetProps {
   onClose: () => void;
 }
 
-// ── Ember particle ──────────────────────────────────────────────
+// ── Dust particle (text-sampled) ────────────────────────────────
 
-interface Ember {
+interface DustParticle {
   x: number; y: number;
+  originX: number; originY: number;
   vx: number; vy: number;
   size: number;
   alpha: number;
-  decay: number;
   color: string;
   glow: boolean;
   rotation: number;
   rotSpeed: number;
   life: number;
   maxLife: number;
-  spawnTime: number;
+  delay: number;
   phase: number;
+  started: boolean;
 }
 
-// Warm color palette — ember/incense tones
-const EMBER_COLORS = [
-  '#ff6b35',  // deep orange
-  '#ff8c42',  // amber
-  '#ffa62b',  // gold
-  '#ffcf56',  // bright gold
-  '#fff5e0',  // white-hot
-  '#ef4444',  // red
-  '#f97316',  // orange
+// Dust/ash palette — matches text-red-300 and warm ash tones
+const DUST_COLORS = [
+  '#fca5a5',  // red-300 (text color)
+  '#f87171',  // red-400
+  '#fb923c',  // orange-400
+  '#fdba74',  // orange-300
+  '#fde68a',  // amber-200 (bright dust)
+  '#d4d4d8',  // zinc-300 (ash)
+  '#a1a1aa',  // zinc-400 (dark ash)
 ];
 
-const TOTAL_DURATION = 1500;    // ms total animation
-const SPAWN_WINDOW  = 800;      // ms — embers spawn during first 800ms
-const TEXT_FADE_MS  = 600;      // ms — text opacity 1→0
-const MAX_PARTICLES = 400;
+// ── Animation constants ─────────────────────────────────────────
 
-function spawnEmber(areaW: number, areaH: number, now: number): Ember {
-  const maxLife = 600 + Math.random() * 600; // 600-1200ms
-  return {
-    x: Math.random() * areaW,
-    y: areaH * (0.3 + Math.random() * 0.7), // bottom-heavy bias
-    vx: (Math.random() - 0.5) * 30,
-    vy: -40 - Math.random() * 60,            // upward: -40 to -100 px/s
-    size: 1 + Math.random() * 4,             // 1-5px radius
-    alpha: 1,
-    decay: 1 / maxLife,
-    color: EMBER_COLORS[Math.floor(Math.random() * EMBER_COLORS.length)],
-    glow: Math.random() < 0.15,              // 15% glow particles
-    rotation: Math.random() * Math.PI * 2,
-    rotSpeed: (Math.random() - 0.5) * 2,
-    life: 0,
-    maxLife,
-    spawnTime: now,
-    phase: Math.random() * Math.PI * 2,
-  };
+const TOTAL_DURATION  = 2000;   // ms total animation
+const VIBRATE_PHASE   = 200;    // ms — particles vibrate in place
+const DISSOLVE_PHASE  = 1200;   // ms — progressive strip dissolution
+const TEXT_FADE_MS    = 100;    // ms — fast text→particle swap
+const MAX_PARTICLES   = 600;    // particle budget
+const NUM_STRIPS      = 8;      // vertical dissolution strips
+const SAMPLE_STEP     = 3;      // sample every 3rd pixel
+const HARD_TIMEOUT    = 3000;   // ms — safety cutoff
+
+// ── Word-wrap helper (canvas fillText doesn't auto-wrap) ────────
+
+function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+  const words = text.split(/\s+/);
+  const lines: string[] = [];
+  let currentLine = '';
+  for (const word of words) {
+    const testLine = currentLine ? `${currentLine} ${word}` : word;
+    if (ctx.measureText(testLine).width > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = testLine;
+    }
+  }
+  if (currentLine) lines.push(currentLine);
+  return lines;
 }
+
+// ── Text-to-pixel sampling ──────────────────────────────────────
+
+function sampleTextPixels(
+  text: string,
+  areaW: number,
+  areaH: number,
+  dpr: number,
+  textareaEl: HTMLTextAreaElement | null,
+): Array<{ x: number; y: number }> {
+  const offscreen = document.createElement('canvas');
+  const scaledW = Math.round(areaW * dpr);
+  const scaledH = Math.round(areaH * dpr);
+  offscreen.width = scaledW;
+  offscreen.height = scaledH;
+  const ctx = offscreen.getContext('2d');
+  if (!ctx) return [];
+
+  ctx.scale(dpr, dpr);
+
+  // Match textarea styling — include border width for accurate text positioning
+  const computed = textareaEl ? getComputedStyle(textareaEl) : null;
+  const fontSize = computed ? (parseFloat(computed.fontSize) || 14) : 14;
+  const fontFamily = computed?.fontFamily || 'system-ui, sans-serif';
+  const lineHeight = computed ? (parseFloat(computed.lineHeight) || fontSize * 1.5) : fontSize * 1.5;
+  const borderLeft = computed ? (parseFloat(computed.borderLeftWidth) || 0) : 1;
+  const borderTop = computed ? (parseFloat(computed.borderTopWidth) || 0) : 1;
+  const paddingLeft = (computed ? (parseFloat(computed.paddingLeft) || 14) : 14) + borderLeft;
+  const paddingTop = (computed ? (parseFloat(computed.paddingTop) || 10) : 10) + borderTop;
+  const textAreaWidth = areaW - paddingLeft * 2;
+
+  ctx.font = `${fontSize}px ${fontFamily}`;
+  ctx.fillStyle = '#ffffff';
+  ctx.textBaseline = 'top';
+
+  const lines = wrapText(ctx, text, textAreaWidth);
+  for (let i = 0; i < lines.length; i++) {
+    ctx.fillText(lines[i], paddingLeft, paddingTop + i * lineHeight);
+  }
+
+  // Read pixel data and collect positions where text exists
+  const imageData = ctx.getImageData(0, 0, scaledW, scaledH);
+  const pixels = imageData.data;
+  const positions: Array<{ x: number; y: number }> = [];
+
+  for (let py = 0; py < scaledH; py += SAMPLE_STEP) {
+    for (let px = 0; px < scaledW; px += SAMPLE_STEP) {
+      const idx = (py * scaledW + px) * 4;
+      if (pixels[idx + 3] > 30) {
+        positions.push({ x: px / dpr, y: py / dpr });
+      }
+    }
+  }
+
+  // Cleanup offscreen canvas
+  offscreen.width = 0;
+  offscreen.height = 0;
+
+  // Cap at MAX_PARTICLES via random subsampling
+  if (positions.length > MAX_PARTICLES) {
+    // Fisher-Yates partial shuffle
+    for (let i = positions.length - 1; i > 0 && i >= positions.length - MAX_PARTICLES; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [positions[i], positions[j]] = [positions[j], positions[i]];
+    }
+    positions.length = MAX_PARTICLES;
+  }
+
+  return positions;
+}
+
+// ── Component ───────────────────────────────────────────────────
 
 export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
   const { t } = useLanguage();
@@ -91,33 +177,44 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
   const containerRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const hapticTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // ── Ember Rise animation ──
+  // ── Thanos Snap dissolution ──
 
   const startBurn = useCallback(() => {
     if (!text.trim() || burning) return;
 
-    // Haptic feedback
-    navigator.vibrate?.([10, 30, 10]);
+    // Haptic: burn initiation
+    void hapticWarning();
 
     // Reduced motion: skip animation entirely
     if (!shouldAnimate()) {
       setBurned(true);
+      announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
+      void hapticSuccess();
       return;
     }
 
     setBurning(true);
 
+    // Fallback helper — instant release if canvas setup fails
+    const instantRelease = () => {
+      setBurned(true);
+      setBurning(false);
+      void hapticSuccess();
+      announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
+    };
+
     const container = containerRef.current;
-    if (!container) { setBurned(true); return; }
+    if (!container) { instantRelease(); return; }
 
     const canvas = canvasRef.current;
-    if (!canvas) { setBurned(true); setBurning(false); return; }
+    if (!canvas) { instantRelease(); return; }
 
     const ctx = canvas.getContext('2d');
-    if (!ctx) { setBurned(true); setBurning(false); return; }
+    if (!ctx) { instantRelease(); return; }
 
-    // Size canvas to container (no html2canvas — zero freeze!)
+    // Size canvas to container
     const rect = container.getBoundingClientRect();
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const w = Math.round(rect.width * dpr);
@@ -131,49 +228,115 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
     const areaW = rect.width;
     const areaH = rect.height;
 
-    // Particle pool
-    const embers: Ember[] = [];
+    // Sample text pixel positions
+    const textareaEl = container.querySelector('textarea');
+    let positions: Array<{ x: number; y: number }>;
+    try {
+      positions = sampleTextPixels(text, areaW, areaH, dpr, textareaEl);
+    } catch {
+      // Fallback: instant release if sampling fails
+      setBurned(true);
+      setBurning(false);
+      announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
+      return;
+    }
+
+    // If no pixels sampled (edge case), instant release
+    if (positions.length === 0) {
+      setBurned(true);
+      setBurning(false);
+      announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
+      return;
+    }
+
+    // RTL-aware dissolution direction
+    const isRTL = document.documentElement.dir === 'rtl';
+
+    // Create particles from sampled text positions
+    const particles: DustParticle[] = positions.map(pos => {
+      const stripIndex = Math.floor((pos.x / areaW) * NUM_STRIPS);
+      const normalizedStrip = isRTL ? (NUM_STRIPS - 1 - stripIndex) : stripIndex;
+      const delay = VIBRATE_PHASE + normalizedStrip * (DISSOLVE_PHASE / NUM_STRIPS);
+      const maxLife = 600 + Math.random() * 600;
+
+      return {
+        x: pos.x,
+        y: pos.y,
+        originX: pos.x,
+        originY: pos.y,
+        vx: 0,
+        vy: 0,
+        size: 1 + Math.random() * 2,
+        alpha: 0.9,
+        color: DUST_COLORS[Math.floor(Math.random() * DUST_COLORS.length)],
+        glow: Math.random() < 0.15,
+        rotation: Math.random() * Math.PI * 2,
+        rotSpeed: (Math.random() - 0.5) * 3,
+        life: 0,
+        maxLife,
+        delay,
+        phase: Math.random() * Math.PI * 2,
+        started: false,
+      };
+    });
+
+    // Haptic at dissolution start
+    hapticTimerRef.current = setTimeout(() => { void hapticMedium(); }, VIBRATE_PHASE);
+
     let lastTime = performance.now();
     const startTime = lastTime;
-    let spawnAccum = 0; // fractional spawn accumulator
 
     function frame(now: number) {
       if (!ctx) return;
-      const dt = Math.min((now - lastTime) / 1000, 0.05); // cap at 50ms to avoid spiral
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
       const elapsed = now - startTime;
       lastTime = now;
 
       ctx.clearRect(0, 0, areaW, areaH);
 
-      // ── Spawn phase: first 800ms ──
-      if (elapsed < SPAWN_WINDOW && embers.length < MAX_PARTICLES) {
-        // ~0.5 embers per ms = ~30 per frame at 60fps
-        spawnAccum += dt * 500;
-        const toSpawn = Math.min(
-          Math.floor(spawnAccum),
-          MAX_PARTICLES - embers.length,
-        );
-        for (let i = 0; i < toSpawn; i++) {
-          embers.push(spawnEmber(areaW, areaH, now));
-        }
-        spawnAccum -= toSpawn;
-      }
-
-      // ── Update & render ──
       let alive = 0;
-      for (let i = 0; i < embers.length; i++) {
-        const p = embers[i];
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
         if (p.alpha <= 0) continue;
 
-        // Lifetime progress
+        // ── Phase 1: Vibrate in place ──
+        if (!p.started) {
+          if (elapsed < p.delay) {
+            const intensity = Math.min(1, elapsed / VIBRATE_PHASE);
+            p.x = p.originX + (Math.random() - 0.5) * 3 * intensity;
+            p.y = p.originY + (Math.random() - 0.5) * 2 * intensity;
+            alive++;
+
+            // Render as stable dot at text position
+            ctx.globalAlpha = 0.9;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            ctx.fill();
+            continue;
+          }
+
+          // ── Activate: assign scatter velocity ──
+          p.started = true;
+          p.life = 0;
+          const angle = Math.random() * Math.PI * 2;
+          const speed = 30 + Math.random() * 80;
+          // Wind bias: rightward in LTR, leftward in RTL
+          const windBias = isRTL ? -20 : 20;
+          p.vx = Math.cos(angle) * speed + windBias;
+          p.vy = Math.sin(angle) * speed + 15;
+        }
+
+        // ── Phase 2/3: Dissolving ──
         p.life += dt * 1000;
         if (p.life >= p.maxLife) { p.alpha = 0; continue; }
 
-        // Anti-gravity: gentle upward deceleration
-        p.vy -= 60 * dt;
-
         // Wind wobble
-        p.vx += Math.sin(now * 0.003 + p.phase) * 15 * dt;
+        p.vx += Math.sin(now * 0.004 + p.phase) * 12 * dt;
+
+        // Gentle gravity
+        p.vy += 30 * dt;
 
         // Move
         p.x += p.vx * dt;
@@ -182,26 +345,27 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
         // Rotation
         p.rotation += p.rotSpeed * dt;
 
-        // Alpha fade based on individual lifetime
-        p.alpha = Math.max(0, 1 - (p.life / p.maxLife));
+        // Alpha: quadratic ease-out fade
+        const lifeT = p.life / p.maxLife;
+        p.alpha = Math.max(0, 1 - lifeT * lifeT);
 
-        // Very subtle shrink
-        p.size *= (1 - 0.002 * (dt * 60));
+        // Size: slow shrink
+        p.size *= (1 - 0.003 * (dt * 60));
 
-        if (p.alpha <= 0.01 || p.size < 0.3) { p.alpha = 0; continue; }
+        if (p.alpha <= 0.01 || p.size < 0.2) { p.alpha = 0; continue; }
 
         alive++;
 
         // ── Render glow halo ──
         if (p.glow) {
-          ctx.globalAlpha = p.alpha * 0.25;
+          ctx.globalAlpha = p.alpha * 0.2;
           ctx.fillStyle = p.color;
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
           ctx.fill();
         }
 
-        // ── Render core ember ──
+        // ── Render core particle ──
         ctx.globalAlpha = p.alpha;
         ctx.fillStyle = p.color;
         ctx.beginPath();
@@ -215,13 +379,17 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
       if (elapsed > TOTAL_DURATION && alive === 0) {
         setBurning(false);
         setBurned(true);
+        void hapticSuccess();
+        announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
         return;
       }
 
-      // Hard timeout safety (3s max)
-      if (elapsed > 3000) {
+      // Hard timeout safety
+      if (elapsed > HARD_TIMEOUT) {
         setBurning(false);
         setBurned(true);
+        void hapticSuccess();
+        announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
         return;
       }
 
@@ -229,7 +397,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
     }
 
     rafRef.current = requestAnimationFrame(frame);
-  }, [text, burning]);
+  }, [text, burning, ts.journalBurnReleasedMessage]);
 
   // ── Telegram-style collapse: burned → brief pause → collapse → close ──
   useEffect(() => {
@@ -241,11 +409,12 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
     return () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); };
   }, [burned, collapsing]);
 
-  // ── Cleanup rAF ──
+  // ── Cleanup rAF + timers ──
   useEffect(() => {
     return () => {
       cancelAnimationFrame(rafRef.current);
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      if (hapticTimerRef.current) clearTimeout(hapticTimerRef.current);
     };
   }, []);
 
@@ -334,11 +503,11 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
             {ts.journalBurnReleasedMessage || 'Your thought has been released.'}
           </motion.p>
         ) : (
-          <div ref={containerRef} className="relative">
-            {/* Content — opacity fade during burning (text dissolves while embers rise) */}
+          <div ref={containerRef} className="relative overflow-hidden">
+            {/* Content — fast opacity swap to particles during burning */}
             <motion.div
               animate={{ opacity: burning ? 0 : 1 }}
-              transition={{ duration: TEXT_FADE_MS / 1000, ease: 'easeOut' }}
+              transition={{ duration: TEXT_FADE_MS / 1000, ease: 'linear' }}
             >
               <textarea
                 value={text}
@@ -362,15 +531,19 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
               )}
             </motion.div>
 
-            {/* Ember canvas — overlays content, pointer-events: none */}
-            {burning && (
-              <canvas
-                ref={canvasRef}
-                className="absolute inset-0 w-full h-full rounded-xl gpu-layer"
-                style={{ zIndex: 2, pointerEvents: 'none' }}
-                aria-hidden="true"
-              />
-            )}
+            {/* Dust canvas — ALWAYS in DOM so ref is available synchronously.
+                React 18 batches setState, so {burning && <canvas>} would make
+                canvasRef.current null when startBurn() accesses it. */}
+            <canvas
+              ref={canvasRef}
+              className="absolute inset-0 w-full h-full rounded-xl gpu-layer"
+              style={{
+                zIndex: 2,
+                pointerEvents: 'none',
+                opacity: burning ? 1 : 0,
+              }}
+              aria-hidden="true"
+            />
           </div>
         )}
       </div>
