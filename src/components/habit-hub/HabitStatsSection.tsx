@@ -71,7 +71,7 @@ export function HabitStatsSection({ currentStreak, allStreaks, completedDates }:
         <div
           key={cell.label}
           className={cn(
-            'flex items-center gap-3 px-3 py-2.5 rounded-xl',
+            'flex items-center gap-3 px-3 py-3 rounded-xl',
             'bg-white/[0.03] border border-white/[0.06]',
           )}
         >

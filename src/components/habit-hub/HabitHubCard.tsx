@@ -70,11 +70,11 @@ export const HabitHubCard = memo(function HabitHubCard({
   const target = isNumeric ? (habit.targetValue || 1) : 1;
   const progress = isNumeric && target > 0 ? Math.min(currentValue / target, 1) : 0;
 
-  // Weekly progress for non-daily boolean habits (e.g. "2/3")
+  // Weekly progress for boolean habits (daily: "4/7", non-daily: "2/3")
   const weeklyProgress = useMemo(() => {
-    const { numerator, denominator } = habit.frequency;
-    if (numerator === denominator) return null; // daily — no badge
     if (habit.habitType !== 'boolean') return null;
+    const { numerator, denominator } = habit.frequency;
+    const isDaily = numerator === denominator;
 
     // Monday of current ISO week
     const todayDate = new Date(today + 'T00:00:00');
@@ -94,7 +94,7 @@ export const HabitHubCard = memo(function HabitHubCard({
       if (val === ENTRY.YES_MANUAL || val === ENTRY.YES_AUTO) count++;
     }
 
-    return { done: count, target: numerator };
+    return { done: count, target: isDaily ? 7 : numerator };
   }, [habit, today]);
 
   // Frequency label for footer (i18n-aware)
@@ -132,7 +132,7 @@ export const HabitHubCard = memo(function HabitHubCard({
       transition={zenMotion.snappy}
     >
       {/* ═══ ROW 1: HEADER ═══ */}
-      <div className="flex items-center gap-2.5 px-3.5 pt-3 pb-1">
+      <div className="flex items-center gap-3 px-4 pt-3 pb-1">
         {/* Score ring */}
         <ScoreRing score={score} color={habitColor} size={16} />
 
@@ -155,26 +155,43 @@ export const HabitHubCard = memo(function HabitHubCard({
           {habit.name}
         </span>
 
-        {/* Score badge — pulse on change, TrendingUp icon signals "strength metric" */}
-        <motion.div
-          key={scorePercent}
-          initial={{ scale: 1.15, opacity: 0.7 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.25, ease: 'easeOut' }}
-          className={cn(
-            'px-2 py-0.5 rounded-lg border text-xs font-semibold tabular-nums flex-shrink-0 flex items-center gap-0.5',
-            getScoreBg(score),
-            getScoreColor(score),
-          )}
-        >
-          <TrendingUp className="w-2.5 h-2.5" />
-          {scorePercent}%
-        </motion.div>
+        {/* Score badge — show weekly ratio when EMA is too low to be meaningful */}
+        {scorePercent >= 5 || !weeklyProgress ? (
+          <motion.div
+            key={scorePercent}
+            initial={{ scale: 1.15, opacity: 0.7 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className={cn(
+              'px-2 py-0.5 rounded-lg border text-xs font-semibold tabular-nums flex-shrink-0 flex items-center gap-0.5',
+              getScoreBg(score),
+              getScoreColor(score),
+            )}
+          >
+            <TrendingUp className="w-2.5 h-2.5" />
+            {scorePercent}%
+          </motion.div>
+        ) : (
+          <motion.div
+            key={`wp-${weeklyProgress.done}`}
+            initial={{ scale: 1.15, opacity: 0.7 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className={cn(
+              'px-2 py-0.5 rounded-lg border text-xs font-semibold tabular-nums flex-shrink-0',
+              weeklyProgress.done >= weeklyProgress.target
+                ? 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400'
+                : 'bg-white/[0.04] border-white/[0.06] text-slate-400',
+            )}
+          >
+            {weeklyProgress.done}/{weeklyProgress.target}
+          </motion.div>
+        )}
       </div>
 
       {/* ═══ ROW 2: MINI WEEK CALENDAR ═══ */}
       <div
-        className="px-3.5 py-2"
+        className="px-4 py-2"
         onClick={(e) => e.stopPropagation()}
       >
         <MiniWeekRow
@@ -186,7 +203,7 @@ export const HabitHubCard = memo(function HabitHubCard({
       </div>
 
       {/* ═══ ROW 3: FOOTER (streak or progress bar) ═══ */}
-      <div className="px-3.5 pb-2.5">
+      <div className="px-4 pb-3">
         {isNumeric ? (
           /* Numerical: progress bar + value label */
           <div className="flex items-center gap-2">
@@ -215,7 +232,7 @@ export const HabitHubCard = memo(function HabitHubCard({
               </div>
             ) : <div />}
             <div className="flex items-center gap-2">
-              {weeklyProgress && (
+              {weeklyProgress && habit.frequency.numerator !== habit.frequency.denominator && (
                 <span className={cn(
                   'text-[10px] tabular-nums',
                   weeklyProgress.done >= weeklyProgress.target

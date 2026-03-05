@@ -202,12 +202,11 @@ export const CompactHabitCard = memo(function CompactHabitCard({
                 background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(20, 184, 166, 0.08) 50%, transparent 100%)',
               }}
             />
-            {/* Shimmer effect — CSS keyframe (QA_PROTOCOLS #5) */}
+            {/* Shimmer effect — CSS keyframe (QA_PROTOCOLS #5, motion-safe) */}
             <div
-              className="absolute inset-0"
+              className="absolute inset-0 motion-safe:animate-[habit-shimmer_2s_linear_3s_infinite]"
               style={{
                 background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%)',
-                animation: 'habit-shimmer 2s linear 3s infinite',
               }}
             />
           </motion.div>
@@ -245,13 +244,12 @@ export const CompactHabitCard = memo(function CompactHabitCard({
             whileHover={{ scale: completed ? 1.05 : 1.02 }}
             whileTap={{ scale: 0.95 }}
           >
-            {/* Inner glow for completed — CSS keyframe (QA_PROTOCOLS #5) */}
+            {/* Inner glow for completed — CSS keyframe (QA_PROTOCOLS #5, motion-safe) */}
             {completed && (
               <div
-                className="absolute inset-0 rounded-xl"
+                className="absolute inset-0 rounded-xl motion-safe:animate-[habit-glow-pulse_2s_ease-in-out_infinite]"
                 style={{
                   background: 'radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%)',
-                  animation: 'habit-glow-pulse 2s ease-in-out infinite',
                 }}
               />
             )}

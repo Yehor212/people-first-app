@@ -137,7 +137,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
           {!showCustomForm && !isEditing && (
             <>
               {/* Section header with sparkle + gradient line */}
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-3">
                 <Sparkles className="w-4 h-4 text-violet-400 flex-shrink-0" />
                 <span className="text-sm font-semibold text-slate-300">
                   {ts.quickStart || 'Quick Start'}
@@ -154,7 +154,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                       key={tmpl.id}
                       onClick={() => { if (isQuickAddProcessing.current) return; isQuickAddProcessing.current = true; handleQuickAdd(tmpl.id); }}
                       className={cn(
-                        'flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl transition-all',
+                        'flex flex-col items-center justify-center gap-3 p-4 rounded-2xl transition-all',
                         'bg-white/[0.04] border border-white/[0.08]',
                         'hover:bg-white/[0.07] hover:scale-[1.03] active:scale-95',
                         'min-h-[104px] relative overflow-hidden group',
@@ -192,7 +192,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                 <button
                   onClick={() => setShowCustomForm(true)}
                   className={cn(
-                    'flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-medium transition-all min-h-[44px]',
+                    'flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
                     'text-violet-400 hover:text-violet-300',
                     'border border-violet-500/20 bg-violet-500/[0.06]',
                     'hover:bg-violet-500/[0.10] hover:border-violet-500/30',
@@ -240,7 +240,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                   placeholder={ts.questionPromptPlaceholder || 'e.g. Did you exercise today?'}
                   aria-label={ts.questionPrompt || 'Question Prompt'}
                   className={cn(
-                    'w-full px-4 py-2.5 rounded-xl text-xs text-slate-300',
+                    'w-full px-4 py-2 rounded-xl text-xs text-slate-300',
                     'bg-white/[0.03] border border-white/[0.06] transition-colors',
                     'placeholder:text-slate-600',
                     'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
@@ -325,7 +325,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                         onClick={() => setHabitType(typ)}
                         aria-pressed={habitType === typ}
                         className={cn(
-                          'flex-1 px-3 py-2.5 rounded-xl text-xs font-medium transition-all min-h-[44px]',
+                          'flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
                           'border',
                           habitType === typ
                             ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
@@ -421,7 +421,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                       onClick={() => setFrequency(preset.ratio)}
                       aria-pressed={isPresetMatch(preset.ratio)}
                       className={cn(
-                        'px-3 py-2.5 rounded-xl text-xs font-medium transition-all min-h-[44px]',
+                        'px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
                         'border',
                         isPresetMatch(preset.ratio)
                           ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
@@ -434,7 +434,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                   <button
                     onClick={() => setFrequency({ numerator: 3, denominator: 7 })}
                     className={cn(
-                      'px-3 py-2.5 rounded-xl text-xs font-medium transition-all min-h-[44px]',
+                      'px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
                       'border',
                       isCustomFreq
                         ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'

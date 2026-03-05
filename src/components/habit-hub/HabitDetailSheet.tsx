@@ -11,6 +11,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { ProgressRing } from '@/components/ui/progress-ring';
 import { computeHabitScore, computeAllStreaks, type HabitStreak } from '@/lib/habitScore';
 import { getHabitCompletedDates } from '@/lib/habits';
+import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
 import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { hapticTap } from '@/lib/haptics';
 import { AnimatedFire } from '@/components/compact-habit-card/AnimatedFire';
@@ -78,11 +79,13 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
       const recent = allStreaks.reduce((best, s) => s.end > best.end ? s : best, allStreaks[0]);
       if (recent.end === todayStr || recent.end === yesterdayStr) streak = recent.length;
     }
+    // Use computed entries (YES_AUTO fills) so Total matches heatmap green cells
+    const computedEntries = computeEntriesWithAuto(habit);
     return {
       score: computeHabitScore(habit),
       streak,
       allStreaks,
-      completedDates: getHabitCompletedDates(habit),
+      completedDates: getHabitCompletedDates(habit, computedEntries),
     };
   }, [habit]);
   const { score, streak, allStreaks, completedDates } = derived;
