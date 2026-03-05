@@ -159,9 +159,9 @@ export const HabitHubCard = memo(function HabitHubCard({
         {scorePercent >= 5 || !weeklyProgress ? (
           <motion.div
             key={scorePercent}
-            initial={{ scale: 1.15, opacity: 0.7 }}
+            initial={{ scale: 1.2, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={zenMotion.bouncy}
             className={cn(
               'px-2 py-0.5 rounded-lg border text-xs font-semibold tabular-nums flex-shrink-0 flex items-center gap-0.5',
               getScoreBg(score),
@@ -174,9 +174,9 @@ export const HabitHubCard = memo(function HabitHubCard({
         ) : (
           <motion.div
             key={`wp-${weeklyProgress.done}`}
-            initial={{ scale: 1.15, opacity: 0.7 }}
+            initial={{ scale: 1.2, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
+            transition={zenMotion.bouncy}
             className={cn(
               'px-2 py-0.5 rounded-lg border text-xs font-semibold tabular-nums flex-shrink-0',
               weeklyProgress.done >= weeklyProgress.target

@@ -8,6 +8,7 @@ import { memo, useMemo, useCallback } from 'react';
 import { cn, getToday } from '@/lib/utils';
 import { getNumericalValue } from '@/lib/habits';
 import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
+import { hapticTap } from '@/lib/haptics';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ENTRY } from '@/types';
 import type { Habit } from '@/types';
@@ -78,6 +79,7 @@ export const MiniWeekRow = memo(function MiniWeekRow({
   }, [habit]);
 
   const handleTap = useCallback((date: string) => {
+    void hapticTap();
     if (isNumerical && onAdjust) {
       onAdjust(habit.id, date, 1);
     } else {

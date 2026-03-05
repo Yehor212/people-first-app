@@ -8,7 +8,9 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useKeyboardShift } from '@/hooks/useKeyboardShift';
+import { zenMotion } from '@/lib/animationUtils';
 import { ChevronLeft, Sparkles, Plus, Check } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
@@ -133,9 +135,17 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
             </SheetTitle>
           </div>
 
-          {/* ═══ TEMPLATES GRID ═══ */}
+          {/* ═══ TEMPLATES / CUSTOM FORM (crossfade) ═══ */}
+          <AnimatePresence mode="wait" initial={false}>
           {!showCustomForm && !isEditing && (
-            <>
+            <motion.div
+              key="templates"
+              initial={{ opacity: 0, x: (language === 'ar' || language === 'he') ? 16 : -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: (language === 'ar' || language === 'he') ? 16 : -16 }}
+              transition={zenMotion.gentle}
+              className="space-y-5"
+            >
               {/* Section header with sparkle + gradient line */}
               <div className="flex items-center gap-3">
                 <Sparkles className="w-4 h-4 text-violet-400 flex-shrink-0" />
@@ -203,12 +213,19 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                 </button>
                 <div className="flex-1 h-px bg-gradient-to-l from-transparent via-white/[0.06] to-transparent" />
               </div>
-            </>
+            </motion.div>
           )}
 
           {/* ═══ CUSTOM FORM ═══ */}
           {showCustomForm && (
-            <>
+            <motion.div
+              key="custom-form"
+              initial={{ opacity: 0, x: (language === 'ar' || language === 'he') ? -16 : 16 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: (language === 'ar' || language === 'he') ? -16 : 16 }}
+              transition={zenMotion.gentle}
+              className="space-y-5"
+            >
               {/* Name */}
               <div>
                 <input
@@ -536,8 +553,9 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                   {ts.save || 'Save'}
                 </button>
               </div>
-            </>
+            </motion.div>
           )}
+          </AnimatePresence>
         </div>
       </SheetContent>
     </Sheet>

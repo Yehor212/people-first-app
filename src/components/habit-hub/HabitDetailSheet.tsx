@@ -6,6 +6,7 @@
  */
 
 import { memo, useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Archive, ArchiveRestore, Pencil, SkipForward, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { ProgressRing } from '@/components/ui/progress-ring';
@@ -13,6 +14,7 @@ import { computeHabitScore, computeAllStreaks, type HabitStreak } from '@/lib/ha
 import { getHabitCompletedDates } from '@/lib/habits';
 import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
 import { resolveHabitColor } from '@/lib/habitColorUtils';
+import { zenMotion } from '@/lib/animationUtils';
 import { hapticTap } from '@/lib/haptics';
 import { AnimatedFire } from '@/components/compact-habit-card/AnimatedFire';
 import { HabitStatsSection } from './HabitStatsSection';
@@ -31,6 +33,16 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { ENTRY } from '@/types';
 import type { Habit } from '@/types';
+
+/** Stagger parent for sheet sections */
+const sheetStagger = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.04, delayChildren: 0.15 } },
+};
+const sectionEntrance = {
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: zenMotion.gentle },
+};
 
 interface HabitDetailSheetProps {
   habit: Habit | null;
@@ -152,12 +164,15 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
         )}
       >
         {habit && (
-          <div
+          <motion.div
             className="px-6 pt-6 space-y-6"
             style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
+            variants={sheetStagger}
+            initial="hidden"
+            animate="visible"
           >
             {/* ═══ HEADER ═══ */}
-            <div className="flex items-center gap-3">
+            <motion.div variants={sectionEntrance} className="flex items-center gap-3">
               <div
                 className="w-12 h-12 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
                 style={{ backgroundColor: `${habitColor}20`, color: habitColor }}
@@ -179,10 +194,10 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 showPercentage
                 color={scorePercent >= 60 ? 'success' : scorePercent >= 30 ? 'warning' : 'primary'}
               />
-            </div>
+            </motion.div>
 
             {/* ═══ SCORE + STREAK SUMMARY ═══ */}
-            <div className="flex items-center justify-center gap-6 py-2">
+            <motion.div variants={sectionEntrance} className="flex items-center justify-center gap-6 py-2">
               <div className="text-center">
                 <div className={cn(
                   'text-2xl font-bold tabular-nums',
@@ -201,36 +216,52 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                   <div className="text-[10px] text-slate-600 mt-0.5">{ts.currentStreak || 'Current Streak'}</div>
                 </div>
               )}
-            </div>
+            </motion.div>
 
             {/* ═══ STATISTICS ═══ */}
-            <HabitStatsSection currentStreak={streak} allStreaks={allStreaks} completedDates={completedDates} />
+            <motion.div variants={sectionEntrance}>
+              <HabitStatsSection currentStreak={streak} allStreaks={allStreaks} completedDates={completedDates} />
+            </motion.div>
 
             {/* ═══ TARGET PROGRESS (numerical only) ═══ */}
-            <HabitTargetCard habit={habit} />
+            <motion.div variants={sectionEntrance}>
+              <HabitTargetCard habit={habit} />
+            </motion.div>
 
             {/* ═══ SCORE HISTORY LINE CHART ═══ */}
-            <HabitScoreChart habit={habit} />
+            <motion.div variants={sectionEntrance}>
+              <HabitScoreChart habit={habit} />
+            </motion.div>
 
             {/* ═══ COMPLETION BAR CHART ═══ */}
-            <HabitBarCard habit={habit} />
+            <motion.div variants={sectionEntrance}>
+              <HabitBarCard habit={habit} />
+            </motion.div>
 
             {/* ═══ HEATMAP ═══ */}
-            <HabitHeatmapGrid habit={habit} />
+            <motion.div variants={sectionEntrance}>
+              <HabitHeatmapGrid habit={habit} />
+            </motion.div>
 
             {/* ═══ FREQUENCY CHART ═══ */}
-            <Suspense fallback={<div className="h-48" />}>
-              <LazyHabitFrequencyChart habit={habit} />
-            </Suspense>
+            <motion.div variants={sectionEntrance}>
+              <Suspense fallback={<div className="h-48" />}>
+                <LazyHabitFrequencyChart habit={habit} />
+              </Suspense>
+            </motion.div>
 
             {/* ═══ STREAK TIMELINE ═══ */}
-            <HabitStreakTimeline allStreaks={allStreaks} currentStreak={streak} />
+            <motion.div variants={sectionEntrance}>
+              <HabitStreakTimeline allStreaks={allStreaks} currentStreak={streak} />
+            </motion.div>
 
             {/* ═══ NOTES ═══ */}
-            <HabitNotesSection habit={habit} onUpdate={handleNoteUpdate} />
+            <motion.div variants={sectionEntrance}>
+              <HabitNotesSection habit={habit} onUpdate={handleNoteUpdate} />
+            </motion.div>
 
             {/* ═══ ACTIONS ═══ */}
-            <div className="space-y-2 pt-2 border-t border-white/[0.06]">
+            <motion.div variants={sectionEntrance} className="space-y-2 pt-2 border-t border-white/[0.06]">
               {/* Edit habit */}
               <button
                 onClick={() => { onEdit(habit); onClose(); }}
@@ -286,55 +317,74 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
               </button>
 
               {/* Delete — danger with confirmation */}
-              {!showDeleteConfirm ? (
-                <button
-                  onClick={() => setShowDeleteConfirm(true)}
-                  className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
-                    'bg-red-500/[0.05] border border-red-500/[0.1]',
-                    'hover:bg-red-500/[0.1] active:scale-[0.98]',
-                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50',
-                    'text-red-400',
-                  )}
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>{ts.deleteHabit || 'Delete Habit'}</span>
-                </button>
-              ) : (
-                <div className="space-y-2">
-                  <p className="text-xs text-red-400 text-center px-2">
-                    {ts.confirmDeleteHabit || 'Are you sure? This cannot be undone.'}
-                  </p>
-                  <div className="flex gap-2">
+              <AnimatePresence mode="wait" initial={false}>
+                {!showDeleteConfirm ? (
+                  <motion.div
+                    key="del-btn"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.15 }}
+                  >
                     <button
-                      onClick={() => setShowDeleteConfirm(false)}
+                      onClick={() => { void hapticTap(); setShowDeleteConfirm(true); }}
                       className={cn(
-                        'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
-                        'bg-white/[0.05] border border-white/[0.08] text-slate-400',
-                        'hover:bg-white/[0.08]',
-                        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
-                      )}
-                    >
-                      {ts.cancel || 'Cancel'}
-                    </button>
-                    <button
-                      onClick={handleDelete}
-                      disabled={isDeleting}
-                      className={cn(
-                        'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
-                        'bg-red-600 text-white',
-                        'hover:bg-red-500 active:scale-[0.98]',
+                        'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
+                        'bg-red-500/[0.05] border border-red-500/[0.1]',
+                        'hover:bg-red-500/[0.1] active:scale-[0.98]',
                         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50',
-                        isDeleting && 'opacity-50 cursor-not-allowed',
+                        'text-red-400',
                       )}
                     >
-                      {ts.delete || 'Delete'}
+                      <Trash2 className="w-4 h-4" />
+                      <span>{ts.deleteHabit || 'Delete Habit'}</span>
                     </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="del-confirm"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={zenMotion.snappy}
+                    className="overflow-hidden"
+                  >
+                    <div className="space-y-2">
+                      <p className="text-xs text-red-400 text-center px-2">
+                        {ts.confirmDeleteHabit || 'Are you sure? This cannot be undone.'}
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setShowDeleteConfirm(false)}
+                          className={cn(
+                            'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
+                            'bg-white/[0.05] border border-white/[0.08] text-slate-400',
+                            'hover:bg-white/[0.08]',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
+                          )}
+                        >
+                          {ts.cancel || 'Cancel'}
+                        </button>
+                        <button
+                          onClick={handleDelete}
+                          disabled={isDeleting}
+                          className={cn(
+                            'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
+                            'bg-red-600 text-white',
+                            'hover:bg-red-500 active:scale-[0.98]',
+                            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50',
+                            isDeleting && 'opacity-50 cursor-not-allowed',
+                          )}
+                        >
+                          {ts.delete || 'Delete'}
+                        </button>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          </motion.div>
         )}
       </SheetContent>
     </Sheet>
