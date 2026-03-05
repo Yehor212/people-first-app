@@ -32,7 +32,7 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
   const ts = t as unknown as Record<string, string>;
 
   const { streaks, currentLen, bestLen } = useMemo(() => {
-    const best = allStreaks.length > 0 ? allStreaks[0].length : 0;
+    const best = allStreaks.length > 0 ? Math.max(...allStreaks.map(s => s.length)) : 0;
     return { streaks: allStreaks.slice(0, 5), currentLen: currentStreak, bestLen: best };
   }, [allStreaks, currentStreak]);
 

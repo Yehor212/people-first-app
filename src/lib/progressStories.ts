@@ -6,7 +6,7 @@
  */
 
 import { MoodEntry, Habit, FocusSession, GratitudeEntry, Badge } from '@/types';
-import { getHabitCompletedDates } from '@/lib/habits';
+import { getHabitCompletedDates, isHabitCompletedOnDate } from '@/lib/habits';
 import { formatDate as toDateStr } from '@/lib/utils';
 
 // ============================================
@@ -94,7 +94,7 @@ const SLIDE_GRADIENTS: Record<StorySlideType, { gradient: string; accentColor: s
 /**
  * Get the start and end dates for the current week (Mon-Sun)
  */
-export function getCurrentWeekRange(): { start: Date; end: Date; range: string } {
+export function getCurrentWeekRange(locale: string = 'en'): { start: Date; end: Date; range: string } {
   const today = new Date();
   const dayOfWeek = today.getDay();
   const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -107,7 +107,8 @@ export function getCurrentWeekRange(): { start: Date; end: Date; range: string }
   sunday.setDate(monday.getDate() + 6);
   sunday.setHours(23, 59, 59, 999);
 
-  const formatDate = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const fmtLocale = locale === 'uk' ? 'uk-UA' : locale === 'en' ? 'en-US' : locale;
+  const formatDate = (d: Date) => d.toLocaleDateString(fmtLocale, { month: 'short', day: 'numeric' });
   const range = `${formatDate(monday)} - ${formatDate(sunday)}`;
 
   return { start: monday, end: sunday, range };
@@ -210,7 +211,8 @@ function calculateHabitStats(habits: Habit[], weekStart: Date, weekEnd: Date): H
     const freqRatio = habit.frequency.denominator > 0
       ? habit.frequency.numerator / habit.frequency.denominator
       : 1;
-    totalPossible += Math.round(daysInWeek.length * freqRatio);
+    const activeDays = daysInWeek.filter(d => d <= endStr);
+    totalPossible += Math.round(activeDays.length * freqRatio);
 
     if (weekCompletions.length > topCompletions) {
       topCompletions = weekCompletions.length;
@@ -233,8 +235,8 @@ function calculateHabitStats(habits: Habit[], weekStart: Date, weekEnd: Date): H
       const isDaily = h.frequency.numerator === h.frequency.denominator;
       return created <= day && isDaily;
     });
-    const completed = completionsByDay.get(day) || 0;
-    return activeDaily.length > 0 && completed >= activeDaily.length;
+    // Check each daily habit individually (not count-based, which mixes non-daily completions)
+    return activeDaily.length > 0 && activeDaily.every(h => isHabitCompletedOnDate(h, day));
   }).length;
 
   const completionRate = totalPossible > 0 ? (totalCompletions / totalPossible) * 100 : 0;
@@ -420,9 +422,9 @@ export function generateWeeklyStory(
 
   // 8. Summary slide
   const summaryPoints = [];
-  if (weekMoods.length > 0) summaryPoints.push(`${moodStats.average.toFixed(1)} avg mood`);
-  if (habitStats.totalCompletions > 0) summaryPoints.push(`${habitStats.totalCompletions} habits`);
-  if (focusStats.totalMinutes > 0) summaryPoints.push(`${focusStats.totalMinutes}m focus`);
+  if (weekMoods.length > 0) summaryPoints.push(`${moodStats.average.toFixed(1)} ${translations.avgMood || 'avg mood'}`);
+  if (habitStats.totalCompletions > 0) summaryPoints.push(`${habitStats.totalCompletions} ${translations.habits || 'habits'}`);
+  if (focusStats.totalMinutes > 0) summaryPoints.push(`${focusStats.totalMinutes}${translations.minFocus || 'm focus'}`);
 
   if (summaryPoints.length > 0) {
     slides.push({

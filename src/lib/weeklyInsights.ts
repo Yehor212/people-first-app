@@ -189,18 +189,22 @@ function calculateWeeklyStats(
       d => d >= startStr && d <= endStr
     );
     totalCompletions += weekCompletions.length;
-    totalPossible += daysInWeek.length;
+    const habitCreated = habit.createdAt ? formatDateStr(new Date(habit.createdAt)) : '';
+    const activeDays = habitCreated ? daysInWeek.filter(d => d >= habitCreated) : daysInWeek;
+    totalPossible += activeDays.length;
   });
 
-  // Calculate streak (consecutive days with at least one habit completed)
+  // Calculate streak (longest consecutive days with at least one habit completed)
+  let currentStreak = 0;
   for (const day of daysInWeek) {
     const hasCompletion = habits.some(h =>
       isHabitCompletedOnDate(h, day)
     );
     if (hasCompletion) {
-      streakDays++;
+      currentStreak++;
+      if (currentStreak > streakDays) streakDays = currentStreak;
     } else {
-      streakDays = 0; // Reset on gap
+      currentStreak = 0;
     }
   }
 

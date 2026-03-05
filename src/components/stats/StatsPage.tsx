@@ -76,7 +76,7 @@ export const StatsPage = memo(function StatsPage({
 
   const pageData = useStatsPageData({
     moods, habits, focusSessions, gratitudeEntries,
-    completedFocusSessions, stats, t: t as unknown as Record<string, string>,
+    completedFocusSessions, stats, t: t as unknown as Record<string, string>, language,
   });
 
   const handleStatsTabChange = useCallback((tab: 'overview' | 'trends' | 'calendar') => {
@@ -236,7 +236,7 @@ export const StatsPage = memo(function StatsPage({
           setSelectedRing(null);
           if (ring === 'mood') onQuickAction?.('logMood');
           else if (ring === 'focus') onQuickAction?.('startFocus');
-          else if (ring === 'habits') onQuickAction?.('logMood');
+          // habits ring: no quick action (user navigates to habits tab separately)
         }}
       />
     </div>

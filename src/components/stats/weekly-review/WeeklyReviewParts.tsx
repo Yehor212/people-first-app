@@ -1,15 +1,22 @@
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
 import type { Trophy } from 'lucide-react';
 
 // Sparkle particle component
 export function SparkleParticle({ delay, color }: { delay: number; color: string }) {
+  const rng = useMemo(() => ({
+    left: 10 + Math.random() * 80,
+    top: 10 + Math.random() * 80,
+    repeatDelay: Math.random() * 3,
+  }), []);
+
   return (
     <motion.div
       className="absolute"
       style={{
-        left: `${10 + Math.random() * 80}%`,
-        top: `${10 + Math.random() * 80}%`,
+        left: `${rng.left}%`,
+        top: `${rng.top}%`,
       }}
       initial={{ scale: 0, opacity: 0 }}
       animate={{
@@ -21,7 +28,7 @@ export function SparkleParticle({ delay, color }: { delay: number; color: string
         duration: 2,
         delay,
         repeat: Infinity,
-        repeatDelay: Math.random() * 3,
+        repeatDelay: rng.repeatDelay,
       }}
     >
       <Sparkles className="w-3 h-3" style={{ color }} />

@@ -1,14 +1,21 @@
+import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, Trophy } from 'lucide-react';
 
 // Sparkle particle for ambient effects
 export function SparkleParticle({ delay, color }: { delay: number; color: string }) {
+  const position = useMemo(() => ({
+    left: `${5 + Math.random() * 90}%`,
+    top: `${5 + Math.random() * 90}%`,
+    repeatDelay: Math.random() * 4,
+  }), []);
+
   return (
     <motion.div
       className="absolute"
       style={{
-        left: `${5 + Math.random() * 90}%`,
-        top: `${5 + Math.random() * 90}%`,
+        left: position.left,
+        top: position.top,
       }}
       initial={{ scale: 0, opacity: 0 }}
       animate={{
@@ -20,7 +27,7 @@ export function SparkleParticle({ delay, color }: { delay: number; color: string
         duration: 2.5,
         delay,
         repeat: Infinity,
-        repeatDelay: Math.random() * 4,
+        repeatDelay: position.repeatDelay,
       }}
     >
       <Sparkles className="w-3 h-3" style={{ color }} />

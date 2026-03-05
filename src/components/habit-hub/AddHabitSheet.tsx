@@ -71,6 +71,10 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
     handleEditHabit,
   } = useHabitForm({ onAddHabit: handleHabitCreated, onUpdateHabit: handleHabitUpdated });
 
+  // Double-tap guard for template quick-add
+  const isQuickAddProcessing = useRef(false);
+  useEffect(() => { if (!open) isQuickAddProcessing.current = false; }, [open]);
+
   // Pre-fill form when opening in edit mode
   const prevEditId = useRef<string | null>(null);
   useEffect(() => {
@@ -83,7 +87,9 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
     }
   }, [open, editingHabit, handleEditHabit]);
 
-  useBackHandler(open, () => { resetForm(); onClose(); });
+  // Android back: custom form (non-edit) → return to template picker; otherwise close
+  useBackHandler(open && showCustomForm && !isEditing, () => { setShowCustomForm(false); });
+  useBackHandler(open && (!showCustomForm || isEditing), () => { resetForm(); onClose(); });
   const keyboardOffset = useKeyboardShift(open);
 
   const handleClose = useCallback(() => {
@@ -116,6 +122,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
             {showCustomForm && !isEditing && (
               <button
                 onClick={resetForm}
+                aria-label={ts.back || 'Back'}
                 className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.06] border border-white/[0.10] min-h-[44px] min-w-[44px] hover:bg-white/[0.10] transition-colors"
               >
                 <ChevronLeft className="w-4 h-4 text-slate-300 rtl:scale-x-[-1]" />
@@ -145,7 +152,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                   return (
                     <button
                       key={tmpl.id}
-                      onClick={() => handleQuickAdd(tmpl.id)}
+                      onClick={() => { if (isQuickAddProcessing.current) return; isQuickAddProcessing.current = true; handleQuickAdd(tmpl.id); }}
                       className={cn(
                         'flex flex-col items-center justify-center gap-2.5 p-4 rounded-2xl transition-all',
                         'bg-white/[0.04] border border-white/[0.08]',
@@ -254,6 +261,8 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                     <button
                       key={ic}
                       onClick={() => setSelectedIcon(ic)}
+                      aria-label={`${ts.selectIcon || 'Icon'}: ${ic}`}
+                      aria-pressed={selectedIcon === ic}
                       className={cn(
                         'w-11 h-11 rounded-xl flex items-center justify-center text-xl transition-all',
                         'border min-h-[44px] min-w-[44px]',
@@ -273,11 +282,13 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                 <label className="text-xs font-medium text-slate-500 mb-2 block">
                   {ts.selectColor || 'Color'}
                 </label>
-                <div className="grid grid-cols-10 gap-2">
+                <div className="grid grid-cols-7 gap-2">
                   {LOOP_PALETTE_LIGHT.map((hex, idx) => (
                     <button
                       key={idx}
                       onClick={() => setSelectedColorIndex(idx)}
+                      aria-label={`${ts.selectColor || 'Color'} ${idx + 1}`}
+                      aria-pressed={selectedColorIndex === idx}
                       className={cn(
                         'w-7 h-7 rounded-full transition-all min-h-[44px] min-w-[44px] flex items-center justify-center',
                         'border',
@@ -312,6 +323,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                       <button
                         key={typ}
                         onClick={() => setHabitType(typ)}
+                        aria-pressed={habitType === typ}
                         className={cn(
                           'flex-1 px-3 py-2.5 rounded-xl text-xs font-medium transition-all min-h-[44px]',
                           'border',
@@ -368,8 +380,9 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                     <div className="flex gap-2">
                       <button
                         onClick={() => setTargetType('atLeast')}
+                        aria-pressed={targetType === 'atLeast'}
                         className={cn(
-                          'flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                          'flex-1 px-3 py-2 min-h-[44px] rounded-xl text-xs font-medium transition-all',
                           'border',
                           targetType === 'atLeast'
                             ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
@@ -380,8 +393,9 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                       </button>
                       <button
                         onClick={() => setTargetType('atMost')}
+                        aria-pressed={targetType === 'atMost'}
                         className={cn(
-                          'flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all',
+                          'flex-1 px-3 py-2 min-h-[44px] rounded-xl text-xs font-medium transition-all',
                           'border',
                           targetType === 'atMost'
                             ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
@@ -405,6 +419,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                     <button
                       key={preset.label}
                       onClick={() => setFrequency(preset.ratio)}
+                      aria-pressed={isPresetMatch(preset.ratio)}
                       className={cn(
                         'px-3 py-2.5 rounded-xl text-xs font-medium transition-all min-h-[44px]',
                         'border',
@@ -479,6 +494,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                     <button
                       key={cat.id}
                       onClick={() => setSelectedCategory(cat.id)}
+                      aria-pressed={selectedCategory === cat.id}
                       className={cn(
                         'px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
                         'border flex items-center gap-1.5',

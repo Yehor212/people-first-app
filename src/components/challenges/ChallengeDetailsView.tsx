@@ -65,7 +65,7 @@ export function ChallengeDetailsView({
   const daysLeft = getDaysRemaining(challenge);
 
   // Calculate statistics
-  const daysPassed = challenge.duration - daysLeft;
+  const daysPassed = Math.max(0, challenge.duration - daysLeft);
   const expectedProgress = challenge.duration > 0
     ? Math.round((daysPassed / challenge.duration) * 100)
     : 0;

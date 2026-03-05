@@ -459,7 +459,9 @@ function generateChallengeCode(): string {
 }
 
 function calculateEndDate(startDate: string, duration: number): string {
-  const start = new Date(startDate);
+  // Parse YYYY-MM-DD as local date (not UTC)
+  const [y, m, d] = startDate.split('-').map(Number);
+  const start = new Date(y, m - 1, d);
   start.setDate(start.getDate() + duration);
   return formatDate(start);
 }

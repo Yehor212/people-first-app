@@ -334,7 +334,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                 }
               }}
             >
-              ← {(t as unknown as Record<string, string>).habitSwipeHint || 'Swipe left for more options'}
+              <span className="inline-block rtl:rotate-180">←</span> {(t as unknown as Record<string, string>).habitSwipeHint || 'Swipe left for more options'}
             </motion.p>
           )}
         </>

@@ -77,8 +77,8 @@ export function isHabitCompletedOnDate(habit: Habit, date: string): boolean {
   // Numerical: completed if meets target
   if (val === ENTRY.UNKNOWN) return false;
   if (habit.targetType === 'atMost') {
-    if (val === ENTRY.NO) return true; // 0 = ideal outcome for "at most" habits
-    if (val <= 0) return false;
+    if (val <= 0) return false; // ENTRY.NO (0) and negatives = not completed
+    if (val === ENTRY.SKIP) return false;
     return (val / 1000) <= habit.targetValue;
   }
   if (val <= 0) return false;
@@ -101,7 +101,7 @@ export function getHabitCompletedDates(
       // Numerical: completed if meets target
       const realValue = entry.value / 1000;
       if (habit.targetType === 'atMost') {
-        if (entry.value !== ENTRY.UNKNOWN && realValue <= habit.targetValue) {
+        if (entry.value !== ENTRY.UNKNOWN && entry.value !== ENTRY.SKIP && realValue <= habit.targetValue) {
           dates.push(date);
         }
       } else {

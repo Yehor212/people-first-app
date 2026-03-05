@@ -13,6 +13,8 @@ import {
 import { safeLocalStorageGet } from '@/lib/safeJson';
 import type { Habit, MoodEntry, FocusSession, GratitudeEntry } from '@/types';
 import { getHabitCompletedDates, isHabitCompletedOnDate } from '@/lib/habits';
+import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
+import { formatDate } from '@/lib/utils';
 import { calculateStreak } from '@/lib/utils';
 
 interface UseChallengeHandlersParams {
@@ -41,7 +43,7 @@ export function useChallengeHandlers({
   const setChallengeHabit = useUIStore(s => s.setChallengeHabit);
 
   const checkForFeatureUnlocks = useCallback(() => {
-    const habitsCompleted = safeHabits.reduce((sum, h) => sum + getHabitCompletedDates(h).length, 0);
+    const habitsCompleted = safeHabits.reduce((sum, h) => sum + getHabitCompletedDates(h, computeEntriesWithAuto(h)).length, 0);
     const focusSessionsCompleted = safeFocusSessions.length;
     const moodEntriesCount = safeMoods.length;
 
@@ -62,15 +64,22 @@ export function useChallengeHandlers({
   const updateChallengeProgress = useCallback(() => {
     const totalFocusMinutes = safeFocusSessions.reduce((sum, s) => sum + (s.duration || 0), 0);
     const totalGratitude = safeGratitudeEntries.length;
-    const totalHabitsCompleted = safeHabits.reduce((sum, h) => sum + getHabitCompletedDates(h).length, 0);
+    const totalHabitsCompleted = safeHabits.reduce((sum, h) => sum + getHabitCompletedDates(h, computeEntriesWithAuto(h)).length, 0);
 
-    // Calculate perfect days (days where ALL habits were completed)
+    // Build per-habit completed date sets (using computed entries for consistency)
+    const habitCompletedSets = safeHabits.map(h => ({
+      habit: h,
+      dates: new Set(getHabitCompletedDates(h, computeEntriesWithAuto(h))),
+    }));
     const habitDates = new Set<string>();
-    safeHabits.forEach(h => getHabitCompletedDates(h).forEach(d => habitDates.add(d)));
+    habitCompletedSets.forEach(({ dates }) => dates.forEach(d => habitDates.add(d)));
+
+    // Calculate perfect days (days where ALL active habits were completed)
     let perfectDaysCount = 0;
     habitDates.forEach(date => {
-      const allCompleted = safeHabits.every(h => isHabitCompletedOnDate(h, date));
-      if (allCompleted && safeHabits.length > 0) perfectDaysCount++;
+      const activeOnDate = habitCompletedSets.filter(({ habit: h }) => formatDate(new Date(h.createdAt)) <= date);
+      const allCompleted = activeOnDate.length > 0 && activeOnDate.every(({ dates }) => dates.has(date));
+      if (allCompleted) perfectDaysCount++;
     });
 
     // Calculate zen master days (days with mood + habits + focus + gratitude)
@@ -82,8 +91,9 @@ export function useChallengeHandlers({
       const hasMood = moodDates.has(date);
       const hasFocus = focusDates.has(date);
       const hasGratitude = gratitudeDates.has(date);
-      const allHabits = safeHabits.every(h => isHabitCompletedOnDate(h, date));
-      if (hasMood && allHabits && hasFocus && hasGratitude && safeHabits.length > 0) {
+      const activeOnDate = habitCompletedSets.filter(({ habit: h }) => formatDate(new Date(h.createdAt)) <= date);
+      const allHabits = activeOnDate.length > 0 && activeOnDate.every(({ dates }) => dates.has(date));
+      if (hasMood && allHabits && hasFocus && hasGratitude) {
         zenMasterDays++;
       }
     });
@@ -91,7 +101,7 @@ export function useChallengeHandlers({
     const specialBadgeData = safeLocalStorageGet<Record<string, number>>('zenflow-special-badges', {});
 
     const perHabitStreaks = safeHabits.map(h => {
-      const dates = getHabitCompletedDates(h);
+      const dates = getHabitCompletedDates(h, computeEntriesWithAuto(h));
       return calculateStreak(dates);
     });
     const maxStreak = Math.max(currentActiveStreak || 0, ...perHabitStreaks, 0);

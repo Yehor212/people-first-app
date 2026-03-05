@@ -140,11 +140,19 @@ export function analyzeMoodHabitCorrelation(
 
   // Group moods by date
   const moodsByDate = new Map<string, number>();
+  const moodCounts = new Map<string, { sum: number; count: number }>();
   moods.forEach(entry => {
     const value = moodToValue(entry.mood);
-    const existing = moodsByDate.get(entry.date);
-    // Take average if multiple moods per day
-    moodsByDate.set(entry.date, existing ? (existing + value) / 2 : value);
+    const existing = moodCounts.get(entry.date);
+    if (existing) {
+      existing.sum += value;
+      existing.count++;
+    } else {
+      moodCounts.set(entry.date, { sum: value, count: 1 });
+    }
+  });
+  moodCounts.forEach(({ sum, count }, date) => {
+    moodsByDate.set(date, sum / count);
   });
 
   // Analyze each habit
@@ -241,7 +249,8 @@ export function analyzeFocusPatterns(
       labelStats.set(session.label, stats);
     }
 
-    // Track by hour
+    // Track by hour — skip sessions without completedAt
+    if (!session.completedAt) return;
     const hour = new Date(session.completedAt).getHours();
     const timeKey = `${hour}:00`;
     const timeStatsEntry = timeStats.get(timeKey) || { durations: [], completed: 0 };

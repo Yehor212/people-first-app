@@ -257,18 +257,18 @@ export function SelectedDayPanel({
               {/* Completed habits */}
               {selectedDayData.habits.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {selectedDayData.habits.map((habitName, idx) => {
-                    const habit = habits.find(h => h.name === habitName);
+                  {selectedDayData.habits.map((habitId, idx) => {
+                    const habit = habits.find(h => h.id === habitId);
                     return (
                       <motion.div
-                        key={habitName}
+                        key={habitId}
                         className="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/20 rounded-full"
                         initial={{ scale: 0.9, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         transition={{ delay: idx * 0.05 }}
                       >
                         <span className="text-sm">{habit?.icon || '✓'}</span>
-                        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{habitName}</span>
+                        <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">{habit?.name || habitId}</span>
                       </motion.div>
                     );
                   })}
@@ -277,7 +277,7 @@ export function SelectedDayPanel({
 
               {/* Missed habits */}
               {(() => {
-                const missedHabits = habits.filter(h => !selectedDayData.habits.includes(h.name));
+                const missedHabits = habits.filter(h => !selectedDayData.habits.includes(h.id));
                 if (missedHabits.length === 0) return null;
                 return (
                   <div className="flex flex-wrap gap-2 pt-2 border-t border-emerald-500/20">

@@ -106,7 +106,6 @@ export const CompactHabitCard = memo(function CompactHabitCard({
       exit={{ opacity: 0, y: -10 }}
       role="listitem"
       aria-label={`${habit.icon} ${habit.name}${completed ? `, ${t.completed || 'completed'}` : ''}`}
-      aria-checked={completed}
       className={cn(
         'relative overflow-hidden rounded-2xl group',
         'zen-shadow-card',
@@ -221,7 +220,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
           'relative flex items-center justify-between p-4',
           'bg-card/80 backdrop-blur-sm rounded-2xl',
           'border border-border/50 transition-all duration-300',
-          isSwiped && (onChallenge ? '-translate-x-[10.5rem]' : '-translate-x-28'),
+          isSwiped && (onChallenge ? 'ltr:-translate-x-[10.5rem] rtl:translate-x-[10.5rem]' : 'ltr:-translate-x-28 rtl:translate-x-28'),
           completed && 'bg-[hsl(var(--mood-good))]/5 border-[hsl(var(--mood-good))]/20'
         )}
       >

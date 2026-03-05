@@ -5,7 +5,7 @@
  * Cell states: YES_MANUAL (habit color), YES_AUTO (dimmed), SKIP (stripe), NO/UNKNOWN (dim).
  */
 
-import { memo, useMemo, useState, useCallback } from 'react';
+import { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -118,22 +118,33 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
     }
   }, [ts.skipped, ts.auto]);
 
+  const tooltipTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => { clearTimeout(tooltipTimeoutRef.current); }, []);
+
   const handleCellTap = useCallback((cell: DayCell, e: React.MouseEvent | React.TouchEvent) => {
     if (cell.status === 'before' || cell.status === 'future') return;
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     const adjustedY = Math.max(40, rect.top - 32);
-    const adjustedX = Math.min(rect.left, window.innerWidth - 140);
+    const adjustedX = Math.max(8, Math.min(rect.left, window.innerWidth - 148));
     setTooltip({ date: formatShortDate(cell.date, language), status: getStatusLabel(cell.status), x: adjustedX, y: adjustedY });
-    setTimeout(() => setTooltip(null), 2000);
+    clearTimeout(tooltipTimeoutRef.current);
+    tooltipTimeoutRef.current = setTimeout(() => setTooltip(null), 2000);
   }, [getStatusLabel, language]);
 
   const handleCellHover = useCallback((cell: DayCell, e: React.MouseEvent) => {
     if (cell.status === 'before' || cell.status === 'future') return;
     const rect = (e.target as HTMLElement).getBoundingClientRect();
     const adjustedY = Math.max(40, rect.top - 32);
-    const adjustedX = Math.min(rect.left, window.innerWidth - 140);
+    const adjustedX = Math.max(8, Math.min(rect.left, window.innerWidth - 148));
     setTooltip({ date: formatShortDate(cell.date, language), status: getStatusLabel(cell.status), x: adjustedX, y: adjustedY });
   }, [getStatusLabel, language]);
+
+  const handleCellKeyDown = useCallback((cell: DayCell, e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleCellTap(cell, e as unknown as React.MouseEvent);
+    }
+  }, [handleCellTap]);
 
   return (
     <div className={cn('relative', className)}>
@@ -173,7 +184,10 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
                     key={dayIdx}
                     {...(isActionable
                       ? {
+                          role: 'button' as const,
+                          'aria-label': `${cell.date}: ${cell.status}`,
                           onClick: (e: React.MouseEvent) => handleCellTap(cell, e),
+                          onKeyDown: (e: React.KeyboardEvent) => handleCellKeyDown(cell, e),
                           onMouseEnter: (e: React.MouseEvent) => handleCellHover(cell, e),
                           onMouseLeave: () => setTooltip(null),
                           tabIndex: 0,
@@ -215,7 +229,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
       {tooltip && (
         <div
           className="fixed z-[100] px-2 py-1 rounded-lg bg-slate-800 border border-white/10 text-[10px] text-slate-200 pointer-events-none shadow-lg"
-          style={{ insetInlineStart: tooltip.x, top: tooltip.y }}
+          style={{ left: tooltip.x, top: tooltip.y }}
         >
           {tooltip.date} · {tooltip.status}
         </div>

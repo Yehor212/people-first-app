@@ -5,7 +5,7 @@
  * Displays a 0-100 ZenScore combining mood, habits, focus, and streak data
  */
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -118,7 +118,7 @@ export function ZenScoreHub({
   // Calculate ZenScore
   const zenScore = useMemo(() => {
     // Normalize mood to 0-100
-    const normalizedMood = ((moodScore - 1) / 4) * 100;
+    const normalizedMood = moodScore > 0 ? ((moodScore - 1) / 4) * 100 : 0;
 
     // Calculate streak bonus (max 15 points for 7+ day streak)
     const streakBonus = Math.min(streakDays / 7, 1) * 15;
@@ -133,6 +133,15 @@ export function ZenScoreHub({
 
     return Math.round(Math.max(0, Math.min(100, score)));
   }, [moodScore, habitRate, focusScore, streakDays]);
+
+  // Reset animation when score changes
+  const prevScoreRef = useRef(zenScore);
+  useEffect(() => {
+    if (prevScoreRef.current !== zenScore) {
+      prevScoreRef.current = zenScore;
+      setHasAnimated(false);
+    }
+  }, [zenScore]);
 
   // Animate score count-up
   useEffect(() => {

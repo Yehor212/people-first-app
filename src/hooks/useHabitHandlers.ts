@@ -132,6 +132,14 @@ export function useHabitHandlers({
     // Side effects OUTSIDE updater (safe from React 18 double-invoke)
     if (nextValue === ENTRY.YES_MANUAL && habit) {
       fireCompletionEffects(habit);
+
+      // Quest progress — only on actual completion, not un-completion
+      const completedQuests = updateAllQuestsProgress({ type: 'habit_completed', value: 1 });
+      completedQuests.forEach(quest => {
+        const xpReward = quest.reward.xp;
+        earnTreats('habit', xpReward, `${ts.questPrefix || 'Quest'}: ${quest.title}`);
+        triggerXpPopup(xpReward, 'bonus');
+      });
     } else {
       void haptics.habitToggled();
     }
@@ -139,13 +147,6 @@ export function useHabitHandlers({
     triggerSync();
     updateChallengeProgress();
     checkForFeatureUnlocks();
-
-    const completedQuests = updateAllQuestsProgress({ type: 'habit_completed', value: 1 });
-    completedQuests.forEach(quest => {
-      const xpReward = quest.reward.xp;
-      earnTreats('habit', xpReward, `${ts.questPrefix || 'Quest'}: ${quest.title}`);
-      triggerXpPopup(xpReward, 'bonus');
-    });
   }, [habits, setHabits, fireCompletionEffects, earnTreats, updateChallengeProgress, checkForFeatureUnlocks, ts]);
 
   /**
@@ -172,9 +173,9 @@ export function useHabitHandlers({
     // Fire completion effects OUTSIDE updater if newly meeting target
     if (habit && habit.targetValue > 0) {
       const isAtMost = habit.targetType === 'atMost';
-      const prevMet = prevValue > 0 && (isAtMost
+      const prevMet = isAtMost
         ? (prevValue / 1000) <= habit.targetValue
-        : (prevValue / 1000) >= habit.targetValue);
+        : (prevValue > 0 && (prevValue / 1000) >= habit.targetValue);
       const nowMet = isAtMost
         ? realValue <= habit.targetValue
         : realValue >= habit.targetValue;
@@ -227,7 +228,7 @@ export function useHabitHandlers({
     // Fire completion effects OUTSIDE updater if newly meeting target
     if (habit && habit.targetValue > 0) {
       const isAtMost = habit.targetType === 'atMost';
-      const prevMet = currentReal > 0 && (isAtMost ? currentReal <= habit.targetValue : currentReal >= habit.targetValue);
+      const prevMet = isAtMost ? currentReal <= habit.targetValue : (currentReal > 0 && currentReal >= habit.targetValue);
       const nowMet = isAtMost ? newReal <= habit.targetValue : newReal >= habit.targetValue;
       if (nowMet && !prevMet) {
         fireCompletionEffects(habit);

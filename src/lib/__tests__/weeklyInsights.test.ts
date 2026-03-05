@@ -40,7 +40,7 @@ const makeHabit = (
   icon,
   color: 8,
   entries: datesToEntries(completedDates),
-  createdAt: Date.now(),
+  createdAt: new Date('2020-01-01').getTime(),
 });
 
 const makeFocusSession = (date: string, duration: number, status: 'completed' | 'aborted' = 'completed'): FocusSession => ({

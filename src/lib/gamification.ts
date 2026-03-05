@@ -3,7 +3,7 @@
  * Achievements, Badges, Levels, Rewards
  */
 
-import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
+import { MoodEntry, Habit, FocusSession, GratitudeEntry, ENTRY } from '@/types';
 import { calculateStreak } from './utils';
 
 // ============================================
@@ -357,7 +357,18 @@ export function checkAchievements(
   }
 
   // Habit completions
-  const totalHabitCompletions = stats.habits.reduce((sum, h) => sum + Object.values(h.entries || {}).filter(e => e.value === 2).length, 0);
+  const totalHabitCompletions = stats.habits.reduce((sum, h) => {
+    if (h.habitType === 'numerical') {
+      // Numerical: count entries that meet or exceed target
+      return sum + Object.values(h.entries || {}).filter(e => {
+        if (e.value <= 0 || e.value === ENTRY.SKIP) return false;
+        const real = e.value / 1000;
+        return h.targetType === 'atMost' ? real <= h.targetValue : real >= h.targetValue;
+      }).length;
+    }
+    // Boolean: count both manual and auto completions
+    return sum + Object.values(h.entries || {}).filter(e => e.value === ENTRY.YES_MANUAL || e.value === ENTRY.YES_AUTO).length;
+  }, 0);
   if (totalHabitCompletions >= 100 && !unlockedAchievements.includes('habit_master')) {
     newAchievements.push({ ...ACHIEVEMENTS.habit_master, unlockedAt: Date.now(), progress: totalHabitCompletions });
   } else {

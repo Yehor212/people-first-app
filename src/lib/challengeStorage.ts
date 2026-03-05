@@ -129,7 +129,9 @@ export function syncChallengeProgress(stats: UserStats, focusMinutes: number, gr
     if (newProgress !== challenge.progress) {
       const result = updateChallengeProgress(challenge.id, newProgress);
       if (result?.completed && result.reward) {
-        const badge = unlockBadge(result.reward);
+        // Badge already unlocked inside updateChallengeProgress — find it directly
+        const badges = getBadges();
+        const badge = badges.find(b => b.id === result.reward && b.unlocked);
         if (badge) {
           newlyUnlockedBadges.push(badge);
         }

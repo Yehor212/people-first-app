@@ -8,7 +8,7 @@
  * - Dismissable once completed or declined
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   Gift,
@@ -118,9 +118,11 @@ export function ComebackChallenge({
   // Check if challenge is complete
   const isComplete = progress.daysActive >= challengeConfig.daysRequired;
 
-  // Auto-complete handler
+  // Auto-complete handler (ref guard prevents multiple XP awards)
+  const completedRef = useRef(false);
   useEffect(() => {
-    if (isComplete && challengeAccepted) {
+    if (isComplete && challengeAccepted && !completedRef.current) {
+      completedRef.current = true;
       void hapticSuccess();
       announceSuccess(t.challengeCompleted || 'Challenge completed!');
       onComplete(challengeConfig.xpReward);

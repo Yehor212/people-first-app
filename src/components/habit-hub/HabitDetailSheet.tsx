@@ -282,7 +282,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 <button
                   onClick={() => setShowDeleteConfirm(true)}
                   className={cn(
-                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors',
+                    'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
                     'bg-red-500/[0.05] border border-red-500/[0.1]',
                     'hover:bg-red-500/[0.1] active:scale-[0.98]',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/50',

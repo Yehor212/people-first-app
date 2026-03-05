@@ -43,6 +43,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
+      e.stopPropagation();
       onTap();
     }
   }, [onTap]);
@@ -59,7 +60,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
       <div
         onClick={onTap}
         onKeyDown={handleKeyDown}
-        tabIndex={isToday ? 0 : -1}
+        tabIndex={0}
         role="button"
         aria-label={`${date}: ${numericDisplay || '0'}`}
         className="min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer"
@@ -87,7 +88,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
     <div
       onClick={onTap}
       onKeyDown={handleKeyDown}
-      tabIndex={isToday ? 0 : -1}
+      tabIndex={0}
       role="checkbox"
       aria-checked={isCompleted}
       aria-label={`${date}: ${isCompleted ? (ts.done || 'done') : isSkipped ? (ts.skipped || 'skipped') : isNo ? (ts.notDone || 'not done') : (ts.noData || 'no data')}`}

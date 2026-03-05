@@ -72,6 +72,7 @@ export function RemindersSection({
                   <motion.button
                     key={day}
                     type="button"
+                    aria-pressed={reminder.days.includes(day)}
                     onClick={(e) => {
                       e.preventDefault();
                       const newDays = reminder.days.includes(day)
@@ -102,7 +103,7 @@ export function RemindersSection({
                 onClick={(e) => { e.preventDefault(); handleRemoveReminder(index); }}
                 aria-label={t.removeReminder || 'Remove reminder'}
                 className={cn(
-                  "p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-lg transition-colors",
+                  "p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors",
                   isPrimaryCTA ? "text-red-400 hover:bg-red-500/20" : "text-destructive hover:bg-destructive/10"
                 )}
                 whileTap={{ scale: 0.95 }}

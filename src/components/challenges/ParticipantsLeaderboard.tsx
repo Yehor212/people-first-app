@@ -57,7 +57,8 @@ export function ParticipantsLeaderboard({
     } finally {
       setLoading(false);
     }
-  }, [challenge.code, challenge.habitName, challenge.habitIcon, challenge.duration, challenge.startDate, username, t]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [challenge.code, challenge.habitName, challenge.habitIcon, challenge.duration, challenge.startDate, username]);
 
   useEffect(() => {
     if (!cloudAvailable) {

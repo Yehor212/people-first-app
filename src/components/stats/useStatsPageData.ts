@@ -20,6 +20,7 @@ interface UseStatsPageDataProps {
   completedFocusSessions: FocusSession[];
   stats: { currentStreak: number };
   t: Record<string, string>;
+  language?: string;
 }
 
 // Legacy moodScore for backward compat with components
@@ -42,9 +43,10 @@ export function useStatsPageData({
   completedFocusSessions,
   stats,
   t,
+  language = 'en',
 }: UseStatsPageDataProps) {
   // Get emotion labels for current language
-  const emotionLabels = useMemo(() => getEmotionLabels(t.locale || 'en'), [t.locale]);
+  const emotionLabels = useMemo(() => getEmotionLabels(language), [language]);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -102,7 +104,7 @@ export function useStatsPageData({
     habits.forEach((habit) => {
       getHabitCompletedDates(habit, computeEntriesWithAuto(habit)).forEach((date) => {
         const list = map.get(date) || [];
-        list.push(habit.name);
+        list.push(habit.id);
         map.set(date, list);
       });
     });

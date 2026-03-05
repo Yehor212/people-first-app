@@ -165,11 +165,11 @@ export function HabitHubList({
         </button>
         {showSortMenu && (
           <>
-            <div className="fixed inset-0 z-[56]" onClick={() => setShowSortMenu(false)} onKeyDown={(e) => { if (e.key === 'Escape') setShowSortMenu(false); }} />
+            <div className="fixed inset-0 z-[56]" aria-hidden="true" onClick={() => setShowSortMenu(false)} />
             <div
               role="listbox"
               className={cn(
-                'absolute end-0 top-6 z-[57] min-w-[120px] rounded-xl overflow-hidden',
+                'absolute end-0 top-full z-[57] min-w-[120px] rounded-xl overflow-hidden',
                 'bg-[#141a2e] border border-white/[0.08] shadow-xl',
               )}
               onKeyDown={(e) => { if (e.key === 'Escape') setShowSortMenu(false); }}
@@ -177,6 +177,8 @@ export function HabitHubList({
               {sortOptions.map((opt) => (
                 <button
                   key={opt}
+                  role="option"
+                  aria-selected={sortOption === opt}
                   onClick={() => handleSortSelect(opt)}
                   className={cn(
                     'w-full px-3 py-2 text-xs text-start transition-colors min-h-[44px] flex items-center',

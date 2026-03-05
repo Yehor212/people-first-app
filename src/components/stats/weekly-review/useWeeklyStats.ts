@@ -80,10 +80,9 @@ export function useWeeklyStats({ habits, moods, focusSessions, currentStreak, t 
         dayMoodCount++;
       });
 
-      // Perfect day check — only consider daily habits that existed on this day
-      const dailyHabits = activeHabits.filter(h => h.frequency.numerator === h.frequency.denominator);
-      const dailyCompleted = dailyHabits.filter(h => isHabitCompletedOnDate(h, date)).length;
-      const isPerfect = dailyCompleted === dailyHabits.length && dailyHabits.length > 0 && dayFocus >= 30;
+      // Perfect day check — all active habits completed (isHabitCompletedOnDate respects frequency)
+      const allHabitsCompleted = activeHabits.length > 0 && activeHabits.every(h => isHabitCompletedOnDate(h, date));
+      const isPerfect = allHabitsCompleted && dayFocus >= 30;
       if (isPerfect) perfectDays++;
 
       // Best day calculation

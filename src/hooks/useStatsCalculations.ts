@@ -40,7 +40,7 @@ export function useStatsCalculations({
 
     if (range === 'week') {
       const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
+      weekAgo.setDate(weekAgo.getDate() - 6);
       weekAgo.setHours(0, 0, 0, 0);
       filtered = filtered.filter((m) => parseLocalDate(m.date) >= weekAgo);
     } else if (range === 'month') {
@@ -53,9 +53,22 @@ export function useStatsCalculations({
 
   // Main stats calculation
   const stats = useMemo((): Stats => {
-    const rangeDates = new Set(filteredMoods.map((entry) => entry.date));
+    // Use actual date range boundaries (not mood dates) to filter habits & focus
+    let rangeStartStr = '';
+    if (range === 'week') {
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 6);
+      weekAgo.setHours(0, 0, 0, 0);
+      rangeStartStr = formatDate(weekAgo);
+    } else if (range === 'month') {
+      rangeStartStr = getToday().slice(0, 7) + '-01';
+    }
+    const rangeEndStr = getToday();
+    const isInRange = (date: string) =>
+      range === 'all' || (date >= rangeStartStr && date <= rangeEndStr);
+
     const totalFocusMinutes = completedFocusSessions
-      .filter((session) => range === 'all' || rangeDates.has(session.date))
+      .filter((session) => isInRange(session.date))
       .reduce((acc, s) => acc + s.duration, 0);
 
     const completedMinutes = completedFocusSessions.reduce((acc, s) => acc + s.duration, 0);
@@ -63,7 +76,7 @@ export function useStatsCalculations({
 
     const totalHabitCompletions = habits.reduce((acc, habit) => {
       const count = getHabitCompletedDates(habit, computeEntriesWithAuto(habit)).filter(
-        (date) => range === 'all' || rangeDates.has(date)
+        (date) => isInRange(date)
       ).length;
       return acc + count;
     }, 0);
@@ -71,7 +84,7 @@ export function useStatsCalculations({
     // Calculate streak from ALL activities
     const allActivityDates = [
       ...moods.map((m) => m.date),
-      ...habits.flatMap((h) => getHabitCompletedDates(h)),
+      ...habits.flatMap((h) => getHabitCompletedDates(h, computeEntriesWithAuto(h))),
       ...completedFocusSessions.map((f) => f.date),
       ...gratitudeEntries.map((g) => g.date),
       ...restDays,
@@ -383,7 +396,7 @@ export function useStatsCalculations({
   const habitCompletionMap = useMemo(() => {
     const map: Record<string, string[]> = {};
     habits.forEach((habit) => {
-      getHabitCompletedDates(habit).forEach((date) => {
+      getHabitCompletedDates(habit, computeEntriesWithAuto(habit)).forEach((date) => {
         if (!map[date]) map[date] = [];
         map[date].push(habit.name);
       });

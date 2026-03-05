@@ -2,11 +2,16 @@
  * PremiumChart - Animated SVG chart with glow effects
  */
 
+import { useId } from 'react';
 import { motion } from 'framer-motion';
 import type { DayData } from './types';
 
 // Premium animated chart with glow effects
 export function PremiumChart({ data, color, glowColor, dayNames }: { data: DayData[]; color: string; glowColor: string; dayNames: string[] }) {
+  const uid = useId();
+  const gradientId = `chartGradient-${uid}`;
+  const filterId = `chartGlow-${uid}`;
+
   if (data.length < 2) return null;
 
   const values = data.map(d => d.value).map(v => (Number.isFinite(v) ? v : 0));
@@ -37,11 +42,11 @@ export function PremiumChart({ data, color, glowColor, dayNames }: { data: DayDa
   return (
     <svg width={width} height={height} className="overflow-visible">
       <defs>
-        <linearGradient id="chartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor={color} stopOpacity="0.4" />
           <stop offset="100%" stopColor={color} stopOpacity="0.02" />
         </linearGradient>
-        <filter id="chartGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
           <feMerge>
             <feMergeNode in="coloredBlur"/>
@@ -53,7 +58,7 @@ export function PremiumChart({ data, color, glowColor, dayNames }: { data: DayDa
       {/* Area fill with gradient */}
       <motion.path
         d={areaD}
-        fill="url(#chartGradient)"
+        fill={`url(#${gradientId})`}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}

@@ -90,7 +90,8 @@ export const HabitHubCard = memo(function HabitHubCard({
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
-      if (habit.entries?.[`${y}-${m}-${day}`]?.value === ENTRY.YES_MANUAL) count++;
+      const val = habit.entries?.[`${y}-${m}-${day}`]?.value;
+      if (val === ENTRY.YES_MANUAL || val === ENTRY.YES_AUTO) count++;
     }
 
     return { done: count, target: numerator };

@@ -197,7 +197,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
 
     const name = template.names[language] || template.names.en;
     const colorVal = typeof template.color === 'number' ? template.color : 0;
-    const type: LoopHabitType = (template as any).habitType || 'boolean';
+    const type: LoopHabitType = template.habitType || 'boolean';
 
     const habit: Habit = {
       id: generateId(),
@@ -211,12 +211,12 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
       question: '',
       description: '',
       isArchived: false,
-      targetValue: 0,
+      targetValue: template.dailyTarget || 0,
       targetType: 'atLeast',
       unit: '',
       entries: {},
       reminders: [],
-      category: (template as any).category || 'health',
+      category: 'health',
     };
 
     onAddHabit(habit);

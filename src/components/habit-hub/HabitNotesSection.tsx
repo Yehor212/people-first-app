@@ -6,10 +6,12 @@
  */
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
+import { ENTRY } from '@/types';
 import { MessageSquarePlus, ChevronDown } from 'lucide-react';
 import { cn, getToday } from '@/lib/utils';
 import { getEntryNote, getDatesWithNotes } from '@/lib/habits';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import type { Habit } from '@/types';
 
 interface HabitNotesSectionProps {
@@ -30,6 +32,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
 
   const todayNote = getEntryNote(habit, today) ?? '';
   const [isEditing, setIsEditing] = useState(false);
+  useBackHandler(isEditing, () => setIsEditing(false));
   const [noteText, setNoteText] = useState(todayNote);
   const [showAll, setShowAll] = useState(false);
 
@@ -58,7 +61,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
         entries[today] = rest;
       }
     } else if (trimmed) {
-      entries[today] = { value: -1, notes: trimmed };
+      entries[today] = { value: ENTRY.UNKNOWN, notes: trimmed };
     }
 
     onUpdate({ ...habit, entries });
@@ -148,7 +151,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
               className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-400 mx-auto min-h-[44px]"
             >
               <ChevronDown className="w-3 h-3" />
-              {ts.showAll || `Show all (${sortedNotes.length})`}
+              {`${ts.showAll || 'Show all'} (${sortedNotes.length})`}
             </button>
           )}
         </div>

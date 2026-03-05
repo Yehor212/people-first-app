@@ -95,11 +95,11 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
       const isToday = dateStr === todayStr;
       const isFuture = dateStr > todayStr;
 
-      // Calculate completion for this day
+      // Calculate completion for this day (store IDs to avoid duplicate-name issues)
       const completedHabits: string[] = [];
       habits.forEach(habit => {
         if (isHabitCompletedOnDate(habit, dateStr)) {
-          completedHabits.push(habit.name);
+          completedHabits.push(habit.id);
         }
       });
 
@@ -137,9 +137,10 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
   const monthStats = useMemo(() => {
     const validDays = calendarData.filter((d): d is DayData => d !== null && !d.isFuture);
     const totalCompletions = validDays.reduce((sum, d) => sum + d.completedCount, 0);
-    const perfectDays = validDays.filter(d => d.completionRate === 1 && d.totalHabits > 0).length;
-    const avgRate = validDays.length > 0
-      ? validDays.reduce((sum, d) => sum + d.completionRate, 0) / validDays.length
+    const perfectDays = validDays.filter(d => d.completionRate >= 1 && d.totalHabits > 0).length;
+    const daysWithHabits = validDays.filter(d => d.totalHabits > 0);
+    const avgRate = daysWithHabits.length > 0
+      ? daysWithHabits.reduce((sum, d) => sum + d.completionRate, 0) / daysWithHabits.length
       : 0;
 
     return { totalCompletions, perfectDays, avgRate };
@@ -269,7 +270,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
                 </span>
 
                 {/* Perfect day indicator */}
-                {dayData.completionRate === 1 && dayData.totalHabits > 0 && (
+                {dayData.completionRate >= 1 && dayData.totalHabits > 0 && (
                   <motion.div
                     className="absolute -top-0.5 -end-0.5 w-2 h-2 bg-amber-400 rounded-full"
                     initial={{ scale: 0 }}
@@ -328,9 +329,8 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
                 <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
                   <motion.div
                     className="h-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
-                    style={{ width: '100%', transformOrigin: 'left center' }}
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: selectedDay.completionRate }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(selectedDay.completionRate * 100, 100)}%` }}
                   />
                 </div>
                 <span className="text-sm font-bold text-emerald-500">
@@ -340,18 +340,19 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
 
               {selectedDay.completedHabits.length > 0 ? (
                 <div className="flex flex-wrap gap-1.5">
-                  {selectedDay.completedHabits.map((habitName) => {
-                    const habit = habits.find(h => h.name === habitName);
+                  {selectedDay.completedHabits.map((habitId) => {
+                    const habit = habits.find(h => h.id === habitId);
+                    if (!habit) return null;
                     return (
                       <motion.div
-                        key={habitName}
+                        key={habitId}
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
                         className="flex items-center gap-1 px-2 py-1 bg-emerald-500/10 rounded-full"
                       >
-                        <span className="text-xs">{habit?.icon || '✓'}</span>
+                        <span className="text-xs">{habit.icon || '✓'}</span>
                         <span className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
-                          {habitName}
+                          {habit.name}
                         </span>
                       </motion.div>
                     );
@@ -374,7 +375,7 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
                       .filter(h => {
                         // Only show habits that existed on the selected day
                         const createdStr = formatDate(new Date(h.createdAt));
-                        return createdStr <= selectedDay.date && !selectedDay.completedHabits.includes(h.name);
+                        return createdStr <= selectedDay.date && !selectedDay.completedHabits.includes(h.id);
                       })
                       .map((habit) => (
                         <div
