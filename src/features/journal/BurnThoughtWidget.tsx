@@ -53,13 +53,11 @@ interface DustParticle {
   started: boolean;
 }
 
-// Dust/ash palette — matches text-red-300 and warm ash tones
+// Dust/ash palette — restrained: red accent + neutral ash
 const DUST_COLORS = [
-  '#fca5a5',  // red-300 (text color)
+  '#fca5a5',  // red-300 (base)
   '#f87171',  // red-400
   '#fb923c',  // orange-400
-  '#fdba74',  // orange-300
-  '#fde68a',  // amber-200 (bright dust)
   '#d4d4d8',  // zinc-300 (ash)
   '#a1a1aa',  // zinc-400 (dark ash)
 ];
@@ -69,7 +67,7 @@ const DUST_COLORS = [
 const TOTAL_DURATION  = 2000;   // ms total animation
 const VIBRATE_PHASE   = 200;    // ms — particles vibrate in place
 const DISSOLVE_PHASE  = 1200;   // ms — progressive strip dissolution
-const TEXT_FADE_MS    = 100;    // ms — fast text→particle swap
+const TEXT_FADE_MS    = 180;    // ms — smooth text→particle swap
 const MAX_PARTICLES   = 600;    // particle budget
 const NUM_STRIPS      = 8;      // vertical dissolution strips
 const SAMPLE_STEP     = 3;      // sample every 3rd pixel
@@ -350,13 +348,16 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
 
         alive++;
 
-        // ── Render glow halo ──
+        // ── Render glow halo (real blur via shadowBlur) ──
         if (p.glow) {
-          ctx.globalAlpha = p.alpha * 0.2;
+          ctx.globalAlpha = p.alpha * 0.25;
+          ctx.shadowBlur = p.size * 3;
+          ctx.shadowColor = p.color;
           ctx.fillStyle = p.color;
           ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size * 2.5, 0, Math.PI * 2);
+          ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
           ctx.fill();
+          ctx.shadowBlur = 0;
         }
 
         // ── Render core particle ──
@@ -427,17 +428,12 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
       };
     }
     if (burned) {
-      return { opacity: 1, y: 0, scale: 1, borderColor: 'rgba(156,163,175,0.2)' };
+      return { opacity: 1, y: 0, scale: 1 };
     }
     if (burning) {
-      return {
-        opacity: 1,
-        y: 0,
-        scale: 1,
-        borderColor: ['rgba(239,68,68,0.5)', 'rgba(249,115,22,0.5)', 'rgba(156,163,175,0.3)'],
-      };
+      return { opacity: 1, y: 0, scale: 1 };
     }
-    return { opacity: 1, y: 0, scale: 1, borderColor: 'rgba(239,68,68,0.5)' };
+    return { opacity: 1, y: 0, scale: 1 };
   };
 
   const getTransition = () => {
@@ -455,8 +451,8 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
 
   return (
     <motion.div
-      className="my-8 p-6 border border-dashed rounded-2xl bg-red-500/5 relative overflow-hidden"
-      style={{ borderColor: 'rgba(239, 68, 68, 0.5)' }}
+      className="my-8 p-6 rounded-2xl relative overflow-hidden bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-soft"
+      style={{ boxShadow: 'inset 0 0 60px rgba(239, 68, 68, 0.04), var(--zen-shadow-soft)' }}
       initial={{ opacity: 0, y: -16, scale: 0.97 }}
       animate={getAnimateProps()}
       exit={{ opacity: 0, height: 0, scaleY: 0.92, y: -8, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
@@ -466,8 +462,8 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-2.5">
-        <div className="flex items-center gap-2 text-red-400">
+      <div className="flex items-center justify-between px-4 py-2">
+        <div className={`flex items-center gap-2 ${burned ? 'text-muted-foreground/70' : 'text-red-400'}`}>
           <Flame className="w-4 h-4" />
           <span className="text-sm font-medium">
             {burned ? (ts.journalBurnReleased || 'Released') : (ts.journalBurnTitle || 'Burn a thought')}
@@ -489,7 +485,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
       <div className="relative px-4 pb-4">
         {burned ? (
           <motion.p
-            className="text-sm py-4 text-center text-red-300/60"
+            className="text-sm py-4 text-center text-muted-foreground/60"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={collapsing ? { opacity: 0, y: -12 } : { opacity: 1, scale: 1 }}
             transition={collapsing ? { duration: 0.25 } : zenMotion.gentle}
@@ -501,13 +497,13 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
             {/* Content — fast opacity swap to particles during burning */}
             <motion.div
               animate={{ opacity: burning ? 0 : 1 }}
-              transition={{ duration: TEXT_FADE_MS / 1000, ease: 'linear' }}
+              transition={{ duration: TEXT_FADE_MS / 1000, ease: 'easeOut' }}
             >
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={ts.journalBurnPlaceholder || 'Write what worries you...'}
-                className="w-full rounded-xl px-3.5 py-2.5 text-sm outline-none resize-none bg-transparent text-red-300 border border-red-500/30 placeholder:text-red-400/40"
+                className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] text-foreground/90 ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/40 transition-shadow"
                 style={{ minHeight: 64 }}
                 rows={2}
                 disabled={burning}
@@ -517,7 +513,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
                   whileTap={{ scale: 0.95 }}
                   onClick={startBurn}
                   disabled={!text.trim()}
-                  className={`mt-2.5 w-full py-2.5 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2 min-h-[44px] ${text.trim() ? 'bg-red-500/20 text-red-300 border border-red-500/40' : 'bg-white/5 text-slate-500 border border-white/10'}`}
+                  className={`mt-3 w-full py-3 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2 min-h-[44px] ${text.trim() ? 'bg-red-500/15 text-red-300 ring-1 ring-red-500/20 hover:bg-red-500/20' : 'bg-white/[0.03] text-muted-foreground/50 ring-1 ring-white/[0.06]'}`}
                 >
                   <Flame className="w-4 h-4" />
                   {ts.journalBurnAction || 'Burn it'}
