@@ -12,7 +12,7 @@ import {
 } from '@/lib/onboardingFlow';
 import { safeLocalStorageGet } from '@/lib/safeJson';
 import type { Habit, MoodEntry, FocusSession, GratitudeEntry } from '@/types';
-import { getHabitCompletedDates, isHabitCompletedOnDate } from '@/lib/habits';
+import { getHabitCompletedDates } from '@/lib/habits';
 import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
 import { formatDate } from '@/lib/utils';
 import { calculateStreak } from '@/lib/utils';

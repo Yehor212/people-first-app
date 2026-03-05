@@ -84,7 +84,7 @@ export function migrateHabitV1toV2(old: HabitV1, index: number): Habit {
   // If already migrated (has entries + numeric color), strip leftover v1 fields and return.
   // Without stripping, needsMigration() keeps detecting old fields → infinite hydration loop.
   if (old.entries && typeof old.color === 'number') {
-    const { completedDates, skippedDates, progressByDate, completionsByDate, notesByDate, type, ...clean } = old as any;
+    const { completedDates: _cd, skippedDates: _sd, progressByDate: _pbd, completionsByDate: _cbd, notesByDate: _nbd, type: _t, ...clean } = old as any;
     return clean as unknown as Habit;
   }
 
