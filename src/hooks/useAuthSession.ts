@@ -123,15 +123,32 @@ export function useAuthSession(isLoading: boolean): void {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (settled) return;
 
-      if (event === 'SIGNED_IN' && session) {
+      if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session) {
         settled = true;
-        logger.log('[Index] Web OAuth code exchange succeeded');
+        logger.log('[Index] Web OAuth code exchange succeeded (event:', event, ')');
         window.history.replaceState({}, '', window.location.pathname);
         setIsProcessingWebOAuth(false);
       }
     });
 
-    // Timeout: if no SIGNED_IN event after 30 seconds, exchange likely failed
+    // Fallback: if no auth event fires within 5s, proactively check session
+    const fallbackCheck = setTimeout(async () => {
+      if (settled) return;
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (settled) return;
+        if (data.session) {
+          settled = true;
+          logger.log('[Index] Web OAuth: fallback session check found valid session');
+          window.history.replaceState({}, '', window.location.pathname);
+          setIsProcessingWebOAuth(false);
+        }
+      } catch (e) {
+        logger.warn('[Index] Web OAuth fallback check failed:', e);
+      }
+    }, 5000);
+
+    // Timeout: if no session after 30 seconds, exchange likely failed
     const timeout = setTimeout(() => {
       if (settled) return;
       settled = true;
@@ -144,6 +161,7 @@ export function useAuthSession(isLoading: boolean): void {
     return () => {
       settled = true;
       subscription.unsubscribe();
+      clearTimeout(fallbackCheck);
       clearTimeout(timeout);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: check OAuth redirect once
