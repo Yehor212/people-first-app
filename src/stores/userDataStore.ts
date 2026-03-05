@@ -163,7 +163,7 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
       console.info(`[habitMigration] Migrated ${habits.length} habits successfully.`);
     }
 
-    set({
+    const payload = {
       ...data,
       ...(data.moods !== undefined && { moods: Array.isArray(data.moods) ? data.moods : [] }),
       ...(habits !== undefined && { habits }),
@@ -172,6 +172,16 @@ export const useUserDataStore = create<UserDataState & UserDataActions>((set, ge
       ...(data.scheduleEvents !== undefined && { scheduleEvents: Array.isArray(data.scheduleEvents) ? data.scheduleEvents : [] }),
       ...(data.microReflections !== undefined && { microReflections: Array.isArray(data.microReflections) ? data.microReflections : [] }),
       ...(data.canvasGoals !== undefined && { canvasGoals: Array.isArray(data.canvasGoals) ? data.canvasGoals : [] }),
-    });
+    };
+
+    // Belt-and-suspenders: skip set() if all values are referentially identical
+    // to current store state. Prevents infinite loop even if re-entry guard fails.
+    const current = get();
+    const changed = Object.keys(payload).some(
+      (k) => (current as unknown as Record<string, unknown>)[k] !== (payload as unknown as Record<string, unknown>)[k]
+    );
+    if (!changed) return;
+
+    set(payload);
   },
 }));

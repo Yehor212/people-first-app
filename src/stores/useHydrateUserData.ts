@@ -195,7 +195,15 @@ export function useHydrateUserData(): void {
     isLoadingPrivacy || isLoadingNotificationPermission || isLoadingGoogleAuth ||
     isLoadingSchedule || isLoadingMicroReflections || isLoadingCanvasGoals;
 
+  // Guard: prevent re-entry during the same synchronous render cycle.
+  // _hydrateFromDB → set() → Zustand notify → re-render → useLayoutEffect fires again.
+  // Without this, migration's dbSetter creates new array refs → infinite loop → React #185.
+  const isHydratingRef = useRef(false);
+
   useLayoutEffect(() => {
+    if (isHydratingRef.current) return;
+    isHydratingRef.current = true;
+
     useUserDataStore.getState()._hydrateFromDB({
       moods, habits, focusSessions, gratitudeEntries,
       reminders, privacy, scheduleEvents, microReflections,
@@ -205,6 +213,9 @@ export function useHydrateUserData(): void {
       notificationPermissionChecked, googleAuthChecked,
       isLoading,
     });
+
+    // Release after microtask — allows next legitimate data change to hydrate
+    queueMicrotask(() => { isHydratingRef.current = false; });
   }, [
     moods, habits, focusSessions, gratitudeEntries,
     reminders, privacy, scheduleEvents, microReflections,
