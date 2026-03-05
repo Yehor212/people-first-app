@@ -82,7 +82,7 @@ function spawnEmber(areaW: number, areaH: number, now: number): Ember {
 
 export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
   const { t } = useLanguage();
-  const ts = t as unknown as Record<string, string>;
+  const ts = (t as unknown as Record<string, string>) ?? {};
   const [text, setText] = useState('');
   const [burned, setBurned] = useState(false);
   const [burning, setBurning] = useState(false);

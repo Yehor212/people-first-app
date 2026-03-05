@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Share2, Copy, Check, Trophy, Clock, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/logger';
 import { Button } from '@/components/ui/button';
 import { hapticSuccess, hapticTap, hapticWarning } from '@/lib/haptics';
 import { useThrottledCallback } from '@/hooks/useThrottledCallback';
@@ -54,9 +55,13 @@ export function ChallengeDetailsView({
   const throttledShare = useThrottledCallback(async () => {
     void hapticTap();
     setIsSharing(true);
-    const success = await shareChallenge(challenge, t as unknown as Record<string, string>);
-    if (success) {
-      void hapticSuccess();
+    try {
+      const success = await shareChallenge(challenge, t as unknown as Record<string, string>);
+      if (success) {
+        void hapticSuccess();
+      }
+    } catch (err) {
+      logger.warn('[Challenge] Share failed:', err);
     }
     setIsSharing(false);
   }, 1000);

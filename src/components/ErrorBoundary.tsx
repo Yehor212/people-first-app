@@ -160,6 +160,16 @@ export const ErrorBoundary: React.FC<{ children: React.ReactNode }> = ({ childre
  * Shows a contained error state instead of crashing the entire app.
  * Use this to wrap any Suspense boundaries or modal content.
  */
+function isChunkLoadError(error: Error | null): boolean {
+  if (!error?.message) return false;
+  return (
+    error.message.includes('Failed to fetch dynamically imported module') ||
+    error.message.includes('Importing a module script failed') ||
+    error.message.includes('Loading chunk') ||
+    error.message.includes('Loading CSS chunk')
+  );
+}
+
 interface ModalErrorBoundaryProps {
   children: React.ReactNode;
   onClose?: () => void;
@@ -209,6 +219,19 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
       context: 'ModalErrorBoundary'
     });
 
+    // Auto-reload on chunk load errors (stale assets after deployment)
+    if (isChunkLoadError(error)) {
+      const reloadKey = 'zenflow_chunk_reload_boundary';
+      const lastReload = sessionStorage.getItem(reloadKey);
+      if (!lastReload || Date.now() - parseInt(lastReload) > 60000) {
+        sessionStorage.setItem(reloadKey, Date.now().toString());
+        logger.log('[ModalErrorBoundary] Chunk error detected, auto-reloading...');
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {});
+        window.location.reload();
+        return;
+      }
+    }
+
     // Announce error to screen readers
     const title = this.props.fallbackTitle || "Something went wrong";
     announceError(title);
@@ -231,13 +254,7 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
   handleRetry = () => {
     const error = this.state.error;
 
-    // Check if this was a chunk loading error (stale assets after deployment)
-    const isChunkError = error?.message &&
-      (error.message.includes('Failed to fetch dynamically imported module') ||
-       error.message.includes('Loading chunk') ||
-       error.message.includes('Loading CSS chunk'));
-
-    if (isChunkError) {
+    if (isChunkLoadError(error)) {
       // Force reload to get fresh assets
       logger.log('[ErrorBoundary] Chunk error detected, reloading page...');
       window.location.reload();

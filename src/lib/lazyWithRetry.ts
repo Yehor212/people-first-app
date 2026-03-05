@@ -34,6 +34,7 @@ export function lazyWithRetry<T extends ComponentType<any>>(
         const isChunkError =
           error instanceof TypeError &&
           (error.message.includes('Failed to fetch dynamically imported module') ||
+           error.message.includes('Importing a module script failed') ||
            error.message.includes('Loading chunk') ||
            error.message.includes('Loading CSS chunk'));
 
