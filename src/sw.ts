@@ -159,7 +159,16 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', (event) => {
   logger.log('[SW] Activating...');
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    self.clients.claim().then(() => {
+      // Notify all tabs that a new SW has activated — they should version-check
+      return self.clients.matchAll().then((clients) => {
+        clients.forEach((client) => {
+          client.postMessage({ type: 'SW_UPDATED' });
+        });
+      });
+    })
+  );
 });
 
 logger.log('[SW] Service Worker loaded');

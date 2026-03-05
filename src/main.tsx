@@ -42,6 +42,22 @@ setupChunkErrorHandler();
 // Initialize accessibility features (aria-live regions for screen readers)
 initA11y();
 
+// Listen for SW activation — new SW means new deploy, check version immediately
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.addEventListener('message', (event) => {
+    if (event.data?.type === 'SW_UPDATED') {
+      logger.log('[Main] New SW activated, checking version...');
+      checkAppVersion().then((isUpToDate) => {
+        markVersionChecked();
+        if (!isUpToDate) {
+          logger.log('[Main] Version mismatch after SW update, reloading...');
+          void forceHardReload();
+        }
+      }).catch((err) => { logger.warn('[Main] SW update version check failed:', err); });
+    }
+  });
+}
+
 // Global error handlers for unhandled exceptions and promise rejections
 // These catch errors that escape React's error boundary
 window.addEventListener('unhandledrejection', (event) => {
@@ -136,6 +152,20 @@ async function handleAppResume(): Promise<void> {
   isHandlingResume = true;
 
   await resumeAllAudio();
+
+  // Proactive version check on tab resume — prevents stale chunk errors
+  // When user returns to a tab left open across deploys, old JS in memory
+  // tries to lazy-load chunks with old hashes (404). Check BEFORE that happens.
+  // Skip on native (Capacitor) — assets are bundled locally, no stale chunks
+  if (!isNative && navigator.onLine && shouldAutoCheckVersion()) {
+    const isUpToDate = await checkAppVersion();
+    markVersionChecked();
+    if (!isUpToDate) {
+      logger.log('[Main] Stale version on resume, reloading...');
+      await forceHardReload();
+      return; // Page will reload
+    }
+  }
 
   // Trigger sync if online and there are pending actions
   if (navigator.onLine && offlineQueue.hasPendingActions()) {
