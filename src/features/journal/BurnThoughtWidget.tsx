@@ -167,7 +167,7 @@ function sampleTextPixels(
 // ── Component ───────────────────────────────────────────────────
 
 export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
-  const { t } = useLanguage();
+  const { t, isRTL } = useLanguage();
   const ts = (t as unknown as Record<string, string>) ?? {};
   const [text, setText] = useState('');
   const [burned, setBurned] = useState(false);
@@ -234,23 +234,17 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
     try {
       positions = sampleTextPixels(text, areaW, areaH, dpr, textareaEl);
     } catch {
-      // Fallback: instant release if sampling fails
-      setBurned(true);
-      setBurning(false);
-      announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
+      instantRelease();
       return;
     }
 
     // If no pixels sampled (edge case), instant release
     if (positions.length === 0) {
-      setBurned(true);
-      setBurning(false);
-      announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
+      instantRelease();
       return;
     }
 
-    // RTL-aware dissolution direction
-    const isRTL = document.documentElement.dir === 'rtl';
+    // RTL-aware dissolution direction (isRTL from useLanguage context)
 
     // Create particles from sampled text positions
     const particles: DustParticle[] = positions.map(pos => {
@@ -397,7 +391,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
     }
 
     rafRef.current = requestAnimationFrame(frame);
-  }, [text, burning, ts.journalBurnReleasedMessage]);
+  }, [text, burning, ts.journalBurnReleasedMessage, isRTL]);
 
   // ── Telegram-style collapse: burned → brief pause → collapse → close ──
   useEffect(() => {
