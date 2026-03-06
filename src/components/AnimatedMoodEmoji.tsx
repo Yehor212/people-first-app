@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import { shouldAnimate } from '@/lib/animationUtils';
 
 interface AnimatedMoodEmojiProps {
   mood: 'great' | 'good' | 'okay' | 'bad' | 'terrible';
@@ -370,6 +372,20 @@ function TerribleEmoji({ size, isSelected }: { size: string; isSelected?: boolea
 
 export function AnimatedMoodEmoji({ mood, size = 'lg', isSelected, className }: AnimatedMoodEmojiProps) {
   const sizeClass = sizeClasses[size];
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const animate = shouldAnimate();
+
+  // Pause/unpause SVG SMIL animations based on Dopamine Settings
+  useEffect(() => {
+    if (!wrapperRef.current) return;
+    const svg = wrapperRef.current.querySelector('svg');
+    if (!svg) return;
+    if (animate) {
+      svg.unpauseAnimations();
+    } else {
+      svg.pauseAnimations();
+    }
+  }, [animate]);
 
   const emojiComponents = {
     great: GreatEmoji,
@@ -382,11 +398,14 @@ export function AnimatedMoodEmoji({ mood, size = 'lg', isSelected, className }: 
   const EmojiComponent = emojiComponents[mood];
 
   return (
-    <div className={cn(
-      "transition-all duration-300",
-      isSelected && "scale-110 drop-shadow-xl",
-      className
-    )}>
+    <div
+      ref={wrapperRef}
+      className={cn(
+        "transition-all duration-300",
+        isSelected && "scale-110 drop-shadow-xl",
+        className
+      )}
+    >
       <EmojiComponent size={sizeClass} isSelected={isSelected} />
     </div>
   );

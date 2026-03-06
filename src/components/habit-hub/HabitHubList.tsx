@@ -13,7 +13,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, ChevronDown, Archive, ArrowUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ModalErrorBoundary } from '@/components/ErrorBoundary';
-import { zenMotion } from '@/lib/animationUtils';
+import { zenMotion, zenTap } from '@/lib/animationUtils';
 import { hapticTap, hapticSelection } from '@/lib/haptics';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -413,7 +413,7 @@ export function HabitHubList({
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ ...zenMotion.bouncy, delay: 0.3 }}
-          whileTap={{ scale: 0.9 }}
+          whileTap={zenTap.button}
           whileHover={{ scale: 1.05 }}
           onClick={() => { void hapticTap(); setShowAddForm(true); }}
           className={cn(

@@ -636,7 +636,7 @@ const SpeedDialFab = memo(function SpeedDialFab({ onNewEntry, onAddGratitude }: 
 
       {/* Main FAB */}
       <motion.button
-        whileTap={{ scale: 0.85 }}
+        whileTap={{ scale: 0.96 }}
         whileHover={{ scale: 1.05 }}
         onClick={() => {
           if (showQuickGratitude || showQuickBurn) {

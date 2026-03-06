@@ -5,13 +5,14 @@
  * Displays a 0-100 ZenScore combining mood, habits, focus, and streak data
  */
 
-import { useMemo, useState, useEffect, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ParticleBackground } from './ParticleBackground';
 import { EmojiOrIcon } from '@/components/icons';
+import { useCountUp } from '@/hooks/useCountUp';
 
 interface WeeklyDataPoint {
   date: string;
@@ -112,8 +113,6 @@ export function ZenScoreHub({
 }: ZenScoreHubProps) {
   const { t } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [animatedScore, setAnimatedScore] = useState(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
 
   // Calculate ZenScore
   const zenScore = useMemo(() => {
@@ -134,38 +133,8 @@ export function ZenScoreHub({
     return Math.round(Math.max(0, Math.min(100, score)));
   }, [moodScore, habitRate, focusScore, streakDays]);
 
-  // Reset animation when score changes
-  const prevScoreRef = useRef(zenScore);
-  useEffect(() => {
-    if (prevScoreRef.current !== zenScore) {
-      prevScoreRef.current = zenScore;
-      setHasAnimated(false);
-    }
-  }, [zenScore]);
-
-  // Animate score count-up
-  useEffect(() => {
-    if (hasAnimated) return;
-
-    const duration = 1500;
-    const steps = 60;
-    const stepDuration = duration / steps;
-    const increment = zenScore / steps;
-
-    let current = 0;
-    const timer = setInterval(() => {
-      current += increment;
-      if (current >= zenScore) {
-        setAnimatedScore(zenScore);
-        clearInterval(timer);
-        setHasAnimated(true);
-      } else {
-        setAnimatedScore(Math.round(current));
-      }
-    }, stepDuration);
-
-    return () => clearInterval(timer);
-  }, [zenScore, hasAnimated]);
+  // Animate score count-up (from 0 on mount, between values on change)
+  const animatedScore = useCountUp(zenScore, 1500, 0);
 
   const scoreColor = getScoreColor(zenScore);
   const circumference = 2 * Math.PI * 45; // radius = 45

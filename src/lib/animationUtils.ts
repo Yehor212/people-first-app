@@ -64,6 +64,28 @@ export const zenMotion = {
   breathing: { duration: 3, ease: 'easeInOut' as const, repeat: Infinity, repeatType: 'reverse' as const },
 } as const;
 
+/**
+ * ZenFlow Tap/Hover Tokens — standardized press feedback
+ * Use these instead of ad-hoc whileTap={{ scale: X }}
+ */
+export const zenTap = {
+  /** Standard buttons, FABs — moderate press */
+  button: { scale: 0.96 },
+  /** Cards, list items — subtle press (large surface) */
+  card: { scale: 0.98 },
+  /** Small icon buttons (close X, etc.) — deeper press */
+  icon: { scale: 0.90 },
+  /** Compact cells (MiniCheckmarkCell) — deepest press */
+  cell: { scale: 0.85 },
+} as const;
+
+export const zenHover = {
+  /** Cards — subtle lift effect */
+  lift: { scale: 1.02, y: -1 },
+  /** Icon buttons — gentle glow scale */
+  glow: { scale: 1.05 },
+} as const;
+
 interface DopamineSettings {
   intensity: 'minimal' | 'normal' | 'adhd';
   animations: boolean;

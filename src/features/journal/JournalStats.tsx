@@ -549,10 +549,11 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                         <StickerRenderer emoji={sticker} size="sm" />
                         <div className="flex-1 h-5 bg-muted/20 rounded-full overflow-hidden">
                           <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${widthPct}%` }}
+                            style={{ transformOrigin: 'left' }}
+                            initial={{ scaleX: 0 }}
+                            animate={{ scaleX: widthPct / 100 }}
                             transition={{ delay: idx * 0.05, duration: 0.4 }}
-                            className="h-full bg-primary/40 rounded-full"
+                            className="h-full w-full bg-primary/40 rounded-full"
                           />
                         </div>
                         <span className="text-xs text-muted-foreground tabular-nums min-w-[24px] text-end">

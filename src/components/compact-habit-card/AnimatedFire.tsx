@@ -3,10 +3,21 @@
  * Extracted from CompactHabitCard (v1.3.0 Premium Phase 8)
  */
 
+import { useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
+import { shouldAnimate } from '@/lib/animationUtils';
 
 export function AnimatedFire({ intensity = 1, size = 'sm' }: { intensity?: number; size?: 'sm' | 'md' }) {
   const sizeClass = size === 'md' ? 'w-5 h-5' : 'w-4 h-4';
+  const svgRef = useRef<SVGSVGElement>(null);
+  const animate = shouldAnimate();
+
+  // Pause SVG SMIL animations when Dopamine Settings has animations disabled
+  useEffect(() => {
+    if (!animate && svgRef.current) {
+      svgRef.current.pauseAnimations();
+    }
+  }, [animate]);
 
   // Intensity affects glow and animation speed
   const glowIntensity = Math.min(intensity, 3);
@@ -15,18 +26,18 @@ export function AnimatedFire({ intensity = 1, size = 'sm' }: { intensity?: numbe
   return (
     <div
       className="relative"
-      style={{ animation: `fire-scale-pulse ${animationDuration}s ease-in-out infinite` }}
+      style={animate ? { animation: `fire-scale-pulse ${animationDuration}s ease-in-out infinite` } : undefined}
     >
       {/* Glow layer — CSS keyframe (QA_PROTOCOLS #5) */}
       <div
         className="absolute inset-0 rounded-full blur-sm"
         style={{
           background: `radial-gradient(circle, rgba(249, 115, 22, ${0.3 * glowIntensity}) 0%, transparent 70%)`,
-          animation: `fire-glow-pulse ${animationDuration * 1.5}s ease-in-out infinite`,
+          ...(animate ? { animation: `fire-glow-pulse ${animationDuration * 1.5}s ease-in-out infinite` } : {}),
         }}
       />
       {/* Fire SVG */}
-      <svg className={cn(sizeClass, 'relative z-10')} viewBox="0 0 24 24" fill="none">
+      <svg ref={svgRef} className={cn(sizeClass, 'relative z-10')} viewBox="0 0 24 24" fill="none">
         <defs>
           <linearGradient id="fireGradient" x1="0%" y1="100%" x2="0%" y2="0%">
             <stop offset="0%" stopColor="#f97316" />

@@ -1,5 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
+import { hapticTap } from "@/lib/haptics";
 
 interface SwitchProps {
   checked?: boolean;
@@ -24,6 +25,7 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
 
     const handleClick = () => {
       if (disabled) return;
+      void hapticTap();
       const newValue = !isChecked;
       if (checked === undefined) {
         setInternalChecked(newValue);
@@ -51,7 +53,7 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         onKeyDown={handleKeyDown}
         className={cn(
           // Exact ThemeToggle dimensions: 52×28px
-          "relative flex-shrink-0 rounded-full transition-all duration-300",
+          "relative flex-shrink-0 rounded-full transition-colors duration-300 active:scale-[0.97]",
           "w-[52px] h-[28px]",
           // Colors - semantic theme colors
           isChecked ? "bg-primary" : "bg-muted-foreground/40",
@@ -66,16 +68,20 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         style={{ minWidth: '52px', minHeight: '28px' }}
         {...props}
       >
-        {/* Thumb - absolute positioning like ThemeToggle */}
+        {/* Thumb - absolute positioning like ThemeToggle, spring-like cubic-bezier */}
         <div
           className={cn(
             // Exact thumb size: 22×22px positioned 3px from top
-            "absolute top-[3px] w-[22px] h-[22px] rounded-full transition-all duration-300",
+            "absolute top-[3px] w-[22px] h-[22px] rounded-full",
             // Background and shadow
             "bg-background shadow-sm",
-            // Position: 3px (unchecked) → 27px (checked)
-            isChecked ? "left-[27px]" : "left-[3px]",
+            // Base position left-[3px]; checked slides 24px right via translateX (GPU-only)
+            "left-[3px]",
           )}
+          style={{
+            transform: isChecked ? 'translateX(24px)' : 'translateX(0)',
+            transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          }}
         />
       </button>
     );

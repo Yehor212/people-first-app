@@ -4,9 +4,11 @@
  * Enhanced with hints and quick actions for better UX guidance
  */
 
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Lightbulb } from 'lucide-react';
+import { zenMotion, shouldAnimate } from '@/lib/animationUtils';
 
 interface EmptyStateProps {
   icon: React.ReactNode;
@@ -70,7 +72,12 @@ export function EmptyState({
   const sizes = sizeClasses[size];
 
   return (
-    <div className={cn("text-center", sizes.container, className)}>
+    <motion.div
+      initial={shouldAnimate() ? { opacity: 0, y: 8 } : false}
+      animate={{ opacity: 1, y: 0 }}
+      transition={zenMotion.gentle}
+      className={cn("text-center", sizes.container, className)}
+    >
       {/* Optional animated illustration above the icon */}
       {animationSlot && (
         <div className="mx-auto mb-2 flex items-center justify-center">
@@ -139,6 +146,6 @@ export function EmptyState({
           {secondaryAction.label}
         </button>
       )}
-    </div>
+    </motion.div>
   );
 }

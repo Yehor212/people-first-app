@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { shouldAnimate } from '@/lib/animationUtils';
 import { useAppStore, useUIStore, selectAnyModalOpen, useHydrateGamification, useUserDataStore, useHydrateUserData, type TabType } from '@/stores';
 import { useAppLifecycle } from '@/hooks/useAppLifecycle';
 import { useDateTracking } from '@/hooks/useDateTracking';
@@ -58,6 +60,14 @@ export function Index() {
   const setActiveTab = useAppStore(s => s.setActiveTab);
   const settingsOpenSection = useAppStore(s => s.settingsOpenSection);
   const quickActionTimeoutRef = useRef<ReturnType<typeof setTimeout>>(null);
+  // Scroll-to-top on re-tap of active tab (iOS / Telegram convention)
+  const handleTabChange = useCallback((tab: TabType) => {
+    if (tab === activeTab) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    setActiveTab(tab);
+  }, [activeTab, setActiveTab]);
 
   useEffect(() => {
     return () => {
@@ -297,89 +307,99 @@ export function Index() {
           </div>
         )}
 
-        {activeTab === 'home' && (
-          <HomeTab
-            safeMoods={moods}
-            safeHabits={habits}
-            safeFocusSessions={focusSessions}
-            currentActiveStreak={innerWorld.currentActiveStreak}
-            isRestMode={isRestMode}
-            activateRestMode={activateRestMode}
-            deactivateRestMode={deactivateRestMode}
-            canActivateRestMode={canActivateRestMode}
-            completedTodayCount={completedTodayCount}
-            currentPrimaryCTA={currentPrimaryCTA}
-            handleAddMood={handleAddMood}
-            handlePullToRefresh={handlePullToRefresh}
-            moodRef={moodRef}
-          />
-        )}
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={activeTab}
+            initial={shouldAnimate() ? { opacity: 0 } : false}
+            animate={{ opacity: 1 }}
+            exit={shouldAnimate() ? { opacity: 0 } : undefined}
+            transition={{ duration: 0.1 }}
+          >
+            {activeTab === 'home' && (
+              <HomeTab
+                safeMoods={moods}
+                safeHabits={habits}
+                safeFocusSessions={focusSessions}
+                currentActiveStreak={innerWorld.currentActiveStreak}
+                isRestMode={isRestMode}
+                activateRestMode={activateRestMode}
+                deactivateRestMode={deactivateRestMode}
+                canActivateRestMode={canActivateRestMode}
+                completedTodayCount={completedTodayCount}
+                currentPrimaryCTA={currentPrimaryCTA}
+                handleAddMood={handleAddMood}
+                handlePullToRefresh={handlePullToRefresh}
+                moodRef={moodRef}
+              />
+            )}
 
-        {activeTab === 'garden' && (
-          <GardenTab
-            safeMoods={moods}
-            safeHabits={habits}
-            safeFocusSessions={focusSessions}
-            safeGratitudeEntries={gratitudeEntries}
-            todayAllEvents={todayAllEvents}
-            handleAddScheduleEvent={handleAddScheduleEvent}
-            handleDeleteScheduleEvent={handleDeleteScheduleEvent}
-            handleCompleteFocusSession={handleCompleteFocusSession}
-            onToggleHabit={handleToggleHabit}
-            onAddGratitude={handleAddGratitude}
-          />
-        )}
+            {activeTab === 'garden' && (
+              <GardenTab
+                safeMoods={moods}
+                safeHabits={habits}
+                safeFocusSessions={focusSessions}
+                safeGratitudeEntries={gratitudeEntries}
+                todayAllEvents={todayAllEvents}
+                handleAddScheduleEvent={handleAddScheduleEvent}
+                handleDeleteScheduleEvent={handleDeleteScheduleEvent}
+                handleCompleteFocusSession={handleCompleteFocusSession}
+                onToggleHabit={handleToggleHabit}
+                onAddGratitude={handleAddGratitude}
+              />
+            )}
 
-        {activeTab === 'stats' && (
-          <StatsTab
-            safeMoods={moods}
-            safeHabits={habits}
-            safeFocusSessions={focusSessions}
-            safeGratitudeEntries={gratitudeEntries}
-            restDays={innerWorld.restDays}
-            currentFocusMinutes={currentFocusMinutes}
-            onQuickAction={handleQuickAction}
-          />
-        )}
+            {activeTab === 'stats' && (
+              <StatsTab
+                safeMoods={moods}
+                safeHabits={habits}
+                safeFocusSessions={focusSessions}
+                safeGratitudeEntries={gratitudeEntries}
+                restDays={innerWorld.restDays}
+                currentFocusMinutes={currentFocusMinutes}
+                onQuickAction={handleQuickAction}
+              />
+            )}
 
-        {activeTab === 'achievements' && (
-          <AchievementsTab
-            stats={stats}
-            unlockedAchievements={gamificationState.unlockedAchievements}
-          />
-        )}
+            {activeTab === 'achievements' && (
+              <AchievementsTab
+                stats={stats}
+                unlockedAchievements={gamificationState.unlockedAchievements}
+              />
+            )}
 
-        {activeTab === 'settings' && (
-          <SettingsTab
-            userName={userName}
-            onNameChange={handleNameChange}
-            onResetData={handleResetData}
-            reminders={reminders}
-            onRemindersChange={setReminders}
-            safeHabits={habits}
-            safeMoods={moods}
-            safeFocusSessions={focusSessions}
-            safeGratitudeEntries={gratitudeEntries}
-            privacy={privacy}
-            onPrivacyChange={setPrivacy}
-            initialOpenSection={settingsOpenSection}
-          />
-        )}
+            {activeTab === 'settings' && (
+              <SettingsTab
+                userName={userName}
+                onNameChange={handleNameChange}
+                onResetData={handleResetData}
+                reminders={reminders}
+                onRemindersChange={setReminders}
+                safeHabits={habits}
+                safeMoods={moods}
+                safeFocusSessions={focusSessions}
+                safeGratitudeEntries={gratitudeEntries}
+                privacy={privacy}
+                onPrivacyChange={setPrivacy}
+                initialOpenSection={settingsOpenSection}
+              />
+            )}
 
-        {activeTab === 'mindmap' && HABIT_HUB_ENABLED && (
-          <HabitHubTab
-            habits={habits}
-            onToggleHabit={handleToggleHabit}
-            onAdjustHabit={handleAdjustHabit}
-            onAddHabit={handleAddHabit}
-            onDeleteHabit={handleDeleteHabit}
-            onUpdateHabit={handleUpdateHabit}
-            onArchiveHabit={handleArchiveHabit}
-            onUnarchiveHabit={handleUnarchiveHabit}
-            onSkipHabit={handleSkipHabit}
-            onUnskipHabit={handleUnskipHabit}
-          />
-        )}
+            {activeTab === 'mindmap' && HABIT_HUB_ENABLED && (
+              <HabitHubTab
+                habits={habits}
+                onToggleHabit={handleToggleHabit}
+                onAdjustHabit={handleAdjustHabit}
+                onAddHabit={handleAddHabit}
+                onDeleteHabit={handleDeleteHabit}
+                onUpdateHabit={handleUpdateHabit}
+                onArchiveHabit={handleArchiveHabit}
+                onUnarchiveHabit={handleUnarchiveHabit}
+                onSkipHabit={handleSkipHabit}
+                onUnskipHabit={handleUnskipHabit}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
         </main>
       </div>
 
@@ -409,7 +429,7 @@ export function Index() {
       )}
 
       <FocusMiniPlayer onNavigateToTimer={() => setActiveTab('garden')} />
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} canvasEnabled={CANVAS_ENABLED} habitHubEnabled={HABIT_HUB_ENABLED} />
+      <Navigation activeTab={activeTab} onTabChange={handleTabChange} canvasEnabled={CANVAS_ENABLED} habitHubEnabled={HABIT_HUB_ENABLED} />
 
       <ModalLayer
         challenges={challenges}
