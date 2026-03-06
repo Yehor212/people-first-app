@@ -1,26 +1,33 @@
 /**
  * BurnThoughtWidget — Premium "burn a worry" section for the journal editor.
  *
- * "Thanos Snap" text disintegration with premium visual enhancements:
- *   STATE MACHINE: IDLE → DISSOLVING → RELEASED → COLLAPSING → closed
+ * "Thanos Snap" text disintegration — cinematic "letting go" experience:
+ *   STATE MACHINE: IDLE -> DISSOLVING -> RELEASED -> COLLAPSING -> closed
+ *
+ *   Director's Arc:
+ *     1. TENSION    — text trembles with crescendo intensity (600ms)
+ *     2. RELEASE    — strip-by-strip dissolution, particles rise upward (2200ms)
+ *     3. LIBERATION — particles float away like freed thoughts, cooling to ash
+ *     4. BREATH     — serene pause (800ms), animated check circle
+ *     5. RESOLUTION — Telegram-style collapse -> onClose()
  *
  *   IDLE: Ambient ember particles float along card edges when text is entered.
  *         Flame icon pulses gently. Burn button glows with warm pulse.
  *         Character counter at bottom-right. Textarea auto-grows.
  *
- *   DISSOLVING: Text-to-pixel sampling → dust particles with temperature
- *     progression (hot amber/orange → cool gray ash). Rising ember particles
- *     float upward during dissolution. Card border glows red.
- *
- *   Phase 1 (0-200ms):    Particles vibrate in place — text "trembles"
- *   Phase 2 (200-1400ms): Progressive strip-by-strip dissolution (LTR/RTL-aware)
- *   Phase 3 (1400-2000ms): Remaining particles cool to ash and fade out
+ *   DISSOLVING: Text-to-pixel sampling -> dust particles with temperature
+ *     progression (hot amber/orange -> cool gray ash). Particles float UPWARD
+ *     like releasing thoughts into the sky. Rising CSS embers complement.
  *
  *   RELEASED: Animated check circle draws itself + "Released" text.
- *   COLLAPSING: Telegram-style height collapse → onClose().
- *   FALLBACK: shouldAnimate() false → instant RELEASED (no animation).
+ *   COLLAPSING: Telegram-style height collapse -> onClose().
+ *   FALLBACK: shouldAnimate() false -> instant RELEASED (no animation).
  *
- * No html2canvas — fillText is GPU-accelerated, <1ms.
+ *   Safari/iOS: Uses standard font stack for canvas (Safari returns
+ *   .AppleSystemUIFont which Canvas API can't parse). willReadFrequently
+ *   hint for getImageData. Keyboard dismissed before animation.
+ *
+ * No html2canvas - fillText is GPU-accelerated, <1ms.
  * Memory-safe: offscreen canvas + particle array destroyed in cleanup.
  * Haptic feedback via Capacitor. Respects in-app Dopamine toggle only.
  */
@@ -30,14 +37,14 @@ import { Flame, X } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { zenMotion, shouldAnimate } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { hapticWarning, hapticMedium, hapticSuccess } from '@/lib/haptics';
+import { hapticWarning, hapticMedium, hapticSuccess, hapticTap } from '@/lib/haptics';
 import { announceSuccess } from '@/lib/a11y';
 
 interface BurnThoughtWidgetProps {
   onClose: () => void;
 }
 
-// ── Dust particle (text-sampled) ────────────────────────────────
+// -- Dust particle (text-sampled) ----------------------------------------
 
 interface DustParticle {
   x: number; y: number;
@@ -57,7 +64,7 @@ interface DustParticle {
   started: boolean;
 }
 
-// Hot ember palette — bright, warm colors for fresh particles
+// Hot ember palette - bright, warm colors for fresh particles
 const COLORS_HOT = [
   '#fbbf24',  // amber-400
   '#fb923c',  // orange-400
@@ -65,7 +72,7 @@ const COLORS_HOT = [
   '#fca5a5',  // red-300
 ];
 
-// Ash palette — cool, muted colors for dying particles
+// Ash palette - cool, muted colors for dying particles
 const COLORS_ASH = [
   '#d4d4d8',  // zinc-300
   '#a1a1aa',  // zinc-400
@@ -75,18 +82,23 @@ const COLORS_ASH = [
 // Ambient ember colors (for floating CSS particles)
 const EMBER_AMBIENT = ['#fbbf24', '#fb923c', '#f87171', '#ef4444'];
 
-// ── Animation constants ─────────────────────────────────────────
+// -- Animation constants (Director's pacing - slow, emotional) -----------
 
-const TOTAL_DURATION  = 2000;   // ms total animation
-const VIBRATE_PHASE   = 200;    // ms — particles vibrate in place
-const DISSOLVE_PHASE  = 1200;   // ms — progressive strip dissolution
-const TEXT_FADE_MS    = 180;    // ms — smooth text→particle swap
+const TOTAL_DURATION  = 4000;   // ms - longer for "letting go" feel
+const VIBRATE_PHASE   = 600;    // ms - crescendo trembling builds tension
+const DISSOLVE_PHASE  = 2200;   // ms - slow, deliberate strip dissolution
+const TEXT_FADE_MS    = 300;    // ms - gradual text->particle swap
 const MAX_PARTICLES   = 600;    // particle budget
 const NUM_STRIPS      = 8;      // vertical dissolution strips
 const SAMPLE_STEP     = 3;      // sample every 3rd pixel
-const HARD_TIMEOUT    = 3000;   // ms — safety cutoff
+const HARD_TIMEOUT    = 5500;   // ms - safety cutoff
+const RELEASED_PAUSE  = 800;    // ms - serenity pause before collapse
 
-// ── Word-wrap helper (canvas fillText doesn't auto-wrap) ────────
+// Safari-safe font stack for Canvas API
+// Safari returns ".AppleSystemUIFont" from getComputedStyle which Canvas can't parse
+const CANVAS_FONT_FAMILY = 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif';
+
+// -- Word-wrap helper (canvas fillText doesn't auto-wrap) ----------------
 
 function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
   const words = text.split(/\s+/);
@@ -105,7 +117,7 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number)
   return lines;
 }
 
-// ── Text-to-pixel sampling ──────────────────────────────────────
+// -- Text-to-pixel sampling ----------------------------------------------
 
 function sampleTextPixels(
   text: string,
@@ -119,15 +131,16 @@ function sampleTextPixels(
   const scaledH = Math.round(areaH * dpr);
   offscreen.width = scaledW;
   offscreen.height = scaledH;
-  const ctx = offscreen.getContext('2d');
+
+  // willReadFrequently hint - optimizes getImageData on Safari/iOS
+  const ctx = offscreen.getContext('2d', { willReadFrequently: true });
   if (!ctx) return [];
 
   ctx.scale(dpr, dpr);
 
-  // Match textarea styling — include border width for accurate text positioning
+  // Match textarea styling - use standard font stack for Safari compatibility
   const computed = textareaEl ? getComputedStyle(textareaEl) : null;
   const fontSize = computed ? (parseFloat(computed.fontSize) || 14) : 14;
-  const fontFamily = computed?.fontFamily || 'system-ui, sans-serif';
   const lineHeight = computed ? (parseFloat(computed.lineHeight) || fontSize * 1.5) : fontSize * 1.5;
   const borderLeft = computed ? (parseFloat(computed.borderLeftWidth) || 0) : 1;
   const borderTop = computed ? (parseFloat(computed.borderTopWidth) || 0) : 1;
@@ -135,7 +148,9 @@ function sampleTextPixels(
   const paddingTop = (computed ? (parseFloat(computed.paddingTop) || 10) : 10) + borderTop;
   const textAreaWidth = areaW - paddingLeft * 2;
 
-  ctx.font = `${fontSize}px ${fontFamily}`;
+  // Use standard font stack instead of computed fontFamily
+  // Safari returns ".AppleSystemUIFont" which Canvas API cannot parse
+  ctx.font = `${fontSize}px ${CANVAS_FONT_FAMILY}`;
   ctx.fillStyle = '#ffffff';
   ctx.textBaseline = 'top';
 
@@ -175,7 +190,7 @@ function sampleTextPixels(
   return positions;
 }
 
-// ── Component ───────────────────────────────────────────────────
+// -- Component -----------------------------------------------------------
 
 export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: BurnThoughtWidgetProps) {
   const { t, isRTL } = useLanguage();
@@ -190,8 +205,9 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
   const rafRef = useRef(0);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const hapticTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const midHapticRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // ── Textarea auto-grow ──
+  // -- Textarea auto-grow --
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -199,12 +215,15 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
   }, [text]);
 
-  // ── Thanos Snap dissolution ──
+  // -- Thanos Snap dissolution --
 
   const startBurn = useCallback(() => {
     if (!text.trim() || burning) return;
 
-    // Haptic: burn initiation
+    // Dismiss iOS virtual keyboard before animation
+    textareaRef.current?.blur();
+
+    // Haptic: burn initiation (Beat 1 - the decision)
     void hapticWarning();
 
     // Reduced motion: skip animation entirely
@@ -217,7 +236,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
 
     setBurning(true);
 
-    // Fallback helper — instant release if canvas setup fails
+    // Fallback helper - instant release if canvas setup fails
     const instantRelease = () => {
       setBurned(true);
       setBurning(false);
@@ -264,14 +283,12 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
       return;
     }
 
-    // RTL-aware dissolution direction (isRTL from useLanguage context)
-
-    // Create particles with temperature-aware colors
+    // Create particles with temperature-aware colors and upward release physics
     const particles: DustParticle[] = positions.map(pos => {
       const stripIndex = Math.floor((pos.x / areaW) * NUM_STRIPS);
       const normalizedStrip = isRTL ? (NUM_STRIPS - 1 - stripIndex) : stripIndex;
       const delay = VIBRATE_PHASE + normalizedStrip * (DISSOLVE_PHASE / NUM_STRIPS);
-      const maxLife = 600 + Math.random() * 600;
+      const maxLife = 1200 + Math.random() * 1200; // longer life for slow release
 
       return {
         x: pos.x,
@@ -284,9 +301,9 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
         alpha: 0.9,
         color: COLORS_HOT[Math.floor(Math.random() * COLORS_HOT.length)],
         ashColor: COLORS_ASH[Math.floor(Math.random() * COLORS_ASH.length)],
-        glow: Math.random() < 0.18,
+        glow: Math.random() < 0.2,
         rotation: Math.random() * Math.PI * 2,
-        rotSpeed: (Math.random() - 0.5) * 3,
+        rotSpeed: (Math.random() - 0.5) * 2,
         life: 0,
         maxLife,
         delay,
@@ -295,8 +312,11 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
       };
     });
 
-    // Haptic at dissolution start
+    // Haptic at dissolution start (Beat 2 - the release)
     hapticTimerRef.current = setTimeout(() => { void hapticMedium(); }, VIBRATE_PHASE);
+
+    // Midway gentle haptic (Beat 3 - the letting go)
+    midHapticRef.current = setTimeout(() => { void hapticTap(); }, VIBRATE_PHASE + DISSOLVE_PHASE / 2);
 
     let lastTime = performance.now();
     const startTime = lastTime;
@@ -315,12 +335,14 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
         const p = particles[i];
         if (p.alpha <= 0) continue;
 
-        // ── Phase 1: Vibrate in place ──
+        // -- Phase 1: Vibrate in place (crescendo trembling) --
         if (!p.started) {
           if (elapsed < p.delay) {
-            const intensity = Math.min(1, elapsed / VIBRATE_PHASE);
-            p.x = p.originX + (Math.random() - 0.5) * 3 * intensity;
-            p.y = p.originY + (Math.random() - 0.5) * 2 * intensity;
+            // Quadratic crescendo - starts subtle, builds to intense trembling
+            const t = Math.min(1, elapsed / VIBRATE_PHASE);
+            const trembleAmp = t * t * 4; // 0 -> 4px quadratic ramp
+            p.x = p.originX + (Math.random() - 0.5) * trembleAmp;
+            p.y = p.originY + (Math.random() - 0.5) * trembleAmp * 0.7;
             alive++;
 
             // Render as hot dot at text position
@@ -332,26 +354,26 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
             continue;
           }
 
-          // ── Activate: assign scatter velocity ──
+          // -- Activate: upward release velocity (like freeing a thought) --
           p.started = true;
           p.life = 0;
-          const angle = Math.random() * Math.PI * 2;
-          const speed = 30 + Math.random() * 80;
-          // Wind bias: rightward in LTR, leftward in RTL
-          const windBias = isRTL ? -20 : 20;
+          // Upward cone: -130deg to -50deg (mostly upward with slight spread)
+          const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.8;
+          const speed = 15 + Math.random() * 40; // gentle, not explosive
+          const windBias = isRTL ? -8 : 8; // subtle directional drift
           p.vx = Math.cos(angle) * speed + windBias;
-          p.vy = Math.sin(angle) * speed + 15;
+          p.vy = Math.sin(angle) * speed; // no downward bias - float up
         }
 
-        // ── Phase 2/3: Dissolving with temperature ──
+        // -- Phase 2/3: Dissolving with temperature --
         p.life += dt * 1000;
         if (p.life >= p.maxLife) { p.alpha = 0; continue; }
 
-        // Wind wobble
-        p.vx += Math.sin(now * 0.004 + p.phase) * 12 * dt;
+        // Gentle wind drift (not chaotic wobble)
+        p.vx += Math.sin(now * 0.002 + p.phase) * 5 * dt;
 
-        // Gentle gravity
-        p.vy += 30 * dt;
+        // Slight upward pull - particles gently rise like released thoughts
+        p.vy -= 8 * dt;
 
         // Move
         p.x += p.vx * dt;
@@ -364,18 +386,18 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
         const lifeT = p.life / p.maxLife;
         p.alpha = Math.max(0, 1 - lifeT * lifeT);
 
-        // Size: slow shrink
-        p.size *= (1 - 0.003 * (dt * 60));
+        // Size: very slow shrink (half the previous rate)
+        p.size *= (1 - 0.0015 * (dt * 60));
 
         if (p.alpha <= 0.01 || p.size < 0.2) { p.alpha = 0; continue; }
 
         alive++;
 
-        // Temperature-based color: hot ember → cool ash
+        // Temperature-based color: hot ember -> cool ash
         const temp = 1 - Math.min(lifeT * 1.3, 1);
         const currentColor = temp > 0.35 ? p.color : p.ashColor;
 
-        // ── Render glow halo (enhanced for hot particles) ──
+        // -- Render glow halo (enhanced for hot particles) --
         if (p.glow) {
           ctx.globalAlpha = p.alpha * 0.3;
           ctx.shadowBlur = p.size * (temp > 0.5 ? 5 : 3);
@@ -387,7 +409,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
           ctx.shadowBlur = 0;
         }
 
-        // ── Render core particle ──
+        // -- Render core particle --
         ctx.globalAlpha = p.alpha;
         ctx.fillStyle = currentColor;
         ctx.beginPath();
@@ -401,7 +423,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
       if (elapsed > TOTAL_DURATION && alive === 0) {
         setBurning(false);
         setBurned(true);
-        void hapticSuccess();
+        void hapticSuccess(); // Beat 4 - resolution
         announceSuccess(ts.journalBurnReleasedMessage || 'Your thought has been released.');
         return;
       }
@@ -421,22 +443,23 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
     rafRef.current = requestAnimationFrame(frame);
   }, [text, burning, ts.journalBurnReleasedMessage, isRTL]);
 
-  // ── Telegram-style collapse: burned → brief pause → collapse → close ──
+  // -- Telegram-style collapse: burned -> serenity pause -> collapse -> close --
   useEffect(() => {
     if (burned && !collapsing) {
       closeTimerRef.current = setTimeout(() => {
         setCollapsing(true);
-      }, 400);
+      }, RELEASED_PAUSE);
     }
     return () => { if (closeTimerRef.current) clearTimeout(closeTimerRef.current); };
   }, [burned, collapsing]);
 
-  // ── Cleanup rAF + timers ──
+  // -- Cleanup rAF + timers --
   useEffect(() => {
     return () => {
       cancelAnimationFrame(rafRef.current);
       if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
       if (hapticTimerRef.current) clearTimeout(hapticTimerRef.current);
+      if (midHapticRef.current) clearTimeout(midHapticRef.current);
     };
   }, []);
 
@@ -486,7 +509,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
         if (collapsing) onClose();
       }}
     >
-      {/* Card burn glow — GPU-only opacity transition instead of box-shadow transition */}
+      {/* Card burn glow - GPU-only opacity transition */}
       <div
         className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-500 ease-out"
         style={{
@@ -496,7 +519,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
         aria-hidden="true"
       />
 
-      {/* Ambient floating embers — visible when text is entered */}
+      {/* Ambient floating embers - visible when text is entered */}
       {showAmbientEmbers && (
         <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl" aria-hidden="true">
           {Array.from({ length: 8 }, (_, i) => (
@@ -526,7 +549,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
                 height: `${2 + (i % 3)}px`,
                 left: `${5 + (i * 7) % 88}%`,
                 bottom: '5%',
-                animationDelay: `${i * 0.1}s`,
+                animationDelay: `${i * 0.15}s`,
                 backgroundColor: COLORS_HOT[i % COLORS_HOT.length],
               }}
             />
@@ -591,7 +614,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
           </motion.div>
         ) : (
           <div ref={containerRef} className="relative overflow-hidden">
-            {/* Content — fast opacity swap to particles during burning */}
+            {/* Content - gradual opacity swap to particles during burning */}
             <motion.div
               animate={{ opacity: burning ? 0 : 1 }}
               transition={{ duration: TEXT_FADE_MS / 1000, ease: 'easeOut' }}
@@ -629,12 +652,12 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
               )}
             </motion.div>
 
-            {/* Dust canvas — ALWAYS in DOM so ref is available synchronously.
+            {/* Dust canvas - ALWAYS in DOM so ref is available synchronously.
                 React 18 batches setState, so {burning && <canvas>} would make
                 canvasRef.current null when startBurn() accesses it. */}
             <canvas
               ref={canvasRef}
-              className="absolute inset-0 w-full h-full rounded-xl gpu-layer"
+              className="absolute inset-0 w-full h-full rounded-xl"
               style={{
                 zIndex: 2,
                 pointerEvents: 'none',

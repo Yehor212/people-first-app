@@ -4192,10 +4192,10 @@ body.reduce-motion .diary-animated {
 
 @keyframes burn-rise-ember {
   0% { opacity: 0; transform: translateY(0) scale(0.4); }
-  10% { opacity: 0.85; }
-  30% { opacity: 0.65; transform: translateY(-30px) translateX(8px) scale(1.2); }
-  70% { opacity: 0.25; transform: translateY(-70px) translateX(-6px) scale(0.7); }
-  100% { opacity: 0; transform: translateY(-120px) translateX(4px) scale(0); }
+  8% { opacity: 0.8; }
+  25% { opacity: 0.6; transform: translateY(-40px) translateX(8px) scale(1.1); }
+  60% { opacity: 0.2; transform: translateY(-90px) translateX(-6px) scale(0.6); }
+  100% { opacity: 0; transform: translateY(-150px) translateX(4px) scale(0); }
 }
 
 @keyframes burn-flame-pulse {
@@ -4217,7 +4217,7 @@ body.reduce-motion .diary-animated {
 }
 
 .animate-burn-rise-ember {
-  animation: burn-rise-ember 1.6s ease-out forwards;
+  animation: burn-rise-ember 2.8s ease-out forwards;
 }
 
 .animate-burn-flame-pulse {
