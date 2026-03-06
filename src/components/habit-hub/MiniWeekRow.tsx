@@ -1,6 +1,6 @@
 /**
  * MiniWeekRow — 7-day compact calendar row for HabitHubCard.
- * Shows last 7 days with weekday labels and MiniCheckmarkCell toggles.
+ * Shows current ISO week (Mon-Sun) with weekday labels and MiniCheckmarkCell toggles.
  * Uses computeEntriesWithAuto for non-daily boolean habits (YES_AUTO display).
  */
 
@@ -30,14 +30,19 @@ function toDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-/** Get the last 7 days as date strings (oldest first) */
-function getLast7Days(): string[] {
+/** Get current ISO week (Mon-Sun) as date strings. Derives from getToday() for timezone safety (Law 19). */
+function getCurrentISOWeek(todayStr: string): string[] {
   const days: string[] = [];
-  const today = new Date();
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    days.push(toDateStr(d));
+  const [y, m, d] = todayStr.split('-').map(Number);
+  const today = new Date(y, m - 1, d);
+  const dow = today.getDay(); // 0=Sun
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(today);
+  monday.setDate(monday.getDate() + mondayOffset);
+  for (let i = 0; i < 7; i++) {
+    const dd = new Date(monday);
+    dd.setDate(dd.getDate() + i);
+    days.push(toDateStr(dd));
   }
   return days;
 }
@@ -65,7 +70,7 @@ export const MiniWeekRow = memo(function MiniWeekRow({
 
   // today is an intentional invalidation signal — recompute days when date changes at midnight
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const days = useMemo(() => getLast7Days(), [today]);
+  const days = useMemo(() => getCurrentISOWeek(today), [today]);
   const computedEntries = useMemo(() => computeEntriesWithAuto(habit), [habit]);
 
   const getEntryVal = useCallback((date: string): number => {
@@ -116,6 +121,7 @@ export const MiniWeekRow = memo(function MiniWeekRow({
             value={getEntryVal(date)}
             habitColor={habitColor}
             isToday={date === today}
+            isFuture={date > today}
             isNumerical={isNumerical}
             numericDisplay={isNumerical ? getNumericDisplay(date) : undefined}
             onTap={() => handleTap(date)}

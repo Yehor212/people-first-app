@@ -18,6 +18,7 @@ import { hapticTap } from '@/lib/haptics';
 import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { isHabitCompletedOnDate, getNumericalValue } from '@/lib/habits';
 import { getCurrentStreak } from '@/lib/habitScore';
+import { computeEntriesWithAuto } from '@/lib/habitComputedEntries';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { frequencyPresets } from '@/hooks/useHabitForm';
 import { AnimatedFire } from '@/components/compact-habit-card/AnimatedFire';
@@ -71,18 +72,20 @@ export const HabitHubCard = memo(function HabitHubCard({
   const progress = isNumeric && target > 0 ? Math.min(currentValue / target, 1) : 0;
 
   // Weekly progress for boolean habits (daily: "4/7", non-daily: "2/3")
+  // Uses computeEntriesWithAuto so counter matches MiniWeekRow visual (includes YES_AUTO)
   const weeklyProgress = useMemo(() => {
     if (habit.habitType !== 'boolean') return null;
     const { numerator, denominator } = habit.frequency;
     const isDaily = numerator === denominator;
 
-    // Monday of current ISO week
+    // Monday of current ISO week (same window as MiniWeekRow)
     const todayDate = new Date(today + 'T00:00:00');
     const dow = todayDate.getDay(); // 0=Sun
     const mondayOffset = dow === 0 ? -6 : 1 - dow;
     const monday = new Date(todayDate);
     monday.setDate(monday.getDate() + mondayOffset);
 
+    const computed = computeEntriesWithAuto(habit);
     let count = 0;
     for (let d = 0; d < 7; d++) {
       const date = new Date(monday);
@@ -90,7 +93,7 @@ export const HabitHubCard = memo(function HabitHubCard({
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
-      const val = habit.entries?.[`${y}-${m}-${day}`]?.value;
+      const val = computed[`${y}-${m}-${day}`]?.value;
       if (val === ENTRY.YES_MANUAL || val === ENTRY.YES_AUTO) count++;
     }
 

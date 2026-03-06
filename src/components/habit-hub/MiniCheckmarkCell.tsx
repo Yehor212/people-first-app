@@ -26,6 +26,7 @@ interface MiniCheckmarkCellProps {
   value: number;       // EntryValue
   habitColor: string;  // resolved hex
   isToday: boolean;
+  isFuture?: boolean;  // Future dates in ISO week — tap disabled (Law 19)
   isNumerical: boolean;
   numericDisplay?: string; // "2.5" for numerical habits
   onTap: () => void;
@@ -49,6 +50,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
   value,
   habitColor,
   isToday,
+  isFuture,
   isNumerical,
   numericDisplay,
   onTap,
@@ -74,12 +76,13 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
     const hasValue = numericDisplay && numericDisplay !== '0';
     return (
       <div
-        onClick={onTap}
-        onKeyDown={handleKeyDown}
-        tabIndex={0}
+        onClick={isFuture ? undefined : onTap}
+        onKeyDown={isFuture ? undefined : handleKeyDown}
+        tabIndex={isFuture ? -1 : 0}
         role="button"
+        aria-disabled={isFuture}
         aria-label={`${date}: ${numericDisplay || '0'}`}
-        className="min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer"
+        className={cn('min-w-[44px] min-h-[44px] flex items-center justify-center', isFuture ? 'opacity-30 cursor-default' : 'cursor-pointer')}
       >
         <motion.div
           whileTap={{ scale: 0.85 }}
@@ -104,13 +107,14 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
   // Boolean cell
   return (
     <div
-      onClick={onTap}
-      onKeyDown={handleKeyDown}
-      tabIndex={0}
+      onClick={isFuture ? undefined : onTap}
+      onKeyDown={isFuture ? undefined : handleKeyDown}
+      tabIndex={isFuture ? -1 : 0}
       role="checkbox"
       aria-checked={isCompleted}
+      aria-disabled={isFuture}
       aria-label={`${date}: ${isCompleted ? (ts.done || 'done') : isSkipped ? (ts.skipped || 'skipped') : isNo ? (ts.notDone || 'not done') : (ts.noData || 'no data')}`}
-      className="min-w-[44px] min-h-[44px] flex items-center justify-center cursor-pointer"
+      className={cn('min-w-[44px] min-h-[44px] flex items-center justify-center', isFuture ? 'opacity-30 cursor-default' : 'cursor-pointer')}
     >
       <motion.div
         whileTap={{ scale: 0.85 }}
