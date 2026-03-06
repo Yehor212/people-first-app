@@ -117,7 +117,7 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
     setSelectedIntensity('moderate');
     setNote('');
     setViewState('wheel');
-  }, [selectedEmotion, selectedIntensity, note, today, onAddEntry]);
+  }, [selectedEmotion, selectedIntensity, note, today, onAddEntry, t.invalidInput, t.textTooLong]);
 
   // Throttled save to prevent duplicate entries from rapid taps
   const throttledSave = useThrottledCallback(handleSave, 1000);
