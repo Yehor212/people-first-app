@@ -489,6 +489,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
             initial={{ opacity: 0, scale: 0.9 }}
             animate={collapsing ? { opacity: 0, y: -12 } : { opacity: 1, scale: 1 }}
             transition={collapsing ? { duration: 0.25 } : zenMotion.gentle}
+            aria-live="polite"
           >
             {ts.journalBurnReleasedMessage || 'Your thought has been released.'}
           </motion.p>
@@ -506,7 +507,9 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
                 className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] text-foreground/90 ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/40 transition-shadow"
                 style={{ minHeight: 64 }}
                 rows={2}
+                maxLength={500}
                 disabled={burning}
+                aria-label={ts.journalBurnPlaceholder || 'Write what worries you...'}
               />
               {!burning && (
                 <motion.button
