@@ -26,14 +26,15 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
   useScrollLock(del.showDeleteConfirm);
 
   // Escape key: dismiss delete confirmation
+  const { showDeleteConfirm, setShowDeleteConfirm } = del;
   useEffect(() => {
-    if (!del.showDeleteConfirm) return;
+    if (!showDeleteConfirm) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); del.setShowDeleteConfirm(false); }
+      if (e.key === 'Escape') { e.preventDefault(); setShowDeleteConfirm(false); }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [del]);
+  }, [showDeleteConfirm, setShowDeleteConfirm]);
 
   const baseUrl = BASE_URL;
   const deleteAccountHref = `${baseUrl}delete-account.html`;
@@ -170,6 +171,7 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
                     value={del.deleteConfirmInput}
                     onChange={(e) => del.setDeleteConfirmInput(e.target.value)}
                     placeholder={t.deleteConfirmWord || 'DELETE'}
+                    aria-label={t.deleteAccountTypeConfirm || 'Type DELETE to confirm'}
                     className="w-full p-2 bg-secondary rounded-lg text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-destructive/30"
                     autoComplete="off"
                   />
@@ -180,14 +182,14 @@ export function AccountSection({ userName, onNameChange, onResetData }: AccountS
                       del.setShowDeleteConfirm(false);
                       del.setDeleteConfirmInput('');
                     }}
-                    className="flex-1 py-2 bg-secondary text-secondary-foreground rounded-lg"
+                    className="flex-1 py-2 min-h-[44px] bg-secondary text-secondary-foreground rounded-lg"
                   >
                     {t.cancel || 'Cancel'}
                   </button>
                   <button
                     onClick={() => { void del.handleDeleteAccount(); }}
                     disabled={del.deleteConfirmInput !== (t.deleteConfirmWord || 'DELETE') || del.isDeletingAccount}
-                    className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
+                    className="flex-1 py-2 min-h-[44px] bg-destructive text-destructive-foreground rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
                   >
                     {del.isDeletingAccount && <Loader2 className="w-4 h-4 motion-safe:animate-spin" aria-label={t.deleting || 'Deleting...'} />}
                     {del.isDeletingAccount ? (t.deleting || 'Deleting...') : (t.delete || 'Delete')}

@@ -276,7 +276,10 @@ function AchievementCard({ achievement, isUnlocked, progress, onClick, hiddenTex
       className={`p-4 cursor-pointer transition-all hover:scale-105 ${
         isUnlocked ? getBadgeGlow(achievement.rarity) : 'opacity-60'
       }`}
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}
     >
       <div className="text-center space-y-2 min-w-0">
         <div className={`text-4xl ${!isUnlocked && 'grayscale blur-[1px]'}`}>

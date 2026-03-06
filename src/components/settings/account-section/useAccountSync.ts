@@ -98,6 +98,7 @@ export function useAccountSync({ sessionEmail, setAuthStatus, t }: UseAccountSyn
     } catch (error) {
       setWeeklyDigestEnabled(!enabled);
       logger.error('[AccountSection] Weekly digest toggle error:', error);
+      setAuthStatus(t.weeklyDigestError || 'Could not update weekly digest. Try again.');
     } finally {
       setWeeklyDigestLoading(false);
     }

@@ -126,6 +126,7 @@ export function useLeaderboardData({ activeTab, isOpen, timeoutLabel, loadErrorL
       }
     } catch (err) {
       logger.error('[Leaderboard] Opt-in toggle failed:', err);
+      announce(loadErrorLabel || 'Something went wrong. Please try again.');
     }
   };
 
@@ -136,6 +137,7 @@ export function useLeaderboardData({ activeTab, isOpen, timeoutLabel, loadErrorL
       if (success) void loadData(0);
     } catch (err) {
       logger.error('[Leaderboard] Name update failed:', err);
+      announce(loadErrorLabel || 'Something went wrong. Please try again.');
     }
   };
 

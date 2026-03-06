@@ -5,7 +5,7 @@ import { Volume2, VolumeX, Sparkles, Zap, Award, Music } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useScrollLock } from '@/hooks/useScrollLock';
 
 export interface DopamineSettings {
@@ -35,7 +35,7 @@ interface DopamineSettingsProps {
 export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
   const { t } = useLanguage();
 
-  useBackHandler(true, onClose);
+  useModalA11y(true, onClose);
   useScrollLock(true);
 
   const [settings, setSettings] = useState<DopamineSettings>(DEFAULT_SETTINGS);
@@ -97,8 +97,8 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
   }, [updateSettings]);
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="dopamine-settings-title">
-      <div className="bg-card rounded-2xl shadow-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-labelledby="dopamine-settings-title" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} onTouchEnd={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="bg-card rounded-2xl shadow-2xl max-w-md w-full max-h-[90dvh] overflow-y-auto" onClick={(e) => e.stopPropagation()} onTouchEnd={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="sticky top-0 bg-card border-b border-border p-6 z-10">
           <div className="flex items-center justify-between">
@@ -134,6 +134,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => handleIntensityChange('minimal')}
+                aria-pressed={settings.intensity === 'minimal'}
                 className={cn(
                   'p-3 rounded-xl text-sm font-medium transition-all',
                   settings.intensity === 'minimal'
@@ -149,6 +150,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
 
               <button
                 onClick={() => handleIntensityChange('normal')}
+                aria-pressed={settings.intensity === 'normal'}
                 className={cn(
                   'p-3 rounded-xl text-sm font-medium transition-all',
                   settings.intensity === 'normal'
@@ -164,6 +166,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
 
               <button
                 onClick={() => handleIntensityChange('adhd')}
+                aria-pressed={settings.intensity === 'adhd'}
                 className={cn(
                   'p-3 rounded-xl text-sm font-medium transition-all',
                   settings.intensity === 'adhd'
@@ -214,6 +217,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
               <Switch
                 checked={settings.animations}
                 onCheckedChange={(checked) => updateSettings({ animations: checked })}
+                aria-label={t.dopamineAnimations || 'Animations'}
               />
             </div>
 
@@ -237,6 +241,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
               <Switch
                 checked={settings.sounds}
                 onCheckedChange={(checked) => updateSettings({ sounds: checked })}
+                aria-label={t.dopamineSounds || 'Sounds'}
               />
             </div>
 
@@ -256,6 +261,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
               <Switch
                 checked={settings.haptics}
                 onCheckedChange={(checked) => updateSettings({ haptics: checked })}
+                aria-label={t.dopamineHaptics || 'Haptics'}
               />
             </div>
 
@@ -275,6 +281,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
               <Switch
                 checked={settings.confetti}
                 onCheckedChange={(checked) => updateSettings({ confetti: checked })}
+                aria-label={t.dopamineConfetti || 'Confetti'}
               />
             </div>
 
@@ -294,6 +301,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
               <Switch
                 checked={settings.streakFire}
                 onCheckedChange={(checked) => updateSettings({ streakFire: checked })}
+                aria-label={t.dopamineStreakFire || 'Streak Fire'}
               />
             </div>
 
@@ -313,6 +321,7 @@ export function DopamineSettingsComponent({ onClose }: DopamineSettingsProps) {
               <Switch
                 checked={settings.moodDrivenUI}
                 onCheckedChange={(checked) => updateSettings({ moodDrivenUI: checked })}
+                aria-label={t.dopamineMoodDrivenUI || 'Mood Visuals'}
               />
             </div>
           </div>

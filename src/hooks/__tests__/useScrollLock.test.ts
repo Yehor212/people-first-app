@@ -96,4 +96,53 @@ describe('useScrollLock', () => {
 
     expect(document.body.style.overflow).toBe('scroll');
   });
+
+  it('handles nested locks — body stays locked until ALL consumers unlock', () => {
+    // Simulates: SettingsPanel locks + DopamineSettings locks
+    const parent = renderHook(
+      ({ locked }) => useScrollLock(locked),
+      { initialProps: { locked: true } }
+    );
+
+    expect(document.body.style.overflow).toBe('hidden');
+
+    // Child component mounts and also locks
+    const child = renderHook(() => useScrollLock(true));
+
+    // Body should still be locked
+    expect(document.body.style.overflow).toBe('hidden');
+
+    // Child unmounts first (DopamineSettings closes)
+    child.unmount();
+
+    // Body should STILL be locked (parent still holds lock)
+    expect(document.body.style.overflow).toBe('hidden');
+
+    // Parent releases lock
+    parent.rerender({ locked: false });
+
+    // NOW body should be unlocked
+    expect(document.body.style.overflow).toBe('');
+  });
+
+  it('handles reverse unlock order — parent unlocks before child unmounts', () => {
+    const parent = renderHook(
+      ({ locked }) => useScrollLock(locked),
+      { initialProps: { locked: true } }
+    );
+
+    const child = renderHook(() => useScrollLock(true));
+
+    // Parent releases first
+    parent.rerender({ locked: false });
+
+    // Body should STILL be locked (child still holds lock)
+    expect(document.body.style.overflow).toBe('hidden');
+
+    // Child unmounts
+    child.unmount();
+
+    // NOW body should be unlocked
+    expect(document.body.style.overflow).toBe('');
+  });
 });

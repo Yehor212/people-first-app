@@ -53,6 +53,7 @@ export function FeatureToggleItem({
         checked={enabled && !isLocked}
         onCheckedChange={onToggle}
         disabled={isDisabled}
+        aria-label={title}
         className="shrink-0 ms-3"
       />
     </div>

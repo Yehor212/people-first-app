@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { logger } from '@/lib/logger';
 import { safeJsonParse } from '@/lib/safeJson';
 import { importBackup, type ImportMode } from '@/storage/backup';
@@ -46,13 +46,13 @@ export function useDataImport({ setDataStatus, t }: UseDataImportOptions) {
     event.target.value = '';
   };
 
-  const handleImportCancel = () => {
+  const handleImportCancel = useCallback(() => {
     setShowImportConfirm(false);
     setPendingImportFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
-  };
+  }, []);
 
   const handleImportConfirm = async () => {
     if (!pendingImportFile) return;

@@ -42,6 +42,7 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
   const [selectedEmotion, setSelectedEmotion] = useState<PrimaryEmotion | null>(null);
   const [selectedIntensity, setSelectedIntensity] = useState<EmotionIntensity>('moderate');
   const [note, setNote] = useState('');
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   // Responsive wheel size for 320px viewport support
   const [wheelSize, setWheelSize] = useState(280);
@@ -87,8 +88,10 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
       const validationResult = moodNoteSchema.safeParse(note);
       if (!validationResult.success) {
         logger.warn('[EmotionWheel] Invalid note:', validationResult.error.message);
+        setNoteError(note.length > 1000 ? (t.textTooLong || 'Text is too long') : (t.invalidInput || 'Invalid input'));
         return;
       }
+      setNoteError(null);
       sanitizedNote = sanitizeString(validationResult.data);
     }
 
@@ -333,6 +336,11 @@ export function EmotionWheel({ entries, onAddEntry, isPrimaryCTA = false }: Emot
             autoFocus
             maxLength={500}
           />
+
+          {/* Validation error */}
+          {noteError && (
+            <p className="text-sm text-destructive" role="alert">{noteError}</p>
+          )}
 
           {/* Save button */}
           <button

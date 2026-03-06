@@ -47,13 +47,14 @@ export function DataSection({
   useScrollLock(showResetConfirm || imp.showImportConfirm);
 
   // Escape key: dismiss import confirm or reset confirm
+  const { showImportConfirm, handleImportCancel } = imp;
   useEffect(() => {
-    if (!showResetConfirm && !imp.showImportConfirm) return;
+    if (!showResetConfirm && !showImportConfirm) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        if (imp.showImportConfirm) {
-          imp.handleImportCancel();
+        if (showImportConfirm) {
+          handleImportCancel();
         } else {
           setShowResetConfirm(false);
         }
@@ -61,7 +62,7 @@ export function DataSection({
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [showResetConfirm, imp]);
+  }, [showResetConfirm, showImportConfirm, handleImportCancel]);
 
   // Auto-clear dataStatus after 3 seconds
   useEffect(() => {
@@ -138,7 +139,7 @@ export function DataSection({
                     aria-pressed={imp.importMode === 'merge'}
                     aria-label={t.importMerge}
                     className={cn(
-                      'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
+                      'flex-1 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-colors',
                       imp.importMode === 'merge'
                         ? 'bg-primary/10 ring-2 ring-primary text-foreground'
                         : 'bg-secondary text-muted-foreground hover:bg-muted'
@@ -151,7 +152,7 @@ export function DataSection({
                     aria-pressed={imp.importMode === 'replace'}
                     aria-label={t.importReplace}
                     className={cn(
-                      'flex-1 py-2 rounded-lg text-sm font-medium transition-colors',
+                      'flex-1 py-2 min-h-[44px] rounded-lg text-sm font-medium transition-colors',
                       imp.importMode === 'replace'
                         ? 'bg-destructive/10 ring-2 ring-destructive text-destructive'
                         : 'bg-secondary text-muted-foreground hover:bg-muted'
@@ -217,14 +218,14 @@ export function DataSection({
                     <button
                       onClick={() => setShowResetConfirm(false)}
                       aria-label={t.cancel}
-                      className="flex-1 py-2 bg-secondary text-secondary-foreground rounded-lg"
+                      className="flex-1 py-2 min-h-[44px] bg-secondary text-secondary-foreground rounded-lg"
                     >
                       {t.cancel}
                     </button>
                     <button
                       onClick={handleReset}
                       aria-label={t.delete}
-                      className="flex-1 py-2 bg-destructive text-destructive-foreground rounded-lg"
+                      className="flex-1 py-2 min-h-[44px] bg-destructive text-destructive-foreground rounded-lg"
                     >
                       {t.delete}
                     </button>
@@ -257,14 +258,14 @@ export function DataSection({
               <button
                 onClick={imp.handleImportCancel}
                 aria-label={t.cancel}
-                className="flex-1 py-2 bg-secondary text-secondary-foreground rounded-lg"
+                className="flex-1 py-2 min-h-[44px] bg-secondary text-secondary-foreground rounded-lg"
               >
                 {t.cancel}
               </button>
               <button
                 onClick={imp.handleImportConfirm}
                 aria-label={t.settingsImportTitle || t.importData}
-                className="flex-1 py-2 zen-gradient text-primary-foreground rounded-lg font-medium"
+                className="flex-1 py-2 min-h-[44px] zen-gradient text-primary-foreground rounded-lg font-medium"
               >
                 {t.settingsImportTitle || t.importData}
               </button>

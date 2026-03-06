@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import {
   Trophy, Flame, Star, Users, Eye, EyeOff,
@@ -22,7 +22,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<LeaderboardType>('weekly');
 
-  useBackHandler(isOpen, () => setIsOpen(false));
+  useModalA11y(isOpen, () => setIsOpen(false));
   useScrollLock(isOpen);
 
   const data = useLeaderboardData({

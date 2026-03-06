@@ -131,6 +131,7 @@ export function HomeTab({
             currentPrimaryCTA={currentPrimaryCTA}
             onScrollToMood={() => scrollToRef(moodRef)}
             onNavigateToHabits={() => setActiveTab('mindmap')}
+            onNavigateToFocus={() => setActiveTab('garden')}
             onScrollToGratitude={() => scrollToRef(gratitudeRef)}
             canActivateRestMode={canActivateRestMode}
             onRestMode={activateRestMode}

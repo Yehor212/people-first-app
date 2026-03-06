@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Sparkles, Smartphone, ChevronRight, Download, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
-import { useScrollLock } from '@/hooks/useScrollLock';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { Habit, ReminderSettings, PrivacySettings, MoodEntry, FocusSession, GratitudeEntry } from '@/types';
 import { Accordion } from '@/components/ui/accordion';
@@ -54,9 +52,6 @@ export function SettingsPanel({
   const [openSections, setOpenSections] = useState<string[]>(
     initialOpenSection ? [initialOpenSection] : ['profile']
   );
-
-  useBackHandler(showDopamineSettings, () => setShowDopamineSettings(false));
-  useScrollLock(showDopamineSettings);
 
   // Auto-open and scroll to section when initialOpenSection changes
   useEffect(() => {
@@ -117,7 +112,7 @@ export function SettingsPanel({
                 <p className="text-xs text-muted-foreground">{t.widgetSettingsDesc || 'Configure widgets for your home screen'}</p>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
           </div>
         </button>
       )}

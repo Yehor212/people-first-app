@@ -68,7 +68,7 @@ export function GratitudeJournal({ entries, onAddEntry, isPrimaryCTA = false, in
     if (!validationResult.success) {
       logger.warn('[GratitudeJournal] Invalid gratitude text:', validationResult.error.message);
       // Show user-friendly error message
-      const errorMessage = trimmedText.length > 2000
+      const errorMessage = trimmedText.length > 500
         ? t.textTooLong
         : t.invalidInput;
       setValidationError(errorMessage);

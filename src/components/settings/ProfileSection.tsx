@@ -100,11 +100,12 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                aria-label={t.yourName || 'Your name'}
                 className="flex-1 p-3 bg-secondary rounded-xl text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
               <button
                 onClick={handleNameSave}
-                className="px-4 py-2 zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
+                className="px-4 py-2 min-h-[44px] zen-gradient text-primary-foreground rounded-xl font-medium hover:opacity-90 transition-opacity"
               >
                 {t.save}
               </button>
@@ -162,6 +163,7 @@ export function ProfileSection({ userName, onNameChange }: ProfileSectionProps) 
                   <button
                     key={option.value}
                     onClick={() => changeTheme(option.value)}
+                    aria-pressed={currentTheme === option.value}
                     className={cn(
                       "flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all",
                       currentTheme === option.value

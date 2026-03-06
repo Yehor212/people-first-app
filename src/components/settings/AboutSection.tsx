@@ -111,7 +111,7 @@ export function AboutSection() {
                   disabled={updateCheckStatus === 'checking'}
                   className="w-full py-3 bg-secondary text-secondary-foreground rounded-xl font-medium hover:bg-muted transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <RefreshCw className={`w-4 h-4 ${updateCheckStatus === 'checking' ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 ${updateCheckStatus === 'checking' ? 'motion-safe:animate-spin' : ''}`} />
                   {updateCheckStatus === 'checking'
                     ? (t.checkingForUpdates || 'Checking...')
                     : (t.checkForUpdates || 'Check for Updates')
@@ -139,7 +139,7 @@ export function AboutSection() {
                     )}
                     <button
                       onClick={handleOpenGooglePlay}
-                      className="w-full py-2 zen-gradient text-primary-foreground rounded-lg font-medium flex items-center justify-center gap-2"
+                      className="w-full py-2 min-h-[44px] zen-gradient text-primary-foreground rounded-lg font-medium flex items-center justify-center gap-2"
                     >
                       <ExternalLink className="w-4 h-4" />
                       {t.openGooglePlay || 'Open Google Play'}
@@ -164,7 +164,7 @@ export function AboutSection() {
                 <MessageSquare className="w-5 h-5 text-primary" />
                 <span className="font-medium">{t.sendFeedback}</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
             </button>
 
             {/* Legal Buttons */}
@@ -176,7 +176,7 @@ export function AboutSection() {
                 <Shield className="w-5 h-5 text-primary" />
                 <span className="font-medium">{t.privacyPolicy}</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
             </button>
 
             <button
@@ -187,7 +187,7 @@ export function AboutSection() {
                 <FileText className="w-5 h-5 text-primary" />
                 <span className="font-medium">{t.termsOfService}</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
             </button>
 
             <button
@@ -198,7 +198,7 @@ export function AboutSection() {
                 <Scale className="w-5 h-5 text-primary" />
                 <span className="font-medium">{t.openSourceLicenses}</span>
               </div>
-              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground rtl:scale-x-[-1]" />
             </button>
           </div>
         </AccordionContent>

@@ -53,8 +53,8 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
       setHabits(h.map(normalizeHabit));
       setFocusSessions(f);
       setGratitudeEntries(g);
-    } catch {
-      // Silently fail — offline banner will show if no connection
+    } catch (err) {
+      logger.warn('[PullToRefresh] Data refresh failed:', err);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: stable callback, all deps are setters
   }, []);

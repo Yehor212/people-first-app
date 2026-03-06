@@ -10,7 +10,7 @@
 import { useState } from 'react';
 import { X, ChevronDown, ChevronUp, Sparkles, Bug, Zap, Trash2, History } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useBackHandler } from '@/hooks/useBackHandler';
+import { useModalA11y } from '@/hooks/useModalA11y';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import changelog from 'virtual:changelog';
 import type { ChangelogVersion } from '@/types/changelog';
@@ -105,7 +105,7 @@ function VersionCard({
 
       {/* Content */}
       {isExpanded && version.sections.length > 0 && (
-        <div className="px-4 pb-4 space-y-4 animate-fade-in">
+        <div className="px-4 pb-4 space-y-4 motion-safe:animate-fade-in">
           {version.sections.map((section, sectionIndex) => (
             <div key={sectionIndex}>
               <div className="flex items-center gap-2 mb-2">
@@ -134,7 +134,7 @@ function VersionCard({
 
 export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
   const { t } = useLanguage();
-  useBackHandler(true, onClose);
+  useModalA11y(true, onClose);
   useScrollLock(true);
   const [expandedVersions, setExpandedVersions] = useState<Set<string>>(() => {
     // Expand the first (latest) version by default
@@ -165,7 +165,7 @@ export function ChangelogPanel({ onClose }: ChangelogPanelProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-[80] bg-background animate-fade-in overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="changelog-title">
+    <div className="fixed inset-0 z-[80] bg-background motion-safe:animate-fade-in overflow-hidden flex flex-col" role="dialog" aria-modal="true" aria-labelledby="changelog-title">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-card/80 backdrop-blur-sm">
         <div className="flex items-center gap-3">

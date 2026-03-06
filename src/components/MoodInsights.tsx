@@ -142,7 +142,7 @@ export function MoodInsights({
         <button
           onClick={() => handleDismiss(featuredInsight.id)}
           aria-label={t.insightsDismiss || 'Dismiss insight'}
-          className="absolute top-3 end-3 p-1.5 hover:bg-black/10 rounded-lg transition-colors"
+          className="absolute top-3 end-3 p-1.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/10 rounded-lg transition-colors"
         >
           <X className="w-4 h-4 text-muted-foreground" />
         </button>
@@ -207,7 +207,7 @@ export function MoodInsights({
               <button
                 onClick={() => handleDismiss(insight.id)}
                 aria-label={t.insightsDismiss || 'Dismiss insight'}
-                className="absolute top-2 end-2 p-1 hover:bg-black/10 rounded-lg transition-colors"
+                className="absolute top-2 end-2 p-1 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-black/10 rounded-lg transition-colors"
               >
                 <X className="w-3 h-3 text-muted-foreground" />
               </button>

@@ -17,6 +17,7 @@ interface TodayFocusCardProps {
   currentPrimaryCTA: PrimaryCTA;
   onScrollToMood?: () => void;
   onNavigateToHabits?: () => void;
+  onNavigateToFocus?: () => void;
   onScrollToGratitude?: () => void;
   canActivateRestMode?: boolean;
   onRestMode?: () => void;
@@ -55,6 +56,7 @@ export const TodayFocusCard = memo(function TodayFocusCard({
   currentPrimaryCTA,
   onScrollToMood,
   onNavigateToHabits,
+  onNavigateToFocus,
   onScrollToGratitude,
   canActivateRestMode,
   onRestMode,
@@ -84,6 +86,7 @@ export const TodayFocusCard = memo(function TodayFocusCard({
   const handleAction = () => {
     if (currentPrimaryCTA === 'mood') onScrollToMood?.();
     else if (currentPrimaryCTA === 'habits') onNavigateToHabits?.();
+    else if (currentPrimaryCTA === 'focus') onNavigateToFocus?.();
     else if (currentPrimaryCTA === 'gratitude') onScrollToGratitude?.();
   };
 
@@ -118,7 +121,7 @@ export const TodayFocusCard = memo(function TodayFocusCard({
               {t.todayFocusSubtitle || 'Your next step'}
             </p>
           </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground flex-shrink-0 rtl:scale-x-[-1]" />
         </div>
       </button>
 
@@ -126,7 +129,7 @@ export const TodayFocusCard = memo(function TodayFocusCard({
       {canActivateRestMode && completedTodayCount === 0 && onRestMode && (
         <button
           onClick={onRestMode}
-          className="mt-2 w-full py-2 flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-xl transition-colors text-xs font-medium"
+          className="mt-2 w-full py-2 min-h-[44px] flex items-center justify-center gap-2 text-muted-foreground hover:text-foreground hover:bg-muted/30 rounded-xl transition-colors text-xs font-medium"
         >
           <Moon className="w-3.5 h-3.5" />
           {t.restDayButton || 'Take a rest day'}

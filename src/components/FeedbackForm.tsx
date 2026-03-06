@@ -143,7 +143,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
       aria-labelledby="feedback-form-title"
     >
       <div
-        className="w-full max-w-lg bg-background rounded-t-3xl p-6 max-h-[85dvh] overflow-y-auto animate-in slide-in-from-bottom duration-300 pb-safe"
+        className="w-full max-w-lg bg-background rounded-t-3xl p-6 max-h-[85dvh] overflow-y-auto motion-safe:animate-in motion-safe:slide-in-from-bottom motion-safe:duration-300 pb-safe"
         onTouchEnd={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -173,6 +173,8 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
               <button
                 key={cat.value}
                 onClick={() => setCategory(cat.value)}
+                aria-pressed={category === cat.value}
+                aria-label={cat.label}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
                   category === cat.value
                     ? 'bg-primary text-primary-foreground'
@@ -190,6 +192,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             placeholder={t.feedbackMessagePlaceholder}
+            aria-label={t.feedbackMessagePlaceholder || 'Message'}
             className="w-full h-32 p-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground resize-none focus:outline-none focus:ring-2 focus:ring-primary"
             disabled={status === 'sending'}
           />
@@ -204,6 +207,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
                 setEmailError(null); // Clear error when user types
               }}
               placeholder={t.feedbackEmailPlaceholder}
+              aria-label={t.feedbackEmailPlaceholder || 'Email (optional)'}
               className={`w-full p-3 rounded-xl bg-secondary text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 ${
                 emailError ? 'ring-2 ring-red-500 focus:ring-red-500' : 'focus:ring-primary'
               }`}
@@ -222,7 +226,7 @@ export const FeedbackForm = ({ open, onOpenChange }: FeedbackFormProps) => {
           >
             {status === 'sending' ? (
               <>
-                <Loader2 className="w-5 h-5 me-2 animate-spin" aria-hidden="true" />
+                <Loader2 className="w-5 h-5 me-2 motion-safe:animate-spin" aria-hidden="true" />
                 {t.feedbackSending}
               </>
             ) : status === 'success' ? (
