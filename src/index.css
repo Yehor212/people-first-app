@@ -4178,3 +4178,63 @@ body.reduce-motion .diary-animated {
     50% { opacity: 0.5; }
   }
 }
+
+/* ── BurnThought premium animations ─────────────────────────────
+   GPU-only: all keyframes use transform + opacity exclusively.
+   Applied conditionally via shouldAnimate() in JSX. */
+
+@keyframes burn-float-ember {
+  0% { opacity: 0; transform: translateY(0) scale(0.5); }
+  15% { opacity: 0.45; }
+  50% { opacity: 0.2; transform: translateY(-50px) translateX(6px) scale(0.7); }
+  100% { opacity: 0; transform: translateY(-110px) translateX(-4px) scale(0.15); }
+}
+
+@keyframes burn-rise-ember {
+  0% { opacity: 0; transform: translateY(0) scale(0.4); }
+  10% { opacity: 0.85; }
+  30% { opacity: 0.65; transform: translateY(-30px) translateX(8px) scale(1.2); }
+  70% { opacity: 0.25; transform: translateY(-70px) translateX(-6px) scale(0.7); }
+  100% { opacity: 0; transform: translateY(-120px) translateX(4px) scale(0); }
+}
+
+@keyframes burn-flame-pulse {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+@keyframes burn-glow-opacity {
+  0%, 100% { opacity: 0; }
+  50% { opacity: 1; }
+}
+
+@keyframes burn-draw-check {
+  to { stroke-dashoffset: 0; }
+}
+
+.animate-burn-float-ember {
+  animation: burn-float-ember 3s ease-out infinite;
+}
+
+.animate-burn-rise-ember {
+  animation: burn-rise-ember 1.6s ease-out forwards;
+}
+
+.animate-burn-flame-pulse {
+  animation: burn-flame-pulse 2s ease-in-out infinite;
+}
+
+/* Button glow: static box-shadow on ::after, GPU-only opacity pulse */
+.burn-glow-pulse-wrap {
+  position: relative;
+}
+.burn-glow-pulse-wrap::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 0 16px 2px rgba(239, 68, 68, 0.15);
+  opacity: 0;
+  animation: burn-glow-opacity 2.5s ease-in-out infinite;
+  pointer-events: none;
+}

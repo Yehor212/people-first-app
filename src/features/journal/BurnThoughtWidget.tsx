@@ -1,19 +1,22 @@
 /**
- * BurnThoughtWidget — Inline "burn a worry" section for the journal editor.
+ * BurnThoughtWidget — Premium "burn a worry" section for the journal editor.
  *
- * "Thanos Snap" text disintegration:
+ * "Thanos Snap" text disintegration with premium visual enhancements:
  *   STATE MACHINE: IDLE → DISSOLVING → RELEASED → COLLAPSING → closed
  *
- *   DISSOLVING uses text-to-pixel sampling: renders the user's text onto an
- *   offscreen canvas via fillText(), samples pixel positions where alpha > 0,
- *   then creates dust particles AT those positions. The text visually
- *   "crumbles" into particles that scatter with wind + gravity.
+ *   IDLE: Ambient ember particles float along card edges when text is entered.
+ *         Flame icon pulses gently. Burn button glows with warm pulse.
+ *         Character counter at bottom-right. Textarea auto-grows.
+ *
+ *   DISSOLVING: Text-to-pixel sampling → dust particles with temperature
+ *     progression (hot amber/orange → cool gray ash). Rising ember particles
+ *     float upward during dissolution. Card border glows red.
  *
  *   Phase 1 (0-200ms):    Particles vibrate in place — text "trembles"
- *   Phase 2 (200-1400ms): Progressive strip-by-strip dissolution (LTR / RTL-aware)
- *   Phase 3 (1400-2000ms): Remaining particles fade out naturally
+ *   Phase 2 (200-1400ms): Progressive strip-by-strip dissolution (LTR/RTL-aware)
+ *   Phase 3 (1400-2000ms): Remaining particles cool to ash and fade out
  *
- *   RELEASED: "Released" text with gentle scale-in (400ms pause).
+ *   RELEASED: Animated check circle draws itself + "Released" text.
  *   COLLAPSING: Telegram-style height collapse → onClose().
  *   FALLBACK: shouldAnimate() false → instant RELEASED (no animation).
  *
@@ -43,6 +46,7 @@ interface DustParticle {
   size: number;
   alpha: number;
   color: string;
+  ashColor: string;
   glow: boolean;
   rotation: number;
   rotSpeed: number;
@@ -53,14 +57,23 @@ interface DustParticle {
   started: boolean;
 }
 
-// Dust/ash palette — restrained: red accent + neutral ash
-const DUST_COLORS = [
-  '#fca5a5',  // red-300 (base)
-  '#f87171',  // red-400
+// Hot ember palette — bright, warm colors for fresh particles
+const COLORS_HOT = [
+  '#fbbf24',  // amber-400
   '#fb923c',  // orange-400
-  '#d4d4d8',  // zinc-300 (ash)
-  '#a1a1aa',  // zinc-400 (dark ash)
+  '#f87171',  // red-400
+  '#fca5a5',  // red-300
 ];
+
+// Ash palette — cool, muted colors for dying particles
+const COLORS_ASH = [
+  '#d4d4d8',  // zinc-300
+  '#a1a1aa',  // zinc-400
+  '#71717a',  // zinc-500
+];
+
+// Ambient ember colors (for floating CSS particles)
+const EMBER_AMBIENT = ['#fbbf24', '#fb923c', '#f87171', '#ef4444'];
 
 // ── Animation constants ─────────────────────────────────────────
 
@@ -173,9 +186,18 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
   const [collapsing, setCollapsing] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const rafRef = useRef(0);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const hapticTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  // ── Textarea auto-grow ──
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+  }, [text]);
 
   // ── Thanos Snap dissolution ──
 
@@ -244,7 +266,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
 
     // RTL-aware dissolution direction (isRTL from useLanguage context)
 
-    // Create particles from sampled text positions
+    // Create particles with temperature-aware colors
     const particles: DustParticle[] = positions.map(pos => {
       const stripIndex = Math.floor((pos.x / areaW) * NUM_STRIPS);
       const normalizedStrip = isRTL ? (NUM_STRIPS - 1 - stripIndex) : stripIndex;
@@ -260,8 +282,9 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
         vy: 0,
         size: 1 + Math.random() * 2,
         alpha: 0.9,
-        color: DUST_COLORS[Math.floor(Math.random() * DUST_COLORS.length)],
-        glow: Math.random() < 0.15,
+        color: COLORS_HOT[Math.floor(Math.random() * COLORS_HOT.length)],
+        ashColor: COLORS_ASH[Math.floor(Math.random() * COLORS_ASH.length)],
+        glow: Math.random() < 0.18,
         rotation: Math.random() * Math.PI * 2,
         rotSpeed: (Math.random() - 0.5) * 3,
         life: 0,
@@ -300,7 +323,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
             p.y = p.originY + (Math.random() - 0.5) * 2 * intensity;
             alive++;
 
-            // Render as stable dot at text position
+            // Render as hot dot at text position
             ctx.globalAlpha = 0.9;
             ctx.fillStyle = p.color;
             ctx.beginPath();
@@ -320,7 +343,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
           p.vy = Math.sin(angle) * speed + 15;
         }
 
-        // ── Phase 2/3: Dissolving ──
+        // ── Phase 2/3: Dissolving with temperature ──
         p.life += dt * 1000;
         if (p.life >= p.maxLife) { p.alpha = 0; continue; }
 
@@ -348,12 +371,16 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
 
         alive++;
 
-        // ── Render glow halo (real blur via shadowBlur) ──
+        // Temperature-based color: hot ember → cool ash
+        const temp = 1 - Math.min(lifeT * 1.3, 1);
+        const currentColor = temp > 0.35 ? p.color : p.ashColor;
+
+        // ── Render glow halo (enhanced for hot particles) ──
         if (p.glow) {
-          ctx.globalAlpha = p.alpha * 0.25;
-          ctx.shadowBlur = p.size * 3;
-          ctx.shadowColor = p.color;
-          ctx.fillStyle = p.color;
+          ctx.globalAlpha = p.alpha * 0.3;
+          ctx.shadowBlur = p.size * (temp > 0.5 ? 5 : 3);
+          ctx.shadowColor = currentColor;
+          ctx.fillStyle = currentColor;
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.size * 2, 0, Math.PI * 2);
           ctx.fill();
@@ -362,7 +389,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
 
         // ── Render core particle ──
         ctx.globalAlpha = p.alpha;
-        ctx.fillStyle = p.color;
+        ctx.fillStyle = currentColor;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
@@ -427,12 +454,6 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
         paddingBottom: 0,
       };
     }
-    if (burned) {
-      return { opacity: 1, y: 0, scale: 1 };
-    }
-    if (burning) {
-      return { opacity: 1, y: 0, scale: 1 };
-    }
     return { opacity: 1, y: 0, scale: 1 };
   };
 
@@ -449,6 +470,10 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
     return zenMotion.gentle;
   };
 
+  const hasText = text.trim().length > 0;
+  const animate = shouldAnimate();
+  const showAmbientEmbers = hasText && !burning && !burned && animate;
+
   return (
     <motion.div
       className="my-8 p-6 rounded-2xl relative overflow-hidden bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-soft"
@@ -461,10 +486,58 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
         if (collapsing) onClose();
       }}
     >
+      {/* Card burn glow — GPU-only opacity transition instead of box-shadow transition */}
+      <div
+        className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-500 ease-out"
+        style={{
+          boxShadow: 'inset 0 0 80px rgba(239, 68, 68, 0.1), 0 0 24px rgba(239, 68, 68, 0.12)',
+          opacity: burning ? 1 : 0,
+        }}
+        aria-hidden="true"
+      />
+
+      {/* Ambient floating embers — visible when text is entered */}
+      {showAmbientEmbers && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl" aria-hidden="true">
+          {Array.from({ length: 8 }, (_, i) => (
+            <span
+              key={i}
+              className="absolute w-1 h-1 rounded-full animate-burn-float-ember"
+              style={{
+                left: `${8 + (i * 12) % 84}%`,
+                bottom: '-2px',
+                animationDelay: `${i * 0.5}s`,
+                backgroundColor: EMBER_AMBIENT[i % EMBER_AMBIENT.length],
+              }}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Rising embers during dissolution */}
+      {burning && animate && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl z-[3]" aria-hidden="true">
+          {Array.from({ length: 14 }, (_, i) => (
+            <span
+              key={i}
+              className="absolute rounded-full animate-burn-rise-ember"
+              style={{
+                width: `${2 + (i % 3)}px`,
+                height: `${2 + (i % 3)}px`,
+                left: `${5 + (i * 7) % 88}%`,
+                bottom: '5%',
+                animationDelay: `${i * 0.1}s`,
+                backgroundColor: COLORS_HOT[i % COLORS_HOT.length],
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2">
         <div className={`flex items-center gap-2 ${burned ? 'text-muted-foreground/70' : 'text-red-400'}`}>
-          <Flame className="w-4 h-4" />
+          <Flame className={`w-4 h-4 ${showAmbientEmbers ? 'animate-burn-flame-pulse' : ''}`} />
           <span className="text-sm font-medium">
             {burned ? (ts.journalBurnReleased || 'Released') : (ts.journalBurnTitle || 'Burn a thought')}
           </span>
@@ -484,15 +557,38 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
       {/* Body */}
       <div className="relative px-4 pb-4">
         {burned ? (
-          <motion.p
-            className="text-sm py-4 text-center text-muted-foreground/60"
+          <motion.div
+            className="flex flex-col items-center gap-3 py-6"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={collapsing ? { opacity: 0, y: -12 } : { opacity: 1, scale: 1 }}
             transition={collapsing ? { duration: 0.25 } : zenMotion.gentle}
             aria-live="polite"
           >
-            {ts.journalBurnReleasedMessage || 'Your thought has been released.'}
-          </motion.p>
+            {/* Animated check circle */}
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center">
+              <svg
+                viewBox="0 0 24 24"
+                className="w-5 h-5 text-emerald-400"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path
+                  d="M5 13l4 4L19 7"
+                  style={animate ? {
+                    strokeDasharray: 22,
+                    strokeDashoffset: 22,
+                    animation: 'burn-draw-check 0.5s ease-out 0.15s forwards',
+                  } : undefined}
+                />
+              </svg>
+            </div>
+            <p className="text-sm text-muted-foreground/60">
+              {ts.journalBurnReleasedMessage || 'Your thought has been released.'}
+            </p>
+          </motion.div>
         ) : (
           <div ref={containerRef} className="relative overflow-hidden">
             {/* Content — fast opacity swap to particles during burning */}
@@ -501,22 +597,31 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
               transition={{ duration: TEXT_FADE_MS / 1000, ease: 'easeOut' }}
             >
               <textarea
+                ref={textareaRef}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={ts.journalBurnPlaceholder || 'Write what worries you...'}
-                className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] text-foreground/90 ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/40 transition-shadow"
-                style={{ minHeight: 64 }}
+                className={`w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/40 transition-colors duration-150 ${burning ? 'text-orange-400/80' : 'text-foreground/90'}`}
+                style={{ minHeight: 64, maxHeight: 200 }}
                 rows={2}
                 maxLength={500}
                 disabled={burning}
                 aria-label={ts.journalBurnPlaceholder || 'Write what worries you...'}
               />
+
+              {/* Character counter */}
+              {text.length > 0 && !burning && (
+                <div className={`text-end text-xs mt-1 transition-opacity duration-200 ${text.length > 450 ? 'text-red-400/70' : 'text-muted-foreground/30'}`}>
+                  {text.length}/500
+                </div>
+              )}
+
               {!burning && (
                 <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={startBurn}
-                  disabled={!text.trim()}
-                  className={`mt-3 w-full py-3 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2 min-h-[44px] ${text.trim() ? 'bg-red-500/15 text-red-300 ring-1 ring-red-500/20 hover:bg-red-500/20' : 'bg-white/[0.03] text-muted-foreground/50 ring-1 ring-white/[0.06]'}`}
+                  disabled={!hasText}
+                  className={`mt-3 w-full py-3 rounded-full text-sm font-medium transition-all flex items-center justify-center gap-2 min-h-[44px] ${hasText ? 'bg-red-500/15 text-red-300 ring-1 ring-red-500/20 hover:bg-red-500/20' : 'bg-white/[0.03] text-muted-foreground/50 ring-1 ring-white/[0.06]'} ${hasText && animate ? 'burn-glow-pulse-wrap' : ''}`}
                 >
                   <Flame className="w-4 h-4" />
                   {ts.journalBurnAction || 'Burn it'}
