@@ -68,8 +68,6 @@ export const MiniWeekRow = memo(function MiniWeekRow({
   ], [t.dayMon, t.dayTue, t.dayWed, t.dayThu, t.dayFri, t.daySat, t.daySun]);
   const isNumerical = habit.habitType === 'numerical';
 
-  // today is an intentional invalidation signal — recompute days when date changes at midnight
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const days = useMemo(() => getCurrentISOWeek(today), [today]);
   const computedEntries = useMemo(() => computeEntriesWithAuto(habit), [habit]);
 
