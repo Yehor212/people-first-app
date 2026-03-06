@@ -6,19 +6,18 @@
 
 import { memo, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Target, Brain, Sparkles, Moon, ChevronRight } from 'lucide-react';
+import { Heart, Target, Brain, Moon, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { zenMotion } from '@/lib/animationUtils';
 import { cn } from '@/lib/utils';
 
-type PrimaryCTA = 'mood' | 'habits' | 'focus' | 'gratitude' | 'complete';
+type PrimaryCTA = 'mood' | 'habits' | 'focus' | 'complete';
 
 interface TodayFocusCardProps {
   currentPrimaryCTA: PrimaryCTA;
   onScrollToMood?: () => void;
   onNavigateToHabits?: () => void;
   onNavigateToFocus?: () => void;
-  onScrollToGratitude?: () => void;
   canActivateRestMode?: boolean;
   onRestMode?: () => void;
   completedTodayCount?: number;
@@ -44,12 +43,6 @@ const CTA_CONFIG = {
     bgClass: 'from-amber-500/10 to-orange-500/10 dark:from-amber-500/15 dark:to-orange-500/15',
     ringClass: 'ring-amber-500/20',
   },
-  gratitude: {
-    Icon: Sparkles,
-    colorClass: 'text-pink-500',
-    bgClass: 'from-pink-500/10 to-rose-500/10 dark:from-pink-500/15 dark:to-rose-500/15',
-    ringClass: 'ring-pink-500/20',
-  },
 } as const;
 
 export const TodayFocusCard = memo(function TodayFocusCard({
@@ -57,7 +50,6 @@ export const TodayFocusCard = memo(function TodayFocusCard({
   onScrollToMood,
   onNavigateToHabits,
   onNavigateToFocus,
-  onScrollToGratitude,
   canActivateRestMode,
   onRestMode,
   completedTodayCount = 0,
@@ -74,8 +66,7 @@ export const TodayFocusCard = memo(function TodayFocusCard({
       return t.todayFocusMoodEvening || 'How was your day?';
     }
     if (currentPrimaryCTA === 'habits') return t.todayFocusHabits || 'Time to check off your habits';
-    if (currentPrimaryCTA === 'focus') return t.todayFocusFocus || 'Ready for a focus session?';
-    return t.todayFocusGratitude || 'What are you grateful for today?';
+    return t.todayFocusFocus || 'Ready for a focus session?';
   }, [currentPrimaryCTA, t]);
 
   // Don't show when everything is complete or in rest mode
@@ -87,7 +78,6 @@ export const TodayFocusCard = memo(function TodayFocusCard({
     if (currentPrimaryCTA === 'mood') onScrollToMood?.();
     else if (currentPrimaryCTA === 'habits') onNavigateToHabits?.();
     else if (currentPrimaryCTA === 'focus') onNavigateToFocus?.();
-    else if (currentPrimaryCTA === 'gratitude') onScrollToGratitude?.();
   };
 
   const { Icon, colorClass, bgClass, ringClass } = config;

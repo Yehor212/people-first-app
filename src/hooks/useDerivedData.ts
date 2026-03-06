@@ -43,10 +43,6 @@ export function useDerivedData(innerWorld: InnerWorldData, badges: Array<{ id: s
     return focusSessions.some(s => s.date === currentDate);
   }, [focusSessions, currentDate]);
 
-  const hasGratitudeToday = useMemo(() => {
-    return gratitudeEntries.some(g => g.date === currentDate);
-  }, [gratitudeEntries, currentDate]);
-
   // In Loop model, all non-archived habits are "due" — frequency affects scoring, not visibility
   const habitsDueToday = useMemo(() => {
     return habits.filter(h => !h.isArchived);
@@ -65,9 +61,8 @@ export function useDerivedData(innerWorld: InnerWorldData, badges: Array<{ id: s
     if (!hasMoodToday) return 'mood' as const;
     if (hasUncompletedHabits) return 'habits' as const;
     if (!hasFocusToday) return 'focus' as const;
-    if (!hasGratitudeToday) return 'gratitude' as const;
     return 'complete' as const;
-  }, [hasMoodToday, hasUncompletedHabits, hasFocusToday, hasGratitudeToday]);
+  }, [hasMoodToday, hasUncompletedHabits, hasFocusToday]);
 
   // Widget data
   const todayFocusMinutes = useMemo(() => {

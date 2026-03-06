@@ -37,9 +37,10 @@ type ModuleState = 'card' | 'open';
 
 interface JournalModuleProps {
   onToggleHabit?: (habitId: string, date: string) => void;
+  onAddGratitude?: (entry: import('@/types').GratitudeEntry) => void;
 }
 
-export function JournalModule({ onToggleHabit }: JournalModuleProps = {}) {
+export function JournalModule({ onToggleHabit, onAddGratitude }: JournalModuleProps = {}) {
   const { t, isRTL } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const rewardUser = useGamificationStore(s => s.rewardUser);
@@ -616,6 +617,7 @@ export function JournalModule({ onToggleHabit }: JournalModuleProps = {}) {
               onDelete={journal.activeEntryId ? () => handleDeleteEntry(journal.activeEntryId) : undefined}
               onBack={journal.goBack}
               onToggleHabit={onToggleHabit}
+              onAddGratitude={onAddGratitude}
             />
           )}
 
@@ -743,6 +745,7 @@ export function JournalModule({ onToggleHabit }: JournalModuleProps = {}) {
                       loading={journal.loading}
                       daysSinceLastEntry={daysSinceLastEntry}
                       privateMode={privateMode}
+                      onAddGratitude={onAddGratitude}
                     />
                   </div>
                 </div>

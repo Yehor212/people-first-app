@@ -126,9 +126,9 @@ src/
 
   components/
     tabs/                       # Tab content components (6 files, extracted from Index.tsx JSX)
-      HomeTab.tsx               # ~231 lines — scrollable: mood, habits, gratitude, streak, growth rings, reflection
+      HomeTab.tsx               # ~170 lines — scrollable: mood, streak, growth rings, reflection (gratitude migrated to Journal)
       MindMapTab.tsx            # ~26 lines — thin wrapper for MindMapCanvas (DISABLED: CANVAS_ENABLED=false)
-      GardenTab.tsx             # ~115 lines — schedule, journal, breathing, focus
+      GardenTab.tsx             # ~133 lines — schedule, journal (with gratitude bloom + speed-dial FAB), breathing, focus
       StatsTab.tsx              # ~45 lines — stats page wrapper
       AchievementsTab.tsx       # ~34 lines — achievements + leaderboard
       SettingsTab.tsx           # ~58 lines — settings panel wrapper
@@ -323,7 +323,7 @@ The Mind Map Canvas lives in a **dedicated "Map" tab** (`MindMapTab.tsx`) — se
 
 **Navigation** (`Navigation.tsx`): 5 visible tabs — Home | Map | Diary | Stats | Settings. The Map tab is conditionally included via `canvasEnabled` prop (wired to `CANVAS_ENABLED` in Index.tsx). `achievements` is accessible via modals, not the nav bar.
 
-**Home tab** (`HomeTab.tsx`, ~231 lines): Full scrollable layout — Header, EmotionWheel (lazy), HabitTracker (lazy), GratitudeJournal (lazy), GrowthRings, ReflectionPrompts, TodayFocusCard, RestMode/AllCompleteCelebration. Receives 20+ props from Index.tsx.
+**Home tab** (`HomeTab.tsx`, ~170 lines): Full scrollable layout — Header, EmotionWheel (lazy), GrowthRings, ReflectionPrompts, TodayFocusCard, RestMode/AllCompleteCelebration. Gratitude migrated to Journal module (GratitudeBloomWidget + speed-dial FAB).
 
 **Mind Map tab** (`MindMapTab.tsx`, ~26 lines): Thin wrapper rendering `MindMapCanvas` full-bleed. Rendered as a `fixed inset-0 z-30` overlay OUTSIDE `<main>` in Index.tsx (prevents canvas from being constrained by scrollable layout). Container sealed with `h-screen overflow-hidden`.
 
@@ -951,7 +951,7 @@ On PR to main:
 | HabitCompletionCelebration.tsx | 462L / 1st / 1eff | max 245L / 1st | `habit-completion-celebration/` — 5 files (3 exports split) |
 | FocusTimer.tsx | 448L / 0st / 0eff | max 204L / 0st | `focus-timer/` — 5 files |
 | ChallengesPanel.tsx | 431L / 3st / 0eff | max 365L / 3st | `challenges-panel/` — 3 files |
-| GratitudeJournal.tsx | 429L / 2st / 2eff | max 316L / 2st | `gratitude-journal/` — 4 files |
+| ~~GratitudeJournal.tsx~~ | DELETED | — | Migrated to `features/journal/GratitudeBloomWidget.tsx` + speed-dial FAB |
 | UnifiedShareModal.tsx | 427L / 0st / 0eff | max 292L / 0st | `share/` — split to 3 files |
 | WeeklyInsightsCard.tsx | 424L / 1st / 0eff | max 278L / 1st | `weekly-insights-card/` — 3 files |
 | MoodWeather.tsx | 416L / 0st / 0eff | max 249L / 0st | `mood-weather/` — 4 files |

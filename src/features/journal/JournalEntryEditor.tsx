@@ -28,6 +28,7 @@ import { JournalHabitSection } from './JournalHabitSection';
 import { useDiaryTheme } from './useDiaryTheme';
 import { DiaryCanvas } from './DiaryCanvas';
 import { BurnThoughtWidget } from './BurnThoughtWidget';
+import { GratitudeBloomWidget } from './GratitudeBloomWidget';
 import { DiaryBreatheWidget } from './DiaryBreatheWidget';
 import { ZenFocusMode } from './ZenFocusMode';
 import { PrivacyShield } from './PrivacyShield';
@@ -203,6 +204,7 @@ interface JournalEntryEditorProps {
   onDelete?: () => void;
   onBack: () => void;
   onToggleHabit?: (habitId: string, date: string) => void;
+  onAddGratitude?: (entry: import('@/types').GratitudeEntry) => void;
 }
 
 export function JournalEntryEditor({
@@ -215,6 +217,7 @@ export function JournalEntryEditor({
   onDelete,
   onBack,
   onToggleHabit,
+  onAddGratitude,
 }: JournalEntryEditorProps) {
   const { t, language } = useLanguage();
   useScrollLock(true);
@@ -264,6 +267,7 @@ export function JournalEntryEditor({
   const diaryTheme = useDiaryTheme(entry?.theme || 'dark', entry?.font || 'caveat');
   const [showStyleBar, setShowStyleBar] = useState(false);
   const [showBurnWidget, setShowBurnWidget] = useState(false);
+  const [showGratitudeWidget, setShowGratitudeWidget] = useState(false);
   const [zenFocusActive, setZenFocusActive] = useState(false);
   const [, setShowActionSheet] = useState(false);
   const [, setToolbarHidden] = useState(false);
@@ -604,6 +608,7 @@ export function JournalEntryEditor({
   }, []);
 
   const handleCloseBurn = useCallback(() => setShowBurnWidget(false), []);
+  const handleCloseGratitude = useCallback(() => setShowGratitudeWidget(false), []);
 
   const handleAddTag = () => {
     const tag = tagInput.trim().replace(/[^a-zA-Z\u0430-\u044f\u0410-\u042f\u0451\u0401\u0456\u0406\u0457\u0407\u0454\u0404\u0491\u04900-9_-]/g, '');
@@ -1376,6 +1381,13 @@ export function JournalEntryEditor({
           )}
         </AnimatePresence>
 
+        {/* Gratitude bloom widget (inline, above textarea) */}
+        <AnimatePresence>
+          {showGratitudeWidget && onAddGratitude && (
+            <GratitudeBloomWidget onClose={handleCloseGratitude} onPlant={onAddGratitude} />
+          )}
+        </AnimatePresence>
+
         {/* Breathing exercise widget (inline, above textarea) */}
         <AnimatePresence>
           {showBreathe && (
@@ -1482,7 +1494,7 @@ export function JournalEntryEditor({
           </motion.button>
           <motion.button
             whileTap={{ scale: 0.95 }}
-            onClick={() => setShowBurnWidget(!showBurnWidget)}
+            onClick={() => { setShowBurnWidget(v => !v); setShowGratitudeWidget(false); }}
             className={cn(
               'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]',
               showBurnWidget
@@ -1492,6 +1504,20 @@ export function JournalEntryEditor({
           >
             🔥 {ts.journalBurnTitle ? ts.journalBurnTitle.split(' ')[0] : 'Burn'}
           </motion.button>
+          {onAddGratitude && (
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={() => { setShowGratitudeWidget(v => !v); setShowBurnWidget(false); }}
+              className={cn(
+                'px-4 py-2 rounded-lg text-sm font-medium border transition-all flex items-center gap-2 flex-shrink-0 min-h-[44px]',
+                showGratitudeWidget
+                  ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                  : 'bg-transparent text-slate-400 border-transparent hover:bg-white/10 hover:text-slate-50',
+              )}
+            >
+              🌱 {ts.journalGratitudeAction ? ts.journalGratitudeAction.split(' ')[0] : 'Gratitude'}
+            </motion.button>
+          )}
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowBreathe(!showBreathe)}

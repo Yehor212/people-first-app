@@ -2383,6 +2383,14 @@ export interface Translations {
   journalBurnReleasedMessage: string;
   journalBurnPlaceholder: string;
   journalBurnAction: string;
+  journalGratitudeTitle: string;
+  journalGratitudePlaceholder: string;
+  journalGratitudeAction: string;
+  journalGratitudePlanted: string;
+  journalGratitudePlantedMsg: string;
+  journalQuickGratitude: string;
+  journalBurnAThought: string;
+  journalFabNewEntry: string;
   journalStyleButton: string;
   journalThemeLabel: string;
   journalFontLabel: string;

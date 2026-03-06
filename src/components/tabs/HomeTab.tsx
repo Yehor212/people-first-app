@@ -1,6 +1,6 @@
 import { Suspense, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { LazyErrorBoundary, ModalErrorBoundary } from '@/components/ErrorBoundary';
+import { ModalErrorBoundary } from '@/components/ErrorBoundary';
 import { Header } from '@/components/Header';
 import { PullToRefresh } from '@/components/PullToRefresh';
 import { InstallBanner } from '@/components/InstallBanner';
@@ -14,15 +14,14 @@ import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { TreePine } from 'lucide-react';
 import { ReflectionPromptCard } from '@/components/ReflectionPromptCard';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
-import { useAppStore, useUIStore, useUserDataStore, getModalToggle } from '@/stores';
+import { useAppStore, useUserDataStore, getModalToggle } from '@/stores';
 import { useReflectionPrompts } from '@/hooks/useReflectionPrompts';
 import { computeGrowthRings, getGrowthRingsSummary } from '@/lib/growthRings';
 import { motionPresets } from '@/lib/animationUtils';
 import { getToday } from '@/lib/utils';
-import type { MoodEntry, Habit, GratitudeEntry, FocusSession } from '@/types';
+import type { MoodEntry, Habit, FocusSession } from '@/types';
 
 const EmotionWheel = lazyWithRetry(() => import('@/components/mindfulness/EmotionWheel').then(m => ({ default: m.EmotionWheel })), 'EmotionWheel');
-const GratitudeJournal = lazyWithRetry(() => import('@/components/GratitudeJournal').then(m => ({ default: m.GratitudeJournal })), 'GratitudeJournal');
 
 const setShowChallenges = getModalToggle('showChallenges');
 const setShowTasksPanel = getModalToggle('showTasksPanel');
@@ -33,7 +32,6 @@ interface HomeTabProps {
   safeMoods: MoodEntry[];
   safeHabits: Habit[];
   safeFocusSessions: FocusSession[];
-  safeGratitudeEntries: GratitudeEntry[];
 
   // Inner World
   currentActiveStreak: number;
@@ -44,28 +42,24 @@ interface HomeTabProps {
 
   // Derived values
   completedTodayCount: number;
-  currentPrimaryCTA: 'mood' | 'habits' | 'focus' | 'gratitude' | 'complete';
+  currentPrimaryCTA: 'mood' | 'habits' | 'focus' | 'complete';
 
   // Handlers
   handleAddMood: (entry: MoodEntry) => void;
-  handleAddGratitude: (entry: GratitudeEntry) => void;
-  handleJournalPromptUsed: () => void;
   handlePullToRefresh: () => Promise<void>;
 
   // Refs
   moodRef: React.RefObject<HTMLDivElement | null>;
-  gratitudeRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export function HomeTab({
-  safeMoods, safeHabits, safeFocusSessions, safeGratitudeEntries,
+  safeMoods, safeHabits, safeFocusSessions,
   currentActiveStreak, isRestMode, activateRestMode, deactivateRestMode,
   canActivateRestMode,
   completedTodayCount, currentPrimaryCTA,
   handleAddMood,
-  handleAddGratitude, handleJournalPromptUsed,
   handlePullToRefresh,
-  moodRef, gratitudeRef,
+  moodRef,
 }: HomeTabProps) {
   const { isFeatureVisible } = useFeatureFlags();
   const userName = useUserDataStore(s => s.userName);
@@ -73,10 +67,10 @@ export function HomeTab({
   const googleAuthChecked = useUserDataStore(s => s.googleAuthChecked);
   const setActiveTab = useAppStore(s => s.setActiveTab);
   const setSettingsOpenSection = useAppStore(s => s.setSettingsOpenSection);
-  const journalPromptText = useUIStore(s => s.journalPromptText);
+  const gratitudeEntries = useUserDataStore(s => s.gratitudeEntries);
 
   // Contextual reflection prompts (IA Blueprint Phase 3)
-  const reflectionPrompts = useReflectionPrompts(safeMoods, safeHabits, safeFocusSessions, safeGratitudeEntries);
+  const reflectionPrompts = useReflectionPrompts(safeMoods, safeHabits, safeFocusSessions, gratitudeEntries);
 
   // Growth Rings — never-resetting growth visualization (IA Blueprint Phase 2.3)
   const growthSummary = useMemo(() => {
@@ -132,7 +126,6 @@ export function HomeTab({
             onScrollToMood={() => scrollToRef(moodRef)}
             onNavigateToHabits={() => setActiveTab('mindmap')}
             onNavigateToFocus={() => setActiveTab('garden')}
-            onScrollToGratitude={() => scrollToRef(gratitudeRef)}
             canActivateRestMode={canActivateRestMode}
             onRestMode={activateRestMode}
             completedTodayCount={completedTodayCount}
@@ -169,22 +162,6 @@ export function HomeTab({
             <>
               {/* Primary content — order based on user preference */}
               {moodBlock}
-
-              {/* Gratitude Journal */}
-              {isFeatureVisible('gratitudeJournal') && (
-                <div ref={gratitudeRef} className="min-h-[120px]">
-                  <LazyErrorBoundary componentName="Gratitude Journal">
-                    <Suspense fallback={<SkeletonCard />}>
-                      <GratitudeJournal
-                        entries={safeGratitudeEntries}
-                        onAddEntry={handleAddGratitude}
-                        initialText={journalPromptText}
-                        onInitialTextUsed={handleJournalPromptUsed}
-                      />
-                    </Suspense>
-                  </LazyErrorBoundary>
-                </div>
-              )}
             </>
           )}
         </div>

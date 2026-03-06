@@ -16,7 +16,7 @@ import { logger } from '@/lib/logger';
 interface UseCloudSyncEffectsParams {
   setChallenges: Dispatch<SetStateAction<ReturnType<typeof import('@/lib/challengeStorage').getChallenges>>>;
   setBadges: Dispatch<SetStateAction<ReturnType<typeof import('@/lib/challengeStorage').getBadges>>>;
-  handleNavigateToSection: (section: 'mood' | 'habits' | 'focus' | 'gratitude') => void;
+  handleNavigateToSection: (section: 'mood' | 'habits' | 'focus') => void;
   quickActionTimeoutRef: MutableRefObject<ReturnType<typeof setTimeout> | null>;
 }
 

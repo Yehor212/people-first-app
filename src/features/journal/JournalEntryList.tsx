@@ -1,12 +1,16 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { Plus, Search, X, Sparkles, Loader2 } from 'lucide-react';
-import { motion, type Variants } from 'framer-motion';
+import { useState, useEffect, useMemo, useCallback, useRef, memo } from 'react';
+import { Plus, Search, X, Sparkles, Loader2, PenLine, Sprout, Flame } from 'lucide-react';
+import { motion, AnimatePresence, type Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { zenMotion } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import type { JournalEntry } from './types';
-import type { MoodType } from '@/types';
+import type { MoodType, GratitudeEntry } from '@/types';
 import { JournalEntryCard } from './JournalEntryCard';
 import { StickerRenderer } from './StickerRenderer';
+import { GratitudeBloomWidget } from './GratitudeBloomWidget';
+import { BurnThoughtWidget } from './BurnThoughtWidget';
 import { searchJournalSemantic, generateAllMissingEmbeddings, type SemanticSearchResult } from '@/lib/journalAI';
 import { supabase } from '@/lib/supabaseClient';
 import { Quote } from 'lucide-react';
@@ -58,6 +62,7 @@ interface JournalEntryListProps {
   onOpenEntry: (id: string) => void;
   onDeleteEntry: (id: string) => void;
   onNewEntry: () => void;
+  onAddGratitude?: (entry: GratitudeEntry) => void;
   totalCount: number;
   loading?: boolean;
   daysSinceLastEntry?: number | null;
@@ -69,6 +74,7 @@ export function JournalEntryList({
   onOpenEntry,
   onDeleteEntry,
   onNewEntry,
+  onAddGratitude,
   totalCount,
   loading = false,
   daysSinceLastEntry,
@@ -533,13 +539,118 @@ export function JournalEntryList({
         </div>
       )}
 
-      {/* FAB — New Entry */}
+      {/* Speed-dial FAB */}
+      <SpeedDialFab
+        onNewEntry={onNewEntry}
+        onAddGratitude={onAddGratitude}
+      />
+    </div>
+  );
+}
+
+// ── Speed-dial FAB ────────────────────────────────────────────────
+
+interface SpeedDialFabProps {
+  onNewEntry: () => void;
+  onAddGratitude?: (entry: GratitudeEntry) => void;
+}
+
+const SpeedDialFab = memo(function SpeedDialFab({ onNewEntry, onAddGratitude }: SpeedDialFabProps) {
+  const { t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
+  const [open, setOpen] = useState(false);
+  const [showQuickGratitude, setShowQuickGratitude] = useState(false);
+  const [showQuickBurn, setShowQuickBurn] = useState(false);
+
+  useBackHandler(open, () => setOpen(false));
+  useBackHandler(showQuickGratitude, () => setShowQuickGratitude(false));
+  useBackHandler(showQuickBurn, () => setShowQuickBurn(false));
+
+  const handleNewEntry = useCallback(() => {
+    setOpen(false);
+    onNewEntry();
+  }, [onNewEntry]);
+
+  const handleQuickGratitude = useCallback(() => {
+    setOpen(false);
+    setShowQuickBurn(false);
+    setShowQuickGratitude(true);
+  }, []);
+
+  const handleQuickBurn = useCallback(() => {
+    setOpen(false);
+    setShowQuickGratitude(false);
+    setShowQuickBurn(true);
+  }, []);
+
+  const fabBottom = 'bottom-[calc(6rem+env(safe-area-inset-bottom))]';
+
+  const miniItems = [
+    { label: ts.journalFabNewEntry || 'New Entry', icon: PenLine, color: 'bg-primary text-primary-foreground', action: handleNewEntry },
+    ...(onAddGratitude ? [{ label: ts.journalQuickGratitude || 'Quick Gratitude', icon: Sprout, color: 'bg-emerald-500 text-white', action: handleQuickGratitude }] : []),
+    { label: ts.journalBurnAThought || 'Burn a Thought', icon: Flame, color: 'bg-orange-500 text-white', action: handleQuickBurn },
+  ];
+
+  return (
+    <>
+      {/* Backdrop */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            className="fixed inset-0 z-[54] bg-black/20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mini-FABs */}
+      <AnimatePresence>
+        {open && miniItems.map((item, i) => (
+          <motion.button
+            key={item.label}
+            initial={{ opacity: 0, scale: 0.5, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.5, y: 20 }}
+            transition={{ delay: i * 0.08, type: 'spring', stiffness: 400, damping: 22 }}
+            onClick={item.action}
+            aria-label={item.label}
+            className={cn(
+              'fixed end-5 z-[56] min-h-[44px]',
+              fabBottom,
+              'flex items-center gap-3 rtl:flex-row flex-row-reverse',
+            )}
+            style={{ [('bottom' as string)]: `calc(6rem + env(safe-area-inset-bottom) + ${(i + 1) * 56}px)` }}
+          >
+            <div className={cn('w-11 h-11 rounded-full flex items-center justify-center shadow-lg', item.color)}>
+              <item.icon className="w-5 h-5" />
+            </div>
+            <span className="text-xs font-medium text-foreground bg-card/90 backdrop-blur-sm px-3 py-1.5 rounded-lg shadow-md whitespace-nowrap">
+              {item.label}
+            </span>
+          </motion.button>
+        ))}
+      </AnimatePresence>
+
+      {/* Main FAB */}
       <motion.button
         whileTap={{ scale: 0.85 }}
         whileHover={{ scale: 1.05 }}
-        onClick={onNewEntry}
+        onClick={() => {
+          if (showQuickGratitude || showQuickBurn) {
+            setShowQuickGratitude(false);
+            setShowQuickBurn(false);
+            setOpen(true);
+          } else {
+            setOpen(prev => !prev);
+          }
+        }}
+        aria-label={open ? (ts.close || 'Close') : (ts.journalFabNewEntry || 'New entry')}
         className={cn(
-          'fixed bottom-[calc(6rem+env(safe-area-inset-bottom))] end-5 z-[55]',
+          'fixed end-5 z-[56]',
+          fabBottom,
           'w-14 h-14 rounded-full',
           'bg-gradient-to-br from-primary to-primary/80',
           'text-primary-foreground',
@@ -547,8 +658,43 @@ export function JournalEntryList({
           'shadow-[0_4px_20px_rgba(var(--primary-rgb,99,102,241),0.35)]',
         )}
       >
-        <Plus className="w-6 h-6" />
+        <motion.div animate={{ rotate: open ? 45 : 0 }} transition={zenMotion.snappy}>
+          <Plus className="w-6 h-6" />
+        </motion.div>
       </motion.button>
-    </div>
+
+      {/* Inline Quick Gratitude */}
+      <AnimatePresence>
+        {showQuickGratitude && onAddGratitude && (
+          <motion.div
+            className="mb-4"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={zenMotion.gentle}
+          >
+            <GratitudeBloomWidget
+              onClose={() => setShowQuickGratitude(false)}
+              onPlant={(entry) => { onAddGratitude(entry); }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Inline Quick Burn */}
+      <AnimatePresence>
+        {showQuickBurn && (
+          <motion.div
+            className="mb-4"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={zenMotion.gentle}
+          >
+            <BurnThoughtWidget onClose={() => setShowQuickBurn(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
-}
+});

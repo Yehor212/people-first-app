@@ -1,6 +1,6 @@
 /**
  * useGratitudeHandlers Hook Tests
- * Tests gratitude entry creation, creature interactions, and journal prompt handling.
+ * Tests gratitude entry creation, creature interactions, and gamification rewards.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -10,7 +10,6 @@ import { renderHook, act } from '@testing-library/react';
 
 const mockSetGratitudeEntries = vi.fn();
 const mockRewardUser = vi.fn();
-const mockSetJournalPromptText = vi.fn();
 const mockEarnTreats = vi.fn(() => ({ earned: 5 }));
 const mockAttractCreature = vi.fn();
 const mockFeedCreatures = vi.fn();
@@ -23,9 +22,7 @@ vi.mock('@/stores', () => ({
   useGamificationStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) =>
     sel({ rewardUser: mockRewardUser }),
   ),
-  useUIStore: vi.fn((sel: (s: Record<string, unknown>) => unknown) =>
-    sel({ setJournalPromptText: mockSetJournalPromptText }),
-  ),
+  useUIStore: vi.fn(),
 }));
 
 vi.mock('@/components/XpPopup', () => ({
@@ -116,13 +113,4 @@ describe('useGratitudeHandlers', () => {
     expect(mockUpdateChallengeProgress).toHaveBeenCalledTimes(1);
   });
 
-  it('handleJournalPromptUsed sets journalPromptText to undefined', () => {
-    const { result } = renderGratitudeHandlers();
-
-    act(() => {
-      result.current.handleJournalPromptUsed();
-    });
-
-    expect(mockSetJournalPromptText).toHaveBeenCalledWith(undefined);
-  });
 });

@@ -1,4 +1,4 @@
-import { Timer, Wind, Heart, Target, ListTodo, Trophy, Flower2, LayoutGrid } from 'lucide-react';
+import { Timer, Wind, Target, ListTodo, Trophy, Flower2, LayoutGrid } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { FeatureToggleItem } from '@/components/FeatureToggleItem';
@@ -56,13 +56,6 @@ export function ModulesSection() {
             description={t.settingsModuleBreathingDesc}
             enabled={isFeatureEnabled('breathingExercise')}
             onToggle={(enabled) => setFlag('breathingExercise', enabled)}
-          />
-          <FeatureToggleItem
-            icon={<Heart className="w-4 h-4 text-pink-500" />}
-            title={t.settingsModuleGratitude}
-            description={t.settingsModuleGratitudeDesc}
-            enabled={isFeatureEnabled('gratitudeJournal')}
-            onToggle={(enabled) => setFlag('gratitudeJournal', enabled)}
           />
           <FeatureToggleItem
             icon={<Target className="w-4 h-4 text-yellow-500" />}

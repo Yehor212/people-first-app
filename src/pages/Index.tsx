@@ -88,14 +88,12 @@ export function Index() {
   // Section refs for navigation
   const moodRef = useRef<HTMLDivElement>(null);
   const focusRef = useRef<HTMLDivElement>(null);
-  const gratitudeRef = useRef<HTMLDivElement>(null);
-
-  const handleNavigateToSection = useCallback((section: 'mood' | 'habits' | 'focus' | 'gratitude') => {
+  const handleNavigateToSection = useCallback((section: 'mood' | 'habits' | 'focus') => {
     if (section === 'habits') {
       setActiveTab('mindmap');
       return;
     }
-    const refs = { mood: moodRef, focus: focusRef, gratitude: gratitudeRef };
+    const refs = { mood: moodRef, focus: focusRef };
     refs[section]?.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [setActiveTab]);
 
@@ -196,7 +194,7 @@ export function Index() {
     updateChallengeProgress,
     checkForFeatureUnlocks,
   });
-  const { handleAddGratitude, handleJournalPromptUsed } = useGratitudeHandlers({
+  const { handleAddGratitude } = useGratitudeHandlers({
     earnTreats,
     attractCreature,
     feedCreatures,
@@ -304,7 +302,6 @@ export function Index() {
             safeMoods={moods}
             safeHabits={habits}
             safeFocusSessions={focusSessions}
-            safeGratitudeEntries={gratitudeEntries}
             currentActiveStreak={innerWorld.currentActiveStreak}
             isRestMode={isRestMode}
             activateRestMode={activateRestMode}
@@ -313,11 +310,8 @@ export function Index() {
             completedTodayCount={completedTodayCount}
             currentPrimaryCTA={currentPrimaryCTA}
             handleAddMood={handleAddMood}
-            handleAddGratitude={handleAddGratitude}
-            handleJournalPromptUsed={handleJournalPromptUsed}
             handlePullToRefresh={handlePullToRefresh}
             moodRef={moodRef}
-            gratitudeRef={gratitudeRef}
           />
         )}
 
@@ -332,6 +326,7 @@ export function Index() {
             handleDeleteScheduleEvent={handleDeleteScheduleEvent}
             handleCompleteFocusSession={handleCompleteFocusSession}
             onToggleHabit={handleToggleHabit}
+            onAddGratitude={handleAddGratitude}
           />
         )}
 

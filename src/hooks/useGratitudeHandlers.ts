@@ -1,5 +1,4 @@
-import { useCallback } from 'react';
-import { useGamificationStore, useUIStore, useUserDataStore } from '@/stores';
+import { useGamificationStore, useUserDataStore } from '@/stores';
 import { triggerXpPopup } from '@/components/XpPopup';
 import { haptics } from '@/lib/haptics';
 import { updateAllQuestsProgress } from '@/lib/randomQuests';
@@ -14,7 +13,7 @@ interface UseGratitudeHandlersParams {
 }
 
 /**
- * Gratitude entry handlers: add gratitude, journal prompt management.
+ * Gratitude entry handlers: add gratitude with gamification rewards.
  */
 export function useGratitudeHandlers({
   earnTreats,
@@ -24,7 +23,6 @@ export function useGratitudeHandlers({
 }: UseGratitudeHandlersParams) {
   const setGratitudeEntries = useUserDataStore(s => s.setGratitudeEntries);
   const rewardUser = useGamificationStore(s => s.rewardUser);
-  const setJournalPromptText = useUIStore(s => s.setJournalPromptText);
 
   const handleAddGratitude = useThrottledCallback((entry: GratitudeEntry) => {
     setGratitudeEntries(prev => [...prev, entry]);
@@ -44,9 +42,5 @@ export function useGratitudeHandlers({
     });
   }, 800);
 
-  const handleJournalPromptUsed = useCallback(() => {
-    setJournalPromptText(undefined);
-  }, [setJournalPromptText]);
-
-  return { handleAddGratitude, handleJournalPromptUsed };
+  return { handleAddGratitude };
 }
