@@ -364,6 +364,11 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
       .eq('user_id', userId);
 
     if (error) throw error;
+
+    // Untrack after confirmed cloud deletion — no longer needed as guard
+    const { untrackDeletedHabitId } = await import('@/storage/deletionTracker');
+    await untrackDeletedHabitId(habitId);
+
     logger.log('[Sync] Habit deleted:', habitId);
   } catch (error) {
     // Handle AbortError separately
@@ -805,46 +810,92 @@ export const pullFromCloud = async (): Promise<boolean> => {
       await db.transaction('rw', [db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio], async () => {
         // Upsert all data
         if (moods.length) await db.moods.bulkPut(moods);
-        if (habits.length) await db.habits.bulkPut(habits);
+
+        // Filter out locally deleted habits before saving — prevents resurrection
+        if (habits.length) {
+          const { getDeletedHabitIds } = await import('@/storage/deletionTracker');
+          const deletedIds = await getDeletedHabitIds();
+          const filteredHabits = deletedIds.size > 0
+            ? habits.filter(h => !deletedIds.has(h.id))
+            : habits;
+          if (filteredHabits.length) await db.habits.bulkPut(filteredHabits);
+        }
         if (focusSessions.length) await db.focusSessions.bulkPut(focusSessions);
         if (gratitudeEntries.length) await db.gratitudeEntries.bulkPut(gratitudeEntries);
 
-        // Journal entries: use updatedAt-based conflict resolution
+        // Journal entries: use updatedAt-based conflict resolution + deletion tracking
         if (journalEntries.length) {
+          const { getDeletedJournalEntryIds } = await import('@/storage/deletionTracker');
+          const deletedEntryIds = await getDeletedJournalEntryIds();
+
           const localEntries = await db.journalEntries.toArray();
           const localMap = new Map(localEntries.map(e => [e.id, e]));
-          const merged = journalEntries.map(remote => {
-            const local = localMap.get(remote.id);
-            if (!local) return remote;
-            // Keep whichever has the newer updatedAt
-            return local.updatedAt > remote.updatedAt ? local : remote;
-          });
-          await db.journalEntries.bulkPut(merged);
-        }
+          const merged = journalEntries
+            .filter(remote => !deletedEntryIds.has(remote.id))
+            .map(remote => {
+              const local = localMap.get(remote.id);
+              if (!local) return remote;
+              // Keep whichever has the newer updatedAt
+              return local.updatedAt > remote.updatedAt ? local : remote;
+            });
+          if (merged.length) await db.journalEntries.bulkPut(merged);
 
-        // Journal photos: merge — only overwrite if local doesn't have binary data
-        if (journalPhotos.length) {
-          const localPhotos = await db.journalPhotos.toArray();
-          const localPhotoMap = new Map(localPhotos.map(p => [p.id, p]));
-          const mergedPhotos = journalPhotos.map(remote => {
-            const local = localPhotoMap.get(remote.id);
-            // If local has binary data, keep it (don't overwrite with empty)
-            if (local && local.data) return { ...remote, data: local.data, thumbnail: local.thumbnail };
-            return remote;
-          });
-          await db.journalPhotos.bulkPut(mergedPhotos);
-        }
+          // Journal photos: merge — filter out deleted entries + preserve local binary data
+          if (journalPhotos.length) {
+            const filteredPhotos = deletedEntryIds.size > 0
+              ? journalPhotos.filter(p => !deletedEntryIds.has(p.entryId))
+              : journalPhotos;
+            if (filteredPhotos.length) {
+              const localPhotos = await db.journalPhotos.toArray();
+              const localPhotoMap = new Map(localPhotos.map(p => [p.id, p]));
+              const mergedPhotos = filteredPhotos.map(remote => {
+                const local = localPhotoMap.get(remote.id);
+                if (local && local.data) return { ...remote, data: local.data, thumbnail: local.thumbnail };
+                return remote;
+              });
+              await db.journalPhotos.bulkPut(mergedPhotos);
+            }
+          }
 
-        // Journal audio: same logic as photos
-        if (journalAudioItems.length) {
-          const localAudio = await db.journalAudio.toArray();
-          const localAudioMap = new Map(localAudio.map(a => [a.id, a]));
-          const mergedAudio = journalAudioItems.map(remote => {
-            const local = localAudioMap.get(remote.id);
-            if (local && local.data) return { ...remote, data: local.data };
-            return remote;
-          });
-          await db.journalAudio.bulkPut(mergedAudio);
+          // Journal audio: same logic as photos
+          if (journalAudioItems.length) {
+            const filteredAudio = deletedEntryIds.size > 0
+              ? journalAudioItems.filter(a => !deletedEntryIds.has(a.entryId))
+              : journalAudioItems;
+            if (filteredAudio.length) {
+              const localAudio = await db.journalAudio.toArray();
+              const localAudioMap = new Map(localAudio.map(a => [a.id, a]));
+              const mergedAudio = filteredAudio.map(remote => {
+                const local = localAudioMap.get(remote.id);
+                if (local && local.data) return { ...remote, data: local.data };
+                return remote;
+              });
+              await db.journalAudio.bulkPut(mergedAudio);
+            }
+          }
+        } else {
+          // No journal entries to merge, but still handle photos/audio
+          if (journalPhotos.length) {
+            const localPhotos = await db.journalPhotos.toArray();
+            const localPhotoMap = new Map(localPhotos.map(p => [p.id, p]));
+            const mergedPhotos = journalPhotos.map(remote => {
+              const local = localPhotoMap.get(remote.id);
+              if (local && local.data) return { ...remote, data: local.data, thumbnail: local.thumbnail };
+              return remote;
+            });
+            await db.journalPhotos.bulkPut(mergedPhotos);
+          }
+
+          if (journalAudioItems.length) {
+            const localAudio = await db.journalAudio.toArray();
+            const localAudioMap = new Map(localAudio.map(a => [a.id, a]));
+            const mergedAudio = journalAudioItems.map(remote => {
+              const local = localAudioMap.get(remote.id);
+              if (local && local.data) return { ...remote, data: local.data };
+              return remote;
+            });
+            await db.journalAudio.bulkPut(mergedAudio);
+          }
         }
 
         // Settings
@@ -1165,6 +1216,13 @@ export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void
     if (entryRes.error) logger.warn('[Sync] Journal entry delete failed:', entryRes.error);
     if (photosRes.error) logger.warn('[Sync] Journal photos delete failed:', photosRes.error);
     if (audioRes.error) logger.warn('[Sync] Journal audio delete failed:', audioRes.error);
+
+    // Untrack after confirmed cloud deletion — no longer needed as guard
+    if (!entryRes.error) {
+      const { untrackDeletedJournalEntryId } = await import('@/storage/deletionTracker');
+      await untrackDeletedJournalEntryId(entryId);
+    }
+
     logger.log('[Sync] Journal entry deleted from cloud:', entryId);
   } catch (error) {
     if (isAbortError(error)) {

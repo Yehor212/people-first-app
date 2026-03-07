@@ -18,6 +18,7 @@ import {
   deleteJournalAudioFromCloud,
 } from '@/storage/realtimeSync';
 import { triggerSync } from '@/storage/cloudSync';
+import { trackDeletedJournalEntryId } from '@/storage/deletionTracker';
 import { logger } from '@/lib/logger';
 
 // ============================================
@@ -84,6 +85,9 @@ export async function deleteEntry(id: string): Promise<void> {
     photos.map(p => p.id),
     audios.map(a => a.id),
   );
+
+  // Track deletion locally so sync never restores this entry
+  void trackDeletedJournalEntryId(id);
 
   // Delete from cloud tables (fire-and-forget)
   deleteJournalEntryFromCloud(id).catch(err => logger.warn('[JournalSync]', 'Entry delete sync failed:', err));

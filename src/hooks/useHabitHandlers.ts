@@ -3,6 +3,8 @@ import { useUIStore, useUserDataStore } from '@/stores';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { triggerXpPopup } from '@/components/XpPopup';
 import { triggerSync } from '@/storage/cloudSync';
+import { deleteHabitFromCloud } from '@/storage/realtimeSync';
+import { trackDeletedHabitId } from '@/storage/deletionTracker';
 import { haptics, hapticTap } from '@/lib/haptics';
 import { normalizeHabit } from '@/lib/habits';
 import { getNextToggleValue, setEntryValue, toStoredValue } from '@/lib/habits';
@@ -266,6 +268,12 @@ export function useHabitHandlers({
     if (filtered.length !== challenges.length) {
       saveChallenges(filtered);
     }
+
+    // Track deletion locally so cloud sync merge never restores this habit
+    void trackDeletedHabitId(habitId);
+
+    // Delete from cloud habits table immediately (untrack on success)
+    void deleteHabitFromCloud(habitId);
 
     triggerSync();
   };

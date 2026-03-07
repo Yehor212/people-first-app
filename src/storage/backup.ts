@@ -11,6 +11,7 @@ import {
   settingSchema,
   safeValidate
 } from "@/lib/validation";
+import { getDeletedHabitIds, mergeDeletedHabitIds, getDeletedJournalEntryIds, mergeDeletedJournalEntryIds } from "@/storage/deletionTracker";
 
 export type ImportMode = "merge" | "replace";
 
@@ -61,6 +62,10 @@ export interface BackupPayloadV3 {
     journalPhotos?: JournalPhoto[];
     journalAudio?: JournalAudio[];
   };
+  /** Habit IDs deleted by this device — other devices must respect these deletions */
+  deletedHabitIds?: string[];
+  /** Journal entry IDs deleted by this device */
+  deletedJournalEntryIds?: string[];
 }
 
 export type BackupPayload = BackupPayloadV1 | BackupPayloadV2 | BackupPayloadV3;
@@ -104,6 +109,10 @@ export const exportBackup = async (): Promise<BackupPayloadV3> => {
   // Get device ID before transaction (it may write to settings)
   const deviceId = await getOrCreateDeviceId();
 
+  // Get deleted IDs to include in backup (cross-device deletion propagation)
+  const deletedHabitIds = [...await getDeletedHabitIds()];
+  const deletedJournalEntryIds = [...await getDeletedJournalEntryIds()];
+
   // Use Dexie transaction for atomic point-in-time snapshot
   // This ensures all data is read consistently without interleaved writes
   const data = await db.transaction(
@@ -141,7 +150,9 @@ export const exportBackup = async (): Promise<BackupPayloadV3> => {
     schemaVersion: BACKUP_SCHEMA_VERSION,
     createdAt: new Date().toISOString(),
     deviceId,
-    data
+    data,
+    deletedHabitIds: deletedHabitIds.length > 0 ? deletedHabitIds : undefined,
+    deletedJournalEntryIds: deletedJournalEntryIds.length > 0 ? deletedJournalEntryIds : undefined,
   };
 };
 
@@ -307,28 +318,33 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
   await db.transaction("rw", [db.moods, db.habits, db.focusSessions, db.gratitudeEntries, db.settings, db.journalEntries, db.journalPhotos, db.journalAudio], async () => {
     if (validMoods.valid.length) await db.moods.bulkPut(validMoods.valid);
 
-    // For habits: use timestamp-based conflict resolution to prevent data loss
+    // For habits: use timestamp-based conflict resolution + deletion tracking
     if (validHabits.valid.length) {
       const localHabits = await db.habits.toArray();
       const localHabitMap = new Map(localHabits.map(h => [h.id, h]));
 
-      const mergedHabits = validHabits.valid.map(remoteHabit => {
-        const localHabit = localHabitMap.get(remoteHabit.id);
+      // Get locally deleted habit IDs — never re-import these
+      const deletedIds = await getDeletedHabitIds();
 
-        // If no local habit exists, use remote
-        if (!localHabit) return remoteHabit;
+      const mergedHabits = validHabits.valid
+        .filter(remoteHabit => !deletedIds.has(remoteHabit.id))
+        .map(remoteHabit => {
+          const localHabit = localHabitMap.get(remoteHabit.id);
 
-        // Compare timestamps - keep the more recent version
-        const localTime = localHabit.updatedAt ? new Date(localHabit.updatedAt).getTime() : 0;
-        const remoteTime = remoteHabit.updatedAt ? new Date(remoteHabit.updatedAt).getTime() : 0;
+          // If no local habit exists, use remote
+          if (!localHabit) return remoteHabit;
 
-        // If local is newer, preserve local data (don't overwrite with stale remote)
-        if (localTime > remoteTime) {
-          return localHabit;
-        }
+          // Compare timestamps - keep the more recent version
+          const localTime = localHabit.updatedAt ? new Date(localHabit.updatedAt).getTime() : 0;
+          const remoteTime = remoteHabit.updatedAt ? new Date(remoteHabit.updatedAt).getTime() : 0;
 
-        return remoteHabit;
-      });
+          // If local is newer, preserve local data (don't overwrite with stale remote)
+          if (localTime > remoteTime) {
+            return localHabit;
+          }
+
+          return remoteHabit;
+        });
 
       await db.habits.bulkPut(mergedHabits);
     }
@@ -336,10 +352,55 @@ export const importBackup = async (payload: BackupPayload, mode: ImportMode): Pr
     if (validFocus.valid.length) await db.focusSessions.bulkPut(validFocus.valid);
     if (validGratitude.valid.length) await db.gratitudeEntries.bulkPut(validGratitude.valid);
     if (validSettings.valid.length) await db.settings.bulkPut(validSettings.valid);
-    if (validJournalEntries.length) await db.journalEntries.bulkPut(validJournalEntries);
-    if (validJournalPhotos.length) await db.journalPhotos.bulkPut(validJournalPhotos);
-    if (validJournalAudio.length) await db.journalAudio.bulkPut(validJournalAudio);
+    // For journal entries: filter out locally deleted entries before merging
+    if (validJournalEntries.length) {
+      const deletedEntryIds = await getDeletedJournalEntryIds();
+      const filteredEntries = deletedEntryIds.size > 0
+        ? validJournalEntries.filter(e => !deletedEntryIds.has(e.id))
+        : validJournalEntries;
+      if (filteredEntries.length) await db.journalEntries.bulkPut(filteredEntries);
+
+      // Also filter photos/audio belonging to deleted entries
+      const deletedEntryIdSet = deletedEntryIds;
+      if (validJournalPhotos.length) {
+        const filteredPhotos = deletedEntryIdSet.size > 0
+          ? validJournalPhotos.filter(p => !deletedEntryIdSet.has(p.entryId))
+          : validJournalPhotos;
+        if (filteredPhotos.length) await db.journalPhotos.bulkPut(filteredPhotos);
+      }
+      if (validJournalAudio.length) {
+        const filteredAudio = deletedEntryIdSet.size > 0
+          ? validJournalAudio.filter(a => !deletedEntryIdSet.has(a.entryId))
+          : validJournalAudio;
+        if (filteredAudio.length) await db.journalAudio.bulkPut(filteredAudio);
+      }
+    } else {
+      if (validJournalPhotos.length) await db.journalPhotos.bulkPut(validJournalPhotos);
+      if (validJournalAudio.length) await db.journalAudio.bulkPut(validJournalAudio);
+    }
   });
+
+  // Handle cross-device deletion propagation:
+  // If the remote backup includes deletedHabitIds, apply them locally
+  const remoteDeletedIds = (payload as BackupPayloadV3).deletedHabitIds;
+  if (remoteDeletedIds?.length) {
+    await mergeDeletedHabitIds(remoteDeletedIds);
+    await db.habits.bulkDelete(remoteDeletedIds);
+  }
+
+  // Handle cross-device journal entry deletion propagation
+  const remoteDeletedJournalIds = (payload as BackupPayloadV3).deletedJournalEntryIds;
+  if (remoteDeletedJournalIds?.length) {
+    await mergeDeletedJournalEntryIds(remoteDeletedJournalIds);
+    await db.journalEntries.bulkDelete(remoteDeletedJournalIds);
+    // Cascade: remove photos and audio belonging to deleted entries
+    for (const entryId of remoteDeletedJournalIds) {
+      const photos = await db.journalPhotos.where('entryId').equals(entryId).primaryKeys();
+      if (photos.length) await db.journalPhotos.bulkDelete(photos);
+      const audios = await db.journalAudio.where('entryId').equals(entryId).primaryKeys();
+      if (audios.length) await db.journalAudio.bulkDelete(audios);
+    }
+  }
 
   return {
     mode,
