@@ -50,34 +50,38 @@ interface UserDigestData {
 // ============================================
 
 async function getSubscribedUsers(supabase: ReturnType<typeof createClient>): Promise<{ id: string; email: string; display_name?: string }[]> {
+  // Query key-value user_settings for weekly_digest_enabled = true
   const { data, error } = await supabase
     .from('user_settings')
-    .select('user_id, weekly_digest_enabled')
-    .eq('weekly_digest_enabled', true);
+    .select('user_id')
+    .eq('key', 'weekly_digest_enabled')
+    .eq('value', true);
 
   if (error) {
     console.error('[WeeklyDigest] Error fetching settings:', error);
     return [];
   }
 
-  // Get user details for subscribed users
   const userIds = (data || []).map((s: { user_id: string }) => s.user_id);
   if (userIds.length === 0) return [];
 
-  const { data: users, error: userError } = await supabase.auth.admin.listUsers();
-
-  if (userError) {
-    console.error('[WeeklyDigest] Error fetching users:', userError);
-    return [];
+  // Fetch user details individually (avoids listUsers pagination issues)
+  const users: { id: string; email: string; display_name?: string }[] = [];
+  for (const userId of userIds) {
+    try {
+      const { data: userData, error: userError } = await supabase.auth.admin.getUserById(userId);
+      if (userError || !userData?.user?.email) continue;
+      users.push({
+        id: userData.user.id,
+        email: userData.user.email,
+        display_name: userData.user.user_metadata?.full_name || userData.user.user_metadata?.name,
+      });
+    } catch {
+      console.warn(`[WeeklyDigest] Failed to fetch user ${redactUserRef(userId)}`);
+    }
   }
 
-  return users.users
-    .filter(u => userIds.includes(u.id) && u.email)
-    .map(u => ({
-      id: u.id,
-      email: u.email!,
-      display_name: u.user_metadata?.full_name || u.user_metadata?.name
-    }));
+  return users;
 }
 
 async function getUserWeeklyStats(
@@ -163,10 +167,11 @@ async function getUserWeeklyStats(
     .from('leaderboards')
     .select('weekly_xp, current_streak')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
+  // User may not have a leaderboard row yet — use defaults
   if (leaderboardError) {
-    throw new Error('Failed to load leaderboard');
+    console.warn(`[WeeklyDigest] Leaderboard not found for ${redactUserRef(userId)}`);
   }
 
   return {
@@ -378,8 +383,8 @@ Deno.serve(async (req) => {
     let sentCount = 0;
     const errors: string[] = [];
 
-    // Process users (rate limit: 4 per hour for free tier)
-    for (const user of users.slice(0, 4)) {
+    // Process all subscribed users (1s delay between emails for Resend rate limit)
+    for (const user of users) {
       try {
         // Get user stats
         const { weeklyStats, topHabits } = await getUserWeeklyStats(supabase, user.id);

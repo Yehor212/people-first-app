@@ -6,14 +6,15 @@ import { logger } from './logger';
  * Extracted from UI components per TD-23.
  */
 
-/** Load weekly digest enabled setting for a user */
+/** Load weekly digest enabled setting for a user (key-value schema) */
 export async function loadWeeklyDigest(userId: string): Promise<boolean | null> {
   if (!supabase) return null;
 
   try {
     const { data, error } = await (supabase.from('user_settings') as any)
-      .select('weekly_digest_enabled')
+      .select('value')
       .eq('user_id', userId)
+      .eq('key', 'weekly_digest_enabled')
       .maybeSingle();
 
     if (error) {
@@ -21,14 +22,14 @@ export async function loadWeeklyDigest(userId: string): Promise<boolean | null> 
       return null;
     }
 
-    return (data as { weekly_digest_enabled?: boolean } | null)?.weekly_digest_enabled ?? false;
+    return (data as { value?: boolean } | null)?.value === true;
   } catch (error) {
     logger.error('[AccountService] Error loading weekly digest:', error);
     return null;
   }
 }
 
-/** Update weekly digest setting for a user. Returns true on success. */
+/** Update weekly digest setting for a user (key-value schema). Returns true on success. */
 export async function updateWeeklyDigest(userId: string, enabled: boolean): Promise<boolean> {
   if (!supabase) return false;
 
@@ -36,9 +37,10 @@ export async function updateWeeklyDigest(userId: string, enabled: boolean): Prom
     const { error } = await (supabase.from('user_settings') as any)
       .upsert({
         user_id: userId,
-        weekly_digest_enabled: enabled,
+        key: 'weekly_digest_enabled',
+        value: enabled,
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'user_id' });
+      }, { onConflict: 'user_id,key' });
 
     if (error) {
       logger.error('[AccountService] Failed to update weekly digest:', error);

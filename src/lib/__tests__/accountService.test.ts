@@ -30,7 +30,7 @@ import {
 
 // Chainable mock builders for query builder pattern
 const mockMaybeSingle = vi.fn();
-const mockEq = vi.fn(() => ({ maybeSingle: mockMaybeSingle }));
+const mockEq = vi.fn(() => ({ eq: mockEq, maybeSingle: mockMaybeSingle }));
 const mockSelect = vi.fn(() => ({ eq: mockEq }));
 const mockUpsert = vi.fn();
 const mockFrom = vi.fn((_table: string) => ({
@@ -62,7 +62,7 @@ describe('accountService', () => {
     vi.clearAllMocks();
     mockSupabase = null;
     mockMaybeSingle.mockReset();
-    mockEq.mockReset().mockReturnValue({ maybeSingle: mockMaybeSingle });
+    mockEq.mockReset().mockReturnValue({ eq: mockEq, maybeSingle: mockMaybeSingle });
     mockSelect.mockReset().mockReturnValue({ eq: mockEq });
     mockUpsert.mockReset();
     mockFrom.mockReset().mockImplementation(() => ({
@@ -89,22 +89,23 @@ describe('accountService', () => {
         mockSupabase = createSupabaseMock();
       });
 
-      it('queries user_settings table with correct parameters', async () => {
-        mockMaybeSingle.mockResolvedValue({ data: { weekly_digest_enabled: true }, error: null });
+      it('queries user_settings with key-value pattern', async () => {
+        mockMaybeSingle.mockResolvedValue({ data: { value: true }, error: null });
         await loadWeeklyDigest('user-123');
         expect(mockFrom).toHaveBeenCalledWith('user_settings');
-        expect(mockSelect).toHaveBeenCalledWith('weekly_digest_enabled');
+        expect(mockSelect).toHaveBeenCalledWith('value');
         expect(mockEq).toHaveBeenCalledWith('user_id', 'user-123');
+        expect(mockEq).toHaveBeenCalledWith('key', 'weekly_digest_enabled');
       });
 
-      it('returns true when weekly_digest_enabled is true', async () => {
-        mockMaybeSingle.mockResolvedValue({ data: { weekly_digest_enabled: true }, error: null });
+      it('returns true when value is true', async () => {
+        mockMaybeSingle.mockResolvedValue({ data: { value: true }, error: null });
         const result = await loadWeeklyDigest('user-123');
         expect(result).toBe(true);
       });
 
-      it('returns false when weekly_digest_enabled is false', async () => {
-        mockMaybeSingle.mockResolvedValue({ data: { weekly_digest_enabled: false }, error: null });
+      it('returns false when value is false', async () => {
+        mockMaybeSingle.mockResolvedValue({ data: { value: false }, error: null });
         const result = await loadWeeklyDigest('user-123');
         expect(result).toBe(false);
       });
@@ -175,16 +176,17 @@ describe('accountService', () => {
         expect(mockFrom).toHaveBeenCalledWith('user_settings');
       });
 
-      it('passes correct data with onConflict option', async () => {
+      it('passes correct key-value data with onConflict option', async () => {
         mockUpsert.mockResolvedValue({ error: null });
         await updateWeeklyDigest('user-456', false);
         expect(mockUpsert).toHaveBeenCalledWith(
           expect.objectContaining({
             user_id: 'user-456',
-            weekly_digest_enabled: false,
+            key: 'weekly_digest_enabled',
+            value: false,
             updated_at: expect.any(String),
           }),
-          { onConflict: 'user_id' }
+          { onConflict: 'user_id,key' }
         );
       });
 
