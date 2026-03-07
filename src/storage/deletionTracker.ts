@@ -1,5 +1,5 @@
 import { db } from '@/storage/db';
-import logger from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 // ── Generic deletion tracking helpers ──────────────────────────────────────────
 
