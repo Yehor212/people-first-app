@@ -143,7 +143,7 @@ Deno.serve(async (req) => {
 
     let sent = 0;
 
-    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && subs && subs.length > 0) {
+    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT && subs && subs.length > 0) {
       webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
       await Promise.all(
         subs.map((sub) =>

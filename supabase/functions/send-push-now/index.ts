@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { create, getNumericDate } from "https://deno.land/x/djwt@v3.0.2/mod.ts";
+import webpush from "npm:web-push@3.6.7";
 import { extractBearerToken } from "../_shared/auth.ts";
 import { createJsonResponse, createNoContentResponse } from "../_shared/http.ts";
 
@@ -136,25 +137,6 @@ const sendFcmNotifications = async (tokens: string[], content: { title: string; 
   return results.reduce((total, value) => total + value, 0);
 };
 
-// Simple web push implementation without external dependency
-const sendWebPush = async (
-  subscription: { endpoint: string; keys: { p256dh: string; auth: string } },
-  payload: string,
-  vapidSubject: string,
-  vapidPublicKey: string,
-  vapidPrivateKey: string
-): Promise<boolean> => {
-  try {
-    // For now, we'll skip web push as it requires complex VAPID signing
-    // This can be implemented later with proper crypto handling
-    console.log("Web push would be sent to:", subscription.endpoint);
-    return false;
-  } catch (error) {
-    console.error("Web push error:", error);
-    return false;
-  }
-};
-
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin");
 
@@ -215,16 +197,17 @@ Deno.serve(async (req) => {
 
     let sent = 0;
 
-    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && subs && subs.length > 0) {
+    if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT && subs && subs.length > 0) {
+      webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
       const results = await Promise.all(
         subs.map((sub) =>
-          sendWebPush(
-            { endpoint: sub.endpoint, keys: sub.keys },
-            JSON.stringify(content),
-            VAPID_SUBJECT,
-            VAPID_PUBLIC_KEY,
-            VAPID_PRIVATE_KEY
-          )
+          webpush
+            .sendNotification(
+              { endpoint: sub.endpoint, keys: sub.keys },
+              JSON.stringify(content)
+            )
+            .then(() => true)
+            .catch(() => false)
         )
       );
       sent += results.filter(Boolean).length;
@@ -242,7 +225,8 @@ Deno.serve(async (req) => {
     }
 
     return createJsonResponse(origin, 200, { sent });
-  } catch (_err) {
+  } catch (err) {
+    console.error("[SendPushNow] Error:", err);
     return createJsonResponse(origin, 500, { error: "Internal error" });
   }
 });

@@ -215,7 +215,7 @@ Deno.serve(async (req) => {
     }
 
   const fcmAccessToken = await getFcmAccessToken();
-  if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
+  if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT) {
     webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
   }
 
@@ -274,7 +274,7 @@ Deno.serve(async (req) => {
 
       const content = getTitleBody(check.type, item.language || "en");
 
-      if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && subs && subs.length > 0) {
+      if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT && subs && subs.length > 0) {
         await Promise.all(
           subs.map((sub) =>
             webpush
