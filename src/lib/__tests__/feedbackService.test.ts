@@ -87,16 +87,24 @@ describe('feedbackService', () => {
         expect(result).toBe(true);
       });
 
-      it('calls from with correct table name "user_feedback"', async () => {
+      it('calls from with correct table name "feedback"', async () => {
         mockInsert.mockResolvedValue({ error: null });
         await submitQuickFeedback(quickFeedbackData);
-        expect(mockFrom).toHaveBeenCalledWith('user_feedback');
+        expect(mockFrom).toHaveBeenCalledWith('feedback');
       });
 
-      it('passes the data object to insert', async () => {
+      it('maps QuickFeedbackData fields to feedback table schema', async () => {
         mockInsert.mockResolvedValue({ error: null });
         await submitQuickFeedback(quickFeedbackData);
-        expect(mockInsert).toHaveBeenCalledWith(quickFeedbackData);
+        expect(mockInsert).toHaveBeenCalledWith({
+          category: 'bug',
+          message: 'Something broke',
+          app_version: '1.0.0',
+          device_info: {
+            platform: 'android',
+            userAgent: 'test-agent',
+          },
+        });
       });
 
       it('returns false when insert returns an error', async () => {

@@ -19,15 +19,24 @@ interface DetailedFeedbackData {
 }
 
 /**
- * Submit quick feedback to 'user_feedback' table (used by FeedbackButton)
+ * Submit quick feedback to 'feedback' table (used by FeedbackButton)
+ * Maps QuickFeedbackData fields to the feedback table schema.
  * Returns true if sent to Supabase, false if failed (caller handles local fallback)
  */
 export async function submitQuickFeedback(data: QuickFeedbackData): Promise<boolean> {
   if (!supabase) return false;
 
   const { error } = await supabase
-    .from('user_feedback')
-    .insert(data as any);
+    .from('feedback')
+    .insert({
+      category: data.type,
+      message: data.message,
+      app_version: data.app_version,
+      device_info: {
+        platform: data.platform,
+        userAgent: data.user_agent,
+      },
+    } as any);
 
   if (error) {
     logger.warn('[FeedbackService] Quick feedback error:', error.message);

@@ -95,11 +95,11 @@ Deno.serve(async (req) => {
     const deviceInfoHtml = device_info ? `
       <h3>Device Information</h3>
       <ul style="margin: 0; padding-left: 20px; color: #666;">
-        <li><strong>Platform:</strong> ${device_info.platform || "Unknown"}</li>
-        <li><strong>App Version:</strong> ${device_info.appVersion || app_version || "Unknown"}</li>
-        <li><strong>Screen Size:</strong> ${device_info.screenSize || "Unknown"}</li>
-        <li><strong>Language:</strong> ${device_info.language || "Unknown"}</li>
-        <li><strong>User Agent:</strong> ${device_info.userAgent || "Unknown"}</li>
+        <li><strong>Platform:</strong> ${escapeHtml(device_info.platform || "Unknown")}</li>
+        <li><strong>App Version:</strong> ${escapeHtml(device_info.appVersion || app_version || "Unknown")}</li>
+        <li><strong>Screen Size:</strong> ${escapeHtml(device_info.screenSize || "Unknown")}</li>
+        <li><strong>Language:</strong> ${escapeHtml(device_info.language || "Unknown")}</li>
+        <li><strong>User Agent:</strong> ${escapeHtml(device_info.userAgent || "Unknown")}</li>
       </ul>
     ` : "";
 
@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
 
           <div style="border-top: 1px solid #eee; padding-top: 16px; margin-top: 20px; text-align: center;">
             <p style="margin: 0; color: #888; font-size: 12px;">
-              App Version: ${app_version || "Unknown"} |
+              App Version: ${escapeHtml(app_version || "Unknown")} |
               ${new Date().toLocaleString("ru-RU", { timeZone: "Europe/Moscow" })} MSK
             </p>
           </div>

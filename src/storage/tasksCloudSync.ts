@@ -126,6 +126,7 @@ function rowToQuest(row: QuestRow): Quest {
  * Returns null if there's an error to prevent data loss
  */
 export async function pullTasksFromCloud(): Promise<Task[] | null> {
+  if (!supabase) return null;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return null; // Not authenticated - return null to keep local data
   const user = session.user;
@@ -149,6 +150,7 @@ export async function pullTasksFromCloud(): Promise<Task[] | null> {
  * Push tasks to Supabase
  */
 export async function pushTasksToCloud(tasks: Task[]): Promise<void> {
+  if (!supabase) return;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return;
   const user = session.user;
@@ -174,6 +176,7 @@ export async function pushTasksToCloud(tasks: Task[]): Promise<void> {
  * Call this when a task is deleted locally to maintain sync consistency
  */
 export async function deleteTaskFromCloud(taskId: string): Promise<void> {
+  if (!supabase) return;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return;
   const user = session.user;
@@ -208,6 +211,7 @@ export async function deleteTaskFromCloud(taskId: string): Promise<void> {
  * Call this when a quest is deleted/expired locally
  */
 export async function deleteQuestFromCloud(questId: string, questType: 'daily' | 'weekly' | 'bonus'): Promise<void> {
+  if (!supabase) return;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return;
   const user = session.user;
@@ -313,6 +317,7 @@ type QuestsState = { daily: Quest | null; weekly: Quest | null; bonus: Quest | n
  * Returns undefined if there's an error to prevent data loss
  */
 export async function pullQuestsFromCloud(): Promise<QuestsState | undefined> {
+  if (!supabase) return undefined;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return undefined; // Not authenticated - return undefined to keep local data
   const user = session.user;
@@ -342,6 +347,7 @@ export async function pullQuestsFromCloud(): Promise<QuestsState | undefined> {
  * Push quests to Supabase
  */
 export async function pushQuestsToCloud(quests: { daily: Quest | null; weekly: Quest | null; bonus: Quest | null }): Promise<void> {
+  if (!supabase) return;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session?.user) return;
   const user = session.user;

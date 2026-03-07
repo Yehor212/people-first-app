@@ -117,6 +117,8 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
   challenges: Challenge[];
   error?: string;
 }> {
+  if (!supabase) return { challenges: getChallenges() };
+
   // Use orchestrator for queue-based sync
   let result: { challenges: Challenge[]; error?: string } = {
     challenges: getChallenges(),
@@ -231,6 +233,7 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
 
 // Push single challenge update to cloud
 export async function pushChallengeUpdate(userId: string, challenge: Challenge): Promise<boolean> {
+  if (!supabase) return false;
   try {
     const { error } = await (supabase
       .from('user_challenges') as any)
@@ -255,6 +258,7 @@ export async function pushChallengeUpdate(userId: string, challenge: Challenge):
  * Call this when a challenge is deleted/expired locally
  */
 export async function deleteChallengeFromCloud(userId: string, challengeId: string): Promise<boolean> {
+  if (!supabase) return false;
   if (!challengeId || typeof challengeId !== 'string') {
     logger.warn('[ChallengesSync] Invalid challengeId for delete:', challengeId);
     return false;
@@ -285,6 +289,7 @@ export async function deleteChallengeFromCloud(userId: string, challengeId: stri
  * Call this when a badge needs to be removed (rare case)
  */
 export async function deleteBadgeFromCloud(userId: string, badgeId: string): Promise<boolean> {
+  if (!supabase) return false;
   if (!badgeId || typeof badgeId !== 'string') {
     logger.warn('[BadgesSync] Invalid badgeId for delete:', badgeId);
     return false;
@@ -315,6 +320,8 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
   badges: Badge[];
   error?: string;
 }> {
+  if (!supabase) return { badges: getBadges() };
+
   // Use orchestrator for queue-based sync
   let result: { badges: Badge[]; error?: string } = {
     badges: getBadges(),
@@ -425,6 +432,7 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
 
 // Push badge unlock to cloud
 export async function pushBadgeUnlock(userId: string, badge: Badge): Promise<boolean> {
+  if (!supabase) return false;
   try {
     const { error } = await (supabase
       .from('user_badges') as any)

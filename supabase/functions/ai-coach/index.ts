@@ -75,14 +75,13 @@ const getCorsHeaders = (origin: string | null) => {
     console.log(`[AICoach] Origin: ${effectiveOrigin}, Allowed: ${isAllowed}`);
   }
 
-  // If origin is allowed, echo it back. Otherwise use wildcard for Capacitor apps.
-  const allowedOrigin = isAllowed ? effectiveOrigin : "*";
+  // If origin is allowed, echo it back. Otherwise fall back to primary origin.
+  const allowedOrigin = isAllowed ? effectiveOrigin : ALLOWED_ORIGINS[0];
 
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Credentials": "true",
   };
 };
 

@@ -60,11 +60,10 @@ const getCorsHeaders = (origin: string | null) => {
   const effectiveOrigin = origin || "null";
   const isAllowed = ALLOWED_ORIGINS.includes(effectiveOrigin);
   return {
-    "Access-Control-Allow-Origin": isAllowed ? effectiveOrigin : "*",
+    "Access-Control-Allow-Origin": isAllowed ? effectiveOrigin : ALLOWED_ORIGINS[0],
     "Access-Control-Allow-Headers":
       "authorization, x-client-info, apikey, content-type",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Credentials": "true",
   };
 };
 
