@@ -26,18 +26,16 @@ Deno.serve(async (req) => {
     }
 
     const userId = data.user.id;
-    const tables = [
-      "user_backups",
-      "user_reminder_settings",
-      "push_subscriptions",
-      "push_device_tokens",
-      "push_logs"
-    ];
 
-    for (const table of tables) {
-      await supabase.from(table).delete().eq("user_id", userId);
-    }
+    // Pre-delete user data from tables that may not CASCADE automatically.
+    // Individual failures are non-critical: auth.users ON DELETE CASCADE
+    // handles remaining child rows in habits, moods, journal_entries, etc.
+    try { await supabase.from("profiles").delete().eq("id", userId); } catch { /* cascade fallback */ }
+    try { await supabase.from("user_backups").delete().eq("user_id", userId); } catch { /* cascade fallback */ }
+    try { await supabase.from("push_subscriptions").delete().eq("user_id", userId); } catch { /* cascade fallback */ }
 
+    // This is the critical operation — deletes auth.users row,
+    // which CASCADE-deletes all child rows in user data tables.
     const { error: deleteError } = await supabase.auth.admin.deleteUser(userId);
     if (deleteError) {
       return createJsonResponse(origin, 500, { error: "Failed to delete account" });
