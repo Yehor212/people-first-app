@@ -380,7 +380,7 @@ async function findFriendByCode(friendCode: string): Promise<{
       .from('user_profiles') as any)
       .select('user_id, display_name, avatar_emoji, current_streak, level, updated_at, status')
       .eq('friend_code', friendCode)
-      .single();
+      .maybeSingle();
 
     if (error || !data) return null;
 
