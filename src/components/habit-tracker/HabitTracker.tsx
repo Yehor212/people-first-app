@@ -13,6 +13,7 @@ import { HabitCompletionCelebration, DailyProgressBar } from '@/components/Habit
 import { CompactHabitCard } from '@/components/CompactHabitCard';
 import { HabitCreationForm } from '@/components/HabitCreationForm';
 import { hapticTap } from '@/lib/haptics';
+import { zenTap } from '@/lib/animationUtils';
 import { SK } from '@/lib/storageKeys';
 import { storageGetRaw, storageSetRaw } from '@/lib/safeJson';
 import { getActiveChallenges } from '@/lib/friendChallenge';
@@ -220,7 +221,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                 aria-label={t.friendChallenges}
                 className="relative w-11 h-11 rounded-xl flex items-center justify-center bg-slate-100/60 dark:bg-foreground/10 backdrop-blur-sm border border-slate-200/60 dark:border-foreground/20 text-slate-600 dark:text-foreground/70 hover:text-slate-800 dark:hover:text-foreground hover:bg-slate-200/60 dark:hover:bg-foreground/20 transition-colors"
                 whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.button}
               >
                 <Users className="w-5 h-5" />
                 {activeChallengesCount > 0 && (
@@ -297,7 +298,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
                     onClick={() => setCategoryFilter(id)}
                     className={cn("px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1 min-h-[44px]", categoryFilter === id ? "bg-primary text-primary-foreground shadow-sm" : "bg-secondary text-muted-foreground hover:bg-muted")}
                     whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
+                    whileTap={zenTap.card}
                   >
                     {icon} {count}
                   </motion.button>

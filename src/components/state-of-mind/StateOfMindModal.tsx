@@ -3,6 +3,7 @@ import { ArrowLeft, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { zenMotion, zenTap } from '@/lib/animationUtils';
+import { haptics } from '@/lib/haptics';
 import { MorphingBlob } from './MorphingBlob';
 import { ValenceSlider } from './ValenceSlider';
 import { EmotionTagGrid } from './EmotionTagGrid';
@@ -17,6 +18,19 @@ interface StateOfMindModalProps {
   onClose: () => void;
   onSave: (entry: MoodEntry) => void;
 }
+
+/** Step container: orchestrates child cascade, fast exit */
+const stepContainer = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06, delayChildren: 0.08 } },
+  exit: { opacity: 0, x: -40, transition: zenMotion.exit },
+};
+
+/** Step child: each sub-element fades + slides up */
+const stepChild = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0, transition: zenMotion.gentle },
+};
 
 /**
  * Full-screen modal orchestrator for State of Mind flow.
@@ -121,50 +135,49 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={som.step}
-                  initial={{ opacity: 0, x: 40 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -40 }}
-                  transition={zenMotion.gentle}
+                  variants={stepContainer}
+                  initial="hidden"
+                  animate="visible"
+                  exit="exit"
                   className="flex-1 flex flex-col"
                 >
                   {som.step === 'slider' && (
                     <div className="flex flex-col items-center gap-6 pt-8">
-                      {/* Log type toggle */}
-                      <LogTypeToggle value={som.logType} onChange={som.setLogType} />
-
-                      {/* Blob */}
-                      <MorphingBlob valence={som.valence} size={192} />
-
-                      {/* Slider */}
-                      <div className="w-full max-w-sm">
+                      <motion.div variants={stepChild}>
+                        <LogTypeToggle value={som.logType} onChange={som.setLogType} />
+                      </motion.div>
+                      <motion.div variants={stepChild}>
+                        <MorphingBlob valence={som.valence} size={192} />
+                      </motion.div>
+                      <motion.div variants={stepChild} className="w-full max-w-sm">
                         <ValenceSlider value={som.valence} onChange={som.setValence} />
-                      </div>
+                      </motion.div>
                     </div>
                   )}
 
                   {som.step === 'emotionTags' && (
-                    <div className="pt-4">
+                    <motion.div variants={stepChild} className="pt-4">
                       <EmotionTagGrid
                         valence={som.valence}
                         selected={som.emotionTags}
                         onToggle={som.handleToggleEmotionTag}
                       />
-                    </div>
+                    </motion.div>
                   )}
 
                   {som.step === 'contexts' && (
-                    <div className="pt-4">
+                    <motion.div variants={stepChild} className="pt-4">
                       <ContextGrid
                         selected={som.contexts}
                         onToggle={som.handleToggleContext}
                       />
-                    </div>
+                    </motion.div>
                   )}
 
                   {som.step === 'note' && (
-                    <div className="pt-4">
+                    <motion.div variants={stepChild} className="pt-4">
                       <NoteStep value={som.note} onChange={som.setNote} />
-                    </div>
+                    </motion.div>
                   )}
 
                   {(som.step === 'saving' || som.step === 'saved') && (
@@ -180,7 +193,10 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                 <motion.button
                   type="button"
                   whileTap={zenTap.button}
-                  onClick={isLastStep ? som.handleSave : som.handleNext}
+                  onClick={() => {
+                    void haptics.light();
+                    if (isLastStep) som.handleSave(); else som.handleNext();
+                  }}
                   className="w-full py-3.5 rounded-xl bg-primary text-primary-foreground font-medium text-base focus:outline-none focus:ring-2 focus:ring-primary/50 focus:ring-offset-2"
                 >
                   {isLastStep ? t.somDone : t.somNext}

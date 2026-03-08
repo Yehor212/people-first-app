@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Translations } from '@/i18n/types';
@@ -44,7 +45,7 @@ export const ChallengeCard = memo(function ChallengeCard({
         "hover:bg-slate-200/60 dark:hover:bg-white/10 transition-all"
       )}
       whileHover={{ scale: 1.01, y: -2 }}
-      whileTap={{ scale: 0.99 }}
+      whileTap={zenTap.card}
     >
       {/* Gradient accent on left */}
       <div

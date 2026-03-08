@@ -4,6 +4,7 @@ import { X, Check, Sparkles } from 'lucide-react';
 import { ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { zenTap } from '@/lib/animationUtils';
 import { parseLocalDate, getToday, formatDate } from '@/lib/utils';
 import { safeParseInt } from '@/lib/validation';
 import { useModalA11y } from '@/hooks/useModalA11y';
@@ -129,7 +130,7 @@ export function AddEventModal({
             <motion.button
               onClick={onClose}
               whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
+              whileTap={zenTap.icon}
               className="p-2 hover:bg-secondary rounded-xl transition-colors"
               aria-label={t.close || 'Close'}
             >
@@ -163,7 +164,7 @@ export function AddEventModal({
                   key={preset.id}
                   onClick={() => setSelectedPreset(preset)}
                   whileHover={{ scale: 1.05, rotateY: 5 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={zenTap.button}
                   aria-pressed={isSelected}
                   aria-label={label}
                   className={cn(
@@ -266,7 +267,7 @@ export function AddEventModal({
             onClick={handleAdd}
             disabled={isSaving}
             whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={zenTap.card}
             className={cn(
               "w-full py-4 bg-gradient-to-r from-primary to-accent text-white rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/30",
               isSaving && "opacity-50"

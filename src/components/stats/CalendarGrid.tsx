@@ -4,6 +4,7 @@
  */
 
 import { motion } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { cn } from '@/lib/utils';
 import { MoodEntry, GratitudeEntry } from '@/types';
 
@@ -82,7 +83,7 @@ export function CalendarGrid({
               aria-pressed={isSelected}
               className="relative w-full aspect-square flex items-center justify-center"
               whileHover={{ scale: 1.15, rotateY: 15, rotateX: -10 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={zenTap.button}
               style={{ perspective: 200 }}
             >
               {/* Crystal shape (rotated square) with animated glow */}

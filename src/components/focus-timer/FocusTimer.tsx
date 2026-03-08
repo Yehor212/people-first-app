@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { FocusSession } from '@/types';
 import { cn } from '@/lib/utils';
+import { zenTap } from '@/lib/animationUtils';
 import { Coffee } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { HyperfocusMode } from '../HyperfocusMode';
@@ -87,7 +88,7 @@ export const FocusTimer = memo(function FocusTimer({ sessions, onCompleteSession
                   boxShadow: `0 0 16px ${colors.glow}`
                 } : {}}
                 whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.button}
               >
                 {item.label}
               </motion.button>

@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { cn } from '@/lib/utils';
 import { ScheduleEvent } from '@/types';
 import { formatDayShort, getEventGradient, HOURS_PER_DAY } from './constants';
@@ -118,7 +119,7 @@ export function PremiumDayPill({
     <motion.button
       onClick={onClick}
       whileHover={{ scale: 1.1, y: -4 }}
-      whileTap={{ scale: 0.95 }}
+      whileTap={zenTap.button}
       className={cn(
         "relative flex-shrink-0 flex flex-col items-center py-3 px-4 rounded-2xl transition-all duration-300 min-w-[60px]",
         "backdrop-blur-md border",

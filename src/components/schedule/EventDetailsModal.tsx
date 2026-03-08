@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { ScheduleEvent } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
+import { zenTap } from '@/lib/animationUtils';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { ParticleBackground } from '@/components/stats';
 import { getEventGradient } from './constants';
@@ -151,7 +152,7 @@ export function EventDetailsModal({
             <motion.button
               onClick={onClose}
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={zenTap.card}
               className="flex-1 py-3 bg-secondary backdrop-blur-sm rounded-xl font-medium text-slate-800 dark:text-white border border-border"
             >
               {t.close || 'Close'}
@@ -167,7 +168,7 @@ export function EventDetailsModal({
                   }}
                   disabled={isDeleting}
                   whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={zenTap.card}
                   className={cn(
                     "flex-1 py-3 bg-red-500/30 text-red-300 rounded-xl font-medium border border-red-500/40",
                     isDeleting && "opacity-50",
@@ -179,7 +180,7 @@ export function EventDetailsModal({
                 <motion.button
                   onClick={() => setShowDeleteConfirm(true)}
                   whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
+                  whileTap={zenTap.card}
                   className="flex-1 py-3 bg-red-500/20 text-red-400 rounded-xl font-medium border border-red-500/30"
                 >
                   {t.delete || 'Delete'}

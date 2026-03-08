@@ -15,6 +15,7 @@ import { FireIcon, StarIcon, TrophyIcon, TargetIcon } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { UnifiedShareModal } from '@/components/share';
 import { hapticTap } from '@/lib/haptics';
+import { zenTap } from '@/lib/animationUtils';
 
 interface Achievement {
   id: string;
@@ -248,7 +249,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
           "backdrop-blur-sm border border-amber-500/30",
         )}
         whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
+        whileTap={zenTap.button}
         aria-label={t.shareAchievements || 'Share achievements'}
       >
         <Share2 className="w-4 h-4 text-amber-700 dark:text-amber-200" aria-hidden="true" />

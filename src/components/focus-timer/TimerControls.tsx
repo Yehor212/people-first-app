@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { zenTap } from '@/lib/animationUtils';
 
 interface TimerControlsProps {
   isPrimaryCTA: boolean;
@@ -53,7 +54,7 @@ export function TimerControls({
                   : '0 0 24px hsl(var(--focus-violet) / 0.5)'
               }}
               whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={zenTap.button}
             >
               {/* Pulse ring when paused */}
               {!isRunning && (
@@ -76,7 +77,7 @@ export function TimerControls({
               aria-label={labels.resetTimer}
               className="w-14 h-14 rounded-full flex items-center justify-center bg-secondary backdrop-blur-sm border border-border text-slate-600 dark:text-white/70 hover:text-slate-800 dark:hover:text-white hover:bg-secondary/80 transition-colors"
               whileHover={{ scale: 1.1, rotate: -90 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={zenTap.button}
             >
               <RotateCcw className="w-5 h-5" aria-hidden="true" />
             </motion.button>
@@ -122,7 +123,7 @@ export function TimerControls({
             boxShadow: '0 0 20px hsl(var(--focus-violet) / 0.3)'
           } : {}}
           whileHover={!isRunning ? { scale: 1.02 } : {}}
-          whileTap={!isRunning ? { scale: 0.98 } : {}}
+          whileTap={!isRunning ? zenTap.card : {}}
         >
           <Zap className="w-5 h-5" />
           {labels.hyperfocusMode}

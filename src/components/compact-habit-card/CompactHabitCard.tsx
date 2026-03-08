@@ -13,6 +13,7 @@ import { useState, useRef, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticTap } from '@/lib/haptics';
+import { zenTap } from '@/lib/animationUtils';
 import { AnimatedFire } from './AnimatedFire';
 import { StreakMilestoneBadge } from './StreakMilestoneBadge';
 import { HabitProgressIndicator } from './HabitProgressIndicator';
@@ -242,7 +243,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
               boxShadow: '0 0 20px rgba(16, 185, 129, 0.4), 0 4px 8px rgba(0, 0, 0, 0.1)',
             } : undefined}
             whileHover={{ scale: completed ? 1.05 : 1.02 }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={zenTap.button}
           >
             {/* Inner glow for completed — CSS keyframe (QA_PROTOCOLS #5, motion-safe) */}
             {completed && (

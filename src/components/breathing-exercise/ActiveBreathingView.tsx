@@ -1,5 +1,6 @@
 import { Play, Pause, RotateCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import Lottie from 'lottie-react';
 import { cn } from '@/lib/utils';
 import { getPhaseInstruction, type BreathingPattern, type BreathingPhase } from '@/lib/breathingPatterns';
@@ -223,7 +224,7 @@ export function ActiveBreathingView({
             boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)',
           }}
           whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileTap={zenTap.card}
         >
           {isPaused ? <Play className="w-5 h-5" /> : <Pause className="w-5 h-5" />}
           {isPaused ? (t.resume || 'Resume') : (t.pause || 'Pause')}
@@ -238,7 +239,7 @@ export function ActiveBreathingView({
             "hover:bg-secondary transition-all"
           )}
           whileHover={{ scale: 1.05, rotate: -180 }}
-          whileTap={{ scale: 0.95 }}
+          whileTap={zenTap.button}
           transition={{ type: 'spring', stiffness: 300 }}
         >
           <RotateCcw className="w-5 h-5" />

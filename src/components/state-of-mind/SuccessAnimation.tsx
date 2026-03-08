@@ -1,6 +1,5 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { zenMotion, shouldShowConfetti } from '@/lib/animationUtils';
 import { haptics } from '@/lib/haptics';
@@ -9,6 +8,25 @@ interface SuccessAnimationProps {
   onComplete: () => void;
 }
 
+/** Circle container scales in with bouncy spring */
+const circleDraw = {
+  hidden: { scale: 0, opacity: 0 },
+  visible: { scale: 1, opacity: 1, transition: zenMotion.bouncy },
+};
+
+/** Checkmark draws via pathLength with delayed bouncy spring */
+const checkDraw = {
+  hidden: { pathLength: 0, opacity: 0 },
+  visible: {
+    pathLength: 1,
+    opacity: 1,
+    transition: {
+      pathLength: { ...zenMotion.bouncy, delay: 0.2 },
+      opacity: { duration: 0.05 },
+    },
+  },
+};
+
 /**
  * Brief success confirmation after saving State of Mind entry.
  * Auto-dismisses after 1.2s.
@@ -16,6 +34,7 @@ interface SuccessAnimationProps {
  * Visual Aesthetic Rule 7: Celebration purpose → bouncy + haptic.
  * Law 18 (Housekeeping): clearTimeout in cleanup.
  * Visual Aesthetic Rule 5: confetti gated by shouldShowConfetti().
+ * Upgrade 4: SVG pathLength draw (like MiniCheckmarkCell pattern).
  */
 export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
   const { t } = useLanguage();
@@ -28,14 +47,26 @@ export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-16">
-      {/* Checkmark with bounce */}
+      {/* Checkmark circle bounces in → 200ms pause → path draws with spring overshoot */}
       <motion.div
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={zenMotion.bouncy}
+        variants={circleDraw}
+        initial="hidden"
+        animate="visible"
         className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center"
       >
-        <Check className="w-8 h-8 text-primary" />
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <motion.path
+            d="M8 16.5 L13 21.5 L24 10.5"
+            stroke="currentColor"
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-primary"
+            variants={checkDraw}
+            initial="hidden"
+            animate="visible"
+          />
+        </svg>
       </motion.div>
 
       {/* "Saved" text */}
@@ -48,10 +79,9 @@ export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
         {t.somSaved}
       </motion.p>
 
-      {/* Confetti (reuse existing ConfettiBurst if dopamine allows) */}
+      {/* Confetti (gated by dopamine settings) */}
       {shouldShowConfetti() && (
         <div className="fixed inset-0 pointer-events-none z-[60]" aria-hidden="true">
-          {/* Confetti particles via CSS animation */}
           {Array.from({ length: 12 }).map((_, i) => (
             <div
               key={i}
@@ -63,8 +93,7 @@ export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
                 height: 8,
                 borderRadius: Math.random() > 0.5 ? '50%' : '2px',
                 backgroundColor: `hsl(${Math.random() * 360}, 70%, 60%)`,
-                animationDelay: `${Math.random() * 0.5}s`,
-                animationDuration: `${0.7 + Math.random() * 0.4}s`,
+                animationDelay: `${Math.random() * 0.3}s`,
               }}
             />
           ))}

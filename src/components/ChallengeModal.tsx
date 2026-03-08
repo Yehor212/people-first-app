@@ -7,6 +7,7 @@ import { useState, useEffect, memo } from 'react';
 import { ChevronRight, Users } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { shouldAnimate, zenTap, zenHover } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { hapticTap } from '@/lib/haptics';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -167,8 +168,8 @@ export const ChallengeModal = memo(function ChallengeModal({
                 onClick={handleBack}
                 aria-label={t.back || 'Go back'}
                 className="p-2 rounded-xl bg-slate-100/60 dark:bg-white/5 border border-slate-200/60 dark:border-white/10 text-slate-600 dark:text-white/70 hover:bg-slate-200/60 dark:hover:bg-white/10 transition-colors"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={zenHover.glow}
+                whileTap={zenTap.icon}
               >
                 <ChevronRight className="w-5 h-5 rotate-180" />
               </motion.button>
@@ -180,8 +181,8 @@ export const ChallengeModal = memo(function ChallengeModal({
                 background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.5) 0%, rgba(168, 85, 247, 0.4) 100%)',
                 boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
               }}
-              animate={{ scale: [1, 1.05, 1] }}
-              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              animate={shouldAnimate() ? { scale: [1, 1.05, 1] } : undefined}
+              transition={shouldAnimate() ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : undefined}
             >
               <Users className="w-5 h-5 text-white" />
             </motion.div>

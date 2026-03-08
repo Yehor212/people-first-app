@@ -8,6 +8,7 @@
 import { motion } from 'framer-motion';
 import { Minus, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { zenTap } from '@/lib/animationUtils';
 import { ProgressRing, ProgressRingCompact } from '@/components/ui/progress-ring';
 
 export interface HabitProgressIndicatorProps {
@@ -43,7 +44,7 @@ export function HabitProgressIndicator({
             aria-label={t.decrease || 'Decrease'}
             className="w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg bg-muted/50 flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none"
             whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={zenTap.button}
           >
             <Minus className="w-5 h-5" />
           </motion.button>
@@ -66,7 +67,7 @@ export function HabitProgressIndicator({
             )}
             style={{ boxShadow: '0 0 8px hsl(var(--primary) / 0.15)' }}
             whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={zenTap.button}
           >
             <Plus className="w-5 h-5" />
           </motion.button>

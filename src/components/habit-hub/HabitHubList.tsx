@@ -146,7 +146,7 @@ export function HabitHubList({
           <motion.button
             key={cat.id}
             onClick={() => { void hapticSelection(); setCategoryFilter(cat.id); }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={zenTap.button}
             aria-pressed={categoryFilter === cat.id}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors',

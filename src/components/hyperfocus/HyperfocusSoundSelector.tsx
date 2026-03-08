@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Volume2, VolumeX, Loader2, AlertCircle, RotateCcw } from 'lucide-react';
 import { SOUNDS, AudioStatus } from '@/lib/ambientSounds';
 import { cn } from '@/lib/utils';
+import { zenTap } from '@/lib/animationUtils';
 
 interface HyperfocusSoundSelectorProps {
   selectedSoundId: string | null;
@@ -88,7 +89,7 @@ export function HyperfocusSoundSelector({
                   ? "bg-violet-500/30 border border-violet-500/50"
                   : "bg-secondary border border-border"
               )}
-              whileTap={{ scale: 0.95 }}
+              whileTap={zenTap.button}
             >
               {isSoundPlaying ? (
                 <Volume2 className="w-5 h-5 text-violet-700 dark:text-violet-300" />
@@ -115,7 +116,7 @@ export function HyperfocusSoundSelector({
             boxShadow: '0 0 12px hsl(var(--focus-violet) / 0.3)'
           } : {}}
           whileHover={{ scale: 1.03 }}
-          whileTap={{ scale: 0.97 }}
+          whileTap={zenTap.card}
         >
           <span className="text-lg">🔇</span>
           <span>{t.hyperfocusSoundNone}</span>
@@ -149,7 +150,7 @@ export function HyperfocusSoundSelector({
                 boxShadow: '0 0 12px hsl(var(--focus-violet) / 0.3)'
               } : {}}
               whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
+              whileTap={zenTap.card}
             >
               <span className="text-lg">{meta.emoji}</span>
               <span>{localizedName}</span>

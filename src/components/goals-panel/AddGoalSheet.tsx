@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { Target, Sparkles, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateId, getToday } from '@/lib/utils';
@@ -217,7 +218,7 @@ export function AddGoalSheet({ open, onOpenChange, habits, onAdd, t }: AddGoalSh
               isSaving && 'opacity-50',
             )}
             style={{ boxShadow: `0 8px 32px ${GOAL_THEMES[type].glowColor}` }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={zenTap.card}
           >
             <Sparkles className="w-5 h-5" />
             <span>{t.addGoal || 'Add Goal'}</span>

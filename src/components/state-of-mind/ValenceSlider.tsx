@@ -1,5 +1,7 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { zenMotion } from '@/lib/animationUtils';
 import { VALENCE_GRADIENT } from './colorUtils';
 
 interface ValenceSliderProps {
@@ -22,6 +24,7 @@ const TOUCH_PADDING = 10; // Extra padding for 44px+ touch target
 export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   const { t } = useLanguage();
   const trackRef = useRef<HTMLDivElement>(null);
+  const [isPressed, setIsPressed] = useState(false);
 
   const getValenceFromEvent = useCallback((clientX: number) => {
     const track = trackRef.current;
@@ -35,6 +38,7 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
 
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     e.currentTarget.setPointerCapture(e.pointerId);
+    setIsPressed(true);
     onChange(getValenceFromEvent(e.clientX));
   }, [getValenceFromEvent, onChange]);
 
@@ -45,6 +49,7 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
 
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     e.currentTarget.releasePointerCapture(e.pointerId);
+    setIsPressed(false);
   }, []);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
@@ -115,8 +120,10 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
           }}
         />
 
-        {/* Thumb */}
-        <div
+        {/* Thumb — spring snap on press/release */}
+        <motion.div
+          animate={{ scale: isPressed ? 1.15 : 1 }}
+          transition={zenMotion.snappy}
           className="absolute rounded-full bg-white shadow-zen-md ring-1 ring-black/10 dark:bg-gray-100 dark:ring-white/20"
           style={{
             width: THUMB_SIZE,

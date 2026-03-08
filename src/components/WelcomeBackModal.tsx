@@ -13,6 +13,7 @@
 import { useState } from 'react';
 import { Heart, TrendingUp, Calendar, Sparkles, X, Zap, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { zenMotion, zenTap, zenHover } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -165,7 +166,7 @@ export function WelcomeBackModal({
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
+            transition={{ ...zenMotion.gentle, delay: 0.2 }}
             className="p-4 rounded-xl bg-gradient-to-br from-violet-500/10 to-purple-500/10 border border-violet-500/30"
           >
             <div className="flex items-center gap-3 mb-3">
@@ -197,7 +198,8 @@ export function WelcomeBackModal({
                   className="h-full bg-gradient-to-r from-violet-500 to-purple-500"
                   style={{ width: '100%', transformOrigin: 'left center' }}
                   initial={{ scaleX: 0 }}
-                  animate={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={zenMotion.gentle}
                 />
               </div>
               <p className="text-xs text-muted-foreground text-center">
@@ -206,8 +208,8 @@ export function WelcomeBackModal({
             </div>
 
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={zenHover.lift}
+              whileTap={zenTap.button}
               onClick={handleAcceptChallenge}
               className="w-full py-2.5 px-4 bg-gradient-to-r from-violet-500 to-purple-500 text-white rounded-xl font-medium hover:from-violet-600 hover:to-purple-600 transition-all zen-shadow-sm flex items-center justify-center gap-2"
             >

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { zenTap } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { useScrollLock } from '@/hooks/useScrollLock';
@@ -100,7 +101,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
                 boxShadow: '0 0 12px rgba(139, 92, 246, 0.3)'
               } : undefined}
               whileHover={{ scale: activeTab !== tab.type ? 1.02 : 1 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={zenTap.card}
             >
               {tab.icon}
               <span className="text-sm">{tab.label}</span>
@@ -216,7 +217,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
           className="absolute top-4 end-4 p-2.5 rounded-xl bg-foreground/5 border border-foreground/10 hover:bg-foreground/10 transition-colors"
           aria-label={t.refresh || 'Refresh'}
           whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileTap={zenTap.button}
         >
           <RefreshCw className={cn("w-5 h-5 text-foreground/60", data.isLoading && "animate-spin")} />
         </motion.button>

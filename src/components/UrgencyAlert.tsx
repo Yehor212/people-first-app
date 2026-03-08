@@ -15,6 +15,7 @@ import { Clock, Flame, AlertTriangle, Sparkles, ChevronRight, X } from 'lucide-r
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Habit } from '@/types';
 import { cn, interpolate, getToday } from '@/lib/utils';
+import { zenTap } from '@/lib/animationUtils';
 import { isHabitCompletedOnDate } from '@/lib/habits';
 import { SK } from '@/lib/storageKeys';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
@@ -238,7 +239,7 @@ function AlertCard({
             onClick={alert.action}
             className="mt-4 w-full py-3 rounded-xl bg-white/20 hover:bg-white/30 backdrop-blur-sm transition-colors flex items-center justify-center gap-2 group"
             whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={zenTap.card}
           >
             <span className="text-sm font-semibold text-white">{t.urgencyCompleteNow || 'Complete now'}</span>
             <ChevronRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />

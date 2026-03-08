@@ -6,6 +6,7 @@
  */
 
 import { motion } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import {
   Brain, Heart, BookOpen, Dumbbell, Palette, Music, Sun, Moon,
   Leaf, Flame, Target, Sparkles, Coffee, Shield, GraduationCap,
@@ -78,7 +79,7 @@ export function IdentityIconPicker({ value, onChange, isPrimaryCTA = false }: Id
                 : "bg-background hover:bg-muted hover:scale-105 border border-border/30"
           )}
           whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          whileTap={zenTap.button}
         >
           <Icon className={cn(
             "w-4 h-4",

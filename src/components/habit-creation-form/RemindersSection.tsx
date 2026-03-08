@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -33,7 +34,7 @@ export function RemindersSection({
             isPrimaryCTA ? "bg-violet-500/20 text-violet-300 border border-violet-500/30 hover:bg-violet-500/30" : "bg-primary/10 text-primary hover:bg-primary/20"
           )}
           whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+          whileTap={zenTap.card}
         >
           + {t.addReminder || 'Add'}
         </motion.button>
@@ -92,7 +93,7 @@ export function RemindersSection({
                           : "bg-secondary text-muted-foreground hover:bg-muted"
                     )}
                     style={isPrimaryCTA && reminder.days.includes(day) ? { boxShadow: '0 0 8px rgba(139, 92, 246, 0.4)' } : undefined}
-                    whileTap={{ scale: 0.95 }}
+                    whileTap={zenTap.button}
                   >
                     {label}
                   </motion.button>
@@ -106,7 +107,7 @@ export function RemindersSection({
                   "p-2 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg transition-colors",
                   isPrimaryCTA ? "text-red-400 hover:bg-red-500/20" : "text-destructive hover:bg-destructive/10"
                 )}
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.button}
               >
                 <X className="w-4 h-4" />
               </motion.button>

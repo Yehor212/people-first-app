@@ -13,6 +13,7 @@ import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
 import { requestDndPolicyAccess, checkPolicyAccess, checkDndActive, setDndEnabled } from '@/hooks/useDnd';
 import { cn } from '@/lib/utils';
+import { zenTap } from '@/lib/animationUtils';
 
 import { SHOW_DND, SHOW_SPOTIFY } from './types';
 import type { HyperfocusModeProps } from './types';
@@ -125,7 +126,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                 boxShadow: `0 0 30px ${progressColor.from}50`
               }}
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={zenTap.button}
             >
               <motion.div
                 className="absolute inset-0 rounded-2xl border-2 border-white/30"
@@ -140,7 +141,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
               onClick={handlePause}
               className="px-8 py-4 min-h-[56px] bg-secondary backdrop-blur-sm border border-border rounded-2xl text-slate-700 dark:text-white font-bold text-lg flex items-center gap-3 transition-all"
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={zenTap.button}
             >
               {timer.isPaused ? (
                 <><Play className="w-6 h-6" />{t.hyperfocusResume}</>
@@ -154,7 +155,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
             onClick={onExit}
             className="px-6 py-4 min-h-[56px] bg-red-100 dark:bg-red-500/20 backdrop-blur-sm border border-red-300 dark:border-red-500/30 rounded-2xl text-red-600 dark:text-red-300 font-medium transition-all"
             whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={zenTap.button}
           >
             {t.hyperfocusExit}
           </motion.button>
@@ -172,7 +173,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                   ? "bg-violet-500/20 border-violet-500/40"
                   : "bg-secondary border-border"
               )}
-              whileTap={{ scale: 0.98 }}
+              whileTap={zenTap.card}
               aria-label={t.focusModeToggle || 'Phone Focus Mode'}
               aria-pressed={dnd.dndEnabled}
               role="switch"
@@ -244,7 +245,7 @@ export function HyperfocusMode({ duration, onComplete, onExit }: HyperfocusModeP
                     ? 'bg-[hsl(var(--brand-spotify))]/30 border border-[hsl(var(--brand-spotify))]/50 text-[hsl(var(--brand-spotify))]'
                     : 'bg-secondary border border-border text-slate-500 dark:text-white/60'
                 )}
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.button}
               >
                 {spotify.spotifyAutoPlay ? t.spotifyAutoPlayOn : t.spotifyAutoPlayOff}
               </motion.button>

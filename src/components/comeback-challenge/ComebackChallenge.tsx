@@ -21,6 +21,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { cn, formatDate, getToday } from '@/lib/utils';
+import { zenTap } from '@/lib/animationUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Habit } from '@/types';
 import { isHabitCompletedOnDate } from '@/lib/habits';
@@ -361,7 +362,7 @@ export function ComebackChallenge({
                 color: challengeConfig.tier === 'silver' ? '#1e293b' : '#fff',
               }}
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={zenTap.card}
             >
               <Trophy className="w-4 h-4" />
               {t.acceptChallenge || 'Accept Challenge'}

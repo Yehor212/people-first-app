@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { zenMotion, zenTap } from '@/lib/animationUtils';
 import { HabitCategory, LoopHabitType } from '@/types';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -90,7 +91,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
       )}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
+      transition={zenMotion.gentle}
       onTouchStart={(e) => e.stopPropagation()}
       onTouchMove={(e) => e.stopPropagation()}
       onTouchEnd={(e) => e.stopPropagation()}
@@ -236,7 +237,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
               )}
               style={isPrimaryCTA && selectedIcon === icon ? { boxShadow: '0 0 16px rgba(139, 92, 246, 0.4)' } : undefined}
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={zenTap.button}
             >
               {icon}
             </motion.button>
@@ -270,7 +271,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
                   boxShadow: selectedColorIndex === idx ? `0 0 16px ${hex}80` : undefined,
                 }}
                 whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.button}
               />
             );
           })}
@@ -302,7 +303,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
               )}
               style={isPrimaryCTA && habitType === type ? { boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)' } : undefined}
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={zenTap.card}
             >
               <span>{icon} {label}</span>
               <span className={cn(
@@ -339,7 +340,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
                     : "bg-background border border-border/50 hover:bg-muted"
               )}
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={zenTap.card}
             >
               {ts[preset.i18nKey] || preset.label}
             </motion.button>
@@ -369,7 +370,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
                 type="button"
                 onClick={() => setTargetValue(Math.max(1, targetValue - 1))}
                 className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-lg bg-muted/50 flex items-center justify-center"
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.button}
               >
                 <Minus className="w-4 h-4" />
               </motion.button>
@@ -394,7 +395,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
                   "w-10 h-10 min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center",
                   "bg-gradient-to-br from-primary/20 to-primary/10 text-primary"
                 )}
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.button}
               >
                 <Plus className="w-4 h-4" />
               </motion.button>
@@ -432,7 +433,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
                       ? "bg-foreground/5 border border-foreground/10 text-foreground/60"
                       : "bg-background border border-border/50 hover:bg-muted"
                 )}
-                whileTap={{ scale: 0.98 }}
+                whileTap={zenTap.card}
               >
                 {tt === 'atLeast' ? (ts.atLeast || 'At least') : (ts.atMost || 'At most')}
               </motion.button>
@@ -470,7 +471,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
                     : isPrimaryCTA ? "bg-foreground/5 border border-foreground/10 text-foreground/70 hover:bg-foreground/10" : "bg-background hover:bg-muted border border-border/50"
                 )}
                 whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileTap={zenTap.card}
               >
                 <span className="text-lg">{icon}</span>
                 <span className="truncate w-full text-center">{categoryLabels[id]}</span>

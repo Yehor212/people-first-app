@@ -1,5 +1,6 @@
 import { Wind } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { cn } from '@/lib/utils';
 
 interface CompactCardProps {
@@ -21,7 +22,7 @@ export function CompactCard({ onOpen, t }: CompactCardProps) {
         boxShadow: '0 0 20px rgba(6, 182, 212, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1)',
       }}
       whileHover={{ scale: 1.01, y: -2 }}
-      whileTap={{ scale: 0.99 }}
+      whileTap={zenTap.card}
     >
       {/* Animated background glow */}
       <motion.div

@@ -93,7 +93,7 @@ export const AllCompleteCelebration = memo(function AllCompleteCelebration({ str
         className="text-muted-foreground mb-6"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.3, duration: 0.3 }}
+        transition={{ ...zenMotion.gentle, delay: 0.3 }}
       >
         {t.allCompleteMessage || 'You\'ve completed all activities for today'}
       </motion.p>
@@ -117,7 +117,7 @@ export const AllCompleteCelebration = memo(function AllCompleteCelebration({ str
         className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.3 }}
+        transition={{ ...zenMotion.gentle, delay: 0.5 }}
       >
         <Heart className="w-4 h-4 text-pink-500" />
         <span>{t.allCompleteSupportive || 'See you tomorrow!'}</span>

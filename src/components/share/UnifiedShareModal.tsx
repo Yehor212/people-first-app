@@ -7,6 +7,7 @@ import { useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Download, Share2, Copy, Check, Loader2, RefreshCw } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { zenMotion } from '@/lib/animationUtils';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/components/ThemeToggle';
@@ -151,7 +152,7 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
               )}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2 }}
+              transition={zenMotion.snappy}
               style={{
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
               }}

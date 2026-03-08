@@ -324,7 +324,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
+                    transition={zenMotion.exit}
                   >
                     <button
                       onClick={() => { void hapticTap(); setShowDeleteConfirm(true); }}

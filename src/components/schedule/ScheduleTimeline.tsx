@@ -13,6 +13,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ParticleBackground } from '@/components/stats';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { zenTap } from '@/lib/animationUtils';
 
 import { ScheduleTimelineProps, HOURS_PER_DAY, DAY_WIDTH_PX } from './constants';
 import { AnimatedClockRing, PremiumDayPill } from './ScheduleVisuals';
@@ -223,7 +224,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
               <motion.button
                 onClick={goToToday}
                 whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.button}
                 className="p-2.5 bg-secondary hover:bg-secondary/80 backdrop-blur-sm rounded-xl border border-border transition-colors"
                 aria-label={t.today || 'Today'}
               >
@@ -236,7 +237,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
               <motion.button
                 onClick={() => setShowAddModal(true)}
                 whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.button}
                 className="p-2.5 bg-gradient-to-br from-primary/40 to-accent/40 hover:from-primary/60 hover:to-accent/60 backdrop-blur-sm rounded-xl border border-primary/30 transition-all shadow-lg shadow-primary/20"
                 aria-label={t.scheduleAddEvent || 'Add event'}
               >

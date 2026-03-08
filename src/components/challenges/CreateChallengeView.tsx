@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { hapticSuccess, hapticTap } from '@/lib/haptics';
@@ -91,7 +92,7 @@ export function CreateChallengeView({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
               whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileTap={zenTap.card}
             >
               <div className={cn(
                 "text-2xl font-bold",
@@ -120,7 +121,7 @@ export function CreateChallengeView({
           boxShadow: '0 0 20px rgba(139, 92, 246, 0.4)'
         } : undefined}
         whileHover={!isCreating ? { scale: 1.02 } : {}}
-        whileTap={!isCreating ? { scale: 0.98 } : {}}
+        whileTap={!isCreating ? zenTap.card : {}}
       >
         {/* Pulse ring */}
         {!isCreating && (

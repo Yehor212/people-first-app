@@ -6,6 +6,7 @@
 
 import { memo, useMemo, useState, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
+import { zenMotion } from '@/lib/animationUtils';
 import { Flame, Zap, Trophy, Moon, Share2, Check, Heart, Target, Brain, Sparkles } from 'lucide-react';
 
 // Lazy-load FireAnimation to isolate lottie-react (CJS) into its own chunk.
@@ -190,7 +191,7 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
                   } : {}}
                   initial={false}
                   animate={activity.done ? { scale: [1, 1.1, 1] } : { scale: 1 }}
-                  transition={{ duration: 0.3 }}
+                  transition={zenMotion.snappy}
                   role="img"
                   aria-label={`${activity.label}: ${activity.done ? t.completed : ''}`}
                 >

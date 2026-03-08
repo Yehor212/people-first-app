@@ -168,7 +168,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
               initial={{ opacity: 0 }}
               animate={{ opacity: 0.4 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              transition={zenMotion.exit}
             >
               <path
                 d="M3 7.5 L5.5 10 L11 4"
@@ -190,7 +190,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              transition={zenMotion.exit}
             >
               <line x1="2" y1="5" x2="8" y2="5" stroke="#60A5FA" strokeWidth={2} strokeLinecap="round" opacity={0.6} />
             </motion.svg>
@@ -204,7 +204,7 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              transition={zenMotion.exit}
             >
               <line x1="2.5" y1="2.5" x2="7.5" y2="7.5" stroke="rgba(255,255,255,0.2)" strokeWidth={1.5} strokeLinecap="round" />
               <line x1="7.5" y1="2.5" x2="2.5" y2="7.5" stroke="rgba(255,255,255,0.2)" strokeWidth={1.5} strokeLinecap="round" />

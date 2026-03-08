@@ -16,6 +16,7 @@ import { Lightbulb, Shuffle, PenLine } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { hapticTap } from '@/lib/haptics';
+import { zenTap } from '@/lib/animationUtils';
 import {
   JournalPrompt,
   CATEGORY_LABELS,
@@ -180,7 +181,7 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
               scale: 1.02,
               boxShadow: '0 0 24px rgba(245, 158, 11, 0.6)',
             }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={zenTap.card}
           >
             {/* Shimmer effect */}
             <motion.div

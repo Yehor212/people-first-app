@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { zenMotion } from '@/lib/animationUtils';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Habit } from '@/types';
@@ -29,7 +30,7 @@ export function PremiumProgressBar({
               style={isComplete ? { boxShadow: '0 0 8px rgba(16, 185, 129, 0.5)' } : {}}
               initial={{ scaleX: 0 }}
               animate={{ scaleX: 1 }}
-              transition={{ delay: index * 0.05, duration: 0.3 }}
+              transition={{ ...zenMotion.gentle, delay: index * 0.05 }}
             />
           );
         })}

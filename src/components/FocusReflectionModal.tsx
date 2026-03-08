@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { X, Sparkles, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { zenMotion } from '@/lib/animationUtils';
+import { zenMotion, zenTap } from '@/lib/animationUtils';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
 
@@ -118,7 +118,7 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
                     boxShadow: '0 0 16px hsl(var(--focus-violet) / 0.5)'
                   } : {}}
                   whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={zenTap.button}
                 >
                   {value}
                 </motion.button>
@@ -130,7 +130,7 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
             <motion.button
               onClick={onDismiss}
               className="flex-1 py-3 rounded-xl bg-secondary text-muted-foreground font-medium hover:bg-secondary/80 hover:text-foreground transition-colors"
-              whileTap={{ scale: 0.98 }}
+              whileTap={zenTap.card}
             >
               {t.focusReflectionSkip}
             </motion.button>
@@ -143,7 +143,7 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
               )}
               style={{ boxShadow: '0 0 16px hsl(var(--focus-violet) / 0.4)' }}
               whileHover={isSaving ? {} : { scale: 1.02 }}
-              whileTap={isSaving ? {} : { scale: 0.98 }}
+              whileTap={isSaving ? {} : zenTap.card}
             >
               {t.focusReflectionSave}
             </motion.button>

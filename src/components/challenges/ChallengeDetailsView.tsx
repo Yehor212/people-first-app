@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { Share2, Copy, Check, Trophy, Clock, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { logger } from '@/lib/logger';
@@ -257,7 +258,7 @@ export function ChallengeDetailsView({
             )}
             style={copied ? { boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)' } : undefined}
             whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={zenTap.button}
           >
             {copied ? (
               <Check className="w-6 h-6 text-emerald-400" />

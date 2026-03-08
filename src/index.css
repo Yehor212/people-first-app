@@ -1179,10 +1179,12 @@
 
 @keyframes ripple {
   0% {
-    box-shadow: 0 0 0 0 hsl(var(--primary) / 0.4);
+    filter: drop-shadow(0 0 0 hsl(var(--primary) / 0.4));
+    opacity: 1;
   }
   100% {
-    box-shadow: 0 0 0 15px hsl(var(--primary) / 0);
+    filter: drop-shadow(0 0 15px hsl(var(--primary) / 0));
+    opacity: 0;
   }
 }
 
@@ -1199,10 +1201,10 @@
 
 @keyframes glow-pulse {
   0%, 100% {
-    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+    filter: drop-shadow(0 0 20px hsl(var(--primary) / 0.3));
   }
   50% {
-    box-shadow: 0 0 35px hsl(var(--primary) / 0.5);
+    filter: drop-shadow(0 0 35px hsl(var(--primary) / 0.5));
   }
 }
 
@@ -1257,8 +1259,20 @@
 
 @keyframes confetti {
   0% {
-    transform: translateY(-100vh) rotate(0deg);
+    transform: translateY(-10vh) rotate(0deg);
     opacity: 1;
+  }
+  15% {
+    transform: translateY(5vh) rotate(108deg);
+    opacity: 1;
+  }
+  40% {
+    transform: translateY(35vh) rotate(288deg);
+    opacity: 1;
+  }
+  70% {
+    transform: translateY(70vh) rotate(504deg);
+    opacity: 0.6;
   }
   100% {
     transform: translateY(100vh) rotate(720deg);
@@ -1289,13 +1303,16 @@
 
 @keyframes success-pulse {
   0% {
-    box-shadow: 0 0 0 0 hsl(var(--mood-good) / 0.7);
+    filter: drop-shadow(0 0 0 hsl(var(--mood-good) / 0.7));
+    opacity: 1;
   }
   70% {
-    box-shadow: 0 0 0 15px hsl(var(--mood-good) / 0);
+    filter: drop-shadow(0 0 15px hsl(var(--mood-good) / 0));
+    opacity: 0.3;
   }
   100% {
-    box-shadow: 0 0 0 0 hsl(var(--mood-good) / 0);
+    filter: drop-shadow(0 0 0 hsl(var(--mood-good) / 0));
+    opacity: 1;
   }
 }
 
@@ -1318,7 +1335,7 @@
 }
 
 .animate-confetti {
-  animation: confetti 3s linear forwards;
+  animation: confetti 1.8s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
 }
 
 .animate-bounce-check {
@@ -1339,16 +1356,16 @@
    PREMIUM UI ANIMATIONS - Phase 3
    ======================================== */
 
-/* Input Focus Ring - Subtle attention draw */
+/* Input Focus Ring — GPU-only via filter */
 @keyframes input-focus-ring {
   0% {
-    box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+    filter: drop-shadow(0 0 0 hsl(var(--primary) / 0));
   }
   50% {
-    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.2);
+    filter: drop-shadow(0 0 3px hsl(var(--primary) / 0.2));
   }
   100% {
-    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15);
+    filter: drop-shadow(0 0 2px hsl(var(--primary) / 0.15));
   }
 }
 
@@ -1590,14 +1607,14 @@
   filter: drop-shadow(0 0 10px hsl(var(--mood-terrible) / 0.6));
 }
 
-/* Emoji selection ring pulse */
+/* Emoji selection ring pulse — GPU-only via scale+opacity on pseudo border */
 @keyframes emoji-select-ring {
   0% {
-    box-shadow: 0 0 0 0 currentColor;
+    transform: scale(1);
     opacity: 0.6;
   }
   100% {
-    box-shadow: 0 0 0 12px currentColor;
+    transform: scale(1.5);
     opacity: 0;
   }
 }
@@ -1607,6 +1624,7 @@
   position: absolute;
   inset: -4px;
   border-radius: 50%;
+  border: 2px solid currentColor;
   animation: emoji-select-ring 1.5s ease-out infinite;
 }
 
@@ -1860,18 +1878,18 @@
   animation: mood-jump-to-calendar 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-/* Calendar day highlight when mood lands */
+/* Calendar day highlight when mood lands — GPU-only */
 @keyframes calendar-day-highlight {
   0% {
-    box-shadow: 0 0 0 0 currentColor;
+    filter: drop-shadow(0 0 0 currentColor);
     transform: scale(1);
   }
   50% {
-    box-shadow: 0 0 20px 10px currentColor;
+    filter: drop-shadow(0 0 20px currentColor);
     transform: scale(1.1);
   }
   100% {
-    box-shadow: 0 0 0 0 currentColor;
+    filter: drop-shadow(0 0 0 currentColor);
     transform: scale(1);
   }
 }
@@ -2207,15 +2225,23 @@
   animation: shimmer-slide 2s ease-in-out infinite;
 }
 
-/* Progress bar fill */
+/* Progress bar fill — GPU-only via scaleX (no layout thrashing from width) */
 @keyframes progress-fill {
   from {
-    width: 0%;
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
   }
 }
 
 .animate-progress-fill {
+  transform-origin: left center;
   animation: progress-fill 0.8s ease-out;
+}
+
+[dir="rtl"] .animate-progress-fill {
+  transform-origin: right center;
 }
 
 /* Habit row enter */
@@ -2234,13 +2260,15 @@
   animation: habit-row-enter 0.4s ease-out forwards;
 }
 
-/* Pulsing glow for incomplete habits */
+/* Pulsing glow for incomplete habits — GPU-only via filter */
 @keyframes incomplete-pulse {
   0%, 100% {
-    box-shadow: 0 0 0 0 hsl(var(--primary) / 0);
+    filter: drop-shadow(0 0 0 hsl(var(--primary) / 0));
+    opacity: 1;
   }
   50% {
-    box-shadow: 0 0 10px 2px hsl(var(--primary) / 0.3);
+    filter: drop-shadow(0 0 10px hsl(var(--primary) / 0.3));
+    opacity: 0.9;
   }
 }
 
@@ -2253,16 +2281,19 @@
   animation: check-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Success ring pulse */
+/* Success ring pulse — GPU-only via filter */
 @keyframes success-ring-pulse {
   0% {
-    box-shadow: 0 0 0 0 hsl(var(--mood-good) / 0.4);
+    filter: drop-shadow(0 0 0 hsl(var(--mood-good) / 0.4));
+    opacity: 1;
   }
   70% {
-    box-shadow: 0 0 0 10px hsl(var(--mood-good) / 0);
+    filter: drop-shadow(0 0 10px hsl(var(--mood-good) / 0));
+    opacity: 0.3;
   }
   100% {
-    box-shadow: 0 0 0 0 hsl(var(--mood-good) / 0);
+    filter: drop-shadow(0 0 0 hsl(var(--mood-good) / 0));
+    opacity: 1;
   }
 }
 
@@ -3050,13 +3081,13 @@ body.mood-bad .mood-particle {
   animation: ring-fill 1s ease-out forwards;
 }
 
-/* Energy bar glow */
+/* Energy bar glow — GPU-only via filter (no box-shadow in keyframes) */
 @keyframes energy-glow {
   0%, 100% {
-    box-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+    filter: drop-shadow(0 0 10px currentColor) drop-shadow(0 0 20px currentColor);
   }
   50% {
-    box-shadow: 0 0 20px currentColor, 0 0 40px currentColor;
+    filter: drop-shadow(0 0 20px currentColor) drop-shadow(0 0 40px currentColor);
   }
 }
 
@@ -3706,13 +3737,13 @@ input::-moz-focus-inner {
 
 @keyframes achievement-glow {
   0%, 100% {
-    box-shadow: 0 0 10px var(--achievement-glow),
-                0 0 20px var(--achievement-glow);
+    filter: drop-shadow(0 0 10px var(--achievement-glow))
+            drop-shadow(0 0 20px var(--achievement-glow));
   }
   50% {
-    box-shadow: 0 0 20px var(--achievement-glow),
-                0 0 40px var(--achievement-glow),
-                0 0 60px var(--achievement-glow);
+    filter: drop-shadow(0 0 20px var(--achievement-glow))
+            drop-shadow(0 0 40px var(--achievement-glow))
+            drop-shadow(0 0 60px var(--achievement-glow));
   }
 }
 
@@ -4015,10 +4046,10 @@ input::-moz-focus-inner {
 
 /* === Mind Map Canvas Premium Styles === */
 
-/* Orb breathe — slower, deeper glow pulse */
+/* Orb breathe — GPU-only: transform + filter (no box-shadow in keyframes) */
 @keyframes orb-breathe {
-  0%, 100% { transform: scale(1); box-shadow: 0 0 40px rgba(52,211,153,0.15), 0 8px 32px rgba(0,0,0,0.5); }
-  50% { transform: scale(1.05); box-shadow: 0 0 60px rgba(52,211,153,0.25), 0 12px 48px rgba(0,0,0,0.6); }
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 40px rgba(52,211,153,0.15)) drop-shadow(0 8px 32px rgba(0,0,0,0.5)); }
+  50% { transform: scale(1.05); filter: drop-shadow(0 0 60px rgba(52,211,153,0.25)) drop-shadow(0 12px 48px rgba(0,0,0,0.6)); }
 }
 .animate-orb-breathe {
   animation: orb-breathe 5s ease-in-out infinite;
@@ -4052,7 +4083,7 @@ input::-moz-focus-inner {
 
 /* Simplify box-shadows on the orb during drag */
 .canvas-drag-active .animate-orb-breathe {
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5) !important;
+  filter: drop-shadow(0 4px 16px rgba(0,0,0,0.5)) !important;
 }
 
 /* Node pop-in entrance */
@@ -4138,8 +4169,8 @@ body.reduce-motion .diary-animated {
 /* EventDetailsModal — CSS keyframes for glow & pulse (replaces FM repeat:Infinity) */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes event-glow {
-    0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.3); }
-    50% { box-shadow: 0 0 40px rgba(139, 92, 246, 0.5); }
+    0%, 100% { filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.3)); }
+    50% { filter: drop-shadow(0 0 40px rgba(139, 92, 246, 0.5)); }
   }
   @keyframes event-pulse {
     0%, 100% { transform: scale(1); }
@@ -4254,35 +4285,6 @@ body.reduce-motion .diary-animated {
   animation: som-blob-breathe 3s ease-in-out infinite;
 }
 
-/* Chip stagger entrance — GPU-only (transform + opacity) */
-@keyframes som-chip-enter {
-  from {
-    opacity: 0;
-    transform: scale(0.85) translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.som-chip-animated {
-  animation: som-chip-enter 0.25s ease-out both;
-}
-
-.som-chip-animated:nth-child(1) { animation-delay: 0ms; }
-.som-chip-animated:nth-child(2) { animation-delay: 20ms; }
-.som-chip-animated:nth-child(3) { animation-delay: 40ms; }
-.som-chip-animated:nth-child(4) { animation-delay: 60ms; }
-.som-chip-animated:nth-child(5) { animation-delay: 80ms; }
-.som-chip-animated:nth-child(6) { animation-delay: 100ms; }
-.som-chip-animated:nth-child(7) { animation-delay: 120ms; }
-.som-chip-animated:nth-child(8) { animation-delay: 140ms; }
-.som-chip-animated:nth-child(9) { animation-delay: 160ms; }
-.som-chip-animated:nth-child(10) { animation-delay: 180ms; }
-/* Items 11+ appear instantly (no stagger) */
-.som-chip-animated:nth-child(n+11) { animation-delay: 0ms; animation-duration: 0.01ms; }
-
 /* Valence label crossfade — GPU-only (opacity) */
 @keyframes som-label-fade {
   from { opacity: 0; }
@@ -4294,11 +4296,6 @@ body.reduce-motion .diary-animated {
 }
 
 /* Reduce motion overrides for SoM classes that don't match [class*="animate-"] wildcard */
-body.reduce-motion .som-chip-animated {
-  animation: none;
-  opacity: 1;
-}
-
 body.reduce-motion .som-label-enter {
   animation: none;
 }

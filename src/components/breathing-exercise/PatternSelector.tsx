@@ -1,5 +1,6 @@
 import { Play } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { cn } from '@/lib/utils';
 import {
   type BreathingPattern,
@@ -36,7 +37,7 @@ export function PatternSelector({ patterns, selected, onSelect, onStart, t }: Pa
               boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)',
             }}
             whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.99 }}
+            whileTap={zenTap.card}
           >
             {selected.id === pattern.id && (
               <motion.div
@@ -112,7 +113,7 @@ export function PatternSelector({ patterns, selected, onSelect, onStart, t }: Pa
           ease: 'linear',
         }}
         whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+        whileTap={zenTap.card}
       >
         <div
           className="absolute inset-0 pointer-events-none"

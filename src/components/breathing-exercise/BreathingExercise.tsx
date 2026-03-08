@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useScrollLock } from '@/hooks/useScrollLock';
@@ -118,7 +119,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
                     "hover:bg-secondary"
                   )}
                   whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                  whileTap={zenTap.button}
                 >
                   <X className="w-5 h-5" />
                 </motion.button>

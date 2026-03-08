@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { zenMotion, zenTap } from '@/lib/animationUtils';
 import { Settings2, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -32,7 +33,7 @@ export function TemplatePicker({
       )}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.2 }}
+      transition={zenMotion.snappy}
     >
       <p className={cn(
         "text-sm font-medium mb-3",
@@ -52,7 +53,7 @@ export function TemplatePicker({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.05 }}
                 whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileTap={zenTap.card}
               >
                 <span className="text-xl">{template.icon}</span>
                 <span className="truncate text-sm font-medium">

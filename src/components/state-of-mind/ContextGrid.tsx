@@ -28,19 +28,37 @@ const ctxToI18nKey = (key: string): keyof Translations => {
   return `somCtx${capitalized}` as keyof Translations;
 };
 
+/** Parent variant: orchestrates stagger cascade (like HabitHubList pattern) */
+const chipContainer = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.02, delayChildren: 0.05 } },
+};
+
+/** Child variant: each chip scales + slides in */
+const chipItem = {
+  hidden: { opacity: 0, scale: 0.85, y: 8 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: zenMotion.snappy },
+};
+
 /**
  * Multi-select chip grid for life context associations.
  * What's influencing how you feel?
  *
  * Law 9 (a11y): semantic <button>, keyboard accessible.
  * Law 17 (i18n): logical margins (me-), i18n key lookup.
+ * Upgrade 5: framer-motion staggerChildren (replaces CSS nth-child).
  */
 export function ContextGrid({ selected, onToggle }: ContextGridProps) {
   const { t } = useLanguage();
 
   return (
-    <div className="flex flex-wrap gap-2.5 px-1">
-      {CONTEXT_OPTIONS.map((ctx, index) => {
+    <motion.div
+      variants={chipContainer}
+      initial="hidden"
+      animate="visible"
+      className="flex flex-wrap gap-2.5 px-1"
+    >
+      {CONTEXT_OPTIONS.map((ctx) => {
         const isSelected = selected.includes(ctx.key);
         const i18nKey = ctxToI18nKey(ctx.key);
         const label = (t[i18nKey] as string) || ctx.key;
@@ -49,6 +67,7 @@ export function ContextGrid({ selected, onToggle }: ContextGridProps) {
           <motion.button
             key={ctx.key}
             type="button"
+            variants={chipItem}
             whileTap={zenTap.button}
             whileHover={zenHover.glow}
             animate={{
@@ -59,7 +78,6 @@ export function ContextGrid({ selected, onToggle }: ContextGridProps) {
             className={[
               'inline-flex items-center px-4 py-2.5 rounded-xl text-sm font-medium min-h-[44px]',
               'ring-1 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',
-              index < 10 ? 'som-chip-animated' : '',
               isSelected
                 ? 'bg-primary/10 text-primary ring-primary/30'
                 : 'bg-card text-muted-foreground ring-black/5 dark:ring-white/10',
@@ -77,6 +95,6 @@ export function ContextGrid({ selected, onToggle }: ContextGridProps) {
           </motion.button>
         );
       })}
-    </div>
+    </motion.div>
   );
 }

@@ -11,6 +11,7 @@
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { TrendingUp, TrendingDown, Minus, Sparkles, Zap, ChevronRight, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
@@ -312,7 +313,7 @@ export function RingDetailSheet({
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.5 }}
             whileHover={{ scale: 1.02, boxShadow: `0 12px 40px ${theme.glowColor}` }}
-            whileTap={{ scale: 0.98 }}
+            whileTap={zenTap.card}
             onClick={() => onAction ? onAction() : onOpenChange(false)}
           >
             <Sparkles className="w-5 h-5" />

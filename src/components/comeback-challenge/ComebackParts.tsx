@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { Sparkles, Trophy } from 'lucide-react';
 
 // Sparkle particle for ambient effects
@@ -151,7 +152,7 @@ export function CompletionCelebration({
               onClick={onDismiss}
               className="px-6 py-2 rounded-xl bg-muted hover:bg-muted/80 text-foreground font-medium text-sm"
               whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileTap={zenTap.button}
             >
               {t.awesome || 'Awesome!'}
             </motion.button>

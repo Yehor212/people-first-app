@@ -4,6 +4,7 @@
  */
 
 import { motion } from 'framer-motion';
+import { zenMotion } from '@/lib/animationUtils';
 import type { ProgressColor } from './types';
 
 interface HyperfocusTimerDisplayProps {
@@ -78,7 +79,7 @@ export function HyperfocusTimerDisplay({
             animate={{
               strokeDashoffset: `${2 * Math.PI * 110 * (1 - progress / 100)}`
             }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
+            transition={zenMotion.gentle}
             style={{
               filter: `drop-shadow(0 0 12px ${progressColor.from})`
             }}
@@ -123,7 +124,7 @@ export function HyperfocusTimerDisplay({
               key={timeLeft}
               initial={{ scale: 0.95, opacity: 0.8 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.15 }}
+              transition={zenMotion.snappy}
             >
               {formattedTime}
             </motion.div>

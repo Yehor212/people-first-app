@@ -11,6 +11,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { zenTap } from '@/lib/animationUtils';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { DiamondIcon, SparklesIcon } from '@/components/icons';
@@ -121,7 +122,7 @@ function CrystalDay({
         isCurrentMonth && "cursor-pointer"
       )}
       whileHover={isCurrentMonth ? { scale: 1.2, rotateY: 15, rotateX: -10 } : {}}
-      whileTap={isCurrentMonth ? { scale: 0.95 } : {}}
+      whileTap={isCurrentMonth ? zenTap.button : {}}
       onClick={onClick}
       disabled={!isCurrentMonth}
       style={{ perspective: 200 }}
@@ -274,7 +275,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
         <motion.button
           className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          whileTap={zenTap.icon}
           onClick={goToPrevMonth}
           aria-label={t.previousMonth}
         >
@@ -294,7 +295,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
         <motion.button
           className="p-2 rounded-lg text-slate-600 dark:text-slate-300 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-500/10 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center"
           whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
+          whileTap={zenTap.icon}
           onClick={goToNextMonth}
           aria-label={t.nextMonth}
         >

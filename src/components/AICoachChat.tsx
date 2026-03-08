@@ -11,6 +11,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAICoach, ChatMessage } from '@/contexts/AICoachContext';
 // Sheet replaced with custom bottom-sheet modal
 import { cn } from '@/lib/utils';
+import { zenTap } from '@/lib/animationUtils';
 import { haptics } from '@/lib/haptics';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
@@ -111,7 +112,7 @@ export function AICoachChat() {
                 className="p-2.5 rounded-xl bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
                 aria-label={t.clearHistory || 'Clear history'}
                 whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+                whileTap={zenTap.button}
               >
                 <Trash2 className="w-5 h-5" />
               </motion.button>
@@ -219,7 +220,7 @@ export function AICoachChat() {
                 boxShadow: '0 0 16px rgba(139, 92, 246, 0.4)'
               } : undefined}
               whileHover={input.trim() && !isLoading ? { scale: 1.05 } : {}}
-              whileTap={input.trim() && !isLoading ? { scale: 0.95 } : {}}
+              whileTap={input.trim() && !isLoading ? zenTap.button : {}}
               aria-label={t.send || 'Send'}
             >
               <Send className="w-5 h-5" />
@@ -347,7 +348,7 @@ function QuickAction({ label, onClick, disabled }: { label: string; onClick: () 
           : "bg-muted border border-border text-muted-foreground hover:bg-secondary hover:text-foreground"
       )}
       whileHover={!disabled ? { scale: 1.02 } : {}}
-      whileTap={!disabled ? { scale: 0.98 } : {}}
+      whileTap={!disabled ? zenTap.card : {}}
     >
       {label}
     </motion.button>
