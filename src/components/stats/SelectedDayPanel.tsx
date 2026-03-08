@@ -231,6 +231,32 @@ export function SelectedDayPanel({
                             ))}
                           </div>
                         )}
+                        {/* State of Mind: emotion tags */}
+                        {entry.emotionTags && entry.emotionTags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2 ps-6">
+                            {entry.emotionTags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="px-2 py-0.5 text-xs rounded-full bg-primary/15 text-primary dark:text-primary"
+                              >
+                                {t[`somTag${tag.charAt(0).toUpperCase()}${tag.slice(1)}`] || tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {/* State of Mind: life contexts */}
+                        {entry.contexts && entry.contexts.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1 ps-6">
+                            {entry.contexts.map((ctx) => (
+                              <span
+                                key={ctx}
+                                className="px-2 py-0.5 text-xs rounded-full bg-muted text-muted-foreground"
+                              >
+                                {t[`somCtx${ctx.charAt(0).toUpperCase()}${ctx.slice(1)}`] || ctx}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </motion.div>
                   );

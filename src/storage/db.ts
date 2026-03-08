@@ -89,6 +89,20 @@ export class ZenFlowDB extends Dexie {
       journalPhotos: 'id, entryId, createdAt',
       journalAudio: 'id, entryId, createdAt',
     });
+
+    // Version 6: State of Mind — add valence index for mood entries
+    // Supports multiple entries per day via valence-based mood tracking
+    this.version(6).stores({
+      moods: 'id, timestamp, date, valence',
+      habits: 'id, createdAt, type',
+      focusSessions: 'id, startTime, date',
+      gratitudeEntries: 'id, timestamp, date',
+      settings: 'key',
+      offlineQueue: 'id, type, entityId, timestamp',
+      journalEntries: 'id, date, createdAt, updatedAt',
+      journalPhotos: 'id, entryId, createdAt',
+      journalAudio: 'id, entryId, createdAt',
+    });
   }
 }
 

@@ -191,6 +191,11 @@ export const moodEntrySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   timestamp: z.number().int().positive(),
   note: z.string().max(1000).optional(),
+  // State of Mind fields (v2.0.0) — must be preserved on backup/restore
+  valence: z.number().min(-1).max(1).optional(),
+  logType: z.enum(['momentary', 'overall']).optional(),
+  emotionTags: z.array(z.string()).optional(),
+  contexts: z.array(z.string()).optional(),
 });
 
 export const habitSchema = z.object({

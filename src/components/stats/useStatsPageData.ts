@@ -23,15 +23,24 @@ interface UseStatsPageDataProps {
   language?: string;
 }
 
-// Legacy moodScore for backward compat with components
-function moodScore(mood: MoodEntry['mood']): number {
-  switch (mood) {
+// Score an entry: prefer valence (State of Mind) → emotion → legacy mood
+function entryScore(m: MoodEntry): number {
+  // State of Mind valence: -1.0..1.0 → 1..5
+  if (m.valence !== undefined) {
+    return Math.round(((m.valence + 1) / 2) * 4 + 1);
+  }
+  // Emotion wheel (legacy)
+  if (m.emotion?.primary) {
+    return getEmotionScore(m.emotion.primary, m.emotion.intensity);
+  }
+  // Legacy 5-emoji mood
+  switch (m.mood) {
     case 'great': return 5;
     case 'good': return 4;
     case 'okay': return 3;
     case 'bad': return 2;
     case 'terrible': return 1;
-    default: return 0;
+    default: return 3; // Neutral fallback
   }
 }
 
@@ -172,12 +181,7 @@ export function useStatsPageData({
     const moodData = weekDays.map(date => {
       const dayMoods = moods.filter(m => m.date === date);
       if (dayMoods.length === 0) return { date, value: 0 };
-      const avgScore = dayMoods.reduce((sum, m) => {
-        const score = m.emotion?.primary
-          ? getEmotionScore(m.emotion.primary, m.emotion.intensity)
-          : moodScore(m.mood);
-        return sum + score;
-      }, 0) / dayMoods.length;
+      const avgScore = dayMoods.reduce((sum, m) => sum + entryScore(m), 0) / dayMoods.length;
       return { date, value: Math.round((avgScore / 5) * 100) };
     });
 
@@ -195,12 +199,7 @@ export function useStatsPageData({
     const prevMoodValues = prevWeekDays.map(date => {
       const dayMoods = moods.filter(m => m.date === date);
       if (dayMoods.length === 0) return 0;
-      const avgScore = dayMoods.reduce((sum, m) => {
-        const score = m.emotion?.primary
-          ? getEmotionScore(m.emotion.primary, m.emotion.intensity)
-          : moodScore(m.mood);
-        return sum + score;
-      }, 0) / dayMoods.length;
+      const avgScore = dayMoods.reduce((sum, m) => sum + entryScore(m), 0) / dayMoods.length;
       return Math.round((avgScore / 5) * 100);
     });
 

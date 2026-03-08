@@ -1,5 +1,8 @@
 export type MoodType = 'great' | 'good' | 'okay' | 'bad' | 'terrible';
 
+/** State of Mind log type: momentary snapshot vs. overall day feeling */
+export type MoodLogType = 'momentary' | 'overall';
+
 export interface MoodEntry {
   id: string;
   mood: MoodType;
@@ -7,8 +10,13 @@ export interface MoodEntry {
   date: string;
   timestamp: number;
   tags?: string[];
-  // v1.5.0: Emotion Wheel (Plutchik model)
+  // v1.5.0: Emotion Wheel (Plutchik model) — deprecated, kept for migration
   emotion?: EmotionData;
+  // v2.0.0: State of Mind (Apple Health model)
+  valence?: number;          // -1.0 (very unpleasant) to +1.0 (very pleasant)
+  logType?: MoodLogType;     // 'momentary' | 'overall'
+  emotionTags?: string[];    // e.g. ['anxious', 'hopeful']
+  contexts?: string[];       // e.g. ['work', 'health']
 }
 
 // ============================================

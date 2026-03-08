@@ -4238,3 +4238,67 @@ body.reduce-motion .diary-animated {
   animation: burn-glow-opacity 2.5s ease-in-out infinite;
   pointer-events: none;
 }
+
+/* ============================================
+   STATE OF MIND — ANIMATIONS
+   GPU-only: transform + opacity only in keyframes
+   ============================================ */
+
+/* Blob idle breathing — GPU-only (transform) */
+@keyframes som-blob-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+.animate-som-blob-breathe {
+  animation: som-blob-breathe 3s ease-in-out infinite;
+}
+
+/* Chip stagger entrance — GPU-only (transform + opacity) */
+@keyframes som-chip-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.som-chip-animated {
+  animation: som-chip-enter 0.25s ease-out both;
+}
+
+.som-chip-animated:nth-child(1) { animation-delay: 0ms; }
+.som-chip-animated:nth-child(2) { animation-delay: 20ms; }
+.som-chip-animated:nth-child(3) { animation-delay: 40ms; }
+.som-chip-animated:nth-child(4) { animation-delay: 60ms; }
+.som-chip-animated:nth-child(5) { animation-delay: 80ms; }
+.som-chip-animated:nth-child(6) { animation-delay: 100ms; }
+.som-chip-animated:nth-child(7) { animation-delay: 120ms; }
+.som-chip-animated:nth-child(8) { animation-delay: 140ms; }
+.som-chip-animated:nth-child(9) { animation-delay: 160ms; }
+.som-chip-animated:nth-child(10) { animation-delay: 180ms; }
+/* Items 11+ appear instantly (no stagger) */
+.som-chip-animated:nth-child(n+11) { animation-delay: 0ms; animation-duration: 0.01ms; }
+
+/* Valence label crossfade — GPU-only (opacity) */
+@keyframes som-label-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.som-label-enter {
+  animation: som-label-fade 0.2s ease-out;
+}
+
+/* Reduce motion overrides for SoM classes that don't match [class*="animate-"] wildcard */
+body.reduce-motion .som-chip-animated {
+  animation: none;
+  opacity: 1;
+}
+
+body.reduce-motion .som-label-enter {
+  animation: none;
+}

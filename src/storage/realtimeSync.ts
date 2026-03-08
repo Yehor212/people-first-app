@@ -155,6 +155,11 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
       date: mood.date,
       timestamp: mood.timestamp,
       emotion: mood.emotion || null,
+      // State of Mind fields (v2.0.0)
+      valence: mood.valence ?? null,
+      log_type: mood.logType ?? null,
+      emotion_tags: mood.emotionTags ?? [],
+      contexts: mood.contexts ?? [],
     }, { onConflict: 'id' });
 
     if (error) throw error;
@@ -667,6 +672,11 @@ export const pullFromCloud = async (): Promise<boolean> => {
         timestamp: m.timestamp,
         tags: m.tags,
         emotion: m.emotion || undefined,
+        // State of Mind fields (v2.0.0)
+        valence: m.valence ?? undefined,
+        logType: m.log_type ?? undefined,
+        emotionTags: m.emotion_tags ?? undefined,
+        contexts: m.contexts ?? undefined,
       })),
       'cloud-moods'
     ) as MoodEntry[];
@@ -1062,6 +1072,11 @@ const _handleRealtimeChange = async (table: string, payload: { eventType: string
             timestamp: moodData.timestamp ?? Date.now(),
             tags: Array.isArray(moodData.tags) ? moodData.tags : [],
             emotion: moodData.emotion || undefined,
+            // State of Mind fields
+            valence: typeof moodData.valence === 'number' ? moodData.valence : undefined,
+            logType: moodData.log_type || undefined,
+            emotionTags: Array.isArray(moodData.emotion_tags) ? moodData.emotion_tags : undefined,
+            contexts: Array.isArray(moodData.contexts) ? moodData.contexts : undefined,
           };
           const validated = runtimeMoodEntrySchema.safeParse(mapped);
           if (validated.success) {

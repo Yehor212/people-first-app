@@ -122,6 +122,8 @@ const companionSchema = z.object({
 // MOOD ENTRY
 // ============================================
 
+const moodLogType = z.enum(['momentary', 'overall']);
+
 /** Runtime schema for MoodEntry */
 export const runtimeMoodEntrySchema = z.object({
   id: z.string().min(1),
@@ -131,6 +133,11 @@ export const runtimeMoodEntrySchema = z.object({
   note: z.string().optional(),
   tags: z.array(z.string()).optional(),
   emotion: emotionDataSchema.optional(),
+  // v2.0.0: State of Mind fields
+  valence: z.number().min(-1).max(1).optional(),
+  logType: moodLogType.optional(),
+  emotionTags: z.array(z.string()).optional(),
+  contexts: z.array(z.string()).optional(),
 }).passthrough();
 
 // ============================================

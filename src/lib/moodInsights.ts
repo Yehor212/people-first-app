@@ -32,9 +32,19 @@ export interface MoodInsight {
   data?: Record<string, unknown>;
 }
 
-// Helper: Get mood score
-function getMoodScore(mood: MoodType): number {
+// Helper: Get mood score (guards against undefined for valence-only entries)
+function getMoodScore(mood: MoodType | undefined): number {
+  if (!mood) return 3; // Neutral fallback for State of Mind entries without legacy mood
   return MOOD_SCORES[mood];
+}
+
+// Helper: Get score preferring valence (State of Mind) over legacy mood
+function getEntryScore(entry: MoodEntry): number {
+  if (entry.valence !== undefined) {
+    // Map -1.0..1.0 → 1..5 scale for consistency with legacy scoring
+    return Math.round(((entry.valence + 1) / 2) * 4 + 1);
+  }
+  return getMoodScore(entry.mood);
 }
 
 // Helper: Get day of week (0 = Sunday)
@@ -76,7 +86,7 @@ function analyzeBestMoodDay(moods: MoodEntry[]): MoodInsight | null {
 
   moods.forEach(entry => {
     const day = getDayOfWeek(entry.date);
-    dayScores[day].push(getMoodScore(entry.mood));
+    dayScores[day].push(getEntryScore(entry));
   });
 
   let bestDay = -1;
@@ -129,7 +139,7 @@ function analyzeMoodByTimeOfDay(moods: MoodEntry[]): MoodInsight | null {
 
   moods.forEach(entry => {
     const period = getTimePeriod(getHourOfDay(entry.timestamp));
-    periodScores[period].push(getMoodScore(entry.mood));
+    periodScores[period].push(getEntryScore(entry));
   });
 
   let bestPeriod = '';
@@ -180,8 +190,8 @@ function analyzeHabitMoodCorrelation(
   // Group moods by date
   const moodByDate: Record<string, number> = {};
   moods.forEach(entry => {
-    if (!moodByDate[entry.date] || getMoodScore(entry.mood) > moodByDate[entry.date]) {
-      moodByDate[entry.date] = getMoodScore(entry.mood);
+    if (!moodByDate[entry.date] || getEntryScore(entry) > moodByDate[entry.date]) {
+      moodByDate[entry.date] = getEntryScore(entry);
     }
   });
 
@@ -248,8 +258,8 @@ function analyzeFocusMoodCorrelation(
   // Group moods by date
   const moodByDate: Record<string, number> = {};
   moods.forEach(entry => {
-    if (!moodByDate[entry.date] || getMoodScore(entry.mood) > moodByDate[entry.date]) {
-      moodByDate[entry.date] = getMoodScore(entry.mood);
+    if (!moodByDate[entry.date] || getEntryScore(entry) > moodByDate[entry.date]) {
+      moodByDate[entry.date] = getEntryScore(entry);
     }
   });
 
@@ -306,8 +316,8 @@ function analyzeGratitudeMoodCorrelation(
   // Group moods by date
   const moodByDate: Record<string, number> = {};
   moods.forEach(entry => {
-    if (!moodByDate[entry.date] || getMoodScore(entry.mood) > moodByDate[entry.date]) {
-      moodByDate[entry.date] = getMoodScore(entry.mood);
+    if (!moodByDate[entry.date] || getEntryScore(entry) > moodByDate[entry.date]) {
+      moodByDate[entry.date] = getEntryScore(entry);
     }
   });
 
@@ -375,10 +385,10 @@ function analyzeMoodTrend(moods: MoodEntry[]): MoodInsight | null {
 
   const recentScores = moods
     .filter(m => last7DaysSet.has(m.date))
-    .map(m => getMoodScore(m.mood));
+    .map(m => getEntryScore(m));
   const previousScores = moods
     .filter(m => prev7DaysSet.has(m.date))
-    .map(m => getMoodScore(m.mood));
+    .map(m => getEntryScore(m));
 
   if (recentScores.length < 3 || previousScores.length < 3) return null;
 
