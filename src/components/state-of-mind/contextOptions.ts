@@ -26,4 +26,7 @@ export const CONTEXT_OPTIONS: ContextOption[] = [
   { key: 'tasks', icon: 'ListTodo' },
   { key: 'weather', icon: 'CloudSun' },
   { key: 'work', icon: 'Briefcase' },
+  { key: 'partner', icon: 'HeartHandshake' },
+  { key: 'selfCare', icon: 'Flower2' },
+  { key: 'travel', icon: 'Plane' },
 ];

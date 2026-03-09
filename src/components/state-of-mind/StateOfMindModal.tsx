@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, X } from 'lucide-react';
+import { ArrowLeft, X, Clock, CalendarDays } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { zenMotion, zenTap } from '@/lib/animationUtils';
@@ -10,9 +10,8 @@ import { ValenceSlider } from './ValenceSlider';
 import { EmotionTagGrid } from './EmotionTagGrid';
 import { ContextGrid } from './ContextGrid';
 import { NoteStep } from './NoteStep';
-import { SuccessAnimation } from './SuccessAnimation';
 import { useStateOfMind } from './useStateOfMind';
-import type { MoodEntry, MoodLogType } from '@/types';
+import type { MoodEntry } from '@/types';
 
 interface StateOfMindModalProps {
   isOpen: boolean;
@@ -35,7 +34,7 @@ const stepChild = {
 
 /**
  * Full-screen modal orchestrator for State of Mind flow.
- * State machine: slider → emotionTags → contexts → note → saving → saved.
+ * State machine: typeSelect → valence → emotionTags → contextsAndNote → saving.
  *
  * Law 10 (Cross-Platform): safe area insets, -webkit-backdrop-filter, dvh.
  * Law 9 (a11y): focus management, Escape to close, semantic buttons.
@@ -46,7 +45,6 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
   const som = useStateOfMind({ isOpen, onClose, onSave });
 
   // Law 9 (a11y): Focus trap + Escape key + focus restoration
-  // Note: Android back button handled in useStateOfMind with step-aware navigation
   const { modalRef, handleKeyDown: trapKeyDown } = useModalKeyboard({
     isOpen,
     onClose: som.handleClose,
@@ -56,14 +54,15 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
   });
 
   const stepTitle: Record<string, string> = {
-    slider: t.somHowAreYouFeeling,
+    typeSelect: t.somLogFeeling,
+    valence: t.somHowAreYouFeeling,
     emotionTags: t.somWhatDescribes,
-    contexts: t.somWhatInfluencing,
-    note: t.somAddNote,
+    contextsAndNote: t.somContextsAndNote,
   };
 
-  const isLastStep = som.step === 'note';
-  const showNavigation = som.step !== 'saving' && som.step !== 'saved';
+  const isLastStep = som.step === 'contextsAndNote';
+  const showNavigation = som.step !== 'saving';
+  const showFooterButton = som.step !== 'typeSelect' && som.step !== 'saving';
 
   return (
     <AnimatePresence>
@@ -71,7 +70,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
             style={{ WebkitBackdropFilter: 'blur(4px)' }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -84,7 +83,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
           {/* Modal content */}
           <motion.div
             ref={modalRef}
-            className="fixed inset-0 z-50 flex flex-col bg-background/95"
+            className="fixed inset-0 z-[60] flex flex-col bg-background/95 h-[100dvh]"
             style={{
               paddingTop: 'max(env(safe-area-inset-top, 0px), 12px)',
               paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)',
@@ -98,20 +97,20 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
             aria-label={t.somHowAreYouFeeling}
             onKeyDown={trapKeyDown}
           >
-            {/* C3: Subtle background color tint — Apple-style color wash */}
+            {/* Immersive background color wash — radial gradient centered on blob */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
-                backgroundColor: valenceToColor(som.valence, 0.05),
-                transition: 'background-color 300ms ease-out',
+                background: `radial-gradient(circle at 50% 35%, ${valenceToColor(som.valence, 0.20)}, ${valenceToColor(som.valence, 0.06)})`,
+                transition: 'background 300ms ease-out',
               }}
               aria-hidden="true"
             />
 
             {/* Header */}
             {showNavigation && (
-              <div className="flex items-center justify-between px-4 py-3">
-                {som.step !== 'slider' ? (
+              <div className="flex items-center justify-between px-4 py-3 flex-shrink-0">
+                {som.step !== 'typeSelect' ? (
                   <motion.button
                     type="button"
                     whileTap={zenTap.icon}
@@ -142,7 +141,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
             )}
 
             {/* Step content */}
-            <div className="flex-1 overflow-y-auto px-4">
+            <div className="flex-1 overflow-y-auto px-4 min-h-0">
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
                   key={som.step}
@@ -150,15 +149,56 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                   initial="hidden"
                   animate="visible"
                   exit="exit"
-                  className="flex-1 flex flex-col"
+                  className="flex-1 flex flex-col h-full"
                 >
-                  {som.step === 'slider' && (
-                    <div className="flex flex-col items-center gap-6 pt-8">
+                  {/* Step: Type Selection — two large cards */}
+                  {som.step === 'typeSelect' && (
+                    <div className="flex flex-col gap-4 pt-8 pb-4">
+                      <motion.button
+                        type="button"
+                        variants={stepChild}
+                        whileTap={zenTap.button}
+                        onClick={() => {
+                          void haptics.light();
+                          som.handleSelectType('momentary');
+                        }}
+                        className="flex items-start gap-4 p-5 rounded-2xl bg-card ring-1 ring-black/5 dark:ring-white/10 text-start focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      >
+                        <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                          <Clock className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-base font-semibold text-foreground">{t.somMomentaryTitle}</span>
+                          <span className="text-sm text-muted-foreground">{t.somMomentarySubtitle}</span>
+                        </div>
+                      </motion.button>
+
+                      <motion.button
+                        type="button"
+                        variants={stepChild}
+                        whileTap={zenTap.button}
+                        onClick={() => {
+                          void haptics.light();
+                          som.handleSelectType('overall');
+                        }}
+                        className="flex items-start gap-4 p-5 rounded-2xl bg-card ring-1 ring-black/5 dark:ring-white/10 text-start focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      >
+                        <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                          <CalendarDays className="w-5 h-5 text-primary" />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-base font-semibold text-foreground">{t.somOverallTitle}</span>
+                          <span className="text-sm text-muted-foreground">{t.somOverallSubtitle}</span>
+                        </div>
+                      </motion.button>
+                    </div>
+                  )}
+
+                  {/* Step: Valence — blob + slider centered */}
+                  {som.step === 'valence' && (
+                    <div className="flex flex-col items-center justify-center flex-1 gap-6">
                       <motion.div variants={stepChild}>
-                        <LogTypeToggle value={som.logType} onChange={som.setLogType} />
-                      </motion.div>
-                      <motion.div variants={stepChild}>
-                        <MorphingBlob valence={som.valence} size={192} />
+                        <MorphingBlob valence={som.valence} size={220} />
                       </motion.div>
                       <motion.div variants={stepChild} className="w-full max-w-sm">
                         <ValenceSlider value={som.valence} onChange={som.setValence} />
@@ -166,6 +206,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                     </div>
                   )}
 
+                  {/* Step: Emotion Tags */}
                   {som.step === 'emotionTags' && (
                     <motion.div variants={stepChild} className="pt-4">
                       <EmotionTagGrid
@@ -176,31 +217,23 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                     </motion.div>
                   )}
 
-                  {som.step === 'contexts' && (
-                    <motion.div variants={stepChild} className="pt-4">
+                  {/* Step: Contexts + Note (merged) */}
+                  {som.step === 'contextsAndNote' && (
+                    <motion.div variants={stepChild} className="pt-4 flex flex-col gap-6">
                       <ContextGrid
                         selected={som.contexts}
                         onToggle={som.handleToggleContext}
                       />
-                    </motion.div>
-                  )}
-
-                  {som.step === 'note' && (
-                    <motion.div variants={stepChild} className="pt-4">
                       <NoteStep value={som.note} onChange={som.setNote} />
                     </motion.div>
-                  )}
-
-                  {(som.step === 'saving' || som.step === 'saved') && (
-                    <SuccessAnimation onComplete={som.handleSavedComplete} valence={som.valence} />
                   )}
                 </motion.div>
               </AnimatePresence>
             </div>
 
-            {/* Footer with Next/Done button */}
-            {showNavigation && (
-              <div className="px-4 py-4">
+            {/* Footer with Next/Done button — always visible */}
+            {showFooterButton && (
+              <div className="px-4 py-4 flex-shrink-0">
                 <motion.button
                   type="button"
                   whileTap={zenTap.button}
@@ -218,35 +251,5 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
         </>
       )}
     </AnimatePresence>
-  );
-}
-
-/** Momentary vs Overall toggle */
-function LogTypeToggle({ value, onChange }: { value: MoodLogType; onChange: (v: MoodLogType) => void }) {
-  const { t } = useLanguage();
-
-  return (
-    <div className="flex gap-2 p-1 rounded-xl bg-muted/50 ring-1 ring-black/5 dark:ring-white/10">
-      {(['momentary', 'overall'] as const).map((type) => (
-        <motion.button
-          key={type}
-          type="button"
-          whileTap={zenTap.button}
-          animate={{ scale: value === type ? 1 : 0.97 }}
-          transition={zenMotion.snappy}
-          aria-pressed={value === type}
-          onClick={() => onChange(type)}
-          className={[
-            'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-            'focus:outline-none focus:ring-2 focus:ring-primary/50',
-            value === type
-              ? 'bg-card text-foreground shadow-zen-xs'
-              : 'text-muted-foreground',
-          ].join(' ')}
-        >
-          {type === 'momentary' ? t.somMomentaryEmotion : t.somOverallMood}
-        </motion.button>
-      ))}
-    </div>
   );
 }

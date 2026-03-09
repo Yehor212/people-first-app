@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import {
   Users, Newspaper, Heart, GraduationCap, Home, Dumbbell, UserPlus,
   Gamepad2, Activity, Palette, Fingerprint, Wallet, Sparkles, ListTodo,
-  CloudSun, Briefcase, type LucideIcon,
+  CloudSun, Briefcase, HeartHandshake, Flower2, Plane, type LucideIcon,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { zenMotion, zenTap, zenHover } from '@/lib/animationUtils';
@@ -14,7 +14,7 @@ import type { Translations } from '@/i18n/types';
 const ICON_MAP: Record<string, LucideIcon> = {
   Users, Newspaper, Heart, GraduationCap, Home, Dumbbell, UserPlus,
   Gamepad2, Activity, Palette, Fingerprint, Wallet, Sparkles, ListTodo,
-  CloudSun, Briefcase,
+  CloudSun, Briefcase, HeartHandshake, Flower2, Plane,
 };
 
 interface ContextGridProps {

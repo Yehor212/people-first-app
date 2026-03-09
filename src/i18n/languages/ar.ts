@@ -2440,7 +2440,9 @@ const arabicOverrides: Partial<Translations> = {
   somOverallMood: 'المزاج العام',
   somVeryUnpleasant: 'مزعج جداً',
   somUnpleasant: 'مزعج',
+  somSlightlyUnpleasant: 'غير مريح قليلاً',
   somNeutral: 'محايد',
+  somSlightlyPleasant: 'مريح قليلاً',
   somPleasant: 'مريح',
   somVeryPleasant: 'مريح جداً',
   somSlider: 'مقياس المزاج',
@@ -2522,6 +2524,15 @@ const arabicOverrides: Partial<Translations> = {
   somCtxTasks: 'المهام',
   somCtxWeather: 'الطقس',
   somCtxWork: 'العمل',
+  somCtxPartner: 'الشريك',
+  somCtxSelfCare: 'العناية بالنفس',
+  somCtxTravel: 'السفر',
+  somMomentaryTitle: 'كيف تشعر الآن',
+  somMomentarySubtitle: 'سجّل حالتك العاطفية الحالية',
+  somOverallTitle: 'كيف كان يومك بشكل عام',
+  somOverallSubtitle: 'تأمل في يومك حتى الآن',
+  somContextsAndNote: 'ما الذي يؤثر على ذلك؟',
+  somShowMore: 'عرض المزيد',
 };
 
 export const ar: Translations = { ...en, ...arabicOverrides };

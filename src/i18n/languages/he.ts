@@ -2510,7 +2510,9 @@ const hebrewOverrides: Partial<Translations> = {
   somOverallMood: 'מצב רוח כללי',
   somVeryUnpleasant: 'מאוד לא נעים',
   somUnpleasant: 'לא נעים',
+  somSlightlyUnpleasant: 'מעט לא נעים',
   somNeutral: 'ניטרלי',
+  somSlightlyPleasant: 'מעט נעים',
   somPleasant: 'נעים',
   somVeryPleasant: 'מאוד נעים',
   somSlider: 'מד מצב רוח',
@@ -2592,6 +2594,15 @@ const hebrewOverrides: Partial<Translations> = {
   somCtxTasks: 'משימות',
   somCtxWeather: 'מזג אוויר',
   somCtxWork: 'עבודה',
+  somCtxPartner: 'בן/בת זוג',
+  somCtxSelfCare: 'טיפול עצמי',
+  somCtxTravel: 'נסיעות',
+  somMomentaryTitle: 'איך אתה מרגיש עכשיו',
+  somMomentarySubtitle: 'תעד את מצבך הרגשי הנוכחי',
+  somOverallTitle: 'איך היה היום שלך בכללי',
+  somOverallSubtitle: 'חשוב על היום שלך עד כה',
+  somContextsAndNote: 'מה משפיע על זה?',
+  somShowMore: 'הצג עוד',
 };
 
 export const he: Translations = { ...en, ...hebrewOverrides };

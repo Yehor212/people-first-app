@@ -1,10 +1,13 @@
 import { useState, useCallback } from 'react';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { getToday, generateId } from '@/lib/utils';
+import { haptics } from '@/lib/haptics';
 import { valenceToMoodType } from './colorUtils';
 import type { MoodEntry, MoodLogType } from '@/types';
 
-export type SomStep = 'slider' | 'emotionTags' | 'contexts' | 'note' | 'saving' | 'saved';
+export type SomStep = 'typeSelect' | 'valence' | 'emotionTags' | 'contextsAndNote' | 'saving';
+
+const STEP_ORDER: SomStep[] = ['typeSelect', 'valence', 'emotionTags', 'contextsAndNote'];
 
 interface UseStateOfMindOptions {
   isOpen: boolean;
@@ -20,7 +23,7 @@ interface UseStateOfMindOptions {
  * Android Law: useBackHandler for hardware back button.
  */
 export function useStateOfMind({ isOpen, onClose, onSave }: UseStateOfMindOptions) {
-  const [step, setStep] = useState<SomStep>('slider');
+  const [step, setStep] = useState<SomStep>('typeSelect');
   const [valence, setValence] = useState(0);
   const [logType, setLogType] = useState<MoodLogType>('momentary');
   const [emotionTags, setEmotionTags] = useState<string[]>([]);
@@ -29,7 +32,7 @@ export function useStateOfMind({ isOpen, onClose, onSave }: UseStateOfMindOption
 
   // Android back button
   useBackHandler(isOpen, () => {
-    if (step === 'slider') {
+    if (step === 'typeSelect') {
       handleClose();
     } else {
       handleBack();
@@ -38,7 +41,7 @@ export function useStateOfMind({ isOpen, onClose, onSave }: UseStateOfMindOption
 
   const handleClose = useCallback(() => {
     // Reset state for next open
-    setStep('slider');
+    setStep('typeSelect');
     setValence(0);
     setLogType('momentary');
     setEmotionTags([]);
@@ -48,22 +51,26 @@ export function useStateOfMind({ isOpen, onClose, onSave }: UseStateOfMindOption
   }, [onClose]);
 
   const handleNext = useCallback(() => {
-    const stepOrder: SomStep[] = ['slider', 'emotionTags', 'contexts', 'note'];
-    const currentIndex = stepOrder.indexOf(step);
-    if (currentIndex < stepOrder.length - 1) {
-      setStep(stepOrder[currentIndex + 1]);
+    const currentIndex = STEP_ORDER.indexOf(step);
+    if (currentIndex < STEP_ORDER.length - 1) {
+      setStep(STEP_ORDER[currentIndex + 1]);
     }
   }, [step]);
 
   const handleBack = useCallback(() => {
-    const stepOrder: SomStep[] = ['slider', 'emotionTags', 'contexts', 'note'];
-    const currentIndex = stepOrder.indexOf(step);
+    const currentIndex = STEP_ORDER.indexOf(step);
     if (currentIndex > 0) {
-      setStep(stepOrder[currentIndex - 1]);
+      setStep(STEP_ORDER[currentIndex - 1]);
     } else {
       handleClose();
     }
   }, [step, handleClose]);
+
+  /** Select log type from type selection screen and advance to valence */
+  const handleSelectType = useCallback((type: MoodLogType) => {
+    setLogType(type);
+    setStep('valence');
+  }, []);
 
   const handleToggleEmotionTag = useCallback((tag: string) => {
     setEmotionTags(prev =>
@@ -79,7 +86,7 @@ export function useStateOfMind({ isOpen, onClose, onSave }: UseStateOfMindOption
 
   const handleSave = useCallback(() => {
     // Law 14: Prevent double-click race condition
-    if (step === 'saving' || step === 'saved') return;
+    if (step === 'saving') return;
     setStep('saving');
 
     // Sanitize note: trim, remove control chars
@@ -99,12 +106,10 @@ export function useStateOfMind({ isOpen, onClose, onSave }: UseStateOfMindOption
     };
 
     onSave(entry);
-    setStep('saved');
-  }, [step, valence, logType, emotionTags, contexts, note, onSave]);
-
-  const handleSavedComplete = useCallback(() => {
+    // Haptic confirmation then immediately close (no animation delay)
+    void haptics.moodSaved();
     handleClose();
-  }, [handleClose]);
+  }, [step, valence, logType, emotionTags, contexts, note, onSave, handleClose]);
 
   return {
     step,
@@ -118,10 +123,10 @@ export function useStateOfMind({ isOpen, onClose, onSave }: UseStateOfMindOption
     setNote,
     handleNext,
     handleBack,
+    handleSelectType,
     handleToggleEmotionTag,
     handleToggleContext,
     handleSave,
-    handleSavedComplete,
     handleClose,
   };
 }

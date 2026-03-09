@@ -2577,7 +2577,9 @@ export interface Translations {
   somOverallMood: string;
   somVeryUnpleasant: string;
   somUnpleasant: string;
+  somSlightlyUnpleasant: string;
   somNeutral: string;
+  somSlightlyPleasant: string;
   somPleasant: string;
   somVeryPleasant: string;
   somSlider: string;
@@ -2662,4 +2664,15 @@ export interface Translations {
   somCtxTasks: string;
   somCtxWeather: string;
   somCtxWork: string;
+  somCtxPartner: string;
+  somCtxSelfCare: string;
+  somCtxTravel: string;
+
+  // State of Mind — type selection screen
+  somMomentaryTitle: string;
+  somMomentarySubtitle: string;
+  somOverallTitle: string;
+  somOverallSubtitle: string;
+  somContextsAndNote: string;
+  somShowMore: string;
 }
