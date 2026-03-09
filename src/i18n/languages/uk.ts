@@ -278,6 +278,31 @@ export const uk: Translations = {
   todayFocusGratitude: 'За що ви вдячні сьогодні?',
   todayFocusSubtitle: 'Ваш наступний крок',
 
+  // Reflection prompts
+  reflectionNoted: 'Записано. Продовжуй рости.',
+  reflectionPlaceholderNano: 'Одне слово...',
+  reflectionPlaceholderMicro: '1-2 речення...',
+  reflectionSubmitLabel: 'Надіслати рефлексію',
+  reflectionExpandJournal: 'Розгорнути в щоденник',
+  reflectionAllDone: 'Все зроблено! Одне слово про твій настрій:',
+  reflectionJoyStreak: 'Ти відчуваєш радість 3 дні поспіль. Що змінилось?',
+  reflectionFocus: 'Що допомогло тобі зосередитись сьогодні?',
+  reflectionEvening: 'Як пройшов твій день? Навіть одне слово допоможе.',
+  reflectionWeekly: 'Цей тиждень у 3 словах:',
+  reflectionDaily1: 'За що ти вдячний(-а) зараз?',
+  reflectionDaily2: 'Зроби глибокий вдих. Як ти себе почуваєш?',
+  reflectionDaily3: 'Яку маленьку перемогу можеш відсвяткувати сьогодні?',
+  reflectionDaily4: 'На чому хочеш зосередитись сьогодні:',
+  reflectionDaily5: 'Що зробить цей день чудовим?',
+
+  // Growth Rings
+  growthRingsTotal: '{count} кілець зростання',
+  growthRingsEmpty: 'Кільця зростання: активність не зафіксована',
+  growthRingsLabel: 'Кільця зростання: {total} днів, {active} активних, {rest} відпочинку',
+  growthWeekBalance: 'Ріс {active} дн., відпочивав {rest}. Баланс.',
+  growthWeekFull: 'Повний тиждень зростання!',
+  growthWeekPartial: '{count} днів зростання цього тижня.',
+
   // Breathing
   breathingTitle: 'Дихання',
   breathingSubtitle: 'Заспокой розум',

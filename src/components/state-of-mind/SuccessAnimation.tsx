@@ -6,26 +6,33 @@ import { haptics } from '@/lib/haptics';
 
 interface SuccessAnimationProps {
   onComplete: () => void;
+  /** Current valence — gates celebration intensity (no confetti for negative moods) */
+  valence?: number;
 }
 
-/** Circle container scales in with bouncy spring */
-const circleDraw = {
-  hidden: { scale: 0, opacity: 0 },
-  visible: { scale: 1, opacity: 1, transition: zenMotion.bouncy },
-};
+/** Circle container: bouncy for positive, gentle for negative */
+function circleDraw(isPositive: boolean) {
+  return {
+    hidden: { scale: 0, opacity: 0 },
+    visible: { scale: 1, opacity: 1, transition: isPositive ? zenMotion.bouncy : zenMotion.gentle },
+  };
+}
 
-/** Checkmark draws via pathLength with delayed bouncy spring */
-const checkDraw = {
-  hidden: { pathLength: 0, opacity: 0 },
-  visible: {
-    pathLength: 1,
-    opacity: 1,
-    transition: {
-      pathLength: { ...zenMotion.bouncy, delay: 0.2 },
-      opacity: { duration: 0.05 },
+/** Checkmark: bouncy overshoot for positive, gentle ease for negative */
+function checkDraw(isPositive: boolean) {
+  const spring = isPositive ? zenMotion.bouncy : zenMotion.gentle;
+  return {
+    hidden: { pathLength: 0, opacity: 0 },
+    visible: {
+      pathLength: 1,
+      opacity: 1,
+      transition: {
+        pathLength: { ...spring, delay: 0.2 },
+        opacity: { duration: 0.05 },
+      },
     },
-  },
-};
+  };
+}
 
 /**
  * Brief success confirmation after saving State of Mind entry.
@@ -36,20 +43,25 @@ const checkDraw = {
  * Visual Aesthetic Rule 5: confetti gated by shouldShowConfetti().
  * Upgrade 4: SVG pathLength draw (like MiniCheckmarkCell pattern).
  */
-export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
+export function SuccessAnimation({ onComplete, valence = 0 }: SuccessAnimationProps) {
   const { t } = useLanguage();
+  const isPositive = valence >= 0;
 
   useEffect(() => {
-    void haptics.success();
+    // C2: Gentle haptic for negative moods, celebratory for positive
+    void (isPositive ? haptics.moodSaved() : haptics.light());
     const timer = setTimeout(onComplete, 1200);
     return () => clearTimeout(timer);
-  }, [onComplete]);
+  }, [onComplete, isPositive]);
+
+  const circleVariants = circleDraw(isPositive);
+  const checkVariants = checkDraw(isPositive);
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-16">
-      {/* Checkmark circle bounces in → 200ms pause → path draws with spring overshoot */}
+      {/* Checkmark circle: bouncy for positive, gentle for negative */}
       <motion.div
-        variants={circleDraw}
+        variants={circleVariants}
         initial="hidden"
         animate="visible"
         className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center"
@@ -62,7 +74,7 @@ export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
             strokeLinecap="round"
             strokeLinejoin="round"
             className="text-primary"
-            variants={checkDraw}
+            variants={checkVariants}
             initial="hidden"
             animate="visible"
           />
@@ -79,8 +91,8 @@ export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
         {t.somSaved}
       </motion.p>
 
-      {/* Confetti (gated by dopamine settings) */}
-      {shouldShowConfetti() && (
+      {/* Confetti: double-gated — dopamine settings AND positive valence only (C2) */}
+      {isPositive && shouldShowConfetti() && (
         <div className="fixed inset-0 pointer-events-none z-[60]" aria-hidden="true">
           {Array.from({ length: 12 }).map((_, i) => (
             <div
@@ -92,7 +104,7 @@ export function SuccessAnimation({ onComplete }: SuccessAnimationProps) {
                 width: 8,
                 height: 8,
                 borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-                backgroundColor: `hsl(${Math.random() * 360}, 70%, 60%)`,
+                backgroundColor: ['hsl(152,68%,46%)', 'hsl(152,68%,66%)', 'hsl(234,56%,58%)', 'hsl(234,56%,78%)', 'hsl(45,80%,60%)'][Math.floor(Math.random() * 5)],
                 animationDelay: `${Math.random() * 0.3}s`,
               }}
             />

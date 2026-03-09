@@ -279,6 +279,31 @@ export const de: Translations = {
   todayFocusGratitude: 'Wofür bist du heute dankbar?',
   todayFocusSubtitle: 'Dein nächster Schritt',
 
+  // Reflection prompts
+  reflectionNoted: 'Notiert. Wachse weiter.',
+  reflectionPlaceholderNano: 'Ein Wort...',
+  reflectionPlaceholderMicro: '1-2 Sätze...',
+  reflectionSubmitLabel: 'Reflexion absenden',
+  reflectionExpandJournal: 'Im Tagebuch erweitern',
+  reflectionAllDone: 'Alles erledigt! Ein Wort zu deinem Befinden:',
+  reflectionJoyStreak: 'Du fühlst dich seit 3 Tagen freudig. Was ist anders?',
+  reflectionFocus: 'Was hat dir heute beim Fokussieren geholfen?',
+  reflectionEvening: 'Wie war dein Tag? Ein Wort genügt.',
+  reflectionWeekly: 'Diese Woche in 3 Worten:',
+  reflectionDaily1: 'Wofür bist du gerade dankbar?',
+  reflectionDaily2: 'Atme tief ein. Wie fühlst du dich?',
+  reflectionDaily3: 'Welchen kleinen Erfolg kannst du heute feiern?',
+  reflectionDaily4: 'Worauf willst du dich heute konzentrieren:',
+  reflectionDaily5: 'Was würde diesen Tag großartig machen?',
+
+  // Growth Rings
+  growthRingsTotal: '{count} Wachstumsringe',
+  growthRingsEmpty: 'Wachstumsringe: keine Aktivität aufgezeichnet',
+  growthRingsLabel: 'Wachstumsringe: {total} Tage, {active} aktiv, {rest} Ruhe',
+  growthWeekBalance: '{active} Tage gewachsen, {rest} geruht. Balance.',
+  growthWeekFull: 'Eine ganze Woche Wachstum!',
+  growthWeekPartial: '{count} Wachstumstage diese Woche.',
+
   // Breathing
   breathingTitle: 'Atmung',
   breathingSubtitle: 'Beruhige deinen Geist',

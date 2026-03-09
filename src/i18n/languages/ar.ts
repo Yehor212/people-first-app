@@ -287,6 +287,31 @@ const arabicOverrides: Partial<Translations> = {
   todayFocusGratitude: 'على ماذا تشعر بالامتنان اليوم؟',
   todayFocusSubtitle: 'خطوتك التالية',
 
+  // Reflection prompts
+  reflectionNoted: 'تم التسجيل. واصل النمو.',
+  reflectionPlaceholderNano: 'كلمة واحدة...',
+  reflectionPlaceholderMicro: 'جملة أو جملتان...',
+  reflectionSubmitLabel: 'إرسال التأمل',
+  reflectionExpandJournal: 'التوسع في اليومية',
+  reflectionAllDone: 'تم الكل! كلمة واحدة عن شعورك:',
+  reflectionJoyStreak: 'شعرت بالفرح لمدة 3 أيام متتالية. ما الذي تغير؟',
+  reflectionFocus: 'ما الذي ساعدك على التركيز اليوم؟',
+  reflectionEvening: 'كيف كان يومك؟ حتى كلمة واحدة تساعد.',
+  reflectionWeekly: 'هذا الأسبوع في 3 كلمات:',
+  reflectionDaily1: 'ما الذي تشعر بالامتنان له الآن؟',
+  reflectionDaily2: 'خذ نفسًا عميقًا. كيف تشعر؟',
+  reflectionDaily3: 'ما الإنجاز الصغير الذي يمكنك الاحتفال به اليوم؟',
+  reflectionDaily4: 'شيء واحد تريد التركيز عليه اليوم:',
+  reflectionDaily5: 'ما الذي سيجعل هذا اليوم رائعًا؟',
+
+  // Growth Rings
+  growthRingsTotal: '{count} حلقات نمو',
+  growthRingsEmpty: 'حلقات النمو: لا يوجد نشاط مسجل',
+  growthRingsLabel: 'حلقات النمو: {total} يوم، {active} نشط، {rest} راحة',
+  growthWeekBalance: 'نمو {active} أيام، راحة {rest}. توازن.',
+  growthWeekFull: 'أسبوع كامل من النمو!',
+  growthWeekPartial: '{count} أيام نمو هذا الأسبوع.',
+
   // Breathing
   breathingTitle: 'التنفس',
   breathingSubtitle: 'هدّئ عقلك',

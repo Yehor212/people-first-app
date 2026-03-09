@@ -70,6 +70,7 @@ export const VALENCE_GRADIENT = `linear-gradient(to right, ${COLOR_STOPS.map(
  * Used when saving to Supabase which has CHECK constraint on mood column.
  */
 export function valenceToMoodType(valence: number): 'great' | 'good' | 'okay' | 'bad' | 'terrible' {
+  if (Number.isNaN(valence)) return 'okay';
   if (valence >= 0.6) return 'great';
   if (valence >= 0.2) return 'good';
   if (valence >= -0.2) return 'okay';

@@ -4,6 +4,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { zenMotion, zenTap } from '@/lib/animationUtils';
 import { haptics } from '@/lib/haptics';
+import { valenceToColor } from './colorUtils';
 import { MorphingBlob } from './MorphingBlob';
 import { ValenceSlider } from './ValenceSlider';
 import { EmotionTagGrid } from './EmotionTagGrid';
@@ -97,6 +98,16 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
             aria-label={t.somHowAreYouFeeling}
             onKeyDown={trapKeyDown}
           >
+            {/* C3: Subtle background color tint — Apple-style color wash */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                backgroundColor: valenceToColor(som.valence, 0.05),
+                transition: 'background-color 300ms ease-out',
+              }}
+              aria-hidden="true"
+            />
+
             {/* Header */}
             {showNavigation && (
               <div className="flex items-center justify-between px-4 py-3">
@@ -181,7 +192,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                   )}
 
                   {(som.step === 'saving' || som.step === 'saved') && (
-                    <SuccessAnimation onComplete={som.handleSavedComplete} />
+                    <SuccessAnimation onComplete={som.handleSavedComplete} valence={som.valence} />
                   )}
                 </motion.div>
               </AnimatePresence>
@@ -223,6 +234,7 @@ function LogTypeToggle({ value, onChange }: { value: MoodLogType; onChange: (v: 
           whileTap={zenTap.button}
           animate={{ scale: value === type ? 1 : 0.97 }}
           transition={zenMotion.snappy}
+          aria-pressed={value === type}
           onClick={() => onChange(type)}
           className={[
             'px-4 py-2 rounded-lg text-sm font-medium transition-colors',

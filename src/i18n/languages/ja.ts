@@ -278,6 +278,31 @@ export const ja: Translations = {
   todayFocusGratitude: '今日感謝していることは何ですか？',
   todayFocusSubtitle: '次のステップ',
 
+  // Reflection prompts
+  reflectionNoted: '記録しました。成長を続けましょう。',
+  reflectionPlaceholderNano: 'ひとこと...',
+  reflectionPlaceholderMicro: '1〜2文...',
+  reflectionSubmitLabel: '振り返りを送信',
+  reflectionExpandJournal: 'ジャーナルに展開',
+  reflectionAllDone: '全部完了！今の気持ちをひとことで：',
+  reflectionJoyStreak: '3日連続で喜びを感じています。何が違いますか？',
+  reflectionFocus: '今日、集中できた理由は何ですか？',
+  reflectionEvening: '今日はどうでしたか？ひとことでも大丈夫。',
+  reflectionWeekly: '今週を3つの言葉で：',
+  reflectionDaily1: '今、感謝していることは何ですか？',
+  reflectionDaily2: '深呼吸して。気分はどうですか？',
+  reflectionDaily3: '今日お祝いできる小さな勝利は何ですか？',
+  reflectionDaily4: '今日集中したいこと：',
+  reflectionDaily5: '今日を素晴らしくするものは何ですか？',
+
+  // Growth Rings
+  growthRingsTotal: '{count}個の成長リング',
+  growthRingsEmpty: '成長リング：活動記録なし',
+  growthRingsLabel: '成長リング：{total}日間、{active}日活動、{rest}日休息',
+  growthWeekBalance: '{active}日成長、{rest}日休息。バランス。',
+  growthWeekFull: '一週間まるまる成長！',
+  growthWeekPartial: '今週{count}日の成長。',
+
   // Breathing
   breathingTitle: '呼吸法',
   breathingSubtitle: '心を落ち着ける',

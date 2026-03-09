@@ -289,6 +289,31 @@ export interface Translations {
   todayFocusGratitude: string;
   todayFocusSubtitle: string;
 
+  // Reflection prompts (IA Blueprint Phase 3)
+  reflectionNoted: string;
+  reflectionPlaceholderNano: string;
+  reflectionPlaceholderMicro: string;
+  reflectionSubmitLabel: string;
+  reflectionExpandJournal: string;
+  reflectionAllDone: string;
+  reflectionJoyStreak: string;
+  reflectionFocus: string;
+  reflectionEvening: string;
+  reflectionWeekly: string;
+  reflectionDaily1: string;
+  reflectionDaily2: string;
+  reflectionDaily3: string;
+  reflectionDaily4: string;
+  reflectionDaily5: string;
+
+  // Growth Rings
+  growthRingsTotal: string;
+  growthRingsEmpty: string;
+  growthRingsLabel: string;
+  growthWeekBalance: string;
+  growthWeekFull: string;
+  growthWeekPartial: string;
+
   // Breathing exercises
   breathingTitle: string;
   breathingSubtitle: string;

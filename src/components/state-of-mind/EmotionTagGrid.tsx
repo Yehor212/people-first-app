@@ -68,6 +68,7 @@ export function EmotionTagGrid({ valence, selected, onToggle }: EmotionTagGridPr
               opacity: isSelected ? 1 : 0.75,
             }}
             transition={zenMotion.snappy}
+            aria-pressed={isSelected}
             className={[
               'px-4 py-2.5 rounded-xl text-sm font-medium min-h-[44px]',
               'ring-1 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50',

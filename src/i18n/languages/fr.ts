@@ -279,6 +279,31 @@ export const fr: Translations = {
   todayFocusGratitude: 'De quoi êtes-vous reconnaissant aujourd\'hui ?',
   todayFocusSubtitle: 'Votre prochaine étape',
 
+  // Reflection prompts
+  reflectionNoted: 'Noté. Continuez à grandir.',
+  reflectionPlaceholderNano: 'Un mot...',
+  reflectionPlaceholderMicro: '1-2 phrases...',
+  reflectionSubmitLabel: 'Envoyer la réflexion',
+  reflectionExpandJournal: 'Développer dans le journal',
+  reflectionAllDone: 'Tout est fait ! Un mot sur votre ressenti :',
+  reflectionJoyStreak: 'Vous êtes joyeux depuis 3 jours. Qu\'est-ce qui a changé ?',
+  reflectionFocus: 'Qu\'est-ce qui vous a aidé à vous concentrer aujourd\'hui ?',
+  reflectionEvening: 'Comment était votre journée ? Même un mot suffit.',
+  reflectionWeekly: 'Cette semaine en 3 mots :',
+  reflectionDaily1: 'De quoi êtes-vous reconnaissant en ce moment ?',
+  reflectionDaily2: 'Respirez profondément. Comment vous sentez-vous ?',
+  reflectionDaily3: 'Quelle petite victoire pouvez-vous célébrer aujourd\'hui ?',
+  reflectionDaily4: 'Sur quoi voulez-vous vous concentrer aujourd\'hui :',
+  reflectionDaily5: 'Qu\'est-ce qui rendrait cette journée formidable ?',
+
+  // Growth Rings
+  growthRingsTotal: '{count} anneaux de croissance',
+  growthRingsEmpty: 'Anneaux de croissance : aucune activité enregistrée',
+  growthRingsLabel: 'Anneaux de croissance : {total} jours, {active} actifs, {rest} repos',
+  growthWeekBalance: '{active} jours de croissance, {rest} de repos. Équilibre.',
+  growthWeekFull: 'Une semaine complète de croissance !',
+  growthWeekPartial: '{count} jours de croissance cette semaine.',
+
   // Breathing
   breathingTitle: 'Respiration',
   breathingSubtitle: 'Apaise ton esprit',

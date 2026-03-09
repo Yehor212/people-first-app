@@ -24,6 +24,7 @@ export function useMoodHandlers({ updateChallengeProgress }: UseMoodHandlersPara
     rewardUser('mood', { treats: 5, treatReason: 'Logged mood', haptic: haptics.moodSaved, seedExtra: entry.mood });
     analytics.moodTracked(entry.mood);
     updateChallengeProgress();
+    triggerSync();
   }, 800);
 
   const handleQuickMood = useCallback((mood: MoodEntry['mood']) => {
@@ -39,6 +40,7 @@ export function useMoodHandlers({ updateChallengeProgress }: UseMoodHandlersPara
     rewardUser('mood', { treats: 5, treatReason: 'Quick mood', haptic: haptics.moodSaved, skipPopup: true, seedExtra: mood });
     analytics.moodTracked(mood);
 
+    triggerSync();
     logger.log('Quick mood logged from notification:', mood);
   }, [rewardUser, setMoods]);
 

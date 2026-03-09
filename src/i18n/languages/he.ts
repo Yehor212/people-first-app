@@ -302,6 +302,31 @@ const hebrewOverrides: Partial<Translations> = {
   todayFocusGratitude: 'על מה אתה אסיר תודה היום?',
   todayFocusSubtitle: 'הצעד הבא שלך',
 
+  // Reflection prompts
+  reflectionNoted: 'נרשם. המשיכו לצמוח.',
+  reflectionPlaceholderNano: 'מילה אחת...',
+  reflectionPlaceholderMicro: 'משפט-שניים...',
+  reflectionSubmitLabel: 'שליחת רפלקציה',
+  reflectionExpandJournal: 'הרחבה ליומן',
+  reflectionAllDone: 'הכול בוצע! מילה אחת על ההרגשה שלך:',
+  reflectionJoyStreak: 'את/ה מרגיש/ה שמחה כבר 3 ימים. מה השתנה?',
+  reflectionFocus: 'מה עזר לך להתמקד היום?',
+  reflectionEvening: 'איך היה היום שלך? אפילו מילה אחת עוזרת.',
+  reflectionWeekly: 'השבוע ב-3 מילים:',
+  reflectionDaily1: 'על מה את/ה אסיר/ת תודה עכשיו?',
+  reflectionDaily2: 'קח/י נשימה עמוקה. איך את/ה מרגיש/ה?',
+  reflectionDaily3: 'איזה ניצחון קטן אפשר לחגוג היום?',
+  reflectionDaily4: 'דבר אחד שרוצה להתמקד בו היום:',
+  reflectionDaily5: 'מה יהפוך את היום הזה לנהדר?',
+
+  // Growth Rings
+  growthRingsTotal: '{count} טבעות צמיחה',
+  growthRingsEmpty: 'טבעות צמיחה: לא נרשמה פעילות',
+  growthRingsLabel: 'טבעות צמיחה: {total} ימים, {active} פעילים, {rest} מנוחה',
+  growthWeekBalance: 'צמחת {active} ימים, נחת {rest}. איזון.',
+  growthWeekFull: 'שבוע שלם של צמיחה!',
+  growthWeekPartial: '{count} ימי צמיחה השבוע.',
+
   // Breathing
   breathingTitle: 'נשימה',
   breathingSubtitle: 'הרגע את הנפש',

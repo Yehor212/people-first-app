@@ -1,8 +1,9 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { zenMotion } from '@/lib/animationUtils';
-import { VALENCE_GRADIENT } from './colorUtils';
+import { haptics } from '@/lib/haptics';
+import { VALENCE_GRADIENT, valenceToColor } from './colorUtils';
 
 interface ValenceSliderProps {
   value: number;
@@ -21,10 +22,34 @@ const TOUCH_PADDING = 10; // Extra padding for 44px+ touch target
  * Law 9 (a11y): role="slider", aria-valuemin/max/now/text, keyboard support.
  * Law 10 (Cross-Platform): pointer events, touch-none, setPointerCapture.
  */
+/** Map valence to mood tier index (0-4) for haptic threshold detection */
+function valenceTier(v: number): number {
+  if (v <= -0.6) return 0;
+  if (v <= -0.2) return 1;
+  if (v <= 0.2) return 2;
+  if (v <= 0.6) return 3;
+  return 4;
+}
+
 export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
   const { t } = useLanguage();
   const trackRef = useRef<HTMLDivElement>(null);
   const [isPressed, setIsPressed] = useState(false);
+  const prevTierRef = useRef(valenceTier(value));
+
+  // C1: Haptic feedback when crossing valence tier thresholds during drag
+  useEffect(() => {
+    const currentTier = valenceTier(value);
+    if (currentTier !== prevTierRef.current) {
+      prevTierRef.current = currentTier;
+      // Stronger haptic at extreme endpoints, subtle pulse at inner thresholds
+      if (value <= -0.95 || value >= 0.95) {
+        void haptics.medium();
+      } else {
+        void haptics.light();
+      }
+    }
+  }, [value]);
 
   const getValenceFromEvent = useCallback((clientX: number) => {
     const track = trackRef.current;
@@ -85,9 +110,13 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
 
   return (
     <div className="w-full px-2">
-      {/* Valence label */}
-      <div className="text-center mb-4">
-        <span className="text-lg font-semibold text-foreground som-label-enter" key={valenceLabel}>
+      {/* Valence label — C4: aria-live for screen readers, C5: color synced with valence */}
+      <div className="text-center mb-4" aria-live="polite" aria-atomic="true">
+        <span
+          className="text-lg font-semibold som-label-enter"
+          key={valenceLabel}
+          style={{ color: valenceToColor(value), transition: 'color 200ms ease-out' }}
+        >
           {valenceLabel}
         </span>
       </div>
@@ -134,7 +163,7 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
       </div>
 
       {/* Min/Max labels */}
-      <div className="flex justify-between px-1 mt-1">
+      <div className="flex justify-between rtl:flex-row-reverse px-1 mt-1">
         <span className="text-xs text-muted-foreground">
           {t.somVeryUnpleasant}
         </span>

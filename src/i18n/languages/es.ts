@@ -279,6 +279,31 @@ export const es: Translations = {
   todayFocusGratitude: '¿Por qué estás agradecido hoy?',
   todayFocusSubtitle: 'Tu próximo paso',
 
+  // Reflection prompts
+  reflectionNoted: 'Anotado. Sigue creciendo.',
+  reflectionPlaceholderNano: 'Una palabra...',
+  reflectionPlaceholderMicro: '1-2 oraciones...',
+  reflectionSubmitLabel: 'Enviar reflexión',
+  reflectionExpandJournal: 'Expandir al diario',
+  reflectionAllDone: '¡Todo listo! Una palabra sobre cómo te sientes:',
+  reflectionJoyStreak: 'Llevas 3 días sintiéndote alegre. ¿Qué ha cambiado?',
+  reflectionFocus: '¿Qué te ayudó a concentrarte hoy?',
+  reflectionEvening: '¿Cómo fue tu día? Una palabra basta.',
+  reflectionWeekly: 'Esta semana en 3 palabras:',
+  reflectionDaily1: '¿Por qué estás agradecido ahora?',
+  reflectionDaily2: 'Respira profundo. ¿Cómo te sientes?',
+  reflectionDaily3: '¿Qué pequeño logro puedes celebrar hoy?',
+  reflectionDaily4: 'Una cosa en la que enfocarte hoy:',
+  reflectionDaily5: '¿Qué haría genial este día?',
+
+  // Growth Rings
+  growthRingsTotal: '{count} anillos de crecimiento',
+  growthRingsEmpty: 'Anillos de crecimiento: sin actividad registrada',
+  growthRingsLabel: 'Anillos de crecimiento: {total} días, {active} activos, {rest} descanso',
+  growthWeekBalance: 'Creciste {active} días, descansaste {rest}. Equilibrio.',
+  growthWeekFull: '¡Una semana completa de crecimiento!',
+  growthWeekPartial: '{count} días de crecimiento esta semana.',
+
   // Breathing
   breathingTitle: 'Respiración',
   breathingSubtitle: 'Calma tu mente',
