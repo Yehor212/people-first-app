@@ -5,6 +5,7 @@ import { triggerXpPopup } from '@/components/XpPopup';
 import { triggerSync } from '@/storage/cloudSync';
 import { deleteHabitFromCloud } from '@/storage/realtimeSync';
 import { trackDeletedHabitId } from '@/storage/deletionTracker';
+import { logger } from '@/lib/logger';
 import { haptics, hapticTap } from '@/lib/haptics';
 import { normalizeHabit } from '@/lib/habits';
 import { getNextToggleValue, setEntryValue, toStoredValue } from '@/lib/habits';
@@ -273,7 +274,9 @@ export function useHabitHandlers({
     void trackDeletedHabitId(habitId);
 
     // Delete from cloud habits table immediately (untrack on success)
-    void deleteHabitFromCloud(habitId);
+    deleteHabitFromCloud(habitId).catch(err => {
+      logger.error('[Habits] Cloud delete failed:', err);
+    });
 
     triggerSync();
   };

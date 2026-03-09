@@ -290,99 +290,96 @@ describe('computeGrowthRings — streak computation', () => {
 // getGrowthRingsSummary
 // ============================================
 
-describe('getGrowthRingsSummary', () => {
+describe('getGrowthRingsSummary — raw data return', () => {
   // Helper that builds GrowthRingsData directly from computeGrowthRings
   function make(activeDates: string[], restDates: string[]): GrowthRingsData {
     return computeGrowthRings(activeDates, restDates, SINCE);
   }
 
   // ──────────────────────────────────────────
-  // 7. getGrowthRingsSummary returns correct totalRings text
+  // 7. getGrowthRingsSummary returns correct total count
   // ──────────────────────────────────────────
-  it('returns "0 rings of growth" when there are no active or rest days', () => {
+  it('returns total=0 when there are no active or rest days', () => {
     const data = make([], []);
-    const { totalRings } = getGrowthRingsSummary(data);
-    expect(totalRings).toBe('0 rings of growth');
+    const { total } = getGrowthRingsSummary(data);
+    expect(total).toBe(0);
   });
 
-  it('counts only active + rest days in the totalRings label (not gaps)', () => {
-    // 3 active + 2 rest = 5 rings
+  it('counts only active + rest days in total (not gaps)', () => {
+    // 3 active + 2 rest = 5
     const activeDates = ['2026-02-10', '2026-02-11', '2026-02-12'];
     const restDates   = ['2026-02-13', '2026-02-14'];
     const data = make(activeDates, restDates);
-    const { totalRings } = getGrowthRingsSummary(data);
-    expect(totalRings).toBe('5 rings of growth');
+    const { total } = getGrowthRingsSummary(data);
+    expect(total).toBe(5);
   });
 
   it('counts only active days when there are no rest days', () => {
     const data = make(['2026-02-17', '2026-02-18', '2026-02-19'], []);
-    const { totalRings } = getGrowthRingsSummary(data);
-    expect(totalRings).toBe('3 rings of growth');
+    const { total } = getGrowthRingsSummary(data);
+    expect(total).toBe(3);
   });
 
-  it('builds the totalRings string as "{n} rings of growth"', () => {
+  it('counts all 10 active days', () => {
     const data = make(ALL_DATES, []);
-    const { totalRings } = getGrowthRingsSummary(data);
-    expect(totalRings).toBe('10 rings of growth');
+    const { total } = getGrowthRingsSummary(data);
+    expect(total).toBe(10);
   });
 
   // ──────────────────────────────────────────
-  // 8. weekSummary mentions rest when rest days exist in last 7 rings
+  // 8. Last 7 days breakdown
   // ──────────────────────────────────────────
-  it('includes rest count in weekSummary when rest days exist in last 7 rings', () => {
+  it('returns correct activeLast7 and restLast7 when rest days exist', () => {
     // last 7 rings = Feb 13–19; make Feb 15 a rest day
     const activeDates = ['2026-02-13', '2026-02-14', '2026-02-16', '2026-02-17', '2026-02-18', '2026-02-19'];
     const restDates   = ['2026-02-15'];
     const data = make(activeDates, restDates);
-    const { weekSummary } = getGrowthRingsSummary(data);
-    // Should say "You grew for 6 days and rested for 1. Perfect balance."
-    expect(weekSummary).toContain('rested for 1');
-    expect(weekSummary).toContain('6');
-    expect(weekSummary).toContain('Perfect balance');
+    const { activeLast7, restLast7 } = getGrowthRingsSummary(data);
+    expect(activeLast7).toBe(6);
+    expect(restLast7).toBe(1);
   });
 
-  it('mentions the correct rest count when there are 2 rest days in last 7', () => {
+  it('returns correct rest count when there are 2 rest days in last 7', () => {
     // last 7 rings: Feb 13–19; Feb 13 and Feb 15 are rest
     const activeDates = ['2026-02-14', '2026-02-16', '2026-02-17', '2026-02-18', '2026-02-19'];
     const restDates   = ['2026-02-13', '2026-02-15'];
     const data = make(activeDates, restDates);
-    const { weekSummary } = getGrowthRingsSummary(data);
-    expect(weekSummary).toContain('rested for 2');
-    expect(weekSummary).toContain('5');
+    const { activeLast7, restLast7 } = getGrowthRingsSummary(data);
+    expect(activeLast7).toBe(5);
+    expect(restLast7).toBe(2);
   });
 
   // ──────────────────────────────────────────
-  // 9. Full week summary says "A full week of growth!"
+  // 9. Full week detection
   // ──────────────────────────────────────────
-  it('returns "A full week of growth!" when all 7 of the last rings are active', () => {
-    // last 7 rings: Feb 13–19 all active, no rest
+  it('returns activeLast7=7 when all 7 of the last rings are active', () => {
     const activeDates = ['2026-02-13', '2026-02-14', '2026-02-15', '2026-02-16', '2026-02-17', '2026-02-18', '2026-02-19'];
     const data = make(activeDates, []);
-    const { weekSummary } = getGrowthRingsSummary(data);
-    expect(weekSummary).toBe('A full week of growth!');
+    const { activeLast7, restLast7 } = getGrowthRingsSummary(data);
+    expect(activeLast7).toBe(7);
+    expect(restLast7).toBe(0);
   });
 
-  it('does NOT say "A full week of growth!" when only 6 of the last 7 are active', () => {
+  it('returns activeLast7=6 when only 6 of the last 7 are active', () => {
     const activeDates = ['2026-02-13', '2026-02-14', '2026-02-15', '2026-02-16', '2026-02-17', '2026-02-19'];
-    // Feb 18 is a gap
     const data = make(activeDates, []);
-    const { weekSummary } = getGrowthRingsSummary(data);
-    expect(weekSummary).not.toBe('A full week of growth!');
+    const { activeLast7 } = getGrowthRingsSummary(data);
+    expect(activeLast7).toBe(6);
   });
 
-  it('shows plain active-count summary when no rest days and fewer than 7 active', () => {
-    // last 7 rings: Feb 13–19; only 4 active, no rest → plain count path
+  it('returns correct counts with no rest days and fewer than 7 active', () => {
     const activeDates = ['2026-02-13', '2026-02-14', '2026-02-15', '2026-02-16'];
     const data = make(activeDates, []);
-    const { weekSummary } = getGrowthRingsSummary(data);
-    expect(weekSummary).toBe('4 days of growth this week.');
+    const { activeLast7, restLast7 } = getGrowthRingsSummary(data);
+    expect(activeLast7).toBe(4);
+    expect(restLast7).toBe(0);
   });
 
-  it('shows 0 days of growth this week when no active or rest days in last 7', () => {
-    // All gaps
+  it('returns 0 active and rest when no activity in last 7 days', () => {
     const data = make([], []);
-    const { weekSummary } = getGrowthRingsSummary(data);
-    expect(weekSummary).toBe('0 days of growth this week.');
+    const { activeLast7, restLast7 } = getGrowthRingsSummary(data);
+    expect(activeLast7).toBe(0);
+    expect(restLast7).toBe(0);
   });
 
   // ──────────────────────────────────────────
@@ -392,18 +389,19 @@ describe('getGrowthRingsSummary', () => {
     // Early dates (Feb 10–12) are all active, but last 7 (Feb 13–19) are all gaps
     const activeDates = ['2026-02-10', '2026-02-11', '2026-02-12'];
     const data = make(activeDates, []);
-    const { weekSummary } = getGrowthRingsSummary(data);
-    // Last 7 rings are all gaps → 0 active, 0 rest → plain count
-    expect(weekSummary).toBe('0 days of growth this week.');
+    const { activeLast7, restLast7, total } = getGrowthRingsSummary(data);
+    expect(activeLast7).toBe(0);
+    expect(restLast7).toBe(0);
+    expect(total).toBe(3); // total still counts historical active days
   });
 
-  it('rest days in last 7 rings take priority over the full-week branch', () => {
-    // 6 active + 1 rest in last 7 — should NOT say "A full week of growth!"
+  it('rest days in last 7 rings are counted separately from active', () => {
+    // 6 active + 1 rest in last 7
     const activeDates = ['2026-02-13', '2026-02-14', '2026-02-15', '2026-02-16', '2026-02-17', '2026-02-18'];
     const restDates   = ['2026-02-19'];
     const data = make(activeDates, restDates);
-    const { weekSummary } = getGrowthRingsSummary(data);
-    expect(weekSummary).toContain('Perfect balance');
-    expect(weekSummary).not.toBe('A full week of growth!');
+    const { activeLast7, restLast7 } = getGrowthRingsSummary(data);
+    expect(activeLast7).toBe(6);
+    expect(restLast7).toBe(1);
   });
 });

@@ -8,8 +8,8 @@ import { DayProgressIndicator } from '@/components/OnboardingOverlay';
 import { TodayFocusCard } from '@/components/TodayFocusCard';
 import { RestModeCard } from '@/components/RestModeCard';
 import { AllCompleteCelebration } from '@/components/AllCompleteCelebration';
-import { TreePine } from 'lucide-react';
 import { ReflectionPromptCard } from '@/components/ReflectionPromptCard';
+import { GrowthRingsCanvas } from '@/components/GrowthRingsCanvas';
 import { StateOfMindModal } from '@/components/state-of-mind/StateOfMindModal';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -18,6 +18,7 @@ import { useReflectionPrompts } from '@/hooks/useReflectionPrompts';
 import { computeGrowthRings, getGrowthRingsSummary } from '@/lib/growthRings';
 import { motionPresets, zenTap } from '@/lib/animationUtils';
 import { valenceToColor } from '@/components/state-of-mind/colorUtils';
+import { isHabitCompletedOnDate } from '@/lib/habits';
 import { getToday } from '@/lib/utils';
 import type { MoodEntry, Habit, FocusSession } from '@/types';
 
@@ -70,17 +71,21 @@ export function HomeTab({
   const [showStateOfMind, setShowStateOfMind] = useState(false);
 
   // Contextual reflection prompts (IA Blueprint Phase 3)
-  const reflectionPrompts = useReflectionPrompts(safeMoods, safeHabits, safeFocusSessions, gratitudeEntries);
+  const reflectionPrompts = useReflectionPrompts(safeMoods, safeHabits, safeFocusSessions, gratitudeEntries, t);
 
   // Growth Rings — never-resetting growth visualization (IA Blueprint Phase 2.3)
-  const growthSummary = useMemo(() => {
-    const activeDates = safeHabits.flatMap(h => Object.entries(h.entries || {}).filter(([, e]) => e.value === 2).map(([d]) => d));
+  const growthData = useMemo(() => {
+    const activeHabits = safeHabits.filter(h => !h.isArchived);
+    const activeDates = activeHabits.flatMap(h =>
+      Object.keys(h.entries || {}).filter(d => isHabitCompletedOnDate(h, d)),
+    );
     const uniqueActive = [...new Set(activeDates)];
     const earliest = safeMoods.length > 0
       ? safeMoods.reduce((min, m) => m.date < min ? m.date : min, safeMoods[0].date)
       : getToday();
     const data = computeGrowthRings(uniqueActive, [], earliest);
-    return getGrowthRingsSummary(data);
+    const summary = getGrowthRingsSummary(data);
+    return { rings: data.rings, ...summary };
   }, [safeHabits, safeMoods]);
 
   const scrollToRef = (ref: React.RefObject<HTMLDivElement | null>) => {
@@ -155,18 +160,27 @@ export function HomeTab({
             isRestMode={isRestMode}
           />
 
-          {/* Growth Rings — permanent growth (IA Blueprint Phase 2.3) */}
+          {/* Growth Rings — canvas tree ring visualization (IA Blueprint Phase 2.3) */}
           <motion.div
             {...motionPresets.slideUp}
-            className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card px-4 py-3 flex items-center justify-between"
+            className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card px-4 py-3 flex items-center gap-3"
           >
-            <div className="flex items-center gap-2">
-              <TreePine className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <GrowthRingsCanvas rings={growthData.rings} size={80} />
+            <div className="flex-1 min-w-0">
               <span className="text-sm font-medium text-foreground">
-                {growthSummary.totalRings}
+                {(t.growthRingsTotal || '{count} rings of growth').replace('{count}', String(growthData.total))}
               </span>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {growthData.restLast7 > 0
+                  ? (t.growthWeekBalance || 'Grew {active} days, rested {rest}. Balance.')
+                      .replace('{active}', String(growthData.activeLast7))
+                      .replace('{rest}', String(growthData.restLast7))
+                  : growthData.activeLast7 === 7
+                    ? (t.growthWeekFull || 'A full week of growth!')
+                    : (t.growthWeekPartial || '{count} days of growth this week.')
+                        .replace('{count}', String(growthData.activeLast7))}
+              </p>
             </div>
-            <span className="text-xs text-muted-foreground">{growthSummary.weekSummary}</span>
           </motion.div>
 
           {/* Contextual reflection prompt (IA Blueprint Phase 3) */}

@@ -12,6 +12,7 @@
 import { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Sparkles, MessageCircle, BookOpen, Send } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useAppStore, useUserDataStore } from '@/stores';
 import { motionPresets } from '@/lib/animationUtils';
 import { haptics } from '@/lib/haptics';
@@ -24,6 +25,7 @@ interface ReflectionPromptCardProps {
 }
 
 export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
+  const { t } = useLanguage();
   const [text, setText] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const setActiveTab = useAppStore(s => s.setActiveTab);
@@ -70,7 +72,7 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
         className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card p-4"
       >
         <p className="text-sm text-emerald-600 dark:text-emerald-400 text-center">
-          Noted. Keep growing.
+          {t.reflectionNoted || 'Noted. Keep growing.'}
         </p>
       </motion.div>
     );
@@ -97,7 +99,7 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-            placeholder="One word..."
+            placeholder={t.reflectionPlaceholderNano || 'One word...'}
             maxLength={50}
             className="flex-1 rounded-lg bg-secondary/60 border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/30"
           />
@@ -105,7 +107,7 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="1-2 sentences..."
+            placeholder={t.reflectionPlaceholderMicro || '1-2 sentences...'}
             maxLength={280}
             rows={2}
             className="flex-1 rounded-lg bg-secondary/60 border border-border px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-violet-500/30 resize-none"
@@ -115,9 +117,9 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
           onClick={handleSubmit}
           disabled={!text.trim()}
           className="self-end rounded-lg bg-violet-500 hover:bg-violet-600 disabled:opacity-40 disabled:cursor-not-allowed p-2 transition-colors"
-          aria-label="Submit reflection"
+          aria-label={t.reflectionSubmitLabel || 'Submit reflection'}
         >
-          <Send className="w-4 h-4 text-white" />
+          <Send className="w-4 h-4 text-white rtl:scale-x-[-1]" />
         </button>
       </div>
 
@@ -127,7 +129,7 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
         className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         <BookOpen className="w-3.5 h-3.5" />
-        Expand to journal
+        {t.reflectionExpandJournal || 'Expand to journal'}
       </button>
     </motion.div>
   );

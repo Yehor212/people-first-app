@@ -9,13 +9,6 @@ import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
 import { triggerDataRefresh } from '@/hooks/useIndexedDB';
 
-// UUID validation regex for secure user_id filtering
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-const _isValidUUID = (id: string): boolean => {
-  return typeof id === 'string' && UUID_REGEX.test(id);
-};
-
 interface TaskRow {
   user_id: string;
   task_id: string;

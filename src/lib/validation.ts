@@ -153,6 +153,21 @@ export const isAbortError = (error: unknown): boolean => {
   return false;
 };
 
+/**
+ * UUID v4 format regex (RFC 4122)
+ * Matches standard UUID format: 8-4-4-4-12 hex digits
+ */
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Check if a string is a valid UUID format.
+ * Used to guard Supabase operations on tables with UUID columns
+ * against locally-generated nanoid strings.
+ */
+export const isValidUUID = (id: string): boolean => {
+  return typeof id === 'string' && UUID_REGEX.test(id);
+};
+
 // Prototype pollution prevention - recursive
 export const sanitizeObject = <T extends Record<string, unknown>>(obj: T): T => {
   if (obj === null || typeof obj !== 'object') {

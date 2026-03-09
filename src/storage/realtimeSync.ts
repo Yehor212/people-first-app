@@ -7,7 +7,7 @@
 
 import { logger } from '@/lib/logger';
 import { addCategorizedBreadcrumb } from '@/lib/sentry';
-import { isAbortError } from '@/lib/validation';
+import { isAbortError, isValidUUID } from '@/lib/validation';
 import { supabase, getCurrentUserId } from '@/lib/supabaseClient';
 import { db } from '@/storage/db';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
@@ -135,6 +135,12 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
     return;
   }
 
+  // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
+  if (!isValidUUID(mood.id)) {
+    logger.log('[Sync] Skipping granular mood sync (non-UUID ID):', mood.id);
+    return;
+  }
+
   addCategorizedBreadcrumb('sync', 'Starting mood sync', { moodId: mood.id, date: mood.date });
 
   // If offline, queue for later sync
@@ -196,6 +202,12 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
+  // Skip granular sync for non-UUID IDs (nanoid)
+  if (!isValidUUID(moodId)) {
+    logger.log('[Sync] Skipping granular mood delete (non-UUID ID):', moodId);
+    return;
+  }
+
   // If offline, queue for later
   if (!navigator.onLine) {
     await offlineQueue.enqueue('DELETE_MOOD', moodId, { id: moodId });
@@ -234,6 +246,12 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
   if (!supabase) return;
   if (!userId) {
     logger.warn('[Sync] Cannot sync habit: User not authenticated');
+    return;
+  }
+
+  // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
+  if (!isValidUUID(habit.id)) {
+    logger.log('[Sync] Skipping granular habit sync (non-UUID ID):', habit.id);
     return;
   }
 
@@ -354,6 +372,14 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
+  // Skip granular sync for non-UUID IDs (nanoid) — still untrack locally
+  if (!isValidUUID(habitId)) {
+    logger.log('[Sync] Skipping granular habit delete (non-UUID ID):', habitId);
+    const { untrackDeletedHabitId } = await import('@/storage/deletionTracker');
+    await untrackDeletedHabitId(habitId);
+    return;
+  }
+
   // If offline, queue for later
   if (!navigator.onLine) {
     await offlineQueue.enqueue('DELETE_HABIT', habitId, { id: habitId });
@@ -394,6 +420,12 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
 export const syncHabitCompletion = async (habitId: string, date: string, completed: boolean, count?: number, duration?: number): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
+
+  // Skip granular sync for non-UUID habit IDs (nanoid)
+  if (!isValidUUID(habitId)) {
+    logger.log('[Sync] Skipping granular habit completion sync (non-UUID ID):', habitId);
+    return;
+  }
 
   // P1-9 Fix: Add offline queue support (was missing)
   if (!navigator.onLine) {
@@ -454,6 +486,12 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
     return;
   }
 
+  // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
+  if (!isValidUUID(session.id)) {
+    logger.log('[Sync] Skipping granular focus session sync (non-UUID ID):', session.id);
+    return;
+  }
+
   // If offline, queue for later sync
   if (!navigator.onLine) {
     await offlineQueue.enqueue('CREATE_FOCUS_SESSION', session.id, session);
@@ -500,6 +538,12 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
     return;
   }
 
+  // Skip granular sync for non-UUID IDs (nanoid) — data is persisted via JSONB backup
+  if (!isValidUUID(entry.id)) {
+    logger.log('[Sync] Skipping granular gratitude sync (non-UUID ID):', entry.id);
+    return;
+  }
+
   // If offline, queue for later sync
   if (!navigator.onLine) {
     await offlineQueue.enqueue('CREATE_GRATITUDE', entry.id, entry);
@@ -533,6 +577,12 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
 export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
+
+  // Skip granular sync for non-UUID IDs (nanoid)
+  if (!isValidUUID(entryId)) {
+    logger.log('[Sync] Skipping granular gratitude delete (non-UUID ID):', entryId);
+    return;
+  }
 
   // If offline, queue for later
   if (!navigator.onLine) {

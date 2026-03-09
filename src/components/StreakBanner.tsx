@@ -266,16 +266,16 @@ export const StreakBanner = memo(function StreakBanner({ moods, habits, focusSes
         )}
       </div>
 
-      {/* Progress bar for today */}
+      {/* Progress bar for today — GPU-accelerated via scaleX */}
       <div className="mt-2 h-1 bg-muted/50 rounded-full overflow-hidden">
         <div
           className={cn(
-            "h-full rounded-full transition-all duration-500",
+            "h-full rounded-full transition-transform duration-500 origin-left rtl:origin-right",
             todayProgress.completed === 4
               ? "bg-gradient-to-r from-green-500 to-emerald-500"
               : "bg-gradient-to-r from-primary to-accent"
           )}
-          style={{ width: `${(todayProgress.completed / 4) * 100}%` }}
+          style={{ transform: `scaleX(${todayProgress.completed / 4})` }}
         />
       </div>
 

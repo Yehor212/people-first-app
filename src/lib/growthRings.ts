@@ -87,31 +87,17 @@ export function computeGrowthRings(
 }
 
 /**
- * Summary text for growth rings (guilt-free language).
- * Examples:
- *   "42 rings of growth" (not "42-day streak")
- *   "You grew for 6 days and rested for 1. Perfect balance."
+ * Raw summary data for growth rings (i18n-ready).
+ * Formatting with translated strings happens in the component layer.
  */
 export function getGrowthRingsSummary(data: GrowthRingsData): {
-  totalRings: string;
-  weekSummary: string;
+  total: number;
+  activeLast7: number;
+  restLast7: number;
 } {
   const total = data.totalActiveDays + data.totalRestDays;
-  const totalRings = `${total} rings of growth`;
-
-  // Last 7 days summary
   const last7 = data.rings.slice(-7);
   const activeLast7 = last7.filter(r => r.type === 'active').length;
   const restLast7 = last7.filter(r => r.type === 'rest').length;
-
-  let weekSummary: string;
-  if (restLast7 > 0) {
-    weekSummary = `You grew for ${activeLast7} days and rested for ${restLast7}. Perfect balance.`;
-  } else if (activeLast7 === 7) {
-    weekSummary = `A full week of growth!`;
-  } else {
-    weekSummary = `${activeLast7} days of growth this week.`;
-  }
-
-  return { totalRings, weekSummary };
+  return { total, activeLast7, restLast7 };
 }

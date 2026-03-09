@@ -8,6 +8,7 @@
 
 import { useMemo } from 'react';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ReflectionTrigger, ReflectionDepth } from '@/types';
+import type { Translations } from '@/i18n/types';
 import { getToday } from '@/lib/utils';
 import { isHabitCompletedOnDate } from '@/lib/habits';
 
@@ -39,23 +40,25 @@ export function useReflectionPrompts(
   habits: Habit[],
   focusSessions: FocusSession[],
   gratitudeEntries: GratitudeEntry[],
+  t: Translations,
 ): ReflectionPrompt[] {
   return useMemo(() => {
     const prompts: ReflectionPrompt[] = [];
     const today = getToday();
     const hour = new Date().getHours();
 
-    // Today's data
+    // Today's data — filter out archived habits
     const todayMoods = moods.filter(m => m.date === today);
-    const todayCompletedHabits = habits.filter(h => isHabitCompletedOnDate(h, today));
+    const activeHabits = habits.filter(h => !h.isArchived);
+    const todayCompletedHabits = activeHabits.filter(h => isHabitCompletedOnDate(h, today));
     const todayFocusSessions = focusSessions.filter(s => s.date === today);
-    const allHabitsComplete = habits.length > 0 && todayCompletedHabits.length === habits.length;
+    const allHabitsComplete = activeHabits.length > 0 && todayCompletedHabits.length === activeHabits.length;
 
     // --- All habits complete → nano reflection ---
     if (allHabitsComplete) {
       prompts.push({
         trigger: 'all_habits_complete',
-        text: 'All done! One word for how you feel:',
+        text: t.reflectionAllDone || 'All done! One word for how you feel:',
         depth: 'nano',
         priority: 90,
         context: { habitIds: todayCompletedHabits.map(h => h.id) },
@@ -66,7 +69,7 @@ export function useReflectionPrompts(
     if (hasRecentMoodStreak(moods, 'joy', 3)) {
       prompts.push({
         trigger: 'mood_joy_streak',
-        text: "You've felt joyful 3 days running. What's different?",
+        text: t.reflectionJoyStreak || "You've felt joyful 3 days running. What's different?",
         depth: 'micro',
         priority: 80,
       });
@@ -77,7 +80,7 @@ export function useReflectionPrompts(
       const lastSession = todayFocusSessions[todayFocusSessions.length - 1];
       prompts.push({
         trigger: 'focus_reflection',
-        text: 'What helped you focus today?',
+        text: t.reflectionFocus || 'What helped you focus today?',
         depth: 'micro',
         priority: 70,
         context: { focusSessionId: lastSession.id },
@@ -88,7 +91,7 @@ export function useReflectionPrompts(
     if (hour >= 19 && todayMoods.length === 0) {
       prompts.push({
         trigger: 'evening_checkin',
-        text: 'How was your day? Even one word helps.',
+        text: t.reflectionEvening || 'How was your day? Even one word helps.',
         depth: 'micro',
         priority: 60,
       });
@@ -98,7 +101,7 @@ export function useReflectionPrompts(
     if (new Date().getDay() === 0) {
       prompts.push({
         trigger: 'weekly_review',
-        text: 'This week in 3 words:',
+        text: t.reflectionWeekly || 'This week in 3 words:',
         depth: 'nano',
         priority: 50,
       });
@@ -107,11 +110,11 @@ export function useReflectionPrompts(
     // --- Daily mindfulness (fallback — always available when no context triggers fire) ---
     if (prompts.length === 0) {
       const dailyPrompts = [
-        'What are you grateful for right now?',
-        'Take a deep breath. How do you feel?',
-        'What small win can you celebrate today?',
-        'One thing you want to focus on today:',
-        'What would make today great?',
+        t.reflectionDaily1 || 'What are you grateful for right now?',
+        t.reflectionDaily2 || 'Take a deep breath. How do you feel?',
+        t.reflectionDaily3 || 'What small win can you celebrate today?',
+        t.reflectionDaily4 || 'One thing you want to focus on today:',
+        t.reflectionDaily5 || 'What would make today great?',
       ];
       const dayIndex = new Date().getDate() % dailyPrompts.length;
       prompts.push({
@@ -125,5 +128,5 @@ export function useReflectionPrompts(
     // Sort highest priority first
     return prompts.sort((a, b) => b.priority - a.priority);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- gratitudeEntries included for future triggers
-  }, [moods, habits, focusSessions, gratitudeEntries]);
+  }, [moods, habits, focusSessions, gratitudeEntries, t]);
 }
