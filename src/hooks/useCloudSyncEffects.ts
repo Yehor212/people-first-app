@@ -84,6 +84,12 @@ export function useCloudSyncEffects({
         }
       }, 100);
     });
+
+    return () => {
+      if (quickActionTimeoutRef.current) {
+        clearTimeout(quickActionTimeoutRef.current);
+      }
+    };
   }, [onQuickAction, handleNavigateToSection, setActiveTab, quickActionTimeoutRef]);
 
   // Cloud sync for challenges and badges + realtime subscriptions

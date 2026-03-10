@@ -2882,6 +2882,14 @@ body.mood-bad .mood-particle {
   animation: breathing-circle 4s ease-in-out infinite;
 }
 
+/* Respect reduced-motion preference for mood ambient animations */
+@media (prefers-reduced-motion: reduce) {
+  .mood-particle,
+  .breathing-suggestion {
+    animation: none;
+  }
+}
+
 /* Hyperfocus breathing animation */
 @keyframes breathing {
   0%, 100% {

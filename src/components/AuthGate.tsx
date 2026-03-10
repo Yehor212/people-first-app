@@ -117,7 +117,7 @@ export function AuthGate({ isLoading, children }: AuthGateProps) {
             onClick={() => window.location.reload()}
             className="w-full py-3 zen-gradient text-primary-foreground rounded-xl font-semibold hover:opacity-90 transition-opacity"
           >
-            Try Again
+            {t.tryAgain || 'Try Again'}
           </button>
         </div>
       </div>

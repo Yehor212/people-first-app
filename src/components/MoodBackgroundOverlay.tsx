@@ -22,7 +22,7 @@ function EmotionParticles() {
   const particleCount = currentEmotion === 'joy' ? 8 : currentEmotion === 'trust' ? 6 : 4;
 
   return (
-    <>
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
       {Array.from({ length: particleCount }).map((_, i) => (
         <div
           key={i}
@@ -37,7 +37,7 @@ function EmotionParticles() {
           }}
         />
       ))}
-    </>
+    </div>
   );
 }
 
@@ -81,7 +81,7 @@ function SupportBanner() {
 
   return (
     <div
-      className="fixed left-4 right-4 z-50 animate-fade-in"
+      className="fixed left-4 right-4 z-[60] animate-fade-in"
       style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
     >
       <div className="mood-support-banner rounded-2xl p-4 flex items-start gap-3 max-w-md mx-auto">
@@ -129,7 +129,7 @@ function BreathingSuggestion() {
     : 'bg-indigo-300/30 dark:bg-indigo-800/10';
 
   return (
-    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0">
+    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-0" aria-hidden="true">
       <div className={cn("breathing-suggestion w-32 h-32 rounded-full", bgColor)} />
     </div>
   );
@@ -142,11 +142,11 @@ function CelebrationSparkles() {
   if (currentEmotion !== 'joy') return null;
 
   return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div className="fixed inset-0 pointer-events-none overflow-hidden z-0" aria-hidden="true">
       {Array.from({ length: 5 }).map((_, i) => (
         <Sparkles
           key={i}
-          className="absolute text-amber-400/30 animate-pulse"
+          className="absolute text-amber-400/30 motion-safe:animate-pulse"
           style={{
             left: `${15 + i * 18}%`,
             top: `${10 + (i * 15) % 40}%`,
@@ -168,13 +168,13 @@ export function MoodBackgroundOverlay() {
   return (
     <>
       {/* Background gradient overlay */}
-      <div className={cn(
+      <div aria-hidden="true" className={cn(
         "mood-background-overlay",
         isTransitioning && "mood-transitioning"
       )} />
 
       {/* Transition flash effect */}
-      <div className={cn(
+      <div aria-hidden="true" className={cn(
         "mood-transition-overlay",
         isTransitioning && "active"
       )} />

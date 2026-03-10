@@ -178,7 +178,7 @@ export function HabitHubList({
         <AnimatePresence>
           {showSortMenu && (
             <>
-              <div className="fixed inset-0 z-[56]" aria-hidden="true" onClick={() => setShowSortMenu(false)} />
+              <div className="fixed inset-0 z-[60]" aria-hidden="true" onClick={() => setShowSortMenu(false)} />
               <motion.div
                 role="listbox"
                 initial={{ opacity: 0, scale: 0.92, y: -4 }}
@@ -186,7 +186,7 @@ export function HabitHubList({
                 exit={{ opacity: 0, scale: 0.95, y: -2 }}
                 transition={zenMotion.snappy}
                 className={cn(
-                  'absolute end-0 top-full z-[57] min-w-[120px] rounded-xl overflow-hidden',
+                  'absolute end-0 top-full z-[61] min-w-[120px] rounded-xl overflow-hidden',
                   'bg-[#141a2e] border border-white/[0.08] shadow-xl',
                   'ltr:origin-top-right rtl:origin-top-left',
                 )}
@@ -406,7 +406,7 @@ export function HabitHubList({
 
       {/* ═══ FAB — Add Habit ═══ */}
       <div
-        className="fixed z-[55]"
+        className="fixed z-[60]"
         style={{ bottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))', insetInlineEnd: '1.25rem' }}
       >
         <motion.button
