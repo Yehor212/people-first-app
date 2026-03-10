@@ -372,11 +372,9 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
   const userId = await getCurrentUserId();
   if (!supabase || !userId) return;
 
-  // Skip granular sync for non-UUID IDs (nanoid) — still untrack locally
+  // Skip granular sync for non-UUID IDs (nanoid) — deletion tracker stays as permanent guard
   if (!isValidUUID(habitId)) {
     logger.log('[Sync] Skipping granular habit delete (non-UUID ID):', habitId);
-    const { untrackDeletedHabitId } = await import('@/storage/deletionTracker');
-    await untrackDeletedHabitId(habitId);
     return;
   }
 
@@ -395,10 +393,6 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
       .eq('user_id', userId);
 
     if (error) throw error;
-
-    // Untrack after confirmed cloud deletion — no longer needed as guard
-    const { untrackDeletedHabitId } = await import('@/storage/deletionTracker');
-    await untrackDeletedHabitId(habitId);
 
     logger.log('[Sync] Habit deleted:', habitId);
   } catch (error) {
@@ -1281,12 +1275,6 @@ export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void
     if (entryRes.error) logger.warn('[Sync] Journal entry delete failed:', entryRes.error);
     if (photosRes.error) logger.warn('[Sync] Journal photos delete failed:', photosRes.error);
     if (audioRes.error) logger.warn('[Sync] Journal audio delete failed:', audioRes.error);
-
-    // Untrack after confirmed cloud deletion — no longer needed as guard
-    if (!entryRes.error) {
-      const { untrackDeletedJournalEntryId } = await import('@/storage/deletionTracker');
-      await untrackDeletedJournalEntryId(entryId);
-    }
 
     logger.log('[Sync] Journal entry deleted from cloud:', entryId);
   } catch (error) {
