@@ -11,7 +11,12 @@
  *   - Soft edges via smoothstep (true airbrush, impossible in Canvas 2D)
  *   - Bloom / aura glow (exponential falloff)
  *   - Subsurface scattering simulation
- *   - Hue shimmer (noise-driven color modulation)
+ *   - Iridescence (thin-film interference — soap-bubble rainbow shimmer)
+ *   - Aurora spectral bands (multi-band flowing color streams)
+ *   - Volumetric light rays (god rays — radial beams behind orb)
+ *   - Caustic light patterns (swimming refraction — underwater crystal effect)
+ *   - Chromatic dispersion (prismatic RGB edge separation)
+ *   - Inner depth luminance (pulsating concentric celestial glow)
  *   - Particle glow spots (22 particles as uniforms)
  *
  * Performance: ~0.3ms per frame on mid-range mobile GPU (Mali-G78).
@@ -188,16 +193,56 @@ void main() {
   // ── Subsurface Scattering (fake) ──
   float sss = max(dot(-normal, lightDir1), 0.0) * 0.12;
 
-  // ── Color with hue shimmer ──
-  float hueShift = snoise(vec3(uTime * 0.12, 300.0, 0.0)) * 0.06;
-  float cosH = cos(hueShift * 6.2832);
-  float sinH = sin(hueShift * 6.2832);
-  vec3 shimmerColor = vec3(
-    uColor.r * cosH + uColor.g * sinH * 0.3,
-    uColor.g * cosH - uColor.r * sinH * 0.3,
-    uColor.b + sinH * 0.08
+  // ── Iridescence (thin-film interference) ──
+  float filmThickness = 0.3 + 0.7 * (1.0 - max(dot(normal, viewDir), 0.0));
+  filmThickness += snoise(vec3(center * 4.0, uTime * 0.15)) * 0.15;
+  vec3 iridescent = vec3(
+    0.5 + 0.5 * cos(6.2832 * (filmThickness * 1.0 + 0.00)),
+    0.5 + 0.5 * cos(6.2832 * (filmThickness * 1.0 + 0.33)),
+    0.5 + 0.5 * cos(6.2832 * (filmThickness * 1.0 + 0.67))
   );
+  float iriStrength = fresnel * mix(0.15, 0.35, (uValence + 1.0) * 0.5);
+
+  // ── Aurora spectral bands (replaces simple hue shimmer) ──
+  float band1 = snoise(vec3(center.x * 3.0 + uTime * 0.08, center.y * 3.0, 20.0));
+  float band2 = snoise(vec3(center.x * 2.0 + uTime * 0.05, center.y * 2.0 + uTime * 0.06, 30.0));
+  float bandMask1 = smoothstep(0.0, 0.4, band1) * smoothstep(0.8, 0.4, band1);
+  float bandMask2 = smoothstep(-0.1, 0.3, band2) * smoothstep(0.7, 0.3, band2);
+  vec3 aurora1 = vec3(
+    uColor.r + band1 * 0.15,
+    uColor.g + band1 * 0.08,
+    uColor.b - band1 * 0.10
+  );
+  vec3 aurora2 = vec3(
+    uColor.r - band2 * 0.10,
+    uColor.g + band2 * 0.12,
+    uColor.b + band2 * 0.15
+  );
+  float bandIntensity = mix(0.20, 0.35, (uValence + 1.0) * 0.5);
+  vec3 shimmerColor = uColor
+    + (aurora1 - uColor) * bandMask1 * bandIntensity
+    + (aurora2 - uColor) * bandMask2 * bandIntensity * 0.7;
   shimmerColor = max(shimmerColor, 0.0);
+
+  // ── Caustic Light Patterns (swimming refraction — underwater crystal) ──
+  float caustic1 = sin(center.x * 18.0 + uTime * 0.3) * sin(center.y * 18.0 + uTime * 0.25);
+  float caustic2 = sin(center.x * 12.0 - uTime * 0.2 + 1.5) * sin(center.y * 15.0 + uTime * 0.35 + 0.8);
+  float caustics = (caustic1 + caustic2) * 0.5;
+  caustics = pow(max(caustics, 0.0), 2.0); // sharpen peaks → light concentrations
+  float causticStr = mix(0.04, 0.14, (uValence + 1.0) * 0.5);
+
+  // ── Inner Depth Luminance (pulsating concentric celestial glow) ──
+  float depthZone1 = exp(-dist * dist / (shapeR * shapeR * 0.12)) * 0.18;
+  float depthZone2 = exp(-dist * dist / (shapeR * shapeR * 0.35)) * 0.10;
+  float depthPulse = sin(uTime * 1.5) * 0.3 + 0.7;
+  float depthGlow = (depthZone1 * depthPulse + depthZone2 * (1.0 - depthPulse * 0.3));
+  float depthStr = mix(0.5, 1.4, (uValence + 1.0) * 0.5);
+
+  // ── Chromatic Dispersion (prismatic RGB edge separation) ──
+  float chromShift = mix(0.004, 0.002, (uValence + 1.0) * 0.5); // stronger at negative
+  float edgeR = 1.0 - smoothstep(-edgeWidth, edgeWidth, sdf - chromShift);
+  float edgeG = edge; // green stays centered
+  float edgeB = 1.0 - smoothstep(-edgeWidth, edgeWidth, sdf + chromShift);
 
   // ── Compose lit surface ──
   vec3 ambient = shimmerColor * 0.20;
@@ -205,7 +250,9 @@ void main() {
   vec3 specular = vec3(1.0) * (spec1 * 0.50 + spec2 * 0.12);
   vec3 rim = shimmerColor * fresnel * fresnelStr;
   vec3 subsurface = shimmerColor * sss;
-  vec3 litColor = ambient + diffuse + specular + rim + subsurface;
+  vec3 causticColor = vec3(1.0, 0.95, 0.88) * caustics * causticStr;
+  vec3 depthColor = shimmerColor * depthGlow * depthStr;
+  vec3 litColor = ambient + diffuse + specular + rim + subsurface + iridescent * iriStrength + causticColor + depthColor;
 
   // ── Glow / Bloom / Aura ──
   float darkMult = uIsDark > 0.5 ? 1.3 : 1.0;
@@ -214,6 +261,16 @@ void main() {
   float bloom = exp(-dist * 7.0) * 0.08 * darkMult;
 
   vec3 auraColor = shimmerColor * 1.15;
+
+  // ── Volumetric Light Rays (god rays behind orb) ──
+  float rayAngle = angle + uTime * 0.03;
+  float rays = pow(abs(cos(rayAngle * 5.0)), 12.0) * 0.6
+             + pow(abs(cos(rayAngle * 8.0 + 1.0)), 8.0) * 0.3;
+  float rayDecay = mix(8.0, 4.0, (uValence + 1.0) * 0.5);
+  float rayFalloff = exp(-max(sdf, 0.0) * rayDecay);
+  float rayNoise = snoise(vec3(rayAngle * 2.0, uTime * 0.2, 5.0)) * 0.3 + 0.7;
+  float rayStr = mix(0.06, 0.22, (uValence + 1.0) * 0.5) * darkMult;
+  float rayIntensity = rays * rayFalloff * rayNoise * rayStr;
 
   // ── Particles (22 glow spots via uniforms) ──
   float particleGlow = 0.0;
@@ -228,13 +285,15 @@ void main() {
     }
   }
 
-  // ── Final Composition ──
-  vec3 finalColor = litColor * edge
+  // ── Final Composition (chromatic dispersion on body edge) ──
+  vec3 chromEdge = vec3(edgeR, edgeG, edgeB);
+  vec3 finalColor = litColor * chromEdge
                   + auraColor * innerGlow
                   + auraColor * aura
+                  + auraColor * rayIntensity
                   + vec3(1.0) * bloom * 0.25
                   + (shimmerColor * 1.5 + vec3(0.5)) * particleGlow;
-  float finalAlpha = clamp(edge + innerGlow + aura + bloom + particleGlow, 0.0, 1.0);
+  float finalAlpha = clamp(edge + innerGlow + aura + bloom + particleGlow + rayIntensity, 0.0, 1.0);
 
   if (uIsDark > 0.5) {
     finalAlpha = min(1.0, finalAlpha * 1.15);

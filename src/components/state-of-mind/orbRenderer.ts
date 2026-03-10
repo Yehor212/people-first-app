@@ -16,16 +16,23 @@
  *   Rich gradient fills create depth. Multiple glow layers create bloom.
  *   Additive blending creates the illusion of emitted light.
  *
- * 11 visual layers (back to front):
+ * 17 visual layers (back to front):
  *   0. Cached Glow Layer — real shadowBlur on offscreen canvas (~0ms/frame)
  *   1. Deep Aura — wide diffuse ambient glow with drifting sub-gradients
+ *  1.5. Volumetric Light Rays — god rays radiating behind orb
  *   2. Shape Glow Shadow — soft under-shape for depth
  *   3. Envelope Glow — atmospheric edge falloff (no strokes)
  *   4. Primary Solid Body — THE orb, high alpha, 3D-lit gradient fill
  *   5. Inner Luminosity — additive blending for subsurface glow
  *   6. Rose Curve Overlay — thin inner mandala lines
  *   7. Luminous Core — large bright center
+ *  7.2. Inner Depth Luminance — pulsating concentric celestial glow
+ *  7.4. Caustic Light Patterns — swimming refraction spots
  *  7.5. Specular Highlight — bright 3D sphere reflection spot
+ *  7.6. Iridescence — thin-film rainbow shimmer at Fresnel edges
+ *  7.65. Chromatic Dispersion — prismatic RGB edge fringe
+ *  7.7. Rim Light — secondary light source (bottom-right)
+ *  7.8. Aurora Spectral Bands — flowing multi-hue color streams
  *   8. Bloom Overlay — additive light pass for premium luminosity
  *   9. Particles — cached sprite, drawn via drawImage
  */
@@ -531,6 +538,279 @@ function drawCore(
   ctx.fill();
 }
 
+// ── Volumetric Light Rays (god rays behind orb — Canvas 2D fallback) ──
+
+function drawGodRays(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  hsl: { h: number; s: number; l: number },
+  time: number,
+  valence: number,
+  isDark: boolean,
+) {
+  const prevComposite = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'lighter';
+
+  const rayCount = 10;
+  const rayRotation = time * 0.03;
+  const rayLength = radius * mapRange(valence, -1, 1, 1.2, 2.0);
+  const rayWidth = Math.PI / 18; // ~10° arc per ray
+  const baseAlpha = mapRange(valence, -1, 1, 0.04, 0.12) * (isDark ? 1.4 : 1.0);
+
+  for (let i = 0; i < rayCount; i++) {
+    const angle = rayRotation + (i / rayCount) * Math.PI * 2;
+    // Noise-driven per-ray flicker
+    const flicker = 0.6 + noise2d(i * 7.3, time * 0.2) * 0.4;
+    const alpha = baseAlpha * flicker;
+
+    const g = ctx.createRadialGradient(cx, cy, radius * 0.4, cx, cy, rayLength);
+    g.addColorStop(0, hsla(hsl.h, hsl.s * 0.5, hsl.l + 20, alpha));
+    g.addColorStop(0.5, hsla(hsl.h, hsl.s * 0.4, hsl.l + 10, alpha * 0.4));
+    g.addColorStop(1, hsla(hsl.h, hsl.s * 0.3, hsl.l, 0));
+
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, rayLength, angle - rayWidth, angle + rayWidth);
+    ctx.closePath();
+    ctx.fillStyle = g;
+    ctx.fill();
+  }
+
+  ctx.globalCompositeOperation = prevComposite;
+}
+
+// ── Iridescence Layer (thin-film shimmer — Canvas 2D fallback) ──
+
+function drawIridescence(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  hsl: { h: number; s: number; l: number },
+  time: number,
+  valence: number,
+  isDark: boolean,
+) {
+  const prevComposite = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = isDark ? 'lighter' : 'overlay';
+
+  // Two hue-shifted overlays simulating thin-film spectral bands
+  const alpha = mapRange(valence, -1, 1, 0.05, 0.10) * (isDark ? 1.3 : 1.0);
+  const innerR = radius * 0.65;
+  const outerR = radius * 1.0;
+  const breathShift = Math.sin(time * 0.7) * 3; // subtle oscillation
+
+  // Band 1: hue + 60° (toward complementary)
+  const g1 = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+  g1.addColorStop(0, hsla(hsl.h + 60 + breathShift, hsl.s * 0.6, hsl.l + 15, 0));
+  g1.addColorStop(0.4, hsla(hsl.h + 60 + breathShift, hsl.s * 0.7, hsl.l + 20, alpha * 0.7));
+  g1.addColorStop(0.75, hsla(hsl.h + 120 + breathShift, hsl.s * 0.5, hsl.l + 10, alpha));
+  g1.addColorStop(1, hsla(hsl.h + 180 + breathShift, hsl.s * 0.4, hsl.l, 0));
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
+  ctx.fillStyle = g1;
+  ctx.fill();
+
+  // Band 2: hue - 40° (opposite direction), offset phase
+  const g2 = ctx.createRadialGradient(cx, cy, innerR * 0.9, cx, cy, outerR * 0.95);
+  g2.addColorStop(0, hsla(hsl.h - 40 - breathShift, hsl.s * 0.5, hsl.l + 12, 0));
+  g2.addColorStop(0.5, hsla(hsl.h - 40 - breathShift, hsl.s * 0.6, hsl.l + 18, alpha * 0.5));
+  g2.addColorStop(1, hsla(hsl.h - 80 - breathShift, hsl.s * 0.3, hsl.l, 0));
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, outerR * 0.95, 0, Math.PI * 2);
+  ctx.fillStyle = g2;
+  ctx.fill();
+
+  ctx.globalCompositeOperation = prevComposite;
+}
+
+// ── Aurora Spectral Bands (flowing color streams — Canvas 2D fallback) ──
+
+function drawAuroraBands(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  hsl: { h: number; s: number; l: number },
+  time: number,
+  valence: number,
+  isDark: boolean,
+) {
+  const prevComposite = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'overlay';
+
+  const alpha = mapRange(valence, -1, 1, 0.08, 0.14) * (isDark ? 1.2 : 1.0);
+
+  // Band 1: drifting elliptical gradient (diagonal flow)
+  const drift1x = noise2d(time * 0.08, 20) * radius * 0.3;
+  const drift1y = noise2d(time * 0.06 + 50, 20) * radius * 0.3;
+  const g1 = ctx.createRadialGradient(
+    cx + drift1x, cy + drift1y, 0,
+    cx + drift1x, cy + drift1y, radius * 0.8,
+  );
+  g1.addColorStop(0, hsla(hsl.h + 40, hsl.s * 0.8, hsl.l + 15, alpha));
+  g1.addColorStop(0.5, hsla(hsl.h + 40, hsl.s * 0.6, hsl.l + 8, alpha * 0.4));
+  g1.addColorStop(1, hsla(hsl.h + 40, hsl.s * 0.4, hsl.l, 0));
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fillStyle = g1;
+  ctx.fill();
+
+  // Band 2: opposite drift (vertical flow)
+  const drift2x = noise2d(time * 0.06 + 100, 30) * radius * 0.25;
+  const drift2y = noise2d(time * 0.08 + 150, 30) * radius * 0.25;
+  const g2 = ctx.createRadialGradient(
+    cx + drift2x, cy + drift2y, 0,
+    cx + drift2x, cy + drift2y, radius * 0.7,
+  );
+  g2.addColorStop(0, hsla(hsl.h - 30, hsl.s * 0.7, hsl.l + 12, alpha * 0.7));
+  g2.addColorStop(0.5, hsla(hsl.h - 30, hsl.s * 0.5, hsl.l + 5, alpha * 0.3));
+  g2.addColorStop(1, hsla(hsl.h - 30, hsl.s * 0.3, hsl.l, 0));
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fillStyle = g2;
+  ctx.fill();
+
+  ctx.globalCompositeOperation = prevComposite;
+}
+
+// ── Caustic Light Patterns (swimming refraction — Canvas 2D fallback) ──
+
+function drawCaustics(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  hsl: { h: number; s: number; l: number },
+  time: number,
+  valence: number,
+  isDark: boolean,
+) {
+  const prevComposite = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'lighter';
+
+  const baseAlpha = mapRange(valence, -1, 1, 0.03, 0.09) * (isDark ? 1.3 : 1.0);
+  const causticCount = 6;
+  const r = radius * 0.7;
+
+  for (let i = 0; i < causticCount; i++) {
+    const phase = (i / causticCount) * Math.PI * 2;
+    const drift = time * 0.15 + phase;
+    const ox = Math.sin(drift) * r * 0.3;
+    const oy = Math.cos(drift * 0.8 + 1.2) * r * 0.3;
+    const spotR = r * (0.2 + Math.sin(drift * 1.5 + i) * 0.1);
+    const alpha = baseAlpha * (0.6 + Math.sin(drift * 2.0 + i * 1.3) * 0.4);
+
+    const g = ctx.createRadialGradient(cx + ox, cy + oy, 0, cx + ox, cy + oy, spotR);
+    g.addColorStop(0, hsla(hsl.h, hsl.s * 0.15, 98, alpha));
+    g.addColorStop(0.4, hsla(hsl.h, hsl.s * 0.3, hsl.l + 25, alpha * 0.5));
+    g.addColorStop(1, hsla(hsl.h, hsl.s * 0.2, hsl.l + 10, 0));
+
+    ctx.beginPath();
+    ctx.arc(cx + ox, cy + oy, spotR, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+  }
+
+  ctx.globalCompositeOperation = prevComposite;
+}
+
+// ── Inner Depth Luminance (pulsating concentric glow — Canvas 2D fallback) ──
+
+function drawInnerDepth(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  hsl: { h: number; s: number; l: number },
+  time: number,
+  valence: number,
+  isDark: boolean,
+) {
+  const prevComposite = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'lighter';
+
+  const depthPulse = Math.sin(time * 1.5) * 0.3 + 0.7;
+  const depthStr = mapRange(valence, -1, 1, 0.4, 1.2);
+
+  // Zone 1: tight pulsating core
+  const z1R = radius * 0.35;
+  const z1Alpha = 0.12 * depthPulse * depthStr * (isDark ? 1.3 : 1.0);
+  const g1 = ctx.createRadialGradient(cx, cy, 0, cx, cy, z1R);
+  g1.addColorStop(0, hsla(hsl.h, hsl.s * 0.2, 99, z1Alpha));
+  g1.addColorStop(0.4, hsla(hsl.h, hsl.s * 0.5, hsl.l + 30, z1Alpha * 0.6));
+  g1.addColorStop(1, hsla(hsl.h, hsl.s * 0.4, hsl.l + 15, 0));
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, z1R, 0, Math.PI * 2);
+  ctx.fillStyle = g1;
+  ctx.fill();
+
+  // Zone 2: wider ambient glow (counter-phase)
+  const z2R = radius * 0.6;
+  const z2Alpha = 0.07 * (1.0 - depthPulse * 0.3) * depthStr * (isDark ? 1.2 : 1.0);
+  const g2 = ctx.createRadialGradient(cx, cy, 0, cx, cy, z2R);
+  g2.addColorStop(0, hsla(hsl.h, hsl.s * 0.3, hsl.l + 25, z2Alpha));
+  g2.addColorStop(0.5, hsla(hsl.h, hsl.s * 0.5, hsl.l + 15, z2Alpha * 0.4));
+  g2.addColorStop(1, hsla(hsl.h, hsl.s * 0.3, hsl.l + 5, 0));
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, z2R, 0, Math.PI * 2);
+  ctx.fillStyle = g2;
+  ctx.fill();
+
+  ctx.globalCompositeOperation = prevComposite;
+}
+
+// ── Chromatic Dispersion (prismatic edge fringe — Canvas 2D fallback) ──
+
+function drawChromaticDispersion(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  _hsl: { h: number; s: number; l: number },
+  valence: number,
+  isDark: boolean,
+) {
+  const prevComposite = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'lighter';
+
+  // Prismatic fringe: red shifted outward, blue shifted inward
+  const fringe = radius * mapRange(valence, -1, 1, 0.04, 0.02); // stronger at negative
+  const alpha = (isDark ? 0.08 : 0.05);
+
+  // Red fringe (outer)
+  const gR = ctx.createRadialGradient(cx, cy, radius - fringe, cx, cy, radius + fringe * 0.5);
+  gR.addColorStop(0, `rgba(0,0,0,0)`);
+  gR.addColorStop(0.4, `rgba(255,120,80,${alpha})`);
+  gR.addColorStop(1, `rgba(255,80,40,0)`);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius + fringe, 0, Math.PI * 2);
+  ctx.fillStyle = gR;
+  ctx.fill();
+
+  // Blue fringe (inner)
+  const gB = ctx.createRadialGradient(cx, cy, radius - fringe * 2, cx, cy, radius);
+  gB.addColorStop(0, `rgba(0,0,0,0)`);
+  gB.addColorStop(0.5, `rgba(80,140,255,${alpha * 0.8})`);
+  gB.addColorStop(1, `rgba(60,100,255,0)`);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fillStyle = gB;
+  ctx.fill();
+
+  ctx.globalCompositeOperation = prevComposite;
+}
+
 // ── Layer 8: Bloom Overlay (additive light pass) ──
 
 function drawBloom(
@@ -759,6 +1039,9 @@ export function drawOrbScene(
   // Layer 1: Deep aura (wider, stronger)
   drawAura(ctx, cx, cy, baseRadius * 1.85, shimmerHSL, time, isDark);
 
+  // Layer 1.5: Volumetric light rays (god rays behind orb)
+  drawGodRays(ctx, cx, cy, baseRadius, shimmerHSL, time, valence, isDark);
+
   // Layer 2: Shape glow shadow (depth beneath main shape)
   drawShapeShadow(
     ctx, cx, cy, baseRadius * 1.0, shape, time,
@@ -837,11 +1120,26 @@ export function drawOrbScene(
   // Layer 7: Luminous core — SHARP
   drawCore(ctx, cx, cy, baseRadius * 0.36, shimmerHSL, time, isDark);
 
+  // Layer 7.2: Inner depth luminance — pulsating concentric celestial glow
+  drawInnerDepth(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, valence, isDark);
+
+  // Layer 7.4: Caustic light patterns — swimming refraction spots
+  drawCaustics(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, valence, isDark);
+
   // Layer 7.5: Specular highlight — 3D sphere illusion
   drawSpecularHighlight(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, isDark);
 
+  // Layer 7.6: Iridescence — thin-film rainbow shimmer at edges
+  drawIridescence(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, valence, isDark);
+
+  // Layer 7.65: Chromatic dispersion — prismatic RGB edge fringe
+  drawChromaticDispersion(ctx, cx, cy, baseRadius * 0.90, shimmerHSL, valence, isDark);
+
   // Layer 7.7: Rim light — secondary light source (bottom-right)
   drawRimLight(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, isDark);
+
+  // Layer 7.8: Aurora spectral bands — flowing color streams
+  drawAuroraBands(ctx, cx, cy, baseRadius * 0.80, shimmerHSL, time, valence, isDark);
 
   // Layer 8: Bloom overlay — additive glow for premium luminosity
   drawBloom(ctx, cx, cy, baseRadius * 0.70, shimmerHSL, time, isDark);
