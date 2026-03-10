@@ -1,4 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
+const packageJson = require('../package.json') as { version: string };
 
 /**
  * Smoke Tests - Basic app functionality verification
@@ -12,7 +16,7 @@ import { test, expect } from '@playwright/test';
 // useIndexedDB falls back to localStorage when IndexedDB has no data yet.
 // addInitScript runs before page scripts, ensuring values are ready for React.
 test.beforeEach(async ({ page }) => {
-  await page.addInitScript(() => {
+  await page.addInitScript((appVersion: string) => {
     localStorage.setItem('zenflow-language-selected', JSON.stringify(true));
     localStorage.setItem('zenflow-google-auth-checked', JSON.stringify(true));
     localStorage.setItem('zenflow-tutorial-complete', JSON.stringify(true));
@@ -28,7 +32,9 @@ test.beforeEach(async ({ page }) => {
     localStorage.setItem('zenflow_last_active', new Date().toISOString().split('T')[0]);
     // Prevent weekly report modal from auto-showing (triggers on Mondays)
     localStorage.setItem('zenflow-last-weekly-report', new Date().toISOString());
-  });
+    // Prevent What's New modal from blocking UI (suppress for current version)
+    localStorage.setItem('zenflow_last_seen_version', appVersion);
+  }, packageJson.version);
 });
 
 test.describe('App Smoke Tests', () => {
@@ -433,7 +439,7 @@ test.describe('Empty States', () => {
     });
 
     // Clear localStorage but re-set all onboarding bypass keys so we can access the app
-    await page.evaluate(() => {
+    await page.evaluate((appVersion: string) => {
       localStorage.clear();
       localStorage.setItem('zenflow-language-selected', JSON.stringify(true));
       localStorage.setItem('zenflow-google-auth-checked', JSON.stringify(true));
@@ -442,7 +448,8 @@ test.describe('Empty States', () => {
       localStorage.setItem('zenflow-notification-permission-checked', JSON.stringify(true));
       localStorage.setItem('zenflow-privacy', JSON.stringify({ noTracking: false, analytics: false, consentShown: true }));
       localStorage.setItem('zenflow-last-weekly-report', new Date().toISOString());
-    });
+      localStorage.setItem('zenflow_last_seen_version', appVersion);
+    }, packageJson.version);
 
     // Reload the page to start fresh
     await page.reload();
