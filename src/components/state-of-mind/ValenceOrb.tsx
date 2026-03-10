@@ -15,7 +15,7 @@
  * Pattern source: GrowthRingsCanvas.tsx
  */
 
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, memo } from 'react';
 import { shouldAnimate } from '@/lib/animationUtils';
 import { createParticlePool, updateParticles } from './particleSystem';
 import { drawOrbScene } from './orbRenderer';
@@ -31,7 +31,7 @@ interface ValenceOrbProps {
 const FRAME_INTERVAL = 1000 / 30; // 30fps
 const PARTICLE_COUNT = 22;
 
-export function ValenceOrb({ valence, size = 192 }: ValenceOrbProps) {
+export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: ValenceOrbProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
@@ -232,4 +232,4 @@ export function ValenceOrb({ valence, size = 192 }: ValenceOrbProps) {
       />
     </div>
   );
-}
+});
