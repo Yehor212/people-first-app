@@ -227,8 +227,10 @@ describe("calculateStreak", () => {
 
   it("calculates streak from consecutive dates", () => {
     const today = getToday();
-    const yesterday = formatDate(new Date(Date.now() - 86400000));
-    const twoDaysAgo = formatDate(new Date(Date.now() - 2 * 86400000));
+    const d1 = new Date(); d1.setDate(d1.getDate() - 1);
+    const yesterday = formatDate(d1);
+    const d2 = new Date(); d2.setDate(d2.getDate() - 2);
+    const twoDaysAgo = formatDate(d2);
     const streak = calculateStreak([today, yesterday, twoDaysAgo]);
     expect(streak).toBe(3);
   });
@@ -239,19 +241,23 @@ describe("calculateStreak", () => {
   });
 
   it("returns 1 for yesterday only", () => {
-    const yesterday = formatDate(new Date(Date.now() - 86400000));
+    const d = new Date(); d.setDate(d.getDate() - 1);
+    const yesterday = formatDate(d);
     expect(calculateStreak([yesterday])).toBe(1);
   });
 
   it("returns 0 if most recent date is before yesterday", () => {
-    const twoDaysAgo = formatDate(new Date(Date.now() - 2 * 86400000));
+    const d = new Date(); d.setDate(d.getDate() - 2);
+    const twoDaysAgo = formatDate(d);
     expect(calculateStreak([twoDaysAgo])).toBe(0);
   });
 
   it("handles unsorted dates", () => {
     const today = getToday();
-    const yesterday = formatDate(new Date(Date.now() - 86400000));
-    const twoDaysAgo = formatDate(new Date(Date.now() - 2 * 86400000));
+    const d1 = new Date(); d1.setDate(d1.getDate() - 1);
+    const yesterday = formatDate(d1);
+    const d2 = new Date(); d2.setDate(d2.getDate() - 2);
+    const twoDaysAgo = formatDate(d2);
     // Unsorted order
     const streak = calculateStreak([twoDaysAgo, today, yesterday]);
     expect(streak).toBe(3);
@@ -259,7 +265,8 @@ describe("calculateStreak", () => {
 
   it("breaks streak on gap", () => {
     const today = getToday();
-    const threeDaysAgo = formatDate(new Date(Date.now() - 3 * 86400000));
+    const d = new Date(); d.setDate(d.getDate() - 3);
+    const threeDaysAgo = formatDate(d);
     // Gap of 2 days
     expect(calculateStreak([today, threeDaysAgo])).toBe(1);
   });

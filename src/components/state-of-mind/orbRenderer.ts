@@ -16,21 +16,152 @@
  *   Rich gradient fills create depth. Multiple glow layers create bloom.
  *   Additive blending creates the illusion of emitted light.
  *
- * 9 visual layers (back to front):
- *   1. Deep Aura — wide diffuse ambient glow
+ * 11 visual layers (back to front):
+ *   0. Cached Glow Layer — real shadowBlur on offscreen canvas (~0ms/frame)
+ *   1. Deep Aura — wide diffuse ambient glow with drifting sub-gradients
  *   2. Shape Glow Shadow — soft under-shape for depth
- *   3. Outer Shape Ring — rich gradient fill + soft glow stroke
- *   4. Middle Shape Ring — counter-rotated, brighter fill
- *   5. Inner Shape Ring — most opaque, strongest color
+ *   3. Envelope Glow — atmospheric edge falloff (no strokes)
+ *   4. Primary Solid Body — THE orb, high alpha, 3D-lit gradient fill
+ *   5. Inner Luminosity — additive blending for subsurface glow
  *   6. Rose Curve Overlay — thin inner mandala lines
- *   7. Luminous Core — large bright center with bloom
- *   8. Bloom Overlay — additive light pass for premium glow
- *   9. Particles — soft floating glow orbs
+ *   7. Luminous Core — large bright center
+ *  7.5. Specular Highlight — bright 3D sphere reflection spot
+ *   8. Bloom Overlay — additive light pass for premium luminosity
+ *   9. Particles — cached sprite, drawn via drawImage
  */
 
 import { noise2d } from './noise2d';
 import { valenceToHSL } from './colorUtils';
 import type { Particle } from './particleSystem';
+
+// ── Cached Glow Layer (offscreen canvas with real shadowBlur) ──
+// Re-rendered only when hue or radius changes significantly.
+// Cost per frame: single drawImage call (~0ms).
+
+let _glowCache: HTMLCanvasElement | null = null;
+let _glowCacheKey = '';
+
+function getOrCreateGlowCache(
+  radius: number,
+  hsl: { h: number; s: number; l: number },
+  isDark: boolean,
+): HTMLCanvasElement {
+  const key = `${Math.round(radius)}_${Math.round(hsl.h)}_${isDark ? 1 : 0}`;
+  if (_glowCache && _glowCacheKey === key) return _glowCache;
+
+  const blurR = radius * 0.45;
+  const padding = blurR * 2;
+  const canvasSize = Math.ceil((radius + padding) * 2);
+
+  const canvas = document.createElement('canvas');
+  canvas.width = canvasSize;
+  canvas.height = canvasSize;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return canvas;
+
+  const cx = canvasSize / 2;
+  const cy = canvasSize / 2;
+
+  // Real Gaussian-like glow via shadowBlur (rendered once, cached)
+  ctx.shadowColor = hsla(hsl.h, hsl.s * 0.7, hsl.l + 18, isDark ? 0.55 : 0.35);
+  ctx.shadowBlur = blurR;
+  ctx.shadowOffsetX = 0;
+  ctx.shadowOffsetY = 0;
+
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+  grad.addColorStop(0, hsla(hsl.h, hsl.s * 0.5, hsl.l + 22, 0.50));
+  grad.addColorStop(0.35, hsla(hsl.h, hsl.s * 0.45, hsl.l + 14, 0.30));
+  grad.addColorStop(0.65, hsla(hsl.h, hsl.s * 0.35, hsl.l + 6, 0.12));
+  grad.addColorStop(1, hsla(hsl.h, hsl.s * 0.2, hsl.l, 0));
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
+
+  _glowCache = canvas;
+  _glowCacheKey = key;
+  return canvas;
+}
+
+// ── Cached Particle Sprite (single glow dot, drawn via drawImage) ──
+
+// ── Reusable Offscreen Canvas for soft-edge body composite ──
+// Persists across frames to avoid GC churn. Resized only when needed.
+
+let _bodyOffscreen: HTMLCanvasElement | null = null;
+let _bodyOffscreenSize = 0;
+
+function getBodyOffscreen(needed: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } | null {
+  const size = Math.ceil(needed);
+  if (!_bodyOffscreen || _bodyOffscreenSize < size) {
+    _bodyOffscreen = document.createElement('canvas');
+    _bodyOffscreen.width = size;
+    _bodyOffscreen.height = size;
+    _bodyOffscreenSize = size;
+  }
+  const ctx = _bodyOffscreen.getContext('2d');
+  if (!ctx) return null;
+  ctx.clearRect(0, 0, _bodyOffscreen.width, _bodyOffscreen.height);
+  return { canvas: _bodyOffscreen, ctx };
+}
+
+let _particleSprite: HTMLCanvasElement | null = null;
+let _particleSpriteKey = '';
+let _particleSpriteBlur: HTMLCanvasElement | null = null;
+let _particleSpriteBlurKey = '';
+
+function getOrCreateParticleSprites(
+  hsl: { h: number; s: number; l: number },
+  isDark: boolean,
+): { sharp: HTMLCanvasElement; soft: HTMLCanvasElement } {
+  const key = `${Math.round(hsl.h)}_${isDark ? 1 : 0}`;
+
+  if (_particleSprite && _particleSpriteKey === key &&
+      _particleSpriteBlur && _particleSpriteBlurKey === key) {
+    return { sharp: _particleSprite, soft: _particleSpriteBlur };
+  }
+
+  const spriteSize = 32;
+
+  // Sharp sprite
+  const sharpCanvas = document.createElement('canvas');
+  sharpCanvas.width = spriteSize;
+  sharpCanvas.height = spriteSize;
+  const sharpCtx = sharpCanvas.getContext('2d');
+  if (sharpCtx) {
+    const c = spriteSize / 2;
+    const r = spriteSize / 2;
+    const grad = sharpCtx.createRadialGradient(c, c, 0, c, c, r);
+    grad.addColorStop(0, hsla(hsl.h, hsl.s * 0.15, 98, 1.0));
+    grad.addColorStop(0.18, hsla(hsl.h, hsl.s * 0.30, 93, 0.75));
+    grad.addColorStop(0.45, hsla(hsl.h, hsl.s * 0.50, hsl.l + 22, 0.38));
+    grad.addColorStop(1, hsla(hsl.h, hsl.s, hsl.l, 0));
+    sharpCtx.fillStyle = grad;
+    sharpCtx.beginPath();
+    sharpCtx.arc(c, c, r, 0, Math.PI * 2);
+    sharpCtx.fill();
+  }
+
+  // Soft (blurred) sprite for depth-of-field on inner particles
+  const softCanvas = document.createElement('canvas');
+  const softSize = spriteSize + 8; // extra padding for blur spread
+  softCanvas.width = softSize;
+  softCanvas.height = softSize;
+  const softCtx = softCanvas.getContext('2d');
+  if (softCtx) {
+    softCtx.filter = 'blur(2px)';
+    softCtx.drawImage(sharpCanvas, 4, 4); // center with 4px padding
+    softCtx.filter = 'none';
+  }
+
+  _particleSprite = sharpCanvas;
+  _particleSpriteKey = key;
+  _particleSpriteBlur = softCanvas;
+  _particleSpriteBlurKey = key;
+
+  return { sharp: sharpCanvas, soft: softCanvas };
+}
 
 export interface OrbSceneParams {
   valence: number;
@@ -62,7 +193,7 @@ const SHAPE_PRESETS: { valence: number; p: ShapeParams }[] = [
   { valence:  1.0, p: { m: 5, n1: 0.55, n2: 1.75, n3: 1.75 } }, // puffy flower
 ];
 
-function getShapeParams(valence: number): ShapeParams {
+export function getShapeParams(valence: number): ShapeParams {
   const v = Math.max(-1, Math.min(1, valence));
 
   let lower = SHAPE_PRESETS[0];
@@ -197,7 +328,7 @@ function drawAura(
   time: number,
   isDark: boolean,
 ) {
-  const baseAlpha = isDark ? 0.28 : 0.18;
+  const baseAlpha = isDark ? 0.35 : 0.22;
   const breathAlpha = baseAlpha + Math.sin(time * 0.8) * 0.04;
 
   // Primary wide glow
@@ -208,7 +339,9 @@ function drawAura(
   g.addColorStop(0.6, hsla(hsl.h, hsl.s * 0.35, hsl.l + 5, breathAlpha * 0.35));
   g.addColorStop(1, hsla(hsl.h, hsl.s * 0.2, hsl.l, 0));
   ctx.fillStyle = g;
-  ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+  ctx.beginPath();
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+  ctx.fill();
 
   // Drifting sub-gradient for color shimmer (hue offset)
   const phase = time * 0.18;
@@ -225,7 +358,9 @@ function drawAura(
   g2.addColorStop(0.4, hsla(hsl.h + 25, hsl.s * 0.6, hsl.l + 12, subAlpha * 0.5));
   g2.addColorStop(1, hsla(hsl.h + 25, hsl.s, hsl.l, 0));
   ctx.fillStyle = g2;
-  ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+  ctx.beginPath();
+  ctx.arc(cx + offsetX, cy + offsetY, subR, 0, Math.PI * 2);
+  ctx.fill();
 
   // Third sub-glow for extra vibrancy in dark mode
   if (isDark) {
@@ -239,16 +374,20 @@ function drawAura(
     g3.addColorStop(0, hsla(hsl.h - 15, hsl.s * 0.7, hsl.l + 18, subAlpha * 0.4));
     g3.addColorStop(1, hsla(hsl.h - 15, hsl.s * 0.4, hsl.l, 0));
     ctx.fillStyle = g3;
-    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+    ctx.beginPath();
+    ctx.arc(cx + ox2, cy + oy2, subR * 0.8, 0, Math.PI * 2);
+    ctx.fill();
   }
 }
 
-// ── Layers 3-5: Shape Rings (RICH gradient fills) ──
+// ── Shape Fill (volumetric blob rendering) ──
 
 /**
- * Draw one concentric ring: superformula shape + rich gradient fill + dual-stroke edges.
+ * Draw a superformula shape with rich gradient fill.
+ * strokeMode: 'glow' = soft outer glow only, 'none' = fill only.
+ * compositeOp: optional override (e.g. 'lighter' for inner luminosity).
  */
-function drawShapeRing(
+function drawShapeFill(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
@@ -258,13 +397,14 @@ function drawShapeRing(
   rotation: number,
   breathScale: number,
   fillAlpha: number,
-  edgeAlpha: number,
   hsl: { h: number; s: number; l: number },
   noiseAmp: number,
   noiseSpeed: number,
   isDark: boolean,
   hueShift: number,
   seed: number,
+  strokeMode: 'glow' | 'none' = 'none',
+  compositeOp?: GlobalCompositeOperation,
 ) {
   const h = hsl.h + hueShift;
 
@@ -273,39 +413,39 @@ function drawShapeRing(
     breathScale, noiseAmp, noiseSpeed, seed,
   );
 
-  // Rich radial gradient fill — center offset toward light source (top-left)
-  const lightOffX = -baseRadius * 0.12;
-  const lightOffY = -baseRadius * 0.12;
-  const gradOuter = baseRadius * 1.15;
+  const prevComposite = ctx.globalCompositeOperation;
+  if (compositeOp) ctx.globalCompositeOperation = compositeOp;
+
+  // Rich radial gradient fill — strong 3D lighting offset (top-left light source)
+  const lightOffX = -baseRadius * 0.25;
+  const lightOffY = -baseRadius * 0.25;
+  const gradOuter = baseRadius * 1.18;
   const grad = ctx.createRadialGradient(
     cx + lightOffX, cy + lightOffY, baseRadius * 0.02,
     cx, cy, gradOuter,
   );
-  const coreLightness = isDark ? Math.min(98, hsl.l + 40) : Math.min(96, hsl.l + 32);
-  grad.addColorStop(0, hsla(h, hsl.s * 0.4, coreLightness, fillAlpha));
-  grad.addColorStop(0.15, hsla(h, hsl.s * 0.7, hsl.l + 25, fillAlpha * 0.92));
-  grad.addColorStop(0.35, hsla(h, hsl.s * 0.85, hsl.l + 15, fillAlpha * 0.75));
-  grad.addColorStop(0.55, hsla(h, hsl.s * 0.8, hsl.l + 8, fillAlpha * 0.50));
-  grad.addColorStop(0.75, hsla(h, hsl.s * 0.6, hsl.l + 3, fillAlpha * 0.25));
-  grad.addColorStop(1, hsla(h, hsl.s * 0.4, hsl.l, fillAlpha * 0.04));
+  const coreLightness = isDark ? Math.min(98, hsl.l + 45) : Math.min(97, hsl.l + 38);
+  grad.addColorStop(0, hsla(h, hsl.s * 0.20, coreLightness, fillAlpha));
+  grad.addColorStop(0.12, hsla(h, hsl.s * 0.45, hsl.l + 35, fillAlpha * 0.97));
+  grad.addColorStop(0.30, hsla(h, hsl.s * 0.75, hsl.l + 22, fillAlpha * 0.90));
+  grad.addColorStop(0.50, hsla(h, hsl.s * 0.90, hsl.l + 10, fillAlpha * 0.75));
+  grad.addColorStop(0.72, hsla(h, hsl.s * 0.85, hsl.l, fillAlpha * 0.45));
+  grad.addColorStop(0.90, hsla(h, hsl.s * 0.60, hsl.l - 5, fillAlpha * 0.15));
+  grad.addColorStop(1, hsla(h, hsl.s * 0.4, hsl.l - 8, 0));
 
-  // Trace path → fill with rich gradient
   traceShapePath(ctx, points);
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // Outer glow stroke — soft, wide, for atmosphere
-  const glowL = isDark ? Math.min(98, hsl.l + 35) : Math.min(96, hsl.l + 28);
-  ctx.strokeStyle = hsla(h, hsl.s * 0.3, glowL, edgeAlpha * 0.4);
-  ctx.lineWidth = baseRadius * 0.04;
-  ctx.stroke();
+  // Optional soft glow stroke (atmospheric edge, no crisp rim)
+  if (strokeMode === 'glow') {
+    const glowL = isDark ? Math.min(98, hsl.l + 35) : Math.min(96, hsl.l + 28);
+    ctx.strokeStyle = hsla(h, hsl.s * 0.3, glowL, isDark ? 0.22 : 0.15);
+    ctx.lineWidth = baseRadius * 0.035;
+    ctx.stroke();
+  }
 
-  // Inner crisp edge — thin, bright, for definition
-  const rimL = isDark ? Math.min(99, hsl.l + 45) : Math.min(97, hsl.l + 35);
-  traceShapePath(ctx, points);
-  ctx.strokeStyle = hsla(h, hsl.s * 0.25, rimL, edgeAlpha * 0.85);
-  ctx.lineWidth = baseRadius * 0.015;
-  ctx.stroke();
+  if (compositeOp) ctx.globalCompositeOperation = prevComposite;
 }
 
 // ── Layer 6: Rose Curve Overlay ──
@@ -326,7 +466,7 @@ function drawRoseCurve(
 ) {
   // k mapping: complex (negative) → simple (positive)
   const k = mapRange(valence, -1, 1, 2.333, 5.0);
-  const roseAlpha = isDark ? 0.18 : 0.12;
+  const roseAlpha = isDark ? 0.08 : 0.05;
 
   // Slow independent rotation
   const roseRotation = time * 0.04;
@@ -346,7 +486,7 @@ function drawRoseCurve(
   }
 
   ctx.strokeStyle = hsla(hsl.h, hsl.s * 0.4, Math.min(97, hsl.l + 30), roseAlpha);
-  ctx.lineWidth = radius * 0.016;
+  ctx.lineWidth = radius * 0.008;
   ctx.stroke();
 }
 
@@ -422,7 +562,86 @@ function drawBloom(
   ctx.globalCompositeOperation = prevComposite;
 }
 
-// ── Layer 9: Particles (soft glow orbs) ──
+// ── Specular Highlight (3D sphere illusion) ──
+
+/**
+ * Bright highlight spot offset toward the light source.
+ * Creates the illusion of a reflective 3D surface — the single biggest
+ * visual upgrade for perceived premium quality.
+ */
+function drawSpecularHighlight(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  hsl: { h: number; s: number; l: number },
+  time: number,
+  isDark: boolean,
+) {
+  const highlightR = radius * 0.24;
+  // Light source is top-left, so highlight is offset there
+  const offsetX = -radius * 0.28;
+  const offsetY = -radius * 0.32;
+  // Subtle breathing on the highlight
+  const breathAlpha = 1 + Math.sin(time * 1.1) * 0.08;
+
+  const alpha = (isDark ? 0.42 : 0.32) * breathAlpha;
+
+  const grad = ctx.createRadialGradient(
+    cx + offsetX, cy + offsetY, 0,
+    cx + offsetX, cy + offsetY, highlightR,
+  );
+  grad.addColorStop(0, hsla(hsl.h, hsl.s * 0.08, 99, alpha));
+  grad.addColorStop(0.25, hsla(hsl.h, hsl.s * 0.12, 97, alpha * 0.65));
+  grad.addColorStop(0.55, hsla(hsl.h, hsl.s * 0.20, 93, alpha * 0.25));
+  grad.addColorStop(1, hsla(hsl.h, hsl.s * 0.25, 88, 0));
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx + offsetX, cy + offsetY, highlightR, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// ── Rim Light (secondary light source for 3D depth) ──
+
+/**
+ * Crescent-shaped glow on the bottom-right edge.
+ * Creates 2-point lighting = instant 3D depth upgrade.
+ */
+function drawRimLight(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  hsl: { h: number; s: number; l: number },
+  time: number,
+  isDark: boolean,
+) {
+  const rimR = radius * 0.35;
+  // Secondary light is bottom-right (opposite of specular)
+  const offsetX = radius * 0.30;
+  const offsetY = radius * 0.25;
+  const breathAlpha = 1 + Math.sin(time * 0.9 + 2.0) * 0.06;
+  const alpha = (isDark ? 0.14 : 0.09) * breathAlpha;
+
+  // Warmer hue shift for secondary light (+30°)
+  const rimH = hsl.h + 30;
+
+  const grad = ctx.createRadialGradient(
+    cx + offsetX, cy + offsetY, 0,
+    cx + offsetX, cy + offsetY, rimR,
+  );
+  grad.addColorStop(0, hsla(rimH, hsl.s * 0.5, Math.min(95, hsl.l + 30), alpha));
+  grad.addColorStop(0.35, hsla(rimH, hsl.s * 0.4, Math.min(90, hsl.l + 20), alpha * 0.55));
+  grad.addColorStop(1, hsla(rimH, hsl.s * 0.3, hsl.l + 10, 0));
+
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx + offsetX, cy + offsetY, rimR, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// ── Layer 9: Particles (depth-of-field: sharp outer, soft inner) ──
 
 function drawParticles(
   ctx: CanvasRenderingContext2D,
@@ -430,7 +649,11 @@ function drawParticles(
   hsl: { h: number; s: number; l: number },
   dpr: number,
   isDark: boolean,
+  orbCx: number,
+  orbCy: number,
+  orbRadius: number,
 ) {
+  const sprites = getOrCreateParticleSprites(hsl, isDark);
   const alphaBoost = isDark ? 0.25 : 0.10;
 
   for (let i = 0; i < particles.length; i++) {
@@ -439,19 +662,22 @@ function drawParticles(
 
     const px = p.x * dpr;
     const py = p.y * dpr;
-    const pr = p.radius * dpr * 2.2;  // 60% larger than before
+    const pr = p.radius * dpr * 2.2;
     const pa = Math.min(1, p.alpha * 0.85 + alphaBoost);
 
-    // Soft glow orb — near-white center → colored middle → transparent edge
-    const grad = ctx.createRadialGradient(px, py, 0, px, py, pr);
-    grad.addColorStop(0, hsla(hsl.h, hsl.s * 0.15, 98, pa));
-    grad.addColorStop(0.20, hsla(hsl.h, hsl.s * 0.35, 92, pa * 0.70));
-    grad.addColorStop(0.50, hsla(hsl.h, hsl.s * 0.55, hsl.l + 20, pa * 0.35));
-    grad.addColorStop(1, hsla(hsl.h, hsl.s, hsl.l, 0));
+    // Depth-of-field: particles closer to center use soft (blurred) sprite
+    const dx = px - orbCx;
+    const dy = py - orbCy;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const useBlur = dist < orbRadius * 0.85;
+    const sprite = useBlur ? sprites.soft : sprites.sharp;
+    const spriteSize = sprite.width;
 
-    ctx.fillStyle = grad;
-    ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
+    ctx.globalAlpha = pa;
+    const drawSize = pr * 2;
+    ctx.drawImage(sprite, 0, 0, spriteSize, spriteSize, px - pr, py - pr, drawSize, drawSize);
   }
+  ctx.globalAlpha = 1;
 }
 
 // ── Layer 2: Shape Glow Shadow (depth anchor beneath shapes) ──
@@ -503,76 +729,123 @@ export function drawOrbScene(
   ctx.clearRect(0, 0, w, h);
 
   // ── Valence-driven animation parameters ──
-  const noiseAmp = 0.05 + Math.abs(valence) * 0.03;
+  // Step 4: More dramatic noise at negative valence (shape writhes)
+  const noiseAmp = 0.04 + (valence < 0 ? Math.abs(valence) * 0.11 : Math.abs(valence) * 0.03);
   const noiseSpeed = mapRange(valence, -1, 1, 0.85, 0.20);
   const rotSpeed = mapRange(valence, -1, 1, 0.055, 0.015);
 
-  const baseRadius = size * 0.38 * dpr;
+  // Valence-driven size: compact at negative, expansive at positive
+  const valenceSizeScale = 1.0 + valence * 0.15; // -1→0.85, 0→1.0, +1→1.15
+  const baseRadius = size * 0.38 * dpr * valenceSizeScale;
+
+  // Living hue shimmer — noise-driven subtle hue modulation over time
+  const hueShimmer = noise2d(time * 0.12, 300) * 8; // ±8° hue drift
+  const shimmerHSL = { h: hsl.h + hueShimmer, s: hsl.s, l: hsl.l };
 
   // ── Layered breath animation (wave from outer to inner) ──
   const outerBreath = 1 + Math.sin(time * 0.9) * 0.025;
-  const midBreath   = 1 + Math.sin(time * 0.9 + 1.0) * 0.020;
-  const innerBreath = 1 + Math.sin(time * 0.9 + 2.0) * 0.015;
+  const bodyBreath  = 1 + Math.sin(time * 0.9 + 0.8) * 0.020;
+  const innerBreath = 1 + Math.sin(time * 0.9 + 1.6) * 0.015;
+
+  // Layer 0: Cached glow layer (real shadowBlur, ~0ms per frame)
+  const glowCanvas = getOrCreateGlowCache(baseRadius * 1.2, hsl, isDark);
+  const glowPad = (glowCanvas.width - baseRadius * 2.4) / 2;
+  ctx.drawImage(
+    glowCanvas,
+    cx - baseRadius * 1.2 - glowPad,
+    cy - baseRadius * 1.2 - glowPad,
+  );
 
   // Layer 1: Deep aura (wider, stronger)
-  drawAura(ctx, cx, cy, baseRadius * 1.85, hsl, time, isDark);
+  drawAura(ctx, cx, cy, baseRadius * 1.85, shimmerHSL, time, isDark);
 
-  // Layer 2: Shape glow shadow (depth beneath main shapes)
+  // Layer 2: Shape glow shadow (depth beneath main shape)
   drawShapeShadow(
     ctx, cx, cy, baseRadius * 1.0, shape, time,
-    time * rotSpeed, outerBreath, hsl,
+    time * rotSpeed, outerBreath, shimmerHSL,
     noiseAmp, noiseSpeed,
   );
 
-  // Layer 3: Outer shape ring — largest, rich fill, glass edges
-  drawShapeRing(
-    ctx, cx, cy,
-    baseRadius * 1.05, shape, time,
-    time * rotSpeed,            // slow clockwise
-    outerBreath,
-    isDark ? 0.38 : 0.30,      // fill alpha — rich, visible
-    isDark ? 0.50 : 0.38,      // edge alpha — visible glow
-    hsl, noiseAmp, noiseSpeed,
-    isDark, 6, 0,               // hueShift=+6, seed=0
-  );
+  // ── Layers 3-5: Soft-edge body composite ──
+  // Draw envelope + body + inner luminosity onto offscreen canvas,
+  // then composite back with blur for airbrushed edge softness.
+  const bodyExtent = baseRadius * 1.18 * outerBreath + 4; // max extent + blur padding
+  const offscreenSize = Math.ceil(bodyExtent * 2 + 8);
+  const offscreen = getBodyOffscreen(offscreenSize);
 
-  // Layer 4: Middle shape ring — counter-rotated for depth
-  drawShapeRing(
-    ctx, cx, cy,
-    baseRadius * 0.78, shape, time,
-    -time * rotSpeed * 0.55,    // counter-rotation
-    midBreath,
-    isDark ? 0.52 : 0.44,      // fill alpha — strong
-    isDark ? 0.55 : 0.42,      // edge alpha
-    hsl, noiseAmp * 0.7, noiseSpeed * 0.8,
-    isDark, -8, 50,
-  );
+  if (offscreen) {
+    const oc = offscreen.ctx;
+    const ocx = offscreenSize / 2;
+    const ocy = offscreenSize / 2;
 
-  // Layer 5: Inner shape ring — smallest, most opaque
-  drawShapeRing(
-    ctx, cx, cy,
-    baseRadius * 0.55, shape, time,
-    time * rotSpeed * 0.3,      // very slow rotation
-    innerBreath,
-    isDark ? 0.70 : 0.62,      // fill alpha — solid presence
-    isDark ? 0.60 : 0.48,      // edge alpha
-    hsl, noiseAmp * 0.5, noiseSpeed * 0.6,
-    isDark, 0, 100,
-  );
+    // Layer 3: Envelope glow
+    drawShapeFill(
+      oc, ocx, ocy,
+      baseRadius * 1.12, shape, time,
+      time * rotSpeed,
+      outerBreath,
+      isDark ? 0.22 : 0.16,
+      shimmerHSL, noiseAmp, noiseSpeed,
+      isDark, 5, 0,
+      'none',
+    );
 
-  // Layer 6: Rose curve overlay (thin inner mandala)
+    // Layer 4: Primary solid body
+    drawShapeFill(
+      oc, ocx, ocy,
+      baseRadius * 1.0, shape, time,
+      time * rotSpeed,
+      bodyBreath,
+      isDark ? 0.82 : 0.72,
+      shimmerHSL, noiseAmp, noiseSpeed,
+      isDark, 0, 10,
+      'glow',
+    );
+
+    // Layer 5: Inner luminosity
+    drawShapeFill(
+      oc, ocx, ocy,
+      baseRadius * 0.70, shape, time,
+      -time * rotSpeed * 0.4,
+      innerBreath,
+      isDark ? 0.18 : 0.14,
+      shimmerHSL, noiseAmp * 0.5, noiseSpeed * 0.6,
+      isDark, 10, 50,
+      'none',
+      'lighter',
+    );
+
+    // Composite back with soft blur — airbrushed edges
+    const prevFilter = ctx.filter;
+    ctx.filter = 'blur(2px)';
+    ctx.drawImage(
+      offscreen.canvas,
+      0, 0, offscreenSize, offscreenSize,
+      cx - bodyExtent - 4, cy - bodyExtent - 4,
+      offscreenSize, offscreenSize,
+    );
+    ctx.filter = prevFilter;
+  }
+
+  // Layer 6: Rose curve overlay (subtle inner mandala) — SHARP, no blur
   drawRoseCurve(
     ctx, cx, cy,
-    baseRadius * 0.42,          // fits inside inner ring
-    valence, time, hsl, isDark,
+    baseRadius * 0.42,
+    valence, time, shimmerHSL, isDark,
   );
 
-  // Layer 7: Luminous core — larger and brighter
-  drawCore(ctx, cx, cy, baseRadius * 0.36, hsl, time, isDark);
+  // Layer 7: Luminous core — SHARP
+  drawCore(ctx, cx, cy, baseRadius * 0.36, shimmerHSL, time, isDark);
+
+  // Layer 7.5: Specular highlight — 3D sphere illusion
+  drawSpecularHighlight(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, isDark);
+
+  // Layer 7.7: Rim light — secondary light source (bottom-right)
+  drawRimLight(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, isDark);
 
   // Layer 8: Bloom overlay — additive glow for premium luminosity
-  drawBloom(ctx, cx, cy, baseRadius * 0.70, hsl, time, isDark);
+  drawBloom(ctx, cx, cy, baseRadius * 0.70, shimmerHSL, time, isDark);
 
-  // Layer 9: Soft particles
-  drawParticles(ctx, particles, hsl, dpr, isDark);
+  // Layer 9: Depth-of-field particles
+  drawParticles(ctx, particles, shimmerHSL, dpr, isDark, cx, cy, baseRadius);
 }

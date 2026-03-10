@@ -1,25 +1,25 @@
 /**
- * ValenceOrb — Premium Canvas 2D orb for State of Mind valence step.
+ * ValenceOrb — GPU-accelerated orb for State of Mind valence step.
  *
- * Multi-layered living orb that responds to valence (-1 to +1):
- *   - Outer Aura: diffuse glow with drifting light spill
- *   - Middle Blob: organic shape via 2D noise displacement
- *   - Inner Core: bright center with breathing pulse
- *   - Particles: floating glow dots orbiting the shape
+ * Progressive enhancement:
+ *   WebGL available → fragment shader (10/10 quality, 60fps capable)
+ *   WebGL unavailable → Canvas 2D fallback (8/10 quality, 30fps)
  *
- * Drop-in replacement for MorphingBlob (same props interface).
+ * Both paths share the same particle system, shape presets, and color mapping.
  *
  * Law 12 (Performance): 30fps RAF, IntersectionObserver pause, DPR cap at 2x.
- * Law 18 (Cleanup): mounted guard, RAF cancel, observer disconnect.
+ * Law 18 (Cleanup): mounted guard, RAF cancel, observer disconnect, GL dispose.
  * Dopamine gate: shouldAnimate() → static frame if disabled.
- * Pattern source: GrowthRingsCanvas.tsx
  */
 
 import { useRef, useEffect, useState, memo } from 'react';
 import { shouldAnimate } from '@/lib/animationUtils';
 import { createParticlePool, updateParticles } from './particleSystem';
-import { drawOrbScene } from './orbRenderer';
+import { drawOrbScene, getShapeParams } from './orbRenderer';
+import { valenceToHSL } from './colorUtils';
+import { createOrbGL } from './orbShader';
 import type { Particle } from './particleSystem';
+import type { OrbGLRenderer } from './orbShader';
 
 interface ValenceOrbProps {
   /** Current valence value (-1.0 to 1.0) */
@@ -37,6 +37,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
   const rafRef = useRef(0);
   const mountedRef = useRef(true);
   const isVisibleRef = useRef(true);
+  const glRendererRef = useRef<OrbGLRenderer | null>(null);
   const [ctxFailed, setCtxFailed] = useState(false);
 
   // Mutable animation state — avoids React re-renders during animation
@@ -85,12 +86,6 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
     canvas.style.width = `${size}px`;
     canvas.style.height = `${size}px`;
 
-    const ctx = canvas.getContext('2d', { willReadFrequently: false });
-    if (!ctx) {
-      setCtxFailed(true);
-      return;
-    }
-
     // Initialize animation state
     const cx = size / 2;
     const cy = size / 2;
@@ -107,18 +102,52 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
     const isDarkRead = () => document.documentElement.classList.contains('dark');
 
-    const animate = shouldAnimate();
+    // ── Progressive enhancement: try WebGL first ──
+    const glRenderer = createOrbGL(canvas);
+    glRendererRef.current = glRenderer;
 
-    if (!animate) {
-      // Static fallback: single frame, no RAF
-      drawOrbScene(ctx, {
-        valence: valenceRef.current,
-        time: 0,
-        particles: stateRef.current.particles,
+    // Canvas 2D fallback (only if WebGL failed)
+    let ctx2d: CanvasRenderingContext2D | null = null;
+    if (!glRenderer) {
+      ctx2d = canvas.getContext('2d', { willReadFrequently: false });
+      if (!ctx2d) {
+        setCtxFailed(true);
+        return;
+      }
+    }
+
+    // ── Render helpers ──
+    const renderGL = (v: number, t: number, particles: Particle[]) => {
+      glRenderer.render({
+        valence: v,
+        time: t,
+        size,
+        dpr,
+        isDark: isDarkRead(),
+        color: valenceToHSL(v),
+        shape: getShapeParams(v),
+        particles,
+      });
+    };
+
+    const renderCanvas2D = (v: number, t: number, particles: Particle[]) => {
+      drawOrbScene(ctx2d, {
+        valence: v,
+        time: t,
+        particles,
         size,
         dpr,
         isDark: isDarkRead(),
       });
+    };
+
+    const render = glRenderer ? renderGL : renderCanvas2D;
+
+    // ── Animation ──
+    const animate = shouldAnimate();
+
+    if (!animate) {
+      render(valenceRef.current, 0, stateRef.current.particles);
       return;
     }
 
@@ -130,15 +159,8 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
       // Runtime dopamine gate
       if (!shouldAnimate()) {
-        drawOrbScene(ctx, {
-          valence: state.currentValence,
-          time: state.time,
-          particles: state.particles,
-          size,
-          dpr,
-          isDark: isDarkRead(),
-        });
-        return; // Stop RAF
+        render(state.currentValence, state.time, state.particles);
+        return;
       }
 
       // Throttle to 30fps
@@ -164,14 +186,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
       // Draw scene (skip when off-screen)
       if (isVisibleRef.current) {
-        drawOrbScene(ctx, {
-          valence: state.currentValence,
-          time: state.time,
-          particles: state.particles,
-          size,
-          dpr,
-          isDark: isDarkRead(),
-        });
+        render(state.currentValence, state.time, state.particles);
       }
 
       rafRef.current = requestAnimationFrame(loop);
@@ -181,6 +196,8 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      glRendererRef.current?.dispose();
+      glRendererRef.current = null;
     };
   }, [size]);
 
@@ -190,22 +207,35 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d', { willReadFrequently: false });
-    if (!ctx) return;
-
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const state = stateRef.current;
     if (!state) return;
 
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
     state.currentValence = valence;
-    drawOrbScene(ctx, {
-      valence,
-      time: 0,
-      particles: state.particles,
-      size,
-      dpr,
-      isDark: document.documentElement.classList.contains('dark'),
-    });
+
+    if (glRendererRef.current) {
+      glRendererRef.current.render({
+        valence,
+        time: 0,
+        size,
+        dpr,
+        isDark: document.documentElement.classList.contains('dark'),
+        color: valenceToHSL(valence),
+        shape: getShapeParams(valence),
+        particles: state.particles,
+      });
+    } else {
+      const ctx = canvas.getContext('2d', { willReadFrequently: false });
+      if (!ctx) return;
+      drawOrbScene(ctx, {
+        valence,
+        time: 0,
+        particles: state.particles,
+        size,
+        dpr,
+        isDark: document.documentElement.classList.contains('dark'),
+      });
+    }
   }, [valence, size]);
 
   // Context failure fallback

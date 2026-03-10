@@ -101,7 +101,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
-                background: `radial-gradient(circle at 50% 35%, ${valenceToColor(som.valence, 0.12)}, ${valenceToColor(som.valence, 0.04)})`,
+                background: `radial-gradient(circle at 50% 32%, ${valenceToColor(som.valence, 0.22)}, ${valenceToColor(som.valence, 0.08)})`,
                 transition: 'background 300ms ease-out',
               }}
               aria-hidden="true"
@@ -197,7 +197,18 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                   {/* Step: Valence — blob + slider centered */}
                   {som.step === 'valence' && (
                     <div className="flex flex-col items-center justify-center flex-1 gap-6">
-                      <motion.div variants={stepChild}>
+                      <motion.div variants={stepChild} className="relative">
+                        {/* CSS blur backdrop — GPU-accelerated immersive color wash behind orb */}
+                        <div
+                          className="absolute inset-0 rounded-full pointer-events-none"
+                          style={{
+                            background: valenceToColor(som.valence, 0.45),
+                            filter: 'blur(60px)',
+                            transform: 'scale(1.8)',
+                            transition: 'background 300ms ease-out',
+                          }}
+                          aria-hidden="true"
+                        />
                         <ValenceOrb valence={som.valence} size={220} />
                       </motion.div>
                       <motion.div variants={stepChild} className="w-full max-w-sm">
