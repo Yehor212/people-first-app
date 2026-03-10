@@ -677,13 +677,44 @@ Bottom sheets use defensive CSS to prevent WebView stacking context bugs:
 
 ## Testing
 
+### Philosophy: Audit-Driven Development + Selective TDD
+
+We do NOT use pure TDD. Our primary quality gate is the **21 Laws + Mirror Protocol** (audit-driven).
+However, we apply **TDD discipline** (test-first) in two specific areas where it prevents real bugs:
+
+1. **Logic-First Test Rule**: Changing business logic (streaks, achievements, sync, date calculations) **starts with updating the test**. See RED → change code → see GREEN. Prevents test drift (e.g., gamification tests falling out of sync).
+2. **Modal Gate Rule**: Every new modal/overlay that can appear on load **MUST have a bypass** in `e2e/smoke.spec.ts` `beforeEach` BEFORE merging. Prevents CI-blocking overlays (learned from WhatsNew v1.7.2 incident).
+
+Visual components (Canvas, CSS, animations) are NOT tested via TDD — they use the 21 Laws audit + visual review.
+
 ### Strategy
 
 | Layer | Tool | What to test |
 |-------|------|-------------|
 | Unit | Vitest | Pure functions, utilities, store logic |
 | Integration | Vitest + Testing Library | Hooks, store interactions |
-| E2E | (future) Playwright | Critical user flows |
+| E2E | Playwright (chromium) | Critical user flows — `e2e/smoke.spec.ts` |
+
+### Playwright E2E
+
+- **Config**: `playwright.config.ts` — serves `dist/` via `vite preview` in CI, `vite dev` locally
+- **Gate bypass**: `beforeEach` in `smoke.spec.ts` sets localStorage keys to skip onboarding/auth/WhatsNew gates
+- **Key rule**: When adding ANY new auto-showing modal/overlay, add its bypass key to `beforeEach`
+- **CI**: Runs in `build` job on push to `main`. Retries: 1 in CI, 0 locally. Reporter: `github` in CI
+- **Run locally**: `npx playwright test e2e/smoke.spec.ts --project=chromium`
+
+### CI Preflight vs Full CI
+
+| Check | `npm run ci:preflight` (local) | GitHub Actions `build` job |
+|-------|-------------------------------|---------------------------|
+| ESLint | ✅ | ✅ |
+| TypeScript | ✅ | ✅ |
+| i18n check | ✅ | ✅ |
+| Vitest | ✅ | ✅ |
+| Vite build | ✅ | ✅ |
+| **Playwright E2E** | ❌ (must run manually) | ✅ |
+
+**IMPORTANT**: `ci:preflight` does NOT run Playwright. Before pushing changes that add modals/overlays, ALWAYS also run `npx playwright test --project=chromium`.
 
 ### Rules
 
@@ -692,6 +723,8 @@ Bottom sheets use defensive CSS to prevent WebView stacking context bugs:
 3. **Test file location:** `src/__tests__/{module}.test.ts` or co-located `*.test.ts`
 4. **Coverage target:** 40% minimum, 70% for `shared/lib/` and `stores/`
 5. **Test naming:** `describe('functionName', () => { it('should do X when Y', ...) })`
+6. **Modal Gate Test**: Any component that auto-shows on load (WhatsNew, FeatureUnlock, WelcomeBack) MUST have E2E bypass in `smoke.spec.ts` `beforeEach`.
+7. **Logic-First**: When changing pure business logic, update the test expectation FIRST → see it fail → then change code.
 
 ---
 
