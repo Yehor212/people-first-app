@@ -95,7 +95,7 @@ export function WhatsNewModal({ onClose }: WhatsNewModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={handleDismiss}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={handleDismiss}>
       <div
         {...modalProps}
         aria-labelledby="whats-new-title"

@@ -41,7 +41,7 @@ export function CardSkeleton({ height = 'h-24', className }: SuspenseFallbackPro
 export function PageSpinner() {
   return (
     <div
-      className="fixed inset-0 z-50 bg-background flex items-center justify-center"
+      className="fixed inset-0 z-[70] bg-background flex items-center justify-center"
       role="status"
       aria-label="Loading"
     >
@@ -67,7 +67,7 @@ export function InlineSpinner({ className }: { className?: string }) {
 export function ModalSkeleton() {
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"
+      className="fixed inset-0 z-[70] bg-black/50 flex items-center justify-center"
       aria-hidden="true"
       role="presentation"
     >

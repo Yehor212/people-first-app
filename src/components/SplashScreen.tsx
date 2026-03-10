@@ -10,7 +10,7 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
   return (
     <motion.div
       key="loading"
-      className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-background overflow-hidden will-change-transform"
+      className="fixed inset-0 z-[80] flex flex-col items-center justify-center bg-background overflow-hidden will-change-transform"
       animate={{
         opacity: loadingFadeOut ? 0 : 1,
         scale: loadingFadeOut ? 1.02 : 1,

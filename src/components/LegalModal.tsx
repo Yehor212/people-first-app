@@ -54,7 +54,7 @@ export function LegalModal({ open, onOpenChange, initialTab = 'privacy' }: Legal
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
       <div
         className="bg-card rounded-2xl shadow-zen-card w-full max-w-md max-h-[80dvh] flex flex-col overflow-hidden"
         role="dialog"

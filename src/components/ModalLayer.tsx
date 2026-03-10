@@ -111,8 +111,8 @@ export function ModalLayer({
       {/* Widget Settings Modal */}
       {showWidgetSettings && (
         <LazyErrorBoundary componentName="Widget Settings">
-          <Suspense fallback={<div className="fixed inset-0 z-50 bg-background flex items-center justify-center"><PremiumLoader size="lg" /></div>}>
-            <div className="fixed inset-0 z-50 bg-background">
+          <Suspense fallback={<div className="fixed inset-0 z-[70] bg-background flex items-center justify-center"><PremiumLoader size="lg" /></div>}>
+            <div className="fixed inset-0 z-[70] bg-background">
               <WidgetSettings onBack={() => setShowWidgetSettings(false)} />
             </div>
           </Suspense>

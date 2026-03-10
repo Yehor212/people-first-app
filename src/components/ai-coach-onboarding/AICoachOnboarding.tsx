@@ -61,7 +61,7 @@ export function AICoachOnboarding({ onComplete, onSkip }: AICoachOnboardingProps
   const currentStepIndex = steps.indexOf(step);
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-br from-background via-primary/5 to-accent/5 flex items-center justify-center p-4 motion-safe:animate-fade-in">
+    <div className="fixed inset-0 z-[80] bg-gradient-to-br from-background via-primary/5 to-accent/5 flex items-center justify-center p-4 motion-safe:animate-fade-in">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
