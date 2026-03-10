@@ -101,7 +101,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
-                background: `radial-gradient(circle at 50% 35%, ${valenceToColor(som.valence, 0.07)}, ${valenceToColor(som.valence, 0.02)})`,
+                background: `radial-gradient(circle at 50% 35%, ${valenceToColor(som.valence, 0.12)}, ${valenceToColor(som.valence, 0.04)})`,
                 transition: 'background 300ms ease-out',
               }}
               aria-hidden="true"

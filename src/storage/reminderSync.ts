@@ -60,26 +60,12 @@ export const syncReminderSettings = async (
     });
 
     if (error) {
-      // Don't throw on table-related errors - the table might not exist yet in Supabase
-      // This is a non-critical feature, so we log and continue
-      if (error.code === '42P01' || error.message.includes('does not exist')) {
-        reminderSyncDisabled = true;
-        logger.warn('[ReminderSync] Table does not exist, disabling sync for this session');
-        return;
-      }
-
-      // Handle 400 Bad Request errors (schema mismatch, missing columns, etc.)
-      // These are common when migrations haven't been applied yet
-      if (error.code === 'PGRST204' || error.message.includes('violates') ||
-          error.code?.startsWith('PGRST') || error.message.includes('Bad Request')) {
-        reminderSyncDisabled = true;
-        logger.warn('[ReminderSync] Schema mismatch, disabling sync for this session');
-        return;
-      }
-
-      // For other unexpected errors, log with details for debugging
-      logger.error('[ReminderSync] Unexpected error:', error.code, error.message);
-      // Don't throw - reminder sync is not critical
+      // Reminder sync is non-critical (maxRetries: 0).
+      // Any error (missing table, schema mismatch, RLS, 400, etc.)
+      // disables sync for the rest of this session to stop repeated failures.
+      reminderSyncDisabled = true;
+      logger.warn('[ReminderSync] Sync failed, disabled for session:', error.code, error.message);
+      return;
     }
   }, { priority: 7, maxRetries: 0 }); // No retries - settings sync failures shouldn't loop
 };

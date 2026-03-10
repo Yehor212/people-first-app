@@ -3,7 +3,7 @@
  * Extracted from WhatsNewModal.tsx for TD-20 decomposition
  */
 
-import { Sparkles, Shield, Zap, Download, Moon, RefreshCw, MessageSquare, ToggleRight, Bug, Settings } from 'lucide-react';
+import { Sparkles, Shield, Zap, Download, Moon, RefreshCw, MessageSquare, ToggleRight, Bug, Settings, Palette } from 'lucide-react';
 
 export interface ChangelogItem {
   icon: React.ReactNode;
@@ -16,6 +16,29 @@ export interface ChangelogItem {
 
 // Changelog entries by version — exported for SettingsPanel banner
 export const CHANGELOG: Record<string, ChangelogItem[]> = {
+  '1.7.2': [
+    {
+      icon: <Palette className="w-5 h-5 text-purple-500" />,
+      titleKey: 'whatsNew.valenceOrb.title',
+      descriptionKey: 'whatsNew.valenceOrb.description',
+      title: 'State of Mind Redesign',
+      description: 'Beautiful new organic shapes that morph with your mood — from spiky stars to soft flowers.',
+    },
+    {
+      icon: <Zap className="w-5 h-5 text-yellow-500" />,
+      titleKey: 'whatsNew.visualPolish172.title',
+      descriptionKey: 'whatsNew.visualPolish172.description',
+      title: 'Visual Polish',
+      description: 'Premium animations, GPU-optimized rendering, and smoother transitions across the app.',
+    },
+    {
+      icon: <Bug className="w-5 h-5 text-orange-500" />,
+      titleKey: 'whatsNew.bugFixes172.title',
+      descriptionKey: 'whatsNew.bugFixes172.description',
+      title: 'Bug Fixes',
+      description: 'Fixed sync errors, cache issues, and improved overall stability.',
+    },
+  ],
   '1.7.1': [
     {
       icon: <Shield className="w-5 h-5 text-green-500" />,

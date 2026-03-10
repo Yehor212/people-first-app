@@ -34,7 +34,7 @@ function spawnParticle(
     y: cy + Math.sin(angle) * dist,
     vx: (Math.random() - 0.5) * 0.4,
     vy: (Math.random() - 0.5) * 0.4,
-    radius: 1.5 + Math.random() * 2.5,
+    radius: 2.0 + Math.random() * 3.5,
     alpha: 0,
     life: 0,
     maxLife: 60 + Math.floor(Math.random() * 60), // 2-4s at 30fps

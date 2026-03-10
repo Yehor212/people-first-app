@@ -741,6 +741,12 @@ export interface Translations {
   whatsNewVersion: string;
   whatsNewGotIt: string;
   whatsNew?: {
+    title?: string;
+    version?: string;
+    gotIt?: string;
+    valenceOrb?: { title: string; description: string };
+    visualPolish172?: { title: string; description: string };
+    bugFixes172?: { title: string; description: string };
     googleOnly?: { title: string; description: string };
     codeQuality?: { title: string; description: string };
   };

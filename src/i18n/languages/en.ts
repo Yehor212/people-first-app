@@ -555,6 +555,12 @@ export const en: Translations = {
   whatsNewVersion: 'Version',
   whatsNewGotIt: 'Got it!',
   whatsNew: {
+    title: "What's New",
+    version: 'Version',
+    gotIt: 'Got it!',
+    valenceOrb: { title: 'State of Mind Redesign', description: 'Beautiful new organic shapes that morph with your mood — from spiky stars to soft flowers.' },
+    visualPolish172: { title: 'Visual Polish', description: 'Premium animations, GPU-optimized rendering, and smoother transitions across the app.' },
+    bugFixes172: { title: 'Bug Fixes', description: 'Fixed sync errors, cache issues, and improved overall stability.' },
     googleOnly: { title: 'Google Sign-In Only', description: 'Sign in securely with Google. Email and skip options removed for better account security.' },
     codeQuality: { title: 'Code Quality', description: '271 code quality warnings fixed to zero. Smoother, more reliable experience.' },
   },

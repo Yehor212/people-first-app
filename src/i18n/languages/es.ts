@@ -556,6 +556,12 @@ export const es: Translations = {
   whatsNewVersion: 'Versión',
   whatsNewGotIt: '¡Entendido!',
   whatsNew: {
+    title: 'Novedades',
+    version: 'Versión',
+    gotIt: '¡Entendido!',
+    valenceOrb: { title: 'Rediseño de Estado de Ánimo', description: 'Hermosas formas orgánicas que se transforman con tu estado de ánimo — de estrellas puntiagudas a flores suaves.' },
+    visualPolish172: { title: 'Pulido Visual', description: 'Animaciones premium, renderizado optimizado para GPU y transiciones más suaves.' },
+    bugFixes172: { title: 'Corrección de Errores', description: 'Errores de sincronización y caché corregidos, estabilidad general mejorada.' },
     googleOnly: { title: 'Solo inicio de sesión con Google', description: 'Inicia sesión de forma segura con Google. Las opciones de correo electrónico y omitir se eliminaron para mayor seguridad.' },
     codeQuality: { title: 'Calidad del código', description: '271 advertencias de calidad de código corregidas a cero. Experiencia más fluida y confiable.' },
   },

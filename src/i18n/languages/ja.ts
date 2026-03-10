@@ -555,6 +555,12 @@ export const ja: Translations = {
   whatsNewVersion: 'バージョン',
   whatsNewGotIt: '了解！',
   whatsNew: {
+    title: '新機能',
+    version: 'バージョン',
+    gotIt: '了解！',
+    valenceOrb: { title: '気分デザインの刷新', description: '気分に応じて変化する美しい有機的な形状 — とがった星から柔らかい花へ。' },
+    visualPolish172: { title: 'ビジュアル改善', description: 'プレミアムアニメーション、GPU最適化レンダリング、よりスムーズなトランジション。' },
+    bugFixes172: { title: 'バグ修正', description: '同期エラーとキャッシュの問題を修正し、全体的な安定性を向上。' },
     googleOnly: { title: 'Googleサインインのみ', description: 'Googleで安全にサインイン。アカウントセキュリティ向上のため、メールとスキップオプションを削除しました。' },
     codeQuality: { title: 'コード品質', description: '271件のコード品質警告をすべて修正。よりスムーズで信頼性の高い体験。' },
   },

@@ -529,6 +529,12 @@ const hebrewOverrides: Partial<Translations> = {
   whatsNewVersion: 'גרסה {version}',
   whatsNewGotIt: 'הבנתי!',
   whatsNew: {
+    title: 'מה חדש',
+    version: 'גרסה',
+    gotIt: 'הבנתי!',
+    valenceOrb: { title: 'עיצוב חדש למצב רוח', description: 'צורות אורגניות יפות שמשתנות עם מצב הרוח שלך — מכוכבים חדים לפרחים רכים.' },
+    visualPolish172: { title: 'ליטוש חזותי', description: 'אנימציות פרימיום, רינדור מותאם ל-GPU ומעברים חלקים יותר.' },
+    bugFixes172: { title: 'תיקוני באגים', description: 'תוקנו שגיאות סנכרון ומטמון, שיפור יציבות כללית.' },
     googleOnly: { title: 'כניסה עם Google בלבד', description: 'התחבר בצורה מאובטחת עם Google. אפשרויות דוא״ל ודילוג הוסרו לאבטחת חשבון טובה יותר.' },
     codeQuality: { title: 'איכות קוד', description: '271 אזהרות איכות קוד תוקנו לאפס. חוויה חלקה ואמינה יותר.' },
   },

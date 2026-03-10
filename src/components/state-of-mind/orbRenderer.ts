@@ -11,14 +11,21 @@
  *   +0.5 → subtle 5-fold shape    (n1=1.10, n2=n3=1.90)
  *   +1.0 → puffy 5-petal flower   (n1=0.55, n2=n3=1.75)
  *
- * 7 visual layers (back to front):
- *   1. Background Aura — diffuse glow
- *   2. Outer Shape Ring — largest, translucent, glass edges
- *   3. Middle Shape Ring — counter-rotated for depth
- *   4. Inner Shape Ring — smallest, most opaque
- *   5. Rose Curve Overlay — thin inner mandala lines
- *   6. Luminous Core — bright center with breathing pulse
- *   7. Particles — subtle floating glow dots
+ * PREMIUM RENDERING PHILOSOPHY:
+ *   Every shape is a luminous volumetric object, not a wireframe sketch.
+ *   Rich gradient fills create depth. Multiple glow layers create bloom.
+ *   Additive blending creates the illusion of emitted light.
+ *
+ * 9 visual layers (back to front):
+ *   1. Deep Aura — wide diffuse ambient glow
+ *   2. Shape Glow Shadow — soft under-shape for depth
+ *   3. Outer Shape Ring — rich gradient fill + soft glow stroke
+ *   4. Middle Shape Ring — counter-rotated, brighter fill
+ *   5. Inner Shape Ring — most opaque, strongest color
+ *   6. Rose Curve Overlay — thin inner mandala lines
+ *   7. Luminous Core — large bright center with bloom
+ *   8. Bloom Overlay — additive light pass for premium glow
+ *   9. Particles — soft floating glow orbs
  */
 
 import { noise2d } from './noise2d';
@@ -179,7 +186,7 @@ function traceShapePath(ctx: CanvasRenderingContext2D, points: [number, number][
   ctx.closePath();
 }
 
-// ── Layer 1: Background Aura ──
+// ── Layer 1: Deep Aura (wide ambient glow) ──
 
 function drawAura(
   ctx: CanvasRenderingContext2D,
@@ -190,38 +197,56 @@ function drawAura(
   time: number,
   isDark: boolean,
 ) {
-  const baseAlpha = isDark ? 0.16 : 0.10;
-  const breathAlpha = baseAlpha + Math.sin(time * 0.8) * 0.03;
+  const baseAlpha = isDark ? 0.28 : 0.18;
+  const breathAlpha = baseAlpha + Math.sin(time * 0.8) * 0.04;
 
+  // Primary wide glow
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-  g.addColorStop(0, hsla(hsl.h, hsl.s * 0.6, hsl.l + 15, breathAlpha * 1.8));
-  g.addColorStop(0.35, hsla(hsl.h, hsl.s * 0.4, hsl.l + 8, breathAlpha));
-  g.addColorStop(0.7, hsla(hsl.h, hsl.s * 0.3, hsl.l, breathAlpha * 0.4));
+  g.addColorStop(0, hsla(hsl.h, hsl.s * 0.7, hsl.l + 20, breathAlpha * 2.2));
+  g.addColorStop(0.15, hsla(hsl.h, hsl.s * 0.6, hsl.l + 15, breathAlpha * 1.6));
+  g.addColorStop(0.35, hsla(hsl.h, hsl.s * 0.5, hsl.l + 10, breathAlpha * 0.9));
+  g.addColorStop(0.6, hsla(hsl.h, hsl.s * 0.35, hsl.l + 5, breathAlpha * 0.35));
   g.addColorStop(1, hsla(hsl.h, hsl.s * 0.2, hsl.l, 0));
   ctx.fillStyle = g;
   ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
 
-  // Drifting sub-gradient for color shimmer
-  const phase = time * 0.2;
-  const offsetX = noise2d(phase, 50) * radius * 0.08;
-  const offsetY = noise2d(50, phase) * radius * 0.08;
-  const subR = radius * 0.55;
-  const subAlpha = breathAlpha * 0.4;
+  // Drifting sub-gradient for color shimmer (hue offset)
+  const phase = time * 0.18;
+  const offsetX = noise2d(phase, 50) * radius * 0.10;
+  const offsetY = noise2d(50, phase) * radius * 0.10;
+  const subR = radius * 0.65;
+  const subAlpha = breathAlpha * 0.55;
 
   const g2 = ctx.createRadialGradient(
     cx + offsetX, cy + offsetY, 0,
     cx + offsetX, cy + offsetY, subR,
   );
-  g2.addColorStop(0, hsla(hsl.h + 20, hsl.s, hsl.l + 20, subAlpha));
-  g2.addColorStop(1, hsla(hsl.h + 20, hsl.s, hsl.l, 0));
+  g2.addColorStop(0, hsla(hsl.h + 25, hsl.s * 0.9, hsl.l + 25, subAlpha));
+  g2.addColorStop(0.4, hsla(hsl.h + 25, hsl.s * 0.6, hsl.l + 12, subAlpha * 0.5));
+  g2.addColorStop(1, hsla(hsl.h + 25, hsl.s, hsl.l, 0));
   ctx.fillStyle = g2;
   ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+
+  // Third sub-glow for extra vibrancy in dark mode
+  if (isDark) {
+    const phase2 = time * 0.14 + 3.0;
+    const ox2 = noise2d(phase2 + 200, 80) * radius * 0.08;
+    const oy2 = noise2d(80, phase2 + 200) * radius * 0.08;
+    const g3 = ctx.createRadialGradient(
+      cx + ox2, cy + oy2, 0,
+      cx + ox2, cy + oy2, subR * 0.8,
+    );
+    g3.addColorStop(0, hsla(hsl.h - 15, hsl.s * 0.7, hsl.l + 18, subAlpha * 0.4));
+    g3.addColorStop(1, hsla(hsl.h - 15, hsl.s * 0.4, hsl.l, 0));
+    ctx.fillStyle = g3;
+    ctx.fillRect(cx - radius, cy - radius, radius * 2, radius * 2);
+  }
 }
 
-// ── Layers 2-4: Shape Rings ──
+// ── Layers 3-5: Shape Rings (RICH gradient fills) ──
 
 /**
- * Draw one concentric ring: superformula shape + gradient fill + glass-edge stroke.
+ * Draw one concentric ring: superformula shape + rich gradient fill + dual-stroke edges.
  */
 function drawShapeRing(
   ctx: CanvasRenderingContext2D,
@@ -248,28 +273,42 @@ function drawShapeRing(
     breathScale, noiseAmp, noiseSpeed, seed,
   );
 
-  // Radial gradient fill
-  const gradOuter = baseRadius * 1.25;
-  const grad = ctx.createRadialGradient(cx, cy, baseRadius * 0.04, cx, cy, gradOuter);
-  const coreLightness = isDark ? Math.min(98, hsl.l + 35) : Math.min(95, hsl.l + 28);
-  grad.addColorStop(0, hsla(h, hsl.s, coreLightness, fillAlpha));
-  grad.addColorStop(0.28, hsla(h, hsl.s, hsl.l + 18, fillAlpha * 0.85));
-  grad.addColorStop(0.55, hsla(h, hsl.s * 0.8, hsl.l + 6, fillAlpha * 0.45));
-  grad.addColorStop(1, hsla(h, hsl.s * 0.5, hsl.l, fillAlpha * 0.06));
+  // Rich radial gradient fill — center offset toward light source (top-left)
+  const lightOffX = -baseRadius * 0.12;
+  const lightOffY = -baseRadius * 0.12;
+  const gradOuter = baseRadius * 1.15;
+  const grad = ctx.createRadialGradient(
+    cx + lightOffX, cy + lightOffY, baseRadius * 0.02,
+    cx, cy, gradOuter,
+  );
+  const coreLightness = isDark ? Math.min(98, hsl.l + 40) : Math.min(96, hsl.l + 32);
+  grad.addColorStop(0, hsla(h, hsl.s * 0.4, coreLightness, fillAlpha));
+  grad.addColorStop(0.15, hsla(h, hsl.s * 0.7, hsl.l + 25, fillAlpha * 0.92));
+  grad.addColorStop(0.35, hsla(h, hsl.s * 0.85, hsl.l + 15, fillAlpha * 0.75));
+  grad.addColorStop(0.55, hsla(h, hsl.s * 0.8, hsl.l + 8, fillAlpha * 0.50));
+  grad.addColorStop(0.75, hsla(h, hsl.s * 0.6, hsl.l + 3, fillAlpha * 0.25));
+  grad.addColorStop(1, hsla(h, hsl.s * 0.4, hsl.l, fillAlpha * 0.04));
 
-  // Glass-edge stroke style
-  const rimL = isDark ? Math.min(98, hsl.l + 42) : Math.min(96, hsl.l + 32);
-
-  // Trace once → fill + stroke (Canvas path persists)
+  // Trace path → fill with rich gradient
   traceShapePath(ctx, points);
   ctx.fillStyle = grad;
   ctx.fill();
-  ctx.strokeStyle = hsla(h, hsl.s * 0.35, rimL, edgeAlpha);
-  ctx.lineWidth = baseRadius * 0.013;
+
+  // Outer glow stroke — soft, wide, for atmosphere
+  const glowL = isDark ? Math.min(98, hsl.l + 35) : Math.min(96, hsl.l + 28);
+  ctx.strokeStyle = hsla(h, hsl.s * 0.3, glowL, edgeAlpha * 0.4);
+  ctx.lineWidth = baseRadius * 0.04;
+  ctx.stroke();
+
+  // Inner crisp edge — thin, bright, for definition
+  const rimL = isDark ? Math.min(99, hsl.l + 45) : Math.min(97, hsl.l + 35);
+  traceShapePath(ctx, points);
+  ctx.strokeStyle = hsla(h, hsl.s * 0.25, rimL, edgeAlpha * 0.85);
+  ctx.lineWidth = baseRadius * 0.015;
   ctx.stroke();
 }
 
-// ── Layer 5: Rose Curve Overlay ──
+// ── Layer 6: Rose Curve Overlay ──
 
 /**
  * Thin semi-transparent rose curve r = cos(k·θ) traced as inner mandala lines.
@@ -287,7 +326,7 @@ function drawRoseCurve(
 ) {
   // k mapping: complex (negative) → simple (positive)
   const k = mapRange(valence, -1, 1, 2.333, 5.0);
-  const roseAlpha = isDark ? 0.14 : 0.09;
+  const roseAlpha = isDark ? 0.18 : 0.12;
 
   // Slow independent rotation
   const roseRotation = time * 0.04;
@@ -300,19 +339,18 @@ function drawRoseCurve(
   for (let i = 0; i <= numPoints; i++) {
     const theta = (i / numPoints) * maxTheta + roseRotation;
     const r = Math.cos(k * theta) * radius;
-    // Negative r naturally plots at (|r|, θ+π) via multiplication
     const x = cx + r * Math.cos(theta);
     const y = cy + r * Math.sin(theta);
     if (i === 0) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
   }
 
-  ctx.strokeStyle = hsla(hsl.h, hsl.s * 0.5, Math.min(96, hsl.l + 25), roseAlpha);
-  ctx.lineWidth = radius * 0.012;
+  ctx.strokeStyle = hsla(hsl.h, hsl.s * 0.4, Math.min(97, hsl.l + 30), roseAlpha);
+  ctx.lineWidth = radius * 0.016;
   ctx.stroke();
 }
 
-// ── Layer 6: Luminous Core ──
+// ── Layer 7: Luminous Core (large, with bloom) ──
 
 function drawCore(
   ctx: CanvasRenderingContext2D,
@@ -323,17 +361,20 @@ function drawCore(
   time: number,
   isDark: boolean,
 ) {
-  const breathScale = 1 + Math.sin(time * 1.2) * 0.04;
+  const breathScale = 1 + Math.sin(time * 1.2) * 0.05;
   const r = radius * breathScale;
-  const coreAlpha = isDark ? 0.95 : 0.92;
+  const coreAlpha = isDark ? 0.97 : 0.95;
 
+  // Offset gradient center toward light source
   const grad = ctx.createRadialGradient(
-    cx - r * 0.12, cy - r * 0.12, 0,
+    cx - r * 0.15, cy - r * 0.15, 0,
     cx, cy, r,
   );
-  grad.addColorStop(0, hsla(hsl.h, hsl.s * 0.15, 98, coreAlpha));
-  grad.addColorStop(0.18, hsla(hsl.h, hsl.s * 0.4, 93, coreAlpha * 0.9));
-  grad.addColorStop(0.45, hsla(hsl.h, hsl.s * 0.7, hsl.l + 22, coreAlpha * 0.65));
+  grad.addColorStop(0, hsla(hsl.h, hsl.s * 0.10, 99, coreAlpha));
+  grad.addColorStop(0.10, hsla(hsl.h, hsl.s * 0.20, 97, coreAlpha * 0.95));
+  grad.addColorStop(0.25, hsla(hsl.h, hsl.s * 0.45, 90, coreAlpha * 0.85));
+  grad.addColorStop(0.45, hsla(hsl.h, hsl.s * 0.70, hsl.l + 25, coreAlpha * 0.60));
+  grad.addColorStop(0.70, hsla(hsl.h, hsl.s * 0.85, hsl.l + 12, coreAlpha * 0.25));
   grad.addColorStop(1, hsla(hsl.h, hsl.s, hsl.l + 5, 0));
 
   ctx.beginPath();
@@ -341,16 +382,47 @@ function drawCore(
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // Apple-style dark center dot (depth anchor)
-  const dotR = r * 0.07;
-  const dotAlpha = isDark ? 0.22 : 0.12;
+  // Inner depth dot — subtle dark anchor for 3D feel
+  const dotR = r * 0.06;
+  const dotAlpha = isDark ? 0.18 : 0.10;
   ctx.beginPath();
   ctx.arc(cx, cy, dotR, 0, Math.PI * 2);
-  ctx.fillStyle = hsla(hsl.h, hsl.s * 0.5, hsl.l - 15, dotAlpha);
+  ctx.fillStyle = hsla(hsl.h, hsl.s * 0.5, Math.max(5, hsl.l - 20), dotAlpha);
   ctx.fill();
 }
 
-// ── Layer 7: Particles ──
+// ── Layer 8: Bloom Overlay (additive light pass) ──
+
+function drawBloom(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  hsl: { h: number; s: number; l: number },
+  time: number,
+  isDark: boolean,
+) {
+  const prevComposite = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'lighter';
+
+  const bloomAlpha = (isDark ? 0.10 : 0.06) + Math.sin(time * 0.7) * 0.015;
+  const bloomR = radius;
+
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, bloomR);
+  g.addColorStop(0, hsla(hsl.h, hsl.s * 0.3, 95, bloomAlpha * 1.8));
+  g.addColorStop(0.2, hsla(hsl.h, hsl.s * 0.5, hsl.l + 30, bloomAlpha * 1.2));
+  g.addColorStop(0.5, hsla(hsl.h, hsl.s * 0.6, hsl.l + 15, bloomAlpha * 0.5));
+  g.addColorStop(1, hsla(hsl.h, hsl.s * 0.4, hsl.l, 0));
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, bloomR, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+
+  ctx.globalCompositeOperation = prevComposite;
+}
+
+// ── Layer 9: Particles (soft glow orbs) ──
 
 function drawParticles(
   ctx: CanvasRenderingContext2D,
@@ -359,7 +431,7 @@ function drawParticles(
   dpr: number,
   isDark: boolean,
 ) {
-  const alphaBoost = isDark ? 0.18 : 0.04;
+  const alphaBoost = isDark ? 0.25 : 0.10;
 
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
@@ -367,18 +439,50 @@ function drawParticles(
 
     const px = p.x * dpr;
     const py = p.y * dpr;
-    const pr = p.radius * dpr * 1.4;
-    const pa = Math.min(1, p.alpha * 0.75 + alphaBoost);
+    const pr = p.radius * dpr * 2.2;  // 60% larger than before
+    const pa = Math.min(1, p.alpha * 0.85 + alphaBoost);
 
-    // Near-white center for premium glow
+    // Soft glow orb — near-white center → colored middle → transparent edge
     const grad = ctx.createRadialGradient(px, py, 0, px, py, pr);
-    grad.addColorStop(0, hsla(hsl.h, hsl.s * 0.25, 97, pa));
-    grad.addColorStop(0.35, hsla(hsl.h, hsl.s * 0.5, hsl.l + 25, pa * 0.55));
+    grad.addColorStop(0, hsla(hsl.h, hsl.s * 0.15, 98, pa));
+    grad.addColorStop(0.20, hsla(hsl.h, hsl.s * 0.35, 92, pa * 0.70));
+    grad.addColorStop(0.50, hsla(hsl.h, hsl.s * 0.55, hsl.l + 20, pa * 0.35));
     grad.addColorStop(1, hsla(hsl.h, hsl.s, hsl.l, 0));
 
     ctx.fillStyle = grad;
     ctx.fillRect(px - pr, py - pr, pr * 2, pr * 2);
   }
+}
+
+// ── Layer 2: Shape Glow Shadow (depth anchor beneath shapes) ──
+
+function drawShapeShadow(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  baseRadius: number,
+  shape: ShapeParams,
+  time: number,
+  rotation: number,
+  breathScale: number,
+  hsl: { h: number; s: number; l: number },
+  noiseAmp: number,
+  noiseSpeed: number,
+) {
+  const points = computeShapePoints(
+    cx, cy, baseRadius * 1.08, shape, time, rotation,
+    breathScale, noiseAmp * 0.6, noiseSpeed * 0.5, 200,
+  );
+
+  const shadowAlpha = 0.18;
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseRadius * 1.3);
+  grad.addColorStop(0, hsla(hsl.h, hsl.s * 0.5, hsl.l + 15, shadowAlpha * 0.8));
+  grad.addColorStop(0.4, hsla(hsl.h, hsl.s * 0.4, hsl.l + 8, shadowAlpha * 0.4));
+  grad.addColorStop(1, hsla(hsl.h, hsl.s * 0.3, hsl.l, 0));
+
+  traceShapePath(ctx, points);
+  ctx.fillStyle = grad;
+  ctx.fill();
 }
 
 // ── Main Scene Composer ──
@@ -410,55 +514,65 @@ export function drawOrbScene(
   const midBreath   = 1 + Math.sin(time * 0.9 + 1.0) * 0.020;
   const innerBreath = 1 + Math.sin(time * 0.9 + 2.0) * 0.015;
 
-  // Layer 1: Background aura
-  drawAura(ctx, cx, cy, baseRadius * 1.65, hsl, time, isDark);
+  // Layer 1: Deep aura (wider, stronger)
+  drawAura(ctx, cx, cy, baseRadius * 1.85, hsl, time, isDark);
 
-  // Layer 2: Outer shape ring (largest, most translucent, glass edges)
+  // Layer 2: Shape glow shadow (depth beneath main shapes)
+  drawShapeShadow(
+    ctx, cx, cy, baseRadius * 1.0, shape, time,
+    time * rotSpeed, outerBreath, hsl,
+    noiseAmp, noiseSpeed,
+  );
+
+  // Layer 3: Outer shape ring — largest, rich fill, glass edges
   drawShapeRing(
     ctx, cx, cy,
     baseRadius * 1.05, shape, time,
     time * rotSpeed,            // slow clockwise
     outerBreath,
-    isDark ? 0.20 : 0.15,      // fill alpha
-    isDark ? 0.38 : 0.28,      // edge alpha
+    isDark ? 0.38 : 0.30,      // fill alpha — rich, visible
+    isDark ? 0.50 : 0.38,      // edge alpha — visible glow
     hsl, noiseAmp, noiseSpeed,
     isDark, 6, 0,               // hueShift=+6, seed=0
   );
 
-  // Layer 3: Middle shape ring (counter-rotated for depth)
+  // Layer 4: Middle shape ring — counter-rotated for depth
   drawShapeRing(
     ctx, cx, cy,
     baseRadius * 0.78, shape, time,
     -time * rotSpeed * 0.55,    // counter-rotation
     midBreath,
-    isDark ? 0.34 : 0.28,
-    isDark ? 0.42 : 0.32,
+    isDark ? 0.52 : 0.44,      // fill alpha — strong
+    isDark ? 0.55 : 0.42,      // edge alpha
     hsl, noiseAmp * 0.7, noiseSpeed * 0.8,
     isDark, -8, 50,
   );
 
-  // Layer 4: Inner shape ring (smallest, most opaque)
+  // Layer 5: Inner shape ring — smallest, most opaque
   drawShapeRing(
     ctx, cx, cy,
     baseRadius * 0.55, shape, time,
     time * rotSpeed * 0.3,      // very slow rotation
     innerBreath,
-    isDark ? 0.52 : 0.48,
-    isDark ? 0.48 : 0.38,
+    isDark ? 0.70 : 0.62,      // fill alpha — solid presence
+    isDark ? 0.60 : 0.48,      // edge alpha
     hsl, noiseAmp * 0.5, noiseSpeed * 0.6,
     isDark, 0, 100,
   );
 
-  // Layer 5: Rose curve overlay (thin inner mandala)
+  // Layer 6: Rose curve overlay (thin inner mandala)
   drawRoseCurve(
     ctx, cx, cy,
     baseRadius * 0.42,          // fits inside inner ring
     valence, time, hsl, isDark,
   );
 
-  // Layer 6: Luminous core
-  drawCore(ctx, cx, cy, baseRadius * 0.28, hsl, time, isDark);
+  // Layer 7: Luminous core — larger and brighter
+  drawCore(ctx, cx, cy, baseRadius * 0.36, hsl, time, isDark);
 
-  // Layer 7: Subtle particles
+  // Layer 8: Bloom overlay — additive glow for premium luminosity
+  drawBloom(ctx, cx, cy, baseRadius * 0.70, hsl, time, isDark);
+
+  // Layer 9: Soft particles
   drawParticles(ctx, particles, hsl, dpr, isDark);
 }

@@ -565,6 +565,12 @@ const arabicOverrides: Partial<Translations> = {
   whatsNewVersion: 'الإصدار {version}',
   whatsNewGotIt: 'فهمت!',
   whatsNew: {
+    title: 'ما الجديد',
+    version: 'الإصدار',
+    gotIt: 'فهمت!',
+    valenceOrb: { title: 'تصميم جديد للحالة المزاجية', description: 'أشكال عضوية جميلة تتحول مع مزاجك — من نجوم حادة إلى أزهار ناعمة.' },
+    visualPolish172: { title: 'تحسينات بصرية', description: 'رسوم متحركة فاخرة، عرض محسّن بالـ GPU، وانتقالات أكثر سلاسة.' },
+    bugFixes172: { title: 'إصلاح الأخطاء', description: 'تم إصلاح أخطاء المزامنة والتخزين المؤقت وتحسين الاستقرار العام.' },
     googleOnly: { title: 'تسجيل الدخول عبر Google فقط', description: 'سجّل الدخول بأمان عبر Google. تم إزالة خيارات البريد الإلكتروني والتخطي لتعزيز أمان الحساب.' },
     codeQuality: { title: 'جودة الكود', description: 'تم إصلاح 271 تحذير جودة الكود إلى الصفر. تجربة أكثر سلاسة وموثوقية.' },
   },

@@ -556,6 +556,12 @@ export const de: Translations = {
   whatsNewVersion: 'Version',
   whatsNewGotIt: 'Verstanden!',
   whatsNew: {
+    title: 'Was ist neu',
+    version: 'Version',
+    gotIt: 'Verstanden!',
+    valenceOrb: { title: 'Neues Design für Gemütszustand', description: 'Wunderschöne organische Formen, die sich mit Ihrer Stimmung verändern — von spitzen Sternen zu weichen Blumen.' },
+    visualPolish172: { title: 'Visueller Feinschliff', description: 'Premium-Animationen, GPU-optimiertes Rendering und flüssigere Übergänge.' },
+    bugFixes172: { title: 'Fehlerbehebungen', description: 'Sync-Fehler und Cache-Probleme behoben, allgemeine Stabilität verbessert.' },
     googleOnly: { title: 'Nur Google-Anmeldung', description: 'Sicher mit Google anmelden. E-Mail- und Überspringen-Optionen wurden für mehr Sicherheit entfernt.' },
     codeQuality: { title: 'Codequalität', description: '271 Code-Qualitätswarnungen auf null behoben. Reibungsloseres, zuverlässigeres Erlebnis.' },
   },
