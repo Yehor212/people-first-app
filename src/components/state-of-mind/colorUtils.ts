@@ -27,15 +27,12 @@ function lerpHSL(a: HSL, b: HSL, t: number): HSL {
 }
 
 /**
- * Convert valence (-1.0 to 1.0) to HSL color string.
- * @param valence - Value from -1.0 to 1.0
- * @param alpha - Optional alpha (0.0 to 1.0), returns hsla if provided
+ * Convert valence (-1.0 to 1.0) to raw HSL object.
+ * Useful for Canvas gradient construction where you need numeric components.
  */
-export function valenceToColor(valence: number, alpha?: number): string {
-  // Clamp valence to [-1, 1]
+export function valenceToHSL(valence: number): HSL {
   const v = Math.max(-1, Math.min(1, valence));
 
-  // Find the two adjacent stops
   let lower = COLOR_STOPS[0];
   let upper = COLOR_STOPS[COLOR_STOPS.length - 1];
 
@@ -47,15 +44,31 @@ export function valenceToColor(valence: number, alpha?: number): string {
     }
   }
 
-  // Interpolation factor between the two stops
   const range = upper.valence - lower.valence;
   const t = range === 0 ? 0 : (v - lower.valence) / range;
-  const color = lerpHSL(lower.color, upper.color, t);
+  return lerpHSL(lower.color, upper.color, t);
+}
+
+/**
+ * Convert valence (-1.0 to 1.0) to HSL color string.
+ * @param valence - Value from -1.0 to 1.0
+ * @param alpha - Optional alpha (0.0 to 1.0), returns hsla if provided
+ */
+export function valenceToColor(valence: number, alpha?: number): string {
+  const color = valenceToHSL(valence);
 
   if (alpha !== undefined) {
     return `hsla(${Math.round(color.h)}, ${Math.round(color.s)}%, ${Math.round(color.l)}%, ${alpha})`;
   }
   return `hsl(${Math.round(color.h)}, ${Math.round(color.s)}%, ${Math.round(color.l)}%)`;
+}
+
+/**
+ * Convert valence to RGBA string for Canvas fillStyle.
+ * Uses HSL internally but outputs rgba() for contexts where HSL is inconvenient.
+ */
+export function valenceToRGBA(valence: number, alpha: number): string {
+  return valenceToColor(valence, alpha);
 }
 
 /**

@@ -5,7 +5,7 @@ import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { zenMotion, zenTap } from '@/lib/animationUtils';
 import { haptics } from '@/lib/haptics';
 import { valenceToColor } from './colorUtils';
-import { MorphingBlob } from './MorphingBlob';
+import { ValenceOrb } from './ValenceOrb';
 import { ValenceSlider } from './ValenceSlider';
 import { EmotionTagGrid } from './EmotionTagGrid';
 import { ContextGrid } from './ContextGrid';
@@ -198,7 +198,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                   {som.step === 'valence' && (
                     <div className="flex flex-col items-center justify-center flex-1 gap-6">
                       <motion.div variants={stepChild}>
-                        <MorphingBlob valence={som.valence} size={220} />
+                        <ValenceOrb valence={som.valence} size={220} />
                       </motion.div>
                       <motion.div variants={stepChild} className="w-full max-w-sm">
                         <ValenceSlider value={som.valence} onChange={som.setValence} />
