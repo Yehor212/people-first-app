@@ -25,10 +25,27 @@
 
 import type { Particle } from './particleSystem';
 
+// ── WebGL context options (shared by both GL1 and GL2) ──
+
+const GL_OPTIONS: WebGLContextAttributes = {
+  alpha: true,
+  premultipliedAlpha: true,
+  antialias: false,
+  preserveDrawingBuffer: false,
+};
+
 // ── Vertex Shader (fullscreen triangle) ──
 
 const VERT_SRC = `
 attribute vec2 aPosition;
+void main() {
+  gl_Position = vec4(aPosition, 0.0, 1.0);
+}`;
+
+// ── Vertex Shader — GLSL 300 es (WebGL 2.0) ──
+
+const VERT_SRC_300 = `#version 300 es
+in vec2 aPosition;
 void main() {
   gl_Position = vec4(aPosition, 0.0, 1.0);
 }`;
@@ -308,6 +325,15 @@ void main() {
 }
 `;
 
+// ── Fragment Shader — GLSL 300 es (WebGL 2.0, derived from ES 1.0 source) ──
+
+const FRAG_SRC_300 = FRAG_SRC
+  .replace(
+    '\nprecision highp float;',
+    '#version 300 es\nprecision highp float;\nout vec4 fragColor;',
+  )
+  .replace('gl_FragColor', 'fragColor');
+
 // ── Types ──
 
 export interface OrbGLRenderer {
@@ -347,8 +373,10 @@ function hslToRgb(h: number, s: number, l: number): [number, number, number] {
 
 // ── Shader Compilation ──
 
+type GLContext = WebGLRenderingContext | WebGL2RenderingContext;
+
 function compileShader(
-  gl: WebGLRenderingContext,
+  gl: GLContext,
   type: number,
   source: string,
 ): WebGLShader | null {
@@ -366,24 +394,15 @@ function compileShader(
   return shader;
 }
 
-// ── Public API ──
+// ── Shared Renderer Builder (WebGL 1.0 & 2.0) ──
 
-/**
- * Create a WebGL renderer for the orb.
- * Returns null if WebGL is unavailable → ValenceOrb uses Canvas 2D fallback.
- */
-export function createOrbGL(canvas: HTMLCanvasElement): OrbGLRenderer | null {
-  const gl = canvas.getContext('webgl', {
-    alpha: true,
-    premultipliedAlpha: true,
-    antialias: false,
-    preserveDrawingBuffer: false,
-  });
-
-  if (!gl) return null;
-
-  const vs = compileShader(gl, gl.VERTEX_SHADER, VERT_SRC);
-  const fs = compileShader(gl, gl.FRAGMENT_SHADER, FRAG_SRC);
+function buildRenderer(
+  gl: GLContext,
+  vertSrc: string,
+  fragSrc: string,
+): OrbGLRenderer | null {
+  const vs = compileShader(gl, gl.VERTEX_SHADER, vertSrc);
+  const fs = compileShader(gl, gl.FRAGMENT_SHADER, fragSrc);
   if (!vs || !fs) {
     if (vs) gl.deleteShader(vs);
     if (fs) gl.deleteShader(fs);
@@ -489,4 +508,26 @@ export function createOrbGL(canvas: HTMLCanvasElement): OrbGLRenderer | null {
       if (vbo) gl.deleteBuffer(vbo);
     },
   };
+}
+
+// ── Public API ──
+
+/**
+ * Create a WebGL 2.0 renderer (GLSL 300 es).
+ * Returns null if WebGL 2.0 is unavailable → caller tries WebGL 1.0 fallback.
+ */
+export function createOrbGL2(canvas: HTMLCanvasElement): OrbGLRenderer | null {
+  const gl = canvas.getContext('webgl2', GL_OPTIONS);
+  if (!gl) return null;
+  return buildRenderer(gl, VERT_SRC_300, FRAG_SRC_300);
+}
+
+/**
+ * Create a WebGL 1.0 renderer (GLSL ES 1.0).
+ * Returns null if WebGL is unavailable → ValenceOrb uses Canvas 2D fallback.
+ */
+export function createOrbGL(canvas: HTMLCanvasElement): OrbGLRenderer | null {
+  const gl = canvas.getContext('webgl', GL_OPTIONS);
+  if (!gl) return null;
+  return buildRenderer(gl, VERT_SRC, FRAG_SRC);
 }

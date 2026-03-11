@@ -1,14 +1,16 @@
 /**
  * ValenceOrb — GPU-accelerated orb for State of Mind valence step.
  *
- * Progressive enhancement:
- *   WebGL available → fragment shader (10/10 quality, 60fps capable)
- *   WebGL unavailable → Canvas 2D fallback (8/10 quality, 30fps)
+ * Progressive enhancement (Law 22 — probe highest tier first):
+ *   WebGL 2.0 available → GLSL 300 es shader (10/10 quality, 60fps capable)
+ *   WebGL 1.0 available → GLSL ES 1.0 shader (10/10 quality, 60fps capable)
+ *   Neither available → Canvas 2D fallback (8/10 quality, 30fps)
  *
  * Both paths share the same particle system, shape presets, and color mapping.
+ * Context loss recovery: seamless WebGL → Canvas 2D → WebGL on restore.
  *
  * Law 12 (Performance): 30fps RAF, IntersectionObserver pause, DPR cap at 2x.
- * Law 18 (Cleanup): mounted guard, RAF cancel, observer disconnect, GL dispose.
+ * Law 18 (Cleanup): mounted guard, RAF cancel, observer disconnect, GL dispose, listener removal.
  * Dopamine gate: shouldAnimate() → static frame if disabled.
  */
 
@@ -17,7 +19,7 @@ import { shouldAnimate } from '@/lib/animationUtils';
 import { createParticlePool, updateParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
-import { createOrbGL } from './orbShader';
+import { createOrbGL2, createOrbGL } from './orbShader';
 import type { Particle } from './particleSystem';
 import type { OrbGLRenderer } from './orbShader';
 
@@ -102,11 +104,11 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
     const isDarkRead = () => document.documentElement.classList.contains('dark');
 
-    // ── Progressive enhancement: try WebGL first ──
-    const glRenderer = createOrbGL(canvas);
+    // ── Progressive enhancement: probe highest tier first (Law 22) ──
+    const glRenderer = createOrbGL2(canvas) ?? createOrbGL(canvas);
     glRendererRef.current = glRenderer;
 
-    // Canvas 2D fallback (only if WebGL failed)
+    // Canvas 2D fallback (only if all WebGL paths failed)
     let ctx2d: CanvasRenderingContext2D | null = null;
     if (!glRenderer) {
       ctx2d = canvas.getContext('2d', { willReadFrequently: false });
@@ -116,9 +118,11 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
       }
     }
 
-    // ── Render helpers ──
+    // ── Render helpers (use refs for context-loss resilience) ──
     const renderGL = (v: number, t: number, particles: Particle[]) => {
-      glRenderer.render({
+      const gl = glRendererRef.current;
+      if (!gl) return;
+      gl.render({
         valence: v,
         time: t,
         size,
@@ -131,6 +135,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
     };
 
     const renderCanvas2D = (v: number, t: number, particles: Particle[]) => {
+      if (!ctx2d) return;
       drawOrbScene(ctx2d, {
         valence: v,
         time: t,
@@ -141,7 +146,31 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
       });
     };
 
-    const render = glRenderer ? renderGL : renderCanvas2D;
+    let render = glRenderer ? renderGL : renderCanvas2D;
+
+    // ── Context loss recovery (Law 22, Part 10) ──
+    const handleContextLost = (e: Event) => {
+      e.preventDefault();
+      cancelAnimationFrame(rafRef.current);
+      glRendererRef.current?.dispose();
+      glRendererRef.current = null;
+      // Degrade to Canvas 2D — user sees no interruption
+      ctx2d = canvas.getContext('2d', { willReadFrequently: false });
+      render = renderCanvas2D;
+    };
+
+    const handleContextRestored = () => {
+      // Re-probe from highest tier
+      const restored = createOrbGL2(canvas) ?? createOrbGL(canvas);
+      if (restored) {
+        glRendererRef.current = restored;
+        ctx2d = null;
+        render = renderGL;
+      }
+    };
+
+    canvas.addEventListener('webglcontextlost', handleContextLost);
+    canvas.addEventListener('webglcontextrestored', handleContextRestored);
 
     // ── Animation ──
     const animate = shouldAnimate();
@@ -196,6 +225,8 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
     return () => {
       cancelAnimationFrame(rafRef.current);
+      canvas.removeEventListener('webglcontextlost', handleContextLost);
+      canvas.removeEventListener('webglcontextrestored', handleContextRestored);
       glRendererRef.current?.dispose();
       glRendererRef.current = null;
     };
