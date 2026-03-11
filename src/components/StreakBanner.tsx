@@ -4,22 +4,23 @@
  * Includes Rest Mode button for low-energy days
  */
 
-import { memo, useMemo, useState, lazy, Suspense } from 'react';
+import { memo, useMemo, useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { zenMotion } from '@/lib/animationUtils';
 import { Flame, Zap, Trophy, Moon, Share2, Check, Heart, Target, Brain, Sparkles } from 'lucide-react';
-
-// Lazy-load FireAnimation to isolate lottie-react (CJS) into its own chunk.
-// Eager import causes TDZ errors in production due to Rollup CJS interop.
-const FireAnimation = lazy(() => import('./FireAnimation'));
 import { hapticTap } from '@/lib/haptics';
 import { cn } from '@/lib/utils';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday, calculateStreak } from '@/lib/utils';
 import { isHabitCompletedOnDate, getHabitCompletedDates } from '@/lib/habits';
 import { useDopamineSettings } from './DopamineSettings';
 import { UnifiedShareModal } from '@/components/share';
+
+// Lazy-load FireAnimation to isolate lottie-react (CJS) into its own chunk.
+// Eager import causes TDZ errors in production due to Rollup CJS interop.
+const FireAnimation = lazyWithRetry(() => import('./FireAnimation'), 'FireAnimation');
 
 interface StreakBannerProps {
   moods: MoodEntry[];

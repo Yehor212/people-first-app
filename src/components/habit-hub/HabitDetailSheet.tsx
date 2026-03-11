@@ -5,7 +5,7 @@
  * Sections: Header → Stats → Score Chart → Heatmap → Frequency → Streaks → Notes → Actions.
  */
 
-import { memo, useState, useMemo, useCallback, useEffect, lazy, Suspense } from 'react';
+import { memo, useState, useMemo, useCallback, useEffect, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Archive, ArchiveRestore, Pencil, SkipForward, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
@@ -22,17 +22,20 @@ import { HabitTargetCard } from './HabitTargetCard';
 import { HabitScoreChart } from './HabitScoreChart';
 import { HabitBarCard } from './HabitBarCard';
 import { HabitHeatmapGrid } from './HabitHeatmapGrid';
-// Lazy-load HabitFrequencyChart to keep recharts out of main bundle (prevents TDZ errors)
-const LazyHabitFrequencyChart = lazy(() =>
-  import('./HabitFrequencyChart').then(m => ({ default: m.HabitFrequencyChart }))
-);
 import { HabitStreakTimeline } from './HabitStreakTimeline';
 import { HabitNotesSection } from './HabitNotesSection';
 import { cn, getToday } from '@/lib/utils';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { ENTRY } from '@/types';
 import type { Habit } from '@/types';
+
+// Lazy-load HabitFrequencyChart to keep recharts out of main bundle (prevents TDZ errors)
+const LazyHabitFrequencyChart = lazyWithRetry(
+  () => import('./HabitFrequencyChart').then(m => ({ default: m.HabitFrequencyChart })),
+  'HabitFrequencyChart'
+);
 
 /** Stagger parent for sheet sections */
 const sheetStagger = {

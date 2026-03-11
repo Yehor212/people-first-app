@@ -109,6 +109,10 @@ export default defineConfig(({ mode }) => {
       // P1 Fix: injectManifest configuration for custom SW
       injectManifest: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
+        // version-check.js and version.json MUST always be fetched from network.
+        // If precached, the old SW serves stale version-check.js with the old
+        // version string baked in, making the version check pass incorrectly.
+        globIgnores: ['version-check.js', 'version.json'],
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024, // 3 MB limit
       },
 

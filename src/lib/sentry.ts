@@ -103,8 +103,10 @@ export function initSentry(): void {
           error.message?.includes('Loading CSS chunk');
 
         if (isChunkError) {
-          // Mark as handled so we can still track frequency, but lower priority
-          event.tags = { ...event.tags, handled: 'true', error_type: 'chunk_load' };
+          // Handled gracefully by UpdateRequiredDialog — don't report to Sentry.
+          // These are expected after every deploy (stale cached HTML references
+          // old chunk hashes). Reporting them creates false regression alerts.
+          return null;
         }
       }
 

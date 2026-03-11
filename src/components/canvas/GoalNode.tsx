@@ -10,18 +10,20 @@
  * - Pop-in animation via framer-motion
  */
 
-import { memo, useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react';
+import { memo, useCallback, useEffect, useRef, useState, Suspense } from 'react';
 import { motion, useTransform, type MotionValue } from 'framer-motion';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
 import { zenMotion } from '@/lib/animationUtils';
 import { GOAL_ICON_MAP } from './GoalInput';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import type { CanvasGoal } from '@/types';
 
 // Lazy-load Lottie burst to isolate lottie-react chunk
-const CompletionBurstLottie = lazy(() =>
-  import('./CompletionBurstLottie').then(m => ({ default: m.CompletionBurstLottie })),
+const CompletionBurstLottie = lazyWithRetry(
+  () => import('./CompletionBurstLottie').then(m => ({ default: m.CompletionBurstLottie })),
+  'CompletionBurstLottie',
 );
 
 /** Preset color palette for goal customization. Key = stored in CanvasGoal.color */

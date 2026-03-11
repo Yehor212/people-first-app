@@ -153,11 +153,12 @@ async function handleAppResume(): Promise<void> {
 
   await resumeAllAudio();
 
-  // Proactive version check on tab resume — prevents stale chunk errors
+  // Proactive version check on EVERY tab resume — prevents stale chunk errors.
   // When user returns to a tab left open across deploys, old JS in memory
   // tries to lazy-load chunks with old hashes (404). Check BEFORE that happens.
-  // Skip on native (Capacitor) — assets are bundled locally, no stale chunks
-  if (!isNative && navigator.onLine && shouldAutoCheckVersion()) {
+  // No throttle — the fetch is ~100ms, and stale-tab errors are the #1 cause
+  // of chunk-load failures. Skip on native (assets are bundled locally).
+  if (!isNative && navigator.onLine) {
     const isUpToDate = await checkAppVersion();
     markVersionChecked();
     if (!isUpToDate) {

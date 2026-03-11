@@ -4,7 +4,7 @@
  * This file: ~200L, 5 useState, delegates data to useStatsPageData hook.
  */
 
-import { useState, useRef, useCallback, memo, lazy, Suspense } from 'react';
+import { useState, useRef, useCallback, memo, Suspense } from 'react';
 import { MoodEntry, Habit, FocusSession, GratitudeEntry } from '@/types';
 import { getToday } from '@/lib/utils';
 import { useStatsCalculations } from '@/hooks/useStatsCalculations';
@@ -25,8 +25,10 @@ import { TrendsTab } from './TrendsTab';
 import { CalendarTab } from './CalendarTab';
 
 // Lazy-load ProgressStoriesViewer to isolate DOMPurify CJS into its own chunk
-const ProgressStoriesViewer = lazy(() =>
-  import('@/components/ProgressStoriesViewer').then(m => ({ default: m.ProgressStoriesViewer }))
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
+const ProgressStoriesViewer = lazyWithRetry(
+  () => import('@/components/ProgressStoriesViewer').then(m => ({ default: m.ProgressStoriesViewer })),
+  'ProgressStoriesViewer'
 );
 
 interface StatsPageProps {

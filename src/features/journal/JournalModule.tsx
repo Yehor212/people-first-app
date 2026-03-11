@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from 'react';
 import { Lock, ChevronRight, X, Settings, Loader2, CheckCircle2, Mail, PenLine, Download, Upload, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, getToday } from '@/lib/utils';
@@ -27,10 +27,12 @@ import { useScreenSecurity } from './useScreenSecurity';
 import { ParticleBackground } from '@/components/stats/ParticleBackground';
 import { useGamificationStore } from '@/stores';
 import { haptics } from '@/lib/haptics';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 
 // Lazy-load JournalStats to avoid CJS TDZ (Recharts)
-const LazyJournalStats = lazy(() =>
-  import('./JournalStats').then(m => ({ default: m.JournalStats }))
+const LazyJournalStats = lazyWithRetry(
+  () => import('./JournalStats').then(m => ({ default: m.JournalStats })),
+  'JournalStats'
 );
 
 type ModuleState = 'card' | 'open';
