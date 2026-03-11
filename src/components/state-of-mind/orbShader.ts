@@ -19,7 +19,7 @@
  *   - Inner depth luminance (pulsating concentric celestial glow)
  *   - Particle glow spots (22 particles as uniforms)
  *
- * Performance: ~0.3ms per frame on mid-range mobile GPU (Mali-G78).
+ * Performance: ~0.4ms per frame on mid-range mobile GPU (Mali-G78).
  * The entire 11-layer Canvas 2D pipeline replaced by ONE GPU draw call.
  */
 
@@ -152,12 +152,12 @@ void main() {
   float rotSpeed = mix(0.055, 0.015, (uValence + 1.0) * 0.5);
   float rotation = uTime * rotSpeed;
   float noiseSpeed = mix(0.85, 0.20, (uValence + 1.0) * 0.5);
-  float noiseAmp = 0.04 + (uValence < 0.0 ? abs(uValence) * 0.11 : abs(uValence) * 0.07);
+  float noiseAmp = 0.04 + (uValence < 0.0 ? abs(uValence) * 0.12 : abs(uValence) * 0.04);
 
   // ── Breathing ──
   float breath = 1.0 + sin(uTime * 0.9) * 0.02;
 
-  // ── Noise displacement (2-octave, per-pixel) ──
+  // ── Noise displacement (3-octave, per-pixel) ──
   float rotAngle = angle + rotation;
   float ca = cos(rotAngle);
   float sa = sin(rotAngle);
@@ -184,8 +184,9 @@ void main() {
   float baseR = 0.38 * (1.0 + uValence * 0.15);
   float shapeR = baseR * sf * (1.0 + noiseDisp) * breath;
 
-  // ── Micro-bump edge detail (high-frequency SDF perturbation) ──
-  float microBump = snoise(vec3(rotAngle * 8.0, dist * 12.0, uTime * 0.4)) * 0.006;
+  // ── Micro-bump edge detail (valence-adaptive: rough crystal → polished gem) ──
+  float microBumpAmp = mix(0.009, 0.003, (uValence + 1.0) * 0.5);
+  float microBump = snoise(vec3(rotAngle * 8.0, dist * 12.0, uTime * 0.4)) * microBumpAmp;
 
   // ── Signed Distance Field ──
   float sdf = dist - shapeR + microBump;

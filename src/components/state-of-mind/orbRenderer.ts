@@ -5,11 +5,11 @@
  *   r(θ) = (|cos(mθ/4)|^n2 + |sin(mθ/4)|^n3)^(-1/n1)
  *
  * Shape morphing driven by valence (-1 → +1):
- *   -1.0 → 8-pointed spiky star  (n1=0.30, n2=n3=0.35)
- *   -0.5 → 7-pointed angular form (n1=0.55, n2=n3=0.70)
- *    0.0 → smooth circle          (n1=n2=n3=2.0)
- *   +0.5 → subtle 5-fold shape    (n1=1.10, n2=n3=1.90)
- *   +1.0 → puffy 5-petal flower   (n1=0.55, n2=n3=1.75)
+ *   -1.0 → 8-pointed chaotic urchin  (asymmetric spikes — anguish, chaos)
+ *   -0.5 → 6-pointed tense crystal   (slight asymmetry — anxiety, unease)
+ *    0.0 → smooth centered sphere     (perfect symmetry — neutral, calm)
+ *   +0.5 → gentle 5-fold bloom        (soft undulation — contentment, warmth)
+ *   +1.0 → radiant 5-petal blossom    (rounded petals — joy, bliss)
  *
  * PREMIUM RENDERING PHILOSOPHY:
  *   Every shape is a luminous volumetric object, not a wireframe sketch.
@@ -193,11 +193,11 @@ interface ShapeParams {
  * Interpolated the same way as colorUtils (lerp between adjacent stops).
  */
 const SHAPE_PRESETS: { valence: number; p: ShapeParams }[] = [
-  { valence: -1.0, p: { m: 8, n1: 0.30, n2: 0.35, n3: 0.35 } }, // spiky urchin
-  { valence: -0.5, p: { m: 7, n1: 0.55, n2: 0.70, n3: 0.70 } }, // angular star
-  { valence:  0.0, p: { m: 6, n1: 2.00, n2: 2.00, n3: 2.00 } }, // perfect circle
-  { valence:  0.5, p: { m: 5, n1: 0.90, n2: 1.85, n3: 1.85 } }, // visible 5-fold petal
-  { valence:  1.0, p: { m: 5, n1: 0.42, n2: 1.70, n3: 1.70 } }, // defined flower bloom
+  { valence: -1.0, p: { m: 8, n1: 0.25, n2: 0.30, n3: 0.45 } }, // chaotic urchin (asymmetric — anguish)
+  { valence: -0.5, p: { m: 6, n1: 0.55, n2: 0.65, n3: 0.80 } }, // tense crystal (slight asymmetry — anxiety)
+  { valence:  0.0, p: { m: 6, n1: 2.00, n2: 2.00, n3: 2.00 } }, // centered sphere (neutral calm)
+  { valence:  0.5, p: { m: 5, n1: 2.00, n2: 1.20, n3: 1.20 } }, // soft bloom (n1>n2/n3 — contentment)
+  { valence:  1.0, p: { m: 5, n1: 1.50, n2: 0.90, n3: 0.90 } }, // radiant blossom (rounded petals — joy)
 ];
 
 export function getShapeParams(valence: number): ShapeParams {
@@ -1010,7 +1010,7 @@ export function drawOrbScene(
 
   // ── Valence-driven animation parameters ──
   // Step 4: More dramatic noise at negative valence (shape writhes)
-  const noiseAmp = 0.04 + (valence < 0 ? Math.abs(valence) * 0.11 : Math.abs(valence) * 0.03);
+  const noiseAmp = 0.04 + (valence < 0 ? Math.abs(valence) * 0.12 : Math.abs(valence) * 0.04);
   const noiseSpeed = mapRange(valence, -1, 1, 0.85, 0.20);
   const rotSpeed = mapRange(valence, -1, 1, 0.055, 0.015);
 
