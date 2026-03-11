@@ -152,7 +152,7 @@ void main() {
   float rotSpeed = mix(0.055, 0.015, (uValence + 1.0) * 0.5);
   float rotation = uTime * rotSpeed;
   float noiseSpeed = mix(0.85, 0.20, (uValence + 1.0) * 0.5);
-  float noiseAmp = 0.04 + (uValence < 0.0 ? abs(uValence) * 0.11 : abs(uValence) * 0.03);
+  float noiseAmp = 0.04 + (uValence < 0.0 ? abs(uValence) * 0.11 : abs(uValence) * 0.07);
 
   // ── Breathing ──
   float breath = 1.0 + sin(uTime * 0.9) * 0.02;
@@ -171,7 +171,12 @@ void main() {
     sa * 5.0 + uTime * noiseSpeed * 0.9 + 100.0,
     10.0
   ));
-  float noiseDisp = (nv1 * 0.7 + nv2 * 0.3) * noiseAmp;
+  float nv3 = snoise(vec3(
+    ca * 10.0 + uTime * noiseSpeed * 1.7 + 200.0,
+    sa * 10.0 + uTime * noiseSpeed * 1.1 + 200.0,
+    10.0
+  ));
+  float noiseDisp = (nv1 * 0.55 + nv2 * 0.30 + nv3 * 0.15) * noiseAmp;
 
   // ── Superformula shape ──
   float mRound = floor(uShapeM + 0.5);
@@ -179,8 +184,11 @@ void main() {
   float baseR = 0.38 * (1.0 + uValence * 0.15);
   float shapeR = baseR * sf * (1.0 + noiseDisp) * breath;
 
+  // ── Micro-bump edge detail (high-frequency SDF perturbation) ──
+  float microBump = snoise(vec3(rotAngle * 8.0, dist * 12.0, uTime * 0.4)) * 0.006;
+
   // ── Signed Distance Field ──
-  float sdf = dist - shapeR;
+  float sdf = dist - shapeR + microBump;
 
   // ── Soft edge (valence-adaptive: dreamy positive, sharp negative) ──
   float edgeWidth = mix(0.008, 0.018, (uValence + 1.0) * 0.5);
@@ -199,7 +207,7 @@ void main() {
   float diff2 = max(dot(normal, lightDir2), 0.0) * 0.3;
 
   vec3 halfDir1 = normalize(lightDir1 + viewDir);
-  float spec1 = pow(max(dot(normal, halfDir1), 0.0), 64.0);
+  float spec1 = pow(max(dot(normal, halfDir1), 0.0), 40.0);
   vec3 halfDir2 = normalize(lightDir2 + viewDir);
   float spec2 = pow(max(dot(normal, halfDir2), 0.0), 32.0) * 0.2;
 
@@ -213,10 +221,11 @@ void main() {
   // ── Iridescence (thin-film interference) ──
   float filmThickness = 0.3 + 0.7 * (1.0 - max(dot(normal, viewDir), 0.0));
   filmThickness += snoise(vec3(center * 4.0, uTime * 0.15)) * 0.15;
+  float iriPhaseOffset = mix(0.5, -0.2, (uValence + 1.0) * 0.5);
   vec3 iridescent = vec3(
-    0.5 + 0.5 * cos(6.2832 * (filmThickness * 1.0 + 0.00)),
-    0.5 + 0.5 * cos(6.2832 * (filmThickness * 1.0 + 0.33)),
-    0.5 + 0.5 * cos(6.2832 * (filmThickness * 1.0 + 0.67))
+    0.5 + 0.5 * cos(6.2832 * (filmThickness * 1.0 + 0.00 + iriPhaseOffset)),
+    0.5 + 0.5 * cos(6.2832 * (filmThickness * 1.0 + 0.33 + iriPhaseOffset)),
+    0.5 + 0.5 * cos(6.2832 * (filmThickness * 1.0 + 0.67 + iriPhaseOffset))
   );
   float iriStrength = fresnel * mix(0.15, 0.35, (uValence + 1.0) * 0.5);
 
@@ -242,8 +251,11 @@ void main() {
   shimmerColor = max(shimmerColor, 0.0);
 
   // ── Caustic Light Patterns (swimming refraction — underwater crystal) ──
-  float caustic1 = sin(center.x * 18.0 + uTime * 0.3) * sin(center.y * 18.0 + uTime * 0.25);
-  float caustic2 = sin(center.x * 12.0 - uTime * 0.2 + 1.5) * sin(center.y * 15.0 + uTime * 0.35 + 0.8);
+  float nv = (uValence + 1.0) * 0.5;
+  float causticFreqHi = mix(22.0, 14.0, nv);
+  float causticFreqLo = mix(16.0, 10.0, nv);
+  float caustic1 = sin(center.x * causticFreqHi + uTime * 0.3) * sin(center.y * causticFreqHi + uTime * 0.25);
+  float caustic2 = sin(center.x * causticFreqLo - uTime * 0.2 + 1.5) * sin(center.y * (causticFreqLo + 3.0) + uTime * 0.35 + 0.8);
   float caustics = (caustic1 + caustic2) * 0.5;
   caustics = pow(max(caustics, 0.0), 2.0); // sharpen peaks → light concentrations
   float causticStr = mix(0.04, 0.14, (uValence + 1.0) * 0.5);
@@ -262,9 +274,9 @@ void main() {
   float edgeB = 1.0 - smoothstep(-edgeWidth, edgeWidth, sdf + chromShift);
 
   // ── Compose lit surface ──
-  vec3 ambient = shimmerColor * 0.20;
+  vec3 ambient = shimmerColor * 0.25;
   vec3 diffuse = shimmerColor * (diff1 * 0.62 + diff2 * 0.18);
-  vec3 specular = vec3(1.0) * (spec1 * 0.50 + spec2 * 0.12);
+  vec3 specular = vec3(1.0) * (spec1 * 0.40 + spec2 * 0.12);
   vec3 rim = shimmerColor * fresnel * fresnelStr;
   vec3 subsurface = shimmerColor * sss;
   vec3 causticColor = vec3(1.0, 0.95, 0.88) * caustics * causticStr;
@@ -277,7 +289,7 @@ void main() {
   float aura = exp(-dist * 3.2) * 0.18 * darkMult;
   float bloom = exp(-dist * 7.0) * 0.08 * darkMult;
 
-  vec3 auraColor = shimmerColor * 1.15;
+  vec3 auraColor = shimmerColor * 1.05;
 
   // ── Volumetric Light Rays (god rays behind orb) ──
   float rayAngle = angle + uTime * 0.03;
@@ -309,7 +321,7 @@ void main() {
                   + auraColor * aura
                   + auraColor * rayIntensity
                   + vec3(1.0) * bloom * 0.25
-                  + (shimmerColor * 1.5 + vec3(0.5)) * particleGlow;
+                  + (shimmerColor * 1.2 + vec3(0.15)) * particleGlow;
   float finalAlpha = clamp(edge + innerGlow + aura + bloom + particleGlow + rayIntensity, 0.0, 1.0);
 
   // ── Vignette (fade to transparent at canvas edges — eliminates square artifact) ──

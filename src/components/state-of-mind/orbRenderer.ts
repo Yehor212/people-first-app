@@ -196,8 +196,8 @@ const SHAPE_PRESETS: { valence: number; p: ShapeParams }[] = [
   { valence: -1.0, p: { m: 8, n1: 0.30, n2: 0.35, n3: 0.35 } }, // spiky urchin
   { valence: -0.5, p: { m: 7, n1: 0.55, n2: 0.70, n3: 0.70 } }, // angular star
   { valence:  0.0, p: { m: 6, n1: 2.00, n2: 2.00, n3: 2.00 } }, // perfect circle
-  { valence:  0.5, p: { m: 5, n1: 1.10, n2: 1.90, n3: 1.90 } }, // subtle 5-fold
-  { valence:  1.0, p: { m: 5, n1: 0.55, n2: 1.75, n3: 1.75 } }, // puffy flower
+  { valence:  0.5, p: { m: 5, n1: 0.90, n2: 1.85, n3: 1.85 } }, // visible 5-fold petal
+  { valence:  1.0, p: { m: 5, n1: 0.42, n2: 1.70, n3: 1.70 } }, // defined flower bloom
 ];
 
 export function getShapeParams(valence: number): ShapeParams {

@@ -11,11 +11,11 @@ interface HSL {
 
 /** Color stops mapped to valence values */
 const COLOR_STOPS: { valence: number; color: HSL }[] = [
-  { valence: -1.0, color: { h: 280, s: 65, l: 30 } },  // Deep violet — dark, brooding
+  { valence: -1.0, color: { h: 280, s: 60, l: 28 } },  // Deep violet — mysterious, brooding
   { valence: -0.5, color: { h: 220, s: 55, l: 45 } },  // Cool blue — distinctly different from violet
   { valence:  0.0, color: { h: 175, s: 55, l: 48 } },  // Teal-cyan — calm center
-  { valence:  0.5, color: { h: 45,  s: 80, l: 55 } },  // Warm amber-gold
-  { valence:  1.0, color: { h: 20,  s: 90, l: 58 } },  // Bright coral — vibrant, joyful
+  { valence:  0.5, color: { h: 45,  s: 62, l: 50 } },  // Rich gold — warm, not neon
+  { valence:  1.0, color: { h: 20,  s: 70, l: 52 } },  // Warm coral — joyful, not blinding
 ];
 
 function lerpHSL(a: HSL, b: HSL, t: number): HSL {
