@@ -449,6 +449,7 @@ export function HabitHubList({
           onAdd={onAddHabit}
           onUpdate={onUpdateHabit}
           editingHabit={editingHabit}
+          activeHabitCount={habits.filter(h => !h.isArchived).length}
         />
       </ModalErrorBoundary>
     </div>

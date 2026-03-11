@@ -157,7 +157,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
   }, [habit, isDeleting, onDelete, onClose]);
 
   return (
-    <Sheet open={!!habit} onOpenChange={(open) => { if (!open) onClose(); }}>
+    <Sheet open={!!habit} onOpenChange={(open) => { if (!open) { setIsDeleting(false); setShowDeleteConfirm(false); onClose(); } }}>
       <SheetContent
         side="bottom"
         className={cn(
@@ -186,9 +186,11 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 <SheetTitle className="text-lg font-semibold text-slate-100 truncate">
                   {habit.name}
                 </SheetTitle>
-                <span className="text-xs text-slate-500 capitalize">
-                  {habit.category || habit.habitType}
-                </span>
+                {habit.category && (
+                  <span className="text-xs text-slate-500 capitalize">
+                    {habit.category}
+                  </span>
+                )}
               </div>
               {/* Score ring */}
               <ProgressRing

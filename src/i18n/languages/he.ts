@@ -1315,6 +1315,8 @@ const hebrewOverrides: Partial<Translations> = {
   weekAbbr: 'ש',
   unitPlaceholder: 'ל, ק"מ, דק\'...',
   addHabitError: 'שגיאה בהוספת הרגל',
+  habitLimitReached: 'הגעת למקסימום של 20 הרגלים. העבר לארכיון או מחק הרגלים קיימים כדי להוסיף חדשים.',
+  confirmTypeChangeDeletesHistory: 'שינוי סוג ההרגל ימחק את כל היסטוריית המעקב. להמשיך?',
   completedHabitReason: 'הרגל הושלם',
   comebackChallengeComplete: 'אתגר החזרה הושלם!',
   questPrefix: 'משימה',

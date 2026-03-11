@@ -176,7 +176,7 @@ export const HabitHubCard = memo(function HabitHubCard({
           </motion.div>
         ) : (
           <motion.div
-            key={`wp-${weeklyProgress.done}`}
+            key={`wp-${weeklyProgress.done}/${weeklyProgress.target}`}
             initial={{ scale: 1.2, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={zenMotion.bouncy}

@@ -1131,6 +1131,8 @@ export const en: Translations = {
   weekAbbr: 'W',
   unitPlaceholder: 'L, km, min...',
   addHabitError: 'Add Habit Error',
+  habitLimitReached: 'Maximum 20 habits reached. Archive or delete existing habits to add new ones.',
+  confirmTypeChangeDeletesHistory: 'Changing the habit type will delete all tracking history. Continue?',
   completedHabitReason: 'Completed habit',
   comebackChallengeComplete: 'Comeback Challenge Complete!',
   questPrefix: 'Quest',

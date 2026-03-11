@@ -1123,6 +1123,8 @@ export const fr: Translations = {
   weekAbbr: 'S',
   unitPlaceholder: 'L, km, min...',
   addHabitError: "Erreur d'ajout d'habitude",
+  habitLimitReached: 'Maximum de 20 habitudes atteint. Archivez ou supprimez des habitudes existantes pour en ajouter.',
+  confirmTypeChangeDeletesHistory: 'Changer le type d\'habitude supprimera tout l\'historique de suivi. Continuer ?',
   completedHabitReason: 'Habitude complétée',
   comebackChallengeComplete: 'Défi de retour terminé !',
   questPrefix: 'Quête',

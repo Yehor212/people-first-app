@@ -22,7 +22,7 @@ export const habitTemplates: HabitTemplate[] = [
   { id: 'journal', names: { en: 'Journal', uk: 'Щоденник', es: 'Diario', de: 'Tagebuch', fr: 'Journal', ja: '日記', ar: 'يوميات', he: 'יומן' }, icon: '✍️', color: 7, habitType: 'boolean' },
   { id: 'quit-smoking', names: { en: 'Quit smoking', uk: 'Кинути палити', es: 'Dejar de fumar', de: 'Mit Rauchen aufhören', fr: 'Arrêter de fumer', ja: '禁煙', ar: 'الإقلاع عن التدخين', he: 'להפסיק לעשן' }, icon: '🚭', color: 15, habitType: 'boolean' },
   { id: 'quit-drinking', names: { en: 'Quit drinking', uk: 'Кинути пити', es: 'Dejar de beber', de: 'Aufhören zu trinken', fr: 'Arrêter de boire', ja: '禁酒', ar: 'الإقلاع عن الشرب', he: 'להפסיק לשתות' }, icon: '🍷', color: 13, habitType: 'boolean' },
-  { id: 'learn-english', names: { en: 'Learn English', uk: 'Вивчити англійську', es: 'Aprender inglés', de: 'Englisch lernen', fr: 'Apprendre l\'anglais', ja: '英語を学ぶ', ar: 'تعلم الإنجليزية', he: 'ללמוד אנגלית' }, icon: '🇬🇧', color: 2, habitType: 'boolean' },
+  { id: 'learn-english', names: { en: 'Learn English', uk: 'Вивчити англійську', es: 'Aprender inglés', de: 'Englisch lernen', fr: 'Apprendre l\'anglais', ja: '英語を学ぶ', ar: 'تعلم الإنجليزية', he: 'ללמוד אנגלית' }, icon: '🗣️', color: 2, habitType: 'boolean' },
 ];
 
 export function getHabitTemplateName(templateId: string, language: Language): string {

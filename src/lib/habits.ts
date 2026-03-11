@@ -26,6 +26,7 @@ export function normalizeHabit(habit: Habit): Habit {
     unit: habit.unit ?? '',
     position: habit.position ?? 0,
     color: typeof habit.color === 'number' ? habit.color : 8,
+    category: habit.category || 'health',
   };
 }
 

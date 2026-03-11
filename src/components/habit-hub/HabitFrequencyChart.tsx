@@ -11,6 +11,8 @@ import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { Habit } from '@/types';
 
+const CHART_MARGIN = { top: 4, right: 4, bottom: 0, left: -20 } as const;
+
 interface HabitFrequencyChartProps {
   habit: Habit;
   className?: string;
@@ -45,7 +47,7 @@ export const HabitFrequencyChart = memo(function HabitFrequencyChart({
 
       <div className="h-[140px] w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={data} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+          <BarChart data={data} margin={CHART_MARGIN}>
             <CartesianGrid
               strokeDasharray="3 3"
               stroke="rgba(255,255,255,0.04)"

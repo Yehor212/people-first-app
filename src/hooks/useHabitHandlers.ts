@@ -18,6 +18,7 @@ import { updateAllQuestsProgress } from '@/lib/randomQuests';
 import { SK } from '@/lib/storageKeys';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import { analytics } from '@/lib/analytics';
+import { LIMITS } from '@/lib/constants';
 import { ENTRY } from '@/types';
 import type { Habit } from '@/types';
 
@@ -242,6 +243,12 @@ export function useHabitHandlers({
   }, [habits, setHabits, fireCompletionEffects]);
 
   const handleAddHabit = (habit: Habit) => {
+    // Guard: enforce MAX_HABITS limit (non-archived only)
+    const activeCount = habits.filter(h => !h.isArchived).length;
+    if (activeCount >= LIMITS.MAX_HABITS) {
+      logger.warn(`[Habits] MAX_HABITS limit reached (${LIMITS.MAX_HABITS})`);
+      return;
+    }
     setHabits(prev => [...prev, habit]);
     triggerSync();
   };

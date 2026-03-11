@@ -9,7 +9,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 // CONSTANTS (shared with HabitCreationForm)
 // ============================================
 
-export const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿', '🚭', '🍷', '🇬🇧', '💪', '🧠'];
+export const habitIcons = ['💧', '🏃', '📚', '🧘', '💊', '🥗', '😴', '✍️', '🎵', '🌿', '🚭', '🍷', '🗣️', '💪', '🧠'];
 
 export const habitCategories: { id: HabitCategory; icon: string; color: string }[] = [
   { id: 'health', icon: '💪', color: 'from-emerald-500 to-teal-500' },
@@ -40,7 +40,8 @@ interface UseHabitFormOptions {
 }
 
 export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions) {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
+  const ts = t as unknown as Record<string, string>;
 
   // Form visibility
   const [isAdding, setIsAdding] = useState(false);
@@ -151,7 +152,12 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
       if (!identityIcon) delete updatedHabit.identityIcon;
 
       // Clear entries when habit type changes — old values are incompatible
+      // Guard: require explicit confirmation to prevent accidental data loss
       if (editingHabit.habitType && editingHabit.habitType !== habitType) {
+        const hasEntries = Object.keys(editingHabit.entries || {}).length > 0;
+        if (hasEntries && !window.confirm(ts.confirmTypeChangeDeletesHistory || 'Changing the habit type will delete all tracking history. Continue?')) {
+          return; // User cancelled — abort save
+        }
         updatedHabit.entries = {};
       }
 
@@ -187,7 +193,7 @@ export function useHabitForm({ onAddHabit, onUpdateHabit }: UseHabitFormOptions)
     selectedIcon, selectedColorIndex, selectedCategory,
     habitType, frequency, question, description,
     targetValue, targetType, unit, reminders,
-    identityCluster, identityVerb, identityIcon,
+    identityCluster, identityVerb, identityIcon, ts,
   ]);
 
   // Create habit immediately from template (true quick-add)

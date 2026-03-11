@@ -1170,6 +1170,8 @@ export interface Translations {
   weekAbbr: string;
   unitPlaceholder: string;
   addHabitError: string;
+  habitLimitReached: string;
+  confirmTypeChangeDeletesHistory: string;
   completedHabitReason: string;
   comebackChallengeComplete: string;
   questPrefix: string;

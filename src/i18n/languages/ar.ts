@@ -981,6 +981,8 @@ const arabicOverrides: Partial<Translations> = {
   weekAbbr: 'أ',
   unitPlaceholder: 'ل، كم، دقيقة...',
   addHabitError: 'خطأ في إضافة العادة',
+  habitLimitReached: 'تم الوصول إلى الحد الأقصى وهو 20 عادة. قم بأرشفة أو حذف العادات الحالية لإضافة جديدة.',
+  confirmTypeChangeDeletesHistory: 'سيؤدي تغيير نوع العادة إلى حذف سجل التتبع بالكامل. هل تريد المتابعة؟',
   completedHabitReason: 'تم إكمال العادة',
   comebackChallengeComplete: 'تم إكمال تحدي العودة!',
   questPrefix: 'مهمة',

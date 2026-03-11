@@ -1122,6 +1122,8 @@ export const uk: Translations = {
   weekAbbr: 'Т',
   unitPlaceholder: 'л, км, хв...',
   addHabitError: 'Помилка додавання звички',
+  habitLimitReached: 'Досягнуто максимум 20 звичок. Архівуйте або видаліть існуючі, щоб додати нові.',
+  confirmTypeChangeDeletesHistory: 'Зміна типу звички видалить всю історію відстеження. Продовжити?',
   completedHabitReason: 'Звичку виконано',
   comebackChallengeComplete: 'Челендж повернення завершено!',
   questPrefix: 'Квест',

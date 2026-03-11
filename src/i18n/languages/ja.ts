@@ -1122,6 +1122,8 @@ export const ja: Translations = {
   weekAbbr: '週',
   unitPlaceholder: 'L, km, 分...',
   addHabitError: '習慣の追加エラー',
+  habitLimitReached: '習慣の上限（20個）に達しました。新しく追加するには、既存の習慣をアーカイブまたは削除してください。',
+  confirmTypeChangeDeletesHistory: '習慣のタイプを変更すると、すべての記録履歴が削除されます。続行しますか？',
   completedHabitReason: '習慣を達成',
   comebackChallengeComplete: 'カムバックチャレンジ達成！',
   questPrefix: 'クエスト',

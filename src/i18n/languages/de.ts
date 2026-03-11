@@ -1123,6 +1123,8 @@ export const de: Translations = {
   weekAbbr: 'W',
   unitPlaceholder: 'L, km, min...',
   addHabitError: 'Fehler beim Hinzufügen der Gewohnheit',
+  habitLimitReached: 'Maximum von 20 Gewohnheiten erreicht. Archiviere oder lösche bestehende, um neue hinzuzufügen.',
+  confirmTypeChangeDeletesHistory: 'Das Ändern des Gewohnheitstyps löscht den gesamten Verlauf. Fortfahren?',
   completedHabitReason: 'Gewohnheit abgeschlossen',
   comebackChallengeComplete: 'Comeback-Challenge abgeschlossen!',
   questPrefix: 'Quest',

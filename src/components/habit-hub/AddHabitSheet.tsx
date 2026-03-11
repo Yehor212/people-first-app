@@ -7,7 +7,7 @@
  * Deep Space aesthetic.
  */
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useKeyboardShift } from '@/hooks/useKeyboardShift';
 import { zenMotion } from '@/lib/animationUtils';
@@ -19,6 +19,7 @@ import { useBackHandler } from '@/hooks/useBackHandler';
 import { useHabitForm, habitIcons, habitCategories, frequencyPresets } from '@/hooks/useHabitForm';
 import { LOOP_PALETTE_LIGHT, resolveHabitColor } from '@/lib/habitColorUtils';
 import { habitTemplates } from '@/lib/habitTemplates';
+import { LIMITS } from '@/lib/constants';
 import type { Habit, LoopHabitType, HabitFrequencyRatio } from '@/types';
 
 const CATEGORY_I18N: Record<string, string> = {
@@ -38,9 +39,10 @@ interface AddHabitSheetProps {
   onAdd: (habit: Habit) => void;
   onUpdate?: (habit: Habit) => void;
   editingHabit?: Habit | null;
+  activeHabitCount?: number;
 }
 
-export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: AddHabitSheetProps) {
+export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, activeHabitCount = 0 }: AddHabitSheetProps) {
   const { t, language } = useLanguage();
   const ts = t as unknown as Record<string, string>;
   const isEditing = !!editingHabit;
@@ -75,7 +77,8 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
 
   // Double-tap guard for template quick-add
   const isQuickAddProcessing = useRef(false);
-  useEffect(() => { if (!open) isQuickAddProcessing.current = false; }, [open]);
+  const [forceCustomFreq, setForceCustomFreq] = useState(false);
+  useEffect(() => { if (!open) { isQuickAddProcessing.current = false; setForceCustomFreq(false); } }, [open]);
 
   // Pre-fill form when opening in edit mode
   const prevEditId = useRef<string | null>(null);
@@ -104,6 +107,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
     frequency.numerator === preset.numerator && frequency.denominator === preset.denominator;
 
   const isCustomFreq = !frequencyPresets.some(p => isPresetMatch(p.ratio));
+  const isAtLimit = !isEditing && activeHabitCount >= LIMITS.MAX_HABITS;
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) handleClose(); }}>
@@ -135,6 +139,13 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
             </SheetTitle>
           </div>
 
+          {/* ═══ LIMIT WARNING ═══ */}
+          {isAtLimit && (
+            <div className="px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs text-center">
+              {ts.habitLimitReached || `Maximum ${LIMITS.MAX_HABITS} habits reached. Archive or delete existing habits to add new ones.`}
+            </div>
+          )}
+
           {/* ═══ TEMPLATES / CUSTOM FORM (crossfade) ═══ */}
           <AnimatePresence mode="wait" initial={false}>
           {!showCustomForm && !isEditing && (
@@ -162,7 +173,8 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                   return (
                     <button
                       key={tmpl.id}
-                      onClick={() => { if (isQuickAddProcessing.current) return; isQuickAddProcessing.current = true; handleQuickAdd(tmpl.id); }}
+                      onClick={() => { if (isAtLimit || isQuickAddProcessing.current) return; isQuickAddProcessing.current = true; handleQuickAdd(tmpl.id); }}
+                      disabled={isAtLimit}
                       className={cn(
                         'flex flex-col items-center justify-center gap-3 p-4 rounded-2xl transition-all',
                         'bg-white/[0.04] border border-white/[0.08]',
@@ -435,12 +447,12 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                   {frequencyPresets.map((preset) => (
                     <button
                       key={preset.label}
-                      onClick={() => setFrequency(preset.ratio)}
-                      aria-pressed={isPresetMatch(preset.ratio)}
+                      onClick={() => { setForceCustomFreq(false); setFrequency(preset.ratio); }}
+                      aria-pressed={isPresetMatch(preset.ratio) && !forceCustomFreq}
                       className={cn(
                         'px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
                         'border',
-                        isPresetMatch(preset.ratio)
+                        (isPresetMatch(preset.ratio) && !forceCustomFreq)
                           ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
                           : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06]',
                       )}
@@ -449,11 +461,11 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                     </button>
                   ))}
                   <button
-                    onClick={() => setFrequency({ numerator: 3, denominator: 7 })}
+                    onClick={() => setForceCustomFreq(true)}
                     className={cn(
                       'px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
                       'border',
-                      isCustomFreq
+                      (forceCustomFreq || isCustomFreq)
                         ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
                         : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06]',
                     )}
@@ -463,7 +475,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                 </div>
 
                 {/* Custom ratio picker */}
-                {isCustomFreq && (
+                {(forceCustomFreq || isCustomFreq) && (
                   <div className="flex items-center gap-2 mt-3">
                     <div className="flex items-center gap-1.5">
                       <button
@@ -541,7 +553,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit }: 
                 </button>
                 <button
                   onClick={submitHabit}
-                  disabled={!newHabitName.trim()}
+                  disabled={!newHabitName.trim() || isAtLimit}
                   className={cn(
                     'flex-1 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[44px]',
                     'bg-gradient-to-r from-violet-600 to-purple-600 text-white',
