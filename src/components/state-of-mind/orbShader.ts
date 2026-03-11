@@ -295,6 +295,10 @@ void main() {
                   + (shimmerColor * 1.5 + vec3(0.5)) * particleGlow;
   float finalAlpha = clamp(edge + innerGlow + aura + bloom + particleGlow + rayIntensity, 0.0, 1.0);
 
+  // ── Vignette (fade to transparent at canvas edges — eliminates square artifact) ──
+  float vignette = 1.0 - smoothstep(0.42, 0.50, dist);
+  finalAlpha *= vignette;
+
   if (uIsDark > 0.5) {
     finalAlpha = min(1.0, finalAlpha * 1.15);
   }

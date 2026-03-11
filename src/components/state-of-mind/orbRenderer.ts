@@ -1146,4 +1146,14 @@ export function drawOrbScene(
 
   // Layer 9: Depth-of-field particles
   drawParticles(ctx, particles, shimmerHSL, dpr, isDark, cx, cy, baseRadius);
+
+  // ── Vignette: fade to transparent at canvas edges — eliminates square artifact ──
+  const vignetteR = Math.min(cx, cy);
+  const vigGrad = ctx.createRadialGradient(cx, cy, vignetteR * 0.84, cx, cy, vignetteR);
+  vigGrad.addColorStop(0, 'rgba(0,0,0,1)');
+  vigGrad.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.globalCompositeOperation = 'destination-in';
+  ctx.fillStyle = vigGrad;
+  ctx.fillRect(0, 0, w, h);
+  ctx.globalCompositeOperation = 'source-over';
 }
