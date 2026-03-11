@@ -148,38 +148,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
     let render = glRenderer ? renderGL : renderCanvas2D;
 
-    // ── Context loss recovery (Law 22, Part 10) ──
-    const handleContextLost = (e: Event) => {
-      e.preventDefault();
-      cancelAnimationFrame(rafRef.current);
-      glRendererRef.current?.dispose();
-      glRendererRef.current = null;
-      // Degrade to Canvas 2D — user sees no interruption
-      ctx2d = canvas.getContext('2d', { willReadFrequently: false });
-      render = renderCanvas2D;
-    };
-
-    const handleContextRestored = () => {
-      // Re-probe from highest tier
-      const restored = createOrbGL2(canvas) ?? createOrbGL(canvas);
-      if (restored) {
-        glRendererRef.current = restored;
-        ctx2d = null;
-        render = renderGL;
-      }
-    };
-
-    canvas.addEventListener('webglcontextlost', handleContextLost);
-    canvas.addEventListener('webglcontextrestored', handleContextRestored);
-
-    // ── Animation ──
-    const animate = shouldAnimate();
-
-    if (!animate) {
-      render(valenceRef.current, 0, stateRef.current.particles);
-      return;
-    }
-
+    // ── Animation loop (defined before context handlers so they can restart it) ──
     const loop = (timestamp: number) => {
       if (!mountedRef.current) return;
 
@@ -221,15 +190,54 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
       rafRef.current = requestAnimationFrame(loop);
     };
 
-    rafRef.current = requestAnimationFrame(loop);
+    // ── Context loss recovery (Law 22, Part 10) ──
+    const handleContextLost = (e: Event) => {
+      e.preventDefault();
+      cancelAnimationFrame(rafRef.current);
+      glRendererRef.current?.dispose();
+      glRendererRef.current = null;
+      // Degrade to Canvas 2D — user sees no interruption
+      ctx2d = canvas.getContext('2d', { willReadFrequently: false });
+      render = renderCanvas2D;
+    };
 
-    return () => {
+    const handleContextRestored = () => {
+      // Re-probe from highest tier
+      const restored = createOrbGL2(canvas) ?? createOrbGL(canvas);
+      if (restored) {
+        glRendererRef.current = restored;
+        ctx2d = null;
+        render = renderGL;
+      }
+      // Restart RAF loop (was killed by handleContextLost)
+      if (shouldAnimate() && mountedRef.current) {
+        rafRef.current = requestAnimationFrame(loop);
+      }
+    };
+
+    canvas.addEventListener('webglcontextlost', handleContextLost);
+    canvas.addEventListener('webglcontextrestored', handleContextRestored);
+
+    // ── Cleanup (returned in ALL code paths — prevents listener/GL leaks) ──
+    const cleanup = () => {
       cancelAnimationFrame(rafRef.current);
       canvas.removeEventListener('webglcontextlost', handleContextLost);
       canvas.removeEventListener('webglcontextrestored', handleContextRestored);
       glRendererRef.current?.dispose();
       glRendererRef.current = null;
     };
+
+    // ── Animation gate ──
+    const animate = shouldAnimate();
+
+    if (!animate) {
+      render(valenceRef.current, 0, stateRef.current.particles);
+      return cleanup;
+    }
+
+    rafRef.current = requestAnimationFrame(loop);
+
+    return cleanup;
   }, [size]);
 
   // Update static frame when valence changes and animations are off

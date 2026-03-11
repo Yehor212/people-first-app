@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowLeft, X, Clock, CalendarDays } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { zenMotion, zenTap } from '@/lib/animationUtils';
 import { haptics } from '@/lib/haptics';
@@ -43,6 +44,9 @@ const stepChild = {
 export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalProps) {
   const { t } = useLanguage();
   const som = useStateOfMind({ isOpen, onClose, onSave });
+
+  // Law 10 (Cross-Platform): Android hardware back button closes modal
+  useBackHandler(isOpen, som.handleClose);
 
   // Law 9 (a11y): Focus trap + Escape key + focus restoration
   const { modalRef, handleKeyDown: trapKeyDown } = useModalKeyboard({
