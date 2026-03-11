@@ -2010,6 +2010,7 @@ const hebrewOverrides: Partial<Translations> = {
 
   // Sync & Storage Errors
   syncFailedLocal: 'הסנכרון נכשל. השינויים נשמרו מקומית.',
+  syncRefreshFailed: 'הסנכרון מושהה — משוך שוב לניסיון חוזר',
   syncQueueFull: 'תור הסנכרון מלא',
   syncQueueFullDesc: 'חלק מהשינויים עלולים לא להסתנכרן. התחבר/י לאינטרנט.',
   syncQueueWarning: 'תור הסנכרון מתמלא',

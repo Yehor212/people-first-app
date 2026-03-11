@@ -79,7 +79,7 @@ export const Header = memo(function Header({ userName = 'Friend', streak, onOpen
           {onOpenTasks && (
             <button
               onClick={onOpenTasks}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-3 bg-[hsl(var(--mood-good))]/10 dark:bg-[hsl(var(--mood-good))]/20 hover:bg-[hsl(var(--mood-good))]/20 dark:hover:bg-[hsl(var(--mood-good))]/30 text-[hsl(var(--mood-good))] rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--mood-good))] focus-visible:ring-offset-2"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-3 bg-[hsl(var(--mood-good))]/10 dark:bg-[hsl(var(--mood-good))]/20 hover:bg-[hsl(var(--mood-good))]/20 dark:hover:bg-[hsl(var(--mood-good))]/30 active:scale-95 text-[hsl(var(--mood-good))] rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--mood-good))] focus-visible:ring-offset-2"
               aria-label={t.openTasks}
             >
               <ListTodo className="w-4 h-4 flex-shrink-0" />
@@ -89,7 +89,7 @@ export const Header = memo(function Header({ userName = 'Friend', streak, onOpen
           {onOpenQuests && (
             <button
               onClick={onOpenQuests}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-3 bg-accent/10 dark:bg-accent/20 hover:bg-accent/20 dark:hover:bg-accent/30 text-accent rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-3 bg-accent/10 dark:bg-accent/20 hover:bg-accent/20 dark:hover:bg-accent/30 active:scale-95 text-accent rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
               aria-label={t.openQuests}
             >
               <Sparkles className="w-4 h-4 flex-shrink-0" />
@@ -99,7 +99,7 @@ export const Header = memo(function Header({ userName = 'Friend', streak, onOpen
           {onOpenChallenges && (
             <button
               onClick={onOpenChallenges}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-primary/10 dark:bg-primary/20 hover:bg-primary/20 dark:hover:bg-primary/30 text-primary rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-primary/10 dark:bg-primary/20 hover:bg-primary/20 dark:hover:bg-primary/30 active:scale-95 text-primary rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t.openChallenges}
             >
               <Trophy className="w-4 h-4 flex-shrink-0" />
@@ -109,7 +109,7 @@ export const Header = memo(function Header({ userName = 'Friend', streak, onOpen
           {onOpenFriends && (
             <button
               onClick={onOpenFriends}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-blue-500/10 dark:bg-blue-500/20 hover:bg-blue-500/20 dark:hover:bg-blue-500/30 text-blue-600 dark:text-blue-400 rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-blue-500/10 dark:bg-blue-500/20 hover:bg-blue-500/20 dark:hover:bg-blue-500/30 active:scale-95 text-blue-600 dark:text-blue-400 rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
               aria-label={t.friends || 'Friends'}
             >
               <Users className="w-4 h-4 flex-shrink-0" />

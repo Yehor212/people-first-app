@@ -55,6 +55,7 @@ export function useSettingsHandlers(allScheduleEvents: ScheduleEvent[]) {
       setGratitudeEntries(g);
     } catch (err) {
       logger.warn('[PullToRefresh] Data refresh failed:', err);
+      throw err; // Re-throw so PullToRefresh can show error feedback
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only: stable callback, all deps are setters
   }, []);

@@ -181,14 +181,14 @@ describe('useSettingsHandlers', () => {
     expect(mockSetGratitudeEntries).toHaveBeenCalledWith([{ id: 'g1' }]);
   });
 
-  it('handlePullToRefresh silently catches errors', async () => {
+  it('handlePullToRefresh re-throws errors for UI feedback', async () => {
     mockSyncWithCloud.mockRejectedValueOnce(new Error('offline'));
 
     const { result } = renderHook(() => useSettingsHandlers(allScheduleEvents));
 
-    // Should not throw
+    // Should re-throw so PullToRefresh can show error feedback
     await act(async () => {
-      await result.current.handlePullToRefresh();
+      await expect(result.current.handlePullToRefresh()).rejects.toThrow('offline');
     });
 
     // setMoods should NOT be called since sync failed

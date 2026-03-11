@@ -1843,6 +1843,7 @@ const arabicOverrides: Partial<Translations> = {
   feedbackFailed: 'فشل إرسال الملاحظات',
   noVersionHistory: 'لا يوجد سجل إصدارات',
   syncFailedLocal: 'فشلت المزامنة. التغييرات محفوظة محلياً.',
+  syncRefreshFailed: 'تم إيقاف المزامنة مؤقتاً — اسحب مرة أخرى للمحاولة',
   // Sync status notifications
   syncQueueFull: 'قائمة المزامنة ممتلئة',
   syncQueueFullDesc: 'قد لا تتم مزامنة بعض التغييرات. يرجى الاتصال بالإنترنت.',

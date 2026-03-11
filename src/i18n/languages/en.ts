@@ -1950,6 +1950,7 @@ export const en: Translations = {
   feedbackFailed: 'Failed to send feedback',
   noVersionHistory: 'No version history available',
   syncFailedLocal: 'Sync failed. Changes saved locally.',
+  syncRefreshFailed: 'Sync paused — pull again to retry',
   // Sync status notifications
   syncQueueFull: 'Sync queue is full',
   syncQueueFullDesc: 'Some changes may not sync. Please connect to the internet.',

@@ -5,10 +5,11 @@
  * Works on both web and native (Capacitor) platforms.
  */
 
-import { useState, useRef, useCallback, type ReactNode } from 'react';
-import { RefreshCw } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect, type ReactNode } from 'react';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { haptics } from '@/lib/haptics';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface PullToRefreshProps {
   /** Async function to call when refresh is triggered */
@@ -30,10 +31,19 @@ export function PullToRefresh({
   enabled = true,
   className,
 }: PullToRefreshProps) {
+  const { t } = useLanguage();
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const startY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-dismiss error after 3 seconds
+  useEffect(() => {
+    if (!error) return;
+    const id = setTimeout(() => setError(false), 3000);
+    return () => clearTimeout(id);
+  }, [error]);
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (!enabled || refreshing) return;
@@ -73,6 +83,10 @@ export function PullToRefresh({
 
       try {
         await onRefresh();
+        setError(false);
+      } catch {
+        setError(true);
+        void haptics.light();
       } finally {
         setRefreshing(false);
       }
@@ -95,6 +109,16 @@ export function PullToRefresh({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
+      {/* Error feedback banner */}
+      {error && (
+        <div className="absolute left-4 right-4 top-2 z-20 flex items-center gap-2 rounded-xl bg-red-500/10 border border-red-500/20 px-3 py-2 animate-fade-in">
+          <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
+          <span className="text-xs text-red-600 dark:text-red-400">
+            {t.syncRefreshFailed || 'Sync paused — pull again to retry'}
+          </span>
+        </div>
+      )}
+
       {/* Pull indicator */}
       <div
         className="absolute left-0 right-0 flex items-center justify-center overflow-hidden transition-all duration-150 ease-out"
@@ -106,7 +130,8 @@ export function PullToRefresh({
       >
         <div
           className={cn(
-            'flex items-center justify-center w-10 h-10 rounded-full bg-primary/10',
+            'flex items-center justify-center w-10 h-10 rounded-full',
+            error ? 'bg-red-500/10' : 'bg-primary/10',
             refreshing && 'animate-pulse'
           )}
           style={{
@@ -116,7 +141,8 @@ export function PullToRefresh({
         >
           <RefreshCw
             className={cn(
-              'w-5 h-5 text-primary',
+              'w-5 h-5',
+              error ? 'text-red-500' : 'text-primary',
               refreshing && 'animate-spin'
             )}
           />

@@ -1942,6 +1942,7 @@ export const de: Translations = {
   feedbackFailed: 'Feedback konnte nicht gesendet werden',
   noVersionHistory: 'Keine Versionshistorie verfügbar',
   syncFailedLocal: 'Synchronisierung fehlgeschlagen. Änderungen lokal gespeichert.',
+  syncRefreshFailed: 'Synchronisierung pausiert — erneut ziehen zum Wiederholen',
   // Sync status notifications
   syncQueueFull: 'Synchronisierungswarteschlange voll',
   syncQueueFullDesc: 'Einige Änderungen werden möglicherweise nicht synchronisiert. Bitte mit dem Internet verbinden.',

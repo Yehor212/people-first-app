@@ -1941,6 +1941,7 @@ export const uk: Translations = {
   feedbackFailed: 'Не вдалося надіслати відгук',
   noVersionHistory: 'Історія версій недоступна',
   syncFailedLocal: 'Синхронізація не вдалася. Зміни збережено локально.',
+  syncRefreshFailed: 'Синхронізацію призупинено — потягніть ще раз',
   // Sync status notifications
   syncQueueFull: 'Черга синхронізації переповнена',
   syncQueueFullDesc: 'Деякі зміни можуть не синхронізуватися. Підключіться до інтернету.',

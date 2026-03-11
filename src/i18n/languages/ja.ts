@@ -1941,6 +1941,7 @@ export const ja: Translations = {
   feedbackFailed: 'フィードバックの送信に失敗しました',
   noVersionHistory: 'バージョン履歴がありません',
   syncFailedLocal: '同期に失敗しました。変更はローカルに保存されました。',
+  syncRefreshFailed: '同期を一時停止 — もう一度引いてリトライ',
   // Sync status notifications
   syncQueueFull: '同期キューがいっぱいです',
   syncQueueFullDesc: '一部の変更が同期されない可能性があります。インターネットに接続してください。',

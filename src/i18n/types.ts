@@ -2052,6 +2052,7 @@ export interface Translations {
   feedbackFailed: string;
   noVersionHistory: string;
   syncFailedLocal: string;
+  syncRefreshFailed: string;
   // Sync status notifications (P0 Premium Upgrade)
   syncQueueFull: string;
   syncQueueFullDesc: string;

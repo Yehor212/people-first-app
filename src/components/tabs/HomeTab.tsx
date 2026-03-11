@@ -195,12 +195,10 @@ export function HomeTab({
             />
           ) : currentPrimaryCTA === 'complete' ? (
             <AllCompleteCelebration streak={currentActiveStreak} />
-          ) : (
-            <>
-              {/* Primary content — order based on user preference */}
-              {moodBlock}
-            </>
-          )}
+          ) : null}
+
+          {/* Mood block — always accessible regardless of state */}
+          {moodBlock}
         </div>
       </PullToRefresh>
 
