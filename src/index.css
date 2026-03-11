@@ -670,16 +670,39 @@
     @apply border-border;
   }
 
+  /* === NATIVE FEEL RESET === */
+
+  /* Kill tap highlight on ALL elements (not just form inputs) */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Disable text selection + long-press callout on UI elements */
+  button,
+  a,
+  nav,
+  [role="button"],
+  [role="tab"],
+  [role="menuitem"],
+  label,
+  header,
+  footer {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
   /* Ensure html fills viewport correctly */
   html {
     height: -webkit-fill-available;
-    overscroll-behavior: contain;
+    overscroll-behavior: none;
+    touch-action: manipulation; /* kill 300ms tap delay */
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Nunito', sans-serif;
-    overscroll-behavior: contain;
+    overscroll-behavior: none;
     /* Safe area padding for Android/iOS notches and navigation bars */
     padding-top: var(--safe-top);
     padding-bottom: var(--safe-bottom);
@@ -1029,7 +1052,7 @@
   }
 
   .animate-tab-enter {
-    animation: tab-enter 0.2s ease-out;
+    animation: tab-enter 0.25s cubic-bezier(0.32, 0.72, 0, 1);
   }
 
   .animate-scale-in {
@@ -1108,7 +1131,7 @@
 @keyframes tab-enter {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -3216,11 +3239,6 @@ textarea:focus {
 }
 
 /* Prevent input background color flash on focus (Android WebView) */
-input,
-textarea,
-select {
-  -webkit-tap-highlight-color: transparent;
-}
 
 /* Remove inner button padding in Firefox */
 input::-moz-focus-inner {
