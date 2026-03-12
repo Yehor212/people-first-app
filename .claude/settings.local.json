@@ -81,7 +81,8 @@
       "Bash(npx cap:*)",
       "Bash(comm:*)",
       "Bash(wmic process:*)",
-      "Bash(npm run lint:*)"
+      "Bash(npm run lint:*)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ]
   }
 }

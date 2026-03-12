@@ -118,7 +118,7 @@ After writing ANY fix, BEFORE declaring it complete:
 Read back every modified file. Verify:
 - The edit actually addresses the root cause (not just a symptom).
 - No typos, no missing imports, no broken syntax.
-- The fix doesn't introduce a NEW violation of Laws 1-15.
+- The fix doesn't introduce a NEW violation of Laws 1-26.
 
 ### 3.2 — Regression Imagination
 For each change, ask: "What ELSE uses this code path?"
@@ -165,3 +165,12 @@ If self-reflection reveals a mistake in your own prior output:
 The Mirror Law transforms the agent from a "fire-and-forget" executor into a self-correcting system. The cost of 30 seconds of self-reflection is INFINITELY lower than the cost of shipping a bug to a live user on Google Play. You do not have the luxury of "good enough" — you have the obligation of "verified correct."
 
 **The agent that reflects catches its own bugs. The agent that doesn't reflects the user's frustration.**
+
+---
+
+## Cross-References
+
+- **Amplifies**: All Laws 1-26 (self-verification gate before work is declared complete)
+- **Mirror 4 (Silence)** → Law 5 (Loud Failure — every catch has user feedback?)
+- **Mirror 5 (Adversary)** → Law 9 (Accessibility — keyboard-only, 320px, RTL), Law 10 (Cross-Platform — iOS/Android/Desktop)
+- **Verified by**: Law 23 Post-Flight (Mirror Protocol is mandatory in POST-FLIGHT)
