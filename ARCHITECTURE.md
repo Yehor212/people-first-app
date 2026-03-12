@@ -2,27 +2,31 @@
 
 > This document is the "constitution" of the ZenFlow codebase.
 > Every PR, every feature, every refactor MUST follow these rules.
-> Last updated: 2026-03-01 (2653 tests, Waves A-G complete + Habit Hub (Loop-style analytics) replaces Mind Map + Store Readiness Audit + Diary WYSIWYG editor overhaul + Zen Focus/Privacy Shield/Panic Gesture + UX Audit Tiers 1-3 + Habit Hub i18n/design polish)
+> Last updated: 2026-03-11 (2664 tests, Full-cycle Senior Dev Audit — 7 new TD items, 3 law refinements, metrics refresh, TD-20 reopened)
 
 ---
 
-## Codebase Metrics (as of 2026-02-25)
+## Codebase Metrics (as of 2026-03-11)
 
 | Metric | Value | Command |
 |--------|-------|---------|
-| Source files | 662 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
-| Test files | 119 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
-| Total LOC | ~57,000 (TSX only) | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
-| Tests passing | 2656/2656 | `npx vitest --run` |
+| Source files | 702 (.ts/.tsx, excl. tests) | `find src -name "*.ts" -o -name "*.tsx" \| grep -v test \| wc -l` |
+| Test files | 121 | `find src test -name "*.test.*" -o -name "*.spec.*" \| wc -l` |
+| Total LOC | ~69,400 (TSX only) | `find src -name "*.tsx" -exec wc -l {} + \| tail -1` |
+| Tests passing | 2664/2664 | `npx vitest --run` |
 | ESLint errors | 0 | `npx eslint src/ --quiet` |
 | ESLint warnings | 0 | `npx eslint . --max-warnings=0` |
 | TypeScript errors | 0 | `npx tsc --noEmit` |
-| God components (>400L) | 2 contexts (AICoachContext 458L, EmotionThemeContext 404L) + 33 components + 3 hooks resolved, 1 dead code deleted, 3 journal out-of-scope | See [Known Technical Debt](#known-technical-debt) |
+| God components (>400L) | 2 contexts (AICoachContext 459L, EmotionThemeContext 404L) + 33 resolved + **7 new violations** (see TD-20) + 1 dead code deleted, 4 journal out-of-scope | See [Known Technical Debt](#known-technical-debt) |
 | Direct localStorage calls | 0 (was 199) | Enforced by ESLint `no-restricted-globals` rule. All access via `SK` + `safeJson`. |
-| Silent .catch(() => {}) | 0 | `grep -rn '\.catch.*=> {}' src/ \| wc -l` |
-| React.memo components | 12 / 80+ | `grep -rl 'memo(' src/ --include="*.tsx" \| wc -l` |
-| lazy() imports | 6 | `grep -rn 'lazy(' src/ \| wc -l` |
-| exhaustive-deps suppressions | 17 across 15 files (all intentional) | `grep -rn 'eslint-disable.*exhaustive-deps' src/ \| wc -l` |
+| Silent .catch(() => {}) | 2 (ErrorBoundary cache cleanup + OrbLottie anim load) | `grep -rn '\.catch.*=> {}' src/ \| wc -l` |
+| React.memo components | 44 / 80+ | `grep -rl 'memo(' src/ --include="*.tsx" \| wc -l` |
+| lazy() imports | 3 | `grep -rn 'lazy(' src/ \| wc -l` |
+| exhaustive-deps suppressions | 22 across ~18 files (all intentional) | `grep -rn 'eslint-disable.*exhaustive-deps' src/ \| wc -l` |
+| Hook test coverage | 36/54 (67%) | `ls src/hooks/__tests__/ \| wc -l` vs `ls src/hooks/*.ts \| wc -l` |
+| Store test coverage | 4/4 (100%) | `ls src/stores/__tests__/ \| wc -l` |
+| index.css LOC | 4,327 | `wc -l src/index.css` |
+| Inline style={{}} | 597 across 174 files | `grep -rn 'style={{' src/ --include="*.tsx" \| wc -l` |
 
 > Update these metrics after each major refactor phase. Compare deltas to track progress.
 
@@ -77,7 +81,7 @@
 ```
 src/
   pages/
-    Index.tsx                   # 407-line orchestrator: hooks → tabs (was 2,800 → 652 → 407)
+    Index.tsx                   # 452-line orchestrator: hooks → tabs (was 2,800 → 652 → 407 → 452)
 
   stores/                       # Zustand stores + bridge hooks
     appStore.ts                 # Auth, initialization, active tab
@@ -88,7 +92,7 @@ src/
     useHydrateGamification.ts   # Bridge: registers gamification hooks into store
     index.ts                    # Barrel export
 
-  hooks/                        # Custom hooks (52 files)
+  hooks/                        # Custom hooks (54 files)
     # Lifecycle hooks (extracted from Index.tsx)
     useAppLifecycle.ts          # App init, splash, loading
     useDateTracking.ts          # Midnight detection, date sync
@@ -591,6 +595,8 @@ Bottom sheets use defensive CSS to prevent WebView stacking context bugs:
 
 5. **Graceful degradation.** If a feature fails to load/sync, the rest of the app continues. Never crash the whole app for a non-critical feature.
 
+6. **Circuit breaker for non-critical sync.** If a sync endpoint fails with schema/permission errors repeatedly, disable it for the session. Pattern: `reminderSync.ts` — tracks consecutive failures, disables after threshold. Prevents infinite retry loops on broken endpoints.
+
 ---
 
 ## Validation
@@ -679,13 +685,13 @@ Bottom sheets use defensive CSS to prevent WebView stacking context bugs:
 
 ### Philosophy: Audit-Driven Development + Selective TDD
 
-We do NOT use pure TDD. Our primary quality gate is the **21 Laws + Mirror Protocol** (audit-driven).
+We do NOT use pure TDD. Our primary quality gate is the **26 Laws + Mirror Protocol** (audit-driven).
 However, we apply **TDD discipline** (test-first) in two specific areas where it prevents real bugs:
 
 1. **Logic-First Test Rule**: Changing business logic (streaks, achievements, sync, date calculations) **starts with updating the test**. See RED → change code → see GREEN. Prevents test drift (e.g., gamification tests falling out of sync).
 2. **Modal Gate Rule**: Every new modal/overlay that can appear on load **MUST have a bypass** in `e2e/smoke.spec.ts` `beforeEach` BEFORE merging. Prevents CI-blocking overlays (learned from WhatsNew v1.7.2 incident).
 
-Visual components (Canvas, CSS, animations) are NOT tested via TDD — they use the 21 Laws audit + visual review.
+Visual components (Canvas, CSS, animations) are NOT tested via TDD — they use the 26 Laws audit + visual review.
 
 ### Strategy
 
@@ -721,7 +727,7 @@ Visual components (Canvas, CSS, animations) are NOT tested via TDD — they use 
 1. **Every new business logic function MUST have tests.** No exceptions.
 2. **Test the behavior, not the implementation.** Don't test internal state shape.
 3. **Test file location:** `src/__tests__/{module}.test.ts` or co-located `*.test.ts`
-4. **Coverage target:** 40% minimum, 70% for `shared/lib/` and `stores/`
+4. **Coverage target:** 40% minimum, 70% for `shared/lib/` and `stores/`. Current: hooks 67% (36/54), stores 100% (4/4).
 5. **Test naming:** `describe('functionName', () => { it('should do X when Y', ...) })`
 6. **Modal Gate Test**: Any component that auto-shows on load (WhatsNew, FeatureUnlock, WelcomeBack) MUST have E2E bypass in `smoke.spec.ts` `beforeEach`.
 7. **Logic-First**: When changing pure business logic, update the test expectation FIRST → see it fail → then change code.
@@ -732,7 +738,7 @@ Visual components (Canvas, CSS, animations) are NOT tested via TDD — they use 
 
 ### General Rules
 
-1. **React.memo** only when measured. Don't prematurely optimize.
+1. **React.memo** — MANDATORY for components receiving callback/object props from parent. OPTIONAL for leaf components with only primitive or no props. Don't prematurely optimize leaf components, but DO protect re-render cascades from parent.
 2. **useMemo/useCallback** for expensive computations and stable references passed to children.
 3. **Lazy load** feature modules:
    ```typescript
@@ -943,17 +949,24 @@ On PR to main:
 | TD-17 | ~~HIGH~~ → DONE | ~~Silent `.catch(() => {})` swallowing errors~~ | **Fixed 2026-02-16**: All 34 instances replaced with `logger.warn`/`logger.error` across 20 files. Categorized by risk: fire-and-forget (warn), data ops (error), with-fallback (warn + fallback). | Various |
 | TD-18 | ~~HIGH~~ → DONE | ~~Memory leaks: uncleaned setTimeout in contexts~~ | **Fixed 2026-02-16**: MoodThemeContext — added useRef + clearTimeout cleanup (EmotionThemeContext already correct). | src/contexts/MoodThemeContext.tsx |
 | TD-19 | ~~HIGH~~ → DONE | ~~Raw console.* calls bypassing logger.ts~~ | **Fixed 2026-02-16**: 16 calls replaced with logger.* in 4 files (main.tsx, sw.ts, sentry.ts, gamificationStore.ts). Remaining: logger.ts (6, implementation) + crashReporting.ts (7, implementation). | Various |
-| TD-20 | ~~HIGH~~ → DONE | God components violating 400-line / 5-useState / 3-useEffect rules | **33 components + 3 hooks + 3 hook-only resolved**, DayClock deleted, 1 SKIP (sidebar), Celebrations.tsx false positive (4 components × 1 useEffect each). | See God Components table below |
+| TD-20 | ~~HIGH~~ → **PARTIALLY RESOLVED** | God components violating 400-line / 5-useState / 3-useEffect rules | **33 components + 3 hooks + 3 hook-only resolved**, DayClock deleted, 1 SKIP (sidebar). **7 new violations appeared** post-audit (HabitCreationForm grew, new components added). | See God Components table below |
 | TD-21 | ~~MEDIUM~~ → DONE | ~~Scattered Capacitor platform checks~~ | **Fixed 2026-02-16**: Created `src/lib/platform.ts` — single source of truth for isNative, platform, isAndroid, isIos, isWeb. ~58 scattered calls → 0 outside platform.ts. 44 files updated, 3 test files migrated to mock `@/lib/platform`. | src/lib/platform.ts |
 | TD-22 | ~~MEDIUM~~ → DONE | ~~Scattered import.meta.env access~~ | **Fixed 2026-02-16**: Created `src/lib/env.ts` — single source of truth for 11 env vars. 26 scattered calls → 0 outside env.ts. 15 files updated. | src/lib/env.ts |
 | TD-23 | ~~MEDIUM~~ → DONE | ~~Direct Supabase calls in UI components~~ | **Fixed 2026-02-17**: Created `feedbackService.ts` + `accountService.ts`. Extracted 10 data/function operations from 5 UI files. 14 auth-only calls remain in place (by design). Original "71 calls" was inflated by grep matching imports/comments; actual was 21. | src/lib/feedbackService.ts, src/lib/accountService.ts |
-| TD-24 | LOW | Low memoization + lazy loading coverage | Only **12/80+** components use React.memo. Only **6** lazy() imports. Heavy components not lazy-loaded. | Various |
+| TD-24 | LOW | Low memoization + lazy loading coverage | React.memo improved: **44/80+** (was 12). Only **3** lazy() imports (was 6). Heavy components not lazy-loaded. | Various |
+| TD-25 | P2 | index.css monolith | **4,327 lines** in a single CSS file. Split plan needed (per-feature partials or CSS modules). | src/index.css |
+| TD-26 | P2 | Feature flags hardcoded | `CANVAS_ENABLED`, `HABIT_HUB_ENABLED` are `const` in Index.tsx (lines 79-80). Extract to central registry with name, default, description per flag. | src/pages/Index.tsx |
+| TD-27 | P2 | Inline style={{}} proliferation | **597 instances** across 174 files. On `React.memo` components, inline objects break memoization. Extract to `useMemo` or module-level constants. | Various |
+| TD-28 | P3 | Feature module migration stalled | Only `features/journal/` migrated. Planned domains (mood, habits, focus, challenges, mindfulness, canvas) remain in `components/` + `hooks/`. | src/components/, src/hooks/ |
+| TD-29 | P3 | Multi-tab sync coordination | `BroadcastChannel` only used for token refresh (`apiClient.ts`). Sync operations lack multi-tab coordination — concurrent tabs can create conflicts. | src/storage/cloudSync.ts |
+| TD-30 | P3 | Missing aria-labels on SVG emojis | 20+ SVG emoji components (coolEmojis.tsx, warmEmojis.tsx) lack `role="img"` + `aria-label`. Screen readers see empty icons. | src/components/animated-emotion-emoji/ |
+| TD-31 | P2 | Silent `.catch(() => {})` reappeared | 2 instances: ErrorBoundary.tsx (cache cleanup) + OrbLottie.tsx (animation load). Should have `// graceful:` annotation per Law 5 convention. | ErrorBoundary.tsx, OrbLottie.tsx |
 
 ### God Components (TD-20 Detail)
 
-> Last audit: 2026-02-16 (Phase 6) via `wc -l` + `grep -c 'useState(' + 'useEffect('`. Limit: 400 lines, 5 useState, 3 useEffect.
+> Last audit: 2026-03-11 (Senior Dev Audit) via `wc -l`. Limit: 400 lines, 5 useState, 3 useEffect.
 > Every PASS must include evidence: command output, file path, or test checklist. No evidence = FAIL.
-> **TD-20 COMPLETE**: All component and hook violations resolved. Only sidebar.tsx (vendored) remains as SKIP.
+> **TD-20 PARTIALLY RESOLVED**: 33 original violations resolved. **7 new violations** appeared (components grew or were added after Phase 6).
 
 #### Resolved (33 components)
 
@@ -977,7 +990,7 @@ On PR to main:
 | RingDetailSheet.tsx | 567L / 0st / 0eff | max 332L / 0st | `ring-detail-sheet/` — 5 files |
 | EmotionGalaxy.tsx | 559L / 2st / 1eff | max 280L / 0st | `emotion-galaxy/` — 6 files |
 | WeeklyReview.tsx | 548L / 1st / 0eff | max 294L / 1st | `weekly-review/` — 5 files (hook extracted) |
-| HabitCreationForm.tsx | 536L / 0st / 1eff | max 394L / 0st | `habit-creation-form/` — 4 files |
+| HabitCreationForm.tsx | 536L / 0st / 1eff | max 394L / 0st | `habit-creation-form/` — 4 files. **⚠️ Regressed to 634L** (Identity Mapping added) — see New Violations |
 | DailySurprise.tsx | 513L / 2st / 1eff | max 313L / 2st | `daily-surprise/` — 4 files (data pool extracted) |
 | ComebackChallenge.tsx | 513L / 2st / 1eff | max 384L / 2st | `comeback-challenge/` — 3 files |
 | WelcomeTutorial.tsx | 471L / 2st / 1eff | max 279L / 2st | `welcome-tutorial/` — 3 files (slides config extracted) |
@@ -1015,7 +1028,19 @@ On PR to main:
 |------|-------|----------|-----------|-------|
 | Celebrations.tsx | 311 | 4 | 4 | 4 components × 1 useEffect each — no single component exceeds limit |
 
-#### Remaining — Component LOC violations (1 file >400L — SKIP)
+#### New Violations (7 files >400L — identified 2026-03-11)
+
+| File | Lines | Severity | Notes |
+|------|-------|----------|-------|
+| habit-creation-form/HabitCreationForm.tsx | **634** | P2 | Regressed from 394L after Identity Mapping section added |
+| habit-hub/AddHabitSheet.tsx | **575** | P2 | New component (Habit Hub feature) |
+| canvas/MindMapCanvas.tsx | **503** | P3 | EXEMPT — `CANVAS_ENABLED=false`, dead code preserved |
+| habit-hub/HabitHubList.tsx | **457** | P3 | New component (Habit Hub feature) |
+| AnimatedMoodEmoji.tsx | **412** | P3 | New — pure presentational, no hooks |
+| stats/HabitCalendar.tsx | **403** | P3 | New — at limit |
+| GrowthRingsCanvas.tsx | **403** | P3 | New — at limit, canvas rendering |
+
+#### Remaining — SKIP (1 file >400L)
 
 | File | Lines | useState | useEffect | Notes |
 |------|-------|----------|-----------|-------|
@@ -1055,16 +1080,20 @@ On PR to main:
 
 ### Audit Cadence
 
-> Run this checklist monthly (or after each major refactor). Compare metrics against [Codebase Metrics](#codebase-metrics-as-of-2026-02-16) table.
+> Run this checklist monthly (or after each major refactor). Compare metrics against [Codebase Metrics](#codebase-metrics-as-of-2026-03-11) table.
 
 1. `npx tsc --noEmit` — must be 0 errors
 2. `npx eslint src/ --quiet` — track error count
 3. `npx vitest --run` — all tests pass
 4. `npm run build` — succeeds
 5. `grep -rn 'localStorage\.' src/ | wc -l` — **0** (enforced by ESLint, was 199)
-6. `grep -rn '\.catch.*=> {}' src/ | wc -l` — **0** (was 34, all fixed)
+6. `grep -rn '\.catch.*=> {}' src/ | wc -l` — track silent catches (target: 0, current: 2)
 7. `find src -name "*.tsx" -exec wc -l {} + | sort -rn | head -20` — god component progress
-8. `grep -rl 'memo(' src/ --include="*.tsx" | wc -l` — memo adoption
+8. `grep -rl 'memo(' src/ --include="*.tsx" | wc -l` — memo adoption (current: 44)
+9. `wc -l src/index.css` — CSS monolith tracking (current: 4,327 — TD-25)
+10. `grep -rn 'style={{' src/ --include="*.tsx" | wc -l` — inline style objects (current: 597 — TD-27)
+11. Hook test coverage: `ls src/hooks/__tests__/ | wc -l` vs `ls src/hooks/*.ts | wc -l` — target ≥ 70%
+12. `grep -rn 'eslint-disable.*exhaustive-deps' src/ | wc -l` — track suppressions (current: 22)
 
 ---
 
@@ -1574,4 +1603,67 @@ After executing: click **"Reset suggestions"** in Performance Advisor, wait 30s,
 
 #### Verification
 - `npx tsc --noEmit` — 0 errors
+- `npm run build` — success
+
+---
+
+### Full-Cycle Senior Developer Audit (2026-03-11)
+
+- Date: 2026-03-11
+- Author: Claude Opus 4.6
+- Scope: Comprehensive codebase audit — "Unknown Unknowns", Architectural Gaps, Missing Professional Standards
+- Method: 3 parallel audit agents (Architecture, Security/Errors, Performance/Races) + Plan agent for verification
+
+#### Audit Verdict: NO NEW LAW NEEDED
+
+From 39 findings across 3 agents:
+- **22** = enforcement gaps in existing laws (laws exist but not followed)
+- **6** = false positives (verified against actual code)
+- **5** = already tracked as technical debt
+- **4** = documented exceptions
+- **2** = genuinely new concerns (covered by extending existing laws)
+
+#### False Positives Corrected
+
+| Agent Claim | Reality |
+|---|---|
+| "Zero store unit tests" | 4 test files, 1400 LOC |
+| "EmotionThemeContext no useMemo" | useMemo wraps provider value |
+| "Zustand selectors recreated every render" | All field-level selectors (correct) |
+| "37/90 hooks tested (41%)" | 36/54 tested (67%) — inflated denominator |
+| "useIndexedDB writePendingRef race condition" | Correct pattern — stale read protection, not TOCTOU |
+
+#### Green Flags (Professional Standards Present)
+
+- Zero XSS vulnerabilities (DOMPurify + Zod schemas + safe char regex)
+- CSP without unsafe-eval (strong script-src policy)
+- Promise-based sync locks (not boolean flags, per Law 25)
+- AbortController timeouts (60s max, checked at multiple points)
+- Environment abstraction (single source env.ts)
+- Sentry integration (PII scrubbing, error categorization)
+- Offline queue (IndexedDB-backed, deduplication, exponential backoff)
+- Auth security (PKCE flow, auto token refresh, Zod validation)
+- Deletion safety (permanent IDs, pull-before-push sync order)
+- Error boundaries (React + global handlers + localStorage logging)
+- Clean dependency graph (zero circular imports)
+
+#### Changes Made
+
+1. **ARCHITECTURE.md metrics updated**: 702 source files, 121 test files, 2664 tests, 69,400 LOC
+2. **TD-20 reopened**: 7 new god component violations identified
+3. **7 new TD items added**: TD-25 (CSS monolith), TD-26 (feature flags), TD-27 (inline styles), TD-28 (feature migration), TD-29 (multi-tab sync), TD-30 (aria-labels), TD-31 (silent catches)
+4. **3 law refinements**: Law 8 Rule 7 (inline styles on memo), Law 14 Rule 7 (feature flag registry), Law 26 Rule 1.1 (CSS complexity threshold)
+5. **Sections updated**: Testing (26 Laws ref), Error Handling (circuit breaker), Performance (memoization policy), Audit Cadence (4 new checks)
+
+#### P1 Enforcement Gaps (fix within 2 releases)
+
+1. Empty `.catch(() => {})` without `// graceful:` comments (Law 5)
+2. Missing aria-labels on SVG emoji icons (Law 9)
+3. Feature flags hardcoded as const → extract to central registry (Law 14)
+4. Fire-and-forget journal deletes without cloud escalation (Law 25)
+
+#### Verification
+- `npx tsc --noEmit` — 0 errors
+- `npx eslint . --max-warnings=0` — 0 warnings
+- `npx vitest --run` — 2664/2664 pass
 - `npm run build` — success
