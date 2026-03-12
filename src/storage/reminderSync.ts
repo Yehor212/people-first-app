@@ -61,10 +61,14 @@ export const syncReminderSettings = async (
 
     if (error) {
       // Reminder sync is non-critical (maxRetries: 0).
-      // Any error (missing table, schema mismatch, RLS, 400, etc.)
-      // disables sync for the rest of this session to stop repeated failures.
+      // Any error disables sync for the rest of this session to stop repeated failures.
       reminderSyncDisabled = true;
-      logger.warn('[ReminderSync] Sync failed, disabled for session:', error.code, error.message);
+      if (error.code === '42P01') {
+        // Table doesn't exist — migration not applied
+        logger.warn('[ReminderSync] Table not found — run migration 20260311_fix_reminder_inner_world.sql. Disabled for session.');
+      } else {
+        logger.warn('[ReminderSync] Sync failed, disabled for session:', error.code, error.message);
+      }
       return;
     }
   }, { priority: 7, maxRetries: 0 }); // No retries - settings sync failures shouldn't loop

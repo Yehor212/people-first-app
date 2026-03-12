@@ -1459,6 +1459,7 @@ export interface Translations {
   tutorialReadySubtitle: string;
   tutorialReadyDesc: string;
   tutorialStart: string;
+  goToSlide: string;
   tutorialJournalTitle: string;
   tutorialJournalSubtitle: string;
   tutorialJournalDesc: string;

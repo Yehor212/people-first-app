@@ -43,6 +43,8 @@ export const AllCompleteCelebration = memo(function AllCompleteCelebration({ str
 
   return (
     <motion.div
+      role="status"
+      aria-live="polite"
       className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-emerald-500/20 via-primary/15 to-teal-500/20 p-8 text-center border border-emerald-500/30 will-change-transform"
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}

@@ -35,6 +35,7 @@ export function PullToRefresh({
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
+  const pullDistanceRef = useRef(0);
   const startY = useRef(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -65,19 +66,21 @@ export function PullToRefresh({
     if (distance > 0) {
       // Apply resistance to make it feel natural
       const resistedDistance = Math.min(distance * 0.5, MAX_PULL);
+      const prevDistance = pullDistanceRef.current;
+      pullDistanceRef.current = resistedDistance;
       setPullDistance(resistedDistance);
 
       // Haptic feedback when crossing threshold
-      if (resistedDistance >= THRESHOLD && pullDistance < THRESHOLD) {
+      if (resistedDistance >= THRESHOLD && prevDistance < THRESHOLD) {
         void haptics.light();
       }
     }
-  }, [enabled, refreshing, pullDistance]);
+  }, [enabled, refreshing]);
 
   const handleTouchEnd = useCallback(async () => {
     if (!enabled || refreshing) return;
 
-    if (pullDistance >= THRESHOLD) {
+    if (pullDistanceRef.current >= THRESHOLD) {
       setRefreshing(true);
       void haptics.medium();
 
@@ -93,9 +96,10 @@ export function PullToRefresh({
     }
 
     // Reset
+    pullDistanceRef.current = 0;
     setPullDistance(0);
     startY.current = 0;
-  }, [enabled, refreshing, pullDistance, onRefresh]);
+  }, [enabled, refreshing, onRefresh]);
 
   // Calculate indicator opacity and rotation based on pull distance
   const progress = Math.min(pullDistance / THRESHOLD, 1);

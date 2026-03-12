@@ -1339,6 +1339,7 @@ export const en: Translations = {
   tutorialReadySubtitle: 'Your journey begins now',
   tutorialReadyDesc: 'Start small – just check in with how you\'re feeling today. Every step counts!',
   tutorialStart: 'Let\'s Go!',
+  goToSlide: 'Go to slide',
   tutorialJournalTitle: 'Diary',
   tutorialJournalSubtitle: 'Your private space to reflect',
   tutorialJournalDesc: 'Write about your day, capture thoughts, and track your journey. Your diary is always private and secure.',

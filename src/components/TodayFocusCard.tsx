@@ -90,6 +90,7 @@ export const TodayFocusCard = memo(function TodayFocusCard({
     >
       <button
         onClick={handleAction}
+        aria-label={title}
         className={cn(
           'w-full text-start p-4 rounded-2xl',
           'bg-gradient-to-r ring-1 transition-all',

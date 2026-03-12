@@ -6,6 +6,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, ChevronLeft, CheckCircle2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useBackHandler } from '@/hooks/useBackHandler';
 import { cn } from '@/lib/utils';
 import { getSlides, getSlideContent } from './slides';
 
@@ -78,6 +79,10 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
       transitionLockRef.current = false;
     }, 300);
   };
+
+  // Android back button: first slide → skip, later slides → go back
+  useBackHandler(currentSlide === 0, onSkip);
+  useBackHandler(currentSlide > 0, handlePrev);
 
   const handleDotClick = (index: number) => {
     // Double protection with both state and ref
@@ -232,13 +237,19 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
             <button
               key={index}
               onClick={() => handleDotClick(index)}
-              className={cn(
-                'h-1.5 sm:h-2 rounded-full transition-all duration-300',
-                index === currentSlide
-                  ? 'w-6 sm:w-8 bg-primary'
-                  : 'w-1.5 sm:w-2 bg-muted hover:bg-muted-foreground/50'
-              )}
-            />
+              aria-label={`${t.goToSlide || 'Go to slide'} ${index + 1}`}
+              aria-current={index === currentSlide ? 'step' : undefined}
+              className="flex items-center justify-center min-w-[44px] min-h-[44px]"
+            >
+              <span
+                className={cn(
+                  'h-1.5 sm:h-2 rounded-full transition-all duration-300',
+                  index === currentSlide
+                    ? 'w-6 sm:w-8 bg-primary'
+                    : 'w-1.5 sm:w-2 bg-muted hover:bg-muted-foreground/50'
+                )}
+              />
+            </button>
           ))}
         </div>
 

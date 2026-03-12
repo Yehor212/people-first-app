@@ -5,6 +5,7 @@ import { MoodInsights } from '@/components/MoodInsights';
 import { SkeletonCard, SkeletonList } from '@/components/ui/skeleton';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 import { useFeatureFlags } from '@/contexts/FeatureFlagsContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useUIStore, useUserDataStore, useGamificationStore, getModalToggle } from '@/stores';
 import { haptics } from '@/lib/haptics';
 import type { MoodEntry, Habit, FocusSession, GratitudeEntry, ScheduleEvent } from '@/types';
@@ -37,6 +38,7 @@ export function GardenTab({
   todayAllEvents, handleAddScheduleEvent, handleDeleteScheduleEvent,
   handleCompleteFocusSession, onToggleHabit, onAddGratitude,
 }: GardenTabProps) {
+  const { t } = useLanguage();
   const { isFeatureVisible } = useFeatureFlags();
   const userName = useUserDataStore(s => s.userName);
   const setCurrentFocusMinutes = useUIStore(s => s.setCurrentFocusMinutes);
@@ -59,7 +61,7 @@ export function GardenTab({
         />
 
         {/* Schedule Timeline — min-h prevents CLS on lazy load */}
-        <div className="min-h-[200px]">
+        <section aria-label={t.scheduleTitle || 'Your Schedule'} className="min-h-[200px]">
         <LazyErrorBoundary componentName="Schedule Timeline">
           <Suspense fallback={<SkeletonList />}>
             <ScheduleTimeline
@@ -69,20 +71,20 @@ export function GardenTab({
             />
           </Suspense>
         </LazyErrorBoundary>
-        </div>
+        </section>
 
         {/* Diary — min-h prevents CLS */}
-        <div id="journal-section" className="min-h-[160px]">
+        <section id="journal-section" aria-label={t.tutorialJournalTitle || 'Diary'} className="min-h-[160px]">
         <LazyErrorBoundary componentName="Journal">
           <Suspense fallback={<SkeletonCard />}>
             <JournalModule onToggleHabit={onToggleHabit} onAddGratitude={onAddGratitude} />
           </Suspense>
         </LazyErrorBoundary>
-        </div>
+        </section>
 
         {/* Breathing Exercise */}
         {isFeatureVisible('breathingExercise') && (
-          <div className="min-h-[100px]">
+          <section aria-label={t.moduleBreathing || 'Breathing'} className="min-h-[100px]">
           <LazyErrorBoundary componentName="Breathing Exercise">
             <Suspense fallback={<SkeletonCard lines={1} />}>
               <BreathingExercise
@@ -97,12 +99,12 @@ export function GardenTab({
               />
             </Suspense>
           </LazyErrorBoundary>
-          </div>
+          </section>
         )}
 
         {/* Focus Timer — min-h prevents CLS */}
         {isFeatureVisible('focusTimer') && (
-          <div className="min-h-[200px]">
+          <section aria-label={t.moduleFocus || 'Focus Timer'} className="min-h-[200px]">
           <ModalErrorBoundary fallbackTitle="Focus Timer Error" fallbackBody="Unable to load focus timer. Try refreshing.">
             <Suspense fallback={<SkeletonCard />}>
               <FocusTimer
@@ -114,7 +116,7 @@ export function GardenTab({
               />
             </Suspense>
           </ModalErrorBoundary>
-          </div>
+          </section>
         )}
 
         {/* Insights */}

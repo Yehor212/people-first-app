@@ -5,6 +5,7 @@
 
 import { Shield, BarChart3 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 
 
 interface ConsentBannerProps {
@@ -22,6 +23,13 @@ export function ConsentBanner({ onConsent }: ConsentBannerProps) {
     onConsent(false);
   };
 
+  const { modalRef, handleKeyDown } = useModalKeyboard({
+    isOpen: true,
+    onClose: handleDecline,
+    closeOnEscape: true,
+    trapFocus: true,
+  });
+
   return (
     <div
       className="fixed inset-0 flex items-end sm:items-center justify-center p-4 sm:pb-4 bg-black/50 backdrop-blur-sm animate-fade-in"
@@ -30,12 +38,12 @@ export function ConsentBanner({ onConsent }: ConsentBannerProps) {
         paddingBottom: 'calc(var(--nav-height) + var(--safe-bottom))'
       }}
     >
-      <div className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 shadow-2xl animate-scale-in max-h-[80dvh] overflow-y-auto">
+      <div ref={modalRef} onKeyDown={handleKeyDown} role="dialog" aria-modal="true" aria-labelledby="consent-title" className="w-full max-w-md bg-card rounded-2xl p-4 sm:p-6 shadow-2xl animate-scale-in max-h-[80dvh] overflow-y-auto">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-2 bg-primary/10 rounded-xl">
             <Shield className="w-6 h-6 text-primary" />
           </div>
-          <h2 className="text-xl font-bold text-foreground">
+          <h2 id="consent-title" className="text-xl font-bold text-foreground">
             {t.consentTitle || 'Privacy Settings'}
           </h2>
         </div>

@@ -24,6 +24,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import { isUserOnline } from '@/lib/presenceService';
 import type { Friend } from './types';
 import { formatLastActive } from './types';
@@ -62,6 +63,15 @@ export function FriendsPanel({
   useBackHandler(!!selectedFriend, () => setSelectedFriend(null));
   useScrollLock(true);
 
+  // Escape key + focus trap (mirrors dual back handler logic)
+  const escapeClose = selectedFriend ? () => setSelectedFriend(null) : onClose;
+  const { modalRef, handleKeyDown: modalKeyDown } = useModalKeyboard({
+    isOpen: true,
+    onClose: escapeClose,
+    closeOnEscape: true,
+    trapFocus: true,
+  });
+
   // Bound formatLastActive with current translations
   const fmtLastActive = (dateStr: string) => formatLastActive(dateStr, tRecord);
 
@@ -71,6 +81,8 @@ export function FriendsPanel({
 
   return (
     <div
+      ref={modalRef}
+      onKeyDown={modalKeyDown}
       role="dialog"
       aria-modal="true"
       aria-labelledby="friends-panel-title"

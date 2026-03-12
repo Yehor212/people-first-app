@@ -10,6 +10,7 @@ import { playNotification, playLevelUp } from '@/lib/audioManager';
 import { getLocale } from '@/lib/timeUtils';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 
 interface TimeHelperProps {
   onClose: () => void;
@@ -19,6 +20,12 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
   const { t, language } = useLanguage();
   useBackHandler(true, onClose);
   useScrollLock(true);
+  const { modalRef, handleKeyDown: modalKeyDown } = useModalKeyboard({
+    isOpen: true,
+    onClose,
+    closeOnEscape: true,
+    trapFocus: true,
+  });
   const [duration, setDuration] = useState(60); // minutes
   const [timeLeft, setTimeLeft] = useState(duration * 60); // seconds
   const [isRunning, setIsRunning] = useState(false);
@@ -101,7 +108,7 @@ export function TimeHelper({ onClose }: TimeHelperProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4" role="dialog" aria-modal="true">
-      <div className="bg-card rounded-2xl shadow-2xl max-w-lg w-full p-6">
+      <div ref={modalRef} onKeyDown={modalKeyDown} className="bg-card rounded-2xl shadow-2xl max-w-lg w-full p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">

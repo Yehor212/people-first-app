@@ -1257,6 +1257,7 @@ const arabicOverrides: Partial<Translations> = {
   tutorialReadySubtitle: 'لنبدأ!',
   tutorialReadyDesc: 'أنت مستعد لبدء رحلتك',
   tutorialStart: 'ابدأ الرحلة',
+  goToSlide: 'انتقل إلى الشريحة',
   tutorialJournalTitle: 'يومياتي',
   tutorialJournalSubtitle: 'مساحتك الخاصة للتأمل',
   tutorialJournalDesc: 'اكتب عن يومك، سجل أفكارك وتابع رحلتك. يومياتك دائماً خاصة وآمنة.',

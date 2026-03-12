@@ -81,6 +81,9 @@ class SyncOrchestrator {
   // Prevents single operations from blocking the entire queue indefinitely
   private readonly OPERATION_TIMEOUT = 45000;
 
+  // Queue size limit to prevent unbounded memory growth under pathological conditions
+  private readonly MAX_QUEUE_SIZE = 50;
+
   // Event handlers (stored for cleanup)
   private onlineHandler = () => this.handleOnlineStatusChange(true);
   private offlineHandler = () => this.handleOnlineStatusChange(false);
@@ -130,6 +133,12 @@ class SyncOrchestrator {
     // Add to queue sorted by priority (higher first)
     this.queue.push(operation);
     this.queue.sort((a, b) => b.priority - a.priority);
+
+    // Drop lowest-priority operation if queue exceeds limit
+    if (this.queue.length > this.MAX_QUEUE_SIZE) {
+      const dropped = this.queue.pop();
+      logger.warn(`[SyncOrchestrator] Queue overflow (>${this.MAX_QUEUE_SIZE}), dropped: ${dropped?.type}`);
+    }
 
     this.updateState({ queueLength: this.queue.length });
 

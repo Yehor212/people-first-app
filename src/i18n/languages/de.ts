@@ -1331,6 +1331,7 @@ export const de: Translations = {
   tutorialReadySubtitle: 'Deine Reise beginnt jetzt',
   tutorialReadyDesc: 'Fang klein an – notiere einfach, wie du dich heute fühlst. Jeder Schritt zählt!',
   tutorialStart: 'Los geht\'s!',
+  goToSlide: 'Gehe zu Folie',
   tutorialJournalTitle: 'Tagebuch',
   tutorialJournalSubtitle: 'Dein privater Raum zum Nachdenken',
   tutorialJournalDesc: 'Schreibe über deinen Tag, halte Gedanken fest und verfolge deine Reise. Dein Tagebuch ist immer privat und sicher.',

@@ -1330,6 +1330,7 @@ export const uk: Translations = {
   tutorialReadySubtitle: 'Ваш шлях починається зараз',
   tutorialReadyDesc: 'Почніть з малого — просто відмітьте, як ви себе почуваєте сьогодні. Кожен крок важливий!',
   tutorialStart: 'Поїхали!',
+  goToSlide: 'Перейти до слайду',
   tutorialJournalTitle: 'Щоденник',
   tutorialJournalSubtitle: 'Ваш приватний простір для роздумів',
   tutorialJournalDesc: 'Пишіть про свій день, фіксуйте думки та відстежуйте свій шлях. Щоденник завжди приватний і захищений.',

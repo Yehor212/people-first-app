@@ -267,6 +267,9 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
                 return (
                   <button
                     key={module.id}
+                    role="checkbox"
+                    aria-checked={isSelected}
+                    aria-label={getModuleName(module.id)}
                     onClick={() => toggleModule(module.id)}
                     className={cn(
                       "relative p-4 rounded-xl flex flex-col items-center gap-2 transition-all duration-200 text-center overflow-hidden",

@@ -6,6 +6,7 @@ import { Sparkles, Clock, Zap, Target, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
 import { useScrollLock } from '@/hooks/useScrollLock';
+import { useModalKeyboard } from '@/hooks/useModalKeyboard';
 import {
   Quest,
   generateDailyQuest,
@@ -27,14 +28,13 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
   useBackHandler(!!onClose, onClose ?? (() => {}));
   useScrollLock(!!onClose);
 
-  // Escape key: close panel
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') { e.preventDefault(); onClose?.(); }
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
+  // Escape key + focus trap
+  const { modalRef, handleKeyDown: modalKeyDown } = useModalKeyboard({
+    isOpen: true,
+    onClose: onClose ?? (() => {}),
+    closeOnEscape: true,
+    trapFocus: true,
+  });
 
   const [dailyQuest, setDailyQuest] = useState<Quest | null>(null);
   const [weeklyQuest, setWeeklyQuest] = useState<Quest | null>(null);
@@ -148,7 +148,7 @@ export function QuestsPanel({ onClose }: QuestsPanelProps) {
   const tRecord = t as unknown as QuestCardTranslations;
 
   return (
-    <div role="dialog" aria-modal="true" aria-labelledby="quests-title" className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto">
+    <div ref={modalRef} onKeyDown={modalKeyDown} role="dialog" aria-modal="true" aria-labelledby="quests-title" className="fixed inset-0 z-[60] bg-background/95 backdrop-blur-sm overflow-y-auto">
       <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">

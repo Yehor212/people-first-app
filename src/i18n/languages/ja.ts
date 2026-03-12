@@ -1330,6 +1330,7 @@ export const ja: Translations = {
   tutorialReadySubtitle: '旅が今始まります',
   tutorialReadyDesc: '小さく始めよう – まず今日の気分をチェックインするだけ。すべてのステップが大切です！',
   tutorialStart: 'レッツゴー！',
+  goToSlide: 'スライドに移動',
   tutorialJournalTitle: '日記',
   tutorialJournalSubtitle: '振り返りのためのプライベートスペース',
   tutorialJournalDesc: '一日のことを書いて、思考を記録し、旅を追跡しましょう。日記は常にプライベートで安全です。',

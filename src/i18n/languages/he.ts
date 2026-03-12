@@ -1488,6 +1488,7 @@ const hebrewOverrides: Partial<Translations> = {
   tutorialReadySubtitle: 'המסע שלך מתחיל עכשיו',
   tutorialReadyDesc: 'התחל/י בקטן – פשוט בדוק/י איך מרגישים היום. כל צעד חשוב!',
   tutorialStart: 'בוא נתחיל!',
+  goToSlide: 'עבור לשקופית',
   tutorialJournalTitle: 'היומן',
   tutorialJournalSubtitle: 'המרחב הפרטי שלך להתבוננות',
   tutorialJournalDesc: 'כתוב על היום שלך, תעד מחשבות ועקוב אחרי המסע שלך. היומן שלך תמיד פרטי ומאובטח.',
