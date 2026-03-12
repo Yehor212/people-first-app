@@ -189,15 +189,24 @@ interface ShapeParams {
 }
 
 /**
- * 5-stop preset system for superformula parameters.
+ * 7-stop preset system for superformula parameters.
+ * Aligned to the 7 ValenceSlider snap positions (-1, -0.667, -0.333, 0, +0.333, +0.667, +1).
  * Interpolated the same way as colorUtils (lerp between adjacent stops).
+ *
+ * Psychology (Bouba/Kiki effect, Bar & Neta 2006):
+ *   n1 < n2/n3 → pinched/spiky (threat, negative valence)
+ *   n1 > n2/n3 → rounded/bloated (safety, positive valence)
+ *   Odd m (7,9) → visual instability; Even m (4,6) → balanced
+ *   Descending m from -1→+1: many chaotic spikes → few broad petals
  */
 const SHAPE_PRESETS: { valence: number; p: ShapeParams }[] = [
-  { valence: -1.0, p: { m: 8, n1: 0.25, n2: 0.30, n3: 0.45 } }, // chaotic urchin (asymmetric — anguish)
-  { valence: -0.5, p: { m: 6, n1: 0.55, n2: 0.65, n3: 0.80 } }, // tense crystal (slight asymmetry — anxiety)
-  { valence:  0.0, p: { m: 6, n1: 2.00, n2: 2.00, n3: 2.00 } }, // centered sphere (neutral calm)
-  { valence:  0.5, p: { m: 5, n1: 2.00, n2: 1.20, n3: 1.20 } }, // soft bloom (n1>n2/n3 — contentment)
-  { valence:  1.0, p: { m: 5, n1: 1.50, n2: 0.90, n3: 0.90 } }, // radiant blossom (rounded petals — joy)
+  { valence: -1.000, p: { m: 9, n1: 0.20, n2: 0.25, n3: 0.50 } }, // 9-fold chaotic urchin (asymmetric spikes — anguish)
+  { valence: -0.667, p: { m: 7, n1: 0.35, n2: 0.45, n3: 0.60 } }, // 7-fold jagged crystal (cracked mineral — anxiety)
+  { valence: -0.333, p: { m: 6, n1: 0.70, n2: 0.80, n3: 0.90 } }, // 6-fold tensed hexagon (guarded — mild unease)
+  { valence:  0.000, p: { m: 6, n1: 2.00, n2: 2.00, n3: 2.00 } }, // centered sphere (balanced — neutral calm)
+  { valence:  0.333, p: { m: 5, n1: 1.80, n2: 1.40, n3: 1.40 } }, // 5-fold soft undulation (rounded starfish — warmth)
+  { valence:  0.667, p: { m: 5, n1: 1.60, n2: 1.00, n3: 1.00 } }, // 5-petal bloom (visible petals — contentment)
+  { valence:  1.000, p: { m: 4, n1: 1.30, n2: 0.75, n3: 0.75 } }, // 4-fold radiant blossom (heart/clover — joy, bliss)
 ];
 
 export function getShapeParams(valence: number): ShapeParams {
@@ -236,6 +245,24 @@ function hsla(h: number, s: number, l: number, a: number): string {
   return `hsla(${Math.round(h)}, ${Math.round(s)}%, ${Math.round(l)}%, ${a.toFixed(3)})`;
 }
 
+/** GLSL-compatible smoothstep: Hermite interpolation */
+function smoothstep(edge0: number, edge1: number, x: number): number {
+  const t = Math.max(0, Math.min(1, (x - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+/**
+ * Physiological breathing curve (inhale 4 → hold 1 → exhale 5 → pause 2 beats).
+ * Returns 0→1→0 with natural timing. Matches WebGL shader breathCycle.
+ */
+function breathCycle(t: number, period: number): number {
+  const phase = ((t / period) % 1 + 1) % 1; // fract (handles negative t)
+  const inhale = smoothstep(0.0, 0.333, phase);
+  const exhale = 1.0 - smoothstep(0.417, 0.833, phase);
+  const pause = phase >= 0.833 ? 1.0 : 0.0;
+  return Math.min(inhale, exhale) * (1.0 - pause);
+}
+
 // ── Superformula Core ──
 
 /** Gielis superformula: returns radius multiplier in ~[0.1, 1.0] */
@@ -272,19 +299,34 @@ function computeShapePoints(
   noiseAmp: number,
   noiseSpeed: number,
   seed: number,
+  valence: number,
 ): [number, number][] {
   const points: [number, number][] = [];
   const mInt = Math.round(shape.m); // integer m for clean closure
 
+  // Domain warp amplitude: strong chaotic warping at negative, gentle flow at positive
+  const warpAmp = mapRange(valence, -1, 1, 0.10, 0.015);
+
   for (let i = 0; i < SHAPE_POINTS; i++) {
     const angle = (i / SHAPE_POINTS) * Math.PI * 2 + rotationOffset;
-
-    // Superformula radius
-    const sf = superformula(angle, mInt, shape.n1, shape.n2, shape.n3);
-
-    // 2-octave noise for organic asymmetry
     const cosA = Math.cos(angle);
     const sinA = Math.sin(angle);
+
+    // Domain warp: warp the angle before superformula lookup (Inigo Quilez technique)
+    const warp1 = noise2d(
+      cosA * 1.8 + time * noiseSpeed * 0.4 + seed,
+      sinA * 1.8 + time * noiseSpeed * 0.3 + seed,
+    );
+    const warp2 = noise2d(
+      cosA * 3.5 + time * noiseSpeed * 0.7 + seed + 50,
+      sinA * 3.5 + time * noiseSpeed * 0.5 + seed + 50,
+    );
+    const warpedAngle = angle + (warp1 * 0.65 + warp2 * 0.35) * warpAmp * Math.PI * 2;
+
+    // Superformula radius with warped angle
+    const sf = superformula(warpedAngle, mInt, shape.n1, shape.n2, shape.n3);
+
+    // 2-octave noise for organic asymmetry (reduced 40% — domain warp handles deformation)
     const nv1 = noise2d(
       cosA * 2.5 + time * noiseSpeed + seed,
       sinA * 2.5 + time * noiseSpeed * 0.7 + seed,
@@ -293,7 +335,7 @@ function computeShapePoints(
       cosA * 5.0 + time * noiseSpeed * 1.3 + seed + 100,
       sinA * 5.0 + time * noiseSpeed * 0.9 + seed + 100,
     );
-    const noiseDisp = (nv1 * 0.7 + nv2 * 0.3) * noiseAmp;
+    const noiseDisp = (nv1 * 0.7 + nv2 * 0.3) * noiseAmp * 0.6;
 
     const r = baseRadius * sf * (1 + noiseDisp) * breathScale;
 
@@ -412,12 +454,13 @@ function drawShapeFill(
   seed: number,
   strokeMode: 'glow' | 'none' = 'none',
   compositeOp?: GlobalCompositeOperation,
+  valence = 0,
 ) {
   const h = hsl.h + hueShift;
 
   const points = computeShapePoints(
     cx, cy, baseRadius, shape, time, rotation,
-    breathScale, noiseAmp, noiseSpeed, seed,
+    breathScale, noiseAmp, noiseSpeed, seed, valence,
   );
 
   const prevComposite = ctx.globalCompositeOperation;
@@ -974,10 +1017,11 @@ function drawShapeShadow(
   hsl: { h: number; s: number; l: number },
   noiseAmp: number,
   noiseSpeed: number,
+  valence = 0,
 ) {
   const points = computeShapePoints(
     cx, cy, baseRadius * 1.08, shape, time, rotation,
-    breathScale, noiseAmp * 0.6, noiseSpeed * 0.5, 200,
+    breathScale, noiseAmp * 0.6, noiseSpeed * 0.5, 200, valence,
   );
 
   const shadowAlpha = 0.18;
@@ -1022,10 +1066,13 @@ export function drawOrbScene(
   const hueShimmer = noise2d(time * 0.12, 300) * 8; // ±8° hue drift
   const shimmerHSL = { h: hsl.h + hueShimmer, s: hsl.s, l: hsl.l };
 
-  // ── Layered breath animation (wave from outer to inner) ──
-  const outerBreath = 1 + Math.sin(time * 0.9) * 0.025;
-  const bodyBreath  = 1 + Math.sin(time * 0.9 + 0.8) * 0.020;
-  const innerBreath = 1 + Math.sin(time * 0.9 + 1.6) * 0.015;
+  // ── Physiological breathing (inhale→hold→exhale→pause, wave from outer to inner) ──
+  const breathPeriod = mapRange(valence, -1, 1, 8.0, 16.0); // anxious=fast, calm=slow
+  const breathJitter = noise2d(time * 0.03, 500) * 0.05; // ±5% organic drift
+  const jitteredPeriod = breathPeriod * (1 + breathJitter);
+  const outerBreath = 1 + breathCycle(time, jitteredPeriod) * 0.04 - 0.02;          // ±0.02
+  const bodyBreath  = 1 + breathCycle(time - 0.8, jitteredPeriod) * 0.032 - 0.016;  // ±0.016, phase-lagged
+  const innerBreath = 1 + breathCycle(time - 1.6, jitteredPeriod) * 0.024 - 0.012;  // ±0.012, more lagged
 
   // Layer 0: Cached glow layer (real shadowBlur, ~0ms per frame)
   const glowCanvas = getOrCreateGlowCache(baseRadius * 1.2, hsl, isDark);
@@ -1046,7 +1093,7 @@ export function drawOrbScene(
   drawShapeShadow(
     ctx, cx, cy, baseRadius * 1.0, shape, time,
     time * rotSpeed, outerBreath, shimmerHSL,
-    noiseAmp, noiseSpeed,
+    noiseAmp, noiseSpeed, valence,
   );
 
   // ── Layers 3-5: Soft-edge body composite ──
@@ -1070,7 +1117,7 @@ export function drawOrbScene(
       isDark ? 0.22 : 0.16,
       shimmerHSL, noiseAmp, noiseSpeed,
       isDark, 5, 0,
-      'none',
+      'none', undefined, valence,
     );
 
     // Layer 4: Primary solid body
@@ -1082,7 +1129,7 @@ export function drawOrbScene(
       isDark ? 0.82 : 0.72,
       shimmerHSL, noiseAmp, noiseSpeed,
       isDark, 0, 10,
-      'glow',
+      'glow', undefined, valence,
     );
 
     // Layer 5: Inner luminosity
@@ -1094,8 +1141,7 @@ export function drawOrbScene(
       isDark ? 0.18 : 0.14,
       shimmerHSL, noiseAmp * 0.5, noiseSpeed * 0.6,
       isDark, 10, 50,
-      'none',
-      'lighter',
+      'none', 'lighter', valence,
     );
 
     // Composite back with soft blur — airbrushed edges

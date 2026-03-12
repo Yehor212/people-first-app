@@ -54,6 +54,7 @@ void main() {
 
 const FRAG_SRC = `
 precision highp float;
+#extension GL_OES_standard_derivatives : enable
 
 uniform vec2 uResolution;
 uniform float uTime;
@@ -154,8 +155,16 @@ void main() {
   float noiseSpeed = mix(0.85, 0.20, (uValence + 1.0) * 0.5);
   float noiseAmp = 0.04 + (uValence < 0.0 ? abs(uValence) * 0.12 : abs(uValence) * 0.04);
 
-  // ── Breathing ──
-  float breath = 1.0 + sin(uTime * 0.9) * 0.02;
+  // ── Physiological Breathing (inhale 4 → hold 1 → exhale 5 → pause 2 beats) ──
+  // Valence-adaptive period: anxious breathes fast, calm breathes slow
+  float breathPeriod = mix(8.0, 16.0, (uValence + 1.0) * 0.5);
+  float breathJitter = snoise(vec3(uTime * 0.03, 500.0, 0.0)) * 0.05; // ±5% organic drift
+  float breathPhase = fract(uTime / (breathPeriod * (1.0 + breathJitter)));
+  float breathInhale = smoothstep(0.0, 0.333, breathPhase);
+  float breathExhale = 1.0 - smoothstep(0.417, 0.833, breathPhase);
+  float breathPause = step(0.833, breathPhase);
+  float breathCurve = min(breathInhale, breathExhale) * (1.0 - breathPause);
+  float breath = 1.0 + breathCurve * 0.04 - 0.02;
 
   // ── Noise displacement (3-octave, per-pixel) ──
   float rotAngle = angle + rotation;
@@ -176,11 +185,26 @@ void main() {
     sa * 10.0 + uTime * noiseSpeed * 1.1 + 200.0,
     10.0
   ));
-  float noiseDisp = (nv1 * 0.55 + nv2 * 0.30 + nv3 * 0.15) * noiseAmp;
+  float noiseDisp = (nv1 * 0.55 + nv2 * 0.30 + nv3 * 0.15) * noiseAmp * 0.6;
+
+  // ── Domain warp: warp the angle before superformula lookup (Inigo Quilez technique) ──
+  float warpAmp = mix(0.10, 0.015, (uValence + 1.0) * 0.5);
+  // -1.0 → 0.10 (strong chaotic warping), +1.0 → 0.015 (gentle organic flow)
+  float warp1 = snoise(vec3(
+    ca * 1.8 + uTime * noiseSpeed * 0.4,
+    sa * 1.8 + uTime * noiseSpeed * 0.3,
+    uTime * 0.05
+  ));
+  float warp2 = snoise(vec3(
+    ca * 3.5 + uTime * noiseSpeed * 0.7 + 50.0,
+    sa * 3.5 + uTime * noiseSpeed * 0.5 + 50.0,
+    uTime * 0.08 + 100.0
+  ));
+  float warpedAngle = rotAngle + (warp1 * 0.65 + warp2 * 0.35) * warpAmp * 6.2832;
 
   // ── Superformula shape ──
   float mRound = floor(uShapeM + 0.5);
-  float sf = superformula(rotAngle, mRound, uShapeN1, uShapeN2, uShapeN3);
+  float sf = superformula(warpedAngle, mRound, uShapeN1, uShapeN2, uShapeN3);
   float baseR = 0.38 * (1.0 + uValence * 0.15);
   float shapeR = baseR * sf * (1.0 + noiseDisp) * breath;
 
@@ -191,9 +215,10 @@ void main() {
   // ── Signed Distance Field ──
   float sdf = dist - shapeR + microBump;
 
-  // ── Soft edge (valence-adaptive: dreamy positive, sharp negative) ──
-  float edgeWidth = mix(0.008, 0.018, (uValence + 1.0) * 0.5);
-  float edge = 1.0 - smoothstep(-edgeWidth, edgeWidth, sdf);
+  // ── Soft edge (fwidth-based resolution-independent AA, valence-adaptive) ──
+  float fw = fwidth(sdf);
+  float edgeScale = mix(1.0, 2.5, (uValence + 1.0) * 0.5);
+  float edge = 1.0 - smoothstep(-fw * edgeScale, fw * edgeScale, sdf);
 
   // ── 3D Normal (sphere approximation for lighting) ──
   float normalZ = sqrt(max(0.001, 1.0 - clamp(dist * dist / (shapeR * shapeR), 0.0, 1.0)));
@@ -342,7 +367,7 @@ void main() {
 
 const FRAG_SRC_300 = FRAG_SRC
   .replace(
-    '\nprecision highp float;',
+    '\nprecision highp float;\n#extension GL_OES_standard_derivatives : enable',
     '#version 300 es\nprecision highp float;\nout vec4 fragColor;',
   )
   .replace('gl_FragColor', 'fragColor');
@@ -542,5 +567,6 @@ export function createOrbGL2(canvas: HTMLCanvasElement): OrbGLRenderer | null {
 export function createOrbGL(canvas: HTMLCanvasElement): OrbGLRenderer | null {
   const gl = canvas.getContext('webgl', GL_OPTIONS);
   if (!gl) return null;
+  gl.getExtension('OES_standard_derivatives'); // Required for fwidth() in GLSL ES 1.0
   return buildRenderer(gl, VERT_SRC, FRAG_SRC);
 }
