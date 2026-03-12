@@ -206,7 +206,7 @@ const SHAPE_PRESETS: { valence: number; p: ShapeParams }[] = [
   { valence:  0.000, p: { m: 6, n1: 2.00, n2: 2.00, n3: 2.00 } }, // centered sphere (balanced — neutral calm)
   { valence:  0.333, p: { m: 5, n1: 1.80, n2: 1.40, n3: 1.40 } }, // 5-fold soft undulation (rounded starfish — warmth)
   { valence:  0.667, p: { m: 5, n1: 1.60, n2: 1.00, n3: 1.00 } }, // 5-petal bloom (visible petals — contentment)
-  { valence:  1.000, p: { m: 4, n1: 1.30, n2: 0.75, n3: 0.75 } }, // 4-fold radiant blossom (heart/clover — joy, bliss)
+  { valence:  1.000, p: { m: 5, n1: 1.40, n2: 0.85, n3: 0.85 } }, // 5-fold radiant blossom (flower petals — joy, bliss)
 ];
 
 export function getShapeParams(valence: number): ShapeParams {
@@ -305,7 +305,7 @@ function computeShapePoints(
   const mInt = Math.round(shape.m); // integer m for clean closure
 
   // Domain warp amplitude: strong chaotic warping at negative, gentle flow at positive
-  const warpAmp = mapRange(valence, -1, 1, 0.10, 0.015);
+  const warpAmp = mapRange(valence, -1, 1, 0.10, 0.045);
 
   for (let i = 0; i < SHAPE_POINTS; i++) {
     const angle = (i / SHAPE_POINTS) * Math.PI * 2 + rotationOffset;
@@ -326,7 +326,7 @@ function computeShapePoints(
     // Superformula radius with warped angle
     const sf = superformula(warpedAngle, mInt, shape.n1, shape.n2, shape.n3);
 
-    // 2-octave noise for organic asymmetry (reduced 40% — domain warp handles deformation)
+    // 2-octave noise for organic asymmetry (domain warp adds complementary deformation)
     const nv1 = noise2d(
       cosA * 2.5 + time * noiseSpeed + seed,
       sinA * 2.5 + time * noiseSpeed * 0.7 + seed,
@@ -335,7 +335,7 @@ function computeShapePoints(
       cosA * 5.0 + time * noiseSpeed * 1.3 + seed + 100,
       sinA * 5.0 + time * noiseSpeed * 0.9 + seed + 100,
     );
-    const noiseDisp = (nv1 * 0.7 + nv2 * 0.3) * noiseAmp * 0.6;
+    const noiseDisp = (nv1 * 0.7 + nv2 * 0.3) * noiseAmp;
 
     const r = baseRadius * sf * (1 + noiseDisp) * breathScale;
 
@@ -1070,9 +1070,9 @@ export function drawOrbScene(
   const breathPeriod = mapRange(valence, -1, 1, 8.0, 16.0); // anxious=fast, calm=slow
   const breathJitter = noise2d(time * 0.03, 500) * 0.05; // ±5% organic drift
   const jitteredPeriod = breathPeriod * (1 + breathJitter);
-  const outerBreath = 1 + breathCycle(time, jitteredPeriod) * 0.04 - 0.02;          // ±0.02
-  const bodyBreath  = 1 + breathCycle(time - 0.8, jitteredPeriod) * 0.032 - 0.016;  // ±0.016, phase-lagged
-  const innerBreath = 1 + breathCycle(time - 1.6, jitteredPeriod) * 0.024 - 0.012;  // ±0.012, more lagged
+  const outerBreath = 1 + breathCycle(time, jitteredPeriod) * 0.05 - 0.025;          // ±0.025
+  const bodyBreath  = 1 + breathCycle(time - 0.8, jitteredPeriod) * 0.04 - 0.02;    // ±0.020, phase-lagged
+  const innerBreath = 1 + breathCycle(time - 1.6, jitteredPeriod) * 0.03 - 0.015;   // ±0.015, more lagged
 
   // Layer 0: Cached glow layer (real shadowBlur, ~0ms per frame)
   const glowCanvas = getOrCreateGlowCache(baseRadius * 1.2, hsl, isDark);

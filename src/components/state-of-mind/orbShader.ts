@@ -164,7 +164,7 @@ void main() {
   float breathExhale = 1.0 - smoothstep(0.417, 0.833, breathPhase);
   float breathPause = step(0.833, breathPhase);
   float breathCurve = min(breathInhale, breathExhale) * (1.0 - breathPause);
-  float breath = 1.0 + breathCurve * 0.04 - 0.02;
+  float breath = 1.0 + breathCurve * 0.05 - 0.025;
 
   // ── Noise displacement (3-octave, per-pixel) ──
   float rotAngle = angle + rotation;
@@ -185,10 +185,10 @@ void main() {
     sa * 10.0 + uTime * noiseSpeed * 1.1 + 200.0,
     10.0
   ));
-  float noiseDisp = (nv1 * 0.55 + nv2 * 0.30 + nv3 * 0.15) * noiseAmp * 0.6;
+  float noiseDisp = (nv1 * 0.55 + nv2 * 0.30 + nv3 * 0.15) * noiseAmp;
 
   // ── Domain warp: warp the angle before superformula lookup (Inigo Quilez technique) ──
-  float warpAmp = mix(0.10, 0.015, (uValence + 1.0) * 0.5);
+  float warpAmp = mix(0.10, 0.045, (uValence + 1.0) * 0.5);
   // -1.0 → 0.10 (strong chaotic warping), +1.0 → 0.015 (gentle organic flow)
   float warp1 = snoise(vec3(
     ca * 1.8 + uTime * noiseSpeed * 0.4,
@@ -295,9 +295,9 @@ void main() {
 
   // ── Chromatic Dispersion (prismatic RGB edge separation) ──
   float chromShift = mix(0.004, 0.002, (uValence + 1.0) * 0.5); // stronger at negative
-  float edgeR = 1.0 - smoothstep(-edgeWidth, edgeWidth, sdf - chromShift);
+  float edgeR = 1.0 - smoothstep(-fw * edgeScale, fw * edgeScale, sdf - chromShift);
   float edgeG = edge; // green stays centered
-  float edgeB = 1.0 - smoothstep(-edgeWidth, edgeWidth, sdf + chromShift);
+  float edgeB = 1.0 - smoothstep(-fw * edgeScale, fw * edgeScale, sdf + chromShift);
 
   // ── Compose lit surface ──
   vec3 ambient = shimmerColor * 0.25;
