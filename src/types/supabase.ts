@@ -224,16 +224,18 @@ export interface Database {
       user_settings: {
         Row: {
           user_id: string;
-          weekly_digest_enabled: boolean;
+          key: string;
+          value: unknown;
           updated_at: string;
         };
         Insert: {
           user_id: string;
-          weekly_digest_enabled?: boolean;
+          key: string;
+          value?: unknown;
           updated_at?: string;
         };
         Update: {
-          weekly_digest_enabled?: boolean;
+          value?: unknown;
           updated_at?: string;
         };
       };
