@@ -22,6 +22,7 @@
     "check:colors": "npx tsx scripts/check-hardcoded-colors.ts",
     "check:strings": "npx tsx scripts/check-hardcoded-strings.ts",
     "audit:check": "npm audit --audit-level=high",
+    "constitution:check": "npx tsx scripts/check-constitution.ts",
     "check:all": "npm run typecheck && npm run lint && npm run i18n:check && npm run check:colors",
     "ci:preflight": "npx eslint . --max-warnings=0 && tsc --noEmit && npm run i18n:check && vitest run && vite build",
     "test:e2e": "playwright test",
