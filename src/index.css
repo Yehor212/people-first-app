@@ -695,14 +695,16 @@
   /* Ensure html fills viewport correctly */
   html {
     height: -webkit-fill-available;
-    overscroll-behavior: none;
+    overscroll-behavior-y: contain; /* native bounce (iOS rubber-band, Android glow), no browser PTR */
     touch-action: manipulation; /* kill 300ms tap delay */
+    scroll-padding-top: calc(var(--safe-top, 0px) + 1rem);
+    scroll-padding-bottom: calc(var(--nav-height) + var(--safe-bottom, 0px) + 1rem);
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Nunito', sans-serif;
-    overscroll-behavior: none;
+    overscroll-behavior-y: contain;
     /* Safe area padding for Android/iOS notches and navigation bars */
     padding-top: var(--safe-top);
     padding-bottom: var(--safe-bottom);
@@ -727,16 +729,19 @@
   }
 
   /* ===== SCROLLBAR STYLING ===== */
-  /* Firefox */
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: hsl(var(--border)) transparent;
+  /* Desktop only: thin custom scrollbar. Mobile: native overlay scrollbar (auto-show/hide) */
+  @media (pointer: fine) {
+    /* Firefox */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: hsl(var(--border)) transparent;
+    }
+    /* WebKit (Chrome, Safari, Edge) */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
   }
-  /* WebKit (Chrome, Safari, Edge) */
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
 
   /* ===== ACCESSIBILITY: Focus Visible ===== */
   /* Visible focus ring for keyboard navigation */
@@ -774,6 +779,17 @@
 }
 
 @layer utilities {
+  /* ===== SCROLL UTILITIES ===== */
+
+  /* Hide scrollbar (horizontal carousels, tag lists) */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   /* ===== ACCESSIBILITY UTILITIES ===== */
 
   /* Touch target minimum size (WCAG 2.5.5 - Target Size)
@@ -813,6 +829,7 @@
     flex-direction: column;
     padding-top: var(--safe-top);
     padding-bottom: var(--safe-bottom);
+    overscroll-behavior: contain;
   }
 
   /* Centered content container (for tutorials, onboarding, modals) */
@@ -857,7 +874,9 @@
     max-height: calc(100vh - var(--safe-top) - var(--safe-bottom) - 2rem);
     max-height: calc(100dvh - var(--safe-top) - var(--safe-bottom) - 2rem);
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
+
 
   .zen-gradient {
     background: var(--zen-gradient);
@@ -1961,34 +1980,6 @@
   pointer-events: none;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: hsl(var(--muted));
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: hsl(var(--primary) / 0.3);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--primary) / 0.5);
-}
-
-/* Hide scrollbar utility */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
 
 /* ============================================
    DUOLINGO-STYLE HABIT ANIMATIONS
