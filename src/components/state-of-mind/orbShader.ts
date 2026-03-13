@@ -390,6 +390,7 @@ export interface OrbGLRenderer {
     particles: Particle[];
   }) => void;
   dispose: () => void;
+  isContextLost: () => boolean;
 }
 
 // ── HSL → RGB ──
@@ -558,6 +559,10 @@ function buildRenderer(
       gl.deleteShader(fs);
       if (vbo) gl.deleteBuffer(vbo);
       gl.getExtension('WEBGL_lose_context')?.loseContext();
+    },
+
+    isContextLost() {
+      return gl.isContextLost();
     },
   };
 }

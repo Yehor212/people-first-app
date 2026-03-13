@@ -39,6 +39,32 @@ interface ValenceOrbProps {
 const FRAME_INTERVAL = 1000 / 30; // 30fps
 const PARTICLE_COUNT = 22;
 
+/** Probe whether WebGL actually renders (catches WKWebView/in-app browser broken contexts) */
+function probeWebGLWorks(): boolean {
+  try {
+    const c = document.createElement('canvas');
+    c.width = 1;
+    c.height = 1;
+    const gl = c.getContext('webgl2', { preserveDrawingBuffer: true })
+            ?? c.getContext('webgl', { preserveDrawingBuffer: true });
+    if (!gl) return false;
+
+    // Clear to known color and read back
+    gl.clearColor(1, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    const pixel = new Uint8Array(4);
+    gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
+
+    // Free test context
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+
+    // If WebGL is broken (WKWebView), pixel will be all zeros
+    return pixel[0] > 200 && pixel[3] > 200;
+  } catch {
+    return false;
+  }
+}
+
 /** Create a fresh canvas element configured for the given size */
 function createCanvas(size: number, dpr: number): HTMLCanvasElement {
   const c = document.createElement('canvas');
@@ -126,38 +152,46 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
     let glRenderer: OrbGLRenderer | null = null;
     let ctx2d: CanvasRenderingContext2D | null = null;
 
-    // Attempt 1: WebGL 2.0
-    const gl2Canvas = createCanvas(size, dpr);
-    const gl2Renderer = createOrbGL2(gl2Canvas);
+    // Functional probe: verify WebGL actually renders pixels
+    // (WKWebView/in-app browsers may return a context that produces no output)
+    const webglWorks = probeWebGLWorks();
 
-    if (gl2Renderer) {
-      glRenderer = gl2Renderer;
-      activeCanvas = gl2Canvas;
-    } else {
-      // Attempt 2: WebGL 1.0 on a FRESH canvas
-      // (gl2Canvas may be locked to webgl2 if getContext succeeded but shader failed)
-      const gl1Canvas = createCanvas(size, dpr);
-      const gl1Renderer = createOrbGL(gl1Canvas);
+    if (webglWorks) {
+      // Attempt 1: WebGL 2.0
+      const gl2Canvas = createCanvas(size, dpr);
+      const gl2Renderer = createOrbGL2(gl2Canvas);
 
-      if (gl1Renderer) {
-        glRenderer = gl1Renderer;
-        activeCanvas = gl1Canvas;
+      if (gl2Renderer) {
+        glRenderer = gl2Renderer;
+        activeCanvas = gl2Canvas;
       } else {
-        // Attempt 3: Canvas 2D on a fresh canvas
-        const c2dCanvas = createCanvas(size, dpr);
-        try {
-          ctx2d = c2dCanvas.getContext('2d', { willReadFrequently: false });
-        } catch (err) {
-          recordError(err, { component: 'ValenceOrb', action: 'canvas2d-probe' });
-          ctx2d = null;
-        }
+        // Attempt 2: WebGL 1.0 on a FRESH canvas
+        // (gl2Canvas may be locked to webgl2 if getContext succeeded but shader failed)
+        const gl1Canvas = createCanvas(size, dpr);
+        const gl1Renderer = createOrbGL(gl1Canvas);
 
-        if (!ctx2d) {
-          setCtxFailed(true);
-          return;
+        if (gl1Renderer) {
+          glRenderer = gl1Renderer;
+          activeCanvas = gl1Canvas;
         }
-        activeCanvas = c2dCanvas;
       }
+    }
+
+    // Canvas 2D fallback (always tried if WebGL skipped or failed)
+    if (!glRenderer) {
+      const c2dCanvas = createCanvas(size, dpr);
+      try {
+        ctx2d = c2dCanvas.getContext('2d', { willReadFrequently: false });
+      } catch (err) {
+        recordError(err, { component: 'ValenceOrb', action: 'canvas2d-probe' });
+        ctx2d = null;
+      }
+
+      if (!ctx2d) {
+        setCtxFailed(true);
+        return;
+      }
+      activeCanvas = c2dCanvas;
     }
 
     glRendererRef.current = glRenderer;
@@ -241,6 +275,13 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
           cx, cy,
           innerR, outerR,
         );
+      }
+
+      // Proactive context loss detection (iOS 17+ WKWebView — context lost without event)
+      if (glRendererRef.current?.isContextLost()) {
+        glRendererRef.current.dispose();
+        glRendererRef.current = null;
+        degradeToCanvas2D();
       }
 
       // Draw scene (skip when off-screen, catch errors to prevent loop death)

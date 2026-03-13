@@ -87,7 +87,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
           {/* Modal content */}
           <motion.div
             ref={modalRef}
-            className="fixed inset-0 z-[60] flex flex-col bg-background/95 h-[100dvh]"
+            className="fixed inset-0 z-[60] flex flex-col bg-background/95"
             style={{
               paddingTop: 'max(env(safe-area-inset-top, 0px), 12px)',
               paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)',
