@@ -157,9 +157,16 @@ function getOrCreateParticleSprites(
   softCanvas.height = softSize;
   const softCtx = softCanvas.getContext('2d');
   if (softCtx) {
-    softCtx.filter = 'blur(2px)';
-    softCtx.drawImage(sharpCanvas, 4, 4); // center with 4px padding
-    softCtx.filter = 'none';
+    if (typeof softCtx.filter === 'string') {
+      softCtx.filter = 'blur(2px)';
+      softCtx.drawImage(sharpCanvas, 4, 4); // center with 4px padding
+      softCtx.filter = 'none';
+    } else {
+      // iOS Safari < 17.2: no ctx.filter — draw with reduced alpha as soft fallback
+      softCtx.globalAlpha = 0.7;
+      softCtx.drawImage(sharpCanvas, 4, 4);
+      softCtx.globalAlpha = 1.0;
+    }
   }
 
   _particleSprite = sharpCanvas;
@@ -1145,15 +1152,25 @@ export function drawOrbScene(
     );
 
     // Composite back with soft blur — airbrushed edges
-    const prevFilter = ctx.filter;
-    ctx.filter = 'blur(2px)';
-    ctx.drawImage(
-      offscreen.canvas,
-      0, 0, offscreenSize, offscreenSize,
-      cx - bodyExtent - 4, cy - bodyExtent - 4,
-      offscreenSize, offscreenSize,
-    );
-    ctx.filter = prevFilter;
+    if (typeof ctx.filter === 'string') {
+      const prevFilter = ctx.filter;
+      ctx.filter = 'blur(2px)';
+      ctx.drawImage(
+        offscreen.canvas,
+        0, 0, offscreenSize, offscreenSize,
+        cx - bodyExtent - 4, cy - bodyExtent - 4,
+        offscreenSize, offscreenSize,
+      );
+      ctx.filter = prevFilter;
+    } else {
+      // iOS Safari < 17.2: draw without blur (sharper edges, still looks good)
+      ctx.drawImage(
+        offscreen.canvas,
+        0, 0, offscreenSize, offscreenSize,
+        cx - bodyExtent - 4, cy - bodyExtent - 4,
+        offscreenSize, offscreenSize,
+      );
+    }
   }
 
   // Layer 6: Rose curve overlay (subtle inner mandala) — SHARP, no blur

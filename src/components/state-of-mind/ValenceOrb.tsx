@@ -12,10 +12,16 @@
  * Law 12 (Performance): 30fps RAF, IntersectionObserver pause, DPR cap at 2x.
  * Law 18 (Cleanup): mounted guard, RAF cancel, observer disconnect, GL dispose, listener removal.
  * Dopamine gate: shouldAnimate() → static frame if disabled.
+ *
+ * Canvas management: canvases are created programmatically (not via JSX ref) to allow
+ * replacing a WebGL-locked canvas with a fresh one for Canvas 2D fallback.
+ * Per HTML spec, once getContext('webgl2') succeeds, the same canvas cannot provide
+ * a '2d' context — a new <canvas> element is the only solution.
  */
 
 import { useRef, useEffect, useState, memo } from 'react';
 import { shouldAnimate } from '@/lib/animationUtils';
+import { recordError } from '@/lib/crashReporting';
 import { createParticlePool, updateParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
@@ -33,13 +39,24 @@ interface ValenceOrbProps {
 const FRAME_INTERVAL = 1000 / 30; // 30fps
 const PARTICLE_COUNT = 22;
 
+/** Create a fresh canvas element configured for the given size */
+function createCanvas(size: number, dpr: number): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = size * dpr;
+  c.height = size * dpr;
+  c.style.width = `${size}px`;
+  c.style.height = `${size}px`;
+  c.setAttribute('aria-hidden', 'true');
+  return c;
+}
+
 export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: ValenceOrbProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef(0);
   const mountedRef = useRef(true);
   const isVisibleRef = useRef(true);
   const glRendererRef = useRef<OrbGLRenderer | null>(null);
+  const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const [ctxFailed, setCtxFailed] = useState(false);
 
   // Mutable animation state — avoids React re-renders during animation
@@ -79,14 +96,10 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
   // Main canvas + animation setup
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
 
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = size * dpr;
-    canvas.height = size * dpr;
-    canvas.style.width = `${size}px`;
-    canvas.style.height = `${size}px`;
 
     // Initialize animation state
     const cx = size / 2;
@@ -104,21 +117,54 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
     const isDarkRead = () => document.documentElement.classList.contains('dark');
 
-    // ── Progressive enhancement: probe highest tier first (Law 22) ──
-    const glRenderer = createOrbGL2(canvas) ?? createOrbGL(canvas);
-    glRendererRef.current = glRenderer;
+    // ── Progressive enhancement with fresh canvas per tier (Law 22) ──
+    // Key: each tier gets a fresh canvas to avoid context locking.
+    // Per HTML spec, once getContext('webgl2') succeeds, getContext('2d')
+    // on the same canvas returns null — a new <canvas> element is required.
 
-    // Canvas 2D fallback (only if all WebGL paths failed)
+    let activeCanvas: HTMLCanvasElement;
+    let glRenderer: OrbGLRenderer | null = null;
     let ctx2d: CanvasRenderingContext2D | null = null;
-    if (!glRenderer) {
-      ctx2d = canvas.getContext('2d', { willReadFrequently: false });
-      if (!ctx2d) {
-        setCtxFailed(true);
-        return;
+
+    // Attempt 1: WebGL 2.0
+    const gl2Canvas = createCanvas(size, dpr);
+    const gl2Renderer = createOrbGL2(gl2Canvas);
+
+    if (gl2Renderer) {
+      glRenderer = gl2Renderer;
+      activeCanvas = gl2Canvas;
+    } else {
+      // Attempt 2: WebGL 1.0 on a FRESH canvas
+      // (gl2Canvas may be locked to webgl2 if getContext succeeded but shader failed)
+      const gl1Canvas = createCanvas(size, dpr);
+      const gl1Renderer = createOrbGL(gl1Canvas);
+
+      if (gl1Renderer) {
+        glRenderer = gl1Renderer;
+        activeCanvas = gl1Canvas;
+      } else {
+        // Attempt 3: Canvas 2D on a fresh canvas
+        const c2dCanvas = createCanvas(size, dpr);
+        try {
+          ctx2d = c2dCanvas.getContext('2d', { willReadFrequently: false });
+        } catch (err) {
+          recordError(err, { component: 'ValenceOrb', action: 'canvas2d-probe' });
+          ctx2d = null;
+        }
+
+        if (!ctx2d) {
+          setCtxFailed(true);
+          return;
+        }
+        activeCanvas = c2dCanvas;
       }
     }
 
-    // ── Render helpers (use refs for context-loss resilience) ──
+    glRendererRef.current = glRenderer;
+    canvasElRef.current = activeCanvas;
+    wrapper.appendChild(activeCanvas);
+
+    // ── Render helpers ──
     const renderGL = (v: number, t: number, particles: Particle[]) => {
       const gl = glRendererRef.current;
       if (!gl) return;
@@ -148,7 +194,22 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
     let render = glRenderer ? renderGL : renderCanvas2D;
 
-    // ── Animation loop (defined before context handlers so they can restart it) ──
+    // ── Fallback canvas for context loss recovery ──
+    let fallbackCanvas: HTMLCanvasElement | null = null;
+
+    /** Degrade to Canvas 2D on a fresh canvas (WebGL canvas is locked) */
+    const degradeToCanvas2D = () => {
+      fallbackCanvas = createCanvas(size, dpr);
+      ctx2d = fallbackCanvas.getContext('2d', { willReadFrequently: false });
+
+      if (ctx2d) {
+        activeCanvas.style.display = 'none';
+        wrapper.appendChild(fallbackCanvas);
+        render = renderCanvas2D;
+      }
+    };
+
+    // ── Animation loop ──
     const loop = (timestamp: number) => {
       if (!mountedRef.current) return;
 
@@ -157,7 +218,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
 
       // Runtime dopamine gate
       if (!shouldAnimate()) {
-        render(state.currentValence, state.time, state.particles);
+        try { render(state.currentValence, state.time, state.particles); } catch { /* static frame best-effort */ }
         return;
       }
 
@@ -182,9 +243,25 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
         );
       }
 
-      // Draw scene (skip when off-screen)
+      // Draw scene (skip when off-screen, catch errors to prevent loop death)
       if (isVisibleRef.current) {
-        render(state.currentValence, state.time, state.particles);
+        try {
+          render(state.currentValence, state.time, state.particles);
+        } catch (err) {
+          recordError(err, { component: 'ValenceOrb', action: 'render' });
+
+          if (glRendererRef.current) {
+            // WebGL render threw — degrade to Canvas 2D
+            glRendererRef.current.dispose();
+            glRendererRef.current = null;
+            degradeToCanvas2D();
+          } else {
+            // Canvas 2D render also threw — give up
+            cancelAnimationFrame(rafRef.current);
+            setCtxFailed(true);
+            return;
+          }
+        }
       }
 
       rafRef.current = requestAnimationFrame(loop);
@@ -196,42 +273,71 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
       cancelAnimationFrame(rafRef.current);
       glRendererRef.current?.dispose();
       glRendererRef.current = null;
-      // Degrade to Canvas 2D — user sees no interruption
-      ctx2d = canvas.getContext('2d', { willReadFrequently: false });
-      render = renderCanvas2D;
+
+      // Cannot getContext('2d') on a WebGL-locked canvas — create a fresh one
+      degradeToCanvas2D();
+
+      // Restart RAF loop with Canvas 2D rendering
+      if (ctx2d && shouldAnimate() && mountedRef.current) {
+        rafRef.current = requestAnimationFrame(loop);
+      }
+
+      recordError(
+        new Error('WebGL context lost — degraded to Canvas 2D'),
+        { component: 'ValenceOrb' },
+      );
     };
 
     const handleContextRestored = () => {
-      // Re-probe from highest tier
-      const restored = createOrbGL2(canvas) ?? createOrbGL(canvas);
+      // Re-probe WebGL on the original canvas (it gets its context back)
+      const restored = createOrbGL2(activeCanvas) ?? createOrbGL(activeCanvas);
       if (restored) {
         glRendererRef.current = restored;
         ctx2d = null;
         render = renderGL;
+
+        // Remove fallback canvas, show original
+        activeCanvas.style.display = '';
+        if (fallbackCanvas && wrapper.contains(fallbackCanvas)) {
+          wrapper.removeChild(fallbackCanvas);
+          fallbackCanvas = null;
+        }
       }
-      // Restart RAF loop (was killed by handleContextLost)
+      // Restart RAF loop
       if (shouldAnimate() && mountedRef.current) {
         rafRef.current = requestAnimationFrame(loop);
       }
     };
 
-    canvas.addEventListener('webglcontextlost', handleContextLost);
-    canvas.addEventListener('webglcontextrestored', handleContextRestored);
+    // Only attach WebGL event listeners if we're using WebGL
+    if (glRenderer) {
+      activeCanvas.addEventListener('webglcontextlost', handleContextLost);
+      activeCanvas.addEventListener('webglcontextrestored', handleContextRestored);
+    }
 
-    // ── Cleanup (returned in ALL code paths — prevents listener/GL leaks) ──
+    // ── Cleanup ──
     const cleanup = () => {
       cancelAnimationFrame(rafRef.current);
-      canvas.removeEventListener('webglcontextlost', handleContextLost);
-      canvas.removeEventListener('webglcontextrestored', handleContextRestored);
+      if (glRenderer) {
+        activeCanvas.removeEventListener('webglcontextlost', handleContextLost);
+        activeCanvas.removeEventListener('webglcontextrestored', handleContextRestored);
+      }
       glRendererRef.current?.dispose();
       glRendererRef.current = null;
+      canvasElRef.current = null;
+
+      // Remove canvas elements from DOM
+      if (wrapper.contains(activeCanvas)) {
+        wrapper.removeChild(activeCanvas);
+      }
+      if (fallbackCanvas && wrapper.contains(fallbackCanvas)) {
+        wrapper.removeChild(fallbackCanvas);
+      }
     };
 
     // ── Animation gate ──
-    const animate = shouldAnimate();
-
-    if (!animate) {
-      render(valenceRef.current, 0, stateRef.current.particles);
+    if (!shouldAnimate()) {
+      try { render(valenceRef.current, 0, stateRef.current.particles); } catch { /* best-effort */ }
       return cleanup;
     }
 
@@ -244,7 +350,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
   useEffect(() => {
     if (shouldAnimate()) return;
 
-    const canvas = canvasRef.current;
+    const canvas = canvasElRef.current;
     if (!canvas) return;
     const state = stateRef.current;
     if (!state) return;
@@ -264,7 +370,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
         particles: state.particles,
       });
     } else {
-      const ctx = canvas.getContext('2d', { willReadFrequently: false });
+      const ctx = canvas.getContext('2d');
       if (!ctx) return;
       drawOrbScene(ctx, {
         valence,
@@ -277,14 +383,29 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
     }
   }, [valence, size]);
 
-  // Context failure fallback
+  // Context failure fallback — soft radial gradient instead of boring pulse
   if (ctxFailed) {
     return (
       <div
-        className="flex-shrink-0 rounded-full bg-primary/10 motion-safe:animate-pulse"
+        ref={wrapperRef}
+        className="relative flex items-center justify-center flex-shrink-0"
         style={{ width: size, height: size }}
         aria-hidden="true"
-      />
+      >
+        <div
+          className="rounded-full motion-safe:animate-pulse"
+          style={{
+            width: size * 0.7,
+            height: size * 0.7,
+            background: `radial-gradient(circle at 35% 35%,
+              hsl(var(--primary) / 0.3),
+              hsl(var(--primary) / 0.15) 50%,
+              hsl(var(--primary) / 0.05) 80%,
+              transparent)`,
+            filter: 'blur(4px)',
+          }}
+        />
+      </div>
     );
   }
 
@@ -294,11 +415,6 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
       className="relative flex items-center justify-center"
       style={{ width: size, height: size }}
       aria-hidden="true"
-    >
-      <canvas
-        ref={canvasRef}
-        style={{ width: size, height: size }}
-      />
-    </div>
+    />
   );
 });

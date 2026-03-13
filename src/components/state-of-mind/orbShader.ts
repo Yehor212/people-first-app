@@ -24,6 +24,7 @@
  */
 
 import type { Particle } from './particleSystem';
+import { recordError } from '@/lib/crashReporting';
 
 // ── WebGL context options (shared by both GL1 and GL2) ──
 
@@ -32,6 +33,9 @@ const GL_OPTIONS: WebGLContextAttributes = {
   premultipliedAlpha: true,
   antialias: false,
   preserveDrawingBuffer: false,
+  depth: false,                // No depth buffer needed — saves ~2MB VRAM on iOS
+  stencil: false,              // No stencil needed — reduces memory pressure
+  powerPreference: 'low-power', // Prefer integrated GPU for stability + battery
 };
 
 // ── Vertex Shader (fullscreen triangle) ──
@@ -53,8 +57,8 @@ void main() {
 // ── Fragment Shader ──
 
 const FRAG_SRC = `
-precision highp float;
 #extension GL_OES_standard_derivatives : enable
+precision highp float;
 
 uniform vec2 uResolution;
 uniform float uTime;
@@ -367,7 +371,7 @@ void main() {
 
 const FRAG_SRC_300 = FRAG_SRC
   .replace(
-    '\nprecision highp float;\n#extension GL_OES_standard_derivatives : enable',
+    '\n#extension GL_OES_standard_derivatives : enable\nprecision highp float;',
     '#version 300 es\nprecision highp float;\nout vec4 fragColor;',
   )
   .replace('gl_FragColor', 'fragColor');
@@ -425,7 +429,11 @@ function compileShader(
   gl.compileShader(shader);
 
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    // Non-critical: Canvas 2D fallback handles this gracefully
+    const infoLog = gl.getShaderInfoLog(shader);
+    recordError(
+      new Error(`WebGL shader compile failed: ${infoLog?.slice(0, 300) ?? 'unknown'}`),
+      { component: 'ValenceOrb', shaderType: type === gl.VERTEX_SHADER ? 'vertex' : 'fragment' },
+    );
     gl.deleteShader(shader);
     return null;
   }
@@ -459,6 +467,11 @@ function buildRenderer(
   gl.linkProgram(program);
 
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    const linkLog = gl.getProgramInfoLog(program);
+    recordError(
+      new Error(`WebGL program link failed: ${linkLog?.slice(0, 300) ?? 'unknown'}`),
+      { component: 'ValenceOrb' },
+    );
     gl.deleteProgram(program);
     gl.deleteShader(vs);
     gl.deleteShader(fs);
@@ -544,6 +557,7 @@ function buildRenderer(
       gl.deleteShader(vs);
       gl.deleteShader(fs);
       if (vbo) gl.deleteBuffer(vbo);
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
     },
   };
 }
@@ -555,9 +569,14 @@ function buildRenderer(
  * Returns null if WebGL 2.0 is unavailable → caller tries WebGL 1.0 fallback.
  */
 export function createOrbGL2(canvas: HTMLCanvasElement): OrbGLRenderer | null {
-  const gl = canvas.getContext('webgl2', GL_OPTIONS);
-  if (!gl) return null;
-  return buildRenderer(gl, VERT_SRC_300, FRAG_SRC_300);
+  try {
+    const gl = canvas.getContext('webgl2', GL_OPTIONS);
+    if (!gl) return null;
+    return buildRenderer(gl, VERT_SRC_300, FRAG_SRC_300);
+  } catch (err) {
+    recordError(err, { component: 'ValenceOrb', action: 'createOrbGL2' });
+    return null;
+  }
 }
 
 /**
@@ -565,8 +584,13 @@ export function createOrbGL2(canvas: HTMLCanvasElement): OrbGLRenderer | null {
  * Returns null if WebGL is unavailable → ValenceOrb uses Canvas 2D fallback.
  */
 export function createOrbGL(canvas: HTMLCanvasElement): OrbGLRenderer | null {
-  const gl = canvas.getContext('webgl', GL_OPTIONS);
-  if (!gl) return null;
-  gl.getExtension('OES_standard_derivatives'); // Required for fwidth() in GLSL ES 1.0
-  return buildRenderer(gl, VERT_SRC, FRAG_SRC);
+  try {
+    const gl = canvas.getContext('webgl', GL_OPTIONS);
+    if (!gl) return null;
+    gl.getExtension('OES_standard_derivatives'); // Required for fwidth() in GLSL ES 1.0
+    return buildRenderer(gl, VERT_SRC, FRAG_SRC);
+  } catch (err) {
+    recordError(err, { component: 'ValenceOrb', action: 'createOrbGL' });
+    return null;
+  }
 }
