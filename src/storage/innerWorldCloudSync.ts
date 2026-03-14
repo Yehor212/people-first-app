@@ -5,6 +5,7 @@ import { safeLocalStorageSet } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
 import { supabase } from '@/lib/supabaseClient';
 import { InnerWorld } from '@/types';
+import { Json } from '@/types/supabase';
 import { z } from 'zod';
 
 /**
@@ -62,11 +63,11 @@ export async function pushInnerWorldToCloud(world: InnerWorld): Promise<void> {
   const user = session.user;
 
   try {
-    const { error } = await (supabase
-      .from('user_inner_world') as any)
+    const { error } = await supabase
+      .from('user_inner_world')
       .upsert({
         user_id: user.id,
-        world_data: world,
+        world_data: world as unknown as Json,
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'user_id',
@@ -94,8 +95,8 @@ export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
   const user = session.user;
 
   try {
-    const { data, error } = await (supabase
-      .from('user_inner_world') as any)
+    const { data, error } = await supabase
+      .from('user_inner_world')
       .select('world_data')
       .eq('user_id', user.id)
       .single();

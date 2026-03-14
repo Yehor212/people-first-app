@@ -1,7 +1,8 @@
-import { exportBackup, importBackup } from "@/storage/backup";
+import { exportBackup, importBackup, type BackupPayload } from "@/storage/backup";
 import { supabase } from "@/lib/supabaseClient";
 import { triggerDataRefresh } from "@/hooks/useIndexedDB";
 import logger from "@/lib/logger";
+import type { Json } from "@/types/supabase";
 import { syncOrchestrator } from "@/lib/syncOrchestrator";
 import { generateSecureRandom, isAbortError } from "@/lib/validation";
 import { addCategorizedBreadcrumb } from "@/lib/sentry";
@@ -130,8 +131,8 @@ const doSyncWithCloud = async (
       throw new Error("Sync operation aborted due to timeout");
     }
 
-    const { data: remote, error: fetchError } = await (supabase
-      .from(BACKUP_TABLE) as any)
+    const { data: remote, error: fetchError } = await supabase
+      .from(BACKUP_TABLE)
       .select("payload, updated_at")
       .eq("user_id", user.id)
       .maybeSingle();
@@ -148,7 +149,7 @@ const doSyncWithCloud = async (
     let syncStatus: "pulled" | "pushed" | "merged" = "pushed";
 
     if (remote?.payload) {
-      const remotePayload = remote.payload;
+      const remotePayload = remote.payload as Record<string, unknown>;
       const remoteData = (remotePayload.data || {}) as Record<string, unknown[]>;
       const localData = localBackup.data;
 
@@ -173,7 +174,7 @@ const doSyncWithCloud = async (
       // The importBackup with mode="merge" will use bulkPut which updates existing or adds new
       if (remoteItemCount > 0) {
         logger.sync('Merging remote data into local...');
-        await importBackup(remotePayload, mode);
+        await importBackup(remotePayload as unknown as BackupPayload, mode);
         syncStatus = localItemCount === 0 ? "pulled" : "merged";
         // Trigger React state refresh after importing cloud data
         triggerDataRefresh();
@@ -199,10 +200,10 @@ const doSyncWithCloud = async (
       throw new Error("Sync operation aborted due to timeout");
     }
 
-    const { error: upsertError } = await (supabase.from(BACKUP_TABLE) as any).upsert(
+    const { error: upsertError } = await supabase.from(BACKUP_TABLE).upsert(
       {
         user_id: user.id,
-        payload: finalBackup,
+        payload: finalBackup as unknown as Json,
         updated_at: new Date().toISOString()
       },
       { onConflict: "user_id" }

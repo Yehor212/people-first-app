@@ -23,13 +23,13 @@ import * as Sentry from '@sentry/react';
 /** Timeout for friend sync operations (15 seconds) */
 const FRIEND_SYNC_TIMEOUT = 15000;
 
-/** Wrap a promise with a timeout to prevent indefinite hangs */
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+/** Wrap a promise/thenable with a timeout to prevent indefinite hangs */
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, label: string): Promise<T> {
   let timer: ReturnType<typeof setTimeout>;
   const timeout = new Promise<never>((_, reject) => {
     timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
   });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+  return Promise.race([Promise.resolve(promise), timeout]).finally(() => clearTimeout(timer));
 }
 
 // ============================================
@@ -350,24 +350,21 @@ async function syncMyProfileToCloud(profile: MyProfile): Promise<void> {
   const user = session.user;
 
   try {
-    // user_profiles not in auto-generated types — typed destructuring for non-generated table
-    const { error }: { error?: { code?: string; message?: string } } = await withTimeout(
-      (supabase as any)
-        .from('user_profiles')
-        .upsert({
-          user_id: user.id,
-          friend_code: profile.friendCode,
-          display_name: profile.displayName,
-          avatar_emoji: profile.avatarEmoji,
-          current_streak: profile.shareStreak ? profile.currentStreak : null,
-          level: profile.shareLevel ? profile.level : null,
-          share_activity: profile.shareActivity,
-          updated_at: new Date().toISOString(),
-        }, {
-          onConflict: 'user_id',
-        }),
-      FRIEND_SYNC_TIMEOUT, 'syncMyProfileToCloud'
-    );
+    const query = supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: user.id,
+        friend_code: profile.friendCode,
+        display_name: profile.displayName,
+        avatar_emoji: profile.avatarEmoji,
+        current_streak: profile.shareStreak ? profile.currentStreak : null,
+        level: profile.shareLevel ? profile.level : null,
+        share_activity: profile.shareActivity,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id',
+      });
+    const { error } = await withTimeout(query, FRIEND_SYNC_TIMEOUT, 'syncMyProfileToCloud');
 
     if (error) {
       // Silently fail - table might not exist yet
@@ -395,15 +392,12 @@ async function findFriendByCode(friendCode: string): Promise<{
   if (!supabase) return null;
 
   try {
-    // user_profiles not in auto-generated types — typed destructuring for non-generated table
-    const { data, error }: { data: Record<string, any> | null; error?: { message?: string } } = await withTimeout(
-      (supabase as any)
-        .from('user_profiles')
-        .select('user_id, display_name, avatar_emoji, current_streak, level, updated_at, status')
-        .eq('friend_code', friendCode)
-        .maybeSingle(),
-      FRIEND_SYNC_TIMEOUT, 'findFriendByCode'
-    );
+    const query = supabase
+      .from('user_profiles')
+      .select('user_id, display_name, avatar_emoji, current_streak, level, updated_at, status')
+      .eq('friend_code', friendCode)
+      .maybeSingle();
+    const { data, error } = await withTimeout(query, FRIEND_SYNC_TIMEOUT, 'findFriendByCode');
 
     if (error || !data) return null;
 
@@ -443,14 +437,11 @@ export async function refreshFriendsData(): Promise<void> {
   try {
     const friendCodes = friends.map(f => f.friendCode);
 
-    // user_profiles not in auto-generated types — typed destructuring for non-generated table
-    const { data, error }: { data: Record<string, any>[] | null; error?: { message?: string } } = await withTimeout(
-      (supabase as any)
-        .from('user_profiles')
-        .select('user_id, friend_code, display_name, avatar_emoji, current_streak, level, updated_at, status, share_activity')
-        .in('friend_code', friendCodes),
-      FRIEND_SYNC_TIMEOUT, 'refreshFriendsData'
-    );
+    const query = supabase
+      .from('user_profiles')
+      .select('user_id, friend_code, display_name, avatar_emoji, current_streak, level, updated_at, status, share_activity')
+      .in('friend_code', friendCodes);
+    const { data, error } = await withTimeout(query, FRIEND_SYNC_TIMEOUT, 'refreshFriendsData');
 
     if (error || !data) return;
 

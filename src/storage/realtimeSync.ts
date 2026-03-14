@@ -23,16 +23,6 @@ import {
   validateArray,
 } from '@/lib/schemas';
 
-// Type aliases for Supabase table rows
-// Cast through `as any` at call sites since generated types are stale
-type MoodRow = any;
-type HabitRow = any;
-type HabitCompletionRow = any;
-type HabitReminderRow = any;
-type FocusSessionRow = any;
-type GratitudeEntryRow = any;
-type UserSettingsRow = any;
-
 // Track active subscriptions
 let realtimeChannel: RealtimeChannel | null = null;
 
@@ -152,7 +142,7 @@ export const syncMood = async (mood: MoodEntry): Promise<void> => {
   }
 
   try {
-    const { error } = await (supabase.from('moods') as any).upsert({
+    const { error } = await supabase.from('moods').upsert({
       id: mood.id,
       user_id: userId,
       mood: mood.mood,
@@ -216,8 +206,8 @@ export const deleteMoodFromCloud = async (moodId: string): Promise<void> => {
   }
 
   try {
-    const { error } = await (supabase
-      .from('moods') as any)
+    const { error } = await supabase
+      .from('moods')
       .delete()
       .eq('id', moodId)
       .eq('user_id', userId);
@@ -268,7 +258,7 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
     const cloudFrequency = freq.denominator === 1 ? 'daily' : 'weekly';
     const cloudType = habit.habitType === 'numerical' ? 'multiple' : 'daily';
 
-    const { error: habitError } = await (supabase.from('habits') as any).upsert({
+    const { error: habitError } = await supabase.from('habits').upsert({
       id: habit.id,
       user_id: userId,
       name: habit.name,
@@ -302,8 +292,8 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
         duration: null,
       }));
 
-      const { error: completionError } = await (supabase
-        .from('habit_completions') as any)
+      const { error: completionError } = await supabase
+        .from('habit_completions')
         .upsert(completions, { onConflict: 'habit_id,date' });
 
       if (completionError) throw completionError;
@@ -325,16 +315,16 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
       }));
 
       // Upsert reminders (safe - won't lose data on failure)
-      const { error: reminderError } = await (supabase
-        .from('habit_reminders') as any)
+      const { error: reminderError } = await supabase
+        .from('habit_reminders')
         .upsert(reminders, { onConflict: 'id' });
 
       if (reminderError) throw reminderError;
 
       // Clean up orphan reminders (non-critical - duplicates are better than data loss)
       const currentIds = reminders.map(r => r.id);
-      const { error: cleanupError } = await (supabase
-        .from('habit_reminders') as any)
+      const { error: cleanupError } = await supabase
+        .from('habit_reminders')
         .delete()
         .eq('habit_id', habit.id)
         .not('id', 'in', `(${currentIds.map(id => `'${id}'`).join(',')})`);
@@ -345,8 +335,8 @@ export const syncHabit = async (habit: Habit): Promise<void> => {
       }
     } else {
       // No reminders - safe to delete all
-      const { error: deleteError } = await (supabase
-        .from('habit_reminders') as any)
+      const { error: deleteError } = await supabase
+        .from('habit_reminders')
         .delete()
         .eq('habit_id', habit.id);
 
@@ -386,8 +376,8 @@ export const deleteHabitFromCloud = async (habitId: string): Promise<void> => {
   }
 
   try {
-    const { error } = await (supabase
-      .from('habits') as any)
+    const { error } = await supabase
+      .from('habits')
       .delete()
       .eq('id', habitId)
       .eq('user_id', userId);
@@ -436,7 +426,7 @@ export const syncHabitCompletion = async (habitId: string, date: string, complet
 
   try {
     if (completed) {
-      const { error } = await (supabase.from('habit_completions') as any).upsert({
+      const { error } = await supabase.from('habit_completions').upsert({
         user_id: userId,
         habit_id: habitId,
         date,
@@ -446,8 +436,8 @@ export const syncHabitCompletion = async (habitId: string, date: string, complet
 
       if (error) throw error;
     } else {
-      const { error } = await (supabase
-        .from('habit_completions') as any)
+      const { error } = await supabase
+        .from('habit_completions')
         .delete()
         .eq('habit_id', habitId)
         .eq('date', date);
@@ -494,7 +484,7 @@ export const syncFocusSession = async (session: FocusSession): Promise<void> => 
   }
 
   try {
-    const { error } = await (supabase.from('focus_sessions') as any).upsert({
+    const { error } = await supabase.from('focus_sessions').upsert({
       id: session.id,
       user_id: userId,
       duration: session.duration,
@@ -546,7 +536,7 @@ export const syncGratitude = async (entry: GratitudeEntry): Promise<void> => {
   }
 
   try {
-    const { error } = await (supabase.from('gratitude_entries') as any).upsert({
+    const { error } = await supabase.from('gratitude_entries').upsert({
       id: entry.id,
       user_id: userId,
       text: entry.text,
@@ -586,8 +576,8 @@ export const deleteGratitudeFromCloud = async (entryId: string): Promise<void> =
   }
 
   try {
-    const { error } = await (supabase
-      .from('gratitude_entries') as any)
+    const { error } = await supabase
+      .from('gratitude_entries')
       .delete()
       .eq('id', entryId)
       .eq('user_id', userId);
@@ -620,7 +610,7 @@ export const syncSetting = async (key: string, value: unknown): Promise<void> =>
   }
 
   try {
-    const { error } = await (supabase.from('user_settings') as any).upsert({
+    const { error } = await supabase.from('user_settings').upsert({
       user_id: userId,
       key,
       value,
@@ -669,16 +659,16 @@ export const pullFromCloud = async (): Promise<boolean> => {
       journalPhotosRes,
       journalAudioRes,
     ] = await Promise.all([
-      (supabase.from('moods') as any).select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
-      (supabase.from('habits') as any).select('*').eq('user_id', userId).eq('is_archived', false).limit(200),
-      (supabase.from('habit_completions') as any).select('*').eq('user_id', userId).order('date', { ascending: false }).limit(2000),
-      (supabase.from('habit_reminders') as any).select('*').eq('user_id', userId).limit(500),
-      (supabase.from('focus_sessions') as any).select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
-      (supabase.from('gratitude_entries') as any).select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
-      (supabase.from('user_settings') as any).select('*').eq('user_id', userId),
-      (supabase.from('journal_entries') as any).select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
-      (supabase.from('journal_photos') as any).select('*').eq('user_id', userId).limit(5000),
-      (supabase.from('journal_audio') as any).select('*').eq('user_id', userId).limit(3000),
+      supabase.from('moods').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
+      supabase.from('habits').select('*').eq('user_id', userId).eq('is_archived', false).limit(200),
+      supabase.from('habit_completions').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(2000),
+      supabase.from('habit_reminders').select('*').eq('user_id', userId).limit(500),
+      supabase.from('focus_sessions').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
+      supabase.from('gratitude_entries').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
+      supabase.from('user_settings').select('*').eq('user_id', userId),
+      supabase.from('journal_entries').select('*').eq('user_id', userId).order('date', { ascending: false }).limit(1000),
+      supabase.from('journal_photos').select('*').eq('user_id', userId).limit(5000),
+      supabase.from('journal_audio').select('*').eq('user_id', userId).limit(3000),
     ]);
 
     // Check for errors
@@ -693,14 +683,14 @@ export const pullFromCloud = async (): Promise<boolean> => {
     if (journalPhotosRes.error) throw journalPhotosRes.error;
     if (journalAudioRes.error) throw journalAudioRes.error;
 
-    // Type-safe Supabase data (LOW priority fix: replaced `as any[]` with proper types)
-    const moodsData: MoodRow[] = moodsRes.data || [];
-    const habitsData: HabitRow[] = habitsRes.data || [];
-    const completionsData: HabitCompletionRow[] = completionsRes.data || [];
-    const remindersData: HabitReminderRow[] = remindersRes.data || [];
-    const focusData: FocusSessionRow[] = focusRes.data || [];
-    const gratitudeData: GratitudeEntryRow[] = gratitudeRes.data || [];
-    const settingsData: UserSettingsRow[] = settingsRes.data || [];
+    // Supabase data — types flow from Database interface via .from()
+    const moodsData = moodsRes.data || [];
+    const habitsData = habitsRes.data || [];
+    const completionsData = completionsRes.data || [];
+    const remindersData = remindersRes.data || [];
+    const focusData = focusRes.data || [];
+    const gratitudeData = gratitudeRes.data || [];
+    const settingsData = settingsRes.data || [];
     const journalEntriesData = journalEntriesRes.data || [];
     const journalPhotosData = journalPhotosRes.data || [];
     const journalAudioData = journalAudioRes.data || [];
@@ -1214,7 +1204,7 @@ export const syncJournalEntry = async (entry: JournalEntry): Promise<void> => {
   }
 
   try {
-    const { error } = await (supabase.from('journal_entries') as any).upsert({
+    const { error } = await supabase.from('journal_entries').upsert({
       id: entry.id,
       user_id: userId,
       date: entry.date,
@@ -1267,9 +1257,9 @@ export const deleteJournalEntryFromCloud = async (entryId: string): Promise<void
     // Delete entry + associated photos/audio metadata from cloud tables
     // (Storage files are cleaned up separately by journalStorage.ts)
     const [entryRes, photosRes, audioRes] = await Promise.all([
-      (supabase.from('journal_entries') as any).delete().eq('id', entryId).eq('user_id', userId),
-      (supabase.from('journal_photos') as any).delete().eq('entry_id', entryId).eq('user_id', userId),
-      (supabase.from('journal_audio') as any).delete().eq('entry_id', entryId).eq('user_id', userId),
+      supabase.from('journal_entries').delete().eq('id', entryId).eq('user_id', userId),
+      supabase.from('journal_photos').delete().eq('entry_id', entryId).eq('user_id', userId),
+      supabase.from('journal_audio').delete().eq('entry_id', entryId).eq('user_id', userId),
     ]);
 
     if (entryRes.error) logger.warn('[Sync] Journal entry delete failed:', entryRes.error);
@@ -1295,7 +1285,7 @@ export const syncJournalPhoto = async (photo: JournalPhoto): Promise<void> => {
   if (!supabase || !userId) return;
 
   try {
-    const { error } = await (supabase.from('journal_photos') as any).upsert({
+    const { error } = await supabase.from('journal_photos').upsert({
       id: photo.id,
       user_id: userId,
       entry_id: photo.entryId,
@@ -1323,7 +1313,7 @@ export const syncJournalAudio = async (audio: JournalAudio): Promise<void> => {
   if (!supabase || !userId) return;
 
   try {
-    const { error } = await (supabase.from('journal_audio') as any).upsert({
+    const { error } = await supabase.from('journal_audio').upsert({
       id: audio.id,
       user_id: userId,
       entry_id: audio.entryId,
@@ -1348,7 +1338,7 @@ export const deleteJournalPhotoFromCloud = async (photoId: string): Promise<void
   if (!supabase || !userId) return;
 
   try {
-    await (supabase.from('journal_photos') as any).delete().eq('id', photoId).eq('user_id', userId);
+    await supabase.from('journal_photos').delete().eq('id', photoId).eq('user_id', userId);
   } catch (error) {
     if (!isAbortError(error)) {
       logger.warn('[Sync] Journal photo delete from cloud failed:', error);
@@ -1361,7 +1351,7 @@ export const deleteJournalAudioFromCloud = async (audioId: string): Promise<void
   if (!supabase || !userId) return;
 
   try {
-    await (supabase.from('journal_audio') as any).delete().eq('id', audioId).eq('user_id', userId);
+    await supabase.from('journal_audio').delete().eq('id', audioId).eq('user_id', userId);
   } catch (error) {
     if (!isAbortError(error)) {
       logger.warn('[Sync] Journal audio delete from cloud failed:', error);
@@ -1378,8 +1368,8 @@ export const fetchUserStats = async () => {
   if (!supabase || !userId) return null;
 
   try {
-    // get_user_stats types manually added — Supabase client can't resolve, assert result
-    const { data, error } = await (supabase as any).rpc('get_user_stats', { p_user_id: userId });
+    // get_user_stats is typed in Database['public']['Functions']
+    const { data, error } = await supabase.rpc('get_user_stats', { p_user_id: userId });
     if (error) throw error;
     return data;
   } catch (error) {

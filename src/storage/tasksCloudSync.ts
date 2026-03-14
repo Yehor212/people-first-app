@@ -3,46 +3,17 @@
 import { logger } from '@/lib/logger';
 import { supabase } from '@/lib/supabaseClient';
 import { Task } from '@/lib/taskMomentum';
-import { Quest, QuestCategory, QuestCondition, QuestReward } from '@/lib/randomQuests';
+import { Quest, QuestCondition, QuestReward } from '@/lib/randomQuests';
 import { syncOrchestrator } from '@/lib/syncOrchestrator';
 import { safeLocalStorageGet, safeLocalStorageSet } from '@/lib/safeJson';
 import { SK } from '@/lib/storageKeys';
 import { triggerDataRefresh } from '@/hooks/useIndexedDB';
-
-interface TaskRow {
-  user_id: string;
-  task_id: string;
-  name: string;
-  description?: string;
-  urgent: boolean;
-  estimated_minutes: number;
-  user_rating?: number;
-  completed: boolean;
-  due_date?: string;
-  category?: string;
-  updated_at: string;
-}
-
-interface QuestRow {
-  user_id: string;
-  quest_id: string;
-  type: 'daily' | 'weekly' | 'bonus';
-  category: QuestCategory;
-  title: string;
-  description: string;
-  condition: QuestCondition;
-  reward: QuestReward;
-  progress: number;
-  total: number;
-  completed: boolean;
-  expires_at: string;
-  updated_at: string;
-}
+import type { Json } from '@/types/supabase';
 
 /**
- * Convert Task to Supabase row format
+ * Convert Task to Supabase row format (matches DB Insert type)
  */
-function taskToRow(task: Task, userId: string): Partial<TaskRow> {
+function taskToRow(task: Task, userId: string) {
   return {
     user_id: userId,
     task_id: task.id,
@@ -54,30 +25,31 @@ function taskToRow(task: Task, userId: string): Partial<TaskRow> {
     completed: task.completed,
     due_date: task.dueDate,
     category: task.category,
+    updated_at: new Date().toISOString(),
   };
 }
 
 /**
- * Convert Supabase row to Task
+ * Convert Supabase row to Task (handles nullable DB fields)
  */
-function rowToTask(row: TaskRow): Task {
+function rowToTask(row: Record<string, unknown>): Task {
   return {
-    id: row.task_id,
-    name: row.name,
-    description: row.description,
-    urgent: row.urgent,
-    estimatedMinutes: row.estimated_minutes,
-    userRating: row.user_rating,
-    completed: row.completed,
-    dueDate: row.due_date,
-    category: row.category,
+    id: row.task_id as string,
+    name: row.name as string,
+    description: (row.description as string) ?? undefined,
+    urgent: (row.urgent as boolean) ?? false,
+    estimatedMinutes: row.estimated_minutes as number,
+    userRating: (row.user_rating as number) ?? undefined,
+    completed: (row.completed as boolean) ?? false,
+    dueDate: (row.due_date as string) ?? undefined,
+    category: (row.category as string) ?? undefined,
   };
 }
 
 /**
- * Convert Quest to Supabase row format
+ * Convert Quest to Supabase row format (matches DB Insert type)
  */
-function questToRow(quest: Quest, userId: string): Partial<QuestRow> {
+function questToRow(quest: Quest, userId: string) {
   return {
     user_id: userId,
     quest_id: quest.id,
@@ -85,31 +57,32 @@ function questToRow(quest: Quest, userId: string): Partial<QuestRow> {
     category: quest.category,
     title: quest.title,
     description: quest.description,
-    condition: quest.condition,
-    reward: quest.reward,
+    condition: quest.condition as unknown as Json,
+    reward: quest.reward as unknown as Json,
     progress: quest.progress,
     total: quest.total,
     completed: quest.completed,
     expires_at: new Date(quest.expiresAt).toISOString(),
+    updated_at: new Date().toISOString(),
   };
 }
 
 /**
- * Convert Supabase row to Quest
+ * Convert Supabase row to Quest (handles nullable DB fields)
  */
-function rowToQuest(row: QuestRow): Quest {
+function rowToQuest(row: Record<string, unknown>): Quest {
   return {
-    id: row.quest_id,
-    type: row.type,
-    category: row.category,
-    title: row.title,
-    description: row.description,
-    condition: row.condition,
-    reward: row.reward,
-    progress: row.progress,
-    total: row.total,
-    completed: row.completed,
-    expiresAt: new Date(row.expires_at).getTime(),
+    id: row.quest_id as string,
+    type: row.type as Quest['type'],
+    category: row.category as Quest['category'],
+    title: row.title as string,
+    description: row.description as string,
+    condition: row.condition as QuestCondition,
+    reward: row.reward as QuestReward,
+    progress: (row.progress as number) ?? 0,
+    total: row.total as number,
+    completed: (row.completed as boolean) ?? false,
+    expiresAt: new Date(row.expires_at as string).getTime(),
     createdAt: Date.now(), // Approximate
   };
 }
@@ -124,8 +97,8 @@ export async function pullTasksFromCloud(): Promise<Task[] | null> {
   if (!session?.user) return null; // Not authenticated - return null to keep local data
   const user = session.user;
 
-  const { data, error } = await (supabase
-    .from('user_tasks') as any)
+  const { data, error } = await supabase
+    .from('user_tasks')
     .select('*')
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
@@ -151,8 +124,8 @@ export async function pushTasksToCloud(tasks: Task[]): Promise<void> {
   // Upsert tasks
   const rows = tasks.map(task => taskToRow(task, user.id));
 
-  const { error } = await (supabase
-    .from('user_tasks') as any)
+  const { error } = await supabase
+    .from('user_tasks')
     .upsert(rows, {
       onConflict: 'user_id,task_id',
       ignoreDuplicates: false,
@@ -181,8 +154,8 @@ export async function deleteTaskFromCloud(taskId: string): Promise<void> {
   }
 
   try {
-    const { error } = await (supabase
-      .from('user_tasks') as any)
+    const { error } = await supabase
+      .from('user_tasks')
       .delete()
       .eq('user_id', user.id)
       .eq('task_id', taskId);
@@ -210,8 +183,8 @@ export async function deleteQuestFromCloud(questId: string, questType: 'daily' |
   const user = session.user;
 
   try {
-    const { error } = await (supabase
-      .from('user_quests') as any)
+    const { error } = await supabase
+      .from('user_quests')
       .delete()
       .eq('user_id', user.id)
       .eq('quest_id', questId)
@@ -315,8 +288,8 @@ export async function pullQuestsFromCloud(): Promise<QuestsState | undefined> {
   if (!session?.user) return undefined; // Not authenticated - return undefined to keep local data
   const user = session.user;
 
-  const { data, error } = await (supabase
-    .from('user_quests') as any)
+  const { data, error } = await supabase
+    .from('user_quests')
     .select('*')
     .eq('user_id', user.id)
     .order('updated_at', { ascending: false })
@@ -345,7 +318,7 @@ export async function pushQuestsToCloud(quests: { daily: Quest | null; weekly: Q
   if (!session?.user) return;
   const user = session.user;
 
-  const rows: Partial<QuestRow>[] = [];
+  const rows: ReturnType<typeof questToRow>[] = [];
 
   if (quests.daily) rows.push(questToRow(quests.daily, user.id));
   if (quests.weekly) rows.push(questToRow(quests.weekly, user.id));
@@ -353,8 +326,8 @@ export async function pushQuestsToCloud(quests: { daily: Quest | null; weekly: Q
 
   if (rows.length === 0) return;
 
-  const { error } = await (supabase
-    .from('user_quests') as any)
+  const { error } = await supabase
+    .from('user_quests')
     .upsert(rows, {
       onConflict: 'user_id,quest_id',
       ignoreDuplicates: false,

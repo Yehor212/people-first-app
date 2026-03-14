@@ -4,46 +4,10 @@ import { Challenge, Badge } from '@/types';
 import { getChallenges, saveChallenges, getBadges, saveBadges } from '@/lib/challengeStorage';
 import { syncOrchestrator } from '@/lib/syncOrchestrator';
 import { triggerDataRefresh } from '@/hooks/useIndexedDB';
+import type { Json } from '@/types/supabase';
 
-// Supabase types
-interface SupabaseChallenge {
-  id: string;
-  user_id: string;
-  challenge_id: string;
-  type: string;
-  progress: number;
-  target: number;
-  completed: boolean;
-  started_at: string;
-  completed_at: string | null;
-  icon: string;
-  title: Record<string, string>;
-  description: Record<string, string>;
-  habit_id: string | null;
-  end_date: string | null;
-  reward: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-interface SupabaseBadge {
-  id: string;
-  user_id: string;
-  badge_id: string;
-  category: string;
-  unlocked: boolean;
-  unlocked_at: string | null;
-  icon: string;
-  title: Record<string, string>;
-  description: Record<string, string>;
-  requirement: number;
-  rarity: string;
-  created_at: string;
-  updated_at: string;
-}
-
-// Convert local Challenge to Supabase format
-function challengeToSupabase(challenge: Challenge, userId: string): Partial<SupabaseChallenge> {
+// Convert local Challenge to Supabase format (matches DB Insert type)
+function challengeToSupabase(challenge: Challenge, userId: string) {
   return {
     user_id: userId,
     challenge_id: challenge.id,
@@ -54,35 +18,36 @@ function challengeToSupabase(challenge: Challenge, userId: string): Partial<Supa
     started_at: challenge.startDate,
     completed_at: challenge.completedDate || null,
     icon: challenge.icon,
-    title: challenge.title,
-    description: challenge.description,
+    title: challenge.title as unknown as Json,
+    description: challenge.description as unknown as Json,
     habit_id: challenge.habitId || null,
     end_date: challenge.endDate || null,
     reward: challenge.reward || null,
+    updated_at: new Date().toISOString(),
   };
 }
 
-// Convert Supabase Challenge to local format
-function supabaseToChallengeLocal(sc: SupabaseChallenge): Challenge {
+// Convert Supabase Challenge to local format (handles nullable DB fields)
+function supabaseToChallengeLocal(sc: Record<string, unknown>): Challenge {
   return {
-    id: sc.challenge_id,
+    id: sc.challenge_id as string,
     type: sc.type as Challenge['type'],
-    progress: sc.progress,
-    target: sc.target,
-    completed: sc.completed,
-    startDate: sc.started_at,
-    completedDate: sc.completed_at || undefined,
-    icon: sc.icon,
-    title: sc.title,
-    description: sc.description,
-    habitId: sc.habit_id || undefined,
-    endDate: sc.end_date || undefined,
-    reward: sc.reward || undefined,
+    progress: (sc.progress as number) ?? 0,
+    target: sc.target as number,
+    completed: (sc.completed as boolean) ?? false,
+    startDate: (sc.started_at as string) ?? new Date().toISOString(),
+    completedDate: (sc.completed_at as string) || undefined,
+    icon: sc.icon as string,
+    title: sc.title as Record<string, string>,
+    description: sc.description as Record<string, string>,
+    habitId: (sc.habit_id as string) || undefined,
+    endDate: (sc.end_date as string) || undefined,
+    reward: (sc.reward as string) || undefined,
   };
 }
 
-// Convert local Badge to Supabase format
-function badgeToSupabase(badge: Badge, userId: string): Partial<SupabaseBadge> {
+// Convert local Badge to Supabase format (matches DB Insert type)
+function badgeToSupabase(badge: Badge, userId: string) {
   return {
     user_id: userId,
     badge_id: badge.id,
@@ -90,24 +55,25 @@ function badgeToSupabase(badge: Badge, userId: string): Partial<SupabaseBadge> {
     unlocked: badge.unlocked,
     unlocked_at: badge.unlockedDate || null,
     icon: badge.icon,
-    title: badge.title,
-    description: badge.description,
+    title: badge.title as unknown as Json,
+    description: badge.description as unknown as Json,
     requirement: badge.requirement,
     rarity: badge.rarity,
+    updated_at: new Date().toISOString(),
   };
 }
 
-// Convert Supabase Badge to local format
-function supabaseToBadgeLocal(sb: SupabaseBadge): Badge {
+// Convert Supabase Badge to local format (handles nullable DB fields)
+function supabaseToBadgeLocal(sb: Record<string, unknown>): Badge {
   return {
-    id: sb.badge_id,
+    id: sb.badge_id as string,
     category: sb.category as Badge['category'],
-    unlocked: sb.unlocked,
-    unlockedDate: sb.unlocked_at || undefined,
-    icon: sb.icon,
-    title: sb.title,
-    description: sb.description,
-    requirement: sb.requirement,
+    unlocked: (sb.unlocked as boolean) ?? false,
+    unlockedDate: (sb.unlocked_at as string) || undefined,
+    icon: sb.icon as string,
+    title: sb.title as Record<string, string>,
+    description: sb.description as Record<string, string>,
+    requirement: sb.requirement as number,
     rarity: sb.rarity as Badge['rarity'],
   };
 }
@@ -130,8 +96,8 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
       const localChallenges = getChallenges();
 
       // 2. Pull from cloud
-      const { data: cloudChallenges, error: fetchError } = await (supabase
-        .from('user_challenges') as any)
+      const { data: cloudChallenges, error: fetchError } = await supabase
+        .from('user_challenges')
         .select('*')
         .eq('user_id', userId)
         .order('updated_at', { ascending: false })
@@ -145,9 +111,9 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
 
       // 3. P1-1 Fix: Merge logic with progress-based conflict resolution
       // Use the version with more progress (not just cloud wins)
-      const cloudMap = new Map<string, SupabaseChallenge>();
+      const cloudMap = new Map<string, Record<string, unknown>>();
       (cloudChallenges || []).forEach(cc => {
-        cloudMap.set(cc.challenge_id, cc);
+        cloudMap.set(cc.challenge_id, cc as Record<string, unknown>);
       });
 
       const localMap = new Map<string, Challenge>();
@@ -157,7 +123,7 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
 
       // Merged challenges
       const merged: Challenge[] = [];
-      const toUpsert: Partial<SupabaseChallenge>[] = [];
+      const toUpsert: ReturnType<typeof challengeToSupabase>[] = [];
 
       // Process all challenges (merge conflicts by progress)
       const allChallengeIds = new Set([...cloudMap.keys(), ...localMap.keys()]);
@@ -196,8 +162,8 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
 
       // 4. Push local-only challenges to cloud
       if (toUpsert.length > 0) {
-        const { error: upsertError } = await (supabase
-          .from('user_challenges') as any)
+        const { error: upsertError } = await supabase
+          .from('user_challenges')
           .upsert(toUpsert, { onConflict: 'user_id,challenge_id' });
 
         if (upsertError) {
@@ -235,8 +201,8 @@ export async function syncChallengesWithCloud(userId: string): Promise<{
 export async function pushChallengeUpdate(userId: string, challenge: Challenge): Promise<boolean> {
   if (!supabase) return false;
   try {
-    const { error } = await (supabase
-      .from('user_challenges') as any)
+    const { error } = await supabase
+      .from('user_challenges')
       .upsert(challengeToSupabase(challenge, userId), {
         onConflict: 'user_id,challenge_id'
       });
@@ -265,8 +231,8 @@ export async function deleteChallengeFromCloud(userId: string, challengeId: stri
   }
 
   try {
-    const { error } = await (supabase
-      .from('user_challenges') as any)
+    const { error } = await supabase
+      .from('user_challenges')
       .delete()
       .eq('user_id', userId)
       .eq('challenge_id', challengeId);
@@ -296,8 +262,8 @@ export async function deleteBadgeFromCloud(userId: string, badgeId: string): Pro
   }
 
   try {
-    const { error } = await (supabase
-      .from('user_badges') as any)
+    const { error } = await supabase
+      .from('user_badges')
       .delete()
       .eq('user_id', userId)
       .eq('badge_id', badgeId);
@@ -333,8 +299,8 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
       const localBadges = getBadges();
 
       // 2. Pull from cloud
-      const { data: cloudBadges, error: fetchError } = await (supabase
-        .from('user_badges') as any)
+      const { data: cloudBadges, error: fetchError } = await supabase
+        .from('user_badges')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
@@ -347,9 +313,9 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
       }
 
       // 3. Merge logic: cloud wins for unlocked status
-      const cloudMap = new Map<string, SupabaseBadge>();
+      const cloudMap = new Map<string, Record<string, unknown>>();
       (cloudBadges || []).forEach(cb => {
-        cloudMap.set(cb.badge_id, cb);
+        cloudMap.set(cb.badge_id, cb as Record<string, unknown>);
       });
 
       const localMap = new Map<string, Badge>();
@@ -359,7 +325,7 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
 
       // Merged badges
       const merged: Badge[] = [];
-      const toUpsert: Partial<SupabaseBadge>[] = [];
+      const toUpsert: ReturnType<typeof badgeToSupabase>[] = [];
 
       // P1-7 Fix: Process ALL badges (both local and cloud)
       // Previously only iterated localMap, losing cloud-only badges
@@ -395,8 +361,8 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
 
       // 4. Push local-only unlocked badges to cloud
       if (toUpsert.length > 0) {
-        const { error: upsertError } = await (supabase
-          .from('user_badges') as any)
+        const { error: upsertError } = await supabase
+          .from('user_badges')
           .upsert(toUpsert, { onConflict: 'user_id,badge_id' });
 
         if (upsertError) {
@@ -434,8 +400,8 @@ export async function syncBadgesWithCloud(userId: string): Promise<{
 export async function pushBadgeUnlock(userId: string, badge: Badge): Promise<boolean> {
   if (!supabase) return false;
   try {
-    const { error } = await (supabase
-      .from('user_badges') as any)
+    const { error } = await supabase
+      .from('user_badges')
       .upsert(badgeToSupabase(badge, userId), {
         onConflict: 'user_id,badge_id'
       });
@@ -482,8 +448,8 @@ export async function initializeBadgesInCloud(userId: string, badges: Badge[]): 
   try {
     const badgesToInsert = badges.map(badge => badgeToSupabase(badge, userId));
 
-    const { error } = await (supabase
-      .from('user_badges') as any)
+    const { error } = await supabase
+      .from('user_badges')
       .upsert(badgesToInsert, { onConflict: 'user_id,badge_id' });
 
     if (error) {

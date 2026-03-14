@@ -40,22 +40,24 @@ export const syncReminderSettings = async (
     const payload = {
       user_id: user.id,
       enabled: Boolean(reminders.enabled),
+      // mood_time is required by DB — use morning time as primary
+      mood_time: reminders.moodTimeMorning || reminders.moodTimeAfternoon || '09:00',
       // 3 mood times for morning/afternoon/evening check-ins
       mood_time_morning: reminders.moodTimeMorning || null,
       mood_time_afternoon: reminders.moodTimeAfternoon || null,
       mood_time_evening: reminders.moodTimeEvening || null,
-      habit_time: reminders.habitTime || null,
-      focus_time: reminders.focusTime || null,
+      habit_time: reminders.habitTime || '08:00',
+      focus_time: reminders.focusTime || '14:00',
       days: safeDays,
-      quiet_start: reminders.quietHours?.start || null,
-      quiet_end: reminders.quietHours?.end || null,
+      quiet_start: reminders.quietHours?.start || '22:00',
+      quiet_end: reminders.quietHours?.end || '07:00',
       habit_ids: safeHabitIds,
       timezone,
       language,
       updated_at: new Date().toISOString()
     };
 
-    const { error } = await (supabase.from("user_reminder_settings") as any).upsert(payload, {
+    const { error } = await supabase.from("user_reminder_settings").upsert(payload, {
       onConflict: "user_id"
     });
 
