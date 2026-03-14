@@ -1378,6 +1378,7 @@ export const fetchUserStats = async () => {
   if (!supabase || !userId) return null;
 
   try {
+    // get_user_stats types manually added — Supabase client can't resolve, assert result
     const { data, error } = await (supabase as any).rpc('get_user_stats', { p_user_id: userId });
     if (error) throw error;
     return data;

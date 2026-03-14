@@ -19,6 +19,11 @@ interface StorageErrorEvent {
   queueSize?: number;
 }
 
+interface IndexedDBTimeoutEvent {
+  timeoutMs: number;
+  message: string;
+}
+
 interface QueueFullEvent {
   queueSize: number;
   maxSize: number;
@@ -80,12 +85,34 @@ export function StorageErrorBanner() {
       setIsVisible(true);
     };
 
+    // Listen for IndexedDB timeout (data may be stale)
+    const handleIndexedDBTimeout = (event: CustomEvent<IndexedDBTimeoutEvent>) => {
+      if (isDismissed) return;
+
+      logger.warn('[StorageErrorBanner] IndexedDB timeout:', event.detail);
+      setErrorMessage(event.detail.message || 'Data may be outdated. Try restarting the app.');
+      setIsVisible(true);
+    };
+
+    // Listen for IndexedDB queue overflow
+    const handleQueueOverflow = () => {
+      if (isDismissed) return;
+
+      logger.warn('[StorageErrorBanner] IndexedDB queue overflow');
+      setErrorMessage('App is busy processing data. Some operations may be delayed.');
+      setIsVisible(true);
+    };
+
     window.addEventListener('zenflow:storage-error', handleStorageError as EventListener);
     window.addEventListener('zenflow:offline-queue-full', handleQueueFull as EventListener);
+    window.addEventListener('zenflow:indexeddb-timeout', handleIndexedDBTimeout as EventListener);
+    window.addEventListener('zenflow:indexeddb-queue-overflow', handleQueueOverflow as EventListener);
 
     return () => {
       window.removeEventListener('zenflow:storage-error', handleStorageError as EventListener);
       window.removeEventListener('zenflow:offline-queue-full', handleQueueFull as EventListener);
+      window.removeEventListener('zenflow:indexeddb-timeout', handleIndexedDBTimeout as EventListener);
+      window.removeEventListener('zenflow:indexeddb-queue-overflow', handleQueueOverflow as EventListener);
     };
   }, [isDismissed]);
 

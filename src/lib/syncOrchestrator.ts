@@ -138,6 +138,18 @@ class SyncOrchestrator {
     if (this.queue.length > this.MAX_QUEUE_SIZE) {
       const dropped = this.queue.pop();
       logger.warn(`[SyncOrchestrator] Queue overflow (>${this.MAX_QUEUE_SIZE}), dropped: ${dropped?.type}`);
+
+      // Notify UI so user knows their action may not sync (Law 5: Loud Failure)
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('zenflow:offline-queue-full', {
+          detail: {
+            queueSize: this.queue.length,
+            maxSize: this.MAX_QUEUE_SIZE,
+            message: 'Sync queue is full. Some changes may not be saved to cloud.',
+            actionType: dropped?.type,
+          }
+        }));
+      }
     }
 
     this.updateState({ queueLength: this.queue.length });

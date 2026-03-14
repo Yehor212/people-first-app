@@ -9,6 +9,7 @@ import {
 } from '@/lib/authRedirect';
 import { AUTH_SESSION_EXPIRED_EVENT } from '@/lib/apiClient';
 import { syncWithCloud, startAutoSync, stopAutoSync } from '@/storage/cloudSync';
+import { syncOrchestrator } from '@/lib/syncOrchestrator';
 import { joinPresence, leavePresence } from '@/lib/presenceService';
 import { migrateExistingUser } from '@/lib/cloudSyncSettings';
 import { logger } from '@/lib/logger';
@@ -263,6 +264,9 @@ export function useAuthSession(isLoading: boolean): void {
       // v1.1.1 Migration: Auto-enable cloud sync when user signs in
       if (session) {
         migrateExistingUser();
+        // Reset sync orchestrator's session-expired flag so 401 errors
+        // are properly surfaced again after re-authentication
+        syncOrchestrator.resetSessionExpired();
       }
       void syncIfNeeded(session?.user?.id ?? null);
     });

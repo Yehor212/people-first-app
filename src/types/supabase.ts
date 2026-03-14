@@ -596,6 +596,44 @@ export interface Database {
           updated_at?: string;
         };
       };
+      user_profiles: {
+        Row: {
+          id: string;
+          user_id: string;
+          friend_code: string;
+          display_name: string;
+          avatar_emoji: string;
+          current_streak: number;
+          level: number;
+          status: string | null;
+          share_activity: boolean;
+          updated_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          friend_code: string;
+          display_name?: string;
+          avatar_emoji?: string;
+          current_streak?: number;
+          level?: number;
+          status?: string | null;
+          share_activity?: boolean;
+          updated_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          friend_code?: string;
+          display_name?: string;
+          avatar_emoji?: string;
+          current_streak?: number;
+          level?: number;
+          status?: string | null;
+          share_activity?: boolean;
+          updated_at?: string;
+        };
+      };
       journal_entries: {
         Row: {
           id: string;
@@ -835,12 +873,11 @@ export interface Database {
       get_user_stats: {
         Args: { p_user_id: string };
         Returns: {
-          currentStreak: number;
-          totalFocusMinutes: number;
-          habitsCompleted: number;
-          moodEntries: number;
-          gratitudeEntries: number;
-          totalBadges: number;
+          total_moods: number;
+          total_habits: number;
+          completed_habits: number;
+          focus_minutes: number;
+          current_streak: number;
         };
       };
       update_member_progress: {
