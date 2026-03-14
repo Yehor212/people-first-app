@@ -152,11 +152,17 @@ describe('feedbackService', () => {
         expect(mockFrom).toHaveBeenCalledWith('feedback');
       });
 
-      it('wraps data in an array for insert', async () => {
+      it('passes structured data to insert', async () => {
         mockInsert.mockResolvedValue({ error: null });
         mockInvoke.mockResolvedValue({ error: null });
         await submitDetailedFeedback(detailedFeedbackData);
-        expect(mockInsert).toHaveBeenCalledWith([detailedFeedbackData]);
+        expect(mockInsert).toHaveBeenCalledWith({
+          category: detailedFeedbackData.category,
+          message: detailedFeedbackData.message,
+          email: detailedFeedbackData.email,
+          device_info: detailedFeedbackData.device_info,
+          app_version: detailedFeedbackData.app_version,
+        });
       });
 
       it('returns false when insert returns an error', async () => {

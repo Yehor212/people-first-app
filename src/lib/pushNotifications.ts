@@ -138,7 +138,7 @@ export async function savePushToken(token: string): Promise<boolean> {
         platform: 'android',
         device_id: deviceIdValue,
         updated_at: new Date().toISOString(),
-      } as any, {
+      }, {
         onConflict: 'user_id,token',
       });
 

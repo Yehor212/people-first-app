@@ -91,7 +91,8 @@ export async function createCloudChallenge(
   const endDate = calculateEndDate(startDate, duration);
 
   // Create challenge
-  const { data: challenge, error: challengeError } = await (supabase.from('friend_challenges') as any)
+  const { data: challenge, error: challengeError } = await supabase
+    .from('friend_challenges')
     .insert({
       code,
       creator_id: userId,
@@ -124,7 +125,8 @@ export async function createCloudChallenge(
 export async function getChallengeByCode(code: string): Promise<FriendChallenge | null> {
   if (!supabase) return null;
 
-  const { data, error } = await (supabase.from('friend_challenges') as any)
+  const { data, error } = await supabase
+    .from('friend_challenges')
     .select('*')
     .eq('code', code.toUpperCase())
     .single();
@@ -145,7 +147,8 @@ export async function getChallengeByCode(code: string): Promise<FriendChallenge 
 export async function getChallengeById(challengeId: string): Promise<FriendChallenge | null> {
   if (!supabase) return null;
 
-  const { data, error } = await (supabase.from('friend_challenges') as any)
+  const { data, error } = await supabase
+    .from('friend_challenges')
     .select('*')
     .eq('id', challengeId)
     .single();
@@ -176,7 +179,8 @@ export async function joinCloudChallenge(
   const userId = await getCurrentUserId();
   if (!userId) return null;
 
-  const { data, error } = await (supabase.from('friend_challenge_members') as any)
+  const { data, error } = await supabase
+    .from('friend_challenge_members')
     .upsert({
       challenge_id: challengeId,
       user_id: userId,
@@ -209,7 +213,7 @@ export async function updateMyProgress(
   const userId = await getCurrentUserId();
   if (!userId) return null;
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .rpc('update_member_progress', {
       p_challenge_id: challengeId,
       p_user_id: userId,
@@ -269,7 +273,7 @@ export async function getChallengeLeaderboard(
   if (!challenge) return null;
 
   // Get leaderboard via RPC
-  const { data: members, error: membersError } = await (supabase as any)
+  const { data: members, error: membersError } = await supabase
     .rpc('get_challenge_leaderboard', { p_challenge_id: challengeId })
     .abortSignal(AbortSignal.timeout(10000));
 
@@ -301,7 +305,8 @@ export async function getMyChallenges(): Promise<ChallengeLeaderboard[]> {
   if (!userId) return [];
 
   // Get challenges where user is a member
-  const { data: memberships, error } = await (supabase.from('friend_challenge_members') as any)
+  const { data: memberships, error } = await supabase
+    .from('friend_challenge_members')
     .select('challenge_id')
     .eq('user_id', userId)
     .limit(20);
@@ -417,7 +422,8 @@ export async function syncLocalChallengeToCloud(
   // Create new challenge
   const endDate = calculateEndDate(startDate, duration);
 
-  const { data: challenge, error } = await (supabase.from('friend_challenges') as any)
+  const { data: challenge, error } = await supabase
+    .from('friend_challenges')
     .insert({
       code,
       creator_id: userId,

@@ -160,14 +160,16 @@ export async function openGooglePlayStore(): Promise<boolean> {
       // Fallback to HTTPS URL if market:// fails
       const marketUrl = 'market://details?id=com.zenflow.app';
 
+      // Capacitor App plugin exposes openUrl at runtime but not in types
+      const appPlugin = App as unknown as { openUrl: (opts: { url: string }) => Promise<void> };
       try {
         // Try to open with market:// protocol (Play Store app)
-        await (App as any).openUrl({ url: marketUrl });
+        await appPlugin.openUrl({ url: marketUrl });
         logger.log('[AppUpdate] Opened Google Play Store via market://');
         return true;
       } catch {
         // Fallback to HTTPS URL (opens in browser)
-        await (App as any).openUrl({ url: GOOGLE_PLAY_URL });
+        await appPlugin.openUrl({ url: GOOGLE_PLAY_URL });
         logger.log('[AppUpdate] Opened Google Play Store via HTTPS');
         return true;
       }

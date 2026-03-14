@@ -220,7 +220,7 @@ export async function scheduleLocalReminders(
       schedule: { on: focusTime, every: 'day', allowWhileIdle: true }
     });
 
-    await LocalNotifications.schedule({ notifications: notifications as any });
+    await LocalNotifications.schedule({ notifications });
     logger.log('Local notifications scheduled successfully');
   } catch (error) {
     logger.error('Failed to schedule local notifications:', error);

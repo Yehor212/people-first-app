@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { logger } from './logger';
+import type { Json } from '@/types/supabase';
 
 interface QuickFeedbackData {
   type: string;
@@ -35,8 +36,8 @@ export async function submitQuickFeedback(data: QuickFeedbackData): Promise<bool
       device_info: {
         platform: data.platform,
         userAgent: data.user_agent,
-      },
-    } as any);
+      } as unknown as Json,
+    });
 
   if (error) {
     logger.warn('[FeedbackService] Quick feedback error:', error.message);
@@ -56,7 +57,13 @@ export async function submitDetailedFeedback(data: DetailedFeedbackData): Promis
   try {
     const { error } = await supabase
       .from('feedback')
-      .insert([data] as any);
+      .insert({
+        category: data.category,
+        message: data.message,
+        email: data.email,
+        device_info: data.device_info as unknown as Json,
+        app_version: data.app_version,
+      });
 
     if (error) {
       logger.error('[FeedbackService] Detailed feedback error:', {

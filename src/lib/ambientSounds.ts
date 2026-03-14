@@ -43,6 +43,7 @@ declare global {
     webkitAudioContext?: typeof AudioContext;
   }
   interface HTMLAudioElement {
+    playsInline?: boolean;
     webkitPreservesPitch?: boolean;
   }
 }
@@ -64,7 +65,7 @@ let blessedAudioElement: HTMLAudioElement | null = null;
 function getOrCreateBlessedElement(): HTMLAudioElement {
   if (!blessedAudioElement) {
     blessedAudioElement = new Audio();
-    (blessedAudioElement as any).playsInline = true;
+    blessedAudioElement.playsInline = true;
     blessedAudioElement.setAttribute('playsinline', '');
     blessedAudioElement.setAttribute('webkit-playsinline', '');
   }
