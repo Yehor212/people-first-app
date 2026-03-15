@@ -37,7 +37,7 @@
  *   9. Particles — cached sprite, drawn via drawImage
  */
 
-import { noise2d } from './noise2d';
+import { noise2d, noise2dTurbulence, noise2dRidge } from './noise2d';
 import { valenceToHSL } from './colorUtils';
 import type { Particle } from './particleSystem';
 
@@ -319,26 +319,33 @@ function computeShapePoints(
     const cosA = Math.cos(angle);
     const sinA = Math.sin(angle);
 
-    // Domain warp: warp the angle before superformula lookup (Inigo Quilez technique)
-    const warp1 = noise2d(
-      cosA * 1.8 + time * noiseSpeed * 0.4 + seed,
-      sinA * 1.8 + time * noiseSpeed * 0.3 + seed,
-    );
-    const warp2 = noise2d(
-      cosA * 3.5 + time * noiseSpeed * 0.7 + seed + 50,
-      sinA * 3.5 + time * noiseSpeed * 0.5 + seed + 50,
-    );
-    const warpedAngle = angle + (warp1 * 0.65 + warp2 * 0.35) * warpAmp * Math.PI * 2;
+    // Iterative Domain Warp (Inigo Quilez technique — biological texture)
+    // Each warp layer feeds into the next → emergent organic complexity
+    const warpPx = cosA * 1.8 + seed;
+    const warpPy = sinA * 1.8 + seed;
+    // Layer q: first warp iteration
+    const qx = noise2d(warpPx + time * noiseSpeed * 0.3, warpPy + time * 0.05);
+    const qy = noise2d(warpPx + 5.2, warpPy + 1.3 + time * noiseSpeed * 0.35);
+    // Layer r: second warp iteration (feeds on q)
+    const nvt = (valence + 1) * 0.5; // 0 at -1, 1 at +1
+    const warpDepth = 4.0 - nvt * 1.5; // deeper warp at negative valence
+    const rx = noise2d(warpPx + warpDepth * qx + 1.7, warpPy + warpDepth * qy + 9.2 + time * 0.08);
+    const ry = noise2d(warpPx + warpDepth * qx + 8.3, warpPy + warpDepth * qy + 2.8 + time * 0.09);
+    // Final warped angle
+    const warpVal = noise2d(warpPx + warpDepth * rx, warpPy + warpDepth * ry);
+    const warpedAngle = angle + warpVal * warpAmp * Math.PI * 2;
 
     // Superformula radius with warped angle
     const sf = superformula(warpedAngle, mInt, shape.n1, shape.n2, shape.n3);
 
-    // 2-octave noise for organic asymmetry (domain warp adds complementary deformation)
-    const nv1 = noise2d(
+    // 2-octave noise with valence-driven type selection
+    // Turbulence (abs) = cracked for negative, Ridge (1-abs) = flowing for positive
+    const noiseFn = nvt < 0.4 ? noise2dTurbulence : nvt > 0.6 ? noise2dRidge : noise2d;
+    const nv1 = noiseFn(
       cosA * 2.5 + time * noiseSpeed + seed,
       sinA * 2.5 + time * noiseSpeed * 0.7 + seed,
     );
-    const nv2 = noise2d(
+    const nv2 = noiseFn(
       cosA * 5.0 + time * noiseSpeed * 1.3 + seed + 100,
       sinA * 5.0 + time * noiseSpeed * 0.9 + seed + 100,
     );
@@ -474,6 +481,10 @@ function drawShapeFill(
   if (compositeOp) ctx.globalCompositeOperation = compositeOp;
 
   // Rich radial gradient fill — strong 3D lighting offset (top-left light source)
+  // Enhancement 3 (Canvas 2D): Wrap lighting — positive valence shifts gradient
+  // stops inward for translucent inner-glow effect (fake SSS)
+  const wrapT = Math.max(0, (valence + 1) * 0.5); // 0 at -1, 1 at +1
+  const wrapBoost = wrapT * 8; // extra lightness for positive emotions
   const lightOffX = -baseRadius * 0.25;
   const lightOffY = -baseRadius * 0.25;
   const gradOuter = baseRadius * 1.18;
@@ -481,12 +492,12 @@ function drawShapeFill(
     cx + lightOffX, cy + lightOffY, baseRadius * 0.02,
     cx, cy, gradOuter,
   );
-  const coreLightness = isDark ? Math.min(98, hsl.l + 45) : Math.min(97, hsl.l + 38);
+  const coreLightness = isDark ? Math.min(98, hsl.l + 45 + wrapBoost) : Math.min(97, hsl.l + 38 + wrapBoost);
   grad.addColorStop(0, hsla(h, hsl.s * 0.20, coreLightness, fillAlpha));
-  grad.addColorStop(0.12, hsla(h, hsl.s * 0.45, hsl.l + 35, fillAlpha * 0.97));
-  grad.addColorStop(0.30, hsla(h, hsl.s * 0.75, hsl.l + 22, fillAlpha * 0.90));
-  grad.addColorStop(0.50, hsla(h, hsl.s * 0.90, hsl.l + 10, fillAlpha * 0.75));
-  grad.addColorStop(0.72, hsla(h, hsl.s * 0.85, hsl.l, fillAlpha * 0.45));
+  grad.addColorStop(0.12, hsla(h, hsl.s * 0.45, hsl.l + 35 + wrapBoost * 0.7, fillAlpha * 0.97));
+  grad.addColorStop(0.30, hsla(h, hsl.s * 0.75, hsl.l + 22 + wrapBoost * 0.5, fillAlpha * 0.90));
+  grad.addColorStop(0.50, hsla(h, hsl.s * 0.90, hsl.l + 10 + wrapBoost * 0.3, fillAlpha * (0.75 + wrapT * 0.10)));
+  grad.addColorStop(0.72, hsla(h, hsl.s * 0.85, hsl.l + wrapBoost * 0.15, fillAlpha * (0.45 + wrapT * 0.08)));
   grad.addColorStop(0.90, hsla(h, hsl.s * 0.60, hsl.l - 5, fillAlpha * 0.15));
   grad.addColorStop(1, hsla(h, hsl.s * 0.4, hsl.l - 8, 0));
 

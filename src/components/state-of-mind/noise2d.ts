@@ -50,6 +50,22 @@ function lerp(a: number, b: number, t: number): number {
 }
 
 /**
+ * Turbulence noise: abs(noise) creates sharp valleys — cracked, broken surfaces.
+ * Returns a value in [0, 1], remapped to [-1, 1].
+ */
+export function noise2dTurbulence(x: number, y: number): number {
+  return Math.abs(noise2d(x, y)) * 2 - 1;
+}
+
+/**
+ * Ridge noise: 1-abs(noise) creates smooth ridges — flowing, silk-like surfaces.
+ * Returns a value in [0, 1], remapped to [-1, 1].
+ */
+export function noise2dRidge(x: number, y: number): number {
+  return (1 - Math.abs(noise2d(x, y))) * 2 - 1;
+}
+
+/**
  * 2D value noise. Returns a value in [-1, 1].
  * Continuous and smooth — suitable for organic displacement.
  */
