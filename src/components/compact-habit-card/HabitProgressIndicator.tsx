@@ -63,9 +63,9 @@ export function HabitProgressIndicator({
             aria-label={t.increase || 'Increase'}
             className={cn(
               "w-12 h-12 min-w-[48px] min-h-[48px] rounded-lg flex items-center justify-center transition-colors focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:outline-none",
-              "bg-gradient-to-br from-primary/20 to-primary/10 text-primary hover:from-primary/30 hover:to-primary/20"
+              "bg-gradient-to-br from-primary/20 to-primary/10 text-primary hover:from-primary/30 hover:to-primary/20",
+              "shadow-[0_0_8px_hsl(var(--primary)/0.15)]"
             )}
-            style={{ boxShadow: '0 0 8px hsl(var(--primary) / 0.15)' }}
             whileHover={{ scale: 1.05 }}
             whileTap={zenTap.button}
           >

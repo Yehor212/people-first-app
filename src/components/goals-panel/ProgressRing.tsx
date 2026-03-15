@@ -47,7 +47,7 @@ export function ProgressRing({
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
           transition={{ duration: 1, ease: 'easeOut' }}
-          style={{ filter: 'blur(4px)' }}
+          className="blur-[4px]"
         />
         {/* Progress arc */}
         <motion.circle

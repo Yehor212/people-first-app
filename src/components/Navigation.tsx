@@ -43,12 +43,11 @@ export function Navigation({ activeTab, onTabChange, canvasEnabled, habitHubEnab
 
   return (
     <nav
-      className="fixed bottom-0 inset-x-0 bg-card/80 backdrop-blur-lg border-t border-border z-50 gpu-layer"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+      className="fixed bottom-0 inset-x-0 bg-card/80 backdrop-blur-lg border-t border-border z-50 gpu-layer pb-[env(safe-area-inset-bottom,0px)]"
       role="navigation"
       aria-label={t.mainNavigation || 'Main navigation'}
     >
-      <div className="mx-auto px-4" style={{ maxWidth: 'var(--container-max-width)' }}>
+      <div className="mx-auto px-4 max-w-[var(--container-max-width)]">
         <div className="flex justify-between py-2" role="tablist">
           {tabs.map((tab) => (
             <button

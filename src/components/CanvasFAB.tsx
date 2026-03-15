@@ -18,11 +18,7 @@ interface CanvasFABProps {
 export function CanvasFAB({ onRecenter, onZoomIn, onZoomOut }: CanvasFABProps) {
   return (
     <div
-      className="fixed z-50 flex flex-col items-center"
-      style={{
-        bottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.5rem)',
-        right: '1rem',
-      }}
+      className="fixed z-50 flex flex-col items-center right-4 bottom-[calc(env(safe-area-inset-bottom,0px)+1.5rem)]"
     >
       {/* Canvas controls pill */}
       <div className={cn(

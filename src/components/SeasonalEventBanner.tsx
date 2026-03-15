@@ -111,8 +111,8 @@ export function SeasonalEventBanner({
         {/* Mini progress bar */}
         <div className="mt-2 h-1 bg-background/30 rounded-full overflow-hidden">
           <motion.div
-            className="h-full rounded-full"
-            style={{ width: '100%', transformOrigin: 'left center', backgroundColor: currentEvent.themeColor }}
+            className="h-full rounded-full w-full origin-left"
+            style={{ backgroundColor: currentEvent.themeColor }}
             initial={{ scaleX: 0 }}
             animate={{ scaleX: progressPercent / 100 }}
             transition={{ duration: 0.5, delay: 0.2 }}
@@ -195,8 +195,8 @@ export function SeasonalEventBanner({
             </div>
             <div className="h-2 bg-background/30 rounded-full overflow-hidden">
               <motion.div
-                className="h-full rounded-full"
-                style={{ width: '100%', transformOrigin: 'left center', backgroundColor: currentEvent.themeColor }}
+                className="h-full rounded-full w-full origin-left"
+                style={{ backgroundColor: currentEvent.themeColor }}
                 initial={{ scaleX: 0 }}
                 animate={{ scaleX: progressPercent / 100 }}
                 transition={{ duration: 0.5, delay: 0.2 }}

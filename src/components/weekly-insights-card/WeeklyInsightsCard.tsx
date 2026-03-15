@@ -108,8 +108,7 @@ export function WeeklyInsightsCard({
         <motion.div
           animate={{ backgroundPosition: ['0% 0%', '100% 100%'] }}
           transition={{ duration: 8, repeat: Infinity, repeatType: 'reverse' }}
-          className="absolute inset-0 bg-gradient-to-br from-primary/15 via-accent/10 to-primary/5"
-          style={{ backgroundSize: '200% 200%' }}
+          className="absolute inset-0 bg-gradient-to-br from-primary/15 via-accent/10 to-primary/5 bg-[length:200%_200%]"
         />
 
         {/* Floating particles */}

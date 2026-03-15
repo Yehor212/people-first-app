@@ -228,8 +228,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
 
       {/* Navigation - responsive */}
       <div
-        className="px-4 sm:px-6 pb-4 sm:pb-8"
-        style={{ paddingBottom: 'calc(1rem + var(--safe-bottom))' }}
+        className="px-4 sm:px-6 pb-[calc(1rem+var(--safe-bottom))]"
       >
         {/* Dots */}
         <div className="flex justify-center gap-1.5 sm:gap-2 mb-4 sm:mb-6">

@@ -74,8 +74,7 @@ export function MoodSelectionCelebration({
       {/* XP Popup */}
       {showXP && (
         <div
-          className="xp-popup text-2xl"
-          style={{ top: '30%', left: '50%', transform: 'translateX(-50%)' }}
+          className="xp-popup text-2xl top-[30%] left-1/2 -translate-x-1/2"
         >
           +{xpGained} XP
         </div>
@@ -204,7 +203,7 @@ export function MoodSelectionCelebration({
             <div className="text-2xl animate-bounce-gentle">✨</div>
           </div>
           <div className="absolute top-4 start-4">
-            <div className="text-xl animate-sparkle" style={{ animationDelay: '0.3s' }}>⭐</div>
+            <div className="text-xl animate-sparkle [animation-delay:0.3s]">⭐</div>
           </div>
         </div>
       )}

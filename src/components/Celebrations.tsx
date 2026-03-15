@@ -135,11 +135,10 @@ export function HabitCompletion({ habitName, onClose }: HabitCompletionProps) {
   return (
     <div
       className={cn(
-        "fixed left-1/2 -translate-x-1/2 z-[150]",
+        "fixed left-1/2 -translate-x-1/2 z-[150] bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]",
         showAnimations && "transition-all duration-300",
         show ? "opacity-100 translate-y-0" : (showAnimations ? "opacity-0 translate-y-4" : "opacity-0")
       )}
-      style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
     >
       <div className="flex items-center gap-3 px-6 py-3 bg-mood-good text-white rounded-full shadow-lg">
         <span className={cn("text-2xl", showAnimations && "animate-bounce-check")}>✓</span>
@@ -264,11 +263,10 @@ export function MoodChangedToast({ emoji, message, onClose }: MoodChangedToastPr
   return (
     <div
       className={cn(
-        "fixed left-1/2 -translate-x-1/2 z-[150]",
+        "fixed left-1/2 -translate-x-1/2 z-[150] bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]",
         showAnimations && "transition-all duration-300",
         show ? "opacity-100 translate-y-0" : (showAnimations ? "opacity-0 translate-y-4" : "opacity-0")
       )}
-      style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
     >
       <div className={cn(
         "flex items-center gap-3 px-6 py-3 bg-primary text-white rounded-full shadow-lg",

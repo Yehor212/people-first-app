@@ -111,12 +111,9 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
                   className={cn(
                     "w-11 h-11 rounded-full text-sm font-bold transition-all",
                     isSelected
-                      ? `bg-gradient-to-br ${colors[value - 1]} text-white`
+                      ? `bg-gradient-to-br ${colors[value - 1]} text-white shadow-[0_0_16px_hsl(var(--focus-violet)/0.5)]`
                       : "bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground"
                   )}
-                  style={isSelected ? {
-                    boxShadow: '0 0 16px hsl(var(--focus-violet) / 0.5)'
-                  } : {}}
                   whileHover={{ scale: 1.1 }}
                   whileTap={zenTap.button}
                 >
@@ -139,9 +136,9 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
               disabled={isSaving}
               className={cn(
                 "flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-medium",
+                "shadow-[0_0_16px_hsl(var(--focus-violet)/0.4)]",
                 isSaving && "opacity-50 cursor-not-allowed",
               )}
-              style={{ boxShadow: '0 0 16px hsl(var(--focus-violet) / 0.4)' }}
               whileHover={isSaving ? {} : { scale: 1.02 }}
               whileTap={isSaving ? {} : zenTap.card}
             >

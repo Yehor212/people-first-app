@@ -54,7 +54,7 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
         className={cn(
           // Exact ThemeToggle dimensions: 52×28px
           "relative flex-shrink-0 rounded-full transition-colors duration-300 active:scale-[0.97]",
-          "w-[52px] h-[28px]",
+          "w-[52px] h-[28px] min-w-[52px] min-h-[28px]",
           // Colors - semantic theme colors
           isChecked ? "bg-primary" : "bg-muted-foreground/40",
           // Focus states
@@ -64,8 +64,6 @@ const Switch = React.forwardRef<HTMLButtonElement, SwitchProps>(
           !disabled && "cursor-pointer",
           className,
         )}
-        // Critical: minWidth/minHeight prevents flex container compression
-        style={{ minWidth: '52px', minHeight: '28px' }}
         {...props}
       >
         {/* Thumb - absolute positioning like ThemeToggle, spring-like cubic-bezier */}

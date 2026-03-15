@@ -49,17 +49,13 @@ export const ChallengeCard = memo(function ChallengeCard({
     >
       {/* Gradient accent on left */}
       <div
-        className="absolute top-0 start-0 w-1 h-full bg-gradient-to-b from-violet-500 to-purple-600"
-        style={{ boxShadow: '0 0 8px rgba(139, 92, 246, 0.4)' }}
+        className="absolute top-0 start-0 w-1 h-full bg-gradient-to-b from-violet-500 to-purple-600 shadow-[0_0_8px_rgba(139,92,246,0.4)]"
       />
 
       <div className="flex items-start justify-between gap-3 ps-2">
         <div className="flex items-center gap-3">
           <div
-            className="text-3xl p-2 rounded-xl"
-            style={{
-              background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(168, 85, 247, 0.1) 100%)',
-            }}
+            className="text-3xl p-2 rounded-xl bg-gradient-to-br from-[rgba(139,92,246,0.15)] to-[rgba(168,85,247,0.1)]"
           >
             {challenge.habitIcon}
           </div>
@@ -94,11 +90,11 @@ export const ChallengeCard = memo(function ChallengeCard({
         </div>
         <div className="h-2.5 bg-slate-200/60 dark:bg-white/10 rounded-full overflow-hidden">
           <motion.div
-            className={cn('h-full rounded-full', statusConfig.progressBg)}
+            className={cn('h-full rounded-full w-full origin-left', statusConfig.progressBg)}
             initial={{ scaleX: 0 }}
             animate={{ scaleX: progress / 100 }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
-            style={{ width: '100%', transformOrigin: 'left center', boxShadow: `0 0 8px ${statusConfig.glow}` }}
+            style={{ boxShadow: `0 0 8px ${statusConfig.glow}` }}
           />
         </div>
       </div>

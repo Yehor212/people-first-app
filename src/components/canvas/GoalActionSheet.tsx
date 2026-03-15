@@ -156,17 +156,11 @@ export function GoalActionSheet({
             role="dialog"
             aria-modal="true"
             aria-label={`Goal: ${goal.title}`}
-            className="fixed bottom-0 inset-x-0 z-[60] rounded-t-2xl overflow-hidden"
+            className="fixed bottom-0 inset-x-0 z-[60] rounded-t-2xl overflow-hidden bg-[rgba(15,20,30,0.95)] backdrop-blur-[12px] [-webkit-backdrop-filter:blur(12px)] pb-[env(safe-area-inset-bottom,0px)]"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={zenMotion.snappy}
-            style={{
-              background: 'rgba(15, 20, 30, 0.95)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
-            }}
             {...modalProps}
           >
             {/* Drag handle */}

@@ -243,8 +243,7 @@ export function HabitHubList({
 
       {/* ═══ FAB — Add Habit ═══ */}
       <div
-        className="fixed z-[60]"
-        style={{ bottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))', insetInlineEnd: '1.25rem' }}
+        className="fixed z-[60] end-5 bottom-[calc(7rem+env(safe-area-inset-bottom,0px))]"
       >
         <motion.button
           initial={{ scale: 0, opacity: 0 }}

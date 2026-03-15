@@ -66,8 +66,7 @@ export function FocusBreathingOverlay({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={zenMotion.snappy}
-            className="fixed bottom-0 inset-x-0 z-[61] max-h-[80dvh] rounded-t-[2rem] bg-card border-t border-border overflow-y-auto"
-            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)' }}
+            className="fixed bottom-0 inset-x-0 z-[61] max-h-[80dvh] rounded-t-[2rem] bg-card border-t border-border overflow-y-auto pb-[calc(env(safe-area-inset-bottom,0px)+1rem)]"
           >
             {/* Handle bar */}
             <div className="flex justify-center py-3">

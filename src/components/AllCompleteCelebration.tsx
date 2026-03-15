@@ -73,8 +73,7 @@ export const AllCompleteCelebration = memo(function AllCompleteCelebration({ str
           <EmojiOrIcon emoji={message.emoji} iconName={message.iconName} size="xl" />
         </div>
         <div
-          className="absolute -end-2 -top-2"
-          style={{ animation: 'zen-wobble 2s ease-in-out infinite' }}
+          className="absolute -end-2 -top-2 [animation:zen-wobble_2s_ease-in-out_infinite]"
         >
           <Star className="w-8 h-8 text-yellow-400 fill-yellow-400" />
         </div>

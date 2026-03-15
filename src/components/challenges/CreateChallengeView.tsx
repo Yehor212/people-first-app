@@ -42,19 +42,12 @@ export function CreateChallengeView({
     <div className="space-y-6 pb-8">
       {/* Habit preview - Premium */}
       <motion.div
-        className="flex items-center gap-4 p-4 rounded-2xl overflow-hidden relative"
+        className="flex items-center gap-4 p-4 rounded-2xl overflow-hidden relative bg-gradient-to-br from-[rgba(139,92,246,0.15)] to-[rgba(168,85,247,0.1)] shadow-[0_0_20px_rgba(139,92,246,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(168, 85, 247, 0.1) 100%)',
-          boxShadow: '0 0 20px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255,255,255,0.05)'
-        }}
       >
         <div
-          className="text-5xl p-3 rounded-xl"
-          style={{
-            background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-          }}
+          className="text-5xl p-3 rounded-xl bg-gradient-to-br from-white/10 to-white/5"
         >
           {habit.icon}
         </div>

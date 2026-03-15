@@ -45,14 +45,9 @@ export function TimerControls({
                 "relative w-16 h-16 rounded-full flex items-center justify-center",
                 "transition-all",
                 isBreak
-                  ? "bg-gradient-to-br from-pink-500 to-rose-600"
-                  : "bg-gradient-to-br from-violet-500 to-purple-600"
+                  ? "bg-gradient-to-br from-pink-500 to-rose-600 shadow-[0_0_24px_hsl(var(--focus-pink)/0.5)]"
+                  : "bg-gradient-to-br from-violet-500 to-purple-600 shadow-[0_0_24px_hsl(var(--focus-violet)/0.5)]"
               )}
-              style={{
-                boxShadow: isBreak
-                  ? '0 0 24px hsl(var(--focus-pink) / 0.5)'
-                  : '0 0 24px hsl(var(--focus-violet) / 0.5)'
-              }}
               whileHover={{ scale: 1.1 }}
               whileTap={zenTap.button}
             >

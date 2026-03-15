@@ -125,7 +125,6 @@ export function ThemeToggle() {
     return (
       <button
         className="relative flex-shrink-0 w-[52px] h-[36px] rounded-full bg-slate-700 transition-colors"
-        style={{ minWidth: '52px', minHeight: '36px' }}
         aria-label={t.toggleTheme || 'Toggle theme'}
         disabled
       >
@@ -145,7 +144,6 @@ export function ThemeToggle() {
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
         effectiveTheme === 'light' ? 'bg-sky-300' : 'bg-slate-700'
       )}
-      style={{ minWidth: '52px', minHeight: '36px' }}
       aria-label={effectiveTheme === 'light' ? (t.switchToDark || 'Switch to dark mode') : (t.switchToLight || 'Switch to light mode')}
     >
       {/* Toggle circle */}

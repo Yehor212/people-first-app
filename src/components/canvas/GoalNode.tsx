@@ -140,10 +140,9 @@ export const GoalNode = memo(function GoalNode({ goal, x, y, progressPercent, on
             strokeLinecap="round"
             strokeDasharray={`${filled} ${RING_PERIMETER}`}
             className="transition-all duration-700 ease-out"
+            className="-rotate-90 opacity-80"
             style={{
-              transform: 'rotate(-90deg)',
               transformOrigin: `${RX}px ${RY}px`,
-              opacity: 0.8,
             }}
           />
         )}
@@ -171,11 +170,9 @@ export const GoalNode = memo(function GoalNode({ goal, x, y, progressPercent, on
           'cursor-pointer',
           'focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-0',
           'transition-colors duration-200',
+          'bg-[rgba(15,20,30,0.8)] backdrop-blur-[8px] [-webkit-backdrop-filter:blur(8px)]',
         )}
         style={{
-          background: 'rgba(15, 20, 30, 0.8)',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
           ...((!isComplete && goal.color) ? { borderColor: rColor + '80' } : {}),
           boxShadow: isComplete
             ? '0 0 20px rgba(52,211,153,0.3), 0 8px 32px rgba(0,0,0,0.5)'

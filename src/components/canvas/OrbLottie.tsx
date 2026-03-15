@@ -26,7 +26,7 @@ export function OrbLottie() {
         animationData={animData}
         loop
         autoplay
-        style={{ width: '100%', height: '100%' }}
+        className="w-full h-full"
       />
     </div>
   );

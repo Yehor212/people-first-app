@@ -81,8 +81,7 @@ export function SegmentedControl<T extends string>({
             )}
             <span className="truncate">{option.label}</span>
             {isSelected && (
-              <div className="absolute inset-0 ring-2 ring-primary/20 rounded-inherit pointer-events-none"
-                style={{ borderRadius: 'inherit' }} />
+              <div className="absolute inset-0 ring-2 ring-primary/20 rounded-[inherit] pointer-events-none" />
             )}
           </button>
         );

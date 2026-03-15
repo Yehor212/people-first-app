@@ -168,8 +168,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
       >
         {habit && (
           <motion.div
-            className="px-6 pt-6 space-y-6"
-            style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom, 0px))' }}
+            className="px-6 pt-6 space-y-6 pb-[calc(2rem+env(safe-area-inset-bottom,0px))]"
             variants={sheetStagger}
             initial="hidden"
             animate="visible"

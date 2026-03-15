@@ -156,10 +156,7 @@ export const ChallengeModal = memo(function ChallengeModal({
         <div className="flex items-center justify-between p-4 border-b border-slate-200/60 dark:border-white/10 relative">
           {/* Subtle gradient glow */}
           <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.05) 0%, transparent 100%)'
-            }}
+            className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[rgba(139,92,246,0.05)] to-transparent"
           />
 
           <div className="flex items-center gap-3 relative z-10">
@@ -176,11 +173,7 @@ export const ChallengeModal = memo(function ChallengeModal({
             )}
 
             <motion.div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.5) 0%, rgba(168, 85, 247, 0.4) 100%)',
-                boxShadow: '0 0 15px rgba(139, 92, 246, 0.3)'
-              }}
+              className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-[rgba(139,92,246,0.5)] to-[rgba(168,85,247,0.4)] shadow-[0_0_15px_rgba(139,92,246,0.3)]"
               animate={shouldAnimate() ? { scale: [1, 1.05, 1] } : undefined}
               transition={shouldAnimate() ? { duration: 2, repeat: Infinity, ease: 'easeInOut' } : undefined}
             >
@@ -204,10 +197,7 @@ export const ChallengeModal = memo(function ChallengeModal({
 
         {/* Content - flex-1 with its own padding */}
         <div
-          className="flex-1 overflow-y-auto p-4"
-          style={{
-            background: 'radial-gradient(ellipse at bottom, rgba(139, 92, 246, 0.03) 0%, transparent 50%)'
-          }}
+          className="flex-1 overflow-y-auto p-4 bg-[radial-gradient(ellipse_at_bottom,rgba(139,92,246,0.03)_0%,transparent_50%)]"
         >
           {mode === 'create' && habit && (
             <CreateChallengeView

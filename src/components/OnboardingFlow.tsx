@@ -329,7 +329,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           </p>
 
           {/* Actions */}
-          <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6" style={{ paddingBottom: 'calc(0.5rem + var(--safe-bottom))' }}>
+          <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6 pb-[calc(0.5rem+var(--safe-bottom))]">
             <button
               type="button"
               onClick={() => {

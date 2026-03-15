@@ -92,12 +92,12 @@ export function TimerRing({
       {/* Inner breathing glow */}
       {isPrimaryCTA && isRunning && (
         <motion.div
-          className="absolute inset-6 rounded-full pointer-events-none"
-          style={{
-            background: isBreak
-              ? 'radial-gradient(circle, hsl(var(--focus-pink) / 0.15) 0%, transparent 70%)'
-              : 'radial-gradient(circle, hsl(var(--focus-violet) / 0.15) 0%, transparent 70%)'
-          }}
+          className={cn(
+            "absolute inset-6 rounded-full pointer-events-none",
+            isBreak
+              ? "bg-[radial-gradient(circle,hsl(var(--focus-pink)/0.15)_0%,transparent_70%)]"
+              : "bg-[radial-gradient(circle,hsl(var(--focus-violet)/0.15)_0%,transparent_70%)]"
+          )}
           animate={{
             scale: [1, 1.1, 1],
             opacity: [0.5, 0.8, 0.5],

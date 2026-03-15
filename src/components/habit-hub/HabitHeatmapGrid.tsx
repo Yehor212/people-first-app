@@ -167,8 +167,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
 
         {/* Grid columns (weeks) */}
         <div
-          className="flex gap-[3px] overflow-x-auto scrollbar-hide"
-          style={{ maxWidth: '100%' }}
+          className="flex gap-[3px] overflow-x-auto scrollbar-hide max-w-full"
         >
           {Array.from({ length: weeks }, (_, weekIdx) => (
             <div key={weekIdx} className="flex flex-col gap-[3px]">

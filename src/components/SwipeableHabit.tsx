@@ -160,7 +160,7 @@ export function SwipeableHabit({
                 ? "bg-gradient-to-r from-emerald-500 to-green-500"
                 : "bg-gradient-to-r from-primary/30 to-primary/50"
             )}
-            style={{ transformOrigin: 'left center' }}
+            className="origin-left"
             initial={{ scaleX: 0 }}
             animate={{ scaleX: showSuccess ? 1 : swipeProgress }}
             exit={{ scaleX: 0 }}

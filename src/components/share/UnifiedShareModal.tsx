@@ -141,21 +141,18 @@ export function UnifiedShareModal(props: UnifiedShareModalProps) {
         </div>
 
         {/* Scrollable content */}
-        <div className="px-4 overflow-y-auto" style={{ maxHeight: 'calc(90dvh - 80px)' }}>
+        <div className="px-4 overflow-y-auto max-h-[calc(90dvh-80px)]">
 
           {/* Preview Card — large, full-width */}
           <div className="flex items-center justify-center py-2">
             <motion.div
               className={cn(
-                "relative w-full rounded-2xl overflow-hidden",
+                "relative w-full rounded-2xl overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.25)]",
                 mode === 'weekly' ? 'max-w-[360px] aspect-[4/5]' : 'max-w-[360px] aspect-square'
               )}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={zenMotion.snappy}
-              style={{
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.25)',
-              }}
             >
               {isGenerating ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-muted/50">

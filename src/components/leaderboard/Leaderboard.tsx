@@ -75,14 +75,13 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
           </button>
         </div>
 
-        <div className="px-6 overflow-y-auto" style={{ maxHeight: 'calc(85dvh - 72px)' }}>
+        <div className="px-6 overflow-y-auto max-h-[calc(85dvh-72px)]">
 
         {/* Tabs */}
         <div
           role="tablist"
           aria-label={t.leaderboardType || 'Leaderboard type'}
-          className="flex gap-1.5 p-1.5 mb-4 rounded-xl"
-          style={{ background: 'hsl(var(--foreground) / 0.05)' }}
+          className="flex gap-1.5 p-1.5 mb-4 rounded-xl bg-[hsl(var(--foreground)/0.05)]"
         >
           {tabs.map((tab) => (
             <motion.button
@@ -151,10 +150,9 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
 
           {data.isOptedIn && currentRank && (
             <motion.div
-              className="mt-3 flex items-center gap-2 text-sm px-3 py-2 rounded-lg"
+              className="mt-3 flex items-center gap-2 text-sm px-3 py-2 rounded-lg bg-[rgba(139,92,246,0.15)]"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              style={{ background: 'rgba(139, 92, 246, 0.15)' }}
             >
               <Medal className="w-4 h-4 text-violet-400" />
               <span className="text-foreground/70">

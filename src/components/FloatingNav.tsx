@@ -66,8 +66,8 @@ export function FloatingNav({ onOpenHabits, onOpenFocus }: FloatingNavProps) {
         'border border-white/10',
         'rounded-full',
         'flex items-center gap-1 px-2 py-1',
+        'pb-[env(safe-area-inset-bottom,0px)]',
       )}
-      style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
       role="navigation"
       aria-label={t.mainNavigation || 'Home navigation'}
     >

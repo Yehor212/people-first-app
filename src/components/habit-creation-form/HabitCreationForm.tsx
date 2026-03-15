@@ -286,8 +286,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         >
           {newHabitName.trim() && (
             <div
-              className={cn("absolute inset-0 rounded-xl border-2", editingHabit ? "border-indigo-400/30" : "border-emerald-400/30")}
-              style={{ animation: 'submit-pulse-ring 1.5s ease-in-out infinite' }}
+              className={cn("absolute inset-0 rounded-xl border-2 [animation:submit-pulse-ring_1.5s_ease-in-out_infinite]", editingHabit ? "border-indigo-400/30" : "border-emerald-400/30")}
             />
           )}
           <span className="relative z-10">

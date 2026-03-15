@@ -36,8 +36,7 @@ export function EventDetailsModal({
       role="dialog"
       aria-modal="true"
       aria-labelledby="event-details-title"
-      className="fixed inset-0 flex items-center justify-center p-4"
-      style={{ zIndex: 60 }}
+      className="fixed inset-0 flex items-center justify-center p-4 z-[60]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -82,11 +81,11 @@ export function EventDetailsModal({
                 "w-20 h-20 rounded-2xl mx-auto mb-3 flex items-center justify-center text-4xl relative",
                 "bg-gradient-to-br",
                 gradient,
-                "backdrop-blur-sm border border-white/20"
+                "backdrop-blur-sm border border-white/20",
+                "[animation:event-glow_2s_ease-in-out_infinite]"
               )}
-              style={{ animation: 'event-glow 2s ease-in-out infinite' }}
             >
-              <span style={{ animation: 'event-pulse 2s ease-in-out infinite' }}>
+              <span className="[animation:event-pulse_2s_ease-in-out_infinite]">
                 {event.emoji}
               </span>
 

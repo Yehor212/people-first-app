@@ -52,8 +52,7 @@ export const RestModeCard = memo(function RestModeCard({ streak, onCancel }: Res
 
       {/* Moon icon — CSS-driven float + sparkle */}
       <div
-        className="relative mb-6"
-        style={{ animation: 'zen-float 4s ease-in-out infinite' }}
+        className="relative mb-6 [animation:zen-float_4s_ease-in-out_infinite]"
       >
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-indigo-500/20 border border-indigo-400/30">
           <Moon className="w-10 h-10 text-indigo-400" />

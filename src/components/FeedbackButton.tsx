@@ -100,10 +100,10 @@ export function FeedbackButton({
           className={cn(
             'fixed z-50 p-3 rounded-full bg-primary text-primary-foreground shadow-lg',
             'hover:bg-primary/90 active:scale-95 transition-all',
+            'bottom-[calc(var(--nav-height)+var(--safe-bottom)+1rem)]',
             positionClasses,
             className
           )}
-          style={{ bottom: 'calc(var(--nav-height) + var(--safe-bottom) + 1rem)' }}
           aria-label={t.sendFeedback || 'Send feedback'}
         >
           <MessageSquarePlus className="w-6 h-6" />

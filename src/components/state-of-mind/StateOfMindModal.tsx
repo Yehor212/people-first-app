@@ -74,8 +74,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
         <>
           {/* Backdrop */}
           <motion.div
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60]"
-            style={{ WebkitBackdropFilter: 'blur(4px)' }}
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[60] [-webkit-backdrop-filter:blur(4px)]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -87,11 +86,7 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
           {/* Modal content */}
           <motion.div
             ref={modalRef}
-            className="fixed inset-0 z-[60] flex flex-col bg-background/95"
-            style={{
-              paddingTop: 'max(env(safe-area-inset-top, 0px), 12px)',
-              paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)',
-            }}
+            className="fixed inset-0 z-[60] flex flex-col bg-background/95 pt-[max(env(safe-area-inset-top,0px),12px)] pb-[max(env(safe-area-inset-bottom,0px),12px)]"
             initial={{ opacity: 0, scale: 0.92, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 16 }}
@@ -204,12 +199,9 @@ export function StateOfMindModal({ isOpen, onClose, onSave }: StateOfMindModalPr
                       <motion.div variants={stepChild} className="relative">
                         {/* CSS blur backdrop — GPU-accelerated immersive color wash behind orb */}
                         <div
-                          className="absolute inset-0 rounded-full pointer-events-none"
+                          className="absolute inset-0 rounded-full pointer-events-none blur-[60px] scale-[1.8] transition-[background] duration-300 ease-out"
                           style={{
                             background: valenceToColor(som.valence, 0.45),
-                            filter: 'blur(60px)',
-                            transform: 'scale(1.8)',
-                            transition: 'background 300ms ease-out',
                           }}
                           aria-hidden="true"
                         />

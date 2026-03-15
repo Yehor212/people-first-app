@@ -84,12 +84,9 @@ export function ParticipantsLeaderboard({
   if (!cloudAvailable) {
     return (
       <motion.div
-        className="rounded-2xl p-5 text-center"
+        className="rounded-2xl p-5 text-center bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.02)_100%)]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-        }}
       >
         <CloudOff className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">
@@ -103,12 +100,9 @@ export function ParticipantsLeaderboard({
   if (loading) {
     return (
       <motion.div
-        className="rounded-2xl p-5 text-center"
+        className="rounded-2xl p-5 text-center bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.02)_100%)]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-        }}
       >
         <Loader2 className="w-6 h-6 mx-auto mb-2 text-primary animate-spin" aria-label={t.loadingParticipants || 'Loading participants...'} />
         <p className="text-sm text-muted-foreground">{t.loadingParticipants || 'Loading participants...'}</p>
@@ -120,12 +114,9 @@ export function ParticipantsLeaderboard({
   if (error) {
     return (
       <motion.div
-        className="rounded-2xl p-5 text-center"
+        className="rounded-2xl p-5 text-center bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.02)_100%)]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-        }}
       >
         <p className="text-sm text-destructive">{error}</p>
         <Button onClick={() => void loadLeaderboard()} variant="ghost" size="sm" className="mt-2">
@@ -139,12 +130,9 @@ export function ParticipantsLeaderboard({
   if (!leaderboard || leaderboard.members.length === 0) {
     return (
       <motion.div
-        className="rounded-2xl p-5 text-center"
+        className="rounded-2xl p-5 text-center bg-[linear-gradient(135deg,rgba(139,92,246,0.1)_0%,rgba(168,85,247,0.05)_100%)]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)',
-        }}
       >
         <Users className="w-8 h-8 mx-auto mb-2 text-violet-400" />
         <p className="text-sm text-muted-foreground">
@@ -157,13 +145,9 @@ export function ParticipantsLeaderboard({
   // Leaderboard
   return (
     <motion.div
-      className="rounded-2xl overflow-hidden"
+      className="rounded-2xl overflow-hidden bg-[linear-gradient(135deg,rgba(139,92,246,0.1)_0%,rgba(168,85,247,0.05)_100%)] shadow-[0_0_20px_rgba(139,92,246,0.1),inset_0_1px_0_rgba(255,255,255,0.05)]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      style={{
-        background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.05) 100%)',
-        boxShadow: '0 0 20px rgba(139, 92, 246, 0.1), inset 0 1px 0 rgba(255,255,255,0.05)'
-      }}
     >
       <div className="px-5 py-3 border-b border-foreground/10 flex items-center gap-2">
         <Users className="w-4 h-4 text-violet-400" />

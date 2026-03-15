@@ -103,12 +103,8 @@ export function EmotionPanel({ isVisible, anchorX, anchorY, onSave, onCancel }: 
               'rounded-2xl p-4',
               'border border-white/10',
               'shadow-zen-lg',
+              'bg-[var(--surface-glass)] backdrop-blur-[var(--surface-glass-blur,20px)] [-webkit-backdrop-filter:blur(var(--surface-glass-blur,20px))]',
             )}
-            style={{
-              background: 'var(--surface-glass)',
-              backdropFilter: 'blur(var(--surface-glass-blur, 20px))',
-              WebkitBackdropFilter: 'blur(var(--surface-glass-blur, 20px))',
-            }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}

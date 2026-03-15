@@ -128,9 +128,8 @@ export const PremiumGoalCard = memo(function PremiumGoalCard({ goal, progress, o
             className={cn(
               'p-2.5 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center',
               'bg-gradient-to-br from-emerald-400 to-teal-500',
-              'text-white shadow-lg active:scale-95 transition-transform',
+              'text-white shadow-[0_4px_16px_rgba(16,185,129,0.4)] active:scale-95 transition-transform',
             )}
-            style={{ boxShadow: '0 4px 16px rgba(16, 185, 129, 0.4)' }}
           >
             <Trophy className="w-4 h-4" />
           </motion.button>

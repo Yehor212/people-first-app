@@ -195,8 +195,7 @@ export function WelcomeBackModal({
               </div>
               <div className="h-2 bg-violet-500/10 rounded-full overflow-hidden">
                 <motion.div
-                  className="h-full bg-gradient-to-r from-violet-500 to-purple-500"
-                  style={{ width: '100%', transformOrigin: 'left center' }}
+                  className="h-full bg-gradient-to-r from-violet-500 to-purple-500 w-full origin-left"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: 1 }}
                   transition={zenMotion.gentle}

@@ -78,8 +78,8 @@ export const AuxPills = memo(function AuxPills({ canvasCenter, canvasMode, onEmo
               'text-white text-sm font-medium',
               'cursor-pointer z-20',
               'hover:bg-white/10 transition-colors',
+              'origin-right',
             )}
-            style={{ transformOrigin: 'right center' }}
             aria-label="Emotions"
           >
             <Heart className="w-4 h-4 text-rose-400" />
@@ -101,8 +101,8 @@ export const AuxPills = memo(function AuxPills({ canvasCenter, canvasMode, onEmo
               'text-white text-sm font-medium',
               'cursor-pointer z-20',
               'hover:bg-white/10 transition-colors',
+              'origin-left',
             )}
-            style={{ transformOrigin: 'left center' }}
             aria-label="Goals"
           >
             <Target className="w-4 h-4 text-emerald-400" />

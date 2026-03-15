@@ -174,8 +174,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
             <div>
               {/* Title with sparkle */}
               <motion.h3
-                className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2"
-                style={{ textShadow: '0 0 10px rgba(139, 92, 246, 0.3)' }}
+                className="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2 [text-shadow:0_0_10px_rgba(139,92,246,0.3)]"
               >
                 <motion.span
                   animate={{ rotate: [0, 15, -15, 0] }}

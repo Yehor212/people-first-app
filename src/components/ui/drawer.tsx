@@ -32,9 +32,10 @@ const DrawerContent = React.forwardRef<
       ref={ref}
       className={cn(
         "fixed inset-x-0 z-50 mt-24 flex h-auto flex-col rounded-t-[10px] border bg-background",
+        "bottom-[env(safe-area-inset-bottom,0px)]",
         className,
       )}
-      style={{ bottom: 'env(safe-area-inset-bottom, 0px)', ...props.style }}
+      style={props.style}
       {...props}
     >
       <div className="mx-auto mt-4 h-2 w-[100px] rounded-full bg-muted" />

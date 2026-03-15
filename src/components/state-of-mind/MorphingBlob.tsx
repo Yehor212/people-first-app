@@ -105,7 +105,7 @@ export function MorphingBlob({ valence, size = 192 }: MorphingBlobProps) {
         <path
           d={pathD}
           fill={`url(#${gradientId})`}
-          style={{ transition: 'fill 300ms ease-out' }}
+          className="transition-[fill] duration-300 ease-out"
         />
       </svg>
     </div>

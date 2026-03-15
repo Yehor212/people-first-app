@@ -80,8 +80,8 @@ export function FocusMiniPlayer({ onNavigateToTimer }: FocusMiniPlayerProps) {
             'rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)]',
             'border border-[var(--surface-glass-border)] zen-shadow-card',
             'flex items-center gap-3 px-4 py-2.5',
+            'bottom-[calc(var(--nav-height)+var(--safe-bottom)+0.5rem)]',
           )}
-          style={{ bottom: 'calc(var(--nav-height) + var(--safe-bottom) + 0.5rem)' }}
         >
           {/* Label area — tap to navigate to full timer */}
           <button
