@@ -1,6 +1,11 @@
 /**
  * Unit tests for SyncOrchestrator
  * Tests queue-based sync logic, retry mechanisms, and state management
+ *
+ * IMPORTANT: The SyncOrchestrator is a singleton with fire-and-forget processing.
+ * Tests that queue long-running executors will block `isProcessing` until the
+ * executor completes or the 45s operation timeout fires. Tests are ordered to
+ * minimize interference between test groups.
  */
 
 import { describe, expect, it, beforeEach, vi, afterEach } from 'vitest';
@@ -13,7 +18,12 @@ vi.mock('@/lib/logger', () => ({
     warn: vi.fn(),
     debug: vi.fn(),
     info: vi.fn(),
+    log: vi.fn(),
   },
+}));
+
+vi.mock('@/lib/sentry', () => ({
+  addCategorizedBreadcrumb: vi.fn(),
 }));
 
 vi.mock('@/lib/cloudSyncSettings', () => ({
@@ -29,24 +39,39 @@ vi.mock('@/lib/apiClient', () => ({
   AUTH_SESSION_EXPIRED_EVENT: 'auth:session-expired',
 }));
 
+vi.mock('@/lib/supabaseClient', () => ({
+  supabase: {
+    auth: {
+      getSession: vi.fn(() => Promise.resolve({ data: { session: null } })),
+    },
+  },
+}));
+
 // Import after mocks are set up
-import { syncOrchestrator, SyncOperationType, SyncStatus } from '../syncOrchestrator';
+import { isCloudSyncEnabled } from '../cloudSyncSettings';
+import { syncOrchestrator, type SyncOperationType, type SyncStatus } from '../syncOrchestrator';
+
+/** Utility: wait for async processing to settle */
+const settle = (ms = 100) => new Promise(resolve => setTimeout(resolve, ms));
 
 describe('SyncOrchestrator', () => {
   beforeEach(async () => {
-    // Wait for any in-flight operations to complete
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Wait for any in-flight operations from previous tests
+    await settle(100);
     // Clear queue and reset state
     syncOrchestrator.clearQueue();
-    // Force online state by dispatching the online event
+    // Force online state
     window.dispatchEvent(new Event('online'));
+    // Ensure cloud sync is enabled
+    vi.mocked(isCloudSyncEnabled).mockReturnValue(true);
   });
 
   afterEach(async () => {
     syncOrchestrator.clearQueue();
-    // Wait for cleanup
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await settle(100);
   });
+
+  // ─── Queue Enqueue & Processing ───────────────────────────────
 
   describe('sync operation queueing', () => {
     it('queues sync operations', async () => {
@@ -60,8 +85,7 @@ describe('SyncOrchestrator', () => {
         executed.push('reminders');
       });
 
-      // Wait for operations to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await settle(100);
 
       expect(executed).toContain('backup');
       expect(executed).toContain('reminders');
@@ -70,7 +94,6 @@ describe('SyncOrchestrator', () => {
     it('executes operations sequentially', async () => {
       const executionOrder: string[] = [];
 
-      // Queue both operations synchronously without awaiting
       void syncOrchestrator.sync('backup', async () => {
         await new Promise(resolve => setTimeout(resolve, 50));
         executionOrder.push('backup');
@@ -80,102 +103,52 @@ describe('SyncOrchestrator', () => {
         executionOrder.push('reminders');
       });
 
-      // Wait for all operations
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await settle(200);
 
       expect(executionOrder).toEqual(['backup', 'reminders']);
     });
 
     it('sorts operations by priority when queued simultaneously', async () => {
-      // Note: Priority sorting only affects operations that are in the queue
-      // when processing hasn't started yet, or for operations queued while another is executing
       const queueInfo = syncOrchestrator.getQueueInfo();
       expect(queueInfo.length).toBe(0);
 
-      // Test that the queue sorts by priority
       void syncOrchestrator.sync('backup', async () => {
-        await new Promise(resolve => setTimeout(resolve, 200)); // Long operation
+        await new Promise(resolve => setTimeout(resolve, 200));
       }, { priority: 5 });
 
-      // Queue more operations while first one is running
-      await new Promise(resolve => setTimeout(resolve, 10)); // Small delay to let first start
+      await settle(10);
 
       void syncOrchestrator.sync('tasks', async () => {
-        // This should be sorted after reminders due to lower priority
+        // low priority
       }, { priority: 1 });
 
       void syncOrchestrator.sync('reminders', async () => {
-        // This should be sorted first due to higher priority
+        // high priority
       }, { priority: 10 });
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await settle(50);
 
       const pendingOps = syncOrchestrator.getQueueInfo();
-      // If there are pending items, they should be sorted by priority
       if (pendingOps.length >= 2) {
         expect(pendingOps[0].priority).toBeGreaterThanOrEqual(pendingOps[1].priority);
       }
 
       syncOrchestrator.clearQueue();
     });
+
+    it('skips sync when cloud sync is disabled', async () => {
+      vi.mocked(isCloudSyncEnabled).mockReturnValue(false);
+
+      const executed: string[] = [];
+      await syncOrchestrator.sync('backup', async () => {
+        executed.push('backup');
+      });
+
+      expect(executed).toEqual([]);
+    });
   });
 
-  describe('retry logic', () => {
-    it('retries failed operations', async () => {
-      let attempts = 0;
-
-      void syncOrchestrator.sync('backup', async () => {
-        attempts++;
-        if (attempts < 2) {
-          throw new Error('Simulated failure');
-        }
-      }, { maxRetries: 3 });
-
-      // Wait for retries (exponential backoff: ~1s for first retry)
-      await new Promise(resolve => setTimeout(resolve, 4000));
-
-      // Should have succeeded on second attempt
-      expect(attempts).toBeGreaterThanOrEqual(2);
-    }, 10000);
-
-    it('stops retrying after max retries', async () => {
-      let attempts = 0;
-
-      await syncOrchestrator.sync('backup', async () => {
-        attempts++;
-        throw new Error('Persistent failure');
-      }, { maxRetries: 2 });
-
-      // Wait for all retries (with exponential backoff, this takes time)
-      await new Promise(resolve => setTimeout(resolve, 8000));
-
-      // Should have attempted max 3 times (initial + 2 retries)
-      expect(attempts).toBeLessThanOrEqual(3);
-    }, 15000);
-
-    it('uses exponential backoff for retries', async () => {
-      const retryTimes: number[] = [];
-
-      await syncOrchestrator.sync('backup', async () => {
-        retryTimes.push(Date.now());
-        if (retryTimes.length < 3) {
-          throw new Error('Retry test');
-        }
-      }, { maxRetries: 3 });
-
-      await new Promise(resolve => setTimeout(resolve, 10000));
-
-      if (retryTimes.length >= 2) {
-        const firstDelay = retryTimes[1] - retryTimes[0];
-        const secondDelay = retryTimes.length >= 3 ? retryTimes[2] - retryTimes[1] : 0;
-
-        // Second delay should be longer than first (exponential backoff)
-        if (secondDelay > 0) {
-          expect(secondDelay).toBeGreaterThan(firstDelay);
-        }
-      }
-    }, 15000);
-  });
+  // ─── State Management ─────────────────────────────────────────
 
   describe('state management', () => {
     it('updates state correctly during sync', async () => {
@@ -189,11 +162,10 @@ describe('SyncOrchestrator', () => {
         await new Promise(resolve => setTimeout(resolve, 50));
       });
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await settle(200);
 
       unsubscribe();
 
-      // Should have transitioned through syncing
       expect(states).toContain('syncing');
     });
 
@@ -208,11 +180,10 @@ describe('SyncOrchestrator', () => {
         throw new Error('Test error');
       }, { maxRetries: 0 });
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await settle(200);
 
       unsubscribe();
 
-      // Should have transitioned through error state
       expect(states).toContain('error');
     });
 
@@ -229,7 +200,7 @@ describe('SyncOrchestrator', () => {
         await new Promise(resolve => setTimeout(resolve, 50));
       });
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await settle(200);
 
       unsubscribe();
 
@@ -251,77 +222,45 @@ describe('SyncOrchestrator', () => {
         await new Promise(resolve => setTimeout(resolve, 50));
       });
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await settle(300);
 
       unsubscribe();
 
-      // Queue should have grown then shrunk
       expect(Math.max(...queueLengths)).toBeGreaterThan(0);
     });
   });
 
-  describe('queue management', () => {
-    it('clears queue on demand', async () => {
-      void syncOrchestrator.sync('backup', async () => {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      });
+  // ─── Subscriber Notification ──────────────────────────────────
 
-      void syncOrchestrator.sync('reminders', async () => {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      });
+  describe('subscriber notification', () => {
+    it('immediately notifies new subscriber with current state', () => {
+      const listener = vi.fn();
+      const unsubscribe = syncOrchestrator.subscribe(listener);
 
-      syncOrchestrator.clearQueue();
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener).toHaveBeenCalledWith(expect.objectContaining({ status: 'idle' }));
 
-      const queueInfo = syncOrchestrator.getQueueInfo();
-      expect(queueInfo.length).toBe(0);
+      unsubscribe();
     });
 
-    it('provides queue info for debugging', async () => {
-      // Queue an operation that takes a while
-      void syncOrchestrator.sync('backup', async () => {
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }, { priority: 5 });
+    it('stops notifying after unsubscribe', async () => {
+      const listener = vi.fn();
+      const unsubscribe = syncOrchestrator.subscribe(listener);
 
-      // Wait a bit for it to start processing
-      await new Promise(resolve => setTimeout(resolve, 10));
+      unsubscribe();
+      listener.mockClear();
 
-      // Queue more operations
-      void syncOrchestrator.sync('reminders', async () => {
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }, { priority: 8 });
+      await syncOrchestrator.sync('backup', async () => {
+        // no-op
+      });
 
-      const queueInfo = syncOrchestrator.getQueueInfo();
+      await settle(200);
 
-      // There should be at least one item in the queue (the second one)
-      // since the first one might be executing
-      if (queueInfo.length > 0) {
-        expect(queueInfo.some(op => op.type === 'reminders' || op.type === 'backup')).toBe(true);
-      }
-
-      syncOrchestrator.clearQueue();
+      expect(listener).not.toHaveBeenCalled();
     });
   });
 
-  describe('online/offline handling', () => {
-    it('responds to online event', async () => {
-      // Dispatch online event
-      window.dispatchEvent(new Event('online'));
-
-      const state = syncOrchestrator.getState();
-      expect(state.isOnline).toBe(true);
-    });
-
-    it('responds to offline event', async () => {
-      // Dispatch offline event
-      window.dispatchEvent(new Event('offline'));
-
-      const state = syncOrchestrator.getState();
-      expect(state.isOnline).toBe(false);
-
-      // Restore online state
-      window.dispatchEvent(new Event('online'));
-    });
-  });
+  // ─── Error Handling ───────────────────────────────────────────
 
   describe('error handling', () => {
     it('captures error messages', async () => {
@@ -337,7 +276,7 @@ describe('SyncOrchestrator', () => {
         throw new Error('Test error message');
       }, { maxRetries: 0 });
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await settle(200);
 
       unsubscribe();
 
@@ -356,10 +295,144 @@ describe('SyncOrchestrator', () => {
         executed.push('reminders');
       });
 
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await settle(200);
 
-      // Second operation should still execute
       expect(executed).toContain('reminders');
+    });
+  });
+
+  // ─── Online/Offline Handling ──────────────────────────────────
+
+  describe('online/offline handling', () => {
+    it('responds to online event', () => {
+      window.dispatchEvent(new Event('online'));
+      expect(syncOrchestrator.getState().isOnline).toBe(true);
+    });
+
+    it('responds to offline event', () => {
+      window.dispatchEvent(new Event('offline'));
+      expect(syncOrchestrator.getState().isOnline).toBe(false);
+
+      // Restore
+      window.dispatchEvent(new Event('online'));
+    });
+  });
+
+  // ─── Retry Logic ──────────────────────────────────────────────
+
+  describe('retry logic', () => {
+    it('retries failed operations', async () => {
+      let attempts = 0;
+
+      void syncOrchestrator.sync('backup', async () => {
+        attempts++;
+        if (attempts < 2) {
+          throw new Error('Simulated failure');
+        }
+      }, { maxRetries: 3 });
+
+      // Wait for retries (exponential backoff: ~1s for first retry + jitter)
+      await settle(4000);
+
+      expect(attempts).toBeGreaterThanOrEqual(2);
+    }, 10000);
+
+    it('stops retrying after max retries', async () => {
+      let attempts = 0;
+
+      await syncOrchestrator.sync('backup', async () => {
+        attempts++;
+        throw new Error('Persistent failure');
+      }, { maxRetries: 2 });
+
+      await settle(8000);
+
+      expect(attempts).toBeLessThanOrEqual(3);
+    }, 15000);
+
+    it('uses exponential backoff for retries', async () => {
+      const retryTimes: number[] = [];
+
+      await syncOrchestrator.sync('backup', async () => {
+        retryTimes.push(Date.now());
+        if (retryTimes.length < 3) {
+          throw new Error('Retry test');
+        }
+      }, { maxRetries: 3 });
+
+      await settle(10000);
+
+      if (retryTimes.length >= 2) {
+        const firstDelay = retryTimes[1] - retryTimes[0];
+        const secondDelay = retryTimes.length >= 3 ? retryTimes[2] - retryTimes[1] : 0;
+
+        if (secondDelay > 0) {
+          expect(secondDelay).toBeGreaterThan(firstDelay);
+        }
+      }
+    }, 15000);
+
+    it('does not retry client errors (4xx, duplicate key, etc.)', async () => {
+      let attempts = 0;
+
+      void syncOrchestrator.sync('backup', async () => {
+        attempts++;
+        throw new Error('422 Unprocessable Entity');
+      }, { maxRetries: 3 });
+
+      await settle(3000);
+
+      // Client errors are NOT retried
+      expect(attempts).toBe(1);
+    }, 5000);
+  });
+
+  // ─── Queue Management ─────────────────────────────────────────
+  // NOTE: These tests queue long-running executors. They are placed LAST
+  // to avoid blocking isProcessing for subsequent tests.
+
+  describe('queue management', () => {
+    it('clears queue on demand', async () => {
+      void syncOrchestrator.sync('backup', async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      void syncOrchestrator.sync('reminders', async () => {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      });
+
+      syncOrchestrator.clearQueue();
+
+      const queueInfo = syncOrchestrator.getQueueInfo();
+      expect(queueInfo.length).toBe(0);
+    });
+
+    it('provides queue info for debugging', async () => {
+      void syncOrchestrator.sync('backup', async () => {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }, { priority: 5 });
+
+      await settle(10);
+
+      void syncOrchestrator.sync('reminders', async () => {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }, { priority: 8 });
+
+      const queueInfo = syncOrchestrator.getQueueInfo();
+
+      if (queueInfo.length > 0) {
+        expect(queueInfo.some(op => op.type === 'reminders' || op.type === 'backup')).toBe(true);
+      }
+
+      syncOrchestrator.clearQueue();
+    });
+
+    it('getState returns a copy (not the same reference)', () => {
+      const state1 = syncOrchestrator.getState();
+      const state2 = syncOrchestrator.getState();
+
+      expect(state1).toEqual(state2);
+      expect(state1).not.toBe(state2);
     });
   });
 });

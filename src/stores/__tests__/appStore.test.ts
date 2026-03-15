@@ -55,7 +55,7 @@ describe('appStore initial state', () => {
 // ─── setActiveTab ────────────────────────────────────────────
 
 describe('setActiveTab', () => {
-  const allTabs: TabType[] = ['home', 'garden', 'stats', 'achievements', 'settings'];
+  const allTabs: TabType[] = ['home', 'garden', 'stats', 'achievements', 'settings', 'mindmap'];
 
   it.each(allTabs)('sets activeTab to "%s"', (tab) => {
     useAppStore.getState().setActiveTab(tab);
@@ -88,6 +88,14 @@ describe('setActiveTab', () => {
     useAppStore.getState().setSettingsOpenSection('notifications');
 
     useAppStore.getState().setActiveTab('garden');
+    expect(useAppStore.getState().settingsOpenSection).toBeUndefined();
+  });
+
+  it('clears settingsOpenSection when switching from settings to mindmap', () => {
+    useAppStore.getState().setActiveTab('settings');
+    useAppStore.getState().setSettingsOpenSection('data');
+
+    useAppStore.getState().setActiveTab('mindmap');
     expect(useAppStore.getState().settingsOpenSection).toBeUndefined();
   });
 });
@@ -272,5 +280,23 @@ describe('resetAuthState', () => {
     expect(useAppStore.getState().activeTab).toBe('garden');
     expect(useAppStore.getState().currentDate).toBe('2026-01-01');
     expect(useAppStore.getState().isProcessingWebOAuth).toBe(true);
+  });
+
+  it('does not affect gate bypass flags', () => {
+    useAppStore.getState().setTutorialBypassFlag(true);
+    useAppStore.getState().setOnboardingBypassFlag(true);
+
+    useAppStore.getState().resetAuthState();
+
+    expect(useAppStore.getState().tutorialBypassFlag).toBe(true);
+    expect(useAppStore.getState().onboardingBypassFlag).toBe(true);
+  });
+
+  it('does not affect webOAuthError', () => {
+    useAppStore.getState().setWebOAuthError('some error');
+
+    useAppStore.getState().resetAuthState();
+
+    expect(useAppStore.getState().webOAuthError).toBe('some error');
   });
 });

@@ -7,6 +7,8 @@ import {
   safeParseInt,
   safeParseFloat,
   safeAverage,
+  isAbortError,
+  isValidUUID,
   safeValidate,
   userNameSchema,
   moodNoteSchema,
@@ -360,6 +362,16 @@ describe('safeParseFloat', () => {
     expect(safeParseFloat('0.5', 0, 1.0, 2.0)).toBeCloseTo(1.0);
     expect(safeParseFloat('3.0', 0, 1.0, 2.0)).toBeCloseTo(2.0);
   });
+
+  it('handles Infinity', () => {
+    expect(safeParseFloat(Infinity, 5.0)).toBe(5.0);
+    expect(safeParseFloat(-Infinity, 5.0)).toBe(5.0);
+  });
+
+  it('handles negative zero', () => {
+    // parseFloat('-0') produces -0, which is a valid finite number
+    expect(safeParseFloat('-0', 1.0)).toBe(-0);
+  });
 });
 
 // ============================================
@@ -391,6 +403,88 @@ describe('safeAverage', () => {
 
   it('handles decimal values', () => {
     expect(safeAverage([1.5, 2.5])).toBe(2);
+  });
+});
+
+// ============================================
+// isAbortError
+// ============================================
+
+describe('isAbortError', () => {
+  it('returns true for DOMException with name AbortError', () => {
+    const error = new DOMException('The operation was aborted.', 'AbortError');
+    expect(isAbortError(error)).toBe(true);
+  });
+
+  it('returns true for Error with name AbortError', () => {
+    const error = new Error('operation failed');
+    error.name = 'AbortError';
+    expect(isAbortError(error)).toBe(true);
+  });
+
+  it('returns true for Error with "aborted" in message', () => {
+    const error = new Error('The fetch was aborted');
+    expect(isAbortError(error)).toBe(true);
+  });
+
+  it('returns true for Error with "abort" in message', () => {
+    const error = new Error('Signal abort');
+    expect(isAbortError(error)).toBe(true);
+  });
+
+  it('returns false for regular errors', () => {
+    expect(isAbortError(new Error('Network error'))).toBe(false);
+    expect(isAbortError(new TypeError('type mismatch'))).toBe(false);
+  });
+
+  it('returns false for non-error values', () => {
+    expect(isAbortError(null)).toBe(false);
+    expect(isAbortError(undefined)).toBe(false);
+    expect(isAbortError('AbortError')).toBe(false);
+    expect(isAbortError(42)).toBe(false);
+    expect(isAbortError({})).toBe(false);
+  });
+});
+
+// ============================================
+// isValidUUID
+// ============================================
+
+describe('isValidUUID', () => {
+  it('accepts valid UUID v4', () => {
+    expect(isValidUUID('550e8400-e29b-41d4-a716-446655440000')).toBe(true);
+    expect(isValidUUID('6ba7b810-9dad-11d1-80b4-00c04fd430c8')).toBe(true);
+  });
+
+  it('accepts uppercase UUIDs', () => {
+    expect(isValidUUID('550E8400-E29B-41D4-A716-446655440000')).toBe(true);
+  });
+
+  it('accepts mixed-case UUIDs', () => {
+    expect(isValidUUID('550e8400-E29B-41d4-a716-446655440000')).toBe(true);
+  });
+
+  it('rejects non-UUID strings', () => {
+    expect(isValidUUID('not-a-uuid')).toBe(false);
+    expect(isValidUUID('task_1705334400000_abc123def')).toBe(false);
+    expect(isValidUUID('')).toBe(false);
+    expect(isValidUUID('12345')).toBe(false);
+  });
+
+  it('rejects UUIDs with wrong segment lengths', () => {
+    expect(isValidUUID('550e840-e29b-41d4-a716-446655440000')).toBe(false);  // first segment 7 chars
+    expect(isValidUUID('550e8400-e29b-41d4-a716-44665544000')).toBe(false);  // last segment 11 chars
+  });
+
+  it('rejects UUIDs with invalid hex characters', () => {
+    expect(isValidUUID('550g8400-e29b-41d4-a716-446655440000')).toBe(false);
+    expect(isValidUUID('550e8400-e29b-41d4-a716-44665544000z')).toBe(false);
+  });
+
+  it('rejects non-string input', () => {
+    expect(isValidUUID(123 as unknown as string)).toBe(false);
+    expect(isValidUUID(null as unknown as string)).toBe(false);
+    expect(isValidUUID(undefined as unknown as string)).toBe(false);
   });
 });
 
@@ -531,6 +625,31 @@ describe('moodEntrySchema', () => {
       note: 'Productive day',
     };
     expect(moodEntrySchema.safeParse(valid).success).toBe(true);
+  });
+
+  it('accepts entry with State of Mind fields', () => {
+    const valid = {
+      id: 'mood_456',
+      mood: 'okay',
+      date: '2024-03-10',
+      timestamp: 1710100000000,
+      valence: 0.5,
+      logType: 'momentary',
+      emotionTags: ['happy', 'calm'],
+      contexts: ['work'],
+    };
+    expect(moodEntrySchema.safeParse(valid).success).toBe(true);
+  });
+
+  it('rejects valence outside [-1, 1]', () => {
+    const invalid = {
+      id: 'mood_789',
+      mood: 'great',
+      date: '2024-01-15',
+      timestamp: 1705334400000,
+      valence: 1.5,
+    };
+    expect(moodEntrySchema.safeParse(invalid).success).toBe(false);
   });
 
   it('rejects invalid mood values', () => {
