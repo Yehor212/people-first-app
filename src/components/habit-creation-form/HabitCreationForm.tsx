@@ -1,18 +1,18 @@
 import { useRef, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { zenMotion, zenTap } from '@/lib/animationUtils';
-import { HabitCategory, LoopHabitType } from '@/types';
+import { zenMotion } from '@/lib/animationUtils';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { habitIcons, habitCategories, frequencyPresets } from '@/hooks/useHabitForm';
-import { LOOP_PALETTE_LIGHT, resolveHabitColor } from '@/lib/habitColorUtils';
+import { frequencyPresets } from '@/hooks/useHabitForm';
+import { resolveHabitColor } from '@/lib/habitColorUtils';
 import type { useHabitForm } from '@/hooks/useHabitForm';
 import type { Habit } from '@/types';
-import { Fingerprint, Minus, Plus } from 'lucide-react';
-import { IdentityIconPicker } from '@/components/IdentityIconPicker';
 import { TemplatePicker } from './TemplatePicker';
 import { RemindersSection } from './RemindersSection';
+import { IconSelector, ColorSelector, TypeSelector, FrequencySelector, CategorySelector } from './FormSelectors';
+import { NumericalTargetSection } from './NumericalTargetSection';
+import { IdentityMappingSection } from './IdentityMappingSection';
 
 interface HabitCreationFormProps {
   form: ReturnType<typeof useHabitForm>;
@@ -46,22 +46,16 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
     handleAddReminder, handleRemoveReminder, handleReminderChange,
   } = form;
 
-  // Collect existing cluster names for autocomplete suggestions
   const existingClusters = [...new Set(
     habits.map(h => h.identityCluster).filter((c): c is string => !!c)
   )];
 
-  // Color palette indices (0-19)
-  const colorIndices = Array.from({ length: LOOP_PALETTE_LIGHT.length }, (_, i) => i);
-
-  // Check if frequency matches a preset
   const activePresetIndex = frequencyPresets.findIndex(
     p => p.ratio.numerator === frequency.numerator && p.ratio.denominator === frequency.denominator
   );
 
   if (!isAdding) return null;
 
-  // Template picker view
   if (!showCustomForm) {
     return (
       <TemplatePicker
@@ -75,12 +69,10 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
     );
   }
 
-  // Frequency display text
   const freqText = activePresetIndex >= 0
     ? (ts[frequencyPresets[activePresetIndex].i18nKey] || frequencyPresets[activePresetIndex].label)
     : `${frequency.numerator}× / ${frequency.denominator}${ts.daysAbbr || 'd'}`;
 
-  // Custom form view
   return (
     <motion.div
       className={cn(
@@ -212,354 +204,38 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
         )}
       />
 
-      {/* Icon Selector */}
-      <div className="relative mb-4">
-        <p className={cn("text-sm font-medium mb-2", isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground")} id="icon-selector-label">{t.icon}:</p>
-        <div className="flex gap-2 flex-wrap" role="radiogroup" aria-labelledby="icon-selector-label">
-          {habitIcons.map((icon) => (
-            <motion.button
-              key={icon}
-              type="button"
-              role="radio"
-              aria-checked={selectedIcon === icon}
-              aria-label={`${t.selectIcon || 'Select icon'} ${icon}`}
-              onClick={(e) => { e.preventDefault(); setSelectedIcon(icon); }}
-              className={cn(
-                "w-11 h-11 min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-xl transition-all duration-200 cursor-pointer",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                isPrimaryCTA
-                  ? selectedIcon === icon
-                    ? "bg-gradient-to-br from-violet-500/30 to-purple-600/20 border border-violet-500/40"
-                    : "bg-foreground/5 border border-foreground/10 hover:bg-foreground/10"
-                  : selectedIcon === icon
-                    ? "bg-primary/20 ring-2 ring-primary scale-105 shadow-sm"
-                    : "bg-background hover:bg-muted hover:scale-105"
-              )}
-              style={isPrimaryCTA && selectedIcon === icon ? { boxShadow: '0 0 16px rgba(139, 92, 246, 0.4)' } : undefined}
-              whileHover={{ scale: 1.05 }}
-              whileTap={zenTap.button}
-            >
-              {icon}
-            </motion.button>
-          ))}
-        </div>
-      </div>
+      <IconSelector selectedIcon={selectedIcon} setSelectedIcon={setSelectedIcon} isPrimaryCTA={isPrimaryCTA} ts={ts} />
+      <ColorSelector selectedColorIndex={selectedColorIndex} setSelectedColorIndex={setSelectedColorIndex} isPrimaryCTA={isPrimaryCTA} ts={ts} />
+      <TypeSelector habitType={habitType} setHabitType={setHabitType} isPrimaryCTA={isPrimaryCTA} ts={ts} />
+      <FrequencySelector frequency={frequency} setFrequency={setFrequency} isPrimaryCTA={isPrimaryCTA} ts={ts} />
 
-      {/* Color Selector — 4×5 grid of 20 Loop palette colors */}
-      <div className="relative mb-4">
-        <p className={cn("text-sm font-medium mb-2", isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground")} id="color-selector-label">{t.color}:</p>
-        <div className="grid grid-cols-10 gap-1.5" role="radiogroup" aria-labelledby="color-selector-label">
-          {colorIndices.map((idx) => {
-            const hex = resolveHabitColor(idx);
-            return (
-              <motion.button
-                key={idx}
-                type="button"
-                role="radio"
-                aria-checked={selectedColorIndex === idx}
-                aria-label={`${t.selectColor || 'Select color'} ${idx + 1}`}
-                onClick={(e) => { e.preventDefault(); setSelectedColorIndex(idx); }}
-                className={cn(
-                  "w-8 h-8 min-w-[32px] min-h-[32px] rounded-full transition-all duration-200 cursor-pointer",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                  selectedColorIndex === idx
-                    ? "ring-2 ring-offset-2 ring-foreground/50 scale-110"
-                    : "hover:scale-105"
-                )}
-                style={{
-                  backgroundColor: hex,
-                  boxShadow: selectedColorIndex === idx ? `0 0 16px ${hex}80` : undefined,
-                }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={zenTap.button}
-              />
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Type Selector — Boolean / Numerical */}
-      <div className="relative mb-4">
-        <p className={cn("text-sm font-medium mb-2", isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground")}>{t.habitType || 'Type'}:</p>
-        <div className="grid grid-cols-2 gap-2">
-          {([
-            { type: 'boolean' as LoopHabitType, icon: '✓', label: ts.habitTypeBoolean || 'Yes/No', desc: ts.habitTypeBooleanDesc || 'Check off once a day' },
-            { type: 'numerical' as LoopHabitType, icon: '🔢', label: ts.habitTypeNumerical || 'Measurable', desc: ts.habitTypeNumericalDesc || 'Track a number per day' },
-          ]).map(({ type, icon, label, desc }) => (
-            <motion.button
-              key={type}
-              type="button"
-              onClick={(e) => { e.preventDefault(); setHabitType(type); }}
-              className={cn(
-                "p-3 rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer min-h-[44px]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-                isPrimaryCTA
-                  ? habitType === type
-                    ? "bg-gradient-to-br from-emerald-500/30 to-teal-600/20 border border-emerald-500/40 text-white"
-                    : "bg-foreground/5 border border-foreground/10 text-foreground/70 hover:bg-foreground/10 hover:text-foreground"
-                  : habitType === type
-                    ? "bg-primary text-primary-foreground shadow-md"
-                    : "bg-background hover:bg-muted border border-border/50"
-              )}
-              style={isPrimaryCTA && habitType === type ? { boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)' } : undefined}
-              whileHover={{ scale: 1.02 }}
-              whileTap={zenTap.card}
-            >
-              <span>{icon} {label}</span>
-              <span className={cn(
-                "text-[10px] block mt-0.5",
-                isPrimaryCTA
-                  ? habitType === type ? "text-foreground/50" : "text-foreground/30"
-                  : habitType === type ? "text-primary-foreground/60" : "text-muted-foreground/60"
-              )}>{desc}</span>
-            </motion.button>
-          ))}
-        </div>
-      </div>
-
-      {/* Frequency Selector */}
-      <div className="relative mb-4">
-        <p className={cn("text-sm font-medium mb-2", isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground")}>
-          {ts.habitFrequency || 'Frequency'}:
-        </p>
-        <div className="flex gap-2 flex-wrap">
-          {frequencyPresets.map((preset, idx) => (
-            <motion.button
-              key={idx}
-              type="button"
-              onClick={(e) => { e.preventDefault(); setFrequency(preset.ratio); }}
-              className={cn(
-                "px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                activePresetIndex === idx
-                  ? isPrimaryCTA
-                    ? "bg-gradient-to-br from-violet-500/30 to-purple-600/20 border border-violet-500/40 text-white"
-                    : "bg-primary text-primary-foreground shadow-sm"
-                  : isPrimaryCTA
-                    ? "bg-foreground/5 border border-foreground/10 text-foreground/70"
-                    : "bg-background border border-border/50 hover:bg-muted"
-              )}
-              whileHover={{ scale: 1.02 }}
-              whileTap={zenTap.card}
-            >
-              {ts[preset.i18nKey] || preset.label}
-            </motion.button>
-          ))}
-          {/* Custom frequency indicator */}
-          {activePresetIndex < 0 && (
-            <span className={cn(
-              "px-3 py-2 rounded-xl text-xs font-medium border",
-              isPrimaryCTA ? "border-violet-500/40 text-violet-300" : "border-primary text-primary"
-            )}>
-              {frequency.numerator}× / {frequency.denominator}{ts.daysAbbr || 'd'}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Numerical Target Section */}
       {habitType === 'numerical' && (
-        <div className="relative mb-4 space-y-3">
-          {/* Target value */}
-          <div>
-            <label className={cn("text-sm mb-2 block", isPrimaryCTA ? "text-slate-500 dark:text-foreground/60" : "text-muted-foreground")}>
-              {ts.habitTarget || 'Target'}:
-            </label>
-            <div className="flex items-center gap-2">
-              <motion.button
-                type="button"
-                onClick={() => setTargetValue(Math.max(1, targetValue - 1))}
-                className="w-10 h-10 min-w-[44px] min-h-[44px] rounded-lg bg-muted/50 flex items-center justify-center"
-                whileTap={zenTap.button}
-              >
-                <Minus className="w-4 h-4" />
-              </motion.button>
-              <input
-                type="number"
-                min="1"
-                step="0.5"
-                value={targetValue}
-                onChange={(e) => setTargetValue(Math.max(0.1, parseFloat(e.target.value) || 1))}
-                className={cn(
-                  "w-20 p-2 rounded-lg text-center text-lg font-bold",
-                  "focus:outline-none focus:ring-2",
-                  isPrimaryCTA
-                    ? "bg-foreground/10 border border-foreground/20 text-white focus:ring-violet-500/50"
-                    : "bg-background text-foreground focus:ring-primary/30"
-                )}
-              />
-              <motion.button
-                type="button"
-                onClick={() => setTargetValue(targetValue + 1)}
-                className={cn(
-                  "w-10 h-10 min-w-[44px] min-h-[44px] rounded-lg flex items-center justify-center",
-                  "bg-gradient-to-br from-primary/20 to-primary/10 text-primary"
-                )}
-                whileTap={zenTap.button}
-              >
-                <Plus className="w-4 h-4" />
-              </motion.button>
-              <input
-                type="text"
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                placeholder={ts.habitUnit || 'Unit (L, km, min...)'}
-                maxLength={20}
-                className={cn(
-                  "flex-1 p-2 rounded-lg text-sm",
-                  "focus:outline-none focus:ring-2",
-                  isPrimaryCTA
-                    ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/30 focus:ring-violet-500/50"
-                    : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
-                )}
-              />
-            </div>
-          </div>
-
-          {/* Target type: At Least / At Most */}
-          <div className="flex gap-2">
-            {(['atLeast', 'atMost'] as const).map((tt) => (
-              <motion.button
-                key={tt}
-                type="button"
-                onClick={(e) => { e.preventDefault(); setTargetType(tt); }}
-                className={cn(
-                  "flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]",
-                  targetType === tt
-                    ? isPrimaryCTA
-                      ? "bg-emerald-500/20 border border-emerald-500/40 text-emerald-300"
-                      : "bg-primary text-primary-foreground shadow-sm"
-                    : isPrimaryCTA
-                      ? "bg-foreground/5 border border-foreground/10 text-foreground/60"
-                      : "bg-background border border-border/50 hover:bg-muted"
-                )}
-                whileTap={zenTap.card}
-              >
-                {tt === 'atLeast' ? (ts.atLeast || 'At least') : (ts.atMost || 'At most')}
-              </motion.button>
-            ))}
-          </div>
-        </div>
+        <NumericalTargetSection
+          isPrimaryCTA={isPrimaryCTA}
+          ts={ts}
+          targetValue={targetValue}
+          setTargetValue={setTargetValue}
+          targetType={targetType}
+          setTargetType={setTargetType}
+          unit={unit}
+          setUnit={setUnit}
+        />
       )}
 
-      {/* Category Selector */}
-      <div className="relative mb-4">
-        <label className={cn("text-sm mb-2 block", isPrimaryCTA ? "text-slate-500 dark:text-foreground/60" : "text-muted-foreground")}>
-          {t.habitCategory || 'Category'}:
-        </label>
-        <div className="grid grid-cols-4 gap-2">
-          {habitCategories.map(({ id, icon, color }) => {
-            const categoryLabels: Record<HabitCategory, string> = {
-              health: t.categoryHealth || 'Health',
-              mindfulness: t.categoryMindfulness || 'Mindfulness',
-              productivity: t.categoryProductivity || 'Productivity',
-              social: t.categorySocial || 'Social',
-              creativity: t.categoryCreativity || 'Creativity',
-              finance: t.categoryFinance || 'Finance',
-              'self-care': t.categorySelfCare || 'Self-care',
-              other: t.categoryOther || 'Other',
-            };
-            return (
-              <motion.button
-                key={id}
-                type="button"
-                onClick={(e) => { e.preventDefault(); setSelectedCategory(id); }}
-                className={cn(
-                  "p-2 rounded-xl text-xs font-medium transition-all flex flex-col items-center gap-1",
-                  selectedCategory === id
-                    ? isPrimaryCTA ? `bg-gradient-to-br ${color} text-white shadow-lg` : "bg-primary text-primary-foreground shadow-md"
-                    : isPrimaryCTA ? "bg-foreground/5 border border-foreground/10 text-foreground/70 hover:bg-foreground/10" : "bg-background hover:bg-muted border border-border/50"
-                )}
-                whileHover={{ scale: 1.02 }}
-                whileTap={zenTap.card}
-              >
-                <span className="text-lg">{icon}</span>
-                <span className="truncate w-full text-center">{categoryLabels[id]}</span>
-              </motion.button>
-            );
-          })}
-        </div>
-      </div>
+      <CategorySelector selectedCategory={selectedCategory} setSelectedCategory={setSelectedCategory} isPrimaryCTA={isPrimaryCTA} ts={ts} />
 
-      {/* Identity Mapping — "Who are you becoming?" (IA Blueprint Phase 2) */}
-      <div className={cn(
-        "relative mb-4 rounded-xl p-3 space-y-3",
-        isPrimaryCTA
-          ? "bg-foreground/5 border border-foreground/10"
-          : "bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)]"
-      )}>
-        <div className="flex items-center gap-2">
-          <Fingerprint className={cn("w-4 h-4", isPrimaryCTA ? "text-violet-400" : "text-primary")} />
-          <p className={cn("text-sm font-medium", isPrimaryCTA ? "text-slate-700 dark:text-foreground/80" : "text-foreground")}>
-            {ts.identityMapping || 'Identity Mapping'}
-          </p>
-        </div>
-        <p className={cn("text-xs", isPrimaryCTA ? "text-slate-500 dark:text-foreground/40" : "text-muted-foreground")}>
-          {ts.identityMappingHint || 'Optional — connect this habit to who you\'re becoming'}
-        </p>
+      <IdentityMappingSection
+        isPrimaryCTA={isPrimaryCTA}
+        ts={ts}
+        identityCluster={identityCluster}
+        setIdentityCluster={setIdentityCluster}
+        identityVerb={identityVerb}
+        setIdentityVerb={setIdentityVerb}
+        identityIcon={identityIcon}
+        setIdentityIcon={setIdentityIcon}
+        existingClusters={existingClusters}
+      />
 
-        {/* Cluster name */}
-        <div>
-          <label className={cn("text-xs mb-1 block", isPrimaryCTA ? "text-slate-500 dark:text-foreground/50" : "text-muted-foreground")}>
-            {ts.identityCluster || 'Cluster'}
-          </label>
-          <input
-            type="text"
-            list="identity-clusters-list"
-            value={identityCluster}
-            onChange={(e) => setIdentityCluster(e.target.value)}
-            placeholder={ts.identityClusterPlaceholder || 'e.g., The Mindful Me'}
-            maxLength={40}
-            className={cn(
-              "w-full p-2 rounded-lg text-sm transition-all",
-              "focus:outline-none focus:ring-2",
-              isPrimaryCTA
-                ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/30 focus:ring-violet-500/50"
-                : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
-            )}
-          />
-          {existingClusters.length > 0 && (
-            <datalist id="identity-clusters-list">
-              {existingClusters.map(c => <option key={c} value={c} />)}
-            </datalist>
-          )}
-        </div>
-
-        {/* Identity verb */}
-        <div>
-          <label className={cn("text-xs mb-1 block", isPrimaryCTA ? "text-slate-500 dark:text-foreground/50" : "text-muted-foreground")}>
-            {ts.identityVerb || 'Affirmation'}
-          </label>
-          <input
-            type="text"
-            value={identityVerb}
-            onChange={(e) => setIdentityVerb(e.target.value)}
-            placeholder={ts.identityVerbPlaceholder || 'e.g., I am a meditator'}
-            maxLength={60}
-            className={cn(
-              "w-full p-2 rounded-lg text-sm transition-all",
-              "focus:outline-none focus:ring-2",
-              isPrimaryCTA
-                ? "bg-foreground/10 border border-foreground/20 text-white placeholder:text-foreground/30 focus:ring-violet-500/50"
-                : "bg-background text-foreground placeholder:text-muted-foreground focus:ring-primary/30"
-            )}
-          />
-        </div>
-
-        {/* Identity icon */}
-        <div>
-          <label className={cn("text-xs mb-1.5 block", isPrimaryCTA ? "text-slate-500 dark:text-foreground/50" : "text-muted-foreground")}>
-            {ts.identityIcon || 'Icon'}
-          </label>
-          <IdentityIconPicker
-            value={identityIcon}
-            onChange={setIdentityIcon}
-            isPrimaryCTA={isPrimaryCTA}
-          />
-        </div>
-      </div>
-
-      {/* Reminders Section */}
       <RemindersSection
         isPrimaryCTA={isPrimaryCTA}
         t={ts}

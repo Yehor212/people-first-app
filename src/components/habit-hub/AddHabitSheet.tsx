@@ -7,31 +7,21 @@
  * Deep Space aesthetic.
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useKeyboardShift } from '@/hooks/useKeyboardShift';
 import { zenMotion } from '@/lib/animationUtils';
-import { ChevronLeft, Sparkles, Plus, Check } from 'lucide-react';
+import { ChevronLeft, Sparkles, Plus } from 'lucide-react';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useBackHandler } from '@/hooks/useBackHandler';
-import { useHabitForm, habitIcons, habitCategories, frequencyPresets } from '@/hooks/useHabitForm';
-import { LOOP_PALETTE_LIGHT, resolveHabitColor } from '@/lib/habitColorUtils';
+import { useHabitForm } from '@/hooks/useHabitForm';
+import { resolveHabitColor } from '@/lib/habitColorUtils';
 import { habitTemplates } from '@/lib/habitTemplates';
 import { LIMITS } from '@/lib/constants';
-import type { Habit, LoopHabitType, HabitFrequencyRatio } from '@/types';
-
-const CATEGORY_I18N: Record<string, string> = {
-  health: 'categoryHealth',
-  mindfulness: 'categoryMindfulness',
-  productivity: 'categoryProductivity',
-  social: 'categorySocial',
-  creativity: 'categoryCreativity',
-  finance: 'categoryFinance',
-  'self-care': 'categorySelfCare',
-  other: 'categoryOther',
-};
+import { AddHabitCustomForm } from './AddHabitCustomForm';
+import type { Habit } from '@/types';
 
 interface AddHabitSheetProps {
   open: boolean;
@@ -77,8 +67,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
 
   // Double-tap guard for template quick-add
   const isQuickAddProcessing = useRef(false);
-  const [forceCustomFreq, setForceCustomFreq] = useState(false);
-  useEffect(() => { if (!open) { isQuickAddProcessing.current = false; setForceCustomFreq(false); } }, [open]);
+  useEffect(() => { if (!open) { isQuickAddProcessing.current = false; } }, [open]);
 
   // Pre-fill form when opening in edit mode
   const prevEditId = useRef<string | null>(null);
@@ -102,11 +91,6 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
     onClose();
   }, [resetForm, onClose]);
 
-  // Check if frequency matches a preset
-  const isPresetMatch = (preset: HabitFrequencyRatio) =>
-    frequency.numerator === preset.numerator && frequency.denominator === preset.denominator;
-
-  const isCustomFreq = !frequencyPresets.some(p => isPresetMatch(p.ratio));
   const isAtLimit = !isEditing && activeHabitCount >= LIMITS.MAX_HABITS;
 
   return (
@@ -230,342 +214,31 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
 
           {/* ═══ CUSTOM FORM ═══ */}
           {showCustomForm && (
-            <motion.div
-              key="custom-form"
-              initial={{ opacity: 0, x: (language === 'ar' || language === 'he') ? -16 : 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: (language === 'ar' || language === 'he') ? -16 : 16 }}
-              transition={zenMotion.gentle}
-              className="space-y-5"
-            >
-              {/* Name */}
-              <div>
-                <input
-                  type="text"
-                  value={newHabitName}
-                  onChange={(e) => setNewHabitName(e.target.value)}
-                  maxLength={100}
-                  placeholder={ts.habitNamePlaceholder || 'Enter habit name...'}
-                  aria-label={ts.habitName || 'Habit name'}
-                  autoFocus
-                  className={cn(
-                    'w-full px-4 py-3 rounded-xl text-sm text-slate-100',
-                    'bg-white/[0.05] border border-white/[0.08] transition-colors',
-                    'placeholder:text-slate-600',
-                    'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
-                  )}
-                />
-              </div>
-
-              {/* Question prompt */}
-              <div>
-                <label className="text-xs font-medium text-slate-500 mb-2 block">
-                  {ts.questionPrompt || 'Question Prompt'}
-                </label>
-                <input
-                  type="text"
-                  value={question}
-                  onChange={(e) => setQuestion(e.target.value)}
-                  placeholder={ts.questionPromptPlaceholder || 'e.g. Did you exercise today?'}
-                  aria-label={ts.questionPrompt || 'Question Prompt'}
-                  className={cn(
-                    'w-full px-4 py-2 rounded-xl text-xs text-slate-300',
-                    'bg-white/[0.03] border border-white/[0.06] transition-colors',
-                    'placeholder:text-slate-600',
-                    'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
-                  )}
-                />
-                <p className="text-[10px] text-slate-600 mt-1">
-                  {ts.questionPromptHint || 'Optional — phrased as a daily check-in question'}
-                </p>
-              </div>
-
-              {/* Icon */}
-              <div>
-                <label className="text-xs font-medium text-slate-500 mb-2 block">
-                  {ts.selectIcon || 'Icon'}
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {habitIcons.map((ic) => (
-                    <button
-                      key={ic}
-                      onClick={() => setSelectedIcon(ic)}
-                      aria-label={`${ts.selectIcon || 'Icon'}: ${ic}`}
-                      aria-pressed={selectedIcon === ic}
-                      className={cn(
-                        'w-11 h-11 rounded-xl flex items-center justify-center text-xl transition-all',
-                        'border min-h-[44px] min-w-[44px]',
-                        selectedIcon === ic
-                          ? 'bg-violet-500/20 border-violet-500/40 scale-110 shadow-[0_0_12px_rgba(139,92,246,0.3)]'
-                          : 'bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.06]',
-                      )}
-                    >
-                      {ic}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Color — palette grid */}
-              <div>
-                <label className="text-xs font-medium text-slate-500 mb-2 block">
-                  {ts.selectColor || 'Color'}
-                </label>
-                <div className="grid grid-cols-7 gap-2">
-                  {LOOP_PALETTE_LIGHT.map((hex, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedColorIndex(idx)}
-                      aria-label={`${ts.selectColor || 'Color'} ${idx + 1}`}
-                      aria-pressed={selectedColorIndex === idx}
-                      className={cn(
-                        'w-7 h-7 rounded-full transition-all min-h-[44px] min-w-[44px] flex items-center justify-center',
-                        'border',
-                        selectedColorIndex === idx
-                          ? 'scale-110 border-white/40'
-                          : 'border-transparent hover:scale-105',
-                      )}
-                      style={{
-                        backgroundColor: hex,
-                        boxShadow: selectedColorIndex === idx ? `0 0 14px ${hex}60` : undefined,
-                      }}
-                    >
-                      {selectedColorIndex === idx && (
-                        <Check className="w-3.5 h-3.5 text-white drop-shadow-md" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Type: Boolean / Numerical */}
-              <div>
-                <label className="text-xs font-medium text-slate-500 mb-2 block">
-                  {ts.habitType || 'Type'}
-                </label>
-                <div className="flex gap-2">
-                  {(['boolean', 'numerical'] as LoopHabitType[]).map((typ) => {
-                    const label = typ === 'boolean'
-                      ? (ts.habitTypeBoolean || 'Yes/No')
-                      : (ts.habitTypeNumerical || 'Measurable');
-                    return (
-                      <button
-                        key={typ}
-                        onClick={() => setHabitType(typ)}
-                        aria-pressed={habitType === typ}
-                        className={cn(
-                          'flex-1 px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
-                          'border',
-                          habitType === typ
-                            ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                            : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06]',
-                        )}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Numerical target + unit */}
-                {habitType === 'numerical' && (
-                  <div className="space-y-3 mt-3">
-                    <div className="flex items-center gap-3">
-                      <label className="text-xs text-slate-500">{ts.dailyTarget || 'Target'}:</label>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setTargetValue(Math.max(1, targetValue - 1))}
-                          aria-label={ts.decreaseTarget || 'Decrease target'}
-                          className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center min-h-[44px] min-w-[44px]"
-                        >
-                          -
-                        </button>
-                        <span className="text-sm text-slate-200 w-8 text-center">{targetValue}</span>
-                        <button
-                          onClick={() => setTargetValue(targetValue + 1)}
-                          aria-label={ts.increaseTarget || 'Increase target'}
-                          className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center min-h-[44px] min-w-[44px]"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <label className="text-xs text-slate-500">{ts.unit || 'Unit'}:</label>
-                      <input
-                        type="text"
-                        value={unit}
-                        onChange={(e) => setUnit(e.target.value)}
-                        placeholder={ts.unitPlaceholder || 'L, km, min...'}
-                        maxLength={20}
-                        className={cn(
-                          'flex-1 px-3 py-2 rounded-xl text-xs text-slate-300',
-                          'bg-white/[0.03] border border-white/[0.06]',
-                          'placeholder:text-slate-600',
-                          'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
-                        )}
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => setTargetType('atLeast')}
-                        aria-pressed={targetType === 'atLeast'}
-                        className={cn(
-                          'flex-1 px-3 py-2 min-h-[44px] rounded-xl text-xs font-medium transition-all',
-                          'border',
-                          targetType === 'atLeast'
-                            ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                            : 'bg-white/[0.03] border-white/[0.06] text-slate-400',
-                        )}
-                      >
-                        {ts.atLeast || 'At Least'}
-                      </button>
-                      <button
-                        onClick={() => setTargetType('atMost')}
-                        aria-pressed={targetType === 'atMost'}
-                        className={cn(
-                          'flex-1 px-3 py-2 min-h-[44px] rounded-xl text-xs font-medium transition-all',
-                          'border',
-                          targetType === 'atMost'
-                            ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                            : 'bg-white/[0.03] border-white/[0.06] text-slate-400',
-                        )}
-                      >
-                        {ts.atMost || 'At Most'}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Frequency */}
-              <div>
-                <label className="text-xs font-medium text-slate-500 mb-2 block">
-                  {ts.habitFrequency || 'Frequency'}
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {frequencyPresets.map((preset) => (
-                    <button
-                      key={preset.label}
-                      onClick={() => { setForceCustomFreq(false); setFrequency(preset.ratio); }}
-                      aria-pressed={isPresetMatch(preset.ratio) && !forceCustomFreq}
-                      className={cn(
-                        'px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
-                        'border',
-                        (isPresetMatch(preset.ratio) && !forceCustomFreq)
-                          ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                          : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06]',
-                      )}
-                    >
-                      {ts[preset.i18nKey] || preset.label}
-                    </button>
-                  ))}
-                  <button
-                    onClick={() => setForceCustomFreq(true)}
-                    className={cn(
-                      'px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
-                      'border',
-                      (forceCustomFreq || isCustomFreq)
-                        ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                        : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06]',
-                    )}
-                  >
-                    {ts.customFreq || 'Custom'}
-                  </button>
-                </div>
-
-                {/* Custom ratio picker */}
-                {(forceCustomFreq || isCustomFreq) && (
-                  <div className="flex items-center gap-2 mt-3">
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => setFrequency({ ...frequency, numerator: Math.max(1, frequency.numerator - 1) })}
-                        className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
-                      >
-                        -
-                      </button>
-                      <span className="text-sm text-slate-200 w-5 text-center tabular-nums">{frequency.numerator}</span>
-                      <button
-                        onClick={() => setFrequency({ ...frequency, numerator: Math.min(frequency.denominator, frequency.numerator + 1) })}
-                        className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <span className="text-xs text-slate-500">{ts.timesPer || 'times per'}</span>
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => { const newD = Math.max(1, frequency.denominator - 1); setFrequency({ ...frequency, denominator: newD, numerator: Math.min(frequency.numerator, newD) }); }}
-                        className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
-                      >
-                        -
-                      </button>
-                      <span className="text-sm text-slate-200 w-5 text-center tabular-nums">{frequency.denominator}</span>
-                      <button
-                        onClick={() => setFrequency({ ...frequency, denominator: Math.min(365, frequency.denominator + 1) })}
-                        className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
-                      >
-                        +
-                      </button>
-                    </div>
-                    <span className="text-xs text-slate-500">{ts.days || 'days'}</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="text-xs font-medium text-slate-500 mb-2 block">
-                  {ts.habitCategory || 'Category'}
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {habitCategories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => setSelectedCategory(cat.id)}
-                      aria-pressed={selectedCategory === cat.id}
-                      className={cn(
-                        'px-3 py-2 rounded-xl text-xs font-medium transition-all min-h-[44px]',
-                        'border flex items-center gap-1.5',
-                        selectedCategory === cat.id
-                          ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg`
-                          : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:bg-white/[0.06]',
-                      )}
-                    >
-                      <span>{cat.icon}</span>
-                      <span>{ts[CATEGORY_I18N[cat.id]] || cat.id}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Action buttons */}
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={handleClose}
-                  className={cn(
-                    'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
-                    'bg-white/[0.05] border border-white/[0.08] text-slate-400',
-                    'hover:bg-white/[0.08]',
-                  )}
-                >
-                  {ts.cancel || 'Cancel'}
-                </button>
-                <button
-                  onClick={submitHabit}
-                  disabled={!newHabitName.trim() || isAtLimit}
-                  className={cn(
-                    'flex-1 px-4 py-3 rounded-xl text-sm font-semibold transition-all min-h-[44px]',
-                    'bg-gradient-to-r from-violet-600 to-purple-600 text-white',
-                    'hover:from-violet-500 hover:to-purple-500 active:scale-[0.98]',
-                    'shadow-[0_0_20px_rgba(139,92,246,0.25)]',
-                    'disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none',
-                  )}
-                >
-                  {ts.save || 'Save'}
-                </button>
-              </div>
-            </motion.div>
+            <AddHabitCustomForm
+              newHabitName={newHabitName}
+              setNewHabitName={setNewHabitName}
+              selectedIcon={selectedIcon}
+              setSelectedIcon={setSelectedIcon}
+              selectedColorIndex={selectedColorIndex}
+              setSelectedColorIndex={setSelectedColorIndex}
+              selectedCategory={selectedCategory}
+              setSelectedCategory={setSelectedCategory}
+              habitType={habitType}
+              setHabitType={setHabitType}
+              frequency={frequency}
+              setFrequency={setFrequency}
+              question={question}
+              setQuestion={setQuestion}
+              targetValue={targetValue}
+              setTargetValue={setTargetValue}
+              targetType={targetType}
+              setTargetType={setTargetType}
+              unit={unit}
+              setUnit={setUnit}
+              submitHabit={submitHabit}
+              handleClose={handleClose}
+              isAtLimit={isAtLimit}
+            />
           )}
           </AnimatePresence>
         </div>
