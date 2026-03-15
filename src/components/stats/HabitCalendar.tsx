@@ -273,10 +273,9 @@ export function HabitCalendar({ habits, className }: HabitCalendarProps) {
                 {/* Perfect day indicator */}
                 {dayData.completionRate >= 1 && dayData.totalHabits > 0 && (
                   <motion.div
-                    className="absolute -top-0.5 -end-0.5 w-2 h-2 bg-amber-400 rounded-full"
+                    className="absolute -top-0.5 -end-0.5 w-2 h-2 bg-amber-400 rounded-full shadow-[0_0_4px_rgba(251,191,36,0.6)]"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    style={{ boxShadow: '0 0 4px rgba(251, 191, 36, 0.6)' }}
                   />
                 )}
               </motion.button>

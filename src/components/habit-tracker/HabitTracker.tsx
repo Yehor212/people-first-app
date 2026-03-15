@@ -179,11 +179,7 @@ export const HabitTracker = memo(function HabitTracker({ habits, onToggleHabit, 
             }}
           />
           <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: 'radial-gradient(circle at 70% 20%, rgba(34, 197, 94, 0.1) 0%, transparent 40%)',
-              animation: 'nature-energy-glow 4s ease-in-out infinite',
-            }}
+            className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_70%_20%,rgba(34,197,94,0.1)_0%,transparent_40%)] [animation:nature-energy-glow_4s_ease-in-out_infinite]"
           />
         </>
       )}

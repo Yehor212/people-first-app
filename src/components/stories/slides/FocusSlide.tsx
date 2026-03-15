@@ -97,10 +97,7 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
     <div className="relative w-full h-full overflow-hidden">
       {/* Deep space background */}
       <div
-        className="absolute inset-0"
-        style={{
-          background: `radial-gradient(ellipse at center, #0a1628 0%, #050a14 50%, #000000 100%)`,
-        }}
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#0a1628_0%,#050a14_50%,#000000_100%)]"
       />
 
       {/* Animated star field */}
@@ -108,17 +105,11 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
 
       {/* Nebula accents */}
       <motion.div
-        className="absolute inset-0"
+        className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(59,130,246,0.15)_0%,transparent_40%),radial-gradient(circle_at_80%_70%,rgba(139,92,246,0.1)_0%,transparent_35%)]"
         animate={{
           opacity: [0.3, 0.5, 0.3],
         }}
         transition={{ duration: 8, repeat: Infinity }}
-        style={{
-          background: `
-            radial-gradient(circle at 20% 30%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
-            radial-gradient(circle at 80% 70%, rgba(139, 92, 246, 0.1) 0%, transparent 35%)
-          `,
-        }}
       />
 
       {/* Central orbital system */}
@@ -147,11 +138,7 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
 
           {/* Central core */}
           <motion.div
-            className="absolute rounded-full flex flex-col items-center justify-center inset-[80px]"
-            style={{
-              background: `radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, rgba(139, 92, 246, 0.2) 50%, transparent 70%)`,
-              boxShadow: '0 0 60px rgba(59, 130, 246, 0.3), inset 0 0 40px rgba(59, 130, 246, 0.2)',
-            }}
+            className="absolute rounded-full flex flex-col items-center justify-center inset-[80px] bg-[radial-gradient(circle,rgba(59,130,246,0.3)_0%,rgba(139,92,246,0.2)_50%,transparent_70%)] shadow-[0_0_60px_rgba(59,130,246,0.3),inset_0_0_40px_rgba(59,130,246,0.2)]"
             animate={{
               scale: [1, 1.05, 1],
               boxShadow: [

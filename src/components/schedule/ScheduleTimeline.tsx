@@ -324,10 +324,7 @@ export function ScheduleTimeline({ events, onAddEvent, onDeleteEvent }: Schedule
 
       {/* Bottom glow */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none"
-        style={{
-          background: 'radial-gradient(ellipse at bottom, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
-        }}
+        className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,rgba(139,92,246,0.15)_0%,transparent_70%)]"
       />
 
       {/* Modals */}

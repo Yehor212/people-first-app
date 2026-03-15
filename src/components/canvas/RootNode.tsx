@@ -72,8 +72,7 @@ export const RootNode = memo(function RootNode({ latestMood, canvasCenter, compl
       {/* SVG progress ring */}
       <svg
         viewBox="0 0 100 100"
-        className="absolute inset-[-12px] pointer-events-none"
-        style={{ width: 'calc(100% + 24px)', height: 'calc(100% + 24px)' }}
+        className="absolute inset-[-12px] pointer-events-none w-[calc(100%+24px)] h-[calc(100%+24px)]"
       >
         {/* Track ring */}
         <circle
@@ -107,9 +106,9 @@ export const RootNode = memo(function RootNode({ latestMood, canvasCenter, compl
           'flex items-center justify-center',
           'text-white text-xl font-bold',
           'cursor-pointer focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-0',
+          'bg-[radial-gradient(circle,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.04)_50%,rgba(15,20,30,0.8)_100%)]'
         )}
         style={{
-          background: 'radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 50%, rgba(15,20,30,0.8) 100%)',
           boxShadow: `0 0 40px ${ringColor}30, 0 0 80px ${ringColor}15, 0 10px 40px rgba(0,0,0,0.5)`,
         }}
         aria-label={t.you || 'Me'}

@@ -53,8 +53,7 @@ export function DayDetailPanel({ selectedDay, habits, onClose }: DayDetailPanelP
             <div className="flex items-center gap-2 mb-3">
               <div className="flex-1 h-2 bg-muted/30 rounded-full overflow-hidden">
                 <motion.div
-                  className="h-full w-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full"
-                  style={{ transformOrigin: 'left' }}
+                  className="h-full w-full bg-gradient-to-r from-emerald-400 to-emerald-500 rounded-full origin-left"
                   initial={{ scaleX: 0 }}
                   animate={{ scaleX: Math.min(selectedDay.completionRate, 1) }}
                 />

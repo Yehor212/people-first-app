@@ -249,13 +249,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
         className="absolute inset-0 bg-gradient-to-b from-teal-50 via-emerald-50/80 to-slate-100 dark:bg-none"
       />
       <div
-        className="absolute inset-0 hidden dark:block"
-        style={{
-          background: `radial-gradient(ellipse at top,
-            rgba(20, 184, 166, 0.1) 0%,
-            #0f172a 40%,
-            #020617 100%)`,
-        }}
+        className="absolute inset-0 hidden dark:block bg-[radial-gradient(ellipse_at_top,rgba(20,184,166,0.1)_0%,#0f172a_40%,#020617_100%)]"
       />
 
       {/* Crystal formations decoration */}

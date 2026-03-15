@@ -75,10 +75,7 @@ export function TimelineDayColumn({
                 />
                 {isMajor && (
                   <div
-                    className="absolute top-0 bottom-0 end-0 pointer-events-none w-2 translate-x-1/2 blur-[2px]"
-                    style={{
-                      background: `linear-gradient(180deg, hsl(var(--timeline-divider-glow) / 0.25) 0%, hsl(var(--timeline-divider-glow) / 0.08) 40%, hsl(var(--timeline-divider-glow) / 0.08) 60%, hsl(var(--timeline-divider-glow) / 0.25) 100%)`,
-                    }}
+                    className="absolute top-0 bottom-0 end-0 pointer-events-none w-2 translate-x-1/2 blur-[2px] bg-[linear-gradient(180deg,hsl(var(--timeline-divider-glow)/0.25)_0%,hsl(var(--timeline-divider-glow)/0.08)_40%,hsl(var(--timeline-divider-glow)/0.08)_60%,hsl(var(--timeline-divider-glow)/0.25)_100%)]"
                   />
                 )}
                 <div className="absolute top-0 end-0" style={{ width: '2px', height: isMajor ? '10px' : '6px', backgroundColor: isMajor ? 'hsl(var(--timeline-tick) / 0.8)' : 'hsl(var(--timeline-tick) / 0.4)' }} />

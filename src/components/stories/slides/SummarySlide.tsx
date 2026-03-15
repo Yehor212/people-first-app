@@ -138,30 +138,16 @@ export function SummarySlide({ slide }: SummarySlideProps) {
     <div className="relative w-full h-full overflow-hidden">
       {/* Cosmic gradient background */}
       <div
-        className="absolute inset-0"
-        style={{
-          background: `radial-gradient(ellipse at center,
-            #1a1a3e 0%,
-            #0d0d2a 40%,
-            #050510 100%
-          )`,
-        }}
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#1a1a3e_0%,#0d0d2a_40%,#050510_100%)]"
       />
 
       {/* Ambient glow */}
       <motion.div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_50%,rgba(139,92,246,0.2)_0%,transparent_50%),radial-gradient(circle_at_30%_30%,rgba(59,130,246,0.1)_0%,transparent_40%),radial-gradient(circle_at_70%_70%,rgba(236,72,153,0.1)_0%,transparent_40%)]"
         animate={{
           opacity: [0.3, 0.5, 0.3],
         }}
         transition={{ duration: 5, repeat: Infinity }}
-        style={{
-          background: `
-            radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.2) 0%, transparent 50%),
-            radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.1) 0%, transparent 40%),
-            radial-gradient(circle at 70% 70%, rgba(236, 72, 153, 0.1) 0%, transparent 40%)
-          `,
-        }}
       />
 
       {/* Central crystal visualization */}
@@ -203,20 +189,7 @@ export function SummarySlide({ slide }: SummarySlideProps) {
 
           {/* Crystal sphere */}
           <motion.div
-            className="absolute rounded-full inset-[50px]"
-            style={{
-              background: `radial-gradient(circle at 30% 30%,
-                rgba(255, 255, 255, 0.3) 0%,
-                rgba(139, 92, 246, 0.4) 30%,
-                rgba(59, 130, 246, 0.3) 60%,
-                rgba(139, 92, 246, 0.2) 100%
-              )`,
-              boxShadow: `
-                0 0 40px rgba(139, 92, 246, 0.4),
-                inset 0 0 60px rgba(255, 255, 255, 0.1),
-                inset -20px -20px 40px rgba(0, 0, 0, 0.2)
-              `,
-            }}
+            className="absolute rounded-full inset-[50px] bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3)_0%,rgba(139,92,246,0.4)_30%,rgba(59,130,246,0.3)_60%,rgba(139,92,246,0.2)_100%)] shadow-[0_0_40px_rgba(139,92,246,0.4),inset_0_0_60px_rgba(255,255,255,0.1),inset_-20px_-20px_40px_rgba(0,0,0,0.2)]"
             animate={{
               scale: [1, 1.03, 1],
             }}

@@ -91,11 +91,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
       {/* Premium cosmic background */}
       {isPrimaryCTA && (
         <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: `radial-gradient(ellipse at top,
-              rgba(139, 92, 246, 0.1) 0%, transparent 50%)`
-          }}
+          className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_top,rgba(139,92,246,0.1)_0%,transparent_50%)]"
         />
       )}
 
@@ -140,11 +136,7 @@ export function HabitCreationForm({ form, habits, isPrimaryCTA = false }: HabitC
       >
         {isPrimaryCTA && (
           <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%)',
-              animation: 'form-shimmer 3s linear 2s infinite',
-            }}
+            className="absolute inset-0 pointer-events-none bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.03)_50%,transparent_100%)] [animation:form-shimmer_3s_linear_2s_infinite]"
           />
         )}
         <p className={cn("text-xs mb-2", isPrimaryCTA ? "text-slate-500 dark:text-foreground/60" : "text-muted-foreground")}>

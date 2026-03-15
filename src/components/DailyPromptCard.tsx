@@ -168,10 +168,7 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
           >
             {/* Shimmer effect */}
             <motion.div
-              className="absolute inset-0 pointer-events-none"
-              style={{
-                background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%)',
-              }}
+              className="absolute inset-0 pointer-events-none bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.25)_50%,transparent_100%)]"
               animate={{ x: ['-100%', '200%'] }}
               transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
             />

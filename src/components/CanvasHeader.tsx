@@ -38,8 +38,7 @@ export function CanvasHeader({ streak, latestMood }: CanvasHeaderProps) {
 
   return (
     <header
-      className="fixed top-0 inset-x-0 z-50 flex items-start justify-between px-4"
-      style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)' }}
+      className="fixed top-0 inset-x-0 z-50 flex items-start justify-between px-4 pt-[calc(env(safe-area-inset-top,0px)+0.75rem)]"
     >
       {/* Left: Logo + date */}
       <div>

@@ -19,10 +19,8 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
     >
       {/* Aurora ambient layer 1 — CSS-driven for battery savings */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_60%_50%_at_50%_30%,hsl(var(--primary)/0.10)_0%,transparent_70%)] [animation:zen-glow-breathe_4s_ease-in-out_infinite]"
         style={{
-          background: 'radial-gradient(ellipse 60% 50% at 50% 30%, hsl(var(--primary) / 0.10) 0%, transparent 70%)',
-          animation: 'zen-glow-breathe 4s ease-in-out infinite',
           '--zen-glow-min': '0.4',
           '--zen-glow-max': '0.8',
         } as React.CSSProperties}
@@ -30,10 +28,8 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
 
       {/* Aurora ambient layer 2 — CSS-driven */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_50%_40%_at_50%_70%,hsl(var(--accent)/0.05)_0%,transparent_70%)] [animation:zen-glow-breathe_5s_ease-in-out_1.5s_infinite]"
         style={{
-          background: 'radial-gradient(ellipse 50% 40% at 50% 70%, hsl(var(--accent) / 0.05) 0%, transparent 70%)',
-          animation: 'zen-glow-breathe 5s ease-in-out 1.5s infinite',
           '--zen-glow-min': '0.3',
           '--zen-glow-max': '0.6',
         } as React.CSSProperties}
@@ -49,10 +45,8 @@ export function SplashScreen({ loadingFadeOut, subtitle }: SplashScreenProps) {
 
       {/* Glow ring behind logo — CSS-driven pulse for battery savings */}
       <div
-        className="absolute rounded-full w-[120px] h-[120px] blur-[10px]"
+        className="absolute rounded-full w-[120px] h-[120px] blur-[10px] bg-[radial-gradient(circle,hsl(var(--primary)/0.15)_0%,transparent_70%)] [animation:zen-pulse_3s_ease-in-out_0.3s_infinite,zen-glow-breathe_3s_ease-in-out_0.3s_infinite]"
         style={{
-          background: 'radial-gradient(circle, hsl(var(--primary) / 0.15) 0%, transparent 70%)',
-          animation: 'zen-pulse 3s ease-in-out 0.3s infinite, zen-glow-breathe 3s ease-in-out 0.3s infinite',
           '--zen-pulse-scale': '1.15',
           '--zen-glow-min': '0.15',
           '--zen-glow-max': '0.25',

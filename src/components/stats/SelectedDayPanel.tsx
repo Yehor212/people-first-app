@@ -50,10 +50,7 @@ export function SelectedDayPanel({
 }: SelectedDayPanelProps) {
   return (
     <motion.div
-      className="mt-5 relative overflow-hidden rounded-2xl border border-violet-500/20 shadow-[0_0_30px_rgba(139,92,246,0.15),inset_0_1px_0_rgba(255,255,255,0.05)]"
-      style={{
-        background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.08) 50%, rgba(6, 182, 212, 0.1) 100%)',
-      }}
+      className="mt-5 relative overflow-hidden rounded-2xl border border-violet-500/20 shadow-[0_0_30px_rgba(139,92,246,0.15),inset_0_1px_0_rgba(255,255,255,0.05)] bg-[linear-gradient(135deg,rgba(139,92,246,0.1)_0%,rgba(59,130,246,0.08)_50%,rgba(6,182,212,0.1)_100%)]"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}

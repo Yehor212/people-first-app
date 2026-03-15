@@ -43,11 +43,7 @@ export function CompletionView({ onReset, t }: CompletionViewProps) {
       </div>
 
       <motion.div
-        className="w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center"
-        style={{
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.3) 0%, rgba(6, 182, 212, 0.2) 100%)',
-          boxShadow: '0 0 40px rgba(16, 185, 129, 0.4)',
-        }}
+        className="w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center bg-[linear-gradient(135deg,rgba(16,185,129,0.3)_0%,rgba(6,182,212,0.2)_100%)] shadow-[0_0_40px_rgba(16,185,129,0.4)]"
         initial={{ scale: 0, rotate: -180 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={{ type: 'spring', stiffness: 200, damping: 15 }}
@@ -84,11 +80,9 @@ export function CompletionView({ onReset, t }: CompletionViewProps) {
         className={cn(
           "w-full py-4 rounded-xl font-semibold",
           "bg-gradient-to-r from-cyan-500 to-teal-500 text-white",
-          "hover:from-cyan-400 hover:to-teal-400 transition-all"
+          "hover:from-cyan-400 hover:to-teal-400 transition-all",
+          "shadow-[0_0_20px_rgba(6,182,212,0.4)]"
         )}
-        style={{
-          boxShadow: '0 0 20px rgba(6, 182, 212, 0.4)',
-        }}
         whileHover={{ scale: 1.02 }}
         whileTap={zenTap.card}
         initial={{ opacity: 0, y: 20 }}

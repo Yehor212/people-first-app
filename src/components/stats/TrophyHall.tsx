@@ -172,21 +172,15 @@ function AchievementCard({
       <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-full">
         <div
           className={cn(
-            "mx-auto rounded-t-sm",
+            "mx-auto rounded-t-sm bg-[linear-gradient(180deg,hsl(var(--trophy-gold-bright))_0%,hsl(var(--trophy-gold-mid))_50%,hsl(var(--trophy-gold-dark))_100%)]",
             isMain ? "w-24 h-3" : "w-20 h-2"
           )}
-          style={{
-            background: 'linear-gradient(180deg, hsl(var(--trophy-gold-bright)) 0%, hsl(var(--trophy-gold-mid)) 50%, hsl(var(--trophy-gold-dark)) 100%)',
-          }}
         />
         <div
           className={cn(
-            "mx-auto rounded-b-sm",
+            "mx-auto rounded-b-sm bg-[linear-gradient(180deg,hsl(var(--trophy-gold-dark))_0%,hsl(var(--trophy-gold-deep))_100%)]",
             isMain ? "w-28 h-2" : "w-24 h-1.5"
           )}
-          style={{
-            background: 'linear-gradient(180deg, hsl(var(--trophy-gold-dark)) 0%, hsl(var(--trophy-gold-deep)) 100%)',
-          }}
         />
       </div>
     </motion.div>
@@ -255,15 +249,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
         className="absolute inset-0 bg-gradient-to-b from-amber-50 via-orange-100/80 to-amber-100 dark:bg-none"
       />
       <div
-        className="absolute inset-0 hidden dark:block"
-        style={{
-          background: `linear-gradient(180deg,
-            hsl(var(--temple-bg-top)) 0%,
-            hsl(var(--temple-bg-mid)) 20%,
-            hsl(var(--temple-bg-bottom)) 50%,
-            hsl(var(--temple-bg-mid)) 80%,
-            hsl(var(--temple-bg-top)) 100%)`,
-        }}
+        className="absolute inset-0 hidden dark:block bg-[linear-gradient(180deg,hsl(var(--temple-bg-top))_0%,hsl(var(--temple-bg-mid))_20%,hsl(var(--temple-bg-bottom))_50%,hsl(var(--temple-bg-mid))_80%,hsl(var(--temple-bg-top))_100%)]"
       />
 
       {/* Spotlights */}
@@ -277,13 +263,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
 
       {/* Marble floor reflection */}
       <div
-        className="absolute bottom-0 inset-x-0 h-16 hidden dark:block"
-        style={{
-          background: `linear-gradient(180deg,
-            transparent 0%,
-            hsl(var(--temple-marble) / 0.1) 50%,
-            hsl(var(--temple-marble) / 0.2) 100%)`,
-        }}
+        className="absolute bottom-0 inset-x-0 h-16 hidden dark:block bg-[linear-gradient(180deg,transparent_0%,hsl(var(--temple-marble)/0.1)_50%,hsl(var(--temple-marble)/0.2)_100%)]"
       />
 
       {/* Content */}
@@ -325,10 +305,7 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
 
       {/* Golden ambient glow at bottom */}
       <div
-        className="absolute bottom-0 inset-x-0 h-24 pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse at bottom, hsl(var(--temple-ambient-glow) / 0.08) 0%, transparent 70%)`,
-        }}
+        className="absolute bottom-0 inset-x-0 h-24 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,hsl(var(--temple-ambient-glow)/0.08)_0%,transparent_70%)]"
       />
 
       {/* Share modal */}

@@ -247,8 +247,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
         </span>
         <span className="flex items-center gap-1">
           <div
-            className="w-2.5 h-2.5 rounded-[2px]"
-            style={{ backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 2px, #64748b 2px, #64748b 3px)`, opacity: 0.4 }}
+            className="w-2.5 h-2.5 rounded-[2px] bg-[repeating-linear-gradient(45deg,transparent,transparent_2px,#64748b_2px,#64748b_3px)] opacity-40"
           /> {ts.legendSkip || 'Skip'}
         </span>
       </div>

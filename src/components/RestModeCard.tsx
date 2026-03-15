@@ -58,9 +58,8 @@ export const RestModeCard = memo(function RestModeCard({ streak, onCancel }: Res
           <Moon className="w-10 h-10 text-indigo-400" />
         </div>
         <div
-          className="absolute -end-1 -top-1"
+          className="absolute -end-1 -top-1 [animation:zen-pulse_2s_ease-in-out_infinite]"
           style={{
-            animation: 'zen-pulse 2s ease-in-out infinite',
             '--zen-pulse-scale': '1.2',
           } as React.CSSProperties}
         >

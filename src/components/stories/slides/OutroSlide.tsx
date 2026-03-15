@@ -87,23 +87,10 @@ export function OutroSlide({ slide, t }: OutroSlideProps) {
     <div className="relative w-full h-full overflow-hidden">
       {/* Sky gradient - sunrise colors */}
       <motion.div
-        className="absolute inset-0"
+        className="absolute inset-0 bg-[linear-gradient(180deg,#1a1a2e_0%,#2d2d5a_10%,#4a3f6b_20%,#7b5e7b_30%,#c97b84_45%,#f0a58f_60%,#ffcb8e_75%,#fff5d4_90%,#fffef0_100%)]"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 1 }}
-        style={{
-          background: `linear-gradient(180deg,
-            #1a1a2e 0%,
-            #2d2d5a 10%,
-            #4a3f6b 20%,
-            #7b5e7b 30%,
-            #c97b84 45%,
-            #f0a58f 60%,
-            #ffcb8e 75%,
-            #fff5d4 90%,
-            #fffef0 100%
-          )`,
-        }}
       />
 
       {/* Clouds at top */}
@@ -157,15 +144,7 @@ export function OutroSlide({ slide, t }: OutroSlideProps) {
 
         {/* Sun disc */}
         <motion.div
-          className="w-24 h-24 rounded-full shadow-[0_0_60px_20px_rgba(255,200,100,0.5)]"
-          style={{
-            background: `radial-gradient(circle at 30% 30%,
-              #fff5d4 0%,
-              #ffdd80 30%,
-              #ffb347 70%,
-              #ff8c42 100%
-            )`,
-          }}
+          className="w-24 h-24 rounded-full shadow-[0_0_60px_20px_rgba(255,200,100,0.5)] bg-[radial-gradient(circle_at_30%_30%,#fff5d4_0%,#ffdd80_30%,#ffb347_70%,#ff8c42_100%)]"
           animate={{
             scale: [1, 1.05, 1],
           }}
@@ -175,14 +154,7 @@ export function OutroSlide({ slide, t }: OutroSlideProps) {
 
       {/* Horizon/ground */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-1/5"
-        style={{
-          background: `linear-gradient(180deg,
-            transparent 0%,
-            rgba(30, 30, 30, 0.3) 50%,
-            rgba(20, 20, 20, 0.6) 100%
-          )`,
-        }}
+        className="absolute bottom-0 left-0 right-0 h-1/5 bg-[linear-gradient(180deg,transparent_0%,rgba(30,30,30,0.3)_50%,rgba(20,20,20,0.6)_100%)]"
       />
 
       {/* Mountain/hill silhouette */}

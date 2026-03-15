@@ -756,7 +756,7 @@ export function JournalEntryEditor({
               <span className="text-sm">Map</span>
             </motion.button>
             <div className="min-w-0">
-              <div className="text-sm font-bold tracking-tight truncate" style={{ color: diaryTheme.accentColor, fontFamily: "'Outfit', sans-serif" }}>
+              <div className="text-sm font-bold tracking-tight truncate font-['Outfit',sans-serif]" style={{ color: diaryTheme.accentColor }}>
                 {title || ts.diaryTimeCapsule || 'TIME CAPSULE'}
               </div>
               <div className="relative">
@@ -1437,8 +1437,8 @@ export function JournalEntryEditor({
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
-          className="w-full min-h-[260px] bg-transparent border-none outline-none resize-none [&_blockquote]:border-l-2 [&_blockquote]:border-current/20 [&_blockquote]:ps-3 [&_blockquote]:italic [&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 empty:before:pointer-events-none"
-          style={{ fontSize: FONT_SIZES[fontSize], lineHeight: 1.8, fontFamily: diaryTheme.fontFamily, color: inkColor !== '#ffffff' ? inkColor : paperColors.text }}
+          className="w-full min-h-[260px] bg-transparent border-none outline-none resize-none [&_blockquote]:border-l-2 [&_blockquote]:border-current/20 [&_blockquote]:ps-3 [&_blockquote]:italic [&_code]:bg-black/5 [&_code]:px-1 [&_code]:rounded [&_code]:font-mono [&_del]:line-through empty:before:content-[attr(data-placeholder)] empty:before:opacity-40 empty:before:pointer-events-none leading-[1.8]"
+          style={{ fontSize: FONT_SIZES[fontSize], fontFamily: diaryTheme.fontFamily, color: inkColor !== '#ffffff' ? inkColor : paperColors.text }}
           onInput={handleEditorInput}
           onFocus={(e) => { const el = e.target; setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300); }}
           data-placeholder={ts.journalEntryPlaceholder || "What's on your mind?"}

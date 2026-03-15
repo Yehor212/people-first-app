@@ -41,10 +41,7 @@ export function PatternSelector({ patterns, selected, onSelect, onStart, t }: Pa
           >
             {selected.id === pattern.id && (
               <motion.div
-                className="absolute inset-0 pointer-events-none"
-                style={{
-                  background: 'radial-gradient(circle at 20% 50%, rgba(6, 182, 212, 0.15) 0%, transparent 50%)',
-                }}
+                className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_50%,rgba(6,182,212,0.15)_0%,transparent_50%)]"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               />
@@ -99,11 +96,9 @@ export function PatternSelector({ patterns, selected, onSelect, onStart, t }: Pa
         className={cn(
           "w-full py-4 rounded-xl font-semibold text-white relative overflow-hidden",
           "bg-gradient-to-r from-cyan-500 via-teal-500 to-cyan-500",
-          "bg-[length:200%_100%]"
+          "bg-[length:200%_100%]",
+          "shadow-[0_0_25px_rgba(6,182,212,0.5),0_4px_15px_rgba(0,0,0,0.2)]"
         )}
-        style={{
-          boxShadow: '0 0 25px rgba(6, 182, 212, 0.5), 0 4px 15px rgba(0, 0, 0, 0.2)',
-        }}
         animate={{
           backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
         }}
@@ -116,10 +111,7 @@ export function PatternSelector({ patterns, selected, onSelect, onStart, t }: Pa
         whileTap={zenTap.card}
       >
         <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.2) 0%, transparent 50%)',
-          }}
+          className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.2)_0%,transparent_50%)]"
         />
         <span className="relative z-10 flex items-center justify-center gap-2">
           <Play className="w-5 h-5" />

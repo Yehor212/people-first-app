@@ -198,17 +198,11 @@ export const CompactHabitCard = memo(function CompactHabitCard({
           >
             {/* Main gradient glow */}
             <div
-              className="absolute inset-0"
-              style={{
-                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.12) 0%, rgba(20, 184, 166, 0.08) 50%, transparent 100%)',
-              }}
+              className="absolute inset-0 bg-[linear-gradient(135deg,rgba(16,185,129,0.12)_0%,rgba(20,184,166,0.08)_50%,transparent_100%)]"
             />
             {/* Shimmer effect — CSS keyframe (QA_PROTOCOLS #5, motion-safe) */}
             <div
-              className="absolute inset-0 motion-safe:animate-[habit-shimmer_2s_linear_3s_infinite]"
-              style={{
-                background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%)',
-              }}
+              className="absolute inset-0 motion-safe:animate-[habit-shimmer_2s_linear_3s_infinite] bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.05)_50%,transparent_100%)]"
             />
           </motion.div>
         )}
@@ -248,10 +242,7 @@ export const CompactHabitCard = memo(function CompactHabitCard({
             {/* Inner glow for completed — CSS keyframe (QA_PROTOCOLS #5, motion-safe) */}
             {completed && (
               <div
-                className="absolute inset-0 rounded-xl motion-safe:animate-[habit-glow-pulse_2s_ease-in-out_infinite]"
-                style={{
-                  background: 'radial-gradient(circle at center, rgba(255,255,255,0.2) 0%, transparent 70%)',
-                }}
+                className="absolute inset-0 rounded-xl motion-safe:animate-[habit-glow-pulse_2s_ease-in-out_infinite] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.2)_0%,transparent_70%)]"
               />
             )}
             {completed ? (

@@ -34,7 +34,7 @@ export function ActiveBreathingView({
           animationData={meditationAnimation}
           loop
           autoplay={!isPaused}
-          style={{ width: '100%', maxWidth: 280, height: 'auto' }}
+          className="w-full max-w-[280px] h-auto"
         />
       </div>
 

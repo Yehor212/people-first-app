@@ -55,15 +55,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
         >
           {/* Cosmic overlay */}
           <motion.div
-            className="absolute inset-0"
-            style={{
-              background: `radial-gradient(ellipse at center,
-                rgba(6, 182, 212, 0.1) 0%,
-                rgba(0, 0, 0, 0.8) 50%,
-                rgba(0, 0, 0, 0.9) 100%)`,
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-            }}
+            className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.9)_100%)] backdrop-blur-lg"
             onClick={closeModal}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -88,11 +80,9 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
             className={cn(
               "relative w-full max-w-sm rounded-3xl overflow-hidden",
               "bg-background/95 backdrop-blur-xl",
-              "border border-border"
+              "border border-border",
+              "shadow-[0_0_40px_rgba(6,182,212,0.2),0_25px_50px_-12px_rgba(0,0,0,0.5)]"
             )}
-            style={{
-              boxShadow: '0 0 40px rgba(6, 182, 212, 0.2), 0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-            }}
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
@@ -100,8 +90,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
           >
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
             <div
-              className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 pointer-events-none"
-              style={{ background: 'radial-gradient(ellipse, rgba(6, 182, 212, 0.15) 0%, transparent 70%)' }}
+              className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-24 pointer-events-none bg-[radial-gradient(ellipse,rgba(6,182,212,0.15)_0%,transparent_70%)]"
             />
 
             <div className="relative z-10 p-4 sm:p-6">

@@ -31,10 +31,7 @@ function SunEffect({ intensity }: { intensity: string }) {
         ))}
       </div>
       <div
-        className="w-10 h-10 rounded-full animate-sun-pulse"
-        style={{
-          background: 'radial-gradient(circle, rgba(251,191,36,0.35) 0%, rgba(251,191,36,0.08) 70%, transparent 100%)',
-        }}
+        className="w-10 h-10 rounded-full animate-sun-pulse bg-[radial-gradient(circle,rgba(251,191,36,0.35)_0%,rgba(251,191,36,0.08)_70%,transparent_100%)]"
       />
     </div>
   );
@@ -123,23 +120,14 @@ function FogEffect({ intensity }: { intensity: string }) {
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
       <div
-        className="absolute rounded-full animate-fog-drift w-[70%] h-4 top-[30%] left-[10%] blur-[8px]"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(148,163,184,0.15), transparent)',
-        }}
+        className="absolute rounded-full animate-fog-drift w-[70%] h-4 top-[30%] left-[10%] blur-[8px] bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.15),transparent)]"
       />
       <div
-        className="absolute rounded-full animate-fog-drift-slow w-[60%] h-3.5 top-[55%] left-[20%] blur-[10px]"
-        style={{
-          background: 'linear-gradient(90deg, transparent, rgba(148,163,184,0.12), transparent)',
-        }}
+        className="absolute rounded-full animate-fog-drift-slow w-[60%] h-3.5 top-[55%] left-[20%] blur-[10px] bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.12),transparent)]"
       />
       {intensity !== 'light' && (
         <div
-          className="absolute rounded-full animate-fog-drift w-1/2 h-3 top-3/4 left-[5%] blur-[12px] [animation-delay:-3s]"
-          style={{
-            background: 'linear-gradient(90deg, transparent, rgba(148,163,184,0.1), transparent)',
-          }}
+          className="absolute rounded-full animate-fog-drift w-1/2 h-3 top-3/4 left-[5%] blur-[12px] [animation-delay:-3s] bg-[linear-gradient(90deg,transparent,rgba(148,163,184,0.1),transparent)]"
         />
       )}
     </div>
@@ -166,12 +154,11 @@ function WindEffect() {
       {Array.from({ length: 3 }, (_, i) => (
         <div
           key={i}
-          className="absolute animate-wind-sway h-[1.5px] rounded-sm"
+          className="absolute animate-wind-sway h-[1.5px] rounded-sm bg-[linear-gradient(90deg,transparent,rgba(239,68,68,0.15),transparent)]"
           style={{
             top: `${25 + i * 22}%`,
             left: `${10 + i * 15}%`,
             width: `${40 - i * 8}%`,
-            background: 'linear-gradient(90deg, transparent, rgba(239,68,68,0.15), transparent)',
             animationDelay: `${i * 0.4}s`,
           }}
         />

@@ -110,11 +110,7 @@ export function Leaderboard({ trigger }: LeaderboardProps) {
 
         {/* Opt-in Settings */}
         <div
-          className="rounded-xl p-4 mb-4"
-          style={{
-            background: 'linear-gradient(135deg, hsl(var(--foreground) / 0.05) 0%, hsl(var(--foreground) / 0.02) 100%)',
-            border: '1px solid hsl(var(--foreground) / 0.1)',
-          }}
+          className="rounded-xl p-4 mb-4 bg-[linear-gradient(135deg,hsl(var(--foreground)/0.05)_0%,hsl(var(--foreground)/0.02)_100%)] border border-[hsl(var(--foreground)/0.1)]"
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">

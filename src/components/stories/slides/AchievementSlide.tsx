@@ -59,14 +59,7 @@ function BadgePedestal({
     >
       {/* Spotlight beam */}
       <motion.div
-        className="absolute -top-32 w-20 pointer-events-none h-[180px] [clip-path:polygon(30%_0%,70%_0%,100%_100%,0%_100%)]"
-        style={{
-          background: `linear-gradient(180deg,
-            rgba(255, 215, 0, 0.3) 0%,
-            rgba(255, 215, 0, 0.1) 50%,
-            transparent 100%
-          )`,
-        }}
+        className="absolute -top-32 w-20 pointer-events-none h-[180px] [clip-path:polygon(30%_0%,70%_0%,100%_100%,0%_100%)] bg-[linear-gradient(180deg,rgba(255,215,0,0.3)_0%,rgba(255,215,0,0.1)_50%,transparent_100%)]"
         animate={{
           opacity: [0.5, 0.8, 0.5],
         }}
@@ -75,16 +68,7 @@ function BadgePedestal({
 
       {/* Badge card with 3D effect */}
       <motion.div
-        className="relative z-10 w-20 h-20 rounded-2xl flex items-center justify-center"
-        style={{
-          background: `linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%)`,
-          boxShadow: `
-            0 0 30px rgba(255, 215, 0, 0.3),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1),
-            inset 0 -1px 0 rgba(0, 0, 0, 0.3)
-          `,
-          border: '1px solid rgba(255, 215, 0, 0.2)',
-        }}
+        className="relative z-10 w-20 h-20 rounded-2xl flex items-center justify-center bg-[linear-gradient(135deg,#2a2a2a_0%,#1a1a1a_100%)] shadow-[0_0_30px_rgba(255,215,0,0.3),inset_0_1px_0_rgba(255,255,255,0.1),inset_0_-1px_0_rgba(0,0,0,0.3)] border border-[rgba(255,215,0,0.2)]"
         whileHover={{ scale: 1.1, rotateY: 10 }}
         animate={{
           boxShadow: [
@@ -142,15 +126,7 @@ export function AchievementSlide({ slide, language }: AchievementSlideProps) {
     <div className="relative w-full h-full overflow-hidden">
       {/* Dark temple background */}
       <div
-        className="absolute inset-0"
-        style={{
-          background: `linear-gradient(180deg,
-            #0a0a0a 0%,
-            #1a1510 30%,
-            #2a2015 60%,
-            #1a1510 100%
-          )`,
-        }}
+        className="absolute inset-0 bg-[linear-gradient(180deg,#0a0a0a_0%,#1a1510_30%,#2a2015_60%,#1a1510_100%)]"
       />
 
       {/* Temple columns on sides */}
@@ -176,14 +152,7 @@ export function AchievementSlide({ slide, language }: AchievementSlideProps) {
 
       {/* Marble floor reflection */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-1/4"
-        style={{
-          background: `linear-gradient(180deg,
-            transparent 0%,
-            rgba(100, 90, 70, 0.1) 30%,
-            rgba(100, 90, 70, 0.2) 100%
-          )`,
-        }}
+        className="absolute bottom-0 left-0 right-0 h-1/4 bg-[linear-gradient(180deg,transparent_0%,rgba(100,90,70,0.1)_30%,rgba(100,90,70,0.2)_100%)]"
       />
 
       {/* Dust particles in spotlights */}
@@ -243,10 +212,7 @@ export function AchievementSlide({ slide, language }: AchievementSlideProps) {
 
       {/* Golden ambient light at bottom */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse at bottom, rgba(255, 215, 0, 0.1) 0%, transparent 70%)`,
-        }}
+        className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,rgba(255,215,0,0.1)_0%,transparent_70%)]"
       />
     </div>
   );

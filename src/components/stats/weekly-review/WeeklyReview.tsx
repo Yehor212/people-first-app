@@ -65,10 +65,7 @@ export function WeeklyReview({
       {/* Animated cosmic background */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <motion.div
-          className="absolute -top-1/2 -end-1/2 w-full h-full rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%)',
-          }}
+          className="absolute -top-1/2 -end-1/2 w-full h-full rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.15)_0%,transparent_70%)]"
           animate={{
             scale: [1, 1.2, 1],
             opacity: [0.3, 0.5, 0.3],
@@ -76,10 +73,7 @@ export function WeeklyReview({
           transition={{ duration: 8, repeat: Infinity }}
         />
         <motion.div
-          className="absolute -bottom-1/2 -start-1/2 w-full h-full rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 60%)',
-          }}
+          className="absolute -bottom-1/2 -start-1/2 w-full h-full rounded-full bg-[radial-gradient(circle,rgba(16,185,129,0.1)_0%,transparent_60%)]"
           animate={{
             scale: [1.2, 1, 1.2],
             opacity: [0.2, 0.4, 0.2],

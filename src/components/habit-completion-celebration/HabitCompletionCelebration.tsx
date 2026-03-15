@@ -100,10 +100,7 @@ export function HabitCompletionCelebration({
         <AnimatePresence>
           {(phase === 'xp' || phase === 'streak') && (
             <motion.div
-              className="absolute -top-10 end-4 flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-sm will-change-transform text-[#78350f] shadow-[0_0_20px_rgba(251,191,36,0.6),0_4px_12px_rgba(0,0,0,0.2)]"
-              style={{
-                background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
-              }}
+              className="absolute -top-10 end-4 flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-sm will-change-transform text-[#78350f] shadow-[0_0_20px_rgba(251,191,36,0.6),0_4px_12px_rgba(0,0,0,0.2)] bg-[linear-gradient(135deg,#fbbf24_0%,#f59e0b_50%,#d97706_100%)]"
               initial={{ opacity: 0, y: 20, scale: 0.5 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.5 }}
@@ -121,9 +118,8 @@ export function HabitCompletionCelebration({
         <AnimatePresence>
           {streakDays && streakDays > 1 && phase === 'streak' && (
             <motion.div
-              className="absolute -top-14 left-1/2 flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-white will-change-transform shadow-[0_0_25px_rgba(249,115,22,0.5),0_4px_12px_rgba(0,0,0,0.2)]"
+              className="absolute -top-14 left-1/2 flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-white will-change-transform shadow-[0_0_25px_rgba(249,115,22,0.5),0_4px_12px_rgba(0,0,0,0.2)] bg-[linear-gradient(135deg,#f97316_0%,#ef4444_50%,#dc2626_100%)]"
               style={{
-                background: 'linear-gradient(135deg, #f97316 0%, #ef4444 50%, #dc2626 100%)',
                 x: '-50%',
               }}
               initial={{ opacity: 0, y: 20, scale: 0.5 }}

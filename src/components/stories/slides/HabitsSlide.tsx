@@ -20,11 +20,10 @@ interface HabitsSlideProps {
 function SoftParticle({ delay, x, y }: { delay: number; x: number; y: number }) {
   return (
     <motion.div
-      className="absolute rounded-full w-1 h-1 shadow-[0_0_10px_rgba(74,222,128,0.5)]"
+      className="absolute rounded-full w-1 h-1 shadow-[0_0_10px_rgba(74,222,128,0.5)] bg-[radial-gradient(circle,rgba(74,222,128,0.8)_0%,transparent_70%)]"
       style={{
         left: `${x}%`,
         top: `${y}%`,
-        background: 'radial-gradient(circle, rgba(74,222,128,0.8) 0%, transparent 70%)',
       }}
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{
@@ -58,38 +57,19 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
     <div className="relative w-full h-full overflow-hidden">
       {/* Deep forest cosmos background */}
       <div
-        className="absolute inset-0"
-        style={{
-          background: `radial-gradient(ellipse at 50% 30%,
-            #1a2f1a 0%,
-            #0d1a0d 40%,
-            #050a05 100%
-          )`,
-        }}
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_30%,#1a2f1a_0%,#0d1a0d_40%,#050a05_100%)]"
       />
 
       {/* Green nebula breathing */}
       <motion.div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_45%,rgba(74,222,128,0.15)_0%,transparent_50%),radial-gradient(circle_at_30%_30%,rgba(34,197,94,0.1)_0%,transparent_40%)]"
         animate={{ opacity: [0.2, 0.35, 0.2] }}
         transition={{ duration: 8, repeat: Infinity }}
-        style={{
-          background: `
-            radial-gradient(circle at 50% 45%, rgba(74,222,128,0.15) 0%, transparent 50%),
-            radial-gradient(circle at 30% 30%, rgba(34,197,94,0.1) 0%, transparent 40%)
-          `,
-        }}
       />
 
       {/* Corner glows */}
       <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `
-            radial-gradient(circle at top left, rgba(74,222,128,0.08) 0%, transparent 40%),
-            radial-gradient(circle at bottom right, rgba(251,191,36,0.05) 0%, transparent 40%)
-          `,
-        }}
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(74,222,128,0.08)_0%,transparent_40%),radial-gradient(circle_at_bottom_right,rgba(251,191,36,0.05)_0%,transparent_40%)]"
       />
 
       {/* Soft particles */}
@@ -108,39 +88,21 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
         >
           {/* Outer glow ring 1 */}
           <motion.div
-            className="absolute -inset-8 rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(74,222,128,0.15) 0%, transparent 70%)',
-            }}
+            className="absolute -inset-8 rounded-full bg-[radial-gradient(circle,rgba(74,222,128,0.15)_0%,transparent_70%)]"
             animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
             transition={{ duration: 4, repeat: Infinity }}
           />
 
           {/* Outer glow ring 2 */}
           <motion.div
-            className="absolute -inset-16 rounded-full"
-            style={{
-              background: 'radial-gradient(circle, rgba(74,222,128,0.08) 0%, transparent 70%)',
-            }}
+            className="absolute -inset-16 rounded-full bg-[radial-gradient(circle,rgba(74,222,128,0.08)_0%,transparent_70%)]"
             animate={{ scale: [1.1, 1, 1.1], opacity: [0.3, 0.5, 0.3] }}
             transition={{ duration: 6, repeat: Infinity }}
           />
 
           {/* Main crown orb */}
           <motion.div
-            className="relative w-48 h-48 rounded-full flex items-center justify-center border border-[rgba(74,222,128,0.2)]"
-            style={{
-              background: `radial-gradient(circle at 30% 30%,
-                rgba(134,239,172,0.4) 0%,
-                rgba(74,222,128,0.3) 30%,
-                rgba(34,197,94,0.2) 60%,
-                rgba(22,163,74,0.1) 100%
-              )`,
-              boxShadow: `
-                0 0 60px rgba(74,222,128,0.4),
-                inset 0 0 40px rgba(134,239,172,0.2)
-              `,
-            }}
+            className="relative w-48 h-48 rounded-full flex items-center justify-center border border-[rgba(74,222,128,0.2)] bg-[radial-gradient(circle_at_30%_30%,rgba(134,239,172,0.4)_0%,rgba(74,222,128,0.3)_30%,rgba(34,197,94,0.2)_60%,rgba(22,163,74,0.1)_100%)] shadow-[0_0_60px_rgba(74,222,128,0.4),inset_0_0_40px_rgba(134,239,172,0.2)]"
             animate={{
               boxShadow: [
                 '0 0 60px rgba(74,222,128,0.4), inset 0 0 40px rgba(134,239,172,0.2)',
@@ -189,29 +151,20 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
           transition={{ delay: 0.5, duration: 0.5 }}
         >
           <div
-            className="w-4 h-20 rounded-[4px_4px_8px_8px] shadow-[0_10px_30px_rgba(0,0,0,0.3)]"
-            style={{
-              background: 'linear-gradient(180deg, #5D4E37 0%, #3D2E1F 50%, #2D1E0F 100%)',
-            }}
+            className="w-4 h-20 rounded-[4px_4px_8px_8px] shadow-[0_10px_30px_rgba(0,0,0,0.3)] bg-[linear-gradient(180deg,#5D4E37_0%,#3D2E1F_50%,#2D1E0F_100%)]"
           />
           {/* Trunk glow */}
           <div
-            className="absolute inset-0 rounded-[4px_4px_8px_8px]"
-            style={{
-              background: 'linear-gradient(180deg, rgba(74,222,128,0.1) 0%, transparent 30%)',
-            }}
+            className="absolute inset-0 rounded-[4px_4px_8px_8px] bg-[linear-gradient(180deg,rgba(74,222,128,0.1)_0%,transparent_30%)]"
           />
         </motion.div>
 
         {/* Ground glow */}
         <motion.div
-          className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[120px] h-5 blur-[8px]"
+          className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[120px] h-5 blur-[8px] bg-[radial-gradient(ellipse,rgba(74,222,128,0.2)_0%,transparent_70%)]"
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.7 }}
-          style={{
-            background: 'radial-gradient(ellipse, rgba(74,222,128,0.2) 0%, transparent 70%)',
-          }}
         />
       </div>
 
