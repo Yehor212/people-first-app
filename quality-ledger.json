@@ -3,15 +3,15 @@
   "lastUpdated": "2026-03-15",
   "floors": {
     "tests.total": {
-      "value": 2772,
+      "value": 3405,
       "direction": "up",
-      "recorded": "2026-03-14",
+      "recorded": "2026-03-15",
       "description": "Total unit test count (vitest)"
     },
     "tests.files": {
-      "value": 121,
+      "value": 144,
       "direction": "up",
-      "recorded": "2026-03-14",
+      "recorded": "2026-03-15",
       "description": "Test file count"
     },
     "eslint.maxWarnings": {
@@ -58,8 +58,8 @@
     }
   },
   "qualityScore": {
-    "current": 9.5,
-    "floor": 9.5,
+    "current": 9.7,
+    "floor": 9.7,
     "weights": {
       "typeSafety": 0.15,
       "lintCleanliness": 0.1,
