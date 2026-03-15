@@ -7,7 +7,7 @@ import {
   getFrequencyByWeekday,
   getHabitWeeklyFrequency,
 } from '../habitScore';
-import type { HabitStreak } from '../habitScore';
+import type { HabitStreak as _HabitStreak } from '../habitScore';
 import { makeTestHabit, datesToEntries, datesToEntriesWithSkips, numericalEntries } from '@/test/habitFixtures';
 import { ENTRY } from '@/types';
 
@@ -306,11 +306,11 @@ describe('computeScoreHistory', () => {
 // computeAllStreaks
 // ============================================
 describe('computeAllStreaks', () => {
-  let realDate: typeof Date;
+  let _realDate: typeof Date;
 
   beforeEach(() => {
     // Fix "today" so streak logic is deterministic
-    realDate = globalThis.Date;
+    _realDate = globalThis.Date;
     const fixedNow = new Date(2026, 2, 14); // 2026-03-14
     vi.useFakeTimers();
     vi.setSystemTime(fixedNow);

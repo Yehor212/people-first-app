@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { computeEntriesWithAuto } from '../habitComputedEntries';
 import { makeTestHabit, datesToEntries, datesToEntriesWithSkips, numericalEntries } from '@/test/habitFixtures';
 import { ENTRY } from '@/types';
-import type { HabitEntry } from '@/types';
+import type { HabitEntry as _HabitEntry } from '@/types';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -13,7 +13,7 @@ function toDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function daysAgo(n: number): string {
+function _daysAgo(n: number): string {
   const d = new Date();
   d.setDate(d.getDate() - n);
   return toDateStr(d);
