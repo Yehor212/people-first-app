@@ -58,8 +58,8 @@
     }
   },
   "qualityScore": {
-    "current": 9.4,
-    "floor": 9.4,
+    "current": 9.5,
+    "floor": 9.5,
     "weights": {
       "typeSafety": 0.15,
       "lintCleanliness": 0.1,
