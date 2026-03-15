@@ -79,18 +79,11 @@ export function AICoachChat() {
         <div className="flex items-center justify-between p-4 border-b border-border relative">
           {/* Subtle glow */}
           <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.05) 0%, transparent 100%)'
-            }}
+            className="absolute inset-0 pointer-events-none bg-[linear-gradient(180deg,rgba(139,92,246,0.05)_0%,transparent_100%)]"
           />
           <div className="flex items-center gap-3 relative z-10">
             <motion.div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.5) 0%, rgba(168, 85, 247, 0.4) 100%)',
-                boxShadow: '0 0 20px rgba(139, 92, 246, 0.4)'
-              }}
+              className="w-12 h-12 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(139,92,246,0.5)_0%,rgba(168,85,247,0.4)_100%)] shadow-[0_0_20px_rgba(139,92,246,0.4)]"
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >
@@ -129,10 +122,7 @@ export function AICoachChat() {
 
         {/* Messages - Premium with cosmic background */}
         <div
-          className="flex-1 overflow-y-auto p-4 space-y-4"
-          style={{
-            background: `radial-gradient(ellipse at bottom, rgba(139, 92, 246, 0.05) 0%, transparent 50%)`
-          }}
+          className="flex-1 overflow-y-auto p-4 space-y-4 bg-[radial-gradient(ellipse_at_bottom,rgba(139,92,246,0.05)_0%,transparent_50%)]"
         >
           {messages.length === 0 && (
             <motion.div
@@ -141,11 +131,7 @@ export function AICoachChat() {
               animate={{ opacity: 1, y: 0 }}
             >
               <div
-                className="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.1) 100%)',
-                  boxShadow: '0 0 30px rgba(139, 92, 246, 0.2)'
-                }}
+                className="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(139,92,246,0.2)_0%,rgba(168,85,247,0.1)_100%)] shadow-[0_0_30px_rgba(139,92,246,0.2)]"
               >
                 <Bot className="w-10 h-10 text-violet-400" />
               </div>
@@ -186,10 +172,7 @@ export function AICoachChat() {
         {/* Input - Premium */}
         <div className="p-4 border-t border-border pb-[env(safe-area-inset-bottom)] relative">
           <div
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              background: 'linear-gradient(0deg, rgba(139, 92, 246, 0.05) 0%, transparent 100%)'
-            }}
+            className="absolute inset-0 pointer-events-none bg-[linear-gradient(0deg,rgba(139,92,246,0.05)_0%,transparent_100%)]"
           />
           <div className="flex items-center gap-3 relative z-10">
             <input
@@ -245,10 +228,7 @@ function ChatBubble({ message, index }: { message: ChatMessage; index: number })
     >
       {isCoach && (
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{
-            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(168, 85, 247, 0.2) 100%)',
-          }}
+          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[linear-gradient(135deg,rgba(139,92,246,0.3)_0%,rgba(168,85,247,0.2)_100%)]"
         >
           <Bot className="w-5 h-5 text-violet-400" />
         </div>
@@ -257,17 +237,10 @@ function ChatBubble({ message, index }: { message: ChatMessage; index: number })
       <div
         className={cn(
           "max-w-[80%] px-4 py-3 rounded-2xl",
-          isCoach ? "rounded-ss-sm" : "rounded-se-sm"
+          isCoach
+            ? "rounded-ss-sm bg-secondary backdrop-blur-[8px] border border-border"
+            : "rounded-se-sm bg-[linear-gradient(135deg,rgba(139,92,246,0.8)_0%,rgba(168,85,247,0.7)_100%)] shadow-[0_4px_12px_rgba(139,92,246,0.3)]"
         )}
-        style={isCoach ? {
-          background: 'hsl(var(--secondary))',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          border: '1px solid hsl(var(--border))',
-        } : {
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.8) 0%, rgba(168, 85, 247, 0.7) 100%)',
-          boxShadow: '0 4px 12px rgba(139, 92, 246, 0.3)',
-        }}
       >
         <p className={cn("text-sm whitespace-pre-wrap", isCoach ? "text-foreground" : "text-white")}>
           {message.content}
@@ -276,10 +249,7 @@ function ChatBubble({ message, index }: { message: ChatMessage; index: number })
 
       {!isCoach && (
         <div
-          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-          style={{
-            background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(168, 85, 247, 0.15) 100%)',
-          }}
+          className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[linear-gradient(135deg,rgba(139,92,246,0.2)_0%,rgba(168,85,247,0.15)_100%)]"
         >
           <User className="w-5 h-5 text-violet-400" />
         </div>
@@ -297,21 +267,12 @@ function TypingIndicator() {
       animate={{ opacity: 1, y: 0 }}
     >
       <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center"
-        style={{
-          background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(168, 85, 247, 0.2) 100%)',
-        }}
+        className="w-9 h-9 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(139,92,246,0.3)_0%,rgba(168,85,247,0.2)_100%)]"
       >
         <Bot className="w-5 h-5 text-violet-400" />
       </div>
       <div
-        className="px-5 py-4 rounded-2xl rounded-ss-sm"
-        style={{
-          background: 'hsl(var(--secondary))',
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
-          border: '1px solid hsl(var(--border))',
-        }}
+        className="px-5 py-4 rounded-2xl rounded-ss-sm bg-secondary backdrop-blur-[8px] border border-border"
       >
         <div className="flex gap-1.5">
           <motion.span

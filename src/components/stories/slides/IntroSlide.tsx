@@ -176,7 +176,7 @@ export function IntroSlide({ slide }: IntroSlideProps) {
               opacity={0.6}
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-              style={{ transformOrigin: 'center' }}
+              className="origin-center"
             />
 
             {/* Innermost ring */}
@@ -190,7 +190,7 @@ export function IntroSlide({ slide }: IntroSlideProps) {
               opacity={0.4}
               animate={{ rotate: -360 }}
               transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
-              style={{ transformOrigin: 'center' }}
+              className="origin-center"
             />
           </svg>
 
@@ -200,16 +200,10 @@ export function IntroSlide({ slide }: IntroSlideProps) {
             {[...Array(8)].map((_, i) => (
               <motion.div
                 key={i}
-                className="absolute"
+                className="absolute left-1/2 top-1/2 -ml-2 -mt-2"
                 custom={i}
                 variants={sparkleVariants}
                 animate="animate"
-                style={{
-                  left: '50%',
-                  top: '50%',
-                  marginLeft: -8,
-                  marginTop: -8,
-                }}
               >
                 <SparklesIcon size="sm" animated />
               </motion.div>
@@ -217,13 +211,10 @@ export function IntroSlide({ slide }: IntroSlideProps) {
 
             {/* Title */}
             <motion.h1
-              className="text-3xl font-black tracking-tight text-white text-center"
+              className="text-3xl font-black tracking-tight text-white text-center [text-shadow:0_0_30px_rgba(139,92,246,0.5)]"
               variants={titleVariants}
               initial="hidden"
               animate="visible"
-              style={{
-                textShadow: '0 0 30px rgba(139, 92, 246, 0.5)',
-              }}
             >
               {slide.title}
             </motion.h1>

@@ -20,8 +20,8 @@ interface AchievementSlideProps {
 function DustParticle({ x, delay }: { x: number; delay: number }) {
   return (
     <motion.div
-      className="absolute w-1 h-1 rounded-full bg-yellow-200/50"
-      style={{ left: `${x}%`, top: '20%' }}
+      className="absolute w-1 h-1 rounded-full bg-yellow-200/50 top-[20%]"
+      style={{ left: `${x}%` }}
       initial={{ y: 0, opacity: 0 }}
       animate={{
         y: [0, 200],
@@ -59,15 +59,13 @@ function BadgePedestal({
     >
       {/* Spotlight beam */}
       <motion.div
-        className="absolute -top-32 w-20 pointer-events-none"
+        className="absolute -top-32 w-20 pointer-events-none h-[180px] [clip-path:polygon(30%_0%,70%_0%,100%_100%,0%_100%)]"
         style={{
-          height: 180,
           background: `linear-gradient(180deg,
             rgba(255, 215, 0, 0.3) 0%,
             rgba(255, 215, 0, 0.1) 50%,
             transparent 100%
           )`,
-          clipPath: 'polygon(30% 0%, 70% 0%, 100% 100%, 0% 100%)',
         }}
         animate={{
           opacity: [0.5, 0.8, 0.5],
@@ -101,9 +99,7 @@ function BadgePedestal({
           initial={{ scale: 0, rotate: -180 }}
           animate={{ scale: 1, rotate: 0 }}
           transition={{ delay: delay + 0.2, type: 'spring' }}
-          style={{
-            filter: 'drop-shadow(0 0 10px rgba(255, 215, 0, 0.5))',
-          }}
+          className="drop-shadow-[0_0_10px_rgba(255,215,0,0.5)]"
         >
           <EmojiOrIcon emoji={badge.icon} iconName={badge.iconName} size="lg" />
         </motion.div>
@@ -111,17 +107,10 @@ function BadgePedestal({
 
       {/* Pedestal */}
       <div
-        className="w-24 h-8 mt-2 rounded-t-lg"
-        style={{
-          background: `linear-gradient(180deg, #d4af37 0%, #b8960c 50%, #8b7200 100%)`,
-          boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
-        }}
+        className="w-24 h-8 mt-2 rounded-t-lg bg-[linear-gradient(180deg,#d4af37_0%,#b8960c_50%,#8b7200_100%)] shadow-[0_4px_15px_rgba(0,0,0,0.3)]"
       />
       <div
-        className="w-28 h-4 rounded-b-lg"
-        style={{
-          background: `linear-gradient(180deg, #8b7200 0%, #6b5500 100%)`,
-        }}
+        className="w-28 h-4 rounded-b-lg bg-[linear-gradient(180deg,#8b7200_0%,#6b5500_100%)]"
       />
 
       {/* Badge title */}

@@ -22,11 +22,10 @@ function CrystalSparkle({ delay }: { delay: number }) {
 
   return (
     <motion.div
-      className="absolute w-2 h-2 rounded-full bg-white"
+      className="absolute w-2 h-2 rounded-full bg-white shadow-[0_0_10px_3px_rgba(255,255,255,0.5)]"
       style={{
         left: `${x}%`,
         top: `${y}%`,
-        boxShadow: '0 0 10px 3px rgba(255, 255, 255, 0.5)',
       }}
       initial={{ opacity: 0, scale: 0 }}
       animate={{
@@ -80,12 +79,7 @@ function OrbitingMetric({
     >
       {/* Positioned at the edge of the orbit */}
       <div
-        className="absolute"
-        style={{
-          left: '50%',
-          top: 0,
-          transform: 'translateX(-50%)',
-        }}
+        className="absolute left-1/2 top-0 -translate-x-1/2"
       >
         {/* Counter-rotate to keep content upright */}
         <motion.div
@@ -172,7 +166,7 @@ export function SummarySlide({ slide }: SummarySlideProps) {
 
       {/* Central crystal visualization */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative" style={{ width: 280, height: 280 }}>
+        <div className="relative w-[280px] h-[280px]">
           {/* Outer glow ring */}
           <motion.div
             className="absolute inset-0 rounded-full"
@@ -209,9 +203,8 @@ export function SummarySlide({ slide }: SummarySlideProps) {
 
           {/* Crystal sphere */}
           <motion.div
-            className="absolute rounded-full"
+            className="absolute rounded-full inset-[50px]"
             style={{
-              inset: 50,
               background: `radial-gradient(circle at 30% 30%,
                 rgba(255, 255, 255, 0.3) 0%,
                 rgba(139, 92, 246, 0.4) 30%,
@@ -245,13 +238,10 @@ export function SummarySlide({ slide }: SummarySlideProps) {
               </motion.div>
 
               <motion.h2
-                className="text-2xl font-bold text-white mt-2"
+                className="text-2xl font-bold text-white mt-2 [text-shadow:0_0_20px_rgba(139,92,246,0.5)]"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7 }}
-                style={{
-                  textShadow: '0 0 20px rgba(139, 92, 246, 0.5)',
-                }}
               >
                 {slide.title}
               </motion.h2>

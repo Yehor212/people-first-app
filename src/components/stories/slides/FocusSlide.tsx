@@ -123,7 +123,7 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
 
       {/* Central orbital system */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative" style={{ width: 300, height: 300 }}>
+        <div className="relative w-[300px] h-[300px]">
           {/* Outer orbit ring */}
           <motion.div
             className="absolute inset-0 rounded-full border border-white/10"
@@ -133,31 +133,22 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
 
           {/* Middle orbit ring */}
           <motion.div
-            className="absolute rounded-full border border-cyan-500/20"
-            style={{
-              inset: 30,
-              boxShadow: '0 0 20px rgba(6, 182, 212, 0.1)',
-            }}
+            className="absolute rounded-full border border-cyan-500/20 inset-[30px] shadow-[0_0_20px_rgba(6,182,212,0.1)]"
             animate={{ rotate: -360 }}
             transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
           />
 
           {/* Inner orbit ring */}
           <motion.div
-            className="absolute rounded-full border-2 border-blue-500/30"
-            style={{
-              inset: 60,
-              boxShadow: '0 0 30px rgba(59, 130, 246, 0.2)',
-            }}
+            className="absolute rounded-full border-2 border-blue-500/30 inset-[60px] shadow-[0_0_30px_rgba(59,130,246,0.2)]"
             animate={{ rotate: 360 }}
             transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
           />
 
           {/* Central core */}
           <motion.div
-            className="absolute rounded-full flex flex-col items-center justify-center"
+            className="absolute rounded-full flex flex-col items-center justify-center inset-[80px]"
             style={{
-              inset: 80,
               background: `radial-gradient(circle, rgba(59, 130, 246, 0.3) 0%, rgba(139, 92, 246, 0.2) 50%, transparent 70%)`,
               boxShadow: '0 0 60px rgba(59, 130, 246, 0.3), inset 0 0 40px rgba(59, 130, 246, 0.2)',
             }}
@@ -183,13 +174,10 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
 
             {/* Time display */}
             <motion.div
-              className="text-4xl font-black text-white"
+              className="text-4xl font-black text-white [text-shadow:0_0_20px_rgba(59,130,246,0.5)]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              style={{
-                textShadow: '0 0 20px rgba(59, 130, 246, 0.5)',
-              }}
             >
               {hours > 0 ? `${hours}h ${minutes}m` : `${animatedMinutes}m`}
             </motion.div>
@@ -252,16 +240,10 @@ export function FocusSlide({ slide, t }: FocusSlideProps) {
 
       {/* Decorative corner glows */}
       <div
-        className="absolute top-0 left-0 w-48 h-48 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at top left, rgba(59, 130, 246, 0.1) 0%, transparent 70%)',
-        }}
+        className="absolute top-0 left-0 w-48 h-48 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.1)_0%,transparent_70%)]"
       />
       <div
-        className="absolute bottom-0 right-0 w-48 h-48 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at bottom right, rgba(139, 92, 246, 0.1) 0%, transparent 70%)',
-        }}
+        className="absolute bottom-0 right-0 w-48 h-48 pointer-events-none bg-[radial-gradient(circle_at_bottom_right,rgba(139,92,246,0.1)_0%,transparent_70%)]"
       />
     </div>
   );

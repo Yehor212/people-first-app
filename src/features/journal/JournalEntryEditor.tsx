@@ -741,7 +741,7 @@ export function JournalEntryEditor({
       )}
 
       {/* ═══ GLASS TOOLBAR ═══ */}
-      <div className="relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)]" style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(2, 6, 23, 0.85))', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="relative z-50 flex-shrink-0 w-full flex flex-col gap-3 px-6 py-3 pt-[max(0.75rem,var(--safe-top))] backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[linear-gradient(135deg,rgba(15,23,42,0.7),rgba(2,6,23,0.85))] border-b border-b-[rgba(255,255,255,0.08)]">
         {/* ROW 1: Navigation & Atmosphere */}
         <div className="flex items-center justify-between gap-3">
           {/* LEFT: Back + Title */}
@@ -1187,12 +1187,11 @@ export function JournalEntryEditor({
           onScroll={handleContentScroll}
         >
           <div
-            className={cn('max-w-4xl mx-auto rounded-2xl border shadow-[0_0_80px_rgba(0,0,0,0.5)] p-4 sm:p-6 md:p-8 min-h-[60dvh] space-y-4', zenFocusActive && 'zen-focus-active')}
+            className={cn('max-w-4xl mx-auto rounded-2xl border shadow-[0_0_80px_rgba(0,0,0,0.5)] p-4 sm:p-6 md:p-8 min-h-[60dvh] space-y-4 [contain:layout_style_paint]', zenFocusActive && 'zen-focus-active')}
             style={{
               backgroundColor: paperColors.bg,
               color: paperColors.text,
               borderColor: paperColors.border,
-              contain: 'layout style paint',
               ...getPaperTextureStyle(paperTexture, paperColor === 'dark'),
             }}
           >
@@ -1482,7 +1481,7 @@ export function JournalEntryEditor({
       {/* END content area */}
 
       {/* ═══ BOTTOM GLASS TOOLBAR (Magic) ═══ */}
-      <div className="relative z-50 flex-shrink-0 w-full px-6 py-3 pb-[max(0.75rem,var(--safe-bottom))] backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)]" style={{ background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(2, 6, 23, 0.85))', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+      <div className="relative z-50 flex-shrink-0 w-full px-6 py-3 pb-[max(0.75rem,var(--safe-bottom))] backdrop-blur-[20px] shadow-[0_10px_40px_rgba(0,0,0,0.5)] bg-[linear-gradient(135deg,rgba(15,23,42,0.7),rgba(2,6,23,0.85))] border-t border-t-[rgba(255,255,255,0.08)]">
         <div className="flex items-center gap-2 overflow-x-auto scrollbar-none -mx-1.5 px-1.5">
           <motion.button
             whileTap={{ scale: 0.95 }}
@@ -1615,8 +1614,7 @@ export function JournalEntryEditor({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.92, y: 20 }}
               transition={zenMotion.gentle}
-              className="rounded-2xl p-6 max-w-[280px] mx-4 text-center shadow-xl"
-              style={{ backgroundColor: 'var(--diary-bg, hsl(var(--card)))', border: '1px solid var(--diary-border, hsl(var(--border) / 0.3))' }}
+              className="rounded-2xl p-6 max-w-[280px] mx-4 text-center shadow-xl bg-[var(--diary-bg,hsl(var(--card)))] border border-[var(--diary-border,hsl(var(--border)/0.3))]"
             >
               {/* Pulsing circle */}
               <div className="flex justify-center mb-4">
@@ -1631,13 +1629,13 @@ export function JournalEntryEditor({
                 </motion.div>
               </div>
 
-              <p className="text-sm font-semibold mb-1" style={{ color: 'var(--diary-text, hsl(var(--foreground)))' }}>
+              <p className="text-sm font-semibold mb-1 text-[var(--diary-text,hsl(var(--foreground)))]">
                 {ts.journalRecording || 'Recording'}
               </p>
-              <p className="text-2xl font-mono font-bold tabular-nums mb-4" style={{ color: 'var(--diary-text, hsl(var(--foreground)))' }}>
+              <p className="text-2xl font-mono font-bold tabular-nums mb-4 text-[var(--diary-text,hsl(var(--foreground)))]">
                 {formatRecordingTime(recorder.duration)}
               </p>
-              <p className="text-[10px] mb-4" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
+              <p className="text-[10px] mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
                 {ts.journalAudioMaxDuration || 'Max 5 minutes'}
               </p>
 
@@ -1665,14 +1663,13 @@ export function JournalEntryEditor({
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={zenMotion.gentle}
-            className="rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl"
-            style={{ backgroundColor: 'var(--diary-bg, hsl(var(--card)))', border: '1px solid var(--diary-border, hsl(var(--border) / 0.3))' }}
+            className="rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl bg-[var(--diary-bg,hsl(var(--card)))] border border-[var(--diary-border,hsl(var(--border)/0.3))]"
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--diary-text, hsl(var(--foreground)))' }}>
+            <h3 className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]">
               {ts.journalDeleteEntry || 'Delete Entry?'}
             </h3>
-            <p className="text-sm mb-4" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
+            <p className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
               {ts.journalDeleteConfirm || 'This action cannot be undone.'}
             </p>
             <div className="flex gap-2">
@@ -1700,14 +1697,13 @@ export function JournalEntryEditor({
             initial={{ opacity: 0, scale: 0.92, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={zenMotion.gentle}
-            className="rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl"
-            style={{ backgroundColor: 'var(--diary-bg, hsl(var(--card)))', border: '1px solid var(--diary-border, hsl(var(--border) / 0.3))' }}
+            className="rounded-2xl p-5 max-w-[300px] mx-4 shadow-xl bg-[var(--diary-bg,hsl(var(--card)))] border border-[var(--diary-border,hsl(var(--border)/0.3))]"
             onClick={e => e.stopPropagation()}
           >
-            <h3 className="text-base font-semibold mb-2" style={{ color: 'var(--diary-text, hsl(var(--foreground)))' }}>
+            <h3 className="text-base font-semibold mb-2 text-[var(--diary-text,hsl(var(--foreground)))]">
               {ts.journalDiscardTitle || 'Unsaved Changes'}
             </h3>
-            <p className="text-sm mb-4" style={{ color: 'var(--diary-muted, hsl(var(--muted-foreground)))' }}>
+            <p className="text-sm mb-4 text-[var(--diary-muted,hsl(var(--muted-foreground)))]">
               {ts.journalDiscardMessage || 'You have unsaved changes.'}
             </p>
             <div className="flex flex-col gap-2">
@@ -1753,8 +1749,7 @@ export function JournalEntryEditor({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 z-[300] flex flex-col items-center justify-center gap-6"
-            style={{ backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)', backgroundColor: 'rgba(2, 6, 17, 0.8)' }}
+            className="fixed inset-0 z-[300] flex flex-col items-center justify-center gap-6 backdrop-blur-[20px] bg-[rgba(2,6,17,0.8)]"
           >
             <DiaryBreatheWidget />
             <button

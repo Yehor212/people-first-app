@@ -153,8 +153,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
 
   return (
     <motion.div
-      className="my-8 p-6 rounded-2xl relative overflow-hidden bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-soft"
-      style={{ boxShadow: 'inset 0 0 60px rgba(52, 211, 153, 0.04), var(--zen-shadow-soft)' }}
+      className="my-8 p-6 rounded-2xl relative overflow-hidden bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-soft shadow-[inset_0_0_60px_rgba(52,211,153,0.04),var(--zen-shadow-soft)]"
       initial={{ opacity: 0, y: -16, scale: 0.97 }}
       animate={getAnimateProps()}
       exit={{ opacity: 0, height: 0, scaleY: 0.92, y: -8, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
@@ -206,17 +205,11 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
         ) : growing ? (
           /* ── Growth animation — seed at bottom, bloom at top ── */
           <div className="flex items-center justify-center py-3" aria-live="polite">
-            <div className="relative" style={{ width: 90, height: 140 }}>
+            <div className="relative w-[90px] h-[140px]">
 
               {/* Seed — pops in at bottom center */}
               <motion.div
-                className="absolute rounded-full"
-                style={{
-                  width: 10, height: 10,
-                  bottom: 0, left: '50%', marginLeft: -5,
-                  background: 'radial-gradient(circle at 35% 35%, #d97706, #78350f)',
-                  boxShadow: '0 0 10px 3px rgba(217, 119, 6, 0.35)',
-                }}
+                className="absolute rounded-full w-2.5 h-2.5 bottom-0 left-1/2 -ml-[5px] bg-[radial-gradient(circle_at_35%_35%,#d97706,#78350f)] shadow-[0_0_10px_3px_rgba(217,119,6,0.35)]"
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ duration: 0.25, type: 'spring', stiffness: 500, damping: 18 }}
@@ -224,14 +217,9 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
 
               {/* Stem — grows UPWARD from seed (scaleY + origin-bottom) */}
               <motion.div
-                className="absolute"
+                className="absolute w-[2.5px] h-[115px] bottom-2 left-1/2 -ml-[1.25px] rounded-[2px] origin-bottom shadow-[0_0_10px_2px_rgba(52,211,153,0.25)]"
                 style={{
-                  width: 2.5, height: 115,
-                  bottom: 8, left: '50%', marginLeft: -1.25,
                   background: 'linear-gradient(to top, #059669, #34d399, #6ee7b7)',
-                  borderRadius: 2,
-                  transformOrigin: 'center bottom',
-                  boxShadow: '0 0 10px 2px rgba(52, 211, 153, 0.25)',
                 }}
                 initial={{ scaleY: 0 }}
                 animate={{ scaleY: 1 }}
@@ -240,15 +228,10 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
 
               {/* Right leaf — sprouts from mid-stem */}
               <motion.div
-                className="absolute"
+                className="absolute w-3.5 h-5 bottom-12 left-[calc(50%+3px)] rounded-[50%_50%_0%_50%] origin-bottom-left shadow-[0_0_8px_1px_rgba(52,211,153,0.2)]"
                 style={{
-                  width: 14, height: 20,
-                  bottom: 48, left: 'calc(50% + 3px)',
                   backgroundColor: LEAF_COLOR,
-                  borderRadius: '50% 50% 0% 50%',
-                  transformOrigin: 'bottom left',
                   rotate: 25,
-                  boxShadow: '0 0 8px 1px rgba(52, 211, 153, 0.2)',
                 }}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -257,15 +240,10 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
 
               {/* Left leaf — slightly higher, staggered */}
               <motion.div
-                className="absolute"
+                className="absolute w-3 h-[18px] bottom-[60px] right-[calc(50%+3px)] rounded-[50%_50%_50%_0%] origin-bottom-right shadow-[0_0_8px_1px_rgba(52,211,153,0.2)]"
                 style={{
-                  width: 12, height: 18,
-                  bottom: 60, right: 'calc(50% + 3px)',
                   backgroundColor: LEAF_COLOR,
-                  borderRadius: '50% 50% 50% 0%',
-                  transformOrigin: 'bottom right',
                   rotate: -25,
-                  boxShadow: '0 0 8px 1px rgba(52, 211, 153, 0.2)',
                 }}
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -273,7 +251,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
               />
 
               {/* Flower — blooms at top of stem */}
-              <div className="absolute" style={{ top: 14, left: '50%', marginLeft: 0 }}>
+              <div className="absolute top-3.5 left-1/2">
                 {/* 5 Petals — teardrop shapes with radial gradient + glow */}
                 {PETAL_COLORS.map((color, i) => (
                   <motion.div
@@ -296,14 +274,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
 
                 {/* Center pistil — warm glow */}
                 <motion.div
-                  className="absolute z-10"
-                  style={{
-                    width: 10, height: 10,
-                    left: -5, top: -5,
-                    background: 'radial-gradient(circle at 38% 38%, #fde68a, #f59e0b)',
-                    borderRadius: '50%',
-                    boxShadow: '0 0 14px 4px rgba(251, 191, 36, 0.45)',
-                  }}
+                  className="absolute z-10 w-2.5 h-2.5 -left-[5px] -top-[5px] rounded-full bg-[radial-gradient(circle_at_38%_38%,#fde68a,#f59e0b)] shadow-[0_0_14px_4px_rgba(251,191,36,0.45)]"
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   transition={{ delay: 1.15, type: 'spring', stiffness: 400, damping: 14 }}
@@ -341,8 +312,7 @@ export const GratitudeBloomWidget = memo(function GratitudeBloomWidget({ onClose
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder={ts.journalGratitudePlaceholder || 'What are you grateful for?'}
-              className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] text-foreground/90 ring-1 ring-white/[0.06] focus:ring-emerald-500/20 placeholder:text-muted-foreground/40 transition-shadow"
-              style={{ minHeight: 64 }}
+              className="w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] text-foreground/90 ring-1 ring-white/[0.06] focus:ring-emerald-500/20 placeholder:text-muted-foreground/40 transition-shadow min-h-16"
               rows={2}
               maxLength={500}
               aria-label={ts.journalGratitudePlaceholder || 'What are you grateful for?'}

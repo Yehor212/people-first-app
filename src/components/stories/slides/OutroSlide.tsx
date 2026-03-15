@@ -61,15 +61,10 @@ function Bird({ id }: { id: number }) {
 function SunRay({ angle, length }: { angle: number; length: number }) {
   return (
     <motion.div
-      className="absolute origin-bottom"
+      className="absolute origin-bottom bottom-[25%] left-1/2 w-[3px] bg-gradient-to-t from-[rgba(255,200,100,0.8)] to-transparent"
       style={{
-        bottom: '25%',
-        left: '50%',
-        width: 3,
         height: length,
-        background: `linear-gradient(to top, rgba(255, 200, 100, 0.8), transparent)`,
         transform: `translateX(-50%) rotate(${angle}deg)`,
-        transformOrigin: 'bottom center',
       }}
       initial={{ scaleY: 0, opacity: 0 }}
       animate={{ scaleY: 1, opacity: 1 }}
@@ -145,18 +140,14 @@ export function OutroSlide({ slide, t }: OutroSlideProps) {
 
       {/* Rising sun */}
       <motion.div
-        className="absolute left-1/2 -translate-x-1/2"
-        style={{ bottom: '20%' }}
+        className="absolute left-1/2 -translate-x-1/2 bottom-[20%]"
         initial={{ y: 100, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 1.5, ease: 'easeOut' }}
       >
         {/* Sun glow */}
         <motion.div
-          className="absolute -inset-8 rounded-full"
-          style={{
-            background: `radial-gradient(circle, rgba(255, 200, 100, 0.6) 0%, transparent 70%)`,
-          }}
+          className="absolute -inset-8 rounded-full bg-[radial-gradient(circle,rgba(255,200,100,0.6)_0%,transparent_70%)]"
           animate={{
             scale: [1, 1.2, 1],
             opacity: [0.6, 0.8, 0.6],
@@ -166,7 +157,7 @@ export function OutroSlide({ slide, t }: OutroSlideProps) {
 
         {/* Sun disc */}
         <motion.div
-          className="w-24 h-24 rounded-full"
+          className="w-24 h-24 rounded-full shadow-[0_0_60px_20px_rgba(255,200,100,0.5)]"
           style={{
             background: `radial-gradient(circle at 30% 30%,
               #fff5d4 0%,
@@ -174,7 +165,6 @@ export function OutroSlide({ slide, t }: OutroSlideProps) {
               #ffb347 70%,
               #ff8c42 100%
             )`,
-            boxShadow: '0 0 60px 20px rgba(255, 200, 100, 0.5)',
           }}
           animate={{
             scale: [1, 1.05, 1],
@@ -197,10 +187,9 @@ export function OutroSlide({ slide, t }: OutroSlideProps) {
 
       {/* Mountain/hill silhouette */}
       <svg
-        className="absolute bottom-0 left-0 right-0 w-full"
+        className="absolute bottom-0 left-0 right-0 w-full h-[15%]"
         viewBox="0 0 400 100"
         preserveAspectRatio="none"
-        style={{ height: '15%' }}
       >
         <path
           d="M0 100 L0 60 Q50 40 100 55 Q150 70 200 45 Q250 20 300 50 Q350 80 400 55 L400 100 Z"
@@ -217,13 +206,10 @@ export function OutroSlide({ slide, t }: OutroSlideProps) {
       <div className="absolute inset-0 flex flex-col items-center justify-start pt-16 px-8">
         {/* Main title */}
         <motion.h1
-          className="text-3xl font-bold text-white text-center mb-2"
+          className="text-3xl font-bold text-white text-center mb-2 [text-shadow:0_2px_10px_rgba(0,0,0,0.3)]"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          style={{
-            textShadow: '0 2px 10px rgba(0, 0, 0, 0.3)',
-          }}
         >
           {slide.title}
         </motion.h1>
@@ -280,13 +266,7 @@ export function OutroSlide({ slide, t }: OutroSlideProps) {
             </span>
           </div>
           <motion.span
-            className="text-2xl font-bold"
-            style={{
-              background: `linear-gradient(135deg, #fff 0%, #ffcb8e 100%)`,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text',
-            }}
+            className="text-2xl font-bold bg-gradient-to-br from-white to-[#ffcb8e] bg-clip-text text-transparent"
           >
             ZenFlow
           </motion.span>

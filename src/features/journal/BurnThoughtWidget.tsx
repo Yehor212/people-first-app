@@ -693,8 +693,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
 
   return (
     <motion.div
-      className="my-8 p-6 rounded-2xl relative overflow-hidden bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-soft"
-      style={{ boxShadow: 'inset 0 0 60px rgba(239, 68, 68, 0.04), var(--zen-shadow-soft)' }}
+      className="my-8 p-6 rounded-2xl relative overflow-hidden bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-soft shadow-[inset_0_0_60px_rgba(239,68,68,0.04),var(--zen-shadow-soft)]"
       initial={{ opacity: 0, y: -16, scale: 0.97 }}
       animate={getAnimateProps()}
       exit={{ opacity: 0, height: 0, scaleY: 0.92, y: -8, marginTop: 0, marginBottom: 0, paddingTop: 0, paddingBottom: 0 }}
@@ -705,9 +704,8 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
     >
       {/* Card warm glow - GPU-only opacity transition */}
       <div
-        className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-500 ease-out"
+        className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-500 ease-out shadow-[inset_0_0_80px_rgba(239,68,68,0.1),0_0_24px_rgba(239,68,68,0.12)]"
         style={{
-          boxShadow: 'inset 0 0 80px rgba(239, 68, 68, 0.1), 0 0 24px rgba(239, 68, 68, 0.12)',
           opacity: burning ? 1 : 0,
         }}
         aria-hidden="true"
@@ -716,11 +714,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
       {/* Card hot glow - bottom-heavy fire glow, driven by burn line via ref (no re-renders) */}
       <div
         ref={hotGlowRef}
-        className="absolute inset-0 rounded-2xl pointer-events-none"
-        style={{
-          boxShadow: 'inset 0 40px 60px -20px rgba(251, 191, 36, 0.15), 0 0 40px rgba(234, 88, 12, 0.2)',
-          opacity: 0,
-        }}
+        className="absolute inset-0 rounded-2xl pointer-events-none shadow-[inset_0_40px_60px_-20px_rgba(251,191,36,0.15),0_0_40px_rgba(234,88,12,0.2)] opacity-0"
         aria-hidden="true"
       />
 
@@ -829,8 +823,7 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder={ts.journalBurnPlaceholder || 'Write what worries you...'}
-                className={`w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/40 transition-colors duration-150 ${burning ? 'text-orange-400/80' : 'text-foreground/90'}`}
-                style={{ minHeight: 64, maxHeight: 200 }}
+                className={`w-full rounded-xl px-4 py-3 text-sm outline-none resize-none bg-white/[0.03] ring-1 ring-white/[0.06] focus:ring-red-500/20 placeholder:text-muted-foreground/40 transition-colors duration-150 min-h-16 max-h-[200px] ${burning ? 'text-orange-400/80' : 'text-foreground/90'}`}
                 rows={2}
                 maxLength={500}
                 disabled={burning}
@@ -862,10 +855,8 @@ export const BurnThoughtWidget = memo(function BurnThoughtWidget({ onClose }: Bu
                 canvasRef.current null when startBurn() accesses it. */}
             <canvas
               ref={canvasRef}
-              className="absolute inset-0 w-full h-full rounded-xl"
+              className="absolute inset-0 w-full h-full rounded-xl z-[2] pointer-events-none"
               style={{
-                zIndex: 2,
-                pointerEvents: 'none',
                 opacity: burning ? 1 : 0,
               }}
               aria-hidden="true"

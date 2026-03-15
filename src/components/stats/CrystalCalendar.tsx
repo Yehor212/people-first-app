@@ -117,7 +117,7 @@ function CrystalDay({
     <motion.button
       className={cn(
         "relative w-10 h-10 flex items-center justify-center",
-        "transition-all duration-200",
+        "transition-all duration-200 [perspective:200px]",
         !isCurrentMonth && "opacity-30",
         isCurrentMonth && "cursor-pointer"
       )}
@@ -125,7 +125,6 @@ function CrystalDay({
       whileTap={isCurrentMonth ? zenTap.button : {}}
       onClick={onClick}
       disabled={!isCurrentMonth}
-      style={{ perspective: 200 }}
       aria-label={`${dayNum}`}
     >
       {/* Crystal shape (rotated square) */}
@@ -363,10 +362,7 @@ export function CrystalCalendar({ data, onDayClick, className }: CrystalCalendar
 
       {/* Bottom crystal glow */}
       <div
-        className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse at bottom, rgba(20, 184, 166, 0.1) 0%, transparent 70%)`,
-        }}
+        className="absolute bottom-0 left-0 right-0 h-16 pointer-events-none bg-[radial-gradient(ellipse_at_bottom,rgba(20,184,166,0.1)_0%,transparent_70%)]"
       />
     </div>
   );

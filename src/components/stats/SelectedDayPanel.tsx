@@ -50,10 +50,9 @@ export function SelectedDayPanel({
 }: SelectedDayPanelProps) {
   return (
     <motion.div
-      className="mt-5 relative overflow-hidden rounded-2xl border border-violet-500/20"
+      className="mt-5 relative overflow-hidden rounded-2xl border border-violet-500/20 shadow-[0_0_30px_rgba(139,92,246,0.15),inset_0_1px_0_rgba(255,255,255,0.05)]"
       style={{
         background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.08) 50%, rgba(6, 182, 212, 0.1) 100%)',
-        boxShadow: '0 0 30px rgba(139, 92, 246, 0.15), inset 0 1px 0 rgba(255,255,255,0.05)',
       }}
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -61,18 +60,12 @@ export function SelectedDayPanel({
     >
       {/* Animated nebula background */}
       <motion.div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at 70% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%)',
-        }}
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_70%_30%,rgba(139,92,246,0.15)_0%,transparent_50%)]"
         animate={{ opacity: [0.3, 0.5, 0.3] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       />
       <motion.div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at 20% 80%, rgba(6, 182, 212, 0.1) 0%, transparent 40%)',
-        }}
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_20%_80%,rgba(6,182,212,0.1)_0%,transparent_40%)]"
         animate={{ opacity: [0.2, 0.4, 0.2] }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
       />
@@ -83,11 +76,7 @@ export function SelectedDayPanel({
           <div className="flex items-center justify-between p-4 border-b border-foreground/10">
             <div className="flex items-center gap-3">
               <motion.div
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(59, 130, 246, 0.2))',
-                  boxShadow: '0 0 15px rgba(139, 92, 246, 0.4)',
-                }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(139,92,246,0.3),rgba(59,130,246,0.2))] shadow-[0_0_15px_rgba(139,92,246,0.4)]"
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               >
@@ -102,7 +91,7 @@ export function SelectedDayPanel({
             </div>
             {selectedDayData.mood && (
               <motion.div
-                style={{ filter: 'drop-shadow(0 0 12px rgba(139, 92, 246, 0.6))' }}
+                className="drop-shadow-[0_0_12px_rgba(139,92,246,0.6)]"
                 animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
                 transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
               >
@@ -223,8 +212,7 @@ export function SelectedDayPanel({
                             {entry.tags.map((tag) => (
                               <span
                                 key={tag}
-                                className="px-2 py-0.5 text-xs rounded-full bg-violet-500/20 text-violet-700 dark:text-violet-300"
-                                style={{ boxShadow: '0 0 6px rgba(139, 92, 246, 0.3)' }}
+                                className="px-2 py-0.5 text-xs rounded-full bg-violet-500/20 text-violet-700 dark:text-violet-300 shadow-[0_0_6px_rgba(139,92,246,0.3)]"
                               >
                                 #{tag}
                               </span>
@@ -340,11 +328,7 @@ export function SelectedDayPanel({
               {selectedDayData.gratitude.map((entry, idx) => (
                 <motion.div
                   key={entry.id}
-                  className="p-3 rounded-xl border border-amber-500/20"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(249, 115, 22, 0.05) 100%)',
-                    boxShadow: '0 0 15px rgba(245, 158, 11, 0.1)',
-                  }}
+                  className="p-3 rounded-xl border border-amber-500/20 bg-[linear-gradient(135deg,rgba(245,158,11,0.1)_0%,rgba(249,115,22,0.05)_100%)] shadow-[0_0_15px_rgba(245,158,11,0.1)]"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.1 }}

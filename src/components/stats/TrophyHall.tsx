@@ -108,10 +108,9 @@ function AchievementCard({
   return (
     <motion.div
       className={cn(
-        "relative cursor-pointer",
+        "relative cursor-pointer [perspective:1000px]",
         isMain ? "w-32 h-40" : "w-28 h-36"
       )}
-      style={{ perspective: 1000 }}
       initial={{ opacity: 0, y: 30 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 + index * 0.15, type: 'spring', stiffness: 100 }}
@@ -123,8 +122,7 @@ function AchievementCard({
       aria-pressed={isFlipped}
     >
       <motion.div
-        className="relative w-full h-full"
-        style={{ transformStyle: 'preserve-3d' }}
+        className="relative w-full h-full [transform-style:preserve-3d]"
         animate={{ rotateY: isFlipped ? 180 : 0 }}
         transition={{ duration: 0.6, type: 'spring', stiffness: 100 }}
       >
@@ -138,7 +136,6 @@ function AchievementCard({
           )}
           style={{
             boxShadow: `0 0 20px ${colors.glow}, inset 0 1px 0 rgba(255,255,255,0.1)`,
-            backfaceVisibility: 'hidden',
           }}
         >
           <motion.div
@@ -158,12 +155,10 @@ function AchievementCard({
             "absolute inset-0 rounded-xl border border-amber-500/30",
             "bg-gradient-to-br from-amber-900/40 to-amber-950/40",
             "flex flex-col items-center justify-center p-3",
-            "backface-hidden"
+            "backface-hidden [transform:rotateY(180deg)]"
           )}
           style={{
             boxShadow: `0 0 20px ${colors.glow}`,
-            backfaceVisibility: 'hidden',
-            transform: 'rotateY(180deg)',
           }}
         >
           <IconComponent size="sm" animated />

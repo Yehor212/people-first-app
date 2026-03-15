@@ -58,8 +58,7 @@ export function HabitCompletionCelebration({
 
   return (
     <div
-      className="fixed left-1/2 -translate-x-1/2 z-[150] pointer-events-none will-change-transform"
-      style={{ bottom: 'calc(6rem + env(safe-area-inset-bottom, 0px))' }}
+      className="fixed left-1/2 -translate-x-1/2 z-[150] pointer-events-none will-change-transform bottom-[calc(6rem+env(safe-area-inset-bottom,0px))]"
     >
       {/* Main completion toast */}
       <div
@@ -101,18 +100,16 @@ export function HabitCompletionCelebration({
         <AnimatePresence>
           {(phase === 'xp' || phase === 'streak') && (
             <motion.div
-              className="absolute -top-10 end-4 flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-sm will-change-transform"
+              className="absolute -top-10 end-4 flex items-center gap-1.5 px-4 py-1.5 rounded-full font-bold text-sm will-change-transform text-[#78350f] shadow-[0_0_20px_rgba(251,191,36,0.6),0_4px_12px_rgba(0,0,0,0.2)]"
               style={{
                 background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%)',
-                color: '#78350f',
-                boxShadow: '0 0 20px rgba(251, 191, 36, 0.6), 0 4px 12px rgba(0, 0, 0, 0.2)',
               }}
               initial={{ opacity: 0, y: 20, scale: 0.5 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.5 }}
               transition={zenMotion.bouncy}
             >
-              <div style={{ animation: 'zen-wobble 1s ease-in-out infinite' }}>
+              <div className="[animation:zen-wobble_1s_ease-in-out_infinite]">
                 <Zap className="w-5 h-5" />
               </div>
               <span className="text-base">+{xpGained} XP</span>
@@ -124,10 +121,9 @@ export function HabitCompletionCelebration({
         <AnimatePresence>
           {streakDays && streakDays > 1 && phase === 'streak' && (
             <motion.div
-              className="absolute -top-14 left-1/2 flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-white will-change-transform"
+              className="absolute -top-14 left-1/2 flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-white will-change-transform shadow-[0_0_25px_rgba(249,115,22,0.5),0_4px_12px_rgba(0,0,0,0.2)]"
               style={{
                 background: 'linear-gradient(135deg, #f97316 0%, #ef4444 50%, #dc2626 100%)',
-                boxShadow: '0 0 25px rgba(249, 115, 22, 0.5), 0 4px 12px rgba(0, 0, 0, 0.2)',
                 x: '-50%',
               }}
               initial={{ opacity: 0, y: 20, scale: 0.5 }}
@@ -136,7 +132,7 @@ export function HabitCompletionCelebration({
               transition={zenMotion.bouncy}
             >
               {/* CSS-driven fire flicker instead of FM loop */}
-              <div style={{ animation: 'zen-wobble 0.6s ease-in-out infinite' }}>
+              <div className="[animation:zen-wobble_0.6s_ease-in-out_infinite]">
                 <Flame className="w-6 h-6" />
               </div>
               <span className="text-lg">{streakDays} {t.dayStreak || 'day streak'}!</span>

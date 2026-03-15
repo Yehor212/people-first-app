@@ -34,7 +34,7 @@ export function ActiveBreathingView({
           animationData={meditationAnimation}
           loop
           autoplay={!isPaused}
-          style={{ width: '100%', maxWidth: '280px', height: 'auto' }}
+          style={{ width: '100%', maxWidth: 280, height: 'auto' }}
         />
       </div>
 
@@ -42,19 +42,15 @@ export function ActiveBreathingView({
       <div className="relative w-44 h-44 sm:w-56 sm:h-56 mx-auto mb-8">
         {/* Layer 1: Outer orbit ring */}
         <motion.div
-          className="absolute inset-0 rounded-full"
-          style={{
-            border: '1px dashed rgba(6, 182, 212, 0.3)',
-          }}
+          className="absolute inset-0 rounded-full border border-dashed border-cyan-500/30"
           animate={{ rotate: 360 }}
           transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
         />
 
         {/* Layer 2: Pulsing glow rings */}
         <motion.div
-          className="absolute inset-2 rounded-full"
+          className="absolute inset-2 rounded-full bg-transparent"
           style={{
-            background: 'transparent',
             boxShadow: `0 0 30px ${phaseColors[currentPhase]}40, 0 0 60px ${phaseColors[currentPhase]}20`,
           }}
           animate={{
@@ -93,10 +89,7 @@ export function ActiveBreathingView({
           >
             {/* Inner shimmer effect */}
             <motion.div
-              className="absolute inset-0"
-              style={{
-                background: 'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.3) 0%, transparent 50%)',
-              }}
+              className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.3)_0%,transparent_50%)]"
               animate={{
                 opacity: [0.3, 0.6, 0.3],
               }}
@@ -115,12 +108,8 @@ export function ActiveBreathingView({
                 return (
                   <motion.div
                     key={`particle-${currentPhase}-${i}-${currentCycle}`}
-                    className="absolute w-2 h-2 rounded-full"
+                    className="absolute w-2 h-2 rounded-full left-1/2 top-1/2 -ml-1 -mt-1"
                     style={{
-                      left: '50%',
-                      top: '50%',
-                      marginLeft: '-4px',
-                      marginTop: '-4px',
                       background: phaseColors[currentPhase],
                       boxShadow: `0 0 8px ${phaseColors[currentPhase]}`,
                     }}
@@ -153,8 +142,7 @@ export function ActiveBreathingView({
           <AnimatePresence mode="wait">
             <motion.span
               key={currentPhase}
-              className="text-xl sm:text-2xl font-bold text-white"
-              style={{ textShadow: '0 2px 10px rgba(0,0,0,0.5)' }}
+              className="text-xl sm:text-2xl font-bold text-white [text-shadow:0_2px_10px_rgba(0,0,0,0.5)]"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
@@ -164,8 +152,7 @@ export function ActiveBreathingView({
             </motion.span>
           </AnimatePresence>
           <span
-            className="text-lg text-white/80 font-medium"
-            style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}
+            className="text-lg text-white/80 font-medium [text-shadow:0_2px_8px_rgba(0,0,0,0.5)]"
           >
             {currentPhase !== 'complete' && `${Math.ceil(getPhaseDuration(currentPhase) - phaseTime)}s`}
           </span>
@@ -192,12 +179,9 @@ export function ActiveBreathingView({
                 className={cn(
                   "w-3 h-3 rounded-full transition-all duration-300",
                   i < currentCycle
-                    ? "bg-gradient-to-br from-cyan-400 to-teal-500"
+                    ? "bg-gradient-to-br from-cyan-400 to-teal-500 shadow-[0_0_8px_rgba(6,182,212,0.6)]"
                     : "bg-secondary/80"
                 )}
-                style={i < currentCycle ? {
-                  boxShadow: '0 0 8px rgba(6, 182, 212, 0.6)',
-                } : {}}
               />
               {i === currentCycle - 1 && isActive && !isPaused && (
                 <motion.div
@@ -218,11 +202,9 @@ export function ActiveBreathingView({
           className={cn(
             "flex-1 py-3.5 rounded-xl font-medium flex items-center justify-center gap-2",
             "bg-secondary backdrop-blur-sm border border-border",
-            "hover:bg-secondary/80 transition-all"
+            "hover:bg-secondary/80 transition-all",
+            "shadow-[inset_0_1px_0_rgba(255,255,255,0.1)]"
           )}
-          style={{
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.1)',
-          }}
           whileHover={{ scale: 1.02 }}
           whileTap={zenTap.card}
         >

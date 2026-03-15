@@ -185,10 +185,7 @@ export function ComebackChallenge({
           transition={{ duration: 6, repeat: Infinity }}
         />
         <motion.div
-          className="absolute -bottom-1/2 -left-1/2 w-full h-full rounded-full"
-          style={{
-            background: 'radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 60%)',
-          }}
+          className="absolute -bottom-1/2 -left-1/2 w-full h-full rounded-full bg-[radial-gradient(circle,rgba(139,92,246,0.1)_0%,transparent_60%)]"
           animate={{
             scale: [1.2, 1, 1.2],
             opacity: [0.2, 0.4, 0.2],

@@ -19,14 +19,9 @@ interface StreakSlideProps {
 function FireParticle({ delay, x }: { delay: number; x: number }) {
   return (
     <motion.div
-      className="absolute rounded-full"
+      className="absolute rounded-full bottom-[30%] w-1 h-1 bg-[radial-gradient(circle,#ffd700_0%,#ff6b00_70%,transparent_100%)] shadow-[0_0_8px_rgba(255,200,0,0.8)]"
       style={{
         left: `${x}%`,
-        bottom: '30%',
-        width: 4,
-        height: 4,
-        background: 'radial-gradient(circle, #ffd700 0%, #ff6b00 70%, transparent 100%)',
-        boxShadow: '0 0 8px rgba(255, 200, 0, 0.8)',
       }}
       animate={{
         y: [0, -150],
@@ -72,10 +67,7 @@ function OrbitingFire({
       style={{ x, y }}
     >
       <motion.div
-        className="p-2 rounded-full bg-black/30 backdrop-blur-sm border border-orange-500/30"
-        style={{
-          boxShadow: '0 0 20px rgba(255, 150, 0, 0.4)',
-        }}
+        className="p-2 rounded-full bg-black/30 backdrop-blur-sm border border-orange-500/30 shadow-[0_0_20px_rgba(255,150,0,0.4)]"
         animate={{
           boxShadow: [
             '0 0 20px rgba(255, 150, 0, 0.4)',
@@ -98,10 +90,7 @@ export function StreakSlide({ slide }: StreakSlideProps) {
     <div className="relative w-full h-full overflow-hidden">
       {/* Deep fire cosmos background */}
       <div
-        className="absolute inset-0"
-        style={{
-          background: `radial-gradient(ellipse at center, #1a0a00 0%, #0d0400 50%, #000000 100%)`,
-        }}
+        className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,#1a0a00_0%,#0d0400_50%,#000000_100%)]"
       />
 
       {/* Fire nebula accents */}
@@ -125,42 +114,32 @@ export function StreakSlide({ slide }: StreakSlideProps) {
 
       {/* Central orbital system (like FocusSlide) */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="relative" style={{ width: 300, height: 300 }}>
+        <div className="relative w-[300px] h-[300px]">
           {/* Outer orbit ring */}
           <motion.div
-            className="absolute inset-0 rounded-full border border-orange-500/20"
-            style={{ boxShadow: '0 0 15px rgba(255, 100, 0, 0.1)' }}
+            className="absolute inset-0 rounded-full border border-orange-500/20 shadow-[0_0_15px_rgba(255,100,0,0.1)]"
             animate={{ rotate: 360 }}
             transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
           />
 
           {/* Middle orbit ring */}
           <motion.div
-            className="absolute rounded-full border border-amber-500/25"
-            style={{
-              inset: 30,
-              boxShadow: '0 0 20px rgba(255, 150, 0, 0.15)',
-            }}
+            className="absolute rounded-full border border-amber-500/25 inset-[30px] shadow-[0_0_20px_rgba(255,150,0,0.15)]"
             animate={{ rotate: -360 }}
             transition={{ duration: 40, repeat: Infinity, ease: 'linear' }}
           />
 
           {/* Inner orbit ring */}
           <motion.div
-            className="absolute rounded-full border-2 border-yellow-500/30"
-            style={{
-              inset: 60,
-              boxShadow: '0 0 25px rgba(255, 200, 0, 0.2)',
-            }}
+            className="absolute rounded-full border-2 border-yellow-500/30 inset-[60px] shadow-[0_0_25px_rgba(255,200,0,0.2)]"
             animate={{ rotate: 360 }}
             transition={{ duration: 25, repeat: Infinity, ease: 'linear' }}
           />
 
           {/* Central fire core */}
           <motion.div
-            className="absolute rounded-full flex flex-col items-center justify-center"
+            className="absolute rounded-full flex flex-col items-center justify-center inset-[75px]"
             style={{
-              inset: 75,
               background: `radial-gradient(circle at 30% 30%,
                 rgba(255, 255, 200, 0.3) 0%,
                 rgba(255, 200, 0, 0.4) 30%,
@@ -184,13 +163,10 @@ export function StreakSlide({ slide }: StreakSlideProps) {
           >
             {/* Streak number */}
             <motion.div
-              className="text-6xl font-black text-white"
+              className="text-6xl font-black text-white [text-shadow:0_0_30px_rgba(255,200,0,0.8)]"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 100, delay: 0.3 }}
-              style={{
-                textShadow: '0 0 30px rgba(255, 200, 0, 0.8)',
-              }}
             >
               {streak}
             </motion.div>
@@ -214,11 +190,10 @@ export function StreakSlide({ slide }: StreakSlideProps) {
 
       {/* Title at top */}
       <motion.h2
-        className="absolute top-16 left-1/2 -translate-x-1/2 text-2xl font-bold text-white drop-shadow-lg"
+        className="absolute top-16 left-1/2 -translate-x-1/2 text-2xl font-bold text-white drop-shadow-lg [text-shadow:0_0_20px_rgba(255,150,0,0.5)]"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        style={{ textShadow: '0 0 20px rgba(255, 150, 0, 0.5)' }}
       >
         {slide.title || 'On Fire!'}
       </motion.h2>
@@ -235,16 +210,10 @@ export function StreakSlide({ slide }: StreakSlideProps) {
 
       {/* Corner glows */}
       <div
-        className="absolute top-0 left-0 w-48 h-48 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at top left, rgba(255, 100, 0, 0.1) 0%, transparent 70%)',
-        }}
+        className="absolute top-0 left-0 w-48 h-48 pointer-events-none bg-[radial-gradient(circle_at_top_left,rgba(255,100,0,0.1)_0%,transparent_70%)]"
       />
       <div
-        className="absolute bottom-0 right-0 w-48 h-48 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at bottom right, rgba(255, 150, 0, 0.1) 0%, transparent 70%)',
-        }}
+        className="absolute bottom-0 right-0 w-48 h-48 pointer-events-none bg-[radial-gradient(circle_at_bottom_right,rgba(255,150,0,0.1)_0%,transparent_70%)]"
       />
     </div>
   );

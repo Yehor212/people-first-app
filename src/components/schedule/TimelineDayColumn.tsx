@@ -53,8 +53,7 @@ export function TimelineDayColumn({
       )}>
         {/* Gradient river */}
         <div
-          className="absolute inset-0 opacity-30"
-          style={{ background: 'linear-gradient(90deg, rgba(99,102,241,0.3) 0%, rgba(168,85,247,0.3) 50%, rgba(236,72,153,0.3) 100%)' }}
+          className="absolute inset-0 opacity-30 bg-[linear-gradient(90deg,rgba(99,102,241,0.3)_0%,rgba(168,85,247,0.3)_50%,rgba(236,72,153,0.3)_100%)]"
         />
 
         {/* Hour grid lines */}
@@ -76,11 +75,9 @@ export function TimelineDayColumn({
                 />
                 {isMajor && (
                   <div
-                    className="absolute top-0 bottom-0 end-0 pointer-events-none"
+                    className="absolute top-0 bottom-0 end-0 pointer-events-none w-2 translate-x-1/2 blur-[2px]"
                     style={{
-                      width: '8px', transform: 'translateX(50%)',
                       background: `linear-gradient(180deg, hsl(var(--timeline-divider-glow) / 0.25) 0%, hsl(var(--timeline-divider-glow) / 0.08) 40%, hsl(var(--timeline-divider-glow) / 0.08) 60%, hsl(var(--timeline-divider-glow) / 0.25) 100%)`,
-                      filter: 'blur(2px)',
                     }}
                   />
                 )}

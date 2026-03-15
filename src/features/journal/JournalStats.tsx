@@ -352,7 +352,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
 
               {/* Pixel grid — 12 months × up to 31 days */}
               <div className="overflow-x-auto scrollbar-hide -mx-1 px-1">
-                <div className="grid gap-[3px]" style={{ gridTemplateColumns: `auto repeat(31, 1fr)` }}>
+                <div className="grid gap-[3px] grid-cols-[auto_repeat(31,1fr)]">
                   {pixelData.months.map(monthData => (
                     <div key={monthData.month} className="contents">
                       {/* Month label */}
@@ -549,7 +549,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
                         <StickerRenderer emoji={sticker} size="sm" />
                         <div className="flex-1 h-5 bg-muted/20 rounded-full overflow-hidden">
                           <motion.div
-                            style={{ transformOrigin: 'left' }}
+                            className="origin-left"
                             initial={{ scaleX: 0 }}
                             animate={{ scaleX: widthPct / 100 }}
                             transition={{ delay: idx * 0.05, duration: 0.4 }}

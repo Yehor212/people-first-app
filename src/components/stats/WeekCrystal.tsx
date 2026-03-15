@@ -181,10 +181,7 @@ export function WeekCrystal({
               cy={sparkle.y}
               r={3 * sparkle.scale}
               fill={theme.sparkleColor}
-              className={`animate-crystal-sparkle-${(i % 4) + 1}`}
-              style={{
-                opacity: 0
-              }}
+              className={`animate-crystal-sparkle-${(i % 4) + 1} opacity-0`}
             />
           ))}
         </svg>
@@ -243,8 +240,8 @@ export function WeekCrystal({
       <div className="w-full mt-3">
         <div className="h-1.5 rounded-full bg-muted/30 overflow-hidden">
           <motion.div
-            className="h-full rounded-full"
-            style={{ width: '100%', transformOrigin: 'left center', backgroundColor: theme.glow }}
+            className="h-full rounded-full w-full origin-left"
+            style={{ backgroundColor: theme.glow }}
             initial={{ scaleX: 0 }}
             animate={{ scaleX: score / 100 }}
             transition={{ duration: 1, delay: 0.5 }}

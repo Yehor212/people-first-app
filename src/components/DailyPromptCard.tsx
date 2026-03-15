@@ -70,30 +70,22 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
         'relative overflow-hidden rounded-2xl',
         'bg-gradient-to-br from-amber-500/10 via-card to-orange-500/10',
         'border border-amber-500/20',
+        'shadow-[0_0_20px_rgba(245,158,11,0.15),0_4px_12px_rgba(0,0,0,0.1)]',
         className
       )}
-      style={{
-        boxShadow: '0 0 20px rgba(245, 158, 11, 0.15), 0 4px 12px rgba(0, 0, 0, 0.1)',
-      }}
       whileHover={{ scale: 1.01 }}
       transition={{ duration: 0.2 }}
     >
       {/* Animated glow background */}
       <motion.div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at 30% 30%, rgba(245, 158, 11, 0.15) 0%, transparent 50%)',
-        }}
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_30%_30%,rgba(245,158,11,0.15)_0%,transparent_50%)]"
         animate={{ opacity: [0.3, 0.6, 0.3] }}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       />
 
       {/* Secondary nebula effect */}
       <motion.div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: 'radial-gradient(circle at 80% 70%, rgba(249, 115, 22, 0.1) 0%, transparent 45%)',
-        }}
+        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_80%_70%,rgba(249,115,22,0.1)_0%,transparent_45%)]"
         animate={{ opacity: [0.2, 0.4, 0.2] }}
         transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
       />
@@ -102,11 +94,7 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
       <div className="relative p-4 border-b border-amber-500/20">
         <div className="flex items-center gap-3">
           <motion.div
-            className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{
-              background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.3) 0%, rgba(249, 115, 22, 0.2) 100%)',
-              boxShadow: '0 0 12px rgba(245, 158, 11, 0.4)',
-            }}
+            className="w-10 h-10 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(245,158,11,0.3)_0%,rgba(249,115,22,0.2)_100%)] shadow-[0_0_12px_rgba(245,158,11,0.4)]"
             animate={{ scale: [1, 1.05, 1] }}
             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           >
@@ -118,12 +106,7 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
 
           {/* Pulsing category badge */}
           <motion.div
-            className="ms-auto px-2.5 py-1 rounded-full text-xs font-medium"
-            style={{
-              background: 'rgba(245, 158, 11, 0.25)',
-              color: 'rgb(251, 191, 36)',
-              boxShadow: '0 0 10px rgba(245, 158, 11, 0.3)',
-            }}
+            className="ms-auto px-2.5 py-1 rounded-full text-xs font-medium bg-[rgba(245,158,11,0.25)] text-[rgb(251,191,36)] shadow-[0_0_10px_rgba(245,158,11,0.3)]"
             animate={{
               boxShadow: [
                 '0 0 8px rgba(245, 158, 11, 0.3)',
@@ -174,9 +157,9 @@ export function DailyPromptCard({ onUsePrompt, className }: DailyPromptCardProps
             className={cn(
               'flex-1 py-3 rounded-xl font-medium text-sm relative overflow-hidden',
               'bg-gradient-to-r from-amber-500 to-orange-500 text-white',
-              'flex items-center justify-center gap-2'
+              'flex items-center justify-center gap-2',
+              'shadow-[0_0_18px_rgba(245,158,11,0.45)]'
             )}
-            style={{ boxShadow: '0 0 18px rgba(245, 158, 11, 0.45)' }}
             whileHover={{
               scale: 1.02,
               boxShadow: '0 0 24px rgba(245, 158, 11, 0.6)',

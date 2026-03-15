@@ -38,14 +38,7 @@ export function OrbitingEmotion({
         return (
           <motion.div
             key={`trail-${orbitIndex}-${trailIndex}`}
-            className="absolute pointer-events-none"
-            style={{
-              left: '50%',
-              top: '50%',
-              width: 1,
-              height: 1,
-              transformOrigin: '0 0',
-            }}
+            className="absolute pointer-events-none left-1/2 top-1/2 h-px w-px origin-top-left"
             animate={{ rotate: [angle - trailOffset, angle - trailOffset + 360] }}
             transition={{
               duration: keplerDuration,
@@ -72,14 +65,7 @@ export function OrbitingEmotion({
 
       {/* Main Emoji Orb - Rotating wrapper */}
       <motion.div
-        className="absolute"
-        style={{
-          left: '50%',
-          top: '50%',
-          width: 1,
-          height: 1,
-          transformOrigin: '0 0',
-        }}
+        className="absolute left-1/2 top-1/2 h-px w-px origin-top-left"
         animate={{ rotate: [angle, angle + 360] }}
         transition={{
           duration: keplerDuration,
@@ -108,9 +94,8 @@ export function OrbitingEmotion({
         >
           {/* Outer glow halo - NO BLUR for clarity */}
           <motion.div
-            className="absolute rounded-full"
+            className="absolute rounded-full -inset-1"
             style={{
-              inset: -4,
               background: `radial-gradient(circle, ${emotion.color}20 0%, transparent 70%)`,
             }}
             animate={{
@@ -152,10 +137,9 @@ export function OrbitingEmotion({
 
           {/* Emoji */}
           <div
-            className="absolute inset-0 flex items-center justify-center"
+            className="absolute inset-0 flex items-center justify-center drop-shadow-[0_2px_4px_rgba(0,0,0,0.3)]"
             style={{
               fontSize: sizePx * 0.52,
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
             }}
           >
             {emotion.emoji}

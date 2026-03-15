@@ -82,10 +82,9 @@ export function AnimatedClockRing({ currentHour, currentMinute }: { currentHour:
       {/* Center time - theme-aware */}
       <div className="absolute inset-0 flex flex-col items-center justify-center">
         <motion.span
-          className="text-xl font-bold"
+          className="text-xl font-bold [text-shadow:0_0_10px_rgba(139,92,246,0.5)]"
           style={{
             color: 'hsl(var(--cosmic-text-primary))',
-            textShadow: '0 0 10px rgba(139, 92, 246, 0.5)'
           }}
           animate={{ opacity: [1, 0.8, 1] }}
           transition={{ duration: 2, repeat: Infinity }}
@@ -122,12 +121,11 @@ export function PremiumDayPill({
       whileTap={zenTap.button}
       className={cn(
         "relative flex-shrink-0 flex flex-col items-center py-3 px-4 rounded-2xl transition-all duration-300 min-w-[60px]",
-        "backdrop-blur-md border",
+        "backdrop-blur-md border [perspective:500px]",
         isSelected
           ? "bg-gradient-to-br from-primary/40 to-accent/30 border-primary/50 shadow-lg shadow-primary/30"
           : "bg-secondary border-border hover:bg-secondary/80 hover:border-border"
       )}
-      style={{ perspective: 500 }}
     >
       {/* Today glow ring */}
       {isToday && (
@@ -253,7 +251,7 @@ export function EventCard3D({
       <motion.span
         animate={{ scale: [1, 1.1, 1] }}
         transition={{ duration: 2, repeat: Infinity }}
-        style={{ filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.5))' }}
+        className="drop-shadow-[0_0_4px_rgba(255,255,255,0.5)]"
       >
         {event.emoji}
       </motion.span>
@@ -272,10 +270,7 @@ export function CurrentTimeOrb({ positionPercent }: { positionPercent: number })
     >
       {/* Trailing glow line */}
       <div
-        className="absolute right-full top-1/2 -translate-y-1/2 w-16 h-0.5"
-        style={{
-          background: 'linear-gradient(to left, rgba(239, 68, 68, 0.8), transparent)',
-        }}
+        className="absolute right-full top-1/2 -translate-y-1/2 w-16 h-0.5 bg-[linear-gradient(to_left,rgba(239,68,68,0.8),transparent)]"
       />
 
       {/* Main line */}

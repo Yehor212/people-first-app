@@ -112,17 +112,13 @@ export function ChallengeDetailsView({
     <div className="space-y-6 pb-8">
       {/* Header with icon - Premium */}
       <motion.div
-        className="relative text-center py-8 rounded-2xl overflow-hidden"
+        className="relative text-center py-8 rounded-2xl overflow-hidden bg-[linear-gradient(180deg,rgba(139,92,246,0.15)_0%,transparent_100%)]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{
-          background: 'linear-gradient(180deg, rgba(139, 92, 246, 0.15) 0%, transparent 100%)',
-        }}
       >
         {/* Glow behind icon */}
         <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full opacity-40"
-          style={{ background: 'radial-gradient(circle, rgba(139, 92, 246, 0.4) 0%, transparent 70%)' }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 rounded-full opacity-40 bg-[radial-gradient(circle,rgba(139,92,246,0.4)_0%,transparent_70%)]"
         />
         <motion.div
           className="text-6xl mb-3 relative z-10"
@@ -140,14 +136,10 @@ export function ChallengeDetailsView({
 
       {/* Progress section - Premium */}
       <motion.div
-        className="rounded-2xl p-5 relative overflow-hidden"
+        className="rounded-2xl p-5 relative overflow-hidden bg-[linear-gradient(135deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.02)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
-        style={{
-          background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.05)'
-        }}
       >
         <div className="flex items-center justify-between mb-4">
           <span className="text-sm font-medium text-slate-800 dark:text-white">
@@ -160,11 +152,10 @@ export function ChallengeDetailsView({
 
         <div className="h-3 bg-slate-200/60 dark:bg-white/10 rounded-full overflow-hidden mb-3">
           <motion.div
-            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
+            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full w-full origin-left shadow-[0_0_12px_rgba(16,185,129,0.5)]"
             initial={{ scaleX: 0 }}
             animate={{ scaleX: progress / 100 }}
             transition={{ duration: 0.8, ease: 'easeOut' }}
-            style={{ width: '100%', transformOrigin: 'left center', boxShadow: '0 0 12px rgba(16, 185, 129, 0.5)' }}
           />
         </div>
 
@@ -178,8 +169,7 @@ export function ChallengeDetailsView({
           )}
           {challenge.status === 'completed' && (
             <span
-              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-amber-700 dark:text-amber-300"
-              style={{ background: 'rgba(245, 158, 11, 0.2)' }}
+              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-amber-700 dark:text-amber-300 bg-[rgba(245,158,11,0.2)]"
             >
               <Trophy className="w-3 h-3" />
               {t.challengeCompleted || 'Challenge Complete!'}
@@ -225,25 +215,16 @@ export function ChallengeDetailsView({
 
       {/* Challenge code - Premium */}
       <motion.div
-        className="relative rounded-2xl p-5 overflow-hidden"
+        className="relative rounded-2xl p-5 overflow-hidden bg-[linear-gradient(135deg,rgba(16,185,129,0.1)_0%,rgba(20,184,166,0.05)_100%)] shadow-[0_0_20px_rgba(16,185,129,0.15),inset_0_1px_0_rgba(255,255,255,0.05)]"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        style={{
-          background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(20, 184, 166, 0.05) 100%)',
-          boxShadow: '0 0 20px rgba(16, 185, 129, 0.15), inset 0 1px 0 rgba(255,255,255,0.05)'
-        }}
       >
         <div className="text-sm font-medium text-slate-600 dark:text-white/80 mb-3">
           {t.challengeCode || 'Challenge Code'}
         </div>
         <div className="flex items-center gap-3">
           <div
-            className="flex-1 rounded-xl px-4 py-4 font-mono text-2xl text-center tracking-widest"
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              color: '#34d399',
-              textShadow: '0 0 10px rgba(52, 211, 153, 0.5)'
-            }}
+            className="flex-1 rounded-xl px-4 py-4 font-mono text-2xl text-center tracking-widest bg-[rgba(255,255,255,0.05)] text-[#34d399] [text-shadow:0_0_10px_rgba(52,211,153,0.5)]"
           >
             {challenge.code}
           </div>

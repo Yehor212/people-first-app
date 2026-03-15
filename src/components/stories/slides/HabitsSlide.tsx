@@ -20,14 +20,11 @@ interface HabitsSlideProps {
 function SoftParticle({ delay, x, y }: { delay: number; x: number; y: number }) {
   return (
     <motion.div
-      className="absolute rounded-full"
+      className="absolute rounded-full w-1 h-1 shadow-[0_0_10px_rgba(74,222,128,0.5)]"
       style={{
         left: `${x}%`,
         top: `${y}%`,
-        width: 4,
-        height: 4,
         background: 'radial-gradient(circle, rgba(74,222,128,0.8) 0%, transparent 70%)',
-        boxShadow: '0 0 10px rgba(74,222,128,0.5)',
       }}
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{
@@ -131,7 +128,7 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
 
           {/* Main crown orb */}
           <motion.div
-            className="relative w-48 h-48 rounded-full flex items-center justify-center"
+            className="relative w-48 h-48 rounded-full flex items-center justify-center border border-[rgba(74,222,128,0.2)]"
             style={{
               background: `radial-gradient(circle at 30% 30%,
                 rgba(134,239,172,0.4) 0%,
@@ -143,7 +140,6 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
                 0 0 60px rgba(74,222,128,0.4),
                 inset 0 0 40px rgba(134,239,172,0.2)
               `,
-              border: '1px solid rgba(74,222,128,0.2)',
             }}
             animate={{
               boxShadow: [
@@ -162,10 +158,7 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
               transition={{ delay: 0.6 }}
             >
               <motion.div
-                className="text-6xl font-black text-white"
-                style={{
-                  textShadow: '0 0 30px rgba(74,222,128,0.6)',
-                }}
+                className="text-6xl font-black text-white [text-shadow:0_0_30px_rgba(74,222,128,0.6)]"
               >
                 {slide.value}
               </motion.div>
@@ -190,53 +183,44 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
 
         {/* Tree trunk */}
         <motion.div
-          className="relative -mt-2"
+          className="relative -mt-2 origin-top"
           initial={{ scaleY: 0, opacity: 0 }}
           animate={{ scaleY: 1, opacity: 1 }}
           transition={{ delay: 0.5, duration: 0.5 }}
-          style={{ transformOrigin: 'top center' }}
         >
           <div
+            className="w-4 h-20 rounded-[4px_4px_8px_8px] shadow-[0_10px_30px_rgba(0,0,0,0.3)]"
             style={{
-              width: 16,
-              height: 80,
               background: 'linear-gradient(180deg, #5D4E37 0%, #3D2E1F 50%, #2D1E0F 100%)',
-              borderRadius: '4px 4px 8px 8px',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
             }}
           />
           {/* Trunk glow */}
           <div
-            className="absolute inset-0"
+            className="absolute inset-0 rounded-[4px_4px_8px_8px]"
             style={{
               background: 'linear-gradient(180deg, rgba(74,222,128,0.1) 0%, transparent 30%)',
-              borderRadius: '4px 4px 8px 8px',
             }}
           />
         </motion.div>
 
         {/* Ground glow */}
         <motion.div
-          className="absolute -bottom-4 left-1/2 -translate-x-1/2"
+          className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-[120px] h-5 blur-[8px]"
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.7 }}
           style={{
-            width: 120,
-            height: 20,
             background: 'radial-gradient(ellipse, rgba(74,222,128,0.2) 0%, transparent 70%)',
-            filter: 'blur(8px)',
           }}
         />
       </div>
 
       {/* Title at top */}
       <motion.h2
-        className="absolute top-12 left-0 right-0 text-center text-2xl font-bold text-white"
+        className="absolute top-12 left-0 right-0 text-center text-2xl font-bold text-white [text-shadow:0_2px_20px_rgba(0,0,0,0.5)]"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        style={{ textShadow: '0 2px 20px rgba(0,0,0,0.5)' }}
       >
         {slide.title}
       </motion.h2>
@@ -244,13 +228,10 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
       {/* Top habit card - bottom left */}
       {data?.topHabit && (
         <motion.div
-          className="absolute bottom-24 left-6 bg-black/30 backdrop-blur-md rounded-2xl px-5 py-4 border border-emerald-500/20"
+          className="absolute bottom-24 left-6 bg-black/30 backdrop-blur-md rounded-2xl px-5 py-4 border border-emerald-500/20 shadow-[0_0_30px_rgba(74,222,128,0.1)]"
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 1 }}
-          style={{
-            boxShadow: '0 0 30px rgba(74,222,128,0.1)',
-          }}
         >
           <p className="text-xs text-emerald-200/60 mb-1">{t.storyTopHabit || 'Top habit'}</p>
           <p className="text-lg font-semibold text-white">
@@ -263,13 +244,10 @@ export function HabitsSlide({ slide, t }: HabitsSlideProps) {
       {/* Perfect days badge - bottom right */}
       {data?.perfectDays > 0 && (
         <motion.div
-          className="absolute bottom-24 right-6 flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 backdrop-blur-sm border border-amber-500/30"
+          className="absolute bottom-24 right-6 flex items-center gap-2 px-4 py-2 rounded-full bg-amber-500/20 backdrop-blur-sm border border-amber-500/30 shadow-[0_0_20px_rgba(251,191,36,0.2)]"
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 1.2 }}
-          style={{
-            boxShadow: '0 0 20px rgba(251,191,36,0.2)',
-          }}
         >
           <StarIcon size="sm" animated />
           <span className="text-sm text-white font-medium">

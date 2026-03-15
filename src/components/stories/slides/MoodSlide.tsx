@@ -38,8 +38,7 @@ const weatherGradients: Record<WeatherType, string> = {
 function Sun({ intensity }: { intensity: number }) {
   return (
     <motion.div
-      className="absolute"
-      style={{ top: '15%', left: '50%', transform: 'translateX(-50%)' }}
+      className="absolute top-[15%] left-1/2 -translate-x-1/2"
       initial={{ scale: 0, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 1, delay: 0.3 }}
@@ -75,9 +74,8 @@ function Sun({ intensity }: { intensity: number }) {
 
       {/* Sun core */}
       <motion.div
-        className="relative w-24 h-24 rounded-full"
+        className="relative w-24 h-24 rounded-full bg-[radial-gradient(circle,#FFF7E0_0%,#FFD93D_50%,#FF9500_100%)]"
         style={{
-          background: 'radial-gradient(circle, #FFF7E0 0%, #FFD93D 50%, #FF9500 100%)',
           boxShadow: `0 0 60px 20px rgba(255, 215, 0, ${0.6 * intensity})`,
         }}
         animate={{
@@ -119,7 +117,7 @@ function RainDrop({ delay, x }: { delay: number; x: number }) {
   return (
     <motion.div
       className="absolute w-0.5 h-4 bg-gradient-to-b from-blue-300 to-transparent rounded-full"
-      style={{ left: `${x}%`, top: -20 }}
+      style={{ left: `${x}%`, top: '-20px' }}
       initial={{ y: 0, opacity: 0 }}
       animate={{
         y: [0, window.innerHeight + 50],
@@ -151,8 +149,7 @@ function Lightning() {
       }}
     >
       <svg
-        className="absolute"
-        style={{ top: '10%', left: '60%', width: 80, height: 200 }}
+        className="absolute top-[10%] left-[60%] w-[80px] h-[200px]"
         viewBox="0 0 80 200"
       >
         <path
@@ -303,10 +300,7 @@ export function MoodSlide({ slide, t }: MoodSlideProps) {
       {/* Horizon line for grounding */}
       {weather !== 'stormy' && (
         <div
-          className="absolute bottom-0 left-0 right-0 h-24"
-          style={{
-            background: `linear-gradient(to top, rgba(0,0,0,0.3), transparent)`,
-          }}
+          className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/30 to-transparent"
         />
       )}
     </div>
