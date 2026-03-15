@@ -45,7 +45,7 @@ After completing ANY implementation or audit, you MUST pass through all five mir
 - If `useScrollLock` is called by both parent and child, what happens when child unmounts first? When parent unmounts first? Both at once?
 - If two modals can be open simultaneously, do their keyboard handlers (Escape), back handlers (Android), and scroll locks compose correctly?
 
-**Anti-pattern this prevents**: SettingsPanel + DopamineSettings both called `useScrollLock`. When DopamineSettings closed, it restored body styles to pre-SettingsPanel state, killing ALL touch events on iPhone.
+**Anti-pattern this prevents**: SettingsPanel + DopamineSettings both called `useScrollLock`. When DopamineSettings closed, it restored body styles to pre-SettingsPanel state, killing ALL touch events on iPhone. (This bug was fixed via reference-counted locking in `useScrollLock.ts`. The example illustrates WHY Mirror 3 matters — this class of bug was only caught through cross-component analysis.)
 
 **Evidence requirement**: For each global-state-modifying hook, list ALL consumers and state: "N consumers found. Concurrent scenario verified: [description]. PASS/FAIL."
 
@@ -69,7 +69,7 @@ After completing ANY implementation or audit, you MUST pass through all five mir
 - **Rage-click test**: What if the user taps the same button 10 times rapidly?
 - **Disconnect test**: What if the network drops mid-operation?
 - **Back-button test**: What if the user presses back/Escape at every possible step?
-- **RTL test**: Are all directional icons (`ChevronRight`, arrows) flipped?
+- **RTL test**: Are all directional icons (`ChevronRight`, arrows) flipped? Verify: `document.dir = 'rtl'` in DevTools, test Arabic/Hebrew rendering (see Law 17 RULE 6)
 - **320px test**: Does the layout work on the smallest supported screen?
 - **Keyboard-only test**: Can every interactive element be reached and activated without touch/mouse?
 

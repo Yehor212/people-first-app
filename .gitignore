@@ -44,6 +44,7 @@ android/build/
 # ============================================
 tmpclaude*
 .claude/
+.mcp.json
 
 # ============================================
 # Extra lockfiles (use only package-lock.json)
