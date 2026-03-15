@@ -1242,25 +1242,22 @@ export type Database = {
       }
       user_settings: {
         Row: {
-          key: string | null
+          key: string
           updated_at: string | null
           user_id: string
           value: Json | null
-          weekly_digest_enabled: boolean | null
         }
         Insert: {
-          key?: string | null
+          key: string
           updated_at?: string | null
           user_id: string
           value?: Json | null
-          weekly_digest_enabled?: boolean | null
         }
         Update: {
-          key?: string | null
+          key?: string
           updated_at?: string | null
           user_id?: string
           value?: Json | null
-          weekly_digest_enabled?: boolean | null
         }
         Relationships: []
       }
@@ -1364,10 +1361,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      calculate_streak: {
-        Args: { p_user_id: string }
-        Returns: number
-      }
+      calculate_streak: { Args: { p_user_id: string }; Returns: number }
       get_challenge_leaderboard: {
         Args: { p_challenge_id: string }
         Returns: {
@@ -1383,22 +1377,13 @@ export type Database = {
           user_id: string
         }[]
       }
-      get_user_stats: {
-        Args: { p_user_id: string }
-        Returns: Json
-      }
+      get_user_stats: { Args: { p_user_id: string }; Returns: Json }
       get_user_weekly_summary: {
         Args: { p_week_start?: string }
         Returns: Json
       }
-      reset_monthly_leaderboard: {
-        Args: Record<string, never>
-        Returns: undefined
-      }
-      reset_weekly_leaderboard: {
-        Args: Record<string, never>
-        Returns: undefined
-      }
+      reset_monthly_leaderboard: { Args: never; Returns: undefined }
+      reset_weekly_leaderboard: { Args: never; Returns: undefined }
       update_member_progress: {
         Args: {
           p_challenge_id: string
@@ -1419,6 +1404,12 @@ export type Database = {
           updated_at: string | null
           user_id: string
         }
+        SetofOptions: {
+          from: "*"
+          to: "friend_challenge_members"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
     }
     Enums: {
@@ -1432,7 +1423,7 @@ export type Database = {
 
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof DatabaseWithoutInternals, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
@@ -1546,3 +1537,9 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
+export const Constants = {
+  public: {
+    Enums: {},
+  },
+} as const

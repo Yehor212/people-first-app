@@ -798,6 +798,7 @@ export const de: Translations = {
   syncPulled: 'Cloud-Daten wiederhergestellt.',
   syncPushed: 'Cloud aktualisiert.',
   syncError: 'Synchronisierung fehlgeschlagen.',
+  weeklyDigestError: 'Wochenbericht konnte nicht aktualisiert werden. Versuchen Sie es erneut.',
   authGateTitle: 'Anmelden',
   authGateBody: 'Melden Sie sich mit E-Mail an, um Fortschritt zu speichern und zwischen Geräten zu synchronisieren.',
   authGateContinue: 'Ohne Konto fortfahren',

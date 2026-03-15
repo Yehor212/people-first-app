@@ -798,6 +798,7 @@ export const fr: Translations = {
   syncPulled: 'Données cloud restaurées.',
   syncPushed: 'Cloud mis à jour.',
   syncError: 'Échec de la synchronisation.',
+  weeklyDigestError: 'Impossible de mettre à jour le résumé hebdomadaire. Réessayez.',
   authGateTitle: 'Se connecter',
   authGateBody: 'Connectez-vous par e-mail pour sauvegarder votre progression et synchroniser entre appareils.',
   authGateContinue: 'Continuer sans compte',

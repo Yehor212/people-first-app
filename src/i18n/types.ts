@@ -681,6 +681,7 @@ export interface Translations {
   syncPulled: string;
   syncPushed: string;
   syncError: string;
+  weeklyDigestError: string;
   authGateTitle: string;
   authGateBody: string;
   authGateContinue: string;

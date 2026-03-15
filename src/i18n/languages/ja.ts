@@ -797,6 +797,7 @@ export const ja: Translations = {
   syncPulled: 'クラウドデータを復元しました。',
   syncPushed: 'クラウドを更新しました。',
   syncError: '同期に失敗しました。',
+  weeklyDigestError: '週間ダイジェストを更新できませんでした。もう一度お試しください。',
   authGateTitle: 'サインイン',
   authGateBody: 'メールでサインインして進捗を保存し、デバイス間で同期。',
   authGateContinue: 'アカウントなしで続ける',

@@ -226,7 +226,7 @@ class ModalErrorBoundaryClass extends React.Component<ModalErrorBoundaryProps, M
       if (!lastReload || Date.now() - parseInt(lastReload) > 60000) {
         sessionStorage.setItem(reloadKey, Date.now().toString());
         logger.log('[ModalErrorBoundary] Chunk error detected, auto-reloading...');
-        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch(() => {});
+        caches.keys().then(keys => Promise.all(keys.map(k => caches.delete(k)))).catch((e) => { console.warn('[ErrorBoundary] Cache cleanup failed:', e); });
         window.location.reload();
         return;
       }

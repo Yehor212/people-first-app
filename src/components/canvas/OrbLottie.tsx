@@ -15,7 +15,7 @@ export function OrbLottie() {
   useEffect(() => {
     import('@/assets/animations/orb-ambient.json')
       .then(m => setAnimData(m.default))
-      .catch(() => {}); // graceful — no animation if file missing
+      .catch((e) => { console.warn('[OrbLottie] Animation load failed:', e); });
   }, []);
 
   if (!animData) return null;

@@ -1974,6 +1974,7 @@ const arabicOverrides: Partial<Translations> = {
   syncPulled: 'تم التنزيل',
   syncPushed: 'تم الرفع',
   syncError: 'خطأ في المزامنة',
+  weeklyDigestError: 'تعذر تحديث الملخص الأسبوعي. حاول مرة أخرى.',
   authGateTitle: 'سجل الدخول',
   authGateBody: 'سجل الدخول للمزامنة السحابية',
   authGateContinue: 'متابعة',

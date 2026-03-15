@@ -798,6 +798,7 @@ export const es: Translations = {
   syncPulled: 'Datos restaurados desde la nube.',
   syncPushed: 'Nube actualizada.',
   syncError: 'Error de sincronización.',
+  weeklyDigestError: 'No se pudo actualizar el resumen semanal. Inténtalo de nuevo.',
   authGateTitle: 'Iniciar sesión',
   authGateBody: 'Inicia sesión con tu email para guardar tu progreso y sincronizar entre dispositivos.',
   authGateContinue: 'Continuar sin cuenta',

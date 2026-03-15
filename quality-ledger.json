@@ -1,0 +1,101 @@
+{
+  "version": "1.0.0",
+  "lastUpdated": "2026-03-15",
+  "floors": {
+    "tests.total": {
+      "value": 2772,
+      "direction": "up",
+      "recorded": "2026-03-14",
+      "description": "Total unit test count (vitest)"
+    },
+    "tests.files": {
+      "value": 121,
+      "direction": "up",
+      "recorded": "2026-03-14",
+      "description": "Test file count"
+    },
+    "eslint.maxWarnings": {
+      "value": 0,
+      "direction": "down",
+      "recorded": "2026-03-14",
+      "description": "ESLint warnings (--max-warnings=0)"
+    },
+    "tsc.errors": {
+      "value": 0,
+      "direction": "down",
+      "recorded": "2026-03-14",
+      "description": "TypeScript compilation errors"
+    },
+    "i18n.languages": {
+      "value": 8,
+      "direction": "up",
+      "recorded": "2026-03-14",
+      "description": "Supported language count"
+    },
+    "silentCatches": {
+      "value": 0,
+      "direction": "down",
+      "recorded": "2026-03-14",
+      "description": "Silent .catch(() => {}) blocks"
+    },
+    "godComponents": {
+      "value": 0,
+      "direction": "down",
+      "recorded": "2026-03-15",
+      "description": "Components >400 LOC (excluding exemptions)"
+    },
+    "exhaustiveDeps": {
+      "value": 22,
+      "direction": "down",
+      "recorded": "2026-03-14",
+      "description": "eslint-disable exhaustive-deps suppressions"
+    },
+    "inlineStyles": {
+      "value": 597,
+      "direction": "down",
+      "recorded": "2026-03-14",
+      "description": "Inline style={{}} in .tsx files"
+    }
+  },
+  "qualityScore": {
+    "current": 9.4,
+    "floor": 9.4,
+    "weights": {
+      "typeSafety": 0.15,
+      "lintCleanliness": 0.1,
+      "testCoverage": 0.2,
+      "codeHealth": 0.15,
+      "i18nCompleteness": 0.1,
+      "buildIntegrity": 0.1,
+      "staleness": 0.1,
+      "debtTrend": 0.1
+    }
+  },
+  "staleness": {
+    "lastFullAudit": "2026-03-14",
+    "maxLedgerAgeDays": 30,
+    "maxAuditAgeDays": 60
+  },
+  "graduation": {
+    "eslint": {
+      "@typescript-eslint/no-floating-promises": {
+        "current": "warn",
+        "target": "error",
+        "evaluateAfter": "2026-04-15"
+      }
+    },
+    "typescript": {
+      "noImplicitAny": {
+        "current": false,
+        "target": true,
+        "evaluateAfter": "2026-06-01"
+      },
+      "strictNullChecks": {
+        "current": false,
+        "target": true,
+        "evaluateAfter": "2026-09-01"
+      }
+    }
+  },
+  "overrides": []
+}

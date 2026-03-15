@@ -94,6 +94,7 @@ export function useAccountSync({ sessionEmail, setAuthStatus, t }: UseAccountSyn
       const success = await updateWeeklyDigest(user.id, enabled);
       if (!success) {
         setWeeklyDigestEnabled(!enabled);
+        setAuthStatus(t.weeklyDigestError || 'Could not update weekly digest. Try again.');
       }
     } catch (error) {
       setWeeklyDigestEnabled(!enabled);

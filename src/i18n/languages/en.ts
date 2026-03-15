@@ -797,6 +797,7 @@ export const en: Translations = {
   syncPulled: 'Cloud data restored.',
   syncPushed: 'Cloud updated.',
   syncError: 'Sync failed.',
+  weeklyDigestError: 'Could not update weekly digest. Try again.',
   authGateTitle: 'Sign in',
   authGateBody: 'Sign in by email to save progress and sync across devices.',
   authGateContinue: 'Continue without account',

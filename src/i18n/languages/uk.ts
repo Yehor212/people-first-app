@@ -797,6 +797,7 @@ export const uk: Translations = {
   syncPulled: 'Хмарні дані відновлено.',
   syncPushed: 'Хмара оновлена.',
   syncError: 'Синхронізація не вдалася.',
+  weeklyDigestError: 'Не вдалося оновити дайджест. Спробуйте ще раз.',
   authGateTitle: 'Вхід',
   authGateBody: 'Увійдіть через email, щоб зберегти прогрес та синхронізувати між пристроями.',
   authGateContinue: 'Продовжити без акаунта',

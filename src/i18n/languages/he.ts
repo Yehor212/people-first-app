@@ -783,6 +783,7 @@ const hebrewOverrides: Partial<Translations> = {
   syncNow: 'סנכרן עכשיו',
   syncSuccess: 'הסנכרון הצליח!',
   syncError: 'שגיאת סנכרון',
+  weeklyDigestError: 'לא ניתן לעדכן את הסיכום השבועי. נסה שוב.',
   cloudSyncDisabled: 'סנכרון ענן מושבת.',
   sessionExpired: 'סנכרון ענן מושהה',
   sessionExpiredMessage: 'התחבר כדי לסנכרן את הנתונים שלך',
