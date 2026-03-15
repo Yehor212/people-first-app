@@ -134,13 +134,6 @@ float snoise(vec3 v) {
   return 42.0 * dot(m * m, vec4(dot(p0, x0), dot(p1, x1), dot(p2, x2), dot(p3, x3)));
 }
 
-// ─── Quilez Cosine Color Palette (GPU-native rich gradient) ───
-// 4 vec3 parameters control entire color personality per emotion.
-// See: https://iquilezles.org/articles/palettes/
-vec3 cosinePalette(float t, vec3 a, vec3 b, vec3 c, vec3 d) {
-  return a + b * cos(6.28318 * (c * t + d));
-}
-
 // ─── Gielis Superformula ───
 
 float superformula(float theta, float m, float n1, float n2, float n3) {
@@ -177,62 +170,41 @@ void main() {
   float breathCurve = min(breathInhale, breathExhale) * (1.0 - breathPause);
   float breath = 1.0 + breathCurve * 0.05 - 0.025;
 
-  // ── Noise displacement (3-octave, per-pixel, valence-driven noise type) ──
+  // ── Noise displacement (3-octave, per-pixel) ──
   float rotAngle = angle + rotation;
   float ca = cos(rotAngle);
   float sa = sin(rotAngle);
-  float nv_raw1 = snoise(vec3(
+  float nv1 = snoise(vec3(
     ca * 2.5 + uTime * noiseSpeed,
     sa * 2.5 + uTime * noiseSpeed * 0.7,
     10.0
   ));
-  float nv_raw2 = snoise(vec3(
+  float nv2 = snoise(vec3(
     ca * 5.0 + uTime * noiseSpeed * 1.3 + 100.0,
     sa * 5.0 + uTime * noiseSpeed * 0.9 + 100.0,
     10.0
   ));
-  float nv_raw3 = snoise(vec3(
+  float nv3 = snoise(vec3(
     ca * 10.0 + uTime * noiseSpeed * 1.7 + 200.0,
     sa * 10.0 + uTime * noiseSpeed * 1.1 + 200.0,
     10.0
   ));
-
-  // Enhancement 4: Valence-driven noise TYPE selection
-  // Turbulence (abs) = cracked/broken for negative, Ridge (1-abs) = flowing/silk for positive
-  float nv_t = (uValence + 1.0) * 0.5; // 0 at -1, 1 at +1
-  float nv1, nv2, nv3;
-  if (nv_t < 0.4) {
-    // TURBULENCE: abs(noise) → sharp valleys like cracked earth
-    nv1 = abs(nv_raw1) * 2.0 - 1.0;
-    nv2 = abs(nv_raw2) * 2.0 - 1.0;
-    nv3 = abs(nv_raw3) * 2.0 - 1.0;
-  } else if (nv_t > 0.6) {
-    // RIDGE: 1-abs(noise) → smooth ridges like silk or sand dunes
-    nv1 = (1.0 - abs(nv_raw1)) * 2.0 - 1.0;
-    nv2 = (1.0 - abs(nv_raw2)) * 2.0 - 1.0;
-    nv3 = (1.0 - abs(nv_raw3)) * 2.0 - 1.0;
-  } else {
-    // SMOOTH transition zone: standard simplex
-    nv1 = nv_raw1;
-    nv2 = nv_raw2;
-    nv3 = nv_raw3;
-  }
   float noiseDisp = (nv1 * 0.55 + nv2 * 0.30 + nv3 * 0.15) * noiseAmp;
 
-  // ── Iterative Domain Warp (Inigo Quilez technique — biological texture) ──
-  // Each warp layer feeds into the next → emergent organic complexity
-  float warpAmp = mix(0.10, 0.045, nv_t);
-  vec3 warpP = vec3(ca * 1.8, sa * 1.8, uTime * 0.05);
-  // Layer q: first warp iteration
-  float qx = snoise(warpP + vec3(0.0, 0.0, uTime * noiseSpeed * 0.3));
-  float qy = snoise(warpP + vec3(5.2, 1.3, uTime * noiseSpeed * 0.35));
-  // Layer r: second warp iteration (feeds on q)
-  float warpDepth = mix(4.0, 2.5, nv_t); // deeper warp at negative valence
-  float rx = snoise(warpP + warpDepth * vec3(qx, qy, 0.0) + vec3(1.7, 9.2, uTime * 0.08));
-  float ry = snoise(warpP + warpDepth * vec3(qx, qy, 0.0) + vec3(8.3, 2.8, uTime * 0.09));
-  // Final warped angle
-  float warpVal = snoise(warpP + warpDepth * vec3(rx, ry, 0.0));
-  float warpedAngle = rotAngle + warpVal * warpAmp * 6.2832;
+  // ── Domain warp: warp the angle before superformula lookup (Inigo Quilez technique) ──
+  float warpAmp = mix(0.10, 0.045, (uValence + 1.0) * 0.5);
+  // -1.0 → 0.10 (strong chaotic warping), +1.0 → 0.015 (gentle organic flow)
+  float warp1 = snoise(vec3(
+    ca * 1.8 + uTime * noiseSpeed * 0.4,
+    sa * 1.8 + uTime * noiseSpeed * 0.3,
+    uTime * 0.05
+  ));
+  float warp2 = snoise(vec3(
+    ca * 3.5 + uTime * noiseSpeed * 0.7 + 50.0,
+    sa * 3.5 + uTime * noiseSpeed * 0.5 + 50.0,
+    uTime * 0.08 + 100.0
+  ));
+  float warpedAngle = rotAngle + (warp1 * 0.65 + warp2 * 0.35) * warpAmp * 6.2832;
 
   // ── Superformula shape ──
   float mRound = floor(uShapeM + 0.5);
@@ -261,11 +233,8 @@ void main() {
   vec3 lightDir2 = normalize(vec3(0.3, -0.25, 0.8));   // bottom-right rim light
   vec3 viewDir = vec3(0.0, 0.0, 1.0);
 
-  // Enhancement 3: Wrap lighting (fake subsurface scattering)
-  // Positive emotions glow from within (translucent), negative stay opaque (defensive)
-  float wrapFactor = mix(0.0, 0.45, (uValence + 1.0) * 0.5);
-  float diff1 = max((dot(normal, lightDir1) + wrapFactor) / (1.0 + wrapFactor), 0.0);
-  float diff2 = max((dot(normal, lightDir2) + wrapFactor) / (1.0 + wrapFactor), 0.0) * 0.3;
+  float diff1 = max(dot(normal, lightDir1), 0.0);
+  float diff2 = max(dot(normal, lightDir2), 0.0) * 0.3;
 
   vec3 halfDir1 = normalize(lightDir1 + viewDir);
   float spec1 = pow(max(dot(normal, halfDir1), 0.0), 40.0);
@@ -279,31 +248,32 @@ void main() {
   // ── Subsurface Scattering (fake) ──
   float sss = max(dot(-normal, lightDir1), 0.0) * 0.12;
 
-  // ── Iridescence (thin-film interference via cosine palette) ──
+  // ── Iridescence (thin-film interference) ──
   float filmThickness = 0.3 + 0.7 * (1.0 - max(dot(normal, viewDir), 0.0));
   filmThickness += snoise(vec3(center * 4.0, uTime * 0.15)) * 0.15;
   float iriPhaseOffset = mix(0.5, -0.2, (uValence + 1.0) * 0.5);
-  // Enhancement 2: Use cosine palette for richer iridescence
-  vec3 iridescent = cosinePalette(
-    filmThickness + iriPhaseOffset,
-    vec3(0.5),                    // bias: centered
-    vec3(0.5),                    // amplitude: full range
-    vec3(1.0, 1.0, 1.0),         // frequency: single cycle
-    vec3(0.00, 0.33, 0.67)       // phase: RGB 120° offset (rainbow)
+  vec3 iridescent = vec3(
+    0.5 + 0.5 * cos(6.2832 * (filmThickness * 1.0 + 0.00 + iriPhaseOffset)),
+    0.5 + 0.5 * cos(6.2832 * (filmThickness * 1.0 + 0.33 + iriPhaseOffset)),
+    0.5 + 0.5 * cos(6.2832 * (filmThickness * 1.0 + 0.67 + iriPhaseOffset))
   );
   float iriStrength = fresnel * mix(0.15, 0.35, (uValence + 1.0) * 0.5);
 
-  // ── Aurora spectral bands (enriched with cosine palette) ──
+  // ── Aurora spectral bands (replaces simple hue shimmer) ──
   float band1 = snoise(vec3(center.x * 3.0 + uTime * 0.08, center.y * 3.0, 20.0));
   float band2 = snoise(vec3(center.x * 2.0 + uTime * 0.05, center.y * 2.0 + uTime * 0.06, 30.0));
   float bandMask1 = smoothstep(0.0, 0.4, band1) * smoothstep(0.8, 0.4, band1);
   float bandMask2 = smoothstep(-0.1, 0.3, band2) * smoothstep(0.7, 0.3, band2);
-  // Cosine palette-driven aurora colors: richer than simple offset
-  vec3 palA = mix(vec3(0.20, 0.15, 0.30), vec3(0.50, 0.40, 0.35), (uValence + 1.0) * 0.5);
-  vec3 palB = mix(vec3(0.25, 0.20, 0.35), vec3(0.45, 0.40, 0.30), (uValence + 1.0) * 0.5);
-  vec3 aurora1 = cosinePalette(band1 * 0.5 + 0.5, palA, vec3(0.3), vec3(1.0), vec3(0.0, 0.10, 0.20));
-  vec3 aurora2 = cosinePalette(band2 * 0.5 + 0.5, palB, vec3(0.25), vec3(1.0), vec3(0.30, 0.20, 0.0));
-  // Blend aurora with base color
+  vec3 aurora1 = vec3(
+    uColor.r + band1 * 0.15,
+    uColor.g + band1 * 0.08,
+    uColor.b - band1 * 0.10
+  );
+  vec3 aurora2 = vec3(
+    uColor.r - band2 * 0.10,
+    uColor.g + band2 * 0.12,
+    uColor.b + band2 * 0.15
+  );
   float bandIntensity = mix(0.20, 0.35, (uValence + 1.0) * 0.5);
   vec3 shimmerColor = uColor
     + (aurora1 - uColor) * bandMask1 * bandIntensity
