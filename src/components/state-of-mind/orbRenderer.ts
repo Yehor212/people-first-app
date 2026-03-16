@@ -184,6 +184,7 @@ export interface OrbSceneParams {
   size: number;
   dpr: number;
   isDark: boolean;
+  shimmer?: number; // P3: 0-1 transition burst flash
 }
 
 // ── Shape Parameters ──
@@ -207,13 +208,13 @@ interface ShapeParams {
  *   Descending m from -1→+1: many chaotic spikes → few broad petals
  */
 const SHAPE_PRESETS: { valence: number; p: ShapeParams }[] = [
-  { valence: -1.000, p: { m: 9, n1: 0.20, n2: 0.25, n3: 0.50 } }, // 9-fold chaotic urchin (asymmetric spikes — anguish)
-  { valence: -0.667, p: { m: 7, n1: 0.35, n2: 0.45, n3: 0.60 } }, // 7-fold jagged crystal (cracked mineral — anxiety)
-  { valence: -0.333, p: { m: 6, n1: 0.70, n2: 0.80, n3: 0.90 } }, // 6-fold tensed hexagon (guarded — mild unease)
-  { valence:  0.000, p: { m: 6, n1: 2.00, n2: 2.00, n3: 2.00 } }, // centered sphere (balanced — neutral calm)
-  { valence:  0.333, p: { m: 5, n1: 1.80, n2: 1.40, n3: 1.40 } }, // 5-fold soft undulation (rounded starfish — warmth)
-  { valence:  0.667, p: { m: 5, n1: 1.60, n2: 1.00, n3: 1.00 } }, // 5-petal bloom (visible petals — contentment)
-  { valence:  1.000, p: { m: 5, n1: 1.40, n2: 0.85, n3: 0.85 } }, // 5-fold radiant blossom (flower petals — joy, bliss)
+  { valence: -1.000, p: { m: 8, n1: 1.25, n2: 1.30, n3: 1.30 } }, // 8 rounded scallops ~19% depth
+  { valence: -0.667, p: { m: 7, n1: 1.40, n2: 1.35, n3: 1.35 } }, // 7 soft waves ~14% depth
+  { valence: -0.333, p: { m: 6, n1: 1.80, n2: 1.50, n3: 1.50 } }, // 6 gentle undulation ~8% depth
+  { valence:  0.000, p: { m: 6, n1: 2.00, n2: 2.00, n3: 2.00 } }, // perfect circle (neutral calm)
+  { valence:  0.333, p: { m: 5, n1: 1.80, n2: 1.50, n3: 1.50 } }, // 5 gentle undulation ~8% depth
+  { valence:  0.667, p: { m: 5, n1: 1.40, n2: 1.35, n3: 1.35 } }, // 5 soft petals ~14% depth
+  { valence:  1.000, p: { m: 5, n1: 1.25, n2: 1.30, n3: 1.30 } }, // 5 rounded petals ~19% depth
 ];
 
 export function getShapeParams(valence: number): ShapeParams {
@@ -311,8 +312,8 @@ function computeShapePoints(
   const points: [number, number][] = [];
   const mInt = Math.round(shape.m); // integer m for clean closure
 
-  // Domain warp amplitude: strong chaotic warping at negative, gentle flow at positive
-  const warpAmp = mapRange(valence, -1, 1, 0.10, 0.045);
+  // Domain warp: barely perceptible — Apple shapes are mathematically clean
+  const warpAmp = mapRange(valence, -1, 1, 0.006, 0.003);
 
   for (let i = 0; i < SHAPE_POINTS; i++) {
     const angle = (i / SHAPE_POINTS) * Math.PI * 2 + rotationOffset;
@@ -384,15 +385,16 @@ function drawAura(
   time: number,
   isDark: boolean,
 ) {
-  const baseAlpha = isDark ? 0.35 : 0.22;
-  const breathAlpha = baseAlpha + Math.sin(time * 0.8) * 0.04;
+  // Dramatic aura — orb clearly emits light
+  const baseAlpha = isDark ? 0.42 : 0.28;
+  const breathAlpha = baseAlpha + Math.sin(time * 0.8) * 0.03;
 
-  // Primary wide glow
+  // Primary wide glow — tighter falloff
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-  g.addColorStop(0, hsla(hsl.h, hsl.s * 0.7, hsl.l + 20, breathAlpha * 2.2));
-  g.addColorStop(0.15, hsla(hsl.h, hsl.s * 0.6, hsl.l + 15, breathAlpha * 1.6));
-  g.addColorStop(0.35, hsla(hsl.h, hsl.s * 0.5, hsl.l + 10, breathAlpha * 0.9));
-  g.addColorStop(0.6, hsla(hsl.h, hsl.s * 0.35, hsl.l + 5, breathAlpha * 0.35));
+  g.addColorStop(0, hsla(hsl.h, hsl.s * 0.7, hsl.l + 20, breathAlpha * 1.8));
+  g.addColorStop(0.12, hsla(hsl.h, hsl.s * 0.6, hsl.l + 15, breathAlpha * 1.2));
+  g.addColorStop(0.28, hsla(hsl.h, hsl.s * 0.5, hsl.l + 10, breathAlpha * 0.6));
+  g.addColorStop(0.5, hsla(hsl.h, hsl.s * 0.35, hsl.l + 5, breathAlpha * 0.15));
   g.addColorStop(1, hsla(hsl.h, hsl.s * 0.2, hsl.l, 0));
   ctx.fillStyle = g;
   ctx.beginPath();
@@ -410,9 +412,9 @@ function drawAura(
     cx + offsetX, cy + offsetY, 0,
     cx + offsetX, cy + offsetY, subR,
   );
-  g2.addColorStop(0, hsla(hsl.h + 25, hsl.s * 0.9, hsl.l + 25, subAlpha));
-  g2.addColorStop(0.4, hsla(hsl.h + 25, hsl.s * 0.6, hsl.l + 12, subAlpha * 0.5));
-  g2.addColorStop(1, hsla(hsl.h + 25, hsl.s, hsl.l, 0));
+  g2.addColorStop(0, hsla(hsl.h + 10, hsl.s * 0.9, hsl.l + 25, subAlpha));
+  g2.addColorStop(0.4, hsla(hsl.h + 10, hsl.s * 0.6, hsl.l + 12, subAlpha * 0.5));
+  g2.addColorStop(1, hsla(hsl.h + 10, hsl.s, hsl.l, 0));
   ctx.fillStyle = g2;
   ctx.beginPath();
   ctx.arc(cx + offsetX, cy + offsetY, subR, 0, Math.PI * 2);
@@ -427,13 +429,65 @@ function drawAura(
       cx + ox2, cy + oy2, 0,
       cx + ox2, cy + oy2, subR * 0.8,
     );
-    g3.addColorStop(0, hsla(hsl.h - 15, hsl.s * 0.7, hsl.l + 18, subAlpha * 0.4));
-    g3.addColorStop(1, hsla(hsl.h - 15, hsl.s * 0.4, hsl.l, 0));
+    g3.addColorStop(0, hsla(hsl.h - 8, hsl.s * 0.7, hsl.l + 18, subAlpha * 0.4));
+    g3.addColorStop(1, hsla(hsl.h - 8, hsl.s * 0.4, hsl.l, 0));
     ctx.fillStyle = g3;
     ctx.beginPath();
     ctx.arc(cx + ox2, cy + oy2, subR * 0.8, 0, Math.PI * 2);
     ctx.fill();
   }
+}
+
+// ── Color Flow Overlay (multi-color surface — matches shader T1) ──
+
+function drawColorFlow(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  h: number,
+  hsl: { h: number; s: number; l: number },
+  time: number,
+  isDark: boolean,
+) {
+  const prevComposite = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = isDark ? 'lighter' : 'overlay';
+
+  // Color overlay 1: hue shifted +45°, flowing position
+  const hueShift1 = 45 + Math.sin(time * 0.05) * 20;
+  const flowX1 = Math.sin(time * 0.06) * radius * 0.3;
+  const flowY1 = Math.cos(time * 0.04) * radius * 0.3;
+  const alpha1 = isDark ? 0.30 : 0.25;
+  const g1 = ctx.createRadialGradient(
+    cx + flowX1, cy + flowY1, 0,
+    cx + flowX1, cy + flowY1, radius * 0.9,
+  );
+  g1.addColorStop(0, hsla(h + hueShift1, hsl.s * 0.8, hsl.l + 10, alpha1));
+  g1.addColorStop(0.5, hsla(h + hueShift1, hsl.s * 0.6, hsl.l, alpha1 * 0.4));
+  g1.addColorStop(1, hsla(h + hueShift1, hsl.s * 0.3, hsl.l - 5, 0));
+  ctx.beginPath();
+  ctx.arc(cx + flowX1, cy + flowY1, radius * 0.9, 0, Math.PI * 2);
+  ctx.fillStyle = g1;
+  ctx.fill();
+
+  // Color overlay 2: hue shifted -50°, different flow phase
+  const hueShift2 = -(50 + Math.cos(time * 0.07) * 20);
+  const flowX2 = Math.cos(time * 0.05 + 2.0) * radius * 0.25;
+  const flowY2 = Math.sin(time * 0.04 + 1.5) * radius * 0.25;
+  const alpha2 = isDark ? 0.25 : 0.20;
+  const g2 = ctx.createRadialGradient(
+    cx + flowX2, cy + flowY2, 0,
+    cx + flowX2, cy + flowY2, radius * 0.85,
+  );
+  g2.addColorStop(0, hsla(h + hueShift2, hsl.s * 0.7, hsl.l + 8, alpha2));
+  g2.addColorStop(0.5, hsla(h + hueShift2, hsl.s * 0.5, hsl.l, alpha2 * 0.35));
+  g2.addColorStop(1, hsla(h + hueShift2, hsl.s * 0.3, hsl.l - 5, 0));
+  ctx.beginPath();
+  ctx.arc(cx + flowX2, cy + flowY2, radius * 0.85, 0, Math.PI * 2);
+  ctx.fillStyle = g2;
+  ctx.fill();
+
+  ctx.globalCompositeOperation = prevComposite;
 }
 
 // ── Shape Fill (volumetric blob rendering) ──
@@ -481,18 +535,82 @@ function drawShapeFill(
     cx + lightOffX, cy + lightOffY, baseRadius * 0.02,
     cx, cy, gradOuter,
   );
-  const coreLightness = isDark ? Math.min(98, hsl.l + 45) : Math.min(97, hsl.l + 38);
-  grad.addColorStop(0, hsla(h, hsl.s * 0.20, coreLightness, fillAlpha));
-  grad.addColorStop(0.12, hsla(h, hsl.s * 0.45, hsl.l + 35, fillAlpha * 0.97));
-  grad.addColorStop(0.30, hsla(h, hsl.s * 0.75, hsl.l + 22, fillAlpha * 0.90));
-  grad.addColorStop(0.50, hsla(h, hsl.s * 0.90, hsl.l + 10, fillAlpha * 0.75));
-  grad.addColorStop(0.72, hsla(h, hsl.s * 0.85, hsl.l, fillAlpha * 0.45));
-  grad.addColorStop(0.90, hsla(h, hsl.s * 0.60, hsl.l - 5, fillAlpha * 0.15));
-  grad.addColorStop(1, hsla(h, hsl.s * 0.4, hsl.l - 8, 0));
+  // Subtle wrap lighting parity: positive valence → gentle inner warmth (+3L max)
+  const wrapBoost = Math.max(0, valence) * 3;
+  // Volumetric peak gradient: bright concentrated core → fast falloff → deep color → dark edge
+  const coreLightness = isDark ? Math.min(99, hsl.l + 53) : Math.min(98, hsl.l + 47);
+  grad.addColorStop(0, hsla(h, hsl.s * 0.10, coreLightness, fillAlpha));
+  grad.addColorStop(0.08, hsla(h, hsl.s * 0.30, hsl.l + 38 + wrapBoost, fillAlpha * 0.97));
+  grad.addColorStop(0.30, hsla(h, hsl.s * 0.80, hsl.l + 18 + wrapBoost, fillAlpha * 0.90));
+  grad.addColorStop(0.50, hsla(h, hsl.s * 0.95, hsl.l + 5 + wrapBoost * 0.5, fillAlpha * 0.75));
+  grad.addColorStop(0.75, hsla(h, hsl.s * 0.80, hsl.l - 3, fillAlpha * 0.06));
+  grad.addColorStop(0.92, hsla(h, hsl.s * 0.50, hsl.l - 10, fillAlpha * 0.02));
+  grad.addColorStop(1, hsla(h, hsl.s * 0.30, hsl.l - 15, 0));
 
   traceShapePath(ctx, points);
   ctx.fillStyle = grad;
   ctx.fill();
+
+  // ── Glass Edge Refraction (wide bright band on body contour — Apple glass rim) ──
+  const dpr = window.devicePixelRatio || 1;
+  const ringL = isDark ? Math.min(95, hsl.l + 30) : Math.min(90, hsl.l + 15);
+  // Wider soft rim glow (behind sharp edge)
+  traceShapePath(ctx, points);
+  ctx.strokeStyle = hsla(h, hsl.s * 0.2, Math.min(97, hsl.l + 35), 0.20);
+  ctx.lineWidth = 3.5 * dpr;
+  ctx.stroke();
+  // Sharp glass edge highlight
+  traceShapePath(ctx, points);
+  ctx.strokeStyle = hsla(h, hsl.s * 0.2, Math.min(98, hsl.l + 42), 0.65);
+  ctx.lineWidth = 2.0 * dpr;
+  ctx.stroke();
+
+  // ── Inner concentric rings (2 inside body — crisp glass rim + soft glow) ──
+  const innerRingScales = [0.65, 0.35];
+  const innerRingAlphas = [0.40, 0.30];
+  const innerRingWidths = [2.0, 1.6];
+  for (let ri = 0; ri < 2; ri++) {
+    const innerPts = computeShapePoints(
+      cx, cy, baseRadius * innerRingScales[ri],
+      shape, time, rotation, breathScale,
+      0, noiseSpeed, seed, valence,
+    );
+    // Soft glow pass (behind sharp line)
+    traceShapePath(ctx, innerPts);
+    ctx.strokeStyle = hsla(h, hsl.s * 0.3, ringL + 8, innerRingAlphas[ri] * 0.25);
+    ctx.lineWidth = innerRingWidths[ri] * dpr * 3;
+    ctx.stroke();
+    // Sharp glass rim pass
+    traceShapePath(ctx, innerPts);
+    ctx.strokeStyle = hsla(h, hsl.s * 0.4, ringL + 5, innerRingAlphas[ri]);
+    ctx.lineWidth = innerRingWidths[ri] * dpr;
+    ctx.stroke();
+  }
+
+  // ── Outer concentric rings (4 outside body — crisp glass rim highlights) ──
+  const ringScales = [1.12, 1.28, 1.44, 1.55];
+  const ringAlphas = [0.55, 0.45, 0.35, 0.25];
+  const ringWidths = [2.5, 2.0, 1.6, 1.4];
+  const ringSats = [hsl.s * 0.55, hsl.s * 0.48, hsl.s * 0.40, hsl.s * 0.32];
+  const ringLs = [ringL, ringL + 3, ringL + 6, ringL + 9];
+
+  for (let ri = 0; ri < 4; ri++) {
+    const ringPoints = computeShapePoints(
+      cx, cy, baseRadius * ringScales[ri],
+      shape, time, rotation, breathScale,
+      0, noiseSpeed, seed, valence,
+    );
+    // Soft glow pass (behind sharp line)
+    traceShapePath(ctx, ringPoints);
+    ctx.strokeStyle = hsla(h, ringSats[ri] * 0.6, ringLs[ri] + 5, ringAlphas[ri] * 0.25);
+    ctx.lineWidth = ringWidths[ri] * dpr * 3;
+    ctx.stroke();
+    // Sharp glass rim pass
+    traceShapePath(ctx, ringPoints);
+    ctx.strokeStyle = hsla(h, ringSats[ri], ringLs[ri], ringAlphas[ri]);
+    ctx.lineWidth = ringWidths[ri] * dpr;
+    ctx.stroke();
+  }
 
   // Optional soft glow stroke (atmospheric edge, no crisp rim)
   if (strokeMode === 'glow') {
@@ -511,7 +629,8 @@ function drawShapeFill(
  * Thin semi-transparent rose curve r = cos(k·θ) traced as inner mandala lines.
  * k varies with valence: complex fractions (negative) → clean integers (positive).
  */
-function drawRoseCurve(
+// [DISABLED] — removed from drawOrbScene per Apple Quality pass
+function _drawRoseCurve(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
@@ -606,8 +725,10 @@ function drawGodRays(
   const rayCount = 10;
   const rayRotation = time * 0.03;
   const rayLength = radius * mapRange(valence, -1, 1, 1.2, 2.0);
-  const rayWidth = Math.PI / 18; // ~10° arc per ray
-  const baseAlpha = mapRange(valence, -1, 1, 0.04, 0.12) * (isDark ? 1.4 : 1.0);
+  // P0: foggy wide rays at negative → sharp narrow rays at positive
+  const rayWidth = mapRange(valence, -1, 1, Math.PI / 10, Math.PI / 18);
+  // P7: -35% volumetric rays (matches shader P5)
+  const baseAlpha = mapRange(valence, -1, 1, 0.026, 0.078) * (isDark ? 1.2 : 1.0);
 
   for (let i = 0; i < rayCount; i++) {
     const angle = rayRotation + (i / rayCount) * Math.PI * 2;
@@ -638,7 +759,7 @@ function drawIridescence(
   cx: number,
   cy: number,
   radius: number,
-  hsl: { h: number; s: number; l: number },
+  _hsl: { h: number; s: number; l: number },
   time: number,
   valence: number,
   isDark: boolean,
@@ -646,29 +767,32 @@ function drawIridescence(
   const prevComposite = ctx.globalCompositeOperation;
   ctx.globalCompositeOperation = isDark ? 'lighter' : 'overlay';
 
-  // Two hue-shifted overlays simulating thin-film spectral bands
-  const alpha = mapRange(valence, -1, 1, 0.05, 0.10) * (isDark ? 1.3 : 1.0);
-  const innerR = radius * 0.65;
+  // P7: Apple Intelligence-style iridescent rim (matches shader P2)
+  // Uses 3 gradient bands approximating Apple's 7-color spectrum
+  const alpha = mapRange(valence, -1, 1, 0.12, 0.22) * (isDark ? 1.3 : 1.0);
+  const innerR = radius * 0.15; // body-wide, not rim-only
   const outerR = radius * 1.0;
-  const breathShift = Math.sin(time * 0.7) * 3; // subtle oscillation
+  const breathShift = Math.sin(time * 0.7) * 3;
+  const phase = time * 0.08; // slow animated drift (matches shader)
+  const phaseHue = (phase * 60) % 360; // rotating hue offset
 
-  // Band 1: hue + 60° (toward complementary)
+  // Band 1: lavender → pink (BC82F3, F5B9EA)
   const g1 = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
-  g1.addColorStop(0, hsla(hsl.h + 60 + breathShift, hsl.s * 0.6, hsl.l + 15, 0));
-  g1.addColorStop(0.4, hsla(hsl.h + 60 + breathShift, hsl.s * 0.7, hsl.l + 20, alpha * 0.7));
-  g1.addColorStop(0.75, hsla(hsl.h + 120 + breathShift, hsl.s * 0.5, hsl.l + 10, alpha));
-  g1.addColorStop(1, hsla(hsl.h + 180 + breathShift, hsl.s * 0.4, hsl.l, 0));
+  g1.addColorStop(0, hsla(275 + phaseHue + breathShift, 65, 73, 0));
+  g1.addColorStop(0.4, hsla(275 + phaseHue + breathShift, 70, 78, alpha * 0.7));
+  g1.addColorStop(0.75, hsla(320 + phaseHue + breathShift, 60, 82, alpha));
+  g1.addColorStop(1, hsla(320 + phaseHue + breathShift, 50, 75, 0));
 
   ctx.beginPath();
   ctx.arc(cx, cy, outerR, 0, Math.PI * 2);
   ctx.fillStyle = g1;
   ctx.fill();
 
-  // Band 2: hue - 40° (opposite direction), offset phase
+  // Band 2: blue → coral (8D9FFF, FF6778)
   const g2 = ctx.createRadialGradient(cx, cy, innerR * 0.9, cx, cy, outerR * 0.95);
-  g2.addColorStop(0, hsla(hsl.h - 40 - breathShift, hsl.s * 0.5, hsl.l + 12, 0));
-  g2.addColorStop(0.5, hsla(hsl.h - 40 - breathShift, hsl.s * 0.6, hsl.l + 18, alpha * 0.5));
-  g2.addColorStop(1, hsla(hsl.h - 80 - breathShift, hsl.s * 0.3, hsl.l, 0));
+  g2.addColorStop(0, hsla(230 + phaseHue - breathShift, 55, 70, 0));
+  g2.addColorStop(0.5, hsla(230 + phaseHue - breathShift, 65, 75, alpha * 0.5));
+  g2.addColorStop(1, hsla(355 + phaseHue - breathShift, 50, 68, 0));
 
   ctx.beginPath();
   ctx.arc(cx, cy, outerR * 0.95, 0, Math.PI * 2);
@@ -680,7 +804,8 @@ function drawIridescence(
 
 // ── Aurora Spectral Bands (flowing color streams — Canvas 2D fallback) ──
 
-function drawAuroraBands(
+// [DISABLED] — removed from drawOrbScene per Apple Quality pass
+function _drawAuroraBands(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
@@ -693,11 +818,12 @@ function drawAuroraBands(
   const prevComposite = ctx.globalCompositeOperation;
   ctx.globalCompositeOperation = 'overlay';
 
-  const alpha = mapRange(valence, -1, 1, 0.08, 0.14) * (isDark ? 1.2 : 1.0);
+  // P7: -20% aurora opacity, -10% drift speed (matches shader P6d)
+  const alpha = mapRange(valence, -1, 1, 0.064, 0.112) * (isDark ? 1.2 : 1.0);
 
-  // Band 1: drifting elliptical gradient (diagonal flow)
-  const drift1x = noise2d(time * 0.08, 20) * radius * 0.3;
-  const drift1y = noise2d(time * 0.06 + 50, 20) * radius * 0.3;
+  // Band 1: drifting elliptical gradient (diagonal flow) — 10% slower
+  const drift1x = noise2d(time * 0.072, 20) * radius * 0.3;
+  const drift1y = noise2d(time * 0.054 + 50, 20) * radius * 0.3;
   const g1 = ctx.createRadialGradient(
     cx + drift1x, cy + drift1y, 0,
     cx + drift1x, cy + drift1y, radius * 0.8,
@@ -711,9 +837,9 @@ function drawAuroraBands(
   ctx.fillStyle = g1;
   ctx.fill();
 
-  // Band 2: opposite drift (vertical flow)
-  const drift2x = noise2d(time * 0.06 + 100, 30) * radius * 0.25;
-  const drift2y = noise2d(time * 0.08 + 150, 30) * radius * 0.25;
+  // Band 2: opposite drift (vertical flow) — 10% slower
+  const drift2x = noise2d(time * 0.054 + 100, 30) * radius * 0.25;
+  const drift2y = noise2d(time * 0.072 + 150, 30) * radius * 0.25;
   const g2 = ctx.createRadialGradient(
     cx + drift2x, cy + drift2y, 0,
     cx + drift2x, cy + drift2y, radius * 0.7,
@@ -732,7 +858,8 @@ function drawAuroraBands(
 
 // ── Caustic Light Patterns (swimming refraction — Canvas 2D fallback) ──
 
-function drawCaustics(
+// [DISABLED] — removed from drawOrbScene per Apple Quality pass
+function _drawCaustics(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
@@ -745,13 +872,13 @@ function drawCaustics(
   const prevComposite = ctx.globalCompositeOperation;
   ctx.globalCompositeOperation = 'lighter';
 
-  const baseAlpha = mapRange(valence, -1, 1, 0.03, 0.09) * (isDark ? 1.3 : 1.0);
+  const baseAlpha = mapRange(valence, -1, 1, 0.06, 0.15) * (isDark ? 1.3 : 1.0); // 4× stronger
   const causticCount = 6;
   const r = radius * 0.7;
 
   for (let i = 0; i < causticCount; i++) {
     const phase = (i / causticCount) * Math.PI * 2;
-    const drift = time * 0.15 + phase;
+    const drift = time * 0.10 + phase;
     const ox = Math.sin(drift) * r * 0.3;
     const oy = Math.cos(drift * 0.8 + 1.2) * r * 0.3;
     const spotR = r * (0.2 + Math.sin(drift * 1.5 + i) * 0.1);
@@ -786,12 +913,13 @@ function drawInnerDepth(
   const prevComposite = ctx.globalCompositeOperation;
   ctx.globalCompositeOperation = 'lighter';
 
-  const depthPulse = Math.sin(time * 1.5) * 0.3 + 0.7;
+  // P7: softer pulse, wider zones (matches shader P6c)
+  const depthPulse = Math.sin(time * 1.2) * 0.25 + 0.75; // gentler pulse
   const depthStr = mapRange(valence, -1, 1, 0.4, 1.2);
 
-  // Zone 1: tight pulsating core
-  const z1R = radius * 0.35;
-  const z1Alpha = 0.12 * depthPulse * depthStr * (isDark ? 1.3 : 1.0);
+  // Zone 1: wider, softer pulsating core
+  const z1R = radius * 0.40; // wider
+  const z1Alpha = 0.10 * depthPulse * depthStr * (isDark ? 1.3 : 1.0); // softer
   const g1 = ctx.createRadialGradient(cx, cy, 0, cx, cy, z1R);
   g1.addColorStop(0, hsla(hsl.h, hsl.s * 0.2, 99, z1Alpha));
   g1.addColorStop(0.4, hsla(hsl.h, hsl.s * 0.5, hsl.l + 30, z1Alpha * 0.6));
@@ -820,7 +948,8 @@ function drawInnerDepth(
 
 // ── Chromatic Dispersion (prismatic edge fringe — Canvas 2D fallback) ──
 
-function drawChromaticDispersion(
+// [DISABLED] — removed from drawOrbScene per Apple Quality pass
+function _drawChromaticDispersion(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
@@ -875,7 +1004,8 @@ function drawBloom(
   const prevComposite = ctx.globalCompositeOperation;
   ctx.globalCompositeOperation = 'lighter';
 
-  const bloomAlpha = (isDark ? 0.10 : 0.06) + Math.sin(time * 0.7) * 0.015;
+  // Dramatic bloom — visible additive glow
+  const bloomAlpha = (isDark ? 0.12 : 0.07) + Math.sin(time * 0.7) * 0.01;
   const bloomR = radius;
 
   const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, bloomR);
@@ -892,6 +1022,53 @@ function drawBloom(
   ctx.globalCompositeOperation = prevComposite;
 }
 
+// ── Hope Sparkle (P0 — warm light within negative valence) ──
+
+/**
+ * At negative valence, rare warm amber flashes appear inside the orb.
+ * "Even in the darkest state, a spark persists." — prevents negative feedback loop
+ * (research: 77.8% drop-off when tracking negative emotions feels punishing).
+ */
+function drawHopeSparkle(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  radius: number,
+  time: number,
+  valence: number,
+  isDark: boolean,
+) {
+  // Only active at negative valence
+  if (valence > -0.1) return;
+
+  const nv = (valence + 1) * 0.5; // 0 at v=-1, 0.45 at v=-0.1
+  const intensity = (1 - nv) * (1 - nv); // strongest at v=-1
+
+  // Slow flickering pulse — noise-driven for organic feel
+  const pulse = Math.pow(Math.max(0, Math.sin(time * 0.7 + noise2d(time * 0.15, 0) * 3)), 4);
+  const flicker = Math.pow(Math.max(0, noise2d(cx * 0.01, time * 0.8)), 8);
+  const alpha = intensity * pulse * flicker * 0.35 * (isDark ? 1.3 : 1.0);
+
+  if (alpha < 0.01) return;
+
+  const sparkleR = radius * 0.35;
+  const prevComposite = ctx.globalCompositeOperation;
+  ctx.globalCompositeOperation = 'lighter';
+
+  // Warm amber radial glow
+  const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, sparkleR);
+  g.addColorStop(0, `rgba(255, 217, 153, ${alpha})`);   // warm amber center
+  g.addColorStop(0.4, `rgba(255, 200, 120, ${alpha * 0.5})`);
+  g.addColorStop(1, `rgba(255, 180, 80, 0)`);
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, sparkleR, 0, Math.PI * 2);
+  ctx.fillStyle = g;
+  ctx.fill();
+
+  ctx.globalCompositeOperation = prevComposite;
+}
+
 // ── Specular Highlight (3D sphere illusion) ──
 
 /**
@@ -899,32 +1076,33 @@ function drawBloom(
  * Creates the illusion of a reflective 3D surface — the single biggest
  * visual upgrade for perceived premium quality.
  */
-function drawSpecularHighlight(
+function _drawSpecularHighlight(
   ctx: CanvasRenderingContext2D,
   cx: number,
   cy: number,
   radius: number,
-  hsl: { h: number; s: number; l: number },
+  _hsl: { h: number; s: number; l: number },
   time: number,
   isDark: boolean,
 ) {
-  const highlightR = radius * 0.24;
+  // P7: sharper, tighter specular for glass feel (matches shader P3)
+  const highlightR = radius * 0.22; // visible glass highlight
   // Light source is top-left, so highlight is offset there
   const offsetX = -radius * 0.28;
   const offsetY = -radius * 0.32;
   // Subtle breathing on the highlight
   const breathAlpha = 1 + Math.sin(time * 1.1) * 0.08;
 
-  const alpha = (isDark ? 0.42 : 0.32) * breathAlpha;
+  const alpha = (isDark ? 0.50 : 0.38) * breathAlpha; // clearly visible glass highlight
 
   const grad = ctx.createRadialGradient(
     cx + offsetX, cy + offsetY, 0,
     cx + offsetX, cy + offsetY, highlightR,
   );
-  grad.addColorStop(0, hsla(hsl.h, hsl.s * 0.08, 99, alpha));
-  grad.addColorStop(0.25, hsla(hsl.h, hsl.s * 0.12, 97, alpha * 0.65));
-  grad.addColorStop(0.55, hsla(hsl.h, hsl.s * 0.20, 93, alpha * 0.25));
-  grad.addColorStop(1, hsla(hsl.h, hsl.s * 0.25, 88, 0));
+  grad.addColorStop(0, hsla(0, 0, 100, alpha)); // pure white core
+  grad.addColorStop(0.15, hsla(0, 0, 99, alpha * 0.75));
+  grad.addColorStop(0.40, hsla(0, 0, 95, alpha * 0.30));
+  grad.addColorStop(1, hsla(0, 0, 88, 0));
 
   ctx.fillStyle = grad;
   ctx.beginPath();
@@ -1048,7 +1226,7 @@ export function drawOrbScene(
   ctx: CanvasRenderingContext2D,
   params: OrbSceneParams,
 ): void {
-  const { valence, time, particles, size, dpr, isDark } = params;
+  const { valence, time, particles, size, dpr, isDark, shimmer = 0 } = params;
   const w = size * dpr;
   const h = size * dpr;
   const cx = w / 2;
@@ -1060,17 +1238,16 @@ export function drawOrbScene(
   ctx.clearRect(0, 0, w, h);
 
   // ── Valence-driven animation parameters ──
-  // Step 4: More dramatic noise at negative valence (shape writhes)
-  const noiseAmp = 0.04 + (valence < 0 ? Math.abs(valence) * 0.12 : Math.abs(valence) * 0.04);
+  // Apple: ~1% body variation, barely perceptible organic life
+  const noiseAmp = 0.010 + (valence < 0 ? Math.abs(valence) * 0.020 : Math.abs(valence) * 0.010);
   const noiseSpeed = mapRange(valence, -1, 1, 0.85, 0.20);
   const rotSpeed = mapRange(valence, -1, 1, 0.055, 0.015);
 
-  // Valence-driven size: compact at negative, expansive at positive
-  const valenceSizeScale = 1.0 + valence * 0.15; // -1→0.85, 0→1.0, +1→1.15
-  const baseRadius = size * 0.38 * dpr * valenceSizeScale;
+  // Fixed size — Apple: all shapes same radius regardless of valence
+  const baseRadius = size * 0.25 * dpr;
 
-  // Living hue shimmer — noise-driven subtle hue modulation over time
-  const hueShimmer = noise2d(time * 0.12, 300) * 8; // ±8° hue drift
+  // Living hue shimmer — Apple Quality: ±3° organic but stable color
+  const hueShimmer = noise2d(time * 0.12, 300) * 3; // ±3° hue drift
   const shimmerHSL = { h: hsl.h + hueShimmer, s: hsl.s, l: hsl.l };
 
   // ── Physiological breathing (inhale→hold→exhale→pause, wave from outer to inner) ──
@@ -1090,8 +1267,8 @@ export function drawOrbScene(
     cy - baseRadius * 1.2 - glowPad,
   );
 
-  // Layer 1: Deep aura (wider, stronger)
-  drawAura(ctx, cx, cy, baseRadius * 1.85, shimmerHSL, time, isDark);
+  // Layer 1: Deep aura — wider for organic light emission into space
+  drawAura(ctx, cx, cy, baseRadius * 1.45, shimmerHSL, time, isDark);
 
   // Layer 1.5: Volumetric light rays (god rays behind orb)
   drawGodRays(ctx, cx, cy, baseRadius, shimmerHSL, time, valence, isDark);
@@ -1115,10 +1292,10 @@ export function drawOrbScene(
     const ocx = offscreenSize / 2;
     const ocy = offscreenSize / 2;
 
-    // Layer 3: Envelope glow
+    // Layer 3: Envelope glow — P7: tighter (was 1.12, now 1.06)
     drawShapeFill(
       oc, ocx, ocy,
-      baseRadius * 1.12, shape, time,
+      baseRadius * 1.06, shape, time,
       time * rotSpeed,
       outerBreath,
       isDark ? 0.22 : 0.16,
@@ -1127,13 +1304,13 @@ export function drawOrbScene(
       'none', undefined, valence,
     );
 
-    // Layer 4: Primary solid body
+    // Layer 4: Primary solid body — Apple Quality: solid core (was 0.82/0.72)
     drawShapeFill(
       oc, ocx, ocy,
       baseRadius * 1.0, shape, time,
       time * rotSpeed,
       bodyBreath,
-      isDark ? 0.82 : 0.72,
+      isDark ? 0.92 : 0.85,
       shimmerHSL, noiseAmp, noiseSpeed,
       isDark, 0, 10,
       'glow', undefined, valence,
@@ -1154,7 +1331,7 @@ export function drawOrbScene(
     // Composite back with soft blur — airbrushed edges
     if (typeof ctx.filter === 'string') {
       const prevFilter = ctx.filter;
-      ctx.filter = 'blur(2px)';
+      ctx.filter = 'blur(1px)';
       ctx.drawImage(
         offscreen.canvas,
         0, 0, offscreenSize, offscreenSize,
@@ -1173,39 +1350,48 @@ export function drawOrbScene(
     }
   }
 
-  // Layer 6: Rose curve overlay (subtle inner mandala) — SHARP, no blur
-  drawRoseCurve(
-    ctx, cx, cy,
-    baseRadius * 0.42,
-    valence, time, shimmerHSL, isDark,
-  );
+  // Layer 6: Multi-color flow overlay (matches shader T1)
+  drawColorFlow(ctx, cx, cy, baseRadius, shimmerHSL.h, shimmerHSL, time, isDark);
 
   // Layer 7: Luminous core — SHARP
   drawCore(ctx, cx, cy, baseRadius * 0.36, shimmerHSL, time, isDark);
 
-  // Layer 7.2: Inner depth luminance — pulsating concentric celestial glow
+  // Layer 7.2: Inner depth luminance — warm inner life
   drawInnerDepth(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, valence, isDark);
 
-  // Layer 7.4: Caustic light patterns — swimming refraction spots
-  drawCaustics(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, valence, isDark);
+  // Layer 7.4: Caustics — slow swimming light for glass/crystal depth
+  _drawCaustics(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, valence, isDark);
 
-  // Layer 7.5: Specular highlight — 3D sphere illusion
-  drawSpecularHighlight(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, isDark);
+  // Layer 7.5: Specular highlight — glass material cue
+  _drawSpecularHighlight(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, isDark);
 
-  // Layer 7.6: Iridescence — thin-film rainbow shimmer at edges
+  // Layer 7.6: Iridescence — Apple Intelligence rainbow rim (the star accent)
   drawIridescence(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, valence, isDark);
 
-  // Layer 7.65: Chromatic dispersion — prismatic RGB edge fringe
-  drawChromaticDispersion(ctx, cx, cy, baseRadius * 0.90, shimmerHSL, valence, isDark);
-
-  // Layer 7.7: Rim light — secondary light source (bottom-right)
+  // Layer 7.7: Rim light — secondary light source (3D depth)
   drawRimLight(ctx, cx, cy, baseRadius * 0.85, shimmerHSL, time, isDark);
-
-  // Layer 7.8: Aurora spectral bands — flowing color streams
-  drawAuroraBands(ctx, cx, cy, baseRadius * 0.80, shimmerHSL, time, valence, isDark);
 
   // Layer 8: Bloom overlay — additive glow for premium luminosity
   drawBloom(ctx, cx, cy, baseRadius * 0.70, shimmerHSL, time, isDark);
+
+  // Layer 8.5: Hope sparkle — warm amber flash inside negative valence orb (P0)
+  drawHopeSparkle(ctx, cx, cy, baseRadius * 0.60, time, valence, isDark);
+
+  // Layer 8.6: Shimmer burst — P3 transition flash (desaturate + brighten)
+  if (shimmer > 0.01) {
+    const prevComposite = ctx.globalCompositeOperation;
+    ctx.globalCompositeOperation = 'lighter';
+    const shimmerAlpha = shimmer * 0.3;
+    const sg = ctx.createRadialGradient(cx, cy, 0, cx, cy, baseRadius * 1.2);
+    sg.addColorStop(0, `rgba(255, 255, 255, ${shimmerAlpha})`);
+    sg.addColorStop(0.5, `rgba(255, 255, 255, ${shimmerAlpha * 0.4})`);
+    sg.addColorStop(1, `rgba(255, 255, 255, 0)`);
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseRadius * 1.2, 0, Math.PI * 2);
+    ctx.fillStyle = sg;
+    ctx.fill();
+    ctx.globalCompositeOperation = prevComposite;
+  }
 
   // Layer 9: Depth-of-field particles
   drawParticles(ctx, particles, shimmerHSL, dpr, isDark, cx, cy, baseRadius);
