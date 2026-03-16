@@ -20,8 +20,7 @@
  */
 
 import { useRef, useEffect, useState, memo } from 'react';
-import { shouldAnimate, shouldPlaySounds } from '@/lib/animationUtils';
-import { resumeOnInteraction } from '@/lib/audioManager';
+import { shouldAnimate } from '@/lib/animationUtils';
 import { recordError } from '@/lib/crashReporting';
 import { hapticTap } from '@/lib/haptics';
 import { hapticMedium } from '@/lib/haptics';
@@ -31,8 +30,6 @@ import { valenceToHSL } from './colorUtils';
 import { createOrbGL2, createOrbGL } from './orbShader';
 import type { Particle } from './particleSystem';
 import type { OrbGLRenderer } from './orbShader';
-import { createOrbAudio } from './orbAudio';
-import type { OrbAudioController } from './orbAudio';
 
 // Module-level: genesis plays only once per browser session
 let genesisPlayed = false;
@@ -221,13 +218,6 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
     canvasElRef.current = activeCanvas;
     wrapper.appendChild(activeCanvas);
 
-    // ── P5: Generative ambient sound (gated by dopamine settings) ──
-    let orbAudio: OrbAudioController | null = null;
-    if (shouldPlaySounds()) {
-      orbAudio = createOrbAudio();
-      orbAudio?.fadeIn(1.5); // gentle 1.5s fade-in
-    }
-
     // ── Genesis easing (ease-out-back with slight overshoot) ──
     const computeGenesis = (timestamp: number): number => {
       const elapsed = (timestamp - genesisStartRef.current) / 1000;
@@ -362,13 +352,6 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
         );
       }
 
-      // P5: Update ambient sound (valence + breath sync)
-      if (orbAudio) {
-        const breathPeriod = 8 + (state.currentValence + 1) * 4; // same formula as shader
-        const breathPhase = (state.time % breathPeriod) / breathPeriod;
-        orbAudio.update(state.currentValence, breathPhase);
-      }
-
       // Proactive context loss detection (iOS 17+ WKWebView — context lost without event)
       if (glRendererRef.current?.isContextLost()) {
         glRendererRef.current.dispose();
@@ -458,7 +441,6 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
         touchRef.current = { x, y, startTime: state.time };
         lastInteractionRef.current = performance.now(); // P4: reset idle
         void hapticTap(); // Tactile feedback on touch (Law 22 — sensory pairing)
-        void resumeOnInteraction(); // P5: iOS user gesture → unlock AudioContext
       }
     };
     // passive: true — never blocks scroll/swipe gestures
@@ -467,8 +449,6 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
     // ── Cleanup ──
     const cleanup = () => {
       cancelAnimationFrame(rafRef.current);
-      // P5: fade out and dispose audio
-      if (orbAudio) { orbAudio.fadeOut(0.5); setTimeout(() => orbAudio?.dispose(), 600); }
       wrapper.removeEventListener('pointerdown', handlePointerDown);
       if (glRenderer) {
         activeCanvas.removeEventListener('webglcontextlost', handleContextLost);
