@@ -145,15 +145,39 @@ function measureMetrics(): Record<string, number> {
   };
 }
 
-/** Count theme-blind hardcoded colors (Visual Aesthetic Part 6 — Chameleon Rule) */
+/** Count theme-blind hardcoded colors (Visual Aesthetic Part 6 — Chameleon Rule)
+ *
+ * Detects 3 categories of theme-blind code:
+ *   1. Tailwind slate/gray utility classes without dark: variant
+ *   2. Arbitrary hex values in bg-[#], text-[#], from-[#], to-[#], via-[#]
+ *   3. border-slate/gray, ring-slate/gray, divide-slate/gray, placeholder-slate/gray
+ *
+ * Shared exclusions (all greps):
+ *   - __tests__     — test files are not rendered UI
+ *   - state-of-mind — WebGL/Canvas shader code
+ *   - dark:         — lines with dark: variant are dual-theme-aware
+ *
+ * Category-specific exemptions:
+ *   - ThemeToggle    — theme-conditional via JS ternary
+ *   - AuthScreen     — Apple/Google brand button colors
+ *   - coolEmojis     — SVG emoji art (brand asset)
+ *   - AchievementsPanel/AchievementToast — gamification brand gradient (#6bb5a0/#4a9d7c)
+ *   - OutroSlide     — Stories context (always dark bg)
+ *   - ChallengeDetailsView — terminal-style accent (#34d399)
+ *   - HabitCompletionCelebration — decorative gold badge
+ *   - 1877F2/166FE5  — Facebook brand blue
+ */
 function countHardcodedColors(): number {
-  // text-slate-N / bg-slate-N / bg-gray-N / text-gray-N WITHOUT dark: variant
-  // Excludes: test files, state-of-mind (WebGL), ThemeToggle (theme-conditional via JS),
-  //           AuthScreen (Apple/Google brand buttons), lines with dark: (dual-variant)
-  const slateGray = runCount(`bash -c "grep -rn 'text-slate-[1-9]\\|bg-slate-[1-9]\\|bg-gray-\\|text-gray-' src/ --include='*.tsx' | grep -v 'dark:' | grep -v '__tests__' | grep -v 'state-of-mind/' | grep -v 'ThemeToggle' | grep -v 'AuthScreen' | wc -l"`);
-  // bg-[#hex] hardcoded backgrounds (excluding brand colors like Facebook #1877F2)
-  const hexBg = runCount(`bash -c "grep -rn 'bg-\\[#[0-9a-fA-F]' src/ --include='*.tsx' | grep -v '__tests__' | grep -v 'state-of-mind/' | grep -v '1877F2\\|166FE5' | wc -l"`);
-  return slateGray + hexBg;
+  // Shared exclude pipeline suffix
+  const shared = "grep -v 'dark:' | grep -v '__tests__' | grep -v 'state-of-mind/'";
+
+  // 1. Tailwind slate/gray utility classes (text-*, bg-*, border-*, ring-*, divide-*, placeholder-*)
+  const slateGray = runCount(`bash -c "grep -rn 'text-slate-[1-9]\\|bg-slate-[1-9]\\|bg-gray-\\|text-gray-\\|border-slate-\\|border-gray-\\|ring-slate-\\|ring-gray-\\|divide-slate-\\|divide-gray-\\|placeholder-slate-\\|placeholder-gray-' src/ --include='*.tsx' | ${shared} | grep -v 'ThemeToggle' | grep -v 'AuthScreen' | wc -l"`);
+
+  // 2. Arbitrary hex values: bg-[#hex], text-[#hex], from-[#hex], to-[#hex], via-[#hex]
+  const hexArbitrary = runCount(`bash -c "grep -rn 'bg-\\[#[0-9a-fA-F]\\|text-\\[#[0-9a-fA-F]\\|from-\\[#[0-9a-fA-F]\\|to-\\[#[0-9a-fA-F]\\|via-\\[#[0-9a-fA-F]' src/ --include='*.tsx' | ${shared} | grep -v '1877F2\\|166FE5' | grep -v 'coolEmojis' | grep -v 'AchievementsPanel\\|AchievementToast' | grep -v 'OutroSlide' | grep -v 'ChallengeDetailsView' | grep -v 'HabitCompletionCelebration' | wc -l"`);
+
+  return slateGray + hexArbitrary;
 }
 
 function getTestTotal(): number {
