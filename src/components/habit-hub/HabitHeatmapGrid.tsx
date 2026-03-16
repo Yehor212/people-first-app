@@ -227,7 +227,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
       {/* Tooltip */}
       {tooltip && (
         <div
-          className="fixed z-[100] px-2 py-1 rounded-lg bg-slate-800 border border-white/10 text-[10px] text-slate-200 pointer-events-none shadow-lg"
+          className="fixed z-[100] px-2 py-1 rounded-lg bg-popover border border-border text-[10px] text-popover-foreground pointer-events-none shadow-lg"
           style={{ left: tooltip.x, top: tooltip.y }}
         >
           {tooltip.date} · {tooltip.status}
@@ -235,7 +235,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
       )}
 
       {/* Legend */}
-      <div className="flex items-center gap-3 mt-3 text-[10px] text-slate-600">
+      <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground">
         <span className="flex items-center gap-1">
           <div className="w-2.5 h-2.5 rounded-[2px] bg-white/[0.04]" /> {ts.legendMiss || 'Miss'}
         </span>

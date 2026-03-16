@@ -42,7 +42,7 @@ function Bird({ id }: { id: number }) {
         height="12"
         viewBox="0 0 24 12"
         fill="currentColor"
-        className="text-gray-800"
+        className="text-foreground/80"
         animate={{
           scaleY: [1, 0.6, 1],
         }}

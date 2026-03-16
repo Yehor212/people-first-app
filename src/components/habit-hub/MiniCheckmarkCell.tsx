@@ -91,11 +91,11 @@ export const MiniCheckmarkCell = memo(function MiniCheckmarkCell({
             'w-8 h-8 rounded-lg flex items-center justify-center',
             'text-[10px] font-semibold tabular-nums',
             'hover:brightness-125',
-            isToday && 'ring-1 ring-white/30',
+            isToday && 'ring-1 ring-foreground/30',
           )}
           style={{
-            backgroundColor: hasValue ? `${habitColor}25` : 'rgba(255,255,255,0.03)',
-            color: hasValue ? habitColor : 'rgba(255,255,255,0.25)',
+            backgroundColor: hasValue ? `${habitColor}25` : 'hsl(var(--foreground) / 0.03)',
+            color: hasValue ? habitColor : 'hsl(var(--foreground) / 0.25)',
           }}
         >
           {numericDisplay || '·'}

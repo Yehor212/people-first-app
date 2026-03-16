@@ -215,11 +215,11 @@ export const HabitHubCard = memo(function HabitHubCard({
                 className="h-full rounded-full transition-all duration-300 motion-reduce:duration-0"
                 style={{
                   width: `${Math.min(progress * 100, 100)}%`,
-                  backgroundColor: isCompleted ? '#22C55E' : habitColor,
+                  backgroundColor: isCompleted ? 'hsl(var(--mood-great))' : habitColor,
                 }}
               />
             </div>
-            <span className="text-[10px] font-medium tabular-nums text-slate-400 flex-shrink-0">
+            <span className="text-[10px] font-medium tabular-nums text-muted-foreground flex-shrink-0">
               {currentValue % 1 === 0 ? currentValue : currentValue.toFixed(1)}/{target}{habit.unit ? ` ${habit.unit}` : ''}
             </span>
           </div>

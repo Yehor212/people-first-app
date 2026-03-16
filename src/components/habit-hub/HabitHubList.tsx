@@ -234,7 +234,7 @@ export function HabitHubList({
               className="h-full rounded-full transition-all duration-500"
               style={{
                 width: `${overallPercent}%`,
-                backgroundColor: overallPercent >= 60 ? '#22C55E' : overallPercent >= 30 ? '#F59E0B' : '#64748B',
+                backgroundColor: overallPercent >= 60 ? 'hsl(var(--mood-great))' : overallPercent >= 30 ? 'hsl(var(--mood-good))' : 'hsl(var(--muted-foreground))',
               }}
             />
           </div>

@@ -47,19 +47,19 @@ export function SyncStatusIndicator() {
     }
 
     if (!state.isOnline) {
-      return { Icon: CloudOff, color: 'text-gray-400', bgColor: 'bg-gray-100' };
+      return { Icon: CloudOff, color: 'text-muted-foreground', bgColor: 'bg-muted' };
     }
 
     switch (state.status) {
       case 'syncing':
-        return { Icon: Loader, color: 'text-blue-500', bgColor: 'bg-blue-50', animate: true };
+        return { Icon: Loader, color: 'text-blue-500 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-500/10', animate: true };
       case 'success':
-        return { Icon: CheckCircle, color: 'text-green-500', bgColor: 'bg-green-50' };
+        return { Icon: CheckCircle, color: 'text-green-500 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-500/10' };
       case 'error':
       case 'conflict':
-        return { Icon: AlertCircle, color: 'text-red-500', bgColor: 'bg-red-50' };
+        return { Icon: AlertCircle, color: 'text-red-500 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-500/10' };
       default:
-        return { Icon: Cloud, color: 'text-gray-400', bgColor: 'bg-gray-100' };
+        return { Icon: Cloud, color: 'text-muted-foreground', bgColor: 'bg-muted' };
     }
   };
 
@@ -211,7 +211,7 @@ export function SyncStatusIndicatorCompact() {
   // Offline without pending
   if (!isOnline || !state.isOnline) {
     return (
-      <WifiOff className="w-5 h-5 text-gray-400" aria-label={t.syncOffline || 'Offline'} />
+      <WifiOff className="w-5 h-5 text-muted-foreground" aria-label={t.syncOffline || 'Offline'} />
     );
   }
 
@@ -245,7 +245,7 @@ export function SyncStatusIndicatorCompact() {
       );
     default:
       return (
-        <Cloud className="w-5 h-5 text-gray-400" aria-label={t.syncReady || 'Ready'} />
+        <Cloud className="w-5 h-5 text-muted-foreground" aria-label={t.syncReady || 'Ready'} />
       );
   }
 }

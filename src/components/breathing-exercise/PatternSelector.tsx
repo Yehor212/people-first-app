@@ -76,10 +76,7 @@ export function PatternSelector({ patterns, selected, onSelect, onStart, t }: Pa
                 pattern.effect === 'sleeping' && "bg-indigo-500/20 text-indigo-400 border-indigo-500/30",
               )}
               style={{
-                boxShadow: pattern.effect === 'calming' ? '0 0 8px rgba(59, 130, 246, 0.3)' :
-                           pattern.effect === 'focusing' ? '0 0 8px rgba(139, 92, 246, 0.3)' :
-                           pattern.effect === 'energizing' ? '0 0 8px rgba(249, 115, 22, 0.3)' :
-                           '0 0 8px rgba(99, 102, 241, 0.3)',
+                boxShadow: 'var(--zen-shadow-sm)',
               }}
             >
               {pattern.effect === 'calming' && (t.effectCalming || 'Calming')}

@@ -175,7 +175,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
                 prize.rarity === 'legendary' && 'bg-gradient-to-r from-yellow-400 to-orange-500 text-white',
                 prize.rarity === 'epic' && 'bg-gradient-to-r from-purple-500 to-pink-500 text-white',
                 prize.rarity === 'rare' && 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white',
-                prize.rarity === 'common' && 'bg-gradient-to-r from-gray-400 to-gray-500 text-white'
+                prize.rarity === 'common' && 'bg-gradient-to-r from-muted-foreground to-muted-foreground/80 text-white'
               )}>
                 <span className="text-4xl">{prize.icon}</span>
                 <div className="text-start">
@@ -206,10 +206,10 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
               className={cn(
                 'mt-6 px-10 py-4 rounded-2xl font-bold text-lg transition-all',
                 isSpinning
-                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : spinsAvailable > 0
                   ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:scale-105 active:scale-95 shadow-lg'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-muted text-muted-foreground cursor-not-allowed'
               )}
             >
               {isSpinning
@@ -225,7 +225,7 @@ export function SpinWheel({ onClose, onWin, spinsAvailable }: SpinWheelProps) {
         <div className="px-6 pb-6">
           <div className="grid grid-cols-4 gap-2 text-xs text-center">
             {[
-              { color: 'bg-gray-400', label: 'Common' },
+              { color: 'bg-muted-foreground', label: 'Common' },
               { color: 'bg-blue-500', label: 'Rare' },
               { color: 'bg-purple-500', label: 'Epic' },
               { color: 'bg-yellow-500', label: 'Legendary' },

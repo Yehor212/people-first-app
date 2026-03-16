@@ -51,7 +51,7 @@ export function AuthScreen({ onComplete, webOAuthError, onClearError }: AuthScre
             disabled={session.isLoading || !supabase}
             aria-label={session.loadingProvider === 'google' ? t.authSigningInGoogle : t.continueWithGoogle}
             aria-disabled={session.isLoading || !supabase}
-            className="w-full py-4 bg-white hover:bg-gray-50 text-gray-800 font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-card hover:bg-muted text-foreground font-semibold rounded-2xl transition-all zen-shadow-soft text-lg flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {session.loadingProvider === 'google' ? (
               <Loader2 className="w-5 h-5 animate-spin" aria-hidden="true" />

@@ -92,14 +92,9 @@ export function WeeklyReview({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <motion.div
-              className="p-2.5 rounded-xl bg-gradient-to-br from-violet-500/30 to-purple-600/20 backdrop-blur-sm"
-              style={{ boxShadow: '0 0 20px rgba(139, 92, 246, 0.3)' }}
+              className="p-2.5 rounded-xl bg-gradient-to-br from-primary/30 to-primary/20 backdrop-blur-sm shadow-zen-md"
               animate={{
-                boxShadow: [
-                  '0 0 15px rgba(139, 92, 246, 0.3)',
-                  '0 0 25px rgba(139, 92, 246, 0.5)',
-                  '0 0 15px rgba(139, 92, 246, 0.3)',
-                ],
+                opacity: [0.8, 1, 0.8],
               }}
               transition={{ duration: 3, repeat: Infinity }}
             >

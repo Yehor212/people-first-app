@@ -124,12 +124,12 @@ export function ThemeToggle() {
   if (!mounted) {
     return (
       <button
-        className="relative flex-shrink-0 w-[52px] h-[36px] rounded-full bg-slate-700 transition-colors"
+        className="relative flex-shrink-0 w-[52px] h-[36px] rounded-full bg-muted transition-colors"
         aria-label={t.toggleTheme || 'Toggle theme'}
         disabled
       >
-        <div className="absolute top-[7px] left-[27px] w-[22px] h-[22px] rounded-full bg-slate-800 flex items-center justify-center">
-          <Moon className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
+        <div className="absolute top-[7px] left-[27px] w-[22px] h-[22px] rounded-full bg-muted-foreground/30 flex items-center justify-center">
+          <Moon className="w-3.5 h-3.5 text-muted-foreground" />
         </div>
       </button>
     );

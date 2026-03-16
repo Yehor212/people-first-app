@@ -75,7 +75,7 @@ export const InsightCard = memo(function InsightCard({ insight }: InsightCardPro
     if (confidence >= 80) return 'bg-green-500';
     if (confidence >= 60) return 'bg-blue-500';
     if (confidence >= 40) return 'bg-amber-500';
-    return 'bg-gray-400';
+    return 'bg-muted-foreground';
   };
 
   return (
