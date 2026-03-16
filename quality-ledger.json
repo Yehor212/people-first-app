@@ -61,6 +61,24 @@
       "direction": "down",
       "recorded": "2026-03-16",
       "description": "Theme-blind hardcoded colors (Visual Aesthetic Part 6)"
+    },
+    "consoleLogs": {
+      "value": 11,
+      "direction": "down",
+      "recorded": "2026-03-16",
+      "description": "console.log/warn/debug in production source (use logger.ts)"
+    },
+    "todoFixme": {
+      "value": 19,
+      "direction": "down",
+      "recorded": "2026-03-16",
+      "description": "TODO/FIXME/HACK/XXX comments in source"
+    },
+    "bundleSizeKB": {
+      "value": 4814,
+      "direction": "down",
+      "recorded": "2026-03-16",
+      "description": "Total JS bundle size in KB (dist/assets/*.js)"
     }
   },
   "qualityScore": {

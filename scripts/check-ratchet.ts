@@ -142,7 +142,31 @@ function measureMetrics(): Record<string, number> {
     'exhaustiveDeps': runCount(`bash -c "grep -rn 'eslint-disable.*exhaustive-deps' src/ | wc -l"`),
     'inlineStyles': runCount(`bash -c "grep -rn 'style={{' src/ --include='*.tsx' | wc -l"`),
     'hardcodedColors': countHardcodedColors(),
+    'consoleLogs': countConsoleLogs(),
+    'todoFixme': countTodoFixme(),
+    'bundleSizeKB': measureBundleSizeKB(),
   };
+}
+
+/** Count console.log/warn/debug in production source (not logger.ts, not tests) */
+function countConsoleLogs(): number {
+  return runCount(`bash -c "grep -rn 'console\\.\\(log\\|warn\\|debug\\)' src/ --include='*.ts' --include='*.tsx' | grep -v '__tests__' | grep -v '.test.' | grep -v 'logger\\.ts' | grep -v 'crashReporting' | wc -l"`);
+}
+
+/** Count TODO/FIXME/HACK/XXX comments in production source */
+function countTodoFixme(): number {
+  return runCount(`bash -c "grep -rn 'TODO\\|FIXME\\|HACK\\|XXX' src/ --include='*.ts' --include='*.tsx' | grep -v '__tests__' | grep -v '.test.' | wc -l"`);
+}
+
+/** Measure total JS bundle size in KB (requires build to have run first) */
+function measureBundleSizeKB(): number {
+  try {
+    const bytes = runCount(`bash -c "find dist/assets -name '*.js' -exec cat {} + 2>/dev/null | wc -c"`);
+    return Math.ceil(bytes / 1024);
+  } catch {
+    // dist/ may not exist if build didn't run (e.g., standalone ratchet check)
+    return 0;
+  }
 }
 
 /** Count theme-blind hardcoded colors (Visual Aesthetic Part 6 — Chameleon Rule)

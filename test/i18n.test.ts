@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { translations, Language, Translations } from '../src/i18n/translations';
 
 // Get all supported languages
-const MAIN_LANGUAGES: Language[] = ['en', 'uk', 'es', 'de', 'fr', 'ja'];
+const MAIN_LANGUAGES: Language[] = ['en', 'uk', 'es', 'de', 'fr', 'ja', 'ar', 'he'];
 
 // Reference language (English) - all other languages should have the same keys
 const REFERENCE_LANG: Language = 'en';
