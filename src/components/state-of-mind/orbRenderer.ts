@@ -1398,7 +1398,7 @@ export function drawOrbScene(
 
   // ── Vignette: fade to transparent at canvas edges — eliminates square artifact ──
   const vignetteR = Math.min(cx, cy);
-  const vigGrad = ctx.createRadialGradient(cx, cy, vignetteR * 0.84, cx, cy, vignetteR);
+  const vigGrad = ctx.createRadialGradient(cx, cy, vignetteR * 0.78, cx, cy, vignetteR);
   vigGrad.addColorStop(0, 'rgba(0,0,0,1)');
   vigGrad.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.globalCompositeOperation = 'destination-in';

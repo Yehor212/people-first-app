@@ -326,12 +326,15 @@ void main() {
   float aura = exp(-dist * 2.8) * 0.30 * darkMult;    // slower decay + 67% brighter
   float bloom = exp(-dist * 5.0) * 0.12 * darkMult;   // wider + 85% brighter
 
-  vec3 auraColor = shimmerColor * 1.15; // brighter aura
-  // Organic aura edge — noise-driven fade, extended range
+  // Light theme: brighter aura so premultiplied pixels don't darken light backgrounds
+  float auraLightBoost = uIsDark > 0.5 ? 1.0 : 1.3;
+  vec3 auraColor = shimmerColor * 1.15 * auraLightBoost;
+  // Organic atmosphere edge — noise-driven fade, ALL atmospheric effects clamp here
   float auraEdgeNoise = 0.92 + snoise(vec3(angle * 2.0, uTime * 0.1, 0.0)) * 0.08;
-  float auraClamp = 1.0 - smoothstep(shapeR * 1.8, shapeR * 3.0 * auraEdgeNoise, dist);
-  aura *= auraClamp;
-  innerGlow *= auraClamp;
+  float atmosphereFade = 1.0 - smoothstep(shapeR * 1.6, shapeR * 2.8 * auraEdgeNoise, dist);
+  aura *= atmosphereFade;
+  innerGlow *= atmosphereFade;
+  bloom *= atmosphereFade;
 
   // ── Volumetric Light Rays (god rays behind orb) ──
   float rayAngle = angle + uTime * 0.03;
@@ -343,7 +346,7 @@ void main() {
   float rayFalloff = exp(-max(sdf, 0.0) * rayDecay);
   float rayNoise = snoise(vec3(rayAngle * 2.0, uTime * 0.2, 5.0)) * 0.3 + 0.7;
   float rayStr = mix(0.04, 0.14, nv) * darkMult; // P5: -35% volumetric rays
-  float rayIntensity = rays * rayFalloff * rayNoise * rayStr;
+  float rayIntensity = rays * rayFalloff * rayNoise * rayStr * atmosphereFade;
 
   // ── Particles (22 glow spots via uniforms) ──
   float particleGlow = 0.0;
@@ -357,6 +360,7 @@ void main() {
       particleGlow += falloff * falloff * p.w * 0.35;
     }
   }
+  particleGlow *= atmosphereFade;
 
   // ── Touch Ripple (expanding wave from touch point) ──
   float ripple = 0.0;
@@ -446,9 +450,12 @@ void main() {
   float genesisAlpha = smoothstep(0.0, 0.15, uGenesis);
   finalAlpha *= genesisAlpha;
 
-  // ── Vignette (fade to transparent at canvas edges — eliminates square artifact) ──
-  float vignette = 1.0 - smoothstep(0.48, 0.56, dist); // wider — space for rings + aura
+  // ── Vignette (safety net — all effects already fade via atmosphereFade) ──
+  float vignette = 1.0 - smoothstep(0.42, 0.52, dist);
   finalAlpha *= vignette;
+
+  // Kill sub-threshold alpha (prevents dark fringing on any background)
+  finalAlpha *= smoothstep(0.0, 0.015, finalAlpha);
 
   if (uIsDark > 0.5) {
     finalAlpha = min(1.0, finalAlpha * 1.15);
