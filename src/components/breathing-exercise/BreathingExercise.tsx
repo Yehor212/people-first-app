@@ -55,7 +55,7 @@ export function BreathingExercise({ onComplete, compact = true }: BreathingExerc
         >
           {/* Cosmic overlay */}
           <motion.div
-            className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(6,182,212,0.1)_0%,rgba(0,0,0,0.8)_50%,rgba(0,0,0,0.9)_100%)] backdrop-blur-lg"
+            className="absolute inset-0 bg-background/90 backdrop-blur-lg"
             onClick={closeModal}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

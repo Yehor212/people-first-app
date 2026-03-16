@@ -190,7 +190,7 @@ export function ValenceSlider({ value, onChange }: ValenceSliderProps) {
               style={{
                 width: isActive ? 6 : 4,
                 height: isActive ? 6 : 4,
-                backgroundColor: isActive ? 'white' : 'rgba(255,255,255,0.5)',
+                backgroundColor: isActive ? 'hsl(var(--foreground))' : 'hsl(var(--foreground) / 0.4)',
                 left: `calc(${pct}% - ${(isActive ? 6 : 4) / 2}px)`,
                 top: '50%',
                 transform: 'translateY(-50%)',

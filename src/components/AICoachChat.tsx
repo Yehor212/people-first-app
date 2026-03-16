@@ -79,11 +79,11 @@ export function AICoachChat() {
         <div className="flex items-center justify-between p-4 border-b border-border relative">
           {/* Subtle glow */}
           <div
-            className="absolute inset-0 pointer-events-none bg-[linear-gradient(180deg,rgba(139,92,246,0.05)_0%,transparent_100%)]"
+            className="absolute inset-0 pointer-events-none bg-gradient-to-b from-primary/5 to-transparent"
           />
           <div className="flex items-center gap-3 relative z-10">
             <motion.div
-              className="w-12 h-12 rounded-xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(139,92,246,0.5)_0%,rgba(168,85,247,0.4)_100%)] shadow-[0_0_20px_rgba(139,92,246,0.4)]"
+              className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-primary/50 to-primary/40 shadow-zen-md"
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
             >
@@ -122,7 +122,7 @@ export function AICoachChat() {
 
         {/* Messages - Premium with cosmic background */}
         <div
-          className="flex-1 overflow-y-auto p-4 space-y-4 bg-[radial-gradient(ellipse_at_bottom,rgba(139,92,246,0.05)_0%,transparent_50%)]"
+          className="flex-1 overflow-y-auto p-4 space-y-4 bg-[radial-gradient(ellipse_at_bottom,hsl(var(--primary)/0.05)_0%,transparent_50%)]"
         >
           {messages.length === 0 && (
             <motion.div
@@ -131,7 +131,7 @@ export function AICoachChat() {
               animate={{ opacity: 1, y: 0 }}
             >
               <div
-                className="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-[linear-gradient(135deg,rgba(139,92,246,0.2)_0%,rgba(168,85,247,0.1)_100%)] shadow-[0_0_30px_rgba(139,92,246,0.2)]"
+                className="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/10 shadow-zen-md"
               >
                 <Bot className="w-10 h-10 text-violet-400" />
               </div>

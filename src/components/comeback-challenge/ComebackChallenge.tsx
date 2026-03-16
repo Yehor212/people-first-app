@@ -356,7 +356,7 @@ export function ComebackChallenge({
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-medium text-sm"
               style={{
                 background: `linear-gradient(135deg, ${colors.primary}, ${colors.secondary})`,
-                color: challengeConfig.tier === 'silver' ? '#1e293b' : '#fff',
+                color: challengeConfig.tier === 'silver' ? 'hsl(var(--foreground))' : '#fff',
               }}
               whileHover={{ scale: 1.02 }}
               whileTap={zenTap.card}

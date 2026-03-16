@@ -61,10 +61,10 @@ function ActionRow({
         'w-full flex items-center gap-3 px-5 py-4',
         'text-sm font-medium transition-colors',
         disabled
-          ? 'text-white/20 cursor-not-allowed'
+          ? 'text-muted-foreground/40 cursor-not-allowed'
           : destructive
             ? 'text-red-400 active:bg-red-400/10'
-            : 'text-white/80 active:bg-white/5',
+            : 'text-foreground/80 active:bg-muted/50',
       )}
     >
       <Icon className="w-5 h-5 flex-shrink-0" />
@@ -156,7 +156,7 @@ export function GoalActionSheet({
             role="dialog"
             aria-modal="true"
             aria-label={`Goal: ${goal.title}`}
-            className="fixed bottom-0 inset-x-0 z-[60] rounded-t-2xl overflow-hidden bg-[rgba(15,20,30,0.95)] backdrop-blur-[12px] [-webkit-backdrop-filter:blur(12px)] pb-[env(safe-area-inset-bottom,0px)]"
+            className="fixed bottom-0 inset-x-0 z-[60] rounded-t-2xl overflow-hidden bg-card/95 backdrop-blur-md [-webkit-backdrop-filter:blur(12px)] pb-[env(safe-area-inset-bottom,0px)]"
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
@@ -164,10 +164,10 @@ export function GoalActionSheet({
             {...modalProps}
           >
             {/* Drag handle */}
-            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-3 mb-4" />
+            <div className="w-10 h-1 rounded-full bg-muted-foreground/20 mx-auto mt-3 mb-4" />
 
             {/* Goal title */}
-            <div className="px-5 pb-3 text-white font-medium text-sm">
+            <div className="px-5 pb-3 text-foreground font-medium text-sm">
               {goal.title}
             </div>
 
@@ -184,8 +184,8 @@ export function GoalActionSheet({
                     className={cn(
                       'p-3 rounded-lg transition-all',
                       isSelected
-                        ? 'bg-white/15 ring-1 ring-white/30 text-white'
-                        : 'text-white/30 active:text-white/60 active:bg-white/5',
+                        ? 'bg-primary/15 ring-1 ring-primary/30 text-foreground'
+                        : 'text-muted-foreground active:text-foreground active:bg-muted/50',
                     )}
                     aria-label={`Icon: ${key}`}
                     aria-pressed={isSelected}
@@ -208,8 +208,8 @@ export function GoalActionSheet({
                     className={cn(
                       'w-9 h-9 rounded-lg flex items-center justify-center transition-all text-base',
                       isSelected
-                        ? 'bg-white/15 ring-1 ring-white/30'
-                        : 'active:bg-white/5',
+                        ? 'bg-primary/15 ring-1 ring-primary/30'
+                        : 'active:bg-muted/50',
                     )}
                     aria-label={`Emoji: ${emoji}`}
                     aria-pressed={isSelected}
@@ -244,7 +244,7 @@ export function GoalActionSheet({
             </div>
 
             {/* Divider */}
-            <div className="h-px bg-white/10 mx-5" />
+            <div className="h-px bg-border mx-5" />
 
             {/* Action rows */}
             <ActionRow
@@ -264,7 +264,7 @@ export function GoalActionSheet({
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowDeleteConfirm(false)}
-                    className="flex-1 py-2.5 rounded-xl bg-white/10 text-white/80 text-sm font-medium min-h-[44px]"
+                    className="flex-1 py-2.5 rounded-xl bg-muted text-foreground/80 text-sm font-medium min-h-[44px]"
                   >
                     {ts.cancel || 'Cancel'}
                   </button>

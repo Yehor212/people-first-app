@@ -166,11 +166,11 @@ export const GoalNode = memo(function GoalNode({ goal, x, y, progressPercent, on
           'border',
           isComplete
             ? 'border-emerald-400/50 opacity-70'
-            : !goal.color ? 'border-white/10' : '',
+            : !goal.color ? 'border-border' : '',
           'cursor-pointer',
-          'focus:outline-none focus:ring-2 focus:ring-white/30 focus:ring-offset-0',
+          'focus:outline-none focus:ring-2 focus:ring-ring/30 focus:ring-offset-0',
           'transition-colors duration-200',
-          'bg-[rgba(15,20,30,0.8)] backdrop-blur-[8px] [-webkit-backdrop-filter:blur(8px)]',
+          'bg-card/80 backdrop-blur-sm [-webkit-backdrop-filter:blur(8px)]',
         )}
         style={{
           ...((!isComplete && goal.color) ? { borderColor: rColor + '80' } : {}),
@@ -189,12 +189,12 @@ export const GoalNode = memo(function GoalNode({ goal, x, y, progressPercent, on
           ) : goal.emoji ? (
             <span className="text-sm flex-shrink-0 leading-none" role="img" aria-label="goal emoji">{goal.emoji}</span>
           ) : GoalIcon ? (
-            <GoalIcon className="w-3.5 h-3.5 text-white/60 flex-shrink-0" />
+            <GoalIcon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
           ) : null}
           <span
             className={cn(
               'text-xs font-medium truncate',
-              isComplete ? 'text-emerald-300 line-through' : 'text-white',
+              isComplete ? 'text-emerald-500 dark:text-emerald-300 line-through' : 'text-foreground',
             )}
           >
             {goal.title}
