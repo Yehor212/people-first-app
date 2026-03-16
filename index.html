@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#4a9d7c" />
 
     <!-- Security Headers — CSP: unsafe-eval removed from script-src; style-src keeps unsafe-inline for Tailwind/inline styles -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor: https:; script-src 'self' capacitor: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https: capacitor:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.zenflowapp.online wss://api.zenflowapp.online https://cdn.pixabay.com https://*.sentry.io https://*.ingest.sentry.io https://www.googleapis.com capacitor:; media-src 'self' https://cdn.pixabay.com blob: data: capacitor:; worker-src 'self' blob:; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' capacitor: https:; script-src 'self' capacitor: https:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: capacitor:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.zenflowapp.online wss://api.zenflowapp.online https://cdn.pixabay.com https://*.sentry.io https://*.ingest.sentry.io https://www.googleapis.com capacitor:; media-src 'self' https://cdn.pixabay.com blob: data: capacitor:; worker-src 'self' blob:; base-uri 'self'; form-action 'self';">
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
@@ -22,10 +22,7 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@ZenFlow" />
 
-    <!-- Google Fonts - Nunito -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- System font stack: SF Pro (iOS), Roboto (Android), platform native -->
 
     <!-- Apple PWA support -->
     <meta name="mobile-web-app-capable" content="yes">

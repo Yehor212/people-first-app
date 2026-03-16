@@ -30,7 +30,7 @@ export function IdentityMappingSection({
       "relative mb-4 rounded-xl p-3 space-y-3",
       isPrimaryCTA
         ? "bg-foreground/5 border border-foreground/10"
-        : "bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)]"
+        : "bg-card"
     )}>
       <div className="flex items-center gap-2">
         <Fingerprint className={cn("w-4 h-4", isPrimaryCTA ? "text-violet-400" : "text-primary")} />

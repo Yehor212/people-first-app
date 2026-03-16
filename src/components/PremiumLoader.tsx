@@ -43,7 +43,6 @@ export function PremiumLoader({
   const animate = shouldAnimate();
 
   const gradId = `inf-grad${uid}`;
-  const hiId = `inf-hi${uid}`;
   const blurId = `inf-blur${uid}`;
   const blurSmId = `inf-blur-sm${uid}`;
 
@@ -69,15 +68,6 @@ export function PremiumLoader({
             <stop offset="50%" stopColor="#a855f7" />
             <stop offset="75%" stopColor="#818cf8" />
             <stop offset="100%" stopColor="#3b82f6" />
-          </linearGradient>
-
-          {/* 5-stop specular highlight — lighter, glass-tube shine */}
-          <linearGradient id={hiId} x1="0%" y1="50%" x2="100%" y2="50%">
-            <stop offset="0%" stopColor="#f9a8d4" />
-            <stop offset="25%" stopColor="#f0abfc" />
-            <stop offset="50%" stopColor="#c084fc" />
-            <stop offset="75%" stopColor="#a5b4fc" />
-            <stop offset="100%" stopColor="#93c5fd" />
           </linearGradient>
 
           {/* Gaussian blurs for glow layers */}
@@ -141,18 +131,6 @@ export function PremiumLoader({
             style={!animate ? { strokeDasharray: '105 60' } : undefined}
           />
 
-          {/* Specular highlight — glass-tube shine, brighter */}
-          <path
-            d={INFINITY_PATH}
-            fill="none"
-            stroke={`url(#${hiId})`}
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            opacity="0.60"
-            className={animate ? 'infinity-draw-line' : undefined}
-            style={!animate ? { strokeDasharray: '105 60' } : undefined}
-          />
         </g>
       </svg>
       <span className="sr-only">{label}...</span>

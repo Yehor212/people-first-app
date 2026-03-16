@@ -99,7 +99,7 @@ export function GardenCanvas({ world, atmosphere }: GardenCanvasProps) {
   return (
     <motion.div
       {...motionPresets.slideUp}
-      className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card overflow-hidden"
+      className="rounded-xl bg-card overflow-hidden"
     >
       {/* Atmosphere gradient background */}
       <div className={cn('relative min-h-[280px] bg-gradient-to-br', gradientClass)}>

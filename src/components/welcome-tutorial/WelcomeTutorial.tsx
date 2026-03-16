@@ -269,7 +269,7 @@ export function WelcomeTutorial({ onComplete, onSkip }: WelcomeTutorialProps) {
             className={cn(
               'flex-1 py-3 sm:py-4 rounded-xl font-semibold transition-all flex items-center justify-center gap-2 text-sm sm:text-base',
               currentSlide === slides.length - 1
-                ? 'zen-gradient text-primary-foreground hover:opacity-90 animate-glow-pulse'
+                ? 'zen-gradient text-primary-foreground hover:opacity-90'
                 : 'zen-gradient text-primary-foreground hover:opacity-90'
             )}
           >

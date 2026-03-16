@@ -182,7 +182,7 @@ export function JournalLockScreen({
           <motion.div
             animate={{ rotate: [0, -3, 3, 0] }}
             transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-            className="w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5 animate-glow-pulse"
+            className="w-16 h-16 rounded-full flex items-center justify-center bg-gradient-to-br from-primary/20 to-primary/5"
           >
             <Lock className="w-8 h-8 text-primary" />
           </motion.div>

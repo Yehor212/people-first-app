@@ -290,9 +290,8 @@ export function JournalEntryList({
           className={cn(
             'flex items-center gap-2 px-6 py-3 rounded-2xl',
             'bg-gradient-to-r from-primary to-primary/90 text-primary-foreground text-sm font-semibold',
-            'shadow-[0_4px_20px_rgba(var(--primary-rgb,99,102,241),0.3)]',
-            'hover:shadow-[0_6px_28px_rgba(var(--primary-rgb,99,102,241),0.4)]',
-            'animate-glow-pulse',
+            'shadow-md',
+            'hover:shadow-lg',
             'transition-shadow duration-300',
           )}
         >

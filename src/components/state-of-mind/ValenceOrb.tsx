@@ -20,14 +20,22 @@
  */
 
 import { useRef, useEffect, useState, memo } from 'react';
-import { shouldAnimate } from '@/lib/animationUtils';
+import { shouldAnimate, shouldPlaySounds } from '@/lib/animationUtils';
+import { resumeOnInteraction } from '@/lib/audioManager';
 import { recordError } from '@/lib/crashReporting';
-import { createParticlePool, updateParticles } from './particleSystem';
+import { hapticTap } from '@/lib/haptics';
+import { hapticMedium } from '@/lib/haptics';
+import { createParticlePool, updateParticles, burstParticles } from './particleSystem';
 import { drawOrbScene, getShapeParams } from './orbRenderer';
 import { valenceToHSL } from './colorUtils';
 import { createOrbGL2, createOrbGL } from './orbShader';
 import type { Particle } from './particleSystem';
 import type { OrbGLRenderer } from './orbShader';
+import { createOrbAudio } from './orbAudio';
+import type { OrbAudioController } from './orbAudio';
+
+// Module-level: genesis plays only once per browser session
+let genesisPlayed = false;
 
 interface ValenceOrbProps {
   /** Current valence value (-1.0 to 1.0) */
@@ -36,7 +44,8 @@ interface ValenceOrbProps {
   size?: number;
 }
 
-const FRAME_INTERVAL = 1000 / 30; // 30fps
+const WEBGL_FRAME_INTERVAL = 1000 / 60; // 60fps for WebGL (shader is <1ms)
+const CANVAS_FRAME_INTERVAL = 1000 / 30; // 30fps for Canvas 2D fallback
 const PARTICLE_COUNT = 22;
 
 /** Probe whether WebGL actually renders (catches WKWebView/in-app browser broken contexts) */
@@ -84,6 +93,11 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
   const glRendererRef = useRef<OrbGLRenderer | null>(null);
   const canvasElRef = useRef<HTMLCanvasElement | null>(null);
   const [ctxFailed, setCtxFailed] = useState(false);
+  const genesisStartRef = useRef(0);
+  const touchRef = useRef<{ x: number; y: number; startTime: number } | null>(null);
+  const shimmerRef = useRef(0); // P3: 1.0→0 decaying flash on large valence change
+  const prevStableValenceRef = useRef(0); // P3: last settled valence for delta detection
+  const lastInteractionRef = useRef(performance.now()); // P4: idle awareness
 
   // Mutable animation state — avoids React re-renders during animation
   const stateRef = useRef<{
@@ -99,6 +113,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
   valenceRef.current = valence;
   if (stateRef.current) {
     stateRef.current.targetValence = valence;
+    lastInteractionRef.current = performance.now(); // P4: slider change = interaction
   }
 
   // Law 18: track mounted state
@@ -140,6 +155,14 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
       particles: createParticlePool(PARTICLE_COUNT, cx, cy, innerR, outerR),
       lastFrame: 0,
     };
+
+    // Genesis plays once per session — skip on re-mounts (tab switches, etc.)
+    if (genesisPlayed) {
+      genesisStartRef.current = -10000; // far in past → computeGenesis returns 1.0 instantly
+    } else {
+      genesisStartRef.current = performance.now();
+      genesisPlayed = true;
+    }
 
     const isDarkRead = () => document.documentElement.classList.contains('dark');
 
@@ -198,8 +221,34 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
     canvasElRef.current = activeCanvas;
     wrapper.appendChild(activeCanvas);
 
+    // ── P5: Generative ambient sound (gated by dopamine settings) ──
+    let orbAudio: OrbAudioController | null = null;
+    if (shouldPlaySounds()) {
+      orbAudio = createOrbAudio();
+      orbAudio?.fadeIn(1.5); // gentle 1.5s fade-in
+    }
+
+    // ── Genesis easing (ease-out-back with slight overshoot) ──
+    const computeGenesis = (timestamp: number): number => {
+      const elapsed = (timestamp - genesisStartRef.current) / 1000;
+      if (elapsed >= 1.5) return 1.0;
+      const t = elapsed / 1.5;
+      const c1 = 1.70158;
+      const c3 = c1 + 1;
+      return Math.max(0, 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2));
+    };
+
+    // ── Touch state ──
+    const computeTouch = (time: number): { x: number; y: number; age: number } => {
+      const tc = touchRef.current;
+      if (!tc) return { x: 0, y: 0, age: 0 };
+      const age = time - tc.startTime;
+      if (age > 1.5) { touchRef.current = null; return { x: 0, y: 0, age: 0 }; }
+      return { x: tc.x, y: tc.y, age };
+    };
+
     // ── Render helpers ──
-    const renderGL = (v: number, t: number, particles: Particle[]) => {
+    const renderGL = (v: number, t: number, particles: Particle[], timestamp = performance.now()) => {
       const gl = glRendererRef.current;
       if (!gl) return;
       gl.render({
@@ -211,10 +260,13 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
         color: valenceToHSL(v),
         shape: getShapeParams(v),
         particles,
+        genesis: computeGenesis(timestamp),
+        touch: computeTouch(t),
+        shimmer: shimmerRef.current,
       });
     };
 
-    const renderCanvas2D = (v: number, t: number, particles: Particle[]) => {
+    const renderCanvas2D = (v: number, t: number, particles: Particle[], _timestamp?: number) => {
       if (!ctx2d) return;
       drawOrbScene(ctx2d, {
         valence: v,
@@ -223,6 +275,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
         size,
         dpr,
         isDark: isDarkRead(),
+        shimmer: shimmerRef.current,
       });
     };
 
@@ -256,16 +309,47 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
         return;
       }
 
-      // Throttle to 30fps
-      if (timestamp - state.lastFrame < FRAME_INTERVAL) {
+      // Throttle: 60fps for WebGL, 30fps for Canvas 2D
+      const frameInterval = glRendererRef.current ? WEBGL_FRAME_INTERVAL : CANVAS_FRAME_INTERVAL;
+      const elapsed = timestamp - state.lastFrame;
+      if (elapsed < frameInterval) {
         rafRef.current = requestAnimationFrame(loop);
         return;
       }
+      // dt in seconds (clamped to avoid spiral-of-death on tab-switch)
+      const dt = Math.min(elapsed / 1000, 0.1);
       state.lastFrame = timestamp;
 
+      // ── P3: Shimmer detection (large valence change from stable state) ──
+      const settled = Math.abs(state.targetValence - state.currentValence) < 0.01;
+      if (settled) {
+        // Check if new target diverges significantly from last stable value
+        const delta = Math.abs(state.targetValence - prevStableValenceRef.current);
+        if (delta > 0.3 && shimmerRef.current < 0.1) {
+          shimmerRef.current = 1.0;
+          void hapticMedium(); // tactile punctuation for the transformation
+          burstParticles(state.particles, 8, cx, cy, innerR, outerR);
+        }
+        prevStableValenceRef.current = state.currentValence;
+      }
+
+      // Shimmer decay: dt-based exponential (~0.8s half-life, frame-rate independent)
+      shimmerRef.current *= Math.pow(0.08, dt); // 0.08^(1/30) ≈ 0.92 per frame at 30fps
+      if (shimmerRef.current < 0.005) shimmerRef.current = 0;
+
+      // P3: Slow interpolation during shimmer (dramatic metamorphosis)
+      // dt-based: 1 - (1 - rate)^(dt*30) ensures same visual speed at any fps
+      const baseLerp = shimmerRef.current > 0.1 ? 0.02 : 0.06;
+      const lerpRate = 1 - Math.pow(1 - baseLerp, dt * 30);
+
       // Interpolate valence (exponential ease)
-      state.currentValence += (state.targetValence - state.currentValence) * 0.06;
-      state.time += 1 / 30;
+      state.currentValence += (state.targetValence - state.currentValence) * lerpRate;
+
+      // ── P4: Idle awareness (meditative slowdown after 8s inactivity) ──
+      const idleElapsed = timestamp - lastInteractionRef.current;
+      const idleFactor = Math.max(0, Math.min(1, (idleElapsed - 8000) / 4000));
+
+      state.time += dt * (1 - idleFactor * 0.4); // idle → 40% slower internal time
 
       // Update particles (skip when off-screen to save CPU)
       if (isVisibleRef.current) {
@@ -274,7 +358,15 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
           state.currentValence,
           cx, cy,
           innerR, outerR,
+          idleFactor, // P4: calm factor
         );
+      }
+
+      // P5: Update ambient sound (valence + breath sync)
+      if (orbAudio) {
+        const breathPeriod = 8 + (state.currentValence + 1) * 4; // same formula as shader
+        const breathPhase = (state.time % breathPeriod) / breathPeriod;
+        orbAudio.update(state.currentValence, breathPhase);
       }
 
       // Proactive context loss detection (iOS 17+ WKWebView — context lost without event)
@@ -287,7 +379,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
       // Draw scene (skip when off-screen, catch errors to prevent loop death)
       if (isVisibleRef.current) {
         try {
-          render(state.currentValence, state.time, state.particles);
+          render(state.currentValence, state.time, state.particles, timestamp);
         } catch (err) {
           recordError(err, { component: 'ValenceOrb', action: 'render' });
 
@@ -356,9 +448,28 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
       activeCanvas.addEventListener('webglcontextrestored', handleContextRestored);
     }
 
+    // ── Touch ripple handler (P2) ──
+    const handlePointerDown = (e: PointerEvent) => {
+      const rect = activeCanvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width;
+      const y = 1.0 - (e.clientY - rect.top) / rect.height; // flip Y for WebGL UV
+      const state = stateRef.current;
+      if (state) {
+        touchRef.current = { x, y, startTime: state.time };
+        lastInteractionRef.current = performance.now(); // P4: reset idle
+        void hapticTap(); // Tactile feedback on touch (Law 22 — sensory pairing)
+        void resumeOnInteraction(); // P5: iOS user gesture → unlock AudioContext
+      }
+    };
+    // passive: true — never blocks scroll/swipe gestures
+    wrapper.addEventListener('pointerdown', handlePointerDown, { passive: true });
+
     // ── Cleanup ──
     const cleanup = () => {
       cancelAnimationFrame(rafRef.current);
+      // P5: fade out and dispose audio
+      if (orbAudio) { orbAudio.fadeOut(0.5); setTimeout(() => orbAudio?.dispose(), 600); }
+      wrapper.removeEventListener('pointerdown', handlePointerDown);
       if (glRenderer) {
         activeCanvas.removeEventListener('webglcontextlost', handleContextLost);
         activeCanvas.removeEventListener('webglcontextrestored', handleContextRestored);
@@ -409,6 +520,9 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
         color: valenceToHSL(valence),
         shape: getShapeParams(valence),
         particles: state.particles,
+        genesis: 1.0,
+        touch: { x: 0, y: 0, age: 0 },
+        shimmer: 0,
       });
     } else {
       const ctx = canvas.getContext('2d');
@@ -454,7 +568,7 @@ export const ValenceOrb = memo(function ValenceOrb({ valence, size = 192 }: Vale
     <div
       ref={wrapperRef}
       className="relative flex items-center justify-center"
-      style={{ width: size, height: size }}
+      style={{ width: size, height: size, touchAction: 'manipulation' }}
       aria-hidden="true"
     />
   );

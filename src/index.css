@@ -17,23 +17,23 @@
      * Placeholder text uses 70% opacity for clear differentiation
      * while maintaining minimum 3:1 contrast ratio for AA compliance.
      */
-    --background: 45 20% 96%;
-    --foreground: 160 25% 15%;
+    --background: 240 5% 96%;
+    --foreground: 0 0% 11%;
 
-    --card: 45 15% 97%;
-    --card-foreground: 160 25% 15%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 11%;
 
-    --popover: 45 15% 97%;
-    --popover-foreground: 160 25% 15%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 11%;
 
     --primary: 158 45% 38%;
-    --primary-foreground: 45 30% 98%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 45 30% 84%;
-    --secondary-foreground: 160 30% 20%;
+    --secondary: 240 5% 90%;
+    --secondary-foreground: 0 0% 15%;
 
-    --muted: 45 25% 82%;
-    --muted-foreground: 160 25% 30%;
+    --muted: 240 5% 84%;
+    --muted-foreground: 0 0% 40%;
 
     --accent: 28 75% 55%;
     --accent-foreground: 28 90% 15%;
@@ -41,8 +41,8 @@
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 45 15% 88%;
-    --input: 45 15% 88%;
+    --border: 240 5% 90%;
+    --input: 240 5% 90%;
     --ring: 158 45% 38%;
 
     --radius: 1rem;
@@ -52,31 +52,31 @@
     --zen-gradient-warm: linear-gradient(135deg, hsl(28 75% 65%), hsl(38 80% 70%));
     --zen-gradient-calm: linear-gradient(135deg, hsl(200 40% 50%), hsl(180 45% 55%));
     --zen-gradient-sunset: linear-gradient(135deg, hsl(350 60% 65%), hsl(28 75% 65%));
-    --zen-gradient-hero: linear-gradient(180deg, hsl(45 20% 98%) 0%, hsl(158 25% 92%) 100%);
+    --zen-gradient-hero: linear-gradient(180deg, hsl(240 5% 96%) 0%, hsl(240 5% 96%) 100%);
     
-    --zen-shadow-soft: 0 4px 20px -4px hsl(158 45% 42% / 0.08);
-    --zen-shadow-card: 0 2px 12px -2px hsl(160 25% 15% / 0.06);
-    --zen-shadow-glow: 0 0 30px hsl(158 45% 42% / 0.1);
-    --zen-shadow-hover: 0 8px 30px -6px hsl(158 45% 42% / 0.12);
+    --zen-shadow-soft: 0 1px 3px 0 hsl(0 0% 0% / 0.04);
+    --zen-shadow-card: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
+    --zen-shadow-glow: 0 0 20px hsl(158 45% 42% / 0.06);
+    --zen-shadow-hover: 0 2px 8px -2px hsl(0 0% 0% / 0.08);
 
     /* ===== PREMIUM UI TOKENS ===== */
-    /* Surface Elevation System - Enhanced contrast for light mode */
-    --surface-base: 45 25% 98%;
-    --surface-raised: 45 20% 92%;
-    --surface-elevated: 45 15% 88%;
-    --surface-overlay: 45 15% 85%;
+    /* Surface Elevation System - Apple-style bg/card contrast */
+    --surface-base: 240 5% 96%;
+    --surface-raised: 0 0% 100%;
+    --surface-elevated: 0 0% 100%;
+    --surface-overlay: 240 5% 97%;
 
     /* Frosted Glass Surface — for bottom sheets, sticky headers, floating cards */
-    --surface-glass: hsl(45 20% 98% / 0.7);
-    --surface-glass-border: hsl(45 25% 90% / 0.5);
+    --surface-glass: hsl(0 0% 100% / 0.72);
+    --surface-glass-border: hsl(240 5% 90% / 0.5);
     --surface-glass-blur: 20px;
 
-    /* Extended Shadow Levels */
-    --zen-shadow-xs: 0 1px 2px -1px hsl(160 25% 15% / 0.05);
-    --zen-shadow-sm: 0 2px 8px -2px hsl(160 25% 15% / 0.08);
-    --zen-shadow-md: 0 4px 16px -4px hsl(160 25% 15% / 0.06);
-    --zen-shadow-lg: 0 8px 24px -6px hsl(160 25% 15% / 0.08);
-    --zen-shadow-xl: 0 20px 50px -12px hsl(160 25% 15% / 0.1);
+    /* Extended Shadow Levels — Apple-minimal */
+    --zen-shadow-xs: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
+    --zen-shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.05);
+    --zen-shadow-md: 0 4px 12px -2px hsl(0 0% 0% / 0.08);
+    --zen-shadow-lg: 0 8px 24px -6px hsl(0 0% 0% / 0.08);
+    --zen-shadow-xl: 0 20px 50px -12px hsl(0 0% 0% / 0.1);
 
     /* Interactive States */
     --button-press-scale: 0.97;
@@ -84,16 +84,16 @@
     --transition-normal: 200ms;
     --transition-slow: 300ms;
 
-    /* Typography Scale (Mobile-Optimized, min 12px) */
+    /* Typography Scale — Apple Health aligned */
     --text-2xs: 0.6875rem;  /* 11px - only for badges */
-    --text-xs: 0.75rem;     /* 12px - minimum readable */
-    --text-sm: 0.8125rem;   /* 13px */
-    --text-base: 0.875rem;  /* 14px */
-    --text-lg: 1rem;        /* 16px */
-    --text-xl: 1.125rem;    /* 18px */
-    --text-2xl: 1.25rem;    /* 20px */
-    --text-3xl: 1.5rem;     /* 24px */
-    --text-4xl: 2rem;       /* 32px */
+    --text-xs: 0.8125rem;   /* 13px - Apple Caption */
+    --text-sm: 0.9375rem;   /* 15px - Apple Secondary */
+    --text-base: 1.0625rem; /* 17px - Apple Body */
+    --text-lg: 1.25rem;     /* 20px - Apple Title 3 */
+    --text-xl: 1.375rem;    /* 22px - Apple Title 2 */
+    --text-2xl: 1.75rem;    /* 28px - Apple Title 1 */
+    --text-3xl: 2.125rem;   /* 34px - Apple Large Title */
+    --text-4xl: 2.5rem;     /* 40px - Display */
 
     /* Border Radius Scale */
     --radius-xs: 0.375rem;  /* 6px */
@@ -121,7 +121,7 @@
 
     /* Container */
     --container-max-width: 32rem;   /* 512px - max-w-lg */
-    --container-padding: 1rem;      /* px-4 */
+    --container-padding: 1.25rem;   /* 20px — Apple system margins */
 
     /* Safe Areas (unified) */
     --safe-top: env(safe-area-inset-top, 0px);
@@ -310,23 +310,23 @@
   /* ===== DARK MODE 2.0 ===== */
   /* Improved contrast, deeper background, warmer accents */
   .dark {
-    --background: 160 15% 6%;           /* Deeper, richer black */
-    --foreground: 45 10% 95%;           /* Warmer white */
+    --background: 0 0% 0%;               /* Pure black — Apple standard */
+    --foreground: 0 0% 95%;
 
-    --card: 160 12% 10%;                /* More contrast with bg */
-    --card-foreground: 45 10% 95%;
+    --card: 0 0% 11%;                   /* #1C1C1E — iOS secondary bg */
+    --card-foreground: 0 0% 95%;
 
-    --popover: 160 12% 10%;
-    --popover-foreground: 45 10% 95%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 0 0% 95%;
 
     --primary: 158 55% 55%;             /* Brighter primary */
     --primary-foreground: 160 20% 5%;
 
-    --secondary: 160 12% 15%;           /* Subtle secondary */
-    --secondary-foreground: 45 15% 90%;
+    --secondary: 0 0% 15%;
+    --secondary-foreground: 0 0% 90%;
 
-    --muted: 160 10% 15%;
-    --muted-foreground: 45 15% 70%;     /* P2 Contrast Fix: Improved from 65% to 70% for WCAG AA */
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;       /* WCAG AA compliant on dark bg */
 
     --accent: 28 80% 60%;               /* More saturated accent */
     --accent-foreground: 28 90% 98%;
@@ -334,8 +334,8 @@
     --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 160 12% 18%;              /* Subtle but visible */
-    --input: 160 12% 18%;
+    --border: 0 0% 17%;
+    --input: 0 0% 17%;
     --ring: 158 55% 55%;
 
     /* Habit Hub — skip state color for heatmap/charts */
@@ -344,7 +344,7 @@
     /* Dark mode gradients */
     --zen-gradient: linear-gradient(135deg, hsl(158 55% 45%) 0%, hsl(180 50% 35%) 100%);
     --zen-gradient-warm: linear-gradient(135deg, hsl(28 80% 55%) 0%, hsl(38 75% 60%) 100%);
-    --zen-gradient-hero: linear-gradient(180deg, hsl(160 15% 6%) 0%, hsl(160 18% 10%) 100%);
+    --zen-gradient-hero: linear-gradient(180deg, hsl(0 0% 0%) 0%, hsl(0 0% 0%) 100%);
 
     /* Improved shadows for dark mode */
     --zen-shadow-soft: 0 4px 20px -4px hsl(158 55% 55% / 0.25);
@@ -352,15 +352,15 @@
     --zen-shadow-glow: 0 0 30px hsl(158 55% 55% / 0.2);
     --zen-shadow-hover: 0 8px 30px -6px hsl(158 55% 55% / 0.35);
 
-    /* Dark mode surface elevation */
-    --surface-base: 160 12% 10%;
-    --surface-raised: 160 10% 12%;
-    --surface-elevated: 160 10% 14%;
-    --surface-overlay: 160 8% 16%;
+    /* Dark mode surface elevation — Apple-style */
+    --surface-base: 0 0% 0%;
+    --surface-raised: 0 0% 11%;
+    --surface-elevated: 0 0% 14%;
+    --surface-overlay: 0 0% 17%;
 
     /* Frosted Glass Surface — dark */
-    --surface-glass: hsl(160 12% 8% / 0.75);
-    --surface-glass-border: hsl(160 12% 20% / 0.4);
+    --surface-glass: hsl(0 0% 8% / 0.75);
+    --surface-glass-border: hsl(0 0% 20% / 0.4);
     --surface-glass-blur: 20px;
 
     /* Dark mode extended shadows */
@@ -703,7 +703,7 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    font-family: 'Nunito', sans-serif;
+    /* System font stack — SF Pro (iOS), Roboto (Android), platform native */
     overscroll-behavior-y: contain;
     /* Safe area padding for Android/iOS notches and navigation bars */
     padding-top: var(--safe-top);
@@ -1125,7 +1125,7 @@
 
   /* Glow pulse for primary actions */
   .animate-glow-pulse {
-    animation: glow-pulse 2s ease-in-out infinite;
+    animation: glow-pulse 0.3s ease-out forwards;
   }
 }
 
@@ -1191,16 +1191,7 @@
 
 @keyframes bounce-gentle {
   0% {
-    transform: scale(1);
-  }
-  25% {
-    transform: scale(1.1);
-  }
-  50% {
-    transform: scale(0.95);
-  }
-  75% {
-    transform: scale(1.05);
+    transform: scale(0.97);
   }
   100% {
     transform: scale(1);
@@ -1236,31 +1227,22 @@
     opacity: 1;
   }
   50% {
-    transform: scale(1.05);
-    opacity: 0.9;
+    transform: scale(1.02);
+    opacity: 0.95;
   }
 }
 
 @keyframes glow-pulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 20px hsl(var(--primary) / 0.3));
+  0% {
+    opacity: 0.8;
   }
-  50% {
-    filter: drop-shadow(0 0 35px hsl(var(--primary) / 0.5));
-  }
-}
-
-@keyframes bounce-gentle {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-4px);
+  100% {
+    opacity: 1;
   }
 }
 
 .animate-bounce-gentle {
-  animation: bounce-gentle 1.5s ease-in-out infinite;
+  animation: bounce-gentle 0.25s ease-out forwards;
 }
 
 /* Celebration Animations */
@@ -1269,7 +1251,7 @@
     transform: translateY(0) scale(1);
   }
   50% {
-    transform: translateY(-20px) scale(1.1);
+    transform: translateY(-4px) scale(1.03);
   }
 }
 
@@ -1279,7 +1261,7 @@
     opacity: 0.7;
   }
   50% {
-    transform: translateY(-15px) scale(0.9);
+    transform: translateY(-3px) scale(0.85);
     opacity: 1;
   }
 }
@@ -1326,8 +1308,8 @@
   0% {
     transform: scale(0);
   }
-  50% {
-    transform: scale(1.3);
+  70% {
+    transform: scale(1.06);
   }
   100% {
     transform: scale(1);
@@ -1451,12 +1433,8 @@
 /* Scale Bounce - Success states */
 @keyframes scale-bounce {
   0% {
-    transform: scale(0.9);
+    transform: scale(0.95);
     opacity: 0;
-  }
-  60% {
-    transform: scale(1.05);
-    opacity: 1;
   }
   100% {
     transform: scale(1);
@@ -1510,143 +1488,94 @@
    ANIMATED MOOD EMOJIS - Unique per mood
    ======================================== */
 
-/* Great mood - Excited bounce + sparkle */
+/* Great mood — single settle, no rotation */
 @keyframes emoji-great {
-  0%, 100% {
-    transform: scale(1) rotate(0deg);
+  0% {
+    transform: scale(0.96);
   }
-  10% {
-    transform: scale(1.2) rotate(-5deg);
-  }
-  20% {
-    transform: scale(1.2) rotate(5deg);
-  }
-  30% {
-    transform: scale(1.1) rotate(-3deg);
-  }
-  40% {
-    transform: scale(1.1) rotate(3deg);
-  }
-  50% {
-    transform: scale(1) rotate(0deg);
+  100% {
+    transform: scale(1);
   }
 }
 
 .emoji-great {
-  animation: emoji-great 1.5s ease-in-out infinite;
-  filter: drop-shadow(0 0 8px hsl(var(--mood-great) / 0.5));
+  animation: emoji-great 0.3s ease-out forwards;
 }
 
 .emoji-great:hover {
-  animation: emoji-great 0.8s ease-in-out infinite;
-  filter: drop-shadow(0 0 15px hsl(var(--mood-great) / 0.8));
+  opacity: 0.85;
 }
 
-/* Good mood - Gentle nod + warm glow */
+/* Good mood — gentle settle */
 @keyframes emoji-good {
-  0%, 100% {
-    transform: translateY(0) scale(1);
+  0% {
+    transform: scale(0.97);
   }
-  25% {
-    transform: translateY(-3px) scale(1.05);
-  }
-  50% {
-    transform: translateY(0) scale(1);
-  }
-  75% {
-    transform: translateY(-2px) scale(1.03);
+  100% {
+    transform: scale(1);
   }
 }
 
 .emoji-good {
-  animation: emoji-good 2s ease-in-out infinite;
-  filter: drop-shadow(0 0 6px hsl(var(--mood-good) / 0.4));
+  animation: emoji-good 0.25s ease-out forwards;
 }
 
 .emoji-good:hover {
-  animation: emoji-good 1s ease-in-out infinite;
-  filter: drop-shadow(0 0 12px hsl(var(--mood-good) / 0.7));
+  opacity: 0.85;
 }
 
-/* Okay mood - Subtle float + think */
+/* Okay mood — minimal settle */
 @keyframes emoji-okay {
-  0%, 100% {
-    transform: translateX(0) rotate(0deg);
+  0% {
+    transform: scale(0.98);
   }
-  25% {
-    transform: translateX(-2px) rotate(-2deg);
-  }
-  75% {
-    transform: translateX(2px) rotate(2deg);
+  100% {
+    transform: scale(1);
   }
 }
 
 .emoji-okay {
-  animation: emoji-okay 3s ease-in-out infinite;
-  filter: drop-shadow(0 0 5px hsl(var(--mood-okay) / 0.3));
+  animation: emoji-okay 0.2s ease-out forwards;
 }
 
 .emoji-okay:hover {
-  animation: emoji-okay 1.5s ease-in-out infinite;
-  filter: drop-shadow(0 0 10px hsl(var(--mood-okay) / 0.6));
+  opacity: 0.85;
 }
 
-/* Bad mood - Slow droop */
+/* Bad mood — subtle settle */
 @keyframes emoji-bad {
-  0%, 100% {
-    transform: translateY(0) scale(1);
+  0% {
+    transform: scale(0.98);
   }
-  50% {
-    transform: translateY(3px) scale(0.98);
+  100% {
+    transform: scale(1);
   }
 }
 
 .emoji-bad {
-  animation: emoji-bad 2.5s ease-in-out infinite;
-  filter: drop-shadow(0 0 5px hsl(var(--mood-bad) / 0.3));
+  animation: emoji-bad 0.3s ease-out forwards;
 }
 
 .emoji-bad:hover {
-  animation: emoji-bad 1.2s ease-in-out infinite;
-  filter: drop-shadow(0 0 10px hsl(var(--mood-bad) / 0.6));
+  opacity: 0.85;
 }
 
-/* Terrible mood - Shake + tears effect */
+/* Terrible mood — subtle settle */
 @keyframes emoji-terrible {
-  0%, 100% {
-    transform: translateX(0) rotate(0deg);
+  0% {
+    transform: scale(0.97);
   }
-  10% {
-    transform: translateX(-1px) rotate(-1deg);
-  }
-  20% {
-    transform: translateX(1px) rotate(1deg);
-  }
-  30% {
-    transform: translateX(-1px) rotate(0deg);
-  }
-  40% {
-    transform: translateX(1px) rotate(1deg);
-  }
-  50% {
-    transform: translateX(-1px) rotate(-1deg);
-  }
-  60% {
-    transform: translateX(1px) rotate(0deg);
-  }
-  70% {
-    transform: translateX(0);
+  100% {
+    transform: scale(1);
   }
 }
 
 .emoji-terrible {
-  animation: emoji-terrible 2s ease-in-out infinite;
-  filter: drop-shadow(0 0 5px hsl(var(--mood-terrible) / 0.3));
+  animation: emoji-terrible 0.3s ease-out forwards;
 }
 
 .emoji-terrible:hover {
-  animation: emoji-terrible 1s ease-in-out infinite;
-  filter: drop-shadow(0 0 10px hsl(var(--mood-terrible) / 0.6));
+  opacity: 0.85;
 }
 
 /* Emoji selection ring pulse — GPU-only via scale+opacity on pseudo border */
@@ -1688,7 +1617,7 @@
 
 .stat-card-animated {
   opacity: 0;
-  animation: stat-card-enter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: stat-card-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .stat-card-animated:nth-child(1) { animation-delay: 0.1s; }
@@ -1698,93 +1627,50 @@
 
 /* Streak fire animation - light: subtle shadow, dark: full glow */
 @keyframes streak-fire {
-  0%, 100% { transform: scale(1) rotate(-2deg); }
-  25% { transform: scale(1.15) rotate(2deg); }
-  50% { transform: scale(1.2) rotate(-1deg); }
-  75% { transform: scale(1.15) rotate(1deg); }
-}
-@keyframes streak-fire-glow {
-  0%, 100% { transform: scale(1) rotate(-2deg); }
-  25% { transform: scale(1.15) rotate(2deg); }
-  50% { transform: scale(1.2) rotate(-1deg); }
-  75% { transform: scale(1.15) rotate(1deg); }
+  0%, 100% { transform: scale(1) rotate(-1deg); }
+  50% { transform: scale(1.03) rotate(1deg); }
 }
 .streak-icon-animated {
   animation: streak-fire 1.2s ease-in-out infinite;
   color: #ff6b35 !important;
-  filter: drop-shadow(0 0 4px rgba(255, 107, 53, 0.4));
 }
-.dark .streak-icon-animated {
-  animation-name: streak-fire-glow;
-  filter: drop-shadow(0 0 10px #ff6b35) drop-shadow(0 0 20px #ff9500);
-}
+.dark .streak-icon-animated { filter: none; }
 
-/* Habits target pulse - light: subtle shadow, dark: full glow */
+/* Habits target pulse */
 @keyframes habits-pulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.15); }
-}
-@keyframes habits-pulse-glow {
-  0%, 100% { filter: drop-shadow(0 0 6px #4ade80) drop-shadow(0 0 12px #22c55e); transform: scale(1); }
-  50% { filter: drop-shadow(0 0 12px #4ade80) drop-shadow(0 0 20px #22c55e); transform: scale(1.15); }
+  50% { transform: scale(1.03); }
 }
 .habits-icon-animated {
   animation: habits-pulse 1.5s ease-in-out infinite;
   color: #22c55e !important;
-  filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.4));
 }
-.dark .habits-icon-animated {
-  animation-name: habits-pulse-glow;
-  filter: none;
-}
+.dark .habits-icon-animated { filter: none; }
 
-/* Focus brain glow - light: subtle shadow, dark: full glow */
+/* Focus brain — subtle rotation */
 @keyframes focus-spin {
   0%, 100% { transform: scale(1) rotate(0deg); }
-  25% { transform: scale(1.05) rotate(5deg); }
-  50% { transform: scale(1.12) rotate(0deg); }
-  75% { transform: scale(1.05) rotate(-5deg); }
-}
-@keyframes focus-glow {
-  0%, 100% { filter: drop-shadow(0 0 6px #60a5fa) drop-shadow(0 0 12px #3b82f6); transform: scale(1) rotate(0deg); }
-  25% { transform: scale(1.05) rotate(5deg); }
-  50% { filter: drop-shadow(0 0 12px #60a5fa) drop-shadow(0 0 20px #3b82f6); transform: scale(1.12) rotate(0deg); }
-  75% { transform: scale(1.05) rotate(-5deg); }
+  50% { transform: scale(1.02) rotate(3deg); }
 }
 .focus-icon-animated {
   animation: focus-spin 2s ease-in-out infinite;
   color: #3b82f6 !important;
-  filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.4));
 }
-.dark .focus-icon-animated {
-  animation-name: focus-glow;
-  filter: none;
-}
+.dark .focus-icon-animated { filter: none; }
 
-/* Gratitude heart beat - light: subtle shadow, dark: full glow */
+/* Gratitude heart beat — Apple: subtle double-pump */
 @keyframes heart-beat {
   0%, 100% { transform: scale(1); }
-  10% { transform: scale(1.25); }
+  10% { transform: scale(1.06); }
   20% { transform: scale(1); }
-  30% { transform: scale(1.2); }
-  40% { transform: scale(1); }
-}
-@keyframes heart-beat-glow {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 6px #f472b6) drop-shadow(0 0 12px #ec4899); }
-  10% { transform: scale(1.25); filter: drop-shadow(0 0 12px #f472b6) drop-shadow(0 0 20px #ec4899); }
-  20% { transform: scale(1); }
-  30% { transform: scale(1.2); filter: drop-shadow(0 0 10px #f472b6) drop-shadow(0 0 18px #ec4899); }
+  30% { transform: scale(1.04); }
   40% { transform: scale(1); }
 }
 .gratitude-icon-animated {
   animation: heart-beat 1.2s ease-in-out infinite;
   color: #ec4899 !important;
-  filter: drop-shadow(0 0 4px rgba(236, 72, 153, 0.4));
 }
-.dark .gratitude-icon-animated {
-  animation-name: heart-beat-glow;
-  filter: none;
-}
+.dark .gratitude-icon-animated { filter: none; }
 
 /* Number count up effect */
 @keyframes number-pop {
@@ -1866,7 +1752,7 @@
   position: fixed;
   font-weight: bold;
   color: #fbbf24;
-  text-shadow: 0 0 10px #fbbf24, 0 2px 4px rgba(0,0,0,0.3);
+  text-shadow: 0 0 4px rgba(251,191,36,0.4), 0 2px 4px rgba(0,0,0,0.3);
   animation: xp-popup 1.2s ease-out forwards;
   pointer-events: none;
   z-index: 300;
@@ -3055,38 +2941,9 @@ body.mood-bad .mood-particle {
   animation: pulse-soft 2s ease-in-out infinite;
 }
 
-/* Gentle bounce for mascot */
-@keyframes bounce-gentle {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-8px);
-  }
-}
-
-.animate-bounce-gentle {
-  animation: bounce-gentle 1.5s ease-in-out infinite;
-}
-
-/* Celebration sparkle */
-@keyframes sparkle-pop {
-  0% {
-    transform: scale(0) rotate(0deg);
-    opacity: 0;
-  }
-  50% {
-    transform: scale(1.2) rotate(180deg);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1) rotate(360deg);
-    opacity: 1;
-  }
-}
-
+/* [REMOVED] bounce-gentle duplicate 3 + sparkle-pop — Apple Quality */
 .animate-sparkle-pop {
-  animation: sparkle-pop 0.5s ease-out forwards;
+  animation: none;
 }
 
 /* Ring fill animation */
@@ -3175,17 +3032,10 @@ body.reduce-motion .animate-slide-up {
   to   { stroke-dashoffset: 0; }
 }
 
-/* Polyrhythmic neon pulse — 3s vs draw 2.5s for organic feel */
+/* Apple Quality: subtle opacity pulse, no colored drop-shadows */
 @keyframes infinity-glow {
-  0%, 100% {
-    filter: drop-shadow(0 0 8px rgba(168,85,247,0.5))
-            drop-shadow(0 0 18px rgba(168,85,247,0.2));
-  }
-  50% {
-    filter: drop-shadow(0 0 16px rgba(168,85,247,0.8))
-            drop-shadow(0 0 36px rgba(168,85,247,0.45))
-            drop-shadow(0 0 56px rgba(168,85,247,0.15));
-  }
+  0%, 100% { opacity: 0.8; filter: drop-shadow(0 0 6px rgba(0,0,0,0.1)); }
+  50% { opacity: 1; filter: drop-shadow(0 0 10px rgba(0,0,0,0.15)); }
 }
 
 .infinity-draw-line {
@@ -3336,51 +3186,10 @@ input::-moz-focus-inner {
   animation: score-count-up 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-/* ===== SHINE SWEEP (Card Shine Effect) ===== */
-@keyframes shine-sweep {
-  0% {
-    transform: translateX(-100%) rotate(25deg);
-    opacity: 0;
-  }
-  10% {
-    opacity: 0.5;
-  }
-  90% {
-    opacity: 0.5;
-  }
-  100% {
-    transform: translateX(200%) rotate(25deg);
-    opacity: 0;
-  }
-}
-
-.animate-shine-sweep {
-  animation: shine-sweep 3s ease-in-out infinite;
-  animation-delay: 1s;
-}
-
-.card-shine {
-  position: relative;
-  overflow: hidden;
-}
-
-.card-shine::before {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 50%;
-  height: 200%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.1) 50%,
-    transparent 100%
-  );
-  transform: rotate(25deg);
-  animation: shine-sweep 4s ease-in-out infinite;
-  pointer-events: none;
-}
+/* [REMOVED] shine-sweep + card-shine — Apple Quality: no shine effects */
+.animate-shine-sweep { animation: none; }
+.card-shine { position: relative; overflow: hidden; }
+.card-shine::before { display: none; }
 
 /* ===== 3D CARD FLIP ===== */
 @keyframes card-flip-in {
@@ -3468,16 +3277,10 @@ input::-moz-focus-inner {
   80% { transform: translateX(4px); }
 }
 
-/* Sun pulse */
+/* Sun pulse — Apple Quality: no colored drop-shadow */
 @keyframes sun-pulse {
-  0%, 100% {
-    transform: scale(1);
-    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.6));
-  }
-  50% {
-    transform: scale(1.05);
-    filter: drop-shadow(0 0 35px rgba(251, 191, 36, 0.8));
-  }
+  0%, 100% { transform: scale(1); opacity: 0.85; }
+  50% { transform: scale(1.02); opacity: 1; }
 }
 
 .animate-sun-pulse {
@@ -3626,31 +3429,18 @@ input::-moz-focus-inner {
   animation: wind-sway 3s ease-in-out infinite;
 }
 
-/* Sparkle twinkle - for happy/radiant/energized particles */
-@keyframes sparkle-twinkle {
-  0%, 100% {
-    opacity: 0;
-    transform: scale(0.5);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.animate-sparkle-twinkle {
-  animation: sparkle-twinkle 2s ease-in-out infinite;
-}
+/* [REMOVED] sparkle-twinkle — Apple Quality: no sparkle effects */
+.animate-sparkle-twinkle { animation: none; }
 
 /* ===== CRYSTAL ANIMATIONS ===== */
 @keyframes crystal-pulse {
   0%, 100% {
-    filter: drop-shadow(0 0 10px var(--crystal-color, hsl(158 60% 50%)));
+    filter: drop-shadow(0 0 6px var(--crystal-color, hsl(158 60% 50%)));
     transform: scale(1);
   }
   50% {
-    filter: drop-shadow(0 0 25px var(--crystal-color, hsl(158 60% 50%)))
-            drop-shadow(0 0 40px var(--crystal-color, hsl(158 60% 50% / 0.5)));
+    filter: drop-shadow(0 0 14px var(--crystal-color, hsl(158 60% 50%)))
+            drop-shadow(0 0 20px var(--crystal-color, hsl(158 60% 50% / 0.5)));
     transform: scale(1.02);
   }
 }
@@ -3659,25 +3449,12 @@ input::-moz-focus-inner {
   animation: crystal-pulse 3s ease-in-out infinite;
 }
 
-@keyframes crystal-sparkle {
-  0%, 100% {
-    opacity: 0;
-    transform: scale(0) rotate(0deg);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1) rotate(180deg);
-  }
-}
-
-.animate-crystal-sparkle {
-  animation: crystal-sparkle 2s ease-in-out infinite;
-}
-
-.animate-crystal-sparkle-1 { animation-delay: 0s; }
-.animate-crystal-sparkle-2 { animation-delay: 0.5s; }
-.animate-crystal-sparkle-3 { animation-delay: 1s; }
-.animate-crystal-sparkle-4 { animation-delay: 1.5s; }
+/* [REMOVED] crystal-sparkle — Apple Quality: no sparkle effects */
+.animate-crystal-sparkle,
+.animate-crystal-sparkle-1,
+.animate-crystal-sparkle-2,
+.animate-crystal-sparkle-3,
+.animate-crystal-sparkle-4 { animation: none; }
 
 /* Crystal rotate on hover */
 @keyframes crystal-rotate {
@@ -3753,19 +3530,12 @@ input::-moz-focus-inner {
 }
 
 @keyframes achievement-glow {
-  0%, 100% {
-    filter: drop-shadow(0 0 10px var(--achievement-glow))
-            drop-shadow(0 0 20px var(--achievement-glow));
-  }
-  50% {
-    filter: drop-shadow(0 0 20px var(--achievement-glow))
-            drop-shadow(0 0 40px var(--achievement-glow))
-            drop-shadow(0 0 60px var(--achievement-glow));
-  }
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
 }
 
 .animate-achievement-glow {
-  animation: achievement-glow 2s ease-in-out infinite;
+  animation: achievement-glow 2s ease-in-out;
 }
 
 /* Unlock confetti burst */
@@ -4065,8 +3835,8 @@ input::-moz-focus-inner {
 
 /* Orb breathe — GPU-only: transform + filter (no box-shadow in keyframes) */
 @keyframes orb-breathe {
-  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 40px rgba(52,211,153,0.15)) drop-shadow(0 8px 32px rgba(0,0,0,0.5)); }
-  50% { transform: scale(1.05); filter: drop-shadow(0 0 60px rgba(52,211,153,0.25)) drop-shadow(0 12px 48px rgba(0,0,0,0.6)); }
+  0%, 100% { transform: scale(1); filter: drop-shadow(0 0 20px rgba(52,211,153,0.08)) drop-shadow(0 8px 32px rgba(0,0,0,0.5)); }
+  50% { transform: scale(1.05); filter: drop-shadow(0 0 30px rgba(52,211,153,0.12)) drop-shadow(0 12px 48px rgba(0,0,0,0.6)); }
 }
 .animate-orb-breathe {
   animation: orb-breathe 5s ease-in-out infinite;
@@ -4186,12 +3956,12 @@ body.reduce-motion .diary-animated {
 /* EventDetailsModal — CSS keyframes for glow & pulse (replaces FM repeat:Infinity) */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes event-glow {
-    0%, 100% { filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.3)); }
-    50% { filter: drop-shadow(0 0 40px rgba(139, 92, 246, 0.5)); }
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
   }
   @keyframes event-pulse {
     0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
+    50% { transform: scale(1.03); }
   }
 }
 

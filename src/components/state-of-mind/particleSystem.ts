@@ -60,6 +60,42 @@ export function createParticlePool(
   return particles;
 }
 
+/**
+ * Force-respawn a batch of particles with burst velocity.
+ * Used by P3 Transition Dramatics — shimmer burst on large valence change.
+ */
+export function burstParticles(
+  particles: Particle[],
+  count: number,
+  cx: number,
+  cy: number,
+  innerR: number,
+  outerR: number,
+): void {
+  const n = Math.min(count, particles.length);
+  // Pick the oldest particles (highest life/maxLife ratio) for recycling
+  const indices = particles
+    .map((p, i) => ({ i, ratio: p.life / p.maxLife }))
+    .sort((a, b) => b.ratio - a.ratio)
+    .slice(0, n)
+    .map(e => e.i);
+
+  for (const idx of indices) {
+    const p = particles[idx];
+    const angle = Math.random() * Math.PI * 2;
+    const dist = innerR + Math.random() * (outerR - innerR) * 0.5;
+    p.x = cx + Math.cos(angle) * dist;
+    p.y = cy + Math.sin(angle) * dist;
+    p.vx = (Math.random() - 0.5) * 1.2; // 3× normal velocity
+    p.vy = (Math.random() - 0.5) * 1.2;
+    p.radius = 3.0 + Math.random() * 4.0;
+    p.alpha = 0.8; // start bright
+    p.life = 0;
+    p.maxLife = 25 + Math.floor(Math.random() * 15); // short burst (~0.8-1.3s at 30fps)
+    p.hueOffset = (Math.random() - 0.5) * 40;
+  }
+}
+
 /** Update all particles in-place. Recycle dead particles. */
 export function updateParticles(
   particles: Particle[],
@@ -68,10 +104,11 @@ export function updateParticles(
   cy: number,
   innerR: number,
   outerR: number,
+  calmFactor = 0,
 ): void {
   // Valence-driven behavior parameters
-  const speedMult = 1.5 - valence; // -1→2.5, 0→1.5, +1→0.5
-  const jitter = (1 - valence) * 0.15; // -1→0.3, +1→0
+  const speedMult = (1.5 - valence) * (1 - calmFactor * 0.5); // idle → 50% slower
+  const jitter = (1 - valence) * 0.15 * (1 - calmFactor * 0.7); // idle → 70% less jitter
 
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i];

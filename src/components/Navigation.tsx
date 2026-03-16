@@ -67,13 +67,14 @@ export function Navigation({ activeTab, onTabChange, canvasEnabled, habitHubEnab
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <div className={cn(
-                "p-2.5 rounded-xl transition-all duration-200",
-                activeTab === tab.id && "zen-gradient text-primary-foreground zen-shadow-soft"
-              )}>
-                <tab.icon className="w-6 h-6" aria-hidden="true" />
-              </div>
-              <span className="text-xs font-medium truncate max-w-full">{tab.label}</span>
+              <tab.icon className={cn(
+                "w-6 h-6 transition-colors duration-200",
+                activeTab === tab.id ? "text-primary" : "text-muted-foreground"
+              )} aria-hidden="true" />
+              <span className={cn(
+                "text-xs truncate max-w-full transition-colors duration-200",
+                activeTab === tab.id ? "text-primary font-medium" : "text-muted-foreground"
+              )}>{tab.label}</span>
             </button>
           ))}
         </div>

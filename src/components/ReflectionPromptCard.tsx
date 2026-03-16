@@ -69,7 +69,7 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
     return (
       <motion.div
         {...motionPresets.scaleIn}
-        className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card p-4"
+        className="rounded-xl bg-card p-4"
       >
         <p className="text-sm text-emerald-600 dark:text-emerald-400 text-center">
           {t.reflectionNoted || 'Noted. Keep growing.'}
@@ -81,7 +81,7 @@ export function ReflectionPromptCard({ prompt }: ReflectionPromptCardProps) {
   return (
     <motion.div
       {...motionPresets.slideUp}
-      className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card p-4 space-y-3"
+      className="rounded-xl bg-card p-4 space-y-3"
     >
       {/* Prompt text */}
       <div className="flex items-start gap-2">

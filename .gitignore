@@ -115,3 +115,6 @@ tsc_errors*.txt
 docs/law*.md
 docs/laws*.md
 docs/visual-aesthetic.md
+
+# Shader preview files (dev-only, not for production)
+*.preview.frag

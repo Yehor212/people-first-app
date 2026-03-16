@@ -48,12 +48,12 @@ export function MoodParticles({ config, budget }: { config: ParticleLayerConfig;
 
   const animClass =
     config.type === 'sparkle'
-      ? 'animate-sparkle-twinkle'
+      ? 'animate-pulse-soft'
       : config.type === 'rain'
         ? 'animate-rain-drop'
         : config.type === 'fog'
           ? 'animate-fog-drift'
-          : 'animate-sparkle-twinkle'; // dots use twinkle too
+          : 'animate-pulse-soft';
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-[1]">

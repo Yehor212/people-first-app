@@ -77,8 +77,7 @@ export function FocusMiniPlayer({ onNavigateToTimer }: FocusMiniPlayerProps) {
           transition={zenMotion.gentle}
           className={cn(
             'fixed left-4 right-4 z-50 max-w-lg mx-auto',
-            'rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)]',
-            'border border-[var(--surface-glass-border)] zen-shadow-card',
+            'rounded-xl bg-card',
             'flex items-center gap-3 px-4 py-2.5',
             'bottom-[calc(var(--nav-height)+var(--safe-bottom)+0.5rem)]',
           )}

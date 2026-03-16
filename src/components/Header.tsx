@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { Leaf, Trophy, ListTodo, Sparkles, Users, Flame } from 'lucide-react';
+import { Trophy, ListTodo, Sparkles, Users, Flame } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SyncStatusIndicatorCompact } from '@/components/SyncStatusIndicator';
 
@@ -42,28 +42,11 @@ export const Header = memo(function Header({ userName = 'Friend', streak, onOpen
   }, [language]);
 
   return (
-    <header className="mb-4 motion-safe:animate-fade-in">
-      {/* Top row: Logo, sync status, and theme toggle */}
-      <div className="flex items-center justify-between mb-2">
+    <header className="mb-6 motion-safe:animate-fade-in">
+      {/* Top row: date + utilities (Apple-style) */}
+      <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-2">
-          <div className="p-1.5 zen-gradient rounded-lg zen-shadow-soft">
-            <Leaf className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <span className="text-lg font-bold zen-text-gradient">{t.appName}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <SyncStatusIndicatorCompact />
-          <ThemeToggle />
-        </div>
-      </div>
-
-      {/* Greeting + compact streak */}
-      <div className="mb-3">
-        <h1 className="text-xl font-bold text-foreground">
-          {greeting}, {userName}
-        </h1>
-        <div className="flex items-center gap-2 mt-0.5">
-          <p className="text-muted-foreground text-xs capitalize">{formattedDate}</p>
+          <p className="text-sm text-muted-foreground capitalize">{formattedDate}</p>
           {streak != null && streak > 0 && (
             <div className="flex items-center gap-1 text-xs font-medium text-orange-500">
               <Flame className="w-3 h-3" />
@@ -71,49 +54,58 @@ export const Header = memo(function Header({ userName = 'Friend', streak, onOpen
             </div>
           )}
         </div>
+        <div className="flex items-center gap-2">
+          <SyncStatusIndicatorCompact />
+          <ThemeToggle />
+        </div>
       </div>
 
-      {/* Quick Actions Bar - compact but accessible */}
+      {/* Large title — Apple Health style */}
+      <h1 className="text-2xl font-bold text-foreground mb-4">
+        {greeting}, {userName}
+      </h1>
+
+      {/* Quick Actions Bar — clean, no colored backgrounds */}
       {(onOpenTasks || onOpenQuests || onOpenChallenges || onOpenFriends) && (
         <div className="flex gap-2">
           {onOpenTasks && (
             <button
               onClick={onOpenTasks}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-3 bg-[hsl(var(--mood-good))]/10 dark:bg-[hsl(var(--mood-good))]/20 hover:bg-[hsl(var(--mood-good))]/20 dark:hover:bg-[hsl(var(--mood-good))]/30 active:scale-95 text-[hsl(var(--mood-good))] rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--mood-good))] focus-visible:ring-offset-2"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-secondary hover:bg-secondary/80 active:scale-[0.97] text-foreground rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t.openTasks}
             >
-              <ListTodo className="w-4 h-4 flex-shrink-0" />
-              <span className="text-xs font-medium truncate">{t.tasks}</span>
+              <ListTodo className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+              <span className="text-sm font-medium truncate">{t.tasks}</span>
             </button>
           )}
           {onOpenQuests && (
             <button
               onClick={onOpenQuests}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-3 bg-accent/10 dark:bg-accent/20 hover:bg-accent/20 dark:hover:bg-accent/30 active:scale-95 text-accent rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-secondary hover:bg-secondary/80 active:scale-[0.97] text-foreground rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t.openQuests}
             >
-              <Sparkles className="w-4 h-4 flex-shrink-0" />
-              <span className="text-xs font-medium truncate">{t.quests}</span>
+              <Sparkles className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+              <span className="text-sm font-medium truncate">{t.quests}</span>
             </button>
           )}
           {onOpenChallenges && (
             <button
               onClick={onOpenChallenges}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-primary/10 dark:bg-primary/20 hover:bg-primary/20 dark:hover:bg-primary/30 active:scale-95 text-primary rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-secondary hover:bg-secondary/80 active:scale-[0.97] text-foreground rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t.openChallenges}
             >
-              <Trophy className="w-4 h-4 flex-shrink-0" />
-              <span className="text-xs font-medium truncate">{t.challenges}</span>
+              <Trophy className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+              <span className="text-sm font-medium truncate">{t.challenges}</span>
             </button>
           )}
           {onOpenFriends && (
             <button
               onClick={onOpenFriends}
-              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2 px-2.5 bg-blue-500/10 dark:bg-blue-500/20 hover:bg-blue-500/20 dark:hover:bg-blue-500/30 active:scale-95 text-blue-600 dark:text-blue-400 rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+              className="flex-1 min-w-0 flex items-center justify-center gap-1.5 py-2.5 px-3 bg-secondary hover:bg-secondary/80 active:scale-[0.97] text-foreground rounded-xl transition-all min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label={t.friends || 'Friends'}
             >
-              <Users className="w-4 h-4 flex-shrink-0" />
-              <span className="text-xs font-medium truncate">{t.friends || 'Friends'}</span>
+              <Users className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
+              <span className="text-sm font-medium truncate">{t.friends || 'Friends'}</span>
             </button>
           )}
         </div>

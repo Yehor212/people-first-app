@@ -30,7 +30,7 @@ export const motionPresets = {
     transition: { duration: 0.2, ease: 'easeOut' },
   },
   modalEnter: {
-    initial: { opacity: 0, scale: 0.95, y: 10 },
+    initial: { opacity: 0, scale: 0.97, y: 4 },
     animate: { opacity: 1, scale: 1, y: 0 },
     transition: { type: 'spring', damping: 25, stiffness: 300 },
   },
@@ -51,11 +51,11 @@ export const zenMotion = {
   /** Smooth entrance — cards, modals, panels (200-300ms feel) */
   gentle: { type: 'spring' as const, stiffness: 260, damping: 25 },
 
-  /** Bottom sheet slide — heavier, more physical feel */
-  sheet: { type: 'spring' as const, stiffness: 300, damping: 28 },
+  /** Bottom sheet slide — critically damped, one smooth motion */
+  sheet: { type: 'spring' as const, stiffness: 300, damping: 26 },
 
-  /** Celebration — achievements, completions (bouncy, 400-800ms feel) */
-  bouncy: { type: 'spring' as const, stiffness: 300, damping: 15 },
+  /** Celebration — critically damped settle, no bounce (Apple Health: one smooth motion) */
+  bouncy: { type: 'spring' as const, stiffness: 300, damping: 26 },
 
   /** Exit — always fast, linear (modals closing, toasts dismissing) */
   exit: { duration: 0.15, ease: 'easeIn' as const },
@@ -73,17 +73,17 @@ export const zenTap = {
   button: { scale: 0.96 },
   /** Cards, list items — subtle press (large surface) */
   card: { scale: 0.98 },
-  /** Small icon buttons (close X, etc.) — deeper press */
-  icon: { scale: 0.90 },
-  /** Compact cells (MiniCheckmarkCell) — deepest press */
-  cell: { scale: 0.85 },
+  /** Small icon buttons (close X, etc.) — Apple: max 5% */
+  icon: { scale: 0.95 },
+  /** Compact cells (MiniCheckmarkCell) — Apple: large surfaces barely compress */
+  cell: { scale: 0.97 },
 } as const;
 
 export const zenHover = {
-  /** Cards — subtle lift effect */
-  lift: { scale: 1.02, y: -1 },
-  /** Icon buttons — gentle glow scale */
-  glow: { scale: 1.05 },
+  /** Cards — barely perceptible hover (Apple: almost invisible) */
+  lift: { scale: 1.01, y: 0 },
+  /** Icon buttons — minimal glow scale (Apple: max 1%) */
+  glow: { scale: 1.01 },
 } as const;
 
 interface DopamineSettings {

@@ -51,7 +51,7 @@ export function GardenTab({
 
   return (
     <div className="animate-tab-enter">
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Header
           userName={userName}
           onOpenChallenges={isFeatureVisible('challenges') ? () => setShowChallenges(true) : undefined}

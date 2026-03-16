@@ -14,7 +14,21 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ['Nunito', 'sans-serif'],
+        sans: [
+          '-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"',
+          '"SF Pro Display"', 'system-ui', 'Roboto',
+          '"Helvetica Neue"', 'Arial', 'sans-serif',
+        ],
+      },
+      fontSize: {
+        'xs':   ['0.8125rem', { lineHeight: '1.125rem' }],   /* 13px — Apple Caption */
+        'sm':   ['0.9375rem', { lineHeight: '1.375rem' }],   /* 15px — Apple Secondary */
+        'base': ['1.0625rem', { lineHeight: '1.5625rem' }],  /* 17px — Apple Body */
+        'lg':   ['1.25rem',   { lineHeight: '1.75rem' }],    /* 20px — Apple Title 3 */
+        'xl':   ['1.375rem',  { lineHeight: '1.875rem' }],   /* 22px — Apple Title 2 */
+        '2xl':  ['1.75rem',   { lineHeight: '2.125rem' }],   /* 28px — Apple Title 1 */
+        '3xl':  ['2.125rem',  { lineHeight: '2.5rem' }],     /* 34px — Apple Large Title */
+        '4xl':  ['2.5rem',    { lineHeight: '1' }],          /* 40px — Display */
       },
       colors: {
         border: "hsl(var(--border))",

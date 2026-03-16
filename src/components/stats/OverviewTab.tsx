@@ -115,7 +115,7 @@ export function OverviewTab({
       </div>
 
       {/* Growth Rings — never-resetting growth (IA Blueprint Phase 2.3) */}
-      <motion.div {...motionPresets.slideUp} className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card p-4 space-y-3">
+      <motion.div {...motionPresets.slideUp} className="rounded-xl bg-card p-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <TreePine className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> {t.growthRings || 'Growth Rings'}
@@ -142,7 +142,7 @@ export function OverviewTab({
 
       {/* Identity Clusters — who you're becoming (IA Blueprint Phase 2) */}
       {identityClusters.length > 0 && (
-        <motion.div {...motionPresets.slideUp} className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card p-4 space-y-3">
+        <motion.div {...motionPresets.slideUp} className="rounded-xl bg-card p-4 space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <Star className="w-4 h-4 text-amber-500" /> {t.identityMap || 'Who I Am'}
           </h3>
@@ -170,7 +170,7 @@ export function OverviewTab({
 
       {/* Habit Impact — mood-habit correlation */}
       {moodInsights && moodInsights.habitDiffs.length > 0 && (
-        <motion.div {...motionPresets.slideUp} className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card p-4 space-y-3">
+        <motion.div {...motionPresets.slideUp} className="rounded-xl bg-card p-4 space-y-3">
           <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-violet-400" /> {t.habitImpact || 'Habit Impact'}
           </h3>

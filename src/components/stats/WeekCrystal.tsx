@@ -181,7 +181,7 @@ export function WeekCrystal({
               cy={sparkle.y}
               r={3 * sparkle.scale}
               fill={theme.sparkleColor}
-              className={`animate-crystal-sparkle-${(i % 4) + 1} opacity-0`}
+              className="animate-fade-in opacity-0"
             />
           ))}
         </svg>

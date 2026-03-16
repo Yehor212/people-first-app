@@ -93,7 +93,7 @@ export function EmptyState({
       </div>
 
       {highlight && (
-        <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/15 dark:bg-primary/25 rounded-full border border-primary/30 animate-glow-pulse mb-4">
+        <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/15 dark:bg-primary/25 rounded-full border border-primary/30 mb-4">
           <span className={cn("font-bold text-primary", sizes.title === 'text-base' ? 'text-sm' : 'text-base')}>{title}</span>
         </div>
       )}

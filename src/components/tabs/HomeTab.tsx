@@ -146,7 +146,7 @@ export function HomeTab({
           <SessionExpiredBanner onSignIn={() => { setSettingsOpenSection('account'); setActiveTab('settings'); }} />
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-5">
           <DayProgressIndicator />
 
           <TodayFocusCard
@@ -163,7 +163,7 @@ export function HomeTab({
           {/* Growth Rings — canvas tree ring visualization (IA Blueprint Phase 2.3) */}
           <motion.div
             {...motionPresets.slideUp}
-            className="rounded-2xl bg-surface-glass backdrop-blur-[var(--surface-glass-blur)] border border-[var(--surface-glass-border)] zen-shadow-card px-4 py-3 flex items-center gap-3"
+            className="rounded-xl bg-card px-4 py-3 flex items-center gap-3"
           >
             <GrowthRingsCanvas rings={growthData.rings} size={80} />
             <div className="flex-1 min-w-0">

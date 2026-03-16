@@ -66,7 +66,7 @@ export function MoodInputView({
       {/* Primary CTA Header */}
       {isPrimaryCTA && !showAddNew && (
         <div className="relative flex items-center justify-center gap-2 mb-4">
-          <div className="flex items-center gap-2 px-4 py-2 bg-primary/25 rounded-full border border-primary/30 animate-glow-pulse">
+          <div className="flex items-center gap-2 px-4 py-2 bg-primary/25 rounded-full border border-primary/30">
             <Sparkles className="w-5 h-5 text-primary" />
             <span className="text-sm font-bold text-primary">{t.startHere || 'Start here'}</span>
             <Sparkles className="w-5 h-5 text-primary" />

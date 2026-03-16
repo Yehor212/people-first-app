@@ -135,14 +135,9 @@ export function CalendarTab({
         {/* Content wrapper */}
         <div className="relative z-10">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-5">
-            <div className="relative">
-              <div className="p-2.5 bg-gradient-to-br from-primary to-accent rounded-xl shadow-lg shadow-primary/20">
-                <Calendar className="w-5 h-5 text-white" />
-              </div>
-              <div className="absolute -top-1 -end-1 w-2 h-2 bg-primary/80 rounded-full animate-pulse" />
-            </div>
-            <h3 className="text-lg font-bold text-foreground">{t.calendarTitle}</h3>
+          <div className="flex items-center gap-2.5 mb-5">
+            <Calendar className="w-5 h-5 text-primary flex-shrink-0" />
+            <h3 className="text-lg font-semibold text-foreground">{t.calendarTitle}</h3>
           </div>
 
           {/* Year & Month Selector */}
