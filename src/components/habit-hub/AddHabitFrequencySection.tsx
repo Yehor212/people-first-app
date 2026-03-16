@@ -23,7 +23,7 @@ export function AddHabitFrequencySection({ frequency, setFrequency, ts }: AddHab
 
   return (
     <div>
-      <label className="text-xs font-medium text-slate-500 mb-2 block">
+      <label className="text-xs font-medium text-muted-foreground mb-2 block">
         {ts.habitFrequency || 'Frequency'}
       </label>
       <div className="flex flex-wrap gap-2">
@@ -37,7 +37,7 @@ export function AddHabitFrequencySection({ frequency, setFrequency, ts }: AddHab
               'border',
               (isPresetMatch(preset.ratio) && !forceCustomFreq)
                 ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06]',
+                : 'bg-white/[0.03] border-border text-muted-foreground hover:bg-white/[0.06]',
             )}
           >
             {ts[preset.i18nKey] || preset.label}
@@ -50,7 +50,7 @@ export function AddHabitFrequencySection({ frequency, setFrequency, ts }: AddHab
             'border',
             (forceCustomFreq || isCustomFreq)
               ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-              : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06]',
+              : 'bg-white/[0.03] border-border text-muted-foreground hover:bg-white/[0.06]',
           )}
         >
           {ts.customFreq || 'Custom'}
@@ -63,35 +63,35 @@ export function AddHabitFrequencySection({ frequency, setFrequency, ts }: AddHab
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setFrequency({ ...frequency, numerator: Math.max(1, frequency.numerator - 1) })}
-              className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
+              className="w-7 h-7 rounded-lg bg-white/[0.05] border border-border text-muted-foreground flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
             >
               -
             </button>
-            <span className="text-sm text-slate-200 w-5 text-center tabular-nums">{frequency.numerator}</span>
+            <span className="text-sm text-foreground w-5 text-center tabular-nums">{frequency.numerator}</span>
             <button
               onClick={() => setFrequency({ ...frequency, numerator: Math.min(frequency.denominator, frequency.numerator + 1) })}
-              className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
+              className="w-7 h-7 rounded-lg bg-white/[0.05] border border-border text-muted-foreground flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
             >
               +
             </button>
           </div>
-          <span className="text-xs text-slate-500">{ts.timesPer || 'times per'}</span>
+          <span className="text-xs text-muted-foreground">{ts.timesPer || 'times per'}</span>
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => { const newD = Math.max(1, frequency.denominator - 1); setFrequency({ ...frequency, denominator: newD, numerator: Math.min(frequency.numerator, newD) }); }}
-              className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
+              className="w-7 h-7 rounded-lg bg-white/[0.05] border border-border text-muted-foreground flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
             >
               -
             </button>
-            <span className="text-sm text-slate-200 w-5 text-center tabular-nums">{frequency.denominator}</span>
+            <span className="text-sm text-foreground w-5 text-center tabular-nums">{frequency.denominator}</span>
             <button
               onClick={() => setFrequency({ ...frequency, denominator: Math.min(365, frequency.denominator + 1) })}
-              className="w-7 h-7 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
+              className="w-7 h-7 rounded-lg bg-white/[0.05] border border-border text-muted-foreground flex items-center justify-center text-xs min-h-[44px] min-w-[44px]"
             >
               +
             </button>
           </div>
-          <span className="text-xs text-slate-500">{ts.days || 'days'}</span>
+          <span className="text-xs text-muted-foreground">{ts.days || 'days'}</span>
         </div>
       )}
     </div>

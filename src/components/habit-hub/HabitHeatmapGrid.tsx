@@ -148,7 +148,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
 
   return (
     <div className={cn('relative', className)}>
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
         {ts.habitHistory || 'History'}
       </h4>
 
@@ -158,7 +158,7 @@ export const HabitHeatmapGrid = memo(function HabitHeatmapGrid({
           {dowLabels.map((label, i) => (
             <div
               key={i}
-              className="w-3 h-3 flex items-center justify-center text-[9px] text-slate-600 leading-none"
+              className="w-3 h-3 flex items-center justify-center text-[9px] text-muted-foreground/60 leading-none"
             >
               {i % 2 === 0 ? label : ''}
             </div>

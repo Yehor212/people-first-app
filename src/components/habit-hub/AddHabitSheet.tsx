@@ -99,7 +99,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
         side="bottom"
         className={cn(
           'max-h-[85dvh] rounded-t-3xl overflow-y-auto',
-          'bg-[#0a0f1a] border-t border-white/[0.06]',
+          'bg-card border-t border-border',
           'p-0',
         )}
       >
@@ -115,10 +115,10 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
                 aria-label={ts.back || 'Back'}
                 className="w-8 h-8 rounded-xl flex items-center justify-center bg-white/[0.06] border border-white/[0.10] min-h-[44px] min-w-[44px] hover:bg-white/[0.10] transition-colors"
               >
-                <ChevronLeft className="w-4 h-4 text-slate-300 rtl:scale-x-[-1]" />
+                <ChevronLeft className="w-4 h-4 text-muted-foreground rtl:scale-x-[-1]" />
               </button>
             )}
-            <SheetTitle className="text-lg font-bold text-slate-100 tracking-tight">
+            <SheetTitle className="text-lg font-bold text-foreground tracking-tight">
               {isEditing ? (ts.editHabit || 'Edit Habit') : (ts.addHabit || 'Add Habit')}
             </SheetTitle>
           </div>
@@ -144,7 +144,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
               {/* Section header with sparkle + gradient line */}
               <div className="flex items-center gap-3">
                 <Sparkles className="w-4 h-4 text-violet-400 flex-shrink-0" />
-                <span className="text-sm font-semibold text-slate-300">
+                <span className="text-sm font-semibold text-muted-foreground">
                   {ts.quickStart || 'Quick Start'}
                 </span>
                 <div className="flex-1 h-px bg-gradient-to-r from-violet-500/30 to-transparent" />
@@ -178,7 +178,7 @@ export function AddHabitSheet({ open, onClose, onAdd, onUpdate, editingHabit, ac
                       </span>
 
                       {/* Localized name */}
-                      <span className="text-[11px] font-medium text-slate-400 relative z-10 text-center leading-tight line-clamp-2 group-hover:text-slate-300 transition-colors">
+                      <span className="text-[11px] font-medium text-muted-foreground relative z-10 text-center leading-tight line-clamp-2 group-hover:text-muted-foreground transition-colors">
                         {tmpl.names[language] || tmpl.names.en}
                       </span>
 

@@ -39,29 +39,29 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
   if (streaks.length === 0) {
     return (
       <div className={cn('', className)}>
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
           {ts.streakHistory || 'Streaks'}
         </h4>
-        <p className="text-xs text-slate-600 py-4 text-center">{ts.noStreaksYet || 'No streaks yet'}</p>
+        <p className="text-xs text-muted-foreground/60 py-4 text-center">{ts.noStreaksYet || 'No streaks yet'}</p>
       </div>
     );
   }
 
   return (
     <div className={cn('', className)}>
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
         {ts.streakHistory || 'Streaks'}
       </h4>
 
       {/* Summary badges */}
       <div className="flex items-center gap-4 mb-3">
-        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <AnimatedFire intensity={1} size="sm" />
-          <span>{ts.currentStreak || 'Current'}: <strong className="text-slate-200">{currentLen}{ts.daysAbbr || 'd'}</strong></span>
+          <span>{ts.currentStreak || 'Current'}: <strong className="text-foreground">{currentLen}{ts.daysAbbr || 'd'}</strong></span>
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <span className="text-amber-400">★</span>
-          <span>{ts.bestStreak || 'Best'}: <strong className="text-slate-200">{bestLen}{ts.daysAbbr || 'd'}</strong></span>
+          <span>{ts.bestStreak || 'Best'}: <strong className="text-foreground">{bestLen}{ts.daysAbbr || 'd'}</strong></span>
         </div>
       </div>
 
@@ -80,7 +80,7 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
               )}
             >
               {/* Rank */}
-              <span className="text-[10px] font-semibold text-slate-600 w-4 text-center">
+              <span className="text-[10px] font-semibold text-muted-foreground/60 w-4 text-center">
                 {i + 1}
               </span>
 
@@ -89,19 +89,19 @@ export const HabitStreakTimeline = memo(function HabitStreakTimeline({
                 {isCurrent ? (
                   <AnimatedFire intensity={Math.min(streak.length / 7, 3)} size="sm" />
                 ) : (
-                  <span className="text-xs text-slate-700">—</span>
+                  <span className="text-xs text-muted-foreground/40">—</span>
                 )}
               </div>
 
               {/* Date range */}
-              <span className="flex-1 text-xs text-slate-400 font-mono">
+              <span className="flex-1 text-xs text-muted-foreground font-mono">
                 {formatDateRange(streak.start, streak.end, language)}
               </span>
 
               {/* Length */}
               <span className={cn(
                 'text-xs font-bold tabular-nums',
-                isCurrent ? 'text-orange-400' : 'text-slate-300',
+                isCurrent ? 'text-orange-400' : 'text-muted-foreground',
               )}>
                 {streak.length}{ts.daysAbbr || 'd'}
               </span>

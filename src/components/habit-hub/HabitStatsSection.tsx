@@ -77,10 +77,10 @@ export function HabitStatsSection({ currentStreak, allStreaks, completedDates }:
         >
           <cell.icon className={cn('w-4 h-4 flex-shrink-0', cell.color)} />
           <div className="min-w-0">
-            <div className="text-lg font-bold text-slate-100 tabular-nums leading-tight">
+            <div className="text-lg font-bold text-foreground tabular-nums leading-tight">
               {cell.value}{cell.suffix || ''}
             </div>
-            <div className="text-[10px] text-slate-500 leading-tight truncate">
+            <div className="text-[10px] text-muted-foreground leading-tight truncate">
               {cell.label}
             </div>
           </div>

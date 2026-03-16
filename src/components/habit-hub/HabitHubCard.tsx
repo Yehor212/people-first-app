@@ -40,14 +40,14 @@ function getScoreColor(score: number): string {
   if (score >= 0.8) return 'text-emerald-400';
   if (score >= 0.5) return 'text-amber-400';
   if (score >= 0.2) return 'text-orange-400';
-  return 'text-slate-500';
+  return 'text-muted-foreground';
 }
 
 function getScoreBg(score: number): string {
   if (score >= 0.8) return 'bg-emerald-500/15 border-emerald-500/20';
   if (score >= 0.5) return 'bg-amber-500/15 border-amber-500/20';
   if (score >= 0.2) return 'bg-orange-500/15 border-orange-500/20';
-  return 'bg-slate-500/10 border-slate-500/15';
+  return 'bg-muted-foreground/10 border-muted-foreground/15';
 }
 
 export const HabitHubCard = memo(function HabitHubCard({
@@ -184,7 +184,7 @@ export const HabitHubCard = memo(function HabitHubCard({
               'px-2 py-0.5 rounded-lg border text-xs font-semibold tabular-nums flex-shrink-0',
               weeklyProgress.done >= weeklyProgress.target
                 ? 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400'
-                : 'bg-white/[0.04] border-white/[0.06] text-slate-400',
+                : 'bg-white/[0.04] border-white/[0.06] text-muted-foreground',
             )}
           >
             {weeklyProgress.done}/{weeklyProgress.target}
@@ -239,12 +239,12 @@ export const HabitHubCard = memo(function HabitHubCard({
                 <span className={cn(
                   'text-[10px] tabular-nums',
                   weeklyProgress.done >= weeklyProgress.target
-                    ? 'text-emerald-400' : 'text-slate-500',
+                    ? 'text-emerald-400' : 'text-muted-foreground',
                 )}>
                   {weeklyProgress.done}/{weeklyProgress.target}
                 </span>
               )}
-              <span className="text-[10px] text-slate-500 tabular-nums">
+              <span className="text-[10px] text-muted-foreground tabular-nums">
                 🎯 {freqLabel}
               </span>
             </div>

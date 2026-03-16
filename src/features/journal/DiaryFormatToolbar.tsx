@@ -192,7 +192,7 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({ editorRef, 
           exit={{ opacity: 0, scale: 0.85, y: 8 }}
           transition={zenMotion.snappy}
           style={getPosition()}
-          className="flex items-center gap-1 bg-slate-900/90 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)] gpu-layer"
+          className="flex items-center gap-1 bg-popover/90 backdrop-blur-xl p-1.5 rounded-2xl border border-border shadow-[0_8px_32px_rgba(0,0,0,0.5)] gpu-layer"
           onPointerDown={(e) => e.preventDefault()}
         >
           {FORMAT_ACTIONS.map(action => {
@@ -208,7 +208,7 @@ export const DiaryFormatToolbar = memo(function DiaryFormatToolbar({ editorRef, 
                   action.style,
                   isActive
                     ? 'bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30'
-                    : 'text-slate-400 hover:bg-white/10 hover:text-slate-50',
+                    : 'text-muted-foreground hover:bg-white/10 hover:text-foreground',
                 )}
                 aria-label={action.icon}
               >

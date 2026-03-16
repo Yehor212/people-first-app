@@ -162,7 +162,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
         side="bottom"
         className={cn(
           'max-h-[85dvh] rounded-t-3xl overflow-y-auto',
-          'bg-[#0a0f1a] border-t border-white/[0.06]',
+          'bg-card border-t border-border',
           'p-0',
         )}
       >
@@ -182,11 +182,11 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 {habit.icon}
               </div>
               <div className="flex-1 min-w-0">
-                <SheetTitle className="text-lg font-semibold text-slate-100 truncate">
+                <SheetTitle className="text-lg font-semibold text-foreground truncate">
                   {habit.name}
                 </SheetTitle>
                 {habit.category && (
-                  <span className="text-xs text-slate-500 capitalize">
+                  <span className="text-xs text-muted-foreground capitalize">
                     {habit.category}
                   </span>
                 )}
@@ -205,11 +205,11 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
               <div className="text-center">
                 <div className={cn(
                   'text-2xl font-bold tabular-nums',
-                  scorePercent >= 60 ? 'text-emerald-400' : scorePercent >= 30 ? 'text-amber-400' : 'text-slate-400',
+                  scorePercent >= 60 ? 'text-emerald-400' : scorePercent >= 30 ? 'text-amber-400' : 'text-muted-foreground',
                 )}>
                   {scorePercent}%
                 </div>
-                <div className="text-[10px] text-slate-600 mt-0.5">{ts.habitScore || 'Score'}</div>
+                <div className="text-[10px] text-muted-foreground/60 mt-0.5">{ts.habitScore || 'Score'}</div>
               </div>
               {streak > 0 && (
                 <div className="text-center">
@@ -217,7 +217,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                     <AnimatedFire intensity={Math.min(streak / 7, 3)} size="md" />
                     <span className="text-2xl font-bold text-orange-400 tabular-nums">{streak}</span>
                   </div>
-                  <div className="text-[10px] text-slate-600 mt-0.5">{ts.currentStreak || 'Current Streak'}</div>
+                  <div className="text-[10px] text-muted-foreground/60 mt-0.5">{ts.currentStreak || 'Current Streak'}</div>
                 </div>
               )}
             </motion.div>
@@ -265,19 +265,19 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
             </motion.div>
 
             {/* ═══ ACTIONS ═══ */}
-            <motion.div variants={sectionEntrance} className="space-y-2 pt-2 border-t border-white/[0.06]">
+            <motion.div variants={sectionEntrance} className="space-y-2 pt-2 border-t border-border">
               {/* Edit habit */}
               <button
                 onClick={() => { onEdit(habit); onClose(); }}
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
-                  'bg-white/[0.03] border border-white/[0.06]',
+                  'bg-white/[0.03] border border-border',
                   'hover:bg-white/[0.06] active:scale-[0.98]',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
                 )}
               >
                 <Pencil className="w-4 h-4 text-violet-400" />
-                <span className="text-slate-300">{ts.editHabit || 'Edit Habit'}</span>
+                <span className="text-muted-foreground">{ts.editHabit || 'Edit Habit'}</span>
               </button>
 
               {/* Skip today */}
@@ -285,14 +285,14 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 onClick={handleSkipToggle}
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
-                  'bg-white/[0.03] border border-white/[0.06]',
+                  'bg-white/[0.03] border border-border',
                   'hover:bg-white/[0.06] active:scale-[0.98]',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
                   isSkippedToday && 'bg-blue-500/[0.08] border-blue-500/[0.15] text-blue-400',
                 )}
               >
                 <SkipForward className="w-4 h-4 text-blue-400" />
-                <span className={isSkippedToday ? 'text-blue-300' : 'text-slate-300'}>
+                <span className={isSkippedToday ? 'text-blue-300' : 'text-muted-foreground'}>
                   {isSkippedToday ? (ts.skipped || 'Skipped Today') : (ts.skipToday || 'Skip Today')}
                 </span>
               </button>
@@ -302,20 +302,20 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                 onClick={handleArchiveToggle}
                 className={cn(
                   'w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm transition-colors min-h-[44px]',
-                  'bg-white/[0.03] border border-white/[0.06]',
+                  'bg-white/[0.03] border border-border',
                   'hover:bg-white/[0.06] active:scale-[0.98]',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
                 )}
               >
                 {habit.isArchived ? (
                   <>
-                    <ArchiveRestore className="w-4 h-4 text-slate-400" />
-                    <span className="text-slate-300">{ts.unarchiveHabit || 'Unarchive'}</span>
+                    <ArchiveRestore className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{ts.unarchiveHabit || 'Unarchive'}</span>
                   </>
                 ) : (
                   <>
-                    <Archive className="w-4 h-4 text-slate-400" />
-                    <span className="text-slate-300">{ts.archiveHabit || 'Archive Habit'}</span>
+                    <Archive className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">{ts.archiveHabit || 'Archive Habit'}</span>
                   </>
                 )}
               </button>
@@ -362,7 +362,7 @@ export const HabitDetailSheet = memo(function HabitDetailSheet({
                           onClick={() => setShowDeleteConfirm(false)}
                           className={cn(
                             'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
-                            'bg-white/[0.05] border border-white/[0.08] text-slate-400',
+                            'bg-white/[0.05] border border-border text-muted-foreground',
                             'hover:bg-white/[0.08]',
                             'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
                           )}

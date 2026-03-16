@@ -31,7 +31,7 @@ export function DiaryFormatHint({ onDismiss }: DiaryFormatHintProps) {
       className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm cursor-pointer"
     >
       <span className="text-sm">✨</span>
-      <span className="text-xs text-slate-400">
+      <span className="text-xs text-muted-foreground">
         {ts.diaryFormatHint || 'Select text to format (bold, italic, etc.)'}
       </span>
     </motion.div>

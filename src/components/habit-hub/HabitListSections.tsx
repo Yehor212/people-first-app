@@ -55,7 +55,7 @@ export function HabitListSections({
       {/* ═══ TODAY'S HABITS ═══ */}
       {todayHabits.length > 0 && (
         <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 px-1 mb-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-3">
             {ts.todayHabits || "Today's Habits"}
           </h3>
           <motion.div className="space-y-2" variants={listStagger} initial="hidden" animate="visible">
@@ -79,10 +79,10 @@ export function HabitListSections({
         <section>
           <button
             onClick={() => setShowOther(prev => !prev)}
-            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500 px-1 mb-3 w-full min-h-[44px]"
+            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground px-1 mb-3 w-full min-h-[44px]"
           >
             <span>{ts.otherHabits || 'Other Habits'}</span>
-            <span className="text-slate-600">({otherHabits.length})</span>
+            <span className="text-muted-foreground/60">({otherHabits.length})</span>
             <ChevronDown className={cn('w-3.5 h-3.5 transition-transform ms-auto', showOther && 'rotate-180')} />
           </button>
           <AnimatePresence>
@@ -118,11 +118,11 @@ export function HabitListSections({
         <section>
           <button
             onClick={() => setShowArchived(prev => !prev)}
-            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-600 px-1 mb-3 w-full min-h-[44px]"
+            className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground/60 px-1 mb-3 w-full min-h-[44px]"
           >
             <Archive className="w-3.5 h-3.5" />
             <span>{ts.archivedHabits || 'Archived'}</span>
-            <span className="text-slate-700">({archivedHabits.length})</span>
+            <span className="text-muted-foreground/40">({archivedHabits.length})</span>
             <ChevronDown className={cn('w-3.5 h-3.5 transition-transform ms-auto', showArchived && 'rotate-180')} />
           </button>
           <AnimatePresence>
@@ -171,7 +171,7 @@ export function HabitListSections({
             {categoryFilter !== 'all' ? '🔍' : '🌱'}
           </motion.div>
           <motion.p
-            className="text-slate-400 text-sm mb-6"
+            className="text-muted-foreground text-sm mb-6"
             variants={{
               hidden: { opacity: 0, y: 8 },
               visible: { opacity: 1, y: 0, transition: zenMotion.gentle },
@@ -192,7 +192,7 @@ export function HabitListSections({
                 onClick={onClearFilter}
                 className={cn(
                   'px-6 py-3 rounded-2xl text-sm font-medium transition-all min-h-[44px]',
-                  'bg-white/[0.06] border border-white/[0.08] text-slate-300',
+                  'bg-white/[0.06] border border-white/[0.08] text-muted-foreground',
                   'hover:bg-white/[0.10] active:scale-[0.97]',
                   'flex items-center gap-2 mx-auto',
                 )}

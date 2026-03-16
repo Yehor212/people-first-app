@@ -88,9 +88,9 @@ export function AddHabitCustomForm({
           aria-label={ts.habitName || 'Habit name'}
           autoFocus
           className={cn(
-            'w-full px-4 py-3 rounded-xl text-sm text-slate-100',
-            'bg-white/[0.05] border border-white/[0.08] transition-colors',
-            'placeholder:text-slate-600',
+            'w-full px-4 py-3 rounded-xl text-sm text-foreground',
+            'bg-white/[0.05] border border-border transition-colors',
+            'placeholder:text-muted-foreground/60',
             'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
           )}
         />
@@ -98,7 +98,7 @@ export function AddHabitCustomForm({
 
       {/* Question prompt */}
       <div>
-        <label className="text-xs font-medium text-slate-500 mb-2 block">
+        <label className="text-xs font-medium text-muted-foreground mb-2 block">
           {ts.questionPrompt || 'Question Prompt'}
         </label>
         <input
@@ -108,20 +108,20 @@ export function AddHabitCustomForm({
           placeholder={ts.questionPromptPlaceholder || 'e.g. Did you exercise today?'}
           aria-label={ts.questionPrompt || 'Question Prompt'}
           className={cn(
-            'w-full px-4 py-2 rounded-xl text-xs text-slate-300',
-            'bg-white/[0.03] border border-white/[0.06] transition-colors',
-            'placeholder:text-slate-600',
+            'w-full px-4 py-2 rounded-xl text-xs text-muted-foreground',
+            'bg-white/[0.03] border border-border transition-colors',
+            'placeholder:text-muted-foreground/60',
             'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
           )}
         />
-        <p className="text-[10px] text-slate-600 mt-1">
+        <p className="text-[10px] text-muted-foreground/60 mt-1">
           {ts.questionPromptHint || 'Optional — phrased as a daily check-in question'}
         </p>
       </div>
 
       {/* Icon */}
       <div>
-        <label className="text-xs font-medium text-slate-500 mb-2 block">
+        <label className="text-xs font-medium text-muted-foreground mb-2 block">
           {ts.selectIcon || 'Icon'}
         </label>
         <div className="flex flex-wrap gap-2">
@@ -136,7 +136,7 @@ export function AddHabitCustomForm({
                 'border min-h-[44px] min-w-[44px]',
                 selectedIcon === ic
                   ? 'bg-violet-500/20 border-violet-500/40 scale-110 shadow-[0_0_12px_rgba(139,92,246,0.3)]'
-                  : 'bg-white/[0.03] border-white/[0.06] hover:bg-white/[0.06]',
+                  : 'bg-white/[0.03] border-border hover:bg-white/[0.06]',
               )}
             >
               {ic}
@@ -147,7 +147,7 @@ export function AddHabitCustomForm({
 
       {/* Color — palette grid */}
       <div>
-        <label className="text-xs font-medium text-slate-500 mb-2 block">
+        <label className="text-xs font-medium text-muted-foreground mb-2 block">
           {ts.selectColor || 'Color'}
         </label>
         <div className="grid grid-cols-7 gap-2">
@@ -179,7 +179,7 @@ export function AddHabitCustomForm({
 
       {/* Type: Boolean / Numerical */}
       <div>
-        <label className="text-xs font-medium text-slate-500 mb-2 block">
+        <label className="text-xs font-medium text-muted-foreground mb-2 block">
           {ts.habitType || 'Type'}
         </label>
         <div className="flex gap-2">
@@ -197,7 +197,7 @@ export function AddHabitCustomForm({
                   'border',
                   habitType === typ
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                    : 'bg-white/[0.03] border-white/[0.06] text-slate-400 hover:bg-white/[0.06]',
+                    : 'bg-white/[0.03] border-border text-muted-foreground hover:bg-white/[0.06]',
                 )}
               >
                 {label}
@@ -210,27 +210,27 @@ export function AddHabitCustomForm({
         {habitType === 'numerical' && (
           <div className="space-y-3 mt-3">
             <div className="flex items-center gap-3">
-              <label className="text-xs text-slate-500">{ts.dailyTarget || 'Target'}:</label>
+              <label className="text-xs text-muted-foreground">{ts.dailyTarget || 'Target'}:</label>
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setTargetValue(Math.max(1, targetValue - 1))}
                   aria-label={ts.decreaseTarget || 'Decrease target'}
-                  className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center min-h-[44px] min-w-[44px]"
+                  className="w-8 h-8 rounded-lg bg-white/[0.05] border border-border text-muted-foreground flex items-center justify-center min-h-[44px] min-w-[44px]"
                 >
                   -
                 </button>
-                <span className="text-sm text-slate-200 w-8 text-center">{targetValue}</span>
+                <span className="text-sm text-foreground w-8 text-center">{targetValue}</span>
                 <button
                   onClick={() => setTargetValue(targetValue + 1)}
                   aria-label={ts.increaseTarget || 'Increase target'}
-                  className="w-8 h-8 rounded-lg bg-white/[0.05] border border-white/[0.08] text-slate-400 flex items-center justify-center min-h-[44px] min-w-[44px]"
+                  className="w-8 h-8 rounded-lg bg-white/[0.05] border border-border text-muted-foreground flex items-center justify-center min-h-[44px] min-w-[44px]"
                 >
                   +
                 </button>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <label className="text-xs text-slate-500">{ts.unit || 'Unit'}:</label>
+              <label className="text-xs text-muted-foreground">{ts.unit || 'Unit'}:</label>
               <input
                 type="text"
                 value={unit}
@@ -238,9 +238,9 @@ export function AddHabitCustomForm({
                 placeholder={ts.unitPlaceholder || 'L, km, min...'}
                 maxLength={20}
                 className={cn(
-                  'flex-1 px-3 py-2 rounded-xl text-xs text-slate-300',
-                  'bg-white/[0.03] border border-white/[0.06]',
-                  'placeholder:text-slate-600',
+                  'flex-1 px-3 py-2 rounded-xl text-xs text-muted-foreground',
+                  'bg-white/[0.03] border border-border',
+                  'placeholder:text-muted-foreground/60',
                   'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
                 )}
               />
@@ -254,7 +254,7 @@ export function AddHabitCustomForm({
                   'border',
                   targetType === 'atLeast'
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                    : 'bg-white/[0.03] border-white/[0.06] text-slate-400',
+                    : 'bg-white/[0.03] border-border text-muted-foreground',
                 )}
               >
                 {ts.atLeast || 'At Least'}
@@ -267,7 +267,7 @@ export function AddHabitCustomForm({
                   'border',
                   targetType === 'atMost'
                     ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                    : 'bg-white/[0.03] border-white/[0.06] text-slate-400',
+                    : 'bg-white/[0.03] border-border text-muted-foreground',
                 )}
               >
                 {ts.atMost || 'At Most'}
@@ -282,7 +282,7 @@ export function AddHabitCustomForm({
 
       {/* Category */}
       <div>
-        <label className="text-xs font-medium text-slate-500 mb-2 block">
+        <label className="text-xs font-medium text-muted-foreground mb-2 block">
           {ts.habitCategory || 'Category'}
         </label>
         <div className="flex flex-wrap gap-2">
@@ -296,7 +296,7 @@ export function AddHabitCustomForm({
                 'border flex items-center gap-1.5',
                 selectedCategory === cat.id
                   ? `bg-gradient-to-r ${cat.color} text-white border-transparent shadow-lg`
-                  : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:bg-white/[0.06]',
+                  : 'bg-white/[0.03] border-border text-muted-foreground hover:bg-white/[0.06]',
               )}
             >
               <span>{cat.icon}</span>
@@ -312,7 +312,7 @@ export function AddHabitCustomForm({
           onClick={handleClose}
           className={cn(
             'flex-1 px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[44px]',
-            'bg-white/[0.05] border border-white/[0.08] text-slate-400',
+            'bg-white/[0.05] border border-border text-muted-foreground',
             'hover:bg-white/[0.08]',
           )}
         >

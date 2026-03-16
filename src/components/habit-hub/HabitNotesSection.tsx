@@ -78,7 +78,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-xs font-medium text-slate-500">
+        <label className="text-xs font-medium text-muted-foreground">
           {ts.habitNotes || 'Notes'}
         </label>
         {!isEditing && (
@@ -103,19 +103,19 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
             rows={2}
             maxLength={1000}
             className={cn(
-              'w-full px-3 py-2 rounded-xl text-sm text-slate-100 resize-none',
+              'w-full px-3 py-2 rounded-xl text-sm text-foreground resize-none',
               'bg-white/[0.05] border border-white/[0.08]',
-              'placeholder:text-slate-600',
+              'placeholder:text-muted-foreground/60',
               'focus:outline-none focus:ring-2 focus:ring-violet-500/50',
             )}
           />
           {noteText.length > 800 && (
-            <p className="text-[10px] text-slate-600 text-end">{noteText.length}/1000</p>
+            <p className="text-[10px] text-muted-foreground/60 text-end">{noteText.length}/1000</p>
           )}
           <div className="flex gap-2">
             <button
               onClick={handleCancel}
-              className="flex-1 px-3 py-1.5 rounded-xl text-xs text-slate-400 bg-white/[0.05] border border-white/[0.08] min-h-[44px]"
+              className="flex-1 px-3 py-1.5 rounded-xl text-xs text-muted-foreground bg-white/[0.05] border border-white/[0.08] min-h-[44px]"
             >
               {ts.cancel || 'Cancel'}
             </button>
@@ -140,15 +140,15 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
                 'bg-white/[0.02] border border-white/[0.04]',
               )}
             >
-              <span className="text-slate-500 tabular-nums">{formatNoteDate(date)}</span>
-              <p className="text-slate-300 mt-0.5 leading-relaxed">{notes}</p>
+              <span className="text-muted-foreground tabular-nums">{formatNoteDate(date)}</span>
+              <p className="text-muted-foreground mt-0.5 leading-relaxed">{notes}</p>
             </div>
           ))}
 
           {sortedNotes.length > MAX_VISIBLE && !showAll && (
             <button
               onClick={() => setShowAll(true)}
-              className="flex items-center gap-1 text-[10px] text-slate-500 hover:text-slate-400 mx-auto min-h-[44px]"
+              className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-muted-foreground mx-auto min-h-[44px]"
             >
               <ChevronDown className="w-3 h-3" />
               {`${ts.showAll || 'Show all'} (${sortedNotes.length})`}
@@ -156,7 +156,7 @@ export function HabitNotesSection({ habit, onUpdate }: HabitNotesSectionProps) {
           )}
         </div>
       ) : !isEditing ? (
-        <p className="text-[10px] text-slate-600 text-center py-2">
+        <p className="text-[10px] text-muted-foreground/60 text-center py-2">
           {ts.noNotes || 'No notes yet'}
         </p>
       ) : null}

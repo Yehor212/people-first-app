@@ -41,7 +41,7 @@ export const HabitFrequencyChart = memo(function HabitFrequencyChart({
 
   return (
     <div className={cn('', className)}>
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
         {ts.weekdayFrequency || 'By Day of Week'}
       </h4>
 

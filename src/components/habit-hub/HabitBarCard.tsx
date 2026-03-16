@@ -116,7 +116,7 @@ export function HabitBarCard({ habit, className }: HabitBarCardProps) {
   return (
     <div className={className}>
       <div className="flex items-center justify-between mb-2">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {ts.completions || 'Completions'}
         </h4>
         <div className="flex gap-1">
@@ -127,8 +127,8 @@ export function HabitBarCard({ habit, className }: HabitBarCardProps) {
               className={cn(
                 'px-3 py-1.5 rounded-md text-[10px] font-medium transition-colors min-h-[44px]',
                 barInterval === iv
-                  ? 'bg-white/[0.1] text-slate-200'
-                  : 'text-slate-500 hover:text-slate-400',
+                  ? 'bg-white/[0.1] text-foreground'
+                  : 'text-muted-foreground hover:text-muted-foreground',
               )}
             >
               {iv === 'week' ? (ts.weekly || 'Week') : (ts.monthly || 'Month')}

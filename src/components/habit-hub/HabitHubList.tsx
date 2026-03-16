@@ -142,7 +142,7 @@ export function HabitHubList({
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50',
               categoryFilter === cat.id
                 ? 'bg-violet-500/20 border-violet-500/40 text-violet-300'
-                : 'bg-white/[0.03] border-white/[0.06] text-slate-500 hover:bg-white/[0.06]',
+                : 'bg-white/[0.03] border-white/[0.06] text-muted-foreground hover:bg-white/[0.06]',
             )}
           >
             <span>{cat.icon}</span>
@@ -158,7 +158,7 @@ export function HabitHubList({
           onKeyDown={(e) => { if (e.key === 'Escape' && showSortMenu) { e.stopPropagation(); setShowSortMenu(false); } }}
           aria-expanded={showSortMenu}
           aria-haspopup="listbox"
-          className="flex items-center gap-1.5 text-[10px] text-slate-500 hover:text-slate-400 transition-colors min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50"
+          className="flex items-center gap-1.5 text-[10px] text-muted-foreground hover:text-muted-foreground transition-colors min-h-[44px] min-w-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/50"
         >
           <ArrowUpDown className="w-3 h-3" />
           <span>{sortLabels[sortOption]}</span>
@@ -175,7 +175,7 @@ export function HabitHubList({
                 transition={zenMotion.snappy}
                 className={cn(
                   'absolute end-0 top-full z-[61] min-w-[120px] rounded-xl overflow-hidden',
-                  'bg-[#141a2e] border border-white/[0.08] shadow-xl',
+                  'bg-popover border border-border shadow-xl',
                   'ltr:origin-top-right rtl:origin-top-left',
                 )}
                 onKeyDown={(e) => { if (e.key === 'Escape') setShowSortMenu(false); }}
@@ -190,7 +190,7 @@ export function HabitHubList({
                       'w-full px-3 py-2 text-xs text-start transition-colors min-h-[44px] flex items-center',
                       sortOption === opt
                         ? 'text-violet-300 bg-violet-500/10'
-                        : 'text-slate-400 hover:bg-white/[0.05]',
+                        : 'text-muted-foreground hover:bg-white/[0.05]',
                     )}
                   >
                     {sortLabels[opt]}
@@ -221,10 +221,10 @@ export function HabitHubList({
       {(todayHabits.length > 0 || otherHabits.length > 0) && (
         <div className="px-1">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] text-slate-500">{ts.overallScore || 'Overall Score'}</span>
+            <span className="text-[10px] text-muted-foreground">{ts.overallScore || 'Overall Score'}</span>
             <span className={cn(
               'text-xs font-bold tabular-nums',
-              overallPercent >= 60 ? 'text-emerald-400' : overallPercent >= 30 ? 'text-amber-400' : 'text-slate-500',
+              overallPercent >= 60 ? 'text-emerald-400' : overallPercent >= 30 ? 'text-amber-400' : 'text-muted-foreground',
             )}>
               {overallPercent}%
             </span>

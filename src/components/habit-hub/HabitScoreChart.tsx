@@ -78,7 +78,7 @@ export function HabitScoreChart({ habit }: HabitScoreChartProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
-        <label className="text-xs font-medium text-slate-500">
+        <label className="text-xs font-medium text-muted-foreground">
           {ts.scoreHistory || 'Score History'}
         </label>
         <div className="flex gap-1">
@@ -89,8 +89,8 @@ export function HabitScoreChart({ habit }: HabitScoreChartProps) {
               className={cn(
                 'px-3 py-1.5 rounded-md text-[10px] font-medium transition-colors min-h-[44px]',
                 range === r
-                  ? 'bg-white/[0.1] text-slate-200'
-                  : 'text-slate-500 hover:text-slate-400',
+                  ? 'bg-white/[0.1] text-foreground'
+                  : 'text-muted-foreground hover:text-muted-foreground',
               )}
             >
               {rangeLabels[r]}

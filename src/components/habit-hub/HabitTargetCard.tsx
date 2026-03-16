@@ -116,7 +116,7 @@ export function HabitTargetCard({ habit, className }: HabitTargetCardProps) {
 
   return (
     <div className={className}>
-      <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
         {ts.targetProgress || 'Target Progress'}
       </h4>
       <div className="flex items-center justify-around py-2">
@@ -129,8 +129,8 @@ export function HabitTargetCard({ habit, className }: HabitTargetCardProps) {
               color={stat.percent >= 80 ? 'success' : stat.percent >= 40 ? 'warning' : 'primary'}
             />
             <div className="text-center">
-              <div className="text-[10px] text-slate-500">{intervalLabels[stat.label]}</div>
-              <div className="text-[10px] font-medium text-slate-400 tabular-nums">
+              <div className="text-[10px] text-muted-foreground">{intervalLabels[stat.label]}</div>
+              <div className="text-[10px] font-medium text-muted-foreground tabular-nums">
                 {stat.actual % 1 === 0 ? stat.actual : stat.actual.toFixed(1)}
                 /{stat.expected % 1 === 0 ? stat.expected : stat.expected.toFixed(0)}
               </div>
