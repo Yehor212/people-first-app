@@ -55,6 +55,12 @@
       "direction": "down",
       "recorded": "2026-03-15",
       "description": "Inline style={{}} in .tsx files"
+    },
+    "hardcodedColors": {
+      "value": 0,
+      "direction": "down",
+      "recorded": "2026-03-16",
+      "description": "Theme-blind hardcoded colors (Visual Aesthetic Part 6)"
     }
   },
   "qualityScore": {

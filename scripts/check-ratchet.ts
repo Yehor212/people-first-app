@@ -141,7 +141,19 @@ function measureMetrics(): Record<string, number> {
     'godComponents': findGodComponents(400),
     'exhaustiveDeps': runCount(`bash -c "grep -rn 'eslint-disable.*exhaustive-deps' src/ | wc -l"`),
     'inlineStyles': runCount(`bash -c "grep -rn 'style={{' src/ --include='*.tsx' | wc -l"`),
+    'hardcodedColors': countHardcodedColors(),
   };
+}
+
+/** Count theme-blind hardcoded colors (Visual Aesthetic Part 6 — Chameleon Rule) */
+function countHardcodedColors(): number {
+  // text-slate-N / bg-slate-N / bg-gray-N / text-gray-N WITHOUT dark: variant
+  // Excludes: test files, state-of-mind (WebGL), ThemeToggle (theme-conditional via JS),
+  //           AuthScreen (Apple/Google brand buttons), lines with dark: (dual-variant)
+  const slateGray = runCount(`bash -c "grep -rn 'text-slate-[1-9]\\|bg-slate-[1-9]\\|bg-gray-\\|text-gray-' src/ --include='*.tsx' | grep -v 'dark:' | grep -v '__tests__' | grep -v 'state-of-mind/' | grep -v 'ThemeToggle' | grep -v 'AuthScreen' | wc -l"`);
+  // bg-[#hex] hardcoded backgrounds (excluding brand colors like Facebook #1877F2)
+  const hexBg = runCount(`bash -c "grep -rn 'bg-\\[#[0-9a-fA-F]' src/ --include='*.tsx' | grep -v '__tests__' | grep -v 'state-of-mind/' | grep -v '1877F2\\|166FE5' | wc -l"`);
+  return slateGray + hexBg;
 }
 
 function getTestTotal(): number {
