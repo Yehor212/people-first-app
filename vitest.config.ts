@@ -23,7 +23,8 @@ export default defineConfig({
         "**/*.config.*",
         "dist/",
         "android/",
-        "ios/"
+        "ios/",
+        "supabase/"
       ]
     }
   },
