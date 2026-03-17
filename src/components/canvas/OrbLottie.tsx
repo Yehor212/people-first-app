@@ -8,6 +8,7 @@
 
 import Lottie from 'lottie-react';
 import { useEffect, useState } from 'react';
+import { logger } from '@/lib/logger';
 
 export function OrbLottie() {
   const [animData, setAnimData] = useState<object | null>(null);
@@ -15,7 +16,7 @@ export function OrbLottie() {
   useEffect(() => {
     import('@/assets/animations/orb-ambient.json')
       .then(m => setAnimData(m.default))
-      .catch((e) => { console.warn('[OrbLottie] Animation load failed:', e); }); // graceful: decorative animation, component returns null without data
+      .catch((e) => { logger.warn('[OrbLottie] Animation load failed:', e); }); // graceful: decorative animation, component returns null without data
   }, []);
 
   if (!animData) return null;
