@@ -99,11 +99,11 @@ export async function pullInnerWorldFromCloud(): Promise<InnerWorld | null> {
       .from('user_inner_world')
       .select('world_data')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (error) {
-      // Table might not exist or no data - that's ok
-      if (error.code !== 'PGRST116' && error.code !== '42P01') {
+      // Table might not exist - that's ok
+      if (error.code !== '42P01') {
         logger.error('[InnerWorld] Error pulling from cloud:', error);
       }
       return null;

@@ -135,7 +135,7 @@ async function checkVersionFromRemote(): Promise<RemoteVersionConfig | null> {
       .from('app_config')
       .select('value')
       .eq('key', 'app_version')
-      .single();
+      .maybeSingle();
 
     if (error) {
       logger.error('[AppUpdate] Failed to fetch remote version:', error);

@@ -143,7 +143,7 @@ export function JournalStats({ entries, onBack }: JournalStatsProps) {
     if (!dateSet.has(todayStr)) {
       checkDate.setDate(checkDate.getDate() - 1);
     }
-    while (true) {
+    while (current < 365) {
       const str = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`;
       if (dateSet.has(str)) {
         current++;

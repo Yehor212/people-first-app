@@ -129,12 +129,10 @@ export async function getChallengeByCode(code: string): Promise<FriendChallenge 
     .from('friend_challenges')
     .select('*')
     .eq('code', code.toUpperCase())
-    .single();
+    .maybeSingle();
 
   if (error) {
-    if (error.code !== 'PGRST116') { // Not "row not found"
-      logger.error('[ChallengeService] Failed to get challenge:', error);
-    }
+    logger.error('[ChallengeService] Failed to get challenge:', error);
     return null;
   }
 
@@ -151,12 +149,10 @@ export async function getChallengeById(challengeId: string): Promise<FriendChall
     .from('friend_challenges')
     .select('*')
     .eq('id', challengeId)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    if (error.code !== 'PGRST116') {
-      logger.error('[ChallengeService] Failed to get challenge:', error);
-    }
+    logger.error('[ChallengeService] Failed to get challenge:', error);
     return null;
   }
 
@@ -342,7 +338,7 @@ export async function isChallengeMember(challengeId: string): Promise<boolean> {
     .select('id')
     .eq('challenge_id', challengeId)
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
   return !error && !!data;
 }

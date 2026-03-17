@@ -14,7 +14,7 @@ export function PremiumChart({ data, color, glowColor, dayNames }: { data: DayDa
 
   if (data.length < 2) return null;
 
-  const values = data.map(d => d.value).map(v => (Number.isFinite(v) ? v : 0));
+  const values = data.map(d => (Number.isFinite(d.value) ? d.value : 0));
   const max = Math.max(...values, 100);
   const height = 100;
   const width = 300;

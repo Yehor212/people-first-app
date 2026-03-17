@@ -98,13 +98,9 @@ export async function getUserLeaderboardEntry(): Promise<LeaderboardEntry | null
     .from('leaderboards')
     .select('*')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
   if (error) {
-    if (error.code === 'PGRST116') {
-      // No entry found - this is normal for new users
-      return null;
-    }
     logger.error('[Leaderboard] Failed to fetch user entry:', error);
     return null;
   }
