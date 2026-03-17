@@ -507,6 +507,16 @@ Hooks are registered via `useHydrateGamification({ awardXp, earnTreats, plantSee
      // ... sync logic
    }, [dep]);
    ```
+8. **Supabase `.single()` vs `.maybeSingle()` Rule:**
+   - `.single()` is ONLY for INSERT/UPSERT `.select()` chains (guaranteed 1 row returned).
+   - `.maybeSingle()` MUST be used for all SELECT queries where 0 rows is a valid outcome (user lookup, config fetch, membership check).
+   - `.single()` throws PGRST116 on 0 rows — this is a 400 error, not graceful.
+   - Incident: 6 locations used `.single()` for lookups (leaderboard, challenges, innerWorld, appUpdate) → PGRST116 errors for new users. Fixed 20260316.
+9. **Law 19 — Canonical Date Strings:**
+   - For "today" → `getToday()` from `@/lib/utils` (returns `YYYY-MM-DD` in local timezone).
+   - For formatting any `Date` → `formatDate(date)` from `@/lib/utils`.
+   - FORBIDDEN: `new Date().toDateString()`, `new Date().toISOString().split('T')[0]` for date comparisons.
+   - These are timezone-unsafe and format-inconsistent. `getToday()` is the single source of truth.
 
 ---
 
