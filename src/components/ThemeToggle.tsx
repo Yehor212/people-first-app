@@ -152,7 +152,7 @@ export function ThemeToggle() {
           "absolute top-[7px] w-[22px] h-[22px] rounded-full transition-all duration-300 flex items-center justify-center shadow-sm",
           effectiveTheme === 'light'
             ? 'left-[3px] bg-yellow-400'
-            : 'left-[27px] bg-slate-800'
+            : 'left-[27px] bg-indigo-950 ring-1 ring-slate-500/30'
         )}
       >
         {effectiveTheme === 'light' ? (

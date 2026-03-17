@@ -105,7 +105,7 @@ export function AddEventModal({
         exit={{ opacity: 0, scale: 0.9, y: 50 }}
       >
         {/* Cosmic background - Theme-aware */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-violet-50 to-indigo-50 dark:bg-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50/80 via-sky-50/60 to-indigo-50/40 dark:bg-none" />
         <div
           className="absolute inset-0 hidden dark:block"
           style={{

@@ -7,18 +7,25 @@ import { zenMotion, zenTap } from '@/lib/animationUtils';
 import { useModalA11y } from '@/hooks/useModalA11y';
 import { RewardedAdPrompt } from '@/components/ads/RewardedAdPrompt';
 
-// CSS-driven cosmic star — replaces FM repeat: Infinity loop for 60fps
+/**
+ * Theme-aware particle — CSS switches animation via .dark ancestor:
+ *   Day:   zen-mote-float  — gentle upward drift (dust in sunbeam)
+ *   Night: zen-star-twinkle — pulse in place (distant stars)
+ * Only transform + opacity → GPU compositor, 60fps.
+ */
 export function CosmicStar({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
   return (
     <div
-      className="absolute rounded-full bg-white"
+      className="zen-particle absolute rounded-full"
       style={{
         left: `${x}%`,
         top: `${y}%`,
         width: size,
         height: size,
-        animation: `zen-star-twinkle ${2 + delay}s ease-in-out ${delay}s infinite`,
-      }}
+        backgroundColor: 'var(--particle-color)',
+        '--particle-duration': `${2 + delay}s`,
+        '--particle-delay': `${delay}s`,
+      } as React.CSSProperties}
     />
   );
 }
@@ -64,8 +71,8 @@ export function FocusReflectionModal({ reflectionValue, onSelectValue, onSave, o
         animate={{ scale: 1, opacity: 1 }}
         transition={zenMotion.gentle}
       >
-        {/* Premium background - Theme-aware */}
-        <div className="absolute inset-0 bg-gradient-to-b from-indigo-50 via-purple-50 to-slate-100 dark:bg-none" />
+        {/* Premium background — Sun-Dappled Meadow (light) / Cosmic (dark) */}
+        <div className="absolute inset-0 bg-gradient-to-b from-amber-50 via-sky-50 to-indigo-50 dark:bg-none" />
         <div
           className="absolute inset-0 hidden dark:block"
           style={{

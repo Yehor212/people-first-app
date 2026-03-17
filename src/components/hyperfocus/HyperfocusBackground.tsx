@@ -1,32 +1,30 @@
 /**
  * HyperfocusBackground — cosmic background with star particles and breathing animation
- * Pure component, 0 useState. Star particles are dark-mode only.
+ * Pure component, 0 useState. Particles visible in both themes via CSS duality.
  */
 
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 
-// Star particle for cosmic background (dark theme only)
+/**
+ * Theme-aware particle — CSS .zen-particle switches animation:
+ *   Day:   zen-mote-float  (gentle upward drift)
+ *   Night: zen-star-twinkle (pulse in place)
+ * Migrated from FM animate → CSS keyframes for 50-particle performance.
+ */
 function CosmicStar({ x, y, size, delay }: { x: number; y: number; size: number; delay: number }) {
   return (
-    <motion.div
-      className="absolute rounded-full bg-white hidden dark:block"
+    <div
+      className="zen-particle absolute rounded-full"
       style={{
         left: `${x}%`,
         top: `${y}%`,
         width: size,
         height: size,
-      }}
-      animate={{
-        opacity: [0.2, 0.8, 0.2],
-        scale: [1, 1.3, 1],
-      }}
-      transition={{
-        duration: 2 + Math.random() * 2,
-        delay,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
+        backgroundColor: 'var(--particle-color)',
+        '--particle-duration': `${2 + delay}s`,
+        '--particle-delay': `${delay}s`,
+      } as React.CSSProperties}
     />
   );
 }
@@ -50,7 +48,8 @@ export function HyperfocusBackground({ showBreathingAnimation, t }: HyperfocusBa
   return (
     <>
       {/* Deep space background - Theme-aware (fixed layer) */}
-      <div className="absolute inset-0 bg-gradient-to-b from-slate-100 via-indigo-50 to-violet-100 dark:bg-none" />
+      {/* Light mode — Sun-Dappled Meadow */}
+      <div className="absolute inset-0 bg-gradient-to-b from-amber-50 via-sky-50 to-indigo-50 dark:bg-none" />
       <div
         className="absolute inset-0 hidden dark:block"
         style={{
@@ -71,9 +70,9 @@ export function HyperfocusBackground({ showBreathingAnimation, t }: HyperfocusBa
         transition={{ duration: 8, repeat: Infinity }}
         style={{
           background: `
-            radial-gradient(circle at 20% 30%, hsl(var(--focus-violet) / 0.15) 0%, transparent 40%),
-            radial-gradient(circle at 80% 70%, hsl(var(--focus-pink) / 0.1) 0%, transparent 40%),
-            radial-gradient(circle at 50% 90%, hsl(var(--focus-cyan) / 0.08) 0%, transparent 30%)
+            radial-gradient(circle at 20% 30%, var(--nebula-a) 0%, transparent 40%),
+            radial-gradient(circle at 80% 70%, var(--nebula-b) 0%, transparent 40%),
+            radial-gradient(circle at 50% 90%, var(--nebula-b) 0%, transparent 30%)
           `
         }}
       />
@@ -86,7 +85,7 @@ export function HyperfocusBackground({ showBreathingAnimation, t }: HyperfocusBa
             <p className="text-4xl font-bold text-slate-800 dark:text-white mb-4">
               {t.hyperfocusBreathe}
             </p>
-            <p className="text-xl text-white/70">
+            <p className="text-xl text-slate-500 dark:text-white/70">
               {t.hyperfocusBreathDesc}
             </p>
           </div>

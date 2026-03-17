@@ -14,8 +14,8 @@ export function CosmicBackground({ startHereLabel }: CosmicBackgroundProps) {
   return (
     <>
       {/* Cosmic Background - Theme-aware */}
-      {/* Light mode background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-violet-100 via-indigo-50 to-slate-100 dark:bg-none" />
+      {/* Light mode background — Sun-Dappled Meadow */}
+      <div className="absolute inset-0 bg-gradient-to-b from-amber-50 via-sky-50 to-indigo-50 dark:bg-none" />
       {/* Dark mode cosmic gradient */}
       <div
         className="absolute inset-0 hidden dark:block"
@@ -35,8 +35,8 @@ export function CosmicBackground({ startHereLabel }: CosmicBackgroundProps) {
         transition={{ duration: 5, repeat: Infinity }}
         style={{
           background: `
-            radial-gradient(circle at 30% 30%, hsl(var(--focus-violet) / 0.15) 0%, transparent 40%),
-            radial-gradient(circle at 70% 70%, hsl(var(--focus-pink) / 0.1) 0%, transparent 40%)
+            radial-gradient(circle at 30% 30%, var(--nebula-a) 0%, transparent 40%),
+            radial-gradient(circle at 70% 70%, var(--nebula-b) 0%, transparent 40%)
           `
         }}
       />

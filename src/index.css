@@ -187,6 +187,11 @@
     --focus-emerald: 160 84% 39%;
     --focus-amber: 38 92% 50%;
 
+    /* Theme duality: particle & nebula colors for Focus backgrounds */
+    --particle-color: hsl(38 70% 65% / 0.6);   /* warm golden motes */
+    --nebula-a: hsl(38 60% 70% / 0.12);         /* warm light pool */
+    --nebula-b: hsl(200 60% 70% / 0.08);        /* soft sky pool */
+
     /* Brand colors (external services) */
     --brand-spotify: 142 76% 36%;
 
@@ -394,6 +399,11 @@
     --focus-cyan: 189 94% 48%;
     --focus-emerald: 160 84% 45%;
     --focus-amber: 38 92% 55%;
+
+    /* Theme duality: particle & nebula colors for Focus backgrounds */
+    --particle-color: hsl(0 0% 100%);           /* white stars */
+    --nebula-a: hsl(270 60% 50% / 0.15);        /* violet nebula */
+    --nebula-b: hsl(330 60% 50% / 0.10);        /* pink nebula */
 
     /* Brand colors (external services) */
     --brand-spotify: 142 76% 40%;
@@ -3798,10 +3808,36 @@ input::-moz-focus-inner {
   50% { opacity: 0.6; transform: scale(1); }
 }
 
-/* Star twinkling — replaces CosmicStar FM opacity/scale loops */
+/* ===== THEME DUALITY: PARTICLE ANIMATIONS ===== */
+
+/*
+ * Night: zen-star-twinkle — stars pulse IN PLACE (stillness in infinity)
+ * Day:   zen-mote-float   — motes DRIFT UPWARD (dust in sunbeam, dandelion seeds)
+ *
+ * .zen-particle switches animation via .dark ancestor — zero JS, pure CSS.
+ * Only transform + opacity animated → GPU compositor, 60fps guaranteed.
+ */
+
+/* Day: gentle upward drift with horizontal sway — "dust motes in warm light" */
+@keyframes zen-mote-float {
+  0%, 100% { opacity: 0.2; transform: translateY(0) translateX(0) scale(1); }
+  25%      { opacity: 0.55; transform: translateY(-8px) translateX(3px) scale(1.3); }
+  50%      { opacity: 0.45; transform: translateY(-14px) translateX(-2px) scale(1.5); }
+  75%      { opacity: 0.35; transform: translateY(-8px) translateX(4px) scale(1.2); }
+}
+
+/* Night: stars pulse in place — "distant stars through atmosphere" */
 @keyframes zen-star-twinkle {
   0%, 100% { opacity: 0.2; transform: scale(1); }
   50% { opacity: 0.8; transform: scale(1.3); }
+}
+
+/* Unified particle class — theme switches animation automatically */
+.zen-particle {
+  animation: zen-mote-float var(--particle-duration, 3s) ease-in-out var(--particle-delay, 0s) infinite;
+}
+.dark .zen-particle {
+  animation-name: zen-star-twinkle;
 }
 
 /* Glow breathing — replaces FM opacity pulse loops on backgrounds */

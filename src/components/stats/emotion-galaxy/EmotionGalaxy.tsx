@@ -90,7 +90,7 @@ export function EmotionGalaxy({ emotions, totalEntries: _totalEntries, className
     )}>
       {/* Theme-aware deep space background */}
       <div
-        className="absolute inset-0 bg-gradient-to-b from-violet-100 via-purple-50/80 to-indigo-100 dark:bg-none"
+        className="absolute inset-0 bg-gradient-to-b from-violet-50 via-purple-50/60 to-indigo-50 dark:bg-none"
       />
       <div
         className="absolute inset-0 hidden dark:block"

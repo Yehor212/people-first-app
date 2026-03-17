@@ -263,6 +263,9 @@ export function TrophyHall({ streak, focusMinutes, habitsCompleted, className }:
 
       {/* Marble floor reflection */}
       <div
+        className="absolute bottom-0 inset-x-0 h-16 block dark:hidden bg-[linear-gradient(180deg,transparent_0%,hsl(38_60%_85%/0.15)_50%,hsl(38_60%_80%/0.25)_100%)]"
+      />
+      <div
         className="absolute bottom-0 inset-x-0 h-16 hidden dark:block bg-[linear-gradient(180deg,transparent_0%,hsl(var(--temple-marble)/0.1)_50%,hsl(var(--temple-marble)/0.2)_100%)]"
       />
 
